@@ -18,16 +18,7 @@ setup ()
 
 setup_tunable_config ()
 {
-	_t="${EVENTSCRIPTS_TESTS_VAR_DIR}/fake-tunable-config.sh"
-	export FAKE_CTDB_EXTRA_CONFIG="$_t"
-	rm -f "$FAKE_CTDB_EXTRA_CONFIG"
-
-	while read line ; do
-		case "$line" in
-		\#*|"") : ;;
-		*) echo "CTDB_SET_${line}"
-		esac
-	done >"$FAKE_CTDB_EXTRA_CONFIG"
+	cat >"${CTDB_BASE}/ctdb.tunables"
 }
 
 result_filter ()

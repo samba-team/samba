@@ -38,7 +38,25 @@
     </para>
 
     <para>
-      The tunable variables are listed alphabetically.
+      Tunables can be set at startup from the
+      <filename>/usr/local/etc/ctdb/ctdb.tunables</filename>
+      configuration file.
+
+      <literallayout>
+<replaceable>TUNABLE</replaceable>=<replaceable>VALUE</replaceable>
+      </literallayout>
+    </para>
+
+    <para>
+      For example:
+
+      <screen format="linespecific">
+MonitorInterval=20
+      </screen>
+    </para>
+
+    <para>
+      The available tunable variables are listed alphabetically below.
     </para>
 
     <refsect2>
@@ -741,6 +759,14 @@
       </para>
     </refsect2>
 
+  </refsect1>
+
+  <refsect1>
+    <title>FILES></title>
+
+    <simplelist>
+      <member><filename>/usr/local/etc/ctdb/ctdb.tunables</filename></member>
+    </simplelist>
   </refsect1>
 
   <refsect1>

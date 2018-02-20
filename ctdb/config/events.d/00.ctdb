@@ -105,18 +105,23 @@ EOF
 
 set_ctdb_variables ()
 {
-    # set any tunables from the config file
-    set | sed -n '/^CTDB_SET_/s/=.*//p' |
-    while read v; do
-	varname="${v#CTDB_SET_}"
-	value=$(eval echo "\$$v")
-	if $CTDB setvar "$varname" "$value" ; then
-	    echo "Set $varname to $value"
-	else
-	    echo "Invalid configuration: CTDB_SET_${varname}=${value}"
-	    return 1
+	_f="${CTDB_BASE}/ctdb.tunables"
+	if [ ! -r "$_f" ] ; then
+		return
 	fi
-    done
+
+	while IFS="=" read _var _val ; do
+		case "$_var" in
+		\#*|"") continue ;;
+		esac
+
+		if $CTDB setvar "$_var" "$_val" ; then
+			echo "Set $_var to $_val"
+		else
+			echo "Invalid tunable: ${_var}=${_val}"
+			return 1
+		fi
+	done <"$_f"
 }
 
 ############################################################

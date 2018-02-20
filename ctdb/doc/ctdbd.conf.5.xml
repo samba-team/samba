@@ -1430,31 +1430,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
   <refsect1>
     <title>
-      TUNABLES CONFIGURATION
-    </title>
-
-    <para>
-      CTDB tunables (see
-      <citerefentry><refentrytitle>ctdbd-tunables</refentrytitle>
-      <manvolnum>7</manvolnum></citerefentry>) can be set from the
-      configuration file.  They are set as follows:
-
-      <literallayout>
-CTDB_SET_<replaceable>TUNABLE</replaceable>=<replaceable>VALUE</replaceable>
-      </literallayout>
-    </para>
-
-    <para>
-      For example:
-
-      <screen format="linespecific">
-CTDB_SET_MonitorInterval=20
-      </screen>
-    </para>
-  </refsect1>
-
-  <refsect1>
-    <title>
       DEBUG AND TEST
     </title>
 

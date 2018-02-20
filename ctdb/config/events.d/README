@@ -51,8 +51,7 @@ setup
 
 	Failure of this event will cause CTDB to terminate.
 
-	Example: 00.ctdb processes tunables defined in the CTDB
-        configuration using CTDB_SET_<TunableName>=<TunableValue>.
+	Example: 00.ctdb processes tunables defined in ctdb.tunables.
 
 startup
 

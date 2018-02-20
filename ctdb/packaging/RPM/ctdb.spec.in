@@ -114,6 +114,7 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sudoers.d
 DESTDIR=$RPM_BUILD_ROOT ./buildtools/bin/waf install
 
 install -m644 config/ctdbd.conf $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
+install -m644 config/ctdb.tunables $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
 
 # Add a pointer to modern location for configuration file.  Allow with
 # "noreplace" in the files section, this stops RPM moving aside a
@@ -154,6 +155,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 
 %config(noreplace) %{_sysconfdir}/ctdb/ctdbd.conf
+%config(noreplace) %{_sysconfdir}/ctdb/ctdb.tunables
 %config(noreplace) %{_sysconfdir}/ctdb/notify.sh
 %config(noreplace) %{_sysconfdir}/ctdb/debug-hung-script.sh
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
