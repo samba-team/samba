@@ -272,8 +272,8 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol;
 	NTSTATUS status, result;
-	struct dom_sid *sids;
-	enum lsa_SidType *types;
+	struct dom_sid *sids = NULL;
+	enum lsa_SidType *types = NULL;
 	int i, level;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -285,9 +285,9 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	level = atoi(argv[1]);
 
@@ -296,7 +296,9 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status) && NT_STATUS_V(status) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
+	{
 		goto done;
+	}
 
 	status = NT_STATUS_OK;
 
