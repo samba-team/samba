@@ -6123,6 +6123,7 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 {
 	TALLOC_CTX *tmp_ctx;
 	struct ctdb_context *ctdb;
+	const char *ctdb_socket;
 	int ret;
 	bool status;
 	uint64_t srvid_offset;
@@ -6156,6 +6157,11 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 	if (ctdb->ev == NULL) {
 		fprintf(stderr, "Failed to initialize tevent\n");
 		goto fail;
+	}
+
+	ctdb_socket = getenv("CTDB_SOCKET");
+	if (ctdb_socket != NULL) {
+		options.socket = ctdb_socket;
 	}
 
 	ret = ctdb_client_init(ctdb, ctdb->ev, options.socket, &ctdb->client);
@@ -6219,7 +6225,6 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc;
 	const struct ctdb_cmd *cmd;
-	const char *ctdb_socket;
 	int loglevel;
 	int ret;
 
@@ -6232,11 +6237,6 @@ int main(int argc, const char *argv[])
 	options.sep = "|";
 	options.maxruntime = 0;
 	options.pnn = -1;
-
-	ctdb_socket = getenv("CTDB_SOCKET");
-	if (ctdb_socket != NULL) {
-		options.socket = ctdb_socket;
-	}
 
 	pc = poptGetContext(argv[0], argc, argv, cmdline_options,
 			    POPT_CONTEXT_KEEP_FIRST);
