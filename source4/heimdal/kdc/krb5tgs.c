@@ -1703,7 +1703,7 @@ server_lookup:
 
 	    ret = _kdc_find_etype(context,
 				  config->tgs_use_strongest_session_key, FALSE,
-				  server, b->etype.val, b->etype.len, &etype,
+				  server, b->etype.val, b->etype.len, NULL,
 				  &skey);
 	    if(ret) {
 		kdc_log(context, config, 0,
@@ -1711,6 +1711,7 @@ server_lookup:
 		goto out;
 	    }
 	    ekey = &skey->key;
+	    etype = skey->key.keytype;
 	    kvno = server->entry.kvno;
 	}
 

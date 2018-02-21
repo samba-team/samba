@@ -20,7 +20,6 @@ HEIMDAL_HDB_1.0 {
 		hdb_dbinfo_get_realm;
 		hdb_default_db;
 		hdb_enctype2key;
-		hdb_enctype_supported;
 		hdb_entry2string;
 		hdb_entry2value;
 		hdb_entry_alias2value;

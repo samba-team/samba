@@ -93,12 +93,11 @@ static struct hdb_method dbmetod =
 #endif
 
 
-static krb5_error_code
-_hdb_next_enctype2key(krb5_context context,
+krb5_error_code
+hdb_next_enctype2key(krb5_context context,
 		     const hdb_entry *e,
 		     krb5_enctype enctype,
-		     Key **key,
-		     bool require_key)
+		     Key **key)
 {
     Key *k;
 
@@ -106,10 +105,6 @@ _hdb_next_enctype2key(krb5_context context,
 	 k < e->keys.val + e->keys.len;
 	 k++)
     {
-	if (require_key && k->key.keyvalue.length == 0) {
-	    continue;
-	}
-
 	if(k->key.keytype == enctype){
 	    *key = k;
 	    return 0;
@@ -121,16 +116,6 @@ _hdb_next_enctype2key(krb5_context context,
     return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
 
-
-krb5_error_code
-hdb_next_enctype2key(krb5_context context,
-		     const hdb_entry *e,
-		     krb5_enctype enctype,
-		     Key **key)
-{
-	return _hdb_next_enctype2key(context, e, enctype, key, true);
-}
-
 krb5_error_code
 hdb_enctype2key(krb5_context context,
 		hdb_entry *e,
@@ -139,15 +124,6 @@ hdb_enctype2key(krb5_context context,
 {
     *key = NULL;
     return hdb_next_enctype2key(context, e, enctype, key);
-}
-
-krb5_error_code
-hdb_enctype_supported(krb5_context context,
-		hdb_entry *e,
-		krb5_enctype enctype)
-{
-    Key *key = NULL;
-    return _hdb_next_enctype2key(context, e, enctype, &key, false);
 }
 
 void
