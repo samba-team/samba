@@ -10,8 +10,6 @@ loadconfig "ctdb"
 # Default NAT gateway nodes file location
 [ -n "$CTDB_NATGW_NODES" ] || CTDB_NATGW_NODES="${CTDB_BASE}/natgw_nodes"
 
-[ -n "$CTDB_SOCKET" ] && export CTDB_SOCKET
-
 if [ -z "$CTDB" ] ; then
 	CTDB=ctdb
 fi

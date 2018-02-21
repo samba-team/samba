@@ -10,8 +10,6 @@ loadconfig "ctdb"
 # Default LVS nodes file location
 [ -n "$CTDB_LVS_NODES" ] || CTDB_LVS_NODES="${CTDB_BASE}/lvs_nodes"
 
-[ -n "$CTDB_SOCKET" ] && export CTDB_SOCKET
-
 if [ -z "$CTDB" ] ; then
 	CTDB=ctdb
 fi
