@@ -210,17 +210,6 @@
 	</para>
       </listitem>
       </varlistentry>
-
-      <varlistentry><term>--socket=<parameter>FILENAME</parameter></term>
-      <listitem>
-	<para>
-	  Specify that FILENAME is the name of the Unix domain
-	  socket to use when connecting to the local CTDB
-	  daemon. The default is
-	  <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
-	</para>
-      </listitem>
-      </varlistentry>
     </variablelist>
   </refsect1>
 

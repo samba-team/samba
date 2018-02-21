@@ -50,7 +50,6 @@
 #define SRVID_CTDB_PUSHDB  (CTDB_SRVID_TOOL_RANGE | 0x0002000000000000LL)
 
 static struct {
-	const char *socket;
 	const char *debuglevelstr;
 	int timelimit;
 	int pnn;
@@ -6097,8 +6096,6 @@ static void usage(const char *command)
 
 struct poptOption cmdline_options[] = {
 	POPT_AUTOHELP
-	{ "socket", 's', POPT_ARG_STRING, &options.socket, 0,
-		"CTDB socket path", "filename" },
 	{ "debug", 'd', POPT_ARG_STRING, &options.debuglevelstr, 0,
 		"debug level"},
 	{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0,
@@ -6160,14 +6157,14 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 	}
 
 	ctdb_socket = getenv("CTDB_SOCKET");
-	if (ctdb_socket != NULL) {
-		options.socket = ctdb_socket;
+	if (ctdb_socket == NULL) {
+		ctdb_socket = CTDB_SOCKET;
 	}
 
-	ret = ctdb_client_init(ctdb, ctdb->ev, options.socket, &ctdb->client);
+	ret = ctdb_client_init(ctdb, ctdb->ev, ctdb_socket, &ctdb->client);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to connect to CTDB daemon (%s)\n",
-			options.socket);
+			ctdb_socket);
 
 		if (!find_node_xpnn(ctdb, NULL)) {
 			fprintf(stderr, "Is this node part of CTDB cluster?\n");
@@ -6231,7 +6228,6 @@ int main(int argc, const char *argv[])
 	setlinebuf(stdout);
 
 	/* Set default options */
-	options.socket = CTDB_SOCKET;
 	options.debuglevelstr = NULL;
 	options.timelimit = 10;
 	options.sep = "|";
