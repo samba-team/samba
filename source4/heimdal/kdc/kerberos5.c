@@ -322,6 +322,7 @@ krb5_error_code
 _kdc_encode_reply(krb5_context context,
 		  krb5_kdc_configuration *config,
 		  KDC_REP *rep, const EncTicketPart *et, EncKDCRepPart *ek,
+		  krb5_enctype etype,
 		  int skvno, const EncryptionKey *skey,
 		  int ckvno, const EncryptionKey *reply_key,
 		  int rk_is_subkey,
@@ -348,7 +349,7 @@ _kdc_encode_reply(krb5_context context,
 	return KRB5KRB_ERR_GENERIC;
     }
 
-    ret = krb5_crypto_init(context, skey, 0, &crypto);
+    ret = krb5_crypto_init(context, skey, etype, &crypto);
     if (ret) {
         const char *msg;
 	free(buf);
@@ -1719,7 +1720,7 @@ _kdc_as_rep(krb5_context context,
     log_as_req(context, config, reply_key->keytype, setype, b);
 
     ret = _kdc_encode_reply(context, config,
-			    &rep, &et, &ek, server->entry.kvno,
+			    &rep, &et, &ek, setype, server->entry.kvno,
 			    &skey->key, client->entry.kvno,
 			    reply_key, 0, &e_text, reply);
     free_EncTicketPart(&et);

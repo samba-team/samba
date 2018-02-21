@@ -987,7 +987,7 @@ tgs_make_reply(krb5_context context,
        etype list, even if we don't want a session key with
        DES3? */
     ret = _kdc_encode_reply(context, config,
-			    &rep, &et, &ek,
+			    &rep, &et, &ek, et.key.keytype,
 			    kvno,
 			    serverkey, 0, replykey, rk_is_subkey,
 			    e_text, reply);
