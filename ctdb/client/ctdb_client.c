@@ -86,7 +86,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 	struct ctdb_registered_call *fn;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	
-	c = talloc(ctdb, struct ctdb_call_info);
+	c = talloc(mem_ctx, struct ctdb_call_info);
 	CTDB_NO_MEMORY(ctdb, c);
 
 	c->key = call->key;
