@@ -38,6 +38,13 @@ struct ltdb_private {
 	bool read_only;
 
 	const struct ldb_schema_syntax *GUID_index_syntax;
+
+	/*
+	 * Maximum index key length.  If non zero keys longer than this length
+	 * will be truncated for non unique indexes. Keys for unique indexes
+	 * greater than this length will be rejected.
+	 */
+	unsigned max_key_length;
 };
 
 struct ltdb_context {

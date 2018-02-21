@@ -1952,6 +1952,19 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	*_module = module;
+
+	/*
+	 * Set the maximum key length
+	 */
+	{
+		const char *len_str =
+			ldb_options_find(ldb, options,
+					 "max_key_len_for_self_test");
+		if (len_str != NULL) {
+			unsigned len = strtoul(len_str, NULL, 0);
+			ltdb->max_key_length = len;
+		}
+	}
 	return LDB_SUCCESS;
 }
 
