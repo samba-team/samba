@@ -2063,111 +2063,37 @@ sub check_env($$)
 	} else {
 	    return 1;
 	}
-
 }
 
-sub setup_env($$$)
-{
-	my ($self, $envname, $path) = @_;
-	my $target3 = $self->{target3};
+# Declare the environments Samba4 makes available.
+# To be set up, they will be called as
+#   samba4->setup_$envname($self, $path, $dep_1_vars, $dep_2_vars, ...)
+%Samba4::ENV_DEPS = (
+	# name               => [dep_1, dep_2, ...],
+	ad_dc_ntvfs          => [],
+	ad_dc                => [],
+	ad_dc_no_nss         => [],
+	ad_dc_no_ntlm        => [],
+	ad_dc_ntvfs          => [],
 
-	$ENV{ENVNAME} = $envname;
+	fl2008r2dc           => ["ad_dc"],
+	fl2003dc             => ["ad_dc"],
+	fl2000dc             => [],
 
-	if (defined($self->{vars}->{$envname})) {
-	        return $self->{vars}->{$envname};
-	}
+	vampire_2000_dc      => ["fl2000dc"],
+	vampire_dc           => ["ad_dc_ntvfs"],
+	promoted_dc          => ["ad_dc_ntvfs"],
+	subdom_dc            => ["ad_dc_ntvfs"],
 
-	if ($envname eq "ad_dc_ntvfs") {
-		return $self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-	} elsif ($envname eq "fl2000dc") {
-		return $self->setup_fl2000dc("$path/fl2000dc");
-	} elsif ($envname eq "vampire_2000_dc") {
-		if (not defined($self->{vars}->{fl2000dc})) {
-			$self->setup_fl2000dc("$path/fl2000dc");
-		}
-		return $self->setup_vampire_dc("$path/vampire_2000_dc", $self->{vars}->{fl2000dc}, "2000");
-	} elsif ($envname eq "fl2003dc") {
-		if (not defined($self->{vars}->{ad_dc})) {
-			$self->setup_ad_dc("$path/ad_dc");
-		}
-		return $self->setup_fl2003dc("$path/fl2003dc", $self->{vars}->{ad_dc});
-	} elsif ($envname eq "fl2008r2dc") {
-		if (not defined($self->{vars}->{ad_dc})) {
-			$self->setup_ad_dc("$path/ad_dc");
-		}
-		return $self->setup_fl2008r2dc("$path/fl2008r2dc", $self->{vars}->{ad_dc});
-	} elsif ($envname eq "rpc_proxy") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{ad_dc_ntvfs});
-	} elsif ($envname eq "vampire_dc") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{ad_dc_ntvfs}, "2008");
-	} elsif ($envname eq "promoted_dc") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $self->setup_promoted_dc("$path/promoted_dc", $self->{vars}->{ad_dc_ntvfs});
-	} elsif ($envname eq "subdom_dc") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $self->setup_subdom_dc("$path/subdom_dc", $self->{vars}->{ad_dc_ntvfs});
-	} elsif ($envname eq "s4member_dflt_domain") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $self->setup_s4member_dflt_domain("$path/s4member_dflt_domain", $self->{vars}->{ad_dc_ntvfs});
-	} elsif ($envname eq "s4member") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $self->setup_s4member("$path/s4member", $self->{vars}->{ad_dc_ntvfs});
-	} elsif ($envname eq "rodc") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $self->setup_rodc("$path/rodc", $self->{vars}->{ad_dc_ntvfs});
-	} elsif ($envname eq "chgdcpass") {
-		return $self->setup_chgdcpass("$path/chgdcpass", $self->{vars}->{chgdcpass});
-	} elsif ($envname eq "ad_member") {
-		if (not defined($self->{vars}->{ad_dc})) {
-			$self->setup_ad_dc("$path/ad_dc");
-		}
-		return $target3->setup_admember("$path/ad_member", $self->{vars}->{ad_dc}, 29);
-	} elsif ($envname eq "ad_dc") {
-		return $self->setup_ad_dc("$path/ad_dc");
-	} elsif ($envname eq "ad_dc_no_nss") {
-		return $self->setup_ad_dc_no_nss("$path/ad_dc_no_nss");
-	} elsif ($envname eq "ad_dc_no_ntlm") {
-		return $self->setup_ad_dc_no_ntlm("$path/ad_dc_no_ntlm");
-	} elsif ($envname eq "ad_member_rfc2307") {
-		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
-			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
-		}
-		return $target3->setup_admember_rfc2307("$path/ad_member_rfc2307",
-							$self->{vars}->{ad_dc_ntvfs}, 34);
-	} elsif ($envname eq "ad_member_idmap_rid") {
-		if (not defined($self->{vars}->{ad_dc})) {
-			$self->setup_ad_dc("$path/ad_dc");
-		}
-		return $target3->setup_ad_member_idmap_rid("$path/ad_member_idmap_rid",
-							   $self->{vars}->{ad_dc});
-	} elsif ($envname eq "ad_member_idmap_ad") {
-		if (not defined($self->{vars}->{ad_dc})) {
-			$self->setup_ad_dc("$path/ad_dc");
-		}
-		return $target3->setup_ad_member_idmap_ad("$path/ad_member_idmap_ad",
-							  $self->{vars}->{ad_dc});
-	} elsif ($envname eq "none") {
-		return $self->setup_none("$path/none");
-	} else {
-		return "UNKNOWN";
-	}
-}
+	rodc                 => ["ad_dc_ntvfs"],
+	rpc_proxy            => ["ad_dc_ntvfs"],
+	chgdcpass            => [],
+
+	s4member_dflt_domain => ["ad_dc_ntvfs"],
+	s4member             => ["ad_dc_ntvfs"],
+
+	none                 => [],
+);
 
 sub setup_s4member
 {
@@ -2179,8 +2105,6 @@ sub setup_s4member
 	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
-
-		$self->{vars}->{s4member} = $env;
 	}
 
 	return $env;
@@ -2197,8 +2121,6 @@ sub setup_s4member_dflt_domain
 	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
-
-		$self->{vars}->{s4member_dflt_domain} = $env;
 	}
 
 	return $env;
@@ -2214,8 +2136,6 @@ sub setup_rpc_proxy
 	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
-
-		$self->{vars}->{rpc_proxy} = $env;
 	}
 	return $env;
 }
@@ -2230,8 +2150,6 @@ sub setup_ad_dc_ntvfs
 		    warn("Failed to start ad_dc_ntvfs");
 		        return undef;
 		}
-
-		$self->{vars}->{ad_dc_ntvfs} = $env;
 	}
 	return $env;
 }
@@ -2245,8 +2163,6 @@ sub setup_chgdcpass
 	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
-
-		$self->{vars}->{chgdcpass} = $env;
 	}
 	return $env;
 }
@@ -2260,8 +2176,6 @@ sub setup_fl2000dc
 	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
-
-		$self->{vars}->{fl2000dc} = $env;
 	}
 
 	return $env;
@@ -2279,8 +2193,6 @@ sub setup_fl2003dc
 		}
 
 		$env = $self->setup_trust($env, $dc_vars, "external", "--no-aes-keys");
-
-		$self->{vars}->{fl2003dc} = $env;
 	}
 	return $env;
 }
@@ -2302,14 +2214,22 @@ sub setup_fl2008r2dc
 		$self->setup_namespaces($env, $upn_array, $spn_array);
 
 		$env = $self->setup_trust($env, $dc_vars, "forest", "");
-
-		$self->{vars}->{fl2008r2dc} = $env;
 	}
 
 	return $env;
 }
 
 sub setup_vampire_dc
+{
+	return setup_generic_vampire_dc(@_, "2008");
+}
+
+sub setup_vampire_2000_dc
+{
+	return setup_generic_vampire_dc(@_, "2000");
+}
+
+sub setup_generic_vampire_dc
 {
 	my ($self, $path, $dc_vars, $fl) = @_;
 
@@ -2319,8 +2239,6 @@ sub setup_vampire_dc
 	        if (not defined($self->check_or_start($env, "single"))) {
 		        return undef;
 		}
-
-		$self->{vars}->{vampire_dc} = $env;
 
 		# force replicated DC to update repsTo/repsFrom
 		# for vampired partitions
@@ -2396,8 +2314,6 @@ sub setup_promoted_dc
 		        return undef;
 		}
 
-		$self->{vars}->{promoted_dc} = $env;
-
 		# force source and replicated DC to update repsTo/repsFrom
 		# for vampired partitions
 		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
@@ -2438,8 +2354,6 @@ sub setup_subdom_dc
 	        if (not defined($self->check_or_start($env, "single"))) {
 		        return undef;
 		}
-
-		$self->{vars}->{subdom_dc} = $env;
 
 		# force replicated DC to update repsTo/repsFrom
 		# for primary domain partitions
@@ -2509,8 +2423,6 @@ sub setup_rodc
 	    return undef;
 	}
 
-	$self->{vars}->{rodc} = $env;
-
 	return $env;
 }
 
@@ -2538,7 +2450,6 @@ sub setup_ad_dc
 
 	$self->setup_namespaces($env, $upn_array, $spn_array);
 
-	$self->{vars}->{ad_dc} = $env;
 	return $env;
 }
 
@@ -2569,7 +2480,6 @@ sub setup_ad_dc_no_nss
 
 	$self->setup_namespaces($env, $upn_array, $spn_array);
 
-	$self->{vars}->{ad_dc_no_nss} = $env;
 	return $env;
 }
 
@@ -2598,7 +2508,6 @@ sub setup_ad_dc_no_ntlm
 
 	$self->setup_namespaces($env, $upn_array, $spn_array);
 
-	$self->{vars}->{ad_dc_no_ntlm} = $env;
 	return $env;
 }
 

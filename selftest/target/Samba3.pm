@@ -163,46 +163,26 @@ sub check_env($$)
 	return 1;
 }
 
-sub setup_env($$$)
-{
-	my ($self, $envname, $path) = @_;
+# Declare the environments Samba3 makes available.
+# To be set up, they will be called as
+#   samba3->setup_$envname($self, $path, $dep_1_vars, $dep_2_vars, ...)
+%Samba3::ENV_DEPS = (
+	# name              => [dep_1, dep_2, ...],
+	nt4_dc              => [],
+	nt4_dc_schannel     => [],
 
-	$ENV{ENVNAME} = $envname;
+	simpleserver        => [],
+	fileserver          => [],
+	maptoguest          => [],
+	ktest               => [],
 
-	if (defined($self->{vars}->{$envname})) {
-	        return $self->{vars}->{$envname};
-	}
+	nt4_member          => ["nt4_dc"],
 
-	#
-	# Avoid hitting system krb5.conf -
-	# An env that needs Kerberos will reset this to the real
-	# value.
-	#
-	$ENV{KRB5_CONFIG} = "$path/no_krb5.conf";
-
-	if ($envname eq "nt4_dc") {
-		return $self->setup_nt4_dc("$path/nt4_dc");
-	} elsif ($envname eq "nt4_dc_schannel") {
-		return $self->setup_nt4_dc_schannel("$path/nt4_dc_schannel");
-	} elsif ($envname eq "simpleserver") {
-		return $self->setup_simpleserver("$path/simpleserver");
-	} elsif ($envname eq "fileserver") {
-		return $self->setup_fileserver("$path/fileserver");
-	} elsif ($envname eq "maptoguest") {
-		return $self->setup_maptoguest("$path/maptoguest");
-	} elsif ($envname eq "ktest") {
-		return $self->setup_ktest("$path/ktest");
-	} elsif ($envname eq "nt4_member") {
-		if (not defined($self->{vars}->{nt4_dc})) {
-			if (not defined($self->setup_nt4_dc("$path/nt4_dc"))) {
-			        return undef;
-			}
-		}
-		return $self->setup_nt4_member("$path/nt4_member", $self->{vars}->{nt4_dc});
-	} else {
-		return "UNKNOWN";
-	}
-}
+	ad_member           => ["ad_dc"],
+	ad_member_rfc2307   => ["ad_dc_ntvfs"],
+	ad_member_idmap_rid => ["ad_dc"],
+	ad_member_idmap_ad  => ["ad_dc"],
+);
 
 sub setup_nt4_dc
 {
@@ -252,8 +232,6 @@ sub setup_nt4_dc
 	$vars->{DC_USERNAME} = $vars->{USERNAME};
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
 
-	$self->{vars}->{nt4_dc} = $vars;
-
 	return $vars;
 }
 
@@ -301,8 +279,6 @@ sub setup_nt4_dc_schannel
 	$vars->{DC_NETBIOSNAME} = $vars->{NETBIOSNAME};
 	$vars->{DC_USERNAME} = $vars->{USERNAME};
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
-
-	$self->{vars}->{nt4_dc_schannel} = $vars;
 
 	return $vars;
 }
@@ -381,7 +357,7 @@ sub setup_nt4_member
 	return $ret;
 }
 
-sub setup_admember
+sub setup_ad_member
 {
 	my ($self, $prefix, $dcvars) = @_;
 
@@ -501,13 +477,10 @@ sub setup_admember
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
-	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
-	$ret->{target} = $self;
-
 	return $ret;
 }
 
-sub setup_admember_rfc2307
+sub setup_ad_member_rfc2307
 {
 	my ($self, $prefix, $dcvars) = @_;
 
@@ -597,9 +570,6 @@ sub setup_admember_rfc2307
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
-	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
-	$ret->{target} = $self;
-
 	return $ret;
 }
 
@@ -684,9 +654,6 @@ sub setup_ad_member_idmap_rid
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
-
-	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
-	$ret->{target} = $self;
 
 	return $ret;
 }
@@ -774,9 +741,6 @@ sub setup_ad_member_idmap_ad
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
-	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
-	$ret->{target} = $self;
-
 	return $ret;
 }
 
@@ -828,8 +792,6 @@ sub setup_simpleserver
 	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
 	       return undef;
 	}
-
-	$self->{vars}->{simpleserver} = $vars;
 
 	return $vars;
 }
@@ -961,7 +923,6 @@ sub setup_fileserver
 	       return undef;
 	}
 
-	$self->{vars}->{fileserver} = $vars;
 
 	mkdir($_, 0777) foreach(@dirs);
 
@@ -1138,8 +1099,6 @@ ntlm auth = yes
 	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
 	       return undef;
 	}
-
-	$self->{vars}->{s3maptoguest} = $vars;
 
 	return $vars;
 }

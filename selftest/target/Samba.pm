@@ -22,33 +22,71 @@ sub new($$$$$) {
 	return $self;
 }
 
+%Samba::ENV_DEPS = (%Samba3::ENV_DEPS, %Samba4::ENV_DEPS);
+our %ENV_DEPS;
+
+%Samba::ENV_TARGETS = (
+	(map { $_ => "Samba3" } keys %Samba3::ENV_DEPS),
+	(map { $_ => "Samba4" } keys %Samba4::ENV_DEPS),
+);
+our %ENV_TARGETS;
+
+%Samba::ENV_NEEDS_AD_DC = (
+	(map { $_ => 1 } keys %Samba4::ENV_DEPS)
+);
+our %ENV_NEEDS_AD_DC;
+foreach my $env (keys %Samba3::ENV_DEPS) {
+    $ENV_NEEDS_AD_DC{$env} = ($env =~ /^ad_/);
+}
+
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
 
-	$ENV{ENVNAME} = $envname;
-
-	my $env = $self->{samba4}->setup_env($envname, $path);
-	if (defined($env) and $env ne "UNKNOWN") {
-	    if (not defined($env->{target})) {
-		$env->{target} = $self->{samba4};
-	    }
-	} elsif (defined($env) and $env eq "UNKNOWN") {
-	   	$env = $self->{samba3}->setup_env($envname, $path);
-		if (defined($env) and $env ne "UNKNOWN") {
-		    if (not defined($env->{target})) {
-			$env->{target} = $self->{samba3};
-		    }
-		}
-	}
-	if (defined($env) and ($env eq "UNKNOWN")) {
+	my $targetname = $ENV_TARGETS{$envname};
+	if (not defined($targetname)) {
 		warn("Samba can't provide environment '$envname'");
 		return "UNKNOWN";
 	}
-	if (not defined $env) {
+
+	my %targetlookup = (
+		"Samba3" => $self->{samba3},
+		"Samba4" => $self->{samba4}
+	);
+	my $target = $targetlookup{$targetname};
+
+	if (defined($target->{vars}->{$envname})) {
+		return $target->{vars}->{$envname};
+	}
+
+	my @dep_vars;
+	foreach(@{$ENV_DEPS{$envname}}) {
+		my $vars = $self->setup_env($_, $path);
+		if (defined($vars)) {
+			push(@dep_vars, $vars);
+		} else {
+			warn("Failed setting up $_ as a dependency of $envname");
+			return undef;
+		}
+	}
+
+	$ENV{ENVNAME} = $envname;
+	# Avoid hitting system krb5.conf -
+	# An env that needs Kerberos will reset this to the real value.
+	$ENV{KRB5_CONFIG} = "$path/no_krb5.conf";
+
+	my $setup_name = $ENV_TARGETS{$envname}."::setup_".$envname;
+	my $setup_sub = \&$setup_name;
+	my $env = &$setup_sub($target, "$path/$envname", @dep_vars);
+
+	if (not defined($env)) {
 		warn("failed to start up environment '$envname'");
 		return undef;
 	}
+
+	$target->{vars}->{$envname} = $env;
+	$target->{vars}->{$envname}->{target} = $target;
+
 	return $env;
 }
 

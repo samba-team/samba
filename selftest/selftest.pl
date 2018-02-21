@@ -85,7 +85,12 @@ sub find_in_list($$)
 
 sub skip
 {
-	my ($name) = @_;
+	my ($name, $envname) = @_;
+	my ($env_basename, $env_localpart) = split(/:/, $envname);
+
+	if ($opt_target eq "samba3" && $Samba::ENV_NEEDS_AD_DC{$env_basename}) {
+		return "environment $envname is disabled as this build does not include an AD DC";
+	}
 
 	return find_in_list(\@excludes, $name);
 }
@@ -449,15 +454,12 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
     $server_maxtime = $ENV{SMBD_MAXTIME};
 }
 
+$target = new Samba($bindir, $ldap, $srcdir, $server_maxtime);
 unless ($opt_list) {
 	if ($opt_target eq "samba") {
 		$testenv_default = "ad_dc";
-		require target::Samba;
-		$target = new Samba($bindir, $ldap, $srcdir, $server_maxtime);
 	} elsif ($opt_target eq "samba3") {
 		$testenv_default = "nt4_member";
-		require target::Samba3;
-		$target = new Samba3($bindir, $srcdir_abs, $server_maxtime);
 	}
 }
 
@@ -725,7 +727,7 @@ $individual_tests = {};
 
 foreach my $testsuite (@available) {
 	my $name = $$testsuite[0];
-	my $skipreason = skip($name);
+	my $skipreason = skip(@$testsuite);
 	if (defined($restricted)) {
 		# Find the testsuite for this test
 		my $match = undef;
