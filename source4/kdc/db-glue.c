@@ -288,14 +288,6 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 					    "msDS-SupportedEncryptionTypes",
 					    0);
 
-	if (userAccountControl & UF_NORMAL_ACCOUNT) {
-		supported_enctypes = 0;
-	}
-	if (supported_enctypes == 0) {
-		/* Otherwise, add in the default enc types */
-		supported_enctypes |= ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
-	}
-
 	if (rid == DOMAIN_RID_KRBTGT || is_rodc) {
 		/* KDCs (and KDCs on RODCs) use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
@@ -316,7 +308,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
 	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
 		supported_enctypes = ENC_CRC32|ENC_RSA_MD5;
-	} else if (supported_enctypes == 0) {
+	} else {
 		/* Otherwise, add in the default enc types */
 		supported_enctypes |= ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
 	}
