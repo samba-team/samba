@@ -52,4 +52,9 @@
 /* lib/replace provides an XSI Compatable strerror_r so use that */
 #define STRERROR_R_PROTO_COMPATIBLE
 
+/* lib/replace provides a closefrom */
+#ifndef HAVE_CLOSEFROM
+#define HAVE_CLOSEFROM 1
+#endif
+
 #endif
