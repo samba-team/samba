@@ -467,23 +467,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--socket=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME specifies the name of the Unix domain socket that
-	    ctdbd will create. This socket is used by local clients to
-	    communicate with ctdbd.
-	  </para>
-	  <para>
-	    The default is <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
-	    You only need to use this option if you plan to run
-	    multiple ctdbd daemons on the same physical host, usually
-	    for testing.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--script-log-level=<parameter>DEBUGLEVEL</parameter></term>
 	<listitem>
 	  <para>

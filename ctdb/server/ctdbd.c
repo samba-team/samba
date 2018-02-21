@@ -117,7 +117,6 @@ int main(int argc, const char *argv[])
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		{ "socket", 0, POPT_ARG_STRING, &ctdb_socket, 0, "local socket name", "filename" },
 		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
@@ -217,7 +216,6 @@ int main(int argc, const char *argv[])
 	setenv("CTDB_LOGGING", options.logging, 1);
 	setenv("CTDB_DEBUGLEVEL", debug_level_to_string(DEBUGLEVEL), 1);
 
-	setenv("CTDB_SOCKET", ctdb_socket, 1);
 	ret = ctdb_set_socketname(ctdb, ctdb_socket);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("ctdb_set_socketname() failed\n"));
