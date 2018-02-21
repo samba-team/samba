@@ -38,7 +38,6 @@ finally:
     f.close()
 
 have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
-with_cmocka = ("HAVE_CMOCKA" in config_hash)
 with_pam = ("WITH_PAM" in config_hash)
 pam_wrapper_so_path=config_hash["LIBPAM_WRAPPER_SO_PATH"]
 
@@ -153,13 +152,12 @@ if with_pam:
                    valgrindify(python), pam_wrapper_so_path,
                    "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD"])
 
-if with_cmocka:
-    plantestsuite("samba.unittests.krb5samba", "none",
-                  [os.path.join(bindir(), "default/testsuite/unittests/test_krb5samba")])
-    plantestsuite("samba.unittests.sambafs_srv_pipe", "none",
-                  [os.path.join(bindir(), "default/testsuite/unittests/test_sambafs_srv_pipe")])
-    plantestsuite("samba.unittests.lib_util_modules", "none",
-                  [os.path.join(bindir(), "default/testsuite/unittests/test_lib_util_modules")])
+plantestsuite("samba.unittests.krb5samba", "none",
+              [os.path.join(bindir(), "default/testsuite/unittests/test_krb5samba")])
+plantestsuite("samba.unittests.sambafs_srv_pipe", "none",
+              [os.path.join(bindir(), "default/testsuite/unittests/test_sambafs_srv_pipe")])
+plantestsuite("samba.unittests.lib_util_modules", "none",
+              [os.path.join(bindir(), "default/testsuite/unittests/test_lib_util_modules")])
 
-    plantestsuite("samba.unittests.smb1cli_session", "none",
-                  [os.path.join(bindir(), "default/libcli/smb/test_smb1cli_session")])
+plantestsuite("samba.unittests.smb1cli_session", "none",
+              [os.path.join(bindir(), "default/libcli/smb/test_smb1cli_session")])
