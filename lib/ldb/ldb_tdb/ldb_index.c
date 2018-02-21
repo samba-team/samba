@@ -2004,6 +2004,25 @@ static int ltdb_index_add1(struct ldb_module *module,
 		talloc_free(list);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	/*
+	 * Samba only maintains unique indexes on the objectSID and objectGUID
+	 * so if a unique index key exceeds the maximum length there is a
+	 * problem.
+	 */
+	if ((truncation == KEY_TRUNCATED) && (a != NULL &&
+		(a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX ||
+		(el->flags & LDB_FLAG_INTERNAL_FORCE_UNIQUE_INDEX)))) {
+
+		ldb_asprintf_errstring(
+			ldb,
+			__location__ ": unique index key on %s in %s, "
+			"exceeds maximum key length of %u (encoded).",
+			el->name,
+			ldb_dn_get_linearized(msg->dn),
+			ltdb->max_key_length);
+		talloc_free(list);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
 	talloc_steal(list, dn_key);
 
 	ret = ltdb_dn_list_load(module, ltdb, dn_key, list);
