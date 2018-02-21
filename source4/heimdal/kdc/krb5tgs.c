@@ -725,7 +725,6 @@ tgs_make_reply(krb5_context context,
 	       KDC_REQ_BODY *b,
 	       krb5_const_principal tgt_name,
 	       const EncTicketPart *tgt,
-	       const EncTicketPart *adtgt,
 	       const krb5_keyblock *replykey,
 	       int rk_is_subkey,
 	       const EncryptionKey *serverkey,
@@ -759,7 +758,7 @@ tgs_make_reply(krb5_context context,
     rep.pvno = 5;
     rep.msg_type = krb_tgs_rep;
 
-    et.authtime = adtgt->authtime;
+    et.authtime = tgt->authtime;
     _kdc_fix_time(&b->till);
     et.endtime = min(tgt->endtime, *b->till);
     ALLOC(et.starttime);
@@ -1481,7 +1480,6 @@ tgs_build_reply(krb5_context context,
     Realm r;
     int nloop = 0;
     EncTicketPart adtkt;
-    EncTicketPart *adtgt = tgt;
     char opt_str[128];
     int signedpath = 0;
 
@@ -2148,7 +2146,7 @@ server_lookup:
 	if (rk_is_subkey == 0) {
 	    auth_data_key = &adtkt.key;
 	}
-	adtgt = &adtkt;
+
 	kdc_log(context, config, 0, "constrained delegation for %s "
 		"from %s (%s) to %s", tpn, cpn, dpn, spn);
     }
@@ -2264,7 +2262,6 @@ server_lookup:
 			 b,
 			 tp,
 			 tgt,
-			 adtgt,
 			 replykey,
 			 rk_is_subkey,
 			 ekey,
