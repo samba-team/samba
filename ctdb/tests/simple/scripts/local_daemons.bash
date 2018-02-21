@@ -169,7 +169,6 @@ setup_ctdb ()
 		local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
 
 		local conf=$(node_conf "$pnn")
-		local socket=$(node_socket "$pnn")
 
 		local db_dir="${node_dir}/db"
 		mkdir -p "${db_dir}/persistent"
@@ -184,7 +183,6 @@ CTDB_DBDIR="${db_dir}"
 CTDB_DBDIR_PERSISTENT="${db_dir}/persistent"
 CTDB_DBDIR_STATE="${db_dir}/state"
 CTDB_PUBLIC_ADDRESSES="${public_addresses}"
-CTDB_SOCKET="${socket}"
 CTDB_NOSETSCHED=yes
 EOF
 
@@ -200,6 +198,7 @@ start_ctdb_1 ()
 	local node_dir=$(node_dir "$pnn")
 	local pidfile=$(node_pidfile "$pnn")
 	local conf=$(node_conf "$pnn")
+	local socket=$(node_socket "$pnn")
 
 	# If there is any CTDB configuration in the environment then
 	# append it to the regular configuration in a temporary
@@ -217,6 +216,7 @@ start_ctdb_1 ()
 	     CTDB_BASE="$node_dir" \
 	     CTDBD_CONF="$conf" \
 	     CTDB_PIDFILE="$pidfile" \
+	     CTDB_SOCKET="$socket" \
 	     ctdbd_wrapper start
 
 	if [ -n "$tmp_conf" ] ; then
@@ -240,10 +240,12 @@ stop_ctdb_1 ()
 	local node_dir=$(node_dir "$pnn")
 	local pidfile=$(node_pidfile "$pnn")
 	local conf=$(node_conf "$pnn")
+	local socket=$(node_socket "$pnn")
 
 	CTDB_BASE="$node_dir" \
 		 CTDBD_CONF="$conf" \
 		 CTDB_PIDFILE="$pidfile" \
+		 CTDB_SOCKET="$socket" \
 		 ctdbd_wrapper stop
 }
 
