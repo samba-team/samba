@@ -86,7 +86,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 	struct ctdb_registered_call *fn;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	
-	c = talloc(mem_ctx, struct ctdb_call_info);
+	c = talloc_zero(mem_ctx, struct ctdb_call_info);
 	CTDB_NO_MEMORY(ctdb, c);
 
 	c->key = call->key;
@@ -94,9 +94,6 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 	c->record_data.dptr = talloc_memdup(c, data->dptr, data->dsize);
 	c->record_data.dsize = data->dsize;
 	CTDB_NO_MEMORY(ctdb, c->record_data.dptr);
-	c->new_data = NULL;
-	c->reply_data = NULL;
-	c->status = 0;
 	c->header = header;
 
 	for (fn=ctdb_db->calls;fn;fn=fn->next) {
