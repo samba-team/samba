@@ -379,24 +379,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_SOCKET=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    Defaults to <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
-	    Corresponds to <option>--socket</option>.
-	  </para>
-	  <para>
-	    If you change this then you probably want to set this in
-	    root's environment (perhaps in a file in
-	    <filename>/etc/profile.d</filename>) so that you can use
-	    the <citerefentry><refentrytitle>ctdb</refentrytitle>
-	    <manvolnum>1</manvolnum></citerefentry> command in a
-	    straightforward manner.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_START_AS_DISABLED=yes|no</term>
 	<listitem>
 	  <para>
