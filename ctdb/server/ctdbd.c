@@ -40,7 +40,6 @@
 #include "common/logging.h"
 
 static struct {
-	const char *socket;
 	const char *debuglevel;
 	const char *nlist;
 	const char *transport;
@@ -64,7 +63,6 @@ static struct {
 	int         max_persistent_check_errors;
 	int         torture;
 } options = {
-	.socket = CTDB_SOCKET,
 	.debuglevel = "NOTICE",
 	.nlist = NULL,
 	.public_address_list = NULL,
@@ -115,10 +113,11 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
 	int interactive = 0;
+	const char *ctdb_socket;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		{ "socket", 0, POPT_ARG_STRING, &options.socket, 0, "local socket name", "filename" },
+		{ "socket", 0, POPT_ARG_STRING, &ctdb_socket, 0, "local socket name", "filename" },
 		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
@@ -156,6 +155,12 @@ int main(int argc, const char *argv[])
 	ctdbd_pidfile = getenv("CTDB_PIDFILE");
 	if (ctdbd_pidfile == NULL) {
 		ctdbd_pidfile = CTDB_RUNDIR "/ctdbd.pid";
+	}
+
+	/* Environment variable overrides default */
+	ctdb_socket = getenv("CTDB_SOCKET");
+	if (ctdb_socket == NULL) {
+		ctdb_socket = CTDB_SOCKET;
 	}
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
@@ -212,8 +217,8 @@ int main(int argc, const char *argv[])
 	setenv("CTDB_LOGGING", options.logging, 1);
 	setenv("CTDB_DEBUGLEVEL", debug_level_to_string(DEBUGLEVEL), 1);
 
-	setenv("CTDB_SOCKET", options.socket, 1);
-	ret = ctdb_set_socketname(ctdb, options.socket);
+	setenv("CTDB_SOCKET", ctdb_socket, 1);
+	ret = ctdb_set_socketname(ctdb, ctdb_socket);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("ctdb_set_socketname() failed\n"));
 		exit(1);
