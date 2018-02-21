@@ -26,7 +26,7 @@ static void test_samba_module_probe(void **state)
 {
 	NTSTATUS status;
 
-	status = smb_probe_module("auth", "unix");
+	status = smb_probe_module("auth", "skel");
 	assert_true(NT_STATUS_IS_OK(status));
 }
 
