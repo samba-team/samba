@@ -12,9 +12,31 @@ Samba 4.8 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+New GUID Index mode in sam.ldb for the AD DC
+--------------------------------------------
+
+Users who upgrade a Samba AD DC in-place will experience a short delay
+in the first startup of Samba while the sam.ldb is re-indexed.
+
+Unlike in previous releases a transparent downgrade is not possible.
+If you wish to downgrade such a DB to a Samba 4.7 or earlier version,
+please run the source4/scripting/bin/sambaundoguididx script first.
 
 NEW FEATURES/CHANGES
 ====================
+
+New GUID Index mode in sam.ldb for the AD DC
+--------------------------------------------
+
+The new layout used for sam.ldb is GUID, rather than DN oriented.
+This provides Samba's Active Directory Domain Controller with a faster
+database, particularly at larger scale.
+
+The underlying DB is still TDB, simply the choice of key has changed.
+
+The new mode is not optional, so no configuration is required.  Older
+Samba versions cannot read the new database (see the upgrade
+note above).
 
 KDC GPO application
 -------------------
