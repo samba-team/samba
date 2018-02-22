@@ -371,7 +371,7 @@ uint32_t cli_state_set_tid(struct cli_state *cli, uint32_t tid)
 	uint32_t ret;
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		ret = smb2cli_tcon_current_id(cli->smb2.tcon);
-		smb2cli_tcon_set_id(cli->smb1.tcon, tid);
+		smb2cli_tcon_set_id(cli->smb2.tcon, tid);
 	} else {
 		ret = smb1cli_tcon_current_id(cli->smb1.tcon);
 		smb1cli_tcon_set_id(cli->smb1.tcon, tid);
