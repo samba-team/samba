@@ -422,7 +422,6 @@ bld.SAMBA_MODULE('ldb_encrypted_secrets',
             samdb-common
             DSDB_MODULE_HELPERS
             samdb
-            nettle
             gnutls
         '''
 	)

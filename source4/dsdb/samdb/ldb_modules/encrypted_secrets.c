@@ -27,8 +27,8 @@
  * to protect the key.
  *
  * Data is encrypted with AES 128 GCM. The encryption uses gnutls where
- * available and if it supports AES 128 GCM AEAD modes, otherwise nettle is
- * used.
+ * available and if it supports AES 128 GCM AEAD modes, otherwise the
+ * samba internal implementation is used.
  *
  */
 
@@ -40,17 +40,15 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 
 #ifdef TEST_ENCRYPTED_SECRETS
-	#ifdef HAVE_NETTLE_AES_GCM
-		#define BUILD_WITH_NETTLE_AES_GCM
-	#endif
+	#define BUILD_WITH_SAMBA_AES_GCM
 	#ifdef HAVE_GNUTLS_AEAD
 		#define BUILD_WITH_GNUTLS_AEAD
 	#endif
 #else
 	#ifdef HAVE_GNUTLS_AEAD
 		#define BUILD_WITH_GNUTLS_AEAD
-	#elif defined  HAVE_NETTLE_AES_GCM
-		#define BUILD_WITH_NETTLE_AES_GCM
+	#else
+		#define BUILD_WITH_SAMBA_AES_GCM
 	#endif
 #endif
 
@@ -59,9 +57,9 @@
 	#include <gnutls/crypto.h>
 #endif /* BUILD_WITH_GNUTLS_AEAD */
 
-#ifdef BUILD_WITH_NETTLE_AES_GCM
-	#include <nettle/gcm.h>
-#endif /* BUILD_WITH_NETTLE_AES_GCM */
+#ifdef BUILD_WITH_SAMBA_AES_GCM
+	#include "lib/crypto/crypto.h"
+#endif /* BUILD_WITH_SAMBA_AES_GCM */
 
 static const char * const secret_attributes[] = {DSDB_SECRET_ATTRIBUTES};
 static const size_t num_secret_attributes = ARRAY_SIZE(secret_attributes);
@@ -71,85 +69,6 @@ static const size_t num_secret_attributes = ARRAY_SIZE(secret_attributes);
 #define NUMBER_OF_KEYS 1
 #define SECRETS_KEY_FILE "encrypted_secrets.key"
 
-
-#ifdef BUILD_WITH_NETTLE_AES_GCM
-/*
- * Details of a nettle encryption algorithm
- */
-
-#ifndef AES128_KEY_SIZE
-	#define AES128_KEY_SIZE 16
-	#define NETTLE_SIZE_TYPE unsigned
-#else
-	#define NETTLE_SIZE_TYPE size_t
-#endif
-#ifndef GCM_DIGEST_SIZE
-	#define GCM_DIGEST_SIZE 16
-#endif
-struct nettle_details {
-	size_t context_size;	/* Size of the nettle encryption context */
-	size_t block_size;	/* Cipher block size */
-	size_t key_size;	/* Size of the key */
-	size_t iv_size;		/* Size of the initialisation routine */
-	size_t tag_size;	/* Size of the aead tag */
-	/*
-	 * Function to load the encryption key into the context
-	 */
-	void (*set_key)(struct gcm_aes_ctx *,
-			NETTLE_SIZE_TYPE,
-			const uint8_t *);
-	/*
-	 * Function to load the initialisation vector into the context
-	 */
-	void (*set_iv)(struct gcm_aes_ctx *, NETTLE_SIZE_TYPE, const uint8_t *);
-	/*
-	 * Function to encrypt data
-	 */
-	void (*encrypt)
-		(struct gcm_aes_ctx *,
-		 NETTLE_SIZE_TYPE,
-		 uint8_t *,
-		 const uint8_t *);
-	/*
-	 * Function to decrypt data
-	 */
-	void (*decrypt)
-		(struct gcm_aes_ctx *,
-		 NETTLE_SIZE_TYPE,
-		 uint8_t *,
-		 const uint8_t *);
-	/*
-	 * Function to add extra authentication data to the context.
-	 */
-	void (*update)(struct gcm_aes_ctx *, NETTLE_SIZE_TYPE, const uint8_t *);
-	/*
-	 * Function returning the authentication tag data
-	 */
-	void (*digest)(struct gcm_aes_ctx *, NETTLE_SIZE_TYPE, uint8_t *);
-};
-
-/*
- * Configuration of the supported nettle algorithms
- */
-static struct nettle_details nettle_algorithms[] = {
-	/* Algorithms are numbered from 1, so element 0 is empty */
-	{},
-	/* AES-GCM 128 */
-	{
-		.context_size	= sizeof(struct gcm_aes_ctx),
-		.block_size	= GCM_BLOCK_SIZE,
-		.key_size	= AES128_KEY_SIZE,
-		.iv_size	= GCM_IV_SIZE,
-		.tag_size	= GCM_DIGEST_SIZE,
-		.set_key	= gcm_aes_set_key,
-		.set_iv		= gcm_aes_set_iv,
-		.encrypt	= gcm_aes_encrypt,
-		.decrypt	= gcm_aes_decrypt,
-		.update		= gcm_aes_update,
-		.digest		= gcm_aes_digest,
-	}
-};
-#endif /* BUILD_WITH_NETTLE_AES_GCM*/
 
 struct es_data {
 	/*
@@ -379,6 +298,7 @@ static bool should_encrypt(const struct ldb_message_element *el)
  *
  * @return Size rounded up to the nearest multiple of block_size
  */
+#ifdef BUILD_WITH_GNUTLS_AEAD
 static size_t round_to_block_size(size_t block_size, size_t size)
 {
 	if ((size % block_size) == 0) {
@@ -387,6 +307,7 @@ static size_t round_to_block_size(size_t block_size, size_t size)
 		return ((int)(size/block_size) + 1) * block_size;
 	}
 }
+#endif /* BUILD_WITH_GNUTLS_AEAD */
 
 /*
  * @brief Create an new EncryptedSecret owned by the supplied talloc context.
@@ -453,11 +374,11 @@ static DATA_BLOB makePlainText(TALLOC_CTX *ctx,
 	return pt;
 }
 
-#ifdef BUILD_WITH_NETTLE_AES_GCM
+#ifdef BUILD_WITH_SAMBA_AES_GCM
 /*
  * @brief Encrypt an ldb value using an aead algorithm.
  *
- * This function uses lib nettle directly to perform the encryption. However
+ * This function uses the samba internal implementation to perform the encryption. However
  * the encrypted data and tag are stored in a manner compatible with gnutls,
  * so the gnutls aead functions can be used to decrypt and verify the data.
  *
@@ -472,22 +393,19 @@ static DATA_BLOB makePlainText(TALLOC_CTX *ctx,
  *
  * @return The encrypted ldb_val, or data_blob_null if there was an error.
  */
-static struct ldb_val nettle_encrypt_aead(int *err,
-					  TALLOC_CTX *ctx,
-					  struct ldb_context *ldb,
-					  const struct ldb_val val,
-					  const struct es_data *data)
+static struct ldb_val samba_encrypt_aead(int *err,
+					 TALLOC_CTX *ctx,
+					 struct ldb_context *ldb,
+					 const struct ldb_val val,
+					 const struct es_data *data)
 {
+	struct aes_gcm_128_context cctx;
 	struct EncryptedSecret *es = NULL;
 	DATA_BLOB pt = data_blob_null;
-	const struct nettle_details *ntl = NULL;
-	void *ntl_ctx = NULL;
 	struct ldb_val enc = data_blob_null;
 	DATA_BLOB key_blob = data_blob_null;
 	int rc;
-
 	TALLOC_CTX *frame = talloc_stackframe();
-	ntl = &nettle_algorithms[SECRET_ENCRYPTION_ALGORITHM];
 
 	es = makeEncryptedSecret(ldb, frame);
 	if (es == NULL) {
@@ -499,52 +417,35 @@ static struct ldb_val nettle_encrypt_aead(int *err,
 		goto error_exit;
 	}
 
-	ntl_ctx = talloc_zero_size(frame,  ntl->context_size);
-	if (ntl_ctx == NULL) {
-		ldb_set_errstring(ldb,
-			          "Out of memory allocating nettle "
-				  "encryption context\n");
-		goto error_exit;
-	}
-
 	/*
 	 * Set the encryption key
 	 */
 	key_blob = get_key(data);
-	if (key_blob.length != ntl->key_size) {
+	if (key_blob.length != AES_BLOCK_SIZE) {
 		ldb_asprintf_errstring(ldb,
 				       "Invalid EncryptedSecrets key size, "
-				       "expected %zu bytes and is %zu bytes\n",
-				       ntl->key_size,
+				       "expected %u bytes and is %zu bytes\n",
+				       AES_BLOCK_SIZE,
 				       key_blob.length);
 		goto error_exit;
 	}
-	ntl->set_key(ntl_ctx, key_blob.length, key_blob.data);
 
 	/*
 	 * Set the initialisation vector
 	 */
 	{
-		uint8_t *iv = talloc_zero_size(frame, ntl->iv_size);
+		uint8_t *iv = talloc_zero_size(frame, AES_GCM_128_IV_SIZE);
 		if (iv == NULL) {
 			ldb_set_errstring(ldb,
 					  "Out of memory allocating iv\n");
 			goto error_exit;
 		}
 
-		generate_random_buffer(iv, ntl->iv_size);
+		generate_random_buffer(iv, AES_GCM_128_IV_SIZE);
 
-		es->iv.length = ntl->iv_size;
+		es->iv.length = AES_GCM_128_IV_SIZE;
 		es->iv.data   = iv;
-		ntl->set_iv(ntl_ctx, es->iv.length, es->iv.data);
 	}
-
-	/*
-	 * Set the extra authentication data
-	 */
-	ntl->update(ntl_ctx,
-		    sizeof(struct EncryptedSecretHeader),
-		    (uint8_t *)&es->header);
 
 	/*
 	 * Encrypt the value, and append the GCM digest to the encrypted
@@ -552,19 +453,24 @@ static struct ldb_val nettle_encrypt_aead(int *err,
 	 * gnutls aead decryption routines.
 	 */
 	{
-		const unsigned tag_size = ntl->tag_size;
-		const size_t ed_size = round_to_block_size(
-			ntl->block_size,
-			sizeof(struct PlaintextSecret) + val.length);
-		const size_t en_size = ed_size + tag_size;
-		uint8_t *ct = talloc_zero_size(frame, en_size);
+		uint8_t *ct = talloc_zero_size(frame, pt.length + AES_BLOCK_SIZE);
+		if (ct == NULL) {
+			ldb_oom(ldb);
+			goto error_exit;
+		}
 
-		ntl->encrypt(ntl_ctx, pt.length, ct, pt.data);
-		ntl->digest(ntl_ctx, tag_size, &ct[pt.length]);
-
-		es->encrypted.length = pt.length + tag_size;
+		memcpy(ct, pt.data, pt.length);
+		es->encrypted.length = pt.length + AES_BLOCK_SIZE;
 		es->encrypted.data   = ct;
 	}
+
+	aes_gcm_128_init(&cctx, key_blob.data, es->iv.data);
+	aes_gcm_128_updateA(&cctx,
+		    (uint8_t *)&es->header,
+		    sizeof(struct EncryptedSecretHeader));
+	aes_gcm_128_crypt(&cctx, es->encrypted.data, pt.length);
+	aes_gcm_128_updateC(&cctx, es->encrypted.data, pt.length);
+	aes_gcm_128_digest(&cctx, &es->encrypted.data[pt.length]);
 
 	rc = ndr_push_struct_blob(&enc,
 				  ctx,
@@ -589,7 +495,7 @@ error_exit:
  * @brief Decrypt data encrypted using an aead algorithm.
  *
  * Decrypt the data in ed and insert it into ev. The data was encrypted
- * with one of the nettle aead compatable algorithms.
+ * with the samba aes gcm implementation.
  *
  * @param err  Pointer to an error code, set to:
  *             LDB_SUCESS               If the value was successfully decrypted
@@ -603,53 +509,53 @@ error_exit:
  *
  * @return ev is updated with the unencrypted data.
  */
-static void nettle_decrypt_aead(int *err,
-				TALLOC_CTX *ctx,
-				struct ldb_context *ldb,
-				struct EncryptedSecret *es,
-				struct PlaintextSecret *ps,
-				const struct es_data *data)
+static void samba_decrypt_aead(int *err,
+			       TALLOC_CTX *ctx,
+			       struct ldb_context *ldb,
+			       struct EncryptedSecret *es,
+			       struct PlaintextSecret *ps,
+			       const struct es_data *data)
 {
-
-	const struct nettle_details *ntl =
-		&nettle_algorithms[es->header.algorithm];
-	const unsigned tag_size = ntl->tag_size;
-	void *ntl_ctx = NULL;
+	struct aes_gcm_128_context cctx;
 	DATA_BLOB pt = data_blob_null;
 	DATA_BLOB key_blob = data_blob_null;
+	uint8_t sig[AES_BLOCK_SIZE] = {0, };
 	int rc;
-
+	int cmp;
 	TALLOC_CTX *frame = talloc_stackframe();
-
-
-	ntl_ctx = talloc_zero_size(frame,  ntl->context_size);
-	if (ntl_ctx == NULL) {
-		ldb_set_errstring(ldb,
-				  "Out of memory allocating nettle "
-				  "encryption context\n");
-		goto error_exit;
-	}
 
 	/*
 	 * Set the encryption key
 	 */
 	key_blob = get_key(data);
-	if (key_blob.length != ntl->key_size) {
+	if (key_blob.length != AES_BLOCK_SIZE) {
 		ldb_asprintf_errstring(ldb,
 				       "Invalid EncryptedSecrets key size, "
-				       "expected %zu bytes and is %zu bytes\n",
-				       ntl->key_size,
+				       "expected %u bytes and is %zu bytes\n",
+				       AES_BLOCK_SIZE,
 				       key_blob.length);
 		goto error_exit;
 	}
-	ntl->set_key(ntl_ctx, key_blob.length, key_blob.data);
 
-	ntl->set_iv(ntl_ctx, es->iv.length, es->iv.data);
-	ntl->update(ntl_ctx,
-		    sizeof(struct EncryptedSecretHeader),
-		    (uint8_t *)&es->header);
+	if (es->iv.length < AES_GCM_128_IV_SIZE) {
+		ldb_asprintf_errstring(ldb,
+				       "Invalid EncryptedSecrets iv size, "
+				       "expected %u bytes and is %zu bytes\n",
+				       AES_GCM_128_IV_SIZE,
+				       es->iv.length);
+		goto error_exit;
+	}
 
-	pt.length = es->encrypted.length - tag_size;
+	if (es->encrypted.length < AES_BLOCK_SIZE) {
+		ldb_asprintf_errstring(ldb,
+				       "Invalid EncryptedData size, "
+				       "expected %u bytes and is %zu bytes\n",
+				       AES_BLOCK_SIZE,
+				       es->encrypted.length);
+		goto error_exit;
+	}
+
+	pt.length = es->encrypted.length - AES_BLOCK_SIZE;
 	pt.data   = talloc_zero_size(ctx, pt.length);
 	if (pt.data == NULL) {
 		ldb_set_errstring(ldb,
@@ -657,29 +563,25 @@ static void nettle_decrypt_aead(int *err,
 				  "plain text\n");
 		goto error_exit;
 	}
-	ntl->decrypt(ntl_ctx, pt.length, pt.data, es->encrypted.data);
+	memcpy(pt.data, es->encrypted.data, pt.length);
+
+	aes_gcm_128_init(&cctx, key_blob.data, es->iv.data);
+	aes_gcm_128_updateA(&cctx,
+		    (uint8_t *)&es->header,
+		    sizeof(struct EncryptedSecretHeader));
+	aes_gcm_128_updateC(&cctx, pt.data, pt.length);
+	aes_gcm_128_crypt(&cctx, pt.data, pt.length);
+	aes_gcm_128_digest(&cctx, sig);
 
 	/*
 	 * Check the authentication tag
 	 */
-	{
-		uint8_t *tag = talloc_zero_size(frame, tag_size);
-		if (tag == NULL) {
-			ldb_set_errstring(ldb,
-					  "Out of memory allocating tag\n");
-			goto error_exit;
-		}
-
-		ntl->digest(ntl_ctx, tag_size, tag);
-		if (memcmp(&es->encrypted.data[pt.length],
-			   tag,
-			   tag_size) != 0) {
-
-			ldb_set_errstring(ldb,
-					  "Tag does not match, "
-					  "data corrupted or altered\n");
-			goto error_exit;
-		}
+	cmp = memcmp(&es->encrypted.data[pt.length], sig, AES_BLOCK_SIZE);
+	if (cmp != 0) {
+		ldb_set_errstring(ldb,
+				  "Tag does not match, "
+				  "data corrupted or altered\n");
+		goto error_exit;
 	}
 
 	rc = ndr_pull_struct_blob(&pt,
@@ -702,7 +604,7 @@ error_exit:
 	TALLOC_FREE(frame);
 	return;
 }
-#endif /* BUILD_WITH_NETTLE_AES_GCM */
+#endif /* BUILD_WITH_SAMBA_AES_GCM */
 
 #ifdef BUILD_WITH_GNUTLS_AEAD
 
@@ -1071,8 +973,8 @@ static struct ldb_val encrypt_value(int *err,
 {
 #ifdef BUILD_WITH_GNUTLS_AEAD
 	return gnutls_encrypt_aead(err, ctx, ldb, val, data);
-#elif defined BUILD_WITH_NETTLE_AES_GCM
-	return nettle_encrypt_aead(err, ctx, ldb, val, data);
+#elif defined BUILD_WITH_SAMBA_AES_GCM
+	return samba_encrypt_aead(err, ctx, ldb, val, data);
 #endif
 }
 
@@ -1305,8 +1207,8 @@ static struct ldb_val decrypt_value(int *err,
 	}
 #ifdef BUILD_WITH_GNUTLS_AEAD
 	gnutls_decrypt_aead(err, frame, ldb, &es, &ps, data);
-#elif defined BUILD_WITH_NETTLE_AES_GCM
-	nettle_decrypt_aead(err, frame, ldb, &es, &ps, data);
+#elif defined BUILD_WITH_SAMBA_AES_GCM
+	samba_decrypt_aead(err, frame, ldb, &es, &ps, data);
 #endif
 
 	if (*err != LDB_SUCCESS) {

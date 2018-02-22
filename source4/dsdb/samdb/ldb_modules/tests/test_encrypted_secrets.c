@@ -392,11 +392,10 @@ static void test_gnutls_value_encryption(void **state)
 				&plain_text));
 	}
 
-#ifdef HAVE_NETTLE_AES_GCM
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -412,7 +411,6 @@ static void test_gnutls_value_encryption(void **state)
 				&decrypted->cleartext,
 				&plain_text));
 	}
-#endif /* HAVE_NETTLE_AES_GCM */
 }
 #endif /* HAVE_GNUTLS_AEAD */
 
@@ -616,11 +614,10 @@ static void test_gnutls_altered_iv(void **state)
 	}
 }
 #endif /* HAVE_GNUTLS_AEAD */
-#ifdef HAVE_NETTLE_AES_GCM
 /*
- *  Test nettle encryption and decryption and decryption.
+ *  Test samba encryption and decryption and decryption.
  */
-static void test_nettle_value_encryption(void **state)
+static void test_samba_value_encryption(void **state)
 {
 	struct ldbtest_ctx *test_ctx =
 		talloc_get_type_abort(*state, struct ldbtest_ctx);
@@ -635,7 +632,7 @@ static void test_nettle_value_encryption(void **state)
 	int rc;
 
 	plain_text = data_blob_string_const("A text value");
-	cipher_text = nettle_encrypt_aead(
+	cipher_text = samba_encrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -677,7 +674,7 @@ static void test_nettle_value_encryption(void **state)
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -695,10 +692,8 @@ static void test_nettle_value_encryption(void **state)
 	}
 
 }
-#endif /* HAVE_NETTLE_AES_GCM  */
 
-#ifdef HAVE_NETTLE_AES_GCM
-static void test_nettle_altered_header(void **state)
+static void test_samba_altered_header(void **state)
 {
 	struct ldbtest_ctx *test_ctx =
 		talloc_get_type_abort(*state, struct ldbtest_ctx);
@@ -713,7 +708,7 @@ static void test_nettle_altered_header(void **state)
 	int rc;
 
 	plain_text = data_blob_string_const("A text value");
-	cipher_text = nettle_encrypt_aead(
+	cipher_text = samba_encrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -732,7 +727,7 @@ static void test_nettle_altered_header(void **state)
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -752,7 +747,7 @@ static void test_nettle_altered_header(void **state)
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -762,10 +757,8 @@ static void test_nettle_altered_header(void **state)
 		assert_int_equal(LDB_ERR_OPERATIONS_ERROR, err);
 	}
 }
-#endif /* HAVE_NETTLE_AES_GCM */
 
-#ifdef HAVE_NETTLE_AES_GCM
-static void test_nettle_altered_data(void **state)
+static void test_samba_altered_data(void **state)
 {
 	struct ldbtest_ctx *test_ctx =
 		talloc_get_type_abort(*state, struct ldbtest_ctx);
@@ -780,7 +773,7 @@ static void test_nettle_altered_data(void **state)
 	int rc;
 
 	plain_text = data_blob_string_const("A text value");
-	cipher_text = nettle_encrypt_aead(
+	cipher_text = samba_encrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -799,7 +792,7 @@ static void test_nettle_altered_data(void **state)
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -819,7 +812,7 @@ static void test_nettle_altered_data(void **state)
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -829,10 +822,8 @@ static void test_nettle_altered_data(void **state)
 		assert_int_equal(LDB_ERR_OPERATIONS_ERROR, err);
 	}
 }
-#endif /* HAVE_NETTLE_AES_GCM */
 
-#ifdef HAVE_NETTLE_AES_GCM
-static void test_nettle_altered_iv(void **state)
+static void test_samba_altered_iv(void **state)
 {
 	struct ldbtest_ctx *test_ctx =
 		talloc_get_type_abort(*state, struct ldbtest_ctx);
@@ -847,7 +838,7 @@ static void test_nettle_altered_iv(void **state)
 	int rc;
 
 	plain_text = data_blob_string_const("A text value");
-	cipher_text = nettle_encrypt_aead(
+	cipher_text = samba_encrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -866,7 +857,7 @@ static void test_nettle_altered_iv(void **state)
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -886,7 +877,7 @@ static void test_nettle_altered_iv(void **state)
 	{
 		struct PlaintextSecret *decrypted =
 			talloc_zero(test_ctx, struct PlaintextSecret);
-		nettle_decrypt_aead(
+		samba_decrypt_aead(
 			&err,
 			test_ctx,
 			test_ctx->ldb,
@@ -896,7 +887,6 @@ static void test_nettle_altered_iv(void **state)
 		assert_int_equal(LDB_ERR_OPERATIONS_ERROR, err);
 	}
 }
-#endif /* HAVE_NETTLE_AES_GCM */
 
 /*
  *  Test message encryption.
@@ -1153,24 +1143,22 @@ int main(void) {
 			setup_with_key,
 			teardown),
 #endif /* HAVE_GNUTLS_AEAD */
-#ifdef HAVE_NETTLE_AES_GCM
 		cmocka_unit_test_setup_teardown(
-			test_nettle_value_encryption,
+			test_samba_value_encryption,
 			setup_with_key,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_nettle_altered_header,
+			test_samba_altered_header,
 			setup_with_key,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_nettle_altered_data,
+			test_samba_altered_data,
 			setup_with_key,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_nettle_altered_iv,
+			test_samba_altered_iv,
 			setup_with_key,
 			teardown),
-#endif /* HAVE_NETTLE_AES_GCM */
 		cmocka_unit_test_setup_teardown(
 			test_message_encryption_decryption,
 			setup_with_key,

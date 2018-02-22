@@ -36,7 +36,6 @@ bld.SAMBA_BINARY('test_encrypted_secrets',
             samdb-common
             samdb
             cmocka
-            nettle
             gnutls
             DSDB_MODULE_HELPERS
         ''',
