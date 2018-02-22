@@ -44,3 +44,13 @@ class SimplePamTests(samba.tests.TestCase):
         res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])
 
         self.assertTrue(res != None)
+
+        # Authenticate again to check that we are not locked out with just one
+        # failed login
+        password = os.environ["PASSWORD"]
+        expected_rc = 0 # PAM_SUCCESS
+
+        tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
+        res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])
+
+        self.assertTrue(res != None)
