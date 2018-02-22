@@ -964,7 +964,7 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 
 	PROFILE_TIMESTAMP(&state->start);
 	ret = glfs_fsync_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
-				fsp), aio_glusterfs_done, req);
+				fsp), aio_glusterfs_done, state);
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
 		return tevent_req_post(req, ev);
