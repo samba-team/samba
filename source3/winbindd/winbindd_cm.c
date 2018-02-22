@@ -2970,6 +2970,13 @@ retry:
 
 	TALLOC_FREE(conn->lsa_pipe);
 
+	if (IS_AD_DC) {
+		/*
+		 * Make sure we only use schannel as AD DC.
+		 */
+		goto schannel;
+	}
+
 	result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("cm_connect_lsa: No user available for "
@@ -3083,12 +3090,26 @@ retry:
 		goto done;
 	}
 
+	if (IS_AD_DC) {
+		/*
+		 * Make sure we only use schannel as AD DC.
+		 */
+		goto done;
+	}
+
 	DEBUG(10,("cm_connect_lsa: rpccli_lsa_open_policy failed, trying "
 		  "anonymous\n"));
 
 	TALLOC_FREE(conn->lsa_pipe);
 
  anonymous:
+
+	if (IS_AD_DC) {
+		/*
+		 * Make sure we only use schannel as AD DC.
+		 */
+		goto done;
+	}
 
 	if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
 		result = NT_STATUS_DOWNGRADE_DETECTED;
