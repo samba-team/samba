@@ -2190,6 +2190,15 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 	TALLOC_CTX *mem_ctx = NULL;
 	struct dcerpc_binding_handle *b;
 
+	if (IS_DC) {
+		/*
+		 * On a DC we loaded all trusts
+		 * from configuration and never learn
+		 * new domains.
+		 */
+		return true;
+	}
+
 	DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s\n", domain->name ));
 
 	/* Our primary domain doesn't need to worry about trust flags.
@@ -2584,6 +2593,15 @@ done:
 
 static void set_dc_type_and_flags( struct winbindd_domain *domain )
 {
+	if (IS_DC) {
+		/*
+		 * On a DC we loaded all trusts
+		 * from configuration and never learn
+		 * new domains.
+		 */
+		return;
+	}
+
 	/* we always have to contact our primary domain */
 
 	if ( domain->primary || domain->internal) {
