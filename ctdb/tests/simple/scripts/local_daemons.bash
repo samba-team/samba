@@ -15,11 +15,11 @@ if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
 	export CTDB_CLUSTER_MUTEX_HELPER="${hdir}/ctdb_mutex_fcntl_helper"
 fi
 
-export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
+export CTDB_NODES="${SIMPLE_TESTS_VAR_DIR}/nodes.txt"
 
 if [ -n "$TEST_SOCKET_WRAPPER_SO_PATH" ] ; then
 	export LD_PRELOAD="$TEST_SOCKET_WRAPPER_SO_PATH"
-	export SOCKET_WRAPPER_DIR="${TEST_VAR_DIR}/sw"
+	export SOCKET_WRAPPER_DIR="${SIMPLE_TESTS_VAR_DIR}/sw"
 	mkdir -p "$SOCKET_WRAPPER_DIR"
 fi
 
@@ -56,7 +56,7 @@ node_dir ()
 {
 	local pnn="$1"
 
-	echo "${TEST_VAR_DIR}/node.${pnn}"
+	echo "${SIMPLE_TESTS_VAR_DIR}/node.${pnn}"
 }
 
 node_conf ()
@@ -85,7 +85,7 @@ node_socket ()
 
 setup_ctdb ()
 {
-    local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
+    local public_addresses_all="${SIMPLE_TESTS_VAR_DIR}/public_addresses_all"
     rm -f $CTDB_NODES $public_addresses_all
 
     # If there are (strictly) greater than 2 nodes then we'll randomly
@@ -161,7 +161,7 @@ setup_ctdb ()
 	mkdir -p "${db_dir}/persistent"
 
 	cat >"$conf" <<EOF
-CTDB_RECOVERY_LOCK="${TEST_VAR_DIR}/rec.lock"
+CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
 CTDB_NODES="$CTDB_NODES"
 CTDB_NODE_ADDRESS="${node_ip}"
 CTDB_EVENT_SCRIPT_DIR="${TEST_VAR_DIR}/events.d"
@@ -193,7 +193,7 @@ start_ctdb_1 ()
 	local tmp_conf=""
 	local env_conf=$(config_from_environment)
 	if [ -n "$env_conf" ] ; then
-		tmp_conf=$(mktemp --tmpdir="$TEST_VAR_DIR")
+		tmp_conf=$(mktemp --tmpdir="$SIMPLE_TESTS_VAR_DIR")
 		cat "$conf" >"$tmp_conf"
 		echo "$env_conf" >>"$tmp_conf"
 		conf="$tmp_conf"
@@ -239,7 +239,7 @@ daemons_stop ()
 	stop_ctdb_1 "$pnn"
     done
 
-    rm -rf "${TEST_VAR_DIR}/test.db"
+    rm -rf "${SIMPLE_TESTS_VAR_DIR}/test.db"
 }
 
 restart_ctdb_1 ()
