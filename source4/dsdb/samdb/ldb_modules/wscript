@@ -12,23 +12,6 @@ def set_options(opt):
     return
 
 def configure(conf):
-    conf.SET_TARGET_TYPE('nettle', 'EMPTY')
-    if conf.CHECK_CFG(
-        package="nettle",
-        args="--cflags --libs",
-        msg='Checking for nettle support'):
-
-        if conf.CHECK_FUNCS_IN(
-            'nettle_gcm_aes_encrypt',
-            'nettle',
-            headers='nettle/gcm.h'):
-
-            conf.DEFINE('HAVE_NETTLE_AES_GCM', '1')
-        else:
-            Logs.warn('No nettle support for AES GCM')
-    else:
-        Logs.warn('No nettle encryption libraries')
-
     if conf.env.HAVE_GNUTLS:
         if conf.CHECK_FUNCS_IN(
             'gnutls_aead_cipher_init',
@@ -38,11 +21,6 @@ def configure(conf):
                 conf.DEFINE('HAVE_GNUTLS_AEAD', '1')
         else:
             Logs.warn('No gnutls support for AEAD encryption')
-
-    if not conf.env.HAVE_GNUTLS_AEAD and not conf.env.HAVE_NETTLE_AES_GCM:
-        conf.fatal("No AES GCM AEAD support"
-                   "Try installing gnutls if that does not support AEAD "
-                   "try installing nettle-dev or nettle-devel")
 
     conf.SET_TARGET_TYPE('gpgme', 'EMPTY')
 
