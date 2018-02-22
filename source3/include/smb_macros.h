@@ -214,6 +214,7 @@ copy an IP address from one buffer to another
 *****************************************************************************/
 
 #define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC || lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) 
+#define IS_AD_DC  (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC)
 
 /*
  * If you add any entries to KERBEROS_VERIFY defines, please modify the below expressions
