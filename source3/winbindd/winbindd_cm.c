@@ -999,6 +999,31 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	enum smb_signing_setting smb_sign_client_connections = lp_client_ipc_signing();
 
+	if (IS_AD_DC) {
+		if (domain->secure_channel_type == SEC_CHAN_NULL) {
+			/*
+			 * Make sure we don't even try to
+			 * connect to a foreign domain
+			 * without a direct outbound trust.
+			 */
+			return NT_STATUS_NO_TRUST_LSA_SECRET;
+		}
+
+		/*
+		 * As AD DC we only use netlogon and lsa
+		 * using schannel over an anonymous transport
+		 * (ncacn_ip_tcp or ncacn_np).
+		 *
+		 * Currently we always establish the SMB connection,
+		 * even if we don't use it, because we later use ncacn_ip_tcp.
+		 *
+		 * As we won't use the SMB connection there's no
+		 * need to try kerberos. And NT4 domains expect
+		 * an anonymous IPC$ connection anyway.
+		 */
+		smb_sign_client_connections = SMB_SIGNING_OFF;
+	}
+
 	if (smb_sign_client_connections == SMB_SIGNING_DEFAULT) {
 		/*
 		 * If we are connecting to our own AD domain, require
@@ -1011,8 +1036,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		 * AD domain in our forest
 		 * then require smb signing to disrupt MITM attacks
 		 */
-		} else if ((lp_security() == SEC_ADS ||
-			    lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC)
+		} else if ((lp_security() == SEC_ADS)
 			   && domain->active_directory
 			   && (domain->domain_trust_attribs
 			       & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST)) {
@@ -1069,6 +1093,22 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		 * trust, and we have no stored user/password
 		 */
 		try_ipc_auth = true;
+	}
+
+	if (IS_AD_DC) {
+		/*
+		 * As AD DC we only use netlogon and lsa
+		 * using schannel over an anonymous transport
+		 * (ncacn_ip_tcp or ncacn_np).
+		 *
+		 * Currently we always establish the SMB connection,
+		 * even if we don't use it, because we later use ncacn_ip_tcp.
+		 *
+		 * As we won't use the SMB connection there's no
+		 * need to try kerberos. And NT4 domains expect
+		 * an anonymous IPC$ connection anyway.
+		 */
+		try_ipc_auth = false;
 	}
 
 	if (try_ipc_auth) {
