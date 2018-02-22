@@ -464,6 +464,7 @@ static void wb_irpc_lsa_LookupSids3_done(struct tevent_req *subreq)
 struct wb_irpc_lsa_LookupNames4_name {
 	void *state;
 	uint32_t idx;
+	const char *namespace;
 	const char *domain;
 	char *name;
 	struct dom_sid sid;
@@ -551,11 +552,12 @@ static NTSTATUS wb_irpc_lsa_LookupNames4_call(struct irpc_message *msg,
 		if (p != NULL) {
 			*p = 0;
 			nstate->domain = nstate->name;
+			nstate->namespace = nstate->domain;
 			nstate->name = p+1;
 		} else if ((p = strchr(nstate->name, '@')) != NULL) {
 			/* upn */
-			nstate->domain = p + 1;
-			*p = 0;
+			nstate->domain = "";
+			nstate->namespace = p + 1;
 		} else {
 			/*
 			 * TODO: select the domain based on
@@ -570,6 +572,7 @@ static NTSTATUS wb_irpc_lsa_LookupNames4_call(struct irpc_message *msg,
 
 		subreq = wb_lookupname_send(msg,
 					    server_event_context(),
+					    nstate->namespace,
 					    nstate->domain,
 					    nstate->name,
 					    LOOKUP_NAME_NO_NSS);

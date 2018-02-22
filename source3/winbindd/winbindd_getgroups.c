@@ -75,7 +75,10 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wb_lookupname_send(state, ev, state->domname, state->username,
+	subreq = wb_lookupname_send(state, ev,
+				    state->domname,
+				    state->domname,
+				    state->username,
 				    LOOKUP_NAME_NO_NSS);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

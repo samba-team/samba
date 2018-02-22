@@ -35,7 +35,9 @@ static void wb_lookupname_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      const char *dom_name, const char *name,
+				      const char *namespace,
+				      const char *dom_name,
+				      const char *name,
 				      uint32_t flags)
 {
 	struct tevent_req *req, *subreq;
@@ -61,9 +63,9 @@ struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	domain = find_lookup_domain_from_name(state->dom_name);
+	domain = find_lookup_domain_from_name(namespace);
 	if (domain == NULL) {
-		DEBUG(5, ("Could not find domain for %s\n", state->dom_name));
+		DEBUG(5, ("Could not find domain for %s\n", namespace));
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return tevent_req_post(req, ev);
 	}

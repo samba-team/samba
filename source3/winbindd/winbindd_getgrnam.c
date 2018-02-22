@@ -76,7 +76,10 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 		fstrcpy(state->name_domain, get_global_sam_name());
 	}
 
-	subreq = wb_lookupname_send(state, ev, state->name_domain, state->name_group,
+	subreq = wb_lookupname_send(state, ev,
+				    state->name_domain,
+				    state->name_domain,
+				    state->name_group,
 				    0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

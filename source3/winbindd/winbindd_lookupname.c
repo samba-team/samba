@@ -35,8 +35,10 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_lookupname_state *state;
-	const char *domname = NULL, *name = NULL;
 	char *p = NULL;
+	const char *domname = NULL;
+	const char *name = NULL;
+	const char *namespace = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_lookupname_state);
@@ -56,28 +58,29 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 		if (p != NULL) {
 			*p = '\0';
 			domname = request->data.name.name;
+			namespace = domname;
 			name = p + 1;
 		} else {
 			p = strchr(request->data.name.name, '@');
 			if (p != NULL) {
 				/* upn */
-				domname = p + 1;
-				*p = '\0';
-				name = request->data.name.name;
+				namespace = p + 1;
 			} else {
-				domname = "";
-				name = request->data.name.name;
+				namespace = "";
 			}
+			domname = "";
+			name = request->data.name.name;
 		}
 	} else {
 		domname = request->data.name.dom_name;
+		namespace = domname;
 		name = request->data.name.name;
 	}
 
 	DEBUG(3, ("lookupname %s%s%s\n", domname, lp_winbind_separator(),
 		  name));
 
-	subreq = wb_lookupname_send(state, ev, domname, name, 0);
+	subreq = wb_lookupname_send(state, ev, namespace, domname, name, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

@@ -568,7 +568,9 @@ NTSTATUS winbindd_lookupsids_recv(struct tevent_req *req,
 
 struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      const char *dom_name, const char *name,
+				      const char *namespace,
+				      const char *dom_name,
+				      const char *name,
 				      uint32_t flags);
 NTSTATUS wb_lookupname_recv(struct tevent_req *req, struct dom_sid *sid,
 			    enum lsa_SidType *type);

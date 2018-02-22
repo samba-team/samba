@@ -185,6 +185,7 @@ static void wb_xids2sids_init_dom_maps_lookupname_next(
 	subreq = wb_lookupname_send(state,
 				    state->ev,
 				    dom_maps[state->dom_idx].name,
+				    dom_maps[state->dom_idx].name,
 				    "",
 				    LOOKUP_NAME_NO_NSS);
 	if (tevent_req_nomem(subreq, state->req)) {
