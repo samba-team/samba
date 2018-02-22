@@ -3212,6 +3212,17 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	*cli = NULL;
 
+	if (IS_AD_DC) {
+		if (domain->secure_channel_type == SEC_CHAN_NULL) {
+			/*
+			 * Make sure we don't even try to
+			 * connect to a foreign domain
+			 * without a direct outbound trust.
+			 */
+			return NT_STATUS_NO_TRUST_LSA_SECRET;
+		}
+	}
+
 	result = init_dc_connection_rpc(domain, domain->rodc);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
