@@ -47,4 +47,5 @@ class SmbcontrolBlockboxTests(BlackboxTestCase):
         for p in processes:
             for id in p.ids:
                 if p.name != "samba":
-                    self.check_run("%s %d %s" % (COMMAND, id.pid, PING))
+                    self.check_run("%s %d %s" % (COMMAND, id.pid, PING),
+                                   msg="trying to ping %s" % p.name)
