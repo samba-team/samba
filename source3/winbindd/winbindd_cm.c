@@ -2650,6 +2650,20 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (IS_AD_DC) {
+		/*
+		 * In theory we should not use SAMR within
+		 * winbindd at all, but that's a larger task to
+		 * remove this and avoid breaking existing
+		 * setups.
+		 *
+		 * At least as AD DC we have the restriction
+		 * to avoid SAMR against trusted domains,
+		 * as there're no existing setups.
+		 */
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
 retry:
 	status = init_dc_connection_rpc(domain, need_rw_dc);
 	if (!NT_STATUS_IS_OK(status)) {
