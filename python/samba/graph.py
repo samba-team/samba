@@ -22,6 +22,7 @@ from __future__ import print_function
 from __future__ import division
 from samba import colour
 import sys
+from itertools import cycle, groupby
 
 FONT_SIZE = 10
 
@@ -511,7 +512,8 @@ def distance_matrix(vertices, edges,
                     utf8=False,
                     colour=None,
                     shorten_names=False,
-                    generate_key=False):
+                    generate_key=False,
+                    grouping_function=None):
     lines = []
     write = lines.append
 
@@ -528,8 +530,21 @@ def distance_matrix(vertices, edges,
 
     colours = COLOUR_SETS[colour]
 
+    colour_cycle = cycle(colours.get('alternate rows', ('',)))
+
     if vertices is None:
         vertices = sorted(set(x[0] for x in edges) | set(x[1] for x in edges))
+
+    if grouping_function is not None:
+        # we sort and colour according to the grouping function
+        # which can be used to e.g. alternate colours by site.
+        vertices = sorted(vertices, key=grouping_function)
+        colour_list = []
+        for k, v in groupby(vertices, key=grouping_function):
+            c = next(colour_cycle)
+            colour_list.extend(c for x in v)
+    else:
+        colour_list = [next(colour_cycle) for v in vertices]
 
     if shorten_names:
         edges, vertices, replacements = shorten_vertex_names(edges,
@@ -540,7 +555,6 @@ def distance_matrix(vertices, edges,
     vlen = max(6, max(len(v) for v in vertices))
 
     # first, the key for the columns
-    colour_cycle = colours.get('alternate rows', ('',))
     c_header = colours.get('header', '')
     c_disconn = colours.get('disconnected', '')
     c_conn = colours.get('connected', '')
@@ -556,7 +570,7 @@ def distance_matrix(vertices, edges,
                                        c_reset))
     for i, v in enumerate(vertices):
         j = len(vertices) - i
-        c = colour_cycle[i % len(colour_cycle)]
+        c = colour_list[i]
         if j == 1:
             start = '%s%ssource%s' % (vspace[:-6], c_header, c_reset)
         else:
@@ -575,7 +589,7 @@ def distance_matrix(vertices, edges,
     connections = find_transitive_distance(vertices, edges)
 
     for i, v in enumerate(vertices):
-        c = colour_cycle[i % len(colour_cycle)]
+        c = colour_list[i]
         links = connections[v]
         row = []
         for v2 in vertices:
@@ -596,13 +610,14 @@ def distance_matrix(vertices, edges,
         write('%s%*s%s %s%s' % (c, vlen, v, c_reset,
                                 ''.join(row), c_reset))
 
+    example_c = next(colour_cycle)
     if shorten_names:
         write('')
         for substitute, original in reversed(replacements):
-            write("'%s%s%s' stands for '%s%s%s'" % (colour_cycle[0],
+            write("'%s%s%s' stands for '%s%s%s'" % (example_c,
                                                     substitute,
                                                     c_reset,
-                                                    colour_cycle[0],
+                                                    example_c,
                                                     original,
                                                     c_reset))
     if generate_key:
@@ -611,7 +626,7 @@ def distance_matrix(vertices, edges,
               "indicated number of steps." % (c_header, c_reset,
                                               c_header, c_reset))
         write("%s%s%s means zero steps (it is the same DC)" %
-              (colour_cycle[0], diagonal, c_reset))
+              (example_c, diagonal, c_reset))
         write("%s1%s means a direct link" % (c_conn, c_reset))
         write("%s2%s means a transitive link involving two steps "
               "(i.e. one intermediate DC)" %

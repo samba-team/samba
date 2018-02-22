@@ -32,6 +32,7 @@ from samba.graph import dot_graph
 from samba.graph import distance_matrix, COLOUR_SETS
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, LdbError
 import time
+import re
 from samba.kcc import KCC
 from samba.kcc.kcc_utils import KCCError
 from samba.compat import text_type
@@ -156,6 +157,16 @@ class GraphCommand(Command):
             return 'ansi'
 
         return color_scheme
+
+
+def get_dnstr_site(dn):
+    """Helper function for sorting and grouping DNs by site, if
+    possible."""
+    m = re.search(r'CN=Servers,CN=\s*([^,]+)\s*,CN=Sites', dn)
+    if m:
+        return m.group(1)
+    # Oh well, let it sort by DN
+    return dn
 
 
 def colour_hash(x):
@@ -316,7 +327,8 @@ class cmd_reps(GraphCommand):
                                             utf8=utf8,
                                             colour=color_scheme,
                                             shorten_names=shorten_names,
-                                            generate_key=key)
+                                            generate_key=key,
+                                            grouping_function=get_dnstr_site)
 
                         s = "\n%s\n%s" % (header_strings[direction] % part, s)
                         self.write(s, output)
@@ -512,7 +524,8 @@ class cmd_ntdsconn(GraphCommand):
                                 utf8=utf8,
                                 colour=color_scheme,
                                 shorten_names=shorten_names,
-                                generate_key=key)
+                                generate_key=key,
+                                grouping_function=get_dnstr_site)
             self.write('\n%s\n%s\n%s' % (title, s, epilog), output)
             return
 
