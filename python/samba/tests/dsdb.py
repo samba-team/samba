@@ -215,19 +215,57 @@ class DsdbTests(TestCase):
             c = "9"
         else:
             c = "0"
-        sid     = str(dom_sid)[:-1] + c + "-1000"
+        sid_str = str(dom_sid)[:-1] + c + "-1000"
+        sid     = ndr_pack(security.dom_sid(sid_str))
         basedn  = self.samdb.get_default_basedn()
-        dn      = "CN=%s,CN=ForeignSecurityPrincipals,%s" % (sid, basedn)
+        dn      = "CN=%s,CN=ForeignSecurityPrincipals,%s" % (sid_str, basedn)
+
+        #
+        # First without control
+        #
+
+        try:
+            self.samdb.add({
+                "dn": dn,
+                "objectClass": "foreignSecurityPrincipal"})
+            self.fail("No exception should get ERR_OBJECT_CLASS_VIOLATION")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_OBJECT_CLASS_VIOLATION, str(e))
+            werr = "%08X" % werror.WERR_DS_MISSING_REQUIRED_ATT
+            self.assertTrue(werr in msg, msg)
+
+        try:
+            self.samdb.add({
+                "dn": dn,
+                "objectClass": "foreignSecurityPrincipal",
+                "objectSid": sid})
+            self.fail("No exception should get ERR_UNWILLING_TO_PERFORM")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_UNWILLING_TO_PERFORM, str(e))
+            werr = "%08X" % werror.WERR_DS_ILLEGAL_MOD_OPERATION
+            self.assertTrue(werr in msg, msg)
+
+        #
+        # We need to use the provision control
+        # in order to add foreignSecurityPrincipal
+        # objects
+        #
+
+        controls = ["provision:0"]
         self.samdb.add({
             "dn": dn,
-            "objectClass": "foreignSecurityPrincipal"})
+            "objectClass": "foreignSecurityPrincipal"},
+            controls=controls)
 
         self.samdb.delete(dn)
 
         try:
             self.samdb.add({
                 "dn": dn,
-                "objectClass": "foreignSecurityPrincipal"})
+                "objectClass": "foreignSecurityPrincipal"},
+                controls=controls)
         except ldb.LdbError as e:
             (code, msg) = e.args
             self.fail("Got unexpected exception %d - %s "
