@@ -83,16 +83,57 @@ node_socket ()
 	echo "${node_dir}/ctdbd.socket"
 }
 
+setup_nodes ()
+{
+	local have_all_ips=true
+	local i
+	for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
+		if [ -n "$CTDB_USE_IPV6" ]; then
+			local j=$(printf "%02x" $i)
+			local node_ip="fd00::5357:5f${j}"
+			if have_ip "$node_ip" ; then
+				echo "$node_ip"
+			else
+				cat >&2 <<EOF
+ERROR: ${node_ip} not on an interface, please add it
+EOF
+				have_all_ips=false
+			fi
+		else
+			local j=$((i + 10))
+			echo "127.0.0.${j}"
+		fi
+	done
+
+	# Fail if we don't have all of the IPv6 addresses assigned
+	$have_all_ips
+}
+
+setup_public_addresses ()
+{
+	local pnn_no_ips="$1"
+
+	local i
+	for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
+		if  [ $((i - 1)) -eq $pnn_no_ips ] ; then
+			continue
+		fi
+
+		# 2 public addresses on most nodes, just to make
+		# things interesting
+		local j=$((i + TEST_LOCAL_DAEMONS))
+		if [ -n "$CTDB_USE_IPV6" ]; then
+			printf "fc00:10::1:%x/64 lo\n" "$i"
+			printf "fc00:10::1:%x/64 lo\n" "$j"
+		else
+			printf "192.168.234.%x/24 lo\n" "$i"
+			printf "192.168.234.%x/24 lo\n" "$j"
+		fi
+	done
+}
+
 setup_ctdb ()
 {
-    local public_addresses_all="${SIMPLE_TESTS_VAR_DIR}/public_addresses_all"
-    rm -f $CTDB_NODES $public_addresses_all
-
-    # If there are (strictly) greater than 2 nodes then we'll randomly
-    # choose a node to have no public addresses.
-    local no_public_ips=-1
-    [ $TEST_LOCAL_DAEMONS -gt 2 ] && no_public_ips=$(($RANDOM % $TEST_LOCAL_DAEMONS))
-
     # When running certain tests we add and remove eventscripts, so we
     # need to be able to modify the events.d/ directory.  Therefore,
     # we use a temporary events.d/ directory under $TEST_VAR_DIR.  We
@@ -103,53 +144,30 @@ setup_ctdb ()
     mkdir -p "${TEST_VAR_DIR}/events.d"
     cp -p "${events_d}/"* "${TEST_VAR_DIR}/events.d/"
 
-    local have_all_ips=true
-    local i
-    for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
-	if [ -n "$CTDB_USE_IPV6" ]; then
-	    local j=$(printf "%02x" $i)
-	    local node_ip="fd00::5357:5f${j}"
-	    if have_ip "$node_ip" ; then
-		echo "$node_ip" >>"$CTDB_NODES"
-	    else
-		echo "ERROR: ${node_ip} not on an interface, please add it"
-		have_all_ips=false
-	    fi
+    setup_nodes >"$CTDB_NODES" || return 1
 
-	    # 2 public addresses on most nodes, just to make things interesting.
-	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
-		echo "fc00:10::1:${i}/64 lo" >>"$public_addresses_all"
-		echo "fc00:10::1:$(($i + $TEST_LOCAL_DAEMONS))/64 lo" >>"$public_addresses_all"
-	    fi
-	else
-	    j=$(( $i + 10))
-	    echo 127.0.0.$j >>"$CTDB_NODES"
-	    # 2 public addresses on most nodes, just to make things interesting.
-	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
-		echo "192.168.234.$i/24 lo" >>"$public_addresses_all"
-		echo "192.168.234.$(($i + $TEST_LOCAL_DAEMONS))/24 lo" >>"$public_addresses_all"
-	    fi
-	fi
-    done
-
-    if ! $have_all_ips ; then
-	    return 1
+    # If there are (strictly) greater than 2 nodes then we'll
+    # randomly choose a node to have no public addresses
+    local pnn_no_ips=-1
+    if [ $TEST_LOCAL_DAEMONS -gt 2 ] ; then
+	    pnn_no_ips=$((RANDOM % TEST_LOCAL_DAEMONS))
     fi
+
+    local public_addresses_all="${SIMPLE_TESTS_VAR_DIR}/public_addresses"
+    setup_public_addresses $pnn_no_ips >"$public_addresses_all"
 
     local pnn
     for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
 	local node_dir=$(node_dir "$pnn")
 	mkdir -p "$node_dir"
 
-	local public_addresses_mine="${node_dir}/public_addresses"
-	local public_addresses
+	local public_addresses="${node_dir}/public_addresses"
 
-	if  [ "$no_public_ips" = $pnn ] ; then
-	    echo "Node $no_public_ips will have no public IPs."
-	    public_addresses="/dev/null"
+	if  [ $pnn_no_ips -eq $pnn ] ; then
+	    echo "Node ${pnn} will have no public IPs."
+	    : >"$public_addresses"
 	else
-	    cp "$public_addresses_all" "$public_addresses_mine"
-	    public_addresses="$public_addresses_mine"
+	    cp "$public_addresses_all" "$public_addresses"
 	fi
 
 	local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
