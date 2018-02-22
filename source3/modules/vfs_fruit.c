@@ -141,7 +141,7 @@ struct fruit_config_data {
 	bool aapl_zero_file_id;
 	const char *model;
 	bool time_machine;
-	size_t time_machine_max_size;
+	off_t time_machine_max_size;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -1989,8 +1989,7 @@ static int init_fruit_config(vfs_handle_struct *handle)
 		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
 		"time machine max size", NULL);
 	if (tm_size_str != NULL) {
-		config->time_machine_max_size =
-			(size_t)conv_str_size(tm_size_str);
+		config->time_machine_max_size = conv_str_size(tm_size_str);
 	}
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
@@ -6321,7 +6320,7 @@ out:
 }
 
 struct fruit_disk_free_state {
-	size_t total_size;
+	off_t total_size;
 };
 
 static bool fruit_get_num_bands(vfs_handle_struct *handle,
@@ -6394,7 +6393,7 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 	size_t sparsebundle_strlen = strlen("sparsebundle");
 	size_t bandsize = 0;
 	size_t nbands;
-	double tm_size;
+	off_t tm_size;
 
 	p = strstr(e->d_name, "sparsebundle");
 	if (p == NULL) {
@@ -6444,8 +6443,8 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 
 	state->total_size += tm_size;
 
-	DBG_DEBUG("[%s] tm_size [%.0f] total_size [%zu]\n",
-		  e->d_name, tm_size, state->total_size);
+	DBG_DEBUG("[%s] tm_size [%jd] total_size [%jd]\n",
+		  e->d_name, (intmax_t)tm_size, (intmax_t)state->total_size);
 
 	return true;
 }
