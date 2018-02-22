@@ -328,15 +328,20 @@ class BlackboxProcessError(Exception):
     (S.stderr)
     """
 
-    def __init__(self, returncode, cmd, stdout, stderr):
+    def __init__(self, returncode, cmd, stdout, stderr, msg=None):
         self.returncode = returncode
         self.cmd = cmd
         self.stdout = stdout
         self.stderr = stderr
+        self.msg = msg
 
     def __str__(self):
-        return "Command '%s'; exit status %d; stdout: '%s'; stderr: '%s'" % (self.cmd, self.returncode,
-                                                                             self.stdout, self.stderr)
+        s = ("Command '%s'; exit status %d; stdout: '%s'; stderr: '%s'" %
+             (self.cmd, self.returncode, self.stdout, self.stderr))
+        if self.msg is not None:
+            s = "%s; message: %s" % (s, self.msg)
+
+        return s
 
 class BlackboxTestCase(TestCaseInTempDir):
     """Base test case for blackbox tests."""
@@ -349,10 +354,10 @@ class BlackboxTestCase(TestCaseInTempDir):
         line = " ".join(parts)
         return line
 
-    def check_run(self, line):
-        self.check_exit_code(line, 0)
+    def check_run(self, line, msg=None):
+        self.check_exit_code(line, 0, msg=msg)
 
-    def check_exit_code(self, line, expected):
+    def check_exit_code(self, line, expected, msg=None):
         line = self._make_cmdline(line)
         p = subprocess.Popen(line,
                              stdout=subprocess.PIPE,
@@ -364,7 +369,8 @@ class BlackboxTestCase(TestCaseInTempDir):
             raise BlackboxProcessError(retcode,
                                        line,
                                        stdoutdata,
-                                       stderrdata)
+                                       stderrdata,
+                                       msg)
 
     def check_output(self, line):
         line = self._make_cmdline(line)
