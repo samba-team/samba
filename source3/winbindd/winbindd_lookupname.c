@@ -55,11 +55,6 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 		*p = 0;
 		domname = request->data.name.name;
 		name = p+1;
-	} else if ((p = strchr(request->data.name.name, '@')) != NULL) {
-		/* upn */
-		domname = p + 1;
-		*p = 0;
-		name = request->data.name.name;
 	} else {
 		domname = request->data.name.dom_name;
 		name = request->data.name.name;
