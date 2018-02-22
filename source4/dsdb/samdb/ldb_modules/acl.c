@@ -966,6 +966,7 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 {
 	int ret = LDB_SUCCESS;
 	unsigned int del_attr_cnt = 0, add_attr_cnt = 0, rep_attr_cnt = 0;
+	unsigned int del_val_cnt = 0, add_val_cnt = 0, rep_val_cnt = 0;
 	struct ldb_message_element *el;
 	struct ldb_message *msg;
 	struct ldb_control *c = NULL;
@@ -1031,12 +1032,15 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		while ((el = ldb_msg_find_element(msg, *l)) != NULL) {
 			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
 				++del_attr_cnt;
+				del_val_cnt += el->num_values;
 			}
 			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD) {
 				++add_attr_cnt;
+				add_val_cnt += el->num_values;
 			}
 			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) {
 				++rep_attr_cnt;
+				rep_val_cnt += el->num_values;
 			}
 			ldb_msg_remove_element(msg, el);
 		}
@@ -1066,9 +1070,21 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		goto checked;
 	}
 
-	if (add_attr_cnt == 1 && del_attr_cnt == 1) {
+	if (add_val_cnt == 1 && del_val_cnt == 1) {
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_USER_CHANGE_PASSWORD,
+					       SEC_ADS_CONTROL_ACCESS,
+					       sid);
+		/* Very strange, but we get constraint violation in this case */
+		if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		goto checked;
+	}
+
+	if (add_val_cnt == 1 && del_val_cnt == 0) {
+		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
 		/* Very strange, but we get constraint violation in this case */
