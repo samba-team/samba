@@ -1249,14 +1249,52 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 
 static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 {
-	struct ldb_context *ldb;
-	const struct ldb_val *rdn_value;
-	struct dom_sid *sid;
+	struct ldb_context *ldb = NULL;
+	const struct ldb_val *rdn_value = NULL;
+	struct ldb_message_element *sid_el = NULL;
+	struct dom_sid *sid = NULL;
+	struct ldb_control *as_system = NULL;
+	struct ldb_control *provision = NULL;
+	bool allowed = false;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	sid = samdb_result_dom_sid(ac->msg, ac->msg, "objectSid");
+	as_system = ldb_request_get_control(ac->req, LDB_CONTROL_AS_SYSTEM_OID);
+	if (as_system != NULL) {
+		allowed = true;
+	}
+
+	provision = ldb_request_get_control(ac->req, LDB_CONTROL_PROVISION_OID);
+	if (provision != NULL) {
+		allowed = true;
+	}
+
+	sid_el = ldb_msg_find_element(ac->msg, "objectSid");
+
+	if (!allowed && sid_el == NULL) {
+		return dsdb_module_werror(ac->module,
+				LDB_ERR_OBJECT_CLASS_VIOLATION,
+				WERR_DS_MISSING_REQUIRED_ATT,
+				"objectSid missing on foreignSecurityPrincipal");
+	}
+
+	if (!allowed) {
+		return dsdb_module_werror(ac->module,
+				LDB_ERR_UNWILLING_TO_PERFORM,
+				WERR_DS_ILLEGAL_MOD_OPERATION,
+				"foreignSecurityPrincipal object not allowed");
+	}
+
+	if (sid_el != NULL) {
+		sid = samdb_result_dom_sid(ac->msg, ac->msg, "objectSid");
+		if (sid == NULL) {
+			ldb_set_errstring(ldb,
+					  "samldb: invalid objectSid!");
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+	}
+
 	if (sid == NULL) {
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
 		if (rdn_value == NULL) {
