@@ -34,6 +34,7 @@
 #include <libgen.h>
 #include <signal.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include <ftw.h>
 
@@ -508,22 +509,20 @@ static const char *libpam_pam_strerror(pam_handle_t *pamh, int errnum)
 	return pwrap.libpam.symbols._libpam_pam_strerror.f(discard_const_p(pam_handle_t, pamh), errnum);
 }
 
-#if defined(HAVE_PAM_VSYSLOG) || defined(HAVE_PAM_SYSLOG)
+#ifdef HAVE_PAM_VSYSLOG
 static void libpam_pam_vsyslog(const pam_handle_t *pamh,
 			       int priority,
 			       const char *fmt,
 			       va_list args)
 {
-#ifdef HAVE_PAM_VSYSLOG
 	pwrap_bind_symbol_libpam(pam_vsyslog);
 
 	pwrap.libpam.symbols._libpam_pam_vsyslog.f(pamh,
 						   priority,
 						   fmt,
 						   args);
-#endif
 }
-#endif
+#endif /* HAVE_PAM_VSYSLOG */
 
 /*********************************************************
  * PWRAP INIT
@@ -762,13 +761,15 @@ static void pwrap_init(void)
 	char tmp_config_dir[] = "/tmp/pam.X";
 	size_t len = strlen(tmp_config_dir);
 	const char *env;
-	uint32_t i;
+	struct stat sb;
 	int rc;
+	unsigned i;
 	char pam_library[128] = { 0 };
 	char libpam_path[1024] = { 0 };
 	ssize_t ret;
 	FILE *pidfile;
 	char pidfile_path[1024] = { 0 };
+	char letter;
 
 	if (!pam_wrapper_enabled()) {
 		return;
@@ -778,39 +779,46 @@ static void pwrap_init(void)
 		return;
 	}
 
-	PWRAP_LOG(PWRAP_LOG_DEBUG, "Initialize pam_wrapper");
+	/*
+	 * The name is selected to match/replace /etc/pam.d
+	 * We start from a random alphanum trying letters until
+	 * an available directory is found.
+	 */
+	letter = 48 + (getpid() % 70);
+	for (i = 0; i < 127; i++) {
+		if (isalpha(letter) || isdigit(letter)) {
+			tmp_config_dir[len - 1] = letter;
 
-	for (i = 0; i < 36; i++) {
-		struct stat sb;
-		char c;
-
-		if (i < 10) {
-			c = (char)(i + 48);
-		} else {
-			c = (char)(i + 87);
+			rc = lstat(tmp_config_dir, &sb);
+			if (rc == 0) {
+				PWRAP_LOG(PWRAP_LOG_TRACE,
+					  "Check if pam_wrapper dir %s is a "
+					  "stale directory",
+					  tmp_config_dir);
+				pwrap_clean_stale_dirs(tmp_config_dir);
+			} else if (rc < 0) {
+				if (errno != ENOENT) {
+					continue;
+				}
+				break; /* found */
+			}
 		}
 
-		tmp_config_dir[len - 1] = c;
-		rc = lstat(tmp_config_dir, &sb);
-		if (rc == 0) {
-			PWRAP_LOG(PWRAP_LOG_TRACE,
-				  "Check if pam_wrapper dir %s is a "
-				  "stale directory",
-				  tmp_config_dir);
-			pwrap_clean_stale_dirs(tmp_config_dir);
-			continue;
-		} else if (errno == ENOENT) {
-			break;
-		}
+		letter++;
+		letter %= 127;
 	}
 
-	if (i == 36) {
+	if (i == 127) {
 		PWRAP_LOG(PWRAP_LOG_ERROR,
 			  "Failed to find a possible path to create "
 			  "pam_wrapper config dir: %s",
 			  tmp_config_dir);
 		exit(1);
 	}
+
+	PWRAP_LOG(PWRAP_LOG_DEBUG, "Initialize pam_wrapper");
+
+	pwrap_clean_stale_dirs(tmp_config_dir);
 
 	pwrap.config_dir = strdup(tmp_config_dir);
 	if (pwrap.config_dir == NULL) {
@@ -1490,7 +1498,6 @@ const char *pam_strerror(pam_handle_t *pamh, int errnum)
 }
 
 #if defined(HAVE_PAM_VSYSLOG) || defined(HAVE_PAM_SYSLOG)
-
 static void pwrap_pam_vsyslog(const pam_handle_t *pamh,
 			      int priority,
 			      const char *fmt,
@@ -1507,11 +1514,13 @@ static void pwrap_pam_vsyslog(const pam_handle_t *pamh,
 
 	PWRAP_LOG(PWRAP_LOG_TRACE, "pwrap_pam_vsyslog called");
 
+#ifdef HAVE_PAM_VSYSLOG
 	d = getenv("PAM_WRAPPER_USE_SYSLOG");
 	if (d != NULL && d[0] == '1') {
 		libpam_pam_vsyslog(pamh, priority, fmt, args);
 		return;
 	}
+#endif /* HAVE_PAM_VSYSLOG */
 
 	switch(priority) {
 	case 0: /* LOG_EMERG */
