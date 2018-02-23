@@ -1807,7 +1807,7 @@ samba-tool user syncpasswords --terminate \\
                     logfile = self.logfile
                     self.logfile = None
                     log_msg("Closing logfile[%s] (st_nlink == 0)\n" % (logfile))
-                    logfd = os.open(logfile, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0600)
+                    logfd = os.open(logfile, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
                     os.dup2(logfd, 0)
                     os.dup2(logfd, 1)
                     os.dup2(logfd, 2)
@@ -1969,7 +1969,7 @@ samba-tool user syncpasswords --terminate \\
                 flags |= os.O_CREAT
 
             try:
-                self.lockfd = os.open(self.lockfile, flags, 0600)
+                self.lockfd = os.open(self.lockfile, flags, 0o600)
             except IOError as (err, msg):
                 if err == errno.ENOENT:
                     if terminate:
@@ -2212,7 +2212,7 @@ samba-tool user syncpasswords --terminate \\
             maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
             if maxfd == resource.RLIM_INFINITY:
                 maxfd = 1024 # Rough guess at maximum number of open file descriptors.
-            logfd = os.open(logfile, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0600)
+            logfd = os.open(logfile, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
             self.outf.write("Using logfile[%s]\n" % logfile)
             for fd in range(0, maxfd):
                 if fd == logfd:
