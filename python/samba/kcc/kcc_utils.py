@@ -83,7 +83,8 @@ class NamingContext(object):
             res = samdb.search(base=self.nc_dnstr,
                                scope=ldb.SCOPE_BASE, attrs=attrs)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e:
+            (enum, estr) = e.args
             raise KCCError("Unable to find naming context (%s) - (%s)" %
                            (self.nc_dnstr, estr))
         msg = res[0]
@@ -301,7 +302,8 @@ class NCReplica(NamingContext):
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=["repsFrom"])
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e1:
+            (enum, estr) = e1.args
             raise KCCError("Unable to find NC for (%s) - (%s)" %
                            (self.nc_dnstr, estr))
 
@@ -389,7 +391,8 @@ class NCReplica(NamingContext):
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=["replUpToDateVector"])
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e2:
+            (enum, estr) = e2.args
             raise KCCError("Unable to find NC for (%s) - (%s)" %
                            (self.nc_dnstr, estr))
 
@@ -423,7 +426,8 @@ class NCReplica(NamingContext):
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=["fSMORoleOwner"])
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e3:
+            (enum, estr) = e3.args
             raise KCCError("Unable to find NC for (%s) - (%s)" %
                            (self.nc_dnstr, estr))
 
@@ -452,7 +456,8 @@ class NCReplica(NamingContext):
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=["repsTo"])
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e4:
+            (enum, estr) = e4.args
             raise KCCError("Unable to find NC for (%s) - (%s)" %
                            (self.nc_dnstr, estr))
 
@@ -644,7 +649,8 @@ class DirectoryServiceAgent(object):
             res = samdb.search(base=self.dsa_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e5:
+            (enum, estr) = e5.args
             raise KCCError("Unable to find nTDSDSA for (%s) - (%s)" %
                            (self.dsa_dnstr, estr))
 
@@ -705,7 +711,8 @@ class DirectoryServiceAgent(object):
             res = samdb.search(base=self.dsa_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=ncattrs)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e6:
+            (enum, estr) = e6.args
             raise KCCError("Unable to find nTDSDSA NCs for (%s) - (%s)" %
                            (self.dsa_dnstr, estr))
 
@@ -773,7 +780,8 @@ class DirectoryServiceAgent(object):
                                scope=ldb.SCOPE_SUBTREE,
                                expression="(objectClass=nTDSConnection)")
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e7:
+            (enum, estr) = e7.args
             raise KCCError("Unable to find nTDSConnection for (%s) - (%s)" %
                            (self.dsa_dnstr, estr))
 
@@ -951,7 +959,8 @@ class NTDSConnection(object):
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e8:
+            (enum, estr) = e8.args
             raise KCCError("Unable to find nTDSConnection for (%s) - (%s)" %
                            (self.dnstr, estr))
 
@@ -1001,7 +1010,8 @@ class NTDSConnection(object):
             res = samdb.search(base=tdnstr,
                                scope=ldb.SCOPE_BASE, attrs=attrs)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e9:
+            (enum, estr) = e9.args
             raise KCCError("Unable to find transport (%s) - (%s)" %
                            (tdnstr, estr))
 
@@ -1028,7 +1038,8 @@ class NTDSConnection(object):
 
         try:
             samdb.delete(self.dnstr)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e10:
+            (enum, estr) = e10.args
             raise KCCError("Could not delete nTDSConnection for (%s) - (%s)" %
                            (self.dnstr, estr))
 
@@ -1052,7 +1063,8 @@ class NTDSConnection(object):
             if len(msg) != 0:
                 found = True
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e11:
+            (enum, estr) = e11.args
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise KCCError("Unable to search for (%s) - (%s)" %
                                (self.dnstr, estr))
@@ -1097,7 +1109,8 @@ class NTDSConnection(object):
                                    ldb.FLAG_MOD_ADD, "schedule")
         try:
             samdb.add(m)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e12:
+            (enum, estr) = e12.args
             raise KCCError("Could not add nTDSConnection for (%s) - (%s)" %
                            (self.dnstr, estr))
 
@@ -1120,7 +1133,8 @@ class NTDSConnection(object):
             # of self.dnstr in the database.
             samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e13:
+            (enum, estr) = e13.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 raise KCCError("nTDSConnection for (%s) doesn't exist!" %
                                self.dnstr)
@@ -1166,7 +1180,8 @@ class NTDSConnection(object):
                 ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "schedule")
         try:
             samdb.modify(m)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e14:
+            (enum, estr) = e14.args
             raise KCCError("Could not modify nTDSConnection for (%s) - (%s)" %
                            (self.dnstr, estr))
 
@@ -1326,7 +1341,8 @@ class Partition(NamingContext):
             res = samdb.search(base=self.partstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e15:
+            (enum, estr) = e15.args
             raise KCCError("Unable to find partition for (%s) - (%s)" %
                            (self.partstr, estr))
         msg = res[0]
@@ -1466,7 +1482,8 @@ class Site(object):
                                attrs=attrs)
             self_res = samdb.search(base=self.site_dnstr, scope=ldb.SCOPE_BASE,
                                     attrs=['objectGUID'])
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e16:
+            (enum, estr) = e16.args
             raise KCCError("Unable to find site settings for (%s) - (%s)" %
                            (ssdn, estr))
 
@@ -1497,7 +1514,8 @@ class Site(object):
             res = samdb.search(self.site_dnstr,
                                scope=ldb.SCOPE_SUBTREE,
                                expression="(objectClass=nTDSDSA)")
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e17:
+            (enum, estr) = e17.args
             raise KCCError("Unable to find nTDSDSAs - (%s)" % estr)
 
         for msg in res:
@@ -1885,7 +1903,8 @@ class Transport(object):
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e18:
+            (enum, estr) = e18.args
             raise KCCError("Unable to find Transport for (%s) - (%s)" %
                            (self.dnstr, estr))
 
@@ -2145,7 +2164,8 @@ class SiteLink(object):
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs, controls=['extended_dn:0'])
 
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e19:
+            (enum, estr) = e19.args
             raise KCCError("Unable to find SiteLink for (%s) - (%s)" %
                            (self.dnstr, estr))
 
