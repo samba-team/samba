@@ -3226,7 +3226,7 @@ static void test_ldb_add_duplicate_value_to_unique_index(void **state)
 	assert_int_equal(ret, LDB_SUCCESS);
 
 	msg02 = ldb_msg_new(tmp_ctx);
-	assert_non_null(msg01);
+	assert_non_null(msg02);
 
 	msg02->dn = ldb_dn_new_fmt(msg02, test_ctx->ldb, "dc=test02");
 	assert_non_null(msg02->dn);
@@ -3267,7 +3267,7 @@ static void test_ldb_add_to_index_duplicates_allowed(void **state)
 	assert_int_equal(ret, LDB_SUCCESS);
 
 	msg02 = ldb_msg_new(tmp_ctx);
-	assert_non_null(msg01);
+	assert_non_null(msg02);
 
 	msg02->dn = ldb_dn_new_fmt(msg02, test_ctx->ldb, "dc=test02");
 	assert_non_null(msg02->dn);
