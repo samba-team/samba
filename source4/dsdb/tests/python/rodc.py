@@ -67,7 +67,8 @@ class RodcTests(samba.tests.TestCase):
             try:
                 self.samdb.add(o)
                 self.fail("Failed to fail to add %s" % o['dn'])
-            except ldb.LdbError as (ecode, emsg):
+            except ldb.LdbError as e:
+                (ecode, emsg) = e.args
                 if ecode != ldb.ERR_REFERRAL:
                     print emsg
                     self.fail("Adding %s: ldb error: %s %s, wanted referral" %
@@ -103,7 +104,8 @@ class RodcTests(samba.tests.TestCase):
             try:
                 self.samdb.modify(msg)
                 self.fail("Failed to fail to modify %s %s" % (dn, attr))
-            except ldb.LdbError as (ecode, emsg):
+            except ldb.LdbError as e1:
+                (ecode, emsg) = e1.args
                 if ecode != ldb.ERR_REFERRAL:
                     self.fail("Failed to REFER when trying to modify %s %s" %
                               (dn, attr))
@@ -138,7 +140,8 @@ class RodcTests(samba.tests.TestCase):
             try:
                 self.samdb.modify(m)
                 self.fail("Failed to fail to modify %s %s" % (dn, attr))
-            except ldb.LdbError as (ecode, emsg):
+            except ldb.LdbError as e2:
+                (ecode, emsg) = e2.args
                 if ecode != ldb.ERR_REFERRAL:
                     self.fail("Failed to REFER when trying to modify %s %s" %
                               (dn, attr))
@@ -172,7 +175,8 @@ class RodcTests(samba.tests.TestCase):
         try:
             self.samdb.modify(m)
             self.fail("Failed to fail to modify %s %s" % (dn, attr))
-        except ldb.LdbError as (ecode, emsg):
+        except ldb.LdbError as e3:
+            (ecode, emsg) = e3.args
             if ecode != ldb.ERR_REFERRAL:
                 self.fail("Failed to REFER when trying to modify %s %s" %
                           (dn, attr))
@@ -190,7 +194,8 @@ class RodcTests(samba.tests.TestCase):
         try:
             self.samdb.delete(dn)
             self.fail("Failed to fail to delete %s" % (dn))
-        except ldb.LdbError as (ecode, emsg):
+        except ldb.LdbError as e4:
+            (ecode, emsg) = e4.args
             if ecode != ldb.ERR_REFERRAL:
                 print ecode, emsg
                 self.fail("Failed to REFER when trying to delete %s" % dn)
@@ -208,7 +213,8 @@ class RodcTests(samba.tests.TestCase):
         try:
             self.samdb.delete(dn)
             self.fail("Failed to fail to delete %s" % (dn))
-        except ldb.LdbError as (ecode, emsg):
+        except ldb.LdbError as e5:
+            (ecode, emsg) = e5.args
             if ecode != ldb.ERR_NO_SUCH_OBJECT:
                 print ecode, emsg
                 self.fail("Failed to NO_SUCH_OBJECT when trying to delete "

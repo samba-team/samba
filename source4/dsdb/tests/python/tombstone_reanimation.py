@@ -205,7 +205,8 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             FLAG_MOD_ADD, "enableOptionalFeature")
         try:
             self.samdb.modify(msg)
-        except LdbError, (num, _):
+        except LdbError as e:
+            (num, _) = e.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
     def test_undelete(self):
@@ -242,13 +243,15 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         try:
             self.samdb.rename(str(objDeleted1.dn), usr1)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e1:
+            (num, _) = e1.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         try:
             self.samdb.rename(str(objDeleted1.dn), usr1, ["show_deleted:1"])
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e2:
+            (num, _) = e2.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
     def test_undelete_with_mod(self):
@@ -307,7 +310,8 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         try:
             self.restore_deleted_object(self.samdb, objDeleted1.dn, usr1)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e3:
+            (num, _) = e3.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
     def test_undelete_cross_nc(self):
@@ -338,13 +342,15 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         try:
             self.restore_deleted_object(self.samdb, objDeleted1.dn, c3)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e4:
+            (num, _) = e4.args
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         #try to undelete from config to base dn
         try:
             self.restore_deleted_object(self.samdb, objDeleted2.dn, c4)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e5:
+            (num, _) = e5.args
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         #assert undeletion will work in same nc
         self.restore_deleted_object(self.samdb, objDeleted1.dn, c4)
