@@ -1509,7 +1509,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         setup_add_ldif(samdb, setup_path("provision_well_known_sec_princ.ldif"), {
             "CONFIGDN": names.configdn,
             "WELLKNOWNPRINCIPALS_DESCRIPTOR": protected1wd_descr,
-            })
+            }, controls=["relax:0", "provision:0"])
 
     if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
         setup_modify_ldif(samdb,
@@ -1524,7 +1524,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
             "DOMAINSID": str(names.domainsid),
             "ADMINPASS_B64": b64encode(adminpass.encode('utf-16-le')),
             "KRBTGTPASS_B64": b64encode(krbtgtpass.encode('utf-16-le'))
-            })
+            }, controls=["relax:0", "provision:0"])
 
         logger.info("Setting up self join")
         setup_self_join(samdb, admin_session_info, names=names, fill=fill,
