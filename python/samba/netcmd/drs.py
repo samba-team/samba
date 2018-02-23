@@ -202,7 +202,8 @@ class cmd_drs_showrepl(Command):
                                                  scope=ldb.SCOPE_BASE,
                                                  attrs=["dnsHostName"])
                 d['dns name'] = c_server_res[0]["dnsHostName"][0]
-            except ldb.LdbError, (errno, _):
+            except ldb.LdbError as e:
+                (errno, _) = e.args
                 if errno == ldb.ERR_NO_SUCH_OBJECT:
                     d['is deleted'] = True
             except KeyError:

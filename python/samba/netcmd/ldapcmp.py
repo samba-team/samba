@@ -122,7 +122,8 @@ class LDAPBase(object):
         res = None
         try:
             res = self.ldb.search(base=object_dn, scope=SCOPE_BASE)
-        except LdbError, (enum, estr):
+        except LdbError as e2:
+            (enum, estr) = e2.args
             if enum == ERR_NO_SUCH_OBJECT:
                 return False
             raise
@@ -784,7 +785,8 @@ class LDAPBundel(object):
                                      summary=self.summary,
                                      filter_list=self.filter_list,
                                      outf=self.outf, errf=self.errf)
-            except LdbError, (enum, estr):
+            except LdbError as e:
+                (enum, estr) = e.args
                 if enum == ERR_NO_SUCH_OBJECT:
                     self.log( "\n!!! Object not found: %s" % self.dn_list[index] )
                     skip = True
@@ -795,7 +797,8 @@ class LDAPBundel(object):
                         summary=other.summary,
                         filter_list=self.filter_list,
                         outf=self.outf, errf=self.errf)
-            except LdbError, (enum, estr):
+            except LdbError as e1:
+                (enum, estr) = e1.args
                 if enum == ERR_NO_SUCH_OBJECT:
                     self.log( "\n!!! Object not found: %s" % other.dn_list[index] )
                     skip = True
@@ -851,7 +854,8 @@ class LDAPBundel(object):
             raise StandardError("Wrong 'scope' given. Choose from: SUB, ONE, BASE")
         try:
             res = self.con.ldb.search(base=self.search_base, scope=self.search_scope, attrs=["dn"])
-        except LdbError, (enum, estr):
+        except LdbError as e3:
+            (enum, estr) = e3.args
             self.outf.write("Failed search of base=%s\n" % self.search_base)
             raise
         for x in res:

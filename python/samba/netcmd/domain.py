@@ -841,7 +841,8 @@ class cmd_domain_demote(Command):
 
                 try:
                     drsuapiBind.DsReplicaSync(drsuapi_handle, 1, req1)
-                except RuntimeError as (werr, string):
+                except RuntimeError as e1:
+                    (werr, string) = e1.args
                     if werr == werror.WERR_DS_DRA_NO_REPLICA:
                         pass
                     else:
@@ -981,7 +982,8 @@ class cmd_domain_demote(Command):
             req1.commit = 1
 
             drsuapiBind.DsRemoveDSServer(drsuapi_handle, 1, req1)
-        except RuntimeError as (werr, string):
+        except RuntimeError as e3:
+            (werr, string) = e3.args
             if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
                 self.errf.write(
                     "Error while demoting, re-enabling inbound replication\n")
@@ -1193,7 +1195,8 @@ class cmd_domain_level(Command):
                       ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
                     try:
                         samdb.modify(m)
-                    except ldb.LdbError, (enum, emsg):
+                    except ldb.LdbError as e:
+                        (enum, emsg) = e.args
                         if enum != ldb.ERR_UNWILLING_TO_PERFORM:
                             raise
 
@@ -1213,7 +1216,8 @@ class cmd_domain_level(Command):
                           "msDS-Behavior-Version")
                 try:
                     samdb.modify(m)
-                except ldb.LdbError, (enum, emsg):
+                except ldb.LdbError as e2:
+                    (enum, emsg) = e2.args
                     if enum != ldb.ERR_UNWILLING_TO_PERFORM:
                         raise
 
