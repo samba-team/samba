@@ -63,7 +63,8 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # tidyup groups and users
         try:
             self.ldb_dc2.delete(self.ou, ["tree_delete:1"])
-        except ldb.LdbError as (enum, string):
+        except ldb.LdbError as e:
+            (enum, string) = e.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
 
