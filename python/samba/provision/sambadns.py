@@ -694,13 +694,13 @@ def create_dns_dir(logger, paths):
     except OSError:
         pass
 
-    os.mkdir(dns_dir, 0770)
+    os.mkdir(dns_dir, 0o770)
 
     if paths.bind_gid is not None:
         try:
             os.chown(dns_dir, -1, paths.bind_gid)
             # chmod needed to cope with umask
-            os.chmod(dns_dir, 0770)
+            os.chmod(dns_dir, 0o770)
         except OSError:
             if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.error("Failed to chown %s to bind gid %u" % (
@@ -767,7 +767,7 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
         try:
             os.chown(paths.dns, -1, paths.bind_gid)
             # chmod needed to cope with umask
-            os.chmod(paths.dns, 0664)
+            os.chmod(paths.dns, 0o664)
         except OSError:
             if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.error("Failed to chown %s to bind gid %u" % (
@@ -873,12 +873,12 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
                 for d in dirs:
                     dpath = os.path.join(dirname, d)
                     os.chown(dpath, -1, paths.bind_gid)
-                    os.chmod(dpath, 0770)
+                    os.chmod(dpath, 0o770)
                 for f in files:
                     if f.endswith('.ldb') or f.endswith('.tdb'):
                         fpath = os.path.join(dirname, f)
                         os.chown(fpath, -1, paths.bind_gid)
-                        os.chmod(fpath, 0660)
+                        os.chmod(fpath, 0o660)
         except OSError:
             if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.error(
