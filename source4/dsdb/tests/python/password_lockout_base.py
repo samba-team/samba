@@ -236,7 +236,8 @@ userPassword: """ + userpass + """
         try:
             ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e:
+            (num, msg) = e.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
@@ -248,7 +249,8 @@ userPassword: """ + userpass + """
         try:
             ldb = SamDB(url=url, credentials=creds, lp=lp)
             self.fail("Login unexpectedly succeeded")
-        except LdbError, (num, msg):
+        except LdbError as e1:
+            (num, msg) = e1.args
             if errno is not None:
                 self.assertEquals(num, errno, ("Login failed in the wrong way"
                                                "(got err %d, expected %d)" %
@@ -479,7 +481,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
 
-        except LdbError, (num, msg):
+        except LdbError as e2:
+            (num, msg) = e2.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -502,7 +505,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
 
-        except LdbError, (num, msg):
+        except LdbError as e3:
+            (num, msg) = e3.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -523,7 +527,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e4:
+            (num, msg) = e4.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -542,7 +547,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e5:
+            (num, msg) = e5.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -561,7 +567,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e6:
+            (num, msg) = e6.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -619,7 +626,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e7:
+            (num, msg) = e7.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -639,7 +647,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e8:
+            (num, msg) = e8.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -672,7 +681,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e9:
+            (num, msg) = e9.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,

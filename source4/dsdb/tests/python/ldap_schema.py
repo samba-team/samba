@@ -166,7 +166,8 @@ systemOnly: FALSE
         try:
                  self.ldb.add_ldif(ldif)
                  self.fail()
-        except LdbError, (num, _):
+        except LdbError as e1:
+                 (num, _) = e1.args
                  self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         ldif = """
@@ -342,7 +343,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add duplicate attributeID value")
-        except LdbError, (enum, estr):
+        except LdbError as e2:
+            (enum, estr) = e2.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
@@ -386,7 +388,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add duplicate governsID conflicting with attributeID value")
-        except LdbError, (enum, estr):
+        except LdbError as e3:
+            (enum, estr) = e3.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
@@ -429,7 +432,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add attribute with duplicate CN")
-        except LdbError, (enum, estr):
+        except LdbError as e4:
+            (enum, estr) = e4.args
             self.assertEquals(enum, ERR_ENTRY_ALREADY_EXISTS)
 
     def test_duplicate_implicit_ldapdisplayname(self):
@@ -472,7 +476,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add attribute with duplicate of the implicit ldapDisplayName")
-        except LdbError, (enum, estr):
+        except LdbError as e5:
+            (enum, estr) = e5.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
@@ -517,7 +522,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add attribute with duplicate ldapDisplayName")
-        except LdbError, (enum, estr):
+        except LdbError as e6:
+            (enum, estr) = e6.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
@@ -565,7 +571,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add class with duplicate ldapDisplayName")
-        except LdbError, (enum, estr):
+        except LdbError as e7:
+            (enum, estr) = e7.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
@@ -619,7 +626,8 @@ ldapDisplayName: """ + attr_ldap_display_name + """
         try:
             self.ldb.modify_ldif(ldif)
             self.fail("Should have failed to modify schema to have attribute with duplicate ldapDisplayName")
-        except LdbError, (enum, estr):
+        except LdbError as e8:
+            (enum, estr) = e8.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
@@ -673,7 +681,8 @@ attributeId: """ + attributeID + """
         try:
             self.ldb.modify_ldif(ldif)
             self.fail("Should have failed to modify schema to have attribute with duplicate attributeID")
-        except LdbError, (enum, estr):
+        except LdbError as e9:
+            (enum, estr) = e9.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
 
     def test_remove_ldapdisplayname(self):
@@ -708,7 +717,8 @@ replace: ldapDisplayName
         try:
             self.ldb.modify_ldif(ldif)
             self.fail("Should have failed to remove the ldapdisplayname")
-        except LdbError, (enum, estr):
+        except LdbError as e10:
+            (enum, estr) = e10.args
             self.assertEquals(enum, ERR_OBJECT_CLASS_VIOLATION)
 
     def test_rename_ldapdisplayname(self):
@@ -777,7 +787,8 @@ attributeId: """ + attributeID + """.1
         try:
             self.ldb.modify_ldif(ldif)
             self.fail("Should have failed to modify schema to have different attributeID")
-        except LdbError, (enum, estr):
+        except LdbError as e11:
+            (enum, estr) = e11.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
 
 
@@ -814,7 +825,8 @@ attributeId: """ + attributeID + """
         try:
             self.ldb.modify_ldif(ldif)
             self.fail("Should have failed to modify schema to have the same attributeID")
-        except LdbError, (enum, estr):
+        except LdbError as e12:
+            (enum, estr) = e12.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
 
 
@@ -860,7 +872,8 @@ systemOnly: FALSE
 
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (enum, estr):
+        except LdbError as e13:
+            (enum, estr) = e13.args
             self.fail(estr)
 
         attr_name_2 = "test-generated-linkID-2" + time.strftime("%s", time.gmtime()) + "-" + rand
@@ -885,7 +898,8 @@ systemOnly: FALSE
 
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (enum, estr):
+        except LdbError as e14:
+            (enum, estr) = e14.args
             self.fail(estr)
 
         res = self.ldb.search("CN=%s,%s" % (attr_name_1, self.schema_dn),
@@ -946,7 +960,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add duplicate linkID value")
-        except LdbError, (enum, estr):
+        except LdbError as e15:
+            (enum, estr) = e15.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
         # If we add another attribute with the attributeID or lDAPDisplayName
@@ -974,7 +989,8 @@ systemOnly: FALSE
 
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (enum, estr):
+        except LdbError as e16:
+            (enum, estr) = e16.args
             self.fail(estr)
 
         res = self.ldb.search("CN=%s,%s" % (attr_name_3, self.schema_dn),
@@ -1006,7 +1022,8 @@ systemOnly: FALSE
 
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (enum, estr):
+        except LdbError as e17:
+            (enum, estr) = e17.args
             self.fail(estr)
 
         res = self.ldb.search("CN=%s,%s" % (attr_name_4, self.schema_dn),
@@ -1042,7 +1059,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add duplicate backlink")
-        except LdbError, (enum, estr):
+        except LdbError as e18:
+            (enum, estr) = e18.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
         # If we try to supply the attributeID or ldapDisplayName
@@ -1072,7 +1090,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add backlink of backlink")
-        except LdbError, (enum, estr):
+        except LdbError as e19:
+            (enum, estr) = e19.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
         attr_name = "test-generated-linkID-backlink-invalid-2" + time.strftime("%s", time.gmtime()) + "-" + rand
@@ -1098,7 +1117,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add backlink of backlink")
-        except LdbError, (enum, estr):
+        except LdbError as e20:
+            (enum, estr) = e20.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
     def test_generated_mAPIID(self):
@@ -1133,7 +1153,8 @@ systemOnly: FALSE
 
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (enum, estr):
+        except LdbError as e21:
+            (enum, estr) = e21.args
             self.fail(estr)
 
         res = self.ldb.search("CN=%s,%s" % (attr_name_1, self.schema_dn),
@@ -1174,7 +1195,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif)
             self.fail("Should have failed to add duplicate mAPIID value")
-        except LdbError, (enum, estr):
+        except LdbError as e22:
+            (enum, estr) = e22.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
@@ -1212,7 +1234,8 @@ governsId: """ + governsID + """.1
         try:
             self.ldb.modify_ldif(ldif)
             self.fail("Should have failed to modify schema to have different governsID")
-        except LdbError, (enum, estr):
+        except LdbError as e23:
+            (enum, estr) = e23.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
 
 
@@ -1250,7 +1273,8 @@ governsId: """ + governsID + """.1
         try:
             self.ldb.modify_ldif(ldif)
             self.fail("Should have failed to modify schema to have the same governsID")
-        except LdbError, (enum, estr):
+        except LdbError as e24:
+            (enum, estr) = e24.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
 
 
@@ -1391,7 +1415,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif_fail)
             self.fail("Adding attribute with preset msDS-IntId should fail")
-        except LdbError, (num, _):
+        except LdbError as e25:
+            (num, _) = e25.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # add the new attribute and update schema
@@ -1418,7 +1443,8 @@ systemOnly: FALSE
         try:
             self.ldb.modify(msg)
             self.fail("Modifying msDS-IntId should return error")
-        except LdbError, (num, _):
+        except LdbError as e26:
+            (num, _) = e26.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # 2. Create attribute with systemFlags = FLAG_SCHEMA_BASE_OBJECT
@@ -1434,7 +1460,8 @@ systemOnly: FALSE
         try:
             self.ldb.add_ldif(ldif_fail)
             self.fail("Adding attribute with preset msDS-IntId should fail")
-        except LdbError, (num, _):
+        except LdbError as e27:
+            (num, _) = e27.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # add the new attribute and update schema
@@ -1461,7 +1488,8 @@ systemOnly: FALSE
         try:
             self.ldb.modify(msg)
             self.fail("Modifying msDS-IntId should return error")
-        except LdbError, (num, _):
+        except LdbError as e28:
+            (num, _) = e28.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
 
@@ -1521,7 +1549,8 @@ systemOnly: FALSE
         try:
             self.ldb.modify(msg)
             self.fail("Modifying msDS-IntId should return error")
-        except LdbError, (num, _):
+        except LdbError as e29:
+            (num, _) = e29.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # 2. Create Class with systemFlags = FLAG_SCHEMA_BASE_OBJECT
@@ -1559,7 +1588,8 @@ systemOnly: FALSE
         try:
             self.ldb.modify(msg)
             self.fail("Modifying msDS-IntId should return error")
-        except LdbError, (num, _):
+        except LdbError as e30:
+            (num, _) = e30.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["msDS-IntId"])
         self.assertEquals(len(res), 1)
@@ -1613,7 +1643,8 @@ class SchemaTests_msDS_isRODC(samba.tests.TestCase):
             ntds_search_dn = "CN=NTDS Settings,%s" % ldb_msg['dn']
             try:
                 res_check = self.ldb.search(ntds_search_dn, attrs=["objectCategory"])
-            except LdbError, (num, _):
+            except LdbError as e:
+                (num, _) = e.args
                 self.assertEquals(num, ERR_NO_SUCH_OBJECT)
                 print("Server entry %s doesn't have a NTDS settings object" % res[0]['dn'])
             else:

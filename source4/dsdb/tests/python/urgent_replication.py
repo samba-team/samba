@@ -38,7 +38,8 @@ class UrgentReplicationTests(samba.tests.TestCase):
     def delete_force(self, ldb, dn):
         try:
             ldb.delete(dn, ["relax:0"])
-        except LdbError, (num, _):
+        except LdbError as e:
+            (num, _) = e.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def setUp(self):

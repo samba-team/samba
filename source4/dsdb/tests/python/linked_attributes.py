@@ -169,7 +169,8 @@ class LATests(samba.tests.TestCase):
         """Assert a function raises a particular LdbError."""
         try:
             f(*args, **kwargs)
-        except ldb.LdbError as (num, msg):
+        except ldb.LdbError as e:
+            (num, msg) = e.args
             if num != errcode:
                 lut = {v: k for k, v in vars(ldb).iteritems()
                        if k.startswith('ERR_') and isinstance(v, int)}

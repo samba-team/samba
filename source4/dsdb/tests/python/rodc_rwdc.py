@@ -471,7 +471,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
 
-        except LdbError, (num, msg):
+        except LdbError as e1:
+            (num, msg) = e1.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -494,7 +495,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
 
-        except LdbError, (num, msg):
+        except LdbError as e2:
+            (num, msg) = e2.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -515,7 +517,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e3:
+            (num, msg) = e3.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -534,7 +537,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e4:
+            (num, msg) = e4.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -553,7 +557,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e5:
+            (num, msg) = e5.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -608,7 +613,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e6:
+            (num, msg) = e6.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -628,7 +634,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e7:
+            (num, msg) = e7.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -661,7 +668,8 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e8:
+            (num, msg) = e8.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
@@ -781,7 +789,8 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         try:
             fn(*args, **kwargs)
             self.fail("failed to raise ldap referral")
-        except ldb.LdbError as (code, msg):
+        except ldb.LdbError as e9:
+            (code, msg) = e9.args
             self.assertEqual(code, ldb.ERR_REFERRAL,
                              "expected referral, got %s %s" % (code, msg))
 
@@ -824,7 +833,8 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
 
             try:
                 self.rwdc_db.add(o)
-            except ldb.LdbError as (ecode, emsg):
+            except ldb.LdbError as e:
+                (ecode, emsg) = e.args
                 self.fail("Failed to add %s to rwdc: ldb error: %s %s" %
                           (ecode, emsg))
 
@@ -1022,7 +1032,8 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                           session_info=system_session(LP), lp=LP)
             if errno is not None:
                 self.fail("logon failed to fail with ldb error %s" % errno)
-        except ldb.LdbError as (code, msg):
+        except ldb.LdbError as e10:
+            (code, msg) = e10.args
             if code != errno:
                 if errno is None:
                     self.fail("logon incorrectly raised ldb error (code=%s)" %
@@ -1172,7 +1183,8 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e11:
+            (num, msg) = e11.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
@@ -1201,7 +1213,8 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e12:
+            (num, msg) = e12.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
@@ -1225,7 +1238,8 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e13:
+            (num, msg) = e13.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
@@ -1254,7 +1268,8 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         try:
             ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e14:
+            (num, msg) = e14.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0

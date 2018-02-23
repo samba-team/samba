@@ -120,7 +120,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "sAMAccountName": "administrator"})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e9:
+            (num, _) = e9.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -131,7 +132,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "sAMAccountName": []})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e10:
+            (num, _) = e10.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -142,7 +144,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "primaryGroupID": "0"})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e11:
+            (num, _) = e11.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -153,7 +156,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "primaryGroupID": str(group_rid_1)})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e12:
+            (num, _) = e12.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -166,7 +170,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e13:
+            (num, _) = e13.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         # Test to see how we should behave when the account isn't a user
@@ -177,7 +182,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e14:
+            (num, _) = e14.args
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
 
         # Test default primary groups on add operations
@@ -332,7 +338,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e15:
+            (num, _) = e15.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # But to reset the actual "sAMAccountName" should still be possible
@@ -367,7 +374,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e16:
+            (num, _) = e16.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Try to make group 1 primary - should be denied since it is not yet
@@ -379,7 +387,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e17:
+            (num, _) = e17.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Make group 1 secondary
@@ -400,7 +409,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.delete("cn=ldaptestgroup,cn=users," + self.base_dn)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e18:
+            (num, _) = e18.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # Try to add group 1 also as secondary - should be denied
@@ -411,7 +421,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e19:
+            (num, _) = e19.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # Try to add invalid member to group 1 - should be denied
@@ -423,7 +434,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e20:
+            (num, _) = e20.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         # Make group 2 secondary
@@ -471,7 +483,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e21:
+            (num, _) = e21.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Delete invalid group member
@@ -482,7 +495,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e22:
+            (num, _) = e22.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Also this should be denied
@@ -492,7 +506,8 @@ class SamTests(samba.tests.TestCase):
               "objectclass": "user",
               "primaryGroupID": "0"})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e23:
+            (num, _) = e23.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Recreate user accounts
@@ -521,7 +536,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e24:
+            (num, _) = e24.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # Already added, but as <SID=...>
@@ -537,7 +553,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e25:
+            (num, _) = e25.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # Invalid member
@@ -548,7 +565,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e26:
+            (num, _) = e26.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         # Invalid member
@@ -560,7 +578,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e27:
+            (num, _) = e27.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         # Invalid member
@@ -573,7 +592,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e28:
+            (num, _) = e28.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         m = Message()
@@ -612,7 +632,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e29:
+            (num, _) = e29.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         # Delete protection tests
@@ -626,7 +647,8 @@ class SamTests(samba.tests.TestCase):
             try:
                 ldb.modify(m)
                 self.fail()
-            except LdbError, (num, _):
+            except LdbError as e:
+                (num, _) = e.args
                 self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
             m = Message()
@@ -635,7 +657,8 @@ class SamTests(samba.tests.TestCase):
             try:
                 ldb.modify(m)
                 self.fail()
-            except LdbError, (num, _):
+            except LdbError as e1:
+                (num, _) = e1.args
                 self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -645,7 +668,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e30:
+            (num, _) = e30.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
@@ -655,7 +679,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e31:
+            (num, _) = e31.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
@@ -665,7 +690,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e32:
+            (num, _) = e32.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -675,7 +701,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e33:
+            (num, _) = e33.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -685,7 +712,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e34:
+            (num, _) = e34.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         # Delete protection tests
@@ -702,7 +730,8 @@ class SamTests(samba.tests.TestCase):
             try:
                 ldb.modify(m)
                 self.fail()
-            except LdbError, (num, _):
+            except LdbError as e2:
+                (num, _) = e2.args
                 self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
             m = Message()
@@ -711,7 +740,8 @@ class SamTests(samba.tests.TestCase):
             try:
                 ldb.modify(m)
                 self.fail()
-            except LdbError, (num, _):
+            except LdbError as e3:
+                (num, _) = e3.args
                 self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -727,7 +757,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "group",
                 "primaryGroupToken": "100"})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e35:
+            (num, _) = e35.args
             self.assertEquals(num, ERR_UNDEFINED_ATTRIBUTE_TYPE)
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
@@ -785,7 +816,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e36:
+            (num, _) = e36.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -851,7 +883,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "group",
                 "groupType": "0"})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e37:
+            (num, _) = e37.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
@@ -861,7 +894,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "group",
                 "groupType": str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP)})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e38:
+            (num, _) = e38.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
@@ -962,7 +996,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e39:
+            (num, _) = e39.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Security groups
@@ -992,7 +1027,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e40:
+            (num, _) = e40.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Change to "universal"
@@ -1065,7 +1101,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e41:
+            (num, _) = e41.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Change to "builtin local" (shouldn't work)
@@ -1078,7 +1115,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e42:
+            (num, _) = e42.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -1109,7 +1147,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e43:
+            (num, _) = e43.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Change back to "global"
@@ -1137,7 +1176,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e44:
+            (num, _) = e44.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Distribution groups
@@ -1167,7 +1207,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e45:
+            (num, _) = e45.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Change to "universal"
@@ -1240,7 +1281,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e46:
+            (num, _) = e46.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Change back to "universal"
@@ -1254,7 +1296,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e47:
+            (num, _) = e47.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         # Make group 2 secondary
@@ -1314,7 +1357,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e48:
+            (num, _) = e48.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Change to "universal"
@@ -1387,7 +1431,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e49:
+            (num, _) = e49.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Change back to "universal"
@@ -1465,7 +1510,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "pwdLastSet": str(1)})
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e50:
+            (num, msg) = e50.args
             self.assertEquals(num, ERR_OTHER)
             self.assertTrue('00000057' in msg)
 
@@ -1475,7 +1521,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "pwdLastSet": str(lastset)})
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e51:
+            (num, msg) = e51.args
             self.assertEquals(num, ERR_OTHER)
             self.assertTrue('00000057' in msg)
 
@@ -1538,7 +1585,8 @@ class SamTests(samba.tests.TestCase):
                                        "pwdLastSet")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e52:
+            (num, msg) = e52.args
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
             self.assertTrue('00002085' in msg)
 
@@ -1553,7 +1601,8 @@ class SamTests(samba.tests.TestCase):
                                        "pwdLastSet")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e53:
+            (num, msg) = e53.args
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
             self.assertTrue('00002085' in msg)
 
@@ -1588,7 +1637,8 @@ class SamTests(samba.tests.TestCase):
                                        "pwdLastSet")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e54:
+            (num, msg) = e54.args
             self.assertEquals(num, ERR_OTHER)
             self.assertTrue('00000057' in msg)
 
@@ -1737,7 +1787,8 @@ class SamTests(samba.tests.TestCase):
             simple_ldb = SamDB(url=host, credentials=simple_creds, lp=lp)
             self.assertIsNotNone(simple_ldb)
             simple_ldb = None
-        except LdbError, (num, msg):
+        except LdbError as e55:
+            (num, msg) = e55.args
             if num != ERR_STRONG_AUTH_REQUIRED:
                 raise
             requires_strong_auth = True
@@ -1750,7 +1801,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb_fail = SamDB(url=host, credentials=sasl_wrong_creds, lp=lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e56:
+            (num, msg) = e56.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
             self.assertTrue(error_msg_sasl_wrong_pw in msg)
 
@@ -1758,7 +1810,8 @@ class SamTests(samba.tests.TestCase):
             try:
                 ldb_fail = SamDB(url=host, credentials=simple_wrong_creds, lp=lp)
                 self.fail()
-            except LdbError, (num, msg):
+            except LdbError as e4:
+                (num, msg) = e4.args
                 self.assertEquals(num, ERR_INVALID_CREDENTIALS)
                 assertLDAPErrorMsg(msg, error_msg_simple_wrong_pw)
 
@@ -1776,14 +1829,16 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb_fail = SamDB(url=host, credentials=sasl_wrong_creds, lp=lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e57:
+            (num, msg) = e57.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
             assertLDAPErrorMsg(msg, error_msg_sasl_wrong_pw)
 
         try:
             ldb_fail = SamDB(url=host, credentials=sasl_creds, lp=lp)
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e58:
+            (num, msg) = e58.args
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
             assertLDAPErrorMsg(msg, error_msg_sasl_must_change)
 
@@ -1791,14 +1846,16 @@ class SamTests(samba.tests.TestCase):
             try:
                 ldb_fail = SamDB(url=host, credentials=simple_wrong_creds, lp=lp)
                 self.fail()
-            except LdbError, (num, msg):
+            except LdbError as e5:
+                (num, msg) = e5.args
                 self.assertEquals(num, ERR_INVALID_CREDENTIALS)
                 assertLDAPErrorMsg(msg, error_msg_simple_wrong_pw)
 
             try:
                 ldb_fail = SamDB(url=host, credentials=simple_creds, lp=lp)
                 self.fail()
-            except LdbError, (num, msg):
+            except LdbError as e6:
+                (num, msg) = e6.args
                 self.assertEquals(num, ERR_INVALID_CREDENTIALS)
                 assertLDAPErrorMsg(msg, error_msg_simple_must_change)
 
@@ -1874,7 +1931,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "userAccountControl": str(UF_TEMP_DUPLICATE_ACCOUNT)})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e59:
+            (num, _) = e59.args
             self.assertEquals(num, ERR_OTHER)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -1884,7 +1942,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e60:
+            (num, _) = e60.args
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -1893,7 +1952,8 @@ class SamTests(samba.tests.TestCase):
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectclass": "user",
                 "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
-        except LdbError, (num, _):
+        except LdbError as e61:
+            (num, _) = e61.args
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -1902,7 +1962,8 @@ class SamTests(samba.tests.TestCase):
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectclass": "user",
                 "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)})
-        except LdbError, (num, _):
+        except LdbError as e62:
+            (num, _) = e62.args
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -1912,7 +1973,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "user",
                 "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e63:
+            (num, _) = e63.args
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -1944,7 +2006,8 @@ class SamTests(samba.tests.TestCase):
             m["userAccountControl"] = MessageElement("0",
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
-        except LdbError, (num, _):
+        except LdbError as e64:
+            (num, _) = e64.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         try:
@@ -1954,7 +2017,8 @@ class SamTests(samba.tests.TestCase):
               str(UF_NORMAL_ACCOUNT),
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
-        except LdbError, (num, _):
+        except LdbError as e65:
+            (num, _) = e65.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -2020,7 +2084,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e66:
+            (num, _) = e66.args
             self.assertEquals(num, ERR_OTHER)
 
         try:
@@ -2031,7 +2096,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e67:
+            (num, _) = e67.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -2049,7 +2115,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e68:
+            (num, _) = e68.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2079,7 +2146,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e69:
+            (num, _) = e69.args
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # With a computer object
@@ -2148,7 +2216,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "computer",
                 "userAccountControl": str(UF_TEMP_DUPLICATE_ACCOUNT)})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e70:
+            (num, _) = e70.args
             self.assertEquals(num, ERR_OTHER)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -2169,7 +2238,8 @@ class SamTests(samba.tests.TestCase):
                 "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
                 "objectclass": "computer",
                 "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
-        except LdbError, (num, _):
+        except LdbError as e71:
+            (num, _) = e71.args
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -2179,7 +2249,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "computer",
                 "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e72:
+            (num, _) = e72.args
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -2212,7 +2283,8 @@ class SamTests(samba.tests.TestCase):
             m["userAccountControl"] = MessageElement("0",
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
-        except LdbError, (num, _):
+        except LdbError as e73:
+            (num, _) = e73.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         try:
@@ -2222,7 +2294,8 @@ class SamTests(samba.tests.TestCase):
               str(UF_NORMAL_ACCOUNT),
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
-        except LdbError, (num, _):
+        except LdbError as e74:
+            (num, _) = e74.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -2288,7 +2361,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e75:
+            (num, _) = e75.args
             self.assertEquals(num, ERR_OTHER)
 
         m = Message()
@@ -2377,7 +2451,8 @@ class SamTests(samba.tests.TestCase):
               FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e76:
+            (num, _) = e76.args
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # "primaryGroupID" does not change if account type remains the same
@@ -3299,7 +3374,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e77:
+            (num, _) = e77.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
@@ -3379,7 +3455,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e78:
+            (num, _) = e78.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
@@ -3434,7 +3511,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e79:
+            (num, _) = e79.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
@@ -3444,7 +3522,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e80:
+            (num, _) = e80.args
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
         m = Message()
@@ -3464,7 +3543,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e81:
+            (num, _) = e81.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
@@ -3474,7 +3554,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e82:
+            (num, _) = e82.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
@@ -3521,7 +3602,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "group",
                 "fSMORoleOwner": self.base_dn})
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e83:
+            (num, _) = e83.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         try:
@@ -3530,7 +3612,8 @@ class SamTests(samba.tests.TestCase):
                 "objectclass": "group",
                 "fSMORoleOwner": [] })
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e84:
+            (num, _) = e84.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # We are able to set it to a valid "nTDSDSA" entry if the server is
@@ -3553,7 +3636,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e85:
+            (num, _) = e85.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
@@ -3562,7 +3646,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError as e86:
+            (num, _) = e86.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # We are able to set it to a valid "nTDSDSA" entry if the server is
@@ -3599,7 +3684,8 @@ class SamTests(samba.tests.TestCase):
         for pr_object in protected_list:
             try:
                 self.ldb.delete(pr_object[0] + "," + pr_object[1] + self.base_dn)
-            except LdbError, (num, _):
+            except LdbError as e7:
+                (num, _) = e7.args
                 self.assertEquals(num, ERR_OTHER)
             else:
                 self.fail("Deleted " + pr_object[0])
@@ -3607,7 +3693,8 @@ class SamTests(samba.tests.TestCase):
             try:
                 self.ldb.rename(pr_object[0] + "," + pr_object[1] + self.base_dn,
                                 pr_object[0] + "2," + pr_object[1] + self.base_dn)
-            except LdbError, (num, _):
+            except LdbError as e8:
+                (num, _) = e8.args
                 self.fail("Could not rename " + pr_object[0])
 
             self.ldb.rename(pr_object[0] + "2," + pr_object[1] + self.base_dn,
