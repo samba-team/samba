@@ -71,7 +71,8 @@ class DescriptorTests(samba.tests.TestCase):
             class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
             try:
                 self.ldb_admin.search(base=class_dn, attrs=["name"])
-            except LdbError, (num, _):
+            except LdbError as e:
+                (num, _) = e.args
                 self.assertEquals(num, ERR_NO_SUCH_OBJECT)
                 break
 

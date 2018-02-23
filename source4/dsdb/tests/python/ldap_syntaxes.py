@@ -222,7 +222,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:ABCD:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e:
+            (num, _) = e.args
             self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
 
         # add object with the same dn but with different string value in case
@@ -230,7 +231,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:abcde:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e1:
+            (num, _) = e1.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different string value
@@ -238,7 +240,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:FGHIJ:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e2:
+            (num, _) = e2.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different dn and string value
@@ -246,7 +249,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:FGHIJ:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e3:
+            (num, _) = e3.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different dn value
@@ -254,7 +258,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:ABCDE:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e4:
+            (num, _) = e4.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with GUID instead of DN
@@ -263,7 +268,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:ABCDE:<GUID=%s>" % str(uuid.uuid4()))
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e5:
+            (num, _) = e5.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with SID instead of DN
@@ -272,7 +278,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:ABCDE:<SID=%s>" % self.ldb.get_domain_sid())
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e6:
+            (num, _) = e6.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with random string instead of DN
@@ -281,7 +288,8 @@ name: """ + object_name + """
                                self.dn_string_attribute, ": S:5:ABCDE:randomSTRING")
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e7:
+            (num, _) = e7.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_dn_binary(self):
@@ -315,7 +323,8 @@ name: """ + object_name + """
                                self.dn_binary_attribute, ": B:5:67890:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e8:
+            (num, _) = e8.args
             self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
 
         # add object with the same dn but with different binary value
@@ -323,7 +332,8 @@ name: """ + object_name + """
                                self.dn_binary_attribute, ": B:4:5678:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e9:
+            (num, _) = e9.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different binary and dn value
@@ -331,7 +341,8 @@ name: """ + object_name + """
                                self.dn_binary_attribute, ": B:4:5678:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e10:
+            (num, _) = e10.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different dn value
@@ -339,7 +350,8 @@ name: """ + object_name + """
                                self.dn_binary_attribute, ": B:4:1234:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e11:
+            (num, _) = e11.args
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with GUID instead of DN
@@ -348,7 +360,8 @@ name: """ + object_name + """
                                self.dn_binary_attribute, ": B:4:1234:<GUID=%s>" % str(uuid.uuid4()))
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e12:
+            (num, _) = e12.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with SID instead of DN
@@ -357,7 +370,8 @@ name: """ + object_name + """
                                self.dn_binary_attribute, ": B:4:1234:<SID=%s>" % self.ldb.get_domain_sid())
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e13:
+            (num, _) = e13.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with random string instead of DN
@@ -366,7 +380,8 @@ name: """ + object_name + """
                                self.dn_binary_attribute, ": B:4:1234:randomSTRING")
         try:
             self.ldb.add_ldif(ldif)
-        except LdbError, (num, _):
+        except LdbError as e14:
+            (num, _) = e14.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
 TestProgram(module=__name__, opts=subunitopts)
