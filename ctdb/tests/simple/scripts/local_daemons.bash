@@ -134,6 +134,13 @@ setup_public_addresses ()
 
 setup_ctdb ()
 {
+	local no_public_addresses=false
+	local no_event_scripts=false
+	case "$1" in
+	--no-public-addresses) no_public_addresses=true ;;
+	--no-event-scripts)    no_event_scripts=true    ;;
+	esac
+
 	setup_nodes >"$CTDB_NODES" || return 1
 
 	# If there are (strictly) greater than 2 nodes then we'll
@@ -159,7 +166,7 @@ setup_ctdb ()
 
 		local public_addresses="${node_dir}/public_addresses"
 
-		if  [ $pnn_no_ips -eq $pnn ] ; then
+		if  $no_public_addresses || [ $pnn_no_ips -eq $pnn ] ; then
 			echo "Node ${pnn} will have no public IPs."
 			: >"$public_addresses"
 		else
@@ -172,6 +179,10 @@ setup_ctdb ()
 
 		local db_dir="${node_dir}/db"
 		mkdir -p "${db_dir}/persistent"
+
+		if $no_event_scripts ; then
+			rm -vf "${CTDB_BASE}/events.d/"*
+		fi
 
 		cat >"$conf" <<EOF
 CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
