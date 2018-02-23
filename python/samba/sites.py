@@ -107,7 +107,8 @@ def delete_site(samdb, configDn, siteName):
                            expression="objectClass=site")
         if len(ret) != 1:
             raise SiteNotFoundException('Site %s does not exist' % siteName)
-    except LdbError as (enum, estr):
+    except LdbError as e:
+        (enum, estr) = e.args
         if enum == ldb.ERR_NO_SUCH_OBJECT:
             raise SiteNotFoundException('Site %s does not exist' % siteName)
 

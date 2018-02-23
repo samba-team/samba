@@ -92,7 +92,8 @@ class dc_join(object):
 
         try:
             ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL, attrs=["dn"])
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e4:
+            (enum, estr) = e4.args
             raise DCJoinException(estr)
 
 
@@ -404,7 +405,8 @@ class dc_join(object):
         '''check if a DN exists'''
         try:
             res = ctx.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[])
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e5:
+            (enum, estr) = e5.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 return False
             raise
@@ -705,7 +707,8 @@ class dc_join(object):
                                       ctx.acct_pass,
                                       force_change_at_next_login=False,
                                       username=ctx.samname)
-            except ldb.LdbError, (num, _):
+            except ldb.LdbError as e2:
+                (num, _) = e2.args
                 if num != ldb.ERR_UNWILLING_TO_PERFORM:
                     pass
                 ctx.net.set_password(account_name=ctx.samname,
@@ -754,7 +757,8 @@ class dc_join(object):
                                                 samba.dsdb.UF_ACCOUNTDISABLE)
                 try:
                     ctx.samdb.add(msg)
-                except ldb.LdbError, (num, _):
+                except ldb.LdbError as e:
+                    (num, _) = e.args
                     if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
                         raise
 
@@ -770,7 +774,8 @@ class dc_join(object):
                                       ctx.dnspass,
                                       force_change_at_next_login=False,
                                       username=ctx.samname)
-            except ldb.LdbError, (num, _):
+            except ldb.LdbError as e3:
+                (num, _) = e3.args
                 if num != ldb.ERR_UNWILLING_TO_PERFORM:
                     raise
                 ctx.net.set_password(account_name="dns-%s" % ctx.myname,
@@ -965,7 +970,8 @@ class dc_join(object):
                     repl.replicate(ctx.rid_manager_dn, source_dsa_invocation_id,
                                    destination_dsa_guid,
                                    exop=drsuapi.DRSUAPI_EXOP_FSMO_RID_ALLOC)
-                except samba.DsExtendedError, (enum, estr):
+                except samba.DsExtendedError as e1:
+                    (enum, estr) = e1.args
                     if enum == drsuapi.DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER:
                         print "WARNING: Unable to replicate own RID Set, as server %s (the server we joined) is not the RID Master." % ctx.server
                         print "NOTE: This is normal and expected, Samba will be able to create users after it contacts the RID Master at first startup."

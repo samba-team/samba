@@ -109,7 +109,8 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         samdb = SamDB(url=dburl,
                       session_info=system_session(),
                       credentials=creds, lp=lp)
-    except ldb.LdbError, (enum, estr):
+    except ldb.LdbError as e:
+        (enum, estr) = e.args
         raise LdifError("Unable to open sam database (%s) : %s" %
                         (dburl, estr))
 
@@ -396,7 +397,8 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         # Write rootdse output
         write_search_result(samdb, f, res)
 
-    except ldb.LdbError, (enum, estr):
+    except ldb.LdbError as e1:
+        (enum, estr) = e1.args
         raise LdifError("Error processing (%s) : %s" % (sstr, estr))
 
     f.close()
