@@ -199,7 +199,7 @@ class TestSource(TestCase):
         for fname, line_no, line in self._iter_source_files_lines():
             if line_no >= 1:
                 continue
-            executable = (os.stat(fname).st_mode & 0111)
+            executable = (os.stat(fname).st_mode & 0o111)
             has_shebang = line.startswith("#!")
             if has_shebang and not executable:
                 self._push_file(files_with_shebang, fname, line_no)
