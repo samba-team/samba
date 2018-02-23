@@ -223,7 +223,7 @@ class LDAPBackend(ProvisionBackend):
                 self.slapd_path)
 
         if not os.path.isdir(self.ldapdir):
-            os.makedirs(self.ldapdir, 0700)
+            os.makedirs(self.ldapdir, 0o700)
 
         # Put the LDIF of the schema into a database so we can search on
         # it to generate schema-dependent configurations in Fedora DS and
@@ -259,7 +259,7 @@ class LDAPBackend(ProvisionBackend):
         finally:
             f.close()
 
-        os.chmod(ldap_backend_script, 0755)
+        os.chmod(ldap_backend_script, 0o755)
 
         # Now start the slapd, so we can provision onto it.  We keep the
         # subprocess context around, to kill this off at the successful
@@ -346,7 +346,7 @@ class OpenLDAPBackend(LDAPBackend):
         :param dbdir: Database directory.
         """
         if not os.path.exists(dbdir):
-            os.makedirs(dbdir, 0700)
+            os.makedirs(dbdir, 0o700)
 
     def provision(self):
         from samba.provision import ProvisioningError, setup_path
@@ -578,7 +578,7 @@ class OpenLDAPBackend(LDAPBackend):
 
         # Wipe the old sam.ldb databases away
         shutil.rmtree(self.olcdir, True)
-        os.makedirs(self.olcdir, 0770)
+        os.makedirs(self.olcdir, 0o770)
 
         # If we were just looking for crashes up to this point, it's a
         # good time to exit before we realise we don't have OpenLDAP on

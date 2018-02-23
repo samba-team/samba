@@ -1213,7 +1213,7 @@ def getpolicypath(sysvolpath, dnsdomain, guid):
 
 def create_gpo_struct(policy_path):
     if not os.path.exists(policy_path):
-        os.makedirs(policy_path, 0775)
+        os.makedirs(policy_path, 0o775)
     f = open(os.path.join(policy_path, "GPT.INI"), 'w')
     try:
         f.write("[General]\r\nVersion=0")
@@ -1221,10 +1221,10 @@ def create_gpo_struct(policy_path):
         f.close()
     p = os.path.join(policy_path, "MACHINE")
     if not os.path.exists(p):
-        os.makedirs(p, 0775)
+        os.makedirs(p, 0o775)
     p = os.path.join(policy_path, "USER")
     if not os.path.exists(p):
-        os.makedirs(p, 0775)
+        os.makedirs(p, 0o775)
 
 
 def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
@@ -1613,7 +1613,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
         file = tempfile.NamedTemporaryFile(dir=os.path.abspath(sysvol))
         try:
             try:
-                smbd.set_simple_acl(file.name, 0755, gid)
+                smbd.set_simple_acl(file.name, 0o755, gid)
             except OSError:
                 if not smbd.have_posix_acls():
                     # This clue is only strictly correct for RPM and
@@ -2160,7 +2160,7 @@ def provision(logger, session_info, smbconf=None,
         setup_encrypted_secrets_key(paths.encrypted_secrets_key_path)
 
     if paths.sysvol and not os.path.exists(paths.sysvol):
-        os.makedirs(paths.sysvol, 0775)
+        os.makedirs(paths.sysvol, 0o775)
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
 
@@ -2240,7 +2240,7 @@ def provision(logger, session_info, smbconf=None,
                 raise MissingShareError("sysvol", paths.smbconf)
 
             if not os.path.isdir(paths.netlogon):
-                os.makedirs(paths.netlogon, 0755)
+                os.makedirs(paths.netlogon, 0o755)
 
         if adminpass is None:
             adminpass = samba.generate_random_password(12, 32)
@@ -2312,7 +2312,7 @@ def provision(logger, session_info, smbconf=None,
         # chown the dns.keytab in the bind-dns directory
         if paths.bind_gid is not None:
             try:
-                os.chmod(paths.binddns_dir, 0770)
+                os.chmod(paths.binddns_dir, 0o770)
                 os.chown(paths.binddns_dir, -1, paths.bind_gid)
             except OSError:
                 if not os.environ.has_key('SAMBA_SELFTEST'):
@@ -2320,7 +2320,7 @@ def provision(logger, session_info, smbconf=None,
                                 paths.binddns_dir, paths.bind_gid)
 
             try:
-                os.chmod(bind_dns_keytab_path, 0640)
+                os.chmod(bind_dns_keytab_path, 0o640)
                 os.chown(bind_dns_keytab_path, -1, paths.bind_gid)
             except OSError:
                 if not os.environ.has_key('SAMBA_SELFTEST'):
