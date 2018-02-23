@@ -62,11 +62,13 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         if guid is not None:
             try:
                 self.ldb_dc2.delete('<GUID=%s>' % guid, ["tree_delete:1"])
-            except LdbError, (num, _):
+            except LdbError as e:
+                (num, _) = e.args
                 self.assertEquals(num, ERR_NO_SUCH_OBJECT)
             try:
                 self.ldb_dc1.delete('<GUID=%s>' % guid, ["tree_delete:1"])
-            except LdbError, (num, _):
+            except LdbError as e1:
+                (num, _) = e1.args
                 self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def test_ReplEnabled(self):

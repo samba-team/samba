@@ -199,14 +199,16 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         try:
             (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
-        except WERRORError as (enum, estr):
+        except WERRORError as e:
+            (enum, estr) = e.args
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
         # send the same request again and we should get the same response
         try:
             (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
-        except WERRORError as (enum, estr):
+        except WERRORError as e1:
+            (enum, estr) = e1.args
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
         # Retry with Administrator credentials, ignores password replication groups
@@ -245,7 +247,8 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
             (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 8, req8)
 
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
-        except RuntimeError as (enum, estr):
+        except RuntimeError as e2:
+            (enum, estr) = e2.args
             pass
 
     def test_msDSRevealedUsers_admin(self):
@@ -506,7 +509,8 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         try:
             (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
-        except WERRORError as (enum, estr):
+        except WERRORError as e3:
+            (enum, estr) = e3.args
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
         req10 = self._getnc_req10(dest_dsa=str(self.rodc_ctx.ntds_guid),
@@ -520,7 +524,8 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         try:
             (level, ctr) = other_rodc_drs.DsGetNCChanges(other_rodc_drs_handle, 10, req10)
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
-        except WERRORError as (enum, estr):
+        except WERRORError as e4:
+            (enum, estr) = e4.args
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
     def test_msDSRevealedUsers_local_deny_allow(self):
@@ -589,7 +594,8 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         try:
             (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
-        except WERRORError as (enum, estr):
+        except WERRORError as e5:
+            (enum, estr) = e5.args
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
         m = ldb.Message()
@@ -605,7 +611,8 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         try:
             (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
-        except WERRORError as (enum, estr):
+        except WERRORError as e6:
+            (enum, estr) = e6.args
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
     def _assert_in_revealed_users(self, user_dn, attrlist):
