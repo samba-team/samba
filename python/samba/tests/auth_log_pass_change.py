@@ -290,7 +290,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                 "userPassword: " + new_password + "\n"
             )
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e:
+            (num, msg) = e.args
             pass
 
         messages = self.waitForMessages(isLastExpectedMessage)
@@ -320,7 +321,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                 "userPassword: " + new_password + "\n"
             )
             self.fail()
-        except LdbError, (num, msg):
+        except LdbError as e1:
+            (num, msg) = e1.args
             pass
 
         messages = self.waitForMessages(isLastExpectedMessage)

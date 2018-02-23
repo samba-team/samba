@@ -56,7 +56,8 @@ class SamDBApiTestCase(TestCaseInTempDir):
         try:
             SamDB(url="tdb://" + existing_name)
             self.fail("Exception not thrown ")
-        except LdbError as (err, _):
+        except LdbError as e:
+            (err, _) = e.args
             self.assertEquals(err, ERR_OPERATIONS_ERROR)
 
         existing = open(existing_name, "r")
@@ -136,7 +137,8 @@ class SamDBApiTestCase(TestCaseInTempDir):
         try:
             SamDB(url="tdb://" + self.tempdir + "/test.db")
             self.fail("Exception not thrown ")
-        except LdbError as (err, _):
+        except LdbError as e1:
+            (err, _) = e1.args
             self.assertEquals(err, ERR_OPERATIONS_ERROR)
 
         try:
