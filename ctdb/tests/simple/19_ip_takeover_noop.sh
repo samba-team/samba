@@ -58,7 +58,8 @@ echo "----------------------------------------"
 daemons_stop
 
 echo "Starting CTDB with an empty public addresses configuration..."
-CTDB_PUBLIC_ADDRESSES="/dev/null" daemons_start
+setup_ctdb --no-public-addresses
+daemons_start
 
 wait_until_ready
 

@@ -29,9 +29,8 @@ ctdb_restart_when_done
 daemons_stop
 
 echo "Starting CTDB with an empty eventscript directory..."
-empty_dir=$(mktemp -d --tmpdir="$TEST_VAR_DIR")
-ctdb_test_exit_hook_add "rmdir $empty_dir"
-CTDB_EVENT_SCRIPT_DIR="$empty_dir" daemons_start
+setup_ctdb --no-event-scripts
+daemons_start
 
 wait_until_ready
 
