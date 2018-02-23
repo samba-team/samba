@@ -255,7 +255,8 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
         msg = samdb.search(
             base='<SID=%s>' % str(groupmap.sid), scope=ldb.SCOPE_BASE)
         found = True
-    except ldb.LdbError, (ecode, emsg):
+    except ldb.LdbError as e1:
+        (ecode, emsg) = e1.args
         if ecode == ldb.ERR_NO_SUCH_OBJECT:
             found = False
         else:
@@ -312,7 +313,8 @@ def add_users_to_group(samdb, group, members, logger):
 
         try:
             samdb.modify(m)
-        except ldb.LdbError, (ecode, emsg):
+        except ldb.LdbError as e:
+            (ecode, emsg) = e.args
             if ecode == ldb.ERR_ENTRY_ALREADY_EXISTS:
                 logger.debug("skipped re-adding member '%s' to group '%s': %s", member_sid, group.sid, emsg)
             elif ecode == ldb.ERR_NO_SUCH_OBJECT:
