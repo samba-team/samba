@@ -44,6 +44,10 @@ ctdb_test_exit ()
     if $ctdb_test_restart_scheduled || ! cluster_is_healthy ; then
 	echo "Restarting CTDB (scheduled)..."
 	ctdb_stop_all || true  # Might be restarting some daemons were shutdown
+
+	echo "Reconfiguring cluster..."
+	setup_ctdb
+
 	ctdb_start_all
     else
 	# This could be made unconditional but then we might get
