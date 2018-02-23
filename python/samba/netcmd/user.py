@@ -1037,7 +1037,8 @@ class GetPasswordCommand(Command):
                     nthash = tmp.get_nt_hash()
                     if nthash == unicodePwd:
                         calculated["Primary:CLEARTEXT"] = cv
-                except gpgme.GpgmeError as (major, minor, msg):
+                except gpgme.GpgmeError as e1:
+                    (major, minor, msg) = e1.args
                     if major == gpgme.ERR_BAD_SECKEY:
                         msg = "ERR_BAD_SECKEY: " + msg
                     else:
@@ -1970,7 +1971,8 @@ samba-tool user syncpasswords --terminate \\
 
             try:
                 self.lockfd = os.open(self.lockfile, flags, 0600)
-            except IOError as (err, msg):
+            except IOError as e4:
+                (err, msg) = e4.args
                 if err == errno.ENOENT:
                     if terminate:
                         return False
@@ -1982,7 +1984,8 @@ samba-tool user syncpasswords --terminate \\
             try:
                 fcntl.lockf(self.lockfd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 got_exclusive = True
-            except IOError as (err, msg):
+            except IOError as e5:
+                (err, msg) = e5.args
                 if err != errno.EACCES and err != errno.EAGAIN:
                     log_msg("check_current_pid_conflict: failed to get exclusive lock[%s] - %s (%d)" %
                             (self.lockfile, msg, err))
@@ -2001,7 +2004,8 @@ samba-tool user syncpasswords --terminate \\
             if got_exclusive and terminate:
                 try:
                     os.ftruncate(self.lockfd, 0)
-                except IOError as (err, msg):
+                except IOError as e2:
+                    (err, msg) = e2.args
                     log_msg("check_current_pid_conflict: failed to truncate [%s] - %s (%d)" %
                             (self.lockfile, msg, err))
                     raise
@@ -2011,7 +2015,8 @@ samba-tool user syncpasswords --terminate \\
 
             try:
                 fcntl.lockf(self.lockfd, fcntl.LOCK_SH)
-            except IOError as (err, msg):
+            except IOError as e6:
+                (err, msg) = e6.args
                 log_msg("check_current_pid_conflict: failed to get shared lock[%s] - %s (%d)" %
                         (self.lockfile, msg, err))
 
@@ -2026,7 +2031,8 @@ samba-tool user syncpasswords --terminate \\
                     try:
                         fcntl.lockf(self.lockfd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                         got_exclusive = True
-                    except IOError as (err, msg):
+                    except IOError as e:
+                        (err, msg) = e.args
                         if err != errno.EACCES and err != errno.EAGAIN:
                             log_msg("update_pid(%r): failed to get exclusive lock[%s] - %s (%d)" %
                                     (pid, self.lockfile, msg, err))
@@ -2048,7 +2054,8 @@ samba-tool user syncpasswords --terminate \\
                     os.ftruncate(self.lockfd, 0)
                     if buf is not None:
                         os.write(self.lockfd, buf)
-                except IOError as (err, msg):
+                except IOError as e3:
+                    (err, msg) = e3.args
                     log_msg("check_current_pid_conflict: failed to write pid to [%s] - %s (%d)" %
                             (self.lockfile, msg, err))
                     raise
@@ -2279,7 +2286,8 @@ samba-tool user syncpasswords --terminate \\
 
             try:
                 sync_loop(wait)
-            except ldb.LdbError as (enum, estr):
+            except ldb.LdbError as e7:
+                (enum, estr) = e7.args
                 self.samdb = None
                 log_msg("ldb.LdbError(%d) => (%s)\n" % (enum, estr))
 
