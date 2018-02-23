@@ -28,15 +28,6 @@ export ONNODE_SSH="${TEST_SUBDIR}/scripts/ssh_local_daemons.sh"
 
 #######################################
 
-config_from_environment ()
-{
-	# Override from the environment.  This would be easier if env was
-	# guaranteed to quote its output so it could be reused.
-	env |
-	grep '^CTDB_' |
-	sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@'
-}
-
 # If the given IP is hosted then print 2 items: maskbits and iface
 have_ip ()
 {
@@ -196,10 +187,6 @@ CTDB_DBDIR_STATE="${db_dir}/state"
 CTDB_PUBLIC_ADDRESSES="${public_addresses}"
 CTDB_NOSETSCHED=yes
 EOF
-
-		# Append any configuration variables set in environment to
-		# configuration file so they affect CTDB after each restart.
-		config_from_environment >>"$conf"
 	done
 }
 
@@ -211,28 +198,12 @@ start_ctdb_1 ()
 	local conf=$(node_conf "$pnn")
 	local socket=$(node_socket "$pnn")
 
-	# If there is any CTDB configuration in the environment then
-	# append it to the regular configuration in a temporary
-	# configuration file and use it just this once.
-	local tmp_conf=""
-	local env_conf=$(config_from_environment)
-	if [ -n "$env_conf" ] ; then
-		tmp_conf=$(mktemp --tmpdir="$SIMPLE_TESTS_VAR_DIR")
-		cat "$conf" >"$tmp_conf"
-		echo "$env_conf" >>"$tmp_conf"
-		conf="$tmp_conf"
-	fi
-
 	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
 	     CTDB_BASE="$node_dir" \
 	     CTDBD_CONF="$conf" \
 	     CTDB_PIDFILE="$pidfile" \
 	     CTDB_SOCKET="$socket" \
 	     ctdbd_wrapper start
-
-	if [ -n "$tmp_conf" ] ; then
-		rm -f "$tmp_conf"
-	fi
 }
 
 daemons_start ()
