@@ -89,7 +89,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     def tearDown(self):
         try:
             self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
-        except ldb.LdbError as (enum, string):
+        except ldb.LdbError as e:
+            (enum, string) = e.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
         super(DrsReplicaSyncTestCase, self).tearDown()
@@ -233,7 +234,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         try:
             (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
             self.fail("Expected DsGetNCChanges to fail with WERR_DS_CANT_FIND_EXPECTED_NC")
-        except WERRORError as (enum, estr):
+        except WERRORError as e1:
+            (enum, estr) = e1.args
             self.assertEquals(enum, werror.WERR_DS_CANT_FIND_EXPECTED_NC)
 
     def test_link_utdv_hwm(self):
@@ -610,7 +612,8 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         super(DrsReplicaPrefixMapTestCase, self).tearDown()
         try:
             self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
-        except ldb.LdbError as (enum, string):
+        except ldb.LdbError as e2:
+            (enum, string) = e2.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
 
@@ -661,7 +664,8 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         try:
             (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
             self.fail("Invalid attid (99999) should have triggered an error")
-        except RuntimeError as (ecode, emsg):
+        except RuntimeError as e3:
+            (ecode, emsg) = e3.args
             self.assertEqual(ecode, 0x000020E2, "Error code should have been "
                              "WERR_DS_DRA_SCHEMA_MISMATCH")
 
@@ -950,7 +954,8 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
         # tidyup groups and users
         try:
             self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
-        except ldb.LdbError as (enum, string):
+        except ldb.LdbError as e4:
+            (enum, string) = e4.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
 

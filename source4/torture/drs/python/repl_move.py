@@ -89,7 +89,8 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
     def tearDown(self):
         try:
             self.ldb_dc1.delete(self.ou1_dn, ["tree_delete:1"])
-        except ldb.LdbError as (enum, string):
+        except ldb.LdbError as e:
+            (enum, string) = e.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
 
