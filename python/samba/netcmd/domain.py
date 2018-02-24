@@ -1824,6 +1824,15 @@ class DomainTrustCommand(Command):
 
         return (policy, info)
 
+    def get_netlogon_dc_unc(self, conn, server, domain):
+        try:
+            info = conn.netr_DsRGetDCNameEx2(server,
+                                             None, 0, None, None, None,
+                                             netlogon.DS_RETURN_DNS_NAME)
+            return info.dc_unc
+        except RuntimeError:
+            return conn.netr_GetDcName(server, domain)
+
     def get_netlogon_dc_info(self, conn, server):
         info = conn.netr_DsRGetDCNameEx2(server,
                                          None, 0, None, None, None,
@@ -2458,7 +2467,8 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 raise self.RemoteRuntimeError(self, error, "failed to connect netlogon server")
 
             try:
-                remote_netlogon_info = self.get_netlogon_dc_info(remote_netlogon, remote_server)
+                remote_netlogon_dc_unc = self.get_netlogon_dc_unc(remote_netlogon,
+                                                                  remote_server, domain)
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "failed to get netlogon dc info")
 
@@ -2608,9 +2618,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
                         # this triggers netr_GetForestTrustInformation to our domain.
                         # and lsaRSetForestTrustInformation() remotely, but new top level
                         # names are disabled by default.
-                        remote_forest_info = remote_netlogon.netr_DsRGetForestTrustInformation(remote_netlogon_info.dc_unc,
-                                                                      local_lsa_info.dns_domain.string,
-                                                                      netlogon.DS_GFTI_UPDATE_TDO)
+                        remote_forest_info = remote_netlogon.netr_DsRGetForestTrustInformation(remote_netlogon_dc_unc,
+                                                                                               local_lsa_info.dns_domain.string,
+                                                                                               netlogon.DS_GFTI_UPDATE_TDO)
                     except RuntimeError as error:
                         raise self.RemoteRuntimeError(self, error, "netr_DsRGetForestTrustInformation() failed")
 
@@ -2661,10 +2671,10 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 if remote_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_OUTBOUND:
                     self.outf.write("Validating incoming trust...\n")
                     try:
-                        remote_trust_verify = remote_netlogon.netr_LogonControl2Ex(remote_netlogon_info.dc_unc,
-                                                                      netlogon.NETLOGON_CONTROL_TC_VERIFY,
-                                                                      2,
-                                                                      local_lsa_info.dns_domain.string)
+                        remote_trust_verify = remote_netlogon.netr_LogonControl2Ex(remote_netlogon_dc_unc,
+                                                                                   netlogon.NETLOGON_CONTROL_TC_VERIFY,
+                                                                                   2,
+                                                                                   local_lsa_info.dns_domain.string)
                     except RuntimeError as error:
                         raise self.RemoteRuntimeError(self, error, "NETLOGON_CONTROL_TC_VERIFY failed")
 
