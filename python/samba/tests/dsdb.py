@@ -23,8 +23,9 @@ from samba.auth import system_session
 from samba.tests import TestCase
 from samba.tests import delete_force
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.dcerpc import drsblobs, security
+from samba.dcerpc import drsblobs, security, misc
 from samba import dsdb
+from samba import werror
 import ldb
 import samba
 import uuid
@@ -268,6 +269,150 @@ class DsdbTests(TestCase):
                 self.fail("Got %d - %s should have got "
                           "LDB_ERR_CONSTRAINT_VIOLATION"
                           % (code, msg))
+
+    def test_linked_vs_non_linked_reference(self):
+        basedn   = self.samdb.get_default_basedn()
+        kept_dn_str   = "cn=reference_kept,cn=Users,%s" % (basedn)
+        removed_dn_str   = "cn=reference_removed,cn=Users,%s" % (basedn)
+        dom_sid = self.samdb.get_domain_sid()
+        none_sid_str = str(dom_sid) + "-4294967294"
+        none_guid_str = "afafafaf-fafa-afaf-fafa-afafafafafaf"
+
+        self.addCleanup(delete_force, self.samdb, kept_dn_str)
+        self.addCleanup(delete_force, self.samdb, removed_dn_str)
+
+        self.samdb.add({
+            "dn": kept_dn_str,
+            "objectClass": "user"})
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=kept_dn_str,
+                                attrs=["objectGUID", "objectSID"])
+        self.assertEqual(len(res), 1)
+        kept_guid = ndr_unpack(misc.GUID, res[0]["objectGUID"][0])
+        kept_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
+        kept_dn = res[0].dn
+
+        self.samdb.add({
+            "dn": removed_dn_str,
+            "objectClass": "user"})
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=removed_dn_str,
+                                attrs=["objectGUID", "objectSID"])
+        self.assertEqual(len(res), 1)
+        removed_guid = ndr_unpack(misc.GUID, res[0]["objectGUID"][0])
+        removed_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
+        self.samdb.delete(removed_dn_str)
+
+        #
+        # First try the linked attribute 'manager'
+        # by GUID and SID
+        #
+
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["manager"] = ldb.MessageElement("<SID=%s>" % removed_sid,
+                                           ldb.FLAG_MOD_ADD,
+                                           "manager")
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_CONSTRAINT_VIOLATION, str(e))
+            werr = "%08X" % werror.WERR_DS_NAME_REFERENCE_INVALID
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["manager"] = ldb.MessageElement("<GUID=%s>" % removed_guid,
+                                           ldb.FLAG_MOD_ADD,
+                                           "manager")
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_CONSTRAINT_VIOLATION, str(e))
+            werr = "%08X" % werror.WERR_DS_NAME_REFERENCE_INVALID
+            self.assertTrue(werr in msg, msg)
+
+        #
+        # Try the non-linked attribute 'assistant'
+        # by GUID and SID, which should work.
+        #
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["assistant"] = ldb.MessageElement("<SID=%s>" % removed_sid,
+                                              ldb.FLAG_MOD_ADD,
+                                              "assistant")
+        self.samdb.modify(msg)
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["assistant"] = ldb.MessageElement("<SID=%s>" % removed_sid,
+                                              ldb.FLAG_MOD_DELETE,
+                                              "assistant")
+        self.samdb.modify(msg)
+
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["assistant"] = ldb.MessageElement("<GUID=%s>" % removed_guid,
+                                              ldb.FLAG_MOD_ADD,
+                                              "assistant")
+        self.samdb.modify(msg)
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["assistant"] = ldb.MessageElement("<GUID=%s>" % removed_guid,
+                                              ldb.FLAG_MOD_DELETE,
+                                              "assistant")
+        self.samdb.modify(msg)
+
+        #
+        # Finally ry the non-linked attribute 'assistant'
+        # but with non existing GUID, SID, DN
+        #
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["assistant"] = ldb.MessageElement("CN=NoneNone,%s" % (basedn),
+                                              ldb.FLAG_MOD_ADD,
+                                              "assistant")
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_CONSTRAINT_VIOLATION, str(e))
+            werr = "%08X" % werror.WERR_DS_NAME_REFERENCE_INVALID
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["assistant"] = ldb.MessageElement("<SID=%s>" % none_sid_str,
+                                              ldb.FLAG_MOD_ADD,
+                                              "assistant")
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_CONSTRAINT_VIOLATION, str(e))
+            werr = "%08X" % werror.WERR_DS_NAME_REFERENCE_INVALID
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = kept_dn
+        msg["assistant"] = ldb.MessageElement("<GUID=%s>" % none_guid_str,
+                                              ldb.FLAG_MOD_ADD,
+                                              "assistant")
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_CONSTRAINT_VIOLATION, str(e))
+            werr = "%08X" % werror.WERR_DS_NAME_REFERENCE_INVALID
+            self.assertTrue(werr in msg, msg)
+
+        self.samdb.delete(kept_dn)
 
     def test_normalize_dn_in_domain_full(self):
         domain_dn = self.samdb.domain_dn()
