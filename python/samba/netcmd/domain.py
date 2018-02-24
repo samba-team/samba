@@ -1662,6 +1662,7 @@ class DomainTrustCommand(Command):
         self.remote_server = None
         self.remote_binding_string = None
         self.remote_creds = None
+        self.protocol_options = ['smb2', '']
 
     def _uint32(self, v):
         return ctypes.c_uint32(v).value
@@ -1726,16 +1727,39 @@ class DomainTrustCommand(Command):
         self.local_lp = lp
 
         self.local_server = local_server
-        self.local_binding_string = "%s:%s[%s]" % (local_transport, local_server, local_binding_options)
+        self.local_bindings = ["%s:%s[%s%s]" % (local_transport, local_server,
+                                                protocol, local_binding_options)
+                               for protocol in self.protocol_options]
         self.local_ldap_url = local_ldap_url
         self.local_creds = local_creds
         return self.local_server
 
+    def _get_connection(self, connect_func, lp, creds, bindings):
+        """ _get_connection: try to generate a valid connection
+                             using multiple bindings to allow
+                             protocol fallbacks
+        """
+        bnd = None
+        last_exc = None
+        for binding in self.local_bindings:
+            try:
+                bnd = connect_func(binding, lp, creds)
+                if bnd is not None:
+                    break
+            except NTSTATUSError as error:
+                last_exc = error
+                continue
+        if bnd is None:
+            raise last_exc
+        return bnd
+
     def new_local_lsa_connection(self):
-        return lsa.lsarpc(self.local_binding_string, self.local_lp, self.local_creds)
+        return self._get_connection(lsa.lsarpc, self.local_lp,
+                                    self.local_creds, self.local_bindings)
 
     def new_local_netlogon_connection(self):
-        return netlogon.netlogon(self.local_binding_string, self.local_lp, self.local_creds)
+        return self._get_connection(netlogon.netlogon, self.local_lp,
+                                    self.local_creds, self.local_bindings)
 
     def new_local_ldap_connection(self):
         return SamDB(url=self.local_ldap_url,
@@ -1803,15 +1827,19 @@ class DomainTrustCommand(Command):
                         server_type_string))
 
         self.remote_server = remote_info.pdc_dns_name
-        self.remote_binding_string="ncacn_np:%s[%s]" % (self.remote_server, remote_binding_options)
+        self.remote_bindings = ["ncacn_np:%s[%s%s]" % (self.remote_server, protocol,
+                                                       remote_binding_options)
+                                for protocol in self.protocol_options]
         self.remote_creds = remote_creds
         return self.remote_server
 
     def new_remote_lsa_connection(self):
-        return lsa.lsarpc(self.remote_binding_string, self.local_lp, self.remote_creds)
+        return self._get_connection(lsa.lsarpc, self.local_lp,
+                                    self.remote_creds, self.remote_bindings)
 
     def new_remote_netlogon_connection(self):
-        return netlogon.netlogon(self.remote_binding_string, self.local_lp, self.remote_creds)
+        return self._get_connection(netlogon.netlogon, self.local_lp,
+                                    self.remote_creds, self.remote_bindings)
 
     def get_lsa_info(self, conn, policy_access):
         objectAttr = lsa.ObjectAttribute()
