@@ -1,0 +1,5 @@
+^samba.tests.dsdb.*.samba.tests.dsdb.DsdbTests.test_foreignSecurityPrincipal_member
+^samba.tests.dsdb.*.samba.tests.dsdb.DsdbTests.test_foreignSecurityPrincipal_MembersForAzRole
+^samba.tests.dsdb.*.samba.tests.dsdb.DsdbTests.test_foreignSecurityPrincipal_NeverRevealGroup
+^samba.tests.dsdb.*.samba.tests.dsdb.DsdbTests.test_foreignSecurityPrincipal_RevealOnDemandGroup
+^samba.tests.dsdb.*.samba.tests.dsdb.DsdbTests.test_foreignSecurityPrincipal_NonMembers

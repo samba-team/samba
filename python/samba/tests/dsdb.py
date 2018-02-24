@@ -274,6 +274,232 @@ class DsdbTests(TestCase):
         # cleanup
         self.samdb.delete(dn)
 
+    def _test_foreignSecurityPrincipal(self, obj_class, fpo_attr):
+
+        dom_sid = self.samdb.get_domain_sid()
+        lsid_str = str(dom_sid) + "-4294967294"
+        bsid_str = "S-1-5-32-4294967294"
+        fsid_str = "S-1-5-4294967294"
+        basedn   = self.samdb.get_default_basedn()
+        cn       = "dsdb_test_fpo"
+        dn_str   = "cn=%s,cn=Users,%s" % (cn, basedn)
+        dn = ldb.Dn(self.samdb, dn_str)
+
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % lsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 0)
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % bsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 0)
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % fsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 0)
+
+        self.addCleanup(delete_force, self.samdb, dn_str)
+
+        self.samdb.add({
+            "dn": dn_str,
+            "objectClass": obj_class})
+
+        msg = ldb.Message()
+        msg.dn = dn
+        msg[fpo_attr] = ldb.MessageElement("<SID=%s>" % lsid_str,
+                                           ldb.FLAG_MOD_ADD,
+                                           fpo_attr)
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get LDB_ERR_UNWILLING_TO_PERFORM")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_UNWILLING_TO_PERFORM, str(e))
+            werr = "%08X" % werror.WERR_DS_INVALID_GROUP_TYPE
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = dn
+        msg[fpo_attr] = ldb.MessageElement("<SID=%s>" % bsid_str,
+                                           ldb.FLAG_MOD_ADD,
+                                           fpo_attr)
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get LDB_ERR_NO_SUCH_OBJECT")
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, ldb.ERR_NO_SUCH_OBJECT, str(e))
+            werr = "%08X" % werror.WERR_NO_SUCH_MEMBER
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = dn
+        msg[fpo_attr] = ldb.MessageElement("<SID=%s>" % fsid_str,
+                                           ldb.FLAG_MOD_ADD,
+                                           fpo_attr)
+        try:
+            self.samdb.modify(msg)
+        except ldb.LdbError as e:
+            self.fail("Should have not raised an exception")
+
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % fsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 1)
+        self.samdb.delete(res[0].dn)
+        self.samdb.delete(dn)
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % fsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 0)
+
+    def test_foreignSecurityPrincipal_member(self):
+        return self._test_foreignSecurityPrincipal(
+                "group", "member")
+
+    def test_foreignSecurityPrincipal_MembersForAzRole(self):
+        return self._test_foreignSecurityPrincipal(
+                "msDS-AzRole", "msDS-MembersForAzRole")
+
+    def test_foreignSecurityPrincipal_NeverRevealGroup(self):
+        return self._test_foreignSecurityPrincipal(
+                "computer", "msDS-NeverRevealGroup")
+
+    def test_foreignSecurityPrincipal_RevealOnDemandGroup(self):
+        return self._test_foreignSecurityPrincipal(
+                "computer", "msDS-RevealOnDemandGroup")
+
+    def _test_fail_foreignSecurityPrincipal(self, obj_class, fpo_attr,
+                                            msg_exp, lerr_exp, werr_exp,
+                                            allow_reference=True):
+
+        dom_sid = self.samdb.get_domain_sid()
+        lsid_str = str(dom_sid) + "-4294967294"
+        bsid_str = "S-1-5-32-4294967294"
+        fsid_str = "S-1-5-4294967294"
+        basedn   = self.samdb.get_default_basedn()
+        cn1       = "dsdb_test_fpo1"
+        dn1_str   = "cn=%s,cn=Users,%s" % (cn1, basedn)
+        dn1 = ldb.Dn(self.samdb, dn1_str)
+        cn2       = "dsdb_test_fpo2"
+        dn2_str   = "cn=%s,cn=Users,%s" % (cn2, basedn)
+        dn2 = ldb.Dn(self.samdb, dn2_str)
+
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % lsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 0)
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % bsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 0)
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=basedn,
+                                expression="(objectSid=%s)" % fsid_str,
+                                attrs=[])
+        self.assertEqual(len(res), 0)
+
+        self.addCleanup(delete_force, self.samdb, dn1_str)
+        self.addCleanup(delete_force, self.samdb, dn2_str)
+
+        self.samdb.add({
+            "dn": dn1_str,
+            "objectClass": obj_class})
+
+        self.samdb.add({
+            "dn": dn2_str,
+            "objectClass": obj_class})
+
+        msg = ldb.Message()
+        msg.dn = dn1
+        msg[fpo_attr] = ldb.MessageElement("<SID=%s>" % lsid_str,
+                                           ldb.FLAG_MOD_ADD,
+                                           fpo_attr)
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get %s" % msg_exp)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, lerr_exp, str(e))
+            werr = "%08X" % werr_exp
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = dn1
+        msg[fpo_attr] = ldb.MessageElement("<SID=%s>" % bsid_str,
+                                           ldb.FLAG_MOD_ADD,
+                                           fpo_attr)
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get %s" % msg_exp)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, lerr_exp, str(e))
+            werr = "%08X" % werr_exp
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = dn1
+        msg[fpo_attr] = ldb.MessageElement("<SID=%s>" % fsid_str,
+                                           ldb.FLAG_MOD_ADD,
+                                           fpo_attr)
+        try:
+            self.samdb.modify(msg)
+            self.fail("No exception should get %s" % msg)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.assertEqual(code, lerr_exp, str(e))
+            werr = "%08X" % werr_exp
+            self.assertTrue(werr in msg, msg)
+
+        msg = ldb.Message()
+        msg.dn = dn1
+        msg[fpo_attr] = ldb.MessageElement("%s" % dn2,
+                                           ldb.FLAG_MOD_ADD,
+                                           fpo_attr)
+        try:
+            self.samdb.modify(msg)
+            if not allow_reference:
+                sel.fail("No exception should get %s" % msg_exp)
+        except ldb.LdbError as e:
+            if allow_reference:
+                self.fail("Should have not raised an exception: %s" % e)
+            (code, msg) = e.args
+            self.assertEqual(code, lerr_exp, str(e))
+            werr = "%08X" % werr_exp
+            self.assertTrue(werr in msg, msg)
+
+        self.samdb.delete(dn2)
+        self.samdb.delete(dn1)
+
+    def test_foreignSecurityPrincipal_NonMembers(self):
+        return self._test_fail_foreignSecurityPrincipal(
+                "group", "msDS-NonMembers",
+                "LDB_ERR_UNWILLING_TO_PERFORM/WERR_NOT_SUPPORTED",
+                ldb.ERR_UNWILLING_TO_PERFORM, werror.WERR_NOT_SUPPORTED,
+                allow_reference=False)
+
+    def test_foreignSecurityPrincipal_HostServiceAccount(self):
+        return self._test_fail_foreignSecurityPrincipal(
+                "computer", "msDS-HostServiceAccount",
+                "LDB_ERR_CONSTRAINT_VIOLATION/WERR_DS_NAME_REFERENCE_INVALID",
+                ldb.ERR_CONSTRAINT_VIOLATION,
+                werror.WERR_DS_NAME_REFERENCE_INVALID)
+
+    def test_foreignSecurityPrincipal_manager(self):
+        return self._test_fail_foreignSecurityPrincipal(
+                "user", "manager",
+                "LDB_ERR_CONSTRAINT_VIOLATION/WERR_DS_NAME_REFERENCE_INVALID",
+                ldb.ERR_CONSTRAINT_VIOLATION,
+                werror.WERR_DS_NAME_REFERENCE_INVALID)
+
     #
     # Duplicate objectSID's should not be permitted for sids in the local
     # domain. The test sequence is add an object, delete it, then attempt to
