@@ -2488,7 +2488,11 @@ class cmd_domain_trust_create(DomainTrustCommand):
             try:
                 remote_netlogon_info = self.get_netlogon_dc_info(remote_netlogon, remote_server)
             except RuntimeError as error:
-                raise self.RemoteRuntimeError(self, error, "failed to get netlogon dc info")
+                # Direct connection failed, re-try via our DC
+                try:
+                    remote_netlogon_info = self.get_netlogon_dc_info(local_netlogon, remote_server)
+                except RuntimeError as error:
+                    raise self.RemoteRuntimeError(self, error, "failed to get netlogon dc info")
 
         def generate_AuthInOutBlob(secret, update_time):
             if secret is None:
