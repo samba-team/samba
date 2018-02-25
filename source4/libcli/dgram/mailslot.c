@@ -171,6 +171,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	packet.dgram_id = generate_random() % UINT16_MAX;
 	src = socket_get_my_addr(dgmsock->sock, tmp_ctx);
 	if (!src) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	packet.src_addr = src->addr;
