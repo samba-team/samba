@@ -226,12 +226,11 @@ static void exit_server_common(enum server_exit_reason how,
 
 		/* Notreached. */
 		exit(1);
-	} else {
-		DEBUG(3,("Server exit (%s)\n",
-			(reason ? reason : "normal exit")));
-		if (am_parent) {
-			pidfile_unlink(lp_pid_directory(), "smbd");
-		}
+	}
+
+	DBG_NOTICE("Server exit (%s)\n", reason ? reason : "normal exit");
+	if (am_parent) {
+		pidfile_unlink(lp_pid_directory(), "smbd");
 	}
 
 	exit(0);
