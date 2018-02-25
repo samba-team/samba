@@ -1506,7 +1506,7 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 
 		domain = find_domain_from_name_noinit(domain_name);
 		if (domain == NULL) {
-			return find_our_domain();
+			return NULL;
 		}
 
 		if (domain->secure_channel_type != SEC_CHAN_NULL) {
