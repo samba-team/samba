@@ -52,6 +52,9 @@ struct extended_dn_replace_list {
 	struct ldb_val *replace_dn;
 	struct extended_dn_context *ac;
 	struct ldb_request *search_req;
+	bool fpo_enabled;
+	bool require_object;
+	bool got_entry;
 };
 
 
@@ -114,6 +117,7 @@ static int extended_replace_dn(struct extended_dn_replace_list *os,
 	 * (ie, add SID and GUID)
 	 */
 	*os->replace_dn = data_blob_string_const(str);
+	os->got_entry = true;
 	return LDB_SUCCESS;
 }
 
@@ -158,6 +162,43 @@ static int extended_replace_callback(struct ldb_request *req, struct ldb_reply *
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 	if (ares->error == LDB_ERR_NO_SUCH_OBJECT) {
+		if (os->got_entry) {
+			/* This is in internal error... */
+			int ret = ldb_module_operr(os->ac->module);
+			return ldb_module_done(os->ac->req, NULL, NULL, ret);
+		}
+
+		if (os->require_object && os->fpo_enabled) {
+			int ret;
+
+			/*
+			 * It's an error if the target doesn't exist,
+			 * unless it's a delete.
+			 *
+			 * Note FPO-enabled attributes generate
+			 * a different error.
+			 */
+			ret = dsdb_module_werror(os->ac->module,
+						 LDB_ERR_NO_SUCH_OBJECT,
+						 WERR_NO_SUCH_USER,
+						"specified dn doesn't exist");
+
+			return ldb_module_done(os->ac->req, NULL, NULL,
+					       ret);
+		}
+
+		if (!os->got_entry && os->require_object) {
+			/*
+			 * It's an error if the target doesn't exist,
+			 * unless it's a delete.
+			 */
+			int ret = dsdb_module_werror(os->ac->module,
+						LDB_ERR_CONSTRAINT_VIOLATION,
+						WERR_DS_NAME_REFERENCE_INVALID,
+						"Referenced object not found");
+			return ldb_module_done(os->ac->req, NULL, NULL, ret);
+		}
+
 		/* Don't worry too much about dangling references */
 
 		ldb_reset_err_string(os->ac->ldb);
@@ -195,6 +236,7 @@ static int extended_replace_callback(struct ldb_request *req, struct ldb_reply *
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(os->ac->req, NULL, NULL, ret);
 		}
+		/* os->got_entry is true at this point */
 		break;
 	}
 	case LDB_REPLY_REFERRAL:
@@ -204,7 +246,38 @@ static int extended_replace_callback(struct ldb_request *req, struct ldb_reply *
 	case LDB_REPLY_DONE:
 
 		talloc_free(ares);
-		
+
+		if (!os->got_entry && os->require_object && os->fpo_enabled) {
+			int ret;
+
+			/*
+			 * It's an error if the target doesn't exist,
+			 * unless it's a delete.
+			 *
+			 * Note FPO-enabled attributes generate
+			 * a different error.
+			 */
+			ret = dsdb_module_werror(os->ac->module,
+						 LDB_ERR_NO_SUCH_OBJECT,
+						 WERR_NO_SUCH_USER,
+						"specified dn doesn't exist");
+
+			return ldb_module_done(os->ac->req, NULL, NULL,
+					       ret);
+		}
+
+		if (!os->got_entry && os->require_object) {
+			/*
+			 * It's an error if the target doesn't exist,
+			 * unless it's a delete.
+			 */
+			int ret = dsdb_module_werror(os->ac->module,
+						 LDB_ERR_CONSTRAINT_VIOLATION,
+						 WERR_DS_NAME_REFERENCE_INVALID,
+						 "Referenced object not found");
+			return ldb_module_done(os->ac->req, NULL, NULL, ret);
+		}
+
 		/* Run the next search */
 
 		if (os->next) {
@@ -250,6 +323,8 @@ static int extended_store_replace(struct extended_dn_context *ac,
 		"objectGUID",
 		NULL
 	};
+	uint32_t ctrl_flags = 0;
+	bool is_untrusted = ldb_req_is_untrusted(ac->req);
 
 	os = talloc_zero(ac, struct extended_dn_replace_list);
 	if (!os) {
@@ -308,9 +383,66 @@ static int extended_store_replace(struct extended_dn_context *ac,
 		return ret;
 	}
 
+	/*
+	 * By default we require the presence of the target.
+	 */
+	os->require_object = true;
+
+	/*
+	 * Handle FPO-enabled attributes cause a different
+	 * error.
+	 */
+	switch (schema_attr->attributeID_id) {
+	case DRSUAPI_ATTID_member:
+	case DRSUAPI_ATTID_msDS_NonMembers:
+	case DRSUAPI_ATTID_msDS_MembersForAzRole:
+	case DRSUAPI_ATTID_msDS_NeverRevealGroup:
+	case DRSUAPI_ATTID_msDS_RevealOnDemandGroup:
+	case DRSUAPI_ATTID_msDS_HostServiceAccount:
+		os->fpo_enabled = true;
+		break;
+	}
+
+	if (schema_attr->linkID == 0) {
+		/*
+		 * None linked attributes allow references
+		 * to deleted objects.
+		 */
+		ctrl_flags |= DSDB_SEARCH_SHOW_RECYCLED;
+	}
+
+	if (is_delete) {
+		/*
+		 * On delete want to be able to
+		 * find a deleted object, but
+		 * it's not a problem if they doesn't
+		 * exist.
+		 */
+		ctrl_flags |= DSDB_SEARCH_SHOW_RECYCLED;
+		os->require_object = false;
+	}
+
+	if (!is_untrusted) {
+		struct ldb_control *ctrl = NULL;
+
+		/*
+		 * During provision or dbcheck we may not find
+		 * an object.
+		 */
+
+		ctrl = ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID);
+		if (ctrl != NULL) {
+			os->require_object = false;
+		}
+		ctrl = ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK);
+		if (ctrl != NULL) {
+			os->require_object = false;
+		}
+	}
+
 	ret = dsdb_request_add_controls(os->search_req,
 					DSDB_FLAG_AS_SYSTEM |
-					DSDB_SEARCH_SHOW_RECYCLED |
+					ctrl_flags |
 					DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(os);
