@@ -865,13 +865,47 @@ void winbind_msg_debug(struct messaging_context *msg_ctx,
 
 /* Set our domains as offline and forward the offline message to our children. */
 
+struct winbind_msg_on_offline_state {
+	struct messaging_context *msg_ctx;
+	uint32_t msg_type;
+};
+
+static bool winbind_msg_on_offline_fn(struct winbindd_child *child,
+				      void *private_data)
+{
+	struct winbind_msg_on_offline_state *state = private_data;
+
+	if (child->domain->internal) {
+		return true;
+	}
+
+	/*
+	 * Each winbindd child should only process requests for one
+	 * domain - make sure we only set it online / offline for that
+	 * domain.
+	 */
+	DBG_DEBUG("sending message to pid %u for domain %s.\n",
+		  (unsigned int)child->pid, child->domain->name);
+
+	messaging_send_buf(state->msg_ctx,
+			   pid_to_procid(child->pid),
+			   state->msg_type,
+			   (const uint8_t *)child->domain->name,
+			   strlen(child->domain->name)+1);
+
+	return true;
+}
+
 void winbind_msg_offline(struct messaging_context *msg_ctx,
 			 void *private_data,
 			 uint32_t msg_type,
 			 struct server_id server_id,
 			 DATA_BLOB *data)
 {
-	struct winbindd_child *child;
+	struct winbind_msg_on_offline_state state = {
+		.msg_ctx = msg_ctx,
+		.msg_type = MSG_WINBIND_OFFLINE,
+	};
 	struct winbindd_domain *domain;
 
 	DEBUG(10,("winbind_msg_offline: got offline message.\n"));
@@ -896,28 +930,7 @@ void winbind_msg_offline(struct messaging_context *msg_ctx,
 		set_domain_offline(domain);
 	}
 
-	for (child = winbindd_children; child != NULL; child = child->next) {
-		/* Only set domain children offline */
-		if (child->domain == NULL) {
-			continue;
-		}
-
-		/* Or internal domains (this should not be possible....) */
-		if (child->domain->internal) {
-			continue;
-		}
-
-		/* Each winbindd child should only process requests for one domain - make sure
-		   we only set it online / offline for that domain. */
-
-		DEBUG(10,("winbind_msg_offline: sending message to pid %u for domain %s.\n",
-			(unsigned int)child->pid, child->domain->name ));
-
-		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
-				   MSG_WINBIND_OFFLINE,
-				   (const uint8_t *)child->domain->name,
-				   strlen(child->domain->name)+1);
-	}
+	forall_domain_children(winbind_msg_on_offline_fn, &state);
 }
 
 /* Set our domains as online and forward the online message to our children. */
