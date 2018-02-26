@@ -1979,18 +1979,6 @@ done:
 	return ret;
 }
 
-/*********************************************************************
- ********************************************************************/
-
-bool winbindd_internal_child(struct winbindd_child *child)
-{
-	if ((child == idmap_child()) || (child == locator_child())) {
-		return True;
-	}
-
-	return False;
-}
-
 #ifdef HAVE_KRB5_LOCATE_PLUGIN_H
 
 /*********************************************************************

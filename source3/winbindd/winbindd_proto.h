@@ -503,7 +503,6 @@ NTSTATUS resolve_alias_to_username(TALLOC_CTX *mem_ctx,
 				   const char *alias, char **name);
 
 bool winbindd_can_contact_domain(struct winbindd_domain *domain);
-bool winbindd_internal_child(struct winbindd_child *child);
 void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain);
 void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain);
 void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain);
