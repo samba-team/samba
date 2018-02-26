@@ -48,6 +48,57 @@ extern bool override_logfile;
 
 static struct winbindd_child *winbindd_children = NULL;
 
+static void forall_domain_children(bool (*fn)(struct winbindd_child *c,
+					      void *private_data),
+				   void *private_data)
+{
+	struct winbindd_domain *d;
+
+	for (d = domain_list(); d != NULL; d = d->next) {
+		int i;
+
+		for (i = 0; i < lp_winbind_max_domain_connections(); i++) {
+			struct winbindd_child *c = &d->children[i];
+			bool ok;
+
+			if (c->pid == 0) {
+				continue;
+			}
+
+			ok = fn(c, private_data);
+			if (!ok) {
+				return;
+			}
+		}
+	}
+}
+
+static void forall_children(bool (*fn)(struct winbindd_child *c,
+				       void *private_data),
+			    void *private_data)
+{
+	struct winbindd_child *c;
+	bool ok;
+
+	c = idmap_child();
+	if (c->pid != 0) {
+		ok = fn(c, private_data);
+		if (!ok) {
+			return;
+		}
+	}
+
+	c = locator_child();
+	if (c->pid != 0) {
+		ok = fn(c, private_data);
+		if (!ok) {
+			return;
+		}
+	}
+
+	forall_domain_children(fn, private_data);
+}
+
 /* Read some data from a client connection */
 
 static NTSTATUS child_read_request(int sock, struct winbindd_request *wreq)
@@ -709,6 +760,7 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 			  "logname == NULL");
 	}
 
+	child->pid = 0;
 	child->sock = -1;
 	child->domain = domain;
 	child->table = table;
@@ -762,28 +814,40 @@ void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
  * level to that of parents.
  */
 
+struct winbind_msg_relay_state {
+	struct messaging_context *msg_ctx;
+	uint32_t msg_type;
+	DATA_BLOB *data;
+};
+
+static bool winbind_msg_relay_fn(struct winbindd_child *child,
+				 void *private_data)
+{
+	struct winbind_msg_relay_state *state = private_data;
+
+	DBG_DEBUG("sending message to pid %u.\n",
+		  (unsigned int)child->pid);
+
+	messaging_send(state->msg_ctx, pid_to_procid(child->pid),
+		       state->msg_type, state->data);
+	return true;
+}
+
 void winbind_msg_debug(struct messaging_context *msg_ctx,
  			 void *private_data,
 			 uint32_t msg_type,
 			 struct server_id server_id,
 			 DATA_BLOB *data)
 {
-	struct winbindd_child *child;
+	struct winbind_msg_relay_state state = {
+		.msg_ctx = msg_ctx, .msg_type = msg_type, .data = data
+	};
 
 	DEBUG(10,("winbind_msg_debug: got debug message.\n"));
 
 	debug_message(msg_ctx, private_data, MSG_DEBUG, server_id, data);
 
-	for (child = winbindd_children; child != NULL; child = child->next) {
-
-		DEBUG(10,("winbind_msg_debug: sending message to pid %u.\n",
-			(unsigned int)child->pid));
-
-		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
-			   MSG_DEBUG,
-			   data->data,
-			   strlen((char *) data->data) + 1);
-	}
+	forall_children(winbind_msg_relay_fn, &state);
 }
 
 /* Set our domains as offline and forward the offline message to our children. */
