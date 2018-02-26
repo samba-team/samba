@@ -413,6 +413,8 @@ plantestsuite("samba4.blackbox.trust_ntlm", "nt4_member:local", [os.path.join(bb
 
 plantestsuite("samba4.blackbox.trust_utils(fl2008r2dc:local)", "fl2008r2dc:local", [os.path.join(bbdir, "test_trust_utils.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_SERVER', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$PREFIX', "forest"])
 plantestsuite("samba4.blackbox.trust_utils(fl2003dc:local)", "fl2003dc:local", [os.path.join(bbdir, "test_trust_utils.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_SERVER', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$PREFIX', "external"])
+plantestsuite("samba4.blackbox.trust_token", "fl2008r2dc", [os.path.join(bbdir, "test_trust_token.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$DOMSID', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$TRUST_DOMSID', 'forest'])
+plantestsuite("samba4.blackbox.trust_token", "fl2003dc", [os.path.join(bbdir, "test_trust_token.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$DOMSID', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$TRUST_DOMSID', 'external'])
 plantestsuite("samba4.blackbox.ktpass(ad_dc_ntvfs)", "ad_dc_ntvfs", [os.path.join(bbdir, "test_ktpass.sh"), '$PREFIX/ad_dc_ntvfs'])
 plantestsuite("samba4.blackbox.password_settings(ad_dc_ntvfs:local)", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_password_settings.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc_ntvfs"])
 plantestsuite("samba4.blackbox.cifsdd(ad_dc_ntvfs)", "ad_dc_ntvfs", [os.path.join(samba4srcdir, "client/tests/test_cifsdd.sh"), '$SERVER', '$USERNAME', '$PASSWORD', "$DOMAIN"])
