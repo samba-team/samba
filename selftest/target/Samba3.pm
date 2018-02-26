@@ -225,6 +225,7 @@ sub setup_nt4_dc
 	       return undef;
 	}
 
+	$vars->{DOMSID} = $vars->{SAMSID};
 	$vars->{DC_SERVER} = $vars->{SERVER};
 	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
 	$vars->{DC_SERVER_IPV6} = $vars->{SERVER_IPV6};
@@ -273,6 +274,7 @@ sub setup_nt4_dc_schannel
 	       return undef;
 	}
 
+	$vars->{DOMSID} = $vars->{SAMSID};
 	$vars->{DC_SERVER} = $vars->{SERVER};
 	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
 	$vars->{DC_SERVER_IPV6} = $vars->{SERVER_IPV6};
@@ -347,6 +349,7 @@ sub setup_nt4_member
 	       return undef;
 	}
 
+	$ret->{DOMSID} = $nt4_dc_vars->{DOMSID};
 	$ret->{DC_SERVER} = $nt4_dc_vars->{SERVER};
 	$ret->{DC_SERVER_IP} = $nt4_dc_vars->{SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $nt4_dc_vars->{SERVER_IPV6};
@@ -429,6 +432,7 @@ sub setup_ad_member
 	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
+	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
 	$ctx = {};
@@ -521,6 +525,7 @@ sub setup_ad_member_rfc2307
 	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
+	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
 	my $prefix_abs = abs_path($prefix);
@@ -606,6 +611,7 @@ sub setup_ad_member_idmap_rid
 	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
+	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
 	my $prefix_abs = abs_path($prefix);
@@ -692,6 +698,7 @@ sub setup_ad_member_idmap_ad
 	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
+	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
 	my $prefix_abs = abs_path($prefix);
@@ -1029,6 +1036,8 @@ $ret->{USERNAME} = KTEST\\Administrator
 #This is the secrets.tdb created by 'net ads join' from Samba3 to a
 #Samba4 DC with the same parameters as are being used here.  The
 #domain SID is S-1-5-21-1071277805-689288055-3486227160
+	$ret->{SAMSID} = "S-1-5-21-1911091480-1468226576-2729736297";
+	$ret->{DOMSID} = "S-1-5-21-1071277805-689288055-3486227160";
 
 	system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb $prefix/private/secrets.tdb");
 	chmod 0600, "$prefix/private/secrets.tdb";
@@ -1364,6 +1373,7 @@ sub provision($$$$$$$$$)
 	## setup the various environment variables we need
 	##
 
+	my $samsid = Samba::random_domain_sid();
 	my $swiface = Samba::get_interface($server);
 	my %ret = ();
 	my %createuser_env = ();
@@ -2143,6 +2153,16 @@ sub provision($$$$$$$$$)
 	";
 	close(CONF);
 
+	my $net = Samba::bindir_path($self, "net");
+	my $cmd = "";
+	$cmd .= "SMB_CONF_PATH=\"$conffile\" ";
+	$cmd .= "$net setlocalsid $samsid";
+
+	if (system($cmd) != 0) {
+	    warn("Join failed\n$cmd");
+	    return undef;
+	}
+
 	unless (open(DFQCONF, ">$dfqconffile")) {
 	        warn("Unable to open $dfqconffile");
 		return undef;
@@ -2266,6 +2286,7 @@ force_user:x:$gid_force_user:
 	$ret{USERNAME} = $unix_name;
 	$ret{USERID} = $unix_uid;
 	$ret{DOMAIN} = $domain;
+	$ret{SAMSID} = $samsid;
 	$ret{NETBIOSNAME} = $server;
 	$ret{PASSWORD} = $password;
 	$ret{PIDDIR} = $piddir;

@@ -804,6 +804,7 @@ my @exported_envvars = (
 	# domain stuff
 	"DOMAIN",
 	"REALM",
+	"DOMSID",
 
 	# stuff related to a trusted domain
 	"TRUST_SERVER",
@@ -814,6 +815,7 @@ my @exported_envvars = (
 	"TRUST_PASSWORD",
 	"TRUST_DOMAIN",
 	"TRUST_REALM",
+	"TRUST_DOMSID",
 
 	# domain controller stuff
 	"DC_SERVER",
@@ -868,6 +870,7 @@ my @exported_envvars = (
 	"SERVER_IPV6",
 	"NETBIOSNAME",
 	"NETBIOSALIAS",
+	"SAMSID",
 
 	# user stuff
 	"USERNAME",

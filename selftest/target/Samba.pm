@@ -443,4 +443,10 @@ sub cleanup_child($$)
     return $childpid;
 }
 
+sub random_domain_sid()
+{
+	my $domain_sid = "S-1-5-21-". int(rand(4294967295)) . "-" . int(rand(4294967295)) . "-" . int(rand(4294967295));
+	return $domain_sid;
+}
+
 1;

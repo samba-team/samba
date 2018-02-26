@@ -372,6 +372,7 @@ sub setup_trust($$$$$)
 	$localenv->{TRUST_PASSWORD} = $remoteenv->{PASSWORD};
 	$localenv->{TRUST_DOMAIN} = $remoteenv->{DOMAIN};
 	$localenv->{TRUST_REALM} = $remoteenv->{REALM};
+	$localenv->{TRUST_DOMSID} = $remoteenv->{DOMSID};
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	# setup the trust
@@ -401,10 +402,10 @@ sub setup_trust($$$$$)
 	return $localenv
 }
 
-sub provision_raw_prepare($$$$$$$$$$$)
+sub provision_raw_prepare($$$$$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
-	    $domain, $realm, $functional_level,
+	    $domain, $realm, $samsid, $functional_level,
 	    $password, $kdc_ipv4, $kdc_ipv6) = @_;
 	my $ctx;
 	my $netbiosname = uc($hostname);
@@ -448,6 +449,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{domain} = $domain;
 	$ctx->{realm} = uc($realm);
 	$ctx->{dnsname} = lc($realm);
+	$ctx->{samsid} = $samsid;
 
 	$ctx->{functional_level} = $functional_level;
 
@@ -543,6 +545,9 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	push (@provision_options, "--quiet");
 	push (@provision_options, "--domain=$ctx->{domain}");
 	push (@provision_options, "--realm=$ctx->{realm}");
+	if (defined($ctx->{samsid})) {
+		push (@provision_options, "--domain-sid=$ctx->{samsid}");
+	}
 	push (@provision_options, "--adminpass=$ctx->{password}");
 	push (@provision_options, "--krbtgtpass=krbtgt$ctx->{password}");
 	push (@provision_options, "--machinepass=machine$ctx->{password}");
@@ -722,6 +727,7 @@ nogroup:x:65534:nobody
 		DOMAIN => $ctx->{domain},
 		USERNAME => $ctx->{username},
 		REALM => $ctx->{realm},
+		SAMSID => $ctx->{samsid},
 		PASSWORD => $ctx->{password},
 		LDAPDIR => $ctx->{ldapdir},
 		LDAP_INSTANCE => $ctx->{ldap_instance},
@@ -755,6 +761,10 @@ nogroup:x:65534:nobody
 	        $ret->{RESOLV_WRAPPER_CONF} = $ctx->{resolv_conf};
 	} else {
 		$ret->{RESOLV_WRAPPER_HOSTS} = $ctx->{dns_host_file};
+	}
+
+	if ($ctx->{server_role} eq "domain controller") {
+		$ret->{DOMSID} = $ret->{SAMSID};
 	}
 
 	return $ret;
@@ -872,9 +882,13 @@ sub provision($$$$$$$$$$)
 	    $password, $kdc_ipv4, $kdc_ipv6, $extra_smbconf_options, $extra_smbconf_shares,
 	    $extra_provision_options) = @_;
 
+	my $samsid = Samba::random_domain_sid();
+
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $hostname,
-					       $domain, $realm, $functional_level,
+					       $domain, $realm,
+					       $samsid,
+					       $functional_level,
 					       $password, $kdc_ipv4, $kdc_ipv6);
 
 	if (defined($extra_provision_options)) {
@@ -1086,6 +1100,7 @@ rpc_server:tcpip = no
 	$ret->{MEMBER_USERNAME} = $ret->{USERNAME};
 	$ret->{MEMBER_PASSWORD} = $ret->{PASSWORD};
 
+	$ret->{DOMSID} = $dcvars->{DOMSID};
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
@@ -1191,6 +1206,7 @@ sub provision_rpc_proxy($$$)
 	$ret->{RPC_PROXY_USERNAME} = $ret->{USERNAME};
 	$ret->{RPC_PROXY_PASSWORD} = $ret->{PASSWORD};
 
+	$ret->{DOMSID} = $dcvars->{DOMSID};
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
@@ -1211,6 +1227,7 @@ sub provision_promoted_dc($$$)
 					       "promotedvdc",
 					       $dcvars->{DOMAIN},
 					       $dcvars->{REALM},
+					       $dcvars->{SAMSID},
 					       "2008",
 					       $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP},
@@ -1306,6 +1323,7 @@ sub provision_vampire_dc($$$)
 					       $name,
 					       $dcvars->{DOMAIN},
 					       $dcvars->{REALM},
+					       $dcvars->{DOMSID},
 					       $fl,
 					       $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP},
@@ -1382,10 +1400,12 @@ sub provision_subdom_dc($$$)
 	print "PROVISIONING SUBDOMAIN DC...\n";
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
+	my $samsid = undef; # TODO pass the domain sid all the way down
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
 					       "localsubdc",
 					       "SAMBASUBDOM",
 					       "sub.samba.example.com",
+					       $samsid,
 					       "2008",
 					       $dcvars->{PASSWORD},
 					       undef);
@@ -1653,6 +1673,7 @@ sub provision_rodc($$$)
 					       "rodc",
 					       $dcvars->{DOMAIN},
 					       $dcvars->{REALM},
+					       $dcvars->{DOMSID},
 					       "2008",
 					       $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP},
