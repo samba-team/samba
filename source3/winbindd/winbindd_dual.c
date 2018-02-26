@@ -1793,14 +1793,14 @@ void winbind_msg_ip_dropped_parent(struct messaging_context *msg_ctx,
 				   struct server_id server_id,
 				   DATA_BLOB *data)
 {
-	struct winbindd_child *child;
+	struct winbind_msg_relay_state state = {
+		.msg_ctx = msg_ctx,
+		.msg_type = msg_type,
+		.data = data,
+	};
 
 	winbind_msg_ip_dropped(msg_ctx, private_data, msg_type,
 			       server_id, data);
 
-
-	for (child = winbindd_children; child != NULL; child = child->next) {
-		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
-				   msg_type, data->data, data->length);
-	}
+	forall_children(winbind_msg_relay_fn, &state);
 }
