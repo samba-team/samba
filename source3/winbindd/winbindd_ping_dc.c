@@ -115,6 +115,11 @@ NTSTATUS winbindd_ping_dc_recv(struct tevent_req *req,
 {
 	struct winbindd_ping_dc_state *state = tevent_req_data(
 		req, struct winbindd_ping_dc_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
 
 	if (!NT_STATUS_IS_OK(state->result)) {
 		set_auth_errors(presp, state->result);
