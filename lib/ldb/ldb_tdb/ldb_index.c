@@ -1820,28 +1820,67 @@ static int ltdb_index_add1(struct ldb_module *module,
 	}
 
 	/*
-	 * Check for duplicates in unique indexes and for the @IDXDN
-	 * DN -> GUID record
+	 * Check for duplicates in the @IDXDN DN -> GUID record
+	 *
+	 * This is very normal, it just means a duplicate DN creation
+	 * was attempted, so don't set the error string or print scary
+	 * messages.
+	 */
+	if (list->count > 0 &&
+	    ldb_attr_cmp(el->name, LTDB_IDXDN) == 0) {
+		talloc_free(list);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/*
+	 * Check for duplicates in unique indexes
 	 */
 	if (list->count > 0 &&
 	    ((a != NULL
 	      && (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX ||
-		 (el->flags & LDB_FLAG_INTERNAL_FORCE_UNIQUE_INDEX))) ||
-	     ldb_attr_cmp(el->name, LTDB_IDXDN) == 0)) {
+		  (el->flags & LDB_FLAG_INTERNAL_FORCE_UNIQUE_INDEX))))) {
 		/*
 		 * We do not want to print info about a possibly
 		 * confidential DN that the conflict was with in the
 		 * user-visible error string
 		 */
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  __location__ ": unique index violation on %s in %s, "
-			  "conficts with %*.*s in %s",
-			  el->name, ldb_dn_get_linearized(msg->dn),
-			  (int)list->dn[0].length,
-			  (int)list->dn[0].length,
-			  list->dn[0].data,
-			  ldb_dn_get_linearized(dn_key));
-		ldb_asprintf_errstring(ldb, __location__ ": unique index violation on %s in %s",
+
+		if (ltdb->cache->GUID_index_attribute == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_WARNING,
+				  __location__
+				  ": unique index violation on %s in %s, "
+				  "conficts with %*.*s in %s",
+				  el->name, ldb_dn_get_linearized(msg->dn),
+				  (int)list->dn[0].length,
+				  (int)list->dn[0].length,
+				  list->dn[0].data,
+				  ldb_dn_get_linearized(dn_key));
+		} else {
+			/* This can't fail, gives a default at worst */
+			const struct ldb_schema_attribute *attr
+				= ldb_schema_attribute_by_name(
+					ldb,
+					ltdb->cache->GUID_index_attribute);
+			struct ldb_val v;
+			ret = attr->syntax->ldif_write_fn(ldb, list,
+							  &list->dn[0], &v);
+			if (ret == LDB_SUCCESS) {
+				ldb_debug(ldb, LDB_DEBUG_WARNING,
+					  __location__
+					  ": unique index violation on %s in "
+					  "%s, conficts with %s %*.*s in %s",
+					  el->name,
+					  ldb_dn_get_linearized(msg->dn),
+					  ltdb->cache->GUID_index_attribute,
+					  (int)v.length,
+					  (int)v.length,
+					  v.data,
+					  ldb_dn_get_linearized(dn_key));
+			}
+		}
+		ldb_asprintf_errstring(ldb,
+				       __location__ ": unique index violation "
+				       "on %s in %s",
 				       el->name,
 				       ldb_dn_get_linearized(msg->dn));
 		talloc_free(list);
