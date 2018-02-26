@@ -108,7 +108,8 @@ class dbcheck(object):
                            attrs=["objectSid"])
             dnsadmins_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
             self.name_map['DnsAdmins'] = str(dnsadmins_sid)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e5:
+            (enum, estr) = e5.args
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
             pass
@@ -198,7 +199,8 @@ class dbcheck(object):
                 self.compatibleFeatures = res[0]["compatibleFeatures"]
             if "requiredFeatures" in res[0]:
                 self.requiredFeatures = res[0]["requiredFeatures"]
-        except ldb.LdbError as (enum, estr):
+        except ldb.LdbError as e6:
+            (enum, estr) = e6.args
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
             pass
@@ -253,7 +255,8 @@ class dbcheck(object):
                                          "CN=Deleted Objects\\0ACNF:%s" % str(misc.GUID(guid)))
                     conflict_dn.add_base(nc)
 
-            except ldb.LdbError, (enum, estr):
+            except ldb.LdbError as e2:
+                (enum, estr) = e2.args
                 if enum == ldb.ERR_NO_SUCH_OBJECT:
                     pass
                 else:
@@ -263,7 +266,8 @@ class dbcheck(object):
             if conflict_dn is not None:
                 try:
                     self.samdb.rename(dn, conflict_dn, ["show_deleted:1", "relax:0", "show_recycled:1"])
-                except ldb.LdbError, (enum, estr):
+                except ldb.LdbError as e1:
+                    (enum, estr) = e1.args
                     self.report("Couldn't move old Deleted Objects placeholder: %s to %s: %s" % (dn, conflict_dn, estr))
                     return 1
 
@@ -596,7 +600,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         try:
             res = self.samdb.search(base=str(dsdb_dn.dn), scope=ldb.SCOPE_BASE,
                                     attrs=[], controls=controls)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e7:
+            (enum, estr) = e7.args
             self.report("unable to find object for DN %s - (%s)" % (dsdb_dn.dn, estr))
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
@@ -999,7 +1004,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         try:
             res = self.samdb.search(base=str(dn), scope=ldb.SCOPE_BASE,
                                     attrs=attrs, controls=controls)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e8:
+            (enum, estr) = e8.args
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
 
@@ -1046,7 +1052,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                     controls=["extended_dn:1:1",
                                               "search_options:1:2",
                                               "paged_results:1:1000"])
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e9:
+            (enum, estr) = e9.args
             raise
 
         for r in res:
@@ -1198,7 +1205,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                         attrs=attrs, controls=["extended_dn:1:1", "show_recycled:1",
                                                                "reveal_internals:0"
                                         ])
-            except ldb.LdbError, (enum, estr):
+            except ldb.LdbError as e3:
+                (enum, estr) = e3.args
                 if enum != ldb.ERR_NO_SUCH_OBJECT:
                     raise
 
@@ -1924,7 +1932,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             instancetype |= dsdb.INSTANCE_TYPE_IS_NC_HEAD
             try:
                 self.samdb.search(base=dn.parent(), scope=ldb.SCOPE_BASE, attrs=[], controls=["show_recycled:1"])
-            except ldb.LdbError, (enum, estr):
+            except ldb.LdbError as e4:
+                (enum, estr) = e4.args
                 if enum != ldb.ERR_NO_SUCH_OBJECT:
                     raise
             else:
@@ -1995,7 +2004,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                         "reveal_internals:0",
                                     ],
                                     attrs=attrs)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e10:
+            (enum, estr) = e10.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 if self.in_transaction:
                     self.report("ERROR: Object %s disappeared during check" % dn)
@@ -2303,7 +2313,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if dn != self.samdb.get_root_basedn() and str(dn.parent()) not in self.dn_set:
                 res = self.samdb.search(base=dn.parent(), scope=ldb.SCOPE_BASE,
                                         controls=["show_recycled:1", "show_deleted:1"])
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e11:
+            (enum, estr) = e11.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 self.err_missing_parent(obj)
                 error_count += 1
@@ -2407,7 +2418,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     try:
                         res = self.samdb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
                                                 attrs=[])
-                    except ldb.LdbError, (enum, estr):
+                    except ldb.LdbError as e:
+                        (enum, estr) = e.args
                         if enum != ldb.ERR_NO_SUCH_OBJECT:
                             raise
                         res = None

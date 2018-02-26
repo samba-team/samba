@@ -890,7 +890,8 @@ class TestZones(DNSTest):
         super(TestZones, self).tearDown()
         try:
             self.delete_zone(self.zone)
-        except RuntimeError, (num, string):
+        except RuntimeError as e:
+            (num, string) = e.args
             if num != werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST:
                 raise
 

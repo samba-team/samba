@@ -428,7 +428,8 @@ def get_last_provision_usn(sam):
         entry = sam.search(expression="%s=*" % LAST_PROVISION_USN_ATTRIBUTE,
                        base="@PROVISION", scope=ldb.SCOPE_BASE,
                        attrs=[LAST_PROVISION_USN_ATTRIBUTE, "provisionnerID"])
-    except ldb.LdbError, (ecode, emsg):
+    except ldb.LdbError as e1:
+        (ecode, emsg) = e1.args
         if ecode == ldb.ERR_NO_SUCH_OBJECT:
             return None
         raise
@@ -1274,7 +1275,8 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     # DB
     try:
         samdb.connect(path)
-    except ldb.LdbError, (num, string_error):
+    except ldb.LdbError as e2:
+        (num, string_error) = e2.args
         if (num == ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS):
             raise ProvisioningError("Permission denied connecting to %s, are you running as root?" % path)
         else:
@@ -1902,7 +1904,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                 elements=kerberos_enctypes, flags=ldb.FLAG_MOD_REPLACE,
                 name="msDS-SupportedEncryptionTypes")
             samdb.modify(msg)
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e:
+            (enum, estr) = e.args
             if enum != ldb.ERR_NO_SUCH_ATTRIBUTE:
                 # It might be that this attribute does not exist in this schema
                 raise

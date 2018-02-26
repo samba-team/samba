@@ -54,7 +54,8 @@ def remove_sysvol_references(samdb, logger, dc_name):
         try:
             logger.info("Removing Sysvol reference: %s" % dn)
             samdb.delete(dn)
-        except ldb.LdbError as (enum, estr):
+        except ldb.LdbError as e:
+            (enum, estr) = e.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
             else:
@@ -77,7 +78,8 @@ def remove_sysvol_references(samdb, logger, dc_name):
         try:
             logger.info("Removing Sysvol reference: %s" % dn)
             samdb.delete(dn)
-        except ldb.LdbError as (enum, estr):
+        except ldb.LdbError as e1:
+            (enum, estr) = e1.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
             else:
@@ -98,7 +100,8 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
 
     try:
         (dn, primary_recs) = samdb.dns_lookup(dnsHostName)
-    except RuntimeError as (enum, estr):
+    except RuntimeError as e4:
+        (enum, estr) = e4.args
         if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
             if ignore_no_name:
                 remove_hanging_dns_references(samdb, logger,
@@ -145,7 +148,8 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
         try:
             logger.debug("checking for DNS records to remove on %s" % a_name)
             (a_rec_dn, a_recs) = samdb.dns_lookup(a_name)
-        except RuntimeError as (enum, estr):
+        except RuntimeError as e2:
+            (enum, estr) = e2.args
             if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 return
             raise DemoteException("lookup of %s failed: %s" % (a_name, estr))
@@ -300,7 +304,8 @@ def offline_remove_ntds_dc(samdb,
     try:
         msgs = samdb.search(base=ntds_dn, expression="objectClass=ntdsDSA",
                         attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
-    except LdbError as (enum, estr):
+    except LdbError as e5:
+        (enum, estr) = e5.args
         if enum == ldb.ERR_NO_SUCH_OBJECT:
               raise DemoteException("Given DN %s doesn't exist" % ntds_dn)
         else:
@@ -349,7 +354,8 @@ def offline_remove_ntds_dc(samdb,
     try:
         logger.info("Removing nTDSDSA: %s (and any children)" % ntds_dn)
         samdb.delete(ntds_dn, ["tree_delete:0"])
-    except LdbError as (enum, estr):
+    except LdbError as e6:
+        (enum, estr) = e6.args
         raise DemoteException("Failed to remove the DCs NTDS DSA object: %s"
                               % estr)
 
@@ -381,7 +387,8 @@ def remove_dc(samdb, logger, dc_name):
                                        expression="(&(objectClass=server)"
                                        "(cn=%s))"
                                     % ldb.binary_encode(dc_name))
-        except LdbError as (enum, estr):
+        except LdbError as e3:
+            (enum, estr) = e3.args
             raise DemoteException("Failure checking if %s is an server "
                                   "object in %s: "
                                   % (dc_name, samdb.domain_dns_name()), estr)
@@ -399,7 +406,8 @@ def remove_dc(samdb, logger, dc_name):
     try:
         ntds_msgs = samdb.search(base=ntds_dn, attrs=[], scope=ldb.SCOPE_BASE,
                                  expression="(objectClass=ntdsdsa)")
-    except LdbError as (enum, estr):
+    except LdbError as e7:
+        (enum, estr) = e7.args
         if enum == ldb.ERR_NO_SUCH_OBJECT:
             ntds_msgs = []
             pass

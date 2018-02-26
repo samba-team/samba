@@ -89,7 +89,8 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
         self.sd_utils.modify_sd_on_dn(self.base_dn, self.desc_sddl)
         try:
             self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
-        except ldb.LdbError as (enum, string):
+        except ldb.LdbError as e1:
+            (enum, string) = e1.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
         super(DrsReplicaSyncUnprivTestCase, self).tearDown()
@@ -117,7 +118,8 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
                 (level, ctr) = self.user_drs.DsGetNCChanges(self.user_drs_handle,
                                                             8, req8)
                 self.fail("Should have failed with user denied access")
-            except WERRORError as (enum, estr):
+            except WERRORError as e:
+                (enum, estr) = e.args
                 self.assertTrue(enum in expected_error,
                                 "Got unexpected error: %s" % estr)
 

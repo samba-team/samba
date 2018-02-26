@@ -216,7 +216,8 @@ class UserTests(samba.tests.TestCase):
                     self.ldb.search(dn,
                                     scope=SCOPE_BASE,
                                     attrs=['cn'])
-                except LdbError as (num, msg):
+                except LdbError as e:
+                    (num, msg) = e.args
                     if num != 32:
                         raise
 

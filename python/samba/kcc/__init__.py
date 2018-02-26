@@ -152,7 +152,8 @@ class KCC(object):
                                     self.samdb.get_config_basedn(),
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=interSiteTransport)")
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e2:
+            (enum, estr) = e2.args
             raise KCCError("Unable to find inter-site transports - (%s)" %
                            estr)
 
@@ -186,7 +187,8 @@ class KCC(object):
                                     self.samdb.get_config_basedn(),
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=siteLink)")
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e3:
+            (enum, estr) = e3.args
             raise KCCError("Unable to find inter-site siteLinks - (%s)" % estr)
 
         for msg in res:
@@ -249,7 +251,8 @@ class KCC(object):
                                     self.samdb.get_config_basedn(),
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=site)")
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e4:
+            (enum, estr) = e4.args
             raise KCCError("Unable to find sites - (%s)" % estr)
 
         for msg in res:
@@ -267,7 +270,8 @@ class KCC(object):
         try:
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                     attrs=["objectGUID"])
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e5:
+            (enum, estr) = e5.args
             DEBUG_FN("Search for dn '%s' [from %s] failed: %s. "
                      "This typically happens in --importldif mode due "
                      "to lack of module support." % (dn, dn_query, estr))
@@ -286,7 +290,8 @@ class KCC(object):
 
                 res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                         attrs=["objectGUID"])
-            except ldb.LdbError, (enum, estr):
+            except ldb.LdbError as e:
+                (enum, estr) = e.args
                 raise KCCError("Unable to find my nTDSDSA - (%s)" % estr)
 
         if len(res) != 1:
@@ -326,7 +331,8 @@ class KCC(object):
                                     self.samdb.get_config_basedn(),
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=crossRef)")
-        except ldb.LdbError, (enum, estr):
+        except ldb.LdbError as e6:
+            (enum, estr) = e6.args
             raise KCCError("Unable to find partitions - (%s)" % estr)
 
         for msg in res:
@@ -2479,7 +2485,8 @@ class KCC(object):
                 self.samdb = SamDB(url=dburl,
                                    session_info=system_session(),
                                    credentials=creds, lp=lp)
-            except ldb.LdbError, (num, msg):
+            except ldb.LdbError as e1:
+                (num, msg) = e1.args
                 raise KCCError("Unable to open sam database %s : %s" %
                                (dburl, msg))
 

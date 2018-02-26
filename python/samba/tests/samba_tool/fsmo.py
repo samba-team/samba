@@ -37,7 +37,8 @@ class FsmoCmdTestCase(SambaToolCmdTest):
                        scope=ldb.SCOPE_BASE, attrs=["fsmoRoleOwner"])
 
             self.assertTrue("DomainDnsZonesMasterRole owner: " + res[0]["fsmoRoleOwner"][0] in out)
-        except ldb.LdbError, (enum, string):
+        except ldb.LdbError as e:
+            (enum, string) = e.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 self.assertTrue("The 'domaindns' role is not present in this domain" in out)
             else:
