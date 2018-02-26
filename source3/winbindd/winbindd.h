@@ -120,6 +120,7 @@ struct winbindd_child {
 	char *logfilename;
 
 	int sock;
+	struct tevent_fd *monitor_fde; /* Watch for dead children/sockets */
 	struct tevent_queue *queue;
 	struct dcerpc_binding_handle *binding_handle;
 

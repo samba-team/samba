@@ -239,6 +239,8 @@ static void wb_child_request_waited(struct tevent_req *subreq)
 		return;
 	}
 
+	tevent_fd_set_flags(state->child->monitor_fde, 0);
+
 	subreq = wb_simple_trans_send(state, server_event_context(), NULL,
 				      state->child->sock, state->request);
 	if (tevent_req_nomem(subreq, req)) {
@@ -338,6 +340,8 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 	TALLOC_FREE(state->subreq);
 	TALLOC_FREE(state->queue_subreq);
 
+	tevent_fd_set_flags(state->child->monitor_fde, TEVENT_FD_READ);
+
 	if (state->child->domain != NULL) {
 		/*
 		 * If the child is attached to a domain,
@@ -359,8 +363,34 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 	 * The basic parent/child communication broke, close
 	 * our socket
 	 */
+	TALLOC_FREE(state->child->monitor_fde);
 	close(state->child->sock);
 	state->child->sock = -1;
+}
+
+static void child_socket_readable(struct tevent_context *ev,
+				  struct tevent_fd *fde,
+				  uint16_t flags,
+				  void *private_data)
+{
+	struct winbindd_child *child = private_data;
+
+	if ((flags & TEVENT_FD_READ) == 0) {
+		return;
+	}
+
+	TALLOC_FREE(child->monitor_fde);
+
+	/*
+	 * We're only active when there is no outstanding child
+	 * request. Arriving here means the child closed its socket,
+	 * it died. Do the same here.
+	 */
+
+	SMB_ASSERT(child->sock != -1);
+
+	close(child->sock);
+	child->sock = -1;
 }
 
 static struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
@@ -798,11 +828,6 @@ void winbind_child_died(pid_t pid)
 	}
 
 	state.child->pid = 0;
-
-	if (state.child->sock != -1) {
-		close(state.child->sock);
-		state.child->sock = -1;
-	}
 }
 
 /* Ensure any negative cache entries with the netbios or realm names are removed. */
@@ -1626,6 +1651,18 @@ static bool fork_domain_child(struct winbindd_child *child)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("fork_domain_child: Child status is %s\n",
 				  nt_errstr(status)));
+			close(fdpair[1]);
+			return false;
+		}
+
+		child->monitor_fde = tevent_add_fd(server_event_context(),
+						   server_event_context(),
+						   fdpair[1],
+						   TEVENT_FD_READ,
+						   child_socket_readable,
+						   child);
+		if (child->monitor_fde == NULL) {
+			DBG_WARNING("tevent_add_fd failed\n");
 			close(fdpair[1]);
 			return false;
 		}
