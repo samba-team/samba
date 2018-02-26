@@ -399,6 +399,20 @@ sub setup_trust($$$$$)
 		return undef;
 	}
 
+	my $groupname = "g_$localenv->{TRUST_DOMAIN}";
+	my $groupadd = $cmd_env;
+	$groupadd .= " $samba_tool group add '$groupname' --group-scope=Domain $cmd_config";
+	unless (system($groupadd) == 0) {
+		warn("Failed to create group \n$groupadd");
+		return undef;
+	}
+	my $groupmem = $cmd_env;
+	$groupmem .= " $samba_tool group addmembers '$groupname' '$localenv->{TRUST_DOMSID}-513' $cmd_config";
+	unless (system($groupmem) == 0) {
+		warn("Failed to add group member \n$groupmem");
+		return undef;
+	}
+
 	return $localenv
 }
 
