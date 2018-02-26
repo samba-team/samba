@@ -772,29 +772,42 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 	}
 }
 
+struct winbind_child_died_state {
+	pid_t pid;
+	struct winbindd_child *child;
+};
+
+static bool winbind_child_died_fn(struct winbindd_child *child,
+				  void *private_data)
+{
+	struct winbind_child_died_state *state = private_data;
+
+	if (child->pid == state->pid) {
+		state->child = child;
+		return false;
+	}
+	return true;
+}
+
 void winbind_child_died(pid_t pid)
 {
-	struct winbindd_child *child;
+	struct winbind_child_died_state state = { .pid = pid };
 
-	for (child = winbindd_children; child != NULL; child = child->next) {
-		if (child->pid == pid) {
-			break;
-		}
-	}
+	forall_children(winbind_child_died_fn, &state);
 
-	if (child == NULL) {
+	if (state.child == NULL) {
 		DEBUG(5, ("Already reaped child %u died\n", (unsigned int)pid));
 		return;
 	}
 
 	/* This will be re-added in fork_domain_child() */
 
-	DLIST_REMOVE(winbindd_children, child);
-	child->pid = 0;
+	DLIST_REMOVE(winbindd_children, state.child);
+	state.child->pid = 0;
 
-	if (child->sock != -1) {
-		close(child->sock);
-		child->sock = -1;
+	if (state.child->sock != -1) {
+		close(state.child->sock);
+		state.child->sock = -1;
 	}
 }
 
