@@ -82,8 +82,7 @@ def configure(conf):
             conf.CHECK_HEADERS('rpc/rpc.h rpc/nettype.h', lib='tirpc', together=True)
             conf.SET_TARGET_TYPE('tirpc', 'SYSLIB')
     if not conf.CONFIG_SET('HAVE_RPC_RPC_H'):
-            Logs.error('ERROR: No rpc/rpc.h header found, tirpc or libntirpc missing?')
-            sys.exit(1)
+            Logs.warn('No rpc/rpc.h header found, tirpc or libntirpc missing?')
 
     conf.SET_TARGET_TYPE('nsl', 'EMPTY')
     conf.CHECK_HEADERS('rpc/rpc.h rpcsvc/yp_prot.h', lib='tirpc')
