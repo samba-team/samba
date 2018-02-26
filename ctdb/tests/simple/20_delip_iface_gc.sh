@@ -18,14 +18,12 @@ cluster_is_healthy
 # Reset configuration
 ctdb_restart_when_done
 
-echo "Getting public IPs information..."
-try_command_on_node -v any "$CTDB ip -v all -X | tail -n +2"
-ip_info="$out"
+select_test_node_and_ips
 
-# Select the first node and find out its interfaces
-test_node=$(awk -F'|' 'NR == 1 { print $3}' <<<"$ip_info")
-ifaces=$(awk -F'|' -v tn=$test_node '$3 == tn { print $6 }' <<<"$ip_info" | sed 's@, @ @g' | xargs -n 1 | sort -u)
-echo "Selected test node ${test_node} with interfaces: ${ifaces}"
+# Find interfaces on test node
+try_command_on_node $test_node "$CTDB ifaces -X"
+ifaces=$(awk -F'|' 'NR > 1 { print $2 }' <<<"$out")
+echo "Node ${test_node} has interfaces: ${ifaces}"
 
 # Delete all IPs on each interface...  deleting IPs from one interface
 # can cause other interfaces to disappear, so we need to be careful...
