@@ -32,6 +32,7 @@ from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
 from samba.compat import text_type
+from samba.dcerpc import security
 
 __docformat__ = "restructuredText"
 
@@ -270,25 +271,40 @@ changetype: modify
             for member in members:
                 filter = ('(&(sAMAccountName=%s)(|(objectclass=user)'
                           '(objectclass=group)))' % ldb.binary_encode(member))
+                foreign_msg = None
+                try:
+                    membersid = security.dom_sid(member)
+                except TypeError as e:
+                    membersid = None
+
+                if membersid is not None:
+                    filter = '(objectSid=%s)' % str(membersid)
+                    dn_str = "<SID=%s>" % str(membersid)
+                    foreign_msg = ldb.Message()
+                    foreign_msg.dn = ldb.Dn(self, dn_str)
+
                 targetmember = self.search(base=self.domain_dn(),
                                            scope=ldb.SCOPE_SUBTREE,
                                            expression="%s" % filter,
                                            attrs=[])
 
+                if len(targetmember) == 0 and foreign_msg is not None:
+                    targetmember = [foreign_msg]
                 if len(targetmember) != 1:
                     raise Exception('Unable to find "%s". Operation cancelled.' % member)
+                targetmember_dn = targetmember[0].dn.extended_str(1)
 
-                if add_members_operation is True and (targetgroup[0].get('member') is None or str(targetmember[0].dn) not in targetgroup[0]['member']):
+                if add_members_operation is True and (targetgroup[0].get('member') is None or str(targetmember_dn) not in targetgroup[0]['member']):
                     modified = True
                     addtargettogroup += """add: member
 member: %s
-""" % (str(targetmember[0].dn))
+""" % (str(targetmember_dn))
 
-                elif add_members_operation is False and (targetgroup[0].get('member') is not None and str(targetmember[0].dn) in targetgroup[0]['member']):
+                elif add_members_operation is False and (targetgroup[0].get('member') is not None and targetmember_dn in targetgroup[0]['member']):
                     modified = True
                     addtargettogroup += """delete: member
 member: %s
-""" % (str(targetmember[0].dn))
+""" % (str(targetmember_dn))
 
             if modified is True:
                 self.modify_ldif(addtargettogroup)
