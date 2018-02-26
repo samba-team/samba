@@ -1420,11 +1420,45 @@ static void child_msg_online(struct messaging_context *msg,
 	}
 }
 
+struct winbindd_reinit_after_fork_state {
+	const struct winbindd_child *myself;
+};
+
+static bool winbindd_reinit_after_fork_fn(struct winbindd_child *child,
+					  void *private_data)
+{
+	struct winbindd_reinit_after_fork_state *state = private_data;
+
+	if (child == state->myself) {
+		return true;
+	}
+
+	/* Destroy all possible events in child list. */
+	TALLOC_FREE(child->lockout_policy_event);
+	TALLOC_FREE(child->machine_password_change_event);
+
+	/*
+	 * Children should never be able to send each other messages,
+	 * all messages must go through the parent.
+	 */
+	child->pid = (pid_t)0;
+
+	/*
+	 * Close service sockets to all other children
+	 */
+	if (child->sock != -1) {
+		close(child->sock);
+		child->sock = -1;
+	}
+
+	return true;
+}
+
 NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 				    const char *logfilename)
 {
+	struct winbindd_reinit_after_fork_state state = { .myself = myself };
 	struct winbindd_domain *domain;
-	struct winbindd_child *cl;
 	NTSTATUS status;
 
 	status = reinit_after_fork(
@@ -1488,43 +1522,7 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 
 	ccache_remove_all_after_fork();
 
-	/* Destroy all possible events in child list. */
-	for (cl = winbindd_children; cl != NULL; cl = cl->next) {
-		TALLOC_FREE(cl->lockout_policy_event);
-		TALLOC_FREE(cl->machine_password_change_event);
-
-		/* Children should never be able to send
-		 * each other messages, all messages must
-		 * go through the parent.
-		 */
-		cl->pid = (pid_t)0;
-
-		/*
-		 * Close service sockets to all other children
-		 */
-		if ((cl != myself) && (cl->sock != -1)) {
-			close(cl->sock);
-			cl->sock = -1;
-		}
-        }
-	/*
-	 * This is a little tricky, children must not
-	 * send an MSG_WINBIND_ONLINE message to idmap_child().
-	 * If we are in a child of our primary domain or
-	 * in the process created by fork_child_dc_connect(),
-	 * and the primary domain cannot go online,
-	 * fork_child_dc_connection() sends MSG_WINBIND_ONLINE
-	 * periodically to idmap_child().
-	 *
-	 * The sequence is, fork_child_dc_connect() ---> getdcs() --->
-	 * get_dc_name_via_netlogon() ---> cm_connect_netlogon()
-	 * ---> init_dc_connection() ---> cm_open_connection --->
-	 * set_domain_online(), sends MSG_WINBIND_ONLINE to
-	 * idmap_child(). Disallow children sending messages
-	 * to each other, all messages must go through the parent.
-	 */
-	cl = idmap_child();
-	cl->pid = (pid_t)0;
+	forall_children(winbindd_reinit_after_fork_fn, &state);
 
 	return NT_STATUS_OK;
 }
