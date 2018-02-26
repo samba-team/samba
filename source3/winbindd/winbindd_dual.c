@@ -897,9 +897,8 @@ void winbind_msg_offline(struct messaging_context *msg_ctx,
 	}
 
 	for (child = winbindd_children; child != NULL; child = child->next) {
-		/* Don't send message to internal children.  We've already
-		   done so above. */
-		if (!child->domain || winbindd_internal_child(child)) {
+		/* Only set domain children offline */
+		if (child->domain == NULL) {
 			continue;
 		}
 
@@ -972,8 +971,8 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 	}
 
 	for (child = winbindd_children; child != NULL; child = child->next) {
-		/* Don't send message to internal childs. */
-		if (!child->domain || winbindd_internal_child(child)) {
+		/* Only set domain children online */
+		if (child->domain == NULL) {
 			continue;
 		}
 
