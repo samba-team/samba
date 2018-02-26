@@ -941,7 +941,10 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 			struct server_id server_id,
 			DATA_BLOB *data)
 {
-	struct winbindd_child *child;
+	struct winbind_msg_on_offline_state state = {
+		.msg_ctx = msg_ctx,
+		.msg_type = MSG_WINBIND_ONLINE,
+	};
 	struct winbindd_domain *domain;
 
 	DEBUG(10,("winbind_msg_online: got online message.\n"));
@@ -983,28 +986,7 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 		}
 	}
 
-	for (child = winbindd_children; child != NULL; child = child->next) {
-		/* Only set domain children online */
-		if (child->domain == NULL) {
-			continue;
-		}
-
-		/* Or internal domains (this should not be possible....) */
-		if (child->domain->internal) {
-			continue;
-		}
-
-		/* Each winbindd child should only process requests for one domain - make sure
-		   we only set it online / offline for that domain. */
-
-		DEBUG(10,("winbind_msg_online: sending message to pid %u for domain %s.\n",
-			(unsigned int)child->pid, child->domain->name ));
-
-		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
-				   MSG_WINBIND_ONLINE,
-				   (const uint8_t *)child->domain->name,
-				   strlen(child->domain->name)+1);
-	}
+	forall_domain_children(winbind_msg_on_offline_fn, &state);
 }
 
 static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
