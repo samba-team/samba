@@ -973,30 +973,6 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	talloc_destroy(mem_ctx);
 }
 
-void winbind_msg_dump_event_list(struct messaging_context *msg_ctx,
-				 void *private_data,
-				 uint32_t msg_type,
-				 struct server_id server_id,
-				 DATA_BLOB *data)
-{
-	struct winbindd_child *child;
-
-	DEBUG(10,("winbind_msg_dump_event_list received\n"));
-
-	DBG_WARNING("dump event list no longer implemented\n");
-
-	for (child = winbindd_children; child != NULL; child = child->next) {
-
-		DEBUG(10,("winbind_msg_dump_event_list: sending message to pid %u\n",
-			(unsigned int)child->pid));
-
-		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
-				   MSG_DUMP_EVENT_LIST,
-				   NULL, 0);
-	}
-
-}
-
 void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 				  void *private_data,
 				  uint32_t msg_type,
@@ -1373,16 +1349,6 @@ static void child_msg_online(struct messaging_context *msg,
 	}
 }
 
-static void child_msg_dump_event_list(struct messaging_context *msg,
-				      void *private_data,
-				      uint32_t msg_type,
-				      struct server_id server_id,
-				      DATA_BLOB *data)
-{
-	DEBUG(5,("child_msg_dump_event_list received\n"));
-	DBG_WARNING("dump_event_list no longer implemented\n");
-}
-
 NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 				    const char *logfilename)
 {
@@ -1426,8 +1392,6 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 			     MSG_WINBIND_ONLINE, NULL);
 	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_ONLINESTATUS, NULL);
-	messaging_deregister(server_messaging_context(),
-			     MSG_DUMP_EVENT_LIST, NULL);
 	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
 	messaging_deregister(server_messaging_context(),
@@ -1643,8 +1607,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			   MSG_WINBIND_OFFLINE, child_msg_offline);
 	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_ONLINE, child_msg_online);
-	messaging_register(server_messaging_context(), NULL,
-			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
 	messaging_register(server_messaging_context(), NULL,
 			   MSG_DEBUG, debug_message);
 	messaging_register(server_messaging_context(), NULL,

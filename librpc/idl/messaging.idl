@@ -126,7 +126,7 @@ interface messaging
 		MSG_WINBIND_RELOAD_TRUSTED_DOMAINS = 0x040D,
 
 		/* event messages */
-		MSG_DUMP_EVENT_LIST		= 0x0500,
+		/* MSG_DUMP_EVENT_LIST		= 0x0500, Obsoleted */
 
 		/* smbXsrv messages */
 		MSG_SMBXSRV_SESSION_CLOSE	= 0x0600,
