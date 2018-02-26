@@ -221,8 +221,9 @@ static int extended_store_replace(struct extended_dn_context *ac,
 				  TALLOC_CTX *callback_mem_ctx,
 				  struct ldb_val *plain_dn,
 				  bool is_delete, 
-				  const char *oid)
+				  const struct dsdb_attribute *schema_attr)
 {
+	const char *oid = schema_attr->syntax->ldap_oid;
 	int ret;
 	struct extended_dn_replace_list *os;
 	static const char *attrs[] = {
@@ -353,7 +354,7 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		el = &ac->new_req->op.add.message->elements[i];
 		for (j = 0; j < el->num_values; j++) {
 			ret = extended_store_replace(ac, ac->new_req, &el->values[j],
-						     false, schema_attr->syntax->ldap_oid);
+						     false, schema_attr);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -449,7 +450,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 			bool is_delete = (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE);
 
 			ret = extended_store_replace(ac, ac->new_req, &el->values[j],
-						     is_delete, schema_attr->syntax->ldap_oid);
+						     is_delete, schema_attr);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(ac);
 				return ret;
