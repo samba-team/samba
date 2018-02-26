@@ -115,8 +115,6 @@ struct winbindd_child_dispatch_table {
 };
 
 struct winbindd_child {
-	struct winbindd_child *next, *prev;
-
 	pid_t pid;
 	struct winbindd_domain *domain;
 	char *logfilename;

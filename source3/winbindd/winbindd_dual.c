@@ -46,8 +46,6 @@
 
 extern bool override_logfile;
 
-static struct winbindd_child *winbindd_children = NULL;
-
 static void forall_domain_children(bool (*fn)(struct winbindd_child *c,
 					      void *private_data),
 				   void *private_data)
@@ -363,7 +361,6 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 	 */
 	close(state->child->sock);
 	state->child->sock = -1;
-	DLIST_REMOVE(winbindd_children, state->child);
 }
 
 static struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
@@ -800,9 +797,6 @@ void winbind_child_died(pid_t pid)
 		return;
 	}
 
-	/* This will be re-added in fork_domain_child() */
-
-	DLIST_REMOVE(winbindd_children, state.child);
 	state.child->pid = 0;
 
 	if (state.child->sock != -1) {
@@ -1636,8 +1630,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			return false;
 		}
 
-		child->next = child->prev = NULL;
-		DLIST_ADD(winbindd_children, child);
 		child->sock = fdpair[1];
 		return True;
 	}

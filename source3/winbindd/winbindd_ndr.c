@@ -36,8 +36,6 @@ void ndr_print_winbindd_child(struct ndr_print *ndr,
 {
 	ndr_print_struct(ndr, name, "winbindd_child");
 	ndr->depth++;
-	ndr_print_ptr(ndr, "next", r->next);
-	ndr_print_ptr(ndr, "prev", r->prev);
 	ndr_print_uint32(ndr, "pid", (uint32_t)r->pid);
 #if 0
 	ndr_print_winbindd_domain(ndr, "domain", r->domain);
