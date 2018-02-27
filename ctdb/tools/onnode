@@ -287,7 +287,7 @@ push()
 
 fakessh ()
 {
-    CTDB_SOCKET="$1" sh -c "$2" 3>/dev/null
+    CTDB_SOCKET="$1" sh -c "$2"
 }
 
 stdout_filter ()
@@ -373,7 +373,7 @@ for n in $nodes ; do
 	{
 	    exec 3>&1
 	    {
-		$ssh_cmd "$n" "$command" |
+		$ssh_cmd "$n" "$command" 3>&- |
 		    stdout_filter >&3
 	    } 2>&1 | stderr_filter
 	} &
@@ -386,7 +386,7 @@ for n in $nodes ; do
 	{
 	    exec 3>&1
 	    {
-		$ssh_cmd "$n" "$command" |
+		$ssh_cmd "$n" "$command" 3>&- |
 		    stdout_filter >&3
 	    } 2>&1 | stderr_filter
 	} || retcode=$?
