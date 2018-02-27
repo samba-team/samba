@@ -1526,6 +1526,7 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 	struct ldb_message *msg;
 	struct ldb_message *filtered_msg;
 	unsigned int i;
+	uint8_t previous_guid_key[LTDB_GUID_KEY_SIZE] = {};
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -1538,17 +1539,39 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 		int ret;
 		bool matched;
 
-		msg = ldb_msg_new(ac);
-		if (!msg) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
 		ret = ltdb_idx_to_key(ac->module, ltdb,
 				      ac, &dn_list->dn[i],
 				      &tdb_key);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+
+		if (ltdb->cache->GUID_index_attribute != NULL) {
+			/*
+			 * If we are in GUID index mode, then the dn_list is
+			 * sorted.  If we got a duplicate, forget about it, as
+			 * otherwise we would send the same entry back more
+			 * than once.
+			 *
+			 * This is needed in the truncated DN case, or if a
+			 * duplicate was forced in via
+			 * LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK
+			 */
+
+			if (memcmp(previous_guid_key, tdb_key.dptr,
+				   sizeof(previous_guid_key)) == 0) {
+				continue;
+			}
+
+			memcpy(previous_guid_key, tdb_key.dptr,
+			       sizeof(previous_guid_key));
+		}
+
+		msg = ldb_msg_new(ac);
+		if (!msg) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 
 		ret = ltdb_search_key(ac->module, ltdb,
 				      tdb_key, msg,
@@ -1923,9 +1946,36 @@ static int ltdb_index_add1(struct ldb_module *module,
 		BINARY_ARRAY_SEARCH_GTE(list->dn, list->count,
 					*key_val, ldb_val_equal_exact_ordered,
 					exact, next);
+
+		/*
+		 * Give a warning rather than fail, this could be a
+		 * duplicate value in the record allowed by a caller
+		 * forcing in the value with
+		 * LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK
+		 */
 		if (exact != NULL) {
-			talloc_free(list);
-			return LDB_ERR_OPERATIONS_ERROR;
+			/* This can't fail, gives a default at worst */
+			const struct ldb_schema_attribute *attr
+				= ldb_schema_attribute_by_name(
+					ldb,
+					ltdb->cache->GUID_index_attribute);
+			struct ldb_val v;
+			ret = attr->syntax->ldif_write_fn(ldb, list,
+							  exact, &v);
+			if (ret == LDB_SUCCESS) {
+				ldb_debug(ldb, LDB_DEBUG_WARNING,
+					  __location__
+					  ": duplicate attribute value in %s "
+					  "for index on %s, "
+					  "duplicate of %s %*.*s in %s",
+					  ldb_dn_get_linearized(msg->dn),
+					  el->name,
+					  ltdb->cache->GUID_index_attribute,
+					  (int)v.length,
+					  (int)v.length,
+					  v.data,
+					  ldb_dn_get_linearized(dn_key));
+			}
 		}
 
 		if (next == NULL) {
