@@ -4150,9 +4150,14 @@ class cmd_domain_schema_upgrade(Command):
                 # Apply patches if we parsed the Schema-Updates.md file
                 diff = os.path.abspath(os.path.join(diff_dir, update + '.diff'))
                 if temp_folder and os.path.exists(diff):
-                    p = subprocess.Popen(['patch', update, '-i', diff],
-                                         stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE, cwd=temp_folder)
+                    try:
+                        p = subprocess.Popen(['patch', update, '-i', diff],
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, cwd=temp_folder)
+                    except (OSError, IOError):
+                        shutil.rmtree(temp_folder)
+                        raise CommandError("Failed to upgrade schema. Check if 'patch' is installed.")
+
                     stdout, stderr = p.communicate()
 
                     if p.returncode:
