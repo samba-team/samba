@@ -23,6 +23,9 @@ if [ -n "$TEST_SOCKET_WRAPPER_SO_PATH" ] ; then
 	mkdir -p "$SOCKET_WRAPPER_DIR"
 fi
 
+# onnode will execute this, which fakes ssh against local daemons
+export ONNODE_SSH="${TEST_SUBDIR}/scripts/ssh_local_daemons.sh"
+
 #######################################
 
 config_from_environment ()
