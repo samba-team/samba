@@ -2191,7 +2191,7 @@ static int ltdb_index_add1(struct ldb_module *module,
 		 * forcing in the value with
 		 * LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK
 		 */
-		if (exact != NULL) {
+		if (exact != NULL && truncation == KEY_NOT_TRUNCATED) {
 			/* This can't fail, gives a default at worst */
 			const struct ldb_schema_attribute *attr
 				= ldb_schema_attribute_by_name(
