@@ -316,19 +316,19 @@ parse_options "$@"
 
 ssh_opts=
 if $push ; then
-    SSH=push
-    EXTRA_SSH_OPTS=""
+    ONNODE_SSH=push
+    ONNODE_SSH_OPTS=""
 else
     $current && command="cd $PWD && $command"
 
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	SSH=fakessh
-	EXTRA_SSH_OPTS=""
+	ONNODE_SSH=fakessh
+	ONNODE_SSH_OPTS=""
     else 
 	# Could "2>/dev/null || true" but want to see errors from typos in file.
 	[ -r "${CTDB_BASE}/onnode.conf" ] && . "${CTDB_BASE}/onnode.conf"
-	[ -n "$SSH" ] || SSH=ssh
-	if [ "$SSH" = "ssh" ] ; then
+	[ -n "$ONNODE_SSH" ] || ONNODE_SSH=ssh
+	if [ "$ONNODE_SSH" = "ssh" ] ; then
 	    if $parallel || ! $stdin ; then
 		ssh_opts="-n"
 	    fi
@@ -372,7 +372,7 @@ for n in $nodes ; do
 	{
 	    exec 3>&1
 	    {
-		$SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" |
+		$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS "$n" "$command" |
 		    stdout_filter >&3
 	    } 2>&1 | stderr_filter
 	} &
@@ -385,7 +385,7 @@ for n in $nodes ; do
 	{
 	    exec 3>&1
 	    {
-		$SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" |
+		$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS "$n" "$command" |
 		    stdout_filter >&3
 	    } 2>&1 | stderr_filter
 	} || retcode=$?
