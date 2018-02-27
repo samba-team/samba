@@ -218,52 +218,52 @@ get_any_available_node ()
 
 get_nodes ()
 {
-    local all_nodes
+	local all_nodes
 
 	local f="${CTDB_BASE}/nodes"
 	if [ -n "$CTDB_NODES_FILE" ] ; then
-	    f="$CTDB_NODES_FILE"
-	    if [ ! -e "$f" -a "${f#/}" = "$f" ] ; then
-		# $f is relative, try in $CTDB_BASE
-		f="${CTDB_BASE}/${f}"
-	    fi
+		f="$CTDB_NODES_FILE"
+		if [ ! -e "$f" -a "${f#/}" = "$f" ] ; then
+			# $f is relative, try in $CTDB_BASE
+			f="${CTDB_BASE}/${f}"
+		fi
 	elif [ -n "$CTDB_NODES" ] ; then
-	    f="$CTDB_NODES"
+		f="$CTDB_NODES"
 	fi
 
 	if [ ! -r "$f" ] ; then
-	    echo "${prog}: unable to open nodes file  \"${f}\"" >&2
-	    exit 1
+		echo "${prog}: unable to open nodes file  \"${f}\"" >&2
+		exit 1
 	fi
 
 	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' "$f")
 
-    local n nodes
-    nodes=$(parse_nodespec "$1") || exit $?
-    for n in $nodes ; do
-	case "$n" in
-	    all)
-		echo "${all_nodes//#DEAD/}"
-		;;
-	    any)
-		get_any_available_node "$all_nodes" || exit 1
-		;;
-	    ok|healthy) 
-		get_nodes_with_status "$all_nodes" "healthy" || exit 1
-		;;
-	    con|connected) 
-		get_nodes_with_status "$all_nodes" "connected" || exit 1
-		;;
-	    [0-9]|[0-9][0-9]|[0-9][0-9][0-9])
-		# Intentional multi-word expansion
-		# shellcheck disable=SC2086
-		echo_nth "$n" $all_nodes
-		;;
-	    *)
-		$names_ok || invalid_nodespec
-		echo "$n"
-	esac
-    done
+	local n nodes
+	nodes=$(parse_nodespec "$1") || exit $?
+	for n in $nodes ; do
+		case "$n" in
+		all)
+			echo "${all_nodes//#DEAD/}"
+			;;
+		any)
+			get_any_available_node "$all_nodes" || exit 1
+			;;
+		ok|healthy)
+			get_nodes_with_status "$all_nodes" "healthy" || exit 1
+			;;
+		con|connected)
+			get_nodes_with_status "$all_nodes" "connected" || exit 1
+			;;
+		[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
+			# Intentional multi-word expansion
+			# shellcheck disable=SC2086
+			echo_nth "$n" $all_nodes
+			;;
+		*)
+			$names_ok || invalid_nodespec
+			echo "$n"
+		esac
+	done
 }
 
 push()
@@ -307,20 +307,20 @@ parse_options "$@"
 
 ssh_opts=
 if $push ; then
-    ONNODE_SSH=push
-    ONNODE_SSH_OPTS=""
+	ONNODE_SSH=push
+	ONNODE_SSH_OPTS=""
 else
-    $current && command="cd $PWD && $command"
+	$current && command="cd $PWD && $command"
 
 	# Could "2>/dev/null || true" but want to see errors from typos in file.
 	[ -r "${CTDB_BASE}/onnode.conf" ] && . "${CTDB_BASE}/onnode.conf"
 	[ -n "$ONNODE_SSH" ] || ONNODE_SSH=ssh
 	if [ "$ONNODE_SSH" = "ssh" ] ; then
-	    if $parallel || ! $stdin ; then
-		ssh_opts="-n"
-	    fi
+		if $parallel || ! $stdin ; then
+			ssh_opts="-n"
+		fi
 	else
-	    : # rsh? All bets are off!
+		: # rsh? All bets are off!
 	fi
 fi
 
@@ -346,43 +346,43 @@ trap 'kill -TERM $pids 2>/dev/null' INT TERM
 # the part of the window where it matter is very small.
 retcode=0
 for n in $nodes ; do
-    set -o pipefail 2>/dev/null
+	set -o pipefail 2>/dev/null
 
-    # The following code applies stdout_filter and stderr_filter to
-    # the relevant streams.  Both filters are at the end of pipes so
-    # they read from stdin and (by default) write to stdout.  To allow
-    # the filters to operate independently, the output of
-    # stdout_filter is sent to a temporary file descriptor (3), which
-    # is redirected back to stdout at the outermost level.
-    ssh_cmd="$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS"
-    if $parallel ; then
-	{
-	    exec 3>&1
-	    {
-		$ssh_cmd "$n" "$command" 3>&- |
-		    stdout_filter >&3
-	    } 2>&1 | stderr_filter
-	} &
-	pids="${pids} $!"
-    else
-	if $verbose ; then
-	    echo >&2 ; echo ">> NODE: $n <<" >&2
+	# The following code applies stdout_filter and stderr_filter to
+	# the relevant streams.  Both filters are at the end of pipes so
+	# they read from stdin and (by default) write to stdout.  To allow
+	# the filters to operate independently, the output of
+	# stdout_filter is sent to a temporary file descriptor (3), which
+	# is redirected back to stdout at the outermost level.
+	ssh_cmd="$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS"
+	if $parallel ; then
+		{
+			exec 3>&1
+			{
+				$ssh_cmd "$n" "$command" 3>&- |
+					stdout_filter >&3
+			} 2>&1 | stderr_filter
+		} &
+		pids="${pids} $!"
+	else
+		if $verbose ; then
+			echo >&2 ; echo ">> NODE: $n <<" >&2
+		fi
+
+		{
+			exec 3>&1
+			{
+				$ssh_cmd "$n" "$command" 3>&- |
+					stdout_filter >&3
+			} 2>&1 | stderr_filter
+		} || retcode=$?
 	fi
-
-	{
-	    exec 3>&1
-	    {
-		$ssh_cmd "$n" "$command" 3>&- |
-		    stdout_filter >&3
-	    } 2>&1 | stderr_filter
-	} || retcode=$?
-    fi
 done
 
 if $parallel ; then
-    for p in $pids; do
-	wait "$p" || retcode=$?
-    done
+	for p in $pids; do
+		wait "$p" || retcode=$?
+	done
 fi
 
 exit $retcode
