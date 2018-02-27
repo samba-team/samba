@@ -615,7 +615,7 @@ samba-tool user setexpiry User1 --days=20 --URL=ldap://samba.samdom.example.com 
 Example1 shows how to set the expiration of an account in a remote LDAP server.  The --URL parameter is used to specify the remote target server.  The --username= and --password= options are used to pass the username and password of a user that exists on the remote server and is authorized to update that server.
 
 Example2:
-su samba-tool user setexpiry User2
+sudo samba-tool user setexpiry User2 --noexpiry
 
 Example2 shows how to set the account expiration of user User2 so it will never expire.  The user in this example resides on the  local server.   sudo is used so a user may run the command as root.
 
