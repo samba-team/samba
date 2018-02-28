@@ -86,6 +86,37 @@ static struct extended_dn_context *extended_dn_context_init(struct ldb_module *m
 	return ac;
 }
 
+static int extended_replace_dn(struct extended_dn_replace_list *os,
+			       struct ldb_dn *dn)
+{
+	struct dsdb_dn *dsdb_dn = NULL;
+	const char *str = NULL;
+
+	/*
+	 * Rebuild with the string or binary 'extra part' the
+	 * DN may have had as a prefix
+	 */
+	dsdb_dn = dsdb_dn_construct(os, dn,
+				    os->dsdb_dn->extra_part,
+				    os->dsdb_dn->oid);
+	if (dsdb_dn == NULL) {
+		return ldb_module_operr(os->ac->module);
+	}
+
+	str = dsdb_dn_get_extended_linearized(os->mem_ctx,
+					      dsdb_dn, 1);
+	if (str == NULL) {
+		return ldb_module_operr(os->ac->module);
+	}
+
+	/*
+	 * Replace the DN with the extended version of the DN
+	 * (ie, add SID and GUID)
+	 */
+	*os->replace_dn = data_blob_string_const(str);
+	return LDB_SUCCESS;
+}
+
 /* An extra layer of indirection because LDB does not allow the original request to be altered */
 
 static int extended_final_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -158,24 +189,11 @@ static int extended_replace_callback(struct ldb_request *req, struct ldb_reply *
 		/* This *must* be the right DN, as this is a base
 		 * search.  We can't check, as it could be an extended
 		 * DN, so a module below will resolve it */
-		struct ldb_dn *dn = ares->message->dn;
-		
-		/* Rebuild with the string or binary 'extra part' the
-		 * DN may have had as a prefix */
-		struct dsdb_dn *dsdb_dn = dsdb_dn_construct(ares, dn, 
-							    os->dsdb_dn->extra_part,
-							    os->dsdb_dn->oid);
-		if (dsdb_dn) {
-			/* Replace the DN with the extended version of the DN
-			 * (ie, add SID and GUID) */
-			*os->replace_dn = data_blob_string_const(
-				dsdb_dn_get_extended_linearized(os->mem_ctx, 
-								dsdb_dn, 1));
-			talloc_free(dsdb_dn);
-		}
-		if (os->replace_dn->data == NULL) {
-			return ldb_module_done(os->ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
+		int ret;
+
+		ret = extended_replace_dn(os, ares->message->dn);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(os->ac->req, NULL, NULL, ret);
 		}
 		break;
 	}
