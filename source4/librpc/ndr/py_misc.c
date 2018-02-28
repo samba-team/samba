@@ -95,14 +95,17 @@ static int py_GUID_init(PyObject *self, PyObject *args, PyObject *kwargs)
 
 	if (str != NULL) {
 		DATA_BLOB guid_val;
-		Py_ssize_t _size;
 
-		if (!PyStr_Check(str)) {
-			PyErr_SetString(PyExc_TypeError, "Expected a string argument to GUID()");
+		/* in python2 we get a string, in python3 we expect bytes */
+		if (!PyBytes_Check(str)) {
+			PyErr_SetString(PyExc_TypeError,
+					"Expected a "
+					PY_DESC_PY3_BYTES
+					" argument to GUID()");
 			return -1;
 		}
-		guid_val.data = (uint8_t *)PyStr_AsUTF8AndSize(str, &_size);
-		guid_val.length = _size;
+		guid_val.data = (uint8_t *)PyBytes_AsString(str);
+		guid_val.length = PyBytes_Size(str);
 		status = GUID_from_data_blob(&guid_val, guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			PyErr_SetNTSTATUS(status);
