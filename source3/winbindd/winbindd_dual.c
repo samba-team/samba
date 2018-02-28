@@ -882,6 +882,21 @@ void winbind_msg_debug(struct messaging_context *msg_ctx,
 	forall_children(winbind_msg_relay_fn, &state);
 }
 
+void winbind_disconnect_dc_parent(struct messaging_context *msg_ctx,
+				  void *private_data,
+				  uint32_t msg_type,
+				  struct server_id server_id,
+				  DATA_BLOB *data)
+{
+	struct winbind_msg_relay_state state = {
+		.msg_ctx = msg_ctx, .msg_type = msg_type, .data = data
+	};
+
+	DBG_DEBUG("Got disconnect_dc message\n");
+
+	forall_children(winbind_msg_relay_fn, &state);
+}
+
 /* Set our domains as offline and forward the offline message to our children. */
 
 struct winbind_msg_on_offline_state {
@@ -1710,7 +1725,9 @@ static bool fork_domain_child(struct winbindd_child *child)
 	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_IP_DROPPED,
 			   winbind_msg_ip_dropped);
-
+	messaging_register(server_messaging_context(), NULL,
+			   MSG_WINBIND_DISCONNECT_DC,
+			   winbind_msg_disconnect_dc);
 
 	primary_domain = find_our_domain();
 
