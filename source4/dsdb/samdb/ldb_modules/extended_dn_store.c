@@ -117,7 +117,7 @@ static int extended_final_callback(struct ldb_request *req, struct ldb_reply *ar
 	return ret;
 }
 
-static int extended_replace_dn(struct ldb_request *req, struct ldb_reply *ares)
+static int extended_replace_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct extended_dn_replace_list *os = talloc_get_type(req->context, 
 							   struct extended_dn_replace_list);
@@ -282,7 +282,7 @@ static int extended_store_replace(struct extended_dn_context *ac,
 	 * processing */
 	ret = ldb_build_search_req(&os->search_req,
 				   ac->ldb, os, os->dsdb_dn->dn, LDB_SCOPE_BASE, NULL, 
-				   attrs, NULL, os, extended_replace_dn,
+				   attrs, NULL, os, extended_replace_callback,
 				   ac->req);
 	LDB_REQ_SET_LOCATION(os->search_req);
 	if (ret != LDB_SUCCESS) {
