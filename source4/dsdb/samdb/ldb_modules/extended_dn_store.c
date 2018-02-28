@@ -331,6 +331,11 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 			continue;
 		}
 
+		if (schema_attr->attributeID_id == DRSUAPI_ATTID_distinguishedName) {
+			/* distinguishedName values are ignored */
+			continue;
+		}
+
 		/* Before we setup a procedure to modify the incoming message, we must copy it */
 		if (!ac->new_req) {
 			struct ldb_message *msg = ldb_msg_copy(ac, req->op.add.message);
@@ -410,6 +415,11 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 
 		/* We only setup an extended DN GUID on these particular DN objects */
 		if (schema_attr->dn_format == DSDB_INVALID_DN) {
+			continue;
+		}
+
+		if (schema_attr->attributeID_id == DRSUAPI_ATTID_distinguishedName) {
+			/* distinguishedName values are ignored */
 			continue;
 		}
 
