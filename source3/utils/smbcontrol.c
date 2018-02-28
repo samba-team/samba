@@ -1258,6 +1258,19 @@ static bool do_winbind_dump_domain_list(struct tevent_context *ev_ctx,
 	return num_replies;
 }
 
+static bool do_msg_disconnect_dc(struct tevent_context *ev_ctx,
+				 struct messaging_context *msg_ctx,
+				 const struct server_id pid,
+				 const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> disconnect-dc\n");
+		return False;
+	}
+
+	return send_message(msg_ctx, pid, MSG_WINBIND_DISCONNECT_DC, NULL, 0);
+}
+
 static void winbind_validate_cache_cb(struct messaging_context *msg,
 				      void *private_data,
 				      uint32_t msg_type,
@@ -1436,6 +1449,7 @@ static const struct {
 	{ "validate-cache" , do_winbind_validate_cache,
 	  "Validate winbind's credential cache" },
 	{ "dump-domain-list", do_winbind_dump_domain_list, "Dump winbind domain list"},
+	{ "disconnect-dc", do_msg_disconnect_dc },
 	{ "notify-cleanup", do_notify_cleanup },
 	{ "num-children", do_num_children,
 	  "Print number of smbd child processes" },

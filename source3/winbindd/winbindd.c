@@ -1346,6 +1346,10 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 			   MSG_DEBUG,
 			   winbind_msg_debug);
 
+	messaging_register(msg_ctx, NULL,
+			   MSG_WINBIND_DISCONNECT_DC,
+			   winbind_disconnect_dc_parent);
+
 	netsamlogon_cache_init(); /* Non-critical */
 
 	/* clear the cached list of trusted domains */
