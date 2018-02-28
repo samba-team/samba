@@ -220,9 +220,6 @@ get_nodes ()
 {
     local all_nodes
 
-    if [ -n "$CTDB_NODES_SOCKETS" ] ; then 
-	all_nodes="$CTDB_NODES_SOCKETS"
-    else
 	local f="${CTDB_BASE}/nodes"
 	if [ -n "$CTDB_NODES_FILE" ] ; then
 	    f="$CTDB_NODES_FILE"
@@ -240,7 +237,6 @@ get_nodes ()
 	fi
 
 	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' "$f")
-    fi
 
     local n nodes
     nodes=$(parse_nodespec "$1") || exit $?
@@ -285,11 +281,6 @@ push()
     done
 }
 
-fakessh ()
-{
-    CTDB_SOCKET="$1" sh -c "$2"
-}
-
 stdout_filter ()
 {
     if [ -n "$prefix" ] ; then
@@ -321,10 +312,6 @@ if $push ; then
 else
     $current && command="cd $PWD && $command"
 
-    if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	ONNODE_SSH=fakessh
-	ONNODE_SSH_OPTS=""
-    else 
 	# Could "2>/dev/null || true" but want to see errors from typos in file.
 	[ -r "${CTDB_BASE}/onnode.conf" ] && . "${CTDB_BASE}/onnode.conf"
 	[ -n "$ONNODE_SSH" ] || ONNODE_SSH=ssh
@@ -335,7 +322,6 @@ else
 	else
 	    : # rsh? All bets are off!
 	fi
-    fi
 fi
 
 ######################################################################
