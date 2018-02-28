@@ -78,6 +78,10 @@
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 
+/* description of bytes and string objects */
+#define PY_DESC_PY3_BYTES "bytes"
+#define PY_DESC_PY3_STRING "string"
+
 /* Ints */
 
 #define PyInt_Type PyLong_Type
@@ -143,6 +147,10 @@
 #define PyBytes_Concat PyString_Concat
 #define PyBytes_ConcatAndDel PyString_ConcatAndDel
 #define _PyBytes_Resize _PyString_Resize
+
+/* description of bytes and string objects */
+#define PY_DESC_PY3_BYTES "string"
+#define PY_DESC_PY3_STRING "unicode"
 
 /* PyArg_ParseTuple/Py_BuildValue argument */
 
