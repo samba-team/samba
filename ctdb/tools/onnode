@@ -368,11 +368,12 @@ for n in $nodes ; do
     # the filters to operate independently, the output of
     # stdout_filter is sent to a temporary file descriptor (3), which
     # is redirected back to stdout at the outermost level.
+    ssh_cmd="$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS"
     if $parallel ; then
 	{
 	    exec 3>&1
 	    {
-		$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS "$n" "$command" |
+		$ssh_cmd "$n" "$command" |
 		    stdout_filter >&3
 	    } 2>&1 | stderr_filter
 	} &
@@ -385,7 +386,7 @@ for n in $nodes ; do
 	{
 	    exec 3>&1
 	    {
-		$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS "$n" "$command" |
+		$ssh_cmd "$n" "$command" |
 		    stdout_filter >&3
 	    } 2>&1 | stderr_filter
 	} || retcode=$?
