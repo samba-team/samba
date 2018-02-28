@@ -165,7 +165,7 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 		DEBUG(1, ("unable to obtain a PAC against this GSSAPI library.  "
 			  "GSSAPI secured connections are available only with Heimdal or MIT Kerberos >= 1.8\n"));
 	} else if (gss_maj != 0) {
-		DEBUG(2, ("obtaining PAC via GSSAPI gss_inqiure_sec_context_by_oid (Heimdal OID) failed: %s\n",
+		DEBUG(2, ("obtaining PAC via GSSAPI gss_inquire_sec_context_by_oid (Heimdal OID) failed: %s\n",
 			  gssapi_error_string(mem_ctx, gss_maj, gss_min, gss_mech_krb5)));
 	} else {
 		if (set == GSS_C_NO_BUFFER_SET) {
