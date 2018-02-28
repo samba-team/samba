@@ -35,7 +35,8 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_lookupname_state *state;
-	char *domname, *name, *p;
+	const char *domname = NULL, *name = NULL;
+	char *p = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_lookupname_state);
@@ -49,17 +50,25 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 		sizeof(request->data.name.dom_name)-1]='\0';
 	request->data.name.name[sizeof(request->data.name.name)-1]='\0';
 
-	/* cope with the name being a fully qualified name */
-	p = strstr(request->data.name.name, lp_winbind_separator());
-	if (p) {
-		*p = 0;
-		domname = request->data.name.name;
-		name = p+1;
-	} else if ((p = strchr(request->data.name.name, '@')) != NULL) {
-		/* upn */
-		domname = p + 1;
-		*p = 0;
-		name = request->data.name.name;
+	if (strlen(request->data.name.dom_name) == 0) {
+		/* cope with the name being a fully qualified name */
+		p = strstr(request->data.name.name, lp_winbind_separator());
+		if (p != NULL) {
+			*p = '\0';
+			domname = request->data.name.name;
+			name = p + 1;
+		} else {
+			p = strchr(request->data.name.name, '@');
+			if (p != NULL) {
+				/* upn */
+				domname = p + 1;
+				*p = '\0';
+				name = request->data.name.name;
+			} else {
+				domname = "";
+				name = request->data.name.name;
+			}
+		}
 	} else {
 		domname = request->data.name.dom_name;
 		name = request->data.name.name;
