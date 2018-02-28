@@ -143,7 +143,7 @@ static int extended_replace_dn(struct ldb_request *req, struct ldb_reply *ares)
 			/* Otherwise, we are done - let's run the
 			 * request now we have swapped the DNs for the
 			 * full versions */
-			return ldb_next_request(os->ac->module, os->ac->req);
+			return ldb_next_request(os->ac->module, os->ac->new_req);
 		}
 	}
 	if (ares->error != LDB_SUCCESS) {
