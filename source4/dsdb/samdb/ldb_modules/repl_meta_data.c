@@ -2039,8 +2039,12 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			/* we got a DN without a GUID - go find the GUID */
 			int ret = dsdb_module_guid_by_dn(module, dn, &p->guid, parent);
 			if (ret != LDB_SUCCESS) {
-				ldb_asprintf_errstring(ldb, "Unable to find GUID for DN %s\n",
-						       ldb_dn_get_linearized(dn));
+				char *dn_str = NULL;
+				dn_str = ldb_dn_get_extended_linearized(mem_ctx,
+									(dn), 1);
+				ldb_asprintf_errstring(ldb,
+						"Unable to find GUID for DN %s\n",
+						dn_str);
 				if (ret == LDB_ERR_NO_SUCH_OBJECT &&
 				    LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE &&
 				    ldb_attr_cmp(el->name, "member") == 0) {
