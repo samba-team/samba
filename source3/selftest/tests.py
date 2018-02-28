@@ -207,6 +207,10 @@ for env in ["nt4_member", "ad_member"]:
 env = "ad_member"
 t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
+plantestsuite("samba3.wbinfo_name_lookup", env,
+              [ os.path.join(srcdir(),
+                            "nsswitch/tests/test_wbinfo_name_lookup.sh"),
+                '$DOMAIN', '$DC_USERNAME' ])
 t = "WBCLIENT-MULTI-PING"
 plantestsuite("samba3.smbtorture_s3.%s" % t, env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//foo/bar', '""', '""', smbtorture3, ""])
 plantestsuite("samba3.substitutions", env, [os.path.join(samba3srcdir, "script/tests/test_substitutions.sh"), "$SERVER", "alice", "Secret007", "$PREFIX"])
