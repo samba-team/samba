@@ -3467,3 +3467,19 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 	}
 	TALLOC_FREE(freeit);
 }
+
+void winbind_msg_disconnect_dc(struct messaging_context *msg_ctx,
+			       void *private_data,
+			       uint32_t msg_type,
+			       struct server_id server_id,
+			       DATA_BLOB *data)
+{
+	struct winbindd_domain *domain;
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->internal) {
+			continue;
+		}
+		invalidate_cm_connection(domain);
+	}
+}
