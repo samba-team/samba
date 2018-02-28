@@ -219,6 +219,7 @@ static int extended_replace_dn(struct ldb_request *req, struct ldb_reply *ares)
 
 static int extended_store_replace(struct extended_dn_context *ac,
 				  TALLOC_CTX *callback_mem_ctx,
+				  struct ldb_dn *self_dn,
 				  struct ldb_val *plain_dn,
 				  bool is_delete, 
 				  const struct dsdb_attribute *schema_attr)
@@ -248,6 +249,19 @@ static int extended_store_replace(struct extended_dn_context *ac,
 				       "could not parse %.*s as a %s DN", (int)plain_dn->length, plain_dn->data,
 				       oid);
 		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	if (self_dn != NULL) {
+		ret = ldb_dn_compare(self_dn, os->dsdb_dn->dn);
+		if (ret == 0) {
+			/*
+			 * If this is a reference to the object
+			 * itself during an 'add', we won't
+			 * be able to find the object.
+			 */
+			talloc_free(os);
+			return LDB_SUCCESS;
+		}
 	}
 
 	if (is_delete && !ldb_dn_has_extended(os->dsdb_dn->dn)) {
@@ -353,7 +367,9 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		/* Re-calculate el */
 		el = &ac->new_req->op.add.message->elements[i];
 		for (j = 0; j < el->num_values; j++) {
-			ret = extended_store_replace(ac, ac->new_req, &el->values[j],
+			ret = extended_store_replace(ac, ac->new_req,
+						     req->op.add.message->dn,
+						     &el->values[j],
 						     false, schema_attr);
 			if (ret != LDB_SUCCESS) {
 				return ret;
@@ -449,7 +465,9 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 			 * input of an extended DN */
 			bool is_delete = (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE);
 
-			ret = extended_store_replace(ac, ac->new_req, &el->values[j],
+			ret = extended_store_replace(ac, ac->new_req,
+						     NULL, /* self_dn to be ignored */
+						     &el->values[j],
 						     is_delete, schema_attr);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(ac);
