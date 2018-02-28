@@ -2078,7 +2078,6 @@ void invalidate_cm_connection(struct winbindd_domain *domain)
 	}
 
 	conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	conn->netlogon_force_reauth = false;
 	TALLOC_FREE(conn->netlogon_creds_ctx);
 
 	if (conn->cli) {
@@ -3365,6 +3364,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		conn->cli, transport,
 		conn->netlogon_creds_ctx, conn->netlogon_force_reauth, creds,
 		&conn->netlogon_pipe);
+	conn->netlogon_force_reauth = false;
 	if (!NT_STATUS_IS_OK(result)) {
 		DBG_DEBUG("rpccli_connect_netlogon failed: %s\n",
 			  nt_errstr(result));
