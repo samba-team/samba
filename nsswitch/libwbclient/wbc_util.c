@@ -455,9 +455,7 @@ static wbcErr process_domain_info_string(struct wbcDomainInfo *info,
 	*s = '\0';
 	s++;
 
-	if (strcmp(r, "Local") == 0) {
-		info->trust_type = WBC_DOMINFO_TRUSTTYPE_NONE;
-	} else if (strncmp(r, "Routed", strlen("Routed")) == 0) {
+	if (strncmp(r, "Routed", strlen("Routed")) == 0) {
 		info->trust_type = WBC_DOMINFO_TRUSTTYPE_NONE;
 		info->trust_routing = strdup(r);
 		BAIL_ON_PTR_ERROR(info->trust_routing, wbc_status);
