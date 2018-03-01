@@ -175,6 +175,7 @@ def configure(conf):
         if not conf.CHECK_FUNCS_IN('pmdaDaemon', 'pcp_pmda'):
             pmda_support = False
         if pmda_support:
+            conf.CHECK_TYPE_IN('__pmID_int', 'pcp/pmapi.h pcp/impl.h')
             have_pmda = True
         else:
             Logs.error("PMDA support not available")
