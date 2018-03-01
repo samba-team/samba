@@ -411,10 +411,14 @@ def build(bld):
                         source='common/logging_conf.c',
                         deps='ctdb-util talloc')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-protocol-basic',
+                        source=bld.SUBDIR('protocol', 'protocol_basic.c'),
+                        deps='talloc tdb')
+
     bld.SAMBA_SUBSYSTEM('ctdb-protocol',
                         source=bld.SUBDIR('protocol',
                                           '''protocol_header.c protocol_packet.c
-                                             protocol_basic.c protocol_types.c
+                                             protocol_types.c
                                              protocol_call.c
                                              protocol_message.c
                                              protocol_control.c
@@ -425,7 +429,7 @@ def build(bld):
                                              protocol_event.c
                                              protocol_sock.c'''),
                         includes='include',
-                        deps='replace talloc tdb')
+                        deps='ctdb-protocol-basic replace talloc tdb')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-util',
                         source='protocol/protocol_util.c',

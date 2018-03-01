@@ -21,10 +21,8 @@
 #include "system/network.h"
 
 #include <talloc.h>
-#include <tdb.h>
 
-#include "protocol.h"
-#include "protocol_private.h"
+#include "protocol_basic.h"
 
 /*
  * Basic data types
