@@ -513,20 +513,20 @@ NTSTATUS make_auth3_context_for_ntlm(TALLOC_CTX *mem_ctx,
 		break;
 	case ROLE_DOMAIN_MEMBER:
 		DEBUG(5,("Making default auth method list for server role = 'domain member'\n"));
-		methods = "guest sam winbind sam_ignoredomain";
+		methods = "anonymous sam winbind sam_ignoredomain";
 		break;
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
 		DEBUG(5,("Making default auth method list for DC\n"));
-		methods = "guest sam winbind sam_ignoredomain";
+		methods = "anonymous sam winbind sam_ignoredomain";
 		break;
 	case ROLE_STANDALONE:
 		DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = yes\n"));
 		if (lp_encrypt_passwords()) {
-			methods = "guest sam_ignoredomain";
+			methods = "anonymous sam_ignoredomain";
 		} else {
 			DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = no\n"));
-			methods = "guest unix";
+			methods = "anonymous unix";
 		}
 		break;
 	default:

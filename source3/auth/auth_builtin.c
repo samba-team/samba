@@ -25,18 +25,18 @@
 #define DBGC_CLASS DBGC_AUTH
 
 /**
- * Return a guest logon for guest users (username = "")
+ * Return a guest logon for anonymous users (username = "")
  *
  * Typically used as the first module in the auth chain, this allows
  * guest logons to be dealt with in one place.  Non-guest logons 'fail'
  * and pass onto the next module.
  **/
 
-static NTSTATUS check_guest_security(const struct auth_context *auth_context,
-				     void *my_private_data, 
-				     TALLOC_CTX *mem_ctx,
-				     const struct auth_usersupplied_info *user_info,
-				     struct auth_serversupplied_info **server_info)
+static NTSTATUS check_anonymous_security(const struct auth_context *auth_context,
+				void *my_private_data,
+				TALLOC_CTX *mem_ctx,
+				const struct auth_usersupplied_info *user_info,
+				struct auth_serversupplied_info **server_info)
 {
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
@@ -86,7 +86,7 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 
 /* Guest modules initialisation */
 
-static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
+static NTSTATUS auth_init_anonymous(struct auth_context *auth_context, const char *options, auth_methods **auth_method)
 {
 	struct auth_methods *result;
 
@@ -94,8 +94,8 @@ static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *o
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	result->auth = check_guest_security;
-	result->name = "guest";
+	result->auth = check_anonymous_security;
+	result->name = "anonymous";
 
         *auth_method = result;
 	return NT_STATUS_OK;
@@ -169,7 +169,7 @@ static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, co
 
 NTSTATUS auth_builtin_init(TALLOC_CTX *mem_ctx)
 {
-	smb_register_auth(AUTH_INTERFACE_VERSION, "guest", auth_init_guest);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "anonymous", auth_init_anonymous);
 #ifdef DEVELOPER
 	smb_register_auth(AUTH_INTERFACE_VERSION, "name_to_ntstatus", auth_init_name_to_ntstatus);
 #endif
