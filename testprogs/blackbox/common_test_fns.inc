@@ -99,8 +99,11 @@ kerberos_kinit() {
 		kpassfile=$(mktemp)
 		echo $password > ${kpassfile}
 		$kinit_tool --password-file=${kpassfile} $principal $@
+		status=$?
 		rm -f ${kpassfile}
 	else
 		echo $password | $kinit_tool $principal $@
+		status=$?
 	fi
+	return $status
 }
