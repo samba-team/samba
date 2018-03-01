@@ -167,6 +167,34 @@ domains. Some pam_winbind setups may also require the global list.
 If you have a setup that doesn't require the global list, you should set
 "winbind scan trusted domains = no".
 
+Improved support for trusted domains (as AD DC)
+-----------------------------------------------
+
+The support for trusted domains/forests has improved a lot.
+
+External domain trusts, as well a transitive forest trusts,
+are supported in both directions (inbound and outbound)
+for Kerberos and NTLM authentication now.
+
+The LSA LookupNames and LookupSids implementations
+support resolving names and sids from trusts domains/forest
+now. This is important in order to allow Samba based
+domain members to make use of the trust.
+
+However there are currently still a few limitations:
+
+- It's not possible to add users/groups of a trusted domain
+  into domain groups. So group memberships are not expanded
+  on trust boundaries.
+  See https://bugzilla.samba.org/show_bug.cgi?id=13300
+- Both sides of the trust need to fully trust each other!
+- No SID filtering rules are applied at all!
+- This means DCs of domain A can grant domain admin rights
+  in domain B.
+- Selective (CROSS_ORIGANIZATION) authentication is
+  not supported. It's possible to create such a trust,
+  but the KDC and winbindd ignore them.
+
 VirusFilter VFS module
 ----------------------
 
