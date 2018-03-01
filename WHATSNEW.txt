@@ -27,6 +27,10 @@ smbclient reparse point symlink parameters reversed
 
 See the more detailed description below.
 
+Changed trusted domains listing with wbinfo -m --verbose
+--------------------------------------------------------
+
+See the more detailed description below.
 
 NEW FEATURES/CHANGES
 ====================
@@ -194,6 +198,46 @@ However there are currently still a few limitations:
 - Selective (CROSS_ORIGANIZATION) authentication is
   not supported. It's possible to create such a trust,
   but the KDC and winbindd ignore them.
+
+Changed trusted domains listing with wbinfo -m --verbose
+--------------------------------------------------------
+
+The trust properties printed by wbinfo -m --verbose have been changed to
+correctly reflect the view of the system where wbinfo is executed.
+
+The trust type field in particular can show additional values that correctly
+reflect the type of the trust: "Local" for the local SAM and BUILTIN,
+"Workstation" for a workstation trust to the primary domain, "RWDC" for the SAM
+on a AD DC, "RODC" for the SAM on a read-only DC, "PDC" for the SAM on a
+NT4-style DC, "Forest" for a AD forest trust and "External" for quarantined,
+external or NT4-style trusts.
+
+Indirect trusts are shown as "Routed" including the routing domain.
+
+Example, on a AD DC (SDOM1):
+
+Domain Name DNS Domain          Trust Type  Transitive  In   Out
+BUILTIN                         Local
+SDOM1       sdom1.site          RWDC
+WDOM3       wdom3.site          Forest      Yes         No   Yes
+WDOM2       wdom2.site          Forest      Yes         Yes  Yes
+SUBDOM31    subdom31.wdom3.site Routed (via WDOM3)
+SUBDOM21    subdom21.wdom2.site Routed (via WDOM2)
+
+Same setup, on a member of WDOM2:
+
+Domain Name DNS Domain          Trust Type  Transitive  In   Out
+BUILTIN                         Local
+TITAN                           Local
+WDOM2       wdom2.site          Workstation Yes         No   Yes
+WDOM1       wdom1.site          Routed (via WDOM2)
+WDOM3       wdom3.site          Routed (via WDOM2)
+SUBDOM21    subdom21.wdom2.site Routed (via WDOM2)
+SDOM1       sdom1.site          Routed (via WDOM2)
+SUBDOM11    subdom11.wdom1.site Routed (via WDOM2)
+
+The list of trusts may be incomplete and additional domains may appear as
+"Routed" if a user of an unknown domain is successfully authenticated.
 
 VirusFilter VFS module
 ----------------------
