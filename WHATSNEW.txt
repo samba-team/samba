@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.8.  This is *not*
+This is the fourth release candidate of Samba 4.8.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -323,6 +323,55 @@ smb.conf changes
   unicode                            Deprecated
   winbind scan trusted domains       New                     yes
   winbind trusted domains only       Removed
+
+
+CHANGES SINCE 4.8.0rc3
+======================
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13287: Fix numerous trust related bugs in winbindd and s4 LSA RPC
+     server.
+   * BUG 13296: vfs_fruit: Use off_t, not size_t for TM size calculations.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13304: mit-kdb: Support MIT Kerberos 1.16 KDB API changes.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13277: build: Fix libceph-common detection.
+
+o  Poornima G <pgurusid@redhat.com>
+   * BUG 13297: vfs_glusterfs: Fix the wrong pointer being sent in
+     glfs_fsync_async.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13305: vfs_fileid: Fix the 32-bit build.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13206: Unable to authenticate with an empty string domain ''.
+   * BUG 13276: configure aborts without libnettle/gnutls.
+   * BUG 13278: winbindd (on an AD DC) should only use netlogon/lsa against
+     trusted domains.
+   * BUG 13287: Fix numerous trust related bugs in winbindd and s4 LSA RPC
+     server.
+   * BUG 13290: A disconnecting winbind client can cause a problem in 
+     the winbind parent child communication.
+   * BUG 13291: tevent: version 0.9.36.
+   * BUG 13292: winbind requests could get stuck in the queue of a busy child,
+     while later requests could get served fine by other children.
+   * BUG 13293: Minimize the lifetime of winbindd_cli_state->{pw,gr}ent_state.
+   * BUG 13294: Avoid using fstrcpy(domain->dcname,...) on a char *.
+   * BUG 13295: winbind parent should find the dc of a foreign domain via the
+     primary domain.
+   * BUG 13299: Disable support for CROSS_ORGANIZATION domains.
+   * BUG 13306: ldb: version 1.3.2.
+
+o  Sachin Prabhu <sprabhu@redhat.com>
+   * BUG 13303: vfs_glusterfs: Add fallocate support for vfs_glusterfs.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13031: subnet: Avoid a segfault when renaming subnet objects.
+   * BUG 13269: RODC may skip objects during replication due to naming
+     conflicts.
 
 
 CHANGES SINCE 4.8.0rc2
