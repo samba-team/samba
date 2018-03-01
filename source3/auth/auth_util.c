@@ -1045,7 +1045,6 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	SMB_ASSERT(src->unix_info);
 
 	dst->guest = true;
-	dst->system = false;
 
 	/* This element must be provided to convert back to an
 	 * auth_serversupplied_info.  This needs to be from the
