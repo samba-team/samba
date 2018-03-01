@@ -22,6 +22,12 @@ Unlike in previous releases a transparent downgrade is not possible.
 If you wish to downgrade such a DB to a Samba 4.7 or earlier version,
 please run the source4/scripting/bin/sambaundoguididx script first.
 
+smbclient reparse point symlink parameters reversed
+---------------------------------------------------
+
+See the more detailed description below.
+
+
 NEW FEATURES/CHANGES
 ====================
 
