@@ -9,6 +9,16 @@
 
 . $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 failed=0
+
+if [ $SMBD_DONT_LOG_STDOUT -eq 1 ]; then
+	subunit_start_test "check_panic_0"
+	subunit_skip_test "check_panic_0" <<EOF
+logging to stdout disabled
+EOF
+
+	testok $0 $failed
+fi
+
 error_inject_conf=$(dirname $SMB_CONF_PATH)/error_inject.conf
 
 panic_count_0=$(grep -c PANIC $SMBD_TEST_LOG)
