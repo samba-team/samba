@@ -673,6 +673,9 @@ static int lmdb_pvt_open(TALLOC_CTX *mem_ctx,
 	if (flags & LDB_FLG_RDONLY) {
 		mdb_flags |= MDB_RDONLY;
 	}
+	if (flags & LDB_FLG_NOSYNC) {
+		mdb_flags |= MDB_NOSYNC;
+	}
 	ret = mdb_env_open(lmdb->env, path, mdb_flags, 0644);
 	if (ret != 0) {
 		ldb_asprintf_errstring(ldb,
