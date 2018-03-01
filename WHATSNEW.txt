@@ -133,37 +133,6 @@ dot or xdot, this shows the network as a graph with DCs as vertices
 and connections edges. Certain types of degenerate edges are shown in
 different colours or line-styles.
 
-NT4-style replication based net commands removed
-------------------------------------------------
-
-The following commands and sub-commands have been removed from the
-"net" utility:
-
-net rpc samdump
-net rpc vampire ldif
-
-Also, replicating from a real NT4 domain with "net rpc vampire" and
-"net rpc vampire keytab" has been removed.
-
-The NT4-based commands were accidentially broken in 2013, and nobody
-noticed the breakage. So instead of fixing them including tests (which
-would have meant writing a server for the protocols, which we don't
-have) we decided to remove them.
-
-For the same reason, the "samsync", "samdeltas" and "database_redo"
-commands have been removed from rpcclient.
-
-"net rpc vampire keytab" from Active Directory domains continues to be
-supported.
-
-vfs_aio_linux module removed
-----------------------------
-
-The current Linux kernel aio does not match what Samba would
-do. Shipping code that uses it leads people to false
-assumptions. Samba implements async I/O based on threads by default,
-there is no special module required to see benefits of read and write
-request being sent do the disk in parallel.
 
 smbclient reparse point symlink parameters reversed
 ---------------------------------------------------
@@ -202,6 +171,9 @@ software to provide scanning and filtering of files on a Samba share.
 REMOVED FEATURES
 ================
 
+'net serverid' commands removed
+-------------------------------
+
 The two commands 'net serverid list' and 'net serverid wipe' have been
 removed, because the file serverid.tdb is not used anymore.
 
@@ -215,6 +187,38 @@ for clustered environments, where the serverid.tdb file was not
 properly cleaned up after single node crashes. Nowadays smbd and
 winbind take care of cleaning up the msg.lock and msg.sock directories
 automatically.
+
+NT4-style replication based net commands removed
+------------------------------------------------
+
+The following commands and sub-commands have been removed from the
+"net" utility:
+
+net rpc samdump
+net rpc vampire ldif
+
+Also, replicating from a real NT4 domain with "net rpc vampire" and
+"net rpc vampire keytab" has been removed.
+
+The NT4-based commands were accidentally broken in 2013, and nobody
+noticed the breakage. So instead of fixing them including tests (which
+would have meant writing a server for the protocols, which we don't
+have) we decided to remove them.
+
+For the same reason, the "samsync", "samdeltas" and "database_redo"
+commands have been removed from rpcclient.
+
+"net rpc vampire keytab" from Active Directory domains continues to be
+supported.
+
+vfs_aio_linux module removed
+----------------------------
+
+The current Linux kernel aio does not match what Samba would
+do. Shipping code that uses it leads people to false
+assumptions. Samba implements async I/O based on threads by default,
+there is no special module required to see benefits of read and write
+request being sent do the disk in parallel.
 
 
 smb.conf changes
