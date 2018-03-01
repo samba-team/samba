@@ -30,7 +30,6 @@ struct extra_auth_info {
 
 struct auth_serversupplied_info {
 	bool guest;
-	bool system;
 
 	struct security_unix_token utok;
 
