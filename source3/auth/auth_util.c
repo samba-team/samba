@@ -633,7 +633,11 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	 */
 
 	uid_to_unix_users_sid(session_info->unix_token->uid, &tmp_sid);
+	add_sid_to_array_unique(session_info->security_token, &tmp_sid,
+				&session_info->security_token->sids,
+				&session_info->security_token->num_sids);
 
+	gid_to_unix_groups_sid(session_info->unix_token->gid, &tmp_sid);
 	add_sid_to_array_unique(session_info->security_token, &tmp_sid,
 				&session_info->security_token->sids,
 				&session_info->security_token->num_sids);
