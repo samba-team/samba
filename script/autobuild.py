@@ -25,6 +25,7 @@ cleanup_list = []
 builddirs = {
     "ctdb"    : "ctdb",
     "samba"  : ".",
+    "samba-nt4"  : ".",
     "samba-xc" : ".",
     "samba-o3" : ".",
     "samba-ctdb" : ".",
@@ -44,7 +45,22 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-libs", "samba-static", "samba-systemkrb5", "samba-nopython", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb",
+                 "samba",
+                 "samba-nt4",
+                 "samba-xc",
+                 "samba-o3",
+                 "samba-ctdb",
+                 "samba-libs",
+                 "samba-static",
+                 "samba-systemkrb5",
+                 "samba-nopython",
+                 "ldb",
+                 "tdb",
+                 "talloc",
+                 "replace",
+                 "tevent",
+                 "pidl" ]
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
@@ -73,13 +89,21 @@ tasks = {
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                ("clean", "make clean", "text/plain") ],
 
-    # We have 'test' before 'install' because, 'test' should work without 'install'
+    # We have 'test' before 'install' because, 'test' should work without 'install (runs ad_dc_ntvfs and all the other envs)'
     "samba" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
-                ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
+                ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--exclude-env=nt4_dc --exclude-env=nt4_member --exclude-env=ad_dc --exclude-env=none'", "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
+
+    # We split out this so the isolated nt4_dc tests do not wait for ad_dc or ad_dc_ntvfs tests (which are long)
+    "samba-nt4" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                       ("make", "make -j", "text/plain"),
+                       ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
+                       ("install", "make install", "text/plain"),
+                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                       ("clean", "make clean", "text/plain") ],
 
     "samba-test-only" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
                           ("make", "make -j", "text/plain"),
@@ -93,11 +117,11 @@ tasks = {
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
                    ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
 
-    # test build with -O3 -- catches extra warnings and bugs, tests the ad_dc environments
+    # test build with -O3 -- catches extra warnings and bugs, tests the ad_dc and none environments
     "samba-o3" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
                    ("configure", "ADDITIONAL_CFLAGS='-O3' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
                    ("make", "make -j", "text/plain"),
-                   ("test", "make quicktest FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc'", "text/plain"),
+                   ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc --include-env=none'", "text/plain"),
                    ("install", "make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "make clean", "text/plain") ],
