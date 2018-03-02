@@ -472,6 +472,26 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
+	if (server_info->cached_session_info != NULL) {
+		session_info = copy_session_info(mem_ctx,
+				server_info->cached_session_info);
+		if (session_info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* This is a potentially untrusted username for use in %U */
+		alpha_strcpy(tmp, smb_username, ". _-$", sizeof(tmp));
+		session_info->unix_info->sanitized_username =
+				talloc_strdup(session_info->unix_info, tmp);
+		if (session_info->unix_info->sanitized_username == NULL) {
+			TALLOC_FREE(session_info);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		*session_info_out = session_info;
+		return NT_STATUS_OK;
+	}
+
 	session_info = talloc_zero(mem_ctx, struct auth_session_info);
 	if (!session_info) {
 		return NT_STATUS_NO_MEMORY;
@@ -524,30 +544,6 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("conversion of info3 into auth_user_info failed!\n"));
 		TALLOC_FREE(session_info);
 		return status;
-	}
-
-	if (server_info->security_token) {
-		/* Just copy the token, it has already been finalised
-		 * (nasty hack to support a cached guest/system session_info
-		 */
-
-		session_info->security_token = dup_nt_token(session_info, server_info->security_token);
-		if (!session_info->security_token) {
-			TALLOC_FREE(session_info);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		session_info->unix_token->ngroups = server_info->utok.ngroups;
-		if (server_info->utok.ngroups != 0) {
-			session_info->unix_token->groups = (gid_t *)talloc_memdup(
-				session_info->unix_token, server_info->utok.groups,
-				sizeof(gid_t)*session_info->unix_token->ngroups);
-		} else {
-			session_info->unix_token->groups = NULL;
-		}
-
-		*session_info_out = session_info;
-		return NT_STATUS_OK;
 	}
 
 	/*
@@ -1560,12 +1556,6 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	 * to take the wrong path */
 	SMB_ASSERT(src->security_token);
 
-	dst->security_token = dup_nt_token(dst, src->security_token);
-	if (!dst->security_token) {
-		TALLOC_FREE(dst);
-		return NULL;
-	}
-
 	dst->session_key = data_blob_talloc( dst, src->session_key.data,
 						src->session_key.length);
 
@@ -1588,6 +1578,7 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 		return NULL;
 	}
 
+	dst->cached_session_info = src;
 	return dst;
 }
 
