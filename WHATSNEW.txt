@@ -22,6 +22,13 @@ Unlike in previous releases a transparent downgrade is not possible.
 If you wish to downgrade such a DB to a Samba 4.7 or earlier version,
 please run the source4/scripting/bin/sambaundoguididx script first.
 
+Domain member setups require winbindd
+-------------------------------------
+
+Setups with "security = domain" or "security = ads" require a
+running 'winbindd' now. The fallback that smbd directly contacts
+domain controllers is gone.
+
 smbclient reparse point symlink parameters reversed
 ---------------------------------------------------
 
