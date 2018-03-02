@@ -5745,6 +5745,11 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 	mode_t ms_nfs_mode = 0;
 	int result;
 	struct security_descriptor *psd = NULL;
+	uint32_t orig_num_aces = 0;
+
+	if (orig_psd->dacl != NULL) {
+		orig_num_aces = orig_psd->dacl->num_aces;
+	}
 
 	psd = security_descriptor_copy(talloc_tos(), orig_psd);
 	if (psd == NULL) {
@@ -5758,6 +5763,22 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 		DEBUG(1, ("fruit_fset_nt_acl: check_ms_nfs failed%s\n", fsp_str_dbg(fsp)));
 		TALLOC_FREE(psd);
 		return status;
+	}
+
+	/*
+	 * If only ms_nfs ACE entries were sent, ensure we set the DACL
+	 * sent/present flags correctly now we've removed them.
+	 */
+
+	if (orig_num_aces != 0) {
+		/*
+		 * Are there any ACE's left ?
+		 */
+		if (psd->dacl->num_aces == 0) {
+			/* No - clear the DACL sent/present flags. */
+			security_info_sent &= ~SECINFO_DACL;
+			psd->type &= ~SEC_DESC_DACL_PRESENT;
+		}
 	}
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
