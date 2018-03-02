@@ -523,7 +523,7 @@ for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "s4member", "chgdcpass
              "--allocate-gid"]
 
     for t in tests:
-        plantestsuite("samba.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
+        plantestsuite("samba.wbinfo_simple.%s" % (t.replace(" --", ".").replace("--", "")), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
 
     plantestsuite(
         "samba.wbinfo_sids2xids.(%s:local)" % env, "%s:local" % env,

@@ -220,16 +220,16 @@
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G against ad_member
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U check for sane mapping
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G check for sane mapping
-^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-uid
-^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-gid
-^samba.wbinfo_simple.\(s4member:local\).--allocate-uid
-^samba.wbinfo_simple.\(s4member:local\).--allocate-gid
-^samba.wbinfo_simple.\(ad_dc:local\).--allocate-uid
-^samba.wbinfo_simple.\(ad_dc:local\).--allocate-gid
-^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-uid
-^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-gid
-^samba.wbinfo_simple.\(rodc:local\).--allocate-uid
-^samba.wbinfo_simple.\(rodc:local\).--allocate-gid
+^samba.wbinfo_simple.allocate-uid.wbinfo\(ad_dc_ntvfs:local\)
+^samba.wbinfo_simple.allocate-gid.wbinfo\(ad_dc_ntvfs:local\)
+^samba.wbinfo_simple.allocate-uid.wbinfo\(s4member:local\)
+^samba.wbinfo_simple.allocate-gid.wbinfo\(s4member:local\)
+^samba.wbinfo_simple.allocate-uid.wbinfo\(ad_dc:local\)
+^samba.wbinfo_simple.allocate-gid.wbinfo\(ad_dc:local\)
+^samba.wbinfo_simple.allocate-uid.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.allocate-gid.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.allocate-uid.wbinfo\(rodc:local\)
+^samba.wbinfo_simple.allocate-gid.wbinfo\(rodc:local\)
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
