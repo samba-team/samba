@@ -284,6 +284,10 @@ NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info);
 NTSTATUS make_session_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_session_info **server_info);
+NTSTATUS make_server_info_anonymous(TALLOC_CTX *mem_ctx,
+				    struct auth_serversupplied_info **server_info);
+NTSTATUS make_session_info_anonymous(TALLOC_CTX *mem_ctx,
+				     struct auth_session_info **psession_info);
 NTSTATUS make_session_info_system(TALLOC_CTX *mem_ctx,
 				 struct auth_session_info **session_info);
 const struct auth_session_info *get_session_info_system(void);

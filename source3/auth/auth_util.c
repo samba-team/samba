@@ -1484,6 +1484,87 @@ done:
 	return status;
 }
 
+static NTSTATUS make_new_session_info_anonymous(TALLOC_CTX *mem_ctx,
+					struct auth_session_info **session_info)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *guest_account = lp_guest_account();
+	struct auth_user_info_dc *user_info_dc = NULL;
+	struct passwd *pwd = NULL;
+	uint32_t hint_flags = 0;
+	uint32_t session_info_flags = 0;
+	NTSTATUS status;
+
+	/*
+	 * We use the guest account for the unix token
+	 * while we use a true anonymous nt token.
+	 *
+	 * It's very important to have a separate
+	 * nt token for anonymous.
+	 */
+
+	pwd = Get_Pwnam_alloc(frame, guest_account);
+	if (pwd == NULL) {
+		DBG_ERR("Unable to locate guest account [%s]!\n",
+			guest_account);
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	status = auth_anonymous_user_info_dc(frame, lp_netbios_name(),
+					     &user_info_dc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("auth_anonymous_user_info_dc failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	/*
+	 * Note we don't pass AUTH3_UNIX_HINT_QUALIFIED_NAME
+	 * nor AUTH3_UNIX_HINT_ISOLATED_NAME here
+	 * as we want the unix name be found by getpwuid_alloc().
+	 */
+
+	status = auth3_user_info_dc_add_hints(user_info_dc,
+					      pwd->pw_uid,
+					      pwd->pw_gid,
+					      hint_flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("auth3_user_info_dc_add_hints failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	/*
+	 * In future we may want to remove
+	 * AUTH_SESSION_INFO_DEFAULT_GROUPS.
+	 *
+	 * Similar to Windows with EveryoneIncludesAnonymous
+	 * and RestrictAnonymous.
+	 *
+	 * We may introduce AUTH_SESSION_INFO_ANON_WORLD...
+	 *
+	 * But for this is required to keep the existing tests
+	 * working.
+	 */
+	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
+	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
+	status = auth3_session_info_create(mem_ctx, user_info_dc,
+					   "",
+					   session_info_flags,
+					   session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("auth3_session_info_create failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /****************************************************************************
   Fake a auth_session_info just from a username (as a
   session_info structure, with create_local_token() already called on
@@ -1661,15 +1742,30 @@ bool session_info_set_session_key(struct auth_session_info *info,
 }
 
 static struct auth_session_info *guest_info = NULL;
+static struct auth_session_info *anonymous_info = NULL;
 
 static struct auth_serversupplied_info *guest_server_info = NULL;
 
 bool init_guest_info(void)
 {
+	NTSTATUS status;
+
 	if (guest_info != NULL)
 		return true;
 
-	return NT_STATUS_IS_OK(make_new_session_info_guest(&guest_info, &guest_server_info));
+	status = make_new_session_info_guest(&guest_info,
+					     &guest_server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	status = make_new_session_info_anonymous(NULL,
+						 &anonymous_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	return true;
 }
 
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
@@ -1688,6 +1784,51 @@ NTSTATUS make_session_info_guest(TALLOC_CTX *mem_ctx,
 {
 	*session_info = copy_session_info(mem_ctx, guest_info);
 	return (*session_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+}
+
+NTSTATUS make_server_info_anonymous(TALLOC_CTX *mem_ctx,
+				    struct auth_serversupplied_info **server_info)
+{
+	if (anonymous_info == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/*
+	 * This is trickier than it would appear to need to be because
+	 * we are trying to avoid certain costly operations when the
+	 * structure is converted to a 'auth_session_info' again in
+	 * create_local_token()
+	 *
+	 * We use a guest server_info, but with the anonymous session info,
+	 * which means create_local_token() will return a copy
+	 * of the anonymous token.
+	 *
+	 * The server info is just used as legacy in order to
+	 * keep existing code working. Maybe some debug messages
+	 * will still refer to guest instead of anonymous.
+	 */
+	*server_info = copy_session_info_serverinfo_guest(mem_ctx, anonymous_info,
+							  guest_server_info);
+	if (*server_info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS make_session_info_anonymous(TALLOC_CTX *mem_ctx,
+				     struct auth_session_info **session_info)
+{
+	if (anonymous_info == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	*session_info = copy_session_info(mem_ctx, anonymous_info);
+	if (*session_info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static struct auth_session_info *system_info = NULL;
