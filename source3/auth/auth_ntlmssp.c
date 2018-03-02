@@ -65,10 +65,7 @@ NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 
 		cmp = dom_sid_compare(sid, &global_sid_Anonymous);
 		if (cmp == 0) {
-			/*
-			 * TODO: use auth_anonymous_session_info() here?
-			 */
-			return make_session_info_guest(mem_ctx, session_info);
+			return make_session_info_anonymous(mem_ctx, session_info);
 		}
 
 		return NT_STATUS_INTERNAL_ERROR;

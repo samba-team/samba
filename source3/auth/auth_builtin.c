@@ -81,7 +81,7 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 		break;
 	}
 
-	return make_server_info_guest(NULL, server_info);
+	return make_server_info_anonymous(NULL, server_info);
 }
 
 /* Guest modules initialisation */
