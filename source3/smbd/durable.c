@@ -305,30 +305,6 @@ static bool vfs_default_durable_reconnect_check_stat(
 {
 	int ret;
 
-	if (cookie_st->st_ex_dev != fsp_st->st_ex_dev) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  name,
-			  "st_ex_dev",
-			  (unsigned long long)cookie_st->st_ex_dev,
-			  (unsigned long long)fsp_st->st_ex_dev));
-		return false;
-	}
-
-	if (cookie_st->st_ex_ino != fsp_st->st_ex_ino) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  name,
-			  "st_ex_ino",
-			  (unsigned long long)cookie_st->st_ex_ino,
-			  (unsigned long long)fsp_st->st_ex_ino));
-		return false;
-	}
-
 	if (cookie_st->st_ex_mode != fsp_st->st_ex_mode) {
 		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
 			  "stat_ex.%s differs: "
