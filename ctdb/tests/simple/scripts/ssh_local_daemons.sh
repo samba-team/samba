@@ -23,20 +23,24 @@ command="$2"
 num=$(awk -v ip="$ip" '$1 == ip { print NR }' "$nodes")
 pnn=$((num - 1))
 
-# Determine the correct Unix domain socket
-export CTDB_SOCKET=""
+# Determine the correct CTDB base directory
+export CTDB_BASE=""
 n=0
-for s in $CTDB_NODES_SOCKETS ; do
+for b in $CTDB_BASES ; do
 	if [ $n -eq $pnn ] ; then
-		CTDB_SOCKET="$s"
+		CTDB_BASE="$b"
 		break
 	fi
 	n=$((n + 1))
 done
-if [ -z "$CTDB_SOCKET" ] ; then
-	echo "$0: Unable to find socket for node ${ip}" >&2
+
+if [ -z "$CTDB_BASE" ] ; then
+	echo "$0: Unable to find base for node ${ip}" >&2
 	exit 1
 fi
+
+export CTDB_SOCKET="${CTDB_BASE}/ctdbd.socket"
+export CTDB_PIDFILE="${CTDB_BASE}/ctdbd.pid"
 
 # Now
 exec sh -c "$command"

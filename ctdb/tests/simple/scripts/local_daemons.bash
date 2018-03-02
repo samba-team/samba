@@ -301,14 +301,14 @@ ps_ctdbd ()
 	echo
 }
 
-# onnode will use CTDB_NODES_SOCKETS to help the ctdb tool connection
-# to each daemon
-export CTDB_NODES_SOCKETS=""
+# onnode will use CTDB_BASES to help the ctdb tool connection to each
+# daemon
+export CTDB_BASES=""
 for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-    socket=$(node_socket "$i")
-    CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${socket}"
+	node_dir=$(node_dir "$i")
+	CTDB_BASES="${CTDB_BASES}${CTDB_BASES:+ }${node_dir}"
 done
 
 # Need a default CTDB_BASE for onnode (to find the functions file).
 # Any node will do, so pick the 1st...
-export CTDB_BASE=$(node_dir 0)
+export CTDB_BASE="${CTDB_BASES%% *}"
