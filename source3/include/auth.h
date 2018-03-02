@@ -34,15 +34,14 @@ struct auth_serversupplied_info {
 	struct security_unix_token utok;
 
 	/*
-	 * NT group information taken from the info3 structure
+	 * A complete auth_session_info
 	 *
 	 * This is not normally filled in, during the typical
 	 * authentication process.  If filled in, it has already been
 	 * finalised by a nasty hack to support a cached guest/system
 	 * session_info
 	 */
-
-	struct security_token *security_token;
+	const struct auth_session_info *cached_session_info;
 
 	/* These are the intermediate session keys, as provided by a
 	 * NETLOGON server and used by NTLMSSP to negotiate key
