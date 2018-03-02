@@ -5738,24 +5738,32 @@ static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 				  files_struct *fsp,
 				  uint32_t security_info_sent,
-				  const struct security_descriptor *psd)
+				  const struct security_descriptor *orig_psd)
 {
 	NTSTATUS status;
 	bool do_chmod;
 	mode_t ms_nfs_mode = 0;
 	int result;
+	struct security_descriptor *psd = NULL;
+
+	psd = security_descriptor_copy(talloc_tos(), orig_psd);
+	if (psd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DBG_DEBUG("fruit_fset_nt_acl: %s\n", fsp_str_dbg(fsp));
 
 	status = check_ms_nfs(handle, fsp, psd, &ms_nfs_mode, &do_chmod);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("fruit_fset_nt_acl: check_ms_nfs failed%s\n", fsp_str_dbg(fsp)));
+		TALLOC_FREE(psd);
 		return status;
 	}
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("fruit_fset_nt_acl: SMB_VFS_NEXT_FSET_NT_ACL failed%s\n", fsp_str_dbg(fsp)));
+		TALLOC_FREE(psd);
 		return status;
 	}
 
@@ -5773,10 +5781,12 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 				  result, (unsigned)ms_nfs_mode,
 				  strerror(errno)));
 			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(psd);
 			return status;
 		}
 	}
 
+	TALLOC_FREE(psd);
 	return NT_STATUS_OK;
 }
 
