@@ -28,5 +28,8 @@ ctdb_test_init "$@"
 
 set -e
 
+ctdb_stop_all >/dev/null 2>&1 || true
+
 setup_ctdb
-restart_ctdb
+
+ctdb_start_all

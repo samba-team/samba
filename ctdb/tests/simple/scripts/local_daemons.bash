@@ -252,10 +252,14 @@ maybe_stop_ctdb ()
     daemons_stop
 }
 
-_restart_ctdb_all ()
+ctdb_stop_all ()
 {
-    daemons_stop
-    daemons_start
+	daemons_stop
+}
+
+_ctdb_start_all ()
+{
+	daemons_start
 }
 
 ps_ctdbd ()

@@ -42,12 +42,13 @@ ctdb_test_exit ()
     unset ctdb_test_exit_hook
 
     if $ctdb_test_restart_scheduled || ! cluster_is_healthy ; then
-
-	restart_ctdb
+	echo "Restarting CTDB (scheduled)..."
+	ctdb_stop_all || true  # Might be restarting some daemons were shutdown
+	ctdb_start_all
     else
 	# This could be made unconditional but then we might get
-	# duplication from the recovery in restart_ctdb.  We want to
-	# leave the recovery in restart_ctdb so that future tests that
+	# duplication from the recovery in ctdb_start_all().  We want to
+	# leave the recovery in ctdb_start_all() so that future tests that
 	# might do a manual restart mid-test will benefit.
 	echo "Forcing a recovery..."
 	onnode 0 $CTDB recover
@@ -487,10 +488,14 @@ _service_ctdb ()
     fi
 }
 
-# Restart CTDB on all nodes.  Override for local daemons.
-_restart_ctdb_all ()
+# Stop/start CTDB on all nodes.  Override for local daemons.
+ctdb_stop_all ()
 {
-    onnode -p all $CTDB_TEST_WRAPPER _service_ctdb restart
+	onnode -p all $CTDB_TEST_WRAPPER _service_ctdb stop
+}
+_ctdb_start_all ()
+{
+	onnode -p all $CTDB_TEST_WRAPPER _service_ctdb start
 }
 
 # Nothing needed for a cluster.  Override for local daemons.
@@ -514,18 +519,12 @@ restart_ctdb_1 ()
     onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb restart
 }
 
-restart_ctdb ()
+ctdb_start_all ()
 {
-    echo -n "Restarting CTDB"
-    if $ctdb_test_restart_scheduled ; then
-	echo -n " (scheduled)"
-    fi
-    echo "..."
-
     local i
     for i in $(seq 1 5) ; do
-	_restart_ctdb_all || {
-	    echo "Restart failed.  Trying again in a few seconds..."
+	_ctdb_start_all || {
+	    echo "Start failed.  Trying again in a few seconds..."
 	    sleep_for 5
 	    continue
 	}
