@@ -79,6 +79,7 @@ struct db_context {
 
 	const char *name;
 	void *private_data;
+	uint64_t flags;
 	enum dbwrap_lock_order lock_order;
 	bool persistent;
 };
