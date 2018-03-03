@@ -32,6 +32,7 @@ builddirs = {
     "samba-libs"  : ".",
     "samba-static"  : ".",
     "samba-test-only"  : ".",
+    "samba-none-env"  : ".",
     "samba-systemkrb5"  : ".",
     "samba-nopython"  : ".",
     "ldb"     : "lib/ldb",
@@ -53,6 +54,7 @@ defaulttasks = [ "ctdb",
                  "samba-ctdb",
                  "samba-libs",
                  "samba-static",
+                 "samba-none-env",
                  "samba-systemkrb5",
                  "samba-nopython",
                  "ldb",
@@ -92,7 +94,11 @@ tasks = {
     # We have 'test' before 'install' because, 'test' should work without 'install (runs ad_dc_ntvfs and all the other envs)'
     "samba" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
-                ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--exclude-env=nt4_dc --exclude-env=nt4_member --exclude-env=ad_dc'", "text/plain"),
+                ("test", "make test FAIL_IMMEDIATELY=1 "
+                 "TESTS='--exclude-env=nt4_dc "
+                 "--exclude-env=nt4_member "
+                 "--exclude-env=ad_dc --exclude-env=none'",
+                 "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
@@ -174,6 +180,15 @@ tasks = {
                       ("allshared-distclean", "make distclean", "text/plain"),
                       ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
                       ("allshared-make", "make -j", "text/plain")],
+
+    "samba-none-env" : [
+                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                      ("make", "make -j", "text/plain"),
+                      ("test", "make test "
+                       "FAIL_IMMEDIATELY=1 "
+                       "TESTS='--include-env=none'",
+                       "text/plain")],
 
     "samba-static" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
