@@ -11,6 +11,14 @@ build_samba:
     # this one takes about 4 hours to finish
     - python script/autobuild.py samba            --verbose --tail --testbase /tmp/samba-testbase
 
+build_samba_none_env:
+  stage: build
+  tags:
+    - autobuild
+  script:
+    # this one takes about 1 hours to finish
+    - python script/autobuild.py samba-none-env    --verbose --tail --testbase /tmp/samba-testbase
+
 build_samba_others:
   stage: build
   tags:

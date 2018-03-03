@@ -12,6 +12,7 @@ env:
   - TASK=samba-libs
   - TASK=samba-static
   - TASK=samba-o3
+  - TASK=samba-none-env
   - TASK=samba-nopython
   - TASK=samba-systemkrb5
   - TASK=ldb
