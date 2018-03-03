@@ -504,6 +504,20 @@ def build(bld):
                                           '''),
                         deps='ctdb-protocol-basic')
 
+    bld.SAMBA_BINARY('ctdb-eventd',
+                     source=bld.SUBDIR('event',
+                                       '''event_cmd.c
+                                          event_config.c
+                                          event_context.c
+                                          event_daemon.c
+                                          event_request.c
+                                          '''),
+                     deps='''ctdb-event-protocol
+                             ctdb-event-conf ctdb-logging-conf
+                             ctdb-server-util samba-util ctdb-util
+                             talloc tevent replace popt''',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_BINARY('ctdbd',
                      source='server/ctdbd.c ' +
                                bld.SUBDIR('server',
