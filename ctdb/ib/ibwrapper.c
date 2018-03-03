@@ -503,10 +503,13 @@ static void ibw_event_handler_cm(struct tevent_context *ev,
 
 	case RDMA_CM_EVENT_ADDR_ERROR:
 		sprintf(ibw_lasterr, "RDMA_CM_EVENT_ADDR_ERROR, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_ROUTE_ERROR:
 		sprintf(ibw_lasterr, "RDMA_CM_EVENT_ROUTE_ERROR, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_CONNECT_ERROR:
 		sprintf(ibw_lasterr, "RDMA_CM_EVENT_CONNECT_ERROR, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_UNREACHABLE:
 		sprintf(ibw_lasterr, "RDMA_CM_EVENT_UNREACHABLE, error %d\n", event->status);
 		goto error;
