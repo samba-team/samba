@@ -687,6 +687,21 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		}
 	}
 
+	if (tdb->hash_size > UINT32_MAX/4) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+			 "hash size %"PRIu32" too large\n", tdb->hash_size));
+		errno = EINVAL;
+		goto fail;
+	}
+
+	ret = tdb->methods->tdb_oob(tdb, FREELIST_TOP, 4*tdb->hash_size, 1);
+	if (ret == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+			 "hash size %"PRIu32" does not fit\n", tdb->hash_size));
+		errno = EINVAL;
+		goto fail;
+	}
+
 	if (locked) {
 		if (tdb_nest_unlock(tdb, ACTIVE_LOCK, F_WRLCK, false) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
