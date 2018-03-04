@@ -689,6 +689,8 @@ int tdb_recovery_area(struct tdb_context *tdb,
 		      tdb_off_t *recovery_offset,
 		      struct tdb_record *rec)
 {
+	int ret;
+
 	if (tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, recovery_offset) == -1) {
 		return -1;
 	}
@@ -709,6 +711,13 @@ int tdb_recovery_area(struct tdb_context *tdb,
 		*recovery_offset = 0;
 		rec->rec_len = 0;
 	}
+
+	ret = methods->tdb_oob(tdb, *recovery_offset, rec->rec_len, 1);
+	if (ret == -1) {
+		*recovery_offset = 0;
+		rec->rec_len = 0;
+	}
+
 	return 0;
 }
 
