@@ -733,6 +733,9 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 /* read/write a record */
 int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 {
+	int ret;
+	tdb_len_t overall_len;
+
 	if (tdb->methods->tdb_read(tdb, offset, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
 	if (TDB_BAD_MAGIC(rec)) {
@@ -741,6 +744,31 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *r
 		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_rec_read bad magic 0x%x at offset=%u\n", rec->magic, offset));
 		return -1;
 	}
+
+	overall_len = rec->key_len + rec->data_len;
+	if (overall_len < rec->data_len) {
+		/* overflow */
+		return -1;
+	}
+
+	if (overall_len > rec->rec_len) {
+		/* invalid record */
+		return -1;
+	}
+
+	ret = tdb->methods->tdb_oob(tdb, offset, rec->key_len, 1);
+	if (ret == -1) {
+		return -1;
+	}
+	ret = tdb->methods->tdb_oob(tdb, offset, rec->data_len, 1);
+	if (ret == -1) {
+		return -1;
+	}
+	ret = tdb->methods->tdb_oob(tdb, offset, rec->rec_len, 1);
+	if (ret == -1) {
+		return -1;
+	}
+
 	return tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 0);
 }
 
