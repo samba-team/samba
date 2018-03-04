@@ -41,10 +41,10 @@ static void print_data(TDB_DATA d)
 static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("{\n");
-	printf("key(%d) = \"", (int)key.dsize);
+	printf("key(%zu) = \"", key.dsize);
 	print_data(key);
 	printf("\"\n");
-	printf("data(%d) = \"", (int)dbuf.dsize);
+	printf("data(%zu) = \"", dbuf.dsize);
 	print_data(dbuf);
 	printf("\"\n");
 	printf("}\n");
