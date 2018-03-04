@@ -854,13 +854,12 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 		return -1;
 	}
 
-	data = (unsigned char *)malloc(recovery_size + sizeof(*rec));
-	if (data == NULL) {
+	rec = malloc(recovery_size + sizeof(*rec));
+	if (rec == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		return -1;
 	}
 
-	rec = (struct tdb_record *)data;
 	memset(rec, 0, sizeof(*rec));
 
 	rec->magic    = TDB_RECOVERY_INVALID_MAGIC;
@@ -868,6 +867,8 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	rec->rec_len  = recovery_max_size;
 	rec->key_len  = old_map_size;
 	CONVERT(*rec);
+
+	data = (unsigned char *)rec;
 
 	/* build the recovery data into a single blob to allow us to do a single
 	   large write, which should be more efficient */
