@@ -242,12 +242,27 @@ static bool tdb_check_used_record(struct tdb_context *tdb,
 				  void *private_data)
 {
 	TDB_DATA key, data;
+	tdb_len_t len;
 
 	if (!tdb_check_record(tdb, off, rec))
 		return false;
 
 	/* key + data + tailer must fit in record */
-	if (rec->key_len + rec->data_len + sizeof(tdb_off_t) > rec->rec_len) {
+	len = rec->key_len;
+	len += rec->data_len;
+	if (len < rec->data_len) {
+		/* overflow */
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "Record lengths overflow\n"));
+		return false;
+	}
+	len += sizeof(tdb_off_t);
+	if (len < sizeof(tdb_off_t)) {
+		/* overflow */
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "Record lengths overflow\n"));
+		return false;
+	}
+
+	if (len > rec->rec_len) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
 			 "Record offset %u too short for contents\n", off));
 		return false;
