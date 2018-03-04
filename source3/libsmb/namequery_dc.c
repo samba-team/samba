@@ -32,7 +32,7 @@
  Is this our primary domain ?
 **********************************************************************/
 
-#ifdef HAVE_KRB5
+#ifdef HAVE_ADS
 static bool is_our_primary_domain(const char *domain)
 {
 	int role = lp_server_role();
