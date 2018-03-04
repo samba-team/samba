@@ -405,7 +405,7 @@ tests= base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap
 
 for t in tests:
     if t == "base.delaywrite":
-        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD -k yes --maximum-runtime=900')
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
     elif t == "base.createx_access":
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD -k yes --maximum-runtime=900')
     elif t == "rap.sam":
