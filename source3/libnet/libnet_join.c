@@ -2653,9 +2653,10 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("failed to precreate account in ou %s: %s",
 			r->in.account_ou, ads_errstr(ads_status)));
 	}
+ rpc_join:
+
 #endif /* HAVE_ADS */
 
- rpc_join:
 	if ((r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) &&
 	    (r->in.join_flags & WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED)) {
 		status = libnet_join_joindomain_rpc_unsecure(mem_ctx, r, cli);
