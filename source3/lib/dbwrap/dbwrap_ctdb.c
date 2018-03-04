@@ -1856,6 +1856,11 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	db_path = ctdbd_dbpath(messaging_ctdb_connection(), db_ctdb,
 			       db_ctdb->db_id);
+	if (db_path == NULL) {
+		DBG_ERR("ctdbd_dbpath failed\n");
+		TALLOC_FREE(result);
+		return NULL;
+	}
 
 	result->persistent = persistent;
 	result->lock_order = lock_order;
