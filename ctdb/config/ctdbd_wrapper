@@ -151,9 +151,6 @@ start()
 	ulimit -n "$CTDB_MAX_OPEN_FILES"
     fi
 
-    _d=$(dirname "$pidfile")
-    mkdir -p "$_d"
-
     if [ -n "$CTDB_VALGRIND" -a "$CTDB_VALGRIND" != "no" ] ; then
 	if [ "$CTDB_VALGRIND" = "yes" ] ; then
 	    ctdbd="valgrind -q --log-file=/usr/local/var/log/ctdb_valgrind ${ctdbd}"
