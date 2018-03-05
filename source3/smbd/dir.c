@@ -159,29 +159,34 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 				    int key, bool forclose)
 {
 	struct dptr_struct *dptr;
+	const int dirhandles_open = sconn->searches.dirhandles_open;
 
-	for(dptr = sconn->searches.dirptrs; dptr; dptr = dptr->next) {
-		if(dptr->dnum == key) {
-			if (!forclose && !dptr->dir_hnd) {
-				if (sconn->searches.dirhandles_open >= MAX_OPEN_DIRECTORIES)
-					dptr_idleoldest(sconn);
-				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
-
-				if (!(dptr->dir_hnd = OpenDir(NULL,
-							dptr->conn,
-							dptr->smb_dname,
-							dptr->wcard,
-							dptr->attr))) {
-					DEBUG(4,("dptr_get: Failed to "
-						"open %s (%s)\n",
-						dptr->smb_dname->base_name,
-						strerror(errno)));
-					return NULL;
-				}
-			}
-			DLIST_PROMOTE(sconn->searches.dirptrs,dptr);
-			return dptr;
+	for (dptr = sconn->searches.dirptrs; dptr != NULL; dptr = dptr->next) {
+		if(dptr->dnum != key) {
+			continue;
 		}
+
+		if (!forclose && (dptr->dir_hnd == NULL)) {
+			if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
+				dptr_idleoldest(sconn);
+			}
+			DBG_INFO("Reopening dptr key %d\n",key);
+
+			dptr->dir_hnd = OpenDir(NULL,
+						dptr->conn,
+						dptr->smb_dname,
+						dptr->wcard,
+						dptr->attr);
+
+			if (dptr->dir_hnd == NULL) {
+				DBG_INFO("Failed to open %s (%s)\n",
+				      dptr->smb_dname->base_name,
+				      strerror(errno));
+				return NULL;
+			}
+		}
+		DLIST_PROMOTE(sconn->searches.dirptrs, dptr);
+		return dptr;
 	}
 	return(NULL);
 }
