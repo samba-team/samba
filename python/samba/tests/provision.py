@@ -66,7 +66,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         ldb = setup_secretsdb(paths, None, None, lp=env_loadparm())
         try:
             self.assertEquals("LSA Secrets",
-                 ldb.searchone(basedn="CN=LSA Secrets", attribute="CN"))
+                 ldb.searchone(basedn="CN=LSA Secrets", attribute="CN").decode('utf8'))
         finally:
             del ldb
             os.unlink(path)
