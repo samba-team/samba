@@ -316,20 +316,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--pidfile=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME for file containing process ID of main CTDB
-	    daemon.  This file is automatically created and removed by
-	    CTDB.
-	  </para>
-	  <para>
-	    The default is to not create a PID file.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--public_addresses=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
