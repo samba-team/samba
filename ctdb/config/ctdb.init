@@ -118,31 +118,18 @@ restart()
 
 check_status ()
 {
-    # Backward compatibility.  When we arrange to pass --pidfile to
-    # ctdbd we also create the directory that will contain it.  If
-    # that directory is missing then we don't use the pidfile to check
-    # status.  Note that this probably won't work if
-    # $CTDB_VALGRIND="yes" but this doesn't need full backward
-    # compatibility because it is a debug option.
-    _d=$(dirname "$pidfile")
-    if [ -d "$_d" ] ; then
-	_pf_opt="-p $pidfile"
-    else
-	_pf_opt=""
-    fi
-
-    case "$CTDB_INIT_STYLE" in
+	case "$CTDB_INIT_STYLE" in
 	suse)
-	    checkproc $_pf_opt "$ctdbd"
-	    rc_status -v
-	    ;;
+		checkproc -p "$pidfile" "$ctdbd"
+		rc_status -v
+		;;
 	redhat)
-	    status $_pf_opt -l "ctdb" "$ctdbd"
-	    ;;
+		status -p "$pidfile" -l "ctdb" "$ctdbd"
+		;;
 	debian)
-	    status_of_proc $_pf_opt "$ctdbd" "ctdb"
-	    ;;
-    esac
+		status_of_proc -p "$pidfile" "$ctdbd" "ctdb"
+		;;
+	esac
 }
 
 ############################################################
