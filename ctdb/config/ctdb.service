@@ -7,8 +7,8 @@ After=network-online.target time-sync.target
 Type=forking
 LimitCORE=infinity
 PIDFile=/run/ctdb/ctdbd.pid
-ExecStart=/usr/sbin/ctdbd_wrapper /run/ctdb/ctdbd.pid start
-ExecStop=/usr/sbin/ctdbd_wrapper /run/ctdb/ctdbd.pid stop
+ExecStart=/usr/sbin/ctdbd_wrapper start
+ExecStop=/usr/sbin/ctdbd_wrapper stop
 KillMode=control-group
 Restart=no
 

@@ -201,12 +201,12 @@ start_ctdb_1 ()
 
 	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
 	     CTDBD_CONF="$conf" \
-	     ctdbd_wrapper "$pidfile" start
+	     CTDB_PIDFILE="$pidfile" \
+	     ctdbd_wrapper start
 
 	if [ -n "$tmp_conf" ] ; then
 		rm -f "$tmp_conf"
 	fi
-
 }
 
 daemons_start ()
@@ -226,7 +226,8 @@ stop_ctdb_1 ()
 	local conf=$(node_conf "$pnn")
 
 	CTDBD_CONF="$conf" \
-	     ctdbd_wrapper "$pidfile" stop
+		  CTDB_PIDFILE="$pidfile" \
+		  ctdbd_wrapper stop
 }
 
 daemons_stop ()
