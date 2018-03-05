@@ -156,7 +156,11 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct tevent_context *ev;
 
-	ctdbd_pidfile = CTDB_RUNDIR "/ctdbd.pid";
+	/* Environment variable overrides default */
+	ctdbd_pidfile = getenv("CTDB_PIDFILE");
+	if (ctdbd_pidfile == NULL) {
+		ctdbd_pidfile = CTDB_RUNDIR "/ctdbd.pid";
+	}
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
