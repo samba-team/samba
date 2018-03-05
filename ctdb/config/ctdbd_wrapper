@@ -28,32 +28,6 @@ ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 
 ############################################################
 
-# ctdbd_is_running()
-
-# Check if ctdbd is running.  ctdbd is only considered to running if
-# the PID in the PID file is active and is called "ctdbd".  Return
-# true if this is the case.  Print the PID regardless, since it can be
-# used to kill stale processes in the session.
-
-ctdbd_is_running ()
-{
-	if read _pid 2>/dev/null <"$pidfile" ; then
-		echo "$_pid"
-
-		# This could be optimised with ps options -q and -h.
-		# However, -q is not generally available because it is
-		# fairly new and -h is not in some older distros.  The
-		# options below are portable.
-		_cmd=$(ps -p "$_pid" -o comm | tail -n +2)
-		[ "$_cmd" = "ctdbd" ]
-	else
-		# Missing/empty PID file
-		return 1
-	fi
-}
-
-############################################################
-
 # If necessary, mount volatile database directory on tmpfs
 dbdir_tmpfs_start ()
 {
@@ -151,28 +125,10 @@ export_debug_variables ()
     [ -n "$CTDB_DEBUG_LOCKS" ] && export CTDB_DEBUG_LOCKS
 }
 
-kill_ctdbd ()
-{
-    _session="$1"
-
-    if [ -n "$_session" ] ; then
-	pkill -9 -s "$_session" 2>/dev/null
-    fi
-}
-
 ############################################################
 
 start()
 {
-    if _session=$(ctdbd_is_running) ; then
-	echo "CTDB is already running"
-	return 0
-    fi
-
-    # About to start new $ctdbd.  The main daemon is not running but
-    # there may still be other processes around, so do some cleanup.
-    kill_ctdbd "$_session"
-
     dbdir_tmpfs_start
 
     # build_ctdb_options() takes no arguments
@@ -242,44 +198,20 @@ start()
 
 stop()
 {
-    if ! _session=$(ctdbd_is_running) ; then
-	echo "CTDB is not running"
+	$CTDB shutdown
+
+	# The above command is important and needs to stand out, so
+	# post-check exit status
+	# shellcheck disable=SC2181
+	if [ $? -ne 0 ] ; then
+		echo "Error while shutting down CTDB"
+		drop_all_public_ips >/dev/null 2>&1
+		return 1
+	fi
+
+	dbdir_tmpfs_stop
+
 	return 0
-    fi
-
-    $CTDB shutdown
-
-    # Wait for remaining CTDB processes to exit...
-    _timeout=${CTDB_SHUTDOWN_TIMEOUT:-30}
-    _count=0
-    _terminated=false
-    while [ "$_count" -lt "$_timeout" ] ; do
-	if ! pkill -0 -s "$_session" 2>/dev/null ; then
-	    _terminated=true
-	    break
-	fi
-
-	_count=$((_count + 1))
-	sleep 1
-    done
-
-    if ! $_terminated ; then
-	echo "Timed out waiting for CTDB to shutdown.  Killing CTDB processes."
-	kill_ctdbd "$_session"
-	drop_all_public_ips >/dev/null 2>&1
-
-	sleep 1
-
-	if pkill -0 -s "$_session" ; then
-	    # If SIGKILL didn't work then things are bad...
-	    echo "Failed to kill all CTDB processes.  Giving up."
-	    return 1
-	fi
-    fi
-
-    dbdir_tmpfs_stop
-
-    return 0
 }
 
 ############################################################
