@@ -134,51 +134,51 @@ setup_public_addresses ()
 
 setup_ctdb ()
 {
-    # When running certain tests we add and remove eventscripts, so we
-    # need to be able to modify the events.d/ directory.  Therefore,
-    # we use a temporary events.d/ directory under $TEST_VAR_DIR.  We
-    # copy the actual test eventscript(s) in there from the original
-    # events.d/ directory that sits alongside $TEST_SCRIPT_DIR.
-    local top=$(dirname "$TEST_SCRIPTS_DIR")
-    local events_d="${top}/events.d"
-    mkdir -p "${TEST_VAR_DIR}/events.d"
-    cp -p "${events_d}/"* "${TEST_VAR_DIR}/events.d/"
+	# When running certain tests we add and remove eventscripts, so we
+	# need to be able to modify the events.d/ directory.  Therefore,
+	# we use a temporary events.d/ directory under $TEST_VAR_DIR.  We
+	# copy the actual test eventscript(s) in there from the original
+	# events.d/ directory that sits alongside $TEST_SCRIPT_DIR.
+	local top=$(dirname "$TEST_SCRIPTS_DIR")
+	local events_d="${top}/events.d"
+	mkdir -p "${TEST_VAR_DIR}/events.d"
+	cp -p "${events_d}/"* "${TEST_VAR_DIR}/events.d/"
 
-    setup_nodes >"$CTDB_NODES" || return 1
+	setup_nodes >"$CTDB_NODES" || return 1
 
-    # If there are (strictly) greater than 2 nodes then we'll
-    # randomly choose a node to have no public addresses
-    local pnn_no_ips=-1
-    if [ $TEST_LOCAL_DAEMONS -gt 2 ] ; then
-	    pnn_no_ips=$((RANDOM % TEST_LOCAL_DAEMONS))
-    fi
-
-    local public_addresses_all="${SIMPLE_TESTS_VAR_DIR}/public_addresses"
-    setup_public_addresses $pnn_no_ips >"$public_addresses_all"
-
-    local pnn
-    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	local node_dir=$(node_dir "$pnn")
-	mkdir -p "$node_dir"
-
-	local public_addresses="${node_dir}/public_addresses"
-
-	if  [ $pnn_no_ips -eq $pnn ] ; then
-	    echo "Node ${pnn} will have no public IPs."
-	    : >"$public_addresses"
-	else
-	    cp "$public_addresses_all" "$public_addresses"
+	# If there are (strictly) greater than 2 nodes then we'll
+	# randomly choose a node to have no public addresses
+	local pnn_no_ips=-1
+	if [ $TEST_LOCAL_DAEMONS -gt 2 ] ; then
+		pnn_no_ips=$((RANDOM % TEST_LOCAL_DAEMONS))
 	fi
 
-	local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
+	local public_addresses_all="${SIMPLE_TESTS_VAR_DIR}/public_addresses"
+	setup_public_addresses $pnn_no_ips >"$public_addresses_all"
 
-	local conf=$(node_conf "$pnn")
-	local socket=$(node_socket "$pnn")
+	local pnn
+	for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+		local node_dir=$(node_dir "$pnn")
+		mkdir -p "$node_dir"
 
-	local db_dir="${node_dir}/db"
-	mkdir -p "${db_dir}/persistent"
+		local public_addresses="${node_dir}/public_addresses"
 
-	cat >"$conf" <<EOF
+		if  [ $pnn_no_ips -eq $pnn ] ; then
+			echo "Node ${pnn} will have no public IPs."
+			: >"$public_addresses"
+		else
+			cp "$public_addresses_all" "$public_addresses"
+		fi
+
+		local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
+
+		local conf=$(node_conf "$pnn")
+		local socket=$(node_socket "$pnn")
+
+		local db_dir="${node_dir}/db"
+		mkdir -p "${db_dir}/persistent"
+
+		cat >"$conf" <<EOF
 CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
 CTDB_NODES="$CTDB_NODES"
 CTDB_NODE_ADDRESS="${node_ip}"
@@ -193,10 +193,10 @@ CTDB_SOCKET="${socket}"
 CTDB_NOSETSCHED=yes
 EOF
 
-	# Append any configuration variables set in environment to
-	# configuration file so they affect CTDB after each restart.
-	config_from_environment >>"$conf"
-    done
+		# Append any configuration variables set in environment to
+		# configuration file so they affect CTDB after each restart.
+		config_from_environment >>"$conf"
+	done
 }
 
 start_ctdb_1 ()
