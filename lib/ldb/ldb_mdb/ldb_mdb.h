@@ -41,6 +41,8 @@ struct lmdb_private {
 	int error;
 	MDB_txn *read_txn;
 
+	pid_t pid;
+
 };
 
 struct lmdb_trans {

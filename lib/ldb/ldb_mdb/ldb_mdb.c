@@ -595,6 +595,25 @@ static int lmdb_pvt_destructor(struct lmdb_private *lmdb)
 {
 	struct lmdb_trans *ltx = NULL;
 
+	/* Check if this is a forked child */
+	if (getpid() != lmdb->pid) {
+		int fd = 0;
+		/*
+		 * We cannot call mdb_env_close or commit any transactions,
+		 * otherwise they might appear finished in the parent.
+		 *
+		 */
+
+		if (mdb_env_get_fd(lmdb->env, &fd) == 0) {
+			close(fd);
+		}
+
+		/* Remove the pointer, so that no access should occur */
+		lmdb->env = NULL;
+
+		return 0;
+	}
+
 	/*
 	 * Close the read transaction if it's open
 	 */
@@ -684,6 +703,9 @@ static int lmdb_pvt_open(TALLOC_CTX *mem_ctx,
 		talloc_free(lmdb);
 		return ldb_mdb_err_map(ret);
 	}
+
+	/* Store the original pid during the LMDB open */
+	lmdb->pid = getpid();
 
 	return LDB_SUCCESS;
 }
