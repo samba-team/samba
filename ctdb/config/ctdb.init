@@ -54,7 +54,7 @@ export CTDB_INIT_STYLE
 
 ctdbd="${CTDBD:-/usr/sbin/ctdbd}"
 ctdbd_wrapper="${CTDBD_WRAPPER:-/usr/sbin/ctdbd_wrapper}"
-pidfile="${CTDB_PIDFILE:-/var/run/ctdb/ctdbd.pid}"
+pidfile="/var/run/ctdb/ctdbd.pid"
 
 ############################################################
 

@@ -94,7 +94,6 @@ build_ctdb_options ()
     maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
 
     # build up ctdb_options variable from optional parameters
-    maybe_set "--pidfile"                "$CTDB_PIDFILE"
     maybe_set "--logging"                "$CTDB_LOGGING"
     maybe_set "--nlist"                  "$CTDB_NODES"
     maybe_set "--socket"                 "$CTDB_SOCKET"

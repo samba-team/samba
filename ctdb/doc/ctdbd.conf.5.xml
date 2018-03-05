@@ -52,41 +52,6 @@
 
   <refsect1>
     <title>
-      INITSCRIPT CONFIGURATION
-    </title>
-
-    <para>
-      Some options must be available to the initscript so they need to
-      be set in the distribution-specific initscript configuration,
-      such as <filename>/etc/sysconfig/ctdb</filename> or
-      <filename>/etc/default/ctdb</filename>.
-    </para>
-
-    <variablelist>
-
-      <varlistentry>
-	<term>CTDB_PIDFILE=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME is the name of the file used to contain the
-	    process ID (PID) of the main CTDB daemon when it is
-	    running.  This is passed from the initscript to
-	    <citerefentry><refentrytitle>ctdbd_wrapper</refentrytitle>
-	    <manvolnum>1</manvolnum></citerefentry>.
-	  </para>
-
-	  <para>
-	    Default is <filename>/usr/local/var/run/ctdb/ctdbd.pid</filename>.
-	    Corresponds to <option>--pidfile</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-    </variablelist>
-  </refsect1>
-
-  <refsect1>
-    <title>
       GLOBAL CONFIGURATION
     </title>
 
