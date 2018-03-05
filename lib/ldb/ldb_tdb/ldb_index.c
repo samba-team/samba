@@ -1862,7 +1862,7 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 		 * The only caller will have filtered the operation out
 		 * so we should never get here
 		 */
-		ldb_operr(ldb);
+		return ldb_operr(ldb);
 
 	case LDB_SCOPE_ONELEVEL:
 		/*
