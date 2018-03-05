@@ -15,6 +15,12 @@ PY3 = sys.version_info > (3, 0)
 TDB_PREFIX = "tdb://"
 MDB_PREFIX = "mdb://"
 
+MDB_INDEX_OBJ = {
+    "dn": "@INDEXLIST",
+    "@IDXONE": [b"1"],
+    "@IDXGUID": [b"objectUUID"],
+    "@IDX_DN_GUID": [b"GUID"]
+}
 
 def tempdir():
     import tempfile
@@ -665,6 +671,17 @@ class SimpleLdb(LdbBaseTest):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertRaises(ldb.LdbError,lambda: l.search("", ldb.SCOPE_SUBTREE, "&(dc=*)(dn=*)", ["dc"]))
 
+# Run the SimpleLdb tests against an lmdb backend
+class SimpleLdbLmdb(SimpleLdb):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        self.index = MDB_INDEX_OBJ
+        super(SimpleLdbLmdb, self).setUp()
+
+    def tearDown(self):
+        super(SimpleLdbLmdb, self).tearDown()
+
 class SearchTests(LdbBaseTest):
     def tearDown(self):
         shutil.rmtree(self.testdir)
@@ -1093,6 +1110,18 @@ class SearchTests(LdbBaseTest):
         self.assertEqual(len(res11), 1)
 
 
+# Run the search tests against an lmdb backend
+class SearchTestsLmdb(SearchTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        self.index = MDB_INDEX_OBJ
+        super(SearchTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(SearchTestsLmdb, self).tearDown()
+
+
 class IndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
@@ -1184,6 +1213,35 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
         self.IDX = True
         self.IDXGUID = True
         self.IDXONE = True
+
+class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        super(GUIDIndexedSearchTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(GUIDIndexedSearchTestsLmdb, self).tearDown()
+
+
+class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        super(GUIDIndexedDNFilterSearchTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(GUIDIndexedDNFilterSearchTestsLmdb, self).tearDown()
+
+
+class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        super(GUIDAndOneLevelIndexedSearchTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(GUIDAndOneLevelIndexedSearchTestsLmdb, self).tearDown()
 
 
 class AddModifyTests(LdbBaseTest):
@@ -1347,6 +1405,16 @@ class AddModifyTests(LdbBaseTest):
                     "objectUUID": b"0123456789abcde3"})
 
 
+class AddModifyTestsLmdb(AddModifyTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        self.index = MDB_INDEX_OBJ
+        super(AddModifyTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(AddModifyTestsLmdb, self).tearDown()
+
 class IndexedAddModifyTests(AddModifyTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
@@ -1457,6 +1525,23 @@ class TransIndexedAddModifyTests(IndexedAddModifyTests):
         self.l.transaction_commit()
         super(TransIndexedAddModifyTests, self).tearDown()
 
+class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        super(GuidIndexedAddModifyTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(GuidIndexedAddModifyTestsLmdb, self).tearDown()
+
+class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        super(GuidTransIndexedAddModifyTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(GuidTransIndexedAddModifyTestsLmdb, self).tearDown()
 
 class BadIndexTests(LdbBaseTest):
     def setUp(self):
@@ -1616,7 +1701,6 @@ class GUIDBadIndexTests(BadIndexTests):
         self.IDXGUID = True
 
         super(GUIDBadIndexTests, self).setUp()
-
 
 class DnTests(TestCase):
 
@@ -2496,6 +2580,17 @@ class LdbResultTests(LdbBaseTest):
 
         (got_pid, status) = os.waitpid(pid, 0)
         self.assertEqual(got_pid, pid)
+
+
+class LdbResultTestsLmdb(LdbResultTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        self.index = MDB_INDEX_OBJ
+        super(LdbResultTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(LdbResultTestsLmdb, self).tearDown()
 
 
 class BadTypeTests(TestCase):

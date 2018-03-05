@@ -1280,6 +1280,17 @@ class MaxIndexKeyLengthTests(LdbBaseTest):
             code = e.args[0]
             self.assertEqual(ldb.ERR_NO_SUCH_OBJECT, code)
 
+
+# Run the index truncation tests against an lmdb backend
+class MaxIndexKeyLengthTestsLmdb(MaxIndexKeyLengthTests):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        super(MaxIndexKeyLengthTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(MaxIndexKeyLengthTestsLmdb, self).tearDown()
+
 if __name__ == '__main__':
     import unittest
     unittest.TestProgram()
