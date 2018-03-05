@@ -69,13 +69,13 @@ bitFields["schemaflagsex"] = {
 
 # ADTS: 3.1.1.2.2.2
 oMObjectClassBER = {
-    '1.3.12.2.1011.28.0.702' : base64.b64encode('\x2B\x0C\x02\x87\x73\x1C\x00\x85\x3E'),
-    '1.2.840.113556.1.1.1.12': base64.b64encode('\x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x0C'),
-    '2.6.6.1.2.5.11.29'      : base64.b64encode('\x56\x06\x01\x02\x05\x0B\x1D'),
-    '1.2.840.113556.1.1.1.11': base64.b64encode('\x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x0B'),
-    '1.3.12.2.1011.28.0.714' : base64.b64encode('\x2B\x0C\x02\x87\x73\x1C\x00\x85\x4A'),
-    '1.3.12.2.1011.28.0.732' : base64.b64encode('\x2B\x0C\x02\x87\x73\x1C\x00\x85\x5C'),
-    '1.2.840.113556.1.1.1.6' : base64.b64encode('\x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x06')
+    '1.3.12.2.1011.28.0.702' : base64.b64encode(b'\x2B\x0C\x02\x87\x73\x1C\x00\x85\x3E').decode('utf8'),
+    '1.2.840.113556.1.1.1.12': base64.b64encode(b'\x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x0C').decode('utf8'),
+    '2.6.6.1.2.5.11.29'      : base64.b64encode(b'\x56\x06\x01\x02\x05\x0B\x1D').decode('utf8'),
+    '1.2.840.113556.1.1.1.11': base64.b64encode(b'\x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x0B').decode('utf8'),
+    '1.3.12.2.1011.28.0.714' : base64.b64encode(b'\x2B\x0C\x02\x87\x73\x1C\x00\x85\x4A').decode('utf8'),
+    '1.3.12.2.1011.28.0.732' : base64.b64encode(b'\x2B\x0C\x02\x87\x73\x1C\x00\x85\x5C').decode('utf8'),
+    '1.2.840.113556.1.1.1.6' : base64.b64encode(b'\x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x06').decode('utf8')
 }
 
 # separated by commas in docs, and must be broken up
