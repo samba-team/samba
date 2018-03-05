@@ -302,7 +302,7 @@ fill_base(unsigned int item, pmAtomValue *atom)
 		atom->d = stats->childwrite_latency.max;
 		break;
 	case 22:
-		atom->d = stats->num_recoveries;
+		atom->ul = stats->num_recoveries;
 		break;
 	default:
 		return PM_ERR_PMID;
