@@ -32,6 +32,9 @@ import shutil
 
 PY3 = sys.version_info > (3, 0)
 
+TDB_PREFIX = "tdb://"
+MDB_PREFIX = "mdb://"
+
 
 def tempdir():
     import tempfile
@@ -52,7 +55,29 @@ def contains(result, dn):
     return False
 
 
-class MaxIndexKeyLengthTests(TestCase):
+class LdbBaseTest(TestCase):
+    def setUp(self):
+        super(LdbBaseTest, self).setUp()
+        try:
+            if self.prefix is None:
+                self.prefix = TDB_PREFIX
+        except AttributeError:
+            self.prefix = TDB_PREFIX
+
+    def tearDown(self):
+        super(LdbBaseTest, self).tearDown()
+
+    def url(self):
+        return self.prefix + self.filename
+
+    def flags(self):
+        if self.prefix == MDB_PREFIX:
+            return ldb.FLG_NOSYNC
+        else:
+            return 0
+
+
+class MaxIndexKeyLengthTests(LdbBaseTest):
     def checkGuids(self, key, guids):
         #
         # This check relies on the current implementation where the indexes
@@ -89,7 +114,7 @@ class MaxIndexKeyLengthTests(TestCase):
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "key_len_test.ldb")
         # Note that the maximum key length is set to 50
-        self.l = ldb.Ldb(self.filename,
+        self.l = ldb.Ldb(self.url(),
                          options=[
                              "modules:rdn_name",
                              "max_key_len_for_self_test:50"])
