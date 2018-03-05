@@ -837,6 +837,11 @@ def build(bld):
                      deps='samba-util ctdb-system popt',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-basic',
+                        source=bld.SUBDIR('tests/src',
+                                          'protocol_common_basic.c'),
+                        deps='replace talloc')
+
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-common',
                         source=bld.SUBDIR('tests/src',
                                           '''protocol_common.c
@@ -844,10 +849,14 @@ def build(bld):
                                              protocol_common_event.c
                                           '''),
                         includes='include',
-                        deps='replace popt talloc tevent tdb')
+                        deps='ctdb-protocol-tests-basic replace talloc tdb')
+
+    bld.SAMBA_BINARY('protocol_basic_test',
+                     source=bld.SUBDIR('tests/src', 'protocol_basic_test.c'),
+                     deps='ctdb-protocol-tests-basic talloc',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     ctdb_protocol_tests = [
-            'protocol_basic_test',
             'protocol_types_test',
             'protocol_ctdb_test',
             'protocol_event_test',

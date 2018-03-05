@@ -20,10 +20,8 @@
 #include <assert.h>
 
 #include "protocol/protocol_basic.c"
-#include "protocol/protocol_types.c"
 
-#include "tests/src/protocol_common.h"
-
+#include "tests/src/protocol_common_basic.h"
 
 PROTOCOL_TYPE1_TEST(uint8_t, ctdb_uint8);
 PROTOCOL_TYPE1_TEST(uint16_t, ctdb_uint16);
