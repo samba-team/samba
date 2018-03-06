@@ -29,6 +29,8 @@
 #define MDB_URL_PREFIX		"mdb://"
 #define MDB_URL_PREFIX_SIZE	(sizeof(MDB_URL_PREFIX)-1)
 
+#define LDB_MDB_MAX_KEY_LENGTH 511
+
 #define GIGABYTE (1024*1024*1024)
 
 int ldb_mdb_err_map(int lmdb_err)
@@ -663,6 +665,7 @@ static int lmdb_pvt_open(TALLOC_CTX *mem_ctx,
 	int ret;
 	unsigned int mdb_flags;
 	const size_t mmap_size = 8LL * GIGABYTE;
+	int lmdb_max_key_length;
 
 	if (flags & LDB_FLG_DONT_CREATE_DB) {
 		struct stat st;
@@ -720,6 +723,14 @@ static int lmdb_pvt_open(TALLOC_CTX *mem_ctx,
 	/* Store the original pid during the LMDB open */
 	lmdb->pid = getpid();
 
+	lmdb_max_key_length = mdb_env_get_maxkeysize(lmdb->env);
+
+	/* This will never happen, but if it does make sure to freak out */
+	if (lmdb_max_key_length < LDB_MDB_MAX_KEY_LENGTH) {
+		talloc_free(lmdb);
+		return ldb_operr(ldb);
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -770,6 +781,14 @@ int lmdb_connect(struct ldb_context *ldb,
 	if (flags & LDB_FLG_RDONLY) {
 		ltdb->read_only = true;
 	}
+
+	/*
+	 * This maximum length becomes encoded in the index values so
+	 * must never change even if LMDB starts to allow longer keys.
+	 * The override option is max_key_len_for_self_test, and is
+	 * used for testing only.
+	 */
+	ltdb->max_key_length = LDB_MDB_MAX_KEY_LENGTH;
 
 	return init_store(ltdb, "ldb_mdb backend", ldb, options, _module);
 }
