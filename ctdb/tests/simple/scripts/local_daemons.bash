@@ -192,17 +192,9 @@ EOF
 start_ctdb_1 ()
 {
 	local pnn="$1"
-	local node_dir=$(node_dir "$pnn")
-	local pidfile=$(node_pidfile "$pnn")
-	local conf=$(node_conf "$pnn")
-	local socket=$(node_socket "$pnn")
 
 	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
-	     CTDB_BASE="$node_dir" \
-	     CTDBD_CONF="$conf" \
-	     CTDB_PIDFILE="$pidfile" \
-	     CTDB_SOCKET="$socket" \
-	     ctdbd_wrapper start
+	     onnode "$pnn" ctdbd_wrapper start
 }
 
 daemons_start ()
@@ -218,16 +210,8 @@ daemons_start ()
 stop_ctdb_1 ()
 {
 	local pnn="$1"
-	local node_dir=$(node_dir "$pnn")
-	local pidfile=$(node_pidfile "$pnn")
-	local conf=$(node_conf "$pnn")
-	local socket=$(node_socket "$pnn")
 
-	CTDB_BASE="$node_dir" \
-		 CTDBD_CONF="$conf" \
-		 CTDB_PIDFILE="$pidfile" \
-		 CTDB_SOCKET="$socket" \
-		 ctdbd_wrapper stop
+	onnode "$pnn" ctdbd_wrapper stop
 }
 
 daemons_stop ()
