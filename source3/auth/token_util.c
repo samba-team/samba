@@ -282,7 +282,7 @@ static NTSTATUS add_builtin_guests(struct security_token *token,
 static NTSTATUS add_local_groups(struct security_token *result,
 				 bool is_guest);
 static NTSTATUS finalize_local_nt_token(struct security_token *result,
-					bool is_guest);
+					uint32_t session_info_flags);
 
 NTSTATUS get_user_sid_info3_and_extra(const struct netr_SamInfo3 *info3,
 				      const struct extra_auth_info *extra,
@@ -313,6 +313,7 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 					  struct security_token **ntok)
 {
 	struct security_token *usrtok = NULL;
+	uint32_t session_info_flags = 0;
 	NTSTATUS status;
 	int i;
 
@@ -403,7 +404,12 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = finalize_local_nt_token(usrtok, is_guest);
+	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
+	if (!is_guest) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
+	status = finalize_local_nt_token(usrtok, session_info_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Failed to finalize nt token\n"));
 		TALLOC_FREE(usrtok);
@@ -427,6 +433,7 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	struct security_token *result = NULL;
 	int i;
 	NTSTATUS status;
+	uint32_t session_info_flags = 0;
 
 	DEBUG(10, ("Create local NT token for %s\n",
 		   sid_string_dbg(user_sid)));
@@ -478,7 +485,12 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = finalize_local_nt_token(result, is_guest);
+	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
+	if (!is_guest) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
+	status = finalize_local_nt_token(result, session_info_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
 		return NULL;
@@ -605,7 +617,7 @@ static NTSTATUS add_local_groups(struct security_token *result,
 }
 
 static NTSTATUS finalize_local_nt_token(struct security_token *result,
-					bool is_guest)
+					uint32_t session_info_flags)
 {
 	struct dom_sid _dom_sid = { 0, };
 	struct dom_sid *domain_sid = NULL;
@@ -620,17 +632,17 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 		return NT_STATUS_INVALID_TOKEN;
 	}
 
-	/* Add in BUILTIN sids */
-
-	status = add_sid_to_array(result, &global_sid_World,
-				  &result->sids, &result->num_sids);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = add_sid_to_array(result, &global_sid_Network,
-				  &result->sids, &result->num_sids);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (session_info_flags & AUTH_SESSION_INFO_DEFAULT_GROUPS) {
+		status = add_sid_to_array(result, &global_sid_World,
+					  &result->sids, &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		status = add_sid_to_array(result, &global_sid_Network,
+					  &result->sids, &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/*
@@ -650,7 +662,7 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 		return NT_STATUS_OK;
 	}
 
-	if (!is_guest) {
+	if (session_info_flags & AUTH_SESSION_INFO_AUTHENTICATED) {
 		status = add_sid_to_array(result,
 					  &global_sid_Authenticated_Users,
 					  &result->sids,
@@ -659,6 +671,8 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 			return status;
 		}
 	}
+
+	/* Add in BUILTIN sids */
 
 	become_root();
 	ok = secrets_fetch_domain_sid(lp_workgroup(), &_dom_sid);
@@ -772,10 +786,16 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 		unbecome_root();
 	}
 
-	/* Add privileges based on current user sids */
 
-	get_privileges_for_sids(&result->privilege_mask, result->sids,
-				result->num_sids);
+	if (session_info_flags & AUTH_SESSION_INFO_SIMPLE_PRIVILEGES) {
+		if (security_token_has_builtin_administrators(result)) {
+			result->privilege_mask = ~0;
+		}
+	} else {
+		/* Add privileges based on current user sids */
+		get_privileges_for_sids(&result->privilege_mask, result->sids,
+					result->num_sids);
+	}
 
 	return NT_STATUS_OK;
 }
