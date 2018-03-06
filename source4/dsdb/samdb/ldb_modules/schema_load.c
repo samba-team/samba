@@ -32,6 +32,7 @@
 #include <tdb.h>
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "lib/ldb-samba/ldb_wrap.h"
 
 #include "system/filesys.h"
 struct schema_load_private_data {
@@ -63,7 +64,6 @@ static int schema_metadata_open(struct ldb_module *module)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx;
 	struct loadparm_context *lp_ctx;
-	const char *sam_name;
 	char *filename;
 	int open_flags;
 	struct stat statbuf;
@@ -79,19 +79,9 @@ static int schema_metadata_open(struct ldb_module *module)
 		return ldb_module_oom(module);
 	}
 
-	sam_name = (const char *)ldb_get_opaque(ldb, "ldb_url");
-	if (!sam_name) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-	if (strncmp("tdb://", sam_name, 6) == 0) {
-		sam_name += 6;
-	}
-	filename = talloc_asprintf(tmp_ctx, "%s.d/metadata.tdb", sam_name);
-	if (!filename) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
+	filename = ldb_relative_path(ldb,
+				     tmp_ctx,
+				     "sam.ldb.d/metadata.tdb");
 
 	open_flags = O_RDWR;
 	if (stat(filename, &statbuf) != 0) {
