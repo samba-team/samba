@@ -221,6 +221,38 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *session_key,
 			    const char *smb_name,
 			    struct auth_session_info **session_info_out);
+
+/*
+ * The unix name should be constructed as DOMAIN+ACCOUNT,
+ * while '+' will be the "winbind separator" character.
+ */
+#define AUTH3_UNIX_HINT_QUALIFIED_NAME             0x00000001
+/*
+ * The unix name will be just ACCOUNT
+ */
+#define AUTH3_UNIX_HINT_ISLOLATED_NAME             0x00000002
+/*
+ * Don't translate the nt token SIDS into uid/gids
+ */
+#define AUTH3_UNIX_HINT_DONT_TRANSLATE_FROM_SIDS   0x00000004
+/*
+ * Don't translate the unix token uid/gids to S-1-22-X-Y SIDS
+ */
+#define AUTH3_UNIX_HINT_DONT_TRANSLATE_TO_SIDS     0x00000008
+/*
+ * The unix token won't get expanded gid values
+ * from getgroups_unix_user()
+ */
+#define AUTH3_UNIX_HINT_DONT_EXPAND_UNIX_GROUPS    0x00000010
+NTSTATUS auth3_user_info_dc_add_hints(struct auth_user_info_dc *user_info_dc,
+				      uid_t uid,
+				      gid_t gid,
+				      uint32_t flags);
+NTSTATUS auth3_session_info_create(TALLOC_CTX *mem_ctx,
+				   const struct auth_user_info_dc *user_info_dc,
+				   const char *original_user_name,
+				   uint32_t session_info_flags,
+				   struct auth_session_info **session_info_out);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
 				    uid_t *uid, gid_t *gid,
