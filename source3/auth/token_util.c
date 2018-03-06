@@ -734,25 +734,49 @@ NTSTATUS finalize_local_nt_token(struct security_token *result,
 	}
 
 	/*
-	 * Add BUILTIN\Guests directly to token.
-	 * But only if the token already indicates
-	 * real guest access by:
-	 * - local GUEST account
-	 * - local GUESTS group
-	 * - domain GUESTS group
-	 *
-	 * Even if a user was authenticated, it
-	 * can be member of a guest related group.
+	 * Deal with the BUILTIN\Guests group.  If the SID can
+	 * be resolved then assume that the add_aliasmem( S-1-5-32 )
+	 * handled it.
 	 */
-	status = add_builtin_guests(result, domain_sid);
+	status = pdb_get_aliasinfo(&global_sid_Builtin_Guests, info);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Failed to check for local "
-			  "Guests membership (%s)\n",
-			  nt_errstr(status)));
-		/*
-		 * This is a hard error.
-		 */
-		return status;
+
+		become_root();
+		status = create_builtin_guests(domain_sid);
+		unbecome_root();
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE)) {
+			/*
+			 * Add BUILTIN\Guests directly to token.
+			 * But only if the token already indicates
+			 * real guest access by:
+			 * - local GUEST account
+			 * - local GUESTS group
+			 * - domain GUESTS group
+			 *
+			 * Even if a user was authenticated, it
+			 * can be member of a guest related group.
+			 */
+			status = add_builtin_guests(result, domain_sid);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(3, ("Failed to check for local "
+					  "Guests membership (%s)\n",
+					  nt_errstr(status)));
+				/*
+				 * This is a hard error.
+				 */
+				return status;
+			}
+		} else if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2, ("Failed to create "
+				  "BUILTIN\\Guests group %s!  Can "
+				  "Winbind allocate gids?\n",
+				  nt_errstr(status)));
+			/*
+			 * This is a hard error.
+			 */
+			return status;
+		}
 	}
 
 	TALLOC_FREE(info);
