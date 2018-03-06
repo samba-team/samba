@@ -36,6 +36,7 @@
 #include "../librpc/gen_ndr/idmap.h"
 #include "lib/param/loadparm.h"
 #include "../lib/tsocket/tsocket.h"
+#include "source4/auth/auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -1295,31 +1296,6 @@ done:
 	return status;
 }
 
-static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
-				 struct netr_SamInfo3 *info3)
-{
-	NTSTATUS status;
-
-	/* Set account name */
-	init_lsa_String(&info3->base.account_name, "SYSTEM");
-
-	/* Set domain name */
-	init_lsa_StringLarge(&info3->base.logon_domain, "NT AUTHORITY");
-
-
-	status = dom_sid_split_rid(mem_ctx, &global_sid_System,
-				   &info3->base.domain_sid,
-				   &info3->base.rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* Primary gid is the same */
-	info3->base.primary_gid = info3->base.rid;
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 				struct netr_SamInfo3 *info3)
 {
@@ -1448,80 +1424,67 @@ done:
 static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 					    struct auth_session_info **session_info)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct auth_user_info_dc *user_info_dc = NULL;
+	uid_t uid = -1;
+	gid_t gid = -1;
+	uint32_t hint_flags = 0;
+	uint32_t session_info_flags = 0;
 	NTSTATUS status;
-	struct auth_serversupplied_info *server_info;
-	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	server_info = make_server_info(tmp_ctx);
-	if (!server_info) {
-		status = NT_STATUS_NO_MEMORY;
-		DEBUG(0, ("failed making server_info\n"));
-		goto done;
-	}
-
-	server_info->info3 = talloc_zero(server_info, struct netr_SamInfo3);
-	if (!server_info->info3) {
-		status = NT_STATUS_NO_MEMORY;
-		DEBUG(0, ("talloc failed setting info3\n"));
-		goto done;
-	}
-
-	status = get_system_info3(server_info, server_info->info3);
+	status = auth_system_user_info_dc(frame, lp_netbios_name(),
+					  &user_info_dc);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed creating system info3 with %s\n",
+		DEBUG(0, ("auth_system_user_info_dc failed: %s\n",
 			  nt_errstr(status)));
 		goto done;
 	}
 
-	server_info->utok.uid = sec_initial_uid();
-	server_info->utok.gid = sec_initial_gid();
-	server_info->unix_name = talloc_asprintf(server_info,
-						 "NT AUTHORITY%cSYSTEM",
-						 *lp_winbind_separator());
+	/*
+	 * Just get the initial uid/gid
+	 * and don't expand the unix groups.
+	 */
+	uid = sec_initial_uid();
+	gid = sec_initial_gid();
+	hint_flags |= AUTH3_UNIX_HINT_DONT_EXPAND_UNIX_GROUPS;
 
-	if (!server_info->unix_name) {
-		status = NT_STATUS_NO_MEMORY;
-		DEBUG(0, ("talloc_asprintf failed setting unix_name\n"));
-		goto done;
-	}
+	/*
+	 * Also avoid sid mapping to gids,
+	 * as well as adding the unix_token uid/gids as
+	 * S-1-22-X-Y SIDs to the nt token.
+	 */
+	hint_flags |= AUTH3_UNIX_HINT_DONT_TRANSLATE_FROM_SIDS;
+	hint_flags |= AUTH3_UNIX_HINT_DONT_TRANSLATE_TO_SIDS;
 
-	server_info->security_token = talloc_zero(server_info, struct security_token);
-	if (!server_info->security_token) {
-		status = NT_STATUS_NO_MEMORY;
-		DEBUG(0, ("talloc failed setting security token\n"));
-		goto done;
-	}
-
-	status = add_sid_to_array_unique(server_info->security_token->sids,
-					 &global_sid_System,
-					 &server_info->security_token->sids,
-					 &server_info->security_token->num_sids);
+	/*
+	 * The unix name will be "NT AUTHORITY+SYSTEM",
+	 * where '+' is the "winbind separator" character.
+	 */
+	hint_flags |= AUTH3_UNIX_HINT_QUALIFIED_NAME;
+	status = auth3_user_info_dc_add_hints(user_info_dc,
+					      uid,
+					      gid,
+					      hint_flags);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	/* SYSTEM has all privilages */
-	server_info->security_token->privilege_mask = ~0;
-
-	/* Now turn the server_info into a session_info with the full token etc */
-	status = create_local_token(mem_ctx, server_info, NULL, "SYSTEM", session_info);
-	talloc_free(server_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("create_local_token failed: %s\n",
+		DEBUG(0, ("auth3_user_info_dc_add_hints failed: %s\n",
 			  nt_errstr(status)));
 		goto done;
 	}
 
-	talloc_steal(mem_ctx, *session_info);
+	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
+	status = auth3_session_info_create(mem_ctx, user_info_dc,
+					   user_info_dc->info->account_name,
+					   session_info_flags,
+					   session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("auth3_session_info_create failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	TALLOC_FREE(frame);
 	return status;
 }
 
