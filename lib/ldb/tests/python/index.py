@@ -1005,7 +1005,7 @@ class MaxIndexKeyLengthTests(TestCase):
         res = self.l.search(
             base="DC=SAMBA,DC=ORG",
             expression="(notUnique=" + aa_gt_max.decode("ascii") + ")")
-        self.assertEquals(2, len(res))
+        self.assertEqual(2, len(res))
         self.assertTrue(
             contains(res, "OU=01,OU=MODIFY_NON_UNIQUE,DC=SAMBA,DC=ORG"))
         self.assertTrue(
