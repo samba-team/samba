@@ -2833,13 +2833,27 @@ static int control_unban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 }
 
+static void wait_for_shutdown(void *private_data)
+{
+	bool *done = (bool *)private_data;
+
+	*done = true;
+}
+
 static int control_shutdown(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			    int argc, const char **argv)
 {
 	int ret;
+	bool done = false;
 
 	if (argc != 0) {
 		usage("shutdown");
+	}
+
+	if (ctdb->pnn == ctdb->cmd_pnn) {
+		ctdb_client_set_disconnect_callback(ctdb->client,
+						    wait_for_shutdown,
+						    &done);
 	}
 
 	ret = ctdb_ctrl_shutdown(mem_ctx, ctdb->ev, ctdb->client,
@@ -2847,6 +2861,10 @@ static int control_shutdown(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Unable to shutdown node %u\n", ctdb->cmd_pnn);
 		return ret;
+	}
+
+	if (ctdb->pnn == ctdb->cmd_pnn) {
+		ctdb_client_wait(ctdb->ev, &done);
 	}
 
 	return 0;
