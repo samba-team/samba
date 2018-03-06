@@ -225,7 +225,7 @@ def get_partition(samdb, part):
         short_partitions, long_partitions = get_partition_maps(samdb)
         part = short_partitions.get(part.upper(), part)
         if part not in long_partitions:
-            raise CommandError("unknown partition %s" % partition)
+            raise CommandError("unknown partition %s" % part)
     return part
 
 
