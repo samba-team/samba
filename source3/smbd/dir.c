@@ -2028,24 +2028,29 @@ static int files_below_forall_fn(struct file_id fid,
 		/*
 		 * Filter files above dirpath
 		 */
-		return 0;
+		goto out;
 	}
 	if (fullpath[state->dirpath_len] != '/') {
 		/*
 		 * Filter file that don't have a path separator at the end of
 		 * dirpath's length
 		 */
-		return 0;
+		goto out;
 	}
 
 	if (memcmp(state->dirpath, fullpath, state->dirpath_len) != 0) {
 		/*
 		 * Not a parent
 		 */
-		return 0;
+		goto out;
 	}
 
+	TALLOC_FREE(to_free);
 	return state->fn(fid, data, state->private_data);
+
+out:
+	TALLOC_FREE(to_free);
+	return 0;
 }
 
 static int files_below_forall(connection_struct *conn,
