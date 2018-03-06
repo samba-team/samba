@@ -145,18 +145,12 @@ setup_ctdb ()
 
 	local pnn
 	for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-		local node_dir=$(node_dir "$pnn")
-
 		setup_ctdb_base "$SIMPLE_TESTS_VAR_DIR" "node.${pnn}" \
 				functions
 
-		if [ "$node_dir" != "$CTDB_BASE" ] ; then
-			die "Inconsistent CTDB_BASE"
-		fi
-
 		cp "$nodes_file" "${CTDB_BASE}/nodes"
 
-		local public_addresses="${node_dir}/public_addresses"
+		local public_addresses="${CTDB_BASE}/public_addresses"
 
 		if  $no_public_addresses || [ $pnn_no_ips -eq $pnn ] ; then
 			echo "Node ${pnn} will have no public IPs."
@@ -167,19 +161,17 @@ setup_ctdb ()
 
 		local node_ip=$(sed -n -e "$(($pnn + 1))p" "$nodes_file")
 
-		local conf=$(node_conf "$pnn")
-
-		local db_dir="${node_dir}/db"
+		local db_dir="${CTDB_BASE}/db"
 		mkdir -p "${db_dir}/persistent"
 
 		if $no_event_scripts ; then
 			rm -vf "${CTDB_BASE}/events.d/"*
 		fi
 
-		cat >"$conf" <<EOF
+		cat >"${CTDB_BASE}/ctdbd.conf" <<EOF
 CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
 CTDB_NODE_ADDRESS="${node_ip}"
-CTDB_LOGGING="file:${node_dir}/log.ctdb"
+CTDB_LOGGING="file:${CTDB_BASE}/log.ctdb"
 CTDB_DEBUGLEVEL=INFO
 CTDB_DBDIR="${db_dir}"
 CTDB_DBDIR_PERSISTENT="${db_dir}/persistent"
