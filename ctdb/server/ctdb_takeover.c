@@ -1106,9 +1106,33 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 */
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 {
+	bool ok;
 	char **lines;
 	int nlines;
 	int i;
+
+	/* If no public addresses file given then try the default */
+	if (ctdb->public_addresses_file == NULL) {
+		const char *b = getenv("CTDB_BASE");
+		if (b == NULL) {
+			DBG_ERR("CTDB_BASE not set\n");
+			return -1;
+		}
+		ctdb->public_addresses_file = talloc_asprintf(
+					ctdb, "%s/%s", b, "public_addresses");
+		if (ctdb->public_addresses_file == NULL) {
+			DBG_ERR("Out of memory\n");
+			return -1;
+		}
+	}
+
+	/* If the file doesn't exist then warn and do nothing */
+	ok = file_exist(ctdb->public_addresses_file);
+	if (!ok) {
+		D_WARNING("Not loading public addresses, no file %s\n",
+			  ctdb->public_addresses_file);
+		return 0;
+	}
 
 	lines = file_lines_load(ctdb->public_addresses_file, &nlines, 0, ctdb);
 	if (lines == NULL) {
@@ -1163,6 +1187,9 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 		}
 	}
 
+
+	D_NOTICE("Loaded public addresses from %s\n",
+		 ctdb->public_addresses_file);
 
 	talloc_free(lines);
 	return 0;

@@ -299,7 +299,7 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--public_addresses=<parameter>FILENAME</parameter></term>
+	<term>--public-addresses=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
 	    FILENAME specifying a file containing the public IP
@@ -313,7 +313,7 @@
 	    nodes.
 	  </para>
 	  <para>
-	    This is usually the file
+	    Default is
 	    <filename>/usr/local/etc/ctdb/public_addresses</filename>
 	  </para>
 	</listitem>

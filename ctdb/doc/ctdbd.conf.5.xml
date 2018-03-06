@@ -329,7 +329,7 @@
 	<term>CTDB_PUBLIC_ADDRESSES=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
-	    No default, usually
+	    Default is
 	    <filename>/usr/local/etc/ctdb/public_addresses</filename>.
 	    Corresponds to <option>--public-addresses</option>.
 	  </para>

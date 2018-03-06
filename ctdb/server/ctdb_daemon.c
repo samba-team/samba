@@ -1340,12 +1340,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	initialise_node_flags(ctdb);
 
-	if (ctdb->public_addresses_file) {
-		ret = ctdb_set_public_addresses(ctdb, true);
-		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
-			exit(1);
-		}
+	ret = ctdb_set_public_addresses(ctdb, true);
+	if (ret == -1) {
+		D_ERR("Unable to setup public IP addresses\n");
+		exit(1);
 	}
 
 	ctdb_initialise_vnn_map(ctdb);
