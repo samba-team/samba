@@ -18,6 +18,7 @@
 */
 
 #include "dsdb/samdb/ldb_modules/partition.h"
+#include "lib/ldb-samba/ldb_wrap.h"
 #include "system/filesys.h"
 
 #define LDB_METADATA_SEQ_NUM	"SEQ_NUM"
@@ -185,7 +186,6 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 	TALLOC_CTX *tmp_ctx;
 	struct partition_private_data *data;
 	struct loadparm_context *lp_ctx;
-	const char *sam_name;
 	char *filename, *dirname;
 	int open_flags;
 	struct stat statbuf;
@@ -202,15 +202,10 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 		return ldb_module_oom(module);
 	}
 
-	sam_name = (const char *)ldb_get_opaque(ldb, "ldb_url");
-	if (!sam_name) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-	if (strncmp("tdb://", sam_name, 6) == 0) {
-		sam_name += 6;
-	}
-	filename = talloc_asprintf(tmp_ctx, "%s.d/metadata.tdb", sam_name);
+	filename = ldb_relative_path(ldb,
+				     tmp_ctx,
+				     "sam.ldb.d/metadata.tdb");
+
 	if (!filename) {
 		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);
@@ -222,7 +217,9 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 
 		/* While provisioning, sam.ldb.d directory may not exist,
 		 * so create it. Ignore errors, if it already exists. */
-		dirname = talloc_asprintf(tmp_ctx, "%s.d", sam_name);
+		dirname = ldb_relative_path(ldb,
+					    tmp_ctx,
+					    "sam.ldb.d");
 		if (!dirname) {
 			talloc_free(tmp_ctx);
 			return ldb_oom(ldb);
