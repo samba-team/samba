@@ -43,7 +43,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	struct tdb_wrap *eadb;
 
-	if (!PyArg_ParseTuple(args, "ssss#", &tdbname, &filename, &attribute,
+	if (!PyArg_ParseTuple(args, "sss"PYARG_BYTES_LEN, &tdbname, &filename, &attribute,
 						  &blob.data, &blobsize))
 		return NULL;
 
@@ -101,7 +101,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	ret = PyStr_FromStringAndSize((char *)blob.data, blob.length);
+	ret = Py_BuildValue(PYARG_BYTES_LEN, blob.data, blob.length);
 	talloc_free(mem_ctx);
 	return ret;
 }
