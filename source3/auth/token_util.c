@@ -281,8 +281,6 @@ static NTSTATUS add_builtin_guests(struct security_token *token,
 
 static NTSTATUS add_local_groups(struct security_token *result,
 				 bool is_guest);
-static NTSTATUS finalize_local_nt_token(struct security_token *result,
-					uint32_t session_info_flags);
 
 NTSTATUS get_user_sid_info3_and_extra(const struct netr_SamInfo3 *info3,
 				      const struct extra_auth_info *extra,
@@ -616,8 +614,8 @@ static NTSTATUS add_local_groups(struct security_token *result,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS finalize_local_nt_token(struct security_token *result,
-					uint32_t session_info_flags)
+NTSTATUS finalize_local_nt_token(struct security_token *result,
+				 uint32_t session_info_flags)
 {
 	struct dom_sid _dom_sid = { 0, };
 	struct dom_sid *domain_sid = NULL;
