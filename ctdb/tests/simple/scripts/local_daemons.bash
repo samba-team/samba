@@ -184,7 +184,6 @@ CTDB_DEBUGLEVEL=INFO
 CTDB_DBDIR="${db_dir}"
 CTDB_DBDIR_PERSISTENT="${db_dir}/persistent"
 CTDB_DBDIR_STATE="${db_dir}/state"
-CTDB_PUBLIC_ADDRESSES="${public_addresses}"
 CTDB_NOSETSCHED=yes
 EOF
 	done
