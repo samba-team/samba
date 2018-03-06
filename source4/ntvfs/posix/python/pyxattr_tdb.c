@@ -50,7 +50,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	struct file_id id;
 	struct stat sbuf;
 
-	if (!PyArg_ParseTuple(args, "ssss#", &tdbname, &filename, &attribute, 
+	if (!PyArg_ParseTuple(args, "sss"PYARG_BYTES_LEN, &tdbname, &filename, &attribute,
 						  &blob.data, &blobsize))
 		return NULL;
 
@@ -137,7 +137,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	ret_obj = PyStr_FromStringAndSize((char *)blob.data, xattr_size);
+	ret_obj = Py_BuildValue(PYARG_BYTES_LEN, blob.data, xattr_size);
 	talloc_free(mem_ctx);
 	return ret_obj;
 }

@@ -41,7 +41,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	Py_ssize_t blobsize;
 	DATA_BLOB blob;
 
-	if (!PyArg_ParseTuple(args, "sss#", &filename, &attribute, &blob.data, 
+	if (!PyArg_ParseTuple(args, "ss"PYARG_BYTES_LEN, &filename, &attribute, &blob.data,
         &blobsize))
 		return NULL;
 
@@ -90,7 +90,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	ret = PyStr_FromStringAndSize(buf, len);
+	ret = Py_BuildValue(PYARG_BYTES_LEN, buf, len);
 	talloc_free(mem_ctx);
 	return ret;
 }
