@@ -333,6 +333,41 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+struct auth_user_info *auth_user_info_copy(TALLOC_CTX *mem_ctx,
+					   const struct auth_user_info *src)
+{
+	struct auth_user_info *dst = NULL;
+
+	dst = talloc_zero(mem_ctx, struct auth_user_info);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	*dst = *src;
+#define _COPY_STRING(_mem, _str) do { \
+	if ((_str) != NULL) { \
+		(_str) = talloc_strdup((_mem), (_str)); \
+		if ((_str) == NULL) { \
+			TALLOC_FREE(dst); \
+			return NULL; \
+		} \
+	} \
+} while(0)
+	_COPY_STRING(dst, dst->account_name);
+	_COPY_STRING(dst, dst->user_principal_name);
+	_COPY_STRING(dst, dst->domain_name);
+	_COPY_STRING(dst, dst->dns_domain_name);
+	_COPY_STRING(dst, dst->full_name);
+	_COPY_STRING(dst, dst->logon_script);
+	_COPY_STRING(dst, dst->profile_path);
+	_COPY_STRING(dst, dst->home_directory);
+	_COPY_STRING(dst, dst->home_drive);
+	_COPY_STRING(dst, dst->logon_server);
+#undef _COPY_STRING
+
+	return dst;
+}
+
 /**
  * Make a user_info_dc struct from the info3 returned by a domain logon
  */
