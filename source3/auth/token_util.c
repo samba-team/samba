@@ -808,6 +808,22 @@ NTSTATUS finalize_local_nt_token(struct security_token *result,
 		unbecome_root();
 	}
 
+	if (session_info_flags & AUTH_SESSION_INFO_NTLM) {
+		struct dom_sid tmp_sid = { 0, };
+
+		ok = dom_sid_parse(SID_NT_NTLM_AUTHENTICATION, &tmp_sid);
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = add_sid_to_array(result,
+					  &tmp_sid,
+					  &result->sids,
+					  &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	if (session_info_flags & AUTH_SESSION_INFO_SIMPLE_PRIVILEGES) {
 		if (security_token_has_builtin_administrators(result)) {
