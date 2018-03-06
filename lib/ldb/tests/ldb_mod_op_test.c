@@ -3389,6 +3389,11 @@ static void test_ldb_unique_index_duplicate_logging(void **state)
 	char *debug_string = NULL;
 	char *p = NULL;
 
+	/* The non-GUID mode is not compatible with mdb */
+	if (strcmp(TEST_BE, "mdb") == 0) {
+		return;
+	}
+	
 	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
@@ -3438,6 +3443,11 @@ static void test_ldb_duplicate_dn_logging(void **state)
 	TALLOC_CTX *tmp_ctx;
 	char *debug_string = NULL;
 
+	/* The non-GUID mode is not compatible with mdb */
+	if (strcmp(TEST_BE, "mdb") == 0) {
+		return;
+	}
+	
 	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
@@ -3836,6 +3846,7 @@ int main(int argc, const char **argv)
 			test_ldb_add_to_index_unique_values_required,
 			ldb_non_unique_index_test_setup,
 			ldb_non_unique_index_test_teardown),
+		/* These tests are not compatible with mdb */
 		cmocka_unit_test_setup_teardown(
 			test_ldb_unique_index_duplicate_logging,
 			ldb_unique_index_test_setup,
