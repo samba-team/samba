@@ -356,6 +356,8 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 	}
 	if (strncmp("tdb://", base_url, 6) == 0) {
 		base_url = base_url+6;
+	} else if (strncmp("mdb://", base_url, 6) == 0) {
+		base_url = base_url+6;
 	} else if (strncmp("ldb://", base_url, 6) == 0) {
 		base_url = base_url+6;
 	}
