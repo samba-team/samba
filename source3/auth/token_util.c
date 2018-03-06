@@ -208,6 +208,8 @@ static NTSTATUS add_builtin_administrators(struct security_token *token,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS add_local_groups(struct security_token *result,
+				 bool is_guest);
 static NTSTATUS finalize_local_nt_token(struct security_token *result,
 					bool is_guest);
 
@@ -323,6 +325,13 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	status = add_local_groups(usrtok, is_guest);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Failed to add local groups\n"));
+		TALLOC_FREE(usrtok);
+		return status;
+	}
+
 	status = finalize_local_nt_token(usrtok, is_guest);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Failed to finalize nt token\n"));
@@ -390,6 +399,12 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(result);
 			return NULL;
 		}
+	}
+
+	status = add_local_groups(result, is_guest);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(result);
+		return NULL;
 	}
 
 	status = finalize_local_nt_token(result, is_guest);
@@ -501,13 +516,6 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 	struct dom_sid dom_sid;
 	NTSTATUS status;
 	struct acct_info *info;
-
-	/* Add any local groups. */
-
-	status = add_local_groups(result, is_guest);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	/* Add in BUILTIN sids */
 
