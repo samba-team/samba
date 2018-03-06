@@ -613,6 +613,13 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 	struct acct_info *info;
 	bool ok;
 
+	result->privilege_mask = 0;
+	result->rights_mask = 0;
+
+	if (result->num_sids == 0) {
+		return NT_STATUS_INVALID_TOKEN;
+	}
+
 	/* Add in BUILTIN sids */
 
 	status = add_sid_to_array(result, &global_sid_World,
@@ -624,6 +631,23 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 				  &result->sids, &result->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	/*
+	 * Don't expand nested groups of system, anonymous etc
+	 *
+	 * Note that they still get SID_WORLD and SID_NETWORK
+	 * for now in order let existing tests pass.
+	 *
+	 * But SYSTEM doesn't get AUTHENTICATED_USERS
+	 * and ANONYMOUS doesn't get BUILTIN GUESTS anymore.
+	 */
+	if (security_token_is_anonymous(result)) {
+		return NT_STATUS_OK;
+	}
+	if (security_token_is_system(result)) {
+		result->privilege_mask = ~0;
+		return NT_STATUS_OK;
 	}
 
 	if (!is_guest) {
