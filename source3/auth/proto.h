@@ -359,6 +359,8 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    bool is_guest,
 					    int num_groupsids,
 					    const struct dom_sid *groupsids);
+NTSTATUS finalize_local_nt_token(struct security_token *result,
+				 uint32_t session_info_flags);
 NTSTATUS get_user_sid_info3_and_extra(const struct netr_SamInfo3 *info3,
 				      const struct extra_auth_info *extra,
 				      struct dom_sid *sid);
