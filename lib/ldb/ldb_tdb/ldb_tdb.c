@@ -651,6 +651,16 @@ static int ltdb_add(struct ltdb_context *ctx)
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret = LDB_SUCCESS;
 
+	if (ltdb->max_key_length != 0 &&
+	    ltdb->cache->GUID_index_attribute == NULL &&
+	    !ldb_dn_is_special(req->op.add.message->dn))
+	{
+		ldb_set_errstring(ldb_module_get_ctx(module),
+				  "Must operate ldb_mdb in GUID "
+				  "index mode, but " LTDB_IDXGUID " not set.");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	ret = ltdb_check_special_dn(module, req->op.add.message);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -2149,7 +2159,13 @@ int init_store(struct ltdb_private *ltdb,
 
 	*_module = module;
 	/*
-	 * Set the maximum key length
+	 * Set or override the maximum key length
+	 *
+	 * The ldb_mdb code will have set this to 511, but our tests
+	 * set this even smaller (to make the tests more practical).
+	 *
+	 * This must only be used for the selftest as the length
+	 * becomes encoded in the index keys.
 	 */
 	{
 		const char *len_str =
