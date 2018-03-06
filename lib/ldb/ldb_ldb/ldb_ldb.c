@@ -19,6 +19,9 @@
  */
 #include "ldb_private.h"
 #include "../ldb_tdb/ldb_tdb.h"
+#ifdef HAVE_LMDB
+#include "../ldb_mdb/ldb_mdb.h"
+#endif /* HAVE_LMDB */
 
 /*
   connect to the database
@@ -50,6 +53,22 @@ static int lldb_connect(struct ldb_context *ldb,
 	 * Don't create the database if it's not there
 	 */
 	flags |= LDB_FLG_DONT_CREATE_DB;
+#ifdef HAVE_LMDB
+	/*
+	 * Try opening the database as an lmdb
+	 */
+	ret = lmdb_connect(ldb, path, flags, options, module);
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (ret != LDB_ERR_UNAVAILABLE) {
+		return ret;
+	}
+
+	/*
+	 * Not mdb so try as tdb
+	 */
+#endif /* HAVE_LMDB */
 	ret = ltdb_connect(ldb, path, flags, options, module);
 	return ret;
 }
