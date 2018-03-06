@@ -162,6 +162,10 @@ static int lmdb_store(struct ltdb_private *ltdb,
 	MDB_txn *txn = NULL;
 	MDB_dbi dbi = 0;
 
+	if (ltdb->read_only) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	txn = lmdb_trans_get_tx(lmdb_private_trans_head(lmdb));
 	if (txn == NULL) {
 		ldb_debug(lmdb->ldb, LDB_DEBUG_FATAL, "No transaction");
@@ -215,6 +219,10 @@ static int lmdb_delete(struct ltdb_private *ltdb, struct ldb_val key)
 	MDB_val mdb_key;
 	MDB_txn *txn = NULL;
 	MDB_dbi dbi = 0;
+
+	if (ltdb->read_only) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	txn = lmdb_trans_get_tx(lmdb_private_trans_head(lmdb));
 	if (txn == NULL) {
@@ -471,6 +479,11 @@ static int lmdb_transaction_start(struct ltdb_private *ltdb)
 	struct lmdb_trans *ltx;
 	struct lmdb_trans *ltx_head;
 	MDB_txn *tx_parent;
+
+	/* Do not take out the transaction lock on a read-only DB */
+	if (ltdb->read_only) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	ltx = talloc_zero(lmdb, struct lmdb_trans);
 	if (ltx == NULL) {
