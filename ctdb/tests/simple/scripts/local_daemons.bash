@@ -15,8 +15,6 @@ if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
 	export CTDB_CLUSTER_MUTEX_HELPER="${hdir}/ctdb_mutex_fcntl_helper"
 fi
 
-export CTDB_NODES="${SIMPLE_TESTS_VAR_DIR}/nodes.txt"
-
 if [ -n "$TEST_SOCKET_WRAPPER_SO_PATH" ] ; then
 	export LD_PRELOAD="$TEST_SOCKET_WRAPPER_SO_PATH"
 	export SOCKET_WRAPPER_DIR="${SIMPLE_TESTS_VAR_DIR}/sw"
@@ -132,7 +130,8 @@ setup_ctdb ()
 	--no-event-scripts)    no_event_scripts=true    ;;
 	esac
 
-	setup_nodes >"$CTDB_NODES" || return 1
+	nodes_file="${SIMPLE_TESTS_VAR_DIR}/nodes"
+	setup_nodes >"$nodes_file" || return 1
 
 	# If there are (strictly) greater than 2 nodes then we'll
 	# randomly choose a node to have no public addresses
@@ -155,6 +154,8 @@ setup_ctdb ()
 			die "Inconsistent CTDB_BASE"
 		fi
 
+		cp "$nodes_file" "${CTDB_BASE}/nodes"
+
 		local public_addresses="${node_dir}/public_addresses"
 
 		if  $no_public_addresses || [ $pnn_no_ips -eq $pnn ] ; then
@@ -164,7 +165,7 @@ setup_ctdb ()
 			cp "$public_addresses_all" "$public_addresses"
 		fi
 
-		local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
+		local node_ip=$(sed -n -e "$(($pnn + 1))p" "$nodes_file")
 
 		local conf=$(node_conf "$pnn")
 
@@ -177,7 +178,6 @@ setup_ctdb ()
 
 		cat >"$conf" <<EOF
 CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
-CTDB_NODES="$CTDB_NODES"
 CTDB_NODE_ADDRESS="${node_ip}"
 CTDB_LOGGING="file:${node_dir}/log.ctdb"
 CTDB_DEBUGLEVEL=INFO

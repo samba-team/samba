@@ -1,6 +1,6 @@
 #!/bin/sh
 
-nodes="${CTDB_NODES:-${CTDB_BASE}/nodes}"
+nodes="${CTDB_BASE}/nodes"
 
 # ssh options can't be used so discard them
 while : ; do
