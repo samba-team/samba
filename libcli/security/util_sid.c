@@ -34,10 +34,10 @@
  */
 
 
-/* S-1 */
+/* S-1-1 */
 const struct dom_sid global_sid_World_Domain =               /* Everyone domain */
 { 1, 0, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-/* S-1-1 */
+/* S-1-1-0 */
 const struct dom_sid global_sid_World =                      /* Everyone */
 { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 /* S-1-2 */
@@ -52,7 +52,7 @@ const struct dom_sid global_sid_NT_Authority =    		/* NT Authority */
 /* S-1-5-18 */
 const struct dom_sid global_sid_System =			/* System */
 { 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-/* S-1-0 */
+/* S-1-0-0 */
 const struct dom_sid global_sid_NULL =            		/* NULL sid */
 { 1, 1, {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 /* S-1-5-11 */
