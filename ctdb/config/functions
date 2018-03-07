@@ -738,19 +738,6 @@ ctdb_setup_state_dir ()
 		die "Error creating script state dir \"${script_state_dir}\""
 }
 
-# ctdb_setup_service_state_dir [name]
-#   Sets/creates/prints script_state_dir)
-ctdb_setup_service_state_dir ()
-{
-	# Some code passes an argument
-	# shellcheck disable=SC2120
-	_s="${1:-${service_name}}"
-
-	ctdb_setup_state_dir "service" "$_s"
-
-	echo "$script_state_dir"
-}
-
 ##################################################################
 # Reconfigure a service on demand
 
