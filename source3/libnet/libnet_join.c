@@ -2237,6 +2237,18 @@ static void libnet_join_add_dom_rids_to_builtins(struct dom_sid *domain_sid)
 			  "BUILTIN\\Administrators during join: %s\n",
 			  nt_errstr(status)));
 	}
+
+	/* Try adding dom guests to builtin\guests. Only log failures. */
+	status = create_builtin_guests(domain_sid);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE)) {
+		DEBUG(10,("Unable to auto-add domain guests to "
+			  "BUILTIN\\Guests during join because "
+			  "winbindd must be running.\n"));
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Failed to auto-add domain guests to "
+			  "BUILTIN\\Guests during join: %s\n",
+			  nt_errstr(status)));
+	}
 }
 
 /****************************************************************
