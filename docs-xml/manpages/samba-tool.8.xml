@@ -110,6 +110,76 @@
 <refsect1>
 <title>COMMANDS</title>
 
+<refsect3>
+	<title>computer create <replaceable>computername</replaceable> [options]</title>
+	<para>Create a new computer in the Active Directory Domain.</para>
+	<para>The new computer name specified on the command is the
+	sAMAccountName, with or without the trailing dollar sign.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--computerou=COMPUTEROU</term>
+	<listitem><para>
+	DN of alternative location (with or without domainDN counterpart) to
+	default CN=Users in which new computer object will be created.
+	E.g. 'OU=OUname'.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--description=DESCRIPTION</term>
+	<listitem><para>
+	The new computers's description.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--prepare-oldjoin</term>
+	<listitem><para>
+	Prepare enabled machine account for oldjoin mechanism.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>computer delete <replaceable>computername</replaceable> [options]</title>
+	<para>Delete an existing computer account.</para>
+	<para>The computer name specified on the command is the
+	sAMAccountName, with or without the trailing dollar sign.</para>
+</refsect3>
+
+<refsect3>
+	<title>computer list</title>
+	<para>List all computers.</para>
+</refsect3>
+
+<refsect3>
+	<title>computer move <replaceable>computername</replaceable> <replaceable>new_parent_dn</replaceable> [options]</title>
+	<para>This command moves a computer account into the specified
+	organizational unit or container.</para>
+	<para>The computername specified on the command is the
+	sAMAccountName, with or without the trailing dollar sign.</para>
+	<para>The name of the organizational unit or container can be
+	specified as a full DN or without the domainDN component.</para>
+</refsect3>
+
+<refsect3>
+	<title>computer show <replaceable>computername</replaceable> [options]</title>
+	<para>Display a computer AD object.</para>
+	<para>The computer name specified on the command is the
+	sAMAccountName, with or without the trailing dollar sign.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--attributes=USER_ATTRS</term>
+	<listitem><para>
+	Comma separated list of attributes, which will be printed.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
 <refsect2>
 	<title>dbcheck</title>
 	<para>Check the local AD database for errors.</para>
