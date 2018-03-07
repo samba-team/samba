@@ -352,6 +352,12 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	char *server_principal = NULL;
 	char *server_realm = NULL;
 	bool fallback = false;
+	OM_uint32 time_req = 0;
+
+	time_req = gensec_setting_int(gensec_security->settings,
+				      "gensec_gssapi",
+				      "requested_life_time",
+				      time_req);
 
 	in_data.value = token_in->data;
 	in_data.length = token_in->length;
@@ -419,7 +425,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					       gse_ctx->server_name,
 					       &gse_ctx->gss_mech,
 					       gse_ctx->gss_want_flags,
-					       0,
+					       time_req,
 					       GSS_C_NO_CHANNEL_BINDINGS,
 					       &in_data,
 					       NULL,
@@ -476,7 +482,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					gse_ctx->server_name,
 					&gse_ctx->gss_mech,
 					gse_ctx->gss_want_flags,
-					0, GSS_C_NO_CHANNEL_BINDINGS,
+					time_req, GSS_C_NO_CHANNEL_BINDINGS,
 					&in_data, NULL, &out_data,
 					&gse_ctx->gss_got_flags, &time_rec);
 	goto init_sec_context_done;
