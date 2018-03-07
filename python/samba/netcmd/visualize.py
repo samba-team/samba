@@ -33,7 +33,7 @@ from samba.graph import distance_matrix, COLOUR_SETS
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, LdbError
 import time
 import re
-from samba.kcc import KCC
+from samba.kcc import KCC, ldif_import_export
 from samba.kcc.kcc_utils import KCCError
 from samba.compat import text_type
 
@@ -400,13 +400,31 @@ class NTDSConn(object):
 
 class cmd_ntdsconn(GraphCommand):
     "Draw the NTDSConnection graph"
+    takes_options = COMMON_OPTIONS + [
+        Option("--importldif", help="graph from samba_kcc generated ldif",
+               default=None),
+    ]
+
+    def import_ldif_db(self, ldif, lp):
+        d = tempfile.mkdtemp(prefix='samba-tool-visualise')
+        fn = os.path.join(d, 'imported.ldb')
+        self._tmp_fn_to_delete = fn
+        samdb = ldif_import_export.ldif_to_samdb(fn, lp, ldif)
+        return fn
+
     def run(self, H=None, output=None, shorten_names=False,
             key=True, talk_to_remote=False,
             sambaopts=None, credopts=None, versionopts=None,
             color=None, color_scheme=None,
-            utf8=None, format=None):
+            utf8=None, format=None, importldif=None):
+
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
+        if importldif is None:
+            creds = credopts.get_credentials(lp, fallback_machine=True)
+        else:
+            creds = None
+            H = self.import_ldif_db(importldif, lp)
+
         local_kcc, dsas = self.get_kcc_and_dsas(H, lp, creds)
         local_dsa_dn = local_kcc.my_dsa_dnstr.split(',', 1)[1]
         vertices = set()
@@ -448,6 +466,10 @@ class cmd_ntdsconn(GraphCommand):
                 dest_dn = msgdn[msgdn.index(',') + 1:]
                 attested_edges.append((msg['fromServer'][0],
                                        dest_dn, ntds_dn))
+
+        if importldif and H == self._tmp_fn_to_delete:
+            os.remove(H)
+            os.rmdir(os.path.dirname(H))
 
         # now we overlay all the graphs and generate styles accordingly
         edges = {}

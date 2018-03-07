@@ -122,6 +122,22 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
 
             self.assertStringsEqual(monochrome, uncoloured, strip=True)
 
+    def test_import_ldif(self):
+        """Make sure the samba-tool visualize --importldif option gives the
+        same output as using the externally generated db from the same
+        LDIF."""
+        result, s1, err = self.runsubcmd("visualize", "ntdsconn",
+                                         '-H', self.dburl,
+                                         '--color=no', '-S')
+        self.assertCmdSuccess(result, s1, err)
+
+        result, s2, err = self.runsubcmd("visualize", "ntdsconn",
+                                         '--importldif', MULTISITE_LDIF,
+                                         '--color=no', '-S')
+        self.assertCmdSuccess(result, s2, err)
+
+        self.assertStringsEqual(s1, s2)
+
     def test_output_file(self):
         """Check that writing to a file works, with and without
         --color=auto."""
