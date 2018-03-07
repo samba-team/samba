@@ -117,12 +117,11 @@ static void queue_process(struct ctdb_queue *queue)
 	}
 
 	/* Extract complete packet */
-	data = talloc_size(queue, pkt_size);
+	data = talloc_memdup(queue, queue->buffer.data, pkt_size);
 	if (data == NULL) {
-		DEBUG(DEBUG_ERR, ("read error alloc failed for %u\n", pkt_size));
+		D_ERR("read error alloc failed for %u\n", pkt_size);
 		return;
 	}
-	memcpy(data, queue->buffer.data, pkt_size);
 
 	/* Shift packet out from buffer */
 	if (queue->buffer.length > pkt_size) {
