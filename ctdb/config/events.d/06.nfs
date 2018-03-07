@@ -6,12 +6,11 @@
 
 . "${CTDB_BASE}/functions"
 
-# service_name is used by various functions
-# shellcheck disable=SC2034
 service_name="nfs"
 
 loadconfig
-service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
+
+ctdb_setup_state_dir "service" "$service_name"
 
 ######################################################################
 
@@ -25,7 +24,9 @@ nfs_callout_pre ()
 
 ######################################################################
 
-nfs_callout_init "$service_state_dir"
+# script_state_dir set by ctdb_setup_state_dir()
+# shellcheck disable=SC2154
+nfs_callout_init "$script_state_dir"
 
 is_ctdb_managed_service || exit 0
 

@@ -8,7 +8,7 @@
 
 loadconfig
 
-service_state_dir=$(ctdb_setup_service_state_dir "system-monitoring") || exit $?
+ctdb_setup_state_dir "service" "system-monitoring"
 
 validate_percentage ()
 {
@@ -38,7 +38,9 @@ check_thresholds ()
     esac
 
     _t=$(echo "$_thing" | sed -e 's@/@SLASH_@g' -e 's@ @_@g')
-    _cache="${service_state_dir}/cache_${_t}"
+    # script_state_dir set by ctdb_setup_state_dir()
+    # shellcheck disable=SC2154
+    _cache="${script_state_dir}/cache_${_t}"
     if validate_percentage "$_unhealthy_threshold" "$_thing" ; then
         if [ "$_usage" -ge "$_unhealthy_threshold" ] ; then
 	    echo "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
@@ -70,7 +72,7 @@ check_thresholds ()
 
 set_monitor_filsystem_usage_defaults ()
 {
-    _fs_defaults_cache="${service_state_dir}/cache_monitor_filsystem_usage_defaults"
+    _fs_defaults_cache="${script_state_dir}/cache_filsystem_usage_defaults"
 
     if [ ! -r "$_fs_defaults_cache" ] ; then
 	# Determine filesystem for each database directory, generate

@@ -28,10 +28,14 @@ loadconfig nfs
 
 ############################################################
 
-service_state_dir=$(ctdb_setup_service_state_dir "statd-callout") || exit $?
+ctdb_setup_state_dir "service" "nfs"
 
-cd "$service_state_dir" || \
-    die "Failed to change directory to \"${service_state_dir}\""
+# script_state_dir set by ctdb_setup_state_dir()
+# shellcheck disable=SC2154
+d="${script_state_dir}/statd-callout"
+
+mkdir -p "$d" || die "Failed to create directory \"${d}\""
+cd "$d" || die "Failed to change directory to \"${d}\""
 
 pnn=$(ctdb_get_pnn)
 

@@ -10,20 +10,20 @@
 
 . "${CTDB_BASE}/functions"
 
-# service_name is used by various functions
-# shellcheck disable=SC2034
-service_name=natgw
+service_name="natgw"
 
 loadconfig
 
 [ -n "$CTDB_NATGW_NODES" ] || exit 0
 export CTDB_NATGW_NODES
 
-service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
+ctdb_setup_state_dir "failover" "$service_name"
 
-natgw_cfg_new="${service_state_dir}/cfg_new"
-natgw_cfg_old="${service_state_dir}/cfg_old"
-natgw_master_old="${service_state_dir}/master_old"
+# script_state_dir set by ctdb_setup_state_dir()
+# shellcheck disable=SC2154
+natgw_cfg_new="${script_state_dir}/cfg_new"
+natgw_cfg_old="${script_state_dir}/cfg_old"
+natgw_master_old="${script_state_dir}/master_old"
 
 ctdb_natgw_slave_only ()
 {

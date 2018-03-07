@@ -7,9 +7,7 @@
 
 loadconfig
 
-# service_name is used by various functions
-# shellcheck disable=SC2034
-service_name=per_ip_routing
+service_name="per_ip_routing"
 
 # Do nothing if unconfigured 
 [ -n "$CTDB_PER_IP_ROUTING_CONF" ] || exit 0
@@ -36,7 +34,7 @@ if ! have_link_local_config && [ ! -r "$CTDB_PER_IP_ROUTING_CONF" ] ; then
     die "error: CTDB_PER_IP_ROUTING_CONF=$CTDB_PER_IP_ROUTING_CONF file not found"
 fi
 
-service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
+ctdb_setup_state_dir "failover" "$service_name"
 
 ######################################################################
 
@@ -105,7 +103,9 @@ ipv4_host_addr_to_net ()
 ensure_rt_tables ()
 {
     rt_tables="$CTDB_SYS_ETCDIR/iproute2/rt_tables"
-    rt_tables_lock="${service_state_dir}/rt_tables_lock"
+    # script_state_dir set by ctdb_setup_state_dir()
+    # shellcheck disable=SC2154
+    rt_tables_lock="${script_state_dir}/rt_tables_lock"
 
     # This file should always exist.  Even if this didn't exist on the
     # system, adding a route will have created it.  What if we startup

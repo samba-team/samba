@@ -24,13 +24,11 @@ case $CTDB_INIT_STYLE in
 		;;
 esac
 
-# service_name is used by various functions
-# shellcheck disable=SC2034
 service_name="samba"
 
 loadconfig
 
-service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
+ctdb_setup_state_dir "service" "$service_name"
 
 service_start ()
 {
@@ -75,7 +73,9 @@ service_stop ()
 # Show the testparm output using a cached smb.conf to avoid delays due
 # to registry access.
 
-smbconf_cache="$service_state_dir/smb.conf.cache"
+# script_state_dir set by ctdb_setup_state_dir()
+# shellcheck disable=SC2154
+smbconf_cache="$script_state_dir/smb.conf.cache"
 
 testparm_foreground_update ()
 {
