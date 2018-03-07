@@ -156,6 +156,8 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct tevent_context *ev;
 
+	ctdbd_pidfile = CTDB_RUNDIR "/ctdbd.pid";
+
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
