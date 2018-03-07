@@ -6,7 +6,9 @@
 	<para>
 	This is a list of files and directories that are neither visible nor accessible.  Each entry in 
 	the list must be separated by a '/', which allows spaces to be included in the entry. '*' and '?' 
-	can be used to specify multiple files or directories as in DOS wildcards.
+	can be used to specify multiple files or directories as in DOS wildcards. Note that directories in
+ 	the list can still be traversed, and their contents remain accessible using symlinks (if enabled),
+	since the parameter does not affect the contents of a directory but only the directory itself.
 	</para>
 
 	<para>
