@@ -3,23 +3,27 @@
                  type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This parameter controls whether or not links 
-	in the UNIX file system may be followed by the server. Links 
-	that point to areas within the directory tree exported by the 
-	server are always allowed; this parameter controls access only 
-	to areas that are outside the directory tree being exported.</para>
-
-	<para>Note: Turning this parameter on when UNIX extensions are enabled
-	will allow UNIX clients to create symbolic links on the share that
-	can point to files or directories outside restricted path exported
-	by the share definition. This can cause access to areas outside of
-	the share. Due to this problem, this parameter will be automatically
-	disabled (with a message in the log file) if the
-	<smbconfoption name="unix extensions"/> option is on.
+	<para>This parameter controls whether or not the server may follow 
+	symbolic links that point to locations outside the directory tree 
+	exported by the share definition.  It is more permissive than the
+	default <smbconfoption name="follow symlinks"/> option, 
+	which only allows symlinks to be created and followed within the 
+	share directory tree, and is not subject to the security risks of 
+	allowing a connected user to create and follow symlinks without 
+	restriction to any destination.
+	</para>
+	<para>Note: Since UNIX extensions allow unrestricted creation of 
+	symbolic links, turning this parameter on when UNIX extensions are 
+	enabled would allow UNIX clients to create symbolic links within 
+	the share that could point to any files or directories elsewhere in 
+	the UNIX filing system. Due to security implications, this parameter
+	is therefore automatically disabled (with a message in the log file)
+	if the <smbconfoption name="unix extensions"/> option is enabled. 
 	</para>
 	<para>
 	See the parameter <smbconfoption name="allow insecure wide links"/>
-	if you wish to change this coupling between the two parameters.
+	if you wish to disable the coupling between these two parameters, and 
+	allow connected users to create and follow symbolic links to any location.
 	</para>
 </description>
 
