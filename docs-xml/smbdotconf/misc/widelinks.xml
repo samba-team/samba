@@ -4,12 +4,12 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter controls whether or not the server may follow 
-	symbolic links that point to locations outside the directory tree 
-	exported by the share definition.  It is more permissive than the
-	default <smbconfoption name="follow symlinks"/> option, 
-	which only allows symlinks to be created and followed within the 
-	share directory tree, and is not subject to the security risks of 
-	allowing a connected user to create and follow symlinks without 
+	(but not create or modify) symbolic links that point to locations
+	outside the directory tree exported by the share definition.  It is
+	more permissive than the default <smbconfoption name="follow symlinks"/> 
+	option, which only allows symlinks to be created and followed within
+	the share directory tree, and is not subject to the security risks
+	of allowing a connected user to create and follow symlinks without
 	restriction to any destination.
 	</para>
 	<para>Note: Since UNIX extensions allow unrestricted creation of 
