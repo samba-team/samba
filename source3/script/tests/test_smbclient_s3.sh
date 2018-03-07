@@ -1422,6 +1422,9 @@ test_utimes()
     saved_TZ="$TZ"
     TZ=UTC
     export TZ
+    saved_LANG="$LANG"
+    LANG=C
+    export LANG
 
     cat > $tmpfile <<EOF
 del utimes_test
@@ -1441,6 +1444,11 @@ EOF
 	export TZ="$saved_TZ"
     else
 	unset TZ
+    fi
+    if [ -n "$saved_LANG" ] ; then
+	export LANG="$saved_LANG"
+    else
+	unset LANG
     fi
 
     if [ $ret != 0 ] ; then
