@@ -1799,11 +1799,12 @@ static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
 
 static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
 {
-	bool ret = (tdb_get_seqnum(ltdb->tdb) != ltdb->tdb_seqnum);
+	int seq = tdb_get_seqnum(ltdb->tdb);
+	bool has_changed = (seq != ltdb->tdb_seqnum);
 
-	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
+	ltdb->tdb_seqnum = seq;
 
-	return ret;
+	return has_changed;
 }
 
 static const struct kv_db_ops key_value_ops = {
