@@ -43,7 +43,6 @@ struct ctdb_buffer {
 	uint8_t *data;
 	uint32_t length;
 	uint32_t size;
-	uint32_t extend;
 };
 
 struct ctdb_queue_pkt {
@@ -102,16 +101,15 @@ static void queue_process(struct ctdb_queue *queue)
 		return;
 	}
 
+	/* Did we at least read the size into the buffer */
 	pkt_size = *(uint32_t *)queue->buffer.data;
 	if (pkt_size == 0) {
 		DEBUG(DEBUG_CRIT, ("Invalid packet of length 0\n"));
 		goto failed;
 	}
 
+	/* the buffer doesn't contain the full packet, return to get the rest */
 	if (queue->buffer.length < pkt_size) {
-		if (pkt_size > queue->buffer_size) {
-			queue->buffer.extend = pkt_size;
-		}
 		return;
 	}
 
@@ -158,6 +156,7 @@ failed:
 static void queue_io_read(struct ctdb_queue *queue)
 {
 	int num_ready = 0;
+	uint32_t pkt_size;
 	ssize_t nread;
 	uint8_t *data;
 
@@ -183,18 +182,28 @@ static void queue_io_read(struct ctdb_queue *queue)
 			goto failed;
 		}
 		queue->buffer.size = queue->buffer_size;
-	} else if (queue->buffer.extend > 0) {
-		/* extending buffer */
-		data = talloc_realloc_size(queue, queue->buffer.data, queue->buffer.extend);
+		goto data_read;
+	}
+
+	if (queue->buffer.length < sizeof(pkt_size)) {
+		/* data read is not sufficient to gather message size */
+		goto data_read;
+	}
+
+	pkt_size = *(uint32_t *)queue->buffer.data;
+	if (pkt_size > queue->buffer.size) {
+		data = talloc_realloc_size(queue,
+					   queue->buffer.data,
+					   pkt_size);
 		if (data == NULL) {
-			DEBUG(DEBUG_ERR, ("read error realloc failed for %u\n", queue->buffer.extend));
+			DBG_ERR("read error realloc failed for %u\n", pkt_size);
 			goto failed;
 		}
 		queue->buffer.data = data;
-		queue->buffer.size = queue->buffer.extend;
-		queue->buffer.extend = 0;
+		queue->buffer.size = pkt_size;
 	}
 
+data_read:
 	num_ready = MIN(num_ready, queue->buffer.size - queue->buffer.length);
 
 	if (num_ready > 0) {
