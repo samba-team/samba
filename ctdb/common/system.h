@@ -26,7 +26,6 @@
 
 uint32_t uint16_checksum(uint16_t *data, size_t n);
 bool ctdb_sys_have_ip(ctdb_sock_addr *_addr);
-char *ctdb_sys_find_ifname(ctdb_sock_addr *addr);
 
 /* From system_<os>.c */
 
