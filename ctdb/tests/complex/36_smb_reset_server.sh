@@ -52,7 +52,7 @@ sleep_for 5
 
 echo "Connecting to node ${test_node} on IP ${test_ip}:${test_port} with nc..."
 
-nc -d -w $(($monitor_interval * 4)) $test_ip $test_port &
+sleep $((monitor_interval * 4)) | nc $test_ip $test_port &
 nc_pid=$!
 ctdb_test_exit_hook_add "kill $nc_pid >/dev/null 2>&1"
 
