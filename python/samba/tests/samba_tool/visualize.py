@@ -71,11 +71,12 @@ def samdb_from_ldif(ldif, tempdir, lp, dsa=None, tag=''):
     return (samdb, dburl)
 
 
-def collapse_space(s):
+def collapse_space(s, keep_empty_lines=False):
     lines = []
     for line in s.splitlines():
         line = ' '.join(line.strip().split())
-        lines.append(line)
+        if line or keep_empty_lines:
+            lines.append(line)
     return '\n'.join(lines)
 
 
@@ -453,6 +454,7 @@ key_0__label -> elision0 [style=invis; weight=9]
 
 EXPECTED_DISTANCE_GRAPH_WITH_KEY = """
 NTDS Connections known to CN=LOCALDC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba,DC=example,DC=com
+
                             destination
                   ,-------- *,CN=CLIENT+
                   |,------- *,CN=LOCALDC+

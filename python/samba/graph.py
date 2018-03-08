@@ -513,7 +513,8 @@ def distance_matrix(vertices, edges,
                     colour=None,
                     shorten_names=False,
                     generate_key=False,
-                    grouping_function=None):
+                    grouping_function=None,
+                    row_comments=None):
     lines = []
     write = lines.append
 
@@ -525,8 +526,10 @@ def distance_matrix(vertices, edges,
         diagonal = '·'
         #missing = '🕱'
         missing = '-'
+        right_arrow = '←'
     else:
         vertical, horizontal, corner, diagonal, missing = '|-,0-'
+        right_arrow = '<-'
 
     colours = COLOUR_SETS[colour]
 
@@ -606,6 +609,9 @@ def distance_matrix(vertices, edges,
                 if link > 9:
                     link = '+'
                 row.append('%s%s%s' % (ct, link, c_reset))
+
+        if row_comments is not None and row_comments[i]:
+            row.append('%s %s %s' % (c_reset, right_arrow, row_comments[i]))
 
         write('%s%*s%s %s%s' % (c, vlen, v, c_reset,
                                 ''.join(row), c_reset))

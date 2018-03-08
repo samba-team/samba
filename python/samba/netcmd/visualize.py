@@ -450,7 +450,13 @@ class cmd_ntdsconn(GraphCommand):
                 ntds_dn = 'CN=NTDS Settings,' + dsa_dn
                 dn = dsa_dn
 
-            vertices.add(ntds_dn)
+            res = samdb.search(ntds_dn,
+                               scope=SCOPE_BASE,
+                               attrs=["msDS-isRODC"])
+
+            is_rodc = res[0]["msDS-isRODC"][0] == 'TRUE'
+
+            vertices.add((ntds_dn, 'RODC' if is_rodc else ''))
             # XXX we could also look at schedule
             res = samdb.search(dn,
                                scope=SCOPE_SUBTREE,
@@ -482,16 +488,25 @@ class cmd_ntdsconn(GraphCommand):
                 edges[k] = e
             e.attest(attester)
 
+        vertices, rodc_status = zip(*sorted(vertices))
+
         if self.calc_output_format(format, output) == 'distance':
             color_scheme = self.calc_distance_color_scheme(color,
                                                            color_scheme,
                                                            output)
+            colours = COLOUR_SETS[color_scheme]
+            c_header = colours.get('header', '')
+            c_reset = colours.get('reset', '')
+
+            epilog = []
+            if 'RODC' in rodc_status:
+                epilog.append('No outbound connections are expected from RODCs')
+
             if not talk_to_remote:
                 # If we are not talking to remote servers, we list all
                 # the connections.
                 graph_edges = edges.keys()
                 title = 'NTDS Connections known to %s' % local_dsa_dn
-                epilog = ''
 
             else:
                 # If we are talking to the remotes, there are
@@ -521,7 +536,7 @@ class cmd_ntdsconn(GraphCommand):
                         both_deny.append(e)
 
                 title = 'NTDS Connections known to each destination DC'
-                epilog = []
+
                 if both_deny:
                     epilog.append('The following connections are alleged by '
                                   'DCs other than the source and '
@@ -540,15 +555,25 @@ class cmd_ntdsconn(GraphCommand):
                                   'are not known to the source DC:\n')
                     for e in source_denies:
                         epilog.append('  %s -> %s\n' % e)
-                epilog = ''.join(epilog)
 
-            s = distance_matrix(sorted(vertices), graph_edges,
+
+            s = distance_matrix(vertices, graph_edges,
                                 utf8=utf8,
                                 colour=color_scheme,
                                 shorten_names=shorten_names,
                                 generate_key=key,
-                                grouping_function=get_dnstr_site)
-            self.write('\n%s\n%s\n%s' % (title, s, epilog), output)
+                                grouping_function=get_dnstr_site,
+                                row_comments=rodc_status)
+
+            epilog = ''.join(epilog)
+            if epilog:
+                epilog = '\n%sNOTES%s\n%s' % (c_header,
+                                              c_reset,
+                                              epilog)
+
+            self.write('\n%s\n\n%s\n%s' % (title,
+                                           s,
+                                           epilog), output)
             return
 
         dot_edges = []
