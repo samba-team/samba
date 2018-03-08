@@ -197,9 +197,9 @@ startup)
 
 	# Error if CTDB_NATGW_PUBLIC_IP is listed in public addresses
 	ip_pat=$(echo "$CTDB_NATGW_PUBLIC_IP" | sed -e 's@\.@\\.@g')
-	if grep -q "^${ip_pat}[[:space:]]" \
-	    "${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}" ; then
-	    die "ERROR: CTDB_NATGW_PUBLIC_IP same as a public address"
+	ctdb_public_addresses="${CTDB_BASE}/public_addresses"
+	if grep -q "^${ip_pat}[[:space:]]" "$ctdb_public_addresses" ; then
+		die "ERROR: CTDB_NATGW_PUBLIC_IP same as a public address"
 	fi
 
 	# do not send out arp requests from loopback addresses

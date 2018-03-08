@@ -12,16 +12,14 @@
 
 loadconfig
 
-[ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
-	CTDB_PUBLIC_ADDRESSES="${CTDB_BASE}/public_addresses"
-}
+ctdb_public_addresses="${CTDB_BASE}/public_addresses"
 
-[ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
-	if [ "$1" = "init" ]; then
-		echo "No public addresses file found. Nothing to do for 10.interfaces"
+if [ ! -f "$ctdb_public_addresses" ]; then
+	if [ "$1" = "init" ] ; then
+		echo "No public addresses file found"
 	fi
 	exit 0
-}
+fi
 
 # This sets $all_interfaces as a side-effect.
 get_all_interfaces ()
@@ -29,7 +27,7 @@ get_all_interfaces ()
     # Get all the interfaces listed in the public_addresses file
     all_interfaces=$(sed -e "s/^[^\t ]*[\t ]*//" \
 			 -e "s/,/ /g" \
-			 -e "s/[\t ]*$//" "$CTDB_PUBLIC_ADDRESSES")
+			 -e "s/[\t ]*$//" "$ctdb_public_addresses")
 
     # Add some special interfaces if they're defined
     [ "$CTDB_PUBLIC_INTERFACE" ] && all_interfaces="$CTDB_PUBLIC_INTERFACE $all_interfaces"

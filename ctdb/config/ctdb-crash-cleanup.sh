@@ -16,11 +16,9 @@ fi
 
 loadconfig ctdb
 
-[ -n "$CTDB_PUBLIC_ADDRESSES" ] || \
-	CTDB_PUBLIC_ADDRESSES="$CTDB_BASE/public_addresses"
-
-[ -f "$CTDB_PUBLIC_ADDRESSES" ] || \
-    die "No public addresses file found. Can't clean up."
+if [ ! -f "$CTDB_BASE/public_addresses" ] ; then
+	die "No public addresses file found. Can't clean up."
+fi
 
 drop_all_public_ips 2>&1 | script_log "ctdb-crash-cleanup.sh"
 

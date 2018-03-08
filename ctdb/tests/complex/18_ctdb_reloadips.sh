@@ -100,7 +100,8 @@ try_command_on_node all "$CTDB setvar TakeoverTimeout ${new_takeover_timeout}"
 
 ####################
 
-addresses=$(get_ctdbd_command_line_option $test_node "public-addresses")
+try_command_on_node $test_node $CTDB_TEST_WRAPPER ctdb_base_show
+addresses="${out}/public_addresses"
 echo "Public addresses file on node $test_node is \"$addresses\""
 backup="${addresses}.$$"
 

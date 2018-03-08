@@ -8,6 +8,6 @@ setup_ctdb
 
 rm -f "${CTDB_BASE}/public_addresses"
 
-ok "No public addresses file found. Nothing to do for 10.interfaces"
+ok "No public addresses file found"
 
 simple_test

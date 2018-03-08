@@ -207,7 +207,7 @@ get_config_for_ip ()
 	    if [ "$_ip" = "$_i" ] ; then
 		printf "%s" "$_ip "; ipv4_host_addr_to_net "$_ip" "$_maskbits"
 	    fi
-	done <"${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+	done <"${CTDB_BASE}/public_addresses"
     else
 	while read _i _rest ; do
 	    if [ "$_ip" = "$_i" ] ; then

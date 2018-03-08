@@ -230,17 +230,21 @@
         clients, as long as there are nodes available capable of
         hosting this address.
       </para>
+
       <para>
-	The public address configuration is stored in a file on each
-	node specified by the <varname>CTDB_PUBLIC_ADDRESSES</varname>
-	configuration variable (see
-	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry>, recommended
-	<filename>/usr/local/etc/ctdb/public_addresses</filename>).  This file
-	contains a list of the public addresses that the node is
-	capable of hosting, one per line.  Each entry also contains
-	the netmask and the interface to which the address should be
-	assigned.
+	The public address configuration is stored in
+	<filename>/usr/local/etc/ctdb/public_addresses</filename> on
+	each node.  This file contains a list of the public addresses
+	that the node is capable of hosting, one per line.  Each entry
+	also contains the netmask and the interface to which the
+	address should be assigned.  If this file is missing then no
+	public addresses are configured.
+      </para>
+
+      <para>
+	Some users who have the same public addresses on all nodes
+	like to put this configuration file in their cluster
+	filesystem.  A symbolic link should be used in this case.
       </para>
 
       <para>
