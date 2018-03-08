@@ -297,7 +297,6 @@ static void client_dead_handler(void *private_data)
 	ctdb_client_callback_func_t callback = client->callback;
 	void *callback_data = client->private_data;
 
-	talloc_free(client);
 	if (callback != NULL) {
 		callback(callback_data);
 		return;
