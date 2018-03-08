@@ -22,6 +22,7 @@ from __future__ import print_function
 import os
 import sys
 from collections import defaultdict
+import subprocess
 
 import tempfile
 import samba
@@ -44,6 +45,8 @@ COMMON_OPTIONS = [
            type=str, metavar="FILE", default=None),
     Option("--dot", help="Graphviz dot output", dest='format',
            const='dot', action='store_const'),
+    Option("--xdot", help="attempt to call Graphviz xdot", dest='format',
+           const='xdot', action='store_const'),
     Option("--distance", help="Distance matrix graph output (default)",
            dest='format', const='distance', action='store_const'),
     Option("--utf8", help="Use utf-8 Unicode characters",
@@ -133,7 +136,20 @@ class GraphCommand(Command):
                 return 'dot'
             else:
                 return 'distance'
+
+        if format == 'xdot':
+            return 'dot'
+
         return format
+
+    def call_xdot(self, s, output):
+        if output is None:
+            fn = self.write(s, TEMP_FILE)
+        else:
+            fn = self.write(s, output)
+        xdot = os.environ.get('SAMBA_TOOL_XDOT_PATH', '/usr/bin/xdot')
+        subprocess.call([xdot, fn])
+        os.remove(fn)
 
     def calc_distance_color_scheme(self, color, color_scheme, output):
         """Heuristics to work out the colour scheme for distance matrices.
@@ -211,7 +227,7 @@ class cmd_reps(GraphCommand):
             key=True, talk_to_remote=False,
             sambaopts=None, credopts=None, versionopts=None,
             mode='self', partition=None, color=None, color_scheme=None,
-            utf8=None, format=None):
+            utf8=None, format=None, xdot=False):
         # We use the KCC libraries in readonly mode to get the
         # replication graph.
         lp = sambaopts.get_loadparm()
@@ -377,7 +393,10 @@ class cmd_reps(GraphCommand):
                       shorten_names=shorten_names,
                       key_items=key_items)
 
-        self.write(s, output)
+        if format == 'xdot':
+            self.call_xdot(s, output)
+        else:
+            self.write(s, output)
 
 
 class NTDSConn(object):
@@ -416,7 +435,8 @@ class cmd_ntdsconn(GraphCommand):
             key=True, talk_to_remote=False,
             sambaopts=None, credopts=None, versionopts=None,
             color=None, color_scheme=None,
-            utf8=None, format=None, importldif=None):
+            utf8=None, format=None, importldif=None,
+            xdot=False):
 
         lp = sambaopts.get_loadparm()
         if importldif is None:
@@ -630,7 +650,11 @@ class cmd_ntdsconn(GraphCommand):
                       edge_styles=edge_styles,
                       shorten_names=shorten_names,
                       key_items=key_items)
-        self.write(s, output)
+
+        if format == 'xdot':
+            self.call_xdot(s, output)
+        else:
+            self.write(s, output)
 
 
 class cmd_visualize(SuperCommand):

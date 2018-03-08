@@ -27,6 +27,7 @@ query.
 from __future__ import print_function
 import samba
 import os
+import tempfile
 import re
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.kcc import ldif_import_export
@@ -122,6 +123,50 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
             uncoloured = colour_re.sub('', out)
 
             self.assertStringsEqual(monochrome, uncoloured, strip=True)
+
+    def test_import_ldif_xdot(self):
+        """We can't test actual xdot, but using the environment we can
+        persuade samba-tool that a script we write is xdot and ensure
+        it gets the right text.
+        """
+        result, expected, err = self.runsubcmd("visualize", "ntdsconn",
+                                               '-H', self.dburl,
+                                               '--color=no', '-S',
+                                               '--dot')
+        self.assertCmdSuccess(result, expected, err)
+
+        # not that we're expecting anything here
+        old_xdot_path = os.environ.get('SAMBA_TOOL_XDOT_PATH')
+
+        tmpdir = tempfile.mkdtemp()
+        fake_xdot = os.path.join(tmpdir, 'fake_xdot')
+        content = os.path.join(tmpdir, 'content')
+        f = open(fake_xdot, 'w')
+        print('#!/bin/sh', file=f)
+        print('cp $1 %s' % content, file=f)
+        f.close()
+        os.chmod(fake_xdot, 0o700)
+
+        os.environ['SAMBA_TOOL_XDOT_PATH'] = fake_xdot
+        result, empty, err = self.runsubcmd("visualize", "ntdsconn",
+                                            '--importldif', MULTISITE_LDIF,
+                                            '--color=no', '-S',
+                                            '--xdot')
+
+        f = open(content)
+        xdot = f.read()
+        f.close()
+        os.remove(fake_xdot)
+        os.remove(content)
+        os.rmdir(tmpdir)
+
+        if old_xdot_path is not None:
+            os.environ['SAMBA_TOOL_XDOT_PATH'] = old_xdot_path
+        else:
+            del os.environ['SAMBA_TOOL_XDOT_PATH']
+
+        self.assertCmdSuccess(result, xdot, err)
+        self.assertStringsEqual(expected, xdot, strip=True)
 
     def test_import_ldif(self):
         """Make sure the samba-tool visualize --importldif option gives the
