@@ -62,7 +62,7 @@
 	writes are now always handled correctly, the only reasonable values are currently
 	0 (no async I/O) and 1 (always do async I/O).
 	</para>
-	
+
 	<para>This module MUST be listed last in any module stack as
 	the Samba VFS pread/pwrite interface is not thread-safe. This
 	module makes direct pread and pwrite system calls and does
