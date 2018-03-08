@@ -3099,7 +3099,7 @@ static int ldb_unique_index_test_setup(void **state)
 		"dn: @INDEXLIST\n"
 		"@IDXATTR: cn\n"
 		"\n";
-	const char *options[] = {"modules:unique_index_test"};
+	const char *options[] = {"modules:unique_index_test", NULL};
 
 
 	ret = ldb_register_module(&ldb_unique_index_test_module_ops);
@@ -3201,7 +3201,7 @@ static int ldb_non_unique_index_test_setup(void **state)
 		"dn: @INDEXLIST\n"
 		"@IDXATTR: cn\n"
 		"\n";
-	const char *options[] = {"modules:unique_index_test"};
+	const char *options[] = {"modules:unique_index_test", NULL};
 
 
 	ret = ldb_register_module(&ldb_unique_index_test_module_ops);
