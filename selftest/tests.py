@@ -144,7 +144,7 @@ plantestsuite(
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.ntacls")
-planpythontestsuite("none", "samba.tests.policy")
+planpythontestsuite("none", "samba.tests.policy",  py3_compatible=True)
 planpythontestsuite("none", "samba.tests.kcc.graph")
 planpythontestsuite("none", "samba.tests.kcc.graph_utils")
 planpythontestsuite("none", "samba.tests.kcc.ldif_import_export")
