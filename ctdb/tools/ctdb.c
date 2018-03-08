@@ -5886,7 +5886,7 @@ static const struct ctdb_cmd {
 	{ "uptime", control_uptime, false, true,
 		"show node uptime", NULL },
 	{ "ping", control_ping, false, true,
-		"ping all nodes", NULL },
+		"ping a node", NULL },
 	{ "runstate", control_runstate, false, true,
 		"get/check runstate of a node",
 		"[setup|first_recovery|startup|running]" },
