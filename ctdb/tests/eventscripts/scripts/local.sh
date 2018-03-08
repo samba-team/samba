@@ -279,17 +279,10 @@ eventscript_call ()
 # it could be made more flexible.
 setup_public_addresses ()
 {
-    if [ -f "$CTDB_PUBLIC_ADDRESSES" -a \
-	    "${CTDB_PUBLIC_ADDRESSES%/*}" = "$EVENTSCRIPTS_TESTS_VAR_DIR" ] ; then
-	rm "$CTDB_PUBLIC_ADDRESSES"
-    fi
+	_f="${CTDB_BASE}/public_addresses"
 
-    export CTDB_PUBLIC_ADDRESSES=$(mktemp \
-				       --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR" \
-				       "public-addresses-XXXXXXXX")
-
-    echo "Setting up CTDB_PUBLIC_ADDRESSES=${CTDB_PUBLIC_ADDRESSES}"
-    cat >"$CTDB_PUBLIC_ADDRESSES" <<EOF
+	echo "Setting up public addresses in ${_f}"
+	cat >"$_f" <<EOF
 10.0.0.1/24 dev123
 10.0.0.2/24 dev123
 10.0.0.3/24 dev123
@@ -421,7 +414,7 @@ ctdb_get_1_interface ()
 # Each line is suitable for passing to takeip/releaseip
 ctdb_get_all_public_addresses ()
 {
-    _f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+    _f="${CTDB_BASE}/public_addresses"
     while IFS="/$IFS" read _ip _maskbits _ifaces ; do
 	echo "$_ifaces $_ip $_maskbits"
     done <"$_f"
@@ -441,7 +434,7 @@ ctdb_get_my_public_addresses ()
 		    echo $_iface $_ip $_maskbits
 		    break
 		fi
-	    done <"${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+	    done <"${CTDB_BASE}/public_addresses"
 	done
     }
 }

@@ -6,7 +6,7 @@ define_test "no public addresses"
 
 setup_ctdb
 
-export CTDB_PUBLIC_ADDRESSES="$CTDB_ETC/does/not/exist"
+rm -f "${CTDB_BASE}/public_addresses"
 
 ok_null
 

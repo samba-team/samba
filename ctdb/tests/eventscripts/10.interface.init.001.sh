@@ -6,7 +6,7 @@ define_test "no public addresses"
 
 setup_ctdb
 
-export CTDB_PUBLIC_ADDRESSES="$CTDB_ETC/does/not/exist"
+rm -f "${CTDB_BASE}/public_addresses"
 
 ok "No public addresses file found. Nothing to do for 10.interfaces"
 
