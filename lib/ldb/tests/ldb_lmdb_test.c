@@ -55,8 +55,8 @@
 
 #include <sys/wait.h>
 
-#include <lmdb.h>
-
+#include "../ldb_tdb/ldb_tdb.h"
+#include "../ldb_mdb/ldb_mdb.h"
 
 #define TEST_BE  "mdb"
 
@@ -371,6 +371,67 @@ static void test_ldb_add_dn_no_guid_mode(void **state)
 	talloc_free(tmp_ctx);
 }
 
+static struct MDB_env *get_mdb_env(struct ldb_context *ldb)
+{
+	void *data = NULL;
+	struct ltdb_private *ltdb = NULL;
+	struct lmdb_private *lmdb = NULL;
+	struct MDB_env *env = NULL;
+
+	data = ldb_module_get_private(ldb->modules);
+	assert_non_null(data);
+
+	ltdb = talloc_get_type(data, struct ltdb_private);
+	assert_non_null(ltdb);
+
+	lmdb = ltdb->lmdb_private;
+	assert_non_null(lmdb);
+
+	env = lmdb->env;
+	assert_non_null(env);
+
+	return env;
+}
+
+static void test_multiple_opens(void **state)
+{
+	struct ldb_context *ldb1 = NULL;
+	struct ldb_context *ldb2 = NULL;
+	struct ldb_context *ldb3 = NULL;
+	struct MDB_env *env1 = NULL;
+	struct MDB_env *env2 = NULL;
+	struct MDB_env *env3 = NULL;
+	int ret;
+	struct ldbtest_ctx *test_ctx = NULL;
+
+	test_ctx = talloc_get_type_abort(*state, struct ldbtest_ctx);
+
+	/*
+	 * Open the database again
+	 */
+	ldb1 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb1, test_ctx->dbpath, LDB_FLG_RDONLY, NULL);
+	assert_int_equal(ret, 0);
+
+	ldb2 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb2, test_ctx->dbpath, LDB_FLG_RDONLY, NULL);
+	assert_int_equal(ret, 0);
+
+	ldb3 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb3, test_ctx->dbpath, 0, NULL);
+	assert_int_equal(ret, 0);
+	/*
+	 * We now have 3 ldb's open pointing to the same on disk database
+	 * they should all share the same MDB_env
+	 */
+	env1 = get_mdb_env(ldb1);
+	env2 = get_mdb_env(ldb2);
+	env3 = get_mdb_env(ldb3);
+
+	assert_ptr_equal(env1, env2);
+	assert_ptr_equal(env1, env3);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -393,6 +454,10 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(
 			test_ldb_add_dn_no_guid_mode,
 			ldbtest_setup_noguid,
+			ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(
+			test_multiple_opens,
+			ldbtest_setup,
 			ldbtest_teardown),
 	};
 

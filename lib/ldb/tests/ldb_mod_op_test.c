@@ -38,6 +38,12 @@
 #define TEST_BE DEFAULT_BE
 #endif /* TEST_BE */
 
+#ifdef TEST_LMDB
+#include "lmdb.h"
+#include "../ldb_tdb/ldb_tdb.h"
+#include "../ldb_mdb/ldb_mdb.h"
+#endif
+
 struct ldbtest_ctx {
 	struct tevent_context *ev;
 	struct ldb_context *ldb;
@@ -3820,6 +3826,167 @@ static void test_ldb_talloc_destructor_transaction_cleanup(void **state)
 	}
 }
 
+#ifdef TEST_LMDB
+static int test_ldb_multiple_connections_callback(struct ldb_request *req,
+						  struct ldb_reply *ares)
+{
+	int ret;
+	int pipes[2];
+	char buf[2];
+	int pid, child_pid;
+	int wstatus;
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		return LDB_SUCCESS;
+
+	case LDB_REPLY_DONE:
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+
+	{
+		/*
+		 * We open a new ldb on an ldb that is already open and
+		 * then close it.
+		 *
+		 * If the multiple connection wrapping is correct the
+		 * underlying MDB_env will be left open and we should see
+		 * an active reader in the child we fork next
+		 */
+		struct ldb_context *ldb = NULL;
+		struct tevent_context *ev = NULL;
+		TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+		ev = tevent_context_init(mem_ctx);
+		assert_non_null(ev);
+
+		ldb = ldb_init(mem_ctx, ev);
+		assert_non_null(ldb);
+
+		ret = ldb_connect(ldb, TEST_BE"://apitest.ldb" , 0, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		TALLOC_FREE(ldb);
+		TALLOC_FREE(mem_ctx);
+	}
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	child_pid = fork();
+	if (child_pid == 0) {
+		struct MDB_env *env = NULL;
+		struct MDB_envinfo stat;
+		close(pipes[0]);
+
+		/*
+		 * Check that there are exactly two readers on the MDB file
+		 * backing the ldb.
+		 *
+		 */
+		ret = mdb_env_create(&env);
+		if (ret != 0) {
+			print_error(__location__
+				      " mdb_env_create returned (%d)",
+				      ret);
+			exit(ret);
+		}
+
+		ret = mdb_env_open(env,
+				   "apitest.ldb",
+				   MDB_NOSUBDIR | MDB_NOTLS,
+				   0644);
+		if (ret != 0) {
+			print_error(__location__
+				      " mdb_env_open returned (%d)",
+				      ret);
+			exit(ret);
+		}
+
+		ret = mdb_env_info(env, &stat);
+		if (ret != 0) {
+			print_error(__location__
+				      " mdb_env_info returned (%d)",
+				      ret);
+			exit(ret);
+		}
+		if (stat.me_numreaders != 2) {
+			print_error(__location__
+				      " Incorrect number of readers (%d)",
+				      stat.me_numreaders);
+			exit(LDB_ERR_CONSTRAINT_VIOLATION);
+		}
+
+		ret = write(pipes[1], "GO", 2);
+		if (ret != 2) {
+			print_error(__location__
+				      " write returned (%d)",
+				      ret);
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		exit(LDB_SUCCESS);
+	}
+	close(pipes[1]);
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	pid = waitpid(child_pid, &wstatus, 0);
+	assert_int_equal(pid, child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+	return LDB_SUCCESS;
+
+}
+
+static void test_ldb_close_with_multiple_connections(void **state)
+{
+	struct search_test_ctx *search_test_ctx = NULL;
+	struct ldb_dn *search_dn = NULL;
+	struct ldb_request *req = NULL;
+	int ret = 0;
+
+	search_test_ctx = talloc_get_type_abort(*state, struct search_test_ctx);
+	assert_non_null(search_test_ctx);
+
+	search_dn = ldb_dn_new_fmt(search_test_ctx,
+				   search_test_ctx->ldb_test_ctx->ldb,
+				   "cn=test_search_cn,"
+				   "dc=search_test_entry");
+	assert_non_null(search_dn);
+
+	/*
+	 * The search just needs to call DONE, we don't care about the
+	 * contents of the search for this test
+	 */
+	ret = ldb_build_search_req(&req,
+				   search_test_ctx->ldb_test_ctx->ldb,
+				   search_test_ctx,
+				   search_dn,
+				   LDB_SCOPE_SUBTREE,
+				   "(&(!(filterAttr=*))"
+				   "(cn=test_search_cn))",
+				   NULL,
+				   NULL,
+				   NULL,
+				   test_ldb_multiple_connections_callback,
+				   NULL);
+	assert_int_equal(ret, 0);
+
+	ret = ldb_request(search_test_ctx->ldb_test_ctx->ldb, req);
+	assert_int_equal(ret, 0);
+
+	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	assert_int_equal(ret, 0);
+}
+
+#endif
+
 static void test_transaction_start_across_fork(void **state)
 {
 	struct ldb_context *ldb1 = NULL;
@@ -4248,6 +4415,12 @@ int main(int argc, const char **argv)
 			test_ldb_talloc_destructor_transaction_cleanup,
 			ldbtest_setup,
 			ldbtest_teardown),
+#ifdef TEST_LMDB
+		cmocka_unit_test_setup_teardown(
+			test_ldb_close_with_multiple_connections,
+			ldb_search_test_setup,
+			ldb_search_test_teardown),
+#endif
 		cmocka_unit_test_setup_teardown(
 			test_transaction_start_across_fork,
 			ldbtest_setup,

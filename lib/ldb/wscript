@@ -492,8 +492,9 @@ def build(bld):
         if bld.CONFIG_SET('HAVE_LMDB'):
             bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
                              source='tests/ldb_mod_op_test.c',
-                             cflags='-DTEST_BE=\"mdb\" -DGUID_IDX=1',
-                             deps='cmocka ldb',
+                             cflags='-DTEST_BE=\"mdb\" -DGUID_IDX=1 '
+                                  + '-DTEST_LMDB=1',
+                             deps='cmocka ldb lmdb',
                              install=False)
 
             bld.SAMBA_BINARY('ldb_lmdb_test',
