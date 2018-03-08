@@ -346,9 +346,10 @@
 
 		<varlistentry>
 		<term>--online-status <replaceable>domain</replaceable></term>
-		<listitem><para>Show whether domains are marked as online or
-				offline. An optional domain argument limits the
-				output to the online status of a given domain.
+		<listitem><para>Display whether winbind currently maintains an
+				active connection or not. An optional domain
+				argument limits the output to the online status
+				of a given domain.
 		</para></listitem>
 		</varlistentry>
 

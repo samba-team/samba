@@ -640,7 +640,7 @@ static bool wbinfo_show_onlinestatus(const char *domain)
 
 		d_printf("%s : %s\n",
 			 domain_list[i].short_name,
-			 is_offline ? "offline" : "online" );
+			 is_offline ? "no active connection" : "active connection" );
 	}
 
 	wbcFreeMemory(domain_list);
@@ -2336,7 +2336,7 @@ int main(int argc, const char **argv, char **envp)
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
 		{ "own-domain", 0, POPT_ARG_NONE, 0, OPT_LIST_OWN_DOMAIN, "List own domain" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Deprecated command, see --online-status" },
-		{ "online-status", 0, POPT_ARG_NONE, 0, OPT_ONLINESTATUS, "Show whether domains are marked as online or offline"},
+		{ "online-status", 0, POPT_ARG_NONE, 0, OPT_ONLINESTATUS, "Show whether domains maintain an active connection"},
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
 		{ "uid-info", 0, POPT_ARG_INT, &int_arg, OPT_UID_INFO, "Get user info from uid", "UID" },
