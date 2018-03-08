@@ -3211,9 +3211,7 @@ static int setup_io(struct ph_context *ac,
 
 	/* Only non-trust accounts have restrictions (possibly this test is the
 	 * wrong way around, but we like to be restrictive if possible */
-	io->u.restrictions = !(io->u.userAccountControl
-		& (UF_INTERDOMAIN_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT
-			| UF_SERVER_TRUST_ACCOUNT));
+	io->u.restrictions = !(io->u.userAccountControl & UF_TRUST_ACCOUNT_MASK);
 
 	if (io->u.is_krbtgt) {
 		io->u.restrictions = 0;
