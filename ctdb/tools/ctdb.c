@@ -5870,34 +5870,6 @@ static int control_reloadips(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-static int control_ipiface(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
-{
-	ctdb_sock_addr addr;
-	char *iface;
-	int ret;
-
-	if (argc != 1) {
-		usage("ipiface");
-	}
-
-	ret = ctdb_sock_addr_from_string(argv[0], &addr, false);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to Parse IP %s\n", argv[0]);
-		return 1;
-	}
-
-	iface = ctdb_sys_find_ifname(&addr);
-	if (iface == NULL) {
-		fprintf(stderr, "Failed to find interface for IP %s\n",
-			argv[0]);
-		return 1;
-	}
-	free(iface);
-
-	return 0;
-}
-
 
 static const struct ctdb_cmd {
 	const char *name;
@@ -6065,8 +6037,6 @@ static const struct ctdb_cmd {
 		"show database statistics", "<dbname|dbid>" },
 	{ "reloadips", control_reloadips, false, false,
 		"reload the public addresses file", "[all|<pnn-list>]" },
-	{ "ipiface", control_ipiface, true, false,
-		"Find the interface an ip address is hosted on", "<ip>" },
 };
 
 static const struct ctdb_cmd *match_command(const char *command)
