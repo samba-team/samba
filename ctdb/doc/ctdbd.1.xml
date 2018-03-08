@@ -299,27 +299,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--public-addresses=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME specifying a file containing the public IP
-	    addresses to use on the cluster when CTDB should use IP
-	    takeover. This file contains a list of IP addresses,
-	    netmasks and interfaces.  CTDB will distribute these public
-	    IP addresses appropriately across the available nodes.
-	  </para>
-	  <para>
-	    The IP addresses specified in this file can differ across
-	    nodes.
-	  </para>
-	  <para>
-	    Default is
-	    <filename>/usr/local/etc/ctdb/public_addresses</filename>
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--public-interface=<parameter>INTERFACE</parameter></term>
 	<listitem>
 	  <para>

@@ -44,7 +44,6 @@ static struct {
 	const char *nlist;
 	const char *transport;
 	const char *myaddress;
-	const char *public_address_list;
 	const char *notification_script;
 	const char *logging;
 	const char *recovery_lock;
@@ -65,7 +64,6 @@ static struct {
 } options = {
 	.debuglevel = "NOTICE",
 	.nlist = NULL,
-	.public_address_list = NULL,
 	.transport = "tcp",
 	.logging = "file:" LOGDIR "/log.ctdb",
 	.db_dir = CTDB_VARDIR,
@@ -119,7 +117,6 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
-		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
@@ -338,7 +335,6 @@ int main(int argc, const char *argv[])
 		ctdb->do_setsched = false;
 	}
 
-	ctdb->public_addresses_file = options.public_address_list;
 	ctdb->do_checkpublicip = (options.no_publicipcheck == 0);
 
 	if (options.max_persistent_check_errors < 0) {
