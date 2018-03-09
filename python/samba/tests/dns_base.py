@@ -119,14 +119,14 @@ class DNSTest(TestCaseInTempDir):
         try:
             send_packet = ndr.ndr_pack(packet)
             if dump:
-                print self.hexdump(send_packet)
+                print(self.hexdump(send_packet))
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
             s.settimeout(timeout)
             s.connect((host, 53))
             s.sendall(send_packet, 0)
             recv_packet = s.recv(2048, 0)
             if dump:
-                print self.hexdump(recv_packet)
+                print(self.hexdump(recv_packet))
             response = ndr.ndr_unpack(dns.name_packet, recv_packet)
             return (response, recv_packet)
         finally:
@@ -142,7 +142,7 @@ class DNSTest(TestCaseInTempDir):
         try:
             send_packet = ndr.ndr_pack(packet)
             if dump:
-                print self.hexdump(send_packet)
+                print(self.hexdump(send_packet))
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             s.settimeout(timeout)
             s.connect((host, 53))
@@ -152,7 +152,7 @@ class DNSTest(TestCaseInTempDir):
 
             recv_packet = s.recv(0xffff + 2, 0)
             if dump:
-                print self.hexdump(recv_packet)
+                print(self.hexdump(recv_packet))
             response = ndr.ndr_unpack(dns.name_packet, recv_packet[2:])
 
         finally:

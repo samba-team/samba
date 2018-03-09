@@ -140,7 +140,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         msg = messages[2]
         self.assertEquals("Authorization", msg["type"])
         serviceDescription = "SMB"
-        print "binding %s" % binding
+        print("binding %s" % binding)
         if binding == "[smb2]":
             serviceDescription = "SMB2"
 
