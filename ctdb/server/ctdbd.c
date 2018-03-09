@@ -46,7 +46,6 @@ static struct {
 	const char *transport;
 	const char *myaddress;
 	const char *public_address_list;
-	const char *event_script_dir;
 	const char *notification_script;
 	const char *logging;
 	const char *recovery_lock;
@@ -70,7 +69,6 @@ static struct {
 	.nlist = NULL,
 	.public_address_list = NULL,
 	.transport = "tcp",
-	.event_script_dir = NULL,
 	.logging = "file:" LOGDIR "/log.ctdb",
 	.db_dir = CTDB_VARDIR,
 	.db_dir_persistent = CTDB_VARDIR "/persistent",
@@ -125,7 +123,6 @@ int main(int argc, const char *argv[])
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
-		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
@@ -316,15 +313,12 @@ int main(int argc, const char *argv[])
 		CTDB_NO_MEMORY(ctdb, ctdb->default_public_interface);
 	}
 
-	if (options.event_script_dir != NULL) {
-		ctdb->event_script_dir = options.event_script_dir;
-	} else {
-		ctdb->event_script_dir = talloc_asprintf(ctdb, "%s/events.d",
-							 getenv("CTDB_BASE"));
-		if (ctdb->event_script_dir == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-			exit(1);
-		}
+	ctdb->event_script_dir = talloc_asprintf(ctdb,
+						 "%s/events.d",
+						 getenv("CTDB_BASE"));
+	if (ctdb->event_script_dir == NULL) {
+		DBG_ERR("Out of memory\n");
+		exit(1);
 	}
 
 	if (options.notification_script != NULL) {

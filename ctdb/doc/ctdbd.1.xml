@@ -107,23 +107,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--event-script-dir=<parameter>DIRECTORY</parameter></term>
-	<listitem>
-	  <para>
-	    DIRECTORY where the CTDB event scripts are stored.  See the
-	    <citetitle>EVENT SCRIPTS</citetitle> section in
-	    <citerefentry><refentrytitle>ctdb</refentrytitle>
-	    <manvolnum>7</manvolnum></citerefentry> for more information.
-	  </para>
-	  <para>
-	    Default is <envar>CTDB_BASE</envar>/events.d, so usually
-	    <filename>/usr/local/etc/ctdb/events.d</filename>, which is part of
-	    the CTDB installation.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--listen=<parameter>IPADDR</parameter></term>
 	<listitem>
 	  <para>
