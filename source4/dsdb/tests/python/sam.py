@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # This is a port of the original in testprogs/ejs/ldap.js
 
+from __future__ import print_function
 import optparse
 import sys
 import os
@@ -80,7 +81,7 @@ class SamTests(samba.tests.TestCase):
         self.ldb = ldb
         self.base_dn = ldb.domain_dn()
 
-        print "baseDN: %s\n" % self.base_dn
+        print("baseDN: %s\n" % self.base_dn)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
@@ -91,7 +92,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_users_groups(self):
         """This tests the SAM users and groups behaviour"""
-        print "Testing users and groups behaviour\n"
+        print("Testing users and groups behaviour\n")
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -616,7 +617,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_sam_attributes(self):
         """Test the behaviour of special attributes of SAM objects"""
-        print "Testing the behaviour of special attributes of SAM objects\n"
+        print("Testing the behaviour of special attributes of SAM objects\n")
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -749,7 +750,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_primary_group_token_constructed(self):
         """Test the primary group token behaviour (hidden-generated-readonly attribute on groups) and some other constructed attributes"""
-        print "Testing primary group token behaviour and other constructed attributes\n"
+        print("Testing primary group token behaviour and other constructed attributes\n")
 
         try:
             ldb.add({
@@ -825,7 +826,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_tokenGroups(self):
         """Test the tokenGroups behaviour (hidden-generated-readonly attribute on SAM objects)"""
-        print "Testing tokenGroups behaviour\n"
+        print("Testing tokenGroups behaviour\n")
 
         # The domain object shouldn't contain any "tokenGroups" entry
         res = ldb.search(self.base_dn, scope=SCOPE_BASE, attrs=["tokenGroups"])
@@ -869,7 +870,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_groupType(self):
         """Test the groupType behaviour"""
-        print "Testing groupType behaviour\n"
+        print("Testing groupType behaviour\n")
 
         # You can never create or change to a
         # "GTYPE_SECURITY_BUILTIN_LOCAL_GROUP"
@@ -1469,7 +1470,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_pwdLastSet(self):
         """Test the pwdLastSet behaviour"""
-        print "Testing pwdLastSet behaviour\n"
+        print("Testing pwdLastSet behaviour\n")
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -1682,7 +1683,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_ldap_bind_must_change_pwd(self):
         """Test the error messages for failing LDAP binds"""
-        print "Test the error messages for failing LDAP binds\n"
+        print("Test the error messages for failing LDAP binds\n")
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -1863,7 +1864,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_userAccountControl(self):
         """Test the userAccountControl behaviour"""
-        print "Testing userAccountControl behaviour\n"
+        print("Testing userAccountControl behaviour\n")
 
         # With a user object
 
@@ -2543,7 +2544,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_smartcard_required1(self):
         """Test the UF_SMARTCARD_REQUIRED behaviour"""
-        print "Testing UF_SMARTCARD_REQUIRED behaviour\n"
+        print("Testing UF_SMARTCARD_REQUIRED behaviour\n")
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -2647,7 +2648,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_smartcard_required2(self):
         """Test the UF_SMARTCARD_REQUIRED behaviour"""
-        print "Testing UF_SMARTCARD_REQUIRED behaviour\n"
+        print("Testing UF_SMARTCARD_REQUIRED behaviour\n")
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -2795,7 +2796,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_smartcard_required3(self):
         """Test the UF_SMARTCARD_REQUIRED behaviour"""
-        print "Testing UF_SMARTCARD_REQUIRED behaviour\n"
+        print("Testing UF_SMARTCARD_REQUIRED behaviour\n")
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -2896,7 +2897,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_isCriticalSystemObject(self):
         """Test the isCriticalSystemObject behaviour"""
-        print "Testing isCriticalSystemObject behaviour\n"
+        print("Testing isCriticalSystemObject behaviour\n")
 
         # Add tests
 
@@ -3028,7 +3029,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_service_principal_name_updates(self):
         """Test the servicePrincipalNames update behaviour"""
-        print "Testing servicePrincipalNames update behaviour\n"
+        print("Testing servicePrincipalNames update behaviour\n")
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -3416,7 +3417,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_sam_description_attribute(self):
         """Test SAM description attribute"""
-        print "Test SAM description attribute"
+        print("Test SAM description attribute")
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -3589,7 +3590,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_fSMORoleOwner_attribute(self):
         """Test fSMORoleOwner attribute"""
-        print "Test fSMORoleOwner attribute"
+        print("Test fSMORoleOwner attribute")
 
         ds_service_name = self.ldb.get_dsServiceName()
 
@@ -3702,7 +3703,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_new_user_default_attributes(self):
         """Test default attributes for new user objects"""
-        print "Test default attributes for new User objects\n"
+        print("Test default attributes for new User objects\n")
 
         user_name = "ldaptestuser"
         user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)

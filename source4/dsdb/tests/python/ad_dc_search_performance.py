@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 import optparse
 import sys
 sys.path.insert(0, 'bin/python')
@@ -153,8 +155,9 @@ class UserTests(samba.tests.TestCase):
                                 expression=expression,
                                 scope=SCOPE_SUBTREE,
                                 attrs=['cn'])
-            print >> sys.stderr, '%d %s took %s' % (i, expression,
-                                                    time.time() - t)
+            print('%d %s took %s' % (i, expression,
+                                     time.time() - t),
+                  file=sys.stderr)
 
     def _test_indexed_search(self):
         expressions = ['(objectclass=group)',
@@ -167,8 +170,9 @@ class UserTests(samba.tests.TestCase):
                                 expression=expression,
                                 scope=SCOPE_SUBTREE,
                                 attrs=['cn'])
-            print >> sys.stderr, '%d runs %s took %s' % (i, expression,
-                                                         time.time() - t)
+            print('%d runs %s took %s' % (i, expression,
+                                          time.time() - t),
+                  file=sys.stderr)
 
     def _test_complex_search(self):
         classes = ['samaccountname', 'objectCategory', 'dn', 'member']
@@ -196,7 +200,7 @@ class UserTests(samba.tests.TestCase):
                                   '(', n2, c2, o2, v2,
                                   '))' if n2 else ')',
                                   ')'])
-            print expression
+            print(expression)
             self.ldb.search(self.ou,
                             expression=expression,
                             scope=SCOPE_SUBTREE,
@@ -219,8 +223,9 @@ class UserTests(samba.tests.TestCase):
                                 expression=expression,
                                 scope=SCOPE_SUBTREE,
                                 attrs=['cn'])
-            print >> sys.stderr, '%d runs %s took %s' % (i, expression,
-                                                         time.time() - t)
+            print('%d runs %s took %s' % (i, expression,
+                                          time.time() - t),
+                  file=sys.stderr)
 
     def _test_add_many_users(self, n=BATCH_SIZE):
         s = self.state.next_user_id

@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import print_function
 
 import optparse
 import sys
@@ -473,18 +473,18 @@ class SimpleSubnetTests(SitesBaseTests):
             try:
                 subnets.create_subnet(self.ldb, basedn, cidr, self.sitename)
             except subnets.SubnetInvalid:
-                print >> sys.stderr, "%s fails properly" % (cidr,)
+                print("%s fails properly" % (cidr,), file=sys.stderr)
                 continue
 
             # we are here because it succeeded when it shouldn't have.
-            print >> sys.stderr, "CIDR %s fails to fail" % (cidr,)
+            print("CIDR %s fails to fail" % (cidr,), file=sys.stderr)
             failures.append(cidr)
             subnets.delete_subnet(self.ldb, basedn, cidr)
 
         if failures:
-            print "These bad subnet names were accepted:"
+            print("These bad subnet names were accepted:")
             for cidr in failures:
-                print "    %s" % cidr
+                print("    %s" % cidr)
             self.fail()
 
     def test_create_good_ranges(self):
@@ -613,7 +613,7 @@ class SimpleSubnetTests(SitesBaseTests):
             try:
                 subnets.create_subnet(self.ldb, basedn, cidr, self.sitename)
             except subnets.SubnetInvalid as e:
-                print e
+                print(e)
                 failures.append(cidr)
                 continue
 
@@ -622,15 +622,15 @@ class SimpleSubnetTests(SitesBaseTests):
                                               cidr))
 
             if len(ret) != 1:
-                print "%s was not created" % cidr
+                print("%s was not created" % cidr)
                 failures.append(cidr)
                 continue
             subnets.delete_subnet(self.ldb, basedn, cidr)
 
         if failures:
-            print "These good subnet names were not accepted:"
+            print("These good subnet names were not accepted:")
             for cidr in failures:
-                print "    %s" % cidr
+                print("    %s" % cidr)
             self.fail()
 
 

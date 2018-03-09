@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # This is unit with tests for LDAP access checks
 
+from __future__ import print_function
 import optparse
 import sys
 import base64
@@ -82,7 +83,7 @@ class AclTests(samba.tests.TestCase):
         self.creds_tmp.set_domain(creds.get_domain())
         self.creds_tmp.set_realm(creds.get_realm())
         self.creds_tmp.set_workstation(creds.get_workstation())
-        print "baseDN: %s" % self.base_dn
+        print("baseDN: %s" % self.base_dn)
 
     def get_user_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
@@ -307,7 +308,7 @@ class AclModifyTests(AclTests):
         """5 Modify one attribute if you have DS_WRITE_PROPERTY for it"""
         mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
-        print "Testing modify on User object"
+        print("Testing modify on User object")
         self.ldb_admin.newuser("test_modify_user1", self.user_pass)
         self.sd_utils.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         ldif = """
@@ -320,7 +321,7 @@ displayName: test_changed"""
                 expression="(distinguishedName=%s)" % self.get_user_dn("test_modify_user1"))
         self.assertEqual(res[0]["displayName"][0], "test_changed")
         # Second test object -- Group
-        print "Testing modify on Group object"
+        print("Testing modify on Group object")
         self.ldb_admin.newgroup("test_modify_group1",
                                 grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         self.sd_utils.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
@@ -333,7 +334,7 @@ displayName: test_changed"""
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % str("CN=test_modify_group1,CN=Users," + self.base_dn))
         self.assertEqual(res[0]["displayName"][0], "test_changed")
         # Third test object -- Organizational Unit
-        print "Testing modify on OU object"
+        print("Testing modify on OU object")
         #delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         self.sd_utils.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
@@ -350,7 +351,7 @@ displayName: test_changed"""
         """6 Modify two attributes as you have DS_WRITE_PROPERTY granted only for one of them"""
         mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
-        print "Testing modify on User object"
+        print("Testing modify on User object")
         #delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.ldb_admin.newuser("test_modify_user1", self.user_pass)
         self.sd_utils.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
@@ -380,7 +381,7 @@ url: www.samba.org"""
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
         # Second test object -- Group
-        print "Testing modify on Group object"
+        print("Testing modify on Group object")
         self.ldb_admin.newgroup("test_modify_group1",
                                 grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         self.sd_utils.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
@@ -425,7 +426,7 @@ displayName: test_changed"""
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
         # Second test object -- Organizational Unit
-        print "Testing modify on OU object"
+        print("Testing modify on OU object")
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         self.sd_utils.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
@@ -456,7 +457,7 @@ url: www.samba.org"""
     def test_modify_u3(self):
         """7 Modify one attribute as you have no what so ever rights granted"""
         # First test object -- User
-        print "Testing modify on User object"
+        print("Testing modify on User object")
         self.ldb_admin.newuser("test_modify_user1", self.user_pass)
         # Modify on attribute you do not have rights for granted
         ldif = """
@@ -474,7 +475,7 @@ url: www.samba.org"""
             self.fail()
 
         # Second test object -- Group
-        print "Testing modify on Group object"
+        print("Testing modify on Group object")
         self.ldb_admin.newgroup("test_modify_group1",
                                 grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         # Modify on attribute you do not have rights for granted
@@ -493,7 +494,7 @@ url: www.samba.org"""
             self.fail()
 
         # Second test object -- Organizational Unit
-        print "Testing modify on OU object"
+        print("Testing modify on OU object")
         #delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         # Modify on attribute you do not have rights for granted
@@ -871,7 +872,7 @@ class AclSearchTests(AclTests):
         self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
         self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
-        print "Testing correct behavior on nonaccessible search base"
+        print("Testing correct behavior on nonaccessible search base")
         try:
              self.ldb_user3.search("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_BASE)
@@ -1870,7 +1871,7 @@ class AclSPNTests(AclTests):
         del self.ldb_user1
 
     def replace_spn(self, _ldb, dn, spn):
-        print "Setting spn %s on %s" % (spn, dn)
+        print("Setting spn %s on %s" % (spn, dn))
         res = self.ldb_admin.search(dn, expression="(objectClass=*)",
                                     scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         if "servicePrincipalName" in res[0].keys():
