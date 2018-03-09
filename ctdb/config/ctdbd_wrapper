@@ -103,7 +103,6 @@ build_ctdb_options ()
     maybe_set "--dbdir"                  "$CTDB_DBDIR"
     maybe_set "--dbdir-persistent"       "$CTDB_DBDIR_PERSISTENT"
     maybe_set "--dbdir-state"            "$CTDB_DBDIR_STATE"
-    maybe_set "--event-script-dir"       "$CTDB_EVENT_SCRIPT_DIR"
     maybe_set "--transport"              "$CTDB_TRANSPORT"
     maybe_set "-d"                       "$CTDB_DEBUGLEVEL"
     maybe_set "--notification-script"    "$CTDB_NOTIFY_SCRIPT"

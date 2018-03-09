@@ -175,17 +175,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_EVENT_SCRIPT_DIR=<parameter>DIRECTORY</parameter></term>
-	<listitem>
-	  <para>
-	    Default is <varname>CTDB_BASE</varname>/events.d, so usually
-	    <filename>/usr/local/etc/ctdb/events.d</filename>.  Corresponds to
-	    <option>--event-script-dir</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_LOGGING=<parameter>STRING</parameter></term>
 	<listitem>
 	  <para>
