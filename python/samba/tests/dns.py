@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 import os
 import sys
 import struct
@@ -77,7 +78,7 @@ class TestSimpleQueries(DNSTest):
 
         name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
@@ -95,7 +96,7 @@ class TestSimpleQueries(DNSTest):
 
         name = "%s" % (self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
@@ -113,7 +114,7 @@ class TestSimpleQueries(DNSTest):
 
         name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
@@ -131,7 +132,7 @@ class TestSimpleQueries(DNSTest):
 
         name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
@@ -145,7 +146,7 @@ class TestSimpleQueries(DNSTest):
 
         name = "invalid-%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
@@ -185,7 +186,7 @@ class TestSimpleQueries(DNSTest):
 
         name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_ALL, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
@@ -685,7 +686,7 @@ class TestComplexQueries(DNSTest):
             # Check the record
             name = "cname_test.%s" % self.get_dns_domain()
             q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
-            print "asking for ", q.name
+            print("asking for ", q.name)
             questions.append(q)
 
             self.finish_name_packet(p, questions)
@@ -825,7 +826,7 @@ class TestInvalidQueries(DNSTest):
 
         name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
@@ -845,7 +846,7 @@ class TestInvalidQueries(DNSTest):
 
         name = "%s.%s" % ('fakefakefake', self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for ", q.name)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
