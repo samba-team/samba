@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../selftest"))
 import selftesthelpers
 from selftesthelpers import *
 
-print >>sys.stderr, "OPTIONS %s" % " ".join(smbtorture4_options)
+print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
 
 def plansmbtorture4testsuite(name, env, options, modname=None):
     return selftesthelpers.plansmbtorture4testsuite(name, env, options,
