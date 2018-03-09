@@ -63,7 +63,7 @@ def parseErrorDescriptions( input_file, isWinError ):
             Errors.append(newError)
         else:
             if len(Errors) == 0:
-                print "Error parsing file as line %d"%count
+                print("Error parsing file as line %d"%count)
                 sys.exit()
             err = Errors[-1]
             if err.err_define == None:
@@ -78,7 +78,7 @@ def parseErrorDescriptions( input_file, isWinError ):
                             err.err_string = err.err_string + " " + desc
         count = count + 1
     fileContents.close()
-    print "parsed %d lines generated %d error definitions"%(count,len(Errors))
+    print("parsed %d lines generated %d error definitions"%(count,len(Errors)))
 
 def write_license(out_file):
     out_file.write("/*\n")
@@ -213,7 +213,7 @@ def main ():
     if len(sys.argv) > 1:
         input_file1 =  sys.argv[1]
     else:
-        print "usage: %s winerrorfile"%(sys.argv[0])
+        print("usage: %s winerrorfile"%(sys.argv[0]))
         sys.exit()
 
     parseErrorDescriptions(input_file1, False)

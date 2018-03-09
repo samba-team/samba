@@ -130,7 +130,7 @@ def main ():
         gen_sourcefile_name = sys.argv[3]
         gen_pythonfile_name = sys.argv[4]
     else:
-        print("usage: %s winerrorfile headerfile sourcefile pythonfile" % (sys.argv[0]))
+        print(("usage: %s winerrorfile headerfile sourcefile pythonfile" % (sys.argv[0])))
         sys.exit()
 
     # read in the data
