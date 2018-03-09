@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 """Helpers used for upgrading between different database formats."""
 
 import os
@@ -776,9 +777,9 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
             obj = hash_ts[k]
             if obj["num"] > limit_print:
                 dt = _glue.nttime2string(_glue.unix2nttime(k*60))
-                print "%s # of modification: %d  \tmin: %d max: %d" % (dt , obj["num"],
+                print("%s # of modification: %d  \tmin: %d max: %d" % (dt , obj["num"],
                                                                     obj["min"],
-                                                                    obj["max"])
+                                                                    obj["max"]))
             if hash_ts[k]["num"] > 600:
                 kept_record.append(k)
 
@@ -803,11 +804,11 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
 
     if ldif != "":
         file = tempfile.mktemp(dir=dest, prefix="usnprov", suffix=".ldif")
-        print
-        print "To track the USNs modified/created by provision and upgrade proivsion,"
-        print " the following ranges are proposed to be added to your provision sam.ldb: \n%s" % ldif
-        print "We recommend to review them, and if it's correct to integrate the following ldif: %s in your sam.ldb" % file
-        print "You can load this file like this: ldbadd -H %s %s\n"%(str(samdb_path),file)
+        print()
+        print("To track the USNs modified/created by provision and upgrade proivsion,")
+        print(" the following ranges are proposed to be added to your provision sam.ldb: \n%s" % ldif)
+        print("We recommend to review them, and if it's correct to integrate the following ldif: %s in your sam.ldb" % file)
+        print("You can load this file like this: ldbadd -H %s %s\n"%(str(samdb_path),file))
         ldif = "dn: @PROVISION\nprovisionnerID: %s\n%s" % (invocationid, ldif)
         open(file,'w').write(ldif)
 

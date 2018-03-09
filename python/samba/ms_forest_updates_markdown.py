@@ -20,6 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 """Generate LDIF from Github documentation."""
 
 import re
@@ -264,7 +265,7 @@ if __name__ == '__main__':
     out_folder = ''
 
     if len(sys.argv) == 0:
-        print >>sys.stderr, "Usage: %s <Forest-Wide-Updates.md> [<output folder>]" % (sys.argv[0])
+        print("Usage: %s <Forest-Wide-Updates.md> [<output folder>]" % (sys.argv[0]), file=sys.stderr)
         sys.exit(1)
 
     in_file = sys.argv[1]

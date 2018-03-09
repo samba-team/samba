@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 import os
 import itertools
 
@@ -339,8 +340,8 @@ def verify_and_dot(basename, edges, vertices=None, label=None,
 def list_verify_tests():
     for k, v in sorted(globals().items()):
         if k.startswith('verify_graph_'):
-            print k.replace('verify_graph_', '')
+            print(k.replace('verify_graph_', ''))
             if v.__doc__:
-                print '    %s%s%s' % (GREY, v.__doc__.rstrip(), C_NORMAL)
+                print('    %s%s%s' % (GREY, v.__doc__.rstrip(), C_NORMAL))
             else:
-                print
+                print()
