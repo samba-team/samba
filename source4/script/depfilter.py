@@ -9,7 +9,7 @@
 import sys, sre
 
 if len(sys.argv) != 2:
-    print 'Usage: depfilter.py NODE'
+    print('Usage: depfilter.py NODE')
     sys.exit(1)
 
 top = sys.argv[1]
@@ -41,10 +41,10 @@ add_deps(top)
 
 # Generate output
 
-print lines[0],
+print(lines[0], end=' ')
 
 for key, value in subgraph.items():
     for n in value:
-        print '\t"%s" -> "%s"' % (key, n)
+        print('\t"%s" -> "%s"' % (key, n))
 
-print lines[-1],
+print(lines[-1], end=' ')
