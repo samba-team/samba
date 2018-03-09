@@ -23,6 +23,7 @@ import samba.getopt as options
 import ldb
 import logging
 import common
+import json
 
 from samba.auth import system_session
 from samba.netcmd import (
@@ -81,8 +82,7 @@ def drs_parse_ntds_dn(ntds_dn):
     return (site, server)
 
 
-
-
+DEFAULT_SHOWREPL_FORMAT = 'classic'
 
 class cmd_drs_showrepl(Command):
     """Show replication status."""
@@ -96,7 +96,11 @@ class cmd_drs_showrepl(Command):
     }
 
     takes_options = [
-        Option("--json", help="output in JSON format", action='store_true'),
+        Option("--json", help="replication details in JSON format",
+               dest='format', action='store_const', const='json'),
+        Option("--classic", help="print local replication details",
+               dest='format', action='store_const', const='classic',
+               default=DEFAULT_SHOWREPL_FORMAT),
     ]
 
     takes_args = ["DC?"]
@@ -148,14 +152,30 @@ class cmd_drs_showrepl(Command):
         return (info_type, info)
 
     def run(self, DC=None, sambaopts=None,
-            credopts=None, versionopts=None, json=False):
-
+            credopts=None, versionopts=None,
+            format=DEFAULT_SHOWREPL_FORMAT):
         self.lp = sambaopts.get_loadparm()
         if DC is None:
             DC = common.netcmd_dnsname(self.lp)
         self.server = DC
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
+        output_function = {
+            'json': self.json_output,
+            'classic': self.classic_output,
+        }.get(format)
+        if output_function is None:
+            raise CommandError("unknown showrepl format %s" % format)
+
+        return output_function()
+
+    def json_output(self):
+        data = self.get_local_repl_data()
+        del data['site']
+        del data['server']
+        json.dump(data, self.outf, indent=2)
+
+    def get_local_repl_data(self):
         drsuapi_connect(self)
         samdb_connect(self)
 
@@ -213,16 +233,23 @@ class cmd_drs_showrepl(Command):
                 a = str(r).split(':')
                 d['replicates NC'].append((a[3], int(a[2])))
 
-        if json:
-            import json as json_mod
-            data = {
-                'dsa': dsa_details,
-                'repsFrom': repsfrom,
-                'repsTo': repsto,
-                'NTDSConnections': conn_details
-            }
-            json_mod.dump(data, self.outf, indent=2)
-            return
+        return {
+            'dsa': dsa_details,
+            'repsFrom': repsfrom,
+            'repsTo': repsto,
+            'NTDSConnections': conn_details,
+            'site': site,
+            'server': server
+        }
+
+    def classic_output(self):
+        data = self.get_local_repl_data()
+        dsa_details = data['dsa']
+        repsfrom = data['repsFrom']
+        repsto = data['repsTo']
+        conn_details = data['NTDSConnections']
+        site = data['site']
+        server = data['server']
 
         self.message("%s\\%s" % (site, server))
         self.message("DSA Options: 0x%08x" % dsa_details["options"])
