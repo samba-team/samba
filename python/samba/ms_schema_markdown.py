@@ -61,7 +61,7 @@ if __name__ == '__main__':
     out_folder = ''
 
     if len(sys.argv) == 0:
-        print >>sys.stderr, "Usage: %s <Schema-Update.md> [<output folder>]" % (sys.argv[0])
+        print("Usage: %s <Schema-Update.md> [<output folder>]" % (sys.argv[0]), file=sys.stderr)
         sys.exit(1)
 
     in_file = sys.argv[1]

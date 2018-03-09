@@ -300,7 +300,7 @@ objectClass: container
                                                "SCHEMA_DN":
                                                str(self.schema_dn)})
         if self.verbose:
-            print("UPDATE (LDIF) ------ OPERATION %d" % op)
+            print(("UPDATE (LDIF) ------ OPERATION %d" % op))
             print(sub_ldif)
 
         self.samdb.modify_ldif(sub_ldif)

@@ -103,7 +103,7 @@ class VersionOptions(optparse.OptionGroup):
 
     def _display_version(self, option, opt_str, arg, parser):
         import samba
-        print(samba.version)
+        print((samba.version))
         sys.exit(0)
 
 

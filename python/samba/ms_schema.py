@@ -144,7 +144,7 @@ def __read_raw_entries(f):
 
                 entry.append(l)
             else:
-                print >>sys.stderr, "Invalid line: %s" % l,
+                print("Invalid line: %s" % l, end=' ', file=sys.stderr)
                 sys.exit(1)
 
         if len(entry):
@@ -313,7 +313,7 @@ if __name__ == '__main__':
         attr_file = sys.argv[1]
         classes_file = sys.argv[2]
     except IndexError:
-        print >>sys.stderr, "Usage: %s attr-file.txt classes-file.txt" % (sys.argv[0])
+        print("Usage: %s attr-file.txt classes-file.txt" % (sys.argv[0]), file=sys.stderr)
         sys.exit(1)
 
-    print read_ms_schema(attr_file, classes_file)
+    print(read_ms_schema(attr_file, classes_file))
