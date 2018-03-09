@@ -263,7 +263,7 @@ tasks = {
 }
 
 def do_print(msg):
-    print "%s" % msg
+    print("%s" % msg)
     sys.stdout.flush()
     sys.stderr.flush()
 
@@ -438,9 +438,9 @@ class buildlist(object):
         filename = 'system-info.txt'
         f = open(filename, 'w')
         for cmd in ['uname -a', 'free', 'cat /proc/cpuinfo']:
-            print >>f, '### %s' % cmd
-            print >>f, run_cmd(cmd, output=True, checkfail=False)
-            print >>f
+            print('### %s' % cmd, file=f)
+            print(run_cmd(cmd, output=True, checkfail=False), file=f)
+            print(file=f)
         f.close()
         return filename
 
@@ -833,7 +833,7 @@ if options.email is not None:
                   elapsed_time, log_base=options.log_base)
 else:
     elapsed_minutes = elapsed_time / 60.0
-    print '''
+    print('''
 
 ####################################################################
 
@@ -848,7 +848,7 @@ the autobuild has been abandoned. Please fix the error and resubmit.
 
 ####################################################################
 
-''' % (options.branch, platform.node(), elapsed_minutes, failed_task, errstr)
+''' % (options.branch, platform.node(), elapsed_minutes, failed_task, errstr))
 
 cleanup()
 do_print(errstr)

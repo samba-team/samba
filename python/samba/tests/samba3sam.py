@@ -41,7 +41,7 @@ def read_datafile(filename):
     return open(os.path.join(datadir, filename), 'r').read()
 
 def ldb_debug(l, text):
-    print text
+    print(text)
 
 
 class MapBaseTestCase(TestCaseInTempDir):

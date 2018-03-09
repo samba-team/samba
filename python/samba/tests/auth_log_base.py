@@ -40,7 +40,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         def messageHandler( context, msgType, src, message):
             # This does not look like sub unit output and it
             # makes these tests much easier to debug.
-            print message
+            print(message)
             jsonMsg = json.loads(message)
             context["messages"].append( jsonMsg)
 

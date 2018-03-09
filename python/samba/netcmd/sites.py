@@ -208,8 +208,8 @@ class cmd_sites_subnet_set_site(Command):
             raise CommandError("Error assigning subnet %s to site %s: %s" %
                                (subnetname, site_of_subnet, e))
 
-        print >> self.outf, ("Subnet %s shifted to site %s" %
-                             (subnetname, site_of_subnet))
+        print(("Subnet %s shifted to site %s" %
+                             (subnetname, site_of_subnet)), file=self.outf)
 
 
 class cmd_sites_subnet(SuperCommand):

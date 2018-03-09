@@ -47,7 +47,7 @@ class UrgentReplicationTests(samba.tests.TestCase):
         self.ldb = samba.tests.connect_samdb(host, global_schema=False)
         self.base_dn = self.ldb.domain_dn()
 
-        print "baseDN: %s\n" % self.base_dn
+        print("baseDN: %s\n" % self.base_dn)
 
     def test_nonurgent_object(self):
         """Test if the urgent replication is not activated when handling a non urgent object."""
@@ -208,7 +208,7 @@ defaultHidingValue: TRUE""")
             self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
 
         except LdbError:
-            print "Not testing urgent replication when creating classSchema object ...\n"
+            print("Not testing urgent replication when creating classSchema object ...\n")
 
         # urgent replication should be enabled when modifying 
         m = Message()

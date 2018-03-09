@@ -31,7 +31,7 @@ VERBOSE = False
 def debug(msg):
     if VERBOSE:
         sys.stdout.flush()
-        print "\033[00;36m%s\033[00m" % msg
+        print("\033[00;36m%s\033[00m" % msg)
         sys.stdout.flush()
 
 timeout = 0

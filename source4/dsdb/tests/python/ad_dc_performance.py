@@ -160,8 +160,8 @@ class UserTests(samba.tests.TestCase):
                                 expression=expression,
                                 scope=SCOPE_SUBTREE,
                                 attrs=['cn'])
-            print >> sys.stderr, '%d %s took %s' % (i, expression,
-                                                    time.time() - t)
+            print('%d %s took %s' % (i, expression,
+                                                    time.time() - t), file=sys.stderr)
 
     def _test_indexed_search(self):
         expressions = ['(objectclass=group)',
@@ -174,8 +174,8 @@ class UserTests(samba.tests.TestCase):
                                 expression=expression,
                                 scope=SCOPE_SUBTREE,
                                 attrs=['cn'])
-            print >> sys.stderr, '%d runs %s took %s' % (i, expression,
-                                                         time.time() - t)
+            print('%d runs %s took %s' % (i, expression,
+                                                         time.time() - t), file=sys.stderr)
 
     def _test_add_many_users(self, n=BATCH_SIZE):
         s = self.state.next_user_id

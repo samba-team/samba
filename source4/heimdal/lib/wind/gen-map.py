@@ -45,7 +45,7 @@ import stringprep
 import util
 
 if len(sys.argv) != 3:
-    print "usage: %s rfc3454.txt out-dir" % sys.argv[0]
+    print("usage: %s rfc3454.txt out-dir" % sys.argv[0])
     sys.exit(1)
 
 tables = rfc3454.read(sys.argv[1])
@@ -114,7 +114,7 @@ trans = stringprep.sort_merge_trans(trans)
 
 for x in trans:
     if x[0] == 0xad:
-        print "fooresult %s" % ",".join(x[3])
+        print("fooresult %s" % ",".join(x[3]))
 
 for x in trans:
     (key, value, description, table) = x
@@ -130,7 +130,7 @@ for x in trans:
     (key, value, description, tables) = x
     symbols = stringprep.symbols(map_list, tables)
     if len(symbols) == 0:
-        print "no symbol for %s %s (%s)" % (key, description, tables)
+        print("no symbol for %s %s (%s)" % (key, description, tables))
         sys.exit(1)
     v = value.split()
     map_c.file.write("  {0x%x, %u, %u, %s}, /* %s: %s */\n"

@@ -43,7 +43,7 @@ import UnicodeData
 import util
 
 if len(sys.argv) != 4:
-    print "usage: %s UnicodeData.txt"
+    print("usage: %s UnicodeData.txt")
     " CompositionExclusions-3.2.0.txt out-dir" % sys.argv[0]
     sys.exit(1)
 
