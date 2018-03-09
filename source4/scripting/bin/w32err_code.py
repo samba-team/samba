@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """Import generete werror.h/doserr.c files from WSPP HTML"""
 
 import re
@@ -100,9 +101,9 @@ class WerrorHtmlParser(object):
 
         # print skipped errors
         if self.opt.print_skipped and len(self._errors_skipped):
-            print "\nErrors skipped during HTML parsing:"
+            print("\nErrors skipped during HTML parsing:")
             pprint.pprint(self._errors_skipped)
-            print "\n"
+            print("\n")
 
         return errors
 
@@ -114,7 +115,7 @@ class WerrorHtmlParser(object):
                 html_str += line.strip()
             fp.close()
         except IOError as e:
-            print "error loading url: " + e.strerror
+            print("error loading url: " + e.strerror)
             pass
 
         # currently ERROR codes are rendered as table
@@ -244,12 +245,12 @@ class WerrorGenerator(object):
         (defined_errors,
          no_value_errors) = werr_parser.load_err_codes(self.opt.werror_file)
         if not defined_errors:
-            print "\nUnable to load existing errors file: %s" % self.opt.werror_file
+            print("\nUnable to load existing errors file: %s" % self.opt.werror_file)
             sys.exit(1)
         if self.opt.verbose and len(no_value_errors):
-            print "\nWarning: there are errors defines using macro value:"
+            print("\nWarning: there are errors defines using macro value:")
             pprint.pprint(no_value_errors)
-            print ""
+            print("")
         # filter generated error codes
         (new_errors,
          diff_code_errors,
