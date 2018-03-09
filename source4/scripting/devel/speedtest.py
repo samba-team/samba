@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 import optparse
 import sys
 import time
@@ -83,7 +84,7 @@ class SpeedTest(samba.tests.TestCase):
         self.base_dn = ldb.domain_dn()
         self.domain_sid = security.dom_sid(ldb.get_domain_sid())
         self.user_pass = "samba123@"
-        print "baseDN: %s" % self.base_dn
+        print("baseDN: %s" % self.base_dn)
 
     def create_user(self, user_dn):
         ldif = """
@@ -125,7 +126,7 @@ class SpeedTestAddDel(SpeedTest):
         super(SpeedTestAddDel, self).setUp()
 
     def run_bundle(self, num):
-        print "\n=== Test ADD/DEL %s user objects ===\n" % num
+        print("\n=== Test ADD/DEL %s user objects ===\n" % num)
         avg_add = Decimal("0.0")
         avg_del = Decimal("0.0")
         for x in [1, 2, 3]:
@@ -133,16 +134,16 @@ class SpeedTestAddDel(SpeedTest):
             self.create_bundle(num)
             res_add = Decimal( str(time.time() - start) )
             avg_add += res_add
-            print "   Attempt %s ADD: %.3fs" % ( x, float(res_add) )
+            print("   Attempt %s ADD: %.3fs" % ( x, float(res_add) ))
             #
             start = time.time()
             self.remove_bundle(num)
             res_del = Decimal( str(time.time() - start) )
             avg_del += res_del
-            print "   Attempt %s DEL: %.3fs" % ( x, float(res_del) )
-        print "Average ADD: %.3fs" % float( Decimal(avg_add) / Decimal("3.0") )
-        print "Average DEL: %.3fs" % float( Decimal(avg_del) / Decimal("3.0") )
-        print ""
+            print("   Attempt %s DEL: %.3fs" % ( x, float(res_del) ))
+        print("Average ADD: %.3fs" % float( Decimal(avg_add) / Decimal("3.0") ))
+        print("Average DEL: %.3fs" % float( Decimal(avg_del) / Decimal("3.0") ))
+        print("")
 
     def test_00000(self):
         """ Remove possibly undeleted test users from previous test
@@ -178,22 +179,22 @@ class AclSearchSpeedTest(SpeedTest):
         delete_force(self.ldb_admin, self.get_user_dn("acltestuser"))
 
     def run_search_bundle(self, num, _ldb):
-        print "\n=== Creating %s user objects ===\n" % num
+        print("\n=== Creating %s user objects ===\n" % num)
         self.create_bundle(num)
         mod = "(A;;LC;;;%s)(D;;RP;;;%s)" % (str(self.user_sid), str(self.user_sid))
         for i in range(num):
             self.sd_utils.dacl_add_ace("cn=speedtestuser%d,cn=Users,%s" %
                                        (i+1, self.base_dn), mod)
-        print "\n=== %s user objects created ===\n" % num
-        print "\n=== Test search on %s user objects ===\n" % num
+        print("\n=== %s user objects created ===\n" % num)
+        print("\n=== Test search on %s user objects ===\n" % num)
         avg_search = Decimal("0.0")
         for x in [1, 2, 3]:
             start = time.time()
             res = _ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_SUBTREE)
             res_search = Decimal( str(time.time() - start) )
             avg_search += res_search
-            print "   Attempt %s SEARCH: %.3fs" % ( x, float(res_search) )
-        print "Average Search: %.3fs" % float( Decimal(avg_search) / Decimal("3.0") )
+            print("   Attempt %s SEARCH: %.3fs" % ( x, float(res_search) ))
+        print("Average Search: %.3fs" % float( Decimal(avg_search) / Decimal("3.0") ))
         self.remove_bundle(num)
 
     def get_user_dn(self, name):

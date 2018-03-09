@@ -36,6 +36,7 @@
 #  $
 #
 
+from __future__ import print_function
 import sys
 
 # Find right direction when running from source tree
@@ -232,7 +233,7 @@ if __name__ == "__main__":
 
     user_session_key = drs_conn.user_session_key
 
-    print "# starting at usn[%d]" % (highwatermark.highest_usn)
+    print("# starting at usn[%d]" % (highwatermark.highest_usn))
 
     while True:
         (level, ctr) = drs_conn.DsGetNCChanges(drs_handle, 8, req8)
@@ -403,7 +404,7 @@ if __name__ == "__main__":
             f.close()
             os.rename(tmp_file, cookie_file)
 
-            print "# up to usn[%d]" % (ctr.new_highwatermark.highest_usn)
+            print("# up to usn[%d]" % (ctr.new_highwatermark.highest_usn))
             break
-        print "# up to tmp_usn[%d]" % (ctr.new_highwatermark.highest_usn)
+        print("# up to tmp_usn[%d]" % (ctr.new_highwatermark.highest_usn))
         req8.highwatermark = ctr.new_highwatermark

@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 import os
 import sys
 from optparse import OptionParser
@@ -65,7 +66,7 @@ def _drs_fetch_pfm(server, samdb, creds, lp):
 
     drs = drsuapi.drsuapi(binding_str, lp, creds)
     (drs_handle, supported_extensions) = drs_DsBind(drs)
-    print "DRS Handle: %s" % drs_handle
+    print("DRS Handle: %s" % drs_handle)
 
     req8 = drsuapi.DsGetNCChangesRequest8()
 
@@ -128,8 +129,8 @@ def _pfm_verify(drs_pfm, ldb_pfm):
 
 def _pfm_schi_verify(drs_schi, ldb_schi):
     errors = []
-    print drs_schi.revision
-    print drs_schi.invocation_id
+    print(drs_schi.revision)
+    print(drs_schi.invocation_id)
     if drs_schi.marker != ldb_schi.marker:
         errors.append("Different marker in schemaInfo: drs = %d, ldb = %d"
                       % (drs_schi.marker, ldb_schi.marker))
@@ -177,14 +178,14 @@ if __name__ == "__main__":
     # verify prefixMaps
     errors = _pfm_verify(drs_pfm, ldb_pfm)
     if len(errors):
-        print "prefixMap verification errors:"
-        print "%s" % errors
+        print("prefixMap verification errors:")
+        print("%s" % errors)
         exit_code = 1
     # verify schemaInfos
     errors = _pfm_schi_verify(drs_schi, ldb_schi)
     if len(errors):
-        print "schemaInfo verification errors:"
-        print "%s" % errors
+        print("schemaInfo verification errors:")
+        print("%s" % errors)
         exit_code = 2
 
     if exit_code != 0:
