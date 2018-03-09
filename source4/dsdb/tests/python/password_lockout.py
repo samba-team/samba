@@ -7,6 +7,7 @@
 # Copyright Stefan Metzmacher 2014
 #
 
+from __future__ import print_function
 import optparse
 import sys
 import base64
@@ -130,11 +131,11 @@ userAccountControl: %d
         if use_kerberos == MUST_USE_KERBEROS:
             logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
-            print "Performs a password cleartext change operation on 'userPassword' using Kerberos"
+            print("Performs a password cleartext change operation on 'userPassword' using Kerberos")
         else:
             logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
-            print "Performs a password cleartext change operation on 'userPassword' using NTLMSSP"
+            print("Performs a password cleartext change operation on 'userPassword' using NTLMSSP")
 
         if initial_lastlogon_relation is not None:
             lastlogon_relation = initial_lastlogon_relation
@@ -232,7 +233,7 @@ userPassword: thatsAcomplPASS2
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
-        print "two failed password change"
+        print("two failed password change")
 
         # Wrong old password
         try:
@@ -580,7 +581,7 @@ userPassword: thatsAcomplPASS2XYZ
 
     def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb,
                                                    initial_logoncount_relation=None):
-        print "Performs a password cleartext change operation on 'unicodePwd'"
+        print("Performs a password cleartext change operation on 'unicodePwd'")
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -702,7 +703,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-        print "two failed password change"
+        print("two failed password change")
 
         # Wrong old password
         try:

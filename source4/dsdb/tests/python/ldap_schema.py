@@ -20,6 +20,7 @@
 
 
 
+from __future__ import print_function
 import optparse
 import sys
 import time
@@ -1615,7 +1616,7 @@ systemOnly: FALSE
                     #self.assertTrue("msDS-IntId" in ldb_msg, "msDS-IntId expected on: %s" % ldb_msg.dn)
                     if "msDS-IntId" not in ldb_msg:
                         count = count + 1
-                        print "%3d warning: msDS-IntId expected on: %-30s %s" % (count, ldb_msg["attributeID"], ldb_msg["cn"])
+                        print("%3d warning: msDS-IntId expected on: %-30s %s" % (count, ldb_msg["attributeID"], ldb_msg["cn"]))
             else:
                 self.assertTrue("msDS-IntId" not in ldb_msg)
 

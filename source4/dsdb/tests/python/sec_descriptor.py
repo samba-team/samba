@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import optparse
 import sys
 import os
@@ -152,7 +153,7 @@ showInAdvancedViewOnly: TRUE
         self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
         self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
         self.addCleanup(self.delete_admin_connection)
-        print "baseDN: %s" % self.base_dn
+        print("baseDN: %s" % self.base_dn)
 
     def delete_admin_connection(self):
         del self.sd_utils
@@ -364,7 +365,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.assertTrue(ace in desc_sddl)
         # Make sure we have identical result for both "add" and "modify"
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
-        print self._testMethodName
+        print(self._testMethodName)
         test_number = self._testMethodName[5:]
         self.assertEqual(self.results[self.DS_BEHAVIOR][test_number], res)
 
@@ -1971,7 +1972,7 @@ class RightsAttributesTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        print self.get_users_domain_dn("testuser_attr")
+        print(self.get_users_domain_dn("testuser_attr"))
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
@@ -2121,12 +2122,12 @@ class SdAutoInheritTests(DescriptorTests):
         self.assertFalse(sub_sddl2 == sub_sddl0)
 
         if ace not in ou_sddl2:
-            print "ou0: %s" % ou_sddl0
-            print "ou2: %s" % ou_sddl2
+            print("ou0: %s" % ou_sddl0)
+            print("ou2: %s" % ou_sddl2)
 
         if sub_ace not in sub_sddl2:
-            print "sub0: %s" % sub_sddl0
-            print "sub2: %s" % sub_sddl2
+            print("sub0: %s" % sub_sddl0)
+            print("sub2: %s" % sub_sddl2)
 
         self.assertTrue(ace in ou_sddl2)
         self.assertTrue(sub_ace in sub_sddl2)

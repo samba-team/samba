@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """Tests the possibleInferiors generation in the schema_fsmo ldb module"""
 
 import optparse
@@ -222,20 +223,20 @@ def possible_inferiors_constructed(db, classinfo, c):
 
 def test_class(db, classinfo, oc):
     """test to see if one objectclass returns the correct possibleInferiors"""
-    print "test: objectClass.%s" % oc
+    print("test: objectClass.%s" % oc)
     poss1 = possible_inferiors_search(db, oc)
     poss2 = possible_inferiors_constructed(db, classinfo, oc)
     if poss1 != poss2:
-        print "failure: objectClass.%s [" % oc
-        print "Returned incorrect list for objectclass %s" % oc
-        print "search:      %s" % poss1
-        print "constructed: %s" % poss2
+        print("failure: objectClass.%s [" % oc)
+        print("Returned incorrect list for objectclass %s" % oc)
+        print("search:      %s" % poss1)
+        print("constructed: %s" % poss2)
         for i in range(0,min(len(poss1),len(poss2))):
-            print "%30s %30s" % (poss1[i], poss2[i])
-        print "]"
+            print("%30s %30s" % (poss1[i], poss2[i]))
+        print("]")
         sys.exit(1)
     else:
-        print "success: objectClass.%s" % oc
+        print("success: objectClass.%s" % oc)
 
 def get_object_classes(db):
     """return a list of all object classes"""
@@ -252,4 +253,4 @@ if objectclass is None:
 else:
     test_class(db,classinfo,objectclass)
 
-print "Lists match OK"
+print("Lists match OK")

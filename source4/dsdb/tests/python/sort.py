@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Originally based on ./sam.py
+from __future__ import print_function
 from unicodedata import normalize
 import locale
 locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))
@@ -134,7 +135,7 @@ class BaseSortTests(samba.tests.TestCase):
             try:
                 self.ldb.delete(self.ou, ['tree_delete:1'])
             except ldb.LdbError as e:
-                print "tried deleting %s, got error %s" % (self.ou, e)
+                print("tried deleting %s, got error %s" % (self.ou, e))
 
         self.ldb.add({
             "dn": self.ou,
@@ -222,12 +223,12 @@ class BaseSortTests(samba.tests.TestCase):
                 expected_order = self.expected_results[attr][rev]
                 received_order = [norm(x[attr][0]) for x in res]
                 if expected_order != received_order:
-                    print attr, ['forward', 'reverse'][rev]
-                    print "expected", expected_order
-                    print "recieved", received_order
-                    print "unnormalised:", [x[attr][0] for x in res]
-                    print "unnormalised: «%s»" % '»  «'.join(x[attr][0]
-                                                             for x in res)
+                    print(attr, ['forward', 'reverse'][rev])
+                    print("expected", expected_order)
+                    print("recieved", received_order)
+                    print("unnormalised:", [x[attr][0] for x in res])
+                    print("unnormalised: «%s»" % '»  «'.join(x[attr][0]
+                                                             for x in res))
                 self.assertEquals(expected_order, received_order)
 
     def _test_server_sort_binary(self):
@@ -242,9 +243,9 @@ class BaseSortTests(samba.tests.TestCase):
                 expected_order = self.expected_results_binary[attr][rev]
                 received_order = [x[attr][0] for x in res]
                 if expected_order != received_order:
-                    print attr
-                    print expected_order
-                    print received_order
+                    print(attr)
+                    print(expected_order)
+                    print(received_order)
                 self.assertEquals(expected_order, received_order)
 
     def _test_server_sort_us_english(self):
@@ -268,13 +269,13 @@ class BaseSortTests(samba.tests.TestCase):
                     expected_order = self.expected_results[attr][rev]
                     received_order = [norm(x[attr][0]) for x in res]
                     if expected_order != received_order:
-                        print attr, lang
-                        print ['forward', 'reverse'][rev]
-                        print "expected: ", expected_order
-                        print "recieved: ", received_order
-                        print "unnormalised:", [x[attr][0] for x in res]
-                        print "unnormalised: «%s»" % '»  «'.join(x[attr][0]
-                                                                 for x in res)
+                        print(attr, lang)
+                        print(['forward', 'reverse'][rev])
+                        print("expected: ", expected_order)
+                        print("recieved: ", received_order)
+                        print("unnormalised:", [x[attr][0] for x in res])
+                        print("unnormalised: «%s»" % '»  «'.join(x[attr][0]
+                                                                 for x in res))
 
                     self.assertEquals(expected_order, received_order)
 
@@ -318,22 +319,22 @@ class BaseSortTests(samba.tests.TestCase):
                 received_order = [norm(x[result_attr][0]) for x in res]
 
                 if expected_order != received_order:
-                    print sort_attr, result_attr, ['forward', 'reverse'][rev]
-                    print "expected", expected_order
-                    print "recieved", received_order
-                    print "unnormalised:", [x[result_attr][0] for x in res]
-                    print "unnormalised: «%s»" % '»  «'.join(x[result_attr][0]
-                                                             for x in res)
-                    print "pairs:", pairs
+                    print(sort_attr, result_attr, ['forward', 'reverse'][rev])
+                    print("expected", expected_order)
+                    print("recieved", received_order)
+                    print("unnormalised:", [x[result_attr][0] for x in res])
+                    print("unnormalised: «%s»" % '»  «'.join(x[result_attr][0]
+                                                             for x in res))
+                    print("pairs:", pairs)
                     # There are bugs in Windows that we don't want (or
                     # know how) to replicate regarding timestamp sorting.
                     # Let's remind ourselves.
                     if result_attr == "msTSExpireDate4":
-                        print '-' * 72
+                        print('-' * 72)
                         print ("This test fails against Windows with the "
                                "default number of elements (33).")
-                        print "Try with --elements=27 (or similar)."
-                        print '-' * 72
+                        print("Try with --elements=27 (or similar).")
+                        print('-' * 72)
 
                 self.assertEquals(expected_order, received_order)
                 for x in res:

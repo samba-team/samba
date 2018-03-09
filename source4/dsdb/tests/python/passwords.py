@@ -8,6 +8,7 @@
 # secured enough (SASL with a minimum of 128 Bit encryption) - consider
 # MS-ADTS 3.1.1.3.1.5
 
+from __future__ import print_function
 import optparse
 import sys
 import base64
@@ -716,7 +717,7 @@ userPassword: thatsAcomplPASS4
              "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS1"] })
 
     def test_empty_passwords(self):
-        print "Performs some empty passwords testing"
+        print("Performs some empty passwords testing")
 
         try:
             self.ldb.add({
@@ -885,7 +886,7 @@ userPassword: thatsAcomplPASS4
                             num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
 
     def test_plain_userPassword(self):
-        print "Performs testing about the standard 'userPassword' behaviour"
+        print("Performs testing about the standard 'userPassword' behaviour")
 
         # Delete the "dSHeuristics"
         self.ldb.set_dsheuristics(None)
@@ -961,7 +962,7 @@ userPassword: thatsAcomplPASS4
         self.ldb.set_dsheuristics("000000001")
 
     def test_modify_dsheuristics_userPassword(self):
-        print "Performs testing about reading userPassword between dsHeuristic modifies"
+        print("Performs testing about reading userPassword between dsHeuristic modifies")
 
         # Make sure userPassword cannot be read
         self.ldb.set_dsheuristics("000000000")

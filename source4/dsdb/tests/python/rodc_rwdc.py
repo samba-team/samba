@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 """Test communication of credentials etc, between an RODC and a RWDC.
 
 How does it work when the password is changed on the RWDC?
@@ -50,13 +51,13 @@ def make_creds(username, password, kerberos_state=None):
         kerberos_state = CREDS.get_kerberos_state()
     c.set_kerberos_state(kerberos_state)
 
-    print '-' * 73
+    print('-' * 73)
     if kerberos_state == MUST_USE_KERBEROS:
-        print "we seem to be using kerberos for %s %s" % (username, password)
+        print("we seem to be using kerberos for %s %s" % (username, password))
     elif kerberos_state == DONT_USE_KERBEROS:
-        print "NOT using kerberos for %s %s" % (username, password)
+        print("NOT using kerberos for %s %s" % (username, password))
     else:
-        print "kerberos state is %s" % kerberos_state
+        print("kerberos state is %s" % kerberos_state)
 
     c.set_gensec_features(c.get_gensec_features() |
                           gensec.FEATURE_SEAL)
@@ -98,7 +99,7 @@ def preload_rodc_user(user_dn):
            credstring,
            '--server', RWDC,]
 
-    print ' '.join(cmd)
+    print(' '.join(cmd))
     subprocess.check_call(cmd)
     set_auto_replication(RWDC, False)
 
@@ -164,12 +165,12 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                              stdout=subprocess.PIPE)
         stdout, stderr = p.communicate()
         if p.returncode:
-            print "failed with code %s" % p.returncode
-            print ' '.join(cmd)
-            print "stdout"
-            print stdout
-            print "stderr"
-            print stderr
+            print("failed with code %s" % p.returncode)
+            print(' '.join(cmd))
+            print("stdout")
+            print(stdout)
+            print("stderr")
+            print(stderr)
             raise RodcRwdcTestException()
 
     def _change_password(self, user_dn, old_password, new_password):
@@ -486,7 +487,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
-        print "two failed password change"
+        print("two failed password change")
 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
@@ -574,7 +575,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
 
         # wait for the lockout to end
         time.sleep(self.account_lockout_duration + 1)
-        print self.account_lockout_duration + 1
+        print(self.account_lockout_duration + 1)
 
         res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
@@ -720,12 +721,12 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                              stdout=subprocess.PIPE)
         stdout, stderr = p.communicate()
         if p.returncode:
-            print "failed with code %s" % p.returncode
-            print ' '.join(cmd)
-            print "stdout"
-            print stdout
-            print "stderr"
-            print stderr
+            print("failed with code %s" % p.returncode)
+            print(' '.join(cmd))
+            print("stdout")
+            print(stdout)
+            print("stderr")
+            print(stderr)
             raise RodcRwdcTestException()
 
     def _check_account_initial(self, dn):
