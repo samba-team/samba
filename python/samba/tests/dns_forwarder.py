@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 import os
 import sys
 import struct
@@ -123,14 +124,14 @@ class DNSTest(TestCase):
         try:
             send_packet = ndr.ndr_pack(packet)
             if dump:
-                print self.hexdump(send_packet)
+                print(self.hexdump(send_packet))
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
             s.settimeout(timeout)
             s.connect((host, 53))
             s.send(send_packet, 0)
             recv_packet = s.recv(2048, 0)
             if dump:
-                print self.hexdump(recv_packet)
+                print(self.hexdump(recv_packet))
             return ndr.ndr_unpack(dns.name_packet, recv_packet)
         finally:
             if s is not None:
@@ -358,7 +359,7 @@ class TestDnsForwarding(DNSTest):
 
     def test_double_forwarder_first_frozen(self):
         if len(dns_servers) < 2:
-            print "Ignoring test_double_forwarder_first_frozen"
+            print("Ignoring test_double_forwarder_first_frozen")
             return
         s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
         s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
@@ -388,7 +389,7 @@ class TestDnsForwarding(DNSTest):
 
     def test_double_forwarder_first_down(self):
         if len(dns_servers) < 2:
-            print "Ignoring test_double_forwarder_first_down"
+            print("Ignoring test_double_forwarder_first_down")
             return
         s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
         ad = contact_real_server(server_ip, 53)
@@ -416,7 +417,7 @@ class TestDnsForwarding(DNSTest):
 
     def test_double_forwarder_both_slow(self):
         if len(dns_servers) < 2:
-            print "Ignoring test_double_forwarder_both_slow"
+            print("Ignoring test_double_forwarder_both_slow")
             return
         s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
         s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
@@ -502,7 +503,7 @@ class TestDnsForwarding(DNSTest):
 
     def test_cname_forwarding_with_slow_server(self):
         if len(dns_servers) < 2:
-            print "Ignoring test_cname_forwarding_with_slow_server"
+            print("Ignoring test_cname_forwarding_with_slow_server")
             return
         s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
         s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
@@ -535,7 +536,7 @@ class TestDnsForwarding(DNSTest):
 
     def test_cname_forwarding_with_server_down(self):
         if len(dns_servers) < 2:
-            print "Ignoring test_cname_forwarding_with_server_down"
+            print("Ignoring test_cname_forwarding_with_server_down")
             return
         s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
 

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """Tests for samba.dcerpc.dnsserver"""
 
 import os
@@ -337,7 +338,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                     self.assert_num_records(self.custom_zone, "testrecord", record_type_str, expected_num=0)
                     self.delete_record(self.custom_zone, "testrecord", record_type_str, record_str, assertion=False)
                 except AssertionError as e:
-                    print e
+                    print(e)
                     num_failures = num_failures + 1
 
         # Also try to update valid records to invalid ones, making sure this fails
@@ -348,7 +349,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                 try:
                     self.add_record(self.custom_zone, "testrecord", record_type_str, record_str, assertion=False)
                 except AssertionError as e:
-                    print e
+                    print(e)
                     num_failures = num_failures + 1
                 self.delete_record(self.custom_zone, "testrecord", record_type_str, good_record_str)
 

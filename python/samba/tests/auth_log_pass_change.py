@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """Tests for the Auth and AuthZ logging of password changes.
 """
 
@@ -50,10 +51,10 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                          credentials=self.get_credentials(),
                          lp=self.get_loadparm())
 
-        print "ldb %s" % type(self.ldb)
+        print("ldb %s" % type(self.ldb))
         # Gets back the basedn
         base_dn = self.ldb.domain_dn()
-        print "base_dn %s" % base_dn
+        print("base_dn %s" % base_dn)
 
         # Gets back the configuration basedn
         configuration_dn = self.ldb.get_config_basedn().get_linearized()
@@ -116,7 +117,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        print "Received %d messages" % len(messages)
+        print("Received %d messages" % len(messages))
         self.assertEquals(8,
                           len(messages),
                           "Did not receive the expected number of messages")
@@ -263,7 +264,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         )
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        print "Received %d messages" % len(messages)
+        print("Received %d messages" % len(messages))
         self.assertEquals(4,
                           len(messages),
                           "Did not receive the expected number of messages")
@@ -295,7 +296,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             pass
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        print "Received %d messages" % len(messages)
+        print("Received %d messages" % len(messages))
         self.assertEquals(3,
                           len(messages),
                           "Did not receive the expected number of messages")
@@ -326,7 +327,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             pass
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        print "Received %d messages" % len(messages)
+        print("Received %d messages" % len(messages))
         self.assertEquals(4,
                           len(messages),
                           "Did not receive the expected number of messages")

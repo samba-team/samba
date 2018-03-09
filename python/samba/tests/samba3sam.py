@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """Tests for the samba3sam LDB module, which maps Samba3 LDAP to AD LDAP."""
 
 import os
@@ -41,7 +42,7 @@ def read_datafile(filename):
     return open(os.path.join(datadir, filename), 'r').read()
 
 def ldb_debug(l, text):
-    print text
+    print(text)
 
 
 class MapBaseTestCase(TestCaseInTempDir):

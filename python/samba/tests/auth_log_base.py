@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """Tests for the Auth and AuthZ logging.
 """
 
@@ -40,7 +41,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         def messageHandler( context, msgType, src, message):
             # This does not look like sub unit output and it
             # makes these tests much easier to debug.
-            print message
+            print(message)
             jsonMsg = json.loads(message)
             context["messages"].append( jsonMsg)
 
