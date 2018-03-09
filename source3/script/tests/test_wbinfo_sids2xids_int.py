@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys,os,subprocess
 
 
 if len(sys.argv) != 3:
-    print "Usage: test_wbinfo_sids2xids_int.py wbinfo net"
+    print("Usage: test_wbinfo_sids2xids_int.py wbinfo net")
     sys.exit(1)
 
 wbinfo = sys.argv[1]
@@ -78,7 +79,7 @@ def check_singular(sids, ids, idtype='gid'):
         outid = subprocess.Popen([wbinfo, '--sid-to-%s' % idtype, sid],
                                  stdout=subprocess.PIPE).communicate()[0].strip()
         if outid != ids[i]:
-            print "Expected %s, got %s\n" % (outid, ids[i])
+            print("Expected %s, got %s\n" % (outid, ids[i]))
             flush_cache(sids=sids, uids=uids, gids=gids)
             sys.exit(1)
         i += 1
@@ -94,7 +95,7 @@ def check_multiple(sids, idtypes):
         result = line.split(' ')[2:]
 
         if result[0] != idtypes[i]:
-            print "Expected %s, got %s\n" % (idtypes[i], result[0])
+            print("Expected %s, got %s\n" % (idtypes[i], result[0]))
             flush_cache(sids=sids, uids=uids, gids=gids)
             sys.exit(1)
         i += 1
