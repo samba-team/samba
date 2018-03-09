@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 import samba.getopt as options
 import ldb
 import string
@@ -354,9 +355,9 @@ class cmd_domain_provision(Command):
 
             def ask(prompt, default=None):
                 if default is not None:
-                    print "%s [%s]: " % (prompt, default),
+                    print("%s [%s]: " % (prompt, default), end=' ')
                 else:
-                    print "%s: " % (prompt,),
+                    print("%s: " % (prompt,), end=' ')
                 return sys.stdin.readline().rstrip("\n") or default
 
             try:

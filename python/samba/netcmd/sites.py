@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 from samba import sites, subnets
 from samba.samdb import SamDB
 import samba.getopt as options
@@ -208,8 +209,8 @@ class cmd_sites_subnet_set_site(Command):
             raise CommandError("Error assigning subnet %s to site %s: %s" %
                                (subnetname, site_of_subnet, e))
 
-        print >> self.outf, ("Subnet %s shifted to site %s" %
-                             (subnetname, site_of_subnet))
+        print(("Subnet %s shifted to site %s" %
+                             (subnetname, site_of_subnet)), file=self.outf)
 
 
 class cmd_sites_subnet(SuperCommand):
