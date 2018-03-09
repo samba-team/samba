@@ -42,6 +42,7 @@
 #include "lib/id_cache.h"
 #include "lib/util/sys_rw_data.h"
 #include "system/threads.h"
+#include "lib/pthreadpool/pthreadpool_tevent.h"
 
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
@@ -3926,6 +3927,12 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	sconn->ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
+
+	ret = pthreadpool_tevent_init(sconn, lp_aio_max_threads(),
+				      &sconn->pool);
+	if (ret != 0) {
+		exit_server("pthreadpool_tevent_init() failed.");
+	}
 
 	if (lp_server_max_protocol() >= PROTOCOL_SMB2_02) {
 		/*

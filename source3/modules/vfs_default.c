@@ -717,19 +717,6 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	return result;
 }
 
-static int vfswrap_init_pool(struct smbd_server_connection *conn)
-{
-	int ret;
-
-	if (conn->pool != NULL) {
-		return 0;
-	}
-
-	ret = pthreadpool_tevent_init(conn, lp_aio_max_threads(),
-				      &conn->pool);
-	return ret;
-}
-
 struct vfswrap_pread_state {
 	ssize_t ret;
 	int fd;
@@ -754,16 +741,10 @@ static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 {
 	struct tevent_req *req, *subreq;
 	struct vfswrap_pread_state *state;
-	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct vfswrap_pread_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	ret = vfswrap_init_pool(handle->conn->sconn);
-	if (tevent_req_error(req, ret)) {
-		return tevent_req_post(req, ev);
 	}
 
 	state->ret = -1;
@@ -878,16 +859,10 @@ static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
 {
 	struct tevent_req *req, *subreq;
 	struct vfswrap_pwrite_state *state;
-	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct vfswrap_pwrite_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	ret = vfswrap_init_pool(handle->conn->sconn);
-	if (tevent_req_error(req, ret)) {
-		return tevent_req_post(req, ev);
 	}
 
 	state->ret = -1;
@@ -997,16 +972,10 @@ static struct tevent_req *vfswrap_fsync_send(struct vfs_handle_struct *handle,
 {
 	struct tevent_req *req, *subreq;
 	struct vfswrap_fsync_state *state;
-	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct vfswrap_fsync_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	ret = vfswrap_init_pool(handle->conn->sconn);
-	if (tevent_req_error(req, ret)) {
-		return tevent_req_post(req, ev);
 	}
 
 	state->ret = -1;
