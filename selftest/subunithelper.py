@@ -65,7 +65,7 @@ def parse_results(msg_ops, statistics, fh):
             try:
                 dt = iso8601.parse_date(arg.rstrip("\n"))
             except TypeError as e:
-                print "Unable to parse time line: %s" % arg.rstrip("\n")
+                print("Unable to parse time line: %s" % arg.rstrip("\n"))
             else:
                 msg_ops.time(dt)
         elif command in VALID_RESULTS:
@@ -600,7 +600,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
         unexpected = False
 
         if not name in self.test_output:
-            print "no output for name[%s]" % name
+            print("no output for name[%s]" % name)
 
         if result in ("success", "xfail"):
             self.suites_ok+=1
@@ -686,11 +686,11 @@ class PlainFormatter(TestsuiteEnabledTestResult):
 
         if not self.immediate and not self.verbose:
             for suite in self.suitesfailed:
-                print "=" * 78
-                print "FAIL: %s" % suite
+                print("=" * 78)
+                print("FAIL: %s" % suite)
                 if suite in self.test_output:
-                    print self.test_output[suite]
-                print ""
+                    print(self.test_output[suite])
+                print("")
 
         f.write("= Skipped tests =\n")
         for reason in self.skips.keys():
@@ -706,13 +706,13 @@ class PlainFormatter(TestsuiteEnabledTestResult):
             not self.statistics['TESTS_ERROR']):
             ok = (self.statistics['TESTS_EXPECTED_OK'] +
                   self.statistics['TESTS_EXPECTED_FAIL'])
-            print "\nALL OK (%d tests in %d testsuites)" % (ok, self.suites_ok)
+            print("\nALL OK (%d tests in %d testsuites)" % (ok, self.suites_ok))
         else:
-            print "\nFAILED (%d failures, %d errors and %d unexpected successes in %d testsuites)" % (
+            print("\nFAILED (%d failures, %d errors and %d unexpected successes in %d testsuites)" % (
                 self.statistics['TESTS_UNEXPECTED_FAIL'],
                 self.statistics['TESTS_ERROR'],
                 self.statistics['TESTS_UNEXPECTED_OK'],
-                len(self.suitesfailed))
+                len(self.suitesfailed)))
 
     def skip_testsuite(self, name, reason="UNKNOWN"):
         self.skips.setdefault(reason, []).append(name)
