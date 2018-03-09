@@ -96,10 +96,11 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         self.assertIsNotNone(val, msg)
 
     def assertMatch(self, base, string, msg=None):
+        # Note: we should stop doing this and just use self.assertIn()
         if msg is None:
             msg = "%r is not in %r" % (truncate_string(string),
                                        truncate_string(base))
-        self.assertTrue(string in base, msg)
+        self.assertIn(string, base, msg)
 
     def randomName(self, count=8):
         """Create a random name, cap letters and numbers, and always starting with a letter"""
