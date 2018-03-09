@@ -27,6 +27,7 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN getncchanges -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
+from __future__ import print_function
 import drs_base
 import samba.tests
 import ldb
