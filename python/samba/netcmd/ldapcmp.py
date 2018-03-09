@@ -889,12 +889,6 @@ class cmd_ldapcmp(Command):
         "credopts": options.CredentialsOptionsDouble,
     }
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptionsDouble,
-    }
-
     takes_args = ["URL1", "URL2", "context1?", "context2?", "context3?", "context4?", "context5?"]
 
     takes_options = [
