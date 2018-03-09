@@ -57,15 +57,15 @@
       </varlistentry>
 
       <varlistentry><term>-f <parameter>FILENAME</parameter></term>
-        <listitem>
-          <para>
-            Specify an alternative nodes FILENAME to use instead of
-            the default.  This option overrides the CTDB_NODES_FILE
-            and CTDB_NODES variables.  See the discussion of
-            <filename>/usr/local/etc/ctdb/nodes</filename> in the FILES section
-            for more details.
+      <listitem>
+	<para>
+	  Specify an alternative nodes FILENAME to use instead of
+	  the default.  This option overrides the CTDB_NODES
+	  variable.  See the discussion of
+	  <filename>/usr/local/etc/ctdb/nodes</filename> in the
+	  FILES section for more details.
 	  </para>
-        </listitem>
+      </listitem>
       </varlistentry>
 
       <varlistentry><term>-i</term>
@@ -247,16 +247,6 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term><envar>CTDB_NODES_FILE</envar></term>
-        <listitem>
-          <para>
-	    Name of alternative nodes file to use instead of the
-	    default.  See the <citetitle>FILES</citetitle> section for
-	    more details.
-	  </para>
-        </listitem>
-      </varlistentry>
-
     </variablelist>
   </refsect1>
 
@@ -271,16 +261,15 @@
             or hostname.
 	  </para>
 	  <para>
-	    As above, a file specified via the <option>-f</option> or
-	    <envar>CTDB_NODES_FILE</envar> is given precedence.  If a
+	    As above, a file specified via the <option>-f</option>
+	    is given precedence.  If a
 	    relative path is specified and no corresponding file
 	    exists relative to the current directory then the file is
 	    also searched for in the <filename>$CTDB_BASE</filename>
 	    directory.
 	  </para>
 	  <para>
-	    If <envar>CTDB_NODES_FILE</envar> is not set and
-	    <envar>CTDB_NODES</envar> is set in configuration then the
+	    If <envar>CTDB_NODES</envar> is set in configuration then the
 	    file pointed to by <envar>CTDB_NODES</envar> is used.
 	  </para>
 	  <para>

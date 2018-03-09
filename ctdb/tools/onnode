@@ -31,7 +31,7 @@ usage ()
 Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
   options:
     -c          Run in current working directory on specified nodes.
-    -f          Specify nodes file, overrides CTDB_NODES_FILE.
+    -f          Specify nodes file, overriding default.
     -i          Keep standard input open - the default is to close it.
     -n          Allow nodes to be specified by name.
     -o <prefix> Save standard output from each node to file <prefix>.<ip>
@@ -57,6 +57,7 @@ invalid_nodespec ()
 
 # Defaults.
 current=false
+ctdb_nodes_file=""
 parallel=false
 verbose=false
 quiet=false
@@ -90,7 +91,7 @@ parse_options ()
     while true ; do
 	case "$1" in
 	    -c) current=true ; shift ;;
-	    -f) CTDB_NODES_FILE="$2" ; shift 2 ;;
+	    -f) ctdb_nodes_file="$2" ; shift 2 ;;
 	    -n) names_ok=true ; shift ;;
 	    -o) prefix="$2" ; shift 2 ;;
 	    -p) parallel=true ; shift ;;
@@ -221,8 +222,8 @@ get_nodes ()
 	local all_nodes
 
 	local f="${CTDB_BASE}/nodes"
-	if [ -n "$CTDB_NODES_FILE" ] ; then
-		f="$CTDB_NODES_FILE"
+	if [ -n "$ctdb_nodes_file" ] ; then
+		f="$ctdb_nodes_file"
 		if [ ! -e "$f" -a "${f#/}" = "$f" ] ; then
 			# $f is relative, try in $CTDB_BASE
 			f="${CTDB_BASE}/${f}"

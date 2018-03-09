@@ -41,7 +41,6 @@ extra_footer ()
 {
     cat <<EOF
 --------------------------------------------------
-CTDB_NODES_FILE="${CTDB_NODES_FILE}"
 CTDB_BASE="$CTDB_BASE"
 ctdb client is $(which ctdb)
 --------------------------------------------------
