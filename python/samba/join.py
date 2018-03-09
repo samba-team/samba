@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """Joining a domain."""
 
 from samba.auth import system_session
@@ -167,7 +168,7 @@ class dc_join(object):
         else:
             if len(res_domaindns) == 0:
                 ctx.dns_backend = "NONE"
-                print "NO DNS zone information found in source domain, not replicating DNS"
+                print("NO DNS zone information found in source domain, not replicating DNS")
             else:
                 ctx.dns_backend = dns_backend
 
@@ -209,7 +210,7 @@ class dc_join(object):
                 ctx.del_noerror(r.dn, recursive=True)
         try:
             ctx.samdb.delete(dn)
-            print "Deleted %s" % dn
+            print("Deleted %s" % dn)
         except Exception:
             pass
 
@@ -414,7 +415,7 @@ class dc_join(object):
 
     def add_krbtgt_account(ctx):
         '''RODCs need a special krbtgt account'''
-        print "Adding %s" % ctx.krbtgt_dn
+        print("Adding %s" % ctx.krbtgt_dn)
         rec = {
             "dn" : ctx.krbtgt_dn,
             "objectclass" : "user",
@@ -429,7 +430,7 @@ class dc_join(object):
         res = ctx.samdb.search(base=ctx.krbtgt_dn, scope=ldb.SCOPE_BASE, attrs=["samAccountName"])
         ctx.krbtgt_name = res[0]["samAccountName"][0]
 
-        print "Got krbtgt_name=%s" % ctx.krbtgt_name
+        print("Got krbtgt_name=%s" % ctx.krbtgt_name)
 
         m = ldb.Message()
         m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
@@ -438,7 +439,7 @@ class dc_join(object):
         ctx.samdb.modify(m)
 
         ctx.new_krbtgt_dn = "CN=%s,CN=Users,%s" % (ctx.krbtgt_name, ctx.base_dn)
-        print "Renaming %s to %s" % (ctx.krbtgt_dn, ctx.new_krbtgt_dn)
+        print("Renaming %s to %s" % (ctx.krbtgt_dn, ctx.new_krbtgt_dn))
         ctx.samdb.rename(ctx.krbtgt_dn, ctx.new_krbtgt_dn)
 
     def drsuapi_connect(ctx):
@@ -535,7 +536,7 @@ class dc_join(object):
     def join_ntdsdsa_obj(ctx):
         '''return the ntdsdsa object to add'''
 
-        print "Adding %s" % ctx.ntds_dn
+        print("Adding %s" % ctx.ntds_dn)
         rec = {
             "dn" : ctx.ntds_dn,
             "objectclass" : "nTDSDSA",
@@ -583,7 +584,7 @@ class dc_join(object):
     def join_add_objects(ctx):
         '''add the various objects needed for the join'''
         if ctx.acct_dn:
-            print "Adding %s" % ctx.acct_dn
+            print("Adding %s" % ctx.acct_dn)
             rec = {
                 "dn" : ctx.acct_dn,
                 "objectClass": "computer",
@@ -621,7 +622,7 @@ class dc_join(object):
             ctx.add_krbtgt_account()
 
         if ctx.server_dn:
-            print "Adding %s" % ctx.server_dn
+            print("Adding %s" % ctx.server_dn)
             rec = {
                 "dn": ctx.server_dn,
                 "objectclass" : "server",
@@ -675,7 +676,7 @@ class dc_join(object):
                     ctx.samdb.modify(m)
 
         if ctx.connection_dn is not None:
-            print "Adding %s" % ctx.connection_dn
+            print("Adding %s" % ctx.connection_dn)
             rec = {
                 "dn" : ctx.connection_dn,
                 "objectclass" : "nTDSConnection",
@@ -685,7 +686,7 @@ class dc_join(object):
             ctx.samdb.add(rec)
 
         if ctx.acct_dn:
-            print "Adding SPNs to %s" % ctx.acct_dn
+            print("Adding SPNs to %s" % ctx.acct_dn)
             m = ldb.Message()
             m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
             for i in range(len(ctx.SPNs)):
@@ -700,7 +701,7 @@ class dc_join(object):
             # connections which are hard to set up and otherwise refuse with
             # ERR_UNWILLING_TO_PERFORM. In this case we fall back to libnet
             # over SAMR.
-            print "Setting account password for %s" % ctx.samname
+            print("Setting account password for %s" % ctx.samname)
             try:
                 ctx.samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))"
                                       % ldb.binary_encode(ctx.samname),
@@ -746,7 +747,7 @@ class dc_join(object):
             for changetype, msg in recs:
                 assert changetype == ldb.CHANGETYPE_NONE
                 dns_acct_dn = msg["dn"]
-                print "Adding DNS account %s with dns/ SPN" % msg["dn"]
+                print("Adding DNS account %s with dns/ SPN" % msg["dn"])
 
                 # Remove dns password (we will set it as a modify, as we can't do clearTextPassword over LDAP)
                 del msg["clearTextPassword"]
@@ -767,7 +768,7 @@ class dc_join(object):
             # connections which are hard to set up and otherwise refuse with
             # ERR_UNWILLING_TO_PERFORM. In this case we fall back to libnet
             # over SAMR.
-            print "Setting account password for dns-%s" % ctx.myname
+            print("Setting account password for dns-%s" % ctx.myname)
             try:
                 ctx.samdb.setpassword("(&(objectClass=user)(samAccountName=dns-%s))"
                                       % ldb.binary_encode(ctx.myname),
@@ -792,7 +793,7 @@ class dc_join(object):
     def join_add_objects2(ctx):
         """add the various objects needed for the join, for subdomains post replication"""
 
-        print "Adding %s" % ctx.partition_dn
+        print("Adding %s" % ctx.partition_dn)
         name_map = {'SubdomainAdmins': "%s-%s" % (str(ctx.domsid), security.DOMAIN_RID_ADMINS)}
         sd_binary = descriptor.get_paritions_crossref_subdomain_descriptor(ctx.forestsid, name_map=name_map)
         rec = {
@@ -835,7 +836,7 @@ class dc_join(object):
     def join_provision(ctx):
         """Provision the local SAM."""
 
-        print "Calling bare provision"
+        print("Calling bare provision")
 
         smbconf = ctx.lp.configfile
 
@@ -849,7 +850,7 @@ class dc_join(object):
                 sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
                 use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend,
                 plaintext_secrets=ctx.plaintext_secrets)
-        print "Provision OK for domain DN %s" % presult.domaindn
+        print("Provision OK for domain DN %s" % presult.domaindn)
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
         ctx.paths       = presult.paths
@@ -901,7 +902,7 @@ class dc_join(object):
     def join_replicate(ctx):
         """Replicate the SAM."""
 
-        print "Starting replication"
+        print("Starting replication")
         ctx.local_samdb.transaction_start()
         try:
             source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
@@ -936,7 +937,7 @@ class dc_join(object):
             if not ctx.subdomain:
                 # Replicate first the critical object for the basedn
                 if not ctx.domain_replica_flags & drsuapi.DRSUAPI_DRS_CRITICAL_ONLY:
-                    print "Replicating critical objects from the base DN of the domain"
+                    print("Replicating critical objects from the base DN of the domain")
                     ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
                     repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                 destination_dsa_guid, rodc=ctx.RODC,
@@ -945,14 +946,14 @@ class dc_join(object):
                 repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                destination_dsa_guid, rodc=ctx.RODC,
                                replica_flags=ctx.domain_replica_flags)
-            print "Done with always replicated NC (base, config, schema)"
+            print("Done with always replicated NC (base, config, schema)")
 
             # At this point we should already have an entry in the ForestDNS
             # and DomainDNS NC (those under CN=Partions,DC=...) in order to
             # indicate that we hold a replica for this NC.
             for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
                 if nc in ctx.nc_list:
-                    print "Replicating %s" % (str(nc))
+                    print("Replicating %s" % (str(nc)))
                     repl.replicate(nc, source_dsa_invocation_id,
                                     destination_dsa_guid, rodc=ctx.RODC,
                                     replica_flags=ctx.replica_flags)
@@ -973,8 +974,8 @@ class dc_join(object):
                 except samba.DsExtendedError as e1:
                     (enum, estr) = e1.args
                     if enum == drsuapi.DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER:
-                        print "WARNING: Unable to replicate own RID Set, as server %s (the server we joined) is not the RID Master." % ctx.server
-                        print "NOTE: This is normal and expected, Samba will be able to create users after it contacts the RID Master at first startup."
+                        print("WARNING: Unable to replicate own RID Set, as server %s (the server we joined) is not the RID Master." % ctx.server)
+                        print("NOTE: This is normal and expected, Samba will be able to create users after it contacts the RID Master at first startup.")
                     else:
                         raise
 
@@ -982,7 +983,7 @@ class dc_join(object):
             ctx.source_dsa_invocation_id = source_dsa_invocation_id
             ctx.destination_dsa_guid = destination_dsa_guid
 
-            print "Committing SAM database"
+            print("Committing SAM database")
         except:
             ctx.local_samdb.transaction_cancel()
             raise
@@ -1190,7 +1191,7 @@ class dc_join(object):
                 ctx.send_DsReplicaUpdateRefs(nc)
 
         if not ctx.clone_only and ctx.RODC:
-            print "Setting RODC invocationId"
+            print("Setting RODC invocationId")
             ctx.local_samdb.set_invocation_id(str(ctx.invocation_id))
             ctx.local_samdb.set_opaque_integer("domainFunctionality",
                                                ctx.behavior_version)
@@ -1256,7 +1257,7 @@ class dc_join(object):
     def join_setup_trusts(ctx):
         """provision the local SAM."""
 
-        print "Setup domain trusts with server %s" % ctx.server
+        print("Setup domain trusts with server %s" % ctx.server)
         binding_options = ""  # why doesn't signing work here? w2k8r2 claims no session key
         lsaconn = lsa.lsarpc("ncacn_np:%s[%s]" % (ctx.server, binding_options),
                              ctx.lp, ctx.creds)
@@ -1399,7 +1400,7 @@ class dc_join(object):
             ctx.join_finalise()
         except:
             try:
-                print "Join failed - cleaning up"
+                print("Join failed - cleaning up")
             except IOError:
                 pass
             if not ctx.clone_only:

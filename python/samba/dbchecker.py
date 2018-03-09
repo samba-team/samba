@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 import ldb
 import samba
 import time
@@ -1759,7 +1760,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         # the correct values are above 0x80000000) values first and
         # remove the 'second' value we see.
         for o in reversed(ctr.array):
-            print "%s: 0x%08x" % (dn, o.attid)
+            print("%s: 0x%08x" % (dn, o.attid))
             att = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
             if att.lower() in set_att:
                 self.report('ERROR: duplicate attributeID values for %s in %s on %s\n' % (att, attr, dn))
