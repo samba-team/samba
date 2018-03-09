@@ -341,7 +341,7 @@ delete: otherLoginWorkstations
             except LdbError as e9:
                 (num, _) = e9.args
                 if num != ERR_UNWILLING_TO_PERFORM:
-                    print "va[%s]" % va
+                    print("va[%s]" % va)
                 self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         try:
@@ -359,7 +359,7 @@ delete: otherLoginWorkstations
         except LdbError as e11:
             (num, _) = e11.args
             if num != ERR_UNWILLING_TO_PERFORM:
-                print "va[%s]" % va
+                print("va[%s]" % va)
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
 if not "://" in url:

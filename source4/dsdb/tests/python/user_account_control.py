@@ -102,7 +102,7 @@ class UserAccountControlTests(samba.tests.TestCase):
         msg = ldb.Message.from_dict(self.samdb, msg_dict )
         msg["sAMAccountName"] = samaccountname
 
-        print "Adding computer account %s" % computername
+        print("Adding computer account %s" % computername)
         samdb.add(msg)
 
     def get_creds(self, target_username, target_password):

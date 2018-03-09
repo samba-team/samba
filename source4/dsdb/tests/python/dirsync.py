@@ -83,7 +83,7 @@ class DirsyncBaseTests(samba.tests.TestCase):
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
         #used for anonymous login
-        print "baseDN: %s" % self.base_dn
+        print("baseDN: %s" % self.base_dn)
 
     def get_user_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
@@ -178,7 +178,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                 expression="samaccountname=*",
                 controls=["dirsync:1:0:1"])
         except LdbError as l:
-            print l
+            print(l)
             self.assertTrue(str(l).find("LDAP_INSUFFICIENT_ACCESS_RIGHTS") != -1)
 
         try:
@@ -186,7 +186,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                 expression="samaccountname=*",
                 controls=["dirsync:1:0:1"])
         except LdbError as l:
-            print l
+            print(l)
             self.assertTrue(str(l).find("LDAP_INSUFFICIENT_ACCESS_RIGHTS") != -1)
 
         try:
@@ -194,7 +194,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                 expression="samaccountname=*",
                 controls=["dirsync:1:1:1"])
         except LdbError as l:
-            print l
+            print(l)
             self.assertTrue(str(l).find("LDAP_UNWILLING_TO_PERFORM") != -1)
 
         try:
@@ -202,7 +202,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                 expression="samaccountname=*",
                 controls=["dirsync:1:0:1"])
         except LdbError as l:
-            print l
+            print(l)
             self.assertTrue(str(l).find("LDAP_INSUFFICIENT_ACCESS_RIGHTS") != -1)
 
         try:
@@ -210,7 +210,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                 expression="samaccountname=*",
                 controls=["dirsync:1:0:1"])
         except LdbError as l:
-            print l
+            print(l)
             self.assertTrue(str(l).find("LDAP_INSUFFICIENT_ACCESS_RIGHTS") != -1)
 
         try:
@@ -218,7 +218,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                 expression="samaccountname=*",
                 controls=["dirsync:1:1:1"])
         except LdbError as l:
-            print l
+            print(l)
             self.assertTrue(str(l).find("LDAP_UNWILLING_TO_PERFORM") != -1)
 
     def test_dirsync_attributes(self):
@@ -516,7 +516,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
 
         # Check that reasking the same question but with an updated cookie
         # didn't return any results.
-        print control1
+        print(control1)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(name=testgroup)",
                                     controls=[control1])

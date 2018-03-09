@@ -70,7 +70,7 @@ class RodcTests(samba.tests.TestCase):
             except ldb.LdbError as e:
                 (ecode, emsg) = e.args
                 if ecode != ldb.ERR_REFERRAL:
-                    print emsg
+                    print(emsg)
                     self.fail("Adding %s: ldb error: %s %s, wanted referral" %
                               (o['dn'], ecode, emsg))
                 else:
@@ -197,7 +197,7 @@ class RodcTests(samba.tests.TestCase):
         except ldb.LdbError as e4:
             (ecode, emsg) = e4.args
             if ecode != ldb.ERR_REFERRAL:
-                print ecode, emsg
+                print(ecode, emsg)
                 self.fail("Failed to REFER when trying to delete %s" % dn)
             else:
                 m = re.search(r'(ldap://[^>]+)>', emsg)
@@ -216,7 +216,7 @@ class RodcTests(samba.tests.TestCase):
         except ldb.LdbError as e5:
             (ecode, emsg) = e5.args
             if ecode != ldb.ERR_NO_SUCH_OBJECT:
-                print ecode, emsg
+                print(ecode, emsg)
                 self.fail("Failed to NO_SUCH_OBJECT when trying to delete "
                           "%s (which does not exist)" % dn)
 
