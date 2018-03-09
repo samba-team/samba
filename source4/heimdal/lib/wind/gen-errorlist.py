@@ -44,7 +44,7 @@ import rfc4518
 import stringprep
 
 if len(sys.argv) != 3:
-    print "usage: %s rfc3454.txt out-dir" % sys.argv[0]
+    print("usage: %s rfc3454.txt out-dir" % sys.argv[0])
     sys.exit(1)
 
 tables = rfc3454.read(sys.argv[1])
@@ -104,7 +104,7 @@ for x in trans:
     (start, length, description, tables) = x
     symbols = stringprep.symbols(error_list, tables)
     if len(symbols) == 0:
-        print "no symbol for %s" % description
+        print("no symbol for %s" % description)
         sys.exit(1)
     errorlist_c.file.write("  {0x%x, 0x%x, %s}, /* %s: %s */\n"
                 % (start, length, symbols, ",".join(tables), description))
