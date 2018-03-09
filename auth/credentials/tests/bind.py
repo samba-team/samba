@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # This is unit with tests for LDAP access checks
 
+from __future__ import print_function
 import optparse
 import sys
 import base64
@@ -101,7 +102,7 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         # do a simple bind and search with the machine account
         creds_machine.set_bind_dn(self.computer_dn)
         creds_machine.set_password(self.password)
-        print "BindTest with: " + creds_machine.get_bind_dn()
+        print("BindTest with: " + creds_machine.get_bind_dn())
         ldb_machine = samba.tests.connect_samdb(host, credentials=creds_machine,
                                                 lp=lp, ldap_only=True)
         res = ldb_machine.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
@@ -119,7 +120,7 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         # do a simple bind and search with the user account in format user@realm
         creds_user1.set_bind_dn(self.username + "@" + creds.get_realm())
         creds_user1.set_password(self.password)
-        print "BindTest with: " + creds_user1.get_bind_dn()
+        print("BindTest with: " + creds_user1.get_bind_dn())
         ldb_user1 = samba.tests.connect_samdb(host, credentials=creds_user1,
                                               lp=lp, ldap_only=True)
         res = ldb_user1.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
@@ -127,7 +128,7 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         # do a simple bind and search with the user account in format domain\user
         creds_user2.set_bind_dn(creds.get_domain() + "\\" + self.username)
         creds_user2.set_password(self.password)
-        print "BindTest with: " + creds_user2.get_bind_dn()
+        print("BindTest with: " + creds_user2.get_bind_dn())
         ldb_user2 = samba.tests.connect_samdb(host, credentials=creds_user2,
                                               lp=lp, ldap_only=True)
         res = ldb_user2.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
@@ -135,7 +136,7 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         # do a simple bind and search with the user account DN
         creds_user3.set_bind_dn(str(user_dn))
         creds_user3.set_password(self.password)
-        print "BindTest with: " + creds_user3.get_bind_dn()
+        print("BindTest with: " + creds_user3.get_bind_dn())
         ldb_user3 = samba.tests.connect_samdb(host, credentials=creds_user3,
                                               lp=lp, ldap_only=True)
         res = ldb_user3.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
@@ -154,7 +155,7 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         creds_user4.set_password(self.password)
         creds_user4.set_domain('')
         creds_user4.set_workstation('')
-        print "BindTest (no domain) with: " + self.username
+        print("BindTest (no domain) with: " + self.username)
         try:
             ldb_user4 = samba.tests.connect_samdb(host, credentials=creds_user4,
                                               lp=lp, ldap_only=True)
