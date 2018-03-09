@@ -27,6 +27,7 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN replica_sync -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
+from __future__ import print_function
 import drs_base
 import samba.tests
 import time
@@ -155,8 +156,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertFalse('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc2, self.domain_dn) not in str(res1[0].dn))
@@ -195,8 +196,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -234,8 +235,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]), "Got %s for %s" % (str(res2[0]["name"][0]), self.ou2))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -276,8 +277,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -325,8 +326,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -364,8 +365,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -407,8 +408,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -455,8 +456,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -506,8 +507,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
@@ -558,8 +559,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % ou2_child,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % ou1_child in str(res1[0]["name"][0]) or 'CNF:%s' % ou2_child in str(res2[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) in str(res2[0].dn))
@@ -625,9 +626,9 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res3 = self.ldb_dc2.search(base="<GUID=%s>" % ou3_child,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0].dn
-        print res2[0].dn
-        print res3[0].dn
+        print(res1[0].dn)
+        print(res2[0].dn)
+        print(res3[0].dn)
         self.assertEqual('Test Child 2', res1[0]["name"][0])
         self.assertEqual('Test Child', res2[0]["name"][0])
         self.assertEqual('Test CASE Child', res3[0]["name"][0])
@@ -645,9 +646,9 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res3 = self.ldb_dc1.search(base="<GUID=%s>" % ou3_child,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0].dn
-        print res2[0].dn
-        print res3[0].dn
+        print(res1[0].dn)
+        print(res2[0].dn)
+        print(res3[0].dn)
         self.assertEqual('Test Child 2', res1[0]["name"][0])
         self.assertEqual('Test Child', res2[0]["name"][0])
         self.assertEqual('Test CASE Child', res3[0]["name"][0])
@@ -723,8 +724,8 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
-        print res1[0]["name"][0]
-        print res2[0]["name"][0]
+        print(res1[0]["name"][0])
+        print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertFalse('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
 
