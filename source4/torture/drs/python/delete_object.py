@@ -121,7 +121,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
@@ -277,7 +277,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2

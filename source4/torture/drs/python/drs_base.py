@@ -251,7 +251,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
             next_object = ctr6.first_object
             for i in range(0, ctr6.object_count):
-                print("Obj %d: %s %s" %(i, next_object.object.identifier.dn[:25],
+                print(("Obj %d: %s %s" %(i, next_object.object.identifier.dn[:25],
                                         next_object.object.identifier.guid))
                 next_object = next_object.next_object
 
@@ -511,19 +511,19 @@ class AbstractLink:
         """See CompareLinks() in MS-DRSR section 4.1.10.5.17"""
         if not isinstance(other, AbstractLink):
             if verbose:
-                print "AbstractLink.__internal_cmp__(%r, %r) => wrong type" % (self, other)
+                print("AbstractLink.__internal_cmp__(%r, %r) => wrong type" % (self, other))
             return NotImplemented
 
         c = cmp(self.selfGUID_blob, other.selfGUID_blob)
         if c != 0:
             if verbose:
-                print "AbstractLink.__internal_cmp__(%r, %r) => %d different identifier" % (self, other, c)
+                print("AbstractLink.__internal_cmp__(%r, %r) => %d different identifier" % (self, other, c))
             return c
 
         c = other.attid - self.attid
         if c != 0:
             if verbose:
-                print "AbstractLink.__internal_cmp__(%r, %r) => %d different attid" % (self, other, c)
+                print("AbstractLink.__internal_cmp__(%r, %r) => %d different attid" % (self, other, c))
             return c
 
         self_active = self.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE
@@ -532,19 +532,19 @@ class AbstractLink:
         c = self_active - other_active
         if c != 0:
             if verbose:
-                print "AbstractLink.__internal_cmp__(%r, %r) => %d different FLAG_ACTIVE" % (self, other, c)
+                print("AbstractLink.__internal_cmp__(%r, %r) => %d different FLAG_ACTIVE" % (self, other, c))
             return c
 
         c = cmp(self.targetGUID_blob, other.targetGUID_blob)
         if c != 0:
             if verbose:
-                print "AbstractLink.__internal_cmp__(%r, %r) => %d different target" % (self, other, c)
+                print("AbstractLink.__internal_cmp__(%r, %r) => %d different target" % (self, other, c))
             return c
 
         c = self.flags - other.flags
         if c != 0:
             if verbose:
-                print "AbstractLink.__internal_cmp__(%r, %r) => %d different flags" % (self, other, c)
+                print("AbstractLink.__internal_cmp__(%r, %r) => %d different flags" % (self, other, c))
             return c
 
         return 0

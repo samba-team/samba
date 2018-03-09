@@ -275,7 +275,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         initial_metadata = [
             (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
             (DRSUAPI_ATTID_cn, self.dc1_guid, 1),
@@ -548,7 +548,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         initial_metadata = [
             (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
             (DRSUAPI_ATTID_cn, self.dc1_guid, 1),
@@ -730,7 +730,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         initial_metadata = [
             (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
             (DRSUAPI_ATTID_cn, self.dc1_guid, 1),
@@ -910,7 +910,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         initial_metadata = [
             (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
             (DRSUAPI_ATTID_cn, self.dc1_guid, 1),
@@ -1091,7 +1091,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         initial_metadata = [
             (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
             (DRSUAPI_ATTID_cn, self.dc1_guid, 1),
@@ -1419,7 +1419,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         user_cur = self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         new_dn = ldb.Dn(self.ldb_dc1, "CN=%s" % username)
@@ -1480,7 +1480,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ou_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=ou_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
@@ -1546,7 +1546,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ou_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=ou_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
@@ -1612,7 +1612,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ou_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=ou_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
@@ -1679,7 +1679,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ou_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=ou_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
@@ -1745,7 +1745,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ou_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=ou_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
@@ -1794,7 +1794,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ou_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (self.ou1_dn, self._GUID_string(ou_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=ou_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
@@ -1958,7 +1958,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         self.ldb_dc1.add(self.ou2)
@@ -2014,7 +2014,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         self.ldb_dc1.add(self.ou2)
@@ -2108,7 +2108,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         self.ldb_dc1.add(self.ou2)
@@ -2197,7 +2197,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         self.ldb_dc1.add(self.ou2)
@@ -2297,7 +2297,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         user_dn   = ldb_res[0]["dn"]
 
         # check user info on DC1
-        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        print("Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0])))
         self._check_obj(sam_ldb=self.ldb_dc1, obj_orig=user_orig, is_deleted=False)
 
         self.ldb_dc1.add(self.ou2)

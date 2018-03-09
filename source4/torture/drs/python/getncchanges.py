@@ -296,7 +296,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
                 # we receive the parents before the child
                 self.assertFalse(get_anc, "Unknown parent for object %s" % dn)
 
-                print("Unknown parent for %s - try GET_ANC" % dn)
+                print("Unknown parent for %s - try GET_ANC" % d)
 
                 # try the same thing again with the GET_ANC flag set this time
                 return self.repl_get_next(get_anc=True, get_tgt=get_tgt,
