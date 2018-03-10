@@ -911,6 +911,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	uint32_t nt_version = NETLOGON_NT_VERSION_1 |
 			      NETLOGON_NT_VERSION_5 |
 			      NETLOGON_NT_VERSION_5EX_WITH_IP;
+	size_t len = strlen(lp_netbios_name());
+	char my_acct_name[len+2];
 
 	if (msg_ctx == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -921,6 +923,11 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_version |= map_ds_flags_to_nt_version(flags);
+
+	snprintf(my_acct_name,
+		 sizeof(my_acct_name),
+		 "%s$",
+		 lp_netbios_name());
 
 	DEBUG(10,("process_dc_netbios\n"));
 
@@ -937,7 +944,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		}
 
 		status = nbt_getdc(msg_ctx, 10, &dclist[i].ss, domain_name,
-				   NULL, nt_version,
+				   NULL, my_acct_name, ACB_WSTRUST, nt_version,
 				   mem_ctx, &nt_version, &dc_name, &r);
 		if (NT_STATUS_IS_OK(status)) {
 			store_cache = true;

@@ -299,6 +299,8 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 				  const struct sockaddr_storage *dc_addr,
 				  const char *domain_name,
 				  const struct dom_sid *sid,
+				  const char *account_name,
+				  uint32_t account_flags,
 				  uint32_t nt_version)
 {
 	struct tevent_req *req, *subreq;
@@ -335,20 +337,10 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer((uint8_t *)(void *)&dgm_id, sizeof(dgm_id));
 
-	{
-		size_t len = strlen(lp_netbios_name());
-		char my_acct_name[len+2];
-
-		snprintf(my_acct_name,
-			 sizeof(my_acct_name),
-			 "%s$",
-			 lp_netbios_name());
-
-		ok = prep_getdc_request(dc_addr, my_acct_name, ACB_WSTRUST,
-					domain_name, sid, nt_version,
-					state->my_mailslot, dgm_id & 0x7fff,
-					&state->p);
-	}
+	ok = prep_getdc_request(dc_addr, account_name, account_flags,
+				domain_name, sid, nt_version,
+				state->my_mailslot, dgm_id & 0x7fff,
+				&state->p);
 
 	if (!ok) {
 		DEBUG(3, ("prep_getdc_request failed\n"));
@@ -452,6 +444,8 @@ NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
 		   const struct sockaddr_storage *dc_addr,
 		   const char *domain_name,
 		   const struct dom_sid *sid,
+		   const char *account_name,
+		   uint32_t account_flags,
 		   uint32_t nt_version,
 		   TALLOC_CTX *mem_ctx,
 		   uint32_t *pnt_version,
@@ -468,7 +462,7 @@ NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
 		goto fail;
 	}
 	req = nbt_getdc_send(ev, ev, msg_ctx, dc_addr, domain_name,
-			     sid, nt_version);
+			     sid, account_name, account_flags, nt_version);
 	if (req == NULL) {
 		goto fail;
 	}

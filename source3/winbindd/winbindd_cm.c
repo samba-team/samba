@@ -1466,9 +1466,21 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	status = nbt_getdc(server_messaging_context(), 10, pss, domain->name,
-			   &domain->sid, nt_version, mem_ctx, &nt_version,
-			   &dc_name, NULL);
+	{
+		size_t len = strlen(lp_netbios_name());
+		char my_acct_name[len+2];
+
+		snprintf(my_acct_name,
+			 sizeof(my_acct_name),
+			 "%s$",
+			 lp_netbios_name());
+
+		status = nbt_getdc(server_messaging_context(), 10, pss,
+				   domain->name, &domain->sid,
+				   my_acct_name, ACB_WSTRUST,
+				   nt_version, mem_ctx, &nt_version,
+				   &dc_name, NULL);
+	}
 	if (NT_STATUS_IS_OK(status)) {
 		*name = talloc_strdup(mem_ctx, dc_name);
 		if (*name == NULL) {
