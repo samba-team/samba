@@ -120,6 +120,8 @@ static char *mailslot_name(TALLOC_CTX *mem_ctx, struct in_addr dc_ip)
 }
 
 static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
+			       const char *account_name,
+			       uint32_t account_flags,
 			       const char *domain_name,
 			       const struct dom_sid *sid,
 			       uint32_t nt_version,
@@ -128,7 +130,6 @@ static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
 			       struct packet_struct *p)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	const char *my_acct_name;
 	struct nbt_netlogon_packet packet;
 	struct NETLOGON_SAM_LOGON_REQUEST *s;
 	enum ndr_err_code ndr_err;
@@ -143,19 +144,14 @@ static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
 		my_sid = *sid;
 	}
 
-	my_acct_name = talloc_asprintf(talloc_tos(), "%s$", lp_netbios_name());
-	if (my_acct_name == NULL) {
-		goto fail;
-	}
-
 	packet.command	= LOGON_SAM_LOGON_REQUEST;
 	s		= &packet.req.logon;
 
 	s->request_count	= 0;
 	s->computer_name	= lp_netbios_name();
-	s->user_name		= my_acct_name;
+	s->user_name		= account_name;
 	s->mailslot_name	= my_mailslot;
-	s->acct_control		= ACB_WSTRUST;
+	s->acct_control		= account_flags;
 	s->sid			= my_sid;
 	s->nt_version		= nt_version;
 	s->lmnt_token		= 0xffff;
@@ -339,9 +335,21 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer((uint8_t *)(void *)&dgm_id, sizeof(dgm_id));
 
-	ok = prep_getdc_request(dc_addr, domain_name, sid, nt_version,
-				state->my_mailslot, dgm_id & 0x7fff,
-				&state->p);
+	{
+		size_t len = strlen(lp_netbios_name());
+		char my_acct_name[len+2];
+
+		snprintf(my_acct_name,
+			 sizeof(my_acct_name),
+			 "%s$",
+			 lp_netbios_name());
+
+		ok = prep_getdc_request(dc_addr, my_acct_name, ACB_WSTRUST,
+					domain_name, sid, nt_version,
+					state->my_mailslot, dgm_id & 0x7fff,
+					&state->p);
+	}
+
 	if (!ok) {
 		DEBUG(3, ("prep_getdc_request failed\n"));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
