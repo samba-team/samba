@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "libsmb/namequery.h"
 #include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"

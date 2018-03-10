@@ -28,6 +28,7 @@
    up, all the errors returned are DOS errors, not NT status codes. */
 
 #include "includes.h"
+#include "libsmb/namequery.h"
 #include "ntdomain.h"
 #include "nt_printing.h"
 #include "srv_spoolss_util.h"

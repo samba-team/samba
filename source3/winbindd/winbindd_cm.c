@@ -60,6 +60,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libsmb/namequery.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "rpc_client/cli_pipe.h"

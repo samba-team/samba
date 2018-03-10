@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/namequery.h"
 #include "auth_info.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"

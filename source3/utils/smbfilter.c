@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/select.h"
+#include "libsmb/namequery.h"
 #include "../lib/util/select.h"
 #include "libsmb/nmblib.h"
 #include "lib/util/sys_rw_data.h"

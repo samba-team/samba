@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libsmb/namequery.h"
 #include "idmap.h"
 #include "tldap_gensec_bind.h"
 #include "tldap_util.h"

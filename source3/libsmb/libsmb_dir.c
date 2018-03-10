@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/namequery.h"
 #include "libsmb/libsmb.h"
 #include "auth_info.h"
 #include "libsmbclient.h"

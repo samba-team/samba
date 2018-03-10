@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/namequery.h"
 #include "system/filesys.h"
 #include "smb_krb5.h"
 #include "../librpc/gen_ndr/ndr_misc.h"

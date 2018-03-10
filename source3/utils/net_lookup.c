@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "libsmb/namequery.h"
 #include "libads/sitename_cache.h"
 #include "../lib/addns/dnsquery.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"

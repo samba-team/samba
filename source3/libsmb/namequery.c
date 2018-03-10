@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/namequery.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "libads/sitename_cache.h"
 #include "../lib/addns/dnsquery.h"

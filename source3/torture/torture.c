@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/shmem.h"
+#include "libsmb/namequery.h"
 #include "wbc_async.h"
 #include "torture/proto.h"
 #include "libcli/security/security.h"

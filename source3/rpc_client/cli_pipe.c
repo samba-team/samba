@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "libsmb/namequery.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "../librpc/gen_ndr/ndr_dssetup.h"

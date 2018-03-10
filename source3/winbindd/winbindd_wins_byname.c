@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libsmb/namequery.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "libsmb/nmblib.h"
 #include "lib/util/string_wrappers.h"

@@ -31,6 +31,7 @@
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "lib/param/loadparm.h"
+#include "libsmb/namequery.h"
 
 #ifdef HAVE_LDAP
 

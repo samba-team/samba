@@ -19,6 +19,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "libsmb/nmblib.h"
+#include "libsmb/namequery.h"
 #include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 

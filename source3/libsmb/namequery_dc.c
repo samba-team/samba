@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "libsmb/namequery.h"
 #include "libads/sitename_cache.h"
 #include "ads.h"
 #include "../librpc/gen_ndr/nbt.h"

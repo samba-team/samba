@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "libsmb/nmblib.h"
+#include "libsmb/namequery.h"
 
 static bool give_flags = false;
 static bool use_bcast = true;

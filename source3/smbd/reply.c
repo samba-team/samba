@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/namequery.h"
 #include "system/filesys.h"
 #include "printing.h"
 #include "smbd/smbd.h"
