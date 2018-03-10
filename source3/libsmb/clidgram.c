@@ -308,6 +308,7 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct nbt_getdc_state *state;
 	uint16_t dgm_id;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state, struct nbt_getdc_state);
 	if (req == NULL) {
@@ -338,9 +339,10 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer((uint8_t *)(void *)&dgm_id, sizeof(dgm_id));
 
-	if (!prep_getdc_request(dc_addr, domain_name, sid, nt_version,
+	ok = prep_getdc_request(dc_addr, domain_name, sid, nt_version,
 				state->my_mailslot, dgm_id & 0x7fff,
-				&state->p)) {
+				&state->p);
+	if (!ok) {
 		DEBUG(3, ("prep_getdc_request failed\n"));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
