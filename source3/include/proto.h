@@ -817,13 +817,6 @@ const char *get_dos_error_msg(WERROR result);
 const char *smb_dos_err_class(uint8_t e_class);
 WERROR map_werror_from_unix(int error);
 
-/* The following definitions come from libsmb/trustdom_cache.c  */
-
-bool trustdom_cache_store(const char *name, const struct dom_sid *sid);
-bool trustdom_cache_fetch(const char* name, struct dom_sid* sid);
-void trustdom_cache_flush(void);
-void update_trustdom_cache( void );
-
 /* The following definitions come from libsmb/trusts_util.c  */
 
 struct netlogon_creds_cli_context;

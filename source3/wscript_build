@@ -929,7 +929,6 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source='''
                            libsmb/namequery_dc.c
-                           libsmb/trustdom_cache.c
                            libsmb/dsgetdcname.c
                            ''',
                     deps='''
