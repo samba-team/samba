@@ -330,7 +330,8 @@ class cmd_drs_replicate(Command):
         Option("--single-object", help="Replicate only the object specified, instead of the whole Naming Context (only with --local)", action="store_true"),
         ]
 
-    def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False, single_object=False,
+    def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False,
+                            single_object=False,
                             sync_forced=False):
         '''replicate from a source DC to the local SAM'''
 
@@ -351,7 +352,9 @@ class cmd_drs_replicate(Command):
 
         res = self.local_samdb.search(base=self.ntds_dn, scope=ldb.SCOPE_BASE,
                                       attrs=["objectGUID"])
-        self.ntds_guid = misc.GUID(self.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
+        self.ntds_guid = misc.GUID(
+            self.samdb.schema_format_value("objectGUID",
+                                           res[0]["objectGUID"][0]))
 
         source_dsa_invocation_id = misc.GUID(self.samdb.get_invocation_id())
         dest_dsa_invocation_id = misc.GUID(self.local_samdb.get_invocation_id())
@@ -364,27 +367,36 @@ class cmd_drs_replicate(Command):
             full_sync = True
 
         self.samdb.transaction_start()
-        repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % self.server, self.lp,
-                                       self.creds, self.local_samdb, dest_dsa_invocation_id)
+        repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % self.server,
+                                       self.lp,
+                                       self.creds, self.local_samdb,
+                                       dest_dsa_invocation_id)
 
         # Work out if we are an RODC, so that a forced local replicate
         # with the admin pw does not sync passwords
         rodc = self.local_samdb.am_rodc()
         try:
             (num_objects, num_links) = repl.replicate(NC,
-                                                      source_dsa_invocation_id, destination_dsa_guid,
-                                                      rodc=rodc, full_sync=full_sync,
-                                                      exop=exop, sync_forced=sync_forced)
+                                                      source_dsa_invocation_id,
+                                                      destination_dsa_guid,
+                                                      rodc=rodc,
+                                                      full_sync=full_sync,
+                                                      exop=exop,
+                                                      sync_forced=sync_forced)
         except Exception as e:
             raise CommandError("Error replicating DN %s" % NC, e)
         self.samdb.transaction_commit()
 
         if full_sync:
-            self.message("Full Replication of all %d objects and %d links from %s to %s was successful."
-                         % (num_objects, num_links, SOURCE_DC, self.local_samdb.url))
+            self.message("Full Replication of all %d objects and %d links "
+                         "from %s to %s was successful." %
+                         (num_objects, num_links, SOURCE_DC,
+                          self.local_samdb.url))
         else:
-            self.message("Incremental replication of %d objects and %d links from %s to %s was successful."
-                         % (num_objects, num_links, SOURCE_DC, self.local_samdb.url))
+            self.message("Incremental replication of %d objects and %d links "
+                         "from %s to %s was successful." %
+                         (num_objects, num_links, SOURCE_DC,
+                          self.local_samdb.url))
 
     def run(self, DEST_DC, SOURCE_DC, NC,
             add_ref=False, sync_forced=False, sync_all=False, full_sync=False,
