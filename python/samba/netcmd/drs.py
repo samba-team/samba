@@ -161,7 +161,6 @@ class cmd_drs_showrepl(Command):
 
         # show domain information
         ntds_dn = self.samdb.get_dsServiceName()
-        server_dns = self.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])[0]['dnsHostName'][0]
 
         (site, server) = drs_parse_ntds_dn(ntds_dn)
         try:
