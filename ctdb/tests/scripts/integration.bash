@@ -611,6 +611,11 @@ get_ctdbd_command_line_option ()
     echo "${t%% -*}"
 }
 
+ctdb_base_show ()
+{
+	echo "${CTDB_BASE:-${CTDB_SCRIPTS_BASE}}"
+}
+
 #######################################
 
 wait_for_monitor_event ()
