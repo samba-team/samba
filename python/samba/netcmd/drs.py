@@ -148,7 +148,7 @@ class cmd_drs_showrepl(Command):
         return (info_type, info)
 
     def run(self, DC=None, sambaopts=None,
-            credopts=None, versionopts=None, server=None, json=False):
+            credopts=None, versionopts=None, json=False):
 
         self.lp = sambaopts.get_loadparm()
         if DC is None:
@@ -286,7 +286,7 @@ class cmd_drs_kcc(Command):
     takes_args = ["DC?"]
 
     def run(self, DC=None, sambaopts=None,
-            credopts=None, versionopts=None, server=None):
+            credopts=None, versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         if DC is None:
@@ -400,7 +400,7 @@ class cmd_drs_replicate(Command):
     def run(self, DEST_DC, SOURCE_DC, NC,
             add_ref=False, sync_forced=False, sync_all=False, full_sync=False,
             local=False, local_online=False, async_op=False, single_object=False,
-            sambaopts=None, credopts=None, versionopts=None, server=None):
+            sambaopts=None, credopts=None, versionopts=None):
 
         self.server = DEST_DC
         self.lp = sambaopts.get_loadparm()
@@ -485,7 +485,7 @@ class cmd_drs_bind(Command):
     takes_args = ["DC?"]
 
     def run(self, DC=None, sambaopts=None,
-            credopts=None, versionopts=None, server=None):
+            credopts=None, versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         if DC is None:
