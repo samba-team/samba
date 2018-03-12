@@ -99,6 +99,7 @@ NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 	struct winbindd_domain *domain = wb_child_domain();
 	struct lsa_RefDomainList *domains = r->out.domains;
 	NTSTATUS status;
+	bool retry = false;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
@@ -110,6 +111,7 @@ NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 	 * and winbindd_ad call into lsa_lookupsids anyway. Caching is
 	 * done at the wbint RPC layer.
 	 */
+again:
 	status = rpc_lookup_sids(p->mem_ctx, domain, r->in.sids,
 				 &domains, &r->out.names);
 
@@ -117,7 +119,11 @@ NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 		r->out.domains = domains;
 	}
 
-	reset_cm_connection_on_error(domain, NULL, status);
+	if (!retry && reset_cm_connection_on_error(domain, NULL, status)) {
+		retry = true;
+		goto again;
+	}
+
 	return status;
 }
 
