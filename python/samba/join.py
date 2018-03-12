@@ -35,7 +35,7 @@ from samba.provision.sambadns import setup_bind9_dns
 from samba import read_and_sub_file
 from samba import werror
 from base64 import b64encode
-from samba import WERRORError
+from samba import WERRORError, NTSTATUSError
 from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord
 from samba import sd_utils
 import logging
