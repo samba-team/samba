@@ -124,7 +124,12 @@ class MaxIndexKeyLengthTests(LdbBaseTest):
         self.l.add({"dn": "@ATTRIBUTES",
                     "uniqueThing": "UNIQUE_INDEX"})
         self.l.add({"dn": "@INDEXLIST",
-                    "@IDXATTR": [b"uniqueThing", b"notUnique"],
+                    "@IDXATTR": [
+                        b"uniqueThing",
+                        b"notUnique",
+                        b"base64____lt",
+                        b"base64_____eq",
+                        b"base64______gt"],
                     "@IDXONE": [b"1"],
                     "@IDXGUID": [b"objectUUID"],
                     "@IDX_DN_GUID": [b"GUID"]})
@@ -869,6 +874,36 @@ class MaxIndexKeyLengthTests(LdbBaseTest):
         self.assertTrue(
             contains(res, "OU=12,OU=SEARCH_NON_UNIQUE01,DC=SAMBA,DC=ORG"))
 
+    #
+    # Test index key truncation for base64 encoded values
+    #
+    def test_index_truncated_base64_encoded_keys(self):
+        value = b"aaaaaaaaaaaaaaaaaaaa\x02"
+        # base64 encodes to "YWFhYWFhYWFhYWFhYWFhYWFhYWEC"
+
+        # One less than max key length
+        self.l.add({"dn": "OU=01,OU=BASE64,DC=SAMBA,DC=ORG",
+                    "base64____lt": value,
+                    "objectUUID": b"0123456789abcde0"})
+        self.checkGuids(
+            "@INDEX:BASE64____LT::YWFhYWFhYWFhYWFhYWFhYWFhYWEC",
+            b"0123456789abcde0")
+
+        # Equal max key length
+        self.l.add({"dn": "OU=02,OU=BASE64,DC=SAMBA,DC=ORG",
+                    "base64_____eq": value,
+                    "objectUUID": b"0123456789abcde1"})
+        self.checkGuids(
+            "@INDEX:BASE64_____EQ::YWFhYWFhYWFhYWFhYWFhYWFhYWEC",
+            b"0123456789abcde1")
+
+        # One greater than max key length
+        self.l.add({"dn": "OU=03,OU=BASE64,DC=SAMBA,DC=ORG",
+                    "base64______gt": value,
+                    "objectUUID": b"0123456789abcde2"})
+        self.checkGuids(
+            "@INDEX#BASE64______GT##YWFhYWFhYWFhYWFhYWFhYWFhYWE",
+            b"0123456789abcde2")
     #
     # Test adding to non unique index with identical multivalued index
     # attributes
