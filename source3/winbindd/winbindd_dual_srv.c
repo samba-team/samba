@@ -42,7 +42,9 @@ void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 static bool reset_cm_connection_on_error(struct winbindd_domain *domain,
 					NTSTATUS status)
 {
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR))
+	{
 		invalidate_cm_connection(domain);
 		/* We invalidated the connection. */
 		return true;
