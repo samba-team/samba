@@ -1851,6 +1851,8 @@ NTSTATUS _winbind_SendToSam(struct pipes_struct *p, struct winbind_SendToSam *r)
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
 	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
+	struct dcerpc_binding_handle *b = NULL;
+	bool retry = false;
 
 	DEBUG(5, ("_winbind_SendToSam received\n"));
 	domain = wb_child_domain();
@@ -1858,17 +1860,25 @@ NTSTATUS _winbind_SendToSam(struct pipes_struct *p, struct winbind_SendToSam *r)
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+reconnect:
 	status = cm_connect_netlogon_secure(domain,
 					    &netlogon_pipe,
 					    &netlogon_creds_ctx);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 		return status;
 	}
 
+	b = netlogon_pipe->binding_handle;
+
 	status = netlogon_creds_cli_SendToSam(netlogon_creds_ctx,
-					      netlogon_pipe->binding_handle,
+					      b,
 					      &r->in.message);
+	if (!retry && reset_cm_connection_on_error(domain, b, status)) {
+		retry = true;
+		goto reconnect;
+	}
 
 	return status;
 }
