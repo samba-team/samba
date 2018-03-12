@@ -201,6 +201,46 @@ static void test_ldb_add_key_len_gt_max(void **state)
 	talloc_free(tmp_ctx);
 }
 
+static void test_ldb_add_key_len_2x_gt_max(void **state)
+{
+	int ret;
+	int xs_size = 0;
+	struct ldb_message *msg;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	char *xs = NULL;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	msg = ldb_msg_new(tmp_ctx);
+	assert_non_null(msg);
+
+	/*
+	 * The zero terminator is part of the key if we were not in
+	 * GUID mode
+	 */
+
+	xs_size = 2 * LMDB_MAX_KEY_SIZE;
+	xs = talloc_zero_size(tmp_ctx, (xs_size + 1));
+	memset(xs, 'x', xs_size);
+
+	msg->dn = ldb_dn_new_fmt(msg, test_ctx->ldb, "dc=%s", xs);
+	assert_non_null(msg->dn);
+
+	ret = ldb_msg_add_string(msg, "cn", "test_cn_val");
+	assert_int_equal(ret, 0);
+
+	ret = ldb_msg_add_string(msg, "objectUUID", "0123456789abcdef");
+	assert_int_equal(ret, 0);
+
+	ret = ldb_add(test_ctx->ldb, msg);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	talloc_free(tmp_ctx);
+}
+
 static void test_ldb_add_key_len_eq_max(void **state)
 {
 	int ret;
@@ -441,6 +481,10 @@ int main(int argc, const char **argv)
 			ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(
 			test_ldb_add_key_len_gt_max,
+			ldbtest_setup,
+			ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(
+			test_ldb_add_key_len_2x_gt_max,
 			ldbtest_setup,
 			ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(
