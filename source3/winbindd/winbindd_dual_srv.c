@@ -848,23 +848,33 @@ NTSTATUS _winbind_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
+	struct dcerpc_binding_handle *b = NULL;
+	bool retry = false;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+reconnect:
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 		goto done;
 	}
 
+	b = netlogon_pipe->binding_handle;
+
 	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(domain->conn.netlogon_creds,
 								      netlogon_pipe->binding_handle,
 								      r->in.site_name,
 								      r->in.dns_ttl,
 								      r->in.dns_names);
+
+	if (!retry && reset_cm_connection_on_error(domain, b, status)) {
+		retry = true;
+		goto reconnect;
+	}
 
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
