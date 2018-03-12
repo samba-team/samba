@@ -386,7 +386,7 @@ DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl
 _facl __facl _fchdir
 __fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
 _fork __fork fseeko
-fsetxattr _fstat __fstat fsync
+_fstat __fstat fsync
 futimens futimes __fxstat getauthuid
 getcwd _getcwd __getcwd getdents __getdents getdirentries
 getgrent getgrnam getgrouplist getgrset getmntent getpagesize
