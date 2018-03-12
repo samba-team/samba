@@ -65,6 +65,7 @@ struct ctdb_queue {
 	size_t alignment;
 	void *private_data;
 	ctdb_queue_cb_fn_t callback;
+	TALLOC_CTX *data_pool;
 	const char *name;
 	uint32_t buffer_size;
 };
@@ -115,7 +116,7 @@ static void queue_process(struct ctdb_queue *queue)
 	}
 
 	/* Extract complete packet */
-	data = talloc_memdup(queue,
+	data = talloc_memdup(queue->data_pool,
 			     queue->buffer.data + queue->buffer.offset,
 			     pkt_size);
 
@@ -477,6 +478,12 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 	 */
 	if (queue->buffer_size == 0) {
 		queue->buffer_size = 1024;
+	}
+
+	queue->data_pool = talloc_pool(queue, queue->buffer_size);
+	if (queue->data_pool == NULL) {
+		TALLOC_FREE(queue);
+		return NULL;
 	}
 
 	return queue;
