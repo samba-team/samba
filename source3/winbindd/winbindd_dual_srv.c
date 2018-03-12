@@ -822,15 +822,11 @@ reconnect:
 					  logon_server, NETLOGON_CONTROL_QUERY,
 					  2, &info, &werr);
 
-	if (!dcerpc_binding_handle_is_connected(b) && !retry) {
-		DEBUG(10, ("Session might have expired. "
-			   "Reconnect and retry once.\n"));
-		invalidate_cm_connection(domain);
+	if (!retry && reset_cm_connection_on_error(domain, b, status)) {
 		retry = true;
 		goto reconnect;
 	}
 
-	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("dcerpc_netr_LogonControl failed: %s\n",
 			nt_errstr(status)));
@@ -1327,8 +1323,9 @@ reconnect:
 			status = NT_STATUS_OK;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			if (!retry && !dcerpc_binding_handle_is_connected(b)) {
-				invalidate_cm_connection(domain);
+			if (!retry &&
+			    reset_cm_connection_on_error(domain, b, status))
+			{
 				retry = true;
 				goto reconnect;
 			}
@@ -1393,8 +1390,7 @@ reconnect:
 		goto verify_return;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!retry && !dcerpc_binding_handle_is_connected(b)) {
-			invalidate_cm_connection(domain);
+		if (!retry && reset_cm_connection_on_error(domain, b, status)) {
 			retry = true;
 			goto reconnect;
 		}
@@ -1547,8 +1543,7 @@ reconnect:
 				 domain->dcname,
 				 true); /* force */
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!retry && !dcerpc_binding_handle_is_connected(b)) {
-			invalidate_cm_connection(domain);
+		if (!retry && reset_cm_connection_on_error(domain, b, status)) {
 			retry = true;
 			goto reconnect;
 		}
@@ -1744,8 +1739,7 @@ reconnect:
 							      b, p->mem_ctx,
 							      &new_fti);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!retry && !dcerpc_binding_handle_is_connected(b)) {
-			invalidate_cm_connection(domain);
+		if (!retry && reset_cm_connection_on_error(domain, b, status)) {
 			retry = true;
 			goto reconnect;
 		}
