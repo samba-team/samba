@@ -24,6 +24,7 @@ import fcntl
 import sys
 import tempfile
 import subprocess
+from samba.kcc import kcc_utils
 
 # ensure we get messages out immediately, so they get in the samba logs,
 # and don't get swallowed by a timeout
@@ -48,6 +49,7 @@ from samba.samdb import SamDB
 from samba.dcerpc import netlogon, winbind
 from samba.netcmd.dns import cmd_dns
 from samba import gensec
+import ldb
 
 samba.ensure_third_party_module("dns", "dnspython")
 import dns.resolver
@@ -775,9 +777,15 @@ for line in cfile:
         cache_list.append(c)
         cache_set.add(str(c))
 
+site_specific_rec = []
+
 # read each line, and check that the DNS name exists
 for line in file:
     line = line.strip()
+
+    if '${SITE}' in line:
+        site_specific_rec.append(line)
+
     if line == '' or line[0] == "#":
         continue
     d = parse_dns_line(line, sub_vars)
@@ -790,6 +798,25 @@ for line in file:
     if str(d) not in dup_set:
         dns_list.append(d)
         dup_set.add(str(d))
+
+# Perform automatic site coverage by default
+auto_coverage = True
+
+if not am_rodc and auto_coverage:
+    site_names = kcc_utils.uncovered_sites_to_cover(samdb,
+                                                    samdb.server_site_name())
+
+    # Duplicate all site specific records for the uncovered site
+    for site in site_names:
+        to_add = [samba.substitute_var(line, {'SITE': site})
+                  for line in site_specific_rec]
+
+        for site_line in to_add:
+            d = parse_dns_line(site_line,
+                               sub_vars=sub_vars)
+            if d is not None and str(d) not in dup_set:
+                dns_list.append(d)
+                dup_set.add(str(d))
 
 # now expand the entries, if any are A record with ip set to $IP
 # then replace with multiple entries, one for each interface IP
