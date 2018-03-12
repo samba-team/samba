@@ -48,7 +48,7 @@ static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode);
 
 ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t size)
 {
-#if defined(HAVE_GETXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return getxattr(path, name, value, size);
 #else
@@ -58,9 +58,9 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 	int options = 0;
 	return getxattr(path, name, value, size, 0, options);
 #endif
-#elif defined(HAVE_GETEA)
+#elif defined(HAVE_XATTR_EA)
 	return getea(path, name, value, size);
-#elif defined(HAVE_EXTATTR_GET_FILE)
+#elif defined(HAVE_XATTR_EXTATTR)
 	ssize_t retval;
 	int attrnamespace;
 	const char *attrname;
@@ -93,7 +93,7 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 	}
 
 	return -1;
-#elif defined(HAVE_ATTR_GET)
+#elif defined(HAVE_XATTR_ATTR)
 	int retval, flags = 0;
 	int valuelength = (int)size;
 	char *attrname = strchr(name,'.') + 1;
@@ -122,7 +122,7 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 
 ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 {
-#if defined(HAVE_FGETXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return fgetxattr(filedes, name, value, size);
 #else
@@ -132,9 +132,9 @@ ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 	int options = 0;
 	return fgetxattr(filedes, name, value, size, 0, options);
 #endif
-#elif defined(HAVE_FGETEA)
+#elif defined(HAVE_XATTR_EA)
 	return fgetea(filedes, name, value, size);
-#elif defined(HAVE_EXTATTR_GET_FD)
+#elif defined(HAVE_XATTR_EXTATTR)
 	ssize_t retval;
 	int attrnamespace;
 	const char *attrname;
@@ -162,7 +162,7 @@ ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 	}
 
 	return -1;
-#elif defined(HAVE_ATTR_GETF)
+#elif defined(HAVE_XATTR_ATTR)
 	int retval, flags = 0;
 	int valuelength = (int)size;
 	char *attrname = strchr(name,'.') + 1;
@@ -188,7 +188,7 @@ ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 #endif
 }
 
-#if defined(HAVE_EXTATTR_LIST_FILE)
+#if defined(HAVE_XATTR_EXTATTR)
 
 #define EXTATTR_PREFIX(s)	(s), (sizeof((s))-1)
 
@@ -219,21 +219,15 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 			continue;
 		}
 		switch(type) {
-#if defined(HAVE_EXTATTR_LIST_FILE)
 			case 0:
 				list_size = extattr_list_file(arg.path, extattr[t].space, list, size);
 				break;
-#endif
-#if defined(HAVE_EXTATTR_LIST_LINK)
 			case 1:
 				list_size = extattr_list_link(arg.path, extattr[t].space, list, size);
 				break;
-#endif
-#if defined(HAVE_EXTATTR_LIST_FD)
 			case 2:
 				list_size = extattr_list_fd(arg.filedes, extattr[t].space, list, size);
 				break;
-#endif
 			default:
 				errno = ENOSYS;
 				return -1;
@@ -285,7 +279,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 
 #endif
 
-#if defined(HAVE_ATTR_LIST) && (defined(HAVE_SYS_ATTRIBUTES_H) || defined(HAVE_ATTR_ATTRIBUTES_H))
+#if defined(HAVE_XATTR_ATTR) && (defined(HAVE_SYS_ATTRIBUTES_H) || defined(HAVE_ATTR_ATTRIBUTES_H))
 static char attr_buffer[ATTR_MAX_VALUELEN];
 
 static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t size, int flags)
@@ -355,7 +349,7 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 
 ssize_t rep_listxattr (const char *path, char *list, size_t size)
 {
-#if defined(HAVE_LISTXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return listxattr(path, list, size);
 #else
@@ -364,13 +358,13 @@ ssize_t rep_listxattr (const char *path, char *list, size_t size)
 	int options = 0;
 	return listxattr(path, list, size, options);
 #endif
-#elif defined(HAVE_LISTEA)
+#elif defined(HAVE_XATTR_EA)
 	return listea(path, list, size);
-#elif defined(HAVE_EXTATTR_LIST_FILE)
+#elif defined(HAVE_XATTR_EXTATTR)
 	extattr_arg arg;
 	arg.path = path;
 	return bsd_attr_list(0, arg, list, size);
-#elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
+#elif defined(HAVE_XATTR_ATTR) && defined(HAVE_SYS_ATTRIBUTES_H)
 	return irix_attr_list(path, 0, list, size, 0);
 #elif defined(HAVE_ATTROPEN)
 	ssize_t ret = -1;
@@ -388,7 +382,7 @@ ssize_t rep_listxattr (const char *path, char *list, size_t size)
 
 ssize_t rep_flistxattr (int filedes, char *list, size_t size)
 {
-#if defined(HAVE_FLISTXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return flistxattr(filedes, list, size);
 #else
@@ -397,13 +391,13 @@ ssize_t rep_flistxattr (int filedes, char *list, size_t size)
 	int options = 0;
 	return flistxattr(filedes, list, size, options);
 #endif
-#elif defined(HAVE_FLISTEA)
+#elif defined(HAVE_XATTR_EA)
 	return flistea(filedes, list, size);
-#elif defined(HAVE_EXTATTR_LIST_FD)
+#elif defined(HAVE_XATTR_EXTATTR)
 	extattr_arg arg;
 	arg.filedes = filedes;
 	return bsd_attr_list(2, arg, list, size);
-#elif defined(HAVE_ATTR_LISTF)
+#elif defined(HAVE_XATTR_ATTR)
 	return irix_attr_list(NULL, filedes, list, size, 0);
 #elif defined(HAVE_ATTROPEN)
 	ssize_t ret = -1;
@@ -421,7 +415,7 @@ ssize_t rep_flistxattr (int filedes, char *list, size_t size)
 
 int rep_removexattr (const char *path, const char *name)
 {
-#if defined(HAVE_REMOVEXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return removexattr(path, name);
 #else
@@ -430,9 +424,9 @@ int rep_removexattr (const char *path, const char *name)
 	int options = 0;
 	return removexattr(path, name, options);
 #endif
-#elif defined(HAVE_REMOVEEA)
+#elif defined(HAVE_XATTR_EA)
 	return removeea(path, name);
-#elif defined(HAVE_EXTATTR_DELETE_FILE)
+#elif defined(HAVE_XATTR_EXTATTR)
 	int attrnamespace;
 	const char *attrname;
 
@@ -448,7 +442,7 @@ int rep_removexattr (const char *path, const char *name)
 	}
 
 	return extattr_delete_file(path, attrnamespace, attrname);
-#elif defined(HAVE_ATTR_REMOVE)
+#elif defined(HAVE_XATTR_ATTR)
 	int flags = 0;
 	char *attrname = strchr(name,'.') + 1;
 
@@ -471,7 +465,7 @@ int rep_removexattr (const char *path, const char *name)
 
 int rep_fremovexattr (int filedes, const char *name)
 {
-#if defined(HAVE_FREMOVEXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return fremovexattr(filedes, name);
 #else
@@ -480,9 +474,9 @@ int rep_fremovexattr (int filedes, const char *name)
 	int options = 0;
 	return fremovexattr(filedes, name, options);
 #endif
-#elif defined(HAVE_FREMOVEEA)
+#elif defined(HAVE_XATTR_EA)
 	return fremoveea(filedes, name);
-#elif defined(HAVE_EXTATTR_DELETE_FD)
+#elif defined(HAVE_XATTR_EXTATTR)
 	int attrnamespace;
 	const char *attrname;
 
@@ -498,7 +492,7 @@ int rep_fremovexattr (int filedes, const char *name)
 	}
 
 	return extattr_delete_fd(filedes, attrnamespace, attrname);
-#elif defined(HAVE_ATTR_REMOVEF)
+#elif defined(HAVE_XATTR_ATTR)
 	int flags = 0;
 	char *attrname = strchr(name,'.') + 1;
 
@@ -521,7 +515,7 @@ int rep_fremovexattr (int filedes, const char *name)
 
 int rep_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
-#if defined(HAVE_SETXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return setxattr(path, name, value, size, flags);
 #else
@@ -530,9 +524,9 @@ int rep_setxattr (const char *path, const char *name, const void *value, size_t 
 	int options = 0;
 	return setxattr(path, name, value, size, 0, options);
 #endif
-#elif defined(HAVE_SETEA)
+#elif defined(HAVE_XATTR_EA)
 	return setea(path, name, value, size, flags);
-#elif defined(HAVE_EXTATTR_SET_FILE)
+#elif defined(HAVE_XATTR_EXTATTR)
 	int retval = 0;
 	int attrnamespace;
 	const char *attrname;
@@ -569,7 +563,7 @@ int rep_setxattr (const char *path, const char *name, const void *value, size_t 
 	}
 	retval = extattr_set_file(path, attrnamespace, attrname, value, size);
 	return (retval < 0) ? -1 : 0;
-#elif defined(HAVE_ATTR_SET)
+#elif defined(HAVE_XATTR_ATTR)
 	int myflags = 0;
 	char *attrname = strchr(name,'.') + 1;
 
@@ -598,7 +592,7 @@ int rep_setxattr (const char *path, const char *name, const void *value, size_t 
 
 int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags)
 {
-#if defined(HAVE_FSETXATTR)
+#if defined(HAVE_XATTR_XATTR)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return fsetxattr(filedes, name, value, size, flags);
 #else
@@ -607,9 +601,9 @@ int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size
 	int options = 0;
 	return fsetxattr(filedes, name, value, size, 0, options);
 #endif
-#elif defined(HAVE_FSETEA)
+#elif defined(HAVE_XATTR_EA)
 	return fsetea(filedes, name, value, size, flags);
-#elif defined(HAVE_EXTATTR_SET_FD)
+#elif defined(HAVE_XATTR_EXTATTR)
 	int retval = 0;
 	int attrnamespace;
 	const char *attrname;
@@ -646,7 +640,7 @@ int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size
 	}
 	retval = extattr_set_fd(filedes, attrnamespace, attrname, value, size);
 	return (retval < 0) ? -1 : 0;
-#elif defined(HAVE_ATTR_SETF)
+#elif defined(HAVE_XATTR_ATTR)
 	int myflags = 0;
 	char *attrname = strchr(name,'.') + 1;
 

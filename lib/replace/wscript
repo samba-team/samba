@@ -393,35 +393,24 @@ def configure(conf):
 
     xattr_headers='sys/attributes.h attr/xattr.h sys/xattr.h'
 
-    conf.CHECK_FUNCS_IN('''
-fgetxattr flistea flistxattr
-fremovexattr fsetxattr getxattr
-listxattr removexattr setxattr
-''', 'attr', checklibc=True, headers=xattr_headers)
+    # default to 1, we set it to 0 if we don't find any EA implementation below:
+    conf.DEFINE('HAVE_XATTR_SUPPORT', 1)
+    if conf.CHECK_FUNCS_IN('getxattr', 'attr', checklibc=True, headers=xattr_headers):
+        conf.DEFINE('HAVE_XATTR_XATTR', 1)
+        # Darwin has extra options to xattr-family functions
+        conf.CHECK_CODE('getxattr(NULL, NULL, NULL, 0, 0, 0)',
+                        headers=xattr_headers, local_include=False,
+                        define='XATTR_ADDITIONAL_OPTIONS',
+                        msg="Checking whether xattr interface takes additional options")
+    elif conf.CHECK_FUNCS_IN('attr_listf', 'attr', checklibc=True, headers=xattr_headers):
+        conf.DEFINE('HAVE_XATTR_ATTR', 1)
+    elif conf.CHECK_FUNCS('extattr_list_fd'):
+        conf.DEFINE('HAVE_XATTR_EXTATTR', 1)
+    elif conf.CHECK_FUNCS('flistea'):
+        conf.DEFINE('HAVE_XATTR_EA', 1)
+    elif not conf.CHECK_FUNCS('attropen'):
+            conf.DEFINE('HAVE_XATTR_SUPPORT', 0)
 
-    # We need to check for linux xattrs first, as we do not wish to link to -lattr
-    # (the XFS compat API) on Linux systems with the native xattr API
-    if not conf.CONFIG_SET('HAVE_GETXATTR'):
-        conf.CHECK_FUNCS_IN('''
-attr_get attr_getf attr_list attr_listf attropen attr_remove
-attr_removef attr_set attr_setf extattr_delete_fd extattr_delete_file
-extattr_get_fd extattr_get_file extattr_list_fd extattr_list_file
-extattr_set_fd extattr_set_file fgetea
-fremoveea fsetea getea listea
-removeea setea
-''', 'attr', checklibc=True, headers=xattr_headers)
-
-    if (conf.CONFIG_SET('HAVE_ATTR_LISTF') or
-        conf.CONFIG_SET('HAVE_EXTATTR_LIST_FD') or
-        conf.CONFIG_SET('HAVE_FLISTEA') or
-        conf.CONFIG_SET('HAVE_FLISTXATTR')):
-            conf.DEFINE('HAVE_XATTR_SUPPORT', 1)
-
-    # Darwin has extra options to xattr-family functions
-    conf.CHECK_CODE('getxattr(NULL, NULL, NULL, 0, 0, 0)',
-                    headers=xattr_headers, local_include=False,
-                    define='XATTR_ADDITIONAL_OPTIONS',
-                    msg="Checking whether xattr interface takes additional options")
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl',
                         checklibc=True, headers='dlfcn.h dl.h')
