@@ -65,7 +65,6 @@ struct ctdb_queue {
 	size_t alignment;
 	void *private_data;
 	ctdb_queue_cb_fn_t callback;
-	bool *destroyed;
 	const char *name;
 	uint32_t buffer_size;
 };
@@ -411,17 +410,6 @@ int ctdb_queue_set_fd(struct ctdb_queue *queue, int fd)
 	return 0;
 }
 
-/* If someone sets up this pointer, they want to know if the queue is freed */
-static int queue_destructor(struct ctdb_queue *queue)
-{
-	TALLOC_FREE(queue->buffer.data);
-	queue->buffer.length = 0;
-	queue->buffer.size = 0;
-	if (queue->destroyed != NULL)
-		*queue->destroyed = true;
-	return 0;
-}
-
 /*
   setup a packet queue on a socket
  */
@@ -454,7 +442,6 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 			return NULL;
 		}
 	}
-	talloc_set_destructor(queue, queue_destructor);
 
 	queue->buffer_size = ctdb->tunable.queue_buffer_size;
 	/* In client code, ctdb->tunable is not initialized.
