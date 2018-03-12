@@ -962,4 +962,8 @@ bool reconnect_need_retry(NTSTATUS status, struct winbindd_domain *domain);
 /* The following definitions come from winbindd/winbindd_gpupdate.c  */
 void gpupdate_init(void);
 
+/* The following comes from winbindd/winbindd_dual_srv.c */
+bool reset_cm_connection_on_error(struct winbindd_domain *domain,
+				  NTSTATUS status);
+
 #endif /*  _WINBINDD_PROTO_H_  */
