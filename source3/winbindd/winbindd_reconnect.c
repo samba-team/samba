@@ -69,7 +69,7 @@ bool reconnect_need_retry(NTSTATUS status, struct winbindd_domain *domain)
 		return false;
 	}
 
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 
 	return true;
 }
