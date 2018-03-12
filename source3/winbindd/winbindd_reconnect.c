@@ -69,13 +69,7 @@ bool reconnect_need_retry(NTSTATUS status, struct winbindd_domain *domain)
 		return false;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR)) {
-		/*
-		 * RPC call sent on expired session, needs
-		 * reauthentication.
-		 */
-		invalidate_cm_connection(domain);
-	}
+	reset_cm_connection_on_error(domain, status);
 
 	return true;
 }
