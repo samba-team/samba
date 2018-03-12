@@ -25,6 +25,11 @@ from StringIO import StringIO
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree
 import re
+from samba.net import Net
+from samba.dcerpc import nbt
+from samba import smb
+import samba.gpo as gpo
+import chardet
 
 try:
     from enum import Enum
@@ -286,6 +291,9 @@ class GPOStorage:
 class gp_ext(object):
     __metaclass__ = ABCMeta
 
+    def __init__(self, logger):
+        self.logger = logger
+
     @abstractmethod
     def list(self, rootpath):
         pass
@@ -295,14 +303,41 @@ class gp_ext(object):
         pass
 
     @abstractmethod
-    def parse(self, afile, ldb, conn, gp_db, lp):
+    def read(self, policy):
         pass
+
+    def parse(self, afile, ldb, conn, gp_db, lp):
+        self.ldb = ldb
+        self.gp_db = gp_db
+        self.lp = lp
+
+        # Fixing the bug where only some Linux Boxes capitalize MACHINE
+        try:
+            blist = afile.split('/')
+            idx = afile.lower().split('/').index('machine')
+            for case in [
+                            blist[idx].upper(),
+                            blist[idx].capitalize(),
+                            blist[idx].lower()
+                        ]:
+                bfile = '/'.join(blist[:idx]) + '/' + case + '/' + \
+                    '/'.join(blist[idx+1:])
+                try:
+                    return self.read(conn.loadfile(bfile.replace('/', '\\')))
+                except NTSTATUSError:
+                    continue
+        except ValueError:
+            try:
+                return self.read(conn.loadfile(afile.replace('/', '\\')))
+            except Exception as e:
+                self.logger.error(str(e))
+                return None
 
     @abstractmethod
     def __str__(self):
         pass
 
-class inf_to():
+class file_to():
     __metaclass__ = ABCMeta
 
     def __init__(self, logger, ldb, gp_db, lp, attribute, val):
@@ -317,7 +352,7 @@ class inf_to():
         return self.val
 
     def update_samba(self):
-        (upd_sam, value) = self.mapper().get(self.attribute)
+        (upd_sam, value) = self.mapper()[self.attribute]
         upd_sam(value())
 
     @abstractmethod
@@ -328,148 +363,19 @@ class inf_to():
     def __str__(self):
         pass
 
-class inf_to_kdc_tdb(inf_to):
-    def mins_to_hours(self):
-        return '%d' % (int(self.val)/60)
-
-    def days_to_hours(self):
-        return '%d' % (int(self.val)*24)
-
-    def set_kdc_tdb(self, val):
-        old_val = self.gp_db.gpostore.get(self.attribute)
-        self.logger.info('%s was changed from %s to %s' % (self.attribute,
-                                                           old_val, val))
-        if val is not None:
-            self.gp_db.gpostore.store(self.attribute, val)
-            self.gp_db.store(str(self), self.attribute, old_val)
-        else:
-            self.gp_db.gpostore.delete(self.attribute)
-            self.gp_db.delete(str(self), self.attribute)
-
-    def mapper(self):
-        return { 'kdc:user_ticket_lifetime': (self.set_kdc_tdb, self.explicit),
-                 'kdc:service_ticket_lifetime': (self.set_kdc_tdb,
-                                                 self.mins_to_hours),
-                 'kdc:renewal_lifetime': (self.set_kdc_tdb,
-                                          self.days_to_hours),
-               }
-
-    def __str__(self):
-        return 'Kerberos Policy'
-
-class inf_to_ldb(inf_to):
-    '''This class takes the .inf file parameter (essentially a GPO file mapped
-    to a GUID), hashmaps it to the Samba parameter, which then uses an ldb
-    object to update the parameter to Samba4. Not registry oriented whatsoever.
-    '''
-
-    def ch_minPwdAge(self, val):
-        old_val = self.ldb.get_minPwdAge()
-        self.logger.info('KDC Minimum Password age was changed from %s to %s' \
-                         % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, old_val)
-        self.ldb.set_minPwdAge(val)
-
-    def ch_maxPwdAge(self, val):
-        old_val = self.ldb.get_maxPwdAge()
-        self.logger.info('KDC Maximum Password age was changed from %s to %s' \
-                         % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, old_val)
-        self.ldb.set_maxPwdAge(val)
-
-    def ch_minPwdLength(self, val):
-        old_val = self.ldb.get_minPwdLength()
-        self.logger.info(
-            'KDC Minimum Password length was changed from %s to %s' \
-             % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, old_val)
-        self.ldb.set_minPwdLength(val)
-
-    def ch_pwdProperties(self, val):
-        old_val = self.ldb.get_pwdProperties()
-        self.logger.info('KDC Password Properties were changed from %s to %s' \
-                         % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, old_val)
-        self.ldb.set_pwdProperties(val)
-
-    def days2rel_nttime(self):
-        seconds = 60
-        minutes = 60
-        hours = 24
-        sam_add = 10000000
-        val = (self.val)
-        val = int(val)
-        return  str(-(val * seconds * minutes * hours * sam_add))
-
-    def mapper(self):
-        '''ldap value : samba setter'''
-        return { "minPwdAge" : (self.ch_minPwdAge, self.days2rel_nttime),
-                 "maxPwdAge" : (self.ch_maxPwdAge, self.days2rel_nttime),
-                 # Could be none, but I like the method assignment in
-                 # update_samba
-                 "minPwdLength" : (self.ch_minPwdLength, self.explicit),
-                 "pwdProperties" : (self.ch_pwdProperties, self.explicit),
-
-               }
-
-    def __str__(self):
-        return 'System Access'
-
-
-class gp_sec_ext(gp_ext):
-    '''This class does the following two things:
-        1) Identifies the GPO if it has a certain kind of filepath,
-        2) Finally parses it.
-    '''
-
-    count = 0
-
-    def __init__(self, logger):
-        self.logger = logger
-
-    def __str__(self):
-        return "Security GPO extension"
-
+class gp_inf_ext(gp_ext):
+    @abstractmethod
     def list(self, rootpath):
-        return os.path.join(rootpath,
-                            "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
+        pass
 
-    def listmachpol(self, rootpath):
-        return os.path.join(rootpath, "Machine/Registry.pol")
-
-    def listuserpol(self, rootpath):
-        return os.path.join(rootpath, "User/Registry.pol")
-
+    @abstractmethod
     def apply_map(self):
-        return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
-                                                         inf_to_ldb),
-                                  "MaximumPasswordAge": ("maxPwdAge",
-                                                         inf_to_ldb),
-                                  "MinimumPasswordLength": ("minPwdLength",
-                                                            inf_to_ldb),
-                                  "PasswordComplexity": ("pwdProperties",
-                                                         inf_to_ldb),
-                                 },
-                "Kerberos Policy": {"MaxTicketAge": (
-                                        "kdc:user_ticket_lifetime",
-                                        inf_to_kdc_tdb
-                                    ),
-                                    "MaxServiceAge": (
-                                        "kdc:service_ticket_lifetime",
-                                        inf_to_kdc_tdb
-                                    ),
-                                    "MaxRenewAge": (
-                                        "kdc:renewal_lifetime",
-                                        inf_to_kdc_tdb
-                                    ),
-                                   }
-               }
+        pass
 
-    def read_inf(self, path, conn):
+    def read(self, policy):
         ret = False
         inftable = self.apply_map()
 
-        policy = conn.loadfile(path.replace('/', '\\'))
         current_section = None
 
         # So here we would declare a boolean,
@@ -499,27 +405,78 @@ class gp_sec_ext(gp_ext):
                     self.gp_db.commit()
         return ret
 
-    def parse(self, afile, ldb, conn, gp_db, lp):
-        self.ldb = ldb
-        self.gp_db = gp_db
-        self.lp = lp
+    @abstractmethod
+    def __str__(self):
+        pass
 
-        # Fixing the bug where only some Linux Boxes capitalize MACHINE
-        if afile.endswith('inf'):
+''' Fetch the hostname of a writable DC '''
+def get_dc_hostname(creds, lp):
+    net = Net(creds=creds, lp=lp)
+    cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
+        nbt.NBT_SERVER_DS))
+    return cldap_ret.pdc_dns_name
+
+''' Fetch a list of GUIDs for applicable GPOs '''
+def get_gpo_list(dc_hostname, creds, lp):
+    gpos = []
+    ads = gpo.ADS_STRUCT(dc_hostname, lp, creds)
+    if ads.connect():
+        gpos = ads.get_gpo_list(creds.get_username())
+    return gpos
+
+def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
+    gp_db = store.get_gplog(creds.get_username())
+    dc_hostname = get_dc_hostname(creds, lp)
+    try:
+        conn =  smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
+    except:
+        logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
+        raise
+    gpos = get_gpo_list(dc_hostname, creds, lp)
+
+    for gpo_obj in gpos:
+        guid = gpo_obj.name
+        if guid == 'Local Policy':
+            continue
+        path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
+        local_path = os.path.join(lp.get("path", "sysvol"), path)
+        version = int(gpo.gpo_get_sysvol_gpt_version(local_path)[1])
+        if version != store.get_int(guid):
+            logger.info('GPO %s has changed' % guid)
+            gp_db.state(GPOSTATE.APPLY)
+        else:
+            gp_db.state(GPOSTATE.ENFORCE)
+        gp_db.set_guid(guid)
+        store.start()
+        for ext in gp_extensions:
             try:
-                blist = afile.split('/')
-                idx = afile.lower().split('/').index('machine')
-                for case in [blist[idx].upper(), blist[idx].capitalize(),
-                             blist[idx].lower()]:
-                    bfile = '/'.join(blist[:idx]) + '/' + case + '/' + \
-                            '/'.join(blist[idx+1:])
-                    try:
-                        return self.read_inf(bfile, conn)
-                    except NTSTATUSError:
-                        continue
-            except ValueError:
-                try:
-                    return self.read_inf(afile, conn)
-                except:
-                    return None
+                ext.parse(ext.list(path), test_ldb, conn, gp_db, lp)
+            except Exception as e:
+                logger.error('Failed to parse gpo %s for extension %s' % \
+                    (guid, str(ext)))
+                logger.error('Message was: ' + str(e))
+                store.cancel()
+                continue
+        store.store(guid, '%i' % version)
+        store.commit()
+
+def unapply_log(gp_db):
+    while True:
+        item = gp_db.apply_log_pop()
+        if item:
+            yield item
+        else:
+            break
+
+def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
+    gp_db = store.get_gplog(creds.get_username())
+    gp_db.state(GPOSTATE.UNAPPLY)
+    for gpo_guid in unapply_log(gp_db):
+        gp_db.set_guid(gpo_guid)
+        unapply_attributes = gp_db.list(gp_extensions)
+        for attr in unapply_attributes:
+            attr_obj = attr[-1](logger, test_ldb, gp_db, lp, attr[0], attr[1])
+            attr_obj.mapper()[attr[0]][0](attr[1]) # Set the old value
+            gp_db.delete(str(attr_obj), attr[0])
+        gp_db.commit()
 
