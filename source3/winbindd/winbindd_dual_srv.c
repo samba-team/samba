@@ -42,6 +42,7 @@ void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 }
 
 bool reset_cm_connection_on_error(struct winbindd_domain *domain,
+				  struct dcerpc_binding_handle *b,
 				  NTSTATUS status)
 {
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
@@ -59,6 +60,12 @@ bool reset_cm_connection_on_error(struct winbindd_domain *domain,
 		/* We invalidated the connection. */
 		return true;
 	}
+
+	if (b != NULL && !dcerpc_binding_handle_is_connected(b)) {
+		invalidate_cm_connection(domain);
+		return true;
+	}
+
 	return false;
 }
 
@@ -76,7 +83,7 @@ NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 
 	status = wb_cache_sid_to_name(domain, p->mem_ctx, r->in.sid,
 				      &dom_name, &name, &type);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -110,7 +117,7 @@ NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 		r->out.domains = domains;
 	}
 
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	return status;
 }
 
@@ -126,7 +133,7 @@ NTSTATUS _wbint_LookupName(struct pipes_struct *p, struct wbint_LookupName *r)
 	status = wb_cache_name_to_sid(domain, p->mem_ctx, r->in.domain,
 				      r->in.name, r->in.flags,
 				      r->out.sid, r->out.type);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	return status;
 }
 
@@ -314,7 +321,7 @@ NTSTATUS _wbint_LookupUserAliases(struct pipes_struct *p,
 					     r->in.sids->sids,
 					     &r->out.rids->num_rids,
 					     &r->out.rids->rids);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	return status;
 }
 
@@ -331,7 +338,7 @@ NTSTATUS _wbint_LookupUserGroups(struct pipes_struct *p,
 	status = wb_cache_lookup_usergroups(domain, p->mem_ctx, r->in.sid,
 					    &r->out.sids->num_sids,
 					    &r->out.sids->sids);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	return status;
 }
 
@@ -346,7 +353,7 @@ NTSTATUS _wbint_QuerySequenceNumber(struct pipes_struct *p,
 	}
 
 	status = wb_cache_sequence_number(domain, r->out.sequence);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	return status;
 }
 
@@ -367,7 +374,7 @@ NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
 	status = wb_cache_lookup_groupmem(domain, p->mem_ctx, r->in.sid,
 					  r->in.type, &num_names, &sid_mem,
 					  &names, &name_types);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -434,7 +441,7 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 		status = wb_cache_enum_local_groups(domain, frame,
 						    &num_local_groups,
 						    &local_groups);
-		reset_cm_connection_on_error(domain, status);
+		reset_cm_connection_on_error(domain, NULL, status);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -443,7 +450,7 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 	status = wb_cache_enum_dom_groups(domain, frame,
 					  &num_dom_groups,
 					  &dom_groups);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -514,7 +521,7 @@ NTSTATUS _wbint_QueryUserRidList(struct pipes_struct *p,
 
 	status = wb_cache_query_user_list(domain, p->mem_ctx,
 					  &r->out.rids->rids);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -545,7 +552,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
 
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Can't contact the NETLOGON pipe\n"));
 		return status;
@@ -566,11 +573,11 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		if (reset_cm_connection_on_error(domain, status)) {
+		if (reset_cm_connection_on_error(domain, NULL, status)) {
 			/* Re-initialize. */
 			status = cm_connect_netlogon(domain, &netlogon_pipe);
 
-			reset_cm_connection_on_error(domain, status);
+			reset_cm_connection_on_error(domain, NULL, status);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(10, ("Can't contact the NETLOGON pipe\n"));
 				return status;
@@ -605,7 +612,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 			r->in.domain_name, &dc_info->dc_unc, &werr);
 	}
 
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("dcerpc_netr_Get[Any]DCName failed: %s\n",
 			   nt_errstr(status)));
@@ -645,7 +652,7 @@ NTSTATUS _wbint_LookupRids(struct pipes_struct *p, struct wbint_LookupRids *r)
 	status = wb_cache_rids_to_names(domain, talloc_tos(), r->in.domain_sid,
 					r->in.rids->rids, r->in.rids->num_rids,
 					&domain_name, &names, &types);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -789,7 +796,7 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 
 reconnect:
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
         if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe: %s\n",
 			  nt_errstr(status)));
@@ -823,7 +830,7 @@ reconnect:
 		goto reconnect;
 	}
 
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("dcerpc_netr_LogonControl failed: %s\n",
 			nt_errstr(status)));
@@ -1036,7 +1043,7 @@ static WERROR _winbind_LogonControl_REDISCOVER(struct pipes_struct *p,
 	status = cm_connect_netlogon_secure(domain,
 					    &netlogon_pipe,
 					    &netlogon_creds_ctx);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
 	}
@@ -1108,7 +1115,7 @@ static WERROR _winbind_LogonControl_TC_QUERY(struct pipes_struct *p,
 	status = cm_connect_netlogon_secure(domain,
 					    &netlogon_pipe,
 					    &netlogon_creds_ctx);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
 	}
@@ -1290,7 +1297,7 @@ reconnect:
 	status = cm_connect_netlogon_secure(domain,
 					    &netlogon_pipe,
 					    &netlogon_creds_ctx);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
 	}
@@ -1513,7 +1520,7 @@ reconnect:
 	status = cm_connect_netlogon_secure(domain,
 					    &netlogon_pipe,
 					    &netlogon_creds_ctx);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
 	}
@@ -1721,7 +1728,7 @@ reconnect:
 	status = cm_connect_netlogon_secure(domain,
 					    &netlogon_pipe,
 					    &netlogon_creds_ctx);
-	reset_cm_connection_on_error(domain, status);
+	reset_cm_connection_on_error(domain, NULL, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
 	}

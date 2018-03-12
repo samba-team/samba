@@ -964,6 +964,7 @@ void gpupdate_init(void);
 
 /* The following comes from winbindd/winbindd_dual_srv.c */
 bool reset_cm_connection_on_error(struct winbindd_domain *domain,
+				  struct dcerpc_binding_handle *b,
 				  NTSTATUS status);
 
 #endif /*  _WINBINDD_PROTO_H_  */
