@@ -42,6 +42,14 @@ void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 bool reset_cm_connection_on_error(struct winbindd_domain *domain,
 				  NTSTATUS status)
 {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+		invalidate_cm_connection(domain);
+		domain->conn.netlogon_force_reauth = true;
+		return true;
+	}
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR))
 	{
