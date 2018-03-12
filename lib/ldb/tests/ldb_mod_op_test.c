@@ -1524,6 +1524,7 @@ static int test_ldb_search_against_transaction_callback1(struct ldb_request *req
 		struct ldb_message *msg;
 		TALLOC_FREE(ctx->test_ctx->ldb);
 		TALLOC_FREE(ctx->test_ctx->ev);
+		close(pipes[0]);
 		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
 		if (ctx->test_ctx->ev == NULL) {
 			exit(LDB_ERR_OPERATIONS_ERROR);
@@ -1586,7 +1587,7 @@ static int test_ldb_search_against_transaction_callback1(struct ldb_request *req
 		ret = ldb_transaction_commit(ctx->test_ctx->ldb);
 		exit(ret);
 	}
-
+	close(pipes[1]);
 	ret = read(pipes[0], buf, 2);
 	assert_int_equal(ret, 2);
 
@@ -1760,6 +1761,7 @@ static int test_ldb_modify_during_search_callback1(struct ldb_request *req,
 		struct ldb_dn *dn, *new_dn;
 		TALLOC_FREE(ctx->test_ctx->ldb);
 		TALLOC_FREE(ctx->test_ctx->ev);
+		close(pipes[0]);
 		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
 		if (ctx->test_ctx->ev == NULL) {
 			exit(LDB_ERR_OPERATIONS_ERROR);
@@ -1826,6 +1828,7 @@ static int test_ldb_modify_during_search_callback1(struct ldb_request *req,
 		struct ldb_message_element *el;
 		TALLOC_FREE(ctx->test_ctx->ldb);
 		TALLOC_FREE(ctx->test_ctx->ev);
+		close(pipes[0]);
 		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
 		if (ctx->test_ctx->ev == NULL) {
 			exit(LDB_ERR_OPERATIONS_ERROR);
@@ -1901,6 +1904,7 @@ static int test_ldb_modify_during_search_callback1(struct ldb_request *req,
 	 * sending the "GO" as it is blocked at ldb_transaction_start().
 	 */
 
+	close(pipes[1]);
 	ret = read(pipes[0], buf, 2);
 	assert_int_equal(ret, 2);
 
@@ -2075,6 +2079,7 @@ static int test_ldb_modify_during_whole_search_callback1(struct ldb_request *req
 		struct ldb_message_element *el;
 		TALLOC_FREE(ctx->test_ctx->ldb);
 		TALLOC_FREE(ctx->test_ctx->ev);
+		close(pipes[0]);
 		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
 		if (ctx->test_ctx->ev == NULL) {
 			exit(LDB_ERR_OPERATIONS_ERROR);
@@ -2137,6 +2142,7 @@ static int test_ldb_modify_during_whole_search_callback1(struct ldb_request *req
 		exit(ret);
 	}
 
+	close(pipes[1]);
 	ret = read(pipes[0], buf, 2);
 	assert_int_equal(ret, 2);
 
@@ -2349,6 +2355,7 @@ static void test_ldb_modify_before_ldb_wait(void **state)
 		struct ldb_message_element *el;
 		TALLOC_FREE(search_test_ctx->ldb_test_ctx->ldb);
 		TALLOC_FREE(search_test_ctx->ldb_test_ctx->ev);
+		close(pipes[0]);
 		search_test_ctx->ldb_test_ctx->ev = tevent_context_init(search_test_ctx->ldb_test_ctx);
 		if (search_test_ctx->ldb_test_ctx->ev == NULL) {
 			exit(LDB_ERR_OPERATIONS_ERROR);
@@ -2417,6 +2424,7 @@ static void test_ldb_modify_before_ldb_wait(void **state)
 		ret = ldb_transaction_commit(search_test_ctx->ldb_test_ctx->ldb);
 		exit(ret);
 	}
+	close(pipes[1]);
 
 	ret = read(pipes[0], buf, 2);
 	assert_int_equal(ret, 2);
