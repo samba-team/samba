@@ -970,4 +970,8 @@ NTSTATUS wb_irpc_register(void);
 /* The following definitions come from winbindd/winbindd_reconnect.c  */
 bool reconnect_need_retry(NTSTATUS status, struct winbindd_domain *domain);
 
+/* The following comes from winbindd/winbindd_dual_srv.c */
+bool reset_cm_connection_on_error(struct winbindd_domain *domain,
+				  NTSTATUS status);
+
 #endif /*  _WINBINDD_PROTO_H_  */

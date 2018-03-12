@@ -39,8 +39,8 @@ void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 	*r->out.out_data = r->in.in_data;
 }
 
-static bool reset_cm_connection_on_error(struct winbindd_domain *domain,
-					NTSTATUS status)
+bool reset_cm_connection_on_error(struct winbindd_domain *domain,
+				  NTSTATUS status)
 {
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR))
