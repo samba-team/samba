@@ -799,6 +799,11 @@ planoldpythontestsuite("rodc:local", "replica_sync_rodc",
 		       environ={'DC1': '$DC_SERVER', 'DC2': '$RODC_DC_SERVER'},
 		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
+planoldpythontestsuite("ad_dc_ntvfs", "password_settings",
+                       extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
+                       name="samba4.ldap.password_settings.python",
+                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+
 for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     plantestsuite_loadlist("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN"])
