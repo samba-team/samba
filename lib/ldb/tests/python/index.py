@@ -113,11 +113,14 @@ class MaxIndexKeyLengthTests(LdbBaseTest):
         super(MaxIndexKeyLengthTests, self).setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "key_len_test.ldb")
-        # Note that the maximum key length is set to 50
+        # Note that the maximum key length is set to 54
+        # This accounts for the 4 bytes added by the dn formatting
+        # a leading dn=, and a trailing zero terminator
+        #
         self.l = ldb.Ldb(self.url(),
                          options=[
                              "modules:rdn_name",
-                             "max_key_len_for_self_test:50"])
+                             "max_key_len_for_self_test:54"])
         self.l.add({"dn": "@ATTRIBUTES",
                     "uniqueThing": "UNIQUE_INDEX"})
         self.l.add({"dn": "@INDEXLIST",

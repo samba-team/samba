@@ -848,6 +848,19 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	unsigned indx_len = 0;
 	unsigned frmt_len = 0;
 
+	if (max_key_length < 4) {
+		ldb_asprintf_errstring(
+			ldb,
+			__location__ ": max_key_length of (%u) < 4",
+			max_key_length);
+		return NULL;
+	}
+	/*
+	 * ltdb_key_dn() makes something 4 bytes longer, it adds a leading
+	 * "DN=" and a trailing string terninator
+	 */
+	max_key_length -= 4;
+
 	if (attr[0] == '@') {
 		attr_for_dn = attr;
 		v = *value;
@@ -911,12 +924,13 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	if (should_b64_encode) {
 		unsigned vstr_len = 0;
 		char *vstr = ldb_base64_encode(ldb, (char *)v.data, v.length);
+		unsigned num_separators = 3;
 		if (!vstr) {
 			talloc_free(attr_folded);
 			return NULL;
 		}
 		vstr_len = strlen(vstr);
-		key_len = 3 + indx_len + attr_len + vstr_len;
+		key_len = num_separators + indx_len + attr_len + vstr_len;
 		if (key_len > max_key_length) {
 			unsigned excess = key_len - max_key_length;
 			frmt_len = vstr_len - excess;
@@ -943,7 +957,8 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 		}
 		talloc_free(vstr);
 	} else {
-		key_len = 2 + indx_len + attr_len + (int)v.length;
+		unsigned num_separators = 2;
+		key_len = num_separators + indx_len + attr_len + (int)v.length;
 		if (key_len > max_key_length) {
 			unsigned excess = key_len - max_key_length;
 			frmt_len = v.length - excess;
