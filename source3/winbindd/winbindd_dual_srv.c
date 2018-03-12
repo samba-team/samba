@@ -544,6 +544,8 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 	WERROR werr;
 	unsigned int orig_timeout;
 	struct dcerpc_binding_handle *b;
+	bool retry = false;
+	bool try_dsrgetdcname = false;
 
 	if (domain == NULL) {
 		return dsgetdcname(p->mem_ctx, server_messaging_context(),
@@ -553,6 +555,11 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 				   r->out.dc_info);
 	}
 
+	if (domain->active_directory) {
+		try_dsrgetdcname = true;
+	}
+
+reconnect:
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
 
 	reset_cm_connection_on_error(domain, NULL, status);
@@ -568,7 +575,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 
 	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
 
-	if (domain->active_directory) {
+	if (try_dsrgetdcname) {
 		status = dcerpc_netr_DsRGetDCName(b,
 			p->mem_ctx, domain->dcname,
 			r->in.domain_name, NULL, r->in.domain_guid,
@@ -576,23 +583,14 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		if (reset_cm_connection_on_error(domain, NULL, status)) {
-			/* Re-initialize. */
-			status = cm_connect_netlogon(domain, &netlogon_pipe);
-
-			reset_cm_connection_on_error(domain, NULL, status);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("Can't contact the NETLOGON pipe\n"));
-				return status;
-			}
-
-			b = netlogon_pipe->binding_handle;
-
-			/* This call can take a long time - allow the server to time out.
-			   35 seconds should do it. */
-
-			orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
+		if (!retry &&
+		    reset_cm_connection_on_error(domain, NULL, status))
+		{
+			retry = true;
+			goto reconnect;
 		}
+		try_dsrgetdcname = false;
+		retry = false;
 	}
 
 	/*
@@ -615,7 +613,10 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 			r->in.domain_name, &dc_info->dc_unc, &werr);
 	}
 
-	reset_cm_connection_on_error(domain, NULL, status);
+	if (!retry && reset_cm_connection_on_error(domain, b, status)) {
+		retry = true;
+		goto reconnect;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("dcerpc_netr_Get[Any]DCName failed: %s\n",
 			   nt_errstr(status)));
