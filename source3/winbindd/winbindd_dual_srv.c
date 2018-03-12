@@ -1221,7 +1221,7 @@ reconnect:
 			status = NT_STATUS_OK;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			if (!retry && dcerpc_binding_handle_is_connected(b)) {
+			if (!retry && !dcerpc_binding_handle_is_connected(b)) {
 				invalidate_cm_connection(domain);
 				retry = true;
 				goto reconnect;
@@ -1287,7 +1287,7 @@ reconnect:
 		goto verify_return;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!retry && dcerpc_binding_handle_is_connected(b)) {
+		if (!retry && !dcerpc_binding_handle_is_connected(b)) {
 			invalidate_cm_connection(domain);
 			retry = true;
 			goto reconnect;
@@ -1438,7 +1438,7 @@ reconnect:
 				 domain->dcname,
 				 true); /* force */
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!retry && dcerpc_binding_handle_is_connected(b)) {
+		if (!retry && !dcerpc_binding_handle_is_connected(b)) {
 			invalidate_cm_connection(domain);
 			retry = true;
 			goto reconnect;
@@ -1632,7 +1632,7 @@ reconnect:
 							      b, p->mem_ctx,
 							      &new_fti);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!retry && dcerpc_binding_handle_is_connected(b)) {
+		if (!retry && !dcerpc_binding_handle_is_connected(b)) {
 			invalidate_cm_connection(domain);
 			retry = true;
 			goto reconnect;
