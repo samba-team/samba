@@ -491,13 +491,16 @@ member: %s
             self.transaction_commit()
 
     def newcomputer(self, computername, computerou=None, description=None,
-        prepare_oldjoin=False):
+                    prepare_oldjoin=False, ip_address_list=None,
+                    service_principal_name_list=None):
         """Adds a new user with additional parameters
 
         :param computername: Name of the new computer
         :param computerou: Object container for new computer
         :param description: Description of the new computer
         :param prepare_oldjoin: Preset computer password for oldjoin mechanism
+        :param ip_address_list: ip address list for DNS A or AAAA record
+        :param service_principal_name_list: string list of servicePincipalName
         """
 
         cn = re.sub(r"\$$", "", computername)
@@ -511,8 +514,6 @@ member: %s
 
         computer_dn = "CN=%s,%s" % (cn, computercontainer_dn)
 
-        dnsdomain = ldb.Dn(self,
-                           self.domain_dn()).canonical_str().replace("/", "")
         ldbmessage = {"dn": computer_dn,
                       "sAMAccountName": samaccountname,
                       "objectClass": "computer",
@@ -521,11 +522,18 @@ member: %s
         if description is not None:
             ldbmessage["description"] = description
 
+        if service_principal_name_list:
+            ldbmessage["servicePrincipalName"] = service_principal_name_list
+
         accountcontrol = str(dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
                              dsdb.UF_ACCOUNTDISABLE)
         if prepare_oldjoin:
             accountcontrol = str(dsdb.UF_WORKSTATION_TRUST_ACCOUNT)
         ldbmessage["userAccountControl"] = accountcontrol
+
+        if ip_address_list:
+            ldbmessage['dNSHostName'] = '{}.{}'.format(
+                cn, self.domain_dns_name())
 
         self.transaction_start()
         try:

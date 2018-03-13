@@ -22,12 +22,22 @@
 
 import samba.getopt as options
 import ldb
+import socket
+import samba
+from samba import sd_utils
+from samba.dcerpc import dnsserver, dnsp, security
+from samba.dnsserver import ARecord, AAAARecord
+from samba.ndr import ndr_unpack, ndr_pack, ndr_print
+from samba.remove_dc import remove_dns_references
 from samba.auth import system_session
 from samba.samdb import SamDB
+
 from samba import (
     credentials,
     dsdb,
     Ldb,
+    werror,
+    WERRORError
     )
 
 from samba.netcmd import (
@@ -36,6 +46,127 @@ from samba.netcmd import (
     SuperCommand,
     Option,
     )
+
+
+def _is_valid_ip(ip_string, address_families=None):
+    """Check ip string is valid address"""
+    # by default, check both ipv4 and ipv6
+    if not address_families:
+        address_families = [socket.AF_INET, socket.AF_INET6]
+
+    for address_family in address_families:
+        try:
+            socket.inet_pton(address_family, ip_string)
+            return True  # if no error, return directly
+        except socket.error:
+            continue  # Otherwise, check next family
+    return False
+
+
+def _is_valid_ipv4(ip_string):
+    """Check ip string is valid ipv4 address"""
+    return _is_valid_ip(ip_string, address_families=[socket.AF_INET])
+
+
+def _is_valid_ipv6(ip_string):
+    """Check ip string is valid ipv6 address"""
+    return _is_valid_ip(ip_string, address_families=[socket.AF_INET6])
+
+
+def add_dns_records(
+        samdb, name, dns_conn, change_owner_sd,
+        server, ip_address_list, logger):
+    """Add DNS A or AAAA records while creating computer. """
+    name = name.rstrip('$')
+    client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+    select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA | dnsserver.DNS_RPC_VIEW_NO_CHILDREN
+    zone = samdb.domain_dns_name()
+    name_found = True
+    sd_helper = sd_utils.SDUtils(samdb)
+
+    try:
+        buflen, res = dns_conn.DnssrvEnumRecords2(
+            client_version,
+            0,
+            server,
+            zone,
+            name,
+            None,
+            dnsp.DNS_TYPE_ALL,
+            select_flags,
+            None,
+            None,
+        )
+    except WERRORError as e:
+        if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
+            name_found = False
+            pass
+
+    if name_found:
+        for rec in res.rec:
+            for record in rec.records:
+                if record.wType == dnsp.DNS_TYPE_A or record.wType == dnsp.DNS_TYPE_AAAA:
+                    # delete record
+                    del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+                    del_rec_buf.rec = record
+                    try:
+                        dns_conn.DnssrvUpdateRecord2(
+                            client_version,
+                            0,
+                            server,
+                            zone,
+                            name,
+                            None,
+                            del_rec_buf,
+                        )
+                    except WERRORError as e:
+                        if e.args[0] != werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
+                            raise
+
+    for ip_address in ip_address_list:
+        if _is_valid_ipv6(ip_address):
+            logger.info("Adding DNS AAAA record %s.%s for IPv6 IP: %s" % (
+                name, zone, ip_address))
+            rec = AAAARecord(ip_address)
+        elif _is_valid_ipv4(ip_address):
+            logger.info("Adding DNS A record %s.%s for IPv4 IP: %s" % (
+                name, zone, ip_address))
+            rec = ARecord(ip_address)
+        else:
+            raise ValueError('Invalid IP: {}'.format(ip_address))
+
+        # Add record
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+
+        dns_conn.DnssrvUpdateRecord2(
+            client_version,
+            0,
+            server,
+            zone,
+            name,
+            add_rec_buf,
+            None,
+        )
+
+    if (len(ip_address_list) > 0):
+        domaindns_zone_dn = ldb.Dn(
+            samdb,
+            'DC=DomainDnsZones,%s' % samdb.get_default_basedn(),
+        )
+
+        dns_a_dn, ldap_record = samdb.dns_lookup(
+            "%s.%s" % (name, zone),
+            dns_partition=domaindns_zone_dn,
+        )
+
+        # Make the DC own the DNS record, not the administrator
+        sd_helper.modify_sd_on_dn(
+            dns_a_dn,
+            change_owner_sd,
+            controls=["sd_flags:1:%d" % (security.SECINFO_OWNER | security.SECINFO_GROUP)],
+        )
+
 
 class cmd_computer_create(Command):
     """Create a new computer.
@@ -83,6 +214,17 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
         Option("--prepare-oldjoin",
                help="Prepare enabled machine account for oldjoin mechanism",
                action="store_true"),
+        Option("--ip-address",
+               dest='ip_address_list',
+               help=("IPv4 address for the computer's A record, or IPv6 "
+                     "address for AAAA record, can be provided multiple "
+                     "times"),
+               action='append'),
+        Option("--service-principal-name",
+               dest='service_principal_name_list',
+               help=("Computer's Service Principal Name, can be provided "
+                     "multiple times"),
+               action='append')
     ]
 
     takes_args = ["computername"]
@@ -94,7 +236,19 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
         }
 
     def run(self, computername, credopts=None, sambaopts=None, versionopts=None,
-            H=None, computerou=None, description=None, prepare_oldjoin=False):
+            H=None, computerou=None, description=None, prepare_oldjoin=False,
+            ip_address_list=None, service_principal_name_list=None):
+
+        if ip_address_list is None:
+            ip_address_list = []
+
+        if service_principal_name_list is None:
+            service_principal_name_list = []
+
+        # check each IP address if provided
+        for ip_address in ip_address_list:
+            if not _is_valid_ip(ip_address):
+                raise CommandError('Invalid IP address {}'.format(ip_address))
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
@@ -104,12 +258,46 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
                           credentials=creds, lp=lp)
             samdb.newcomputer(computername, computerou=computerou,
                               description=description,
-                              prepare_oldjoin=prepare_oldjoin)
+                              prepare_oldjoin=prepare_oldjoin,
+                              ip_address_list=ip_address_list,
+                              service_principal_name_list=service_principal_name_list,
+                              )
+
+            if ip_address_list:
+                # if ip_address_list provided, then we need to create DNS
+                # records for this computer.
+                filters = '(&(sAMAccountName={}$)(objectclass=computer))'.format(
+                    ldb.binary_encode(computername.rstrip('$')))
+
+                recs = samdb.search(
+                    base=samdb.domain_dn(),
+                    scope=ldb.SCOPE_SUBTREE,
+                    expression=filters,
+                    attrs=['primaryGroupID', 'objectSid'])
+
+                group = recs[0]['primaryGroupID'][0]
+                owner = ndr_unpack(security.dom_sid, recs[0]["objectSid"][0])
+
+                dns_conn = dnsserver.dnsserver(
+                    "ncacn_ip_tcp:{}[sign]".format(samdb.host_dns_name()),
+                    lp, creds)
+
+                change_owner_sd = security.descriptor()
+                change_owner_sd.owner_sid = owner
+                change_owner_sd.group_sid = security.dom_sid(
+                    "{}-{}".format(samdb.get_domain_sid(), group),
+                )
+
+                add_dns_records(
+                    samdb, computername.rstrip('$'), dns_conn,
+                    change_owner_sd, samdb.host_dns_name(),
+                    ip_address_list, self.get_logger())
         except Exception, e:
             raise CommandError("Failed to create computer '%s': " %
                                computername, e)
 
         self.outf.write("Computer '%s' created successfully\n" % computername)
+
 
 class cmd_computer_delete(Command):
     """Delete a computer.
@@ -177,9 +365,13 @@ sudo is used so a computer may run the command as root.
             res = samdb.search(base=samdb.domain_dn(),
                                scope=ldb.SCOPE_SUBTREE,
                                expression=filter,
-                               attrs=["userAccountControl"])
+                               attrs=["userAccountControl", "dNSHostName"])
             computer_dn = res[0].dn
             computer_ac = int(res[0]["userAccountControl"][0])
+            if "dNSHostName" in res[0]:
+                computer_dns_host_name = res[0]["dNSHostName"][0]
+            else:
+                computer_dns_host_name = None
         except IndexError:
             raise CommandError('Unable to find computer "%s"' % computername)
 
@@ -191,6 +383,10 @@ sudo is used so a computer may run the command as root.
                                % computername)
         try:
             samdb.delete(computer_dn)
+            if computer_dns_host_name:
+                remove_dns_references(
+                    samdb, self.get_logger(), computer_dns_host_name,
+                    ignore_no_name=True)
         except Exception, e:
             raise CommandError('Failed to remove computer "%s"' %
                                samaccountname, e)
