@@ -190,6 +190,9 @@ static NTSTATUS add_builtin_administrators(struct security_token *token,
 	if ( IS_DC ) {
 		sid_copy( &domadm, get_global_sam_sid() );
 	} else {
+		if (dom_sid == NULL) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
 		sid_copy(&domadm, dom_sid);
 	}
 	sid_append_rid( &domadm, DOMAIN_RID_ADMINS );
@@ -513,9 +516,11 @@ static NTSTATUS add_local_groups(struct security_token *result,
 static NTSTATUS finalize_local_nt_token(struct security_token *result,
 					bool is_guest)
 {
-	struct dom_sid dom_sid;
+	struct dom_sid _dom_sid = { 0, };
+	struct dom_sid *domain_sid = NULL;
 	NTSTATUS status;
 	struct acct_info *info;
+	bool ok;
 
 	/* Add in BUILTIN sids */
 
@@ -547,6 +552,16 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 		}
 	}
 
+	become_root();
+	ok = secrets_fetch_domain_sid(lp_workgroup(), &_dom_sid);
+	if (ok) {
+		domain_sid = &_dom_sid;
+	} else {
+		DEBUG(3, ("Failed to fetch domain sid for %s\n",
+			  lp_workgroup()));
+	}
+	unbecome_root();
+
 	info = talloc_zero(talloc_tos(), struct acct_info);
 	if (info == NULL) {
 		DEBUG(0, ("talloc failed!\n"));
@@ -561,18 +576,12 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 	if (!NT_STATUS_IS_OK(status)) {
 
 		become_root();
-		if (!secrets_fetch_domain_sid(lp_workgroup(), &dom_sid)) {
-			status = NT_STATUS_OK;
-			DEBUG(3, ("Failed to fetch domain sid for %s\n",
-				  lp_workgroup()));
-		} else {
-			status = create_builtin_administrators(&dom_sid);
-		}
+		status = create_builtin_administrators(domain_sid);
 		unbecome_root();
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE)) {
 			/* Add BUILTIN\Administrators directly to token. */
-			status = add_builtin_administrators(result, &dom_sid);
+			status = add_builtin_administrators(result, domain_sid);
 			if ( !NT_STATUS_IS_OK(status) ) {
 				DEBUG(3, ("Failed to check for local "
 					  "Administrators membership (%s)\n",
@@ -593,13 +602,7 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 	if (!NT_STATUS_IS_OK(status)) {
 
 		become_root();
-		if (!secrets_fetch_domain_sid(lp_workgroup(), &dom_sid)) {
-			status = NT_STATUS_OK;
-			DEBUG(3, ("Failed to fetch domain sid for %s\n",
-				  lp_workgroup()));
-		} else {
-			status = create_builtin_users(&dom_sid);
-		}
+		status = create_builtin_users(domain_sid);
 		unbecome_root();
 
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE) &&
