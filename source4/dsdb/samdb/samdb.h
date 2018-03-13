@@ -182,6 +182,15 @@ struct dsdb_control_password_user_account_control {
 /* passed when we want to thoroughly delete linked attributes */
 #define DSDB_CONTROL_REPLMD_VANISH_LINKS "1.3.6.1.4.1.7165.4.3.29"
 
+/*
+ * Used to pass "user password change" vs "password reset" from the ACL to the
+ * password_hash module, ensuring both modules treat the request identical.
+ */
+#define DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID "1.3.6.1.4.1.7165.4.3.33"
+struct dsdb_control_password_acl_validation {
+	bool pwd_reset;
+};
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;

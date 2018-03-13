@@ -1020,6 +1020,55 @@ userPassword: thatsAcomplPASS4
         # Reset the "minPwdLength" as it was before
         self.ldb.set_minPwdLength(minPwdLength)
 
+    def test_pw_change_delete_no_value_userPassword(self):
+        """Test password change with userPassword where the delete attribute doesn't have a value"""
+
+        try:
+            self.ldb2.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: userPassword
+add: userPassword
+userPassword: thatsAcomplPASS1
+""")
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
+
+    def test_pw_change_delete_no_value_clearTextPassword(self):
+        """Test password change with clearTextPassword where the delete attribute doesn't have a value"""
+
+        try:
+            self.ldb2.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: clearTextPassword
+add: clearTextPassword
+clearTextPassword: thatsAcomplPASS2
+""")
+        except LdbError, (num, msg):
+            self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
+                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+        else:
+            self.fail()
+
+    def test_pw_change_delete_no_value_unicodePwd(self):
+        """Test password change with unicodePwd where the delete attribute doesn't have a value"""
+
+        try:
+            self.ldb2.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: unicodePwd
+add: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')) + """
+""")
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
+
     def tearDown(self):
         super(PasswordTests, self).tearDown()
         delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)

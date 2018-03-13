@@ -3188,7 +3188,35 @@ static int setup_io(struct ph_context *ac,
 		/* On "add" we have only "password reset" */
 		ac->pwd_reset = true;
 	} else if (ac->req->operation == LDB_MODIFY) {
-		if (io->og.cleartext_utf8 || io->og.cleartext_utf16
+		struct ldb_control *pav_ctrl = NULL;
+		struct dsdb_control_password_acl_validation *pav = NULL;
+
+		pav_ctrl = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID);
+		if (pav_ctrl != NULL) {
+			pav = talloc_get_type_abort(pav_ctrl->data,
+				struct dsdb_control_password_acl_validation);
+		}
+
+		if (pav == NULL && ac->update_password) {
+			bool ok;
+
+			/*
+			 * If the DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID
+			 * control is missing, we require system access!
+			 */
+			ok = dsdb_module_am_system(ac->module);
+			if (!ok) {
+				return ldb_module_operr(ac->module);
+			}
+		}
+
+		if (pav != NULL) {
+			/*
+			 * We assume what the acl module has validated.
+			 */
+			ac->pwd_reset = pav->pwd_reset;
+		} else if (io->og.cleartext_utf8 || io->og.cleartext_utf16
 		    || io->og.nt_hash || io->og.lm_hash) {
 			/* If we have an old password specified then for sure it
 			 * is a user "password change" */
@@ -3921,25 +3949,26 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		}
 
 		while ((passwordAttr = ldb_msg_find_element(msg, *l)) != NULL) {
-			if (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_DELETE) {
+			unsigned int mtype = LDB_FLAG_MOD_TYPE(passwordAttr->flags);
+			unsigned int nvalues = passwordAttr->num_values;
+
+			if (mtype == LDB_FLAG_MOD_DELETE) {
 				++del_attr_cnt;
 			}
-			if (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_ADD) {
+			if (mtype == LDB_FLAG_MOD_ADD) {
 				++add_attr_cnt;
 			}
-			if (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_REPLACE) {
+			if (mtype == LDB_FLAG_MOD_REPLACE) {
 				++rep_attr_cnt;
 			}
-			if ((passwordAttr->num_values != 1) &&
-			    (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_ADD)) {
+			if ((nvalues != 1) && (mtype == LDB_FLAG_MOD_ADD)) {
 				talloc_free(ac);
 				ldb_asprintf_errstring(ldb,
 						       "'%s' attribute must have exactly one value on add operations!",
 						       *l);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
-			if ((passwordAttr->num_values > 1) &&
-			    (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_DELETE)) {
+			if ((nvalues > 1) && (mtype == LDB_FLAG_MOD_DELETE)) {
 				talloc_free(ac);
 				ldb_asprintf_errstring(ldb,
 						       "'%s' attribute must have zero or one value(s) on delete operations!",
