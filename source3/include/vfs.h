@@ -256,8 +256,9 @@
 /* Version 39 - Remove SMB_VFS_FCHMOD_ACL - no longer used. */
 /* Version 39 - Remove struct dfree_cached_info pointer from
 		connection struct */
+/* Bump to version 40, Samba 4.10 will ship with that */
 
-#define SMB_VFS_INTERFACE_VERSION 39
+#define SMB_VFS_INTERFACE_VERSION 40
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
