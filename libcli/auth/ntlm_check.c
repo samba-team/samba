@@ -572,7 +572,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	   - I think this is related to Win9X pass-though authentication
 	*/
 	DEBUG(4,("ntlm_password_check: Checking NT MD4 password in LM field\n"));
-	if (ntlm_auth) {
+	if (ntlm_auth == NTLM_AUTH_ON) {
 		if (smb_pwd_check_ntlmv1(mem_ctx, 
 					 lm_response, 
 					 stored_nt->hash, challenge,
