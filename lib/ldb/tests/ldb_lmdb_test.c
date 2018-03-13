@@ -472,6 +472,81 @@ static void test_multiple_opens(void **state)
 	assert_ptr_equal(env1, env3);
 }
 
+static void test_multiple_opens_across_fork(void **state)
+{
+	struct ldb_context *ldb1 = NULL;
+	struct ldb_context *ldb2 = NULL;
+	struct MDB_env *env1 = NULL;
+	struct MDB_env *env2 = NULL;
+	int ret;
+	struct ldbtest_ctx *test_ctx = NULL;
+	int pipes[2];
+	char buf[2];
+	int wstatus;
+	pid_t pid, child_pid;
+
+	test_ctx = talloc_get_type_abort(*state, struct ldbtest_ctx);
+
+	/*
+	 * Open the database again
+	 */
+	ldb1 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb1, test_ctx->dbpath, LDB_FLG_RDONLY, NULL);
+	assert_int_equal(ret, 0);
+
+	ldb2 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb2, test_ctx->dbpath, LDB_FLG_RDONLY, NULL);
+	assert_int_equal(ret, 0);
+
+	env1 = get_mdb_env(ldb1);
+	env2 = get_mdb_env(ldb2);
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	child_pid = fork();
+	if (child_pid == 0) {
+		struct ldb_context *ldb3 = NULL;
+		struct MDB_env *env3 = NULL;
+
+		close(pipes[0]);
+		ldb3 = ldb_init(test_ctx, test_ctx->ev);
+		ret = ldb_connect(ldb3, test_ctx->dbpath, 0, NULL);
+		if (ret != 0) {
+			print_error(__location__": ldb_connect returned (%d)\n",
+				    ret);
+			exit(ret);
+		}
+		env3 = get_mdb_env(ldb3);
+		if (env1 != env2) {
+			print_error(__location__": env1 != env2\n");
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		if (env1 == env3) {
+			print_error(__location__": env1 == env3\n");
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		ret = write(pipes[1], "GO", 2);
+		if (ret != 2) {
+			print_error(__location__
+				      " write returned (%d)",
+				      ret);
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		exit(LDB_SUCCESS);
+	}
+	close(pipes[1]);
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	pid = waitpid(child_pid, &wstatus, 0);
+	assert_int_equal(pid, child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -501,6 +576,10 @@ int main(int argc, const char **argv)
 			ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(
 			test_multiple_opens,
+			ldbtest_setup,
+			ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(
+			test_multiple_opens_across_fork,
 			ldbtest_setup,
 			ldbtest_teardown),
 	};
