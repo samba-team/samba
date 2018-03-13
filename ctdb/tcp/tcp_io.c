@@ -56,13 +56,6 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 		goto failed;
 	}
 
-
-	if (cnt != hdr->length) {
-		DEBUG(DEBUG_ALERT,(__location__ " Bad header length %u expected %u\n", 
-			 (unsigned)hdr->length, (unsigned)cnt));
-		goto failed;
-	}
-
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		DEBUG(DEBUG_ALERT,(__location__ " Non CTDB packet 0x%x rejected\n", 
 			 hdr->ctdb_magic));
