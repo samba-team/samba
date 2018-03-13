@@ -443,6 +443,18 @@ static int lmdb_lock_read(struct ldb_module *module)
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	pid_t pid = getpid();
+
+	if (pid != lmdb->pid) {
+		ldb_asprintf_errstring(
+			lmdb->ldb,
+			__location__": Reusing ldb opened by pid %d in "
+			"process %d\n",
+			lmdb->pid,
+			pid);
+		lmdb->error = MDB_BAD_TXN;
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	lmdb->error = MDB_SUCCESS;
 	if (lmdb_transaction_active(ltdb) == false &&
@@ -482,6 +494,7 @@ static int lmdb_transaction_start(struct ltdb_private *ltdb)
 	struct lmdb_trans *ltx;
 	struct lmdb_trans *ltx_head;
 	MDB_txn *tx_parent;
+	pid_t pid = getpid();
 
 	/* Do not take out the transaction lock on a read-only DB */
 	if (ltdb->read_only) {
@@ -492,6 +505,18 @@ static int lmdb_transaction_start(struct ltdb_private *ltdb)
 	if (ltx == NULL) {
 		return ldb_oom(lmdb->ldb);
 	}
+
+	if (pid != lmdb->pid) {
+		ldb_asprintf_errstring(
+			lmdb->ldb,
+			__location__": Reusing ldb opened by pid %d in "
+			"process %d\n",
+			lmdb->pid,
+			pid);
+		lmdb->error = MDB_BAD_TXN;
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
 
 	ltx_head = lmdb_private_trans_head(lmdb);
 
@@ -660,7 +685,7 @@ struct mdb_env_wrap {
 	dev_t device;
 	ino_t inode;
 	MDB_env *env;
-	int pid;
+	pid_t pid;
 };
 
 static struct mdb_env_wrap *mdb_list;
@@ -689,10 +714,13 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 
 	struct mdb_env_wrap *w;
 	struct stat st;
+	pid_t pid = getpid();
 
 	if (stat(path, &st) == 0) {
 		for (w=mdb_list;w;w=w->next) {
-			if (st.st_dev == w->device && st.st_ino == w->inode) {
+			if (st.st_dev == w->device &&
+			    st.st_ino == w->inode &&
+			    pid == w->pid) {
 				/*
 				 * We must have only one MDB_env per process
 				 */
@@ -765,6 +793,7 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 	w->env = *env;
 	w->device = st.st_dev;
 	w->inode  = st.st_ino;
+	w->pid = pid;
 
 	talloc_set_destructor(w, mdb_env_wrap_destructor);
 
