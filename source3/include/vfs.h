@@ -245,6 +245,7 @@
 /* Version 37 - Rename SMB_VFS_STRICT_LOCK to
                 SMB_VFS_STRICT_LOCK_CHECK */
 /* Version 38 - Remove SMB_VFS_INIT_SEARCH_OP */
+/* Bump to version 39, Samba 4.9 will ship with that */
 /* Version 39 - Remove SMB_VFS_FSYNC
 		Only implement async versions. */
 /* Version 39 - Remove SMB_VFS_READ
