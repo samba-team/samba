@@ -94,6 +94,8 @@ static struct ldb_wrap {
 		/* the context is what we use to tell if two ldb
 		 * connections are exactly equivalent
 		 */
+		pid_t pid; /* We want to re-open in a new PID due to
+			    * the LMDB backend */
 		const char *url;
 		struct tevent_context *ev;
 		struct loadparm_context *lp_ctx;
@@ -186,10 +188,12 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 				   struct cli_credentials *credentials,
 				   unsigned int flags)
 {
+	pid_t pid = getpid();
 	struct ldb_wrap *w;
 	/* see if we can re-use an existing ldb */
 	for (w=ldb_wrap_list; w; w=w->next) {
-		if (w->context.ev == ev &&
+		if (w->context.pid == pid &&
+		    w->context.ev == ev &&
 		    w->context.lp_ctx == lp_ctx &&
 		    w->context.session_info == session_info &&
 		    w->context.credentials == credentials &&
@@ -249,6 +253,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 		return false;
 	}
 
+	c.pid          = getpid();
 	c.url          = url;
 	c.ev           = ev;
 	c.lp_ctx       = lp_ctx;
