@@ -130,8 +130,9 @@ NTSTATUS create_builtin_users(const struct dom_sid *dom_sid)
 	}
 
 	/* add domain users */
-	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
-		&& sid_compose(&dom_users, dom_sid, DOMAIN_RID_USERS))
+	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER)) &&
+	    (dom_sid != NULL) &&
+	    sid_compose(&dom_users, dom_sid, DOMAIN_RID_USERS))
 	{
 		status = add_sid_to_builtin(&global_sid_Builtin_Users,
 					    &dom_users);
@@ -159,8 +160,9 @@ NTSTATUS create_builtin_administrators(const struct dom_sid *dom_sid)
 	}
 
 	/* add domain admins */
-	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
-		&& sid_compose(&dom_admins, dom_sid, DOMAIN_RID_ADMINS))
+	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER)) &&
+	    (dom_sid != NULL) &&
+	    sid_compose(&dom_admins, dom_sid, DOMAIN_RID_ADMINS))
 	{
 		status = add_sid_to_builtin(&global_sid_Builtin_Administrators,
 					    &dom_admins);
