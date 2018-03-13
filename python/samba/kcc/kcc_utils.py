@@ -31,6 +31,7 @@ from samba.dcerpc import (
     )
 from samba.common import dsdb_Dn
 from samba.ndr import ndr_unpack, ndr_pack
+from collections import Counter
 
 
 class KCCError(Exception):
@@ -2284,11 +2285,11 @@ def uncovered_sites_to_cover(samdb, site_name):
                             scope=ldb.SCOPE_SUBTREE,
                             expression="(objectClass=site)")
 
-    sites_in_use = set()
+    sites_in_use = Counter()
 
     # Assume server is of form DC,Servers,Site-ABCD because of schema
     for msg in server_res:
-        sites_in_use.add(msg.dn.parent().parent().canonical_str())
+        sites_in_use[msg.dn.parent().parent().canonical_str()] += 1
 
     if len(sites_in_use) != len(site_res):
         # There is a possible uncovered site
