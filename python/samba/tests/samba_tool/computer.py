@@ -23,6 +23,8 @@ import os
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba import dsdb
+from samba.ndr import ndr_unpack, ndr_pack
+from samba.dcerpc import dnsp
 
 class ComputerCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool computer subcommands"""
@@ -31,13 +33,31 @@ class ComputerCmdTestCase(SambaToolCmdTest):
 
     def setUp(self):
         super(ComputerCmdTestCase, self).setUp()
-        self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
-            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.computers = []
-        self.computers.append(self._randomComputer({"name": "testcomputer1"}))
-        self.computers.append(self._randomComputer({"name": "testcomputer2"}))
-        self.computers.append(self._randomComputer({"name": "testcomputer3$"}))
-        self.computers.append(self._randomComputer({"name": "testcomputer4$"}))
+        self.creds = "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"])
+        self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"], self.creds)
+        # ips used to test --ip-address option
+        self.ipv4 = '10.10.10.10'
+        self.ipv6 = '2001:0db8:0a0b:12f0:0000:0000:0000:0001'
+        data = [
+            {
+                'name': 'testcomputer1',
+                'ip_address_list': [self.ipv4]
+            },
+            {
+                'name': 'testcomputer2',
+                'ip_address_list': [self.ipv6],
+                'service_principal_name_list': ['SPN0']
+            },
+            {
+                'name': 'testcomputer3$',
+                'ip_address_list': [self.ipv4, self.ipv6],
+                'service_principal_name_list': ['SPN0', 'SPN1']
+            },
+            {
+                'name': 'testcomputer4$',
+            },
+        ]
+        self.computers = [self._randomComputer(base=item) for item in data]
 
         # setup the 4 computers and ensure they are correct
         for computer in self.computers:
@@ -62,6 +82,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             self.assertEquals("%s" % found.get("description"),
                               computer["description"])
 
+
     def tearDown(self):
         super(ComputerCmdTestCase, self).tearDown()
         # clean up all the left over computers, just in case
@@ -73,6 +94,38 @@ class ComputerCmdTestCase(SambaToolCmdTest):
                                       "Failed to delete computer '%s'" %
                                       computer["name"])
 
+    def test_newcomputer_with_service_principal_name(self):
+        # Each computer should have correct servicePrincipalName as provided.
+        for computer in self.computers:
+            expected_names = computer.get('service_principal_name_list', [])
+            found = self._find_service_principal_name(computer['name'], expected_names)
+            self.assertTrue(found)
+
+    def test_newcomputer_with_dns_records(self):
+
+        # Each computer should have correct DNS record and ip address.
+        for computer in self.computers:
+            for ip_address in computer.get('ip_address_list', []):
+                found = self._find_dns_record(computer['name'], ip_address)
+                self.assertTrue(found)
+
+        # try to delete all the computers we just created
+        for computer in self.computers:
+            (result, out, err) = self.runsubcmd("computer", "delete",
+                                                "%s" % computer["name"])
+            self.assertCmdSuccess(result, out, err,
+                                  "Failed to delete computer '%s'" %
+                                  computer["name"])
+            found = self._find_computer(computer["name"])
+            self.assertIsNone(found,
+                              "Deleted computer '%s' still exists" %
+                              computer["name"])
+
+        # all DNS records should be gone
+        for computer in self.computers:
+            for ip_address in computer.get('ip_address_list', []):
+                found = self._find_dns_record(computer['name'], ip_address)
+                self.assertFalse(found)
 
     def test_newcomputer(self):
         """This tests the "computer create" and "computer delete" commands"""
@@ -81,6 +134,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             (result, out, err) = self._create_computer(computer)
             self.assertCmdFail(result, "Succeeded to create existing computer")
             self.assertIn("already exists", err)
+
 
         # try to delete all the computers we just created
         for computer in self.computers:
@@ -98,7 +152,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         for computer in self.computers:
             (result, out, err) = self.runsubcmd(
                 "computer", "create", "%s" % computer["name"],
-                 "--description=%s" % computer["description"])
+                "--description=%s" % computer["description"])
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "There shouldn't be any error message")
@@ -201,8 +255,18 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         return ou
 
     def _create_computer(self, computer):
-        return self.runsubcmd("computer", "create", "%s" % computer["name"],
-                              "--description=%s" % computer["description"])
+        args = '{} {} --description={}'.format(
+            computer['name'], self.creds, computer["description"])
+
+        for ip_address in computer.get('ip_address_list', []):
+            args += ' --ip-address={}'.format(ip_address)
+
+        for service_principal_name in computer.get('service_principal_name_list', []):
+            args += ' --service-principal-name={}'.format(service_principal_name)
+
+        args = args.split()
+
+        return self.runsubcmd('computer', 'create', *args)
 
     def _create_ou(self, ou):
         return self.runsubcmd("ou", "create", "OU=%s" % ou["name"],
@@ -223,3 +287,43 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             return computerlist[0]
         else:
             return None
+
+    def _find_dns_record(self, name, ip_address):
+        name = name.rstrip('$')  # computername
+        records = self.samdb.search(
+            base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+            scope=ldb.SCOPE_SUBTREE,
+            expression="(&(objectClass=dnsNode)(name={}))".format(name),
+            attrs=['dnsRecord', 'dNSTombstoned'])
+
+        # unpack data and compare
+        for record in records:
+            if 'dNSTombstoned' in record and str(record['dNSTombstoned']) == 'TRUE':
+                # if a record is dNSTombstoned, ignore it.
+                continue
+            for dns_record_bin in record['dnsRecord']:
+                dns_record_obj = ndr_unpack(dnsp.DnssrvRpcRecord, dns_record_bin)
+                ip = str(dns_record_obj.data)
+
+                if str(ip) == str(ip_address):
+                    return True
+
+        return False
+
+    def _find_service_principal_name(self, name, expected_service_principal_names):
+        """Find all servicePrincipalName values and compare with expected_service_principal_names"""
+        samaccountname = name.strip('$') + '$'
+        search_filter = ("(&(sAMAccountName=%s)(objectCategory=%s,%s))" %
+                         (ldb.binary_encode(samaccountname),
+                          "CN=Computer,CN=Schema,CN=Configuration",
+                          self.samdb.domain_dn()))
+        computer_list = self.samdb.search(
+            base=self.samdb.domain_dn(),
+            scope=ldb.SCOPE_SUBTREE,
+            expression=search_filter,
+            attrs=['servicePrincipalName'])
+        names = set()
+        for computer in computer_list:
+            for name in computer.get('servicePrincipalName', []):
+                names.add(name)
+        return names == set(expected_service_principal_names)
