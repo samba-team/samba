@@ -895,11 +895,6 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		return;
 	}
 	hdr = (struct ctdb_req_header *)data;
-	if (cnt != hdr->length) {
-		ctdb_set_error(client->ctdb, "Bad header length %u expected %u\n in daemon", 
-			       (unsigned)hdr->length, (unsigned)cnt);
-		return;
-	}
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		ctdb_set_error(client->ctdb, "Non CTDB packet rejected\n");
