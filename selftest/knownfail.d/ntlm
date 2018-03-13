@@ -1,2 +1,0 @@
-^samba.unittests.ntlm_check.test_ntlm_mschapv2_only_denied
-^samba.unittests.ntlm_check.test_ntlmv2_only_ntlm\(
