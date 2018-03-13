@@ -903,12 +903,12 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		ctdb_set_error(client->ctdb, "Non CTDB packet rejected\n");
-		return;
+		goto err_out;
 	}
 
 	if (hdr->ctdb_version != CTDB_PROTOCOL) {
 		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected in daemon\n", hdr->ctdb_version);
-		return;
+		goto err_out;
 	}
 
 	DEBUG(DEBUG_DEBUG,(__location__ " client request %u of type %u length %u from "
@@ -917,6 +917,10 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	/* it is the responsibility of the incoming packet function to free 'data' */
 	daemon_incoming_packet(client, hdr);
+	return;
+
+err_out:
+	TALLOC_FREE(data);
 }
 
 
