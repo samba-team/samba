@@ -1,12 +1,11 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.8.0
+                           March 13, 2018
+                   =============================
 
-This is the fourth release candidate of Samba 4.8.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
 
-Samba 4.8 will be the next version of the Samba suite.
+This is the first stable release of the Samba 4.8 release series.
+Please read the release notes carefully before upgrading.
 
 
 UPGRADING
@@ -149,7 +148,6 @@ In '--dot' mode, Graphviz dot output is generated. When viewed using
 dot or xdot, this shows the network as a graph with DCs as vertices
 and connections edges. Certain types of degenerate edges are shown in
 different colours or line-styles.
-
 
 smbclient reparse point symlink parameters reversed
 ---------------------------------------------------
@@ -321,8 +319,8 @@ smb.conf changes
   map untrusted to domain            Removed
   oplock contention limit            Removed
   prefork children                   New                     1
-  mdns name                          New                   netbios
-  fruit:time machine                 New                   false
+  mdns name                          New                     netbios
+  fruit:time machine                 New                     false
   profile acls                       Removed
   use spnego                         Removed
   server schannel                    Default changed/        yes
@@ -330,6 +328,28 @@ smb.conf changes
   unicode                            Deprecated
   winbind scan trusted domains       New                     yes
   winbind trusted domains only       Removed
+
+
+CHANGES SINCE 4.8.0rc4
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11343: CVE-2018-1050: Codenomicon crashes in spoolss server code.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13272: CVE-2018-1057: Unprivileged user can change any user (and admin)
+     password.
+   * BUG 13313: nsswitch: Fix wbinfo -m --verbose trust type "Local".
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13272: CVE-2018-1057: Unprivileged user can change any user (and admin)
+     password.
+
+o  Dan Robertson <drobertson@tripwire.com>
+   * BUG 13310: libsmb: Use smb2 tcon if conn_protocol >= SMB2_02.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13315: s3:smbd: Do not crash if we fail to init the session table.
 
 
 CHANGES SINCE 4.8.0rc3
