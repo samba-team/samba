@@ -41,37 +41,6 @@ have_ip ()
 	[ -n "$t" ]
 }
 
-node_dir ()
-{
-	local pnn="$1"
-
-	echo "${SIMPLE_TESTS_VAR_DIR}/node.${pnn}"
-}
-
-node_conf ()
-{
-	local pnn="$1"
-
-	local node_dir=$(node_dir "$pnn")
-	echo "${node_dir}/ctdbd.conf"
-}
-
-node_pidfile ()
-{
-	local pnn="$1"
-
-	local node_dir=$(node_dir "$pnn")
-	echo "${node_dir}/ctdbd.pid"
-}
-
-node_socket ()
-{
-	local pnn="$1"
-
-	local node_dir=$(node_dir "$pnn")
-	echo "${node_dir}/ctdbd.socket"
-}
-
 setup_nodes ()
 {
 	local have_all_ips=true
