@@ -80,7 +80,8 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 	return;
 
 failed:
-	talloc_free(in);
+	TALLOC_FREE(in);
+	TALLOC_FREE(data);
 }
 
 /*
