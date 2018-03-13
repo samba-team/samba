@@ -2252,3 +2252,83 @@ def new_connection_schedule():
 
     schedule.dataArray = [data]
     return schedule
+
+
+##################################################
+# DNS related calls
+##################################################
+
+def uncovered_sites_to_cover(samdb, site_name):
+    """
+    Discover which sites have no DCs and whose lowest single-hop cost
+    distance for any link attached to that site is linked to the site supplied.
+
+    We compare the lowest cost of your single-hop link to this site to all of
+    those available (if it exists). This means that a lower ranked siteLink
+    with only the uncovered site can trump any available links (but this can
+    only be done with specific, poorly enacted user configuration).
+
+    :param samdb database
+    :param site_name origin site (with a DC)
+
+    :return a list of sites this site should be covering (for DNS)
+    """
+    sites_to_cover = []
+
+    server_res = samdb.search(base=samdb.get_config_basedn(),
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(&(objectClass=server)"
+                              "(serverReference=*))")
+
+    site_res = samdb.search(base=samdb.get_config_basedn(),
+                            scope=ldb.SCOPE_SUBTREE,
+                            expression="(objectClass=site)")
+
+    sites_in_use = set()
+
+    # Assume server is of form DC,Servers,Site-ABCD because of schema
+    for msg in server_res:
+        sites_in_use.add(msg.dn.parent().parent().canonical_str())
+
+    if len(sites_in_use) != len(site_res):
+        # There is a possible uncovered site
+        sites_uncovered = []
+
+        for msg in site_res:
+            if msg.dn.canonical_str() not in sites_in_use:
+                sites_uncovered.append(msg)
+
+        own_site_dn = "CN={},CN=Sites,{}".format(
+            ldb.binary_encode(site_name),
+            ldb.binary_encode(str(samdb.get_config_basedn()))
+        )
+
+        for site in sites_uncovered:
+            encoded_dn = ldb.binary_encode(str(site.dn))
+
+            # Get a sorted list of all siteLinks featuring the uncovered site
+            link_res1 = samdb.search(base=samdb.get_config_basedn(),
+                                     scope=ldb.SCOPE_SUBTREE, attrs=["cost"],
+                                     expression="(&(objectClass=siteLink)"
+                                     "(siteList={}))".format(encoded_dn),
+                                     controls=["server_sort:1:0:cost"])
+
+            # Get a sorted list of all siteLinks connecting this an the
+            # uncovered site
+            link_res2 = samdb.search(base=samdb.get_config_basedn(),
+                                     scope=ldb.SCOPE_SUBTREE, attrs=["cost"],
+                                     expression="(&(objectClass=siteLink)"
+                                     "(siteList={})(siteList={}))".format(
+                                         own_site_dn,
+                                         encoded_dn),
+                                     controls=["server_sort:1:0:cost"])
+
+            # Add to list if your link is equal in cost to lowest cost link
+            if len(link_res1) > 0 and len(link_res2) > 0:
+                cost1 = int(link_res1[0]['cost'][0])
+                cost2 = int(link_res2[0]['cost'][0])
+                if cost1 == cost2:
+                    site_cover_rdn = site.dn.get_rdn_value()
+                    sites_to_cover.append(site_cover_rdn)
+
+    return sites_to_cover
