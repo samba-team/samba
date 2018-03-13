@@ -95,6 +95,7 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_brl_lock) \
 	SMBPROFILE_STATS_BASIC(syscall_brl_unlock) \
 	SMBPROFILE_STATS_BASIC(syscall_brl_cancel) \
+	SMBPROFILE_STATS_BYTES(syscall_asys_getxattrat) \
 	SMBPROFILE_STATS_SECTION_END \
 	\
 	SMBPROFILE_STATS_SECTION_START(acl, "ACL Calls") \

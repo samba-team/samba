@@ -201,6 +201,8 @@ typedef enum _vfs_op_type {
 
 	/* EA operations. */
 	SMB_VFS_OP_GETXATTR,
+	SMB_VFS_OP_GETXATTRAT_SEND,
+	SMB_VFS_OP_GETXATTRAT_RECV,
 	SMB_VFS_OP_FGETXATTR,
 	SMB_VFS_OP_LISTXATTR,
 	SMB_VFS_OP_FLISTXATTR,
@@ -330,6 +332,8 @@ static struct {
 	{ SMB_VFS_OP_SYS_ACL_SET_FD,	"sys_acl_set_fd" },
 	{ SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	"sys_acl_delete_def_file" },
 	{ SMB_VFS_OP_GETXATTR,	"getxattr" },
+	{ SMB_VFS_OP_GETXATTRAT_SEND, "getxattrat_send" },
+	{ SMB_VFS_OP_GETXATTRAT_RECV, "getxattrat_recv" },
 	{ SMB_VFS_OP_FGETXATTR,	"fgetxattr" },
 	{ SMB_VFS_OP_LISTXATTR,	"listxattr" },
 	{ SMB_VFS_OP_FLISTXATTR,	"flistxattr" },
@@ -2317,6 +2321,140 @@ static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
+struct smb_full_audit_getxattrat_state {
+	struct vfs_aio_state aio_state;
+	vfs_handle_struct *handle;
+	files_struct *dir_fsp;
+	const struct smb_filename *smb_fname;
+	const char *xattr_name;
+	ssize_t xattr_size;
+	uint8_t *xattr_value;
+};
+
+static void smb_full_audit_getxattrat_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_full_audit_getxattrat_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			const struct smb_filename *smb_fname,
+			const char *xattr_name,
+			size_t alloc_hint)
+{
+	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct smb_full_audit_getxattrat_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_full_audit_getxattrat_state);
+	if (req == NULL) {
+		do_log(SMB_VFS_OP_GETXATTRAT_SEND,
+		       false,
+		       handle,
+		       "%s/%s|%s",
+		       fsp_str_do_log(dir_fsp),
+		       smb_fname->base_name,
+		       xattr_name);
+		return NULL;
+	}
+	*state = (struct smb_full_audit_getxattrat_state) {
+		.handle = handle,
+		.dir_fsp = dir_fsp,
+		.smb_fname = smb_fname,
+		.xattr_name = xattr_name,
+	};
+
+	subreq = SMB_VFS_NEXT_GETXATTRAT_SEND(state,
+					      evg,
+					      handle,
+					      dir_fsp,
+					      smb_fname,
+					      xattr_name,
+					      alloc_hint);
+	if (tevent_req_nomem(subreq, req)) {
+		do_log(SMB_VFS_OP_GETXATTRAT_SEND,
+		       false,
+		       handle,
+		       "%s/%s|%s",
+		       fsp_str_do_log(dir_fsp),
+		       smb_fname->base_name,
+		       xattr_name);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_full_audit_getxattrat_done, req);
+
+	do_log(SMB_VFS_OP_GETXATTRAT_SEND,
+	       true,
+	       handle,
+	       "%s/%s|%s",
+	       fsp_str_do_log(dir_fsp),
+	       smb_fname->base_name,
+	       xattr_name);
+
+	return req;
+}
+
+static void smb_full_audit_getxattrat_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_full_audit_getxattrat_state *state = tevent_req_data(
+		req, struct smb_full_audit_getxattrat_state);
+
+	state->xattr_size = SMB_VFS_NEXT_GETXATTRAT_RECV(subreq,
+							 &state->aio_state,
+							 state,
+							 &state->xattr_value);
+	TALLOC_FREE(subreq);
+	if (state->xattr_size == -1) {
+		tevent_req_error(req, state->aio_state.error);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static ssize_t smb_full_audit_getxattrat_recv(struct tevent_req *req,
+					      struct vfs_aio_state *aio_state,
+					      TALLOC_CTX *mem_ctx,
+					      uint8_t **xattr_value)
+{
+	struct smb_full_audit_getxattrat_state *state = tevent_req_data(
+		req, struct smb_full_audit_getxattrat_state);
+	ssize_t xattr_size;
+
+	if (tevent_req_is_unix_error(req, &aio_state->error)) {
+		do_log(SMB_VFS_OP_GETXATTRAT_RECV,
+		       false,
+		       state->handle,
+		       "%s/%s|%s",
+		       fsp_str_do_log(state->dir_fsp),
+		       state->smb_fname->base_name,
+		       state->xattr_name);
+		tevent_req_received(req);
+		return -1;
+	}
+
+	do_log(SMB_VFS_OP_GETXATTRAT_RECV,
+	       true,
+	       state->handle,
+	       "%s/%s|%s",
+	       fsp_str_do_log(state->dir_fsp),
+	       state->smb_fname->base_name,
+	       state->xattr_name);
+
+	*aio_state = state->aio_state;
+	xattr_size = state->xattr_size;
+	if (xattr_value != NULL) {
+		*xattr_value = talloc_move(mem_ctx, &state->xattr_value);
+	}
+
+	tevent_req_received(req);
+	return xattr_size;
+}
+
 static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       const char *name, void *value, size_t size)
@@ -2593,6 +2731,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.sys_acl_set_fd_fn = smb_full_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = smb_full_audit_sys_acl_delete_def_file,
 	.getxattr_fn = smb_full_audit_getxattr,
+	.getxattrat_send_fn = smb_full_audit_getxattrat_send,
+	.getxattrat_recv_fn = smb_full_audit_getxattrat_recv,
 	.fgetxattr_fn = smb_full_audit_fgetxattr,
 	.listxattr_fn = smb_full_audit_listxattr,
 	.flistxattr_fn = smb_full_audit_flistxattr,

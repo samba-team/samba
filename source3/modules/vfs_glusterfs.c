@@ -1542,6 +1542,8 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	/* EA Operations */
 	.getxattr_fn = vfs_gluster_getxattr,
+	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
+	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vfs_gluster_fgetxattr,
 	.listxattr_fn = vfs_gluster_listxattr,
 	.flistxattr_fn = vfs_gluster_flistxattr,

@@ -431,6 +431,8 @@ static int posix_eadb_connect(vfs_handle_struct *handle, const char *service,
 
 static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.getxattr_fn = posix_eadb_getxattr,
+	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
+	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = posix_eadb_fgetxattr,
 	.setxattr_fn = posix_eadb_setxattr,
 	.fsetxattr_fn = posix_eadb_fsetxattr,

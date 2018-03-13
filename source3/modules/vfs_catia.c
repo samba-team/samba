@@ -2468,6 +2468,8 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 
 	/* EA operations. */
 	.getxattr_fn = catia_getxattr,
+	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
+	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.listxattr_fn = catia_listxattr,
 	.removexattr_fn = catia_removexattr,
 	.setxattr_fn = catia_setxattr,

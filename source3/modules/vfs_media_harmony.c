@@ -2311,6 +2311,8 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 
 	/* EA operations. */
 	.getxattr_fn = mh_getxattr,
+	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
+	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.listxattr_fn = mh_listxattr,
 	.removexattr_fn = mh_removexattr,
 	.setxattr_fn = mh_setxattr,

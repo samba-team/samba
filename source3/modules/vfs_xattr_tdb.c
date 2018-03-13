@@ -602,6 +602,8 @@ static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 
 static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
 	.getxattr_fn = xattr_tdb_getxattr,
+	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
+	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = xattr_tdb_fgetxattr,
 	.setxattr_fn = xattr_tdb_setxattr,
 	.fsetxattr_fn = xattr_tdb_fsetxattr,

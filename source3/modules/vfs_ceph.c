@@ -1528,6 +1528,8 @@ static struct vfs_fn_pointers ceph_fns = {
 
 	/* EA operations. */
 	.getxattr_fn = cephwrap_getxattr,
+	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
+	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = cephwrap_fgetxattr,
 	.listxattr_fn = cephwrap_listxattr,
 	.flistxattr_fn = cephwrap_flistxattr,

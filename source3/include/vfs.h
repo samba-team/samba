@@ -259,6 +259,7 @@
 /* Bump to version 40, Samba 4.10 will ship with that */
 /* Version 40 - Introduce smb_vfs_ev_glue infrastructure. */
 /* Version 40 - Add vfs_not_implemented_* helper functions. */
+/* Version 40 - Add SMB_VFS_GETXATTRAT_SEND/RECV */
 
 #define SMB_VFS_INTERFACE_VERSION 40
 
@@ -953,6 +954,18 @@ struct vfs_fn_pointers {
 					const char *name,
 					void *value,
 					size_t size);
+	struct tevent_req *(*getxattrat_send_fn)(
+				TALLOC_CTX *mem_ctx,
+				const struct smb_vfs_ev_glue *evg,
+				struct vfs_handle_struct *handle,
+				files_struct *dir_fsp,
+				const struct smb_filename *smb_fname,
+				const char *xattr_name,
+				size_t alloc_hint);
+	ssize_t (*getxattrat_recv_fn)(struct tevent_req *req,
+				      struct vfs_aio_state *aio_state,
+				      TALLOC_CTX *mem_ctx,
+				      uint8_t **xattr_value);
 	ssize_t (*fgetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
 	ssize_t (*listxattr_fn)(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
@@ -1443,6 +1456,18 @@ ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
 				const char *name,
 				void *value,
 				size_t size);
+struct tevent_req *smb_vfs_call_getxattrat_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			const struct smb_filename *smb_fname,
+			const char *xattr_name,
+			size_t alloc_hint);
+ssize_t smb_vfs_call_getxattrat_recv(struct tevent_req *req,
+				     struct vfs_aio_state *aio_state,
+				     TALLOC_CTX *mem_ctx,
+				     uint8_t **xattr_value);
 ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size);
@@ -1850,6 +1875,18 @@ ssize_t vfs_not_implemented_getxattr(vfs_handle_struct *handle,
 				const char *name,
 				void *value,
 				size_t size);
+struct tevent_req *vfs_not_implemented_getxattrat_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			const struct smb_filename *smb_fname,
+			const char *xattr_name,
+			size_t alloc_hint);
+ssize_t vfs_not_implemented_getxattrat_recv(struct tevent_req *req,
+				    struct vfs_aio_state *aio_state,
+				    TALLOC_CTX *mem_ctx,
+				    uint8_t **xattr_value);
 ssize_t vfs_not_implemented_fgetxattr(vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name,
 			      void *value, size_t size);
