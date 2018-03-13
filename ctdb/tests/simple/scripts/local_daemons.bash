@@ -253,8 +253,8 @@ ps_ctdbd ()
 # daemon
 export CTDB_BASES=""
 for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	node_dir=$(node_dir "$i")
-	CTDB_BASES="${CTDB_BASES}${CTDB_BASES:+ }${node_dir}"
+	b="${SIMPLE_TESTS_VAR_DIR}/node.${i}"
+	CTDB_BASES="${CTDB_BASES}${CTDB_BASES:+ }${b}"
 done
 
 # Need a default CTDB_BASE for onnode (to find the functions file).
