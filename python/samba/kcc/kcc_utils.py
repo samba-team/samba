@@ -2269,6 +2269,10 @@ def uncovered_sites_to_cover(samdb, site_name):
     with only the uncovered site can trump any available links (but this can
     only be done with specific, poorly enacted user configuration).
 
+    If the site is connected to more than one other site with the same
+    siteLink, only the largest site (failing that sorted alphabetically)
+    creates the DNS records.
+
     :param samdb database
     :param site_name origin site (with a DC)
 
@@ -2286,10 +2290,15 @@ def uncovered_sites_to_cover(samdb, site_name):
                             expression="(objectClass=site)")
 
     sites_in_use = Counter()
+    dc_count = 0
 
     # Assume server is of form DC,Servers,Site-ABCD because of schema
     for msg in server_res:
-        sites_in_use[msg.dn.parent().parent().canonical_str()] += 1
+        site_dn = msg.dn.parent().parent()
+        sites_in_use[site_dn.canonical_str()] += 1
+
+        if site_dn.get_rdn_value().lower() == site_name.lower():
+            dc_count += 1
 
     if len(sites_in_use) != len(site_res):
         # There is a possible uncovered site
@@ -2317,7 +2326,8 @@ def uncovered_sites_to_cover(samdb, site_name):
             # Get a sorted list of all siteLinks connecting this an the
             # uncovered site
             link_res2 = samdb.search(base=samdb.get_config_basedn(),
-                                     scope=ldb.SCOPE_SUBTREE, attrs=["cost"],
+                                     scope=ldb.SCOPE_SUBTREE,
+                                     attrs=["cost", "siteList"],
                                      expression="(&(objectClass=siteLink)"
                                      "(siteList={})(siteList={}))".format(
                                          own_site_dn,
@@ -2328,7 +2338,28 @@ def uncovered_sites_to_cover(samdb, site_name):
             if len(link_res1) > 0 and len(link_res2) > 0:
                 cost1 = int(link_res1[0]['cost'][0])
                 cost2 = int(link_res2[0]['cost'][0])
-                if cost1 == cost2:
+
+                # Own siteLink must match the lowest cost link
+                if cost1 != cost2:
+                    continue
+
+                # In a siteLink with more than 2 sites attached, only pick the
+                # largest site, and if there are multiple, the earliest
+                # alphabetically.
+                to_cover = True
+                for site_val in link_res2[0]['siteList']:
+                    site_dn = ldb.Dn(samdb, str(site_val))
+                    site_dn_str = site_dn.canonical_str()
+                    site_rdn = site_dn.get_rdn_value().lower()
+                    if sites_in_use[site_dn_str] > dc_count:
+                        to_cover = False
+                        break
+                    elif (sites_in_use[site_dn_str] == dc_count and
+                          site_rdn < site_name.lower()):
+                        to_cover = False
+                        break
+
+                if to_cover:
                     site_cover_rdn = site.dn.get_rdn_value()
                     sites_to_cover.append(site_cover_rdn)
 
