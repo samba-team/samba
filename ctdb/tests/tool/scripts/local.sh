@@ -1,7 +1,5 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# Augment PATH with stubs/ directory.
-
 if "$TEST_VERBOSE" ; then
     debug () { echo "$@" ; }
 else
