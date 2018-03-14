@@ -1882,9 +1882,14 @@ static int ltdb_tdb_parse_record(struct ltdb_private *ltdb,
 		.dptr = ldb_key.data,
 		.dsize = ldb_key.length
 	};
+	int ret;
 
-	return tdb_parse_record(ltdb->tdb, key, ltdb_tdb_parse_record_wrapper,
-				&kv_ctx);
+	ret = tdb_parse_record(ltdb->tdb, key, ltdb_tdb_parse_record_wrapper,
+			       &kv_ctx);
+	if (ret == 0) {
+		return LDB_SUCCESS;
+	}
+	return ltdb_err_map(tdb_error(ltdb->tdb));
 }
 
 static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
