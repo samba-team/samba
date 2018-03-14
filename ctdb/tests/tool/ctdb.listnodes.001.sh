@@ -10,10 +10,11 @@ setup_nodes <<EOF
 192.168.20.43
 EOF
 
-rm -f "$CTDB_NODES"
+f="${CTDB_BASE}/nodes"
+rm -f "$f"
 
 required_result 1 <<EOF
-${TEST_DATE_STAMP}Failed to read nodes file "${CTDB_NODES}"
+${TEST_DATE_STAMP}Failed to read nodes file "${f}"
 EOF
 
 simple_test

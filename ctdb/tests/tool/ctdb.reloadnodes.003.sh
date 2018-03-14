@@ -10,13 +10,9 @@ setup_nodes <<EOF
 192.168.20.43
 EOF
 
+# fake_ctdbd returns error for empty file
 setup_nodes 1 <<EOF
-192.168.20.41
-#192.168.20.42
-192.168.20.43
 EOF
-
-rm "$CTDB_NODES_1"
 
 setup_ctdbd <<EOF
 NODEMAP

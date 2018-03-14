@@ -92,23 +92,9 @@ setup_nodes ()
 {
     _pnn="$1"
 
-    _v="CTDB_NODES${_pnn:+_}${_pnn}"
-    debug "Setting up ${_v}"
+    _f="${CTDB_BASE}/nodes${_pnn:+.}${_pnn}"
 
-    eval export "${_v}"=$(mktemp --tmpdir="$TEST_VAR_DIR")
-
-    eval _f="\${${_v}}"
-    test_cleanup "rm -f ${_f}"
     cat >"$_f"
-
-    # You can't be too careful about what might be in the
-    # environment...  so clean up when setting the default variable.
-    if [ -z "$_pnn" ] ; then
-	_n=$(wc -l "$CTDB_NODES" | awk '{ print $1 }')
-	for _i in $(seq 0 $_n) ; do
-	    eval unset "CTDB_NODES_${_i}"
-	done
-    fi
 }
 
 simple_test_other ()

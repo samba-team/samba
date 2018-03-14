@@ -380,28 +380,49 @@ static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx,
 					     uint32_t pnn)
 {
 	struct ctdb_node_map *nodemap;
-	char nodepath[PATH_MAX];
-	const char *nodes_list;
+	char nodes_list[PATH_MAX];
+	const char *ctdb_base;
+	int num;
 
-	/* read the nodes file */
-	sprintf(nodepath, "CTDB_NODES_%u", pnn);
-	nodes_list = getenv(nodepath);
-	if (nodes_list == NULL) {
-		nodes_list = getenv("CTDB_NODES");
-		if (nodes_list == NULL) {
-			DEBUG(DEBUG_INFO, ("Nodes file not defined\n"));
-			return NULL;
-		}
-	}
-
-	nodemap = ctdb_read_nodes_file(mem_ctx, nodes_list);
-	if (nodemap == NULL) {
-		DEBUG(DEBUG_INFO, ("Failed to read nodes file \"%s\"\n",
-				   nodes_list));
+	ctdb_base = getenv("CTDB_BASE");
+	if (ctdb_base == NULL) {
+		D_ERR("CTDB_BASE is not set\n");
 		return NULL;
 	}
 
-	return nodemap;
+	/* read optional node-specific nodes file */
+	num = snprintf(nodes_list, sizeof(nodes_list),
+		       "%s/nodes.%d", ctdb_base, pnn);
+	if (num == sizeof(nodes_list)) {
+		D_ERR("nodes file path too long\n");
+		return NULL;
+	}
+	nodemap = ctdb_read_nodes_file(mem_ctx, nodes_list);
+	if (nodemap != NULL) {
+		/* Fake a load failure for an empty nodemap */
+		if (nodemap->num == 0) {
+			talloc_free(nodemap);
+
+			D_ERR("Failed to read nodes file \"%s\"\n", nodes_list);
+			return NULL;
+		}
+
+		return nodemap;
+	}
+
+	/* read normal nodes file */
+	num = snprintf(nodes_list, sizeof(nodes_list), "%s/nodes", ctdb_base);
+	if (num == sizeof(nodes_list)) {
+		D_ERR("nodes file path too long\n");
+		return NULL;
+	}
+	nodemap = ctdb_read_nodes_file(mem_ctx, nodes_list);
+	if (nodemap != NULL) {
+		return nodemap;
+	}
+
+	DBG_ERR("Failed to read nodes file \"%s\"\n", nodes_list);
+	return NULL;
 }
 
 static struct interface_map *interfaces_init(TALLOC_CTX *mem_ctx)
