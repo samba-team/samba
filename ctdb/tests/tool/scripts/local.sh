@@ -72,13 +72,7 @@ setup_natgw ()
 {
 	debug "Setting up NAT gateway"
 
-	# Use in-tree binaries if running against local daemons.
-	# Otherwise CTDB need to be installed on all nodes.
-	if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
-		if [ -z "$CTDB_NATGW_HELPER" ] ; then
-			export CTDB_NATGW_HELPER="${ctdb_dir}/tools/ctdb_natgw"
-		fi
-	fi
+	export CTDB_NATGW_HELPER="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/ctdb_natgw"
 
 	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
 	mkdir -p "$natgw_config_dir"
@@ -93,13 +87,7 @@ setup_lvs ()
 {
 	debug "Setting up LVS"
 
-	# Use in-tree binaries if running against local daemons.
-	# Otherwise CTDB need to be installed on all nodes.
-	if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
-		if [ -z "$CTDB_LVS_HELPER" ] ; then
-			export CTDB_LVS_HELPER="${ctdb_dir}/tools/ctdb_lvs"
-		fi
-	fi
+	export CTDB_LVS_HELPER="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/ctdb_lvs"
 
 	lvs_config_dir="${TEST_VAR_DIR}/lvs_config"
 	mkdir -p "$lvs_config_dir"
