@@ -999,6 +999,8 @@ for env in [
                            )
     planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs")
 
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.kcc.kcc_utils")
+
 for env in [ "simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs", "ad_member"]:
     planoldpythontestsuite(env, "netlogonsvc",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
