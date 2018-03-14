@@ -674,6 +674,10 @@ static int ltdb_tdb_delete(struct ltdb_private *ltdb, struct ldb_val ldb_key)
 		.dptr = ldb_key.data,
 		.dsize = ldb_key.length
 	};
+	bool transaction_active = tdb_transaction_active(ltdb->tdb);
+	if (transaction_active == false){
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 	return tdb_delete(ltdb->tdb, tdb_key);
 }
 
