@@ -479,17 +479,14 @@ static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx, uint32_t pnn)
 	struct ctdb_node_map *nodemap;
 	const char *nodes_list = NULL;
 
-	nodes_list = getenv("CTDB_NODES");
+	const char *basedir = getenv("CTDB_BASE");
+	if (basedir == NULL) {
+		basedir = CTDB_ETCDIR;
+	}
+	nodes_list = talloc_asprintf(mem_ctx, "%s/nodes", basedir);
 	if (nodes_list == NULL) {
-		const char *basedir = getenv("CTDB_BASE");
-		if (basedir == NULL) {
-			basedir = CTDB_ETCDIR;
-		}
-		nodes_list = talloc_asprintf(mem_ctx, "%s/nodes", basedir);
-		if (nodes_list == NULL) {
-			fprintf(stderr, "Memory allocation error\n");
-			return NULL;
-		}
+		fprintf(stderr, "Memory allocation error\n");
+		return NULL;
 	}
 
 	nodemap = ctdb_read_nodes_file(mem_ctx, nodes_list);
