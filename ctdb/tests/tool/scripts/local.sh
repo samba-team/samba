@@ -1,5 +1,10 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
+[ -n "$TEST_VAR_DIR" ] || die "TEST_VAR_DIR unset"
+
+setup_ctdb_base "$TEST_VAR_DIR" "unit_tool" \
+		functions
+
 if "$TEST_VERBOSE" ; then
     debug () { echo "$@" ; }
 else
@@ -73,8 +78,6 @@ setup_natgw ()
 		if [ -z "$CTDB_NATGW_HELPER" ] ; then
 			export CTDB_NATGW_HELPER="${ctdb_dir}/tools/ctdb_natgw"
 		fi
-		# Only want to find functions file, so this is OK
-		export CTDB_BASE="${ctdb_dir}/config"
 	fi
 
 	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
@@ -96,8 +99,6 @@ setup_lvs ()
 		if [ -z "$CTDB_LVS_HELPER" ] ; then
 			export CTDB_LVS_HELPER="${ctdb_dir}/tools/ctdb_lvs"
 		fi
-		# Only want to find functions file, so this is OK
-		export CTDB_BASE="${ctdb_dir}/config"
 	fi
 
 	lvs_config_dir="${TEST_VAR_DIR}/lvs_config"
