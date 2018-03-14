@@ -228,8 +228,6 @@ get_nodes ()
 			# $f is relative, try in $CTDB_BASE
 			f="${CTDB_BASE}/${f}"
 		fi
-	elif [ -n "$CTDB_NODES" ] ; then
-		f="$CTDB_NODES"
 	fi
 
 	if [ ! -r "$f" ] ; then

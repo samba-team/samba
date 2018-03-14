@@ -93,7 +93,6 @@ build_ctdb_options ()
 
     # build up ctdb_options variable from optional parameters
     maybe_set "--logging"                "$CTDB_LOGGING"
-    maybe_set "--nlist"                  "$CTDB_NODES"
     maybe_set "--listen"                 "$CTDB_NODE_ADDRESS"
     maybe_set "--dbdir"                  "$CTDB_DBDIR"
     maybe_set "--dbdir-persistent"       "$CTDB_DBDIR_PERSISTENT"

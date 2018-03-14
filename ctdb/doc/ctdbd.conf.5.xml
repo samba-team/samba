@@ -257,17 +257,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_NODES=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    Default is <varname>CTDB_BASE</varname>/nodes, so usually
-	    <filename>/usr/local/etc/ctdb/nodes</filename>.  Corresponds to
-	    <option>--nlist</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_NOSETSCHED=yes|no</term>
 	<listitem>
 	  <para>
@@ -311,8 +300,10 @@
 	  </para>
 	  <para>
 	    By default ctdbd will select the first address from the
-	    nodes list that in can bind to.  See also
-	    <citetitle>CTDB_NODES</citetitle>.
+	    nodes list that in can bind to.  See also the
+	    <citetitle>Private address</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
 	  </para>
 	  <para>
 	    This option is only required when automatic address

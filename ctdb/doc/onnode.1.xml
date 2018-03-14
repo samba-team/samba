@@ -60,8 +60,7 @@
       <listitem>
 	<para>
 	  Specify an alternative nodes FILENAME to use instead of
-	  the default.  This option overrides the CTDB_NODES
-	  variable.  See the discussion of
+	  the default.  See the discussion of
 	  <filename>/usr/local/etc/ctdb/nodes</filename> in the
 	  FILES section for more details.
 	  </para>
@@ -269,14 +268,8 @@
 	    directory.
 	  </para>
 	  <para>
-	    If <envar>CTDB_NODES</envar> is set in configuration then the
-	    file pointed to by <envar>CTDB_NODES</envar> is used.
-	  </para>
-	  <para>
 	    Otherwise the default is
-	    <filename>$CTDB_BASE/nodes</filename>, where
-	    <envar>CTDB_BASE</envar> defaults to
-	    <filename>/usr/local/etc/ctdb</filename>.
+	    <filename>/usr/local/etc/ctdb/nodes</filename>.
           </para>
 	</listitem>
       </varlistentry>

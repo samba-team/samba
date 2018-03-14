@@ -174,16 +174,21 @@
         the cluster and is the address that CTDB daemons will use to
         communicate with the CTDB daemons on other nodes.
       </para>
+
       <para>
-        Private addresses are listed in the file specified by the
-        <varname>CTDB_NODES</varname> configuration variable (see
-        <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
-        <manvolnum>5</manvolnum></citerefentry>, default
-        <filename>/usr/local/etc/ctdb/nodes</filename>).  This file contains the
-        list of private addresses for all nodes in the cluster, one
-        per line. This file must be the same on all nodes in the
-        cluster.
+	Private addresses are listed in the file
+	<filename>/usr/local/etc/ctdb/nodes</filename>).  This file
+	contains the list of private addresses for all nodes in the
+	cluster, one per line. This file must be the same on all nodes
+	in the cluster.
       </para>
+
+      <para>
+	Some users like to put this configuration file in their
+	cluster filesystem.  A symbolic link should be used in this
+	case.
+      </para>
+
       <para>
 	Private addresses should not be used by clients to connect to
 	services provided by the cluster.
