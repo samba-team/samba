@@ -858,8 +858,6 @@ class KCC(object):
         :param current_dsa: optional DSA on whose behalf we are acting.
         :return: None
         """
-        count = 0
-
         ro = False
         if current_dsa is None:
             current_dsa = self.my_dsa
