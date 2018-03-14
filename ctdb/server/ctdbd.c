@@ -41,7 +41,6 @@
 
 static struct {
 	const char *debuglevel;
-	const char *nlist;
 	const char *transport;
 	const char *myaddress;
 	const char *notification_script;
@@ -62,7 +61,6 @@ static struct {
 	int         torture;
 } options = {
 	.debuglevel = "NOTICE",
-	.nlist = NULL,
 	.transport = "tcp",
 	.logging = "file:" LOGDIR "/log.ctdb",
 	.db_dir = CTDB_VARDIR,
@@ -117,7 +115,6 @@ int main(int argc, const char *argv[])
 		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
-		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
@@ -285,15 +282,11 @@ int main(int argc, const char *argv[])
 	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
 
 	/* tell ctdb what nodes are available */
-	if (options.nlist != NULL) {
-		ctdb->nodes_file = options.nlist;
-	} else {
-		ctdb->nodes_file =
-			talloc_asprintf(ctdb, "%s/nodes", getenv("CTDB_BASE"));
-		if (ctdb->nodes_file == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-			exit(1);
-		}
+	ctdb->nodes_file =
+		talloc_asprintf(ctdb, "%s/nodes", getenv("CTDB_BASE"));
+	if (ctdb->nodes_file == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		exit(1);
 	}
 	ctdb_load_nodes_file(ctdb);
 

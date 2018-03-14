@@ -114,8 +114,10 @@
 	  </para>
 	  <para>
 	    By default ctdbd will select the first address from the
-	    nodes list that in can bind to.  See also
-	    <citetitle>--nlist</citetitle>.
+	    nodes list that in can bind to.    See also the
+	    <citetitle>Private address</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
 	  </para>
 	  <para>
 	    This option is only required when automatic address
@@ -223,22 +225,6 @@
 	    node with unhealthy persistent databases to startup and
 	    join the cluster as long as there is another node with
 	    healthy persistent databases.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--nlist=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME containing a list of the private IP addresses, one
-	    per line, for each node in the cluster.  This file
-	    <emphasis>must be the same on each node</emphasis> in the
-	    cluster.
-	  </para>
-	  <para>
-	    Default is <envar>CTDB_BASE</envar>/nodes, so usually
-	    <filename>/usr/local/etc/ctdb/nodes</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
