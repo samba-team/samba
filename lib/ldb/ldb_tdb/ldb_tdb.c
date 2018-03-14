@@ -428,6 +428,10 @@ static int ltdb_tdb_store(struct ltdb_private *ltdb, struct ldb_val ldb_key,
 		.dptr = ldb_data.data,
 		.dsize = ldb_data.length
 	};
+	bool transaction_active = tdb_transaction_active(ltdb->tdb);
+	if (transaction_active == false){
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 	return tdb_store(ltdb->tdb, key, data, flags);
 }
 
