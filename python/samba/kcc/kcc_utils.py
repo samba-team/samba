@@ -2361,6 +2361,6 @@ def uncovered_sites_to_cover(samdb, site_name):
 
                 if to_cover:
                     site_cover_rdn = site.dn.get_rdn_value()
-                    sites_to_cover.append(site_cover_rdn)
+                    sites_to_cover.append(site_cover_rdn.lower())
 
     return sites_to_cover
