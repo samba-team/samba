@@ -477,18 +477,9 @@ static struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
 static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx, uint32_t pnn)
 {
 	struct ctdb_node_map *nodemap;
-	char *nodepath;
 	const char *nodes_list = NULL;
 
-	if (pnn != CTDB_UNKNOWN_PNN) {
-		nodepath = talloc_asprintf(mem_ctx, "CTDB_NODES_%u", pnn);
-		if (nodepath != NULL) {
-			nodes_list = getenv(nodepath);
-		}
-	}
-	if (nodes_list == NULL) {
-		nodes_list = getenv("CTDB_NODES");
-	}
+	nodes_list = getenv("CTDB_NODES");
 	if (nodes_list == NULL) {
 		const char *basedir = getenv("CTDB_BASE");
 		if (basedir == NULL) {
