@@ -11,8 +11,8 @@ else
     debug () { : ; }
 fi
 
-ctdbd_socket="${TEST_VAR_DIR}/ctdbd.socket.$$"
-ctdbd_pidfile="${TEST_VAR_DIR}/ctdbd.pid.$$"
+ctdbd_socket="${CTDB_BASE}/ctdbd.socket"
+ctdbd_pidfile="${CTDB_BASE}/ctdbd.pid"
 
 define_test ()
 {
@@ -73,12 +73,7 @@ setup_natgw ()
 	debug "Setting up NAT gateway"
 
 	export CTDB_NATGW_HELPER="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/ctdb_natgw"
-
-	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
-	mkdir -p "$natgw_config_dir"
-
-	export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
-	test_cleanup "rm -f $CTDB_NATGW_NODES"
+	export CTDB_NATGW_NODES="${CTDB_BASE}/natgw_nodes"
 
 	cat >"$CTDB_NATGW_NODES"
 }
@@ -88,12 +83,7 @@ setup_lvs ()
 	debug "Setting up LVS"
 
 	export CTDB_LVS_HELPER="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/ctdb_lvs"
-
-	lvs_config_dir="${TEST_VAR_DIR}/lvs_config"
-	mkdir -p "$lvs_config_dir"
-
-	export CTDB_LVS_NODES=$(mktemp --tmpdir="$lvs_config_dir")
-	test_cleanup "rm -f ${CTDB_LVS_NODES}"
+	export CTDB_LVS_NODES="${CTDB_BASE}/lvs_nodes"
 
 	cat >"$CTDB_LVS_NODES"
 }
