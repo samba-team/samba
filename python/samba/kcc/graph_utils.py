@@ -274,12 +274,8 @@ def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
     return verify_graph_directed_double_ring(edges, vertices, edge_vertices)
 
 
-def verify_graph(title, edges, vertices=None, directed=False, properties=(),
-                 fatal=True, debug=null_debug):
+def verify_graph(edges, vertices=None, directed=False, properties=()):
     errors = []
-    debug("%sStarting verify_graph for %s%s%s" % (PURPLE, MAGENTA, title,
-                                                  C_NORMAL))
-
     properties = [x.replace(' ', '_') for x in properties]
 
     edge_vertices = set()
@@ -291,31 +287,16 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(),
         vertices = edge_vertices
     else:
         vertices = set(vertices)
-        if vertices != edge_vertices:
-            debug("vertices in edges don't match given vertices:\n %s != %s" %
-                  (sorted(edge_vertices), sorted(vertices)))
 
     for p in properties:
         fn = 'verify_graph_%s' % p
-        try:
-            f = globals()[fn]
-        except KeyError:
-            errors.append((p, "There is no verification check for '%s'" % p))
+        f = globals()[fn]
         try:
             f(edges, vertices, edge_vertices)
-            debug(" %s%18s:%s verified!" % (DARK_GREEN, p, C_NORMAL))
         except GraphError as e:
             errors.append((p, e))
 
-    if errors:
-        if fatal:
-            raise GraphError("The '%s' graph lacks the following properties:"
-                             "\n%s" %
-                             (title, '\n'.join('%s: %s' % x for x in errors)))
-        debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
-        for p, e in errors:
-            debug(" %18s: %s%s%s" % (p, DARK_YELLOW, e, RED))
-        debug(C_NORMAL)
+    return errors
 
 
 def verify_and_dot(basename, edges, vertices=None, label=None,
@@ -325,16 +306,26 @@ def verify_and_dot(basename, edges, vertices=None, label=None,
                    edge_colors=None, edge_labels=None,
                    vertex_colors=None):
 
-    title = '%s %s' % (basename, label or '')
-    if verify:
-        verify_graph(title, edges, vertices, properties=properties,
-                     fatal=fatal, debug=debug)
     if dot_file_dir is not None:
         write_dot_file(basename, edges, vertices=vertices, label=label,
                        dot_file_dir=dot_file_dir,
                        reformat_labels=reformat_labels, directed=directed,
                        debug=debug, edge_colors=edge_colors,
                        edge_labels=edge_labels, vertex_colors=vertex_colors)
+
+    if verify:
+        errors = verify_graph(edges, vertices,
+                              properties=properties)
+        if errors:
+            title = '%s %s' % (basename, label or '')
+            debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
+            for p, e in errors:
+                debug(" %18s: %s%s%s" % (p, DARK_YELLOW, e, RED))
+            if fatal:
+                raise GraphError("The '%s' graph lacks the following "
+                                 "properties:\n%s" %
+                                 (title, '\n'.join('%s: %s' % x
+                                                   for x in errors)))
 
 
 def list_verify_tests():

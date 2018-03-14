@@ -184,10 +184,13 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
                                vertices=graph_nodes, label=label)
 
             if verify:
-                verify_graph('spanning tree edge set %s' % edgeType,
-                             graph_edges, vertices=graph_nodes,
-                             properties=('complete', 'connected'),
-                             debug=DEBUG)
+                errors = verify_graph(graph_edges, vertices=graph_nodes,
+                                      properties=('complete', 'connected'))
+                if errors:
+                    DEBUG('spanning tree edge set %s FAILED' % edgeType)
+                    for p, e in errors:
+                        DEBUG("%18s: %s" % (p, e))
+                    raise KCCError("spanning tree failed")
 
         # Run dijkstra's algorithm with just the red vertices as seeds
         # Seed from the full replicas
