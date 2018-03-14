@@ -36,6 +36,7 @@ import re
 import samba.auth
 import samba.dcerpc.base
 from samba.compat import PY3, text_type
+from random import randint
 if not PY3:
     # Py2 only
     from samba.samdb import SamDB
@@ -475,3 +476,15 @@ def delete_force(samdb, dn, **kwargs):
     except ldb.LdbError as error:
         (num, errstr) = error.args
         assert num == ldb.ERR_NO_SUCH_OBJECT, "ldb.delete() failed: %s" % errstr
+
+def create_test_ou(samdb, name):
+    """Creates a unique OU for the test"""
+
+    # Add some randomness to the test OU. Replication between the testenvs is
+    # constantly happening in the background. Deletion of the last test's
+    # objects can be slow to replicate out. So the OU created by a previous
+    # testenv may still exist at the point that tests start on another testenv.
+    rand = randint(1, 10000000)
+    dn = "OU=%s%d,%s" %(name, rand, samdb.get_default_basedn())
+    samdb.add({ "dn": dn, "objectclass": "organizationalUnit"})
+    return dn

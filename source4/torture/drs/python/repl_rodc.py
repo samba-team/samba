@@ -92,17 +92,11 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         super(DrsRodcTestCase, self).setUp()
         self.base_dn = self.ldb_dc1.get_default_basedn()
 
-        rand = random.randint(1, 10000000)
-
-        self.ou = "OU=test_drs_rodc%s,%s" % (rand, self.base_dn)
-        self.ldb_dc1.add({
-            "dn": self.ou,
-            "objectclass": "organizationalUnit"
-        })
+        self.ou = samba.tests.create_test_ou(self.ldb_dc1, "test_drs_rodc")
         self.allowed_group = "CN=Allowed RODC Password Replication Group,CN=Users,%s" % self.base_dn
 
         self.site = self.ldb_dc1.server_site_name()
-        self.rodc_name = "TESTRODCDRS%s" % rand
+        self.rodc_name = "TESTRODCDRS%s" % random.randint(1, 10000000)
         self.rodc_pass = "password12#"
         self.computer_dn = "CN=%s,OU=Domain Controllers,%s" % (self.rodc_name, self.base_dn)
 

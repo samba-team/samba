@@ -46,15 +46,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaLinkConflictTestCase, self).setUp()
 
-        # add some randomness to the test OU. (Deletion of the last test's
-        # objects can be slow to replicate out. So the OU created by a previous
-        # testenv may still exist at this point).
-        rand = random.randint(1, 10000000)
+        self.ou = samba.tests.create_test_ou(self.ldb_dc1, "test_link_conflict")
         self.base_dn = self.ldb_dc1.get_default_basedn()
-        self.ou = "OU=test_link_conflict%d,%s" %(rand, self.base_dn)
-        self.ldb_dc1.add({
-            "dn": self.ou,
-            "objectclass": "organizationalUnit"})
 
         (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
         (self.drs2, self.drs2_handle) = self._ds_bind(self.dnsname_dc2)

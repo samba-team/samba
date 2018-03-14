@@ -46,15 +46,8 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # the vampire_dc), so we point this test directly at that DC
         self.set_test_ldb_dc(self.ldb_dc2)
 
-        # add some randomness to the test OU. (Deletion of the last test's
-        # objects can be slow to replicate out. So the OU created by a previous
-        # testenv may still exist at this point).
-        rand = random.randint(1, 10000000)
+        self.ou = samba.tests.create_test_ou(self.test_ldb_dc, "getncchanges")
         self.base_dn = self.test_ldb_dc.get_default_basedn()
-        self.ou = "OU=getncchanges%d_test,%s" %(rand, self.base_dn)
-        self.test_ldb_dc.add({
-            "dn": self.ou,
-            "objectclass": "organizationalUnit"})
 
         self.default_conn = DcConnection(self, self.ldb_dc2, self.dnsname_dc2)
         self.set_dc_connection(self.default_conn)
