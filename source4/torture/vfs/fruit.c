@@ -36,6 +36,10 @@
 #include "torture/smb2/proto.h"
 #include "torture/vfs/proto.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
+#include "libcli/security/dom_sid.h"
+#include "../librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/secace.h"
+#include "libcli/security/security_descriptor.h"
 
 #define BASEDIR "vfs_fruit_dir"
 #define FNAME_CC_SRC "testfsctl.dat"
@@ -4426,6 +4430,172 @@ done:
 }
 
 /*
+ * Ensure this security descriptor has exactly one mode, uid
+ * and gid.
+ */
+
+static NTSTATUS check_nfs_sd(const struct security_descriptor *psd)
+{
+	uint32_t i;
+	bool got_one_mode = false;
+	bool got_one_uid = false;
+	bool got_one_gid = false;
+
+	if (psd->dacl == NULL) {
+		return NT_STATUS_INVALID_SECURITY_DESCR;
+	}
+
+	for (i = 0; i < psd->dacl->num_aces; i++) {
+		if (dom_sid_compare_domain(&global_sid_Unix_NFS_Mode,
+					   &psd->dacl->aces[i].trustee) == 0) {
+			if (got_one_mode == true) {
+				/* Can't have more than one. */
+				return NT_STATUS_INVALID_SECURITY_DESCR;
+			}
+			got_one_mode = true;
+		}
+	}
+	for (i = 0; i < psd->dacl->num_aces; i++) {
+		if (dom_sid_compare_domain(&global_sid_Unix_NFS_Users,
+					   &psd->dacl->aces[i].trustee) == 0) {
+			if (got_one_uid == true) {
+				/* Can't have more than one. */
+				return NT_STATUS_INVALID_SECURITY_DESCR;
+			}
+			got_one_uid = true;
+		}
+	}
+	for (i = 0; i < psd->dacl->num_aces; i++) {
+		if (dom_sid_compare_domain(&global_sid_Unix_NFS_Groups,
+					   &psd->dacl->aces[i].trustee) == 0) {
+			if (got_one_gid == true) {
+				/* Can't have more than one. */
+				return NT_STATUS_INVALID_SECURITY_DESCR;
+			}
+			got_one_gid = true;
+		}
+	}
+	/* Must have at least one of each. */
+	if (got_one_mode == false ||
+			got_one_uid == false ||
+			got_one_gid == false) {
+		return NT_STATUS_INVALID_SECURITY_DESCR;
+	}
+	return NT_STATUS_OK;
+}
+
+static bool test_nfs_aces(struct torture_context *tctx,
+			  struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct security_ace ace;
+	struct dom_sid sid;
+	const char *fname = BASEDIR "\\nfs_aces.txt";
+	struct smb2_handle h = {{0}};
+	union smb_fileinfo finfo2;
+	union smb_setfileinfo set;
+	struct security_descriptor *psd = NULL;
+	NTSTATUS status;
+	bool ret = true;
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert(tctx, ret == true, "enable_aapl failed");
+
+	/* clean slate ...*/
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, h);
+
+	/* Create a test file. */
+	status = torture_smb2_testfile_access(tree,
+				fname,
+				&h,
+				SEC_STD_READ_CONTROL |
+				SEC_STD_WRITE_DAC |
+				SEC_RIGHTS_FILE_ALL);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Get the ACL. */
+	finfo2.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	finfo2.generic.level = RAW_FILEINFO_SEC_DESC;
+	finfo2.generic.in.file.handle = h;
+	status = smb2_getinfo_file(tree, tctx, &finfo2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	psd = finfo2.query_secdesc.out.sd;
+
+	/* Ensure we have only single mode/uid/gid NFS entries. */
+	status = check_nfs_sd(psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		NDR_PRINT_DEBUG(
+			security_descriptor,
+			discard_const_p(struct security_descriptor, psd));
+	}
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Add a couple of extra NFS uids and gids. */
+	sid_compose(&sid, &global_sid_Unix_NFS_Users, 27);
+	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
+	status = security_descriptor_dacl_add(psd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = security_descriptor_dacl_add(psd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	sid_compose(&sid, &global_sid_Unix_NFS_Groups, 300);
+	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
+	status = security_descriptor_dacl_add(psd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = security_descriptor_dacl_add(psd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Now set on the file handle. */
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.handle = h;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = psd;
+	status = smb2_setinfo_file(tree, &set);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Get the ACL again. */
+	finfo2.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	finfo2.generic.level = RAW_FILEINFO_SEC_DESC;
+	finfo2.generic.in.file.handle = h;
+	status = smb2_getinfo_file(tree, tctx, &finfo2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	psd = finfo2.query_secdesc.out.sd;
+
+	/* Ensure we have only single mode/uid/gid NFS entries. */
+	status = check_nfs_sd(psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		NDR_PRINT_DEBUG(
+			security_descriptor,
+			discard_const_p(struct security_descriptor, psd));
+	}
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
  * argument with the local path to the share:
@@ -4465,6 +4635,7 @@ struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "creating rsrc with read-only access", test_rfork_create_ro);
 	torture_suite_add_1smb2_test(suite, "copy-chunk streams", test_copy_chunk_streams);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
+	torture_suite_add_1smb2_test(suite, "NFS ACE entries", test_nfs_aces);
 
 	return suite;
 }
