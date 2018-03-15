@@ -1708,6 +1708,7 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 					void *private_data,
 					struct smb_filename *smb_fname,
+					bool get_dosmode,
 					uint32_t *_mode)
 {
 	struct smbd_dirptr_lanman2_state *state =
@@ -1741,7 +1742,7 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 
 	if (ms_dfs_link) {
 		mode = dos_mode_msdfs(state->conn, smb_fname);
-	} else {
+	} else if (get_dosmode) {
 		mode = dos_mode(state->conn, smb_fname);
 	}
 
