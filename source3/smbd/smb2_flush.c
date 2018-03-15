@@ -198,7 +198,7 @@ static void smbd_smb2_flush_done(struct tevent_req *subreq)
 	ret = SMB_VFS_FSYNC_RECV(subreq, &vfs_aio_state);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		tevent_req_error(req, vfs_aio_state.error);
+		tevent_req_nterror(req, map_nt_error_from_unix(vfs_aio_state.error));
 		return;
 	}
 	tevent_req_done(req);
