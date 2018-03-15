@@ -2550,11 +2550,15 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 
 	TALLOC_FREE(fname);
 	TALLOC_FREE(smb_fname);
-	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-		dptr_SeekDir(dirptr, prev_dirpos);
+
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
+	{
 		return status;
 	}
-	if (!NT_STATUS_IS_OK(status)) {
+
+	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		dptr_SeekDir(dirptr, prev_dirpos);
 		return status;
 	}
 
