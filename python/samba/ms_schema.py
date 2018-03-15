@@ -277,7 +277,7 @@ def __transform_entry(entry, objectClass):
 
     header.append(["objectGUID", str(uuid.uuid4()), False])
 
-    entry = header + [x for x in entry if x[0].lower() not in {'dn', 'changetype', 'objectcategory'}]
+    entry = header + [x for x in entry if x[0].lower() not in set(['dn', 'changetype', 'objectcategory'])]
 
     return entry
 
