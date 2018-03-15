@@ -5735,7 +5735,6 @@ static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 	struct security_ace ace;
 	struct dom_sid sid;
 	struct fruit_config_data *config;
-	bool remove_ok = false;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data,
@@ -5757,18 +5756,16 @@ static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 		return NT_STATUS_OK;
 	}
 
+	/* First remove any existing ACE's with NFS style mode/uid/gid SIDs. */
+	status = remove_virtual_nfs_aces(*ppdesc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("failed to remove MS NFS style ACEs\n");
+		return status;
+	}
+
 	/* MS NFS style mode */
 	sid_compose(&sid, &global_sid_Unix_NFS_Mode, fsp->fsp_name->st.st_ex_mode);
 	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
-
-	/* First remove any existing ACE's with this SID. */
-	status = security_descriptor_dacl_del(*ppdesc, &sid);
-	remove_ok = (NT_STATUS_IS_OK(status) ||
-		     NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND));
-	if (!remove_ok) {
-		DBG_WARNING("failed to remove MS NFS_mode style ACE\n");
-		return status;
-	}
 	status = security_descriptor_dacl_add(*ppdesc, &ace);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("failed to add MS NFS style ACE\n"));
@@ -5778,15 +5775,6 @@ static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 	/* MS NFS style uid */
 	sid_compose(&sid, &global_sid_Unix_NFS_Users, fsp->fsp_name->st.st_ex_uid);
 	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
-
-	/* First remove any existing ACE's with this SID. */
-	status = security_descriptor_dacl_del(*ppdesc, &sid);
-	remove_ok = (NT_STATUS_IS_OK(status) ||
-		     NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND));
-	if (!remove_ok) {
-		DBG_WARNING("failed to remove MS NFS_users style ACE\n");
-		return status;
-	}
 	status = security_descriptor_dacl_add(*ppdesc, &ace);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("failed to add MS NFS style ACE\n"));
@@ -5796,15 +5784,6 @@ static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 	/* MS NFS style gid */
 	sid_compose(&sid, &global_sid_Unix_NFS_Groups, fsp->fsp_name->st.st_ex_gid);
 	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
-
-	/* First remove any existing ACE's with this SID. */
-	status = security_descriptor_dacl_del(*ppdesc, &sid);
-	remove_ok = (NT_STATUS_IS_OK(status) ||
-		     NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND));
-	if (!remove_ok) {
-		DBG_WARNING("failed to remove MS NFS_groups style ACE\n");
-		return status;
-	}
 	status = security_descriptor_dacl_add(*ppdesc, &ace);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("failed to add MS NFS style ACE\n"));
