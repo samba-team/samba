@@ -2936,6 +2936,49 @@ static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS remove_virtual_nfs_aces(struct security_descriptor *psd)
+{
+	NTSTATUS status;
+	uint32_t i;
+
+	if (psd->dacl == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	for (i = 0; i < psd->dacl->num_aces; i++) {
+		/* MS NFS style mode/uid/gid */
+		if (!dom_sid_compare_domain(
+				&global_sid_Unix_NFS,
+				&psd->dacl->aces[i].trustee) == 0) {
+			/* Normal ACE entry. */
+			continue;
+		}
+
+		/*
+		 * security_descriptor_dacl_del()
+		 * *must* return NT_STATUS_OK as we know
+		 * we have something to remove.
+		 */
+
+		status = security_descriptor_dacl_del(psd,
+				&psd->dacl->aces[i].trustee);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("failed to remove MS NFS style ACE: %s\n",
+				nt_errstr(status));
+			return status;
+		}
+
+		/*
+		 * security_descriptor_dacl_del() may delete more
+		 * then one entry subsequent to this one if the
+		 * SID matches, but we only need to ensure that
+		 * we stay looking at the same element in the array.
+		 */
+		i--;
+	}
+	return NT_STATUS_OK;
+}
+
 /* Search MS NFS style ACE with UNIX mode */
 static NTSTATUS check_ms_nfs(vfs_handle_struct *handle,
 			     files_struct *fsp,
