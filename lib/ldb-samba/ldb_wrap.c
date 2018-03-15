@@ -329,20 +329,11 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 }
 
 /*
-  when we fork() we need to make sure that any open ldb contexts have
-  any open transactions cancelled (ntdb databases doesn't need reopening,
-  as we don't use clear_if_first).
- */
+  call tdb_reopen_all() in case there is a TDB open so we are
+  not blocked from re-opening it inside ldb_tdb.
+*/
  void ldb_wrap_fork_hook(void)
 {
-	struct ldb_wrap *w;
-
-	for (w=ldb_wrap_list; w; w=w->next) {
-		if (ldb_transaction_cancel_noerr(w->ldb) != LDB_SUCCESS) {
-			smb_panic("Failed to cancel child transactions\n");
-		}
-	}
-
 	if (tdb_reopen_all(1) != 0) {
 		smb_panic("tdb_reopen_all failed\n");
 	}
