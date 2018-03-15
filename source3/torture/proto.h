@@ -95,6 +95,7 @@ bool run_nttrans_create(int dummy);
 bool run_nttrans_fsctl(int dummy);
 bool run_smb2_basic(int dummy);
 bool run_smb2_negprot(int dummy);
+bool run_smb2_anonymous(int dummy);
 bool run_smb2_session_reconnect(int dummy);
 bool run_smb2_tcon_dependence(int dummy);
 bool run_smb2_multi_channel(int dummy);
