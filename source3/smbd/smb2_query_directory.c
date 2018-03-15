@@ -522,6 +522,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 					       false, /* requires_resume_key */
 					       dont_descend,
 					       ask_sharemode,
+					       true,
 					       8, /* align to 8 bytes */
 					       false, /* no padding */
 					       &pdata,
