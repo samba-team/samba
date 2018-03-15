@@ -1487,6 +1487,144 @@ static NTSTATUS vfswrap_get_dos_attributes(struct vfs_handle_struct *handle,
 	return get_ea_dos_attribute(handle->conn, smb_fname, dosmode);
 }
 
+struct vfswrap_get_dos_attributes_state {
+	struct vfs_aio_state aio_state;
+	connection_struct *conn;
+	TALLOC_CTX *mem_ctx;
+	const struct smb_vfs_ev_glue *evg;
+	files_struct *dir_fsp;
+	struct smb_filename *smb_fname;
+	uint32_t dosmode;
+	bool as_root;
+};
+
+static void vfswrap_get_dos_attributes_getxattr_done(struct tevent_req *subreq);
+
+static struct tevent_req *vfswrap_get_dos_attributes_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			struct smb_filename *smb_fname)
+{
+	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct vfswrap_get_dos_attributes_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct vfswrap_get_dos_attributes_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	*state = (struct vfswrap_get_dos_attributes_state) {
+		.conn = dir_fsp->conn,
+		.mem_ctx = mem_ctx,
+		.evg = evg,
+		.dir_fsp = dir_fsp,
+		.smb_fname = smb_fname,
+	};
+
+	subreq = SMB_VFS_GETXATTRAT_SEND(state,
+					 evg,
+					 dir_fsp,
+					 smb_fname,
+					 SAMBA_XATTR_DOS_ATTRIB,
+					 sizeof(fstring));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				vfswrap_get_dos_attributes_getxattr_done,
+				req);
+
+	return req;
+}
+
+static void vfswrap_get_dos_attributes_getxattr_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct vfswrap_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct vfswrap_get_dos_attributes_state);
+	ssize_t xattr_size;
+	DATA_BLOB blob = {0};
+	NTSTATUS status;
+
+	xattr_size = SMB_VFS_GETXATTRAT_RECV(subreq,
+					     &state->aio_state,
+					     state,
+					     &blob.data);
+	TALLOC_FREE(subreq);
+	if (xattr_size == -1) {
+		const struct smb_vfs_ev_glue *root_evg = NULL;
+
+		status = map_nt_error_from_unix(state->aio_state.error);
+
+		if (state->as_root) {
+			tevent_req_nterror(req, status);
+			return;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			tevent_req_nterror(req, status);
+			return;
+		}
+
+		state->as_root = true;
+		root_evg = smb_vfs_ev_glue_get_root_glue(state->evg);
+
+		subreq = SMB_VFS_GETXATTRAT_SEND(state,
+						 root_evg,
+						 state->dir_fsp,
+						 state->smb_fname,
+						 SAMBA_XATTR_DOS_ATTRIB,
+						 sizeof(fstring));
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					vfswrap_get_dos_attributes_getxattr_done,
+					req);
+		return;
+	}
+
+	blob.length = xattr_size;
+
+	status = parse_dos_attribute_blob(state->smb_fname,
+					  blob,
+					  &state->dosmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS vfswrap_get_dos_attributes_recv(struct tevent_req *req,
+						struct vfs_aio_state *aio_state,
+						uint32_t *dosmode)
+{
+	struct vfswrap_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct vfswrap_get_dos_attributes_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*aio_state = state->aio_state;
+	*dosmode = state->dosmode;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS vfswrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    uint32_t *dosmode)
@@ -3164,8 +3302,8 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.set_dos_attributes_fn = vfswrap_set_dos_attributes,
 	.fset_dos_attributes_fn = vfswrap_fset_dos_attributes,
 	.get_dos_attributes_fn = vfswrap_get_dos_attributes,
-	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
-	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,
+	.get_dos_attributes_send_fn = vfswrap_get_dos_attributes_send,
+	.get_dos_attributes_recv_fn = vfswrap_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = vfswrap_fget_dos_attributes,
 	.offload_read_send_fn = vfswrap_offload_read_send,
 	.offload_read_recv_fn = vfswrap_offload_read_recv,
