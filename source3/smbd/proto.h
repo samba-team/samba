@@ -260,6 +260,11 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 uint32_t dos_mode_msdfs(connection_struct *conn,
 		      const struct smb_filename *smb_fname);
 uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname);
+struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
+				    struct smb_vfs_ev_glue *evg,
+				    files_struct *dir_fsp,
+				    struct smb_filename *smb_fname);
+NTSTATUS dos_mode_at_recv(struct tevent_req *req, uint32_t *dosmode);
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		     uint32_t dosmode, const char *parent_dir, bool newfile);
 NTSTATUS file_set_sparse(connection_struct *conn,

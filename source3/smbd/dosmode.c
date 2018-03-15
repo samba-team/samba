@@ -25,6 +25,7 @@
 #include "../libcli/security/security.h"
 #include "smbd/smbd.h"
 #include "lib/param/loadparm.h"
+#include "lib/util/tevent_ntstatus.h"
 
 static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 				const struct smb_filename *smb_fname,
@@ -748,6 +749,142 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 
 	result = dos_mode_post(result, conn, smb_fname, __func__);
 	return result;
+}
+
+struct dos_mode_at_state {
+	files_struct *dir_fsp;
+	struct smb_filename *smb_fname;
+	uint32_t dosmode;
+};
+
+static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq);
+
+struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
+				    struct smb_vfs_ev_glue *evg,
+				    files_struct *dir_fsp,
+				    struct smb_filename *smb_fname)
+{
+	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_req *req = NULL;
+	struct dos_mode_at_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	DBG_DEBUG("%s\n", smb_fname_str_dbg(smb_fname));
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct dos_mode_at_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	*state = (struct dos_mode_at_state) {
+		.dir_fsp = dir_fsp,
+		.smb_fname = smb_fname,
+	};
+
+	if (!VALID_STAT(smb_fname->st)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = SMB_VFS_GET_DOS_ATTRIBUTES_SEND(state,
+						 evg,
+						 dir_fsp,
+						 smb_fname);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, dos_mode_at_vfs_get_dosmode_done, req);
+
+	return req;
+}
+
+static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct dos_mode_at_state *state =
+		tevent_req_data(req,
+		struct dos_mode_at_state);
+	char *path = NULL;
+	struct smb_filename *smb_path = NULL;
+	struct vfs_aio_state aio_state;
+	NTSTATUS status;
+
+	status = SMB_VFS_GET_DOS_ATTRIBUTES_RECV(subreq,
+						 &aio_state,
+						 &state->dosmode);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Both the sync dos_mode() as well as the async
+		 * dos_mode_at_[send|recv] have no real error return, the only
+		 * unhandled error is when the stat info in smb_fname is not
+		 * valid (cf the checks in dos_mode() and dos_mode_at_send().
+		 *
+		 * If SMB_VFS_GET_DOS_ATTRIBUTES[_SEND|_RECV] fails we must call
+		 * dos_mode_post() which also does the mapping of a last ressort
+		 * from S_IFMT(st_mode).
+		 *
+		 * Only if we get NT_STATUS_NOT_IMPLEMENTED from a stacked VFS
+		 * module we must fallback to sync processing.
+		 */
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			/*
+			 * state->dosmode should still be 0, but reset
+			 * it to be sure.
+			 */
+			state->dosmode = 0;
+			status = NT_STATUS_OK;
+		}
+	}
+	if (NT_STATUS_IS_OK(status)) {
+		state->dosmode = dos_mode_post(state->dosmode,
+					       state->dir_fsp->conn,
+					       state->smb_fname,
+					       __func__);
+		tevent_req_done(req);
+		return;
+	}
+
+	/*
+	 * Fall back to sync dos_mode() if we got NOT_IMPLEMENTED.
+	 */
+
+	path = talloc_asprintf(state,
+			       "%s/%s",
+			       state->dir_fsp->fsp_name->base_name,
+			       state->smb_fname->base_name);
+	if (tevent_req_nomem(path, req)) {
+		return;
+	}
+
+	smb_path = synthetic_smb_fname(state, path, NULL, NULL, 0);
+	if (tevent_req_nomem(path, req)) {
+		return;
+	}
+
+	state->dosmode = dos_mode(state->dir_fsp->conn, smb_path);
+	tevent_req_done(req);
+	return;
+}
+
+NTSTATUS dos_mode_at_recv(struct tevent_req *req, uint32_t *dosmode)
+{
+	struct dos_mode_at_state *state =
+		tevent_req_data(req,
+		struct dos_mode_at_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*dosmode = state->dosmode;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
