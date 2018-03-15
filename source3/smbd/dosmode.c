@@ -260,16 +260,96 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
  This can also pull the create time into the stat struct inside smb_fname.
 ****************************************************************************/
 
+NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
+				  DATA_BLOB blob,
+				  uint32_t *pattr)
+{
+	struct xattr_DOSATTRIB dosattrib;
+	enum ndr_err_code ndr_err;
+	uint32_t dosattr;
+
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &dosattrib,
+			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("bad ndr decode "
+			    "from EA on file %s: Error = %s\n",
+			    smb_fname_str_dbg(smb_fname),
+			    ndr_errstr(ndr_err));
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	DBG_DEBUG("%s attr = %s\n",
+		  smb_fname_str_dbg(smb_fname), dosattrib.attrib_hex);
+
+	switch (dosattrib.version) {
+	case 0xFFFF:
+		dosattr = dosattrib.info.compatinfoFFFF.attrib;
+		break;
+	case 1:
+		dosattr = dosattrib.info.info1.attrib;
+		if (!null_nttime(dosattrib.info.info1.create_time)) {
+			struct timespec create_time =
+				nt_time_to_unix_timespec(
+					dosattrib.info.info1.create_time);
+
+			update_stat_ex_create_time(&smb_fname->st,
+						   create_time);
+
+			DBG_DEBUG("file %s case 1 set btime %s\n",
+				  smb_fname_str_dbg(smb_fname),
+				  time_to_asc(convert_timespec_to_time_t(
+						      create_time)));
+		}
+		break;
+	case 2:
+		dosattr = dosattrib.info.oldinfo2.attrib;
+		/* Don't know what flags to check for this case. */
+		break;
+	case 3:
+		dosattr = dosattrib.info.info3.attrib;
+		if ((dosattrib.info.info3.valid_flags & XATTR_DOSINFO_CREATE_TIME) &&
+		    !null_nttime(dosattrib.info.info3.create_time)) {
+			struct timespec create_time =
+				nt_time_to_unix_timespec(
+					dosattrib.info.info3.create_time);
+
+			update_stat_ex_create_time(&smb_fname->st,
+						   create_time);
+
+			DBG_DEBUG("file %s case 3 set btime %s\n",
+				  smb_fname_str_dbg(smb_fname),
+				  time_to_asc(convert_timespec_to_time_t(
+						      create_time)));
+		}
+		break;
+	default:
+		DBG_WARNING("Badly formed DOSATTRIB on file %s - %s\n",
+			    smb_fname_str_dbg(smb_fname), blob.data);
+		/* Should this be INTERNAL_ERROR? */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		dosattr |= FILE_ATTRIBUTE_DIRECTORY;
+	}
+
+	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
+	*pattr |= (uint32_t)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
+
+	dos_mode_debug_print(__func__, *pattr);
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS get_ea_dos_attribute(connection_struct *conn,
 			      struct smb_filename *smb_fname,
 			      uint32_t *pattr)
 {
-	struct xattr_DOSATTRIB dosattrib;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	ssize_t sizeret;
 	fstring attrstr;
-	uint32_t dosattr;
+	NTSTATUS status;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -327,78 +407,10 @@ NTSTATUS get_ea_dos_attribute(connection_struct *conn,
 	blob.data = (uint8_t *)attrstr;
 	blob.length = sizeret;
 
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &dosattrib,
-			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(1,("get_ea_dos_attribute: bad ndr decode "
-			 "from EA on file %s: Error = %s\n",
-			 smb_fname_str_dbg(smb_fname),
-			 ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);
+	status = parse_dos_attribute_blob(smb_fname, blob, pattr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	DEBUG(10,("get_ea_dos_attribute: %s attr = %s\n",
-		  smb_fname_str_dbg(smb_fname), dosattrib.attrib_hex));
-
-	switch (dosattrib.version) {
-		case 0xFFFF:
-			dosattr = dosattrib.info.compatinfoFFFF.attrib;
-			break;
-		case 1:
-			dosattr = dosattrib.info.info1.attrib;
-			if (!null_nttime(dosattrib.info.info1.create_time)) {
-				struct timespec create_time =
-					nt_time_to_unix_timespec(
-						dosattrib.info.info1.create_time);
-
-				update_stat_ex_create_time(&smb_fname->st,
-							create_time);
-
-				DEBUG(10,("get_ea_dos_attribute: file %s case 1 "
-					"set btime %s\n",
-					smb_fname_str_dbg(smb_fname),
-					time_to_asc(convert_timespec_to_time_t(
-						create_time)) ));
-			}
-			break;
-		case 2:
-			dosattr = dosattrib.info.oldinfo2.attrib;
-			/* Don't know what flags to check for this case. */
-			break;
-		case 3:
-			dosattr = dosattrib.info.info3.attrib;
-			if ((dosattrib.info.info3.valid_flags & XATTR_DOSINFO_CREATE_TIME) &&
-					!null_nttime(dosattrib.info.info3.create_time)) {
-				struct timespec create_time =
-					nt_time_to_unix_timespec(
-						dosattrib.info.info3.create_time);
-
-				update_stat_ex_create_time(&smb_fname->st,
-							create_time);
-
-				DEBUG(10,("get_ea_dos_attribute: file %s case 3 "
-					"set btime %s\n",
-					smb_fname_str_dbg(smb_fname),
-					time_to_asc(convert_timespec_to_time_t(
-						create_time)) ));
-			}
-			break;
-		default:
-			DEBUG(1,("get_ea_dos_attribute: Badly formed DOSATTRIB on "
-				 "file %s - %s\n", smb_fname_str_dbg(smb_fname),
-				 attrstr));
-			/* Should this be INTERNAL_ERROR? */
-	                return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		dosattr |= FILE_ATTRIBUTE_DIRECTORY;
-	}
-	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
-	*pattr |= (uint32_t)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
-
-	dos_mode_debug_print(__func__, *pattr);
 
 	return NT_STATUS_OK;
 }

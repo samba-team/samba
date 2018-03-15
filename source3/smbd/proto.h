@@ -290,6 +290,10 @@ struct timespec get_change_timespec(connection_struct *conn,
 				struct files_struct *fsp,
 				const struct smb_filename *smb_fname);
 
+NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
+				  DATA_BLOB blob,
+				  uint32_t *pattr);
+
 /* The following definitions come from smbd/error.c  */
 
 bool use_nt_status(void);
