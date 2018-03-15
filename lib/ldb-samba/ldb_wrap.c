@@ -303,9 +303,13 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 	struct ldb_context *ldb;
 	int ret;
 
-	ldb = ldb_wrap_find(url, ev, lp_ctx, session_info, credentials, flags);
-	if (ldb != NULL)
-		return talloc_reference(mem_ctx, ldb);
+	/*
+	 * Unlike samdb_connect_url() do not try and cache the LDB
+	 * handle, get a new one each time.  Only sam.ldb is
+	 * punitively expensive to open and helpful caches like this
+	 * cause challenges (such as if the value for 'private dir'
+	 * changes).
+	 */
 
 	ldb = samba_ldb_init(mem_ctx, ev, lp_ctx, session_info, credentials);
 
@@ -314,11 +318,6 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 
 	ret = samba_ldb_connect(ldb, lp_ctx, url, flags);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(ldb);
-		return NULL;
-	}
-
-	if (!ldb_wrap_add(url, ev, lp_ctx, session_info, credentials, flags, ldb)) {
 		talloc_free(ldb);
 		return NULL;
 	}
