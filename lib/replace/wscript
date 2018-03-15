@@ -68,7 +68,15 @@ def configure(conf):
     conf.CHECK_HEADERS('aio.h sys/unistd.h alloca.h float.h')
 
     conf.SET_TARGET_TYPE('tirpc', 'EMPTY')
-    conf.CHECK_HEADERS('rpc/rpc.h rpc/nettype.h')
+
+    if conf.CHECK_CODE(
+            '\n#ifndef _TIRPC_RPC_H\n#error "no tirpc headers in system path"\n#endif\n',
+            'HAVE_RPC_RPC_HEADERS',
+            headers=['rpc/rpc.h', 'rpc/nettype.h'],
+            msg='Checking for tirpc rpc headers in default system path'):
+        if conf.CONFIG_SET('HAVE_RPC_RPC_H'):
+            conf.undefine('HAVE_RPC_RPC_H')
+
     if not conf.CONFIG_SET('HAVE_RPC_RPC_H'):
         if conf.CHECK_CFG(package='libtirpc', args='--cflags --libs',
                        msg='Checking for libtirpc headers',
