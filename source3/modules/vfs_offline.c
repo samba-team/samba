@@ -46,6 +46,8 @@ static NTSTATUS offline_fget_dos_attributes(struct vfs_handle_struct *handle,
 static struct vfs_fn_pointers offline_fns = {
     .fs_capabilities_fn = offline_fs_capabilities,
 	.get_dos_attributes_fn = offline_get_dos_attributes,
+	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
+	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = offline_fget_dos_attributes,
 };
 

@@ -69,6 +69,7 @@
 #include "lib/util/tevent_unix.h"
 #include "libcli/security/sddl.h"
 #include "passdb/machine_sid.h"
+#include "lib/util/tevent_ntstatus.h"
 
 static int vfs_full_audit_debug_level = DBGC_VFS;
 
@@ -178,6 +179,8 @@ typedef enum _vfs_op_type {
 
 	/* DOS attribute operations. */
 	SMB_VFS_OP_GET_DOS_ATTRIBUTES,
+	SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND,
+	SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV,
 	SMB_VFS_OP_FGET_DOS_ATTRIBUTES,
 	SMB_VFS_OP_SET_DOS_ATTRIBUTES,
 	SMB_VFS_OP_FSET_DOS_ATTRIBUTES,
@@ -317,6 +320,8 @@ static struct {
 	{ SMB_VFS_OP_SNAP_CREATE, "snap_create" },
 	{ SMB_VFS_OP_SNAP_DELETE, "snap_delete" },
 	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES, "get_dos_attributes" },
+	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND, "get_dos_attributes_send" },
+	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV, "get_dos_attributes_recv" },
 	{ SMB_VFS_OP_FGET_DOS_ATTRIBUTES, "fget_dos_attributes" },
 	{ SMB_VFS_OP_SET_DOS_ATTRIBUTES, "set_dos_attributes" },
 	{ SMB_VFS_OP_FSET_DOS_ATTRIBUTES, "fset_dos_attributes" },
@@ -2064,6 +2069,128 @@ static NTSTATUS smb_full_audit_get_dos_attributes(
 	return status;
 }
 
+struct smb_full_audit_get_dos_attributes_state {
+	struct vfs_aio_state aio_state;
+	vfs_handle_struct *handle;
+	files_struct *dir_fsp;
+	const struct smb_filename *smb_fname;
+	uint32_t dosmode;
+};
+
+static void smb_full_audit_get_dos_attributes_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_full_audit_get_dos_attributes_send(
+		TALLOC_CTX *mem_ctx,
+		const struct smb_vfs_ev_glue *evg,
+		struct vfs_handle_struct *handle,
+		files_struct *dir_fsp,
+		struct smb_filename *smb_fname)
+{
+	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_req *req = NULL;
+	struct smb_full_audit_get_dos_attributes_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_full_audit_get_dos_attributes_state);
+	if (req == NULL) {
+		do_log(SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND,
+		       false,
+		       handle,
+		       "%s/%s",
+		       fsp_str_do_log(dir_fsp),
+		       smb_fname->base_name);
+		return NULL;
+	}
+	*state = (struct smb_full_audit_get_dos_attributes_state) {
+		.handle = handle,
+		.dir_fsp = dir_fsp,
+		.smb_fname = smb_fname,
+	};
+
+	subreq = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES_SEND(mem_ctx,
+						      evg,
+						      handle,
+						      dir_fsp,
+						      smb_fname);
+	if (tevent_req_nomem(subreq, req)) {
+		do_log(SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND,
+		       false,
+		       handle,
+		       "%s/%s",
+		       fsp_str_do_log(dir_fsp),
+		       smb_fname->base_name);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				smb_full_audit_get_dos_attributes_done,
+				req);
+
+	do_log(SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND,
+	       true,
+	       handle,
+	       "%s/%s",
+	       fsp_str_do_log(dir_fsp),
+	       smb_fname->base_name);
+
+	return req;
+}
+
+static void smb_full_audit_get_dos_attributes_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smb_full_audit_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct smb_full_audit_get_dos_attributes_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES_RECV(subreq,
+						      &state->aio_state,
+						      &state->dosmode);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS smb_full_audit_get_dos_attributes_recv(struct tevent_req *req,
+						struct vfs_aio_state *aio_state,
+						uint32_t *dosmode)
+{
+	struct smb_full_audit_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct smb_full_audit_get_dos_attributes_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		do_log(SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV,
+		       false,
+		       state->handle,
+		       "%s/%s",
+		       fsp_str_do_log(state->dir_fsp),
+		       state->smb_fname->base_name);
+		tevent_req_received(req);
+		return status;
+	}
+
+	do_log(SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV,
+	       true,
+	       state->handle,
+	       "%s/%s",
+	       fsp_str_do_log(state->dir_fsp),
+	       state->smb_fname->base_name);
+
+	*aio_state = state->aio_state;
+	*dosmode = state->dosmode;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS smb_full_audit_fget_dos_attributes(
 				struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
@@ -2716,6 +2843,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.translate_name_fn = smb_full_audit_translate_name,
 	.fsctl_fn = smb_full_audit_fsctl,
 	.get_dos_attributes_fn = smb_full_audit_get_dos_attributes,
+	.get_dos_attributes_send_fn = smb_full_audit_get_dos_attributes_send,
+	.get_dos_attributes_recv_fn = smb_full_audit_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = smb_full_audit_fget_dos_attributes,
 	.set_dos_attributes_fn = smb_full_audit_set_dos_attributes,
 	.fset_dos_attributes_fn = smb_full_audit_fset_dos_attributes,

@@ -1757,6 +1757,104 @@ static NTSTATUS smb_time_get_dos_attributes(struct vfs_handle_struct *handle,
 	return result;
 }
 
+struct smb_time_audit_get_dos_attributes_state {
+	struct vfs_aio_state aio_state;
+	files_struct *dir_fsp;
+	const struct smb_filename *smb_fname;
+	uint32_t dosmode;
+};
+
+static void smb_time_audit_get_dos_attributes_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_time_audit_get_dos_attributes_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			struct smb_filename *smb_fname)
+{
+	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_req *req = NULL;
+	struct smb_time_audit_get_dos_attributes_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_time_audit_get_dos_attributes_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct smb_time_audit_get_dos_attributes_state) {
+		.dir_fsp = dir_fsp,
+		.smb_fname = smb_fname,
+	};
+
+	subreq = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES_SEND(mem_ctx,
+						      evg,
+						      handle,
+						      dir_fsp,
+						      smb_fname);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				smb_time_audit_get_dos_attributes_done,
+				req);
+
+	return req;
+}
+
+static void smb_time_audit_get_dos_attributes_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smb_time_audit_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct smb_time_audit_get_dos_attributes_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES_RECV(subreq,
+						      &state->aio_state,
+						      &state->dosmode);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS smb_time_audit_get_dos_attributes_recv(struct tevent_req *req,
+						struct vfs_aio_state *aio_state,
+						uint32_t *dosmode)
+{
+	struct smb_time_audit_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct smb_time_audit_get_dos_attributes_state);
+	NTSTATUS status;
+	double timediff;
+
+	timediff = state->aio_state.duration * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_at("async get_dos_attributes",
+				      timediff,
+				      state->dir_fsp,
+				      state->smb_fname);
+	}
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*aio_state = state->aio_state;
+	*dosmode = state->dosmode;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS smb_time_fget_dos_attributes(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					uint32_t *dosmode)
@@ -2774,6 +2872,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.translate_name_fn = smb_time_audit_translate_name,
 	.fsctl_fn = smb_time_audit_fsctl,
 	.get_dos_attributes_fn = smb_time_get_dos_attributes,
+	.get_dos_attributes_send_fn = smb_time_audit_get_dos_attributes_send,
+	.get_dos_attributes_recv_fn = smb_time_audit_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = smb_time_fget_dos_attributes,
 	.set_dos_attributes_fn = smb_time_set_dos_attributes,
 	.fset_dos_attributes_fn = smb_time_fset_dos_attributes,

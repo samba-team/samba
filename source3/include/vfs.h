@@ -260,6 +260,7 @@
 /* Version 40 - Introduce smb_vfs_ev_glue infrastructure. */
 /* Version 40 - Add vfs_not_implemented_* helper functions. */
 /* Version 40 - Add SMB_VFS_GETXATTRAT_SEND/RECV */
+/* Version 40 - Add SMB_VFS_GET_DOS_ATTRIBUTES_SEND/RECV */
 
 #define SMB_VFS_INTERFACE_VERSION 40
 
@@ -900,6 +901,18 @@ struct vfs_fn_pointers {
 					   struct files_struct *fsp,
 					   uint32_t dosmode);
 
+	struct tevent_req *(*get_dos_attributes_send_fn)(
+				TALLOC_CTX *mem_ctx,
+				const struct smb_vfs_ev_glue *evg,
+				struct vfs_handle_struct *handle,
+				files_struct *dir_fsp,
+				struct smb_filename *smb_fname);
+
+	NTSTATUS (*get_dos_attributes_recv_fn)(
+				struct tevent_req *req,
+				struct vfs_aio_state *aio_state,
+				uint32_t *dosmode);
+
 	/* NT ACL operations. */
 
 	NTSTATUS (*fget_nt_acl_fn)(struct vfs_handle_struct *handle,
@@ -1355,6 +1368,16 @@ NTSTATUS smb_vfs_call_set_dos_attributes(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_fset_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t dosmode);
+struct tevent_req *smb_vfs_call_get_dos_attributes_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			struct smb_filename *smb_fname);
+NTSTATUS smb_vfs_call_get_dos_attributes_recv(
+			struct tevent_req *req,
+			struct vfs_aio_state *aio_state,
+			uint32_t *dosmode);
 struct tevent_req *smb_vfs_call_offload_read_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
@@ -1827,6 +1850,16 @@ NTSTATUS vfs_not_implemented_readdir_attr(struct vfs_handle_struct *handle,
 NTSTATUS vfs_not_implemented_get_dos_attributes(struct vfs_handle_struct *handle,
 						struct smb_filename *smb_fname,
 						uint32_t *dosmode);
+struct tevent_req *vfs_not_implemented_get_dos_attributes_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			struct smb_filename *smb_fname);
+NTSTATUS vfs_not_implemented_get_dos_attributes_recv(
+			struct tevent_req *req,
+			struct vfs_aio_state *aio_state,
+			uint32_t *dosmode);
 NTSTATUS vfs_not_implemented_fget_dos_attributes(struct vfs_handle_struct *handle,
 						 struct files_struct *fsp,
 						 uint32_t *dosmode);

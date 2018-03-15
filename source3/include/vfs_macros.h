@@ -386,6 +386,21 @@
 #define SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, attributes) \
 	smb_vfs_call_fget_dos_attributes((handle)->next, (fsp), (attributes))
 
+#define SMB_VFS_GET_DOS_ATTRIBUTES_SEND(mem_ctx, evg, dir_fsp, smb_fname) \
+	smb_vfs_call_get_dos_attributes_send((mem_ctx), (evg), \
+					     (dir_fsp)->conn->vfs_handles, \
+					     (dir_fsp), (smb_fname))
+#define SMB_VFS_GET_DOS_ATTRIBUTES_RECV(req, aio_state, dosmode) \
+	smb_vfs_call_get_dos_attributes_recv((req), (aio_state), (dosmode))
+
+#define SMB_VFS_NEXT_GET_DOS_ATTRIBUTES_SEND(mem_ctx, evg, handle, dir_fsp, \
+					     smb_fname) \
+	smb_vfs_call_get_dos_attributes_send((mem_ctx), (evg), \
+					     (handle)->next, \
+					     (dir_fsp), (smb_fname))
+#define SMB_VFS_NEXT_GET_DOS_ATTRIBUTES_RECV(req, aio_state, dosmode) \
+	smb_vfs_call_get_dos_attributes_recv((req), (aio_state), (dosmode))
+
 #define SMB_VFS_SET_DOS_ATTRIBUTES(conn, smb_fname, attributes) \
 	smb_vfs_call_set_dos_attributes((conn)->vfs_handles, (smb_fname), (attributes))
 #define SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle, smb_fname, attributes) \

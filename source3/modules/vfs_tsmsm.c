@@ -605,6 +605,8 @@ static struct vfs_fn_pointers tsmsm_fns = {
 	.set_dos_attributes_fn = tsmsm_set_dos_attributes,
 	.fset_dos_attributes_fn = tsmsm_fset_dos_attributes,
 	.get_dos_attributes_fn = tsmsm_get_dos_attributes,
+	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
+	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = tsmsm_fget_dos_attributes,
 };
 

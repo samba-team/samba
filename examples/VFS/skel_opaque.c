@@ -707,6 +707,52 @@ static NTSTATUS skel_get_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+struct skel_get_dos_attributes_state {
+	struct vfs_aio_state aio_state;
+	uint32_t dosmode;
+};
+
+static struct tevent_req *skel_get_dos_attributes_send(
+			TALLOC_CTX *mem_ctx,
+			const struct smb_vfs_ev_glue *evg,
+			struct vfs_handle_struct *handle,
+			files_struct *dir_fsp,
+			struct smb_filename *smb_fname)
+{
+	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_req *req = NULL;
+	struct skel_get_dos_attributes_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct skel_get_dos_attributes_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS skel_get_dos_attributes_recv(struct tevent_req *req,
+					     struct vfs_aio_state *aio_state,
+					     uint32_t *dosmode)
+{
+	struct skel_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct skel_get_dos_attributes_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*aio_state = state->aio_state;
+	*dosmode = state->dosmode;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS skel_fget_dos_attributes(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				uint32_t *dosmode)
@@ -1069,6 +1115,8 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 
 	/* DOS attributes. */
 	.get_dos_attributes_fn = skel_get_dos_attributes,
+	.get_dos_attributes_send_fn = skel_get_dos_attributes_send,
+	.get_dos_attributes_recv_fn = skel_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = skel_fget_dos_attributes,
 	.set_dos_attributes_fn = skel_set_dos_attributes,
 	.fset_dos_attributes_fn = skel_fset_dos_attributes,
