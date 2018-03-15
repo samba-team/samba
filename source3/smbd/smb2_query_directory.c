@@ -531,6 +531,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 {
 	struct smbd_smb2_query_directory_state *state = tevent_req_data(
 		req, struct smbd_smb2_query_directory_state);
+	struct smb_filename *smb_fname = NULL; /* relative to fsp !! */
 	bool got_exact_match = false;
 	int off = state->out_output_buffer.length;
 	int space_remaining = state->in_output_buffer_length - off;
@@ -557,6 +558,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 					   state->base_data,
 					   state->end_data,
 					   space_remaining,
+					   &smb_fname,
 					   &got_exact_match,
 					   &state->last_entry_off,
 					   NULL,
@@ -602,6 +604,8 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 			req);
 		state->async_sharemode_count++;
 	}
+
+	TALLOC_FREE(smb_fname);
 
 	state->num++;
 	state->out_output_buffer.length = off;

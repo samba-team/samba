@@ -2458,6 +2458,7 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       char *base_data,
 			       char *end_data,
 			       int space_remaining,
+			       struct smb_filename **_smb_fname,
 			       bool *got_exact_match,
 			       int *_last_entry_off,
 			       struct ea_list *name_list,
@@ -2548,14 +2549,28 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 		*file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	}
 
-	TALLOC_FREE(fname);
-	TALLOC_FREE(smb_fname);
-
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
 	{
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(fname);
 		return status;
 	}
+
+	if (_smb_fname != NULL) {
+		struct smb_filename *name = NULL;
+
+		name = synthetic_smb_fname(ctx, fname, NULL, &smb_fname->st, 0);
+		if (name == NULL) {
+			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(fname);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*_smb_fname = name;
+	}
+
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(fname);
 
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		dptr_SeekDir(dirptr, prev_dirpos);
@@ -2598,6 +2613,7 @@ static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					 true, align, do_pad,
 					 ppdata, base_data, end_data,
 					 space_remaining,
+					 NULL,
 					 got_exact_match,
 					 last_entry_off, name_list, NULL);
 }
