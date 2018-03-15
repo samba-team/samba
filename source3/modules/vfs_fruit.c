@@ -2988,9 +2988,6 @@ static NTSTATUS check_ms_nfs(vfs_handle_struct *handle,
 {
 	uint32_t i;
 	struct fruit_config_data *config = NULL;
-	struct dom_sid sid;
-	NTSTATUS status = NT_STATUS_OK;
-	bool remove_ok = false;
 
 	*pdo_chmod = false;
 
@@ -3024,40 +3021,7 @@ static NTSTATUS check_ms_nfs(vfs_handle_struct *handle,
 	 * fruit_fget_nt_acl().
 	 */
 
-	/* MS NFS style mode */
-	sid_compose(&sid, &global_sid_Unix_NFS_Mode,
-		    fsp->fsp_name->st.st_ex_mode);
-	status = security_descriptor_dacl_del(psd, &sid);
-	remove_ok = (NT_STATUS_IS_OK(status) ||
-		     NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND));
-	if (!remove_ok) {
-		DBG_WARNING("failed to remove MS NFS_mode style ACE\n");
-		return status;
-	}
-
-	/* MS NFS style uid */
-	sid_compose(&sid, &global_sid_Unix_NFS_Users,
-		    fsp->fsp_name->st.st_ex_uid);
-	status = security_descriptor_dacl_del(psd, &sid);
-	remove_ok = (NT_STATUS_IS_OK(status) ||
-		     NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND));
-	if (!remove_ok) {
-		DBG_WARNING("failed to remove MS NFS_users style ACE\n");
-		return status;
-	}
-
-	/* MS NFS style gid */
-	sid_compose(&sid, &global_sid_Unix_NFS_Groups,
-		    fsp->fsp_name->st.st_ex_gid);
-	status = security_descriptor_dacl_del(psd, &sid);
-	remove_ok = (NT_STATUS_IS_OK(status) ||
-		     NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND));
-	if (!remove_ok) {
-		DBG_WARNING("failed to remove MS NFS_groups style ACE\n");
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	return remove_virtual_nfs_aces(psd);
 }
 
 /****************************************************************************
