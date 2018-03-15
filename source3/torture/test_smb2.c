@@ -24,6 +24,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "libcli/security/security.h"
 #include "libsmb/proto.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth_generic.h"
 #include "../librpc/ndr/libndr.h"
@@ -268,6 +269,47 @@ bool run_smb2_negprot(int dummy)
 	if (smbXcli_conn_is_connected(cli->conn)) {
 		printf("2nd smbXcli_negprot should disconnect "
 		       "- still connected\n");
+		return false;
+	}
+
+	return true;
+}
+
+bool run_smb2_anonymous(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	struct cli_credentials *anon_creds = NULL;
+	bool guest = false;
+
+	printf("Starting SMB2-ANONYMOUS\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn, cli->timeout,
+				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	anon_creds = cli_credentials_init_anon(talloc_tos());
+	if (anon_creds == NULL) {
+		printf("cli_credentials_init_anon failed\n");
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, anon_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	guest = smbXcli_session_is_guest(cli->smb2.session);
+	if (guest) {
+		printf("anonymous session should not have guest authentication\n");
 		return false;
 	}
 

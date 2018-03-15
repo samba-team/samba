@@ -11588,6 +11588,7 @@ static struct {
 	{ "NOTIFY-ONLINE", run_notify_online },
 	{ "SMB2-BASIC", run_smb2_basic },
 	{ "SMB2-NEGPROT", run_smb2_negprot },
+	{ "SMB2-ANONYMOUS", run_smb2_anonymous },
 	{ "SMB2-SESSION-RECONNECT", run_smb2_session_reconnect },
 	{ "SMB2-TCON-DEPENDENCE", run_smb2_tcon_dependence },
 	{ "SMB2-MULTI-CHANNEL", run_smb2_multi_channel },
