@@ -2144,6 +2144,32 @@ struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct securi
 }
 
 /****************************************************************************
+ Return a root token
+****************************************************************************/
+
+struct security_unix_token *root_unix_token(TALLOC_CTX *mem_ctx)
+{
+	struct security_unix_token *t = NULL;
+
+	t = talloc_zero(mem_ctx, struct security_unix_token);
+	if (t == NULL) {
+		return NULL;
+	}
+
+	/*
+	 * This is not needed, but lets make it explicit, not implicit.
+	 */
+	*t = (struct security_unix_token) {
+		.uid = 0,
+		.gid = 0,
+		.ngroups = 0,
+		.groups = NULL
+	};
+
+	return t;
+}
+
+/****************************************************************************
  Check that a file matches a particular file type.
 ****************************************************************************/
 
