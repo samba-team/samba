@@ -1929,7 +1929,7 @@ sub provision($$$$$$$$$)
 
 [vfs_fruit]
 	path = $shrdir
-	vfs objects = catia fruit streams_xattr acl_xattr
+	vfs objects = catia fruit streams_xattr acl_xattr xattr_tdb
 	fruit:resource = file
 	fruit:metadata = netatalk
 	fruit:locking = netatalk
@@ -1948,29 +1948,29 @@ sub provision($$$$$$$$$)
 
 [vfs_fruit_metadata_stream]
 	path = $shrdir
-	vfs objects = fruit streams_xattr acl_xattr
+	vfs objects = fruit streams_xattr acl_xattr xattr_tdb
 	fruit:resource = file
 	fruit:metadata = stream
 	fruit:veto_appledouble = no
 
 [vfs_fruit_stream_depot]
 	path = $shrdir
-	vfs objects = fruit streams_depot acl_xattr
+	vfs objects = fruit streams_depot acl_xattr xattr_tdb
 	fruit:resource = stream
 	fruit:metadata = stream
 	fruit:veto_appledouble = no
 
 [vfs_wo_fruit]
 	path = $shrdir
-	vfs objects = streams_xattr acl_xattr
+	vfs objects = streams_xattr acl_xattr xattr_tdb
 
 [vfs_wo_fruit_stream_depot]
 	path = $shrdir
-	vfs objects = streams_depot acl_xattr
+	vfs objects = streams_depot acl_xattr xattr_tdb
 
 [vfs_fruit_timemachine]
 	path = $shrdir
-	vfs objects = fruit streams_xattr acl_xattr
+	vfs objects = fruit streams_xattr acl_xattr xattr_tdb
 	fruit:resource = file
 	fruit:metadata = stream
 	fruit:time machine = yes
