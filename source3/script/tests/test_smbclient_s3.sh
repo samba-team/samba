@@ -643,13 +643,17 @@ test_backup_privilege_list()
 {
     tmpfile=$PREFIX/smbclient_backup_privilege_list
 
+    # selftest uses the forward slash as a separator, but "net sam rights
+    # grant" requires the backslash separator
+    USER_TMP=$(printf '%s' "$USERNAME" | tr '/' '\\')
+
     # If we don't have a DOMAIN component to the username, add it.
-    echo "$USERNAME" | grep '\\' 2>&1
+    printf '%s' "$USER_TMP" | grep '\\' 2>&1
     ret=$?
     if [ $ret != 0 ] ; then
-	priv_username="$DOMAIN\\$USERNAME"
+	priv_username="$DOMAIN\\$USER_TMP"
     else
-	priv_username=$USERNAME
+	priv_username="$USER_TMP"
     fi
 
     $NET sam rights grant $priv_username SeBackupPrivilege 2>&1
