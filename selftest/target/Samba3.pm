@@ -1896,6 +1896,16 @@ sub provision($$$$$$$$$)
 	fruit:encoding = native
 	fruit:veto_appledouble = no
 
+[vfs_fruit_xattr]
+	path = $shrdir
+        # This is used by vfs.fruit tests that require real fs xattr
+	vfs objects = catia fruit streams_xattr acl_xattr
+	fruit:resource = file
+	fruit:metadata = netatalk
+	fruit:locking = netatalk
+	fruit:encoding = native
+	fruit:veto_appledouble = no
+
 [vfs_fruit_metadata_stream]
 	path = $shrdir
 	vfs objects = fruit streams_xattr acl_xattr
