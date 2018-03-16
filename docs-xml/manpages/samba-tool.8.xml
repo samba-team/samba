@@ -134,6 +134,21 @@
 	</varlistentry>
 
 	<varlistentry>
+	<term>--ip-address=IP_ADDRESS_LIST</term>
+	<listitem><para>
+	IPv4 address for the computer's A record, or IPv6 address for AAAA record,
+	can be provided multiple times.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--service-principal-name=SERVICE_PRINCIPAL_NAME_LIST</term>
+	<listitem><para>
+	Computer's Service Principal Name, can be provided multiple times.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
 	<term>--prepare-oldjoin</term>
 	<listitem><para>
 	Prepare enabled machine account for oldjoin mechanism.
