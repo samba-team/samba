@@ -372,7 +372,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 
 		rc = tsocket_address_inet_from_strings(tmp_ctx,
 						       "ip",
-						       "localhost",
+						       "127.0.0.1",
 						       0,
 						       &local);
 		if (rc < 0) {

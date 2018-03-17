@@ -38,7 +38,7 @@ WERROR winreg_printer_binding_handle(TALLOC_CTX *mem_ctx,
 
 	rc = tsocket_address_inet_from_strings(mem_ctx,
 					       "ip",
-					       "localhost",
+					       "127.0.0.1",
 					       0,
 					       &local);
 	if (rc < 0) {

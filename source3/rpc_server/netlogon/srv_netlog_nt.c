@@ -694,7 +694,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 
 	rc = tsocket_address_inet_from_strings(mem_ctx,
 					       "ip",
-					       "localhost",
+					       "127.0.0.1",
 					       0,
 					       &local);
 	if (rc < 0) {
@@ -1188,7 +1188,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	rc = tsocket_address_inet_from_strings(mem_ctx,
 					       "ip",
-					       "localhost",
+					       "127.0.0.1",
 					       0,
 					       &local);
 	if (rc < 0) {
