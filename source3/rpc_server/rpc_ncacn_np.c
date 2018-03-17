@@ -623,7 +623,7 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 
 		rc = tsocket_address_inet_from_strings(mem_ctx,
 						       "ip",
-						       "127.0.0.1",
+						       "localhost",
 						       0,
 						       &local);
 		if (rc < 0) {
