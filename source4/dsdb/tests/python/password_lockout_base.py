@@ -200,6 +200,20 @@ class BasePasswordTestCase(PasswordTestCase):
         time.sleep(0.01)
         return res
 
+    def update_lockout_settings(self, threshold, duration, observation_window):
+        """Updates the global user lockout settings"""
+        m = Message()
+        m.dn = Dn(self.ldb, self.base_dn)
+        account_lockout_duration_ticks = -int(duration * (1e7))
+        m["lockoutDuration"] = MessageElement(str(account_lockout_duration_ticks),
+                                              FLAG_MOD_REPLACE, "lockoutDuration")
+        m["lockoutThreshold"] = MessageElement(str(threshold),
+                                               FLAG_MOD_REPLACE, "lockoutThreshold")
+        lockout_observation_window_ticks = -int(observation_window * (1e7))
+        m["lockOutObservationWindow"] = MessageElement(str(lockout_observation_window_ticks),
+                                                       FLAG_MOD_REPLACE, "lockOutObservationWindow")
+        self.ldb.modify(m)
+
     def _readd_user(self, creds, lockOutObservationWindow=0):
         username = creds.get_username()
         userpass = creds.get_password()
@@ -308,31 +322,14 @@ replace: lockoutThreshold
 lockoutThreshold: """ + str(lockoutThreshold) + """
 """)
 
-        m = Message()
-        m.dn = Dn(self.ldb, base_dn)
-
+        self.base_dn = self.ldb.domain_dn()
         self.account_lockout_duration = 2
-        account_lockout_duration_ticks = -int(self.account_lockout_duration * (1e7))
-
-        m["lockoutDuration"] = MessageElement(str(account_lockout_duration_ticks),
-                                              FLAG_MOD_REPLACE, "lockoutDuration")
-
-        account_lockout_threshold = 3
-        m["lockoutThreshold"] = MessageElement(str(account_lockout_threshold),
-                                               FLAG_MOD_REPLACE, "lockoutThreshold")
-
         self.lockout_observation_window = 2
-        lockout_observation_window_ticks = -int(self.lockout_observation_window * (1e7))
-
-        m["lockOutObservationWindow"] = MessageElement(str(lockout_observation_window_ticks),
-                                                       FLAG_MOD_REPLACE, "lockOutObservationWindow")
-
-        self.ldb.modify(m)
+        self.update_lockout_settings(threshold=3, duration=2,
+                                     observation_window=2)
 
         # update DC to allow password changes for the duration of this test
         self.allow_password_changes()
-
-        self.base_dn = self.ldb.domain_dn()
 
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
         self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % self.host, self.lp, self.global_creds)

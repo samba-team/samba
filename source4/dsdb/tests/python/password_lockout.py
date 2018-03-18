@@ -33,6 +33,7 @@ import samba.tests
 from samba.tests import delete_force
 from samba.dcerpc import security, samr
 from samba.ndr import ndr_unpack
+from samba.tests.pso import PasswordSettings
 
 parser = optparse.OptionParser("password_lockout.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -590,6 +591,41 @@ userPassword: thatsAcomplPASS2XYZ
                                                           "samr",
                                                           initial_lastlogon_relation='greater')
 
+    # For PSOs, just test a selection of the above combinations
+    def test_pso_userPassword_lockout_with_clear_change_krb5_ldap_userAccountControl(self):
+        self.use_pso_lockout_settings(self.lockout1krb5_creds)
+        self._test_userPassword_lockout_with_clear_change(self.lockout1krb5_creds,
+                                                          self.lockout2krb5_ldb,
+                                                          "ldap_userAccountControl")
+
+    def test_pso_userPassword_lockout_with_clear_change_ntlm_ldap_lockoutTime(self):
+        self.use_pso_lockout_settings(self.lockout1ntlm_creds)
+        self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
+                                                          self.lockout2ntlm_ldb,
+                                                          "ldap_lockoutTime",
+                                                          initial_lastlogon_relation='greater')
+
+    def test_pso_userPassword_lockout_with_clear_change_ntlm_samr(self):
+        self.use_pso_lockout_settings(self.lockout1ntlm_creds)
+        self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
+                                                          self.lockout2ntlm_ldb,
+                                                          "samr",
+                                                          initial_lastlogon_relation='greater')
+
+    def use_pso_lockout_settings(self, creds):
+        # create a PSO with the lockout settings the test cases normally expect
+        pso = PasswordSettings("lockout-PSO", self.ldb, lockout_attempts=3,
+                               lockout_duration=2)
+        self.addCleanup(self.ldb.delete, pso.dn)
+
+        userdn = "cn=%s,cn=users,%s" % (creds.get_username(), self.base_dn)
+        pso.apply_to(userdn)
+
+        # update the global lockout settings to be wildly different to what
+        # the test cases normally expect
+        self.update_lockout_settings(threshold=10, duration=600,
+                                     observation_window=600)
+
     def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb,
                                                    initial_logoncount_relation=None):
         print("Performs a password cleartext change operation on 'unicodePwd'")
@@ -1010,6 +1046,17 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         self._test_login_lockout(self.lockout1krb5_creds)
 
     def test_login_lockout_ntlm(self):
+        self._test_login_lockout(self.lockout1ntlm_creds)
+
+    # Repeat the login lockout tests using PSOs
+    def test_pso_login_lockout_krb5(self):
+        """Check the PSO lockout settings get applied to the user correctly"""
+        self.use_pso_lockout_settings(self.lockout1krb5_creds)
+        self._test_login_lockout(self.lockout1krb5_creds)
+
+    def test_pso_login_lockout_ntlm(self):
+        """Check the PSO lockout settings get applied to the user correctly"""
+        self.use_pso_lockout_settings(self.lockout1ntlm_creds)
         self._test_login_lockout(self.lockout1ntlm_creds)
 
     def test_multiple_logon_krb5(self):
