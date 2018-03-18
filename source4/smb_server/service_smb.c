@@ -33,7 +33,6 @@
 #include "param/share.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
-#include "file_server/file_server.h"
 #include "ntvfs/ntvfs.h"
 #include "lib/cmdline/popt_common.h"
 /*

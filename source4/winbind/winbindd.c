@@ -27,7 +27,6 @@
 #include "lib/param/param.h"
 #include "source4/smbd/service.h"
 #include "source4/smbd/process_model.h"
-#include "file_server/file_server.h"
 #include "dynconfig.h"
 #include "nsswitch/winbind_client.h"
 
