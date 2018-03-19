@@ -1413,14 +1413,19 @@ struct ctdb_record_handle *ctdb_fetch_lock_recv(struct tevent_req *req,
 		offset = ctdb_ltdb_header_len(&h->header);
 
 		data->dsize = h->data.dsize - offset;
-		data->dptr = talloc_memdup(mem_ctx, h->data.dptr + offset,
-					   data->dsize);
-		if (data->dptr == NULL) {
-			TALLOC_FREE(state->h);
-			if (perr != NULL) {
-				*perr = ENOMEM;
+		if (data->dsize == 0) {
+			data->dptr = NULL;
+		} else {
+			data->dptr = talloc_memdup(mem_ctx,
+						   h->data.dptr + offset,
+						   data->dsize);
+			if (data->dptr == NULL) {
+				TALLOC_FREE(state->h);
+				if (perr != NULL) {
+					*perr = ENOMEM;
+				}
+				return NULL;
 			}
-			return NULL;
 		}
 	}
 
