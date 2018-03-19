@@ -3088,7 +3088,7 @@ static void test_read_only(void **state)
 		msg = ldb_msg_new(tmp_ctx);
 		assert_non_null(msg);
 
-		msg->dn = ldb_dn_new_fmt(msg, ro_ldb, "dc=test");
+		msg->dn = ldb_dn_new_fmt(msg, rw_ldb, "dc=test");
 		assert_non_null(msg->dn);
 
 		ret = ldb_msg_add_string(msg, "cn", "test_cn_val");
