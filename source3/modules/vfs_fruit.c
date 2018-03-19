@@ -2947,9 +2947,10 @@ static NTSTATUS remove_virtual_nfs_aces(struct security_descriptor *psd)
 
 	for (i = 0; i < psd->dacl->num_aces; i++) {
 		/* MS NFS style mode/uid/gid */
-		if (!dom_sid_compare_domain(
+		int cmp = dom_sid_compare_domain(
 				&global_sid_Unix_NFS,
-				&psd->dacl->aces[i].trustee) == 0) {
+				&psd->dacl->aces[i].trustee);
+		if (cmp != 0) {
 			/* Normal ACE entry. */
 			continue;
 		}
