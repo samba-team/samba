@@ -17,6 +17,12 @@
 #
 
 import samba.tests
+from StringIO import StringIO
+from samba.netcmd.main import cmd_sambatool
+from samba.credentials import Credentials
+from samba.auth import system_session
+from samba.samdb import SamDB
+import ldb
 
 class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
     """Blackbox test case for samba_dnsupdate."""
@@ -57,3 +63,51 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
         self.assertTrue(" DNS deletes needed" in rpc_out, rpc_out)
         out = self.check_output("samba_dnsupdate --verbose")
         self.assertTrue("No DNS updates needed" in out, out + rpc_out)
+
+    def test_add_new_uncovered_site(self):
+        name = 'sites'
+        cmd = cmd_sambatool.subcommands[name]
+        cmd.outf = StringIO()
+        cmd.errf = StringIO()
+
+        site_name = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+        # Clear out any existing site
+        cmd._run("samba-tool %s" % name, 'remove', site_name)
+
+        result = cmd._run("samba-tool %s" % name, 'create', site_name)
+        if result is not None:
+            self.fail("Error creating new site")
+
+        self.lp = samba.tests.env_loadparm()
+        self.creds = Credentials()
+        self.creds.guess(self.lp)
+        self.session = system_session()
+
+        self.samdb = SamDB(session_info=self.session,
+                           credentials=self.creds,
+                           lp=self.lp)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, 'CN=DEFAULTIPSITELINK,CN=IP,'
+                      'CN=Inter-Site Transports,CN=Sites,{}'.format(
+                          self.samdb.get_config_basedn()))
+        m['siteList'] = ldb.MessageElement("CN={},CN=Sites,{}".format(
+            site_name,
+            self.samdb.get_config_basedn()),
+            ldb.FLAG_MOD_ADD, "siteList")
+
+        out = self.check_output("samba_dnsupdate --verbose")
+        self.assertTrue("No DNS updates needed" in out, out)
+
+        self.samdb.modify(m)
+
+        out = self.check_output("samba_dnsupdate --verbose --use-samba-tool"
+                                " --rpc-server-ip={}".format(self.server_ip))
+
+        self.assertFalse("No DNS updates needed" in out, out)
+        self.assertTrue(site_name.lower() in out, out)
+
+        result = cmd._run("samba-tool %s" % name, 'remove', site_name)
+        if result is not None:
+            self.fail("Error deleting site")
