@@ -894,24 +894,6 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
     rm -f "$_out" "$_rc_file"
 }
 
-
-# VSFTPD fakery
-
-setup_vsftpd ()
-{
-	debug "Setting up VSFTPD environment: service $1, not managed by CTDB"
-
-	_service_name="vsftpd"
-
-	if [ "$1" != "down" ] ; then
-		service "$_service_name" start
-	else
-		service "$_service_name" force-stopped
-	fi
-
-	export CTDB_MANAGES_VSFTPD=""
-}
-
 ######################################################################
 
 # HTTPD fakery
