@@ -1221,6 +1221,19 @@ class AddModifyTests(LdbBaseTest):
                     "name": b"Admins",
                     "x": "z", "y": "a",
                     "objectUUID": b"0123456789abcde2"})
+
+        res2 = self.l.search(base="DC=SAMBA,DC=ORG",
+                             scope=ldb.SCOPE_SUBTREE,
+                             expression="(objectUUID=0123456789abcde1)")
+        self.assertEqual(len(res2), 1)
+        self.assertEqual(str(res2[0].dn), "OU=DUP,DC=SAMBA,DC=ORG")
+
+        res3 = self.l.search(base="DC=SAMBA,DC=ORG",
+                             scope=ldb.SCOPE_SUBTREE,
+                             expression="(objectUUID=0123456789abcde2)")
+        self.assertEqual(len(res3), 1)
+        self.assertEqual(str(res3[0].dn), "OU=DUP2,DC=SAMBA,DC=ORG")
+
         try:
             self.l.rename("OU=DUP,DC=SAMBA,DC=ORG",
                           "OU=DUP2,DC=SAMBA,DC=ORG")
