@@ -1191,6 +1191,7 @@ struct tevent_req *ctdb_fetch_lock_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->h, req)) {
 		return tevent_req_post(req, ev);
 	}
+	state->h->ev = ev;
 	state->h->client = client;
 	state->h->db = db;
 	state->h->key.dptr = talloc_memdup(state->h, key.dptr, key.dsize);
