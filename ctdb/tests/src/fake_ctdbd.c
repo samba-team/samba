@@ -3553,6 +3553,8 @@ static void control_error(TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_reply_control reply;
 
+	D_DEBUG("Control %u not implemented\n", request->opcode);
+
 	reply.rdata.opcode = request->opcode;
 	reply.status = -1;
 	reply.errmsg = "Not implemented";
@@ -3957,6 +3959,8 @@ static void client_process_message(struct tevent_req *req,
 		message_disable_recoveries(mem_ctx, req, &header, &request);
 	} else if (srvid == CTDB_SRVID_TAKEOVER_RUN) {
 		message_takeover_run(mem_ctx, req, &header, &request);
+	} else {
+		D_DEBUG("Message id 0x%"PRIx64" not implemented\n", srvid);
 	}
 
 	/* check srvid */
