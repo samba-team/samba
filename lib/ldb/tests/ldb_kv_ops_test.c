@@ -266,6 +266,63 @@ static void test_add_get(void **state)
 }
 
 /*
+ * Test that attempts to read data without a read transaction fail.
+ */
+static void test_read_outside_transaction(void **state)
+{
+	int ret;
+	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
+							  struct test_ctx);
+	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	uint8_t key_val[] = "TheKey";
+	struct ldb_val key = {
+		.data   = key_val,
+		.length = sizeof(key_val)
+	};
+
+	uint8_t value[] = "The record contents";
+	struct ldb_val data = {
+		.data    = value,
+		.length = sizeof(value)
+	};
+
+	struct ldb_val read;
+
+	int flags = 0;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	/*
+	 * Begin a transaction
+	 */
+	ret = ltdb->kv_ops->begin_write(ltdb);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * Write the record
+	 */
+	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * Commit the transaction
+	 */
+	ret = ltdb->kv_ops->finish_write(ltdb);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * And now read it back
+	 * Note there is no read transaction active
+	 */
+	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	assert_int_equal(ret, LDB_ERR_PROTOCOL_ERROR);
+
+	talloc_free(tmp_ctx);
+}
+
+/*
  * Test that data can be deleted from the kv store
  */
 static void test_delete(void **state)
@@ -722,6 +779,125 @@ static void test_iterate(void **state)
 		assert_int_equal(1, visits[i]);
 	}
 	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	assert_int_equal(ret, 0);
+
+	TALLOC_FREE(tmp_ctx);
+}
+
+struct update_context {
+	struct ldb_context* ldb;
+	int visits[NUM_RECS];
+};
+
+static int update_fn(struct ltdb_private *ltdb,
+		     struct ldb_val key,
+		     struct ldb_val data,
+		     void *ctx) {
+
+	struct ldb_val new_key;
+	struct ldb_module *module = NULL;
+	struct update_context *context =NULL;
+	int ret = LDB_SUCCESS;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(ltdb);
+	assert_non_null(tmp_ctx);
+
+	context = talloc_get_type_abort(ctx, struct update_context);
+
+	module = talloc_zero(tmp_ctx, struct ldb_module);
+	module->ldb = context->ldb;
+
+	if (strncmp("key ", (char *) key.data, 4) == 0) {
+		int i = strtol((char *) &key.data[4], NULL, 10);
+		context->visits[i]++;
+		new_key.data = talloc_memdup(tmp_ctx, key.data, key.length);
+		new_key.length  = key.length;
+		new_key.data[0] = 'K';
+
+		ret = ltdb->kv_ops->update_in_iterate(ltdb,
+						      key,
+						      new_key,
+						      data,
+						      &module);
+	}
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+
+/*
+ * Test that update_in_iterate behaves as expected.
+ */
+static void test_update_in_iterate(void **state)
+{
+	int ret;
+	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
+							  struct test_ctx);
+	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	int i;
+	struct update_context *context = NULL;
+
+
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	context = talloc_zero(tmp_ctx, struct update_context);
+	assert_non_null(context);
+	context->ldb = test_ctx->ldb;
+	/*
+	 * Begin a transaction
+	 */
+	ret = ltdb->kv_ops->begin_write(ltdb);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * Write the records
+	 */
+	for (i = 0; i < NUM_RECS; i++) {
+		struct ldb_val key;
+		struct ldb_val rec;
+		int flags = 0;
+
+		key.data   = (uint8_t *)talloc_asprintf(tmp_ctx, "key %04d", i);
+		key.length = strlen((char *)key.data) + 1;
+
+		rec.data   = (uint8_t *) talloc_asprintf(tmp_ctx,
+							 "data for record (%04d)",
+							 i);
+		rec.length = strlen((char *)rec.data) + 1;
+
+		ret = ltdb->kv_ops->store(ltdb, key, rec, flags);
+		assert_int_equal(ret, 0);
+
+		TALLOC_FREE(key.data);
+		TALLOC_FREE(rec.data);
+	}
+
+	/*
+	 * Commit the transaction
+	 */
+	ret = ltdb->kv_ops->finish_write(ltdb);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * Now iterate over the kv store and ensure that all the
+	 * records are visited.
+	 */
+
+	/*
+	 * Needs to be done inside a transaction
+	 */
+	ret = ltdb->kv_ops->begin_write(ltdb);
+	assert_int_equal(ret, 0);
+
+	ret = ltdb->kv_ops->iterate(ltdb, update_fn, context);
+	for (i = 0; i < NUM_RECS; i++) {
+		assert_int_equal(1, context->visits[i]);
+	}
+
+	ret = ltdb->kv_ops->finish_write(ltdb);
 	assert_int_equal(ret, 0);
 
 	TALLOC_FREE(tmp_ctx);
@@ -1367,6 +1543,10 @@ int main(int argc, const char **argv)
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
+			test_read_outside_transaction,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
 			test_write_outside_transaction,
 			setup,
 			teardown),
@@ -1376,6 +1556,10 @@ int main(int argc, const char **argv)
 			teardown),
 		cmocka_unit_test_setup_teardown(
 			test_iterate,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_update_in_iterate,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
