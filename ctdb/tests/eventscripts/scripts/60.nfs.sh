@@ -1,0 +1,295 @@
+setup_nfs ()
+{
+	setup_ctdb
+
+	service_name="nfs"
+
+	export FAKE_RPCINFO_SERVICES=""
+
+	export CTDB_NFS_SKIP_SHARE_CHECK="no"
+
+	export RPCNFSDCOUNT
+
+	# This doesn't even need to exist
+	export CTDB_NFS_EXPORTS_FILE="$EVENTSCRIPTS_TESTS_VAR_DIR/etc-exports"
+
+	# Reset the failcounts for nfs services.
+	eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
+
+	if [ "$1" != "down" ] ; then
+		debug "Setting up NFS environment: all RPC services up, NFS managed by CTDB"
+
+		service "nfs" force-started
+		service "nfslock" force-started
+
+		export CTDB_MANAGES_NFS="yes"
+
+		rpc_services_up \
+			"portmapper" "nfs" "mountd" "rquotad" "nlockmgr" "status"
+
+		nfs_setup_fake_threads "nfsd"
+		nfs_setup_fake_threads "rpc.foobar"  # Just set the variable to empty
+	else
+		debug "Setting up NFS environment: all RPC services down, NFS not managed by CTDB"
+
+		service "nfs" force-stopped
+		service "nfslock" force-stopped
+
+		export CTDB_MANAGES_NFS=""
+	fi
+
+	# This is really nasty.  However, when we test NFS we don't
+	# actually test statd-callout. If we leave it there then left
+	# over, backgrounded instances of statd-callout will do
+	# horrible things with the "ctdb ip" stub and cause the actual
+	# statd-callout tests that follow to fail.
+	rm "${CTDB_BASE}/statd-callout"
+}
+
+rpc_services_down ()
+{
+	for _i ; do
+	    debug "Marking RPC service \"${_i}\" as unavailable"
+	    FAKE_RPCINFO_SERVICES=$(echo "$FAKE_RPCINFO_SERVICES" | sed -r -e "s@[[:space:]]*${_i}:[0-9]+:[0-9]+@@g")
+	done
+}
+
+rpc_services_up ()
+{
+	for _i ; do
+		debug "Marking RPC service \"${_i}\" as available"
+		case "$_i" in
+		portmapper) _t="2:4" ;;
+		nfs)        _t="2:3" ;;
+		mountd)     _t="1:3" ;;
+		rquotad)    _t="1:2" ;;
+		nlockmgr)   _t="3:4" ;;
+		status)     _t="1:1" ;;
+		*) die "Internal error - unsupported RPC service \"${_i}\"" ;;
+		esac
+
+		FAKE_RPCINFO_SERVICES="${FAKE_RPCINFO_SERVICES}${FAKE_RPCINFO_SERVICES:+ }${_i}:${_t}"
+	done
+}
+
+nfs_setup_fake_threads ()
+{
+	_prog="$1" ; shift
+
+	case "$_prog" in
+	nfsd)
+		export PROCFS_PATH=$(mktemp -d --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+		_threads="${PROCFS_PATH}/fs/nfsd/threads"
+		mkdir -p $(dirname "$_threads")
+		echo $# >"$_threads"
+		export FAKE_NFSD_THREAD_PIDS="$*"
+		;;
+	*)
+		export FAKE_RPC_THREAD_PIDS="$*"
+		;;
+	esac
+}
+
+program_stack_traces ()
+{
+	_prog="$1"
+	_max="${2:-1}"
+
+	_count=1
+	for _pid in ${FAKE_NFSD_THREAD_PIDS:-$FAKE_RPC_THREAD_PIDS} ; do
+		[ $_count -le $_max ] || break
+
+		program_stack_trace "$_prog" "$_pid"
+		_count=$(($_count + 1))
+	done
+}
+
+guess_output ()
+{
+	case "$1" in
+	$CTDB_NFS_CALLOUT\ start\ nlockmgr)
+		echo "&Starting nfslock: OK"
+		;;
+	$CTDB_NFS_CALLOUT\ start\ nfs)
+		cat <<EOF
+&Starting nfslock: OK
+&Starting nfs: OK
+EOF
+		;;
+	*)
+		: # Nothing
+	esac
+}
+
+# Set the required result for a particular RPC program having failed
+# for a certain number of iterations.  This is probably still a work
+# in progress.  Note that we could hook aggressively
+# nfs_check_rpc_service() to try to implement this but we're better
+# off testing nfs_check_rpc_service() using independent code...  even
+# if it is incomplete and hacky.  So, if the 60.nfs eventscript
+# changes and the tests start to fail then it may be due to this
+# function being incomplete.
+rpc_set_service_failure_response ()
+{
+	_rpc_service="$1"
+	_numfails="${2:-1}" # default 1
+
+	# Default
+	ok_null
+	if [ $_numfails -eq 0 ] ; then
+		return
+	fi
+
+	nfs_load_config
+
+	# A handy newline.  :-)
+	_nl="
+"
+
+	_dir="${CTDB_NFS_CHECKS_DIR:-${CTDB_BASE}/nfs-checks.d}"
+
+	_file=$(ls "$_dir"/[0-9][0-9]."${_rpc_service}.check")
+	[ -r "$_file" ] || die "RPC check file \"$_file\" does not exist or is not unique"
+
+	_out=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	_rc_file=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+
+	(
+		# Subshell to restrict scope variables...
+
+		# Defaults
+		family="tcp"
+		version=""
+		unhealthy_after=1
+		restart_every=0
+		service_stop_cmd=""
+		service_start_cmd=""
+		service_check_cmd=""
+		service_debug_cmd=""
+
+		# Don't bother syntax checking, eventscript does that...
+		. "$_file"
+
+		# Just use the first version, or use default.  This is
+		# dumb but handles all the cases that we care about
+		# now...
+		if [ -n "$version" ] ; then
+			_ver="${version%% *}"
+		else
+			case "$_rpc_service" in
+			portmapper) _ver="" ;;
+			*) 	    _ver=1  ;;
+			esac
+		fi
+		_rpc_check_out="\
+$_rpc_service failed RPC check:
+rpcinfo: RPC: Program not registered
+program $_rpc_service${_ver:+ version }${_ver} is not available"
+
+		if [ $unhealthy_after -gt 0 -a $_numfails -ge $unhealthy_after ] ; then
+			_unhealthy=true
+			echo 1 >"$_rc_file"
+			echo "ERROR: ${_rpc_check_out}" >>"$_out"
+		else
+			_unhealthy=false
+			echo 0 >"$_rc_file"
+		fi
+
+		if [ $restart_every -gt 0 ] && \
+			   [ $(($_numfails % $restart_every)) -eq 0 ] ; then
+			if ! $_unhealthy ; then
+				echo "WARNING: ${_rpc_check_out}" >>"$_out"
+			fi
+
+			echo "Trying to restart service \"${_rpc_service}\"..." >>"$_out"
+
+			if [ -n "$service_debug_cmd" ] ; then
+				$service_debug_cmd 2>&1 >>"$_out"
+			fi
+
+			guess_output "$service_start_cmd" >>"$_out"
+		fi
+	)
+
+	read _rc <"$_rc_file"
+	required_result $_rc <"$_out"
+
+	rm -f "$_out" "$_rc_file"
+}
+
+# Run an NFS eventscript iteratively.
+#
+# - 1st argument is the number of iterations.
+#
+# - 2nd argument is the NFS/RPC service being tested
+#
+#   rpcinfo (or $service_check_cmd) is used on each iteration to test
+#   the availability of the service
+#
+#   If this is not set or null then no RPC service is checked and the
+#   required output is not reset on each iteration.  This is useful in
+#   baseline tests to confirm that the eventscript and test
+#   infrastructure is working correctly.
+#
+# - Subsequent arguments come in pairs: an iteration number and
+#   something to eval before that iteration.  Each time an iteration
+#   number is matched the associated argument is given to eval after
+#   the default setup is done.  The iteration numbers need to be given
+#   in ascending order.
+#
+#   These arguments can allow a service to be started or stopped
+#   before a particular iteration.
+#
+nfs_iterate_test ()
+{
+	_repeats="$1"
+	_rpc_service="$2"
+	if [ -n "$2" ] ; then
+		shift 2
+	else
+		shift
+	fi
+
+	echo "Running $_repeats iterations of \"$script $event\" $args"
+
+	_iterate_failcount=0
+	for _iteration in $(seq 1 $_repeats) ; do
+		# This is not a numerical comparison because $1 will
+		# often not be set.
+		if [ "$_iteration" = "$1" ] ; then
+			debug "##################################################"
+			eval "$2"
+			debug "##################################################"
+			shift 2
+		fi
+		if [ -n "$_rpc_service" ] ; then
+			_ok=false
+			if [ -n "$service_check_cmd" ] ; then
+				if eval "$service_check_cmd" ; then
+					_ok=true
+				fi
+			else
+				if rpcinfo -T tcp localhost "$_rpc_service" >/dev/null 2>&1 ; then
+					_ok=true
+				fi
+			fi
+
+			if $_ok ; then
+				_iterate_failcount=0
+			else
+				_iterate_failcount=$(($_iterate_failcount + 1))
+			fi
+			rpc_set_service_failure_response "$_rpc_service" $_iterate_failcount
+		fi
+		_out=$(simple_test 2>&1)
+		_ret=$?
+		if "$TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
+			echo "##################################################"
+			echo "Iteration ${_iteration}:"
+			echo "$_out"
+		fi
+		if [ $_ret -ne 0 ] ; then
+			exit $_ret
+		fi
+	done
+}
