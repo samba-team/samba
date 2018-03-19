@@ -1925,6 +1925,11 @@ static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
 	return has_changed;
 }
 
+static bool ltdb_transaction_active(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_active(ltdb->tdb);
+}
+
 static const struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
 	.delete = ltdb_tdb_delete,
@@ -1941,6 +1946,7 @@ static const struct kv_db_ops key_value_ops = {
 	.errorstr = ltdb_errorstr,
 	.name = ltdb_tdb_name,
 	.has_changed = ltdb_tdb_changed,
+	.transaction_active = ltdb_transaction_active,
 };
 
 static void ltdb_callback(struct tevent_context *ev,
