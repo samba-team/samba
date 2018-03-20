@@ -691,10 +691,12 @@ typedef int bool;
 
 #if !defined(HAVE_INTPTR_T)
 typedef long long intptr_t ;
+#define __intptr_t_defined
 #endif
 
 #if !defined(HAVE_UINTPTR_T)
 typedef unsigned long long uintptr_t ;
+#define __uintptr_t_defined
 #endif
 
 #if !defined(HAVE_PTRDIFF_T)
