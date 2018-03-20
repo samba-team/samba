@@ -1,7 +1,10 @@
 # see https://docs.gitlab.com/ce/ci/yaml/README.html for all available options
 
 before_script:
-  - echo "Build starting ..."
+  - echo "Build starting (preparing swap)..."
+  - sudo dd if=/dev/zero of=/samba-swap bs=1M count=10240 
+  - sudo mkswap /samba-swap
+  - sudo swapon /samba-swap
 
 build_samba:
   stage: build
