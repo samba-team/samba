@@ -176,7 +176,11 @@ def get_partition_maps(samdb):
         "DNSDOMAIN": "DC=DomainDnsZones,%s" % base_dn,
         "DNSFOREST": "DC=ForestDnsZones,%s" % base_dn
     }
-    long_to_short = {v: k for k, v in short_to_long.iteritems()}
+
+    long_to_short = {}
+    for s, l in short_to_long.iteritems():
+        long_to_short[l] = s
+
     return short_to_long, long_to_short
 
 
