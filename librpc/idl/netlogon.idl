@@ -29,7 +29,7 @@ cpp_quote("#define ENC_HMAC_SHA1_96_AES256 KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96"
 interface netlogon
 {
 	typedef bitmap samr_AcctFlags samr_AcctFlags;
-	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
+	typedef bitmap security_GroupAttrs security_GroupAttrs;
 	typedef enum netr_DeltaEnum8Bit netr_DeltaEnum8Bit;
 	typedef enum netr_SamDatabaseID8Bit netr_SamDatabaseID8Bit;
 
@@ -274,7 +274,7 @@ interface netlogon
 
 	typedef [public] struct {
 		dom_sid2 *sid;
-		samr_GroupAttrs attributes;
+		security_GroupAttrs attributes;
 	} netr_SidAttr;
 
 	typedef [public] struct {

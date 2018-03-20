@@ -597,6 +597,17 @@ interface security
 		[subcontext(4)] security_descriptor *sd;
 	} sec_desc_buf;
 
+	/* Group attributes, used to be samr_GroupAttrs */
+	typedef [public,bitmap32bit] bitmap {
+		SE_GROUP_MANDATORY		= 0x00000001,
+		SE_GROUP_ENABLED_BY_DEFAULT	= 0x00000002,
+		SE_GROUP_ENABLED		= 0x00000004,
+		SE_GROUP_OWNER			= 0x00000008,
+		SE_GROUP_USE_FOR_DENY_ONLY	= 0x00000010,
+		SE_GROUP_RESOURCE		= 0x20000000,
+		SE_GROUP_LOGON_ID		= 0xC0000000
+	} security_GroupAttrs;
+
 	/* This is not yet sent over the network, but is simply defined in IDL */
 	typedef [public] struct {
 		uint32 num_sids;

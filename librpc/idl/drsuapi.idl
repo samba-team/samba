@@ -13,7 +13,7 @@ import "security.idl", "misc.idl", "lsa.idl", "samr.idl";
 ]
 interface drsuapi
 {
-	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
+	typedef bitmap security_GroupAttrs security_GroupAttrs;
 
 	/* see MS-DRSR section 5.39 */
 	typedef [public,bitmap32bit] bitmap {
@@ -945,7 +945,7 @@ interface drsuapi
 		[range(0,10000)] uint32 num_memberships;
 		[range(0,10000)] uint32 num_sids;
 		[size_is(num_memberships)] drsuapi_DsReplicaObjectIdentifier **info_array;
-		[size_is(num_memberships)] samr_GroupAttrs *group_attrs;
+		[size_is(num_memberships)] security_GroupAttrs *group_attrs;
 		[size_is(num_sids)] dom_sid28 **sids;
 	} drsuapi_DsGetMembershipsCtr1;
 

@@ -16,6 +16,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 ] interface samr
 {
 	typedef bitmap security_secinfo security_secinfo;
+	typedef bitmap security_GroupAttrs security_GroupAttrs;
 
 	/* account control (acct_flags) bits */
 	typedef [public,bitmap32bit] bitmap {
@@ -565,29 +566,18 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[out,ref]     policy_handle *group_handle
 		);
 
-	/* Group attributes */
-	typedef [public,bitmap32bit] bitmap {
-		SE_GROUP_MANDATORY		= 0x00000001,
-		SE_GROUP_ENABLED_BY_DEFAULT 	= 0x00000002,
-		SE_GROUP_ENABLED 		= 0x00000004,
-		SE_GROUP_OWNER 			= 0x00000008,
-		SE_GROUP_USE_FOR_DENY_ONLY 	= 0x00000010,
-		SE_GROUP_RESOURCE 		= 0x20000000,
-		SE_GROUP_LOGON_ID 		= 0xC0000000
-	} samr_GroupAttrs;
-
 	/************************/
 	/* Function    0x14     */
 
 	typedef struct {
 		lsa_String name;
-		samr_GroupAttrs attributes;
+		security_GroupAttrs attributes;
 		uint32 num_members;
 		lsa_String description;
 	} samr_GroupInfoAll;
 
 	typedef struct {
-		samr_GroupAttrs attributes;
+		security_GroupAttrs attributes;
 	} samr_GroupInfoAttributes;
 
 	typedef struct {
@@ -651,7 +641,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	typedef struct {
 		uint32 count;
 		[size_is(count)] uint32 *rids;
-		[size_is(count)] samr_GroupAttrs *attributes;
+		[size_is(count)] security_GroupAttrs *attributes;
 	} samr_RidAttrArray;
 
 	NTSTATUS samr_QueryGroupMember(
@@ -1090,7 +1080,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef [public] struct {
 		uint32 rid;
-		samr_GroupAttrs attributes;
+		security_GroupAttrs attributes;
 	} samr_RidWithAttribute;
 
 	typedef [public] struct {
@@ -1136,7 +1126,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	typedef struct {
 		uint32    idx;
 		uint32    rid;
-		samr_GroupAttrs acct_flags;
+		security_GroupAttrs acct_flags;
 		lsa_String account_name;
 		lsa_String description;
 	} samr_DispEntryFullGroup;
