@@ -40,6 +40,7 @@
 #include "lib/param/loadparm.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1503,6 +1504,7 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		return status;
 	}
+	initialize_password_db(true, server_event_context());
 
 	close_conns_after_fork();
 

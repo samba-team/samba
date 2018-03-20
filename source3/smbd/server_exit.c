@@ -44,6 +44,7 @@
 #include "printing.h"
 #include "serverid.h"
 #include "messages.h"
+#include "passdb.h"
 #include "../lib/util/pidfile.h"
 #include "smbprofile.h"
 #include "libcli/auth/netlogon_creds_cli.h"
@@ -261,6 +262,9 @@ NTSTATUS smbd_reinit_after_fork(struct messaging_context *msg_ctx,
 				struct tevent_context *ev_ctx,
 				bool parent_longlived, const char *comment)
 {
+	NTSTATUS ret;
 	am_parent = NULL;
-	return reinit_after_fork(msg_ctx, ev_ctx, parent_longlived, comment);
+	ret = reinit_after_fork(msg_ctx, ev_ctx, parent_longlived, comment);
+	initialize_password_db(true, ev_ctx);
+	return ret;
 }

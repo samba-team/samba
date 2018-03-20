@@ -3412,6 +3412,7 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 				  nt_errstr(status)));
 			exit(1);
 		}
+		initialize_password_db(true, xconn->ev_ctx);
 		smbd_echo_loop(xconn, listener_pipe[1]);
 		exit(0);
 	}

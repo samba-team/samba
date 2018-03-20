@@ -44,6 +44,7 @@
 #include "lib/async_req/async_sock.h"
 #include "libsmb/samlogon_cache.h"
 #include "libcli/auth/netlogon_creds_cli.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1752,6 +1753,7 @@ int main(int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Winbindd reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}
+	initialize_password_db(true, server_event_context());
 
 	/*
 	 * Do not initialize the parent-child-pipe before becoming
