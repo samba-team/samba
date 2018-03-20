@@ -121,7 +121,11 @@ static unsigned int talloc_magic = TALLOC_MAGIC_NON_RANDOM;
    NULL
 */
 static void *null_context;
+static bool talloc_report_null;
+static bool talloc_report_null_full;
 static void *autofree_context;
+
+static void talloc_setup_atexit(void);
 
 /* used to enable fill of memory on free, which can be useful for
  * catching use after free errors when valgrind is too slow
@@ -425,6 +429,41 @@ void talloc_lib_init(void)
 #else
 #warning "No __attribute__((constructor)) support found on this platform, additional talloc security measures not available"
 #endif
+
+#ifdef HAVE_DESTRUCTOR_ATTRIBUTE
+void talloc_lib_fini(void) __attribute__((destructor));
+void talloc_lib_fini(void)
+#else /* ! HAVE_DESTRUCTOR_ATTRIBUTE */
+static void talloc_lib_fini(void)
+#endif /* ! HAVE_DESTRUCTOR_ATTRIBUTE */
+{
+	TALLOC_FREE(autofree_context);
+
+	if (talloc_total_size(null_context) == 0) {
+		return;
+	}
+
+	if (talloc_report_null_full) {
+		talloc_report_full(null_context, stderr);
+	} else if (talloc_report_null) {
+		talloc_report(null_context, stderr);
+	}
+}
+
+static void talloc_setup_atexit(void)
+{
+#ifndef HAVE_DESTRUCTOR_ATTRIBUTE
+	static bool done;
+
+	if (done) {
+		return;
+	}
+
+#warning "No __attribute__((destructor)) support found on this platform, using atexit"
+	atexit(talloc_lib_fini);
+	done = true;
+#endif /* ! HAVE_DESTRUCTOR_ATTRIBUTE */
+}
 
 static void talloc_log(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 static void talloc_log(const char *fmt, ...)
@@ -2295,26 +2334,6 @@ _PUBLIC_ void talloc_report(const void *ptr, FILE *f)
 }
 
 /*
-  report on any memory hanging off the null context
-*/
-static void talloc_report_null(void)
-{
-	if (talloc_total_size(null_context) != 0) {
-		talloc_report(null_context, stderr);
-	}
-}
-
-/*
-  report on any memory hanging off the null context
-*/
-static void talloc_report_null_full(void)
-{
-	if (talloc_total_size(null_context) != 0) {
-		talloc_report_full(null_context, stderr);
-	}
-}
-
-/*
   enable tracking of the NULL context
 */
 _PUBLIC_ void talloc_enable_null_tracking(void)
@@ -2369,7 +2388,8 @@ _PUBLIC_ void talloc_disable_null_tracking(void)
 _PUBLIC_ void talloc_enable_leak_report(void)
 {
 	talloc_enable_null_tracking();
-	atexit(talloc_report_null);
+	talloc_report_null = true;
+	talloc_setup_atexit();
 }
 
 /*
@@ -2378,7 +2398,8 @@ _PUBLIC_ void talloc_enable_leak_report(void)
 _PUBLIC_ void talloc_enable_leak_report_full(void)
 {
 	talloc_enable_null_tracking();
-	atexit(talloc_report_null_full);
+	talloc_report_null_full = true;
+	talloc_setup_atexit();
 }
 
 /*
@@ -2765,11 +2786,6 @@ static int talloc_autofree_destructor(void *ptr)
 	return 0;
 }
 
-static void talloc_autofree(void)
-{
-	talloc_free(autofree_context);
-}
-
 /*
   return a context which will be auto-freed on exit
   this is useful for reducing the noise in leak reports
@@ -2779,7 +2795,7 @@ _PUBLIC_ void *talloc_autofree_context(void)
 	if (autofree_context == NULL) {
 		autofree_context = _talloc_named_const(NULL, 0, "autofree_context");
 		talloc_set_destructor(autofree_context, talloc_autofree_destructor);
-		atexit(talloc_autofree);
+		talloc_setup_atexit();
 	}
 	return autofree_context;
 }
