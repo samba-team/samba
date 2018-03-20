@@ -23,7 +23,9 @@ check_ctdb_tdb_statd_state ()
 	ctdb_get_my_public_addresses |
 		while read _x _sip _x ; do
 			for _cip ; do
-				echo "statd-state@${_sip}@${_cip}" "$FAKE_DATE_OUTPUT"
+				cat <<EOF
+statd-state@${_sip}@${_cip} $FAKE_DATE_OUTPUT
+EOF
 			done
 		done |
 		ctdb_catdb_format_pairs | {
