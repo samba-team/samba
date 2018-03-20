@@ -36,7 +36,7 @@ build_samba_fileserver:
   stage: build
   tags:
     - docker
-    - shared
+    - private
   script:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-fileserver --verbose --tail --testbase /tmp/samba-testbase
