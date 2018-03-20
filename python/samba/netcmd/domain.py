@@ -43,7 +43,7 @@ from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
 from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
-from samba.samdb import SamDB
+from samba.samdb import SamDB, get_default_backend_store
 from samba.ndr import ndr_unpack, ndr_pack, ndr_print
 from samba.dcerpc import drsuapi
 from samba.dcerpc import drsblobs
@@ -258,6 +258,10 @@ class cmd_domain_provision(Command):
          Option("--plaintext-secrets", action="store_true",
                 help="Store secret/sensitive values as plain text on disk" +
                      "(default is to encrypt secret/ensitive values)"),
+         Option("--backend-store", type="choice", metavar="BACKENDSTORE",
+                choices=["tdb", "mdb"],
+                help="Specify the database backend to be used "
+                     "(default is %s)" % get_default_backend_store()),
         ]
 
     openldap_options = [
@@ -328,7 +332,8 @@ class cmd_domain_provision(Command):
             ldap_backend_forced_uri=None,
             ldap_dryrun_mode=None,
             base_schema=None,
-            plaintext_secrets=False):
+            plaintext_secrets=False,
+            backend_store=None):
 
         self.logger = self.get_logger("provision")
         if quiet:
@@ -476,6 +481,8 @@ class cmd_domain_provision(Command):
             domain_sid = security.dom_sid(domain_sid)
 
         session = system_session()
+        if backend_store is None:
+            backend_store = get_default_backend_store()
         try:
             result = provision(self.logger,
                   session, smbconf=smbconf, targetdir=targetdir,
@@ -498,7 +505,8 @@ class cmd_domain_provision(Command):
                   ldap_backend_forced_uri=ldap_backend_forced_uri,
                   nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode,
                   base_schema=base_schema,
-                  plaintext_secrets=plaintext_secrets)
+                  plaintext_secrets=plaintext_secrets,
+                  backend_store=backend_store)
 
         except ProvisioningError as e:
             raise CommandError("Provision failed", e)

@@ -123,6 +123,7 @@ from samba.schema import Schema
 from samba.samdb import SamDB
 from samba.dbchecker import dbcheck
 from samba.provision.kerberos import create_kdc_conf
+from samba.samdb import get_default_backend_store
 
 DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
 DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04FB984F9"
@@ -814,7 +815,8 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
 
 def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                            provision_backend, names, serverrole,
-                           erase=False, plaintext_secrets=False):
+                           erase=False, plaintext_secrets=False,
+                           backend_store=None):
     """Setup the partitions for the SAM database.
 
     Alternatively, provision() may call this, and then populate the database.
@@ -847,11 +849,16 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
     if not plaintext_secrets:
         required_features = "requiredFeatures: encryptedSecrets"
 
+    if backend_store is None:
+        backend_store = get_default_backend_store()
+    backend_store_line = "backendStore: %s" % backend_store
+
     samdb.transaction_start()
     try:
         logger.info("Setting up sam.ldb partitions and settings")
         setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
-                "LDAP_BACKEND_LINE": ldap_backend_line
+                "LDAP_BACKEND_LINE": ldap_backend_line,
+                "BACKEND_STORE": backend_store_line
         })
 
 
@@ -1245,7 +1252,7 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
 
 def setup_samdb(path, session_info, provision_backend, lp, names,
         logger, fill, serverrole, schema, am_rodc=False,
-        plaintext_secrets=False):
+        plaintext_secrets=False, backend_store=None):
     """Setup a complete SAM Database.
 
     :note: This will wipe the main SAM database file!
@@ -1254,7 +1261,8 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     # Also wipes the database
     setup_samdb_partitions(path, logger=logger, lp=lp,
         provision_backend=provision_backend, session_info=session_info,
-        names=names, serverrole=serverrole, plaintext_secrets=plaintext_secrets)
+        names=names, serverrole=serverrole, plaintext_secrets=plaintext_secrets,
+        backend_store=backend_store)
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
@@ -1293,7 +1301,8 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 def fill_samdb(samdb, lp, names, logger, policyguid,
         policyguid_dc, fill, adminpass, krbtgtpass, machinepass, dns_backend,
         dnspass, invocationid, ntdsguid, serverrole, am_rodc=False,
-        dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None):
+        dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None,
+        backend_store=None):
 
     if next_rid is None:
         next_rid = 1000
@@ -1831,7 +1840,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    invocationid=None, machinepass=None, ntdsguid=None,
                    dns_backend=None, dnspass=None,
                    serverrole=None, dom_for_fun_level=None,
-                   am_rodc=False, lp=None, use_ntvfs=False, skip_sysvolacl=False):
+                   am_rodc=False, lp=None, use_ntvfs=False,
+                   skip_sysvolacl=False, backend_store=None):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
     # "How Core Group Policy Works"
@@ -1863,7 +1873,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                        dns_backend=dns_backend, dnspass=dnspass,
                        ntdsguid=ntdsguid, serverrole=serverrole,
                        dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
-                       next_rid=next_rid, dc_rid=dc_rid)
+                       next_rid=next_rid, dc_rid=dc_rid,
+                       backend_store=backend_store)
 
         # Set up group policies (domain policy and domain controller
         # policy)
@@ -1913,7 +1924,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         setup_ad_dns(samdb, secrets_ldb, names, paths, lp, logger,
                      hostip=hostip, hostip6=hostip6, dns_backend=dns_backend,
                      dnspass=dnspass, os_level=dom_for_fun_level,
-                     targetdir=targetdir, fill_level=samdb_fill)
+                     targetdir=targetdir, fill_level=samdb_fill,
+                     backend_store=backend_store)
 
         domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
                                      attribute="objectGUID")
@@ -2033,7 +2045,7 @@ def provision(logger, session_info, smbconf=None,
         use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
         ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
         ldap_backend_extra_port=None, base_schema=None,
-        plaintext_secrets=False):
+        plaintext_secrets=False, backend_store=None):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -2050,6 +2062,8 @@ def provision(logger, session_info, smbconf=None,
 
     if backend_type is None:
         backend_type = "ldb"
+    if backend_store is None:
+        backend_store = get_default_backend_store()
 
     if domainsid is None:
         domainsid = security.random_sid()
@@ -2233,7 +2247,8 @@ def provision(logger, session_info, smbconf=None,
                             provision_backend, lp, names, logger=logger,
                             serverrole=serverrole,
                             schema=schema, fill=samdb_fill, am_rodc=am_rodc,
-                            plaintext_secrets=plaintext_secrets)
+                            plaintext_secrets=plaintext_secrets,
+                            backend_store=backend_store)
 
         if serverrole == "active directory domain controller":
             if paths.netlogon is None:
@@ -2264,7 +2279,8 @@ def provision(logger, session_info, smbconf=None,
                     dnspass=dnspass, serverrole=serverrole,
                     dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                     lp=lp, use_ntvfs=use_ntvfs,
-                           skip_sysvolacl=skip_sysvolacl)
+                    skip_sysvolacl=skip_sysvolacl,
+                    backend_store=backend_store)
 
         if not is_heimdal_built():
             create_kdc_conf(paths.kdcconf, realm, domain, os.path.dirname(lp.get("log file")))
