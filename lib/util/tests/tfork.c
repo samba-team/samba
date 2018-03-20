@@ -32,7 +32,6 @@
 #include "lib/util/sys_rw.h"
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
-#include <sys/syscall.h>
 #endif
 
 static bool test_tfork_simple(struct torture_context *tctx)
