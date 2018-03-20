@@ -911,6 +911,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	TALLOC_CTX *subframe = NULL;
 	bool mask_has_wild;
+	uint32_t max_trans = smb2cli_conn_max_trans_size(cli->conn);
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -974,7 +975,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 					ph->fid_persistent,
 					ph->fid_volatile,
 					mask,
-					0xffff,
+					max_trans,
 					subframe,
 					&dir_data,
 					&dir_data_length);
