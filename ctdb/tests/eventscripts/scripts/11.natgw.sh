@@ -39,7 +39,9 @@ setup_ctdb_natgw ()
 
 ok_natgw_master_ip_addr_show ()
 {
-	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
+	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" |
+	       md5sum |
+	       sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
 
 	# This is based on CTDB_NATGW_PUBLIC_IP
 	_brd="10.1.1.255"
@@ -54,7 +56,9 @@ EOF
 
 ok_natgw_slave_ip_addr_show ()
 {
-	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
+	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" |
+	       md5sum |
+	       sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
 
 	ok <<EOF
 1: ${CTDB_NATGW_PUBLIC_IFACE}: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
