@@ -25,7 +25,8 @@ setup_nfs ()
 		export CTDB_MANAGES_NFS="yes"
 
 		rpc_services_up \
-			"portmapper" "nfs" "mountd" "rquotad" "nlockmgr" "status"
+			"portmapper" "nfs" "mountd" "rquotad" \
+			"nlockmgr" "status"
 
 		nfs_setup_fake_threads "nfsd"
 		nfs_setup_fake_threads "rpc.foobar"  # Just set the variable to empty
@@ -88,20 +89,6 @@ nfs_setup_fake_threads ()
 		export FAKE_RPC_THREAD_PIDS="$*"
 		;;
 	esac
-}
-
-program_stack_traces ()
-{
-	_prog="$1"
-	_max="${2:-1}"
-
-	_count=1
-	for _pid in ${FAKE_NFSD_THREAD_PIDS:-$FAKE_RPC_THREAD_PIDS} ; do
-		[ $_count -le $_max ] || break
-
-		program_stack_trace "$_prog" "$_pid"
-		_count=$(($_count + 1))
-	done
 }
 
 guess_output ()
@@ -215,6 +202,20 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 	required_result $_rc <"$_out"
 
 	rm -f "$_out" "$_rc_file"
+}
+
+program_stack_traces ()
+{
+	_prog="$1"
+	_max="${2:-1}"
+
+	_count=1
+	for _pid in ${FAKE_NFSD_THREAD_PIDS:-$FAKE_RPC_THREAD_PIDS} ; do
+		[ $_count -le $_max ] || break
+
+		program_stack_trace "$_prog" "$_pid"
+		_count=$(($_count + 1))
+	done
 }
 
 # Run an NFS eventscript iteratively.
