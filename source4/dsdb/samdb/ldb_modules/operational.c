@@ -87,7 +87,14 @@ struct operational_data {
 enum search_type {
 	TOKEN_GROUPS,
 	TOKEN_GROUPS_GLOBAL_AND_UNIVERSAL,
-	TOKEN_GROUPS_NO_GC_ACCEPTABLE
+	TOKEN_GROUPS_NO_GC_ACCEPTABLE,
+
+	/*
+	 * MS-DRSR 4.1.8.1.3 RevMembGetAccountGroups: Transitive membership in
+	 * all account groups in a given domain, excluding built-in groups.
+	 * (Used internally for msDS-ResultantPSO support)
+	 */
+	ACCOUNT_GROUPS
 };
 
 /*
@@ -185,6 +192,12 @@ static int get_group_sids(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	case TOKEN_GROUPS:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
 					 GROUP_TYPE_SECURITY_ENABLED);
+		break;
+
+	/* for RevMembGetAccountGroups, exclude built-in groups */
+	case ACCOUNT_GROUPS:
+		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))",
+				GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
 		break;
 	}
 
@@ -856,6 +869,268 @@ static int construct_msds_user_password_expiry_time_computed(struct ldb_module *
 				   password_expiry_time);
 }
 
+/*
+ * Checks whether the msDS-ResultantPSO attribute is supported for a given
+ * user object. As per MS-ADTS, section 3.1.1.4.5.36 msDS-ResultantPSO.
+ */
+static bool pso_is_supported(struct ldb_context *ldb, struct ldb_message *msg)
+{
+	int functional_level;
+	uint32_t uac;
+	uint32_t user_rid;
+
+	functional_level = dsdb_functional_level(ldb);
+	if (functional_level < DS_DOMAIN_FUNCTION_2008) {
+		return false;
+	}
+
+	/* msDS-ResultantPSO is only supported for user objects */
+	if (!ldb_match_msg_objectclass(msg, "user")) {
+		return false;
+	}
+
+	/* ...and only if the ADS_UF_NORMAL_ACCOUNT bit is set */
+	uac = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
+	if (!(uac & UF_NORMAL_ACCOUNT)) {
+		return false;
+	}
+
+	/* skip it if it's the special KRBTGT default account */
+	user_rid = samdb_result_rid_from_sid(msg, msg, "objectSid", 0);
+	if (user_rid == DOMAIN_RID_KRBTGT) {
+		return false;
+	}
+
+	/* ...or if it's a special KRBTGT account for an RODC KDC */
+	if (ldb_msg_find_ldb_val(msg, "msDS-SecondaryKrbTgtNumber") != NULL) {
+		return false;
+	}
+
+	return true;
+}
+
+/*
+ * Compares two PSO objects returned by a search, to work out the better PSO.
+ * The PSO with the lowest precedence is better, otherwise (if the precedence
+ * is equal) the PSO with the lower GUID wins.
+ */
+static int pso_compare(struct ldb_message **m1, struct ldb_message **m2,
+		       TALLOC_CTX *mem_ctx)
+{
+	uint32_t prec1;
+	uint32_t prec2;
+
+	prec1 = ldb_msg_find_attr_as_uint(*m1, "msDS-PasswordSettingsPrecedence",
+					  0xffffffff);
+	prec2 = ldb_msg_find_attr_as_uint(*m2, "msDS-PasswordSettingsPrecedence",
+					  0xffffffff);
+
+	/* if precedence is equal, use the lowest GUID */
+	if (prec1 == prec2) {
+		struct GUID guid1 = samdb_result_guid(*m1, "objectGUID");
+		struct GUID guid2 = samdb_result_guid(*m2, "objectGUID");
+
+		return ndr_guid_compare(&guid1, &guid2);
+	} else {
+		return prec1 - prec2;
+	}
+}
+
+/*
+ * Search for PSO objects that apply to the object SIDs specified
+ */
+static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+			      struct ldb_request *parent,
+			      struct dom_sid *sid_array, unsigned int num_sids,
+			      struct ldb_result **result)
+{
+	int ret;
+	int i;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	char *sid_filter = NULL;
+	struct ldb_dn *domain_dn = NULL;
+	struct ldb_dn *psc_dn = NULL;
+	const char *attrs[] = {
+		"msDS-PasswordSettingsPrecedence",
+		"objectGUID",
+		NULL
+	};
+
+	/* build a query for PSO objects that apply to any of the SIDs given */
+	sid_filter = talloc_strdup(mem_ctx, "");
+
+	for (i = 0; sid_filter && i < num_sids; i++) {
+		char sid_buf[DOM_SID_STR_BUFLEN] = {0,};
+
+		dom_sid_string_buf(&sid_array[i], sid_buf, sizeof(sid_buf));
+
+		sid_filter = talloc_asprintf_append(sid_filter,
+						    "(msDS-PSOAppliesTo=<SID=%s>)",
+						    sid_buf);
+	}
+
+	if (sid_filter == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	/* only PSOs located in the Password Settings Container are valid */
+	domain_dn = ldb_get_default_basedn(ldb);
+	psc_dn = ldb_dn_new_fmt(mem_ctx, ldb,
+			        "CN=Password Settings Container,CN=System,%s",
+				ldb_dn_get_linearized(domain_dn));
+	if (psc_dn == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	ret = dsdb_module_search(module, mem_ctx, result, psc_dn,
+				 LDB_SCOPE_ONELEVEL, attrs,
+				 DSDB_FLAG_NEXT_MODULE, parent,
+				 "(&(objectClass=msDS-PasswordSettings)(|%s))",
+				 sid_filter);
+	talloc_free(sid_filter);
+	return ret;
+}
+
+/*
+ * Returns the best PSO object that applies to the object SID(s) specified
+ */
+static int pso_find_best(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+			 struct ldb_request *parent, struct dom_sid *sid_array,
+			 unsigned int num_sids, struct ldb_message **best_pso)
+{
+	struct ldb_result *res = NULL;
+	int ret;
+
+	*best_pso = NULL;
+
+	/* find any PSOs that apply to the SIDs specified */
+	ret = pso_search_by_sids(module, mem_ctx, parent, sid_array, num_sids,
+				 &res);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Error %d retrieving PSO for SID(s)\n", ret);
+		return ret;
+	}
+
+	/* sort the list so that the best PSO is first */
+	LDB_TYPESAFE_QSORT(res->msgs, res->count, mem_ctx, pso_compare);
+
+	if (res->count > 0) {
+		*best_pso = res->msgs[0];
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+ * Determines the Password Settings Object (PSO) that applies to the given user
+ */
+static int get_pso_for_user(struct ldb_module *module,
+			    struct ldb_message *user_msg,
+			    struct ldb_request *parent,
+                            struct ldb_message **pso_msg)
+{
+	bool pso_supported;
+	struct dom_sid *groupSIDs = NULL;
+	unsigned int num_groupSIDs = 0;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_message *best_pso = NULL;
+	int ret;
+	struct ldb_message_element *el = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	*pso_msg = NULL;
+
+	/* first, check msDS-ResultantPSO is supported for this object */
+	pso_supported = pso_is_supported(ldb, user_msg);
+
+	if (!pso_supported) {
+		return LDB_SUCCESS;
+	}
+
+	tmp_ctx = talloc_new(user_msg);
+
+	/*
+	 * if any PSOs apply directly to the user, they are considered first
+	 * before we check group membership PSOs
+	 */
+	el = ldb_msg_find_element(user_msg, "msDS-PSOApplied");
+
+	if (el != NULL && el->num_values > 0) {
+		struct dom_sid *user_sid = NULL;
+
+		/* lookup the best PSO object, based on the user's SID */
+		user_sid = samdb_result_dom_sid(tmp_ctx, user_msg, "objectSid");
+
+		ret = pso_find_best(module, tmp_ctx, parent, user_sid, 1,
+				    &best_pso);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		if (best_pso != NULL) {
+			*pso_msg = best_pso;
+			return LDB_SUCCESS;
+		}
+	}
+
+	/*
+	 * If no valid PSO applies directly to the user, then try its groups.
+	 * Work out the SIDs of any account groups the user is a member of
+	 */
+	ret = get_group_sids(ldb, tmp_ctx, user_msg,
+			     "msDS-ResultantPSO", ACCOUNT_GROUPS,
+			     &groupSIDs, &num_groupSIDs);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Error %d determining group SIDs for %s\n", ret,
+			ldb_dn_get_linearized(user_msg->dn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* lookup the best PSO that applies to any of these groups */
+	ret = pso_find_best(module, tmp_ctx, parent, groupSIDs,
+			    num_groupSIDs, &best_pso);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	*pso_msg = best_pso;
+	return LDB_SUCCESS;
+}
+
+/*
+ * Constructs the msDS-ResultantPSO attribute, which is the DN of the Password
+ * Settings Object (PSO) that applies to that user.
+ */
+static int construct_resultant_pso(struct ldb_module *module,
+                                   struct ldb_message *msg,
+				   enum ldb_scope scope,
+                                   struct ldb_request *parent)
+{
+	struct ldb_message *pso = NULL;
+	int ret;
+
+	/* work out the PSO (if any) that applies to this user */
+	ret = get_pso_for_user(module, msg, parent, &pso);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Couldn't determine PSO for %s\n",
+			ldb_dn_get_linearized(msg->dn));
+		return ret;
+	}
+
+	if (pso != NULL) {
+		DBG_INFO("%s is resultant PSO for user %s\n",
+			 ldb_dn_get_linearized(pso->dn),
+			 ldb_dn_get_linearized(msg->dn));
+		return ldb_msg_add_string(msg, "msDS-ResultantPSO",
+					  ldb_dn_get_linearized(pso->dn));
+	}
+
+	/* no PSO applies to this user */
+	return LDB_SUCCESS;
+}
 
 struct op_controls_flags {
 	bool sd;
@@ -918,6 +1193,15 @@ static const char *user_password_expiry_time_computed_attrs[] =
 	NULL
 };
 
+static const char *resultant_pso_computed_attrs[] =
+{
+	"msDS-PSOApplied",
+	"userAccountControl",
+	"objectSid",
+	"msDS-SecondaryKrbTgtNumber",
+	"primaryGroupID",
+	NULL
+};
 
 /*
   a list of attribute names that are hidden, but can be searched for
@@ -939,7 +1223,9 @@ static const struct op_attributes_replace search_sub[] = {
 	{ "msDS-User-Account-Control-Computed", "userAccountControl", user_account_control_computed_attrs,
 	  construct_msds_user_account_control_computed },
 	{ "msDS-UserPasswordExpiryTimeComputed", "userAccountControl", user_password_expiry_time_computed_attrs,
-	  construct_msds_user_password_expiry_time_computed }
+	  construct_msds_user_password_expiry_time_computed },
+	{ "msDS-ResultantPSO", "objectClass", resultant_pso_computed_attrs,
+	  construct_resultant_pso }
 };
 
 
