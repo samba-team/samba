@@ -18,6 +18,7 @@ build_samba:
   stage: build
   tags:
     - docker
+    - private
   script:
     # this one takes about 4 hours to finish
     - python script/autobuild.py samba            --verbose --tail --testbase /tmp/samba-testbase
@@ -25,7 +26,8 @@ build_samba:
 build_samba_nt4:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - private
   script:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-nt4        --verbose --tail --testbase /tmp/samba-testbase
@@ -33,7 +35,8 @@ build_samba_nt4:
 build_samba_fileserver:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - shared
   script:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-fileserver --verbose --tail --testbase /tmp/samba-testbase
@@ -41,7 +44,8 @@ build_samba_fileserver:
 build_samba_ad_dc:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - private
   script:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-ad-dc     --verbose --tail --testbase /tmp/samba-testbase
@@ -49,7 +53,8 @@ build_samba_ad_dc:
 build_samba_none_env:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - shared
   script:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-none-env    --verbose --tail --testbase /tmp/samba-testbase
@@ -58,6 +63,7 @@ build_samba_others:
   stage: build
   tags:
     - docker
+    - shared
   script:
     - python script/autobuild.py samba-nopython   --verbose --tail --testbase /tmp/samba-testbase
     - python script/autobuild.py samba-systemkrb5 --verbose --tail --testbase /tmp/samba-testbase
@@ -70,6 +76,7 @@ build_ctdb:
   stage: build
   tags:
     - docker
+    - shared
   script:
     - python script/autobuild.py samba-ctdb       --verbose --tail --testbase /tmp/samba-testbase
     - python script/autobuild.py ctdb             --verbose --tail --testbase /tmp/samba-testbase
@@ -78,6 +85,7 @@ build_others:
   stage: build
   tags:
     - docker
+    - shared
   script:
     - python script/autobuild.py ldb              --verbose --tail --testbase /tmp/samba-testbase
     - python script/autobuild.py pidl             --verbose --tail --testbase /tmp/samba-testbase
