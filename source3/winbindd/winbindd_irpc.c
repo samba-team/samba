@@ -29,6 +29,8 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "libcli/security/dom_sid.h"
 #include "passdb/lookup_sid.h" /* only for LOOKUP_NAME_NO_NSS flag */
+#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 struct wb_irpc_forward_state {
 	struct irpc_message *msg;
@@ -726,6 +728,66 @@ static void wb_irpc_lsa_LookupNames4_domains_done(struct tevent_req *subreq)
 	return;
 }
 
+struct wb_irpc_GetDCName_state {
+	struct irpc_message *msg;
+	struct wbint_DsGetDcName *req;
+};
+
+static void wb_irpc_GetDCName_done(struct tevent_req *subreq);
+
+static NTSTATUS wb_irpc_GetDCName(struct irpc_message *msg,
+				  struct wbint_DsGetDcName *req)
+{
+
+	struct tevent_req *subreq = NULL;
+	struct wb_irpc_GetDCName_state *state = NULL;
+
+	state = talloc_zero(msg, struct wb_irpc_GetDCName_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->msg = msg;
+	state->req = req;
+
+	subreq = wb_dsgetdcname_send(msg,
+				     server_event_context(),
+				     req->in.domain_name,
+				     req->in.domain_guid,
+				     req->in.site_name,
+				     req->in.flags);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tevent_req_set_callback(subreq,
+				wb_irpc_GetDCName_done,
+				state);
+
+	msg->defer_reply = true;
+
+	return NT_STATUS_OK;
+}
+
+static void wb_irpc_GetDCName_done(struct tevent_req *subreq)
+{
+	struct wb_irpc_GetDCName_state *state = tevent_req_callback_data(
+		subreq, struct wb_irpc_GetDCName_state);
+	NTSTATUS status;
+
+	status = wb_dsgetdcname_recv(subreq, state->msg,
+				     state->req->out.dc_info);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("RPC callback failed for %s - %s\n", "DSGETDCNAME",
+			 nt_errstr(status));
+	}
+
+	state->req->out.result = status;
+
+	irpc_send_reply(state->msg, NT_STATUS_OK);
+}
+
 NTSTATUS wb_irpc_register(void)
 {
 	NTSTATUS status;
@@ -766,6 +828,12 @@ NTSTATUS wb_irpc_register(void)
 	status = IRPC_REGISTER(winbind_imessaging_context(),
 			       lsarpc, LSA_LOOKUPNAMES4,
 			       wb_irpc_lsa_LookupNames4_call, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = IRPC_REGISTER(winbind_imessaging_context(),
+			       winbind, WBINT_DSGETDCNAME,
+			       wb_irpc_GetDCName, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
