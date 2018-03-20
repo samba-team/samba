@@ -2762,6 +2762,8 @@ struct dcesrv_netr_DsRGetDCName_base_state {
 	} _r;
 };
 
+static void dcesrv_netr_DsRGetDCName_base_done(struct tevent_req *subreq);
+
 static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName_base_state *state)
 {
 	struct dcesrv_call_state *dce_call = state->dce_call;
@@ -2781,6 +2783,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	const char *dc_name = NULL;
 	const char *domain_name = NULL;
 	const char *pdc_ip;
+	bool different_domain = true;
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -2841,12 +2844,76 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 		return WERR_INVALID_FLAGS;
 	}
 
+	/* Attempt winbind search only if we suspect the domain is incorrect */
+	if (r->in.domain_name != NULL && strcmp("", r->in.domain_name) != 0) {
+		if (r->in.flags & DS_IS_FLAT_NAME) {
+			if (strcasecmp_m(r->in.domain_name,
+					 lpcfg_sam_name(lp_ctx)) == 0) {
+				different_domain = false;
+			}
+		} else if (r->in.flags & DS_IS_DNS_NAME) {
+			if (strcasecmp_m(r->in.domain_name,
+					 lpcfg_dnsdomain(lp_ctx)) == 0) {
+				different_domain = false;
+			}
+		} else {
+			if (strcasecmp_m(r->in.domain_name,
+					 lpcfg_sam_name(lp_ctx)) == 0 ||
+			    strcasecmp_m(r->in.domain_name,
+					 lpcfg_dnsdomain(lp_ctx)) == 0) {
+				different_domain = false;
+			}
+		}
+	} else {
+		/*
+		 * We need to be able to handle empty domain names, where we
+		 * revert to our domain by default.
+		 */
+		different_domain = false;
+	}
+
 	/* Proof server site parameter "site_name" if it was specified */
 	server_site_name = samdb_server_site_name(sam_ctx, state);
 	W_ERROR_HAVE_NO_MEMORY(server_site_name);
-	if ((r->in.site_name != NULL) && (strcasecmp(r->in.site_name,
-						     server_site_name) != 0)) {
-		return WERR_NO_SUCH_DOMAIN;
+	if (different_domain || (r->in.site_name != NULL &&
+				 (strcasecmp_m(r->in.site_name,
+					     server_site_name) != 0))) {
+
+		struct dcerpc_binding_handle *irpc_handle = NULL;
+		struct tevent_req *subreq = NULL;
+
+		irpc_handle = irpc_binding_handle_by_name(state,
+							  dce_call->msg_ctx,
+							  "winbind_server",
+							  &ndr_table_winbind);
+		if (irpc_handle == NULL) {
+			DEBUG(0,("Failed to get binding_handle for "
+				 "winbind_server task\n"));
+			dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+			return WERR_SERVICE_NOT_FOUND;
+		}
+
+		dcerpc_binding_handle_set_timeout(irpc_handle, 60);
+
+		dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+
+		subreq = dcerpc_wbint_DsGetDcName_send(state,
+						       dce_call->event_ctx,
+						       irpc_handle,
+						       r->in.domain_name,
+						       r->in.domain_guid,
+						       r->in.site_name,
+						       r->in.flags,
+						       r->out.info);
+		if (subreq == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
+		tevent_req_set_callback(subreq,
+					dcesrv_netr_DsRGetDCName_base_done,
+					state);
+
+		return WERR_OK;
 	}
 
 	guid_str = r->in.domain_guid != NULL ?
@@ -2935,6 +3002,104 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	*r->out.info = info;
 
 	return WERR_OK;
+}
+
+static void dcesrv_netr_DsRGetDCName_base_done(struct tevent_req *subreq)
+{
+	struct dcesrv_netr_DsRGetDCName_base_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_netr_DsRGetDCName_base_state);
+	struct dcesrv_call_state *dce_call = state->dce_call;
+	NTSTATUS result, status;
+
+	status = dcerpc_wbint_DsGetDcName_recv(subreq,
+					       state->mem_ctx,
+					       &result);
+	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		state->r.out.result = WERR_TIMEOUT;
+		goto finished;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR(__location__ ": IRPC callback failed %s\n",
+			nt_errstr(status));
+		state->r.out.result = WERR_GEN_FAILURE;
+		goto finished;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DBG_NOTICE("DC location via winbind failed - %s\n",
+			   nt_errstr(result));
+		state->r.out.result = WERR_NO_SUCH_DOMAIN;
+		goto finished;
+	}
+
+	if (state->r.out.info == NULL || state->r.out.info[0] == NULL) {
+		DBG_ERR("DC location via winbind returned no results\n");
+		state->r.out.result = WERR_GEN_FAILURE;
+		goto finished;
+	}
+
+	if (state->r.out.info[0]->dc_unc == NULL) {
+		DBG_ERR("DC location via winbind returned no DC unc\n");
+		state->r.out.result = WERR_GEN_FAILURE;
+		goto finished;
+	}
+
+	/*
+	 * Either the supplied site name is NULL (possibly via
+	 * TRY_NEXT_CLOSEST_SITE) or the resulting site name matches
+	 * the input match name.
+	 *
+	 * TODO: Currently this means that requests with NETBIOS domain
+	 * names can fail because they do not return the site name.
+	 */
+	if (state->r.in.site_name == NULL ||
+	    strcasecmp_m("", state->r.in.site_name) == 0 ||
+	    (state->r.out.info[0]->dc_site_name != NULL &&
+	     strcasecmp_m(state->r.out.info[0]->dc_site_name,
+			  state->r.in.site_name) == 0)) {
+		/*
+		 * Make sure to return our DC UNC with // prefix.
+		 * Winbind currently doesn't send the leading slashes
+		 * for some reason.
+		 */
+		if (strlen(state->r.out.info[0]->dc_unc) > 2 &&
+		    strncmp("\\\\", state->r.out.info[0]->dc_unc, 2) != 0) {
+			const char *dc_unc = NULL;
+
+			dc_unc = talloc_asprintf(state->mem_ctx,
+						 "\\\\%s",
+						 state->r.out.info[0]->dc_unc);
+			state->r.out.info[0]->dc_unc = dc_unc;
+		}
+
+		state->r.out.result = WERR_OK;
+	} else {
+		state->r.out.info = NULL;
+		state->r.out.result = WERR_NO_SUCH_DOMAIN;
+	}
+
+finished:
+	if (state->_r.dcex2 != NULL) {
+		struct netr_DsRGetDCNameEx2 *r = state->_r.dcex2;
+		r->out.result = state->r.out.result;
+	} else if (state->_r.dcex != NULL) {
+		struct netr_DsRGetDCNameEx *r = state->_r.dcex;
+		r->out.result = state->r.out.result;
+	} else if (state->_r.dc != NULL) {
+		struct netr_DsRGetDCName *r = state->_r.dc;
+		r->out.result = state->r.out.result;
+	}
+
+	TALLOC_FREE(state);
+	status = dcesrv_reply(dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n",
+			 nt_errstr(status)));
+	}
 }
 
 /*

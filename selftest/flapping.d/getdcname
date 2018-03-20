@@ -1,0 +1,2 @@
+# winbind appears to return inconsistent answers (depending on whether or not it uses NETBIOS queries or not)
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind_with_site_netbios.fl2008r2dc:local.*
