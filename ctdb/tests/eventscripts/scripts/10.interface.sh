@@ -46,7 +46,9 @@ setup_bond ()
 	_mii_s="${3:-up}"
 	_mii_subs="${4:-${_mii_s:-up}}"
 
-	echo "Setting $_iface to be a bond with active slave $_slave and MII status $_mii_s"
+	cat <<EOF
+Setting $_iface to be a bond with active slave $_slave and MII status $_mii_s
+EOF
 	cat >"${FAKE_PROC_NET_BONDING}/$_iface" <<EOF
 Bonding Mode: IEEE 802.3ad Dynamic link aggregation
 Currently Active Slave: $_slave
