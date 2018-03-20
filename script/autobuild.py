@@ -36,6 +36,7 @@ builddirs = {
     "samba-test-only"  : ".",
     "samba-none-env"  : ".",
     "samba-ad-dc"  : ".",
+    "samba-ad-dc-2"  : ".",
     "samba-systemkrb5"  : ".",
     "samba-nopython"  : ".",
     "ldb"     : "lib/ldb",
@@ -60,6 +61,7 @@ defaulttasks = [ "ctdb",
                  "samba-static",
                  "samba-none-env",
                  "samba-ad-dc",
+                 "samba-ad-dc-2",
                  "samba-systemkrb5",
                  "samba-nopython",
                  "ldb",
@@ -104,6 +106,9 @@ tasks = {
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
+                 "--exclude-env=chgdcpass "
+                 "--exclude-env=vampire_2000_dc "
+                 "--exclude-env=fl2000dc "
                  "--exclude-env=fileserver'",
                  "text/plain"),
                 ("install", "make install", "text/plain"),
@@ -130,6 +135,13 @@ tasks = {
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc'", "text/plain"),
+                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+    # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
+    "samba-ad-dc-2" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                      ("make", "make -j", "text/plain"),
+                      ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=chgdcpass --include-env=vampire_2000_dc --include-env=fl2000dc'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-test-only" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
