@@ -275,8 +275,9 @@ static int virusfilter_vfs_connect(
 	temp_quarantine_dir_mode = lp_parm_const_string(
 		snum, "virusfilter", "quarantine directory mode", "0755");
 	if (temp_quarantine_dir_mode != NULL) {
-		sscanf(temp_quarantine_dir_mode, "%o",
-		       &config->quarantine_dir_mode);
+		unsigned int mode = 0;
+		sscanf(temp_quarantine_dir_mode, "%o", &mode);
+		config->quarantine_dir_mode = mode;
 	}
 
 	config->quarantine_prefix = lp_parm_const_string(
