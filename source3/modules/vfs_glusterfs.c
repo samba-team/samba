@@ -640,7 +640,11 @@ static ssize_t vfs_gluster_pread(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+#ifdef HAVE_GFAPI_VER_7_6
+	return glfs_pread(glfd, data, n, offset, 0, NULL);
+#else
 	return glfs_pread(glfd, data, n, offset, 0);
+#endif
 }
 
 struct glusterfs_aio_state;
@@ -671,7 +675,14 @@ static int aio_wrapper_destructor(struct glusterfs_aio_wrapper *wrap)
  * threads once the async IO submitted is complete. To notify
  * Samba of the completion we use a pipe based queue.
  */
+#ifdef HAVE_GFAPI_VER_7_6
+static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret,
+			       struct glfs_stat *prestat,
+			       struct glfs_stat *poststat,
+			       void *data)
+#else
 static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
+#endif
 {
 	struct glusterfs_aio_state *state = NULL;
 	int sts = 0;
@@ -957,7 +968,11 @@ static ssize_t vfs_gluster_pwrite(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+#ifdef HAVE_GFAPI_VER_7_6
+	return glfs_pwrite(glfd, data, n, offset, 0, NULL, NULL);
+#else
 	return glfs_pwrite(glfd, data, n, offset, 0);
+#endif
 }
 
 static off_t vfs_gluster_lseek(struct vfs_handle_struct *handle,
@@ -1246,7 +1261,11 @@ static int vfs_gluster_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+#ifdef HAVE_GFAPI_VER_7_6
+	return glfs_ftruncate(glfd, offset, NULL, NULL);
+#else
 	return glfs_ftruncate(glfd, offset);
+#endif
 }
 
 static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
