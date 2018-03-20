@@ -18,6 +18,7 @@ env:
   - TASK=samba-nt4
   - TASK=samba-fileserver
   - TASK=samba-ad-dc
+  - TASK=samba-ad-dc-2
   - TASK=ldb
   - TASK=tdb
   - TASK=talloc
