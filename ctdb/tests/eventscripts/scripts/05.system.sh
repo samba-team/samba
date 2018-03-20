@@ -11,7 +11,8 @@ setup_memcheck ()
 	_mem_total=3940712
 	_mem_free=225268
 	_mem_buffers=146120
-	_mem_cached=$(( $_mem_total * (100 - $_mem_usage) / 100 - $_mem_free - $_mem_buffers ))
+	_mem_cached=$(( $_mem_total * (100 - $_mem_usage) / 100 -
+			$_mem_free - $_mem_buffers ))
 
 	export FAKE_PROC_MEMINFO="\
 MemTotal:        ${_mem_total} kB
