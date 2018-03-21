@@ -1,8 +1,6 @@
 setup ()
 {
 	setup_public_addresses
-
-	export CTDB_PARTIALLY_ONLINE_INTERFACES=""
 }
 
 _tcp_connections ()

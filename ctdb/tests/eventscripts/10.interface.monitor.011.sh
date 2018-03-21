@@ -10,7 +10,9 @@ iface=$(ctdb_get_1_interface)
 
 setup_bond $iface "None"
 
+setup_script_options <<EOF
 CTDB_PARTIALLY_ONLINE_INTERFACES=yes
+EOF
 
 ethtool_interfaces_down "$iface"
 

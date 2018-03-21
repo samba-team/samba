@@ -8,7 +8,9 @@ setup
 
 ifaces=$(ctdb_get_interfaces)
 
+setup_script_options <<EOF
 CTDB_PARTIALLY_ONLINE_INTERFACES=yes
+EOF
 
 ethtool_interfaces_down $ifaces
 

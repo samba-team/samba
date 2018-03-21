@@ -6,7 +6,9 @@ define_test "Missing interface, CTDB_PARTIALLY_ONLINE_INTERFACES=yes, warn"
 
 setup
 
+setup_script_options <<EOF
 CTDB_PARTIALLY_ONLINE_INTERFACES=yes
+EOF
 
 iface=$(ctdb_get_1_interface)
 ip link delete "$iface"
