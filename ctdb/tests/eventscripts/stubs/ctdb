@@ -469,26 +469,17 @@ ctdb_gratarp ()
 
 ######################################################################
 
-case "$1" in
-    gettickles) shift ; ctdb_gettickles "$@" ;;
-    addtickle) shift ; ctdb_addtickle "$@" ;;
-    deltickle) shift ; ctdb_deltickle "$@" ;;
-    pstore) shift; ctdb_pstore  "$@" ;;
-    pdelete) shift ; ctdb_pdelete "$@" ;;
-    pfetch) shift ; ctdb_pfetch  "$@" ;;
-    ptrans) shift ; ctdb_ptrans  "$@" ;;
-    catdb) shift ; ctdb_catdb   "$@" ;;
-    ifaces) shift ; ctdb_ifaces "$@" ;;
-    setifacelink) shift ; ctdb_setifacelink "$@" ;;
-    checktcpport) shift ; ctdb_checktcpport "$@" ;;
-    gratarp) shift ; ctdb_gratarp "$@" ;;
-    ip) shift ; ctdb_ip "$@" ;;
-    pnn) shift ; ctdb_pnn ;;
-    enable) shift ; ctdb_enable "$@";;
-    disable) shift ; ctdb_disable "$@";;
-    moveip) shift ; ctdb_moveip "$@";;
-    shutdown) shift ; ctdb_shutdown "$@";;
-    setvar) shift ; ctdb_setvar "$@" ;;
-    nodestatus) shift ; ctdb_nodestatus "$@" ;;
-    *) not_implemented "$1" ;;
-esac
+cmd="$1"
+shift
+
+func="ctdb_${cmd}"
+
+# This could inadvertently run an external function instead of a local
+# function.  However, this can only happen if testing a script
+# containing a new ctdb command that is not implemented, so this is
+# unlikely to do harm.
+if type "$func" >/dev/null 2>&1 ; then
+	"$func" "$@"
+else
+	not_implemented "$cmd"
+fi
