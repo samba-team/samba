@@ -593,11 +593,12 @@ double torture_create_procs(struct torture_context *tctx,
 	bool (*fn)(struct torture_context *, struct smbcli_state *, int),
 	bool *result)
 {
-	int i, status;
+	int status;
+	size_t i;
 	struct child_status *child_status;
-	int synccount;
-	int tries = 8;
-	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
+	size_t synccount;
+	size_t tries = 8;
+	size_t torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
 	double start_time_limit = 10 + (torture_nprocs * 1.5);
 	struct timeval tv;
 
@@ -629,7 +630,7 @@ double torture_create_procs(struct torture_context *tctx,
 			pid_t mypid = getpid();
 			srandom(((int)mypid) ^ ((int)time(NULL)));
 
-			if (asprintf(&myname, "CLIENT%d", i) == -1) {
+			if (asprintf(&myname, "CLIENT%zu", i) == -1) {
 				printf("asprintf failed\n");
 				return -1;
 			}
@@ -654,7 +655,7 @@ double torture_create_procs(struct torture_context *tctx,
 
 			if (!child_status[i].start) {
 				child_status[i].result = TORTURE_ERROR;
-				printf("Child %d failed to start!\n", i);
+				printf("Child %zu failed to start!\n", i);
 				_exit(1);
 			}
 
@@ -671,14 +672,14 @@ double torture_create_procs(struct torture_context *tctx,
 				if (strlen(tctx->last_reason) > 1023) {
 					/* note: reason already contains \n */
 					torture_comment(tctx,
-						"child %d (pid %u) failed: %s",
+						"child %zu (pid %u) failed: %s",
 						i,
 						(unsigned)child_status[i].pid,
 						tctx->last_reason);
 				}
 
 				snprintf(child_status[i].reason,
-					 1024, "child %d (pid %u) failed: %s",
+					 1024, "child %zu (pid %u) failed: %s",
 					 i, (unsigned)child_status[i].pid,
 					 tctx->last_reason);
 				/* ensure proper "\n\0" termination: */
@@ -705,7 +706,7 @@ double torture_create_procs(struct torture_context *tctx,
 	} while (timeval_elapsed(&tv) < start_time_limit);
 
 	if (synccount != torture_nprocs) {
-		printf("FAILED TO START %d CLIENTS (started %d)\n", torture_nprocs, synccount);
+		printf("FAILED TO START %zu CLIENTS (started %zu)\n", torture_nprocs, synccount);
 
 		/* cleanup child processes */
 		for (i = 0; i < torture_nprocs; i++) {
@@ -718,7 +719,7 @@ double torture_create_procs(struct torture_context *tctx,
 		return timeval_elapsed(&tv);
 	}
 
-	printf("Starting %d clients\n", torture_nprocs);
+	printf("Starting %zu clients\n", torture_nprocs);
 
 	/* start the client load */
 	tv = timeval_current();
@@ -726,7 +727,7 @@ double torture_create_procs(struct torture_context *tctx,
 		child_status[i].start = true;
 	}
 
-	printf("%d clients started\n", torture_nprocs);
+	printf("%zu clients started\n", torture_nprocs);
 
 	kill(0, SIGCONT);
 
