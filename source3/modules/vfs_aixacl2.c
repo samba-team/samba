@@ -476,7 +476,8 @@ int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
 	acl_type_t	acl_type_info;
 	int	rc;
 
-	DEBUG(10, ("aixjfs2_sys_acl_set_file invoked for %s", name));
+	DEBUG(10, ("aixjfs2_sys_acl_set_file invoked for %s",
+		   smb_fname->base_name));
 
 	rc = aixjfs2_query_acl_support((char *)smb_fname->base_name,
 			ACL_AIXC, &acl_type_info);
@@ -490,7 +491,7 @@ int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
 		return -1;
 
 	rc = aclx_put(
-		(char *)name,
+		(char *)smb_fname->base_name,
 		SET_ACL, /* set only the ACL, not mode bits */
 		acl_type_info,
 		acl_aixc,
