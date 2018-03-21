@@ -15,7 +15,10 @@ setup ()
 		_devices="${_devices}${_devices:+ }${_t}"
 	done
 
-	export CTDB_MONITOR_MPDEVICES="$_devices"
+	setup_script_options <<EOF
+CTDB_MONITOR_MPDEVICES="$_devices"
+EOF
+
 	export FAKE_MULTIPATH_FAILURES="$_failures"
 	export FAKE_SLEEP_FORCE=0.1
 }
