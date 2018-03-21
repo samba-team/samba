@@ -12,5 +12,7 @@ setup ()
 		done
 	fi
 
-	export CTDB_MANAGES_HTTPD=""
+	setup_script_options <<EOF
+CTDB_MANAGES_HTTPD=""
+EOF
 }
