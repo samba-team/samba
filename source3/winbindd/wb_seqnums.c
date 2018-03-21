@@ -56,8 +56,8 @@ struct tevent_req *wb_seqnums_send(TALLOC_CTX *mem_ctx,
 
 	state->subreqs = talloc_array(state, struct tevent_req *,
 				      state->num_domains);
-	state->domains = talloc_array(state, struct winbindd_domain *,
-				      state->num_domains);
+	state->domains = talloc_zero_array(state, struct winbindd_domain *,
+					   state->num_domains);
 	state->stati = talloc_array(state, NTSTATUS, state->num_domains);
 	state->seqnums = talloc_array(state, uint32_t, state->num_domains);
 
