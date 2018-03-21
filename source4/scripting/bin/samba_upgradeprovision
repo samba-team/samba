@@ -36,11 +36,13 @@ sys.path.insert(0, "bin/python")
 import ldb
 import samba
 import samba.getopt as options
+from samba.samdb import get_default_backend_store
 
 from base64 import b64encode
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
 from samba import tdb_util
+from samba import mdb_util
 from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn, LdbError)
@@ -1366,7 +1368,7 @@ def update_samdb(ref_samdb, samdb, names, provisionUSNs, schema, prereloadfunc):
         return 0
 
 
-def backup_provision(paths, dir, only_db):
+def backup_provision(samdb, paths, dir, only_db):
     """This function backup the provision files so that a rollback
     is possible
 
@@ -1374,8 +1376,20 @@ def backup_provision(paths, dir, only_db):
     :param dir: Directory where to store the backup
     :param only_db: Skip sysvol for users with big sysvol
     """
+
+    # Currently we default to tdb for the backend store type
+    #
+    backend_store = "tdb"
+    res = samdb.search(base="@PARTITION",
+                       scope=ldb.SCOPE_BASE,
+                       attrs=["backendStore"])
+    if "backendStore" in res[0]:
+        backend_store = res[0]["backendStore"][0]
+
+
     if paths.sysvol and not only_db:
         copytree_with_xattrs(paths.sysvol, os.path.join(dir, "sysvol"))
+
     tdb_util.tdb_copy(paths.samdb, os.path.join(dir, os.path.basename(paths.samdb)))
     tdb_util.tdb_copy(paths.secrets, os.path.join(dir, os.path.basename(paths.secrets)))
     tdb_util.tdb_copy(paths.idmapdb, os.path.join(dir, os.path.basename(paths.idmapdb)))
@@ -1399,8 +1413,12 @@ def backup_provision(paths, dir, only_db):
 
         for ldb_name in os.listdir(samldbdir):
             if not ldb_name.endswith("-lock"):
-                tdb_util.tdb_copy(os.path.join(samldbdir, ldb_name),
-                                  os.path.join(dir, "sam.ldb.d", ldb_name))
+                if backend_store == "mdb" and ldb_name != "metadata.tdb":
+                    mdb_util.mdb_copy(os.path.join(samldbdir, ldb_name),
+                                      os.path.join(dir, "sam.ldb.d", ldb_name))
+                else:
+                    tdb_util.tdb_copy(os.path.join(samldbdir, ldb_name),
+                                      os.path.join(dir, "sam.ldb.d", ldb_name))
 
 
 def sync_calculated_attributes(samdb, names):
@@ -1571,7 +1589,7 @@ if __name__ == '__main__':
     ldbs = get_ldbs(paths, creds, session, lp)
     backupdir = tempfile.mkdtemp(dir=paths.private_dir,
                                     prefix="backupprovision")
-    backup_provision(paths, backupdir, opts.db_backup_only)
+    backup_provision(ldbs.sam, paths, backupdir, opts.db_backup_only)
     try:
         ldbs.startTransactions()
 
