@@ -244,8 +244,8 @@ static void free_symbol_map_value(
 static void remove_always_return_values(ListNode * const map_head,
                                         const size_t number_of_symbol_names);
 
-static int check_for_leftover_values_list(const ListNode * head,
-    const char * const error_message);
+static size_t check_for_leftover_values_list(const ListNode * head,
+                                             const char * const error_message);
 
 static int check_for_leftover_values(
     const ListNode * const map_head, const char * const error_message,
@@ -811,11 +811,11 @@ static void remove_always_return_values(ListNode * const map_head,
     }
 }
 
-static int check_for_leftover_values_list(const ListNode * head,
-                                          const char * const error_message)
+static size_t check_for_leftover_values_list(const ListNode * head,
+                                             const char * const error_message)
 {
     ListNode *child_node;
-    int leftover_count = 0;
+    size_t leftover_count = 0;
     if (!list_empty(head))
     {
         for (child_node = head->next; child_node != head;
@@ -1952,10 +1952,10 @@ static const ListNode* check_point_allocated_blocks(void) {
 
 /* Display the blocks allocated after the specified check point.  This
  * function returns the number of blocks displayed. */
-static int display_allocated_blocks(const ListNode * const check_point) {
+static size_t display_allocated_blocks(const ListNode * const check_point) {
     const ListNode * const head = get_allocated_blocks_list();
     const ListNode *node;
-    int allocated_blocks = 0;
+    size_t allocated_blocks = 0;
     assert_non_null(check_point);
     assert_non_null(check_point->next);
 
@@ -1964,14 +1964,14 @@ static int display_allocated_blocks(const ListNode * const check_point) {
             (const MallocBlockInfo*)node->value;
         assert_non_null(block_info);
 
-        if (!allocated_blocks) {
+        if (allocated_blocks == 0) {
             cm_print_error("Blocks allocated...\n");
         }
         cm_print_error(SOURCE_LOCATION_FORMAT ": note: block %p allocated here\n",
                        block_info->location.file,
                        block_info->location.line,
                        block_info->block);
-        allocated_blocks ++;
+        allocated_blocks++;
     }
     return allocated_blocks;
 }
@@ -1997,10 +1997,10 @@ static void free_allocated_blocks(const ListNode * const check_point) {
 /* Fail if any any blocks are allocated after the specified check point. */
 static void fail_if_blocks_allocated(const ListNode * const check_point,
                                      const char * const test_name) {
-    const int allocated_blocks = display_allocated_blocks(check_point);
-    if (allocated_blocks) {
+    const size_t allocated_blocks = display_allocated_blocks(check_point);
+    if (allocated_blocks > 0) {
         free_allocated_blocks(check_point);
-        cm_print_error("ERROR: %s leaked %d block(s)\n", test_name,
+        cm_print_error("ERROR: %s leaked %zu block(s)\n", test_name,
                        allocated_blocks);
         exit_test(1);
     }
