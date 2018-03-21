@@ -106,6 +106,11 @@ tasks = {
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
+                 "--exclude-env=fl2003dc "
+                 "--exclude-env=fl2008r2dc "
+                 "--exclude-env=ad_member "
+                 "--exclude-env=ad_member_idmap_rid "
+                 "--exclude-env=ad_member_idmap_ad "
                  "--exclude-env=chgdcpass "
                  "--exclude-env=vampire_2000_dc "
                  "--exclude-env=fl2000dc "
@@ -134,7 +139,13 @@ tasks = {
     "samba-ad-dc" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
-                      ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc'", "text/plain"),
+                      ("test", "make test FAIL_IMMEDIATELY=1 TESTS='"
+                       "--include-env=ad_dc "
+                       "--include-env=fl2003dc "
+                       "--include-env=fl2008r2dc "
+                       "--include-env=ad_member "
+                       "--include-env=ad_member_idmap_rid "
+                       "--include-env=ad_member_idmap_ad'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
