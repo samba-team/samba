@@ -53,7 +53,6 @@ bool namemap_cache_set_sid2name(const struct dom_sid *sid,
 	}
 
 	snprintf(typebuf, sizeof(typebuf), "%d", (int)type);
-	snprintf(keybuf, sizeof(keybuf), "SID2NAME/%s", sidbuf);
 
 	ret = strv_add(talloc_tos(), &val, domain);
 	if (ret != 0) {
