@@ -31,6 +31,9 @@
 #include "smb2_ioctl_private.h"
 #include "../lib/tsocket/tsocket.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 static void copychunk_pack_limits(struct srv_copychunk_rsp *cc_rsp)
 {
 	cc_rsp->chunks_written = COPYCHUNK_MAX_CHUNKS;

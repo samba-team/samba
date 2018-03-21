@@ -23,6 +23,9 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req)
 {
 	DATA_BLOB outbody;

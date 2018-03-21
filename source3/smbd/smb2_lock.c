@@ -26,6 +26,9 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "messages.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 struct smbd_smb2_lock_element {
 	uint64_t offset;
 	uint64_t length;

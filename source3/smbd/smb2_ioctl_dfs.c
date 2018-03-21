@@ -26,6 +26,9 @@
 #include "include/ntioctl.h"
 #include "smb2_ioctl_private.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 static NTSTATUS fsctl_dfs_get_refers(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct connection_struct *conn,

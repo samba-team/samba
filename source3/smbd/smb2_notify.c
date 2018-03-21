@@ -25,6 +25,9 @@
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 struct smbd_smb2_notify_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smbreq;
