@@ -253,6 +253,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	struct tm tm;
 	char *p;
 	bool stop = false;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_query_directory_state);
@@ -513,6 +514,13 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	ok = aio_add_req_to_fsp(fsp, req);
+	if (!ok) {
+		DBG_ERR("Could not add req to fsp\n");
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return tevent_req_post(req, ev);
 	}
 
