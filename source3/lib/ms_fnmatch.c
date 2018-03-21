@@ -150,7 +150,8 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 {
 	smb_ucs2_t *p = NULL;
 	smb_ucs2_t *s = NULL;
-	int ret, count, i;
+	int ret;
+	size_t count, i;
 	struct max_n *max_n = NULL;
 	struct max_n *max_n_free = NULL;
 	struct max_n one_max_n;
