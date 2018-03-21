@@ -13,7 +13,9 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
+setup_script_options <<EOF
 CTDB_NATGW_PUBLIC_IP=""
+EOF
 
 required_result 1 "Invalid configuration: CTDB_NATGW_PUBLIC_IP not set"
 

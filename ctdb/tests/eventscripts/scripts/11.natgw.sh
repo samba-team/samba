@@ -5,13 +5,6 @@ setup ()
 	natgw_nodes="${CTDB_BASE}/natgw_nodes"
 
 	ctdb_set_pnn
-
-	export CTDB_NATGW_NODES=""
-	export CTDB_NATGW_PRIVATE_NETWORK=""
-	export CTDB_NATGW_PUBLIC_IP=""
-	export CTDB_NATGW_PUBLIC_IFACE=""
-	export CTDB_NATGW_DEFAULT_GATEWAY=""
-	export CTDB_NATGW_STATIC_ROUTES=""
 }
 
 # A separate function for this makes sense because it can be done
@@ -38,14 +31,16 @@ setup_ctdb_natgw ()
 	# addresses:
 	read _ip <"$natgw_nodes"
 
-	CTDB_NATGW_NODES="$natgw_nodes"
-	CTDB_NATGW_PRIVATE_NETWORK="${_ip%.*}.0/24"
-	# These are fixed.  Probably don't use the same network for the
-	# private node IPs.  To unset the default gateway just set it to
-	# "".  :-)
-	CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
-	CTDB_NATGW_PUBLIC_IFACE="eth1"
-	CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
+	setup_script_options <<EOF
+CTDB_NATGW_NODES="$natgw_nodes"
+CTDB_NATGW_PRIVATE_NETWORK="${_ip%.*}.0/24"
+# These are fixed.  Probably don't use the same network for the
+# private node IPs.  To unset the default gateway just set it to
+# "".  :-)
+CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
+CTDB_NATGW_PUBLIC_IFACE="eth1"
+CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
+EOF
 }
 
 ok_natgw_master_ip_addr_show ()

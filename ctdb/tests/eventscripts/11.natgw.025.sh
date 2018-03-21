@@ -6,7 +6,9 @@ define_test "static routes, custom gateway, multiple transitions"
 
 setup
 
+setup_script_options <<EOF
 CTDB_NATGW_STATIC_ROUTES="10.1.1.0/24 10.1.2.0/24@10.1.1.253"
+EOF
 
 echo "*** Master node..."
 
