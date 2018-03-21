@@ -625,7 +625,6 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 	TALLOC_CTX *tmp_ctx;
 	WERROR werr;
 	Py_ssize_t i;
-	Py_ssize_t _size;
 	PyTypeObject *py_type = NULL;
 	PyObject *module = NULL;
 
@@ -688,13 +687,16 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 
 		for (i = 0; i < el->num_values; i++) {
 			PyObject *item = PyList_GetItem(el_list, i);
-			if (!PyStr_Check(item)) {
-				PyErr_Format(PyExc_TypeError, "ldif_elements should be strings");
+			if (!PyBytes_Check(item)) {
+				PyErr_Format(PyExc_TypeError,
+					     "ldif_element type should be "
+					     PY_DESC_PY3_BYTES
+					     );
 				talloc_free(tmp_ctx);
 				return NULL;
 			}
-			el->values[i].data = (uint8_t *)PyStr_AsUTF8AndSize(item, &_size);;
-			el->values[i].length = _size;
+			el->values[i].data = (uint8_t *)PyBytes_AsString(item);
+			el->values[i].length = PyBytes_Size(item);
 		}
 	}
 
