@@ -15,13 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Tests for samba.samba3."""
+"""Tests for samba.s3passdb"""
 
-from samba.samba3 import (
-    Registry,
-    WinsDatabase,
-    IdmapDatabase,
-    )
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
 from samba.tests import TestCase, TestCaseInTempDir
@@ -33,31 +28,6 @@ for p in [ "../../../../../testdata/samba3", "../../../../testdata/samba3" ]:
     DATADIR = os.path.join(os.path.dirname(__file__), p)
     if os.path.exists(DATADIR):
         break
-
-
-class RegistryTestCase(TestCase):
-
-    def setUp(self):
-        super(RegistryTestCase, self).setUp()
-        self.registry = Registry(os.path.join(DATADIR, "registry"))
-
-    def tearDown(self):
-        self.registry.close()
-        super(RegistryTestCase, self).tearDown()
-
-    def test_length(self):
-        self.assertEquals(28, len(self.registry))
-
-    def test_keys(self):
-        self.assertTrue("HKLM" in self.registry.keys())
-
-    def test_subkeys(self):
-        self.assertEquals(["SOFTWARE", "SYSTEM"], self.registry.subkeys("HKLM"))
-
-    def test_values(self):
-        self.assertEquals({'DisplayName': (1L, 'E\x00v\x00e\x00n\x00t\x00 \x00L\x00o\x00g\x00\x00\x00'),
-                           'ErrorControl': (4L, '\x01\x00\x00\x00')},
-                           self.registry.values("HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))
 
 
 class PassdbTestCase(TestCaseInTempDir):
@@ -81,11 +51,6 @@ class PassdbTestCase(TestCaseInTempDir):
         self.pdb = []
         os.system("rm -rf %s" % os.path.join(self.tempdir, "samba3"))
         super(PassdbTestCase, self).tearDown()
-
-    def test_param(self):
-        self.assertEquals("BEDWYR", self.lp.get("netbios name"))
-        self.assertEquals("SAMBA", self.lp.get("workgroup"))
-        self.assertEquals("USER", self.lp.get("security"))
 
     def test_policy(self):
         policy = self.pdb.get_account_policy()
@@ -171,50 +136,3 @@ class PassdbTestCase(TestCaseInTempDir):
         aliaslist = self.pdb.search_aliases()
         self.assertEquals(1, len(aliaslist))
         self.assertEquals("Jelmers NT Group", aliaslist[0]['account_name'])
-
-
-class WinsDatabaseTestCase(TestCase):
-
-    def setUp(self):
-        super(WinsDatabaseTestCase, self).setUp()
-        self.winsdb = WinsDatabase(os.path.join(DATADIR, "wins.dat"))
-
-    def test_length(self):
-        self.assertEquals(22, len(self.winsdb))
-
-    def test_first_entry(self):
-        self.assertEqual((1124185120, ["192.168.1.5"], 0x64), self.winsdb["ADMINISTRATOR#03"])
-
-    def tearDown(self):
-        self.winsdb.close()
-        super(WinsDatabaseTestCase, self).tearDown()
-
-
-class IdmapDbTestCase(TestCase):
-
-    def setUp(self):
-        super(IdmapDbTestCase, self).setUp()
-        self.idmapdb = IdmapDatabase(os.path.join(DATADIR,
-            "winbindd_idmap"))
-
-    def test_user_hwm(self):
-        self.assertEquals(10000, self.idmapdb.get_user_hwm())
-
-    def test_group_hwm(self):
-        self.assertEquals(10002, self.idmapdb.get_group_hwm())
-
-    def test_uids(self):
-        self.assertEquals(1, len(list(self.idmapdb.uids())))
-
-    def test_gids(self):
-        self.assertEquals(3, len(list(self.idmapdb.gids())))
-
-    def test_get_user_sid(self):
-        self.assertEquals("S-1-5-21-58189338-3053988021-627566699-501", self.idmapdb.get_user_sid(65534))
-
-    def test_get_group_sid(self):
-        self.assertEquals("S-1-5-21-2447931902-1787058256-3961074038-3007", self.idmapdb.get_group_sid(10001))
-
-    def tearDown(self):
-        self.idmapdb.close()
-        super(IdmapDbTestCase, self).tearDown()
