@@ -236,18 +236,20 @@ void
 AES_encrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
 	if (has_intel_aes_instructions()) {
-		return AES_encrypt_aesni(in, out, key);
+		AES_encrypt_aesni(in, out, key);
+		return;
 	}
-	return AES_encrypt_rj(in, out, key);
+	AES_encrypt_rj(in, out, key);
 }
 
 void
 AES_decrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
 	if (has_intel_aes_instructions()) {
-		return AES_decrypt_aesni(in, out, key);
+		AES_decrypt_aesni(in, out, key);
+		return;
 	}
-	return AES_decrypt_rj(in, out, key);
+	AES_decrypt_rj(in, out, key);
 }
 
 #endif /* SAMBA_RIJNDAEL */
