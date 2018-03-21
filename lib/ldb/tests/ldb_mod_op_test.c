@@ -1914,22 +1914,22 @@ static void test_ldb_modify_during_search(void **state, bool add_index,
 
 static void test_ldb_modify_during_indexed_search(void **state)
 {
-	return test_ldb_modify_during_search(state, true, false);
+	test_ldb_modify_during_search(state, true, false);
 }
 
 static void test_ldb_modify_during_unindexed_search(void **state)
 {
-	return test_ldb_modify_during_search(state, false, false);
+	test_ldb_modify_during_search(state, false, false);
 }
 
 static void test_ldb_rename_during_indexed_search(void **state)
 {
-	return test_ldb_modify_during_search(state, true, true);
+	test_ldb_modify_during_search(state, true, true);
 }
 
 static void test_ldb_rename_during_unindexed_search(void **state)
 {
-	return test_ldb_modify_during_search(state, false, true);
+	test_ldb_modify_during_search(state, false, true);
 }
 
 /*
