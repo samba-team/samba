@@ -352,7 +352,7 @@ const char **str_list_make_v3_const(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint);
 
-char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, int maxlen, FILE *f);
+char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, size_t maxlen, FILE *f);
 
 /**
 load a file into memory from a fd.

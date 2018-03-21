@@ -79,10 +79,10 @@ _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 	return data;
 }
 
-char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, int maxlen, FILE *f)
+char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, size_t maxlen, FILE *f)
 {
 	char *s = s2;
-	int len = 0;
+	size_t len = 0;
 	int c;
 	bool start_of_line = true;
 
