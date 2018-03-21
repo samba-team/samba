@@ -27,6 +27,9 @@
 #include "../librpc/ndr/libndr.h"
 #include "../libcli/smb/smb_signing.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 extern fstring remote_proto;
 
 /*

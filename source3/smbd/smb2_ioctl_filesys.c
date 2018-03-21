@@ -31,6 +31,9 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 /*
  * XXX this may reduce dup_extents->byte_count so that it's less than the
  * target file size.
