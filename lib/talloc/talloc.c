@@ -2554,7 +2554,8 @@ static struct talloc_chunk *_vasprintf_tc(const void *t,
 					  const char *fmt,
 					  va_list ap)
 {
-	int len;
+	int vlen;
+	size_t len;
 	char *ret;
 	va_list ap2;
 	struct talloc_chunk *tc;
@@ -2562,9 +2563,13 @@ static struct talloc_chunk *_vasprintf_tc(const void *t,
 
 	/* this call looks strange, but it makes it work on older solaris boxes */
 	va_copy(ap2, ap);
-	len = vsnprintf(buf, sizeof(buf), fmt, ap2);
+	vlen = vsnprintf(buf, sizeof(buf), fmt, ap2);
 	va_end(ap2);
-	if (unlikely(len < 0)) {
+	if (unlikely(vlen < 0)) {
+		return NULL;
+	}
+	len = vlen;
+	if (unlikely(len + 1 < len)) {
 		return NULL;
 	}
 
