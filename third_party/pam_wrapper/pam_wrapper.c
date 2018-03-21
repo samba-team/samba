@@ -531,7 +531,7 @@ static void libpam_pam_vsyslog(const pam_handle_t *pamh,
 #define BUFFER_SIZE 32768
 
 /* copy file from src to dst, overwrites dst */
-static int p_copy(const char *src, const char *dst, const char *pdir, mode_t mode)
+static int p_copy(const char *src, const char *dst, mode_t mode)
 {
 	int srcfd = -1;
 	int dstfd = -1;
@@ -567,7 +567,6 @@ static int p_copy(const char *src, const char *dst, const char *pdir, mode_t mod
 	}
 
 	for (;;) {
-		char *p;
 		bread = read(srcfd, buf, BUFFER_SIZE);
 		if (bread == 0) {
 			/* done */
@@ -576,21 +575,6 @@ static int p_copy(const char *src, const char *dst, const char *pdir, mode_t mod
 			errno = EIO;
 			rc = -1;
 			goto out;
-		}
-
-		/* EXTRA UGLY HACK */
-		if (pdir != NULL) {
-			p = buf;
-
-			while (p < buf + BUFFER_SIZE) {
-				if (*p == '/') {
-					cmp = memcmp(p, "/etc/pam.d", 10);
-					if (cmp == 0) {
-						memcpy(p, pdir, 10);
-					}
-				}
-				p++;
-			}
 		}
 
 		bwritten = write(dstfd, buf, bread);
@@ -668,7 +652,7 @@ static int copy_ftw(const char *fpath,
 	}
 
 	PWRAP_LOG(PWRAP_LOG_TRACE, "Copying %s", fpath);
-	rc = p_copy(fpath, buf, NULL, sb->st_mode);
+	rc = p_copy(fpath, buf, sb->st_mode);
 	if (rc != 0) {
 		return FTW_STOP;
 	}
@@ -754,6 +738,100 @@ static void pwrap_clean_stale_dirs(const char *dir)
 	}
 
 	return;
+}
+
+static int pso_copy(const char *src, const char *dst, const char *pdir, mode_t mode)
+{
+	int srcfd = -1;
+	int dstfd = -1;
+	int rc = -1;
+	ssize_t bread, bwritten;
+	struct stat sb;
+	char buf[10];
+	int cmp;
+	size_t to_read;
+	bool found_slash;
+
+	cmp = strcmp(src, dst);
+	if (cmp == 0) {
+		return -1;
+	}
+
+	srcfd = open(src, O_RDONLY, 0);
+	if (srcfd < 0) {
+		return -1;
+	}
+
+	if (mode == 0) {
+		rc = fstat(srcfd, &sb);
+		if (rc != 0) {
+			rc = -1;
+			goto out;
+		}
+		mode = sb.st_mode;
+	}
+
+	dstfd = open(dst, O_CREAT|O_WRONLY|O_TRUNC, mode);
+	if (dstfd < 0) {
+		rc = -1;
+		goto out;
+	}
+
+	found_slash = false;
+	to_read = 1;
+
+	for (;;) {
+		bread = read(srcfd, buf, to_read);
+		if (bread == 0) {
+			/* done */
+			break;
+		} else if (bread < 0) {
+			errno = EIO;
+			rc = -1;
+			goto out;
+		}
+
+		to_read = 1;
+		if (!found_slash && buf[0] == '/') {
+			found_slash = true;
+			to_read = 9;
+		}
+
+		if (found_slash && bread == 9) {
+			cmp = memcmp(buf, "etc/pam.d", 9);
+			if (cmp == 0) {
+				memcpy(buf, pdir + 1, 9);
+			}
+			found_slash = false;
+		}
+
+		bwritten = write(dstfd, buf, bread);
+		if (bwritten < 0) {
+			errno = EIO;
+			rc = -1;
+			goto out;
+		}
+
+		if (bread != bwritten) {
+			errno = EFAULT;
+			rc = -1;
+			goto out;
+		}
+	}
+
+	rc = 0;
+out:
+	if (srcfd != -1) {
+		close(srcfd);
+	}
+	if (dstfd != -1) {
+		close(dstfd);
+	}
+	if (rc < 0) {
+		unlink(dst);
+	}
+
+	return rc;
 }
 
 static void pwrap_init(void)
@@ -908,11 +986,13 @@ static void pwrap_init(void)
 			 "%s",
 			 pam_library);
 	} else {
-		char libpam_path_cp[sizeof(libpam_path)];
-		char *dname;
+		char libpam_path_cp[1024] = {0};
+		char *dname = NULL;
 
-		strncpy(libpam_path_cp, libpam_path, sizeof(libpam_path_cp));
-		libpam_path_cp[sizeof(libpam_path_cp) - 1] = '\0';
+		snprintf(libpam_path_cp,
+			 sizeof(libpam_path_cp),
+			 "%s",
+			 libpam_path);
 
 		dname = dirname(libpam_path_cp);
 		if (dname == NULL) {
@@ -931,7 +1011,7 @@ static void pwrap_init(void)
 	PWRAP_LOG(PWRAP_LOG_TRACE, "Reconstructed PAM path: %s", libpam_path);
 
 	PWRAP_LOG(PWRAP_LOG_DEBUG, "Copy %s to %s", libpam_path, pwrap.libpam_so);
-	rc = p_copy(libpam_path, pwrap.libpam_so, pwrap.config_dir, 0644);
+	rc = pso_copy(libpam_path, pwrap.libpam_so, pwrap.config_dir, 0644);
 	if (rc != 0) {
 		PWRAP_LOG(PWRAP_LOG_ERROR,
 			  "Failed to copy %s - error: %s",
