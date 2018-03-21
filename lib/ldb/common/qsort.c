@@ -59,9 +59,8 @@ typedef struct
 #define CHAR_BIT 8
 #endif
 #define STACK_SIZE	(CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high)	((void) ((top->lo = (low)), (top->hi = (high)), ++top))
-#define	POP(low, high)	((void) (--top, (low = top->lo), (high = top->hi)))
-#define	STACK_NOT_EMPTY	(stack < top)
+#define PUSH(low, high) ((void) ((stack[i].lo = (low)), (stack[i].hi = (high)), i++))
+#define POP(low, high)  ((void) (i--, (low = stack[i].lo), (high = stack[i].hi)))
 
 
 /* Order size using quicksort.  This implementation incorporates
@@ -104,11 +103,11 @@ void ldb_qsort (void *const pbase, size_t total_elems, size_t size,
       char *lo = base_ptr;
       char *hi = &lo[size * (total_elems - 1)];
       stack_node stack[STACK_SIZE];
-      stack_node *top = stack;
+      size_t i = 0;
 
       PUSH (NULL, NULL);
 
-      while (STACK_NOT_EMPTY)
+      do
         {
           char *left_ptr;
           char *right_ptr;
@@ -194,6 +193,7 @@ void ldb_qsort (void *const pbase, size_t total_elems, size_t size,
               hi = right_ptr;
             }
         }
+      while (i > 0 && i < STACK_SIZE);
     }
 
   /* Once the BASE_PTR array is partially sorted by quicksort the rest
