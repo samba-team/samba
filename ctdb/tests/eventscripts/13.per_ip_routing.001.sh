@@ -6,7 +6,9 @@ define_test "not configured"
 
 setup
 
+setup_script_options <<EOF
 CTDB_PER_IP_ROUTING_CONF=""
+EOF
 
 ok_null
 simple_test_event "takeip"

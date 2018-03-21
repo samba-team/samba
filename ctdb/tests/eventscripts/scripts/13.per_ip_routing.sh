@@ -4,10 +4,12 @@ setup ()
 
 	service_name="per_ip_routing"
 
-	export CTDB_PER_IP_ROUTING_CONF="${CTDB_BASE}/policy_routing"
-	export CTDB_PER_IP_ROUTING_RULE_PREF=100
-	export CTDB_PER_IP_ROUTING_TABLE_ID_LOW=1000
-	export CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=2000
+	setup_script_options <<EOF
+CTDB_PER_IP_ROUTING_CONF="${CTDB_BASE}/policy_routing"
+CTDB_PER_IP_ROUTING_RULE_PREF=100
+CTDB_PER_IP_ROUTING_TABLE_ID_LOW=1000
+CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=2000
+EOF
 
 	# Tests need to create and populate this file
 	rm -f "$CTDB_PER_IP_ROUTING_CONF"
