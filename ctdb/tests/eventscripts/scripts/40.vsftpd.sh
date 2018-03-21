@@ -10,5 +10,7 @@ setup ()
 		service "$_service_name" force-stopped
 	fi
 
-	export CTDB_MANAGES_VSFTPD=""
+	setup_script_options <<EOF
+CTDB_MANAGES_VSFTPD=""
+EOF
 }

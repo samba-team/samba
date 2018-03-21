@@ -6,7 +6,9 @@ define_test "managed, down - once, twice"
 
 setup "down"
 
+setup_script_options <<EOF
 CTDB_MANAGES_VSFTPD="yes"
+EOF
 
 ok <<EOF
 vsftpd not listening on TCP port 21
