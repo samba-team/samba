@@ -241,9 +241,9 @@ ctdb_moveip ()
 
 	while read _i _pnn ; do
 	    if [ "$_ip" = "$_i" ] ; then
-		echo "$_ip $_target"
+		echo "$_i $_target"
 	    else
-		echo "$_ip $_pnn"
+		echo "$_i $_pnn"
 	    fi
 	done | sort >"$_t"
 	mv "$_t" "$FAKE_CTDB_IP_LAYOUT"
@@ -486,7 +486,7 @@ case "$1" in
     pnn|xpnn)      ctdb_pnn ;;
     enable)        ctdb_enable "$@";;
     disable)       ctdb_disable "$@";;
-    moveip)        ctdb_moveip "$@";;
+    moveip) shift ; ctdb_moveip "$@";;
     shutdown)      ctdb_shutdown "$@";;
     setvar)	   ctdb_setvar "$@" ;;
     nodestatus)	   ctdb_nodestatus "$@" ;;
