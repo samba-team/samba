@@ -611,8 +611,9 @@ planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
 planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check")
 planpythontestsuite("none", "samba.tests.samba_tool.help")
 
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.sites")
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dnscmd")
+# Run these against fl2008r2dc to share the runtime load
+planpythontestsuite("fl2008r2dc:local", "samba.tests.samba_tool.sites")
+planpythontestsuite("fl2008r2dc:local", "samba.tests.samba_tool.dnscmd")
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho")
 planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
