@@ -28,6 +28,7 @@
 #include "winbindd_rpc.h"
 #include "lib/util_unixsids.h"
 #include "rpc_client/rpc_client.h"
+#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
@@ -179,6 +180,32 @@ static NTSTATUS open_cached_internal_pipe_conn(
 	return NT_STATUS_OK;
 }
 
+static bool reset_connection_on_error(struct winbindd_domain *domain,
+				      struct rpc_pipe_client *p,
+				      NTSTATUS status)
+{
+	struct winbind_internal_pipes *internal_pipes = NULL;
+
+	internal_pipes = talloc_get_type_abort(
+		domain->private_data, struct winbind_internal_pipes);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR))
+	{
+		TALLOC_FREE(internal_pipes);
+		domain->private_data = NULL;
+		return true;
+	}
+
+	if (!rpccli_is_connected(p)) {
+		TALLOC_FREE(internal_pipes);
+		domain->private_data = NULL;
+		return true;
+	}
+
+	return false;
+}
+
 /*********************************************************************
  SAM specific functions.
 *********************************************************************/
@@ -195,6 +222,7 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 	uint32_t num_info = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("sam_enum_dom_groups\n"));
 
@@ -207,6 +235,7 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -222,6 +251,12 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 				     &dom_pol,
 				     &num_info,
 				     &info);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(tmp_ctx);
 		return status;
@@ -249,6 +284,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 	uint32_t *rids = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("samr_query_user_list\n"));
 
@@ -257,6 +293,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -271,6 +308,11 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				     &dom_pol,
 				     &domain->sid,
 				     &rids);
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -296,6 +338,7 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 	uint32_t num_trusts = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("samr: trusted domains\n"));
 
@@ -308,6 +351,7 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						NULL,
 						NULL,
@@ -322,6 +366,12 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 				     &lsa_policy,
 				     &num_trusts,
 				     &trusts);
+
+	if (!retry && reset_connection_on_error(domain, lsa_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -356,6 +406,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("sam_lookup_groupmem\n"));
 
@@ -374,6 +425,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -394,6 +446,11 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 				     &sid_mem,
 				     &names,
 				     &name_types);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
 
 	if (pnum_names) {
 		*pnum_names = num_names;
@@ -467,6 +524,7 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 	uint32_t num_info = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("samr: enum local groups\n"));
 
@@ -479,6 +537,7 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -492,7 +551,13 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 				       samr_pipe,
 				       &dom_pol,
 				       &num_info,
+
 				       &info);
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -525,6 +590,7 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("sam_name_to_sid\n"));
 
@@ -533,6 +599,7 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						NULL,
 						NULL,
@@ -550,6 +617,12 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 				 flags,
 				 &sid,
 				 &type);
+
+	if (!retry && reset_connection_on_error(domain, lsa_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -581,6 +654,7 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("sam_sid_to_name\n"));
 
@@ -604,6 +678,7 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						NULL,
 						NULL,
@@ -621,6 +696,11 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 				 &domain_name,
 				 &name,
 				 &type);
+
+	if (!retry && reset_connection_on_error(domain, lsa_pipe, status)) {
+		retry = true;
+		goto again;
+	}
 
 	if (ptype) {
 		*ptype = type;
@@ -656,6 +736,7 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	char **names = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("sam_rids_to_names for %s\n", domain->name));
 
@@ -675,6 +756,7 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						NULL,
 						NULL,
@@ -694,6 +776,12 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 				   &domain_name,
 				   &names,
 				   &types);
+
+	if (!retry && reset_connection_on_error(domain, lsa_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -725,6 +813,7 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
+	bool retry = false;
 
 	DEBUG(3,("sam_lockout_policy\n"));
 
@@ -733,6 +822,7 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -750,6 +840,12 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 					     DomainLockoutInformation,
 					     &info,
 					     &result);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
 	}
@@ -775,6 +871,7 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
+	bool retry = false;
 
 	DEBUG(3,("sam_password_policy\n"));
 
@@ -783,6 +880,7 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -800,6 +898,12 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 					     DomainPasswordInformation,
 					     &info,
 					     &result);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
 	}
@@ -828,6 +932,7 @@ static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
 	uint32_t num_groups = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("sam_lookup_usergroups\n"));
 
@@ -842,6 +947,7 @@ static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -858,6 +964,12 @@ static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
 				       user_sid,
 				       &num_groups,
 				       &user_grpsids);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -889,6 +1001,7 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 	uint32_t *alias_rids = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("sam_lookup_useraliases\n"));
 
@@ -901,6 +1014,7 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -917,6 +1031,12 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 					sids,
 					&num_aliases,
 					&alias_rids);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -944,6 +1064,7 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 	uint32_t seq = DOM_SEQUENCE_NONE;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	bool retry = false;
 
 	DEBUG(3,("samr: sequence number\n"));
 
@@ -956,6 +1077,7 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+again:
 	status = open_cached_internal_pipe_conn(domain,
 						&samr_pipe,
 						&dom_pol,
@@ -970,6 +1092,12 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 				     &dom_pol,
 				     domain->name,
 				     &seq);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
