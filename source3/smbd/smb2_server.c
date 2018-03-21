@@ -616,34 +616,37 @@ static bool smb2_validate_sequence_number(struct smbXsrv_connection *xconn,
 
 	seq_tmp = xconn->smb2.credits.seq_low;
 	if (seq_id < seq_tmp) {
-		DEBUG(0,("smb2_validate_sequence_number: bad message_id "
+		DBGC_ERR(DBGC_SMB2_CREDITS,
+			"smb2_validate_sequence_number: bad message_id "
 			"%llu (sequence id %llu) "
 			"(granted = %u, low = %llu, range = %u)\n",
 			(unsigned long long)message_id,
 			(unsigned long long)seq_id,
 			(unsigned int)xconn->smb2.credits.granted,
 			(unsigned long long)xconn->smb2.credits.seq_low,
-			(unsigned int)xconn->smb2.credits.seq_range));
+			(unsigned int)xconn->smb2.credits.seq_range);
 		return false;
 	}
 
 	seq_tmp += xconn->smb2.credits.seq_range;
 	if (seq_id >= seq_tmp) {
-		DEBUG(0,("smb2_validate_sequence_number: bad message_id "
+		DBGC_ERR(DBGC_SMB2_CREDITS,
+			"smb2_validate_sequence_number: bad message_id "
 			"%llu (sequence id %llu) "
 			"(granted = %u, low = %llu, range = %u)\n",
 			(unsigned long long)message_id,
 			(unsigned long long)seq_id,
 			(unsigned int)xconn->smb2.credits.granted,
 			(unsigned long long)xconn->smb2.credits.seq_low,
-			(unsigned int)xconn->smb2.credits.seq_range));
+			(unsigned int)xconn->smb2.credits.seq_range);
 		return false;
 	}
 
 	offset = seq_id % xconn->smb2.credits.max;
 
 	if (bitmap_query(credits_bm, offset)) {
-		DEBUG(0,("smb2_validate_sequence_number: duplicate message_id "
+		DBGC_ERR(DBGC_SMB2_CREDITS,
+			"smb2_validate_sequence_number: duplicate message_id "
 			"%llu (sequence id %llu) "
 			"(granted = %u, low = %llu, range = %u) "
 			"(bm offset %u)\n",
@@ -652,7 +655,7 @@ static bool smb2_validate_sequence_number(struct smbXsrv_connection *xconn,
 			(unsigned int)xconn->smb2.credits.granted,
 			(unsigned long long)xconn->smb2.credits.seq_low,
 			(unsigned int)xconn->smb2.credits.seq_range,
-			offset));
+			offset);
 		return false;
 	}
 
@@ -668,10 +671,11 @@ static bool smb2_validate_sequence_number(struct smbXsrv_connection *xconn,
 	 * already seen.
 	 */
 	while (bitmap_query(credits_bm, offset)) {
-		DEBUG(10,("smb2_validate_sequence_number: clearing "
+		DBGC_DEBUG(DBGC_SMB2_CREDITS,
+			  "smb2_validate_sequence_number: clearing "
 			  "id %llu (position %u) from bitmap\n",
 			  (unsigned long long)(xconn->smb2.credits.seq_low),
-			  offset));
+			  offset);
 		bitmap_clear(credits_bm, offset);
 
 		xconn->smb2.credits.seq_low += 1;
@@ -700,7 +704,9 @@ static bool smb2_validate_message_id(struct smbXsrv_connection *xconn,
 		credit_charge = MAX(credit_charge, 1);
 	}
 
-	DEBUG(11, ("smb2_validate_message_id: mid %llu (charge %llu), "
+	DEBUGC(11,
+		   DBGC_SMB2_CREDITS,
+		   ("smb2_validate_message_id: mid %llu (charge %llu), "
 		   "credits_granted %llu, "
 		   "seqnum low/range: %llu/%llu\n",
 		   (unsigned long long) message_id,
@@ -710,7 +716,8 @@ static bool smb2_validate_message_id(struct smbXsrv_connection *xconn,
 		   (unsigned long long) xconn->smb2.credits.seq_range));
 
 	if (xconn->smb2.credits.granted < credit_charge) {
-		DEBUG(0, ("smb2_validate_message_id: client used more "
+		DBGC_ERR(DBGC_SMB2_CREDITS,
+			  "smb2_validate_message_id: client used more "
 			  "credits than granted, mid %llu, charge %llu, "
 			  "credits_granted %llu, "
 			  "seqnum low/range: %llu/%llu\n",
@@ -718,7 +725,7 @@ static bool smb2_validate_message_id(struct smbXsrv_connection *xconn,
 			  (unsigned long long) credit_charge,
 			  (unsigned long long) xconn->smb2.credits.granted,
 			  (unsigned long long) xconn->smb2.credits.seq_low,
-			  (unsigned long long) xconn->smb2.credits.seq_range));
+			  (unsigned long long) xconn->smb2.credits.seq_range);
 		return false;
 	}
 
@@ -734,7 +741,9 @@ static bool smb2_validate_message_id(struct smbXsrv_connection *xconn,
 		uint64_t id = message_id + i;
 		bool ok;
 
-		DEBUG(11, ("Iterating mid %llu charge %u (sequence %llu)\n",
+		DEBUGC(11,
+			   DBGC_SMB2_CREDITS,
+			   ("Iterating mid %llu charge %u (sequence %llu)\n",
 			   (unsigned long long)message_id,
 			   credit_charge,
 			   (unsigned long long)id));
@@ -912,7 +921,8 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 	xconn->smb2.credits.granted += credits_granted;
 	xconn->smb2.credits.seq_range += credits_granted;
 
-	DEBUG(10,("smb2_set_operation_credit: requested %u, charge %u, "
+	DBGC_DEBUG(DBGC_SMB2_CREDITS,
+		"smb2_set_operation_credit: requested %u, charge %u, "
 		"granted %u, current possible/max %u/%u, "
 		"total granted/max/low/range %u/%u/%llu/%u\n",
 		(unsigned int)credits_requested,
@@ -923,7 +933,7 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 		(unsigned int)xconn->smb2.credits.granted,
 		(unsigned int)xconn->smb2.credits.max,
 		(unsigned long long)xconn->smb2.credits.seq_low,
-		(unsigned int)xconn->smb2.credits.seq_range));
+		(unsigned int)xconn->smb2.credits.seq_range);
 }
 
 static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
@@ -1981,13 +1991,15 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 
 	needed_charge = (data_length - 1)/ 65536 + 1;
 
-	DEBUG(10, ("mid %llu, CreditCharge: %d, NeededCharge: %d\n",
+	DBGC_DEBUG(DBGC_SMB2_CREDITS,
+		   "mid %llu, CreditCharge: %d, NeededCharge: %d\n",
 		   (unsigned long long) BVAL(inhdr, SMB2_HDR_MESSAGE_ID),
-		   credit_charge, needed_charge));
+		   credit_charge, needed_charge);
 
 	if (needed_charge > credit_charge) {
-		DEBUG(2, ("CreditCharge too low, given %d, needed %d\n",
-			  credit_charge, needed_charge));
+		DBGC_WARNING(DBGC_SMB2_CREDITS,
+			  "CreditCharge too low, given %d, needed %d\n",
+			  credit_charge, needed_charge);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
