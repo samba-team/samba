@@ -405,6 +405,9 @@ EOF
 
 ######################################################################
 
+FAKE_CTDB_IFACES_DOWN="${FAKE_CTDB_STATE}/ifaces-down"
+rm -f "${FAKE_CTDB_IFACES_DOWN}"/*
+
 ctdb_ifaces()
 {
 	_f="${CTDB_BASE}/public_addresses"
@@ -435,6 +438,8 @@ ctdb_setifacelink ()
 {
 	_iface="$1"
 	_state="$2"
+
+	mkdir -p "$FAKE_CTDB_IFACES_DOWN"
 
 	# Existence of file means CTDB thinks interface is down.
 	_f="${FAKE_CTDB_IFACES_DOWN}/${_iface}"

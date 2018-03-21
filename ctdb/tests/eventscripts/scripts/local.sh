@@ -327,10 +327,6 @@ setup_ctdb ()
     export FAKE_CTDB_EXTRA_CONFIG="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-config.sh"
     rm -f "$FAKE_CTDB_EXTRA_CONFIG"
 
-    export FAKE_CTDB_IFACES_DOWN="$FAKE_CTDB_STATE/ifaces-down"
-    mkdir -p "$FAKE_CTDB_IFACES_DOWN"
-    rm -f "$FAKE_CTDB_IFACES_DOWN"/*
-
     export CTDB_PARTIALLY_ONLINE_INTERFACES
 
     export FAKE_CTDB_TUNABLES_OK="MonitorInterval TDBMutexEnabled DatabaseHashSize"
