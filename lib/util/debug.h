@@ -217,6 +217,14 @@ extern int  *DEBUGLEVEL_CLASS;
 		&& (dbgtext("%s: ", __func__))				\
 		&& (dbgtext body) )
 
+/* Prefix messages with the function name - class specific */
+#define DBGC_PREFIX(dbgc_class, level, body ) \
+	(void)( ((level) <= MAX_DEBUG_LEVEL) &&			\
+		unlikely(DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))	\
+		&& (dbghdrclass(level, dbgc_class, __location__, __func__ )) \
+		&& (dbgtext("%s: ", __func__))				\
+		&& (dbgtext body) )
+
 /*
  * Debug levels matching RFC 3164
  */
@@ -232,11 +240,33 @@ extern int  *DEBUGLEVEL_CLASS;
 #define DBG_INFO(...)		DBG_PREFIX(DBGLVL_INFO,		(__VA_ARGS__))
 #define DBG_DEBUG(...)		DBG_PREFIX(DBGLVL_DEBUG,	(__VA_ARGS__))
 
+#define DBGC_ERR(dbgc_class, ...)	DBGC_PREFIX(dbgc_class, \
+						DBGLVL_ERR, (__VA_ARGS__))
+#define DBGC_WARNING(dbgc_class, ...)	DBGC_PREFIX(dbgc_class, \
+						DBGLVL_WARNING,	(__VA_ARGS__))
+#define DBGC_NOTICE(dbgc_class, ...)	DBGC_PREFIX(dbgc_class, \
+						DBGLVL_NOTICE,	(__VA_ARGS__))
+#define DBGC_INFO(dbgc_class, ...)	DBGC_PREFIX(dbgc_class, \
+						DBGLVL_INFO,	(__VA_ARGS__))
+#define DBGC_DEBUG(dbgc_class, ...)	DBGC_PREFIX(dbgc_class, \
+						DBGLVL_DEBUG,	(__VA_ARGS__))
+
 #define D_ERR(...)		DEBUG(DBGLVL_ERR,	(__VA_ARGS__))
 #define D_WARNING(...)		DEBUG(DBGLVL_WARNING,	(__VA_ARGS__))
 #define D_NOTICE(...)		DEBUG(DBGLVL_NOTICE,	(__VA_ARGS__))
 #define D_INFO(...)		DEBUG(DBGLVL_INFO,	(__VA_ARGS__))
 #define D_DEBUG(...)		DEBUG(DBGLVL_DEBUG,	(__VA_ARGS__))
+
+#define DC_ERR(...)		DEBUGC(dbgc_class, \
+					DBGLVL_ERR,	(__VA_ARGS__))
+#define DC_WARNING(...)		DEBUGC(dbgc_class, \
+					DBGLVL_WARNING,	(__VA_ARGS__))
+#define DC_NOTICE(...)		DEBUGC(dbgc_class, \
+					DBGLVL_NOTICE,	(__VA_ARGS__))
+#define DC_INFO(...)		DEBUGC(dbgc_class, \
+					DBGLVL_INFO,	(__VA_ARGS__))
+#define DC_DEBUG(...)		DEBUGC(dbgc_class, \
+					DBGLVL_DEBUG,	(__VA_ARGS__))
 
 /* The following definitions come from lib/debug.c  */
 
