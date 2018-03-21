@@ -41,7 +41,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 	struct _gss_cred *cred = (struct _gss_cred *) *cred_handle;
 	OM_uint32	major_status = GSS_S_COMPLETE;
 	struct _gss_mechanism_cred *mc;
-	int one_ok = 0;
+	OM_uint32 one_ok = 0;
 
 	*minor_status = 0;
 

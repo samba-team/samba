@@ -803,7 +803,7 @@ static struct addr_operations at[] = {
     }
 };
 
-static int num_addrs = sizeof(at) / sizeof(at[0]);
+static size_t num_addrs = sizeof(at) / sizeof(at[0]);
 
 static size_t max_sockaddr_size = 0;
 
@@ -814,22 +814,26 @@ static size_t max_sockaddr_size = 0;
 static struct addr_operations *
 find_af(int af)
 {
-    struct addr_operations *a;
+    size_t i;
 
-    for (a = at; a < at + num_addrs; ++a)
-	if (af == a->af)
-	    return a;
+    for (i = 0; i < num_addrs; i++) {
+	if (af == at[i].af) {
+		return &at[i];
+	}
+    }
     return NULL;
 }
 
 static struct addr_operations *
 find_atype(krb5_address_type atype)
 {
-    struct addr_operations *a;
+    size_t i;
 
-    for (a = at; a < at + num_addrs; ++a)
-	if (atype == a->atype)
-	    return a;
+    for (i = 0; i < num_addrs; i++) {
+	if (atype == at[i].atype) {
+		return &at[i];
+	}
+    }
     return NULL;
 }
 
@@ -949,10 +953,11 @@ KRB5_LIB_FUNCTION size_t KRB5_LIB_CALL
 krb5_max_sockaddr_size (void)
 {
     if (max_sockaddr_size == 0) {
-	struct addr_operations *a;
+	size_t i;
 
-	for(a = at; a < at + num_addrs; ++a)
-	    max_sockaddr_size = max(max_sockaddr_size, a->max_sockaddr_size);
+	for (i = 0; i < num_addrs; i++) {
+	    max_sockaddr_size = max(max_sockaddr_size, at[i].max_sockaddr_size);
+	}
     }
     return max_sockaddr_size;
 }
