@@ -6,8 +6,10 @@ define_test "Check throttling of warnings"
 
 setup
 
+setup_script_options <<EOF
 CTDB_MONITOR_MEMORY_USAGE="70:80"
 CTDB_MONITOR_SWAP_USAGE=""
+EOF
 
 # Below threshold, nothing logged
 set_mem_usage 67 0

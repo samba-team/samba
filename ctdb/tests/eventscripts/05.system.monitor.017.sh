@@ -6,7 +6,9 @@ define_test "Memory check, bad situation, both custom memory checks, causes unhe
 
 setup
 
+setup_script_options <<EOF
 CTDB_MONITOR_MEMORY_USAGE="70:80"
+EOF
 
 set_mem_usage 87 0
 required_result 1 <<EOF

@@ -40,10 +40,6 @@ setup ()
 {
 	setup_dbdir
 
-	export CTDB_MONITOR_MEMORY_USAGE=""
-	export CTDB_MONITOR_SWAP_USAGE=""
-	export CTDB_MONITOR_FILESYSTEM_USAGE=""
-
 	# Tests use default unless explicitly set
 	set_mem_usage
 	set_fs_usage

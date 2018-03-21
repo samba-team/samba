@@ -6,7 +6,9 @@ define_test "Filesystem use check, error situation, both checks enabled"
 
 setup
 
+setup_script_options <<EOF
 CTDB_MONITOR_FILESYSTEM_USAGE="/var:80:90"
+EOF
 
 set_fs_usage 95
 required_result 1 <<EOF

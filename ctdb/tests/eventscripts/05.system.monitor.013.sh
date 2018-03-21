@@ -6,7 +6,9 @@ define_test "Memory check, bad situation, custom swap critical"
 
 setup
 
+setup_script_options <<EOF
 CTDB_MONITOR_SWAP_USAGE=":50"
+EOF
 
 set_mem_usage 100 90
 required_result 1 <<EOF

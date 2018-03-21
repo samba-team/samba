@@ -6,7 +6,9 @@ define_test "Memory check, bad memory situation, custom memory warning"
 
 setup
 
+setup_script_options <<EOF
 CTDB_MONITOR_MEMORY_USAGE="85:"
+EOF
 
 set_mem_usage 90 10
 ok <<EOF
