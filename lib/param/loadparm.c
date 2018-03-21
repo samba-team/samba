@@ -1598,7 +1598,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue)
 {
-	int i;
+	size_t i;
 
 	/* switch on the type of variable it is */
 	switch (parm_table[parmnum].type)
