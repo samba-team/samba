@@ -26,6 +26,9 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "locking/leases_db.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 static NTSTATUS smbd_smb2_request_process_lease_break(
 	struct smbd_smb2_request *req);
 

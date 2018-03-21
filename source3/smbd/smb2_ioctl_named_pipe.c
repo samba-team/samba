@@ -27,6 +27,9 @@
 #include "include/ntioctl.h"
 #include "smb2_ioctl_private.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq);
 static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq);
 

@@ -26,6 +26,9 @@
 #include "trans2.h"
 #include "../lib/util/tevent_ntstatus.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,

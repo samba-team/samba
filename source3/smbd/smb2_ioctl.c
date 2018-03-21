@@ -27,6 +27,9 @@
 #include "smb2_ioctl_private.h"
 #include "librpc/gen_ndr/ioctl.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,

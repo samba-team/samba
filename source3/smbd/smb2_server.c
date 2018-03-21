@@ -32,6 +32,9 @@
 #include "auth.h"
 #include "lib/crypto/sha512.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_SMB2
+
 static void smbd_smb2_connection_handler(struct tevent_context *ev,
 					 struct tevent_fd *fde,
 					 uint16_t flags,
