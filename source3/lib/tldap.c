@@ -1262,7 +1262,8 @@ static bool tldap_find_first_star(const char *val, const char **star)
 
 static bool tldap_unescape_inplace(char *value, size_t *val_len)
 {
-	int c, i, p;
+	int c;
+	size_t i, p;
 
 	for (i = 0,p = 0; i < *val_len; i++) {
 
