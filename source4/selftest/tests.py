@@ -978,7 +978,7 @@ plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '
                          "samba4.krb5.kdc with specified account")
 
 
-for env in ["rodc", "promoted_dc", "ad_dc", "fl2000dc", "fl2008r2dc"]:
+for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
     if env == "rodc":
         # The machine account is cached at the RODC, as it is the local account
         extra_options = ['--option=torture:expect_rodc=true', '--option=torture:expect_cached_at_rodc=true']
