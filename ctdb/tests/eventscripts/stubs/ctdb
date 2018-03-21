@@ -406,6 +406,70 @@ EOF
 
 ######################################################################
 
+ctdb_ifaces()
+{
+	_f="${CTDB_BASE}/public_addresses"
+
+	if [ ! -f "$_f" ] ; then
+		die "Public addresses file \"${_f}\" not found"
+	fi
+
+	# Assume -Y.
+	echo "|Name|LinkStatus|References|"
+	while read _ip _iface ; do
+		case "_$ip" in
+		\#*) : ;;
+		*)
+			_status=1
+			# For now assume _iface contains only 1.
+			if [ -f "{FAKE_CTDB_IFACES_DOWN}/${_iface}" ] ; then
+				_status=0
+			fi
+			# Nobody looks at references
+			echo "|${_iface}|${_status}|0|"
+		esac
+	done <"$_f" |
+	sort -u
+}
+
+ctdb_setifacelink ()
+{
+	_iface="$1"
+	_state="$2"
+
+	# Existence of file means CTDB thinks interface is down.
+	_f="${FAKE_CTDB_IFACES_DOWN}/${_iface}"
+
+	case "$_state" in
+	up)   rm -f "$_f" ;;
+	down) touch "$_f" ;;
+	*) die "ctdb setifacelink: unsupported interface status ${_state}" ;;
+	esac
+}
+
+######################################################################
+
+ctdb_checktcpport ()
+{
+	_port="$1"
+
+	for _i in $FAKE_TCP_LISTEN ; do
+		if [ "$_port" = "${_i##*:}" ] ; then
+			exit 98
+		fi
+	done
+
+	exit 0
+}
+
+ctdb_gratarp ()
+{
+	# Do nothing for now
+	:
+}
+
+######################################################################
+
 case "$1" in
     gettickles) shift ; ctdb_gettickles "$@" ;;
     addtickle) shift ; ctdb_addtickle "$@" ;;
@@ -415,48 +479,10 @@ case "$1" in
     pfetch)  ctdb_pfetch  "$@" ;;
     ptrans)  ctdb_ptrans  "$@" ;;
     catdb)   ctdb_catdb   "$@" ;;
-    ifaces)
-	# Assume -Y.
-	echo "|Name|LinkStatus|References|"
-	_f="${CTDB_BASE}/public_addresses"
-	if [ -r "$_f" ] ; then
-	    while read _ip _iface ; do
-		case "_$ip" in
-		    \#*) : ;;
-		    *)
-			_status=1
-			# For now assume _iface contains only 1.
-			if [ -f "{FAKE_CTDB_IFACES_DOWN}/${_iface}" ] ; then
-			    _status=0
-			fi
-			# Nobody looks at references
-			echo "|${_iface}|${_status}|0|"
-		esac
-	    done <"$_f" |
-	    sort -u
-	fi
-	;;
-    setifacelink)
-	# Existence of file means CTDB thinks interface is down.
-	_f="${FAKE_CTDB_IFACES_DOWN}/$2"
-	case "$3" in
-	    up)   rm -f "$_f" ;;
-	    down) touch "$_f" ;;
-	    *)
-		echo "ctdb setifacelink: unsupported interface status $3"
-		exit 1
-	esac
-	;;
-    checktcpport)
-	for _i in $FAKE_TCP_LISTEN ; do
-	    if [ "$2" = "${_i##*:}" ] ; then
-		exit 98
-	    fi
-	done
-
-	exit 0
-	;;
-    gratarp) : ;;  # Do nothing for now
+    ifaces) shift ; ctdb_ifaces "$@" ;;
+    setifacelink) shift ; ctdb_setifacelink "$@" ;;
+    checktcpport) shift ; ctdb_checktcpport "$@" ;;
+    gratarp) shift ; ctdb_gratarp "$@" ;;
     ip)            ctdb_ip "$@" ;;
     pnn)	   ctdb_pnn ;;
     enable)        ctdb_enable "$@";;
