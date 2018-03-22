@@ -47,10 +47,10 @@ class IdmapDbTestCase(TestCase):
         self.assertEquals(3, len(list(self.idmapdb.gids())))
 
     def test_get_user_sid(self):
-        self.assertEquals("S-1-5-21-58189338-3053988021-627566699-501", self.idmapdb.get_user_sid(65534))
+        self.assertEquals(b"S-1-5-21-58189338-3053988021-627566699-501", self.idmapdb.get_user_sid(65534))
 
     def test_get_group_sid(self):
-        self.assertEquals("S-1-5-21-2447931902-1787058256-3961074038-3007", self.idmapdb.get_group_sid(10001))
+        self.assertEquals(b"S-1-5-21-2447931902-1787058256-3961074038-3007", self.idmapdb.get_group_sid(10001))
 
     def tearDown(self):
         self.idmapdb.close()
