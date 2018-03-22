@@ -43,12 +43,12 @@ class RegistryTestCase(TestCase):
         self.assertEquals(28, len(self.registry))
 
     def test_keys(self):
-        self.assertTrue("HKLM" in self.registry.keys())
+        self.assertTrue(b"HKLM" in self.registry.keys())
 
     def test_subkeys(self):
-        self.assertEquals(["SOFTWARE", "SYSTEM"], self.registry.subkeys("HKLM"))
+        self.assertEquals([b"SOFTWARE", b"SYSTEM"], self.registry.subkeys(b"HKLM"))
 
     def test_values(self):
-        self.assertEquals({'DisplayName': (1L, 'E\x00v\x00e\x00n\x00t\x00 \x00L\x00o\x00g\x00\x00\x00'),
-                           'ErrorControl': (4L, '\x01\x00\x00\x00')},
-                           self.registry.values("HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))
+        self.assertEquals({b'DisplayName': (1, b'E\x00v\x00e\x00n\x00t\x00 \x00L\x00o\x00g\x00\x00\x00'),
+                           b'ErrorControl': (4, b'\x01\x00\x00\x00')},
+                           self.registry.values(b"HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))
