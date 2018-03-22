@@ -729,7 +729,16 @@ static bool init_gluster_aio(struct vfs_handle_struct *handle)
 	read_fd = fds[0];
 	write_fd = fds[1];
 
-	aio_read_event = tevent_add_fd(handle->conn->sconn->ev_ctx,
+	/*
+	 * We use the raw tevent context here,
+	 * as this is a global event handler.
+	 *
+	 * The tevent_req_defer_callback()
+	 * calls will make sure the results
+	 * of async calls are propagated
+	 * to the correct tevent_context.
+	 */
+	aio_read_event = tevent_add_fd(handle->conn->sconn->raw_ev_ctx,
 					NULL,
 					read_fd,
 					TEVENT_FD_READ,
