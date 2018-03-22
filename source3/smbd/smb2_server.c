@@ -1482,8 +1482,14 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		data_blob_clear_free(&req->last_key);
 	}
 
+	/*
+	 * smbd_smb2_request_pending_timer() just send a packet
+	 * to the client and doesn't need any impersonation.
+	 * So we use req->xconn->client->raw_ev_ctx instead
+	 * of req->ev_ctx here.
+	 */
 	defer_endtime = timeval_current_ofs_usec(defer_time);
-	req->async_te = tevent_add_timer(req->sconn->ev_ctx,
+	req->async_te = tevent_add_timer(req->xconn->client->raw_ev_ctx,
 					 req, defer_endtime,
 					 smbd_smb2_request_pending_timer,
 					 req);
