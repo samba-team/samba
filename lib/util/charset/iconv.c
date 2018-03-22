@@ -25,6 +25,8 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/charset/charset.h"
 #include "lib/util/charset/charset_proto.h"
+#include "libcli/util/ntstatus.h"
+#include "lib/util/util_str_hex.h"
 
 #ifdef strcasecmp
 #undef strcasecmp
@@ -454,8 +456,8 @@ static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		unsigned int v;
-
+		uint64_t v;
+		NTSTATUS status;
 		if ((*inbuf)[0] != '@') {
 			/* seven bit ascii case */
 			(*outbuf)[0] = (*inbuf)[0];
@@ -471,8 +473,9 @@ static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			errno = EINVAL;
 			return -1;
 		}
+		status = read_hex_bytes(&(*inbuf)[1], 4, &v);
 
-		if (sscanf(&(*inbuf)[1], "%04x", &v) != 1) {
+		if (!NT_STATUS_IS_OK(status)) {
 			errno = EILSEQ;
 			return -1;
 		}
