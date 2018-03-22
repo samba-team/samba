@@ -186,16 +186,20 @@ static bool yesno(const char *p)
  number taken from the buffer. This may not equal the number written.
 ****************************************************************************/
 
-static int writefile(int f, char *b, int n)
+static ssize_t writefile(int f, char *b, size_t n)
 {
-	int i;
+	size_t i = 0;
+
+	if (n == 0) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	if (!translation) {
 		return write(f,b,n);
 	}
 
-	i = 0;
-	while (i < n) {
+	do {
 		if (*b == '\r' && (i<(n-1)) && *(b+1) == '\n') {
 			b++;i++;
 		}
@@ -204,9 +208,9 @@ static int writefile(int f, char *b, int n)
 		}
 		b++;
 		i++;
-	}
+	} while (i < n);
 
-	return(i);
+	return (ssize_t)i;
 }
 
 /****************************************************************************
@@ -1092,7 +1096,10 @@ static int cmd_echo(void)
 static NTSTATUS writefile_sink(char *buf, size_t n, void *priv)
 {
 	int *pfd = (int *)priv;
-	if (writefile(*pfd, buf, n) == -1) {
+	ssize_t rc;
+
+	rc = writefile(*pfd, buf, n);
+	if (rc == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 	return NT_STATUS_OK;
@@ -5954,7 +5961,7 @@ static char **completion_fn(const char *text, int start, int end)
 			return NULL;
 	} else {
 		char **matches;
-		int i, len, samelen = 0, count=1;
+		size_t i, len, samelen = 0, count=1;
 
 		matches = SMB_MALLOC_ARRAY(char *, MAX_COMPLETIONS);
 		if (!matches) {
