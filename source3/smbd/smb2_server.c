@@ -2922,8 +2922,13 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			}
 		}
 
+		/*
+		 * smbd_smb2_request_dispatch() will redo the impersonation.
+		 * So we use req->xconn->client->raw_ev_ctx instead
+		 * of req->ev_ctx here.
+		 */
 		tevent_schedule_immediate(im,
-					req->sconn->ev_ctx,
+					req->xconn->client->raw_ev_ctx,
 					smbd_smb2_request_dispatch_immediate,
 					req);
 		return NT_STATUS_OK;
