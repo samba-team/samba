@@ -109,7 +109,7 @@ testit "kpasswd check short user password" \
 ###########################################################
 
 echo "check that a short password is rejected"
-cat > ./tmpkpasswdscript <<EOF
+cat > $PREFIX/tmpkpasswdscript <<EOF
 expect Password
 password ${TEST_PASSWORD}\n
 expect New password
@@ -126,7 +126,7 @@ testit "kpasswd check weak user password" \
 ### check that a strong password is accepted
 ###########################################################
 
-cat > ./tmpkpasswdscript <<EOF
+cat > $PREFIX/tmpkpasswdscript <<EOF
 expect Password
 password ${TEST_PASSWORD}\n
 expect New password
