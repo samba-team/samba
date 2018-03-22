@@ -6,9 +6,9 @@ define_test "setup, known and unknown tunables in config"
 
 setup
 
-setup_config <<EOF
-CTDB_SET_MonitorInterval=5
-CTDB_SET_UnknownMagic=0
+setup_tunable_config <<EOF
+MonitorInterval=5
+UnknownMagic=0
 EOF
 
 required_result 1 <<EOF

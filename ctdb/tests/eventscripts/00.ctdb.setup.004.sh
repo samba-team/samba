@@ -6,9 +6,9 @@ define_test "setup, known and obsolete tunables in config"
 
 setup
 
-setup_config <<EOF
-CTDB_SET_MonitorInterval=5
-CTDB_SET_EventScriptUnhealthyOnTimeout=0
+setup_tunable_config <<EOF
+MonitorInterval=5
+EventScriptUnhealthyOnTimeout=0
 EOF
 
 required_result 0 <<EOF
