@@ -11,7 +11,9 @@ setup ()
 			service "$i" force-started
 		done
 
-		export CTDB_MANAGES_SAMBA="yes"
+		setup_script_options <<EOF
+CTDB_MANAGES_SAMBA="yes"
+EOF
 
 		setup_tcp_listen 445 139
 
@@ -27,12 +29,16 @@ setup ()
 			service "$i" force-stopped
 		done
 
-		export CTDB_MANAGES_SAMBA=""
+		setup_script_options <<EOF
+CTDB_MANAGES_SAMBA=""
+EOF
 
 		setup_tcp_listen
 	fi
 
-	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
+	setup_script_options <<EOF
+CTDB_SAMBA_SKIP_SHARE_CHECK="no"
+EOF
 
 	setup_shares
 
