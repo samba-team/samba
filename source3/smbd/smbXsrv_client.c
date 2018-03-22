@@ -507,7 +507,7 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(table);
 		return NT_STATUS_NO_MEMORY;
 	}
-	client->ev_ctx = ev_ctx;
+	client->raw_ev_ctx = ev_ctx;
 	client->msg_ctx = msg_ctx;
 
 	client->server_multi_channel_enabled = lp_server_multi_channel_support();
@@ -543,9 +543,11 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
 	}
 
-	subreq = messaging_filtered_read_send(client, client->ev_ctx, client->msg_ctx,
-					      smbXsrv_client_connection_pass_filter,
-					      client);
+	subreq = messaging_filtered_read_send(client,
+					client->raw_ev_ctx,
+					client->msg_ctx,
+					smbXsrv_client_connection_pass_filter,
+					client);
 	if (subreq == NULL) {
 		TALLOC_FREE(client);
 		return NT_STATUS_NO_MEMORY;
@@ -678,9 +680,11 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 next:
 	TALLOC_FREE(rec);
 
-	subreq = messaging_filtered_read_send(client, client->ev_ctx, client->msg_ctx,
-					      smbXsrv_client_connection_pass_filter,
-					      client);
+	subreq = messaging_filtered_read_send(client,
+					client->raw_ev_ctx,
+					client->msg_ctx,
+					smbXsrv_client_connection_pass_filter,
+					client);
 	if (subreq == NULL) {
 		const char *r;
 		r = "messaging_read_send(MSG_SMBXSRV_CONNECTION_PASS failed";

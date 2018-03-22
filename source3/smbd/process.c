@@ -3697,7 +3697,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	}
 	talloc_steal(frame, xconn);
 
-	xconn->ev_ctx = client->ev_ctx;
+	xconn->ev_ctx = client->raw_ev_ctx;
 	xconn->msg_ctx = client->msg_ctx;
 	xconn->transport.sock = sock_fd;
 	smbd_echo_init(xconn);
@@ -3848,7 +3848,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	xconn->smb1.sessions.done_sesssetup = false;
 	xconn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;
 
-	xconn->transport.fde = tevent_add_fd(client->ev_ctx,
+	xconn->transport.fde = tevent_add_fd(client->raw_ev_ctx,
 					     xconn,
 					     sock_fd,
 					     TEVENT_FD_READ,

@@ -258,7 +258,9 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 
 	table->global.db_ctx = smbXsrv_session_global_db_ctx;
 
-	subreq = messaging_read_send(table, client->ev_ctx, client->msg_ctx,
+	subreq = messaging_read_send(table,
+				     client->raw_ev_ctx,
+				     client->msg_ctx,
 				     MSG_SMBXSRV_SESSION_CLOSE);
 	if (subreq == NULL) {
 		TALLOC_FREE(table);
@@ -376,7 +378,7 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 		goto next;
 	}
 
-	subreq = smb2srv_session_shutdown_send(session, client->ev_ctx,
+	subreq = smb2srv_session_shutdown_send(session, client->raw_ev_ctx,
 					       session, NULL);
 	if (subreq == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -396,7 +398,9 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 next:
 	TALLOC_FREE(rec);
 
-	subreq = messaging_read_send(table, client->ev_ctx, client->msg_ctx,
+	subreq = messaging_read_send(table,
+				     client->raw_ev_ctx,
+				     client->msg_ctx,
 				     MSG_SMBXSRV_SESSION_CLOSE);
 	if (subreq == NULL) {
 		const char *r;
