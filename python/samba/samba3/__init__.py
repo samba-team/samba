@@ -26,9 +26,8 @@ import os
 import struct
 import tdb
 
-import passdb
-import param as s3param
-
+import samba.samba3.passdb
+from samba.samba3 import param as s3param
 
 def fetch_uint32(db, key):
     try:
