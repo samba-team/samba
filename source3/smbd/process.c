@@ -3390,7 +3390,7 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 		close(listener_pipe[0]);
 		set_blocking(listener_pipe[1], false);
 
-		status = smbd_reinit_after_fork(xconn->msg_ctx,
+		status = smbd_reinit_after_fork(xconn->client->msg_ctx,
 						xconn->client->raw_ev_ctx,
 						true,
 						"smbd-echo");
@@ -3702,7 +3702,6 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	}
 	talloc_steal(frame, xconn);
 
-	xconn->msg_ctx = client->msg_ctx;
 	xconn->transport.sock = sock_fd;
 	smbd_echo_init(xconn);
 	xconn->protocol = PROTOCOL_NONE;

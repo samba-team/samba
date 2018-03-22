@@ -1110,7 +1110,7 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 		return;
 	}
 
-	status = messaging_send(conn->msg_ctx,
+	status = messaging_send(conn->client->msg_ctx,
 				global->channels[0].server_id,
 				MSG_SMBXSRV_SESSION_CLOSE, &blob);
 	TALLOC_FREE(state->db_rec);
@@ -1362,7 +1362,7 @@ NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 	c = &global->channels[global->num_channels];
 	ZERO_STRUCTP(c);
 
-	c->server_id = messaging_server_id(conn->msg_ctx);
+	c->server_id = messaging_server_id(conn->client->msg_ctx);
 	c->local_address = tsocket_address_string(conn->local_address,
 						  global->channels);
 	if (c->local_address == NULL) {

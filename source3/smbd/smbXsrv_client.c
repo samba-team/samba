@@ -345,7 +345,7 @@ NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
 	iov.iov_base = blob.data;
 	iov.iov_len = blob.length;
 
-	status = messaging_send_iov(smb2req->xconn->msg_ctx,
+	status = messaging_send_iov(smb2req->xconn->client->msg_ctx,
 				    global->server_id,
 				    MSG_SMBXSRV_CONNECTION_PASS,
 				    &iov, 1,

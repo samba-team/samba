@@ -1095,7 +1095,7 @@ NTSTATUS smb1srv_tcon_create(struct smbXsrv_connection *conn,
 			     NTTIME now,
 			     struct smbXsrv_tcon **_tcon)
 {
-	struct server_id id = messaging_server_id(conn->msg_ctx);
+	struct server_id id = messaging_server_id(conn->client->msg_ctx);
 
 	return smbXsrv_tcon_create(conn->client->tcon_table,
 				   conn->protocol,
