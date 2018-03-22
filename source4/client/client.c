@@ -3053,7 +3053,7 @@ static char **completion_fn(const char *text, int start, int end)
 			return NULL;
 	} else {
 		char **matches;
-		int i, len, samelen = 0, count=1;
+		size_t i, len, samelen = 0, count=1;
 
 		matches = malloc_array_p(char *, MAX_COMPLETIONS);
 		if (!matches) return NULL;
@@ -3092,10 +3092,8 @@ static char **completion_fn(const char *text, int start, int end)
 		return matches;
 
 cleanup:
-		count--;
-		while (count >= 0) {
-			free(matches[count]);
-			count--;
+		for (i = 0; i < count; i++) {
+			free(matches[i]);
 		}
 		free(matches);
 		return NULL;
