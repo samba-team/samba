@@ -3924,6 +3924,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->client = client;
 
 	sconn->ev_ctx = ev_ctx;
+	sconn->raw_ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
 
 	ret = pthreadpool_tevent_init(sconn, lp_aio_max_threads(),
