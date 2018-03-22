@@ -109,7 +109,7 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
-	subreq = smbd_smb2_write_send(req, req->sconn->ev_ctx,
+	subreq = smbd_smb2_write_send(req, req->ev_ctx,
 				      req, in_fsp,
 				      in_data_buffer,
 				      in_offset,

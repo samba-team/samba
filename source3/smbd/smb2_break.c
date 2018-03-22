@@ -86,7 +86,7 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	subreq = smbd_smb2_oplock_break_send(req, req->sconn->ev_ctx,
+	subreq = smbd_smb2_oplock_break_send(req, req->ev_ctx,
 					     req, in_fsp, in_oplock_level);
 	if (subreq == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
@@ -265,7 +265,7 @@ static NTSTATUS smbd_smb2_request_process_lease_break(
 	in_lease_key.data[1] = BVAL(inbody, 16);
 	in_lease_state = IVAL(inbody, 24);
 
-	subreq = smbd_smb2_lease_break_send(req, req->sconn->ev_ctx, req,
+	subreq = smbd_smb2_lease_break_send(req, req->ev_ctx, req,
 					    in_lease_key, in_lease_state);
 	if (subreq == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
