@@ -129,29 +129,21 @@ static struct lmdb_trans *lmdb_private_trans_head(struct lmdb_private *lmdb)
 	return ltx;
 }
 
+
 static MDB_txn *get_current_txn(struct lmdb_private *lmdb)
 {
 	MDB_txn *txn = NULL;
 
+	txn = lmdb_trans_get_tx(lmdb_private_trans_head(lmdb));
+	if (txn != NULL) {
+		return txn;
+	}
 	if (lmdb->read_txn != NULL) {
 		return lmdb->read_txn;
 	}
-
-	txn = lmdb_trans_get_tx(lmdb_private_trans_head(lmdb));
-	if (txn == NULL) {
-		int ret;
-		ret = mdb_txn_begin(lmdb->env, NULL, MDB_RDONLY, &txn);
-		if (ret != 0) {
-			lmdb->error = ret;
-			ldb_asprintf_errstring(lmdb->ldb,
-					       "%s failed: %s\n", __FUNCTION__,
-					       mdb_strerror(ret));
-			return NULL;
-		}
-		lmdb->read_txn = txn;
-	}
-
-	return txn;
+	lmdb->error = MDB_BAD_TXN;
+	ldb_set_errstring(lmdb->ldb, __location__":No active transaction\n");
+	return NULL;
 }
 
 static int lmdb_store(struct ltdb_private *ltdb,
@@ -197,10 +189,6 @@ static int lmdb_store(struct ltdb_private *ltdb,
 		MDB_val value;
 		lmdb->error = mdb_get(txn, dbi, &mdb_key, &value);
 		if (lmdb->error != MDB_SUCCESS) {
-			if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-				mdb_txn_commit(lmdb->read_txn);
-				lmdb->read_txn = NULL;
-			}
 			return ldb_mdb_error(lmdb->ldb, lmdb->error);
 		}
 		mdb_flags = 0;
@@ -302,11 +290,6 @@ static int lmdb_traverse_fn(struct ltdb_private *ltdb,
 done:
 	if (cursor != NULL) {
 		mdb_cursor_close(cursor);
-	}
-
-	if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-		mdb_txn_commit(lmdb->read_txn);
-		lmdb->read_txn = NULL;
 	}
 
 	if (lmdb->error != MDB_SUCCESS) {
@@ -414,10 +397,6 @@ static int lmdb_parse_record(struct ltdb_private *ltdb, struct ldb_val key,
 	if (lmdb->error != MDB_SUCCESS) {
 		/* TODO closing a handle should not even be necessary */
 		mdb_dbi_close(lmdb->env, dbi);
-		if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-			mdb_txn_commit(lmdb->read_txn);
-			lmdb->read_txn = NULL;
-		}
 		if (lmdb->error == MDB_NOTFOUND) {
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
@@ -429,11 +408,6 @@ static int lmdb_parse_record(struct ltdb_private *ltdb, struct ldb_val key,
 	/* TODO closing a handle should not even be necessary */
 	mdb_dbi_close(lmdb->env, dbi);
 
-	/* We created a read transaction, commit it */
-	if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-		mdb_txn_commit(lmdb->read_txn);
-		lmdb->read_txn = NULL;
-	}
 	return parser(key, data, ctx);
 }
 
@@ -516,7 +490,6 @@ static int lmdb_transaction_start(struct ltdb_private *ltdb)
 		lmdb->error = MDB_BAD_TXN;
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
-
 
 	ltx_head = lmdb_private_trans_head(lmdb);
 
