@@ -19,7 +19,7 @@
 
 __docformat__ = "restructuredText"
 
-REGISTRY_VALUE_PREFIX = "SAMBA_REGVAL"
+REGISTRY_VALUE_PREFIX = b"SAMBA_REGVAL"
 REGISTRY_DB_VERSION = 1
 
 import os
@@ -79,7 +79,7 @@ class Registry(DbDatabase):
 
     def keys(self):
         """Return list with all the keys."""
-        return [k.rstrip("\x00") for k in self.db.iterkeys() if not k.startswith(REGISTRY_VALUE_PREFIX)]
+        return [k.rstrip(b"\x00") for k in self.db if not k.startswith(REGISTRY_VALUE_PREFIX)]
 
     def subkeys(self, key):
         """Retrieve the subkeys for the specified key.
@@ -87,12 +87,12 @@ class Registry(DbDatabase):
         :param key: Key path.
         :return: list with key names
         """
-        data = self.db.get("%s\x00" % key)
+        data = self.db.get(b"%s\x00" % key)
         if data is None:
             return []
         (num, ) = struct.unpack("<L", data[0:4])
-        keys = data[4:].split("\0")
-        assert keys[-1] == ""
+        keys = data[4:].split(b"\0")
+        assert keys[-1] == b""
         keys.pop()
         assert len(keys) == num
         return keys
@@ -103,7 +103,7 @@ class Registry(DbDatabase):
         :param key: Key to retrieve values for.
         :return: Dictionary with value names as key, tuple with type and
             data as value."""
-        data = self.db.get("%s/%s\x00" % (REGISTRY_VALUE_PREFIX, key))
+        data = self.db.get(b"%s/%s\x00" % (REGISTRY_VALUE_PREFIX, key))
         if data is None:
             return {}
         ret = {}
@@ -111,7 +111,7 @@ class Registry(DbDatabase):
         data = data[4:]
         for i in range(num):
             # Value name
-            (name, data) = data.split("\0", 1)
+            (name, data) = data.split(b"\0", 1)
 
             (type, ) = struct.unpack("<L", data[0:4])
             data = data[4:]
