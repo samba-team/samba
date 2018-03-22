@@ -2953,10 +2953,14 @@ static WERROR dcesrv_netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TAL
 }
 
 /*
-  netr_DsRGetDCName
-*/
+ * netr_DsRGetDCName
+ *
+ * This function is a predecessor to DsrGetDcNameEx2 according to [MS-NRPC].
+ * Although it has a site-guid parameter, the documentation 3.5.4.3.3 DsrGetDcName
+ * insists that it be ignored.
+ */
 static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				struct netr_DsRGetDCName *r)
+				       struct netr_DsRGetDCName *r)
 {
 	struct netr_DsRGetDCNameEx2 r2;
 	WERROR werr;
