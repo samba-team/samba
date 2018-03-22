@@ -35,6 +35,7 @@ struct smb2_request *smb2_find_send(struct smb2_tree *tree, struct smb2_find *io
 
 	req = smb2_request_init_tree(tree, SMB2_OP_QUERY_DIRECTORY, 0x20, true, 0);
 	if (req == NULL) return NULL;
+	req->credit_charge = (MAX(io->in.max_response_size, 1) - 1)/ 65536 + 1;
 
 	SCVAL(req->out.body, 0x02, io->in.level);
 	SCVAL(req->out.body, 0x03, io->in.continue_flags);
