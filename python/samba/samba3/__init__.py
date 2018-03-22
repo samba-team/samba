@@ -125,11 +125,11 @@ class Registry(DbDatabase):
 
 
 # High water mark keys
-IDMAP_HWM_GROUP = "GROUP HWM\0"
-IDMAP_HWM_USER = "USER HWM\0"
+IDMAP_HWM_GROUP = b"GROUP HWM\0"
+IDMAP_HWM_USER = b"USER HWM\0"
 
-IDMAP_GROUP_PREFIX = "GID "
-IDMAP_USER_PREFIX = "UID "
+IDMAP_GROUP_PREFIX = b"GID "
+IDMAP_USER_PREFIX = b"UID "
 
 # idmap version determines auto-conversion
 IDMAP_VERSION_V2 = 2
@@ -138,27 +138,27 @@ class IdmapDatabase(DbDatabase):
     """Samba 3 ID map database reader."""
 
     def _check_version(self):
-        assert fetch_int32(self.db, "IDMAP_VERSION\0") == IDMAP_VERSION_V2
+        assert fetch_int32(self.db, b"IDMAP_VERSION\0") == IDMAP_VERSION_V2
 
     def ids(self):
         """Retrieve a list of all ids in this database."""
         for k in self.db.iterkeys():
             if k.startswith(IDMAP_USER_PREFIX):
-                yield k.rstrip("\0").split(" ")
+                yield k.rstrip(b"\0").split(b" ")
             if k.startswith(IDMAP_GROUP_PREFIX):
-                yield k.rstrip("\0").split(" ")
+                yield k.rstrip(b"\0").split(b" ")
 
     def uids(self):
         """Retrieve a list of all uids in this database."""
-        for k in self.db.iterkeys():
+        for k in self.db:
             if k.startswith(IDMAP_USER_PREFIX):
-                yield int(k[len(IDMAP_USER_PREFIX):].rstrip("\0"))
+                yield int(k[len(IDMAP_USER_PREFIX):].rstrip(b"\0"))
 
     def gids(self):
         """Retrieve a list of all gids in this database."""
-        for k in self.db.iterkeys():
+        for k in self.db:
             if k.startswith(IDMAP_GROUP_PREFIX):
-                yield int(k[len(IDMAP_GROUP_PREFIX):].rstrip("\0"))
+                yield int(k[len(IDMAP_GROUP_PREFIX):].rstrip(b"\0"))
 
     def get_sid(self, xid, id_type):
         """Retrive SID associated with a particular id and type.
@@ -177,16 +177,16 @@ class IdmapDatabase(DbDatabase):
         :param uid: UID to retrieve SID for.
         :return: A SID or None if no mapping was found.
         """
-        data = self.db.get("%s%d\0" % (IDMAP_USER_PREFIX, uid))
+        data = self.db.get(b"%s%d\0" % (IDMAP_USER_PREFIX, uid))
         if data is None:
             return data
-        return data.rstrip("\0")
+        return data.rstrip(b"\0")
 
     def get_group_sid(self, gid):
-        data = self.db.get("%s%d\0" % (IDMAP_GROUP_PREFIX, gid))
+        data = self.db.get(b"%s%d\0" % (IDMAP_GROUP_PREFIX, gid))
         if data is None:
             return data
-        return data.rstrip("\0")
+        return data.rstrip(b"\0")
 
     def get_user_hwm(self):
         """Obtain the user high-water mark."""
