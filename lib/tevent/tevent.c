@@ -577,8 +577,10 @@ void tevent_set_abort_fn(void (*abort_fn)(const char *reason))
 
 static void tevent_abort(struct tevent_context *ev, const char *reason)
 {
-	tevent_debug(ev, TEVENT_DEBUG_FATAL,
-		     "abort: %s\n", reason);
+	if (ev != NULL) {
+		tevent_debug(ev, TEVENT_DEBUG_FATAL,
+			     "abort: %s\n", reason);
+	}
 
 	if (!tevent_abort_fn) {
 		abort();
