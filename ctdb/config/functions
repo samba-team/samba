@@ -795,48 +795,8 @@ service_reconfigure ()
     :
 }
 
-##################################################################
-# Does CTDB manage this service?
-
-ctdb_compat_managed_service ()
-{
-    if [ "$1" = "yes" -a "$2" = "$service_name" ] ; then
-	CTDB_MANAGED_SERVICES="$CTDB_MANAGED_SERVICES $2"
-    fi
-}
-
-is_ctdb_managed_service ()
-{
-    assert_service_name
-
-    # $t is used just for readability and to allow better accurate
-    # matching via leading/trailing spaces
-    t=" $CTDB_MANAGED_SERVICES "
-
-    # Return 0 if "<space>$service_name<space>" appears in $t
-    if [ "${t#* ${service_name} }" != "${t}" ] ; then
-	return 0
-    fi
-
-    # If above didn't match then update $CTDB_MANAGED_SERVICES for
-    # backward compatibility and try again.
-    ctdb_compat_managed_service "$CTDB_MANAGES_VSFTPD"   "vsftpd"
-    ctdb_compat_managed_service "$CTDB_MANAGES_SAMBA"    "samba"
-    ctdb_compat_managed_service "$CTDB_MANAGES_WINBIND"  "winbind"
-    ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "apache2"
-    ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "httpd"
-    ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
-    ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
-    ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
-
-    t=" $CTDB_MANAGED_SERVICES "
-
-    # Return 0 if "<space>$service_name<space>" appears in $t
-    [ "${t#* ${service_name} }" != "${t}" ]
-}
-
 # Default service_start() and service_stop() functions.
- 
+
 # These may be overridden in an eventscript.
 service_start ()
 {
