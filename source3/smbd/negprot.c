@@ -557,14 +557,15 @@ static const struct {
 
 void reply_negprot(struct smb_request *req)
 {
-	int choice= -1;
+	size_t choice = 0;
 	int chosen_level = -1;
+	bool choice_set = false;
 	int protocol;
 	const char *p;
 	int protocols = 0;
 	int num_cliprotos;
 	char **cliprotos;
-	int i;
+	size_t i;
 	size_t converted_size;
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
@@ -733,14 +734,16 @@ void reply_negprot(struct smb_request *req)
 				if (strequal(cliprotos[i],supported_protocols[protocol].proto_name)) {
 					choice = i;
 					chosen_level = supported_protocols[protocol].protocol_level;
+					choice_set = true;
 				}
 				i++;
 			}
-		if(choice != -1)
+		if (choice_set) {
 			break;
+		}
 	}
 
-	if (choice == -1) {
+	if (!choice_set) {
 		bool ok;
 
 		DBG_NOTICE("No protocol supported !\n");
@@ -760,7 +763,7 @@ void reply_negprot(struct smb_request *req)
 	supported_protocols[protocol].proto_reply_fn(req, choice);
 	DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 
-	DEBUG( 5, ( "negprot index=%d\n", choice ) );
+	DBG_INFO("negprot index=%zu\n", choice);
 
 	/* We always have xconn->smb1.signing_state also for >= SMB2_02 */
 	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
