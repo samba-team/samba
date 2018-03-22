@@ -11,9 +11,11 @@ setup ()
 	[ -n "$_ip" ] || return 0
 	[ -n "$_iface" ] || return 0
 
-	export CTDB_LVS_NODES="${CTDB_BASE}/lvs_nodes"
-	export CTDB_LVS_PUBLIC_IP="$_ip"
-	export CTDB_LVS_PUBLIC_IFACE="$_iface"
+	setup_script_options <<EOF
+CTDB_LVS_NODES="${CTDB_BASE}/lvs_nodes"
+CTDB_LVS_PUBLIC_IP="$_ip"
+CTDB_LVS_PUBLIC_IFACE="$_iface"
+EOF
 
 	export FAKE_CTDB_LVS_MASTER=""
 
