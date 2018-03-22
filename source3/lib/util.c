@@ -438,6 +438,7 @@ static void reinit_after_fork_pipe_handler(struct tevent_context *ev,
 		 * we have reached EOF on stdin, which means the
 		 * parent has exited. Shutdown the server
 		 */
+		TALLOC_FREE(fde);
 		(void)kill(getpid(), SIGTERM);
 	}
 }
