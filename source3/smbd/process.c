@@ -822,7 +822,14 @@ bool schedule_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 				"scheduling mid %llu\n",
 				(unsigned long long)mid ));
 
-			te = tevent_add_timer(pml->sconn->ev_ctx,
+			/*
+			 * smbd_deferred_open_timer() calls
+			 * process_smb() to redispatch the request
+			 * including the required impersonation.
+			 *
+			 * So we can just use the raw tevent_context.
+			 */
+			te = tevent_add_timer(xconn->client->raw_ev_ctx,
 					      pml,
 					      timeval_zero(),
 					      smbd_deferred_open_timer,
