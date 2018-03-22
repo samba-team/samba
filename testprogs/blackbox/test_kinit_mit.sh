@@ -306,5 +306,5 @@ $samba_kdestroy
 rm -f $KRB5CCNAME_PATH
 rm -f $PREFIX/tmpkinituserpassscript
 rm -f $PREFIX/tmpkinitscript
-
+rm -f $PREFIX/tmpkpasswdscript
 exit $failed

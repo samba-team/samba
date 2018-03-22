@@ -110,5 +110,5 @@ test_smbclient "Test login with kerberos ccache with fresh kinit" 'ls' "$unc" -k
 
 rm -f $KRB5CCNAME
 
-rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
+rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache
 exit $failed

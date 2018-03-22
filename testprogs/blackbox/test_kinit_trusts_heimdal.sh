@@ -94,5 +94,5 @@ testit "wbinfo check outgoing trust pw" $VALGRIND $wbinfo --check-secret --domai
 
 test_smbclient "Test user login with the changed outgoing secret" 'ls' "$unc" -k yes -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
 
-rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
+rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache
 exit $failed
