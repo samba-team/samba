@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "system/network.h"
 #include "librpc/ndr/libndr.h"
+#include "libcli/util/ntstatus.h"
+#include "lib/util/util_str_hex.h"
 
 _PUBLIC_ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
@@ -52,21 +54,32 @@ _PUBLIC_ char *ndr_syntax_id_to_string(TALLOC_CTX *mem_ctx, const struct ndr_syn
 
 _PUBLIC_ bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id)
 {
-	int ret;
 	size_t i;
 	uint32_t time_low;
 	uint32_t time_mid, time_hi_and_version;
 	uint32_t clock_seq[2];
 	uint32_t node[6];
-	uint32_t if_version;
+	uint64_t if_version;
+	NTSTATUS status;
 
-	ret = sscanf(s,
-		     "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x/0x%08x",
-		     &time_low, &time_mid, &time_hi_and_version,
-		     &clock_seq[0], &clock_seq[1],
-		     &node[0], &node[1], &node[2], &node[3], &node[4], &node[5],
-		     &if_version);
-	if (ret != 12) {
+	status =  parse_guid_string(s,
+				    &time_low,
+				    &time_mid,
+				    &time_hi_and_version,
+				    clock_seq,
+				    node);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	if (strncmp(s + 36, "/0x", 3) != 0) {
+		return false;
+	}
+
+	status = read_hex_bytes(s + 39, 8, &if_version);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
@@ -78,7 +91,7 @@ _PUBLIC_ bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id)
 	for (i=0; i<6; i++) {
 		id->uuid.node[i] = node[i];
 	}
-	id->if_version = if_version;
+	id->if_version = (uint32_t)if_version;
 
 	return true;
 }
