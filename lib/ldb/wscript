@@ -358,6 +358,11 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
+        bld.SAMBA_BINARY('test_ldb_qsort',
+                         source='tests/test_ldb_qsort.c',
+                         deps='cmocka ldb',
+                         install=False)
+
 def test(ctx):
     '''run ldb testsuite'''
     import Utils, samba_utils, shutil
@@ -386,7 +391,8 @@ def test(ctx):
 
     cmocka_ret = 0
     for test_exe in ['ldb_tdb_mod_op_test',
-                     'ldb_msg_test']:
+                     'ldb_msg_test',
+                     'test_ldb_qsort']:
             cmd = os.path.join(Utils.g_module.blddir, test_exe)
             cmocka_ret = cmocka_ret or samba_utils.RUN_COMMAND(cmd)
 
