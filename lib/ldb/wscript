@@ -353,6 +353,12 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_tdb_guid_mod_op_test',
+                         source='tests/ldb_mod_op_test.c',
+                         cflags='-DTEST_BE=\"tdb\" -DGUID_IDX=1',
+                         deps='cmocka ldb',
+                         install=False)
+
         bld.SAMBA_BINARY('ldb_msg_test',
                          source='tests/ldb_msg.c',
                          deps='cmocka ldb',
@@ -390,9 +396,10 @@ def test(ctx):
     print("Python testsuite returned %d" % pyret)
 
     cmocka_ret = 0
-    for test_exe in ['ldb_tdb_mod_op_test',
+    for test_exe in ['test_ldb_qsort',
                      'ldb_msg_test',
-                     'test_ldb_qsort']:
+                     'ldb_tdb_mod_op_test',
+                     'ldb_tdb_guid_mod_op_test']:
             cmd = os.path.join(Utils.g_module.blddir, test_exe)
             cmocka_ret = cmocka_ret or samba_utils.RUN_COMMAND(cmd)
 
