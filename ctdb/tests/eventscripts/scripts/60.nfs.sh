@@ -6,12 +6,13 @@ setup ()
 
 	export FAKE_RPCINFO_SERVICES=""
 
-	export CTDB_NFS_SKIP_SHARE_CHECK="no"
+	setup_script_options <<EOF
+CTDB_NFS_SKIP_SHARE_CHECK="no"
+# This doesn't even need to exist
+CTDB_NFS_EXPORTS_FILE="$EVENTSCRIPTS_TESTS_VAR_DIR/etc-exports"
+EOF
 
 	export RPCNFSDCOUNT
-
-	# This doesn't even need to exist
-	export CTDB_NFS_EXPORTS_FILE="$EVENTSCRIPTS_TESTS_VAR_DIR/etc-exports"
 
 	if [ "$1" != "down" ] ; then
 		debug <<EOF
@@ -21,7 +22,9 @@ EOF
 		service "nfs" force-started
 		service "nfslock" force-started
 
-		export CTDB_MANAGES_NFS="yes"
+		setup_script_options <<EOF
+CTDB_MANAGES_NFS="yes"
+EOF
 
 		rpc_services_up \
 			"portmapper" "nfs" "mountd" "rquotad" \
@@ -37,10 +40,10 @@ EOF
 		service "nfs" force-stopped
 		service "nfslock" force-stopped
 
-		export CTDB_MANAGES_NFS=""
+		setup_script_options <<EOF
+CTDB_MANAGES_NFS=""
+EOF
 	fi
-
-	export CTDB_NFS_CALLOUT=""
 
 	# This is really nasty.  However, when we test NFS we don't
 	# actually test statd-callout. If we leave it there then left
