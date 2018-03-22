@@ -47,6 +47,8 @@
 #include "libds/common/flag_mapping.h"
 #include "../lib/util/util_runcmd.h"
 #include "lib/util/access.h"
+#include "lib/util/util_str_hex.h"
+#include "libcli/util/ntstatus.h"
 
 /*
  * This included to allow us to handle DSDB_FLAG_REPLICATED_UPDATE in
@@ -5186,12 +5188,12 @@ _PUBLIC_ NTSTATUS NS_GUID_from_string(const char *s, struct GUID *guid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (11 == sscanf(s, "%08x-%04x%04x-%02x%02x%02x%02x-%02x%02x%02x%02x",
-			 &time_low, &time_mid, &time_hi_and_version, 
-			 &clock_seq[0], &clock_seq[1],
-			 &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
-	        status = NT_STATUS_OK;
-	}
+	status =  parse_guid_string(s,
+				    &time_low,
+				    &time_mid,
+				    &time_hi_and_version,
+				    clock_seq,
+				    node);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
