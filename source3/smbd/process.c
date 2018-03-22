@@ -2738,8 +2738,10 @@ static int release_ip(struct tevent_context *ev,
 		 * as we might be called from within ctdbd_migrate(),
 		 * we need to defer our action to the next event loop
 		 */
-		tevent_schedule_immediate(state->im, xconn->ev_ctx,
-					  smbd_release_ip_immediate, state);
+		tevent_schedule_immediate(state->im,
+					  xconn->client->raw_ev_ctx,
+					  smbd_release_ip_immediate,
+					  state);
 
 		/*
 		 * Make sure we don't get any io on the connection.
@@ -3388,14 +3390,16 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 		close(listener_pipe[0]);
 		set_blocking(listener_pipe[1], false);
 
-		status = smbd_reinit_after_fork(xconn->msg_ctx, xconn->ev_ctx,
-						true, "smbd-echo");
+		status = smbd_reinit_after_fork(xconn->msg_ctx,
+						xconn->client->raw_ev_ctx,
+						true,
+						"smbd-echo");
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
 			exit(1);
 		}
-		initialize_password_db(true, xconn->ev_ctx);
+		initialize_password_db(true, xconn->client->raw_ev_ctx);
 		smbd_echo_loop(xconn, listener_pipe[1]);
 		exit(0);
 	}
@@ -3409,7 +3413,8 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 	 * Without smb signing this is the same as the normal smbd
 	 * listener. This needs to change once signing comes in.
 	 */
-	xconn->smb1.echo_handler.trusted_fde = tevent_add_fd(xconn->ev_ctx,
+	xconn->smb1.echo_handler.trusted_fde = tevent_add_fd(
+					xconn->client->raw_ev_ctx,
 					xconn,
 					xconn->smb1.echo_handler.trusted_fd,
 					TEVENT_FD_READ,
@@ -3697,7 +3702,6 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	}
 	talloc_steal(frame, xconn);
 
-	xconn->ev_ctx = client->raw_ev_ctx;
 	xconn->msg_ctx = client->msg_ctx;
 	xconn->transport.sock = sock_fd;
 	smbd_echo_init(xconn);

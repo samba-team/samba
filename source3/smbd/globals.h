@@ -364,12 +364,10 @@ struct smbXsrv_connection {
 
 	struct smbXsrv_client *client;
 
-
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
 	const char *remote_hostname;
 
-	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 
 	enum protocol_types protocol;

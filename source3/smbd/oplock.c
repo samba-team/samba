@@ -576,7 +576,8 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			lck->data->modified = true;
 		}
 
-		tevent_schedule_immediate(state->im, xconn->ev_ctx,
+		tevent_schedule_immediate(state->im,
+					  xconn->client->raw_ev_ctx,
 					  downgrade_lease_additional_trigger,
 					  state);
 	}

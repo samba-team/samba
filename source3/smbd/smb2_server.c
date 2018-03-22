@@ -227,7 +227,8 @@ static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	xconn->transport.fde = tevent_add_fd(xconn->ev_ctx,
+	xconn->transport.fde = tevent_add_fd(
+					xconn->client->raw_ev_ctx,
 					xconn,
 					xconn->transport.sock,
 					TEVENT_FD_READ,
