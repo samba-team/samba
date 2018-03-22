@@ -1584,13 +1584,14 @@ static NTSTATUS vfswrap_offload_read_recv(struct tevent_req *req,
 }
 
 struct vfswrap_offload_write_state {
-	struct tevent_context *ev;
 	uint8_t *buf;
 	bool read_lck_locked;
 	bool write_lck_locked;
 	DATA_BLOB *token;
+	struct tevent_context *src_ev;
 	struct files_struct *src_fsp;
 	off_t src_off;
+	struct tevent_context *dst_ev;
 	struct files_struct *dst_fsp;
 	off_t dst_off;
 	off_t to_copy;
@@ -1641,9 +1642,9 @@ static struct tevent_req *vfswrap_offload_write_send(
 	}
 
 	*state = (struct vfswrap_offload_write_state) {
-		.ev = ev,
 		.token = token,
 		.src_off = transfer_offset,
+		.dst_ev = ev,
 		.dst_fsp = dest_fsp,
 		.dst_off = dest_off,
 		.to_copy = to_copy,
@@ -1685,7 +1686,6 @@ static struct tevent_req *vfswrap_offload_write_send(
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
-	state->src_fsp = src_fsp;
 
 	DBG_DEBUG("server side copy chunk of length %" PRIu64 "\n", to_copy);
 
@@ -1700,6 +1700,9 @@ static struct tevent_req *vfswrap_offload_write_send(
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
+
+	state->src_ev = state->src_fsp->conn->sconn->ev_ctx;
+	state->src_fsp = src_fsp;
 
 	state->buf = talloc_array(state, uint8_t, num);
 	if (tevent_req_nomem(state->buf, req)) {
@@ -1765,7 +1768,7 @@ static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 	}
 
 	subreq = SMB_VFS_PREAD_SEND(state,
-				    state->src_fsp->conn->sconn->ev_ctx,
+				    state->src_ev,
 				    state->src_fsp,
 				    state->buf,
 				    state->next_io_size,
@@ -1829,7 +1832,7 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 	}
 
 	subreq = SMB_VFS_PWRITE_SEND(state,
-				     state->ev,
+				     state->dst_ev,
 				     state->dst_fsp,
 				     state->buf,
 				     state->next_io_size,
