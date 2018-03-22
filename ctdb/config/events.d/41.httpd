@@ -49,7 +49,7 @@ service_stop ()
 
 loadconfig
 
-is_ctdb_managed_service || exit 0
+[ "$CTDB_MANAGES_HTTPD" = "yes" ] || exit 0
 
 case "$1" in
 startup)

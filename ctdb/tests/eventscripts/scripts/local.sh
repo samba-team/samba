@@ -816,7 +816,7 @@ setup_samba ()
 	done
 
 	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
-	export CTDB_MANAGED_SERVICES="foo samba bar"
+	export CTDB_MANAGES_SAMBA="yes"
 
 	export FAKE_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
 	export FAKE_WBINFO_FAIL="no"
@@ -834,8 +834,7 @@ setup_samba ()
 	done
 
 	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
-	export CTDB_MANAGED_SERVICES="foo bar"
-	unset CTDB_MANAGES_SAMBA
+	export CTDB_MANAGES_SAMBA=""
 
 	export FAKE_TCP_LISTEN=""
 	export FAKE_WBINFO_FAIL="yes"
@@ -871,7 +870,7 @@ setup_winbind ()
 
 	service "winbind" force-started
 
-	export CTDB_MANAGED_SERVICES="foo winbind bar"
+	export CTDB_MANAGES_WINBIND="yes"
 
 	export FAKE_WBINFO_FAIL="no"
 
@@ -880,8 +879,7 @@ setup_winbind ()
 
 	service "winbind" force-stopped
 
-	export CTDB_MANAGED_SERVICES="foo bar"
-	unset CTDB_MANAGES_WINBIND
+	export CTDB_MANAGES_WINBIND=""
 
 	export FAKE_WBINFO_FAIL="yes"
     fi
@@ -921,7 +919,7 @@ setup_nfs ()
 	service "nfs" force-started
 	service "nfslock" force-started
 
-	export CTDB_MANAGED_SERVICES="foo nfs bar"
+	export CTDB_MANAGES_NFS="yes"
 
 	rpc_services_up \
 	    "portmapper" "nfs" "mountd" "rquotad" "nlockmgr" "status"
@@ -934,8 +932,7 @@ setup_nfs ()
 	service "nfs" force-stopped
 	service "nfslock" force-stopped
 
-	export CTDB_MANAGED_SERVICES="foo bar"
-	unset CTDB_MANAGES_NFS
+	export CTDB_MANAGES_NFS=""
     fi
 
     # This is really nasty.  However, when we test NFS we don't
@@ -1187,8 +1184,7 @@ setup_vsftpd ()
 		service "$_service_name" force-stopped
 	fi
 
-	export CTDB_MANAGED_SERVICES="foo"
-	unset CTDB_MANAGES_VSFTPD
+	export CTDB_MANAGES_VSFTPD=""
 }
 
 ######################################################################
@@ -1209,8 +1205,7 @@ setup_httpd ()
 		done
 	fi
 
-	export CTDB_MANAGED_SERVICES="foo"
-	unset CTDB_MANAGES_HTTPD
+	export CTDB_MANAGES_HTTPD=""
 }
 
 ######################################################################

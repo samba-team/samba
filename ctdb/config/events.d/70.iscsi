@@ -13,7 +13,7 @@ service_name="iscsi"
 
 loadconfig
 
-is_ctdb_managed_service || exit 0
+[ "$CTDB_MANAGES_ISCSI" = "yes" ] || exit 0
 
 [ -z "$CTDB_START_ISCSI_SCRIPTS" ] && {
 	echo "No iscsi start script directory found"

@@ -34,7 +34,7 @@ service_stop ()
 
 ###########################
 
-is_ctdb_managed_service || exit 0
+[ "$CTDB_MANAGES_WINBIND" = "yes" ] || exit 0
 
 ###########################
 

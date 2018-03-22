@@ -17,7 +17,7 @@ loadconfig
 
 ctdb_setup_state_dir "service" "$service_name"
 
-is_ctdb_managed_service || exit 0
+[ "$CTDB_MANAGES_VSFTPD" = "yes" ] || exit 0
 
 case "$1" in
 startup)
