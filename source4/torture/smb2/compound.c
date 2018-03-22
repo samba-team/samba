@@ -1306,6 +1306,74 @@ done:
 	return ret;
 }
 
+/* Test compound related finds */
+static bool test_compound_find_close(struct torture_context *tctx,
+				     struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *dname = "compound_find_dir";
+	struct smb2_create create;
+	struct smb2_find f;
+	struct smb2_handle h;
+	struct smb2_request *req = NULL;
+	const int num_files = 5000;
+	int i;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, dname);
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	create.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	create.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				 NTCREATEX_SHARE_ACCESS_WRITE |
+				 NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_CREATE;
+	create.in.fname = dname;
+
+	smb2cli_conn_set_max_credits(tree->session->transport->conn, 256);
+
+	status = smb2_create(tree, mem_ctx, &create);
+	h = create.out.file.handle;
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_CREATE;
+
+	for (i = 0; i < num_files; i++) {
+		create.in.fname = talloc_asprintf(mem_ctx, "%s\\file%d",
+						  dname, i);
+		status = smb2_create(tree, mem_ctx, &create);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
+		smb2_util_close(tree, create.out.file.handle);
+	}
+
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed\n");
+
+	ZERO_STRUCT(f);
+	f.in.file.handle	= h;
+	f.in.pattern		= "*";
+	f.in.max_response_size	= 8*1024*1024;
+	f.in.level              = SMB2_FIND_BOTH_DIRECTORY_INFO;
+
+	req = smb2_find_send(tree, &f);
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_close failed\n");
+
+	status = smb2_find_recv(req, mem_ctx, &f);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_find_recv failed\n");
+
+done:
+	smb2_util_close(tree, h);
+	smb2_deltree(tree, dname);
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 /* Test compound unrelated finds */
 static bool test_compound_find_unrelated(struct torture_context *tctx,
 					 struct smb2_tree *tree)
@@ -1392,6 +1460,7 @@ struct torture_suite *torture_smb2_compound_find_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "compound_find_related", test_compound_find_related);
 	torture_suite_add_1smb2_test(suite, "compound_find_unrelated", test_compound_find_unrelated);
+	torture_suite_add_1smb2_test(suite, "compound_find_close", test_compound_find_close);
 
 	suite->description = talloc_strdup(suite, "SMB2-COMPOUND-FIND tests");
 
