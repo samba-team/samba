@@ -263,6 +263,8 @@ for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc", "ad_dc"]:
         for bindoptions in ["connect", "krb5", "krb5,sign", "krb5,seal", "spnego", "spnego,sign", "spnego,seal"] + validate_list + ["padcheck", "bigendian", "bigendian,seal"]:
             echooptions = "--option=socket:testnonblock=True --option=torture:quick=yes -k yes"
             plansmbtorture4testsuite('rpc.echo', env, ["%s:$SERVER[%s]" % (transport, bindoptions), echooptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.echo on %s with %s and %s" % (transport, bindoptions, echooptions))
+
+for env in ["fl2000dc", "fl2008r2dc"]:
     plansmbtorture4testsuite("net.api.become.dc", env, '$SERVER[%s] -U$USERNAME%%$PASSWORD -W$DOMAIN' % validate)
 
 for bindoptions in ["sign", "seal"]:
