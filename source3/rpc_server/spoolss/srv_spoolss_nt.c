@@ -5006,7 +5006,7 @@ static WERROR string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 						  const char *arch,
 						  int version)
 {
-	int i;
+	size_t i;
 	size_t num_strings = 0;
 	const char **array = NULL;
 
