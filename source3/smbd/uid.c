@@ -202,6 +202,7 @@ static bool check_user_ok(connection_struct *conn,
 			conn->session_info = ent->session_info;
 			conn->read_only = ent->read_only;
 			conn->share_access = ent->share_access;
+			conn->vuid = ent->vuid;
 			return(True);
 		}
 	}
@@ -250,6 +251,7 @@ static bool check_user_ok(connection_struct *conn,
 	ent->share_access = share_access;
 	free_conn_session_info_if_unused(conn);
 	conn->session_info = ent->session_info;
+	conn->vuid = ent->vuid;
 	if (vuid == UID_FIELD_INVALID) {
 		/*
 		 * Not strictly needed, just make it really
