@@ -68,17 +68,52 @@ build_samba_none_env:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-none-env    --verbose --tail --testbase /tmp/samba-testbase
 
-build_samba_others:
+build_samba_nopython:
   stage: build
   tags:
     - docker
     - shared
   script:
     - python script/autobuild.py samba-nopython   --verbose --tail --testbase /tmp/samba-testbase
+
+build_samba_systemkrb5:
+  stage: build
+  tags:
+    - docker
+    - shared
+  script:
     - python script/autobuild.py samba-systemkrb5 --verbose --tail --testbase /tmp/samba-testbase
+
+build_samba_xc:
+  stage: build
+  tags:
+    - docker
+    - shared
+  script:
     - python script/autobuild.py samba-xc         --verbose --tail --testbase /tmp/samba-testbase
+
+build_samba_o3:
+  stage: build
+  tags:
+    - docker
+    - shared
+  script:
     - python script/autobuild.py samba-o3         --verbose --tail --testbase /tmp/samba-testbase
+
+build_samba_libs:
+  stage: build
+  tags:
+    - docker
+    - shared
+  script:
     - python script/autobuild.py samba-libs       --verbose --tail --testbase /tmp/samba-testbase
+
+build_samba_static:
+  stage: build
+  tags:
+    - docker
+    - shared
+  script:
     - python script/autobuild.py samba-static     --verbose --tail --testbase /tmp/samba-testbase
 
 build_ctdb:
@@ -88,6 +123,13 @@ build_ctdb:
     - shared
   script:
     - python script/autobuild.py samba-ctdb       --verbose --tail --testbase /tmp/samba-testbase
+
+build_samba_ctdb:
+  stage: build
+  tags:
+    - docker
+    - shared
+  script:
     - python script/autobuild.py ctdb             --verbose --tail --testbase /tmp/samba-testbase
 
 build_others:
