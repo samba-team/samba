@@ -379,6 +379,7 @@ int ldb_transaction_start(struct ldb_context *ldb)
 				"ldb transaction start: %s (%d)",
 				ldb_strerror(status),
 				status);
+		ldb->transaction_active--;
 		}
 		if ((next_module && next_module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
 			ldb_debug(next_module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s",
