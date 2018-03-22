@@ -8,7 +8,9 @@ setup ()
 
 		service "winbind" force-started
 
-		export CTDB_MANAGES_WINBIND="yes"
+		setup_script_options <<EOF
+CTDB_MANAGES_WINBIND="yes"
+EOF
 
 		export FAKE_WBINFO_FAIL="no"
 
@@ -17,7 +19,9 @@ setup ()
 
 		service "winbind" force-stopped
 
-		export CTDB_MANAGES_WINBIND=""
+		setup_script_options <<EOF
+CTDB_MANAGES_WINBIND=""
+EOF
 
 		export FAKE_WBINFO_FAIL="yes"
 	fi
