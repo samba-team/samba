@@ -101,7 +101,7 @@ static int ltdb_lock_read(struct ldb_module *module)
 	int tdb_ret = 0;
 	int ret;
 
-	if (ltdb->in_transaction == 0 &&
+	if (tdb_transaction_active(ltdb->tdb) == false &&
 	    ltdb->read_lock_count == 0) {
 		tdb_ret = tdb_lockall_read(ltdb->tdb);
 	}
@@ -128,7 +128,7 @@ static int ltdb_unlock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	if (ltdb->in_transaction == 0 && ltdb->read_lock_count == 1) {
+	if (!tdb_transaction_active(ltdb->tdb) && ltdb->read_lock_count == 1) {
 		tdb_unlockall_read(ltdb->tdb);
 		ltdb->read_lock_count--;
 		return 0;
@@ -379,7 +379,7 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 
 	/* only allow modifies inside a transaction, otherwise the
 	 * ldb is unsafe */
-	if (ltdb->in_transaction == 0) {
+	if (ltdb->kv_ops->transaction_active(ltdb) == false) {
 		ldb_set_errstring(ldb_module_get_ctx(module), "ltdb modify without transaction");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1479,7 +1479,6 @@ static int ltdb_start_trans(struct ldb_module *module)
 		return ltdb->kv_ops->error(ltdb);
 	}
 
-	ltdb->in_transaction++;
 
 	ltdb_index_transaction_start(module);
 
@@ -1500,8 +1499,11 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
-	if (ltdb->in_transaction != 1) {
-		return LDB_SUCCESS;
+	if (!ltdb->kv_ops->transaction_active(ltdb)) {
+		ldb_set_errstring(ldb_module_get_ctx(module),
+				  "ltdb_prepare_commit() called "
+				  "without transaction active");
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/*
@@ -1525,13 +1527,11 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 	ret = ltdb_index_transaction_commit(module);
 	if (ret != LDB_SUCCESS) {
 		ltdb->kv_ops->abort_write(ltdb);
-		ltdb->in_transaction--;
 		return ret;
 	}
 
 	if (ltdb->kv_ops->prepare_write(ltdb) != 0) {
 		ret = ltdb->kv_ops->error(ltdb);
-		ltdb->in_transaction--;
 		ldb_debug_set(ldb_module_get_ctx(module),
 			      LDB_DEBUG_FATAL,
 			      "Failure during "
@@ -1559,7 +1559,6 @@ static int ltdb_end_trans(struct ldb_module *module)
 		}
 	}
 
-	ltdb->in_transaction--;
 	ltdb->prepared_commit = false;
 
 	if (ltdb->kv_ops->finish_write(ltdb) != 0) {
@@ -1579,7 +1578,6 @@ static int ltdb_del_trans(struct ldb_module *module)
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
-	ltdb->in_transaction--;
 
 	if (ltdb_index_transaction_cancel(module) != 0) {
 		ltdb->kv_ops->abort_write(ltdb);
@@ -1809,7 +1807,7 @@ static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn
 		.ctx = ctx,
 		.ltdb = ltdb
 	};
-	if (ltdb->in_transaction != 0) {
+	if (tdb_transaction_active(ltdb->tdb)) {
 		return tdb_traverse(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
 	} else {
 		return tdb_traverse_read(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
@@ -2215,7 +2213,7 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 		path = url;
 	}
 
-	tdb_flags = TDB_DEFAULT | TDB_SEQNUM;
+	tdb_flags = TDB_DEFAULT | TDB_SEQNUM | TDB_DISALLOW_NESTING;
 
 	/* check for the 'nosync' option */
 	if (flags & LDB_FLG_NOSYNC) {

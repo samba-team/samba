@@ -53,7 +53,6 @@ struct ltdb_private {
 		const char *GUID_index_dn_component;
 	} *cache;
 
-	int in_transaction;
 
 	bool check_base;
 	bool disallow_dn_filter;
