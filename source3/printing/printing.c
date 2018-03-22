@@ -991,7 +991,7 @@ static void print_unix_job(struct tevent_context *ev,
 
 struct traverse_struct {
 	print_queue_struct *queue;
-	int qcount, snum, maxcount, total_jobs;
+	size_t qcount, snum, maxcount, total_jobs;
 	const char *sharename;
 	time_t lpq_time;
 	const char *lprm_command;
@@ -1010,7 +1010,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	struct traverse_struct *ts = (struct traverse_struct *)state;
 	struct printjob pjob;
 	uint32_t jobid;
-	int i = 0;
+	size_t i = 0;
 
 	if (  key.dsize != sizeof(jobid) )
 		return 0;
@@ -1408,7 +1408,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
                                         struct printif *current_printif,
                                         char *lpq_command, char *lprm_command)
 {
-	int i, qcount;
+	size_t i, qcount;
 	print_queue_struct *queue = NULL;
 	print_status_struct status;
 	print_status_struct old_status;
@@ -1443,8 +1443,10 @@ static void print_queue_update_internal(struct tevent_context *ev,
 		current_printif->type,
 		lpq_command, &queue, &status);
 
-	DEBUG(3, ("print_queue_update_internal: %d job%s in queue for %s\n",
-		qcount, (qcount != 1) ?	"s" : "", sharename));
+	DBG_NOTICE("%zu job%s in queue for %s\n",
+		   qcount,
+		   (qcount != 1) ? "s" : "",
+		   sharename);
 
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
@@ -1519,15 +1521,20 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	SAFE_FREE(tstruct.queue);
 	talloc_free(tmp_ctx);
 
-	DEBUG(10,("print_queue_update_internal: printer %s INFO/total_jobs = %d\n",
-				sharename, tstruct.total_jobs ));
+	DBG_DEBUG("printer %s INFO, total_jobs = %zu\n",
+		  sharename,
+		  tstruct.total_jobs);
 
 	tdb_store_int32(pdb->tdb, "INFO/total_jobs", tstruct.total_jobs);
 
 	get_queue_status(sharename, &old_status);
-	if (old_status.qcount != qcount)
-		DEBUG(10,("print_queue_update_internal: queue status change %d jobs -> %d jobs for printer %s\n",
-					old_status.qcount, qcount, sharename));
+	if (old_status.qcount != qcount) {
+		DBG_DEBUG("Queue status change %zu jobs -> %zu jobs "
+			  "for printer %s\n",
+			  old_status.qcount,
+			  qcount,
+			  sharename);
+	}
 
 	/* store the new queue status structure */
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", sharename);
