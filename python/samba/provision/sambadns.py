@@ -811,6 +811,11 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         # Fill the basedn and @OPTION records in domain partition
         dom_url = "%s://%s" % (backend_store, domainpart_file)
         dom_ldb = samba.Ldb(dom_url)
+
+        # We need the dummy main-domain DB to have the correct @INDEXLIST
+        index_res = samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
+        dom_ldb.add(index_res[0])
+
         domainguid_line = "objectGUID: %s\n-" % domainguid
         descr = b64encode(get_domain_descriptor(domainsid))
         setup_add_ldif(dom_ldb, setup_path("provision_basedn.ldif"), {
@@ -821,9 +826,6 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         setup_add_ldif(dom_ldb,
             setup_path("provision_basedn_options.ldif"), None)
 
-        # We need the dummy main-domain DB to have the correct @INDEXLIST
-        index_res = samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
-        dom_ldb.add(index_res[0])
     except:
         logger.error(
             "Failed to setup database for BIND, AD based DNS cannot be used")
