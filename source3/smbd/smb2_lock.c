@@ -568,8 +568,12 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 			(int)from_now.tv_sec, (int)from_now.tv_usec));
 	}
 
+	/*
+	 * brl_timeout_fn() calls change_to_root_user()
+	 * so we can use sconn->root_ev_ctx.
+	 */
 	sconn->smb2.locks.brl_timeout = tevent_add_timer(
-				sconn->ev_ctx,
+				sconn->root_ev_ctx,
 				NULL,
 				next_timeout,
 				brl_timeout_fn,
