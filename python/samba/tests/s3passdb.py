@@ -97,7 +97,7 @@ class PassdbTestCase(TestCaseInTempDir):
         self.assertEquals("", user.logon_script)
         self.assertEquals(0, user.logon_time)
         self.assertEquals("", user.munged_dial)
-        self.assertEquals('\x87\x8d\x80\x14`l\xda)gzD\xef\xa15?\xc7', user.nt_passwd)
+        self.assertEquals(b'\x87\x8d\x80\x14`l\xda)gzD\xef\xa15?\xc7', user.nt_passwd)
         self.assertEquals("", user.nt_username)
         self.assertEquals(1125418267, user.pass_can_change_time)
         self.assertEquals(1125418267, user.pass_last_set_time)
