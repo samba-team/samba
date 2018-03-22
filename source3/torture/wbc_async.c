@@ -98,10 +98,10 @@ struct wb_context {
 
 static int make_nonstd_fd(int fd)
 {
-	int i;
+	size_t i;
 	int sys_errno = 0;
 	int fds[3];
-	int num_fds = 0;
+	size_t num_fds = 0;
 
 	if (fd == -1) {
 		return -1;
