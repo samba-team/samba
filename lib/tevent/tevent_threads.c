@@ -441,6 +441,14 @@ struct tevent_threaded_context *tevent_threaded_context_create(
 #endif
 }
 
+static int tevent_threaded_schedule_immediate_destructor(struct tevent_immediate *im)
+{
+	if (im->event_ctx != NULL) {
+		abort();
+	}
+	return 0;
+}
+
 void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 					 struct tevent_immediate *im,
 					 tevent_immediate_handler_t handler,
@@ -483,6 +491,14 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 		.create_location	= create_location,
 		.schedule_location	= location,
 	};
+
+	/*
+	 * Make sure the event won't be destroyed while
+	 * it's part of the ev->scheduled_immediates list.
+	 * _tevent_schedule_immediate() will reset the destructor
+	 * in tevent_common_threaded_activate_immediate().
+	 */
+	talloc_set_destructor(im, tevent_threaded_schedule_immediate_destructor);
 
 	ret = pthread_mutex_lock(&ev->scheduled_mutex);
 	if (ret != 0) {
