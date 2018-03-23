@@ -532,8 +532,20 @@ void tevent_common_threaded_activate_immediate(struct tevent_context *ev)
 
 	while (ev->scheduled_immediates != NULL) {
 		struct tevent_immediate *im = ev->scheduled_immediates;
+		struct tevent_immediate copy = *im;
+
 		DLIST_REMOVE(ev->scheduled_immediates, im);
-		DLIST_ADD_END(ev->immediate_events, im);
+
+		tevent_debug(ev, TEVENT_DEBUG_TRACE,
+			     "Schedule immediate event \"%s\": %p from thread into main\n",
+			     im->handler_name, im);
+		im->handler_name = NULL;
+		_tevent_schedule_immediate(im,
+					   ev,
+					   copy.handler,
+					   copy.private_data,
+					   copy.handler_name,
+					   copy.schedule_location);
 	}
 
 	ret = pthread_mutex_unlock(&ev->scheduled_mutex);

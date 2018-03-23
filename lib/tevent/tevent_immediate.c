@@ -36,9 +36,11 @@ static void tevent_common_immediate_cancel(struct tevent_immediate *im)
 		return;
 	}
 
-	tevent_debug(im->event_ctx, TEVENT_DEBUG_TRACE,
-		     "Cancel immediate event %p \"%s\"\n",
-		     im, im->handler_name);
+	if (im->handler_name != NULL) {
+		tevent_debug(im->event_ctx, TEVENT_DEBUG_TRACE,
+			     "Cancel immediate event %p \"%s\"\n",
+			     im, im->handler_name);
+	}
 
 	/* let the backend free im->additional_data */
 	if (im->cancel_fn) {
