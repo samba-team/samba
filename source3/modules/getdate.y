@@ -105,7 +105,7 @@ typedef struct
 enum { MERam, MERpm, MER24 };
 
 /* Information passed to and from the parser.  */
-typedef struct
+struct parser_control
 {
   /* The input string remaining to be parsed. */
   const char *input;
@@ -151,16 +151,15 @@ typedef struct
 
   /* Table of local time zone abbrevations, terminated by a null entry.  */
   table local_time_zone_table[3];
-} parser_control;
-
-#define PC (* (parser_control *) parm)
-#define YYLEX_PARAM parm
-#define YYPARSE_PARAM parm
+};
 
 %}
 
+%lex-param     {struct parser_control *pc}
+%parse-param   {struct parser_control *pc}
+
 /* We want a reentrant parser.  */
-%pure_parser
+%pure-parser
 
 /* This grammar has 13 shift/reduce conflicts. */
 %expect 13
@@ -173,8 +172,8 @@ typedef struct
 
 %{
 
-static int yyerror(const char *);
-static int yylex(YYSTYPE *, parser_control *);
+static int yyerror(struct parser_control *, const char *);
+static int yylex(YYSTYPE *, struct parser_control *);
 
 %}
 
@@ -196,100 +195,100 @@ spec:
 
 item:
     time
-      { PC.times_seen++; }
+      { pc->times_seen++; }
   | local_zone
-      { PC.local_zones_seen++; }
+      { pc->local_zones_seen++; }
   | zone
-      { PC.zones_seen++; }
+      { pc->zones_seen++; }
   | date
-      { PC.dates_seen++; }
+      { pc->dates_seen++; }
   | day
-      { PC.days_seen++; }
+      { pc->days_seen++; }
   | rel
-      { PC.rels_seen++; }
+      { pc->rels_seen++; }
   | number
   ;
 
 time:
     tUNUMBER tMERIDIAN
       {
-	PC.hour = $1.value;
-	PC.minutes = 0;
-	PC.seconds = 0;
-	PC.meridian = $2;
+	pc->hour = $1.value;
+	pc->minutes = 0;
+	pc->seconds = 0;
+	pc->meridian = $2;
       }
   | tUNUMBER ':' tUNUMBER o_merid
       {
-	PC.hour = $1.value;
-	PC.minutes = $3.value;
-	PC.seconds = 0;
-	PC.meridian = $4;
+	pc->hour = $1.value;
+	pc->minutes = $3.value;
+	pc->seconds = 0;
+	pc->meridian = $4;
       }
   | tUNUMBER ':' tUNUMBER tSNUMBER
       {
-	PC.hour = $1.value;
-	PC.minutes = $3.value;
-	PC.meridian = MER24;
-	PC.zones_seen++;
-	PC.time_zone = $4.value % 100 + ($4.value / 100) * 60;
+	pc->hour = $1.value;
+	pc->minutes = $3.value;
+	pc->meridian = MER24;
+	pc->zones_seen++;
+	pc->time_zone = $4.value % 100 + ($4.value / 100) * 60;
       }
   | tUNUMBER ':' tUNUMBER ':' tUNUMBER o_merid
       {
-	PC.hour = $1.value;
-	PC.minutes = $3.value;
-	PC.seconds = $5.value;
-	PC.meridian = $6;
+	pc->hour = $1.value;
+	pc->minutes = $3.value;
+	pc->seconds = $5.value;
+	pc->meridian = $6;
       }
   | tUNUMBER ':' tUNUMBER ':' tUNUMBER tSNUMBER
       {
-	PC.hour = $1.value;
-	PC.minutes = $3.value;
-	PC.seconds = $5.value;
-	PC.meridian = MER24;
-	PC.zones_seen++;
-	PC.time_zone = $6.value % 100 + ($6.value / 100) * 60;
+	pc->hour = $1.value;
+	pc->minutes = $3.value;
+	pc->seconds = $5.value;
+	pc->meridian = MER24;
+	pc->zones_seen++;
+	pc->time_zone = $6.value % 100 + ($6.value / 100) * 60;
       }
   ;
 
 local_zone:
     tLOCAL_ZONE
-      { PC.local_isdst = $1; }
+      { pc->local_isdst = $1; }
   | tLOCAL_ZONE tDST
-      { PC.local_isdst = $1 < 0 ? 1 : $1 + 1; }
+      { pc->local_isdst = $1 < 0 ? 1 : $1 + 1; }
   ;
 
 zone:
     tZONE
-      { PC.time_zone = $1; }
+      { pc->time_zone = $1; }
   | tDAYZONE
-      { PC.time_zone = $1 + 60; }
+      { pc->time_zone = $1 + 60; }
   | tZONE tDST
-      { PC.time_zone = $1 + 60; }
+      { pc->time_zone = $1 + 60; }
   ;
 
 day:
     tDAY
       {
-	PC.day_ordinal = 1;
-	PC.day_number = $1;
+	pc->day_ordinal = 1;
+	pc->day_number = $1;
       }
   | tDAY ','
       {
-	PC.day_ordinal = 1;
-	PC.day_number = $1;
+	pc->day_ordinal = 1;
+	pc->day_number = $1;
       }
   | tUNUMBER tDAY
       {
-	PC.day_ordinal = $1.value;
-	PC.day_number = $2;
+	pc->day_ordinal = $1.value;
+	pc->day_number = $2;
       }
   ;
 
 date:
     tUNUMBER '/' tUNUMBER
       {
-	PC.month = $1.value;
-	PC.day = $3.value;
+	pc->month = $1.value;
+	pc->day = $3.value;
       }
   | tUNUMBER '/' tUNUMBER '/' tUNUMBER
       {
@@ -300,139 +299,139 @@ date:
 	   you want portability, use the ISO 8601 format.  */
 	if (4 <= $1.digits)
 	  {
-	    PC.year = $1;
-	    PC.month = $3.value;
-	    PC.day = $5.value;
+	    pc->year = $1;
+	    pc->month = $3.value;
+	    pc->day = $5.value;
 	  }
 	else
 	  {
-	    PC.month = $1.value;
-	    PC.day = $3.value;
-	    PC.year = $5;
+	    pc->month = $1.value;
+	    pc->day = $3.value;
+	    pc->year = $5;
 	  }
       }
   | tUNUMBER tSNUMBER tSNUMBER
       {
 	/* ISO 8601 format.  YYYY-MM-DD.  */
-	PC.year = $1;
-	PC.month = -$2.value;
-	PC.day = -$3.value;
+	pc->year = $1;
+	pc->month = -$2.value;
+	pc->day = -$3.value;
       }
   | tUNUMBER tMONTH tSNUMBER
       {
 	/* e.g. 17-JUN-1992.  */
-	PC.day = $1.value;
-	PC.month = $2;
-	PC.year.value = -$3.value;
-	PC.year.digits = $3.digits;
+	pc->day = $1.value;
+	pc->month = $2;
+	pc->year.value = -$3.value;
+	pc->year.digits = $3.digits;
       }
   | tMONTH tUNUMBER
       {
-	PC.month = $1;
-	PC.day = $2.value;
+	pc->month = $1;
+	pc->day = $2.value;
       }
   | tMONTH tUNUMBER ',' tUNUMBER
       {
-	PC.month = $1;
-	PC.day = $2.value;
-	PC.year = $4;
+	pc->month = $1;
+	pc->day = $2.value;
+	pc->year = $4;
       }
   | tUNUMBER tMONTH
       {
-	PC.day = $1.value;
-	PC.month = $2;
+	pc->day = $1.value;
+	pc->month = $2;
       }
   | tUNUMBER tMONTH tUNUMBER
       {
-	PC.day = $1.value;
-	PC.month = $2;
-	PC.year = $3;
+	pc->day = $1.value;
+	pc->month = $2;
+	pc->year = $3;
       }
   ;
 
 rel:
     relunit tAGO
       {
-	PC.rel_seconds = -PC.rel_seconds;
-	PC.rel_minutes = -PC.rel_minutes;
-	PC.rel_hour = -PC.rel_hour;
-	PC.rel_day = -PC.rel_day;
-	PC.rel_month = -PC.rel_month;
-	PC.rel_year = -PC.rel_year;
+	pc->rel_seconds = -pc->rel_seconds;
+	pc->rel_minutes = -pc->rel_minutes;
+	pc->rel_hour = -pc->rel_hour;
+	pc->rel_day = -pc->rel_day;
+	pc->rel_month = -pc->rel_month;
+	pc->rel_year = -pc->rel_year;
       }
   | relunit
   ;
 
 relunit:
     tUNUMBER tYEAR_UNIT
-      { PC.rel_year += $1.value * $2; }
+      { pc->rel_year += $1.value * $2; }
   | tSNUMBER tYEAR_UNIT
-      { PC.rel_year += $1.value * $2; }
+      { pc->rel_year += $1.value * $2; }
   | tYEAR_UNIT
-      { PC.rel_year += $1; }
+      { pc->rel_year += $1; }
   | tUNUMBER tMONTH_UNIT
-      { PC.rel_month += $1.value * $2; }
+      { pc->rel_month += $1.value * $2; }
   | tSNUMBER tMONTH_UNIT
-      { PC.rel_month += $1.value * $2; }
+      { pc->rel_month += $1.value * $2; }
   | tMONTH_UNIT
-      { PC.rel_month += $1; }
+      { pc->rel_month += $1; }
   | tUNUMBER tDAY_UNIT
-      { PC.rel_day += $1.value * $2; }
+      { pc->rel_day += $1.value * $2; }
   | tSNUMBER tDAY_UNIT
-      { PC.rel_day += $1.value * $2; }
+      { pc->rel_day += $1.value * $2; }
   | tDAY_UNIT
-      { PC.rel_day += $1; }
+      { pc->rel_day += $1; }
   | tUNUMBER tHOUR_UNIT
-      { PC.rel_hour += $1.value * $2; }
+      { pc->rel_hour += $1.value * $2; }
   | tSNUMBER tHOUR_UNIT
-      { PC.rel_hour += $1.value * $2; }
+      { pc->rel_hour += $1.value * $2; }
   | tHOUR_UNIT
-      { PC.rel_hour += $1; }
+      { pc->rel_hour += $1; }
   | tUNUMBER tMINUTE_UNIT
-      { PC.rel_minutes += $1.value * $2; }
+      { pc->rel_minutes += $1.value * $2; }
   | tSNUMBER tMINUTE_UNIT
-      { PC.rel_minutes += $1.value * $2; }
+      { pc->rel_minutes += $1.value * $2; }
   | tMINUTE_UNIT
-      { PC.rel_minutes += $1; }
+      { pc->rel_minutes += $1; }
   | tUNUMBER tSEC_UNIT
-      { PC.rel_seconds += $1.value * $2; }
+      { pc->rel_seconds += $1.value * $2; }
   | tSNUMBER tSEC_UNIT
-      { PC.rel_seconds += $1.value * $2; }
+      { pc->rel_seconds += $1.value * $2; }
   | tSEC_UNIT
-      { PC.rel_seconds += $1; }
+      { pc->rel_seconds += $1; }
   ;
 
 number:
     tUNUMBER
       {
-	if (PC.dates_seen
-	    && ! PC.rels_seen && (PC.times_seen || 2 < $1.digits))
-	  PC.year = $1;
+	if (pc->dates_seen
+	    && ! pc->rels_seen && (pc->times_seen || 2 < $1.digits))
+	  pc->year = $1;
 	else
 	  {
 	    if (4 < $1.digits)
 	      {
-		PC.dates_seen++;
-		PC.day = $1.value % 100;
-		PC.month = ($1.value / 100) % 100;
-		PC.year.value = $1.value / 10000;
-		PC.year.digits = $1.digits - 4;
+		pc->dates_seen++;
+		pc->day = $1.value % 100;
+		pc->month = ($1.value / 100) % 100;
+		pc->year.value = $1.value / 10000;
+		pc->year.digits = $1.digits - 4;
 	      }
 	    else
 	      {
-		PC.times_seen++;
+		pc->times_seen++;
 		if ($1.digits <= 2)
 		  {
-		    PC.hour = $1.value;
-		    PC.minutes = 0;
+		    pc->hour = $1.value;
+		    pc->minutes = 0;
 		  }
 		else
 		  {
-		    PC.hour = $1.value / 100;
-		    PC.minutes = $1.value % 100;
+		    pc->hour = $1.value / 100;
+		    pc->minutes = $1.value % 100;
 		  }
-		PC.seconds = 0;
-		PC.meridian = MER24;
+		pc->seconds = 0;
+		pc->meridian = MER24;
 	      }
 	  }
       }
@@ -674,7 +673,7 @@ to_year (textint textyear)
 }
 
 static table const *
-lookup_zone (parser_control const *pc, char const *name)
+lookup_zone (struct parser_control const *pc, char const *name)
 {
   table const *tp;
 
@@ -718,7 +717,7 @@ tm_diff (struct tm const *a, struct tm const *b)
 #endif /* ! HAVE_TM_GMTOFF */
 
 static table const *
-lookup_word (parser_control const *pc, char *word)
+lookup_word (struct parser_control const *pc, char *word)
 {
   char *p;
   char *q;
@@ -787,7 +786,7 @@ lookup_word (parser_control const *pc, char *word)
 }
 
 static int
-yylex (YYSTYPE *lvalp, parser_control *pc)
+yylex (YYSTYPE *lvalp, struct parser_control *pc)
 {
   unsigned char c;
   size_t count;
@@ -829,18 +828,18 @@ yylex (YYSTYPE *lvalp, parser_control *pc)
       if (ISALPHA (c))
 	{
 	  char buff[20];
-	  char *p = buff;
+	  size_t i = 0;
 	  table const *tp;
 
 	  do
 	    {
-	      if (p < buff + sizeof buff - 1)
-		*p++ = c;
+	      if (i < 20)
+		buff[i++] = c;
 	      c = *++pc->input;
 	    }
 	  while (ISALPHA (c) || c == '.');
 
-	  *p = '\0';
+	  buff[i] = '\0';
 	  tp = lookup_word (pc, buff);
 	  if (! tp)
 	    return '?';
@@ -867,7 +866,7 @@ yylex (YYSTYPE *lvalp, parser_control *pc)
 
 /* Do nothing if the parser reports an error.  */
 static int
-yyerror (const char *s ATTRIBUTE_UNUSED)
+yyerror (struct parser_control *pc ATTRIBUTE_UNUSED, const char *s ATTRIBUTE_UNUSED)
 {
   return 0;
 }
@@ -883,7 +882,7 @@ get_date (const char *p, const time_t *now)
   struct tm *tmp = localtime (&Start);
   struct tm tm;
   struct tm tm0;
-  parser_control pc;
+  struct parser_control pc;
 
   if (! tmp)
     return -1;
