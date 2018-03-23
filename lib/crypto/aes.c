@@ -66,22 +66,6 @@ static bool has_intel_aes_instructions(void)
 		return (bool)has_aes_instructions;
 	}
 
-	__cpuid(cpuid_results, 0);
-	/*
-	 *        MSB         LSB
-	 *  EBX = 'u' 'n' 'e' 'G'
-	 *  EDX = 'I' 'e' 'n' 'i'
-	 *  ECX = 'l' 'e' 't' 'n'
-	 */
-	if (memcmp((unsigned char *)&cpuid_results[1], "Genu", 4) != 0 ||
-			memcmp((unsigned char *)&cpuid_results[3],
-				"ineI", 4) != 0 ||
-			memcmp((unsigned char *)&cpuid_results[2],
-				"ntel", 4) != 0) {
-		has_aes_instructions = 0;
-		return (bool)has_aes_instructions;
-	}
-
 	__cpuid(cpuid_results, 1);
 	has_aes_instructions = !!(cpuid_results[2] & (1 << 25));
 	return (bool)has_aes_instructions;
