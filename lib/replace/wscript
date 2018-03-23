@@ -122,6 +122,9 @@ def configure(conf):
     if conf.CHECK_CFLAGS('-Wno-unused-function'):
         conf.define('HAVE_WNO_UNUSED_FUNCTION', '1')
 
+    if conf.CHECK_CFLAGS('-Wno-strict-overflow'):
+        conf.define('HAVE_WNO_STRICT_OVERFLOW', '1')
+
     # Check for process set name support
     conf.CHECK_CODE('''
                     #include <sys/prctl.h>
