@@ -1,3 +1,4 @@
+from __future__ import print_function
 import samba
 
 from samba.auth import system_session
@@ -54,7 +55,7 @@ class BasePasswordTestCase(samba.tests.TestCase):
                         (name, res[0][name], res[0].dn))
 
 
-        print  "%s = '%s'" % (name, res[0][name][0])
+        print("%s = '%s'" % (name, res[0][name][0]))
 
         if mode == "present":
             return
@@ -107,9 +108,9 @@ class BasePasswordTestCase(samba.tests.TestCase):
                        effective_bad_password_count=None,
                        msg=None,
                        badPwdCountOnly=False):
-        print '-=' * 36
+        print('-=' * 36)
         if msg is not None:
-            print  "\033[01;32m %s \033[00m\n" % msg
+            print("\033[01;32m %s \033[00m\n" % msg)
         attrs = [
            "objectSid",
            "badPwdCount",
@@ -385,11 +386,11 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         if use_kerberos == MUST_USE_KERBEROS:
             logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
-            print "Performs a lockout attempt against LDAP using Kerberos"
+            print("Performs a lockout attempt against LDAP using Kerberos")
         else:
             logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
-            print "Performs a lockout attempt against LDAP using NTLM"
+            print("Performs a lockout attempt against LDAP using NTLM")
 
         # Change password on a connection as another user
         res = self._check_account(userdn,
@@ -406,8 +407,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         lastLogon = int(res[0]["lastLogon"][0])
         firstLogon = lastLogon
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
-        print firstLogon
-        print lastLogonTimestamp
+        print(firstLogon)
+        print(lastLogonTimestamp)
 
 
         self.assertGreater(lastLogon, badPasswordTime)
@@ -496,7 +497,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
-        print "two failed password change"
+        print("two failed password change")
 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
@@ -584,7 +585,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         # wait for the lockout to end
         time.sleep(self.account_lockout_duration + 1)
-        print self.account_lockout_duration + 1
+        print(self.account_lockout_duration + 1)
 
         res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
@@ -726,11 +727,11 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         use_kerberos = creds.get_kerberos_state()
         if use_kerberos == MUST_USE_KERBEROS:
-            print "Testing multiple logon with Kerberos"
+            print("Testing multiple logon with Kerberos")
             logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
         else:
-            print "Testing multiple logon with NTLM"
+            print("Testing multiple logon with NTLM")
             logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
 
@@ -750,7 +751,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         lastLogon = int(res[0]["lastLogon"][0])
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
         firstLogon = lastLogon
-        print "last logon is %d" % lastLogon
+        print("last logon is %d" % lastLogon)
         self.assertGreater(lastLogon, badPasswordTime)
         self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 

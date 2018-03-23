@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Based on the EchoServer example from python docs
+from __future__ import print_function
 import SocketServer
 import time
 import sys
@@ -31,7 +32,7 @@ VERBOSE = False
 def debug(msg):
     if VERBOSE:
         sys.stdout.flush()
-        print "\033[00;36m%s\033[00m" % msg
+        print("\033[00;36m%s\033[00m" % msg)
         sys.stdout.flush()
 
 timeout = 0

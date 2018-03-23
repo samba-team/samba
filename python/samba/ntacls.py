@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
 """NT Acls."""
 
 
@@ -73,7 +74,7 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True, servi
             except Exception:
                 # FIXME: Don't catch all exceptions, just those related to opening
                 # xattrdb
-                print "Fail to open %s" % dbname
+                print("Fail to open %s" % dbname)
                 attribute = samba.xattr_native.wrap_getxattr(file,
                                                              xattr.XATTR_NTACL_NAME)
         else:
@@ -152,7 +153,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
             except Exception:
                 # FIXME: Don't catch all exceptions, just those related to opening
                 # xattrdb
-                print "Fail to open %s" % dbname
+                print("Fail to open %s" % dbname)
                 samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
                                                  ndr_pack(ntacl))
         else:

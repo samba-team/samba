@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import optparse
 import sys
 import os
@@ -52,7 +53,7 @@ class BaseDeleteTests(samba.tests.TestCase):
         self.configuration_dn = self.ldb.get_config_basedn().get_linearized()
 
     def search_guid(self, guid):
-        print "SEARCH by GUID %s" % self.GUID_string(guid)
+        print("SEARCH by GUID %s" % self.GUID_string(guid))
 
         res = self.ldb.search(base="<GUID=%s>" % self.GUID_string(guid),
                          scope=SCOPE_BASE, controls=["show_deleted:1"])
@@ -60,7 +61,7 @@ class BaseDeleteTests(samba.tests.TestCase):
         return res[0]
 
     def search_dn(self,dn):
-        print "SEARCH by DN %s" % dn
+        print("SEARCH by DN %s" % dn)
 
         res = self.ldb.search(expression="(objectClass=*)",
                          base=dn,
@@ -76,14 +77,14 @@ class BasicDeleteTests(BaseDeleteTests):
         super(BasicDeleteTests, self).setUp()
 
     def del_attr_values(self, delObj):
-        print "Checking attributes for %s" % delObj["dn"]
+        print("Checking attributes for %s" % delObj["dn"])
 
         self.assertEquals(delObj["isDeleted"][0],"TRUE")
         self.assertTrue(not("objectCategory" in delObj))
         self.assertTrue(not("sAMAccountType" in delObj))
 
     def preserved_attributes_list(self, liveObj, delObj):
-        print "Checking for preserved attributes list"
+        print("Checking for preserved attributes list")
 
         preserved_list = ["nTSecurityDescriptor", "attributeID", "attributeSyntax", "dNReferenceUpdate", "dNSHostName",
         "flatName", "governsID", "groupType", "instanceType", "lDAPDisplayName", "legacyExchangeDN",
@@ -98,7 +99,7 @@ class BasicDeleteTests(BaseDeleteTests):
                 self.assertTrue(a in delObj)
 
     def check_rdn(self, liveObj, delObj, rdnName):
-        print "Checking for correct rDN"
+        print("Checking for correct rDN")
         rdn=liveObj[rdnName][0]
         rdn2=delObj[rdnName][0]
         name2=delObj["name"][0]
@@ -109,7 +110,7 @@ class BasicDeleteTests(BaseDeleteTests):
         self.assertEquals(name2, dn_rdn)
 
     def delete_deleted(self, ldb, dn):
-        print "Testing the deletion of the already deleted dn %s" % dn
+        print("Testing the deletion of the already deleted dn %s" % dn)
 
         try:
             ldb.delete(dn)
@@ -121,7 +122,7 @@ class BasicDeleteTests(BaseDeleteTests):
     def test_delete_protection(self):
         """Delete protection tests"""
 
-        print self.base_dn
+        print(self.base_dn)
 
         delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
         delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
@@ -268,7 +269,7 @@ class BasicDeleteTests(BaseDeleteTests):
     def test_all(self):
         """Basic delete tests"""
 
-        print self.base_dn
+        print(self.base_dn)
 
         # user current time in ms to make unique objects
         import time

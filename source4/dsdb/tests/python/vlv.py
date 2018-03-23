@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Originally based on ./sam.py
+from __future__ import print_function
 import optparse
 import sys
 import os
@@ -155,7 +156,7 @@ class VLVTests(samba.tests.TestCase):
             try:
                 self.ldb.delete(self.ou, ['tree_delete:1'])
             except ldb.LdbError as e:
-                print "tried deleting %s, got error %s" % (self.ou, e)
+                print("tried deleting %s, got error %s" % (self.ou, e))
         self.ldb.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
@@ -317,9 +318,9 @@ class VLVTests(samba.tests.TestCase):
             gte_map[k] = len(expected_order)
 
         if False:
-            print "gte_map:"
+            print("gte_map:")
             for k in gte_order:
-                print "   %10s => %10s" % (k, gte_map[k])
+                print("   %10s => %10s" % (k, gte_map[k]))
 
         return gte_order, expected_order, gte_map
 
@@ -340,14 +341,14 @@ class VLVTests(samba.tests.TestCase):
             return
 
         if expected_order is not None:
-            print "expected order: %s" % expected_order[:20]
+            print("expected order: %s" % expected_order[:20])
             if len(expected_order) > 20:
-                print "... and %d more not shown" % (len(expected_order) - 20)
+                print("... and %d more not shown" % (len(expected_order) - 20))
 
-        print "offset %d before %d after %d" % (offset, before, after)
-        print "start %d end %d" % (start, end)
-        print "expected: %s" % expected_results
-        print "got     : %s" % results
+        print("offset %d before %d after %d" % (offset, before, after))
+        print("start %d end %d" % (start, end))
+        print("expected: %s" % expected_results)
+        print("got     : %s" % results)
         self.assertEquals(expected_results, results)
 
     def test_server_vlv_with_cookie(self):
@@ -1005,10 +1006,10 @@ class VLVTests(samba.tests.TestCase):
                         iteration += 1
                         if expected_results != results:
                             middle = expected_order[len(expected_order) // 2]
-                            print expected_results, results
-                            print middle
-                            print expected_order
-                            print
+                            print(expected_results, results)
+                            print(middle)
+                            print(expected_order)
+                            print()
                             print ("\nattr %s offset %d before %d "
                                    "after %d gte %s" %
                                    (attr, offset, before, after, gte))

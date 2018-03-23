@@ -34,6 +34,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
 # SUCH DAMAGE. 
 
+from __future__ import print_function
 import re
 import string
 import sys
@@ -42,7 +43,7 @@ import generate
 import UnicodeData
 
 if len(sys.argv) != 3:
-    print "usage: %s UnicodeData.txt out-dir" % sys.argv[0]
+    print("usage: %s UnicodeData.txt out-dir" % sys.argv[0])
     sys.exit(1)
 
 ud = UnicodeData.read(sys.argv[1])

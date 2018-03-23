@@ -19,6 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
+
 def render_placeholder(environ, start_response):
     """Send the user a simple placeholder about missing SWAT."""
     status = '200 OK'
@@ -48,7 +50,7 @@ def __call__(environ, start_response):
     try:
         import swat
     except ImportError as e:
-        print "NO SWAT: %r" % e
+        print("NO SWAT: %r" % e)
         have_swat = False
     else:
         have_swat = True
@@ -75,5 +77,5 @@ def __call__(environ, start_response):
 if __name__ == '__main__':
     from wsgiref import simple_server
     httpd = simple_server.make_server('localhost', 8090, __call__)
-    print "Serving HTTP on port 8090..."
+    print("Serving HTTP on port 8090...")
     httpd.serve_forever()
