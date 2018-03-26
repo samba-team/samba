@@ -410,6 +410,10 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 		ret = ltdb_cache_reload(module);
 	}
 
+	if (ret != LDB_SUCCESS) {
+		ltdb->reindex_failed = true;
+	}
+
 	return ret;
 }
 
@@ -1404,8 +1408,16 @@ static int ltdb_start_trans(struct ldb_module *module)
 
 	ltdb_index_transaction_start(module);
 
+	ltdb->reindex_failed = false;
+
 	return LDB_SUCCESS;
 }
+
+/*
+ * Forward declaration to allow prepare_commit to in fact abort the
+ * transaction
+ */
+static int ltdb_del_trans(struct ldb_module *module);
 
 static int ltdb_prepare_commit(struct ldb_module *module)
 {
@@ -1415,6 +1427,24 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 
 	if (ltdb->in_transaction != 1) {
 		return LDB_SUCCESS;
+	}
+
+	/*
+	 * Check if the last re-index failed.
+	 *
+	 * This can happen if for example a duplicate value was marked
+	 * unique.  We must not write a partial re-index into the DB.
+	 */
+	if (ltdb->reindex_failed) {
+		/*
+		 * We must instead abort the transaction so we get the
+		 * old values and old index back
+		 */
+		ltdb_del_trans(module);
+		ldb_set_errstring(ldb_module_get_ctx(module),
+				  "Failure during re-index, so "
+				  "transaction must be aborted.");
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ltdb_index_transaction_commit(module);

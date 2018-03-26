@@ -37,6 +37,8 @@ struct ltdb_private {
 
 	bool read_only;
 
+	bool reindex_failed;
+
 	const struct ldb_schema_syntax *GUID_index_syntax;
 };
 
