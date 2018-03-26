@@ -636,7 +636,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, int nd
 
 _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
-	ssize_t required;
+	size_t required;
 
 	if (NDR_BE(ndr) && chset == CH_UTF16) {
 		chset = CH_UTF16BE;
