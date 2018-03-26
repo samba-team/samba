@@ -482,6 +482,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 struct shutdown_state {
 	const char *ip;
+	size_t ip_len;
 	struct messaging_context *msg_ctx;
 };
 
@@ -492,6 +493,8 @@ static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 	struct server_id self_pid = messaging_server_id(state->msg_ctx);
 	struct server_id pid = session->channels[0].server_id;
 	const char *addr = session->channels[0].remote_address;
+	const char *port_colon;
+	size_t addr_len;
 	struct server_id_buf tmp;
 
 	DEBUG(10, ("shutdown_other_smbds: %s, %s\n",
@@ -507,14 +510,17 @@ static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 		return 0;
 	}
 
-	/*
-	 * here we use strstr() because 'addr'
-	 * (session->channels[0].remote_address)
-	 * contains a string like:
-	 * 'ipv4:127.0.0.1:48163'
-	 */
-	if (strstr(addr, state->ip)  == NULL) {
-		DEBUG(10, ("%s does not match %s\n", state->ip, addr));
+	port_colon = strrchr(addr, ':');
+	if (port_colon == NULL) {
+		DBG_DEBUG("addr %s in contains no port\n", addr);
+		return 0;
+	}
+	addr_len = port_colon - addr;
+
+	if ((addr_len != state->ip_len) ||
+	    (strncmp(addr, state->ip, state->ip_len) != 0)) {
+		DEBUG(10, ("%s (%zu) does not match %s (%zu)\n",
+			   state->ip, state->ip_len, addr, addr_len));
 		return 0;
 	}
 
@@ -534,14 +540,21 @@ static void setup_new_vc_session(struct smbd_server_connection *sconn)
 
 	if (lp_reset_on_zero_vc()) {
 		char *addr;
+		const char *port_colon;
 		struct shutdown_state state;
 
-		addr = tsocket_address_inet_addr_string(
+		addr = tsocket_address_string(
 			sconn->remote_address, talloc_tos());
 		if (addr == NULL) {
 			return;
 		}
 		state.ip = addr;
+
+		port_colon = strrchr(addr, ':');
+		if (port_colon == NULL) {
+			return;
+		}
+		state.ip_len = port_colon - addr;
 		state.msg_ctx = sconn->msg_ctx;
 		smbXsrv_session_global_traverse(shutdown_other_smbds, &state);
 		TALLOC_FREE(addr);
