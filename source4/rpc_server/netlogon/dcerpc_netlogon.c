@@ -2845,6 +2845,14 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 		return WERR_INVALID_FLAGS;
 	}
 
+	/*
+	 * If we send an all-zero GUID, we should ignore it as winbind actually
+	 * checks it with a DNS query. Windows also appears to ignore it.
+	 */
+	if (r->in.domain_guid != NULL && GUID_all_zero(r->in.domain_guid)) {
+		r->in.domain_guid = NULL;
+	}
+
 	/* Attempt winbind search only if we suspect the domain is incorrect */
 	if (r->in.domain_name != NULL && strcmp("", r->in.domain_name) != 0) {
 		if (r->in.flags & DS_IS_FLAT_NAME) {
