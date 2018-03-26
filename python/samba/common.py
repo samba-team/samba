@@ -23,6 +23,14 @@ from samba.ndr import ndr_pack
 from samba.dcerpc import misc
 import binascii
 
+from samba.compat import PY3
+
+
+if PY3:
+    # cmp() exists only in Python 2
+    def cmp(a, b):
+        return (a > b) - (a < b)
+
 
 def confirm(msg, forced=False, allow_all=False):
     """confirm an action with the user
@@ -109,6 +117,25 @@ class dsdb_Dn(object):
             return v
         v = cmp(dn1.binary, dn2.binary)
         return v
+
+    # In Python3, __cmp__ is replaced by these 6 methods
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
+
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
 
     def get_binary_integer(self):
         '''return binary part of a dsdb_Dn as an integer, or None'''
