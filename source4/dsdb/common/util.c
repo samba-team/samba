@@ -1825,9 +1825,13 @@ const char *samdb_server_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 /*
  * Finds the client site by using the client's IP address.
  * The "subnet_name" returns the name of the subnet if parameter != NULL
+ *
+ * Has a Windows-based fallback to provide the only site available, or an empty
+ * string if there are multiple sites.
  */
 const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-				   const char *ip_address, char **subnet_name)
+				   const char *ip_address, char **subnet_name,
+				   bool fallback)
 {
 	const char *attrs[] = { "cn", "siteObject", NULL };
 	struct ldb_dn *sites_container_dn, *subnets_dn, *sites_dn;
@@ -1896,7 +1900,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (site_name == NULL) {
+	if (site_name == NULL && fallback) {
 		/* This is the Windows Server fallback rule: when no subnet
 		 * exists and we have only one site available then use it (it
 		 * is for sure the same as our server site). If more sites do

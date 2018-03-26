@@ -3080,7 +3080,8 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 		ctr->sitename[i].string   = samdb_client_site_name(sam_ctx,
 								   mem_ctx,
 								   addr_str,
-								   &subnet_name);
+								   &subnet_name,
+								   true);
 		W_ERROR_HAVE_NO_MEMORY(ctr->sitename[i].string);
 		ctr->subnetname[i].string = subnet_name;
 	}

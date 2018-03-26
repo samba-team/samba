@@ -314,7 +314,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	server_site      = samdb_server_site_name(sam_ctx, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(server_site);
 	client_site      = samdb_client_site_name(sam_ctx, mem_ctx,
-						  src_address, NULL);
+						  src_address, NULL,
+						  true);
 	NT_STATUS_HAVE_NO_MEMORY(client_site);
 	if (strcasecmp(server_site, client_site) == 0) {
 		server_type |= DS_SERVER_CLOSEST;
