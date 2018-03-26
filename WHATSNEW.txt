@@ -261,6 +261,137 @@ feature, currently it should be enabled from the DNS Manager tool from
 Windows. Also the feature needs to have been enabled by setting the smb.conf
 parameter "dns zone scavenging = yes".
 
+CTDB changes
+------------
+
+There are many changes to CTDB in this release.
+
+* Configuration has been completely overhauled
+
+  - Daemon and tool options are now specified in a new ctdb.conf
+    Samba-style configuration file.  See ctdb.conf(5) for details.
+
+  - Event script configuration is no longer specified in the top-level
+    configuration file.  It can now be specified per event script.
+    For example, configuration options for the 50.samba event script
+    can be placed alongside the event script in a file called
+    50.samba.options.  Script options can also be specified in a new
+    script.options file.  See ctdb-script.options(5) for details.
+
+  - Options that affect CTDB startup should be configured in the
+    distribution-specific configuration file.  See ctdb.sysconfig(5)
+    for details.
+
+  - Tunable settings are now loaded from ctdb.tunables.  Using
+    CTDB_SET_TunableVariable=<value> in the main configuration file is
+    no longer supported.  See ctdb-tunables(7) for details.
+
+  A script to convert an old-style configuration to a new one will be
+  available for release but is not yet available.
+
+* The following configuration variables and corresponding ctdbd
+  command-line options have been removed and not replaced with
+  counterparts in the new configuration scheme:
+
+    CTDB_PIDFILE                     --pidfile
+    CTDB_SOCKET			     --socket
+    CTDB_NODES			     --nlist
+    CTDB_PUBLIC_ADDRESSES	     --public-addresses
+    CTDB_EVENT_SCRIPT_DIR	     --event-script-dir
+    CTDB_NOTIFY_SCRIPT		     --notification-script
+    CTDB_PUBLIC_INTERFACE	     --public-interface
+    CTDB_MAX_PERSISTENT_CHECK_ERRORS --max-persistent-check-errors
+
+  - The compile-time defaults should be used for the first 6 of these.
+  - Use a symbolic link from the configuration directory to specify a
+    different location for nodes or public_addresses (e.g. in the
+    cluster filesystem).
+  - Executable notification scripts in the notify.d/ subdirectory of
+    the configuration directory are now run by unconditionally.
+  - Interfaces for public IP addresses must always be specified in the
+    public_addresses file using the currently supported format.
+
+  Some related items that have been removed are:
+
+  - The ctdb command's --socket command-line option
+  - The ctdb command's CTDB_NODES environment variable
+
+  When writing tests there are still mechanisms available to change
+  the locations of certain directories and files.
+
+* Event scripts have moved to the scripts/legacy subdirectory of the
+  configuration directory
+
+  Event scripts must now end with a ".script" suffix.
+
+* The following service-related event script options have been
+  removed:
+
+    CTDB_MANAGES_SAMBA
+    CTDB_MANAGES_WINBIND
+
+    CTDB_MANAGES_CLAMD
+    CTDB_MANAGES_HTTPD
+    CTDB_MANAGES_ISCSI
+    CTDB_MANAGES_NFS
+    CTDB_MANAGES_VSFTPD
+
+    CTDB_MANAGED_SERVICES
+
+  Event scripts for services are now disabled by default.  To enable
+  an event script and, therefore, manage a service use a command like
+  the following:
+
+    ctdb event script enable legacy 50.samba
+
+* Notification scripts have moved to the scripts/notification
+  subdirectory of the configuration directory
+
+  Notification scripts must now end with a ".script" suffix.
+
+* Support for setting CTDB_DBDIR=tmpfs has been removed
+
+  This feature has not been implemented in the new configuration
+  system.  If this is desired then a tmpfs filesystem should be
+  manually mounted on the directory pointed to by the "volatile
+  database directory" option.  See ctdb.conf(5) for more details.
+
+* Support for the NoIPHostOnAllDisabled tunable has been removed
+
+  If all nodes are unhealthy or disabled then CTDB will not host
+  public IP addresses.  That is, CTDB now behaves as if
+  NoIPHostOnAllDisabled were set to 1.
+
+* The onnode command's CTDB_NODES_FILE environment variable has been
+  removed
+
+  The -f option can still be used to specify an alternate node file.
+
+* The 10.external event script has been removed
+
+* The CTDB_SHUTDOWN_TIMEOUT configuration variable has been removed
+
+  As with other daemons, if ctdbd does not shut down when requested
+  then manual intervention is required.  There is no safe way of
+  automatically killing ctdbd after a failed shutdown.
+
+* CTDB_SUPPRESS_COREFILE and CTDB_MAX_OPEN_FILES configuration
+  variable have been removed
+
+  These should be setup in the systemd unit/system file or, for SYSV
+  init, in the distribution-specific configuration file for the ctdb
+  service.
+
+* CTDB_PARTIALLY_ONLINE_INTERFACES incompatibility no longer enforced
+
+  11.natgw and 91.lvs will no longer fail if
+  CTDB_PARTIALLY_ONLINE_INTERFACES=yes.  The incompatibility is,
+  however, well documented.  This option will be removed in future and
+  replaced by sensible behaviour where public IP addresses simply
+  switch interfaces or become unavailable when interfaces are down.
+
+* Configuration file /etc/ctdb/sysconfig/ctdb is no longer supported
+
 
 REMOVED FEATURES
 ================
