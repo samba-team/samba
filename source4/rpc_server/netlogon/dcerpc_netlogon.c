@@ -2754,6 +2754,7 @@ struct dcesrv_netr_DsRGetDCName_base_state {
 	TALLOC_CTX *mem_ctx;
 
 	struct netr_DsRGetDCNameEx2 r;
+	const char *client_site;
 
 	struct {
 		struct netr_DsRGetDCName *dc;
@@ -2881,6 +2882,22 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 
 		struct dcerpc_binding_handle *irpc_handle = NULL;
 		struct tevent_req *subreq = NULL;
+
+		/*
+		 * Retrieve the client site to override the winbind response.
+		 *
+		 * DO NOT use Windows fallback for client site.
+		 * In the case of multiple domains, this is plainly wrong.
+		 *
+		 * Note: It's possible that the client may belong to multiple
+		 * subnets across domains. It's not clear what this would mean,
+		 * but here we only return what this domain knows.
+		 */
+		state->client_site = samdb_client_site_name(sam_ctx,
+							    state,
+							    remote_addr,
+							    NULL,
+							    false);
 
 		irpc_handle = irpc_binding_handle_by_name(state,
 							  dce_call->msg_ctx,
@@ -3061,6 +3078,10 @@ static void dcesrv_netr_DsRGetDCName_base_done(struct tevent_req *subreq)
 	    (state->r.out.info[0]->dc_site_name != NULL &&
 	     strcasecmp_m(state->r.out.info[0]->dc_site_name,
 			  state->r.in.site_name) == 0)) {
+
+		state->r.out.info[0]->client_site_name =
+			talloc_move(state->mem_ctx, &state->client_site);
+
 		/*
 		 * Make sure to return our DC UNC with // prefix.
 		 * Winbind currently doesn't send the leading slashes
