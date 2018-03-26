@@ -75,7 +75,8 @@ cat <<EOF
 Output (Exit status: ${_rc}):
 --------------------------------------------------
 EOF
-	echo "$_out" | result_filter | cat $TEST_CAT_RESULTS_OPTS
+	# Avoid echo, which might expand unintentional escapes
+	printf '%s\n' "$_out" | result_filter | cat $TEST_CAT_RESULTS_OPTS
     fi
 
     if ! $_passed ; then
@@ -84,14 +85,17 @@ EOF
 Required output (Exit status: ${required_rc}):
 --------------------------------------------------
 EOF
-	echo "$required_output" | cat $TEST_CAT_RESULTS_OPTS
+	# Avoid echo, which might expand unintentional escapes
+	printf '%s\n' "$required_output" | cat $TEST_CAT_RESULTS_OPTS
 
 	if $TEST_DIFF_RESULTS ; then
 	    _outr=$(mktemp)
-	    echo "$required_output" >"$_outr"
+	    # Avoid echo, which might expand unintentional escapes
+	    printf '%s\n' "$required_output" >"$_outr"
 
 	    _outf=$(mktemp)
-	    echo "$_fout" >"$_outf"
+	    # Avoid echo, which might expand unintentional escapes
+	    printf '%s\n' "$_fout" >"$_outf"
 
 	    cat <<EOF
 --------------------------------------------------
@@ -143,7 +147,8 @@ result_check ()
 {
     _rc=$?
 
-    _fout=$(echo "$_out" | result_filter)
+    # Avoid echo, which might expand unintentional escapes
+    _fout=$(printf '%s\n' "$_out" | result_filter)
 
     if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	_passed=true
