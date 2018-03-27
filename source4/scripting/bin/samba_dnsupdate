@@ -24,7 +24,6 @@ import fcntl
 import sys
 import tempfile
 import subprocess
-from samba.kcc import kcc_utils
 
 # ensure we get messages out immediately, so they get in the samba logs,
 # and don't get swallowed by a timeout
@@ -49,6 +48,7 @@ from samba.samdb import SamDB
 from samba.dcerpc import netlogon, winbind
 from samba.netcmd.dns import cmd_dns
 from samba import gensec
+from samba.kcc import kcc_utils
 import ldb
 
 samba.ensure_third_party_module("dns", "dnspython")
