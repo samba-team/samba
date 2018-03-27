@@ -88,7 +88,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state,
 	bool match = false;
 	int ret;
 
-	if (principal == NULL && principal[0] == '\0') {
+	if ((principal == NULL) || (principal[0] == '\0')) {
 		return NT_STATUS_NONE_MAPPED;
 	}
 
