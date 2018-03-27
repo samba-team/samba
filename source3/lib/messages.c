@@ -213,6 +213,13 @@ static bool messaging_register_event_context(struct messaging_context *ctx,
 	}
 
 	if (free_reg == NULL) {
+		struct tevent_immediate *im = NULL;
+
+		im = tevent_create_immediate(ctx);
+		if (im == NULL) {
+			return false;
+		}
+
 		tmp = talloc_realloc(ctx, ctx->event_contexts,
 				     struct messaging_registered_ev,
 				     num_event_contexts+1);
@@ -222,9 +229,14 @@ static bool messaging_register_event_context(struct messaging_context *ctx,
 		ctx->event_contexts = tmp;
 
 		free_reg = &ctx->event_contexts[num_event_contexts];
+		free_reg->im = talloc_move(ctx->event_contexts, &im);
 	}
 
-	*free_reg = (struct messaging_registered_ev) { .ev = ev, .refcount = 1 };
+	/*
+	 * free_reg->im might be cached
+	 */
+	free_reg->ev = ev;
+	free_reg->refcount = 1;
 
 	return true;
 }
@@ -248,6 +260,16 @@ static bool messaging_deregister_event_context(struct messaging_context *ctx,
 
 			if (reg->refcount == 0) {
 				/*
+				 * The primary event context
+				 * is never unregistered using
+				 * messaging_deregister_event_context()
+				 * it's only registered using
+				 * messaging_register_event_context().
+				 */
+				SMB_ASSERT(ev != ctx->event_ctx);
+				SMB_ASSERT(reg->ev != ctx->event_ctx);
+
+				/*
 				 * Not strictly necessary, just
 				 * paranoia
 				 */
@@ -256,7 +278,14 @@ static bool messaging_deregister_event_context(struct messaging_context *ctx,
 				/*
 				 * Do not talloc_free(reg->im),
 				 * recycle immediates events.
+				 *
+				 * We just invalidate it using
+				 * the primary event context,
+				 * which is never unregistered.
 				 */
+				tevent_schedule_immediate(reg->im,
+							  ctx->event_ctx,
+							  NULL, NULL);
 			}
 			return true;
 		}
@@ -326,15 +355,6 @@ static bool messaging_alert_event_contexts(struct messaging_context *ctx)
 		struct messaging_registered_ev *reg = &ctx->event_contexts[i];
 
 		if (reg->refcount == 0) {
-			continue;
-		}
-
-		if (reg->im == NULL) {
-			reg->im = tevent_create_immediate(
-				ctx->event_contexts);
-		}
-		if (reg->im == NULL) {
-			DBG_WARNING("Could not create immediate\n");
 			continue;
 		}
 
