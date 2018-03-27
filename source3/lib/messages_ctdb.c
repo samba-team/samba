@@ -215,8 +215,18 @@ struct messaging_ctdb_fde *messaging_ctdb_register_tevent_context(
 	}
 
 	for (fde_ev = ctx->fde_evs; fde_ev != NULL; fde_ev = fde_ev->next) {
-		if ((fde_ev->ev == ev) &&
-		    (tevent_fd_get_flags(fde_ev->fde) != 0)) {
+		if (tevent_fd_get_flags(fde_ev->fde) == 0) {
+			/*
+			 * If the event context got deleted,
+			 * tevent_fd_get_flags() will return 0
+			 * for the stale fde.
+			 *
+			 * In that case we should not
+			 * use fde_ev->ev anymore.
+			 */
+			continue;
+		}
+		if (fde_ev->ev == ev) {
 			break;
 		}
 	}
