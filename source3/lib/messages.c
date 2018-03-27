@@ -192,15 +192,23 @@ static bool messaging_register_event_context(struct messaging_context *ctx,
 	for (i=0; i<num_event_contexts; i++) {
 		struct messaging_registered_ev *reg = &ctx->event_contexts[i];
 
-		if (reg->ev == ev) {
-			reg->refcount += 1;
-			return true;
-		}
 		if (reg->refcount == 0) {
 			if (reg->ev != NULL) {
 				abort();
 			}
 			free_reg = reg;
+			/*
+			 * We continue here and may find another
+			 * free_req, but the important thing is
+			 * that we continue to search for an
+			 * existing registration in the loop.
+			 */
+			continue;
+		}
+
+		if (reg->ev == ev) {
+			reg->refcount += 1;
+			return true;
 		}
 	}
 
@@ -231,10 +239,11 @@ static bool messaging_deregister_event_context(struct messaging_context *ctx,
 	for (i=0; i<num_event_contexts; i++) {
 		struct messaging_registered_ev *reg = &ctx->event_contexts[i];
 
+		if (reg->refcount == 0) {
+			continue;
+		}
+
 		if (reg->ev == ev) {
-			if (reg->refcount == 0) {
-				return false;
-			}
 			reg->refcount -= 1;
 
 			if (reg->refcount == 0) {
