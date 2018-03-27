@@ -93,7 +93,7 @@ static bool fill_default_spns(TALLOC_CTX *ctx, const char *machine_name,
 
 	if (*spns == NULL) {
 		*spns = talloc_zero_array(ctx, const char*, 3);
-		if (spns == NULL) {
+		if (*spns == NULL) {
 			return false;
 		}
 	}
