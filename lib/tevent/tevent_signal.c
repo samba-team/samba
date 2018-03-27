@@ -255,10 +255,10 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 		}
 	}
 
-	se = talloc(mem_ctx?mem_ctx:ev, struct tevent_signal);
+	se = talloc_zero(mem_ctx?mem_ctx:ev, struct tevent_signal);
 	if (se == NULL) return NULL;
 
-	sl = talloc(se, struct tevent_common_signal_list);
+	sl = talloc_zero(se, struct tevent_common_signal_list);
 	if (!sl) {
 		talloc_free(se);
 		return NULL;
@@ -303,7 +303,7 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 			}
 		}
 #endif
-		sig_state->oldact[signum] = talloc(sig_state, struct sigaction);
+		sig_state->oldact[signum] = talloc_zero(sig_state, struct sigaction);
 		if (sig_state->oldact[signum] == NULL) {
 			talloc_free(se);
 			return NULL;
