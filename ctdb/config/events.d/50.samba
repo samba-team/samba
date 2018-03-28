@@ -53,8 +53,6 @@ service_start ()
     # start Samba service. Start it reniced, as under very heavy load
     # the number of smbd processes will mean that it leaves few cycles
     # for anything else
-    net serverid wipe
-
     if [ -n "$CTDB_SERVICE_NMB" ] ; then
 	nice_service "$CTDB_SERVICE_NMB" start || die "Failed to start nmbd"
     fi
