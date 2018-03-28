@@ -530,6 +530,73 @@ static bool deltest9(struct torture_context *tctx, struct smbcli_state *cli1, st
 	return true;
 }
 
+/* Test 9a ... */
+static bool deltest9a(struct torture_context *tctx,
+			struct smbcli_state *cli1,
+			struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	NTSTATUS status;
+	uint32_t disps[4] = {
+			NTCREATEX_DISP_OVERWRITE_IF,
+			NTCREATEX_DISP_OPEN,
+			NTCREATEX_DISP_OVERWRITE,
+			NTCREATEX_DISP_OPEN_IF};
+
+	unsigned int i;
+
+	del_clean_area(cli1, cli2);
+
+	/* Create the file, and try with open calls. */
+	fnum1 = smbcli_open(cli1->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+	torture_assert(tctx,
+			fnum1 != -1,
+			talloc_asprintf(tctx, "open of %s failed (%s)",
+			fname,
+			smbcli_errstr(cli1->tree)));
+	status = smbcli_close(cli1->tree, fnum1);
+	torture_assert_ntstatus_ok(tctx,
+				status,
+				talloc_asprintf(tctx, "close failed"));
+
+	for (i = 0; i < sizeof(disps)/sizeof(disps[0]); i++) {
+		fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				NTCREATEX_SHARE_ACCESS_NONE,
+				disps[i],
+				NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+		torture_assert(tctx, fnum1 == -1,
+			talloc_asprintf(tctx, "open of %s succeeded "
+				"should have failed!",
+			fname));
+
+		/* Must fail with NT_STATUS_INVALID_PARAMETER. */
+		status = smbcli_nt_error(cli1->tree);
+		torture_assert_ntstatus_equal(tctx,
+			status,
+			NT_STATUS_INVALID_PARAMETER,
+			talloc_asprintf(tctx, "create of %s should return "
+				"NT_STATUS_INVALID_PARAMETER, got %s",
+			fname,
+			smbcli_errstr(cli1->tree)));
+
+		/*
+		 * This should succeed - the file should not have been deleted.
+		 */
+		status = smbcli_getatr(cli1->tree, fname, NULL, NULL, NULL);
+		torture_assert_ntstatus_ok(tctx,
+			status,
+			talloc_asprintf(tctx, "getattr of %s failed %s",
+			fname,
+			smbcli_errstr(cli1->tree)));
+	}
+
+	del_clean_area(cli1, cli2);
+	return true;
+}
+
 /* Test 10 ... */
 static bool deltest10(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
@@ -2309,6 +2376,7 @@ struct torture_suite *torture_test_delete(TALLOC_CTX *ctx)
 	torture_suite_add_2smb_test(suite, "deltest7", deltest7);
 	torture_suite_add_2smb_test(suite, "deltest8", deltest8);
 	torture_suite_add_2smb_test(suite, "deltest9", deltest9);
+	torture_suite_add_2smb_test(suite, "deltest9a", deltest9a);
 	torture_suite_add_2smb_test(suite, "deltest10", deltest10);
 	torture_suite_add_2smb_test(suite, "deltest11", deltest11);
 	torture_suite_add_2smb_test(suite, "deltest12", deltest12);
