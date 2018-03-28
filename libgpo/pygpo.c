@@ -264,12 +264,12 @@ static PyObject* py_ads_connect(ADS *self)
 			Py_RETURN_FALSE;
 		}
 		self->ads_ptr->auth.password = smb_xstrdup(passwd);
+		SAFE_FREE(passwd);
 		self->ads_ptr->auth.realm =
 			smb_xstrdup(self->ads_ptr->server.realm);
 		if (!strupper_m(self->ads_ptr->auth.realm)) {
 			PyErr_SetString(PyExc_SystemError, "Failed to strdup");
 			TALLOC_FREE(frame);
-			SAFE_FREE(passwd);
 			Py_RETURN_FALSE;
 		}
 
@@ -278,7 +278,6 @@ static PyObject* py_ads_connect(ADS *self)
 			PyErr_SetString(PyExc_SystemError,
 					"ads_connect() failed");
 			TALLOC_FREE(frame);
-			SAFE_FREE(passwd);
 			Py_RETURN_FALSE;
 		}
 	}
