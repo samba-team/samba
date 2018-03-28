@@ -1087,7 +1087,7 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 		addrs->val = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
 		if (addrs->val == NULL) {
 			SAFE_FREE(addrs);
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
