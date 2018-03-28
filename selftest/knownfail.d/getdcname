@@ -1,0 +1,8 @@
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_empty_string_site.fl2008r2dc:local.*
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind.fl2008r2dc:local.*
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind_domain_guid.fl2008r2dc:local.*
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind_empty_string_site.fl2008r2dc:local.*
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind_ex2.fl2008r2dc:local.*
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind_netbios.fl2008r2dc:local.*
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind_with_site.fl2008r2dc:local.*
+^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_over_winbind_with_site_netbios.fl2008r2dc:local.*
