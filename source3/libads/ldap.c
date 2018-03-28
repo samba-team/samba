@@ -412,7 +412,7 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 				     const char *realm)
 {
 	int count;
-	struct ip_service *ip_list;
+	struct ip_service *ip_list = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(6, ("resolve_and_ping_dns: (cldap) looking for realm '%s'\n",
@@ -421,6 +421,7 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 	status = get_sorted_dc_list(realm, sitename, &ip_list, &count,
 				    true);
 	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(ip_list);
 		return status;
 	}
 
