@@ -2359,6 +2359,70 @@ static bool deltest24(struct torture_context *tctx)
 	return correct;
 }
 
+/* Test 25 ... */
+static bool deltest25(struct torture_context *tctx,
+			struct smbcli_state *cli1,
+			struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	NTSTATUS status;
+	uint32_t disps[4] = {
+			NTCREATEX_DISP_SUPERSEDE,
+			NTCREATEX_DISP_OVERWRITE_IF,
+			NTCREATEX_DISP_CREATE,
+			NTCREATEX_DISP_OPEN_IF};
+	unsigned int i;
+
+	del_clean_area(cli1, cli2);
+
+	for (i = 0; i < sizeof(disps)/sizeof(disps[0]); i++) {
+		/* This should fail - we need to set DELETE_ACCESS. */
+
+		/*
+		 * A file or directory create with DELETE_ON_CLOSE but
+		 * without DELETE_ACCESS should fail with
+		 * NT_STATUS_INVALID_PARAMETER.
+		 */
+
+		fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
+				SEC_FILE_READ_DATA,
+				FILE_ATTRIBUTE_DIRECTORY,
+				NTCREATEX_SHARE_ACCESS_NONE,
+				disps[i],
+				NTCREATEX_OPTIONS_DIRECTORY|
+				NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+		torture_assert(tctx, fnum1 == -1,
+			talloc_asprintf(tctx, "open of %s succeeded "
+				"should have failed!",
+			dname));
+
+		/* Must fail with NT_STATUS_INVALID_PARAMETER. */
+		status = smbcli_nt_error(cli1->tree);
+		torture_assert_ntstatus_equal(tctx,
+			status,
+			NT_STATUS_INVALID_PARAMETER,
+			talloc_asprintf(tctx, "create of %s should return "
+				"NT_STATUS_INVALID_PARAMETER, got %s",
+			dname,
+			smbcli_errstr(cli1->tree)));
+
+		/*
+		 * This should fail - the directory
+		 * should not have been created.
+		 */
+		status = smbcli_getatr(cli1->tree, dname, NULL, NULL, NULL);
+		torture_assert_ntstatus_equal(tctx,
+			status,
+			NT_STATUS_OBJECT_NAME_NOT_FOUND,
+			talloc_asprintf(tctx, "getattr of %s succeeded should "
+				"not have been created !",
+			dname));
+	}
+
+	return true;
+}
+
 /*
   Test delete on close semantics.
  */
@@ -2401,6 +2465,7 @@ struct torture_suite *torture_test_delete(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "deltest22", deltest22);
 	torture_suite_add_2smb_test(suite, "deltest23", deltest23);
 	torture_suite_add_simple_test(suite, "deltest24", deltest24);
+	torture_suite_add_2smb_test(suite, "deltest25", deltest25);
 
 	return suite;
 }
