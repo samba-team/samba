@@ -477,31 +477,39 @@ static bool deltest9(struct torture_context *tctx, struct smbcli_state *cli1, st
 {
 	int fnum1 = -1;
 	NTSTATUS status;
+	uint32_t disps[4] = {
+			NTCREATEX_DISP_SUPERSEDE,
+			NTCREATEX_DISP_OVERWRITE_IF,
+			NTCREATEX_DISP_CREATE,
+			NTCREATEX_DISP_OPEN_IF};
+	unsigned int i;
 
 	del_clean_area(cli1, cli2);
 
-	/* This should fail - we need to set DELETE_ACCESS. */
+	for (i = 0; i < sizeof(disps)/sizeof(disps[0]); i++) {
+		/* This should fail - we need to set DELETE_ACCESS. */
 
-	/*
-	 * A file or directory create with DELETE_ON_CLOSE but
-	 * without DELETE_ACCESS should fail with
-	 * NT_STATUS_INVALID_PARAMETER.
-	 */
+		/*
+		 * A file or directory create with DELETE_ON_CLOSE but
+		 * without DELETE_ACCESS should fail with
+		 * NT_STATUS_INVALID_PARAMETER.
+		 */
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
-				      SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA,
-				      FILE_ATTRIBUTE_NORMAL, 
-				      NTCREATEX_SHARE_ACCESS_NONE, 
-				      NTCREATEX_DISP_OVERWRITE_IF, 
-				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
-	
-	torture_assert(tctx, fnum1 == -1, 
-				   talloc_asprintf(tctx, "open of %s succeeded should have failed!", 
-		       fname));
+		fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				NTCREATEX_SHARE_ACCESS_NONE,
+				disps[i],
+				NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 
-	/* Must fail with NT_STATUS_INVALID_PARAMETER. */
-	status = smbcli_nt_error(cli1->tree);
-	torture_assert_ntstatus_equal(tctx,
+		torture_assert(tctx, fnum1 == -1,
+			talloc_asprintf(tctx, "open of %s succeeded "
+				"should have failed!",
+			fname));
+
+		/* Must fail with NT_STATUS_INVALID_PARAMETER. */
+		status = smbcli_nt_error(cli1->tree);
+		torture_assert_ntstatus_equal(tctx,
 			status,
 			NT_STATUS_INVALID_PARAMETER,
 			talloc_asprintf(tctx, "create of %s should return "
@@ -509,14 +517,15 @@ static bool deltest9(struct torture_context *tctx, struct smbcli_state *cli1, st
 			fname,
 			smbcli_errstr(cli1->tree)));
 
-	/* This should fail - the file should not have been created. */
-	status = smbcli_getatr(cli1->tree, fname, NULL, NULL, NULL);
-	torture_assert_ntstatus_equal(tctx,
+		/* This should fail - the file should not have been created. */
+		status = smbcli_getatr(cli1->tree, fname, NULL, NULL, NULL);
+		torture_assert_ntstatus_equal(tctx,
 			status,
 			NT_STATUS_OBJECT_NAME_NOT_FOUND,
 			talloc_asprintf(tctx, "getattr of %s succeeded should "
 				"not have been created !",
 			fname));
+	}
 
 	return true;
 }
