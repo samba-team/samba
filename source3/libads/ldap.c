@@ -3471,6 +3471,7 @@ out:
 	if (name != NULL) {
 		ok = (strlen(name) > 0);
 	}
+	TALLOC_FREE(name);
 	return ok;
 }
 
