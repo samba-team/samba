@@ -87,7 +87,7 @@ class Registry(DbDatabase):
         :param key: Key path.
         :return: list with key names
         """
-        data = self.db.get(b"%s\x00" % key)
+        data = self.db.get(key + b"\x00")
         if data is None:
             return []
         (num, ) = struct.unpack("<L", data[0:4])
@@ -103,7 +103,7 @@ class Registry(DbDatabase):
         :param key: Key to retrieve values for.
         :return: Dictionary with value names as key, tuple with type and
             data as value."""
-        data = self.db.get(b"%s/%s\x00" % (REGISTRY_VALUE_PREFIX, key))
+        data = self.db.get(REGISTRY_VALUE_PREFIX + b'/' + key + b'\x00')
         if data is None:
             return {}
         ret = {}
@@ -177,13 +177,13 @@ class IdmapDatabase(DbDatabase):
         :param uid: UID to retrieve SID for.
         :return: A SID or None if no mapping was found.
         """
-        data = self.db.get(b"%s%d\0" % (IDMAP_USER_PREFIX, uid))
+        data = self.db.get(IDMAP_USER_PREFIX + str(uid).encode() + b'\0')
         if data is None:
             return data
         return data.rstrip(b"\0")
 
     def get_group_sid(self, gid):
-        data = self.db.get(b"%s%d\0" % (IDMAP_GROUP_PREFIX, gid))
+        data = self.db.get(IDMAP_GROUP_PREFIX + str(gid).encode() + b'\0')
         if data is None:
             return data
         return data.rstrip(b"\0")
