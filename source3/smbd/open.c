@@ -5074,6 +5074,18 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		goto fail;
 	}
 
+	/*
+	 * Files or directories can't be opened DELETE_ON_CLOSE without
+	 * delete access.
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13358
+	 */
+	if (create_options & FILE_DELETE_ON_CLOSE) {
+		if ((access_mask & DELETE_ACCESS) == 0) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+	}
+
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && is_ntfs_stream_smb_fname(smb_fname)
 	    && (!(private_flags & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
