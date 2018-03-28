@@ -11,8 +11,10 @@ bld.SAMBA_LIBRARY('samba-policy',
 	)
 
 for env in bld.gen_python_environments():
-    bld.SAMBA_PYTHON('py_policy',
-	    source='pypolicy.c',
-	    public_deps='samba-policy pytalloc-util',
-    	    realname='samba/policy.so'
-	    )
+    pytalloc_util = bld.pyembed_libname('pytalloc-util')
+    bld.SAMBA_PYTHON(
+        'py_policy',
+        source='pypolicy.c',
+        public_deps=' '.join(['samba-policy', pytalloc_util]),
+        realname='samba/policy.so'
+    )
