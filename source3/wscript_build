@@ -1298,9 +1298,11 @@ bld.SAMBA3_BINARY('vlp',
 
 
 for env in bld.gen_python_environments():
+    pyrpc_util = bld.pyembed_libname('pyrpc_util')
+    pytalloc_util = bld.pyembed_libname('pytalloc-util')
     bld.SAMBA3_PYTHON('pysmbd',
                   source='smbd/pysmbd.c',
-                  deps='smbd_base pyrpc_util pytalloc-util',
+                  deps=' '.join(['smbd_base', pyrpc_util, pytalloc_util]),
                   realname='samba/samba3/smbd.so'
                   )
 
