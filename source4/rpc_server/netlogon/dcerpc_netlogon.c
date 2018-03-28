@@ -2749,14 +2749,24 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 	return NT_STATUS_OK;
 }
 
+struct dcesrv_netr_DsRGetDCName_base_state {
+	struct dcesrv_call_state *dce_call;
+	TALLOC_CTX *mem_ctx;
 
-/*
-  netr_DsRGetDCNameEx2
-*/
-static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
-					  TALLOC_CTX *mem_ctx,
-					  struct netr_DsRGetDCNameEx2 *r)
+	struct netr_DsRGetDCNameEx2 r;
+
+	struct {
+		struct netr_DsRGetDCName *dc;
+		struct netr_DsRGetDCNameEx *dcex;
+		struct netr_DsRGetDCNameEx2 *dcex2;
+	} _r;
+};
+
+static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName_base_state *state)
 {
+	struct dcesrv_call_state *dce_call = state->dce_call;
+	TALLOC_CTX *mem_ctx = state->mem_ctx;
+	struct netr_DsRGetDCNameEx2 *r = &state->r;
 	struct ldb_context *sam_ctx;
 	struct netr_DsRGetDCNameInfo *info;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
@@ -2774,7 +2784,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 
 	ZERO_STRUCTP(r->out.info);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+	sam_ctx = samdb_connect(state, dce_call->event_ctx, lp_ctx,
 				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_DS_UNAVAILABLE;
@@ -2782,13 +2792,13 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 
 	local_address = dcesrv_connection_get_local_address(dce_call->conn);
 	if (tsocket_address_is_inet(local_address, "ip")) {
-		local_addr = tsocket_address_inet_addr_string(local_address, mem_ctx);
+		local_addr = tsocket_address_inet_addr_string(local_address, state);
 		W_ERROR_HAVE_NO_MEMORY(local_addr);
 	}
 
 	remote_address = dcesrv_connection_get_remote_address(dce_call->conn);
 	if (tsocket_address_is_inet(remote_address, "ip")) {
-		remote_addr = tsocket_address_inet_addr_string(remote_address, mem_ctx);
+		remote_addr = tsocket_address_inet_addr_string(remote_address, state);
 		W_ERROR_HAVE_NO_MEMORY(remote_addr);
 	}
 
@@ -2832,7 +2842,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Proof server site parameter "site_name" if it was specified */
-	server_site_name = samdb_server_site_name(sam_ctx, mem_ctx);
+	server_site_name = samdb_server_site_name(sam_ctx, state);
 	W_ERROR_HAVE_NO_MEMORY(server_site_name);
 	if ((r->in.site_name != NULL) && (strcasecmp(r->in.site_name,
 						     server_site_name) != 0)) {
@@ -2840,7 +2850,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	}
 
 	guid_str = r->in.domain_guid != NULL ?
-		 GUID_string(mem_ctx, r->in.domain_guid) : NULL;
+		 GUID_string(state, r->in.domain_guid) : NULL;
 
 	status = fill_netlogon_samlogon_response(sam_ctx, mem_ctx,
 						 r->in.domain_name,
@@ -2928,28 +2938,56 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 }
 
 /*
+  netr_DsRGetDCNameEx2
+*/
+static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
+					  TALLOC_CTX *mem_ctx,
+					  struct netr_DsRGetDCNameEx2 *r)
+{
+	struct dcesrv_netr_DsRGetDCName_base_state *state;
+
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_DsRGetDCName_base_state);
+	if (state == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
+
+	state->r = *r;
+	state->_r.dcex2 = r;
+
+	return dcesrv_netr_DsRGetDCName_base_call(state);
+}
+
+/*
   netr_DsRGetDCNameEx
 */
 static WERROR dcesrv_netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct netr_DsRGetDCNameEx *r)
 {
-	struct netr_DsRGetDCNameEx2 r2;
-	WERROR werr;
+	struct dcesrv_netr_DsRGetDCName_base_state *state;
 
-	ZERO_STRUCT(r2);
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_DsRGetDCName_base_state);
+	if (state == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
-	r2.in.server_unc = r->in.server_unc;
-	r2.in.client_account = NULL;
-	r2.in.mask = 0;
-	r2.in.domain_guid = r->in.domain_guid;
-	r2.in.domain_name = r->in.domain_name;
-	r2.in.site_name = r->in.site_name;
-	r2.in.flags = r->in.flags;
-	r2.out.info = r->out.info;
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
 
-	werr = dcesrv_netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
+	state->r.in.server_unc = r->in.server_unc;
+	state->r.in.client_account = NULL;
+	state->r.in.mask = 0;
+	state->r.in.domain_guid = r->in.domain_guid;
+	state->r.in.domain_name = r->in.domain_name;
+	state->r.in.site_name = r->in.site_name;
+	state->r.in.flags = r->in.flags;
+	state->r.out.info = r->out.info;
 
-	return werr;
+	state->_r.dcex = r;
+
+	return dcesrv_netr_DsRGetDCName_base_call(state);
 }
 
 /*
@@ -2962,24 +3000,29 @@ static WERROR dcesrv_netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TAL
 static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_DsRGetDCName *r)
 {
-	struct netr_DsRGetDCNameEx2 r2;
-	WERROR werr;
+	struct dcesrv_netr_DsRGetDCName_base_state *state;
 
-	ZERO_STRUCT(r2);
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_DsRGetDCName_base_state);
+	if (state == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
-	r2.in.server_unc = r->in.server_unc;
-	r2.in.client_account = NULL;
-	r2.in.mask = 0;
-	r2.in.domain_name = r->in.domain_name;
-	r2.in.domain_guid = r->in.domain_guid;
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
 
-	r2.in.site_name = NULL; /* this is correct, we should ignore site GUID */
-	r2.in.flags = r->in.flags;
-	r2.out.info = r->out.info;
+	state->r.in.server_unc = r->in.server_unc;
+	state->r.in.client_account = NULL;
+	state->r.in.mask = 0;
+	state->r.in.domain_name = r->in.domain_name;
+	state->r.in.domain_guid = r->in.domain_guid;
 
-	werr = dcesrv_netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
+	state->r.in.site_name = NULL; /* this is correct, we should ignore site GUID */
+	state->r.in.flags = r->in.flags;
+	state->r.out.info = r->out.info;
 
-	return werr;
+	state->_r.dc = r;
+
+	return dcesrv_netr_DsRGetDCName_base_call(state);
 }
 /*
   netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN
