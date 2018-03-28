@@ -528,6 +528,7 @@ int main(int argc, const char *argv[])
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = 0;
+	struct tevent_context *ev;
 	struct messaging_context *msg_ctx = NULL;
 	char *db_path;
 	bool ok;
@@ -618,7 +619,14 @@ int main(int argc, const char *argv[])
 	 * This implicitly initializes the global ctdbd connection,
 	 * usable by the db_open() calls further down.
 	 */
-	msg_ctx = messaging_init(NULL, samba_tevent_context_init(NULL));
+	ev = samba_tevent_context_init(NULL);
+	if (ev == NULL) {
+		fprintf(stderr, "samba_tevent_context_init failed\n");
+		ret = -1;
+		goto done;
+	}
+
+	msg_ctx = messaging_init(NULL, ev);
 	if (msg_ctx == NULL) {
 		fprintf(stderr, "messaging_init failed\n");
 		ret = -1;
