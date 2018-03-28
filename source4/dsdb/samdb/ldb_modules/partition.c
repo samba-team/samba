@@ -1016,7 +1016,8 @@ int partition_del_trans(struct ldb_module *module)
 							      struct partition_private_data);
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+		if (ldb_module_flags(ldb_module_get_ctx(module)) &
+		    LDB_FLG_ENABLE_TRACING) {
 			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_del_trans() -> %s",
 				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
 		}
@@ -1035,7 +1036,8 @@ int partition_del_trans(struct ldb_module *module)
 	}
 	data->in_transaction--;
 
-	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+	if (ldb_module_flags(ldb_module_get_ctx(module)) &
+	    LDB_FLG_ENABLE_TRACING) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_del_trans() -> (metadata partition)");
 	}
 	ret = ldb_next_del_trans(module);
