@@ -875,6 +875,7 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 		 * order to be sure.
 		 */
 		if (dsdb_attribute_by_attributeID_id(schema, msds_intid)) {
+			id_exists = true;
 			msds_intid = generate_random() % 0X3FFFFFFF;
 			msds_intid += 0x80000000;
 			continue;
