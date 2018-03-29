@@ -215,6 +215,17 @@ def get_partition_maps(samdb):
     return short_to_long, long_to_short
 
 
+def get_partition(samdb, part):
+    # Allow people to say "--partition=DOMAIN" rather than
+    # "--partition=DC=blah,DC=..."
+    if part is not None:
+        short_partitions, long_partitions = get_partition_maps(samdb)
+        part = short_partitions.get(part.upper(), part)
+        if part not in long_partitions:
+            raise CommandError("unknown partition %s" % partition)
+    return part
+
+
 class cmd_reps(GraphCommand):
     "repsFrom/repsTo from every DSA"
 
@@ -235,13 +246,7 @@ class cmd_reps(GraphCommand):
         local_kcc, dsas = self.get_kcc_and_dsas(H, lp, creds)
         unix_now = local_kcc.unix_now
 
-        # Allow people to say "--partition=DOMAIN" rather than
-        # "--partition=DC=blah,DC=..."
-        short_partitions, long_partitions = get_partition_maps(local_kcc.samdb)
-        if partition is not None:
-            partition = short_partitions.get(partition.upper(), partition)
-            if partition not in long_partitions:
-                raise CommandError("unknown partition %s" % partition)
+        partition = get_partition(local_kcc.samdb, partition)
 
         # nc_reps is an autovivifying dictionary of dictionaries of lists.
         # nc_reps[partition]['current' | 'needed'] is a list of
@@ -306,6 +311,8 @@ class cmd_reps(GraphCommand):
 
         all_edges = {'needed':  {'to': [], 'from': []},
                      'current': {'to': [], 'from': []}}
+
+        short_partitions, long_partitions = get_partition_maps(local_kcc.samdb)
 
         for partname, part in nc_reps.items():
             for state, edgelists in all_edges.items():
