@@ -286,6 +286,9 @@ class GPOStorage:
 class gp_ext(object):
     __metaclass__ = ABCMeta
 
+    def __init__(self, logger):
+        self.logger = logger
+
     @abstractmethod
     def list(self, rootpath):
         pass
@@ -423,9 +426,6 @@ class gp_sec_ext(gp_ext):
     '''
 
     count = 0
-
-    def __init__(self, logger):
-        self.logger = logger
 
     def __str__(self):
         return "Security GPO extension"
