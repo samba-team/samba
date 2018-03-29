@@ -234,22 +234,6 @@
   </refsect1>
 
   <refsect1>
-    <title>ENVIRONMENT</title>
-
-    <variablelist>
-      <varlistentry><term><envar>CTDB_BASE</envar></term>
-        <listitem>
-          <para>
-	    Directory containing CTDB configuration files.  The
-	    default is <filename>/usr/local/etc/ctdb</filename>.
-	  </para>
-        </listitem>
-      </varlistentry>
-
-    </variablelist>
-  </refsect1>
-
-  <refsect1>
     <title>FILES</title>
 
     <variablelist>
@@ -264,8 +248,7 @@
 	    is given precedence.  If a
 	    relative path is specified and no corresponding file
 	    exists relative to the current directory then the file is
-	    also searched for in the <filename>$CTDB_BASE</filename>
-	    directory.
+	    also searched for in the CTDB configuration directory.
 	  </para>
 	  <para>
 	    Otherwise the default is

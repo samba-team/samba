@@ -66,15 +66,6 @@
     <variablelist>
 
       <varlistentry>
-	<term>CTDB_BASE=<parameter>DIRECTORY</parameter></term>
-	<listitem>
-	  <para>
-	    DIRECTORY containing CTDB scripts and configuration files.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_INIT_STYLE=debian|redhat|suse</term>
 	<listitem>
 	  <para>
@@ -1448,7 +1439,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	    an event script times out.
 	  </para>
 	  <para>
-	    Default is <filename><varname>CTDB_BASE</varname>/debug-hung-script.sh</filename>.
+	    Default is <filename>/usr/local/etc/ctdb/debug-hung-script.sh</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -1494,7 +1485,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  </para>
 	  <para>
 	    No default, usually
-	    <filename><varname>CTDB_BASE</varname>/debug_locks.sh</filename>.
+	    <filename>/usr/local/etc/ctdb/debug_locks.sh</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
