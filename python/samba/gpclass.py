@@ -298,8 +298,35 @@ class gp_ext(object):
         pass
 
     @abstractmethod
-    def parse(self, afile, ldb, conn, gp_db, lp):
+    def read(self, policy):
         pass
+
+    def parse(self, afile, ldb, conn, gp_db, lp):
+        self.ldb = ldb
+        self.gp_db = gp_db
+        self.lp = lp
+
+        # Fixing the bug where only some Linux Boxes capitalize MACHINE
+        try:
+            blist = afile.split('/')
+            idx = afile.lower().split('/').index('machine')
+            for case in [
+                            blist[idx].upper(),
+                            blist[idx].capitalize(),
+                            blist[idx].lower()
+                        ]:
+                bfile = '/'.join(blist[:idx]) + '/' + case + '/' + \
+                    '/'.join(blist[idx+1:])
+                try:
+                    return self.read(conn.loadfile(bfile.replace('/', '\\')))
+                except NTSTATUSError:
+                    continue
+        except ValueError:
+            try:
+                return self.read(conn.loadfile(afile.replace('/', '\\')))
+            except Exception as e:
+                self.logger.error(str(e))
+                return None
 
     @abstractmethod
     def __str__(self):
@@ -465,11 +492,10 @@ class gp_sec_ext(gp_ext):
                                    }
                }
 
-    def read_inf(self, path, conn):
+    def read(self, policy):
         ret = False
         inftable = self.apply_map()
 
-        policy = conn.loadfile(path.replace('/', '\\'))
         current_section = None
 
         # So here we would declare a boolean,
@@ -498,28 +524,4 @@ class gp_sec_ext(gp_ext):
                            value).update_samba()
                     self.gp_db.commit()
         return ret
-
-    def parse(self, afile, ldb, conn, gp_db, lp):
-        self.ldb = ldb
-        self.gp_db = gp_db
-        self.lp = lp
-
-        # Fixing the bug where only some Linux Boxes capitalize MACHINE
-        if afile.endswith('inf'):
-            try:
-                blist = afile.split('/')
-                idx = afile.lower().split('/').index('machine')
-                for case in [blist[idx].upper(), blist[idx].capitalize(),
-                             blist[idx].lower()]:
-                    bfile = '/'.join(blist[:idx]) + '/' + case + '/' + \
-                            '/'.join(blist[idx+1:])
-                    try:
-                        return self.read_inf(bfile, conn)
-                    except NTSTATUSError:
-                        continue
-            except ValueError:
-                try:
-                    return self.read_inf(afile, conn)
-                except:
-                    return None
 
