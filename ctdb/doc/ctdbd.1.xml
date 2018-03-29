@@ -301,26 +301,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--notification-script=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME specifying a script to be invoked by ctdbd when
-	    certain state changes occur.
-	  </para>
-	  <para>
-	    The default is
-	    <filename>/usr/local/etc/ctdb/notify.sh</filename>.
-	  </para>
-	  <para>
-	    Please see the <citetitle>NOTIFICATIONS</citetitle>
-	    section in <citerefentry><refentrytitle>ctdb</refentrytitle>
-	    <manvolnum>7</manvolnum></citerefentry> for more
-	    information.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--reclock=<parameter>LOCK</parameter></term>
 	<listitem>
 	  <para>

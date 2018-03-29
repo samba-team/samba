@@ -43,7 +43,6 @@ static struct {
 	const char *debuglevel;
 	const char *transport;
 	const char *myaddress;
-	const char *notification_script;
 	const char *logging;
 	const char *recovery_lock;
 	const char *db_dir;
@@ -115,7 +114,6 @@ int main(int argc, const char *argv[])
 		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
-		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
@@ -312,14 +310,9 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	if (options.notification_script != NULL) {
-		ctdb->notification_script = talloc_strdup(
-				ctdb, options.notification_script);
-	} else {
-		ctdb->notification_script = talloc_asprintf(ctdb,
-							    "%s/notify.sh",
-							    ctdb_base);
-	}
+	ctdb->notification_script = talloc_asprintf(ctdb,
+						    "%s/notify.sh",
+						    ctdb_base);
 	if (ctdb->notification_script == NULL) {
 		D_ERR("Unable to set notification script\n");
 		exit(1);
