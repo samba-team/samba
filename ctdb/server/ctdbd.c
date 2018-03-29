@@ -308,9 +308,10 @@ int main(int argc, const char *argv[])
 	}
 
 	if (options.notification_script != NULL) {
-		ret = ctdb_set_notification_script(ctdb, options.notification_script);
-		if (ret == -1) {
-			DEBUG(DEBUG_ERR,("Unable to setup notification script\n"));
+		ctdb->notification_script = talloc_strdup(
+				ctdb, options.notification_script);
+		if (ctdb->notification_script == NULL) {
+			D_ERR("Unable to set notification script\n");
 			exit(1);
 		}
 	}
