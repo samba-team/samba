@@ -349,7 +349,7 @@
 	<term>CTDB_NOTIFY_SCRIPT=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
-	    No default, usually
+	    Default is
 	    <filename>/usr/local/etc/ctdb/notify.sh</filename>.  Corresponds to
 	    <option>--notification-script</option>.
 	  </para>

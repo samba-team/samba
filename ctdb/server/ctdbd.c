@@ -315,10 +315,14 @@ int main(int argc, const char *argv[])
 	if (options.notification_script != NULL) {
 		ctdb->notification_script = talloc_strdup(
 				ctdb, options.notification_script);
-		if (ctdb->notification_script == NULL) {
-			D_ERR("Unable to set notification script\n");
-			exit(1);
-		}
+	} else {
+		ctdb->notification_script = talloc_asprintf(ctdb,
+							    "%s/notify.sh",
+							    ctdb_base);
+	}
+	if (ctdb->notification_script == NULL) {
+		D_ERR("Unable to set notification script\n");
+		exit(1);
 	}
 
 	ctdb->valgrinding = (options.valgrinding == 1);

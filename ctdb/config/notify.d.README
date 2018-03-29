@@ -4,12 +4,6 @@ the event, which is one of:
 
   init, setup, startup, unhealthy, healthy
 
-To use notifications with this directory then you need to set:
-
-  CTDB_NOTIFY_SCRIPT=/etc/ctdb/notify.sh
-
-in your CTDB configuration file.
-
 An example script that sends SNMP traps for unhealthy/healthy might
 look like this:
 

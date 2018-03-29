@@ -308,11 +308,11 @@
 	    certain state changes occur.
 	  </para>
 	  <para>
-	    This file is usually
+	    The default is
 	    <filename>/usr/local/etc/ctdb/notify.sh</filename>.
 	  </para>
 	  <para>
-	    Please see the <citetitle>NOTIFICATION SCRIPT</citetitle>
+	    Please see the <citetitle>NOTIFICATIONS</citetitle>
 	    section in <citerefentry><refentrytitle>ctdb</refentrytitle>
 	    <manvolnum>7</manvolnum></citerefentry> for more
 	    information.

@@ -958,24 +958,28 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
   </refsect1>
 
   <refsect1>
-    <title>NOTIFICATION SCRIPT</title>
+    <title>NOTIFICATIONS</title>
 
     <para>
       When certain state changes occur in CTDB, it can be configured
-      to perform arbitrary actions via a notification script.  For
-      example, sending SNMP traps or emails when a node becomes
-      unhealthy or similar.
+      to perform arbitrary actions via notifications.  For example,
+      sending SNMP traps or emails when a node becomes unhealthy or
+      similar.
     </para>
+
     <para>
-      This is activated by setting the
+      The default notification script is
+      <filename>/usr/local/etc/ctdb/notify.sh</filename>.  It executes
+      files in <filename>/usr/local/etc/ctdb/notify.d/</filename>,
+      which must be executable.
+    </para>
+
+    <para>
+      This notification script can be changed via the
       <varname>CTDB_NOTIFY_SCRIPT</varname> configuration variable.
-      The specified script must be executable.  
+      The specified script must be executable.
     </para>
-    <para>
-      Use of the provided <filename>/usr/local/etc/ctdb/notify.sh</filename>
-      script is recommended.  It executes files in
-      <filename>/usr/local/etc/ctdb/notify.d/</filename>.
-    </para>
+
     <para>
       CTDB currently generates notifications after CTDB changes to
       these states:
