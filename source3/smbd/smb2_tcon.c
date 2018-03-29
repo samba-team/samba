@@ -270,6 +270,21 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
+	/* Handle non-DFS clients attempting connections to msdfs proxy */
+	if (lp_host_msdfs()) {
+		char *proxy = lp_msdfs_proxy(talloc_tos(), snum);
+
+		if ((proxy != NULL) && (*proxy != '\0')) {
+			DBG_NOTICE("refusing connection to dfs proxy share "
+				   "'%s' (pointing to %s)\n",
+				   service,
+				   proxy);
+			TALLOC_FREE(proxy);
+			return NT_STATUS_BAD_NETWORK_NAME;
+		}
+		TALLOC_FREE(proxy);
+	}
+
 	if ((lp_smb_encrypt(snum) >= SMB_SIGNING_DESIRED) &&
 	    (conn->smb2.server.cipher != 0))
 	{
