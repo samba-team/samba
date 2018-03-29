@@ -779,6 +779,9 @@ sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
     else:
         replacement_shebang = "#!/usr/bin/env %s\n" % task.env["PYTHON"]
 
+    gp_pattern='sys.path.insert(0, "bin/py_gp")'
+    gp_replacement="""sys.path.insert(0, "%s")""" % task.env["STATEDIR"]
+
     installed_location=task.outputs[0].bldpath(task.env)
     source_file = open(task.inputs[0].srcpath(task.env))
     installed_file = open(installed_location, 'w')
@@ -790,6 +793,8 @@ sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
             newline = replacement_shebang
         elif pattern in line:
             newline = line.replace(pattern, replacement)
+        elif gp_pattern and gp_pattern in line:
+            newline = line.replace(gp_pattern, gp_replacement)
         installed_file.write(newline)
         lineno = lineno + 1
     installed_file.close()
@@ -840,7 +845,8 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
         inst_file = file + '.inst'
         bld.SAMBA_GENERATOR('python_%s' % destname,
                             rule=copy_and_fix_python_path,
-                            dep_vars=["PYTHON","PYTHON_SPECIFIED","PYTHONDIR","PYTHONARCHDIR"],
+                            dep_vars=["PYTHON","PYTHON_SPECIFIED",
+                                      "PYTHONDIR","PYTHONARCHDIR","STATEDIR"],
                             source=file,
                             target=inst_file)
         file = inst_file

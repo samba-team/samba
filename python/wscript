@@ -82,3 +82,9 @@ def build(bld):
                              installdir='python')
 
             bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'samba/**/*.py', flat=False)
+        for env in bld.gen_python_environments():
+            bld.SAMBA_SCRIPT('samba_python_files',
+                             pattern='gp_exts/**/*.py',
+                             installdir='py_gp')
+
+            bld.INSTALL_WILDCARD('${STATEDIR}', 'gp_exts/**/*.py', flat=False)
