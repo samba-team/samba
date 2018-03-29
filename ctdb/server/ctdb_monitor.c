@@ -46,16 +46,6 @@ static void ctdb_check_health(struct tevent_context *ev,
 			      struct tevent_timer *te,
 			      struct timeval t, void *private_data);
 
-/*
-  setup the notification script
-*/
-int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script)
-{
-	ctdb->notification_script = talloc_strdup(ctdb, script);
-	CTDB_NO_MEMORY(ctdb, ctdb->notification_script);
-	return 0;
-}
-
 static int ctdb_run_notification_script_child(struct ctdb_context *ctdb, const char *event)
 {
 	struct stat st;
