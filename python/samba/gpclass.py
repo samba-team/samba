@@ -302,7 +302,7 @@ class gp_ext(object):
     def __str__(self):
         pass
 
-class inf_to():
+class gp_ext_setter():
     __metaclass__ = ABCMeta
 
     def __init__(self, logger, ldb, gp_db, lp, attribute, val):
@@ -328,7 +328,7 @@ class inf_to():
     def __str__(self):
         pass
 
-class inf_to_kdc_tdb(inf_to):
+class inf_to_kdc_tdb(gp_ext_setter):
     def mins_to_hours(self):
         return '%d' % (int(self.val)/60)
 
@@ -357,7 +357,7 @@ class inf_to_kdc_tdb(inf_to):
     def __str__(self):
         return 'Kerberos Policy'
 
-class inf_to_ldb(inf_to):
+class inf_to_ldb(gp_ext_setter):
     '''This class takes the .inf file parameter (essentially a GPO file mapped
     to a GUID), hashmaps it to the Samba parameter, which then uses an ldb
     object to update the parameter to Samba4. Not registry oriented whatsoever.
