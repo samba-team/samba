@@ -4,8 +4,9 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-	This parameter specifies the size of the directory name cache.
-	It will be needed to turn this off for *BSD systems.
+	This parameter specifies the size of the directory name cache for SMB1
+	connections. It is not used for SMB2. It will be needed to turn this off
+	for *BSD systems.
 	</para>
 
 </description>
