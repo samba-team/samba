@@ -1622,7 +1622,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       <member><filename>/usr/local/etc/ctdb/ctdbd.conf</filename></member>
       <member><filename>/etc/sysconfig/ctdb</filename></member>
       <member><filename>/etc/default/ctdb</filename></member>
-      <member><filename>/usr/local/etc/ctdb/sysconfig/ctdb</filename></member>
     </simplelist>
   </refsect1>
 
