@@ -346,17 +346,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_NOTIFY_SCRIPT=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    Default is
-	    <filename>/usr/local/etc/ctdb/notify.sh</filename>.  Corresponds to
-	    <option>--notification-script</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_MAX_PERSISTENT_CHECK_ERRORS=<parameter>NUM</parameter></term>
 	<listitem>
 	  <para>
