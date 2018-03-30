@@ -5032,7 +5032,7 @@ static bool test_smb2_kernel_oplocks8(struct torture_context *tctx,
 
 	/* Take the oplock locally in a sub-process. */
 	ret = wait_for_child_oplock(tctx, localdir, fname);
-	torture_assert_goto(tctx, ret = true, ret, done,
+	torture_assert_goto(tctx, ret, ret, done,
 		"Wait for child process failed.\n");
 
 	/*
