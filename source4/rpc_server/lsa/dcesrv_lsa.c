@@ -2657,7 +2657,6 @@ static NTSTATUS dcesrv_lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_ca
 				 1+(r->in.max_size/LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER));
 
 	r->out.domains->domains = entries + *r->in.resume_handle;
-	r->out.domains->count = r->out.domains->count;
 
 	if (r->out.domains->count < count - *r->in.resume_handle) {
 		*r->out.resume_handle = *r->in.resume_handle + r->out.domains->count;
