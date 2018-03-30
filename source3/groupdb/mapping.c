@@ -237,9 +237,13 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 
 		if (fd != 0) {
 			fstring output;
+			ssize_t nread;
 
 			*new_gid = 0;
-			if (read(fd, output, sizeof(output)) > 0) {
+
+			nread = read(fd, output, sizeof(output)-1);
+			if (nread > 0) {
+				output[nread] = '\0';
 				*new_gid = (gid_t)strtoul(output, NULL, 10);
 			}
 
