@@ -1010,7 +1010,7 @@ static void tstream_smbXcli_np_readv_trans_done(struct tevent_req *subreq)
 	cli_nps->read.buf = talloc_array(cli_nps, uint8_t, received);
 	if (cli_nps->read.buf == NULL) {
 		TALLOC_FREE(subreq);
-		tevent_req_nomem(cli_nps->read.buf, req);
+		tevent_req_oom(req);
 		return;
 	}
 	memcpy(cli_nps->read.buf, rcvbuf, received);
