@@ -577,7 +577,6 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	if (!req) {
 		return NULL;
 	}
-	ZERO_STRUCTP(state);
 	state->caller.ev = ev;
 	state->req = req;
 	state->caller.cldap = cldap;
