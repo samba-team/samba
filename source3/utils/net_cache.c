@@ -456,6 +456,7 @@ static int net_cache_samlogon_show(struct net_context *c,
 				      &num_user_sids,
 				      true);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(user_sids);
 		d_printf("sid_array_from_info3 failed for %s\n", sid_str);
 		return -1;
 	}
@@ -464,6 +465,8 @@ static int net_cache_samlogon_show(struct net_context *c,
 		d_printf("SID %2" PRIu32 ": %s\n",
 			 i, sid_string_dbg(&user_sids[i]));
 	}
+
+	TALLOC_FREE(user_sids);
 
 	return 0;
 }
