@@ -5079,6 +5079,13 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if (lease != NULL) {
 		uint16_t epoch = lease->lease_epoch;
 		uint16_t version = lease->lease_version;
+
+		if (req == NULL) {
+			DBG_WARNING("Got lease on internal open\n");
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto fail;
+		}
+
 		status = lease_match(conn,
 				req,
 				&lease->lease_key,
