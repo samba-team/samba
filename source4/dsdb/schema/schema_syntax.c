@@ -662,7 +662,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_validate_ldb(const struct dsdb_syntax_ctx *
 		}
 
 		if (attr->rangeUpper) {
-			if ((int32_t)t > (int32_t)*attr->rangeLower) {
+			if ((int32_t)t > (int32_t)*attr->rangeUpper) {
 				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 			}
 		}
