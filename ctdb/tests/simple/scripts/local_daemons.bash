@@ -115,7 +115,7 @@ setup_ctdb ()
 	local pnn
 	for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
 		setup_ctdb_base "$SIMPLE_TESTS_VAR_DIR" "node.${pnn}" \
-				functions
+				functions notify.sh
 
 		cp "$nodes_file" "${CTDB_BASE}/nodes"
 
