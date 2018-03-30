@@ -179,12 +179,14 @@ krb5_error_code kt_copy_one_principal(krb5_context context,
 
     ret = krb5_kt_resolve (context, from, &src_keytab);
     if (ret) {
+	krb5_free_principal(context, princ);
 	krb5_set_error_message(context, ret, "resolving src keytab `%s'", from);
 	return ret;
     }
 
     ret = krb5_kt_resolve (context, to, &dst_keytab);
     if (ret) {
+	krb5_free_principal(context, princ);
 	krb5_kt_close (context, src_keytab);
 	krb5_set_error_message(context, ret, "resolving dst keytab `%s'", to);
 	return ret;
@@ -223,6 +225,7 @@ krb5_error_code kt_copy_one_principal(krb5_context context,
 	}
     }
 
+    krb5_free_principal(context, princ);
     krb5_kt_close (context, src_keytab);
     krb5_kt_close (context, dst_keytab);
     return ret;
