@@ -66,6 +66,7 @@ static krb5_error_code copy_one_entry(krb5_context context,
 					KRB5_KEY_TYPE(KRB5_KT_KEY(&entry)),
 					&etype_str);
     if(ret) {
+        krb5_free_unparsed_name(context, name_str);
 	krb5_set_error_message(context, ret, "krb5_enctype_to_string");
 	etype_str = NULL; /* XXX */
 	return ret;
