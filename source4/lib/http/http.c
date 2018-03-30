@@ -471,6 +471,7 @@ static int http_read_response_next_vector(struct tstream_context *stream,
 	/* Sanity checks */
 	if (!stream || !private_data || !_vector || !_count) {
 		DEBUG(0, ("%s: Invalid Parameter\n", __func__));
+		return -1;
 	}
 
 	state =	talloc_get_type_abort(private_data, struct http_read_response_state);
