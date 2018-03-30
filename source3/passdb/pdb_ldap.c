@@ -6054,7 +6054,7 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	char *filter;
 	char *escape_username;
 	char *gidstr;
-	const char *dn = NULL;
+	char *dn = NULL;
 	gid_t gid;
 	int rc;
 
@@ -6125,11 +6125,12 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "gidNumber", gidstr);
 
 	if (mods == NULL) {
+		TALLOC_FREE(dn);
 		return NT_STATUS_OK;
 	}
 
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
-
+	TALLOC_FREE(dn);
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("ldapsam_set_primary_group: failed to modify [%s] primary group to [%s]\n",
 			 pdb_get_username(sampass), gidstr));
