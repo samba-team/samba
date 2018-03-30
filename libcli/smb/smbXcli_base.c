@@ -2105,10 +2105,10 @@ static NTSTATUS smb1cli_inbuf_parse_chain(uint8_t *buf, TALLOC_CTX *mem_ctx,
 		wct_ofs = SVAL(cur[0].iov_base, 2);
 
 		if (wct_ofs < taken) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto inval;
 		}
 		if (wct_ofs > buflen) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto inval;
 		}
 
 		/*
