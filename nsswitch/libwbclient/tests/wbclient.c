@@ -296,6 +296,7 @@ static bool test_wbc_users(struct torture_context *tctx)
 	char *name = NULL;
 	char *sid_string = NULL;
 	wbcErr ret = false;
+	char separator;
 
 	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
 		"%s", "wbcInterfaceDetails failed");
@@ -306,6 +307,7 @@ static bool test_wbc_users(struct torture_context *tctx)
 			    ret,
 			    fail,
 			    "Failed to allocate domain_name");
+	separator = details->winbind_separator;
 	wbcFreeMemory(details);
 	details = NULL;
 
@@ -323,9 +325,38 @@ static bool test_wbc_users(struct torture_context *tctx)
 		struct wbcDomainSid sid;
 		enum wbcSidType name_type;
 		uint32_t num_sids;
+		const char *user;
+		char *c;
+
+		c = strchr(users[i], separator);
+
+		if (c == NULL) {
+			/*
+			 * NT4 DC
+			 * user name does not contain DOMAIN SEPARATOR prefix.
+			 */
+
+			user = users[i];
+		} else {
+			/*
+			 * AD DC
+			 * user name starts with DOMAIN SEPARATOR prefix.
+			 */
+			const char *dom;
+
+			*c = '\0';
+			dom = users[i];
+			user = c + 1;
+
+			torture_assert_str_equal_goto(tctx, dom, domain_name,
+						      ret, fail, "Domain part "
+						      "of user name does not "
+						      "match domain name.\n");
+		}
 
 		torture_assert_wbc_ok_goto_fail(tctx,
-						wbcLookupName(domain_name, users[i], &sid, &name_type),
+						wbcLookupName(domain_name, user,
+							      &sid, &name_type),
 						"wbcLookupName of %s failed",
 						users[i]);
 		torture_assert_int_equal_goto(tctx,
