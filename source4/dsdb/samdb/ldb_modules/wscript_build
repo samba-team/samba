@@ -7,9 +7,9 @@ bld.SAMBA_LIBRARY('dsdb-module',
 	grouping_library=True)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
-	source='util.c acl_util.c schema_util.c netlogon.c',
+	source='util.c acl_util.c schema_util.c netlogon.c audit_util.c',
 	autoproto='util_proto.h',
-	deps='ldb ndr samdb-common samba-security'
+	deps='ldb ndr samdb-common samba-security audit_logging'
 	)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
@@ -40,6 +40,35 @@ bld.SAMBA_BINARY('test_encrypted_secrets',
             DSDB_MODULE_HELPERS
         ''',
         install=False)
+#
+# These tests require JANSSON, so we only build them if we are doing a selftest
+# build.
+#
+if bld.CONFIG_GET('ENABLE_SELFTEST'):
+    bld.SAMBA_BINARY('test_audit_util',
+            source='tests/test_audit_util.c',
+            deps='''
+                talloc
+                samba-util
+                samdb-common
+                samdb
+                cmocka
+                audit_logging
+                DSDB_MODULE_HELPERS
+            ''',
+            install=False)
+    bld.SAMBA_BINARY('test_audit_log',
+            source='tests/test_audit_log.c',
+            deps='''
+                talloc
+                samba-util
+                samdb-common
+                samdb
+                cmocka
+                audit_logging
+                DSDB_MODULE_HELPERS
+            ''',
+            install=False)
 
 if bld.AD_DC_BUILD_IS_ENABLED():
     bld.PROCESS_SEPARATE_RULE("server")

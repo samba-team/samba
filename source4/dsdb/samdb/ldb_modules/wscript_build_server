@@ -425,3 +425,19 @@ bld.SAMBA_MODULE('ldb_encrypted_secrets',
             gnutls
         '''
 	)
+
+bld.SAMBA_MODULE('ldb_audit_log',
+	source='audit_log.c',
+	subsystem='ldb',
+	init_function='ldb_audit_log_module_init',
+	module_init_name='ldb_init_module',
+	internal_module=False,
+	deps='''
+            audit_logging
+            talloc
+            samba-util
+            samdb-common
+            DSDB_MODULE_HELPERS
+            samdb
+        '''
+	)

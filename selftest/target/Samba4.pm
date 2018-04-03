@@ -1524,6 +1524,8 @@ sub provision_ad_dc_ntvfs($$)
 	lsa over netlogon = yes
         rpc server port = 1027
         auth event notification = true
+	dsdb event notification = true
+	dsdb password event notification = true
 	server schannel = auto
 	";
 	my $ret = $self->provision($prefix,
@@ -1896,6 +1898,8 @@ sub provision_ad_dc($$$$$$)
 
 	server schannel = auto
         auth event notification = true
+	dsdb event notification = true
+	dsdb password event notification = true
         $smbconf_args
 ";
 

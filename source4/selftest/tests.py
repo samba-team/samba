@@ -685,6 +685,14 @@ if have_heimdal_support:
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+    planoldpythontestsuite("ad_dc:local", "samba.tests.audit_log_pass_change",
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'CLIENT_IP': '127.0.0.11',
+                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+    planoldpythontestsuite("ad_dc:local", "samba.tests.audit_log_dsdb",
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'CLIENT_IP': '127.0.0.11',
+                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
 
 planoldpythontestsuite("fl2008r2dc:local",
                        "samba.tests.getdcname",
@@ -1075,3 +1083,7 @@ plantestsuite("samba4.dsdb.samdb.ldb_modules.encrypted_secrets", "none",
                   [os.path.join(bindir(), "test_encrypted_secrets")])
 plantestsuite("lib.audit_logging.audit_logging", "none",
                   [os.path.join(bindir(), "audit_logging_test")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.audit_util", "none",
+                  [os.path.join(bindir(), "test_audit_util")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.audit_log", "none",
+                  [os.path.join(bindir(), "test_audit_log")])
