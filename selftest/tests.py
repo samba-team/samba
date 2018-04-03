@@ -72,7 +72,7 @@ planpythontestsuite("none", "samba.tests.netcmd")
 planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dcerpc.array", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dcerpc.string", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.hostconfig")
+planpythontestsuite("none", "samba.tests.hostconfig", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging",
                     py3_compatible=True)
 planpythontestsuite("none", "samba.tests.s3param", py3_compatible=True)
