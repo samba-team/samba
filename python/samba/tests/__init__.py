@@ -19,6 +19,7 @@
 """Samba Python tests."""
 
 import os
+import tempfile
 import ldb
 import samba
 from samba import param
@@ -254,7 +255,8 @@ class LdbTestCase(TestCase):
 
     def setUp(self):
         super(LdbTestCase, self).setUp()
-        self.filename = os.tempnam()
+        self.tempfile = tempfile.NamedTemporaryFile(delete=False)
+        self.filename = self.tempfile.name
         self.ldb = samba.Ldb(self.filename)
 
     def set_modules(self, modules=[]):
