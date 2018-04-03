@@ -130,7 +130,7 @@ class MapBaseTestCase(TestCaseInTempDir):
 
     def assertSidEquals(self, text, ndr_sid):
         sid_obj1 = samba.ndr.ndr_unpack(samba.dcerpc.security.dom_sid,
-                                        str(ndr_sid[0]))
+                                        ndr_sid[0])
         sid_obj2 = samba.dcerpc.security.dom_sid(text)
         self.assertEquals(sid_obj1, sid_obj2)
 
@@ -176,7 +176,7 @@ class Samba3SamTestCase(MapBaseTestCase):
         self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-1052",
                              msg[0]["objectSid"])
         oc = set(msg[0]["objectClass"])
-        self.assertEquals(oc, set(["group"]))
+        self.assertEquals(oc, set([b"group"]))
 
     def test_search_by_objclass(self):
         """Looking up by objectClass"""
@@ -536,11 +536,11 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-1052
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "x")
-        self.assertEquals(str(res[0]["objectClass"][0]), "user")
+        self.assertEquals(res[0]["objectClass"][0], b"user")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
         self.assertEquals(str(res[1]["dnsHostName"]), "x")
         self.assertEquals(str(res[1]["lastLogon"]), "x")
-        self.assertEquals(str(res[1]["objectClass"][0]), "user")
+        self.assertEquals(res[1]["objectClass"][0], b"user")
 
         # Prove that the objectClass is actually used for the search
         res = self.ldb.search(expression="(|(objectClass=user)(badPwdCount=x))",
@@ -550,15 +550,15 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-1052
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "x")
-        self.assertEquals(res[0]["objectClass"][0], "user")
+        self.assertEquals(res[0]["objectClass"][0], b"user")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[1])
         self.assertEquals(str(res[1]["lastLogon"]), "y")
-        self.assertEquals(set(res[1]["objectClass"]), set(["top"]))
+        self.assertEquals(set(res[1]["objectClass"]), set([b"top"]))
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=X"))
         self.assertEquals(str(res[2]["dnsHostName"]), "x")
         self.assertEquals(str(res[2]["lastLogon"]), "x")
-        self.assertEquals(str(res[2]["objectClass"][0]), "user")
+        self.assertEquals(res[2]["objectClass"][0], b"user")
 
         # Testing search by parse tree
 

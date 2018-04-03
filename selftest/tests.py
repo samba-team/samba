@@ -80,7 +80,7 @@ planpythontestsuite("none", "samba.tests.s3passdb", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.s3registry", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.s3windb", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.s3idmapdb", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.samba3sam")
+planpythontestsuite("none", "samba.tests.samba3sam", py3_compatible=True)
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
     extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
