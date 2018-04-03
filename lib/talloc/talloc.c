@@ -430,12 +430,7 @@ void talloc_lib_init(void)
 #warning "No __attribute__((constructor)) support found on this platform, additional talloc security measures not available"
 #endif
 
-#ifdef HAVE_DESTRUCTOR_ATTRIBUTE
-void talloc_lib_fini(void) __attribute__((destructor));
-void talloc_lib_fini(void)
-#else /* ! HAVE_DESTRUCTOR_ATTRIBUTE */
-static void talloc_lib_fini(void)
-#endif /* ! HAVE_DESTRUCTOR_ATTRIBUTE */
+static void talloc_lib_atexit(void)
 {
 	TALLOC_FREE(autofree_context);
 
@@ -452,17 +447,14 @@ static void talloc_lib_fini(void)
 
 static void talloc_setup_atexit(void)
 {
-#ifndef HAVE_DESTRUCTOR_ATTRIBUTE
 	static bool done;
 
 	if (done) {
 		return;
 	}
 
-#warning "No __attribute__((destructor)) support found on this platform, using atexit"
-	atexit(talloc_lib_fini);
+	atexit(talloc_lib_atexit);
 	done = true;
-#endif /* ! HAVE_DESTRUCTOR_ATTRIBUTE */
 }
 
 static void talloc_log(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
