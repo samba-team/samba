@@ -16,8 +16,8 @@
 #
 
 """Local host configuration."""
-
-from samdb import SamDB
+from __future__ import absolute_import
+from .samdb import SamDB
 
 class Hostconfig(object):
     """Aggregate object that contains all information about the configuration
