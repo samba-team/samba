@@ -65,6 +65,12 @@ bool is_attr_in_list(const char * const * attrs, const char *attr);
 #define DSDB_SECRET_ATTRIBUTES_COMMA ,
 #define DSDB_SECRET_ATTRIBUTES DSDB_SECRET_ATTRIBUTES_EX(DSDB_SECRET_ATTRIBUTES_COMMA)
 
+#define DSDB_PASSWORD_ATTRIBUTES \
+	"userPassword", \
+	"clearTextPassword", \
+	"unicodePwd", \
+	"dBCSPwd"
+
 struct GUID;
 
 char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);

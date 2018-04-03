@@ -4008,10 +4008,7 @@ static int password_hash_needed(struct ldb_module *module,
 	const struct ldb_message *msg = NULL;
 	struct ph_context *ac = NULL;
 	const char *passwordAttrs[] = {
-		"userPassword",
-		"clearTextPassword",
-		"unicodePwd",
-		"dBCSPwd",
+		DSDB_PASSWORD_ATTRIBUTES,
 		NULL
 	};
 	const char **a = NULL;
@@ -4242,8 +4239,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ph_context *ac = NULL;
-	const char *passwordAttrs[] = { "userPassword", "clearTextPassword",
-		"unicodePwd", "dBCSPwd", NULL }, **l;
+	const char *passwordAttrs[] = {DSDB_PASSWORD_ATTRIBUTES, NULL}, **l;
 	unsigned int del_attr_cnt, add_attr_cnt, rep_attr_cnt;
 	struct ldb_message_element *passwordAttr;
 	struct ldb_message *msg;
