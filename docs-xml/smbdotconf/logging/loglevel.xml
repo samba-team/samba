@@ -46,6 +46,12 @@
         <listitem><para><parameter moreinfo="none">auth_audit</parameter></para></listitem>
         <listitem><para><parameter moreinfo="none">auth_json_audit</parameter></para></listitem>
         <listitem><para><parameter moreinfo="none">kerberos</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">dsdb_audit</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">dsdb_json_audit</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">dsdb_password_audit</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">dsdb_password_json_audit</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">dsdb_transaction_audit</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">dsdb_transaction_json_audit</parameter></para></listitem>
     </itemizedlist>
 
     <para>Authentication and authorization audit information is logged
@@ -58,7 +64,7 @@
     as well as the implicit authentication in password changes.  In
     the file server, NTLM authentication, SMB and RPC authorization is
     covered.</para>
-    
+
     <para>Log levels for auth_audit and auth_audit_json are:</para>
     <itemizedlist>
 	<listitem><para>2: Authentication Failure</para></listitem>
@@ -66,9 +72,25 @@
 	<listitem><para>4: Authorization Success</para></listitem>
 	<listitem><para>5: Anonymous Authentication and Authorization Success</para></listitem>
     </itemizedlist>
-    
 
-    
+    <para>Changes to the sam.ldb database are logged
+    under the dsdb_audit, and if Samba was not compiled with
+    --without-json-audit, a JSON representation is logged under
+    dsdb_json_audit.</para>
+
+    <para>Password changes and Password resets are logged under
+    dsdb_password_audit, and if Samba was not compiled with
+    --without-json-audit, a JSON representation is logged under the
+    dsdb_password_json_audit.</para>
+
+    <para>Transaction rollbacks and prepare commit failures are logged under
+    the dsdb_transaction_audit, and if Samba was not compiled with
+    --without-json-audit, a JSON representation is logged under the
+    password_json_audit. Logging the transaction details allows the
+    identification of password and sam.ldb operations that have been rolled
+    back.</para>
+
+
 </description>
 <value type="default">0</value>
 <value type="example">3 passdb:5 auth:10 winbind:2</value>

@@ -543,6 +543,12 @@ static const char *default_classname_table[] = {
 	[DBGC_DRS_REPL] =       "drs_repl",
 	[DBGC_SMB2] =           "smb2",
 	[DBGC_SMB2_CREDITS] =   "smb2_credits",
+	[DBGC_DSDB_AUDIT]  =	"dsdb_audit",
+	[DBGC_DSDB_AUDIT_JSON] = "dsdb_json_audit",
+	[DBGC_DSDB_PWD_AUDIT]  =	"dsdb_password_audit",
+	[DBGC_DSDB_PWD_AUDIT_JSON] = "dsdb_password_json_audit",
+	[DBGC_DSDB_TXN_AUDIT]  =	"dsdb_transaction_audit",
+	[DBGC_DSDB_TXN_AUDIT_JSON] = "dsdb_transaction_json_audit",
 };
 
 /*
