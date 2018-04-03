@@ -282,6 +282,7 @@ def dn_sort(x, y):
     len1 = len(tab1)-1
     len2 = len(tab2)-1
     # Note: python range go up to upper limit but do not include it
+    cmp = lambda x, y:  (x > y) - (x < y)  # cmp is removed in py3
     for i in range(0, minimum):
         ret = cmp(tab1[len1-i], tab2[len2-i])
         if ret != 0:
@@ -351,7 +352,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         hash[str(current[i]["dn"]).lower()] = current[i]["dn"]
 
     for k in hash_new.keys():
-        if not hash.has_key(k):
+        if k not in hash:
             listMissing.append(hash_new[k])
         else:
             listPresent.append(hash_new[k])
