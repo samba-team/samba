@@ -156,7 +156,7 @@ planpythontestsuite("none", "samba.tests.graph")
 plantestsuite("wafsamba.duplicate_symbols", "none", [os.path.join(srcdir(), "buildtools/wafsamba/test_duplicate_symbol.sh")])
 planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.tdb_util", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.samdb_api")
+planpythontestsuite("none", "samba.tests.samdb_api", py3_compatible=True)
 
 if with_pam:
     plantestsuite("samba.tests.pam_winbind(local)", "ad_member",

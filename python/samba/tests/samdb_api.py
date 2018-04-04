@@ -72,15 +72,15 @@ class SamDBApiTestCase(TestCaseInTempDir):
     #
     def test_create_db_existing_file_non_tdb_file(self):
         existing_name = self.tempdir + "/existing.db"
-        existing = open(existing_name, "w")
-        existing.write("This is not a tdb file!!!!!!")
+        existing = open(existing_name, "wb")
+        existing.write(b"This is not a tdb file!!!!!!")
         existing.close()
 
         SamDB(url="tdb://" + existing_name, flags=0)
 
-        existing = open(existing_name, "r")
+        existing = open(existing_name, "rb")
         contents = existing.readline()
-        self.assertEquals("TDB file\n", contents)
+        self.assertEquals(b"TDB file\n", contents)
 
     #
     # Attempt to open an existing tdb file as a tdb file.
@@ -99,11 +99,11 @@ class SamDBApiTestCase(TestCaseInTempDir):
         })
 
         cn = initial.searchone("cn", dn)
-        self.assertEquals("test_dont_create_db_existing_tdb_file", cn)
+        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
 
         second = SamDB(url="tdb://" + existing_name)
         cn = second.searchone("cn", dn)
-        self.assertEquals("test_dont_create_db_existing_tdb_file", cn)
+        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
 
     #
     # Attempt to open an existing tdb file as a tdb file.
@@ -122,11 +122,11 @@ class SamDBApiTestCase(TestCaseInTempDir):
         })
 
         cn = initial.searchone("cn", dn)
-        self.assertEquals("test_dont_create_db_existing_tdb_file", cn)
+        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
 
         second = SamDB(url="tdb://" + existing_name, flags=0)
         cn = second.searchone("cn", dn)
-        self.assertEquals("test_dont_create_db_existing_tdb_file", cn)
+        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
 
     # Open a non existent TDB file.
     # Don't create new db is set, the default
@@ -155,6 +155,6 @@ class SamDBApiTestCase(TestCaseInTempDir):
     #
     def test_create_db_new_file(self):
         SamDB(url="tdb://" + self.tempdir + "/test.db", flags=0)
-        existing = open(self.tempdir + "/test.db", "r")
+        existing = open(self.tempdir + "/test.db", mode="rb")
         contents = existing.readline()
-        self.assertEquals("TDB file\n", contents)
+        self.assertEquals(b"TDB file\n", contents)
