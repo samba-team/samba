@@ -54,7 +54,7 @@ class UndirectedGraphTests(samba.tests.TestCase):
         vertices2 = tuple('ijk')
         edges = tuple(itertools.combinations(vertices, 2))
         edges2 = tuple(itertools.combinations(vertices2, 2))
-        line_edges = zip(vertices[1:], vertices[:-1])
+        line_edges = list(zip(vertices[1:], vertices[:-1]))
         ring_edges = line_edges + [(vertices[0], vertices[-1])]
 
         tree = make_tree(vertices)
