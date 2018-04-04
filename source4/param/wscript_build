@@ -39,6 +39,7 @@ bld.SAMBA_SUBSYSTEM('SECRETS',
 for env in bld.gen_python_environments():
 	pytalloc_util = bld.pyembed_libname('pytalloc-util')
 	pyparam_util = bld.pyembed_libname('pyparam_util')
+	libpython = bld.pyembed_libname('LIBPYTHON')
 
 	bld.SAMBA_PYTHON('pyparam',
 	    source='pyparam.c',
@@ -48,7 +49,7 @@ for env in bld.gen_python_environments():
 
 	bld.SAMBA_SUBSYSTEM(pyparam_util,
 	    source='pyparam_util.c',
-	    deps='LIBPYTHON samba-hostconfig %s' % pytalloc_util,
+	    deps='%s samba-hostconfig %s' % (libpython, pytalloc_util),
 	    pyext=True,
 	    enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	    )

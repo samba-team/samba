@@ -21,8 +21,11 @@ bld.SAMBA_SUBSYSTEM('ldbwrap',
 for env in bld.gen_python_environments():
     pyparam_util = bld.pyembed_libname('pyparam_util')
     pyldb_util = bld.pyembed_libname('pyldb-util')
+    pyauth = 'pyauth'
+    if bld.env['IS_EXTRA_PYTHON']:
+        pyauth = 'extra-' + pyauth
     bld.SAMBA_PYTHON('python_samba__ldb', 'pyldb.c',
-                     deps='ldbsamba %s ldbwrap %s pyauth' % (pyparam_util, pyldb_util),
+                     deps='ldbsamba %s ldbwrap %s %s' % (pyparam_util, pyldb_util, pyauth),
                      realname='samba/_ldb.so')
 
 bld.SAMBA_MODULE('ldbsamba_extensions',
