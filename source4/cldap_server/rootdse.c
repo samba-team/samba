@@ -166,6 +166,13 @@ void cldapd_rootdse_request(struct cldap_socket *cldap,
 	cldapd_rootdse_fill(cldapd, tmp_ctx, search, &reply.response,
 			    reply.result);
 
+	/*
+	 * We clear this after cldapd_rootdse_fill as this is shared ldb
+	 * and if it was not cleared the audit logging would report changes
+	 * made by internal processes as coming from the last cldap requester
+	 */
+	ldb_set_opaque(cldapd->samctx, "remoteAddress", NULL);
+
 	status = cldap_reply_send(cldap, &reply);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("cldap rootdse query failed '%s' - %s\n",
