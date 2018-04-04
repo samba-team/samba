@@ -700,6 +700,128 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 	return status;
 }
 
+struct cli_read_state {
+	struct cli_state *cli;
+	char *buf;
+	size_t buflen;
+	size_t received;
+};
+
+static void cli_read_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	char *buf,
+	off_t offset,
+	size_t size)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_read_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+	state->buf = buf;
+	state->buflen = size;
+
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		uint32_t max_size;
+		bool ok;
+
+		ok = smb2cli_conn_req_possible(state->cli->conn, &max_size);
+		if (!ok) {
+			tevent_req_nterror(
+				req,
+				NT_STATUS_INSUFFICIENT_RESOURCES);
+			return tevent_req_post(req, ev);
+		}
+
+		/*
+		 * downgrade depending on the available credits
+		 */
+		size = MIN(max_size, size);
+
+		subreq = cli_smb2_read_send(
+			state, ev, cli, fnum, offset, size);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		bool ok;
+		ok = smb1cli_conn_req_possible(state->cli->conn);
+		if (!ok) {
+			tevent_req_nterror(
+				req,
+				NT_STATUS_INSUFFICIENT_RESOURCES);
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = cli_read_andx_send(
+			state, ev, cli, fnum, offset, size);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	tevent_req_set_callback(subreq, cli_read_done, req);
+
+	return req;
+}
+
+static void cli_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_read_state *state = tevent_req_data(
+		req, struct cli_read_state);
+	NTSTATUS status;
+	ssize_t received;
+	uint8_t *buf;
+
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_read_recv(subreq, &received, &buf);
+	} else {
+		status = cli_read_andx_recv(subreq, &received, &buf);
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+		received = 0;
+		status = NT_STATUS_OK;
+	}
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if ((received < 0) || (received > state->buflen)) {
+		state->received = 0;
+		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
+		return;
+	}
+
+	memcpy(state->buf, buf, received);
+	state->received = received;
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_read_recv(struct tevent_req *req, size_t *received)
+{
+	struct cli_read_state *state = tevent_req_data(
+		req, struct cli_read_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (received != NULL) {
+		*received = state->received;
+	}
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS cli_read_sink(char *buf, size_t n, void *priv)
 {
 	char **pbuf = (char **)priv;
