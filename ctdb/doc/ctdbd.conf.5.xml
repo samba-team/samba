@@ -411,22 +411,6 @@
     <variablelist>
 
       <varlistentry>
-	<term>CTDB_SHUTDOWN_TIMEOUT=<parameter>NUM</parameter></term>
-	<listitem>
-	  <para>
-	    NUM is the number of seconds to wait for
-	    <citerefentry><refentrytitle>ctdbd</refentrytitle>
-	    <manvolnum>1</manvolnum></citerefentry> to shut down
-	    gracefully before giving up and killing it.
-	  </para>
-
-	  <para>
-	    Defaults is 30.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_STARTUP_TIMEOUT=<parameter>NUM</parameter></term>
 	<listitem>
 	  <para>
