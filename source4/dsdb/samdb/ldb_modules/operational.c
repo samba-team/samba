@@ -249,8 +249,9 @@ static int construct_generic_token_groups(struct ldb_module *module,
 					   tmp_ctx, &groupSIDs, &num_groupSIDs);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to construct tokenGroups: expanding groups of SID %s failed: %s",
-				       account_sid_string, nt_errstr(status));
+		ldb_asprintf_errstring(ldb, "Failed to construct %s: expanding groups of SID %s failed: %s",
+				       attribute_string, account_sid_string,
+				       nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -264,8 +265,9 @@ static int construct_generic_token_groups(struct ldb_module *module,
 	status = dsdb_expand_nested_groups(ldb, &primary_group_blob, false, filter,
 					   tmp_ctx, &groupSIDs, &num_groupSIDs);
 	if (!NT_STATUS_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to construct tokenGroups: expanding groups of SID %s failed: %s",
-				       account_sid_string, nt_errstr(status));
+		ldb_asprintf_errstring(ldb, "Failed to construct %s: expanding groups of SID %s failed: %s",
+				       attribute_string, account_sid_string,
+				       nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
