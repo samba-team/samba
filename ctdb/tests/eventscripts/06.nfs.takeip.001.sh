@@ -6,7 +6,7 @@ define_test "callout is 'true'"
 
 setup
 
-setup_script_options <<EOF
+setup_script_options "service" "60.nfs" <<EOF
 CTDB_NFS_CALLOUT="true"
 EOF
 

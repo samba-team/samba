@@ -6,7 +6,7 @@ define_test "callout is 'false', causes takeip-pre to fail"
 
 setup
 
-setup_script_options <<EOF
+setup_script_options "service" "60.nfs" <<EOF
 CTDB_NFS_CALLOUT="echo takeip-pre ; false"
 EOF
 

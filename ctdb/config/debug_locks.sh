@@ -17,7 +17,7 @@
 CTDB_DBDIR="${CTDB_VARDIR}/volatile"
 CTDB_DBDIR_PERSISTENT="${CTDB_VARDIR}/persistent"
 
-loadconfig
+load_script_options
 
 (
     flock -n 9 || exit 1

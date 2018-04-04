@@ -6,7 +6,7 @@ fi
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_script_options "failover" "11.natgw"
 
 # Default NAT gateway nodes file location
 [ -n "$CTDB_NATGW_NODES" ] || CTDB_NATGW_NODES="${CTDB_BASE}/natgw_nodes"

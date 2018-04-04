@@ -8,7 +8,7 @@
 
 service_name="nfs"
 
-load_script_options
+load_script_options "service" "60.nfs"
 
 ctdb_setup_state_dir "service" "$service_name"
 

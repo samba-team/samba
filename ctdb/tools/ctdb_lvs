@@ -6,7 +6,7 @@ fi
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_script_options "failover" "91.lvs"
 
 # Default LVS nodes file location
 [ -n "$CTDB_LVS_NODES" ] || CTDB_LVS_NODES="${CTDB_BASE}/lvs_nodes"
