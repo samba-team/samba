@@ -58,6 +58,12 @@ load_script_options ()
 {
 	loadconfig
 
+	_options="${CTDB_BASE}/script.options"
+
+	if [ -r "$_options" ] ; then
+		. "$_options"
+	fi
+
 	_options="${0%.script}.options"
 
 	if [ -r "$_options" ] ; then
