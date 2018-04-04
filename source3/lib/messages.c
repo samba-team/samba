@@ -457,6 +457,13 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	const char *priv_path;
 	bool ok;
 
+	/*
+	 * sec_init() *must* be called before any other
+	 * functions that use sec_XXX(). e.g. sec_initial_uid().
+	 */
+
+	sec_init();
+
 	lck_path = lock_path("msg.lock");
 	if (lck_path == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -506,8 +513,6 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-
-	sec_init();
 
 	ctx->msg_dgm_ref = messaging_dgm_ref(ctx,
 					     ctx->event_ctx,
