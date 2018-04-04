@@ -106,6 +106,11 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 	}
 
 	password = ldb_msg_find_attr_as_string(msg, "secret", NULL);
+	if (password == NULL) {
+		/* This attribute is mandatory */
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
 
 	whenChanged = ldb_msg_find_ldb_val(msg, "whenChanged");
 	if (!whenChanged || ldb_val_to_time(whenChanged, &lct) != LDB_SUCCESS) {
