@@ -54,8 +54,19 @@ loadconfig() {
 	fi
 }
 
+# load_script_options [ component script ]
+#   script is an event script name relative to a component
+#   component is currently ignored
 load_script_options ()
 {
+	if [ $# -eq 2 ] ; then
+		_script="$2"
+	elif [ $# -eq 0  ] ; then
+		_script=""
+	else
+		die "usage: load_script_options [ component script ]"
+	fi
+
 	loadconfig
 
 	_options="${CTDB_BASE}/script.options"
@@ -64,7 +75,12 @@ load_script_options ()
 		. "$_options"
 	fi
 
-	_options="${0%.script}.options"
+	if [ -n "$_script" ] ; then
+		_s="${CTDB_BASE}/events.d/${_script}"
+	else
+		_s="${0%.script}"
+	fi
+	_options="${_s}.options"
 
 	if [ -r "$_options" ] ; then
 		. "$_options"

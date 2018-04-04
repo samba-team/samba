@@ -71,11 +71,24 @@ fi
 
 # General setup fakery
 
-# The current implementation just assumes each non-comment line of
-# input is a variable assignment and evals it with export prepended.
+# Default is to use script name with ".options" appended.  With
+# arguments, this can specify an alternate script name (and
+# component).
 setup_script_options ()
 {
-	_options="${script_dir}/${script%.script}.options"
+	if [ $# -eq 2 ] ; then
+		_script="$2"
+	elif [ $# -eq 0  ] ; then
+		_script=""
+	else
+		die "usage: setup_script_options [ component script ]"
+	fi
+
+	if [ -n "$_script" ] ; then
+		_options="${CTDB_BASE}/events.d/${_script}.options"
+	else
+		_options="${script_dir}/${script%.script}.options"
+	fi
 
 	cat >>"$_options"
 
