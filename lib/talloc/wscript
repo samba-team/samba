@@ -165,7 +165,7 @@ def build(bld):
 
             bld.SAMBA_PYTHON('test_pytalloc',
                             'test_pytalloc.c',
-                            deps='pytalloc',
+                            deps=name,
                             enabled=bld.PYTHON_BUILD_IS_ENABLED(),
                             realname='_test_pytalloc.so',
                             install=False)
