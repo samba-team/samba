@@ -131,6 +131,123 @@ static int construct_primary_group_token(struct ldb_module *module,
 }
 
 /*
+ * Returns the group SIDs for the user in the given LDB message
+ */
+static int get_group_sids(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+			  struct ldb_message *msg, const char *attribute_string,
+			  enum search_type type, struct dom_sid **groupSIDs,
+			  unsigned int *num_groupSIDs)
+{
+	const char *filter = NULL;
+	NTSTATUS status;
+	struct dom_sid *primary_group_sid;
+	const char *primary_group_string;
+	const char *primary_group_dn;
+	DATA_BLOB primary_group_blob;
+	struct dom_sid *account_sid;
+	const char *account_sid_string;
+	const char *account_sid_dn;
+	DATA_BLOB account_sid_blob;
+	struct dom_sid *domain_sid;
+
+	/* If it's not a user, it won't have a primaryGroupID */
+	if (ldb_msg_find_element(msg, "primaryGroupID") == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	/* Ensure it has an objectSID too */
+	account_sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
+	if (account_sid == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	status = dom_sid_split_rid(mem_ctx, account_sid, &domain_sid, NULL);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	primary_group_sid = dom_sid_add_rid(mem_ctx,
+					    domain_sid,
+					    ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
+	if (!primary_group_sid) {
+		return ldb_oom(ldb);
+	}
+
+	/* only return security groups */
+	switch(type) {
+	case TOKEN_GROUPS_GLOBAL_AND_UNIVERSAL:
+		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u)(|(groupType:1.2.840.113556.1.4.803:=%u)(groupType:1.2.840.113556.1.4.803:=%u)))",
+					 GROUP_TYPE_SECURITY_ENABLED, GROUP_TYPE_ACCOUNT_GROUP, GROUP_TYPE_UNIVERSAL_GROUP);
+		break;
+	case TOKEN_GROUPS_NO_GC_ACCEPTABLE:
+	case TOKEN_GROUPS:
+		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
+					 GROUP_TYPE_SECURITY_ENABLED);
+		break;
+	}
+
+	if (!filter) {
+		return ldb_oom(ldb);
+	}
+
+	primary_group_string = dom_sid_string(mem_ctx, primary_group_sid);
+	if (!primary_group_string) {
+		return ldb_oom(ldb);
+	}
+
+	primary_group_dn = talloc_asprintf(mem_ctx, "<SID=%s>", primary_group_string);
+	if (!primary_group_dn) {
+		return ldb_oom(ldb);
+	}
+
+	primary_group_blob = data_blob_string_const(primary_group_dn);
+
+	account_sid_string = dom_sid_string(mem_ctx, account_sid);
+	if (!account_sid_string) {
+		return ldb_oom(ldb);
+	}
+
+	account_sid_dn = talloc_asprintf(mem_ctx, "<SID=%s>", account_sid_string);
+	if (!account_sid_dn) {
+		return ldb_oom(ldb);
+	}
+
+	account_sid_blob = data_blob_string_const(account_sid_dn);
+
+	status = dsdb_expand_nested_groups(ldb, &account_sid_blob,
+					   true, /* We don't want to add the object's SID itself,
+						    it's not returend in this attribute */
+					   filter,
+					   mem_ctx, groupSIDs, num_groupSIDs);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to construct %s: expanding groups of SID %s failed: %s",
+				       attribute_string, account_sid_string,
+				       nt_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Expands the primary group - this function takes in
+	 * memberOf-like values, so we fake one up with the
+	 * <SID=S-...> format of DN and then let it expand
+	 * them, as long as they meet the filter - so only
+	 * domain groups, not builtin groups
+	 */
+	status = dsdb_expand_nested_groups(ldb, &primary_group_blob, false, filter,
+					   mem_ctx, groupSIDs, num_groupSIDs);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to construct %s: expanding groups of SID %s failed: %s",
+				       attribute_string, account_sid_string,
+				       nt_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
   construct the token groups for SAM objects from a message
 */
 static int construct_generic_token_groups(struct ldb_module *module,
@@ -143,135 +260,24 @@ static int construct_generic_token_groups(struct ldb_module *module,
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	unsigned int i;
 	int ret;
-	const char *filter = NULL;
-
-	NTSTATUS status;
-
-	struct dom_sid *primary_group_sid;
-	const char *primary_group_string;
-	const char *primary_group_dn;
-	DATA_BLOB primary_group_blob;
-
-	struct dom_sid *account_sid;
-	const char *account_sid_string;
-	const char *account_sid_dn;
-	DATA_BLOB account_sid_blob;
 	struct dom_sid *groupSIDs = NULL;
 	unsigned int num_groupSIDs = 0;
-
-	struct dom_sid *domain_sid;
 
 	if (scope != LDB_SCOPE_BASE) {
 		ldb_set_errstring(ldb, "Cannot provide tokenGroups attribute, this is not a BASE search");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* If it's not a user, it won't have a primaryGroupID */
-	if (ldb_msg_find_element(msg, "primaryGroupID") == NULL) {
-		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
-	}
+	/* calculate the group SIDs for this object */
+	ret = get_group_sids(ldb, tmp_ctx, msg, attribute_string, type,
+			     &groupSIDs, &num_groupSIDs);
 
-	/* Ensure it has an objectSID too */
-	account_sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
-	if (account_sid == NULL) {
-		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
-	}
-
-	status = dom_sid_split_rid(tmp_ctx, account_sid, &domain_sid, NULL);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
-	} else if (!NT_STATUS_IS_OK(status)) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	primary_group_sid = dom_sid_add_rid(tmp_ctx,
-					    domain_sid,
-					    ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
-	if (!primary_group_sid) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
-
-	/* only return security groups */
-	switch(type) {
-	case TOKEN_GROUPS_GLOBAL_AND_UNIVERSAL:
-		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u)(|(groupType:1.2.840.113556.1.4.803:=%u)(groupType:1.2.840.113556.1.4.803:=%u)))",
-					 GROUP_TYPE_SECURITY_ENABLED, GROUP_TYPE_ACCOUNT_GROUP, GROUP_TYPE_UNIVERSAL_GROUP);
-		break;
-	case TOKEN_GROUPS_NO_GC_ACCEPTABLE:
-	case TOKEN_GROUPS:
-		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
-					 GROUP_TYPE_SECURITY_ENABLED);
-		break;
-	}
-
-	if (!filter) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
-
-	primary_group_string = dom_sid_string(tmp_ctx, primary_group_sid);
-	if (!primary_group_string) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
-
-	primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
-	if (!primary_group_dn) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
-
-	primary_group_blob = data_blob_string_const(primary_group_dn);
-
-	account_sid_string = dom_sid_string(tmp_ctx, account_sid);
-	if (!account_sid_string) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
-
-	account_sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", account_sid_string);
-	if (!account_sid_dn) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
-
-	account_sid_blob = data_blob_string_const(account_sid_dn);
-
-	status = dsdb_expand_nested_groups(ldb, &account_sid_blob,
-					   true, /* We don't want to add the object's SID itself,
-						    it's not returend in this attribute */
-					   filter,
-					   tmp_ctx, &groupSIDs, &num_groupSIDs);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to construct %s: expanding groups of SID %s failed: %s",
-				       attribute_string, account_sid_string,
-				       nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* Expands the primary group - this function takes in
-	 * memberOf-like values, so we fake one up with the
-	 * <SID=S-...> format of DN and then let it expand
-	 * them, as long as they meet the filter - so only
-	 * domain groups, not builtin groups
-	 */
-	status = dsdb_expand_nested_groups(ldb, &primary_group_blob, false, filter,
-					   tmp_ctx, &groupSIDs, &num_groupSIDs);
-	if (!NT_STATUS_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to construct %s: expanding groups of SID %s failed: %s",
-				       attribute_string, account_sid_string,
-				       nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
+	/* add these SIDs to the search result */
 	for (i=0; i < num_groupSIDs; i++) {
 		ret = samdb_msg_add_dom_sid(ldb, msg, msg, attribute_string, &groupSIDs[i]);
 		if (ret) {
