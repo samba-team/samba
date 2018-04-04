@@ -1168,6 +1168,98 @@ static NTSTATUS cli_smb1_writeall_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+struct cli_writeall_state {
+	struct cli_state *cli;
+	size_t written;
+};
+
+static void cli_writeall_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_writeall_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint16_t mode,
+	const uint8_t *buf,
+	off_t offset,
+	size_t size)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_writeall_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_writeall_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_writeall_send(
+			state,
+			ev,
+			cli,
+			fnum,
+			mode,
+			buf,
+			offset,
+			size);
+	} else {
+		subreq = cli_smb1_writeall_send(
+			state,
+			ev,
+			cli,
+			fnum,
+			mode,
+			buf,
+			offset,
+			size);
+	}
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_writeall_done, req);
+
+	return req;
+}
+
+static void cli_writeall_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_writeall_state *state = tevent_req_data(
+		req, struct cli_writeall_state);
+	NTSTATUS status;
+
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_writeall_recv(subreq, &state->written);
+	} else {
+		status = cli_smb1_writeall_recv(subreq, &state->written);
+	}
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_writeall_recv(struct tevent_req *req, size_t *pwritten)
+{
+	struct cli_writeall_state *state = tevent_req_data(
+		req, struct cli_writeall_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (pwritten != NULL) {
+		*pwritten = state->written;
+	}
+	return NT_STATUS_OK;
+}
+
+
 NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		      const uint8_t *buf, off_t offset, size_t size,
 		      size_t *pwritten)
@@ -1188,24 +1280,14 @@ NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	if (ev == NULL) {
 		goto fail;
 	}
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		req = cli_smb2_writeall_send(frame, ev, cli, fnum, mode,
-					     buf, offset, size);
-	} else {
-		req = cli_smb1_writeall_send(frame, ev, cli, fnum, mode,
-					buf, offset, size);
-	}
+	req = cli_writeall_send(frame, ev, cli, fnum, mode, buf, offset, size);
 	if (req == NULL) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		status = cli_smb2_writeall_recv(req, pwritten);
-	} else {
-		status = cli_smb1_writeall_recv(req, pwritten);
-	}
+	status = cli_writeall_recv(req, pwritten);
  fail:
 	TALLOC_FREE(frame);
 	return status;
