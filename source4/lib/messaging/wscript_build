@@ -20,6 +20,6 @@ for env in bld.gen_python_environments():
 
 	bld.SAMBA_PYTHON('python_messaging',
 		source='pymessaging.c',
-		deps='MESSAGING events pyparam_util pytalloc-util',
+		deps='MESSAGING events %s %s' % (pyparam_util, pytalloc_util),
 		realname='samba/messaging.so'
 		)
