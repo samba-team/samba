@@ -1900,6 +1900,11 @@ static int ltdb_tdb_parse_record(struct ltdb_private *ltdb,
 	};
 	int ret;
 
+	if (tdb_transaction_active(ltdb->tdb) == false &&
+	    ltdb->read_lock_count == 0) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
 	ret = tdb_parse_record(ltdb->tdb, key, ltdb_tdb_parse_record_wrapper,
 			       &kv_ctx);
 	if (ret == 0) {
