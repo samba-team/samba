@@ -728,7 +728,7 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 
       <para>
 	See the <citetitle>NAT GATEWAY</citetitle> section in
-	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
+	<citerefentry><refentrytitle>ctdb-script.options</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> for more details of
 	NATGW configuration.
       </para>
@@ -780,7 +780,7 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 	This is implemented in the <filename>11.natgw</filename>
 	eventscript.  Please see the eventscript file and the
 	<citetitle>NAT GATEWAY</citetitle> section in
-	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
+	<citerefentry><refentrytitle>ctdb-script.options</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> for more details.
       </para>
 
@@ -812,7 +812,7 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 	<varname>CTDB_PER_IP_ROUTING_TABLE_ID_LOW</varname>,
 	<varname>CTDB_PER_IP_ROUTING_TABLE_ID_HIGH</varname>.  See the
 	<citetitle>POLICY ROUTING</citetitle> section in
-	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
+	<citerefentry><refentrytitle>ctdb-script.options</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> for more details.
       </para>
     </refsect2>
@@ -1075,6 +1075,9 @@ CTDB_CAPABILITY_RECMASTER=no
       <manvolnum>1</manvolnum></citerefentry>,
 
       <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb-script.options</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>,
 
       <citerefentry><refentrytitle>ctdb-statistics</refentrytitle>
