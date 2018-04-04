@@ -92,7 +92,9 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 				    system_session(tctx->lp_ctx),
 				    0,
 				    test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
-				    &samdb, &errstring);
+				    NULL,
+				    &samdb,
+				    &errstring);
 	struct ldb_message *msg;
 	const char *attrs[] = {
 		NULL

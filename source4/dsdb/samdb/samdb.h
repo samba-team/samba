@@ -28,7 +28,7 @@ struct dsdb_extended_replicated_object;
 struct dsdb_extended_replicated_objects;
 struct loadparm_context;
 struct tevent_context;
-
+struct tsocket_address;
 struct dsdb_trust_routing_table;
 
 #include "librpc/gen_ndr/security.h"

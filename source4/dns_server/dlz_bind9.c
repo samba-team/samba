@@ -706,7 +706,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	ret = samdb_connect_url(state, state->ev_ctx, state->lp,
 				system_session(state->lp), 0,
 				state->options.url,
-				&state->samdb, &errstring);
+				NULL, &state->samdb, &errstring);
 	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR,
 			   "samba_dlz: Failed to connect to %s: %s",

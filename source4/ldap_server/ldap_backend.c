@@ -31,6 +31,7 @@
 #include <ldb_errors.h>
 #include <ldb_module.h>
 #include "ldb_wrap.h"
+#include "lib/tsocket/tsocket.h"
 
 static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 	const char *add_err_string, const char **errstring)
@@ -188,7 +189,10 @@ int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 				    conn->lp_ctx,
 				    conn->session_info,
 				    conn->global_catalog ? LDB_FLG_RDONLY : 0,
-				    "sam.ldb", &conn->ldb, errstring);
+				    "sam.ldb",
+				    conn->connection->remote_address,
+				    &conn->ldb,
+				    errstring);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -228,9 +232,6 @@ int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 
 		ldb_set_opaque(conn->ldb, "supportedSASLMechanisms", sasl_mechs);
 	}
-
-	ldb_set_opaque(conn->ldb, "remoteAddress",
-		       conn->connection->remote_address);
 
 	return LDB_SUCCESS;
 }

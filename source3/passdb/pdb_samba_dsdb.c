@@ -3893,7 +3893,7 @@ static NTSTATUS pdb_init_samba_dsdb(struct pdb_methods **pdb_method,
 				state->lp_ctx,
 				system_session(state->lp_ctx),
 				0, location,
-				&state->ldb, &errstring);
+				NULL, &state->ldb, &errstring);
 
 	if (!state->ldb) {
 		DEBUG(0, ("samdb_connect failed: %s: %s\n",

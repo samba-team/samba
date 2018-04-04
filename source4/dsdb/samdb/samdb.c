@@ -42,6 +42,7 @@
 #include "auth/credentials/credentials.h"
 #include "param/secrets.h"
 #include "auth/auth.h"
+#include "lib/tsocket/tsocket.h"
 
 /*
   connect to the SAM database specified by URL
@@ -51,7 +52,9 @@ int samdb_connect_url(TALLOC_CTX *mem_ctx,
 		      struct tevent_context *ev_ctx,
 		      struct loadparm_context *lp_ctx,
 		      struct auth_session_info *session_info,
-		      unsigned int flags, const char *url,
+		      unsigned int flags,
+		      const char *url,
+		      struct tsocket_address *remote_address,
 		      struct ldb_context **ldb_ret,
 		      char **errstring)
 {
@@ -59,13 +62,17 @@ int samdb_connect_url(TALLOC_CTX *mem_ctx,
 	int ret;
 	*ldb_ret = NULL;
 	*errstring = NULL;
-	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, NULL, flags);
-	if (ldb != NULL) {
-		*ldb_ret = talloc_reference(mem_ctx, ldb);
-		if (*ldb_ret == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+
+	if (remote_address == NULL) {
+		ldb = ldb_wrap_find(url, ev_ctx, lp_ctx,
+				    session_info, NULL, flags);
+		if (ldb != NULL) {
+			*ldb_ret = talloc_reference(mem_ctx, ldb);
+			if (*ldb_ret == NULL) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			return LDB_SUCCESS;
 		}
-		return LDB_SUCCESS;
 	}
 
 	ldb = samba_ldb_init(mem_ctx, ev_ctx, lp_ctx, session_info, NULL);
@@ -91,6 +98,20 @@ int samdb_connect_url(TALLOC_CTX *mem_ctx,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/*
+	 * If a remote_address was specified, then set it on the DB
+	 * and do not add to the wrap list (as we need to keep the LDB
+	 * pointer unique for the address).
+	 *
+	 * We use this for audit logging and for the "netlogon" attribute
+	 */
+	if (remote_address != NULL) {
+		ldb_set_opaque(ldb, "remoteAddress",
+			       remote_address);
+		*ldb_ret = ldb;
+		return LDB_SUCCESS;
+	}
+		
 	if (!ldb_wrap_add(url, ev_ctx, lp_ctx, session_info, NULL, flags, ldb)) {
 		*errstring = talloc_asprintf(mem_ctx,
 					     "Failed to add cached DB reference"
@@ -118,7 +139,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	char *errstring;
 	struct ldb_context *ldb;
 	int ret = samdb_connect_url(mem_ctx, ev_ctx, lp_ctx, session_info, flags,
-				    "sam.ldb", &ldb, &errstring);
+				    "sam.ldb", NULL, &ldb, &errstring);
 	if (ret == LDB_SUCCESS) {
 		return ldb;
 	}
