@@ -19,6 +19,7 @@
 
 #include <Python.h>
 #include "includes.h"
+#include "python/py3compat.h"
 #include "policy.h"
 #include "libcli/util/pyerrors.h"
 
@@ -51,7 +52,7 @@ static PyObject *py_get_gpo_flags(PyObject *self, PyObject *args)
 
 	py_ret = PyList_New(0);
 	for (i = 0; ret[i]; i++) {
-		PyObject *item = PyString_FromString(ret[i]);
+		PyObject *item = PyStr_FromString(ret[i]);
 		if (item == NULL) {
 			talloc_free(mem_ctx);
 			Py_DECREF(py_ret);
@@ -93,7 +94,7 @@ static PyObject *py_get_gplink_options(PyObject *self, PyObject *args)
 
 	py_ret = PyList_New(0);
 	for (i = 0; ret[i]; i++) {
-		PyObject *item = PyString_FromString(ret[i]);
+		PyObject *item = PyStr_FromString(ret[i]);
 		if (item == NULL) {
 			talloc_free(mem_ctx);
 			Py_DECREF(py_ret);
@@ -131,13 +132,21 @@ static PyMethodDef py_policy_methods[] = {
 	{ NULL }
 };
 
-void initpolicy(void)
-{
-	PyObject *m;
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "policy",
+    .m_doc = "(Group) Policy manipulation",
+    .m_size = -1,
+    .m_methods = py_policy_methods,
+};
 
-	m = Py_InitModule3("policy", py_policy_methods, "(Group) Policy manipulation");
+MODULE_INIT_FUNC(policy)
+{
+	PyObject *m = NULL;
+
+	m = PyModule_Create(&moduledef);
 	if (!m)
-		return;
+		return m;
 
 	PyModule_AddObject(m, "GPO_FLAG_USER_DISABLE",
 					   PyInt_FromLong(GPO_FLAG_USER_DISABLE));
@@ -147,4 +156,5 @@ void initpolicy(void)
 					   PyInt_FromLong(GPLINK_OPT_DISABLE ));
 	PyModule_AddObject(m, "GPLINK_OPT_ENFORCE ",
 					   PyInt_FromLong(GPLINK_OPT_ENFORCE ));
+	return m;
 }

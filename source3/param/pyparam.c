@@ -19,6 +19,7 @@
 
 #include <Python.h>
 #include "includes.h"
+#include "python/py3compat.h"
 #include "param/param.h"
 #include "param/loadparm.h"
 #include "lib/talloc/pytalloc.h"
@@ -66,22 +67,31 @@ static PyMethodDef pyparam_methods[] = {
     { NULL }
 };
 
-void initparam(void)
-{
-	PyObject *m, *mod;
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "param",
+    .m_doc = "Parsing and writing Samba3 configuration files.",
+    .m_size = -1,
+    .m_methods = pyparam_methods,
+};
 
-	m = Py_InitModule3("param", pyparam_methods, "Parsing and writing Samba3 configuration files.");
+MODULE_INIT_FUNC(param)
+{
+	PyObject *m = NULL, *mod = NULL;
+
+	m = PyModule_Create(&moduledef);
 	if (m == NULL)
-		return;
+		return NULL;
 
 	mod = PyImport_ImportModule("samba.param");
 	if (mod == NULL) {
-		return;
+		return NULL;
 	}
 
 	loadparm_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "LoadParm");
 	Py_DECREF(mod);
 	if (loadparm_Type == NULL) {
-		return;
+		return NULL;
 	}
+	return m;
 }
