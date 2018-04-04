@@ -805,6 +805,11 @@ class InternalEdge(object):
         self.e_type = eType
         self.site_link = site_link
 
+    def __hash__(self):
+        return hash(tuple([
+            self.v1, self.v2, self.red_red, self.repl_info, self.e_type,
+            self.site_link]))
+
     def __eq__(self, other):
         return not self < other and not other < self
 

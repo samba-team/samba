@@ -77,6 +77,9 @@ class dsdb_Dn(object):
 
     def __init__(self, samdb, dnstring, syntax_oid=None):
         '''create a dsdb_Dn'''
+        if PY3:
+            if type(dnstring) == bytes:
+                dnstring = dnstring.decode('utf-8')
         if syntax_oid is None:
             # auto-detect based on string
             if dnstring.startswith("B:"):
