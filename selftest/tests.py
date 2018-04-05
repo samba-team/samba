@@ -43,7 +43,7 @@ pam_wrapper_so_path=config_hash["LIBPAM_WRAPPER_SO_PATH"]
 
 planpythontestsuite("none", "samba.tests.source", py3_compatible=True)
 if have_man_pages_support:
-    planpythontestsuite("none", "samba.tests.docs")
+    planpythontestsuite("none", "samba.tests.docs", py3_compatible=True)
 
 try:
     import testscenarios
