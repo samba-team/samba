@@ -19,6 +19,7 @@
 
 """Source level Python tests."""
 
+import io
 import errno
 import os
 import re
@@ -60,7 +61,7 @@ def get_source_file_contents():
     """Iterate over the contents of all python files."""
     for fname in get_python_source_files():
         try:
-            f = open(fname, 'rb')
+            f = io.open(fname, mode='r', encoding='utf-8')
         except IOError as e:
             if e.errno == errno.ENOENT:
                 warnings.warn("source file %s broken link?" % fname)
