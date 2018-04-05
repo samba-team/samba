@@ -22,6 +22,10 @@
 #include "winbindd.h"
 #include "idmap.h"
 #include "../libcli/security/dom_sid.h"
+#include "ads.h"
+#include "../libcli/ldap/ldap_ndr.h"
+#include "libsmb/samlogon_cache.h"
+#include "winbindd_ads.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -34,6 +38,111 @@ struct idmap_rid_context {
   compat params can't be used because of the completely different way
   we support multiple domains in the new idmap
  *****************************************************************************/
+
+static NTSTATUS idmap_rid_sid_to_id(struct idmap_domain *dom, struct id_map *map);
+
+static NTSTATUS idmap_rid_query_user(struct idmap_domain *domain,
+				     struct wbint_userinfo *info)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	ADS_STRUCT *ads = NULL;
+	const char *attrs[] = { "*", NULL };
+	ADS_STATUS rc;
+	int count;
+	LDAPMessage *msg = NULL;
+	char *ldap_exp;
+	char *sidstr;
+	uint32_t group_rid;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	int ret;
+	char *full_name;
+	struct dom_sid *domain_sid;
+	struct id_map group_map;
+
+	DEBUG(3,("ads: query_user\n"));
+
+	status = dom_sid_split_rid(mem_ctx, &(info->user_sid),
+				   &domain_sid, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("dom_sid_split_rid(%s) failed - %s\n",
+			sid_string_dbg(&(info->user_sid)), nt_errstr(status));
+		TALLOC_FREE(mem_ctx);
+		return status;
+	}
+
+	/* no cache...do the query */
+	rc = ads_idmap_cached_connection(&ads, domain->name);
+	if (!ADS_ERR_OK(rc)) {
+		TALLOC_FREE(mem_ctx);
+		return ads_ntstatus(rc);
+	}
+
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), &(info->user_sid));
+
+	ret = asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
+	TALLOC_FREE(sidstr);
+	if (ret == -1) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
+	SAFE_FREE(ldap_exp);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
+			 sid_string_dbg(&(info->user_sid)), ads_errstr(rc)));
+		TALLOC_FREE(mem_ctx);
+		return ads_ntstatus(rc);
+	} else if (!msg) {
+		DEBUG(1,("query_user(sid=%s) ads_search returned NULL res\n",
+			 sid_string_dbg(&(info->user_sid))));
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	count = ads_count_replies(ads, msg);
+	if (count != 1) {
+		DEBUG(1,("query_user(sid=%s): Not found\n",
+			 sid_string_dbg(&(info->user_sid))));
+		ads_msgfree(ads, msg);
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
+
+	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
+		DEBUG(1,("No primary group for %s !?\n",
+			 sid_string_dbg(&(info->user_sid))));
+		ads_msgfree(ads, msg);
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+	sid_compose(&info->group_sid, domain_sid, group_rid);
+	group_map.sid = &info->group_sid;
+	idmap_rid_sid_to_id(domain, &group_map);
+	if (group_map.xid.type == ID_TYPE_GID ||
+	    group_map.xid.type == ID_TYPE_BOTH) {
+		info->primary_gid = group_map.xid.id;
+	}
+
+	full_name = ads_pull_string(ads, mem_ctx, msg, "displayName");
+	if (full_name == NULL) {
+		full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+	}
+
+	ads_msgfree(ads, msg);
+	msg = NULL;
+
+	if (info->full_name == NULL) {
+		info->full_name = full_name;
+	} else {
+		TALLOC_FREE(full_name);
+	}
+
+	DEBUG(3,("ads query_user gave %s\n", info->acct_name));
+	TALLOC_FREE(mem_ctx);
+	return NT_STATUS_OK;
+}
 
 static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 {
@@ -48,6 +157,7 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 	ctx->base_rid = idmap_config_int(dom->name, "base_rid", 0);
 
 	dom->private_data = ctx;
+	dom->query_user = idmap_rid_query_user;
 
 	return NT_STATUS_OK;
 }
