@@ -958,7 +958,7 @@ NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(e->Computername);
 
 	if (t->sid_length > 0) {
-		const char *sid_str = NULL;
+		char *sid_str = NULL;
 		size_t len;
 		if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
 					   t->sid.data, t->sid.length,
@@ -971,6 +971,7 @@ NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 				return NT_STATUS_INVALID_SID;
 			}
 		}
+		TALLOC_FREE(sid_str);
 	}
 
 	e->Strings		= talloc_array(mem_ctx, const char *, t->num_of_strings);
