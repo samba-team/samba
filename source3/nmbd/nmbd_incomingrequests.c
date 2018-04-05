@@ -341,7 +341,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 
 	namerec = subrec->namelist;
 
-	while (buf < bufend) {
+	while (PTR_DIFF(bufend, buf) > 0) {
 		if( (namerec->data.source == SELF_NAME) || (namerec->data.source == PERMANENT_NAME) ) {
 			int name_type = namerec->name.name_type;
 			unstring name;
