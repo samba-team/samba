@@ -140,6 +140,7 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct tevent_context *ev;
 	const char *ctdb_base;
+	const char *t;
 
 	/* Environment variable overrides default */
 	ctdbd_pidfile = getenv("CTDB_PIDFILE");
@@ -325,6 +326,13 @@ int main(int argc, const char *argv[])
 	}
 
 	ctdb->do_checkpublicip = (options.no_publicipcheck == 0);
+
+	t = getenv("CTDB_TEST_MODE");
+	if (t != NULL) {
+		ctdb->do_setsched = false;
+		ctdb->do_checkpublicip = false;
+		fast_start = true;
+	}
 
 	if (options.max_persistent_check_errors < 0) {
 		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;

@@ -120,3 +120,20 @@ How is the ctdb tool invoked?
 $CTDB determines how to invoke the ctdb client.  If not already set
 and if $VALGRIND is set, this is set to "$VALGRIND ctdb".  If this is
 not already set but $VALGRIND is not set, this is simply set to "ctdb"
+
+Test and debugging variable options
+-----------------------------------
+
+       CTDB_TEST_MODE
+
+	   Set this environment variable to enable test mode.
+
+	   When testing with multiple local daemons on a single
+	   machine this does 3 things:
+
+	   * Disables checks related to public IP addresses
+
+	   * Speeds up the initial recovery during startup at the
+	     expense of some consistency checking
+
+	   * Disables real-time scheduling
