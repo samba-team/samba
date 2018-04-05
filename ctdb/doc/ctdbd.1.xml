@@ -403,29 +403,6 @@
     <variablelist>
 
       <varlistentry>
-	<term>--nopublicipcheck</term>
-	<listitem>
-	  <para>
-	    This option is used when testing with multiple local
-	    daemons on a single machine.  It disables checks related
-	    to public IP addresses.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--sloppy-start</term>
-	<listitem>
-	  <para>
-	    This is debugging option.  This speeds up the initial
-	    recovery during startup at the expense of some consistency
-	    checking.  <emphasis>Don't use this option in
-	    production</emphasis>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--torture</term>
 	<listitem>
 	  <para>

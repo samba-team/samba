@@ -55,7 +55,6 @@ static struct {
 	int         no_lmaster;
 	int         no_recmaster;
 	int	    script_log_level;
-	int         no_publicipcheck;
 	int         max_persistent_check_errors;
 	int         torture;
 } options = {
@@ -127,11 +126,9 @@ int main(int argc, const char *argv[])
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
 		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, 0, "log level of event script output", NULL },
-		{ "nopublicipcheck", 0, POPT_ARG_NONE, &options.no_publicipcheck, 0, "don't check we have/don't have the correct public ip addresses", NULL },
 		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
 		  &options.max_persistent_check_errors, 0,
 		  "max allowed persistent check errors (default 0)", NULL },
-		{ "sloppy-start", 0, POPT_ARG_NONE, &fast_start, 0, "Do not perform full recovery on start", NULL },
 		{ "torture", 0, POPT_ARG_NONE, &options.torture, 0, "enable nastiness in library", NULL },
 		POPT_TABLEEND
 	};
@@ -325,7 +322,7 @@ int main(int argc, const char *argv[])
 		ctdb->do_setsched = false;
 	}
 
-	ctdb->do_checkpublicip = (options.no_publicipcheck == 0);
+	ctdb->do_checkpublicip = true;
 
 	t = getenv("CTDB_TEST_MODE");
 	if (t != NULL) {
