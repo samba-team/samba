@@ -145,7 +145,6 @@ CTDB_DEBUGLEVEL=INFO
 CTDB_DBDIR="${db_dir}"
 CTDB_DBDIR_PERSISTENT="${db_dir}/persistent"
 CTDB_DBDIR_STATE="${db_dir}/state"
-CTDB_NOSETSCHED=yes
 EOF
 	done
 }
@@ -154,7 +153,7 @@ start_ctdb_1 ()
 {
 	local pnn="$1"
 
-	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
+	CTDBD="${VALGRIND} ctdbd" \
 	     onnode "$pnn" ctdbd_wrapper start
 }
 
