@@ -37,10 +37,6 @@ lvs_check_config ()
 		[ -n "$CTDB_LVS_PUBLIC_IFACE" ] || \
 			die "Invalid configuration: CTDB_LVS_PUBLIC_IFACE not set"
 	fi
-
-	if [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" = "yes" ] ; then
-		die "Invalid configuration: CTDB_PARTIALLY_ONLINE_INTERFACES=yes incompatible with LVS"
-	fi
 }
 
 case "$1" in
