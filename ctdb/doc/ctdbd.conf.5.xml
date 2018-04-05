@@ -1517,22 +1517,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_RC_LOCAL=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME is a script fragment to be sourced by the
-	    <filename>functions</filename> that is sourced by scripts.
-	    On example use would be to override function definitions
-	    in unit tests.  As a sanity check, this file must be
-	    executable for it to be used.
-	  </para>
-	  <para>
-	    No default.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_RUN_TIMEOUT_MONITOR=yes|no</term>
 	<listitem>
 	  <para>
