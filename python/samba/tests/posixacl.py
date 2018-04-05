@@ -82,7 +82,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         # This should invalidate the ACL, as we include the posix ACL in the hash
         (backend_obj, dbname) = checkset_backend(self.lp, None, None)
         backend_obj.wrap_setxattr(dbname,
-                                  self.tempf, "system.fake_access_acl", "")
+                                  self.tempf, "system.fake_access_acl", b"")
 
         #however, as this is direct DB access, we do not notice it
         facl = getntacl(self.lp, self.tempf, direct_db_access=True)
@@ -96,7 +96,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         # This should invalidate the ACL, as we include the posix ACL in the hash
         (backend_obj, dbname) = checkset_backend(self.lp, None, None)
         backend_obj.wrap_setxattr(dbname,
-                                  self.tempf, "system.fake_access_acl", "")
+                                  self.tempf, "system.fake_access_acl", b"")
 
         #the hash would break, and we return an ACL based only on the mode, except we set the ACL using the 'ntvfs' mode that doesn't include a hash
         facl = getntacl(self.lp, self.tempf)
@@ -112,7 +112,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         # This should invalidate the ACL, as we include the posix ACL in the hash
         (backend_obj, dbname) = checkset_backend(self.lp, None, None)
         backend_obj.wrap_setxattr(dbname,
-                                  self.tempf, "system.fake_access_acl", "")
+                                  self.tempf, "system.fake_access_acl", b"")
 
         #the hash will break, and we return an ACL based only on the mode
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
