@@ -41,7 +41,7 @@ have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
 with_pam = ("WITH_PAM" in config_hash)
 pam_wrapper_so_path=config_hash["LIBPAM_WRAPPER_SO_PATH"]
 
-planpythontestsuite("none", "samba.tests.source")
+planpythontestsuite("none", "samba.tests.source", py3_compatible=True)
 if have_man_pages_support:
     planpythontestsuite("none", "samba.tests.docs")
 
