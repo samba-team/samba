@@ -137,3 +137,29 @@ Test and debugging variable options
 	     expense of some consistency checking
 
 	   * Disables real-time scheduling
+
+       CTDB_DEBUG_HUNG_SCRIPT_LOGFILE=FILENAME
+	   FILENAME specifies where log messages should go when
+	   debugging hung eventscripts. This is a testing option. See
+	   also CTDB_DEBUG_HUNG_SCRIPT.
+
+	   No default. Messages go to stdout/stderr and are logged to
+	   the same place as other CTDB log messages.
+
+       CTDB_SYS_ETCDIR=DIRECTORY
+	   DIRECTORY containing system configuration files. This is
+	   used to provide alternate configuration when testing and
+	   should not need to be changed from the default.
+
+	   Default is /etc.
+
+       CTDB_RUN_TIMEOUT_MONITOR=yes|no
+	   Whether CTDB should simulate timing out monitor
+	   events. This uses the 99.timeout eventscript.
+
+	   Default is no.
+
+       CTDB_VARDIR=DIRECTORY
+	   DIRECTORY containing CTDB files that are modified at runtime.
+
+	   Defaults to /usr/local/var/lib/ctdb.
