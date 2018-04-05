@@ -70,10 +70,6 @@ if [ -z "$CTDB_BASE" ] ; then
     CTDB_BASE="/usr/local/etc/ctdb"
 fi
 
-. "${CTDB_BASE}/functions"
-
-loadconfig
-
 parse_options ()
 {
     # $POSIXLY_CORRECT means that the command passed to onnode can
