@@ -107,6 +107,18 @@
       </varlistentry>
 
       <varlistentry>
+	<term>-i, --interactive</term>
+	<listitem>
+	  <para>
+	    Enable interactive mode.  This will make ctdbd run in the
+	    foreground and not detach from the terminal.  By default
+	    ctdbd will detach itself and run in the background as a
+	    daemon.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>--listen=<parameter>IPADDR</parameter></term>
 	<listitem>
 	  <para>
@@ -265,6 +277,30 @@
       </varlistentry>
 
       <varlistentry>
+	<term>--nosetsched</term>
+	<listitem>
+	  <para>
+	    Normally ctdbd will change its scheduler to run as a
+	    real-time process. This is the default mode for a normal
+	    ctdbd operation to gurarantee that ctdbd always gets the CPU
+	    cycles that it needs.
+	  </para>
+	  <para>
+	    This option is used to tell ctdbd to
+	    <emphasis>not</emphasis> run as a real-time process and
+	    instead run ctdbd as a normal userspace process.  This can
+	    be used on a platform where real-time scheduling is not
+	    supported.
+	  </para>
+	  <para>
+	    This is also useful for debugging and when you want to run
+	    ctdbd under valgrind or gdb. (You don't want to attach
+	    valgrind or gdb to a real-time process.)
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>--notification-script=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
@@ -296,6 +332,22 @@
 	    <citetitle>RECOVERY LOCK</citetitle> section in
 	    <citerefentry><refentrytitle>ctdb</refentrytitle>
 	    <manvolnum>7</manvolnum></citerefentry>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--script-log-level=<parameter>DEBUGLEVEL</parameter></term>
+	<listitem>
+	  <para>
+	    This option sets the debug level of event script output to
+	    DEBUGLEVEL.  The default is ERR.
+	  </para>
+	  <para>
+	    See the <citetitle>DEBUG LEVELS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -371,64 +423,12 @@
     <variablelist>
 
       <varlistentry>
-	<term>-i, --interactive</term>
-	<listitem>
-	  <para>
-	    Enable interactive mode.  This will make ctdbd run in the
-	    foreground and not detach from the terminal.  By default
-	    ctdbd will detach itself and run in the background as a
-	    daemon.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--nopublicipcheck</term>
 	<listitem>
 	  <para>
 	    This option is used when testing with multiple local
 	    daemons on a single machine.  It disables checks related
 	    to public IP addresses.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--nosetsched</term>
-	<listitem>
-	  <para>
-	    This is a debugging option. This option is only used when
-	    debugging ctdbd.
-	  </para>
-	  <para>
-	    Normally ctdbd will change its scheduler to run as a
-	    real-time process. This is the default mode for a normal
-	    ctdbd operation to gurarantee that ctdbd always gets the CPU
-	    cycles that it needs.
-	  </para>
-	  <para>
-	    This option is used to tell ctdbd to
-	    <emphasis>not</emphasis> run as a real-time process and
-	    instead run ctdbd as a normal userspace process.  This is
-	    useful for debugging and when you want to run ctdbd under
-	    valgrind or gdb. (You don't want to attach valgrind or gdb
-	    to a real-time process.)
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--script-log-level=<parameter>DEBUGLEVEL</parameter></term>
-	<listitem>
-	  <para>
-	    This option sets the debug level of event script output to
-	    DEBUGLEVEL.  The default is ERR.
-	  </para>
-	  <para>
-	    See the <citetitle>DEBUG LEVELS</citetitle> section in
-	    <citerefentry><refentrytitle>ctdb</refentrytitle>
-	    <manvolnum>7</manvolnum></citerefentry> for more
-	    information.
 	  </para>
 	</listitem>
       </varlistentry>
