@@ -51,7 +51,7 @@ except ImportError:
     skiptestsuite("subunit", "testscenarios not available")
 else:
     planpythontestsuite("none", "subunit.tests.test_suite")
-planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
+planpythontestsuite("none", "samba.tests.blackbox.ndrdump", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.blackbox.check_output", py3_compatible=True)
 planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
 planpythontestsuite("none", "samba.tests.credentials", py3_compatible=True)
