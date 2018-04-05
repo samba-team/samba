@@ -1616,7 +1616,7 @@ main() {
         if not conf.env['FLEX']:
             conf.fatal("Spotlight support requested but flex missing")
         conf.CHECK_COMMAND('%s --version' % conf.env['FLEX'], msg='Using flex version', define=None, on_target=False)
-        versions = ['1.0', '0.16', '0.14']
+        versions = ['2.0', '1.0', '0.16', '0.14']
         for version in versions:
             testlib = 'tracker-sparql-' + version
             if conf.CHECK_CFG(package=testlib,
