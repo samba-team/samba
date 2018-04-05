@@ -41,9 +41,9 @@ have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
 with_pam = ("WITH_PAM" in config_hash)
 pam_wrapper_so_path=config_hash["LIBPAM_WRAPPER_SO_PATH"]
 
-planpythontestsuite("none", "samba.tests.source")
+planpythontestsuite("none", "samba.tests.source", py3_compatible=True)
 if have_man_pages_support:
-    planpythontestsuite("none", "samba.tests.docs")
+    planpythontestsuite("none", "samba.tests.docs", py3_compatible=True)
 
 try:
     import testscenarios
@@ -51,8 +51,8 @@ except ImportError:
     skiptestsuite("subunit", "testscenarios not available")
 else:
     planpythontestsuite("none", "subunit.tests.test_suite")
-planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
-planpythontestsuite("none", "samba.tests.blackbox.check_output")
+planpythontestsuite("none", "samba.tests.blackbox.ndrdump", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.blackbox.check_output", py3_compatible=True)
 planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
 planpythontestsuite("none", "samba.tests.credentials", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.registry", py3_compatible=True)
@@ -60,23 +60,27 @@ planpythontestsuite("none", "samba.tests.auth", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.get_opt", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.security", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dcerpc.misc", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.dcerpc.integer")
+planpythontestsuite("none", "samba.tests.dcerpc.integer", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.param", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.upgrade")
+planpythontestsuite("none", "samba.tests.upgrade", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.core", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.common")
-planpythontestsuite("none", "samba.tests.provision")
-planpythontestsuite("none", "samba.tests.password_quality")
-planpythontestsuite("none", "samba.tests.samba3")
+planpythontestsuite("none", "samba.tests.common", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.provision", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.password_quality", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.strings")
 planpythontestsuite("none", "samba.tests.netcmd")
-planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc")
-planpythontestsuite("none", "samba.tests.dcerpc.array")
-planpythontestsuite("none", "samba.tests.dcerpc.string")
-planpythontestsuite("none", "samba.tests.hostconfig")
+planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.dcerpc.array", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.dcerpc.string", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.hostconfig", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging",
                     py3_compatible=True)
-planpythontestsuite("none", "samba.tests.samba3sam")
+planpythontestsuite("none", "samba.tests.s3param", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.s3passdb", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.s3registry", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.s3windb", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.s3idmapdb", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.samba3sam", py3_compatible=True)
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
     extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
@@ -141,18 +145,18 @@ plantestsuite(
     ["PYTHON=%s" % python,
      os.path.join(bbdir, "functionalprep.sh"),
      '$PREFIX_ABS/provision', configuration])
-planpythontestsuite("none", "samba.tests.upgradeprovision")
+planpythontestsuite("none", "samba.tests.upgradeprovision", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.xattr", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.ntacls")
-planpythontestsuite("none", "samba.tests.policy")
-planpythontestsuite("none", "samba.tests.kcc.graph")
-planpythontestsuite("none", "samba.tests.kcc.graph_utils")
-planpythontestsuite("none", "samba.tests.kcc.ldif_import_export")
-planpythontestsuite("none", "samba.tests.graph")
+planpythontestsuite("none", "samba.tests.ntacls", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.policy", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.kcc.graph", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.kcc.graph_utils", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.kcc.ldif_import_export", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.graph", py3_compatible=True)
 plantestsuite("wafsamba.duplicate_symbols", "none", [os.path.join(srcdir(), "buildtools/wafsamba/test_duplicate_symbol.sh")])
 planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.tdb_util", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.samdb_api")
+planpythontestsuite("none", "samba.tests.samdb_api", py3_compatible=True)
 
 if with_pam:
     plantestsuite("samba.tests.pam_winbind(local)", "ad_member",

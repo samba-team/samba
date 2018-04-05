@@ -60,7 +60,7 @@ def get_source_file_contents():
     """Iterate over the contents of all python files."""
     for fname in get_python_source_files():
         try:
-            f = open(fname, 'rb')
+            f = open(fname, 'r')
         except IOError as e:
             if e.errno == errno.ENOENT:
                 warnings.warn("source file %s broken link?" % fname)

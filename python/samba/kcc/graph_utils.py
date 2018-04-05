@@ -32,7 +32,7 @@ def write_dot_file(basename, edge_list, vertices=None, label=None,
     s = dot_graph(vertices, edge_list, title=label, **kwargs)
     if label:
         # sanitise DN and guid labels
-        basename += '_' + label.translate(None, ', ')
+        basename += '_' + label.replace(', ', '')
 
     filename = os.path.join(dot_file_dir, "%s.dot" % basename)
     if debug is not None:
@@ -235,7 +235,7 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
             raise GraphError("wanted double directed ring, found a leaf node"
                              "(%s)" % vertex)
 
-    for vertex in edge_map.keys():
+    for vertex in list(edge_map.keys()):
         nset = edge_map[vertex]
         if not nset:
             continue

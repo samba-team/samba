@@ -46,18 +46,6 @@ from samba.kcc.debug import DEBUG, DEBUG_FN, logger
 from samba.kcc import debug
 
 
-def sort_replica_by_dsa_guid(rep1, rep2):
-    """Helper to sort NCReplicas by their DSA guids
-
-    The guids need to be sorted in their NDR form.
-
-    :param rep1: An NC replica
-    :param rep2: Another replica
-    :return: -1, 0, or 1, indicating sort order.
-    """
-    return cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))
-
-
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
     """Helper to sort DSAs by guid global catalog status
 
@@ -286,7 +274,7 @@ class KCC(object):
                                                      scope=ldb.SCOPE_BASE,
                                                      attrs=["dsServiceName"])
                 dn = ldb.Dn(self.samdb,
-                            service_name_res[0]["dsServiceName"][0])
+                            service_name_res[0]["dsServiceName"][0].decode())
 
                 res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                         attrs=["objectGUID"])
@@ -2194,7 +2182,7 @@ class KCC(object):
         # on the local DC
         r_list.append(l_of_x)
 
-        r_list.sort(sort_replica_by_dsa_guid)
+        r_list.sort(key=lambda rep: ndr_pack(rep.rep_dsa_guid))
         r_len = len(r_list)
 
         max_node_edges = self.intrasite_max_node_edges(r_len)

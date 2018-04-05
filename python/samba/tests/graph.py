@@ -73,7 +73,7 @@ class DotFileTests(samba.tests.TestCaseInTempDir):
     def test_basic_dot_files(self):
         vertices = tuple('abcdefgh')
         all_edges = tuple(itertools.combinations(vertices, 2))
-        line_edges = zip(vertices[1:], vertices[:-1])
+        line_edges = list(zip(vertices[1:], vertices[:-1]))
         ring_edges = line_edges + [(vertices[0], vertices[-1])]
         no_edges = []
         # even join to even numbers, odd to odd
@@ -101,6 +101,15 @@ class DotFileTests(samba.tests.TestCaseInTempDir):
 
 
 class DistanceTests(samba.tests.TestCase):
+
+    def setUp(self):
+        super(DistanceTests, self).setUp()
+        # a sorted list of colour set names.
+        self.sorted_colour_sets = sorted(
+            graph.COLOUR_SETS,
+            # return '' for None, so it's sortable.
+            key=lambda name: name or '')
+
     def test_simple_distance(self):
         edges = [('ant', 'bat'),
                  ('cat', 'dog'),
@@ -115,12 +124,10 @@ class DistanceTests(samba.tests.TestCase):
                  ('cat', 'dog')]
 
         for utf8 in (True, False):
-            for colour in sorted(graph.COLOUR_SETS):
+            for colour in self.sorted_colour_sets:
                 print('utf8 %s, colour %s' % (utf8, colour))
                 s = graph.distance_matrix(None, edges, utf8=utf8,
                                           colour=colour)
-                print(s)
-                print()
 
     def test_simple_distance2(self):
         edges = [('ant', 'bat'),
@@ -129,12 +136,10 @@ class DistanceTests(samba.tests.TestCase):
                  ('ant', 'cat')]
 
         for utf8 in (True, False):
-            for colour in sorted(graph.COLOUR_SETS):
+            for colour in self.sorted_colour_sets:
                 print('utf8 %s, colour %s' % (utf8, colour))
                 s = graph.distance_matrix(None, edges, utf8=utf8,
                                           colour=colour)
-                print(s)
-                print()
 
     def test_simple_distance3(self):
         edges = [('ant', 'bat'),
@@ -144,9 +149,7 @@ class DistanceTests(samba.tests.TestCase):
                  ('dog', 'eel')]
 
         for utf8 in (True, False):
-            for colour in sorted(graph.COLOUR_SETS):
+            for colour in self.sorted_colour_sets:
                 print('utf8 %s, colour %s' % (utf8, colour))
                 s = graph.distance_matrix(None, edges, utf8=utf8,
                                           colour=colour)
-                print(s)
-                print()

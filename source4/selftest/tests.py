@@ -376,7 +376,7 @@ for t in smbtorture4_testsuites("dlz_bind9."):
     #The dlz_bind9 tests needs to look at the DNS database
     plansmbtorture4testsuite(t, "chgdcpass:local", ["ncalrpc:$SERVER", '-U$USERNAME%$PASSWORD'])
 
-planpythontestsuite("nt4_dc", "samba.tests.libsmb_samba_internal");
+planpythontestsuite("nt4_dc", "samba.tests.libsmb_samba_internal", py3_compatible=True);
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
@@ -570,7 +570,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         name = module
     plantestsuite_loadlist(name, env, args)
     if py3_compatible and extra_python is not None:
-        args[0] = subunitrun3
+        args[args.index(subunitrun)] = subunitrun3
         plantestsuite_loadlist(name, env, args)
 
 
@@ -806,8 +806,8 @@ for env in ["ad_dc_ntvfs"]:
                            )
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc")
-planpythontestsuite("ad_dc:local", "samba.tests.posixacl")
-planpythontestsuite("ad_dc_no_nss:local", "samba.tests.posixacl")
+planpythontestsuite("ad_dc:local", "samba.tests.posixacl", py3_compatible=True)
+planpythontestsuite("ad_dc_no_nss:local", "samba.tests.posixacl", py3_compatible=True)
 plantestsuite_loadlist("samba4.deletetest.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"),
                                                      '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.blackbox.samba3dump", "none", [os.path.join(samba4srcdir, "selftest/test_samba3dump.sh")])

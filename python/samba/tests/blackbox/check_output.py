@@ -100,6 +100,8 @@ class CheckOutputTests(BlackboxTestCase):
         try:
             with TimeoutHelper(10):
                 actual = self.check_output(cmdline)
-                self.assertEqual(actual, expected)
+                # check_output will return bytes
+                # convert expected to bytes for python 3
+                self.assertEqual(actual, expected.encode('utf-8'))
         except TimeoutHelper.Timeout:
             self.fail(msg='Timeout!')
