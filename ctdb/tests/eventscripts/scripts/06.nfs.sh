@@ -1,1 +1,6 @@
-. "${TEST_SUBDIR}/scripts/60.nfs.sh"
+setup ()
+{
+	setup_script_options <<EOF
+CTDB_MANAGES_NFS="yes"
+EOF
+}
