@@ -440,7 +440,7 @@ Example2 shows how to delete a user in the domain against the local server.   su
                       credentials=creds, lp=lp)
 
         filter = ("(&(sAMAccountName=%s)(sAMAccountType=805306368))" %
-                   username)
+                   ldb.binary_encode(username))
 
         try:
             res = samdb.search(base=samdb.domain_dn(),

@@ -360,7 +360,8 @@ sudo is used so a computer may run the command as root.
             samaccountname = "%s$" % computername
 
         filter = ("(&(sAMAccountName=%s)(sAMAccountType=%u))" %
-                  (samaccountname, dsdb.ATYPE_WORKSTATION_TRUST))
+                  (ldb.binary_encode(samaccountname),
+                   dsdb.ATYPE_WORKSTATION_TRUST))
         try:
             res = samdb.search(base=samdb.domain_dn(),
                                scope=ldb.SCOPE_SUBTREE,
@@ -544,7 +545,8 @@ class cmd_computer_move(Command):
             samaccountname = "%s$" % computername
 
         filter = ("(&(sAMAccountName=%s)(sAMAccountType=%u))" %
-                  (samaccountname, dsdb.ATYPE_WORKSTATION_TRUST))
+                  (ldb.binary_encode(samaccountname),
+                   dsdb.ATYPE_WORKSTATION_TRUST))
         try:
             res = samdb.search(base=domain_dn,
                                expression=filter,
