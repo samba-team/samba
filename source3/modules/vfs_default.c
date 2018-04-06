@@ -2229,9 +2229,12 @@ static struct smb_filename *vfswrap_getwd(vfs_handle_struct *handle,
 				NULL,
 				NULL,
 				0);
-	if (smb_fname == NULL) {
-		SAFE_FREE(result);
-	}
+	/*
+	 * sys_getwd() *always* returns malloced memory.
+	 * We must free here to avoid leaks:
+	 * BUG:https://bugzilla.samba.org/show_bug.cgi?id=13372
+	 */
+	SAFE_FREE(result);
 	return smb_fname;
 }
 
