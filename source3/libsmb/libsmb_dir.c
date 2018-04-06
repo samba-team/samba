@@ -40,6 +40,26 @@
  * We accept the URL syntax explained in SMBC_parse_path(), above.
  */
 
+static void remove_dirplus(SMBCFILE *dir)
+{
+	struct smbc_dirplus_list *d = NULL;
+
+	d = dir->dirplus_list;
+	while (d != NULL) {
+		struct smbc_dirplus_list *f = d;
+		d = d->next;
+
+		SAFE_FREE(f->smb_finfo->short_name);
+		SAFE_FREE(f->smb_finfo->name);
+		SAFE_FREE(f->smb_finfo);
+		SAFE_FREE(f);
+	}
+
+	dir->dirplus_list = NULL;
+	dir->dirplus_end = NULL;
+	dir->dirplus_next = NULL;
+}
+
 static void
 remove_dir(SMBCFILE *dir)
 {
@@ -930,6 +950,7 @@ SMBC_closedir_ctx(SMBCCTX *context,
 	}
 
 	remove_dir(dir); /* Clean it up */
+	remove_dirplus(dir);
 
 	DLIST_REMOVE(context->internal->files, dir);
 
