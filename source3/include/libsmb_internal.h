@@ -94,6 +94,10 @@ struct smbc_dir_list {
 	struct smbc_dirent *dirent;
 };
 
+struct smbc_dirplus_list {
+	struct smbc_dirplus_list *next;
+	struct libsmb_file_info *smb_finfo;
+};
 
 /*
  * Structure for open file management
@@ -110,6 +114,7 @@ struct _SMBCFILE {
 	struct _SMBCSRV *srv;
 	bool file;
 	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
+	struct smbc_dirplus_list *dirplus_list, *dirplus_end, *dirplus_next;
 	int dir_type, dir_error;
 
 	SMBCFILE *next, *prev;

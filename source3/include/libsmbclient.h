@@ -129,6 +129,55 @@ struct smbc_dirent
 	char name[1];
 };
 
+/**@ingroup structure
+ * Structure that represents all attributes of a directory entry.
+ *
+ */
+struct libsmb_file_info
+{
+	/**
+	 * Size of file
+	 */
+	uint64_t size;
+	/**
+	 * DOS attributes of file
+	 */
+	uint16_t attrs;
+	/**
+	 * User ID of file
+	 */
+	uid_t uid;
+	/**
+	 * Group ID of file
+	 */
+	gid_t gid;
+	/**
+	 * Birth/Create time of file (if supported by system)
+	 * Otherwise the value will be 0
+	 */
+	struct timespec btime_ts;
+	/**
+	 * Modified time for the file
+	 */
+	struct timespec mtime_ts;
+	/**
+	 * Access time for the file
+	 */
+	struct timespec atime_ts;
+	/**
+	 * Change time for the file
+	 */
+	struct timespec ctime_ts;
+	/**
+	 * Name of file
+	 */
+	char *name;
+	/**
+	 * Short name of file
+	 */
+	char *short_name;
+};
+
 /*
  * Logging callback function
  */
