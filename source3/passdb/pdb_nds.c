@@ -183,15 +183,19 @@ static int berEncodeLoginData(
 		err = (ber_printf(requestBer, "}}", 0) < 0) ? LDAP_ENCODING_ERROR : 0;
 	}
 
-	if(putData)
-	{
+	if (!err) {
+		if (putData) {
 		/* BER Encode the the tag and data */
-		err = (ber_printf(requestBer, "oio}", utf8TagPtr, utf8TagSize, putDataLen, putData, putDataLen) < 0) ? LDAP_ENCODING_ERROR : 0;
-	}
-	else
-	{
+			err = (ber_printf(requestBer, "oio}", utf8TagPtr,
+					  utf8TagSize, putDataLen, putData,
+					  putDataLen) < 0)
+				? LDAP_ENCODING_ERROR : 0;
+		} else {
 		/* BER Encode the the tag */
-		err = (ber_printf(requestBer, "o}", utf8TagPtr, utf8TagSize) < 0) ? LDAP_ENCODING_ERROR : 0;
+			err = (ber_printf(requestBer, "o}", utf8TagPtr,
+					  utf8TagSize) < 0)
+				? LDAP_ENCODING_ERROR : 0;
+		}
 	}
 
 	if (err)
