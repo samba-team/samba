@@ -24,6 +24,7 @@ import samba.getopt as options
 import ldb
 import socket
 import samba
+import re
 from samba import sd_utils
 from samba.dcerpc import dnsserver, dnsp, security
 from samba.dnsserver import ARecord, AAAARecord
@@ -266,8 +267,13 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
             if ip_address_list:
                 # if ip_address_list provided, then we need to create DNS
                 # records for this computer.
+
+                hostname = re.sub(r"\$$", "", computername)
+                if hostname.count('$'):
+                    raise CommandError('Illegal computername "%s"' % computername)
+
                 filters = '(&(sAMAccountName={}$)(objectclass=computer))'.format(
-                    ldb.binary_encode(computername.rstrip('$')))
+                    ldb.binary_encode(hostname))
 
                 recs = samdb.search(
                     base=samdb.domain_dn(),
@@ -289,7 +295,7 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
                 )
 
                 add_dns_records(
-                    samdb, computername.rstrip('$'), dns_conn,
+                    samdb, hostname, dns_conn,
                     change_owner_sd, samdb.host_dns_name(),
                     ip_address_list, self.get_logger())
         except Exception, e:
