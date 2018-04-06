@@ -159,6 +159,73 @@ add_dirent(SMBCFILE *dir,
 
 }
 
+static int add_dirplus(SMBCFILE *dir, struct file_info *finfo)
+{
+	struct smbc_dirplus_list *new_entry = NULL;
+	struct libsmb_file_info *info = NULL;
+
+	new_entry = SMB_MALLOC_P(struct smbc_dirplus_list);
+	if (new_entry == NULL) {
+		dir->dir_error = ENOMEM;
+		return -1;
+	}
+	ZERO_STRUCTP(new_entry);
+
+	info = SMB_MALLOC_P(struct libsmb_file_info);
+	if (info == NULL) {
+		SAFE_FREE(new_entry);
+		dir->dir_error = ENOMEM;
+		return -1;
+	}
+
+	ZERO_STRUCTP(info);
+
+	info->btime_ts = finfo->btime_ts;
+	info->atime_ts = finfo->atime_ts;
+	info->ctime_ts = finfo->ctime_ts;
+	info->mtime_ts = finfo->mtime_ts;
+	info->gid = finfo->gid;
+	info->attrs = finfo->mode;
+	info->size = finfo->size;
+	info->uid = finfo->uid;
+	info->name = SMB_STRDUP(finfo->name);
+	if (info->name == NULL) {
+		SAFE_FREE(info);
+		SAFE_FREE(new_entry);
+		dir->dir_error = ENOMEM;
+		return -1;
+	}
+
+	if (finfo->short_name) {
+		info->short_name = SMB_STRDUP(finfo->short_name);
+	} else {
+		info->short_name = SMB_STRDUP("");
+	}
+
+	if (info->short_name == NULL) {
+		SAFE_FREE(info->name);
+		SAFE_FREE(info);
+		SAFE_FREE(new_entry);
+		dir->dir_error = ENOMEM;
+		return -1;
+	}
+	new_entry->smb_finfo = info;
+
+	/* Now add to the list. */
+	if (dir->dirplus_list == NULL) {
+		/* Empty list - point everything at new_entry. */
+		dir->dirplus_list = new_entry;
+		dir->dirplus_end = new_entry;
+		dir->dirplus_next = new_entry;
+	} else {
+		/* Append to list but leave the ->next cursor alone. */
+		dir->dirplus_end->next = new_entry;
+		dir->dirplus_end = new_entry;
+	}
+
+	return 0;
+}
+
 static void
 list_unique_wg_fn(const char *name,
                   uint32_t type,
@@ -268,11 +335,17 @@ dir_list_fn(const char *mnt,
             const char *mask,
             void *state)
 {
+	SMBCFILE *dirp = (SMBCFILE *)state;
+	int ret;
 
 	if (add_dirent((SMBCFILE *)state, finfo->name, "",
 		       (finfo->mode&FILE_ATTRIBUTE_DIRECTORY?SMBC_DIR:SMBC_FILE)) < 0) {
 		SMBCFILE *dir = (SMBCFILE *)state;
 		return map_nt_error_from_unix(dir->dir_error);
+	}
+	ret = add_dirplus(dirp, finfo);
+	if (ret < 0) {
+		return map_nt_error_from_unix(dirp->dir_error);
 	}
 	return NT_STATUS_OK;
 }
