@@ -290,7 +290,7 @@ static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
 	LDAPMessage *msg = NULL;
 	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	char *username;
+	char *username = NULL;
 	struct idmap_domain *dom;
 	struct idmap_ad_context *ctx = NULL;
 
@@ -339,7 +339,8 @@ static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
 	username = ads_pull_string(ctx->ads, mem_ctx, msg,
 				   "sAMAccountName");
 	if (!username) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		nt_status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto done;
 	}
 
 	*name = talloc_asprintf(mem_ctx, "%s\\%s",
@@ -353,6 +354,7 @@ static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
 	nt_status = NT_STATUS_OK;
 
 done:
+	TALLOC_FREE(username);
 	TALLOC_FREE(filter);
 	if (msg) {
 		ads_msgfree(ctx->ads, msg);
