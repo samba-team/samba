@@ -64,7 +64,6 @@
 
 #include <sys/wait.h>
 
-#include "lmdb.h"
 #include "ldb_tdb/ldb_tdb.h"
 
 
