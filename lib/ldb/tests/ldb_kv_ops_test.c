@@ -198,7 +198,7 @@ static int parse(struct ldb_val key,
 	read->data = talloc_size(talloc_autofree_context(),
 				 data.length);
 	assert_non_null(read->data);
-	
+
 	memcpy(read->data, data.data, data.length);
 	read->length = data.length;
 	return LDB_SUCCESS;

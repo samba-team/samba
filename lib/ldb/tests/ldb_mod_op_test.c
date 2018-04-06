@@ -1953,7 +1953,7 @@ static void test_ldb_modify_during_search(void **state, bool add_index,
 		}
 		assert_int_equal(ret, LDB_SUCCESS);
 	}
-		
+
 	tevent_loop_allow_nesting(search_test_ctx->ldb_test_ctx->ev);
 
 	ctx.basedn
@@ -3370,7 +3370,7 @@ static void test_ldb_add_duplicate_value_to_unique_index(void **state)
 
 	ret = ldb_msg_add_string(msg02, "cn", "test_unique_index");
 	assert_int_equal(ret, LDB_SUCCESS);
-	
+
 	ret = ldb_msg_add_string(msg02, "objectUUID",
 				 "0123456789abcde2");
 	assert_int_equal(ret, LDB_SUCCESS);
@@ -3421,7 +3421,7 @@ static void test_ldb_add_to_index_duplicates_allowed(void **state)
 
 	ret = ldb_msg_add_string(msg02, "objectUUID",
 				 "0123456789abcde2");
-	
+
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_SUCCESS);
 	talloc_free(tmp_ctx);
@@ -3453,7 +3453,7 @@ static void test_ldb_add_to_index_unique_values_required(void **state)
 
 	ret = ldb_msg_add_string(msg01, "objectUUID",
 				 "0123456789abcde1");
-	
+
 	ret = ldb_add(test_ctx->ldb, msg01);
 	assert_int_equal(ret, LDB_SUCCESS);
 
@@ -3468,7 +3468,7 @@ static void test_ldb_add_to_index_unique_values_required(void **state)
 
 	ret = ldb_msg_add_string(msg02, "objectUUID",
 				 "0123456789abcde2");
-	
+
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_ERR_CONSTRAINT_VIOLATION);
 	talloc_free(tmp_ctx);
@@ -3498,7 +3498,7 @@ static void test_ldb_unique_index_duplicate_logging(void **state)
 #ifdef GUID_IDX
 	return;
 #endif
-	
+
 	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
@@ -3514,7 +3514,7 @@ static void test_ldb_unique_index_duplicate_logging(void **state)
 
 	ret = ldb_msg_add_string(msg01, "objectUUID",
 				 "0123456789abcde1");
-	
+
 	ret = ldb_add(test_ctx->ldb, msg01);
 	assert_int_equal(ret, LDB_SUCCESS);
 
@@ -3529,7 +3529,7 @@ static void test_ldb_unique_index_duplicate_logging(void **state)
 
 	ret = ldb_msg_add_string(msg02, "objectUUID",
 				 "0123456789abcde2");
-	
+
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_ERR_CONSTRAINT_VIOLATION);
 
@@ -3558,7 +3558,7 @@ static void test_ldb_duplicate_dn_logging(void **state)
 #ifdef GUID_IDX
 	return;
 #endif
-	
+
 	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
@@ -3574,7 +3574,7 @@ static void test_ldb_duplicate_dn_logging(void **state)
 
 	ret = ldb_msg_add_string(msg01, "objectUUID",
 				 "0123456789abcde1");
-	
+
 	ret = ldb_add(test_ctx->ldb, msg01);
 	assert_int_equal(ret, LDB_SUCCESS);
 
@@ -3589,7 +3589,7 @@ static void test_ldb_duplicate_dn_logging(void **state)
 
 	ret = ldb_msg_add_string(msg02, "objectUUID",
 				 "0123456789abcde2");
-	
+
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_ERR_ENTRY_ALREADY_EXISTS);
 

@@ -853,7 +853,7 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	const size_t min_data = 1;
 	const size_t min_key_length = additional_key_length
 		+ indx_len + num_separators + min_data;
-	
+
 	if (attr[0] == '@') {
 		attr_for_dn = attr;
 		v = *value;
@@ -907,7 +907,7 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 		talloc_free(attr_folded);
 		return NULL;
 	}
-	
+
 	/*
 	 * ltdb_key_dn() makes something 4 bytes longer, it adds a leading
 	 * "DN=" and a trailing string terminator
@@ -977,8 +977,8 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	} else {
 		/* Only need two seperators */
 		num_separators = 2;
-		
-		/* 
+
+		/*
 		 * Overflow here is not critical as we only use this
 		 * to choose the printf truncation
 		 */
