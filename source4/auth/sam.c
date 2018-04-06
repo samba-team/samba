@@ -103,6 +103,7 @@ const char *user_attrs[] = {
 	"badPasswordTime",
 	"lmPwdHistory",
 	"ntPwdHistory",
+	"msDS-ResultantPSO",
 	NULL,
 };
 
@@ -777,6 +778,38 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Returns the details for the Password Settings Object (PSO), if one applies
+ * the user.
+ */
+static int authsam_get_user_pso(struct ldb_context *sam_ctx,
+				TALLOC_CTX *mem_ctx,
+				struct ldb_message *user_msg,
+				struct ldb_message **pso_msg)
+{
+	const char *attrs[] = { "msDS-LockoutThreshold",
+				"msDS-LockoutObservationWindow",
+				NULL };
+	struct ldb_dn *pso_dn = NULL;
+	struct ldb_result *res = NULL;
+	int ret;
+
+	/* check if the user has a PSO that applies to it */
+	pso_dn = ldb_msg_find_attr_as_dn(sam_ctx, mem_ctx, user_msg,
+					 "msDS-ResultantPSO");
+
+	if (pso_dn != NULL) {
+		ret = dsdb_search_dn(sam_ctx, mem_ctx, &res, pso_dn, attrs, 0);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		*pso_msg = res->msgs[0];
+	}
+
+	return LDB_SUCCESS;
+}
+
 NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 				      struct ldb_message *msg,
 				      struct ldb_dn *domain_dn)
@@ -790,6 +823,7 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 	NTSTATUS status;
 	struct ldb_result *domain_res;
 	struct ldb_message *msg_mod = NULL;
+	struct ldb_message *pso_msg = NULL;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_new(msg);
@@ -803,8 +837,20 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	ret = authsam_get_user_pso(sam_ctx, mem_ctx, msg, &pso_msg);
+	if (ret != LDB_SUCCESS) {
+
+		/*
+		 * fallback to using the domain defaults so that we still
+		 * record the bad password attempt
+		 */
+		DBG_ERR("Error (%d) checking PSO for %s",
+			ret, ldb_dn_get_linearized(msg->dn));
+	}
+
 	status = dsdb_update_bad_pwd_count(mem_ctx, sam_ctx,
-					   msg, domain_res->msgs[0], &msg_mod);
+					   msg, domain_res->msgs[0], pso_msg,
+					   &msg_mod);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mem_ctx);
 		return status;

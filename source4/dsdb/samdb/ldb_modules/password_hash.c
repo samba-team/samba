@@ -2533,6 +2533,7 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 	status = dsdb_update_bad_pwd_count(io->ac, ldb,
 					   io->ac->search_res->message,
 					   io->ac->dom_res->message,
+					   NULL, /* TODO: support PSO */
 					   &mod_msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;

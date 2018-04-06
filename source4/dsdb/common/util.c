@@ -5267,6 +5267,39 @@ int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
 }
 
 /*
+ * Returns the lockoutThreshold that applies. If a PSO is specified, then that
+ * setting is used over the domain defaults
+ */
+static int64_t get_lockout_threshold(struct ldb_message *domain_msg,
+				     struct ldb_message *pso_msg)
+{
+	if (pso_msg != NULL) {
+		return ldb_msg_find_attr_as_int(pso_msg,
+						"msDS-LockoutThreshold", 0);
+	} else {
+		return ldb_msg_find_attr_as_int(domain_msg,
+						"lockoutThreshold", 0);
+	}
+}
+
+/*
+ * Returns the lockOutObservationWindow that applies. If a PSO is specified,
+ * then that setting is used over the domain defaults
+ */
+static int64_t get_lockout_observation_window(struct ldb_message *domain_msg,
+					      struct ldb_message *pso_msg)
+{
+	if (pso_msg != NULL) {
+		return ldb_msg_find_attr_as_int(pso_msg,
+						"msDS-LockoutObservationWindow",
+						 0);
+	} else {
+		return ldb_msg_find_attr_as_int(domain_msg,
+						"lockOutObservationWindow", 0);
+	}
+}
+
+/*
  * Prepare an update to the badPwdCount and associated attributes.
  *
  * This requires that the user_msg have (if present):
@@ -5278,11 +5311,16 @@ int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
  *  - pwdProperties
  *  - lockoutThreshold
  *  - lockOutObservationWindow
+ *
+ * This also requires that the pso_msg have (if present):
+ *  - msDS-LockoutThreshold
+ *  - msDS-LockoutObservationWindow
  */
 NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 				   struct ldb_context *sam_ctx,
 				   struct ldb_message *user_msg,
 				   struct ldb_message *domain_msg,
+				   struct ldb_message *pso_msg,
 				   struct ldb_message **_mod_msg)
 {
 	int i, ret, badPwdCount;
@@ -5315,8 +5353,7 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 	 * Also, the built in administrator account is exempt:
 	 * http://msdn.microsoft.com/en-us/library/windows/desktop/aa375371%28v=vs.85%29.aspx
 	 */
-	lockoutThreshold = ldb_msg_find_attr_as_int(domain_msg,
-						    "lockoutThreshold", 0);
+	lockoutThreshold = get_lockout_threshold(domain_msg, pso_msg);
 	if (lockoutThreshold == 0 || (rid == DOMAIN_RID_ADMINISTRATOR)) {
 		DEBUG(5, ("Not updating badPwdCount on %s after wrong password\n",
 			  ldb_dn_get_linearized(user_msg->dn)));
@@ -5333,8 +5370,8 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	lockOutObservationWindow = ldb_msg_find_attr_as_int64(domain_msg,
-							      "lockOutObservationWindow", 0);
+	lockOutObservationWindow = get_lockout_observation_window(domain_msg,
+								  pso_msg);
 
 	badPwdCount = dsdb_effective_badPwdCount(user_msg, lockOutObservationWindow, now);
 
