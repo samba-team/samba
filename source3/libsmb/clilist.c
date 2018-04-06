@@ -77,6 +77,14 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			if (pdata_end - base < 27) {
 				return pdata_end - base;
 			}
+			/*
+			 * What we're returning here as ctime_ts is
+			 * actually the server create time.
+			 */
+			finfo->btime_ts = convert_time_t_to_timespec(
+				make_unix_date2(p+4,
+					smb1cli_conn_server_time_zone(
+						cli->conn)));
 			finfo->ctime_ts = convert_time_t_to_timespec(
 				make_unix_date2(p+4, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->atime_ts = convert_time_t_to_timespec(
@@ -128,6 +136,14 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			if (pdata_end - base < 31) {
 				return pdata_end - base;
 			}
+			/*
+			 * What we're returning here as ctime_ts is
+			 * actually the server create time.
+			 */
+			finfo->btime_ts = convert_time_t_to_timespec(
+				make_unix_date2(p+4,
+					smb1cli_conn_server_time_zone(
+						cli->conn)));
 			finfo->ctime_ts = convert_time_t_to_timespec(
 				make_unix_date2(p+4, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->atime_ts = convert_time_t_to_timespec(
@@ -250,6 +266,9 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 
 	finfo->mode = CVAL(p,21);
 
+	/* We don't get birth time. */
+	finfo->btime_ts.tv_sec = 0;
+	finfo->btime_ts.tv_nsec = 0;
 	/* this date is converted to GMT by make_unix_date */
 	finfo->ctime_ts.tv_sec = make_unix_date(p+22, smb1cli_conn_server_time_zone(cli->conn));
 	finfo->ctime_ts.tv_nsec = 0;
