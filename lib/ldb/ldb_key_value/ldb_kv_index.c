@@ -1613,6 +1613,15 @@ static int ldb_kv_index_dn_attr(struct ldb_module *module,
 
 	/* work out the index key from the parent DN */
 	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(dn));
+	if (val.data == NULL) {
+		const char *dn_str = ldb_dn_get_linearized(dn);
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       __location__
+				       ": Failed to get casefold DN "
+				       "from: %s",
+				       dn_str);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	val.length = strlen((char *)val.data);
 	key = ldb_kv_index_key(ldb, ldb_kv, attr, &val, NULL, truncation);
 	if (!key) {
