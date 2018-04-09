@@ -319,38 +319,6 @@ int partition_metadata_init(struct ldb_module *module)
 		return ret;
 	}
 
-	/*
-	 * We need to fill in the sequence number from the DB, so we
-	 * need to get a lock over all the databases.  We only read
-	 * from the main partitions, but write to metadata so to avoid
-	 * lock ordering we just get a transaction over the lot.
-	 */
-	ret = partition_start_trans(module);
-	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(data->metadata);
-		return ret;
-	}
-
-	ret = partition_metadata_set_sequence_number(module);
-	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(data->metadata);
-		partition_del_trans(module);
-		return ret;
-	}
-
-	ret = partition_prepare_commit(module);
-	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(data->metadata);
-		partition_del_trans(module);
-		return ret;
-	}
-
-	ret = partition_end_trans(module);
-	if (ret != LDB_SUCCESS) {
-		/* Nothing much we can do */
-		TALLOC_FREE(data->metadata);
-	}
-
 	return ret;
 }
 
@@ -370,6 +338,13 @@ int partition_metadata_sequence_number(struct ldb_module *module, uint64_t *valu
 		return ret;
 	}
 
+	/*
+	 * This means we will give a 0 until the first write
+	 * tranaction, which is actually pretty reasonable.
+	 *
+	 * All modern databases will have the metadata.tdb from
+	 * the time of the first transaction in provision anyway.
+	 */
 	ret = partition_metadata_get_uint64(module,
 					    LDB_METADATA_SEQ_NUM,
 					    value,
@@ -408,6 +383,26 @@ int partition_metadata_sequence_number_increment(struct ldb_module *module, uint
 	ret = partition_metadata_get_uint64(module, LDB_METADATA_SEQ_NUM, value, 0);
 	if (ret != LDB_SUCCESS) {
 		return ret;
+	}
+
+	if (*value == 0) {
+		/*
+		 * We are in a transaction now, so we can get the
+		 * sequence number from the partitions.
+		 */
+		ret = partition_metadata_set_sequence_number(module);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(data->metadata);
+			partition_del_trans(module);
+			return ret;
+		}
+
+		ret = partition_metadata_get_uint64(module,
+						    LDB_METADATA_SEQ_NUM,
+						    value, 0);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	(*value)++;
