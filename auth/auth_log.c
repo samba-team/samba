@@ -57,48 +57,7 @@
 #include "lib/util/server_id_db.h"
 #include "lib/param/param.h"
 #include "librpc/ndr/libndr.h"
-
-/*
- * Get a human readable timestamp.
- *
- * Returns the current time formatted as
- *  "Tue, 14 Mar 2017 08:38:42.209028 NZDT"
- *
- * The returned string is allocated by talloc in the supplied context.
- * It is the callers responsibility to free it.
- *
- */
-static const char* get_timestamp(TALLOC_CTX *frame)
-{
-	char buffer[40];	/* formatted time less usec and timezone */
-	char tz[10];		/* formatted time zone			 */
-	struct tm* tm_info;	/* current local time			 */
-	struct timeval tv;	/* current system time			 */
-	int r;			/* response code from gettimeofday	 */
-	const char * ts;	/* formatted time stamp			 */
-
-	r = gettimeofday(&tv, NULL);
-	if (r) {
-		DBG_ERR("Unable to get time of day: (%d) %s\n",
-			errno,
-			strerror(errno));
-		return NULL;
-	}
-
-	tm_info = localtime(&tv.tv_sec);
-	if (tm_info == NULL) {
-		DBG_ERR("Unable to determine local time\n");
-		return NULL;
-	}
-
-	strftime(buffer, sizeof(buffer)-1, "%a, %d %b %Y %H:%M:%S", tm_info);
-	strftime(tz, sizeof(tz)-1, "%Z", tm_info);
-	ts = talloc_asprintf(frame, "%s.%06ld %s", buffer, tv.tv_usec, tz);
-	if (ts == NULL) {
-		DBG_ERR("Out of memory formatting time stamp\n");
-	}
-	return ts;
-}
+#include "lib/audit_logging/audit_logging.h"
 
 /*
  * Determine the type of the password supplied for the
@@ -113,97 +72,12 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui);
 #include "system/time.h"
 
 /*
- * Context required by the JSON generation
- *  routines
- *
- */
-struct json_context {
-	json_t *root;
-	bool error;
-};
-
-static NTSTATUS get_auth_event_server(struct imessaging_context *msg_ctx,
-				      struct server_id *auth_event_server)
-{
-	NTSTATUS status;
-	TALLOC_CTX *frame = talloc_stackframe();
-	unsigned num_servers, i;
-	struct server_id *servers;
-
-	status = irpc_servers_byname(msg_ctx, frame,
-				     AUTH_EVENT_NAME,
-				     &num_servers, &servers);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_NOTICE("Failed to find 'auth_event' registered on the "
-			   "message bus to send JSON authentication events to: %s\n",
-			   nt_errstr(status));
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	/*
-	 * Select the first server that is listening, because
-	 * we get connection refused as
-	 * NT_STATUS_OBJECT_NAME_NOT_FOUND without waiting
-	 */
-	for (i = 0; i < num_servers; i++) {
-		status = imessaging_send(msg_ctx, servers[i], MSG_PING,
-					 &data_blob_null);
-		if (NT_STATUS_IS_OK(status)) {
-			*auth_event_server = servers[i];
-			TALLOC_FREE(frame);
-			return NT_STATUS_OK;
-		}
-	}
-	DBG_NOTICE("Failed to find a running 'auth_event' server "
-		   "registered on the message bus to send JSON "
-		   "authentication events to\n");
-	TALLOC_FREE(frame);
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-}
-
-static void auth_message_send(struct imessaging_context *msg_ctx,
-			      const char *json)
-{
-	struct server_id auth_event_server;
-	NTSTATUS status;
-	DATA_BLOB json_blob = data_blob_string_const(json);
-	if (msg_ctx == NULL) {
-		return;
-	}
-
-	/* Need to refetch the address each time as the destination server may
-	 * have disconnected and reconnected in the interim, in which case
-	 * messages may get lost, manifests in the auth_log tests
-	 */
-	status = get_auth_event_server(msg_ctx, &auth_event_server);
-	if (!NT_STATUS_IS_OK(status)) {
-		return;
-	}
-
-	status = imessaging_send(msg_ctx, auth_event_server, MSG_AUTH_LOG,
-				 &json_blob);
-
-	/* If the server crashed, try to find it again */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		status = get_auth_event_server(msg_ctx, &auth_event_server);
-		if (!NT_STATUS_IS_OK(status)) {
-			return;
-		}
-		imessaging_send(msg_ctx, auth_event_server, MSG_AUTH_LOG,
-				&json_blob);
-
-	}
-}
-
-/*
  * Write the json object to the debug logs.
  *
  */
 static void log_json(struct imessaging_context *msg_ctx,
 		     struct loadparm_context *lp_ctx,
-		     struct json_context *context,
+		     struct json_object *context,
 		     const char *type, int debug_class, int debug_level)
 {
 	char* json = NULL;
@@ -221,234 +95,16 @@ static void log_json(struct imessaging_context *msg_ctx,
 
 	DEBUGC(debug_class, debug_level, ("JSON %s: %s\n", type, json));
 	if (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx)) {
-		auth_message_send(msg_ctx, json);
+		audit_message_send(msg_ctx,
+				   AUTH_EVENT_NAME,
+				   MSG_AUTH_LOG,
+				   json);
 	}
 
 	if (json) {
 		free(json);
 	}
 
-}
-
-/*
- * Create a new json logging context.
- *
- * Free with a call to free_json_context
- *
- */
-static struct json_context get_json_context(void) {
-
-	struct json_context context;
-	context.error = false;
-
-	context.root = json_object();
-	if (context.root == NULL) {
-		context.error = true;
-		DBG_ERR("Unable to create json_object\n");
-	}
-	return context;
-}
-
-/*
- * free a previously created json_context
- *
- */
-static void free_json_context(struct json_context *context)
-{
-	if (context->root) {
-		json_decref(context->root);
-	}
-}
-
-/*
- * Output a JSON pair with name name and integer value value
- *
- */
-static void add_int(struct json_context *context,
-		    const char* name,
-		    const int value)
-{
-	int rc = 0;
-
-	if (context->error) {
-		return;
-	}
-
-	rc = json_object_set_new(context->root, name, json_integer(value));
-	if (rc) {
-		DBG_ERR("Unable to set name [%s] value [%d]\n", name, value);
-		context->error = true;
-	}
-
-}
-
-/*
- * Output a JSON pair with name name and string value value
- *
- */
-static void add_string(struct json_context *context,
-		       const char* name,
-		       const char* value)
-{
-	int rc = 0;
-
-	if (context->error) {
-		return;
-	}
-
-	if (value) {
-		rc = json_object_set_new(context->root, name, json_string(value));
-	} else {
-		rc = json_object_set_new(context->root, name, json_null());
-	}
-	if (rc) {
-		DBG_ERR("Unable to set name [%s] value [%s]\n", name, value);
-		context->error = true;
-	}
-}
-
-
-/*
- * Output a JSON pair with name name and object value
- *
- */
-static void add_object(struct json_context *context,
-		       const char* name,
-		       struct json_context *value)
-{
-	int rc = 0;
-
-	if (value->error) {
-		context->error = true;
-	}
-	if (context->error) {
-		return;
-	}
-	rc = json_object_set_new(context->root, name, value->root);
-	if (rc) {
-		DBG_ERR("Unable to add object [%s]\n", name);
-		context->error = true;
-	}
-}
-
-/*
- * Output a version object
- *
- * "version":{"major":1,"minor":0}
- *
- */
-static void add_version(struct json_context *context, int major, int minor)
-{
-	struct json_context version = get_json_context();
-	add_int(&version, "major", major);
-	add_int(&version, "minor", minor);
-	add_object(context, "version", &version);
-}
-
-/*
- * Output the current date and time as a timestamp in ISO 8601 format
- *
- * "timestamp":"2017-03-06T17:18:04.455081+1300"
- *
- */
-static void add_timestamp(struct json_context *context)
-{
-	char buffer[40];	/* formatted time less usec and timezone */
-	char timestamp[50];	/* the formatted ISO 8601 time stamp	 */
-	char tz[10];		/* formatted time zone			 */
-	struct tm* tm_info;	/* current local time			 */
-	struct timeval tv;	/* current system time			 */
-	int r;			/* response code from gettimeofday	 */
-
-	if (context->error) {
-		return;
-	}
-
-	r = gettimeofday(&tv, NULL);
-	if (r) {
-		DBG_ERR("Unable to get time of day: (%d) %s\n",
-			errno,
-			strerror(errno));
-		context->error = true;
-		return;
-	}
-
-	tm_info = localtime(&tv.tv_sec);
-	if (tm_info == NULL) {
-		DBG_ERR("Unable to determine local time\n");
-		context->error = true;
-		return;
-	}
-
-	strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%T", tm_info);
-	strftime(tz, sizeof(tz)-1, "%z", tm_info);
-	snprintf(timestamp, sizeof(timestamp),"%s.%06ld%s",
-		 buffer, tv.tv_usec, tz);
-	add_string(context,"timestamp", timestamp);
-}
-
-
-/*
- * Output an address pair, with name name.
- *
- * "localAddress":"ipv6::::0"
- *
- */
-static void add_address(struct json_context *context,
-			const char *name,
-			const struct tsocket_address *address)
-{
-	char *s = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	if (context->error) {
-		return;
-	}
-
-	s = tsocket_address_string(address, frame);
-	add_string(context, name, s);
-	talloc_free(frame);
-
-}
-
-/*
- * Output a SID with name name
- *
- * "sid":"S-1-5-18"
- *
- */
-static void add_sid(struct json_context *context,
-		    const char *name,
-		    const struct dom_sid *sid)
-{
-	char sid_buf[DOM_SID_STR_BUFLEN];
-
-	if (context->error) {
-		return;
-	}
-
-	dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-	add_string(context, name, sid_buf);
-}
-
-/*
- * Add a formatted string representation of a GUID to a json object.
- *
- */
-static void add_guid(struct json_context *context,
-		     const char *name,
-		     struct GUID *guid)
-{
-
-	char *guid_str;
-	struct GUID_txt_buf guid_buff;
-
-	if (context->error) {
-		return;
-	}
-
-	guid_str = GUID_buf_string(guid, &guid_buff);
-	add_string(context, name, guid_str);
 }
 
 /*
@@ -482,49 +138,63 @@ static void log_authentication_event_json(
 			struct dom_sid *sid,
 			int debug_level)
 {
-	struct json_context context = get_json_context();
-	struct json_context authentication;
+	struct json_object context = json_new_object();
+	struct json_object authentication;
 	char negotiate_flags[11];
 
-	add_timestamp(&context);
-	add_string(&context, "type", AUTH_JSON_TYPE);
+	json_add_timestamp(&context);
+	json_add_string(&context, "type", AUTH_JSON_TYPE);
 
-	authentication = get_json_context();
-	add_version(&authentication, AUTH_MAJOR, AUTH_MINOR);
-	add_string(&authentication, "status", nt_errstr(status));
-	add_address(&authentication, "localAddress", ui->local_host);
-	add_address(&authentication, "remoteAddress", ui->remote_host);
-	add_string(&authentication,
-		   "serviceDescription",
-		   ui->service_description);
-	add_string(&authentication, "authDescription", ui->auth_description);
-	add_string(&authentication, "clientDomain", ui->client.domain_name);
-	add_string(&authentication, "clientAccount", ui->client.account_name);
-	add_string(&authentication, "workstation", ui->workstation_name);
-	add_string(&authentication, "becameAccount", account_name);
-	add_string(&authentication, "becameDomain", domain_name);
-	add_sid(&authentication, "becameSid", sid);
-	add_string(&authentication, "mappedAccount", ui->mapped.account_name);
-	add_string(&authentication, "mappedDomain", ui->mapped.domain_name);
-	add_string(&authentication,
-		   "netlogonComputer",
-		   ui->netlogon_trust_account.computer_name);
-	add_string(&authentication,
-		   "netlogonTrustAccount",
-		   ui->netlogon_trust_account.account_name);
+	authentication = json_new_object();
+	json_add_version(&authentication, AUTH_MAJOR, AUTH_MINOR);
+	json_add_string(&authentication, "status", nt_errstr(status));
+	json_add_address(&authentication, "localAddress", ui->local_host);
+	json_add_address(&authentication, "remoteAddress", ui->remote_host);
+	json_add_string(&authentication,
+			"serviceDescription",
+			ui->service_description);
+	json_add_string(&authentication,
+			"authDescription",
+			ui->auth_description);
+	json_add_string(&authentication,
+			"clientDomain",
+			ui->client.domain_name);
+	json_add_string(&authentication,
+			"clientAccount",
+			ui->client.account_name);
+	json_add_string(&authentication,
+			"workstation",
+			ui->workstation_name);
+	json_add_string(&authentication, "becameAccount", account_name);
+	json_add_string(&authentication, "becameDomain", domain_name);
+	json_add_sid(&authentication, "becameSid", sid);
+	json_add_string(&authentication,
+			"mappedAccount",
+			ui->mapped.account_name);
+	json_add_string(&authentication,
+			"mappedDomain",
+			ui->mapped.domain_name);
+	json_add_string(&authentication,
+			"netlogonComputer",
+			ui->netlogon_trust_account.computer_name);
+	json_add_string(&authentication,
+			"netlogonTrustAccount",
+			ui->netlogon_trust_account.account_name);
 	snprintf(negotiate_flags,
 		 sizeof( negotiate_flags),
 		 "0x%08X",
 		 ui->netlogon_trust_account.negotiate_flags);
-	add_string(&authentication, "netlogonNegotiateFlags", negotiate_flags);
-	add_int(&authentication,
-		"netlogonSecureChannelType",
-		ui->netlogon_trust_account.secure_channel_type);
-	add_sid(&authentication,
-		"netlogonTrustAccountSid",
-		ui->netlogon_trust_account.sid);
-	add_string(&authentication, "passwordType", get_password_type(ui));
-	add_object(&context,AUTH_JSON_TYPE, &authentication);
+	json_add_string(&authentication,
+			"netlogonNegotiateFlags",
+			negotiate_flags);
+	json_add_int(&authentication,
+		     "netlogonSecureChannelType",
+		     ui->netlogon_trust_account.secure_channel_type);
+	json_add_sid(&authentication,
+		     "netlogonTrustAccountSid",
+		     ui->netlogon_trust_account.sid);
+	json_add_string(&authentication, "passwordType", get_password_type(ui));
+	json_add_object(&context,AUTH_JSON_TYPE, &authentication);
 
 	log_json(msg_ctx,
 		 lp_ctx,
@@ -532,7 +202,7 @@ static void log_authentication_event_json(
 		 AUTH_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
 		 debug_level);
-	free_json_context(&context);
+	json_free(&context);
 }
 
 /*
@@ -566,36 +236,45 @@ static void log_successful_authz_event_json(
 				struct auth_session_info *session_info,
 				int debug_level)
 {
-	struct json_context context = get_json_context();
-	struct json_context authorization;
+	struct json_object context = json_new_object();
+	struct json_object authorization;
 	char account_flags[11];
 
-	//start_object(&context, NULL);
-	add_timestamp(&context);
-	add_string(&context, "type", AUTHZ_JSON_TYPE);
-	authorization = get_json_context();
-	add_version(&authorization, AUTHZ_MAJOR, AUTHZ_MINOR);
-	add_address(&authorization, "localAddress", local);
-	add_address(&authorization, "remoteAddress", remote);
-	add_string(&authorization, "serviceDescription", service_description);
-	add_string(&authorization, "authType", auth_type);
-	add_string(&authorization, "domain", session_info->info->domain_name);
-	add_string(&authorization, "account", session_info->info->account_name);
-	add_sid(&authorization, "sid", &session_info->security_token->sids[0]);
-	add_guid(&authorization,
-		 "sessionId",
-		 &session_info->unique_session_token);
-	add_string(&authorization,
-		   "logonServer",
-		   session_info->info->logon_server);
-	add_string(&authorization, "transportProtection", transport_protection);
+	json_add_timestamp(&context);
+	json_add_string(&context, "type", AUTHZ_JSON_TYPE);
+	authorization = json_new_object();
+	json_add_version(&authorization, AUTHZ_MAJOR, AUTHZ_MINOR);
+	json_add_address(&authorization, "localAddress", local);
+	json_add_address(&authorization, "remoteAddress", remote);
+	json_add_string(&authorization,
+			"serviceDescription",
+			service_description);
+	json_add_string(&authorization, "authType", auth_type);
+	json_add_string(&authorization,
+			"domain",
+			session_info->info->domain_name);
+	json_add_string(&authorization,
+			"account",
+			session_info->info->account_name);
+	json_add_sid(&authorization,
+		     "sid",
+		     &session_info->security_token->sids[0]);
+	json_add_guid(&authorization,
+		      "sessionId",
+		      &session_info->unique_session_token);
+	json_add_string(&authorization,
+			"logonServer",
+			session_info->info->logon_server);
+	json_add_string(&authorization,
+			"transportProtection",
+			transport_protection);
 
 	snprintf(account_flags,
 		 sizeof(account_flags),
 		 "0x%08X",
 		 session_info->info->acct_flags);
-	add_string(&authorization, "accountFlags", account_flags);
-	add_object(&context,AUTHZ_JSON_TYPE, &authorization);
+	json_add_string(&authorization, "accountFlags", account_flags);
+	json_add_object(&context, AUTHZ_JSON_TYPE, &authorization);
 
 	log_json(msg_ctx,
 		 lp_ctx,
@@ -603,7 +282,7 @@ static void log_successful_authz_event_json(
 		 AUTHZ_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
 		 debug_level);
-	free_json_context(&context);
+	json_free(&context);
 }
 
 #else
@@ -738,7 +417,7 @@ static void log_authentication_event_human_readable(
 
 	password_type = get_password_type(ui);
 	/* Get the current time */
-        ts = get_timestamp(frame);
+        ts = audit_get_timestamp(frame);
 
 	/* Only log the NETLOGON details if they are present */
 	if (ui->netlogon_trust_account.computer_name ||
@@ -869,7 +548,7 @@ static void log_successful_authz_event_human_readable(
 	frame = talloc_stackframe();
 
 	/* Get the current time */
-        ts = get_timestamp(frame);
+        ts = audit_get_timestamp(frame);
 
 	remote_str = tsocket_address_string(remote, frame);
 	local_str = tsocket_address_string(local, frame);

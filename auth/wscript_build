@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('common_auth',
                   source='auth_sam_reply.c wbc_auth_util.c auth_log.c',
-                  deps='talloc samba-security samba-util util_str_escape LIBTSOCKET jansson MESSAGING_SEND server_id_db ',
+                  deps='talloc samba-security samba-util util_str_escape LIBTSOCKET audit_logging jansson MESSAGING_SEND server_id_db ',
                   private_library=True)
 
 bld.RECURSE('gensec')
