@@ -1365,7 +1365,7 @@ static int es_search_post_process(struct ldb_module *module,
 	/*
 	 * Decrypt any encrypted secret attributes
 	 */
-	if (data->encrypt_secrets) {
+	if (data && data->encrypt_secrets) {
 		int err = decrypt_secret_attributes(ldb, msg, data);
 		if (err !=  LDB_SUCCESS) {
 			return err;
