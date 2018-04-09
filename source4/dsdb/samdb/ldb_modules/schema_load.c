@@ -498,16 +498,10 @@ static int schema_load(struct ldb_context *ldb,
 static int schema_load_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct schema_load_private_data *private_data;
+	struct schema_load_private_data *private_data =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct schema_load_private_data);
 	int ret;
-
-	private_data = talloc_zero(module, struct schema_load_private_data);
-	if (private_data == NULL) {
-		return ldb_oom(ldb);
-	}
-	private_data->module = module;
-
-	ldb_module_set_private(module, private_data);
 
 	ret = ldb_next_init(module);
 	if (ret != LDB_SUCCESS) {
@@ -618,7 +612,14 @@ static int schema_read_lock(struct ldb_module *module)
 	int ret;
 
 	if (private_data == NULL) {
-		return ldb_next_read_lock(module);
+		private_data = talloc_zero(module, struct schema_load_private_data);
+		if (private_data == NULL) {
+			return ldb_module_oom(module);
+		}
+
+		private_data->module = module;
+
+		ldb_module_set_private(module, private_data);
 	}
 
 	ret = ldb_next_read_lock(module);
@@ -640,11 +641,8 @@ static int schema_read_lock(struct ldb_module *module)
 static int schema_read_unlock(struct ldb_module *module)
 {
 	struct schema_load_private_data *private_data =
-		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
-
-	if (private_data == NULL) {
-		return ldb_next_read_unlock(module);
-	}
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct schema_load_private_data);
 
 	private_data->in_read_transaction--;
 

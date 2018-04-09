@@ -249,7 +249,7 @@ static bool check_required_features(struct ldb_message_element *el)
 static int samba_dsdb_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int ret, len, i, j;
+	int ret, lock_ret, len, i, j;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_result *res;
 	struct ldb_message *rootdse_msg = NULL, *partition_msg;
@@ -627,7 +627,20 @@ static int samba_dsdb_init(struct ldb_module *module)
 	/* Set this as the 'next' module, so that we effectivly append it to module chain */
 	ldb_module_set_next(module, module_chain);
 
-	return ldb_next_init(module);
+	ret = ldb_next_read_lock(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_next_init(module);
+
+	lock_ret = ldb_next_read_unlock(module);
+
+	if (lock_ret != LDB_SUCCESS) {
+		return lock_ret;
+	}
+
+	return ret;
 }
 
 static const struct ldb_module_ops ldb_samba_dsdb_module_ops = {

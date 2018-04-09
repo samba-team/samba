@@ -863,18 +863,9 @@ int partition_init(struct ldb_module *module)
 		return ldb_operr(ldb);
 	}
 
-	data = talloc_zero(mem_ctx, struct partition_private_data);
-	if (data == NULL) {
-		return ldb_operr(ldb);
-	}
-
-	/* When used from Samba4, this message is set by the samba4
-	 * module, as a fixed value not read from the DB.  This avoids
-	 * listing modules in the DB */
-	data->forced_module_msg = talloc_get_type(
-		ldb_get_opaque(ldb,
-			       DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME),
-		struct ldb_message);
+	/* We actually got this during the read_lock call */
+	data = talloc_get_type_abort(ldb_module_get_private(module),
+				     struct partition_private_data);
 
 	/* This loads the partitions */
 	ret = partition_reload_if_required(module, data, NULL);
