@@ -921,6 +921,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 			}
 			DEBUG(0,("Failed to save updated prefixMap: %s\n",
 				 win_errstr(werr)));
+			ldb_transaction_cancel(ldb);
 			TALLOC_FREE(tmp_ctx);
 			return werr;
 		}
