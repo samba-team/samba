@@ -1140,6 +1140,52 @@ SMBC_readdir_ctx(SMBCCTX *context,
 }
 
 /*
+ * Routine to get a directory entry with all attributes
+ */
+
+const struct libsmb_file_info *
+SMBC_readdirplus_ctx(SMBCCTX *context,
+                     SMBCFILE *dir)
+{
+	struct libsmb_file_info *smb_finfo = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	/* Check that all is ok first ... */
+
+	if (!context || !context->internal->initialized) {
+		DBG_ERR("Invalid context in SMBC_readdirplus_ctx()\n");
+		TALLOC_FREE(frame);
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if (dir == NULL ||
+			SMBC_dlist_contains(context->internal->files,
+					dir) == 0) {
+		DBG_ERR("Invalid dir in SMBC_readdirplus_ctx()\n");
+		TALLOC_FREE(frame);
+		errno = EBADF;
+		return NULL;
+	}
+
+	if (dir->dirplus_next == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	smb_finfo = dir->dirplus_next->smb_finfo;
+	if (smb_finfo == NULL) {
+		TALLOC_FREE(frame);
+		errno = ENOENT;
+		return NULL;
+	}
+	dir->dirplus_next = dir->dirplus_next->next;
+
+	TALLOC_FREE(frame);
+	return smb_finfo;
+}
+
+/*
  * Routine to get directory entries
  */
 
