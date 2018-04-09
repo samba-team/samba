@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+bld.SAMBA_SUBSYSTEM(
+    'audit_logging',
+    deps='''MESSAGING_SEND
+            jansson
+            samba-debug
+            LIBTSOCKET''',
+    source='audit_logging.c'
+)
+
+bld.SAMBA_BINARY(
+    'audit_logging_test',
+    source='tests/audit_logging_test.c',
+    deps='''
+        audit_logging
+        jansson
+        cmocka
+        talloc
+        samba-util
+        LIBTSOCKET
+    ''',
+    install=False
+)
