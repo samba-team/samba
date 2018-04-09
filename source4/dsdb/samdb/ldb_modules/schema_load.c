@@ -42,6 +42,12 @@ struct schema_load_private_data {
 	uint64_t schema_seq_num_read_lock;
 	uint64_t schema_seq_num_cache;
 	int tdb_seqnum;
+
+	/*
+	 * Please write out the updated schema on the next transaction
+	 * start
+	 */
+	bool need_write;
 };
 
 static int dsdb_schema_from_db(struct ldb_module *module,
@@ -495,7 +501,6 @@ static int schema_load_init(struct ldb_module *module)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct schema_load_private_data *private_data;
 	int ret;
-	bool need_write = false;
 
 	private_data = talloc_zero(module, struct schema_load_private_data);
 	if (private_data == NULL) {
@@ -510,50 +515,7 @@ static int schema_load_init(struct ldb_module *module)
 		return ret;
 	}
 
-	ret = schema_load(ldb, module, &need_write);
-
-	if (ret == LDB_SUCCESS && need_write) {
-		TALLOC_CTX *frame = talloc_stackframe();
-		struct dsdb_schema *schema = NULL;
-
-		ret = ldb_transaction_start(ldb);
-		if (ret != LDB_SUCCESS) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "schema_load_init: transaction start failed");
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		schema = dsdb_get_schema(ldb, frame);
-		if (schema == NULL) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "schema_load_init: dsdb_get_schema failed");
-			ldb_transaction_cancel(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		ret = dsdb_schema_set_indices_and_attributes(ldb, schema,
-							     SCHEMA_WRITE);
-
-		TALLOC_FREE(frame);
-
-		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb, "Failed to write new "
-					       "@INDEXLIST and @ATTRIBUTES "
-					       "records for updated schema: %s",
-					       ldb_errstring(ldb));
-			ldb_transaction_cancel(ldb);
-			return ret;
-		}
-
-		ret = ldb_transaction_commit(ldb);
-		if (ret != LDB_SUCCESS) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "schema_load_init: transaction commit failed");
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	}
-
-
-	return ret;
+	return schema_load(ldb, module, &private_data->need_write);
 }
 
 static int schema_search(struct ldb_module *module, struct ldb_request *req)
@@ -586,6 +548,14 @@ static int schema_load_start_transaction(struct ldb_module *module)
 			      "schema_load_init: dsdb_get_schema failed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	if (private_data->need_write) {
+		ret = dsdb_schema_set_indices_and_attributes(ldb,
+							     schema,
+							     SCHEMA_WRITE);
+		private_data->need_write = false;
+	}
+
 	private_data->in_transaction++;
 
 	return ret;
