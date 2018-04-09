@@ -43,7 +43,7 @@
 #define AUTH_MAJOR 1
 #define AUTH_MINOR 0
 #define AUTHZ_MAJOR 1
-#define AUTHZ_MINOR 0
+#define AUTHZ_MINOR 1
 
 #include "includes.h"
 #include "../lib/tsocket/tsocket.h"
@@ -56,6 +56,7 @@
 #include "source4/lib/messaging/irpc.h"
 #include "lib/util/server_id_db.h"
 #include "lib/param/param.h"
+#include "librpc/ndr/libndr.h"
 
 /*
  * Get a human readable timestamp.
@@ -431,6 +432,26 @@ static void add_sid(struct json_context *context,
 }
 
 /*
+ * Add a formatted string representation of a GUID to a json object.
+ *
+ */
+static void add_guid(struct json_context *context,
+		     const char *name,
+		     struct GUID *guid)
+{
+
+	char *guid_str;
+	struct GUID_txt_buf guid_buff;
+
+	if (context->error) {
+		return;
+	}
+
+	guid_str = GUID_buf_string(guid, &guid_buff);
+	add_string(context, name, guid_str);
+}
+
+/*
  * Write a machine parsable json formatted authentication log entry.
  *
  * IF removing or changing the format/meaning of a field please update the
@@ -561,6 +582,9 @@ static void log_successful_authz_event_json(
 	add_string(&authorization, "domain", session_info->info->domain_name);
 	add_string(&authorization, "account", session_info->info->account_name);
 	add_sid(&authorization, "sid", &session_info->security_token->sids[0]);
+	add_guid(&authorization,
+		 "sessionId",
+		 &session_info->unique_session_token);
 	add_string(&authorization,
 		   "logonServer",
 		   session_info->info->logon_server);
