@@ -7777,10 +7777,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 
 		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
 			  "changing group %u for file %s\n",
-			  (unsigned int)set_owner,
+			  (unsigned int)set_grp,
 			  smb_fname_str_dbg(smb_fname)));
 		if (fsp && fsp->fh->fd != -1) {
-			ret = SMB_VFS_FCHOWN(fsp, set_owner, (gid_t)-1);
+			ret = SMB_VFS_FCHOWN(fsp, (uid_t)-1, set_grp);
 		} else {
 			/*
 			 * UNIX extensions calls must always operate
