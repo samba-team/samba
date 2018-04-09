@@ -105,6 +105,13 @@ interface auth
 		[noprint] DATA_BLOB session_key;
 
 		[value(NULL), ignore] cli_credentials *credentials;
+
+	        /*
+		 * It is really handy to have our authorization code log a
+		 * token that can be used to tie later requests togeather.
+		 * We generate this in auth_generate_session_info()
+		 */
+	        GUID unique_session_token;
 	} auth_session_info;
 
 	typedef [public] struct {

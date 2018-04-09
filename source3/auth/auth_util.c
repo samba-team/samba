@@ -488,6 +488,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		session_info->unique_session_token = GUID_random();
+
 		*session_info_out = session_info;
 		return NT_STATUS_OK;
 	}
@@ -657,6 +659,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	session_info->unique_session_token = GUID_random();
 
 	*session_info_out = session_info;
 	return NT_STATUS_OK;
@@ -1209,6 +1213,8 @@ done:
 		return status;
 	}
 
+	session_info->unique_session_token = GUID_random();
+	
 	*session_info_out = talloc_move(mem_ctx, &session_info);
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;

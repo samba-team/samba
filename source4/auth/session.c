@@ -220,6 +220,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
+	session_info->unique_session_token = GUID_random();
+
 	session_info->credentials = NULL;
 
 	talloc_steal(mem_ctx, session_info);
