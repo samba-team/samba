@@ -867,6 +867,8 @@ static struct rootdse_private_data *rootdse_get_private_data(struct ldb_module *
 {
 	void *priv = ldb_module_get_private(module);
 	struct rootdse_private_data *data = NULL;
+	struct ldb_context *ldb
+		= ldb_module_get_ctx(module);
 
 	if (priv != NULL) {
 		data = talloc_get_type_abort(priv,
@@ -889,6 +891,9 @@ static struct rootdse_private_data *rootdse_get_private_data(struct ldb_module *
 	data->block_anonymous = true;
 
 	ldb_module_set_private(module, data);
+
+	ldb_set_default_dns(ldb);
+
 	return data;
 }
 
@@ -978,8 +983,6 @@ static int rootdse_init(struct ldb_module *module)
 	if (data == NULL) {
 		return ldb_module_oom(module);
 	}
-
-	ldb_set_default_dns(ldb);
 
 	ret = ldb_next_init(module);
 
