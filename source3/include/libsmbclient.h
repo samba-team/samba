@@ -1024,6 +1024,11 @@ typedef struct smbc_dirent * (*smbc_readdir_fn)(SMBCCTX *c,
 smbc_readdir_fn smbc_getFunctionReaddir(SMBCCTX *c);
 void smbc_setFunctionReaddir(SMBCCTX *c, smbc_readdir_fn fn);
 
+typedef const struct libsmb_file_info * (*smbc_readdirplus_fn)(SMBCCTX *c,
+                                                               SMBCFILE *dir);
+smbc_readdirplus_fn smbc_getFunctionReaddirPlus(SMBCCTX *c);
+void smbc_setFunctionReaddirPlus(SMBCCTX *c, smbc_readdirplus_fn fn);
+
 typedef int (*smbc_getdents_fn)(SMBCCTX *c,
                                 SMBCFILE *dir,
                                 struct smbc_dirent *dirp,
@@ -1617,6 +1622,20 @@ int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count);
  * @see             smbc_dirent, smbc_getdents(), smbc_open()
  */
 struct smbc_dirent* smbc_readdir(unsigned int dh);
+
+/**@ingroup directory
+ * Works similar as smbc_readdir but returns more information about file.
+ *
+ * @param dh        Valid directory as returned by smbc_opendir()
+ *
+ * @return          A const pointer to a libsmb_file_info structure,
+ *                  or NULL if an error occurs or end-of-directory is reached:
+ *                  - EBADF Invalid directory handle
+ *                  - EINVAL smbc_init() failed or has not been called
+ *
+ * @see             smbc_open(), smbc_readdir()
+ */
+const struct libsmb_file_info *smbc_readdirplus(unsigned int dh);
 
 
 /**@ingroup directory
@@ -3067,6 +3086,7 @@ struct _SMBCCTX
         smbc_opendir_fn                 opendir DEPRECATED_SMBC_INTERFACE;
         smbc_closedir_fn                closedir DEPRECATED_SMBC_INTERFACE;
         smbc_readdir_fn                 readdir DEPRECATED_SMBC_INTERFACE;
+        smbc_readdirplus_fn             readdirplus DEPRECATED_SMBC_INTERFACE;
         smbc_getdents_fn                getdents DEPRECATED_SMBC_INTERFACE;
         smbc_mkdir_fn                   mkdir DEPRECATED_SMBC_INTERFACE;
         smbc_rmdir_fn                   rmdir DEPRECATED_SMBC_INTERFACE;
