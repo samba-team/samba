@@ -78,7 +78,9 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui);
 static void log_json(struct imessaging_context *msg_ctx,
 		     struct loadparm_context *lp_ctx,
 		     struct json_object *context,
-		     const char *type, int debug_class, int debug_level)
+		     const char *type,
+		     int debug_class,
+		     int debug_level)
 {
 	char* json = NULL;
 
@@ -128,15 +130,15 @@ static void log_json(struct imessaging_context *msg_ctx,
  *           \t\(.Authentication.localAddress)"'
  */
 static void log_authentication_event_json(
-	                struct imessaging_context *msg_ctx,
-			struct loadparm_context *lp_ctx,
-			const struct auth_usersupplied_info *ui,
-			NTSTATUS status,
-			const char *domain_name,
-			const char *account_name,
-			const char *unix_username,
-			struct dom_sid *sid,
-			int debug_level)
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct auth_usersupplied_info *ui,
+	NTSTATUS status,
+	const char *domain_name,
+	const char *account_name,
+	const char *unix_username,
+	struct dom_sid *sid,
+	int debug_level)
 {
 	struct json_object context = json_new_object();
 	struct json_object authentication;
@@ -226,15 +228,15 @@ static void log_authentication_event_json(
  *
  */
 static void log_successful_authz_event_json(
-				struct imessaging_context *msg_ctx,
-				struct loadparm_context *lp_ctx,
-				const struct tsocket_address *remote,
-				const struct tsocket_address *local,
-				const char *service_description,
-				const char *auth_type,
-				const char *transport_protection,
-				struct auth_session_info *session_info,
-				int debug_level)
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *transport_protection,
+	struct auth_session_info *session_info,
+	int debug_level)
 {
 	struct json_object context = json_new_object();
 	struct json_object authorization;
@@ -294,13 +296,15 @@ static void log_no_json(struct imessaging_context *msg_ctx,
 		static bool auth_event_logged = false;
 		if (auth_event_logged == false) {
 			auth_event_logged = true;
-			DBG_ERR("auth event notification = true but Samba was not compiled with jansson\n");
+			DBG_ERR("auth event notification = true but Samba was "
+				"not compiled with jansson\n");
 		}
 	} else {
 		static bool json_logged = false;
 		if (json_logged == false) {
 			json_logged = true;
-			DBG_NOTICE("JSON auth logs not available unless compiled with jansson\n");
+			DBG_NOTICE("JSON auth logs not available unless "
+				   "compiled with jansson\n");
 		}
 	}
 
@@ -308,30 +312,30 @@ static void log_no_json(struct imessaging_context *msg_ctx,
 }
 
 static void log_authentication_event_json(
-	                struct imessaging_context *msg_ctx,
-			struct loadparm_context *lp_ctx,
-			const struct auth_usersupplied_info *ui,
-			NTSTATUS status,
-			const char *domain_name,
-			const char *account_name,
-			const char *unix_username,
-			struct dom_sid *sid,
-			int debug_level)
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct auth_usersupplied_info *ui,
+	NTSTATUS status,
+	const char *domain_name,
+	const char *account_name,
+	const char *unix_username,
+	struct dom_sid *sid,
+	int debug_level)
 {
 	log_no_json(msg_ctx, lp_ctx);
 	return;
 }
 
 static void log_successful_authz_event_json(
-				struct imessaging_context *msg_ctx,
-				struct loadparm_context *lp_ctx,
-				const struct tsocket_address *remote,
-				const struct tsocket_address *local,
-				const char *service_description,
-				const char *auth_type,
-				const char *transport_protection,
-				struct auth_session_info *session_info,
-				int debug_level)
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *transport_protection,
+	struct auth_session_info *session_info,
+	int debug_level)
 {
 	log_no_json(msg_ctx, lp_ctx);
 	return;
@@ -394,13 +398,13 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui)
  *
  */
 static void log_authentication_event_human_readable(
-			const struct auth_usersupplied_info *ui,
-			NTSTATUS status,
-			const char *domain_name,
-			const char *account_name,
-			const char *unix_username,
-			struct dom_sid *sid,
-			int debug_level)
+	const struct auth_usersupplied_info *ui,
+	NTSTATUS status,
+	const char *domain_name,
+	const char *account_name,
+	const char *unix_username,
+	struct dom_sid *sid,
+	int debug_level)
 {
 	TALLOC_CTX *frame = NULL;
 
@@ -469,7 +473,7 @@ static void log_authentication_event_human_readable(
 		logon_line,
 		local,
 		nl ? nl : ""
-	       ));
+	));
 
 	talloc_free(frame);
 }
@@ -481,14 +485,15 @@ static void log_authentication_event_human_readable(
  * NOTE: msg_ctx and lp_ctx is optional, but when supplied allows streaming the
  * authentication events over the message bus.
  */
-void log_authentication_event(struct imessaging_context *msg_ctx,
-			      struct loadparm_context *lp_ctx,
-			      const struct auth_usersupplied_info *ui,
-			      NTSTATUS status,
-			      const char *domain_name,
-			      const char *account_name,
-			      const char *unix_username,
-			      struct dom_sid *sid)
+void log_authentication_event(
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct auth_usersupplied_info *ui,
+	NTSTATUS status,
+	const char *domain_name,
+	const char *account_name,
+	const char *unix_username,
+	struct dom_sid *sid)
 {
 	/* set the log level */
 	int debug_level = AUTH_FAILURE_LEVEL;
@@ -530,13 +535,13 @@ void log_authentication_event(struct imessaging_context *msg_ctx,
  *
  */
 static void log_successful_authz_event_human_readable(
-				const struct tsocket_address *remote,
-				const struct tsocket_address *local,
-				const char *service_description,
-				const char *auth_type,
-				const char *transport_protection,
-				struct auth_session_info *session_info,
-				int debug_level)
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *transport_protection,
+	struct auth_session_info *session_info,
+	int debug_level)
 {
 	TALLOC_CTX *frame = NULL;
 
@@ -586,14 +591,15 @@ static void log_successful_authz_event_human_readable(
  * NOTE: msg_ctx and lp_ctx is optional, but when supplied allows streaming the
  * authentication events over the message bus.
  */
-void log_successful_authz_event(struct imessaging_context *msg_ctx,
-				struct loadparm_context *lp_ctx,
-				const struct tsocket_address *remote,
-				const struct tsocket_address *local,
-				const char *service_description,
-				const char *auth_type,
-				const char *transport_protection,
-				struct auth_session_info *session_info)
+void log_successful_authz_event(
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *transport_protection,
+	struct auth_session_info *session_info)
 {
 	int debug_level = AUTHZ_SUCCESS_LEVEL;
 
