@@ -1669,7 +1669,7 @@ class Site(object):
         #
         # Note: We don't want to divide by zero here so they must
         #       have meant "f" instead of "o!interSiteTopologyFailover"
-        k_idx = (i_idx + ((self.nt_now - t_time) / f)) % len(D_sort)
+        k_idx = (i_idx + ((self.nt_now - t_time) // f)) % len(D_sort)
 
         # The local writable DC acts as an ISTG for its site if and
         # only if dk is the nTDSDSA object for the local DC. If the
