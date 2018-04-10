@@ -126,6 +126,7 @@ static void smb_panic_default(const char *why)
 {
 	DBG_ERR("PANIC (pid %llu): %s\n",
 		    (unsigned long long)getpid(), why);
+	log_stack_trace();
 
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
 	/*
@@ -171,8 +172,6 @@ _PUBLIC_ void smb_panic(const char *why)
 	}
 	smb_panic_default(why);
 }
-
-
 
 /*******************************************************************
  Print a backtrace of the stack to the debug log. This function
