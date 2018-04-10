@@ -5247,12 +5247,46 @@ static int dsdb_effective_badPwdCount(const struct ldb_message *user_msg,
 }
 
 /*
+ * Returns a user's PSO, or NULL if none was found
+ */
+static struct ldb_result *lookup_user_pso(struct ldb_context *sam_ldb,
+					  TALLOC_CTX *mem_ctx,
+					  const struct ldb_message *user_msg,
+					  const char * const *attrs)
+{
+	struct ldb_result *res = NULL;
+	struct ldb_dn *pso_dn = NULL;
+	int ret;
+
+	/* if the user has a PSO that applies, then use the PSO's setting */
+	pso_dn = ldb_msg_find_attr_as_dn(sam_ldb, mem_ctx, user_msg,
+					 "msDS-ResultantPSO");
+
+	if (pso_dn != NULL) {
+
+		ret = dsdb_search_dn(sam_ldb, mem_ctx, &res, pso_dn, attrs, 0);
+		if (ret != LDB_SUCCESS) {
+
+			/*
+			 * log the error. The caller should fallback to using
+			 * the default domain password settings
+			 */
+			DBG_ERR("Error retrieving msDS-ResultantPSO %s for %s",
+				ldb_dn_get_linearized(pso_dn),
+				ldb_dn_get_linearized(user_msg->dn));
+		}
+		talloc_free(pso_dn);
+	}
+	return res;
+}
+
+/*
  * Return the effective badPwdCount
  *
  * This requires that the user_msg have (if present):
  *  - badPasswordTime
  *  - badPwdCount
- *
+ *  - msDS-ResultantPSO
  */
 int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
 				       TALLOC_CTX *mem_ctx,
@@ -5261,8 +5295,27 @@ int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
 {
 	struct timeval tv_now = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv_now);
-	int64_t lockOutObservationWindow = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn,
-							      "lockOutObservationWindow", NULL);
+	int64_t lockOutObservationWindow;
+	struct ldb_result *res = NULL;
+	const char *attrs[] = { "msDS-LockoutObservationWindow",
+				NULL };
+
+	res = lookup_user_pso(sam_ldb, mem_ctx, user_msg, attrs);
+
+	if (res != NULL) {
+		lockOutObservationWindow =
+			ldb_msg_find_attr_as_int(res->msgs[0],
+						 "msDS-LockoutObservationWindow",
+						  0);
+		talloc_free(res);
+	} else {
+
+		/* no PSO was found, lookup the default domain setting */
+		lockOutObservationWindow =
+			 samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn,
+					    "lockOutObservationWindow", NULL);
+	}
+
 	return dsdb_effective_badPwdCount(user_msg, lockOutObservationWindow, now);
 }
 
