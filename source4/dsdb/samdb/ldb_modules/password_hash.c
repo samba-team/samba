@@ -3138,10 +3138,27 @@ static int setup_io(struct ph_context *ac,
 		info_msg = client_msg;
 	}
 
-	if (smb_krb5_init_context(ac,
+	ret = smb_krb5_init_context(ac,
 				  (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm"),
-				  &io->smb_krb5_context) != 0) {
-		return ldb_operr(ldb);
+				  &io->smb_krb5_context);
+
+	if (ret != 0) {
+		/*
+		 * In the special case of mit krb5.conf vs heimdal, the includedir
+		 * statement causes ret == 22 (KRB5_CONFIG_BADFORMAT) to be returned.
+		 * We look for this case so that we can give a more instructional
+		 * message to the administrator.
+		 */
+		if (ret == KRB5_CONFIG_BADFORMAT || ret == EINVAL) {
+			ldb_asprintf_errstring(ldb, "Failed to setup krb5_context: %s - "
+				"This could be due to an invalid krb5 configuration. "
+				"Please check your system's krb5 configuration is correct.",
+				error_message(ret));
+		} else {
+			ldb_asprintf_errstring(ldb, "Failed to setup krb5_context: %s",
+				error_message(ret));
+		}
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	io->ac				= ac;
