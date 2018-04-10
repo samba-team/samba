@@ -123,6 +123,9 @@ _PUBLIC_ const char *panic_action = NULL;
 static void smb_panic_default(const char *why) _NORETURN_;
 static void smb_panic_default(const char *why)
 {
+	DBG_ERR("PANIC (pid %llu): %s\n",
+		    (unsigned long long)getpid(), why);
+
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
 	/*
 	 * Make sure all children can attach a debugger.
@@ -148,7 +151,6 @@ static void smb_panic_default(const char *why)
 					  WEXITSTATUS(result)));
 		}
 	}
-	DEBUG(0,("PANIC: %s\n", why));
 
 #ifdef SIGABRT
 	CatchSignal(SIGABRT, SIG_DFL);
