@@ -22,12 +22,10 @@
 from samba.dcerpc import samr, security
 from samba.tests import RpcInterfaceTestCase
 
+
 # FIXME: Pidl should be doing this for us
-def toArray((handle, array, num_entries)):
-    ret = []
-    for x in range(num_entries):
-        ret.append((array.entries[x].idx, array.entries[x].name))
-    return ret
+def toArray(handle, array, num_entries):
+    return [(entry.idx, entry.name) for entry in array.entries[:num_entries]]
 
 
 class SamrTests(RpcInterfaceTestCase):
@@ -45,6 +43,6 @@ class SamrTests(RpcInterfaceTestCase):
 
     def test_EnumDomains(self):
         handle = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
-        domains = toArray(self.conn.EnumDomains(handle, 0, 4294967295L))
+        domains = toArray(*self.conn.EnumDomains(handle, 0, 4294967295))
         self.conn.Close(handle)
 
