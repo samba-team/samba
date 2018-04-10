@@ -32,7 +32,7 @@ def write_dot_file(basename, edge_list, vertices=None, label=None,
     s = dot_graph(vertices, edge_list, title=label, **kwargs)
     if label:
         # sanitise DN and guid labels
-        basename += '_' + label.translate(None, ', ')
+        basename += '_' + label.replace(', ', '')
 
     filename = os.path.join(dot_file_dir, "%s.dot" % basename)
     if debug is not None:
