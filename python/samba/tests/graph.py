@@ -73,7 +73,7 @@ class DotFileTests(samba.tests.TestCaseInTempDir):
     def test_basic_dot_files(self):
         vertices = tuple('abcdefgh')
         all_edges = tuple(itertools.combinations(vertices, 2))
-        line_edges = zip(vertices[1:], vertices[:-1])
+        line_edges = list(zip(vertices[1:], vertices[:-1]))
         ring_edges = line_edges + [(vertices[0], vertices[-1])]
         no_edges = []
         # even join to even numbers, odd to odd
