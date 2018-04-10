@@ -34,7 +34,12 @@ import uuid
 import time
 import shutil
 import subprocess
-import urllib
+
+try:
+    from urllib.parse import quote as urllib_quote  # py3
+except ImportError:
+    from urllib import quote as urllib_quote  # fall back to py2
+
 
 from ldb import SCOPE_BASE, SCOPE_ONELEVEL, LdbError, timestring
 
@@ -183,7 +188,7 @@ class LDAPBackend(ProvisionBackend):
         if ldap_backend_forced_uri is not None:
             self.ldap_uri = ldap_backend_forced_uri
         else:
-            self.ldap_uri = "ldapi://%s" % urllib.quote(
+            self.ldap_uri = "ldapi://%s" % urllib_quote(
                 os.path.join(self.ldapdir, "ldapi"), safe="")
 
         if not os.path.exists(self.ldapdir):

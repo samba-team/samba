@@ -37,10 +37,14 @@ import logging
 import time
 import uuid
 import socket
-import urllib
 import string
 import tempfile
 import samba.dsdb
+
+try:
+    from urllib.parse import quote as urllib_quote  # py3
+except ImportError:
+    from urllib import quote as urllib_quote  # fall back to py2
 
 import ldb
 
@@ -2189,7 +2193,7 @@ def provision(logger, session_info, smbconf=None,
     if paths.sysvol and not os.path.exists(paths.sysvol):
         os.makedirs(paths.sysvol, 0o775)
 
-    ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
+    ldapi_url = "ldapi://%s" % urllib_quote(paths.s4_ldapi_path, safe="")
 
     schema = Schema(domainsid, invocationid=invocationid,
         schemadn=names.schemadn, base_schema=base_schema)
