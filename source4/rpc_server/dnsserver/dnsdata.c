@@ -219,9 +219,7 @@ int dns_split_name_components(TALLOC_CTX *tmp_ctx, const char *name, char ***com
 	return count;
 
 failed:
-	if (str) {
-		talloc_free(str);
-	}
+	TALLOC_FREE(str);
 	return -1;
 }
 
