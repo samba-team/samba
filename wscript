@@ -128,6 +128,7 @@ def configure(conf):
     conf.RECURSE('lib/replace')
 
     conf.RECURSE('examples/fuse')
+    conf.RECURSE('examples/winexe')
 
     conf.SAMBA_CHECK_PERL(mandatory=True)
     conf.find_program('xsltproc', var='XSLTPROC')

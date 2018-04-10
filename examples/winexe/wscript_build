@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+
+import samba_utils
+
+def generate_winexesvc_c_from_exe(t):
+    src = t.inputs[0].bldpath(t.env)
+    tgt = t.outputs[0].bldpath(t.env)
+    fn = t.env.SAMBA_GENERATOR_VARS['WINEXE_FN']
+    src_blob = samba_utils.load_file(src)
+
+    def c_array(src):
+        N = 0
+        result = ''
+        while src:
+            l = src[:8]
+            src = src[8:]
+            h = ' '.join(["0x%02X," % ord(x) for x in l])
+            result += "\t\t%s\n" % (h)
+        return result
+
+    src_array = c_array(src_blob)
+
+    contents = '''
+#include "replace.h"
+#include "lib/util/data_blob.h"
+
+const DATA_BLOB *%s(void);
+const DATA_BLOB *%s(void)
+{
+\tstatic const uint8_t array[] = {
+%s
+\t};
+\tstatic const DATA_BLOB blob = {
+\t\t.data = discard_const_p(uint8_t, array),
+\t\t.length = ARRAY_SIZE(array),
+\t};
+\treturn &blob;
+}
+''' % (fn, fn, src_array)
+
+    ret = samba_utils.save_file(tgt, contents)
+    assert(ret == True)
+
+winexesvc_binaries = ''
+
+if bld.env.WINEXE_CC_WIN32:
+    bld.SAMBA_GENERATOR(
+        'winexesvc32_exe',
+        source='winexesvc.c',
+        target='winexesvc32.exe',
+        rule='${WINEXE_CC_WIN32} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}')
+    vars = {"WINEXE_FN": "winexesvc32_exe_binary"}
+    bld.SAMBA_GENERATOR(
+        'winexesvc32_exe_binary',
+        source='winexesvc32.exe',
+        target='winexesvc32_exe_binary.c',
+        group='build_source',
+        vars=vars,
+        rule=generate_winexesvc_c_from_exe)
+    winexesvc_binaries += ' winexesvc32_exe_binary.c'
+
+if bld.env.WINEXE_CC_WIN64:
+    bld.SAMBA_GENERATOR(
+        'winexesvc64_exe',
+        source='winexesvc.c',
+        target='winexesvc64.exe',
+        rule='${WINEXE_CC_WIN64} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}')
+    vars = {"WINEXE_FN": "winexesvc64_exe_binary"}
+    bld.SAMBA_GENERATOR(
+        'winexesvc64_exe_binary',
+        source='winexesvc64.exe',
+        target='winexesvc64_exe_binary.c',
+        group='build_source',
+        vars=vars,
+        rule=generate_winexesvc_c_from_exe)
+    winexesvc_binaries += ' winexesvc64_exe_binary.c'
+
+if winexesvc_binaries != '':
+    bld.SAMBA3_BINARY('winexe',
+                      source='winexe.c ' + winexesvc_binaries,
+                      deps='''
+                          popt
+                          samba-credentials
+                          LOADPARM_CTX
+                          libsmb
+                          msrpc3
+                      ''')

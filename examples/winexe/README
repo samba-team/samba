@@ -1,0 +1,18 @@
+winexe from https://sourceforge.net/projects/winexe/ is a project
+based on Samba libraries from 2012. According to the winexe git
+repository the last Samba commit winexe was updated to is 47bbf9886f0c
+from November 6, 2012. As winexe uses unpublished Samba internal
+libraries, it broke over time.
+
+This is a port of the winexe functionality to more modern Samba
+versions. It still uses internal APIs, but it being part of the tree
+means that it is much easier to keep up to date.
+
+The Windows service files were taken literally from the original
+winexe from the sourceforge git. Andrzej Hajda chose GPLv3 only and
+not GPLv3+. As GPL evolves very slowly, this should not be a practical
+problem for quite some time.
+
+To build it under Linux, you need mingw binaries on your build
+system. Under Debian stretch, the package names are gcc-mingw-w64 and
+friends.
