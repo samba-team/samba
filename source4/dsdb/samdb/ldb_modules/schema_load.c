@@ -514,7 +514,8 @@ static int schema_load_init(struct ldb_module *module)
 static int schema_load_start_transaction(struct ldb_module *module)
 {
 	struct schema_load_private_data *private_data =
-		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct schema_load_private_data);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema;
 	int ret;
@@ -547,7 +548,8 @@ static int schema_load_start_transaction(struct ldb_module *module)
 static int schema_load_end_transaction(struct ldb_module *module)
 {
 	struct schema_load_private_data *private_data =
-		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct schema_load_private_data);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	if (private_data->in_transaction == 0) {
