@@ -563,7 +563,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     py_path = list(extra_path)
     if py_path:
         environ["PYTHONPATH"] = ":".join(["$PYTHONPATH"] + py_path)
-    args = ["%s=%s" % item for item in environ.iteritems()]
+    args = ["%s=%s" % item for item in environ.items()]
     args += [subunitrun, "$LISTOPT", "$LOADLIST", module]
     args += extra_args
     if name is None:

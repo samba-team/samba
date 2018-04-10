@@ -774,11 +774,11 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     f = open(smbconf, 'w')
     try:
         f.write("[globals]\n")
-        for key, val in global_settings.iteritems():
+        for key, val in global_settings.items():
             f.write("\t%s = %s\n" % (key, val))
         f.write("\n")
 
-        for name, path in shares.iteritems():
+        for name, path in shares.items():
             f.write("[%s]\n" % name)
             f.write("\tpath = %s\n" % path)
             f.write("\tread only = no\n")
