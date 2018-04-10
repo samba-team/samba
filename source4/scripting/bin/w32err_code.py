@@ -194,7 +194,7 @@ class WerrorGenerator(object):
         fp.close()
 
     def _lookup_error_by_name(self, err_name, defined_errors):
-        for err in defined_errors.itervalues():
+        for err in defined_errors.values():
             if err['err_name'] == err_name:
                 return err
         return None
@@ -212,7 +212,7 @@ class WerrorGenerator(object):
         new_errors = {}
         diff_code_errors = []
         diff_name_errors = []
-        for err_def in errors.itervalues():
+        for err_def in errors.values():
             add_error = True
             # try get defined error by code
             if defined_errors.has_key(err_def['code']):
