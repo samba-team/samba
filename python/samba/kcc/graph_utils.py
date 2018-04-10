@@ -235,7 +235,7 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
             raise GraphError("wanted double directed ring, found a leaf node"
                              "(%s)" % vertex)
 
-    for vertex in edge_map.keys():
+    for vertex in list(edge_map.keys()):
         nset = edge_map[vertex]
         if not nset:
             continue
