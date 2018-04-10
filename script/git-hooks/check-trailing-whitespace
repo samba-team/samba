@@ -1,0 +1,17 @@
+#!/bin/sh
+
+git diff-index --cached --check  HEAD -- :/*.[ch] :/*.p[ylm]
+
+if [ $? != 0 ]; then
+    echo
+    echo "The commit failed because it seems to introduce trailing whitespace"
+    echo "into C, Perl, or Python code."
+    echo
+    echo "If you are sure you want to do this, repeat the commit with the "
+    echo "--no-verify, like this:"
+    echo
+    echo "   git commit --no-verify"
+    exit 1
+fi
+
+exit 0

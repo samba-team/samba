@@ -14,4 +14,6 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
+${gitdir}/script/git-hooks/check-trailing-whitespace || exit $?
+
 exit 0
