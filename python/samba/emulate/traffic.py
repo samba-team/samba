@@ -1398,9 +1398,9 @@ def replay(conversations,
         print(("we have %d accounts but %d conversations" %
                (accounts, conversations)), file=sys.stderr)
 
-    cstack = zip(sorted(conversations,
-                        key=lambda x: x.start_time, reverse=True),
-                 accounts)
+    cstack = list(zip(
+        sorted(conversations, key=lambda x: x.start_time, reverse=True),
+        accounts))
 
     # Set the process group so that the calling scripts are not killed
     # when the forked child processes are killed.
