@@ -518,16 +518,6 @@ static int schema_load_init(struct ldb_module *module)
 	return schema_load(ldb, module, &private_data->need_write);
 }
 
-static int schema_search(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-
-	/* Try the schema refresh now */
-	dsdb_get_schema(ldb, NULL);
-
-	return ldb_next_request(module, req);
-}
-
 static int schema_load_start_transaction(struct ldb_module *module)
 {
 	struct schema_load_private_data *private_data =
@@ -632,8 +622,10 @@ static int schema_read_lock(struct ldb_module *module)
 		return ldb_next_read_lock(module);
 	}
 
+	private_data->in_read_transaction++;
+
 	if (private_data->in_transaction == 0 &&
-	    private_data->in_read_transaction == 0) {
+	    private_data->in_read_transaction == 1) {
 		/*
 		 * This appears to fail during the init path, so do not bother
 		 * checking the return, and return 0 (reload schema).
@@ -643,8 +635,10 @@ static int schema_read_lock(struct ldb_module *module)
 					   &schema_seq_num, 0);
 
 		private_data->schema_seq_num_read_lock = schema_seq_num;
+
+		/* Try the schema refresh now */
+		dsdb_get_schema(ldb_module_get_ctx(module), NULL);
 	}
-	private_data->in_read_transaction++;
 
 	return ldb_next_read_lock(module);
 
@@ -673,7 +667,6 @@ static const struct ldb_module_ops ldb_schema_load_module_ops = {
 	.name		= "schema_load",
 	.init_context	= schema_load_init,
 	.extended	= schema_load_extended,
-	.search		= schema_search,
 	.start_transaction = schema_load_start_transaction,
 	.end_transaction   = schema_load_end_transaction,
 	.del_transaction   = schema_load_del_transaction,
