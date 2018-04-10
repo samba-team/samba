@@ -9,5 +9,5 @@ if len(sys.argv) < 2:
     sys.exit(1)
 
 db = tdb.Tdb(sys.argv[1])
-for (k, v) in db.iteritems():
+for (k, v) in db.items():
     print("{\nkey(%d) = %r\ndata(%d) = %r\n}" % (len(k), k, len(v), v))

@@ -1065,7 +1065,7 @@ def guess_server_address(conversations):
 
 def stringify_keys(x):
     y = {}
-    for k, v in x.iteritems():
+    for k, v in x.items():
         k2 = '\t'.join(k)
         y[k2] = v
     return y
@@ -1073,7 +1073,7 @@ def stringify_keys(x):
 
 def unstringify_keys(x):
     y = {}
-    for k, v in x.iteritems():
+    for k, v in x.items():
         t = tuple(str(k).split('\t'))
         y[t] = v
     return y
@@ -1133,12 +1133,12 @@ class TrafficModel(object):
 
     def save(self, f):
         ngrams = {}
-        for k, v in self.ngrams.iteritems():
+        for k, v in self.ngrams.items():
             k = '\t'.join(k)
             ngrams[k] = dict(Counter(v))
 
         query_details = {}
-        for k, v in self.query_details.iteritems():
+        for k, v in self.query_details.items():
             query_details[k] = dict(Counter('\t'.join(x) if x else '-'
                                             for x in v))
 
@@ -1161,15 +1161,15 @@ class TrafficModel(object):
 
         d = json.load(f)
 
-        for k, v in d['ngrams'].iteritems():
+        for k, v in d['ngrams'].items():
             k = tuple(str(k).split('\t'))
             values = self.ngrams.setdefault(k, [])
-            for p, count in v.iteritems():
+            for p, count in v.items():
                 values.extend([str(p)] * count)
 
-        for k, v in d['query_details'].iteritems():
+        for k, v in d['query_details'].items():
             values = self.query_details.setdefault(str(k), [])
-            for p, count in v.iteritems():
+            for p, count in v.items():
                 if p == '-':
                     values.extend([()] * count)
                 else:

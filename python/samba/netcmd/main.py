@@ -42,12 +42,10 @@ class cache_loader(dict):
         except KeyError:
             return default
 
-    def iteritems(self):
+    def items(self):
         for key in self:
             yield (key, self[key])
 
-    def items(self):
-        return list(self.iteritems())
 
 class cmd_sambatool(SuperCommand):
     """Main samba administration tool."""

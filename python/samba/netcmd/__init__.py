@@ -130,7 +130,7 @@ class Command(object):
             prog=prog,epilog=epilog)
         parser.add_options(self.takes_options)
         optiongroups = {}
-        for name, optiongroup in self.takes_optiongroups.iteritems():
+        for name, optiongroup in self.takes_optiongroups.items():
             optiongroups[name] = optiongroup(parser)
             parser.add_option_group(optiongroups[name])
         return parser, optiongroups

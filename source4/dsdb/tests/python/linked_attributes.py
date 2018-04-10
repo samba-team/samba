@@ -173,7 +173,7 @@ class LATests(samba.tests.TestCase):
         except ldb.LdbError as e:
             (num, msg) = e.args
             if num != errcode:
-                lut = {v: k for k, v in vars(ldb).iteritems()
+                lut = {v: k for k, v in vars(ldb).items()
                        if k.startswith('ERR_') and isinstance(v, int)}
                 self.fail("%s, expected "
                           "LdbError %s, (%d) "
@@ -181,7 +181,7 @@ class LATests(samba.tests.TestCase):
                                            lut.get(errcode), errcode,
                                            lut.get(num), num))
         else:
-            lut = {v: k for k, v in vars(ldb).iteritems()
+            lut = {v: k for k, v in vars(ldb).items()
                    if k.startswith('ERR_') and isinstance(v, int)}
             self.fail("%s, expected "
                       "LdbError %s, (%d) "
