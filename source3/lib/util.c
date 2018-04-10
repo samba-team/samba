@@ -852,10 +852,6 @@ void smb_panic_s3(const char *why)
 #include <execinfo.h>
 #endif
 
-#ifdef HAVE_LIBEXC_H
-#include <libexc.h>
-#endif
-
 void log_stack_trace(void)
 {
 #ifdef HAVE_LIBUNWIND
@@ -933,44 +929,6 @@ libunwind_failed:
 
 		/* Leak the backtrace_strings, rather than risk what free() might do */
 	}
-
-#elif HAVE_LIBEXC
-
-	/* The IRIX libexc library provides an API for unwinding the stack. See
-	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
-	 * since we are about to abort anyway, it hardly matters.
-	 */
-
-#define NAMESIZE 32 /* Arbitrary */
-
-	__uint64_t	addrs[BACKTRACE_STACK_SIZE];
-	char *      	names[BACKTRACE_STACK_SIZE];
-	char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
-
-	int		i;
-	int		levels;
-
-	ZERO_ARRAY(addrs);
-	ZERO_ARRAY(names);
-	ZERO_ARRAY(namebuf);
-
-	/* We need to be root so we can open our /proc entry to walk
-	 * our stack. It also helps when we want to dump core.
-	 */
-	become_root();
-
-	for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
-		names[i] = namebuf + (i * NAMESIZE);
-	}
-
-	levels = trace_back_stack(0, addrs, names,
-			BACKTRACE_STACK_SIZE, NAMESIZE - 1);
-
-	DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
-	for (i = 0; i < levels; i++) {
-		DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
-	}
-#undef NAMESIZE
 
 #else
 	DEBUG(0, ("unable to produce a stack trace on this platform\n"));
