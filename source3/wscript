@@ -96,7 +96,7 @@ def configure(conf):
     # We crash without vfs_default
     required_static_modules.extend(TO_LIST('vfs_default'))
 
-    conf.CHECK_HEADERS('execinfo.h libunwind.h netdb.h')
+    conf.CHECK_HEADERS('netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h linux/ioctl.h')
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod')
