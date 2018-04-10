@@ -53,5 +53,6 @@ void fault_setup(void);
 void fault_setup_disable(void);
 _NORETURN_ void smb_panic(const char *reason);
 
+void log_stack_trace(void);
 
 #endif /* _SAMBA_FAULT_H_ */
