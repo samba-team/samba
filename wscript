@@ -10,7 +10,7 @@ import sys, os, tempfile
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options, samba_dist, samba_git, Scripting, Utils, samba_version
 import Logs, samba_utils
-
+import shutil
 
 samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
@@ -106,6 +106,13 @@ def configure(conf):
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
         conf.env.DEVELOPER = True
+        # if we are in a git tree without a pre-commit hook, install a
+        # simple default.
+        pre_commit_hook = os.path.join(srcdir, '.git/hooks/pre-commit')
+        if (os.path.isdir(os.path.dirname(pre_commit_hook)) and
+            not os.path.exists(pre_commit_hook)):
+            shutil.copy(os.path.join(srcdir, 'script/git-hooks/pre-commit-hook'),
+                        pre_commit_hook)
 
     conf.ADD_EXTRA_INCLUDES('#include/public #source4 #lib #source4/lib #source4/include #include #lib/replace')
 

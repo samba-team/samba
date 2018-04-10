@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -eu
+
+#
+# make emacs/magit work, cf
+# https://github.com/magit/magit/issues/3419
+#
+unset GIT_LITERAL_PATHSPECS
+
+gitdir=$(git rev-parse --show-toplevel)
+if [ $? -ne 0 ] ; then
+    echo "git rev-parse --show-toplevel failed"
+    exit 1
+fi
+
+exit 0
