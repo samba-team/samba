@@ -498,7 +498,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			continue;
 		}
 
-		if (p->normalise) {
+		if (p && p->normalise) {
 			/* If we are also in 'normalise' mode, then
 			 * fix the attribute names to be in the
 			 * correct case */
