@@ -4065,6 +4065,11 @@ static ssize_t fruit_pread_rsrc(vfs_handle_struct *handle,
 	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	ssize_t nread;
 
+	if (fio == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	switch (fio->config->rsrc) {
 	case FRUIT_RSRC_STREAM:
 		nread = fruit_pread_rsrc_stream(handle, fsp, data, n, offset);
