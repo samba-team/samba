@@ -1,4 +1,79 @@
                    ==============================
+                   Release Notes for Samba 4.6.15
+                           April 13, 2018
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.6 release series.
+
+
+Changes since 4.6.14:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13244: s3: ldap: Ensure the ADS_STRUCT pointer doesn't get freed
+     on error, we don't own it here.
+   * BUG 13270: s3: smbd: Fix possible directory fd leak if the underlying
+     OS doesn't support fdopendir().
+   * BUG 13375: s3: smbd: Unix extensions attempts to change wrong field
+     in fchown call.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13277: build: fix libceph-common detection.
+
+o  Poornima G <pgurusid@redhat.com>
+   * BUG 13297: vfs_glusterfs: Fix the wrong pointer being sent in
+     glfs_fsync_async.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13215: Fix smbd panic if the client-supplied channel sequence number
+     wraps.
+   * BUG 13240: samba: Only use async signal-safe functions in signal handler.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13197: SMB2 close/lock/logoff can generate
+     NT_STATUS_NETWORK_SESSION_EXPIRED.
+   * BUG 13206: Fix authentication with an empty string domain ''.
+   * BUG 13215: s3:smb2_server: correctly maintain request counters for
+     compound requests.
+
+o  Anton Nefedov
+   * BUG 13338: s3:smbd: Map nterror on smb2_flush errorpath.
+
+o  Dan Robertson <drobertson@tripwire.com>
+   * BUG 13310: libsmb: Use smb2 tcon if conn_protocol >= SMB2_02.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13031: subnet: Avoid a segfault when renaming subnet objects.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13315: s3:smbd: Do not crash if we fail to init the session table.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.6.14
                            March 13, 2018
                    =============================
@@ -36,7 +111,7 @@ o  CVE-2018-1057:
    https://wiki.samba.org/index.php/CVE-2018-1057
 
 
-Changes since 4.6.12:
+Changes since 4.6.13:
 ---------------------
 
 o  Jeremy Allison <jra@samba.org>
@@ -71,8 +146,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.6.13
