@@ -162,15 +162,9 @@ static bool smbd_unlock_socket_internal(struct smbXsrv_connection *xconn)
 
 #ifdef HAVE_ROBUST_MUTEXES
 	if (xconn->smb1.echo_handler.socket_mutex != NULL) {
-		int ret = EINTR;
-
-		while (ret == EINTR) {
-			ret = pthread_mutex_unlock(
-				xconn->smb1.echo_handler.socket_mutex);
-			if (ret == 0) {
-				break;
-			}
-		}
+		int ret;
+		ret = pthread_mutex_unlock(
+			xconn->smb1.echo_handler.socket_mutex);
 		if (ret != 0) {
 			DEBUG(1, ("pthread_mutex_unlock failed: %s\n",
 				  strerror(ret)));
