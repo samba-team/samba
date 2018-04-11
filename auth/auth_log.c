@@ -201,6 +201,7 @@ static void auth_message_send(struct imessaging_context *msg_ctx,
  *
  */
 static void log_json(struct imessaging_context *msg_ctx,
+		     struct loadparm_context *lp_ctx,
 		     struct json_context *context,
 		     const char *type, int debug_class, int debug_level)
 {
@@ -218,7 +219,9 @@ static void log_json(struct imessaging_context *msg_ctx,
 	}
 
 	DEBUGC(debug_class, debug_level, ("JSON %s: %s\n", type, json));
-	auth_message_send(msg_ctx, json);
+	if (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx)) {
+		auth_message_send(msg_ctx, json);
+	}
 
 	if (json) {
 		free(json);
@@ -502,7 +505,12 @@ static void log_authentication_event_json(
 	add_string(&authentication, "passwordType", get_password_type(ui));
 	add_object(&context,AUTH_JSON_TYPE, &authentication);
 
-	log_json(msg_ctx, &context, AUTH_JSON_TYPE, DBGC_AUTH_AUDIT, debug_level);
+	log_json(msg_ctx,
+		 lp_ctx,
+		 &context,
+		 AUTH_JSON_TYPE,
+		 DBGC_AUTH_AUDIT,
+		 debug_level);
 	free_json_context(&context);
 }
 
@@ -566,6 +574,7 @@ static void log_successful_authz_event_json(
 	add_object(&context,AUTHZ_JSON_TYPE, &authorization);
 
 	log_json(msg_ctx,
+		 lp_ctx,
 		 &context,
 		 AUTHZ_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
