@@ -721,7 +721,9 @@ planpythontestsuite("ad_dc_ntvfs:local",
 
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.krb5_credentials",
+                       py3_compatible=True,
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+
 for env in ["ad_dc_ntvfs", "vampire_dc", "promoted_dc"]:
     planoldpythontestsuite(env,
                            "samba.tests.py_credentials",
