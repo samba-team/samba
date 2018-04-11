@@ -69,14 +69,16 @@ fail:
 	return NULL;
 }
 
-NTSTATUS make_internal_rpc_pipe_socketpair(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev_ctx,
-					   struct messaging_context *msg_ctx,
-					   const char *pipe_name,
-					   const struct ndr_syntax_id *syntax,
-					   const struct tsocket_address *remote_address,
-					   const struct auth_session_info *session_info,
-					   struct npa_state **pnpa)
+NTSTATUS make_internal_rpc_pipe_socketpair(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev_ctx,
+	struct messaging_context *msg_ctx,
+	const char *pipe_name,
+	const struct ndr_syntax_id *syntax,
+	const struct tsocket_address *remote_address,
+	const struct tsocket_address *local_address,
+	const struct auth_session_info *session_info,
+	struct npa_state **pnpa)
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct named_pipe_client *npc;
@@ -132,6 +134,19 @@ NTSTATUS make_internal_rpc_pipe_socketpair(TALLOC_CTX *mem_ctx,
 	npc->remote_client_name = tsocket_address_inet_addr_string(npc->remote_client_addr,
 								   npc);
 	if (npc->remote_client_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	npc->local_server_addr = tsocket_address_copy(local_address, npc);
+	if (npc->local_server_addr == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	npc->local_server_name = tsocket_address_inet_addr_string(
+		npc->local_server_addr, npc);
+	if (npc->local_server_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
