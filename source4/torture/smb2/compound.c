@@ -1030,6 +1030,81 @@ done:
 	return ret;
 }
 
+static bool test_compound_invalid4(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	struct smb2_create cr;
+	struct smb2_read rd;
+	NTSTATUS status;
+	const char *fname = "compound_invalid4.dat";
+	struct smb2_close cl;
+	bool ret = true;
+	bool ok;
+	struct smb2_request *req[2];
+
+	smb2_transport_credits_ask_num(tree->session->transport, 2);
+
+	smb2_util_unlink(tree, fname);
+
+	ZERO_STRUCT(cr);
+	cr.in.security_flags	  = 0x00;
+	cr.in.oplock_level	  = 0;
+	cr.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	cr.in.create_flags	  = 0x00000000;
+	cr.in.reserved		  = 0x00000000;
+	cr.in.desired_access	  = SEC_RIGHTS_FILE_ALL;
+	cr.in.file_attributes	  = FILE_ATTRIBUTE_NORMAL;
+	cr.in.share_access	  = NTCREATEX_SHARE_ACCESS_READ |
+				    NTCREATEX_SHARE_ACCESS_WRITE |
+				    NTCREATEX_SHARE_ACCESS_DELETE;
+	cr.in.create_disposition  = NTCREATEX_DISP_OPEN_IF;
+	cr.in.create_options	  = NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+				    NTCREATEX_OPTIONS_ASYNC_ALERT	|
+				    NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+				    0x00200000;
+	cr.in.fname		  = fname;
+
+	status = smb2_create(tree, tctx, &cr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = cr.out.file.handle;
+	rd.in.length      = 1;
+	rd.in.offset      = 0;
+	req[0] = smb2_read_send(tree, &rd);
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	/*
+	 * Send a completely bogus request as second compound
+	 * element. This triggers smbd_smb2_request_error() in in
+	 * smbd_smb2_request_dispatch() before calling
+	 * smbd_smb2_request_dispatch_update_counts().
+	 */
+
+	req[1] = smb2_request_init_tree(tree, 0xff, 0x04, false, 0);
+	smb2_transport_send(req[1]);
+
+	status = smb2_read_recv(req[0], tctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_END_OF_FILE);
+
+	ok = smb2_request_receive(req[1]);
+	torture_assert(tctx, ok, "Invalid request failed\n");
+	CHECK_STATUS(req[1]->status, NT_STATUS_INVALID_PARAMETER);
+
+	ZERO_STRUCT(cl);
+	cl.in.file.handle = cr.out.file.handle;
+
+	status = smb2_close(tree, &cl);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_unlink(tree, fname);
+done:
+	return ret;
+}
+
 /* Send a compound request where we expect the last request (Create, Notify)
  * to go asynchronous. This works against a Win7 server and the reply is
  * sent in two different packets. */
@@ -1297,6 +1372,8 @@ struct torture_suite *torture_smb2_compound_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "invalid1", test_compound_invalid1);
 	torture_suite_add_1smb2_test(suite, "invalid2", test_compound_invalid2);
 	torture_suite_add_1smb2_test(suite, "invalid3", test_compound_invalid3);
+	torture_suite_add_1smb2_test(
+		suite, "invalid4", test_compound_invalid4);
 	torture_suite_add_1smb2_test(suite, "interim1",  test_compound_interim1);
 	torture_suite_add_1smb2_test(suite, "interim2",  test_compound_interim2);
 	torture_suite_add_1smb2_test(suite, "compound-break", test_compound_break);
