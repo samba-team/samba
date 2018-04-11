@@ -44,14 +44,16 @@ NTSTATUS make_external_rpc_pipe(TALLOC_CTX *mem_ctx,
 				const struct auth_session_info *session_info,
 				struct npa_state **pnpa);
 
-NTSTATUS make_internal_rpc_pipe_socketpair(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev_ctx,
-					   struct messaging_context *msg_ctx,
-					   const char *pipe_name,
-					   const struct ndr_syntax_id *syntax,
-					   const struct tsocket_address *remote_address,
-					   const struct auth_session_info *session_info,
-					   struct npa_state **pnpa);
+NTSTATUS make_internal_rpc_pipe_socketpair(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev_ctx,
+	struct messaging_context *msg_ctx,
+	const char *pipe_name,
+	const struct ndr_syntax_id *syntax,
+	const struct tsocket_address *remote_address,
+	const struct tsocket_address *local_address,
+	const struct auth_session_info *session_info,
+	struct npa_state **pnpa);
 
 struct np_proxy_state {
 	uint16_t file_type;
