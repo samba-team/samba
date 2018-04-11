@@ -108,8 +108,6 @@ static int acl_module_init(struct ldb_module *module)
 					NULL, "acl", "search", true);
 	ldb_module_set_private(module, data);
 
-	data->userPassword_support = dsdb_user_password_support(module, module, NULL);
-	
 	mem_ctx = talloc_new(module);
 	if (!mem_ctx) {
 		return ldb_oom(ldb);
@@ -180,7 +178,21 @@ static int acl_module_init(struct ldb_module *module)
 
 done:
 	talloc_free(mem_ctx);
-	return ldb_next_init(module);
+	ret = ldb_next_init(module);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/*
+	 * Check this after the modules have be initalised so we
+	 * can actually read the backend DB.
+	 */
+	data->userPassword_support
+		= dsdb_user_password_support(module,
+					     module,
+					     NULL);
+	return ret;
 }
 
 static int acl_allowedAttributes(struct ldb_module *module,
