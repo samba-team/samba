@@ -185,7 +185,7 @@ static int dbwrap_tool_store_string(struct db_context *db,
 	if (dbwrap_is_persistent(db)) {
 		status = dbwrap_trans_store_bystring(db, keyname,
 						     tdbdata,
-						     TDB_REPLACE);
+						     DBWRAP_REPLACE);
 	} else {
 		status = dbwrap_store_bystring(db, keyname,
 					      tdbdata,
@@ -225,7 +225,7 @@ static int dbwrap_tool_store_hex(struct db_context *db,
 	if (dbwrap_is_persistent(db)) {
 		status = dbwrap_trans_store_bystring(db, keyname,
 						     tdbdata,
-						     TDB_REPLACE);
+						     DBWRAP_REPLACE);
 	} else {
 		status = dbwrap_store_bystring(db, keyname,
 					       tdbdata,

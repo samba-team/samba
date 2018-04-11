@@ -2083,7 +2083,7 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 		goto done;
 	}
 
-	status = dbwrap_trans_store_bystring(db, keystr, data, TDB_REPLACE);
+	status = dbwrap_trans_store_bystring(db, keystr, data, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("regdb_store_values_internal: error storing: %s\n", nt_errstr(status)));
 		goto done;

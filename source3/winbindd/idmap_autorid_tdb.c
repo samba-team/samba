@@ -973,7 +973,10 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 
 	data = string_tdb_data(cfgstr);
 
-	status = dbwrap_trans_store_bystring(db, CONFIGKEY, data, TDB_REPLACE);
+	status = dbwrap_trans_store_bystring(db,
+					     CONFIGKEY,
+					     data,
+					     DBWRAP_REPLACE);
 
 done:
 	TALLOC_FREE(frame);
