@@ -142,7 +142,7 @@ static WERROR regsubkey_ctr_hash_keyname(struct regsubkey_ctr *ctr,
 						keyname,
 						make_tdb_data((uint8_t *)&idx,
 							      sizeof(idx)),
-						TDB_REPLACE));
+						DBWRAP_REPLACE));
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("error hashing new key '%s' in container: %s\n",
 			  keyname, win_errstr(werr)));
