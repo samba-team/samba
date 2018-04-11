@@ -189,7 +189,7 @@ static int dbwrap_tool_store_string(struct db_context *db,
 	} else {
 		status = dbwrap_store_bystring(db, keyname,
 					      tdbdata,
-					      TDB_REPLACE);
+					      DBWRAP_REPLACE);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr,
@@ -229,7 +229,7 @@ static int dbwrap_tool_store_hex(struct db_context *db,
 	} else {
 		status = dbwrap_store_bystring(db, keyname,
 					       tdbdata,
-					       TDB_REPLACE);
+					       DBWRAP_REPLACE);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr,

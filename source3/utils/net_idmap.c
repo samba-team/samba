@@ -319,7 +319,7 @@ static int net_idmap_store_id_mapping(struct db_context *db,
 
 	status = dbwrap_store_bystring(db, idstr,
 				       string_term_tdb_data(sid_string),
-				       TDB_REPLACE);
+				       DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Error storing ID -> SID: "
 			 "%s\n", nt_errstr(status));
@@ -328,7 +328,7 @@ static int net_idmap_store_id_mapping(struct db_context *db,
 	}
 	status = dbwrap_store_bystring(db, sid_string,
 				       string_term_tdb_data(idstr),
-				       TDB_REPLACE);
+				       DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Error storing SID -> ID: "
 			 "%s\n", nt_errstr(status));

@@ -118,7 +118,7 @@ NTSTATUS schannel_store_session_key_tdb(struct db_context *db_sc,
 	value.dptr = blob.data;
 	value.dsize = blob.length;
 
-	status = dbwrap_store_bystring(db_sc, keystr, value, TDB_REPLACE);
+	status = dbwrap_store_bystring(db_sc, keystr, value, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n",
 			 keystr, nt_errstr(status)));
@@ -359,7 +359,7 @@ NTSTATUS schannel_store_challenge_tdb(struct db_context *db_sc,
 	value.dptr = blob.data;
 	value.dsize = blob.length;
 
-	status = dbwrap_store_bystring(db_sc, keystr, value, TDB_REPLACE);
+	status = dbwrap_store_bystring(db_sc, keystr, value, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s: failed to stored challenge info for '%s' "
 			 "with key %s - %s\n",

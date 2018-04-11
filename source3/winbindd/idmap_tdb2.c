@@ -156,7 +156,7 @@ static NTSTATUS idmap_tdb2_set_mapping_action(struct db_context *db,
 
 	ret = dbwrap_store_bystring(db, state->ksidstr,
 				    string_term_tdb_data(state->kidstr),
-				    TDB_INSERT);
+				    DBWRAP_INSERT);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0, ("Error storing SID -> ID: %s\n", nt_errstr(ret)));
 		goto done;
@@ -164,7 +164,7 @@ static NTSTATUS idmap_tdb2_set_mapping_action(struct db_context *db,
 
 	ret = dbwrap_store_bystring(db, state->kidstr,
 				    string_term_tdb_data(state->ksidstr),
-				    TDB_INSERT);
+				    DBWRAP_INSERT);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0, ("Error storing ID -> SID: %s\n", nt_errstr(ret)));
 		/* try to remove the previous stored SID -> ID map */

@@ -292,7 +292,7 @@ NTSTATUS printer_list_mark_reload(void)
 		       PL_TSTAMP_FORMAT, time_h, time_l);
 
 	status = dbwrap_store_bystring(db, PL_TIMESTAMP_KEY,
-						data, TDB_REPLACE);
+						data, DBWRAP_REPLACE);
 
 done:
 	TALLOC_FREE(data.dptr);

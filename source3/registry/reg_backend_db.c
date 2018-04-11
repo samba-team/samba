@@ -468,7 +468,10 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 			return 1;
 		}
 
-		status = dbwrap_store_bystring(db, keyname, value, TDB_REPLACE);
+		status = dbwrap_store_bystring(db,
+					       keyname,
+					       value,
+					       DBWRAP_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("regdb_normalize_keynames_fn: "
 				 "failed to store new record for [%s]!\n",
@@ -574,7 +577,7 @@ static bool upgrade_v2_to_v3_check_subkeylist(struct db_context *db,
 			   path));
 
 		status = dbwrap_store_bystring(db, path, empty_subkey_list,
-					       TDB_INSERT);
+					       DBWRAP_INSERT);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("regdb_upgrade_v2_to_v3: writing subkey list "
 				  "[%s] failed\n", path));
@@ -1123,7 +1126,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	dbuf.dptr = buffer;
 	dbuf.dsize = len;
 	werr = ntstatus_to_werror(dbwrap_store_bystring(db, keyname, dbuf,
-							TDB_REPLACE));
+							DBWRAP_REPLACE));
 
 done:
 	TALLOC_FREE(ctx);

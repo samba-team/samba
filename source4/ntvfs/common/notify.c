@@ -232,7 +232,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
 	dbuf.dsize = blob.length;
 
 	status = dbwrap_store_bystring(notify->db, NOTIFY_KEY, dbuf,
-				       TDB_REPLACE);
+				       DBWRAP_REPLACE);
 	talloc_free(tmp_ctx);
 	return status;
 }

@@ -261,7 +261,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	}
 
 	ret = dbwrap_store_bystring(db, numstr,
-			string_term_tdb_data(keystr), TDB_INSERT);
+			string_term_tdb_data(keystr), DBWRAP_INSERT);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "

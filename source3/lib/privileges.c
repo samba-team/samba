@@ -150,7 +150,7 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t mask )
 	SBVAL(privbuf,0,mask);
 
 	return NT_STATUS_IS_OK(dbwrap_store_bystring(db, keystr, data,
-						     TDB_REPLACE));
+						     DBWRAP_REPLACE));
 }
 
 /*********************************************************************

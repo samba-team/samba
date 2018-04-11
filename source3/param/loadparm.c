@@ -1646,7 +1646,7 @@ static bool hash_a_service(const char *name, int idx)
 
 	dbwrap_store_bystring(ServiceHash, canon_name,
 			      make_tdb_data((uint8_t *)&idx, sizeof(idx)),
-			      TDB_REPLACE);
+			      DBWRAP_REPLACE);
 
 	TALLOC_FREE(canon_name);
 
