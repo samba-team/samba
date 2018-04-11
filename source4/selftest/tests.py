@@ -619,7 +619,7 @@ planpythontestsuite("none", "samba.tests.samba_tool.help")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.sites")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.dnscmd")
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho", py3_compatible=True)
 
 planoldpythontestsuite("nt4_dc", "samba.tests.netbios", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
