@@ -79,7 +79,7 @@ class TestProtocolClient(unittest.TestResult):
     suite = make_suite()
     # Create a stream (any object with a 'write' method). This should accept
     # bytes not strings: subunit is a byte orientated protocol.
-    stream = file('tests.log', 'wb')
+    stream = open('tests.log', 'wb')
     # Create a subunit result object which will output to the stream
     result = subunit.TestProtocolClient(stream)
     # Optionally, to get timing data for performance analysis, wrap the
