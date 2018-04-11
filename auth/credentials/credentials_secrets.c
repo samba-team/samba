@@ -122,6 +122,7 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 
 	if ((lct == secrets_tdb_last_change_time) &&
 	    (secrets_tdb_password != NULL) &&
+	    (password != NULL) &&
 	    (strcmp(password, secrets_tdb_password) != 0)) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NOT_FOUND;
