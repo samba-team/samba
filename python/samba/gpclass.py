@@ -29,7 +29,6 @@ from samba.net import Net
 from samba.dcerpc import nbt
 from samba import smb
 import samba.gpo as gpo
-import chardet
 
 try:
     from enum import Enum
