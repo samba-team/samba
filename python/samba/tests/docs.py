@@ -30,8 +30,7 @@ import xml.etree.ElementTree as ET
 class TestCase(samba.tests.TestCaseInTempDir):
 
     def _format_message(self, parameters, message):
-        parameters = list(parameters)
-        parameters = map(str, parameters)
+        parameters = list(map(str, parameters))
         parameters.sort()
         return message + '\n\n    %s' % ('\n    '.join(parameters))
 
