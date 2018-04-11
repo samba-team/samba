@@ -53,7 +53,7 @@ class RpcEchoTests(RpcInterfaceTestCase):
         self.assertEquals(8 * [0], y.surrounding)
 
     def test_manual_request(self):
-        self.assertEquals("\x01\x00\x00\x00", self.conn.request(0, chr(0) * 4))
+        self.assertEquals(b"\x01\x00\x00\x00", self.conn.request(0, chr(0) * 4))
 
     def test_server_name(self):
         self.assertEquals(None, self.conn.server_name)
@@ -64,8 +64,8 @@ class NdrEchoTests(TestCase):
     def test_info1_push(self):
         x = echo.info1()
         x.v = 42
-        self.assertEquals("\x2a", ndr_pack(x))
+        self.assertEquals(b"\x2a", ndr_pack(x))
 
     def test_info1_pull(self):
-        x = ndr_unpack(echo.info1, "\x42")
+        x = ndr_unpack(echo.info1, b"\x42")
         self.assertEquals(x.v, 66)
