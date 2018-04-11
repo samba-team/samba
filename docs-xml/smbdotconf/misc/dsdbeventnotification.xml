@@ -1,0 +1,27 @@
+<samba:parameter name="dsdb event notification"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>When enabled, this option causes Samba (acting as an
+	Active Directory Domain Controller) to stream Samba database
+	events across the internal message bus.  Scripts built using
+	Samba's python bindings can listen to these events by
+	registering as the service
+	<filename moreinfo="none">dsdb_event</filename>.</para>
+
+	<para>This should be considered a developer option (it assists
+	in the Samba testsuite) rather than a facility for external
+	auditing, as message delivery is not guaranteed (a feature
+	that the testsuite works around).  Additionally Samba must be
+	not compiled with the --without-json-audit parameter for this
+	option to be effective.</para>
+
+	<para>The Samba database events are also logged via the normal
+	logging methods when the <smbconfoption name="log level"/> is
+	set appropriately.</para>
+
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
