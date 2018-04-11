@@ -2180,7 +2180,7 @@ static NTSTATUS smbd_smb2_request_dispatch_update_counts(
 	bool update_open = false;
 	NTSTATUS status = NT_STATUS_OK;
 
-	req->request_counters_updated = false;
+	SMB_ASSERT(!req->request_counters_updated);
 
 	if (xconn->protocol < PROTOCOL_SMB2_22) {
 		return NT_STATUS_OK;
@@ -2314,6 +2314,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	DO_PROFILE_INC(request);
+
+	SMB_ASSERT(!req->request_counters_updated);
 
 	/* TODO: verify more things */
 
@@ -2754,6 +2756,8 @@ static void smbd_smb2_request_reply_update_counts(struct smbd_smb2_request *req)
 	if (!req->request_counters_updated) {
 		return;
 	}
+
+	req->request_counters_updated = false;
 
 	if (xconn->protocol < PROTOCOL_SMB2_22) {
 		return;
