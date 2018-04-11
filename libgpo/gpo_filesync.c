@@ -50,7 +50,7 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 	int read_size = io_bufsize;
 	off_t nread = 0;
 
-	result = cli_openx(cli, nt_path, O_RDONLY, DENY_NONE, &fnum);
+	result = cli_open(cli, nt_path, O_RDONLY, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
 	}
