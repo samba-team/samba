@@ -193,6 +193,14 @@ systemOnly: FALSE
 
         samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
 
+        # We now only update the @ATTRIBUTES when a transaction happens
+        # rather than making a read of the DB do writes.
+        #
+        # This avoids locking issues and is more expected
+
+        samdb2.transaction_start()
+        samdb2.transaction_commit()
+
         res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE,
                                 attrs=["@TEST_EXTRA"])
         self.assertEquals(len(res), 1)
@@ -219,6 +227,14 @@ systemOnly: FALSE
         self.assertEquals(res[0]["@TEST_EXTRA"][0], "1")
 
         samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
+
+        # We now only update the @INDEXLIST when a transaction happens
+        # rather than making a read of the DB do writes.
+        #
+        # This avoids locking issues and is more expected
+
+        samdb2.transaction_start()
+        samdb2.transaction_commit()
 
         res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE,
                                 attrs=["@TEST_EXTRA"])
