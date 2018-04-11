@@ -111,6 +111,15 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		try_mutex = lp_parm_bool(-1, "dbwrap_tdb_mutexes", "*", try_mutex);
 		try_mutex = lp_parm_bool(-1, "dbwrap_tdb_mutexes", base, try_mutex);
 
+		if (!lp_use_mmap()) {
+			/*
+			 * Mutexes require mmap. "use mmap = no" can
+			 * be a debugging tool, so let it override the
+			 * mutex parameters
+			 */
+			try_mutex = false;
+		}
+
 		if (try_mutex && tdb_runtime_check_for_robust_mutexes()) {
 			tdb_flags |= TDB_MUTEX_LOCKING;
 		}
