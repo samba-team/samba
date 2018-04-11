@@ -93,10 +93,9 @@ class PyKrb5CredentialsTests(TestCase):
         # remove the account if it exists, this will happen if a previous test
         # run failed
         delete_force(self.ldb, self.machine_dn)
-
-        utf16pw = unicode(
-            '"' + self.machine_pass.encode('utf-8') + '"', 'utf-8'
-        ).encode('utf-16-le')
+        # get unicode str for both py2 and py3
+        pass_unicode = self.machine_pass.encode('utf-8').decode('utf-8')
+        utf16pw = u'"{}"'.format(pass_unicode).encode('utf-16-le')
         self.ldb.add({
             "dn": self.machine_dn,
             "objectclass": "computer",
