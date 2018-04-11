@@ -681,6 +681,28 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		}
 	}
 
+	/*
+	 * According to MS-FSA a stream name does not have
+	 * separate DOS attribute metadata, so we must return
+	 * the DOS attribute from the base filename. With one caveat,
+	 * a non-default stream name can never be a directory.
+	 *
+	 * As this is common to all streams data stores, we handle
+	 * it here instead of inside all stream VFS modules.
+	 *
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13380
+	 */
+
+	if (is_ntfs_stream_smb_fname(smb_fname)) {
+		/* is_ntfs_stream_smb_fname() returns false for a POSIX path. */
+		if (!is_ntfs_default_stream_smb_fname(smb_fname)) {
+			/*
+			 * Non-default stream name, not a posix path.
+			 */
+			result &= ~(FILE_ATTRIBUTE_DIRECTORY);
+		}
+	}
+
 	if (conn->fs_capabilities & FILE_FILE_COMPRESSION) {
 		bool compressed = false;
 		status = dos_mode_check_compressed(conn, smb_fname,
