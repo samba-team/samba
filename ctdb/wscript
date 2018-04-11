@@ -476,6 +476,10 @@ def build(bld):
                         source='event/event_conf.c',
                         deps='ctdb-util')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-legacy-conf',
+                        source='server/legacy_conf.c',
+                        deps='ctdb-util')
+
     bld.SAMBA_BINARY('ctdb-config',
                      source='common/conf_tool.c',
                      cflags='-DCTDB_CONF_TOOL',
