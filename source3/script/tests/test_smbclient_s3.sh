@@ -1598,6 +1598,78 @@ EOF
     return 0
 }
 
+# Test xattr_stream correctly reports mode.
+# BUG: https://bugzilla.samba.org/show_bug.cgi?id=13380
+
+test_stream_directory_xattr()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+#
+# Test against streams_xattr
+#
+    cat > $tmpfile <<EOF
+deltree foo
+mkdir foo
+put ${PREFIX}/smbclient_interactive_prompt_commands foo:bar
+setmode foo -a
+allinfo foo:bar
+deltree foo
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/streams_xattr -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed checking attributes on xattr stream foo:bar with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep "attributes:.*80"
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed checking attributes on xattr stream foo:bar"
+	return 1
+    fi
+
+#
+# Test against streams_depot
+#
+    cat > $tmpfile <<EOF
+deltree foo
+mkdir foo
+put ${PREFIX}/smbclient_interactive_prompt_commands foo:bar
+setmode foo -a
+allinfo foo:bar
+deltree foo
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed checking attributes on depot stream foo:bar with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep "attributes:.*80"
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed checking attributes on depot stream foo:bar"
+	return 1
+    fi
+}
+
+#
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -1695,6 +1767,10 @@ testit "Ensure widelinks are restricted" \
 
 testit "streams_depot can delete correctly" \
     test_streams_depot_delete || \
+    failed=`expr $failed + 1`
+
+testit "stream_xattr attributes" \
+    test_stream_directory_xattr || \
     failed=`expr $failed + 1`
 
 testit "follow symlinks = no" \

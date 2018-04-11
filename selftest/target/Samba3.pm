@@ -2173,6 +2173,10 @@ sub provision($$$$$$$$$)
 	kernel oplocks = yes
 	vfs objects = streams_xattr xattr_tdb
 
+[streams_xattr]
+	copy = tmp
+	vfs objects = streams_xattr xattr_tdb
+
 [compound_find]
 	copy = tmp
 	smbd:find async delay usec = 10000
