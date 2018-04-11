@@ -395,7 +395,7 @@ NTSTATUS set_share_security(const char *share_name,
 	}
 
 	status = dbwrap_trans_store(share_db, string_term_tdb_data(key), blob,
-				    TDB_REPLACE);
+				    DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("set_share_security: Failed to store secdesc for "
 			  "%s: %s\n", share_name, nt_errstr(status)));

@@ -425,7 +425,7 @@ NTSTATUS dbwrap_trans_store_int32_bystring(struct db_context *db,
 	return dbwrap_trans_store(db, string_term_tdb_data(keystr),
 				  make_tdb_data((const uint8_t *)&v_store,
 						sizeof(v_store)),
-				  TDB_REPLACE);
+				  DBWRAP_REPLACE);
 }
 
 NTSTATUS dbwrap_trans_store_uint32_bystring(struct db_context *db,
@@ -439,7 +439,7 @@ NTSTATUS dbwrap_trans_store_uint32_bystring(struct db_context *db,
 	return dbwrap_trans_store(db, string_term_tdb_data(keystr),
 				  make_tdb_data((const uint8_t *)&v_store,
 						sizeof(v_store)),
-				  TDB_REPLACE);
+				  DBWRAP_REPLACE);
 }
 
 NTSTATUS dbwrap_trans_store_bystring(struct db_context *db, const char *key,
