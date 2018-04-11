@@ -23,7 +23,7 @@ from samba.net import Net
 
 
 def _get_user_realm_domain(user):
-    """ get the realm or the domain and the base user
+    r""" get the realm or the domain and the base user
         from user like:
         * username
         * DOMAIN\username
