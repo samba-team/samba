@@ -40,6 +40,13 @@ enum dbwrap_lock_order {
 #define DBWRAP_FLAG_NONE                     0x0000000000000000ULL
 #define DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS 0x0000000000000001ULL
 
+/** Flags to dbwrap_store() */
+#define DBWRAP_REPLACE	TDB_REPLACE	/* Replace record */
+#define DBWRAP_INSERT	TDB_INSERT	/* Don't overwrite an existing entry */
+#define DBWRAP_MODIFY	TDB_MODIFY	/* Don't create an existing entry    */
+
+#define DBWRAP_TDB_FLAGS (DBWRAP_REPLACE | DBWRAP_INSERT | DBWRAP_MODIFY)
+
 enum dbwrap_req_state {
 	/**
 	 * We are creating the request
