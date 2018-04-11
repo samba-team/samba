@@ -715,7 +715,10 @@ planoldpythontestsuite("fl2000dc:local",
                        "samba.tests.encrypted_secrets",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.lsa_string")
+planpythontestsuite("ad_dc_ntvfs:local",
+                    "samba.tests.lsa_string",
+                    py3_compatible=True)
+
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.krb5_credentials",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
