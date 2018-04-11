@@ -1,4 +1,109 @@
                    =============================
+                   Release Notes for Samba 4.7.7
+                           April 12, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.7 release series.
+
+
+Changes since 4.7.6:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13206: s4:auth_sam: Allow logons with an empty domain name.
+   * BUG 13244: s3: ldap: Ensure the ADS_STRUCT pointer doesn't get freed on
+     error, we don't own it here.
+   * BUG 13270: s3: smbd: Fix possible directory fd leak if the underlying
+     OS doesn't support fdopendir().
+   * BUG 13319: Round-tripping ACL get/set through vfs_fruit will increase
+     the number of ACE entries without limit.
+   * BUG 13347: s3: smbd: SMB2: Add DBGC_SMB2_CREDITS class to specifically
+     debug credit issues.
+   * BUG 13358: s3: smbd: Files or directories can't be opened DELETE_ON_CLOSE
+     without delete access.
+   * BUG 13372: s3: smbd: Fix memory leak in vfswrap_getwd().
+   * BUG 13375: s3: smbd: Unix extensions attempts to change wrong field
+     in fchown call.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13363: s3:smbd: Don't use the directory cache for SMB2/3.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13277: build: Fix libceph-common detection.
+
+o  David Disseldorp <ddiss@suse.de>
+   * BUG 13250: build: Fix ceph_statx check when configured with libcephfs_dir.
+
+o  Poornima G <pgurusid@redhat.com>
+   * BUG 13297: vfs_glusterfs: Fix the wrong pointer being sent in
+     glfs_fsync_async.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13359: ctdb-scripts: Drop 'net serverid wipe' from 50.samba event
+     script.
+
+o  Lutz Justen <ljusten@google.com>
+   * BUG 13368: s3: lib: messages: Don't use the result of sec_init() before
+     calling sec_init().
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13215: smbd can panic if the client-supplied channel sequence number
+     wraps.
+   * BUG 13367: dsdb: Fix CID 1034966 Uninitialized scalar variable.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13206: s3:libsmb: Allow -U"\\administrator" to work.
+   * BUG 13328: Windows 10 cannot logon on Samba NT4 domain.
+
+o  David Mulder <dmulder@suse.com>
+   * BUG 13050: smbc_opendir should not return EEXIST with invalid login
+     credentials.
+
+o  Anton Nefedov
+   * BUG 13338: s3:smbd: map nterror on smb2_flush errorpath.
+
+o  Dan Robertson <drobertson@tripwire.com>
+   * BUG 13310: libsmb: Use smb2 tcon if conn_protocol >= SMB2_02.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13031: subnet: Avoid a segfault when renaming subnet objects.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13312: 'wbinfo --name-to-sid' returns misleading result on invalid
+     query.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13315: s3:smbd: Do not crash if we fail to init the session table.
+
+o  Eric Vannier <evannier@google.com>
+   * BUG 13302: Allow AESNI to be used on all processor supporting AESNI.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.7.6
                            March 13, 2018
                    =============================
@@ -71,8 +176,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.7.5
