@@ -121,6 +121,11 @@ userAccountControl: %d
 
     def _test_userPassword_lockout_with_clear_change(self, creds, other_ldb, method,
                                                      initial_lastlogon_relation=None):
+        """
+        Tests user lockout behaviour when we try to change the user's password
+        but specify an incorrect old-password. The method parameter specifies
+        how to reset the locked out account (e.g. by resetting lockoutTime)
+        """
         # Notice: This works only against Windows if "dSHeuristics" has been set
         # properly
         username = creds.get_username()
@@ -546,6 +551,12 @@ userPassword: thatsAcomplPASS2XYZ
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
+    # The following test lockout behaviour when modifying a user's password
+    # and specifying an invalid old password. There are variants for both
+    # NTLM and kerberos user authentication. As well as that, there are 3 ways
+    # to reset the locked out account: by clearing the lockout bit for
+    # userAccountControl (via LDAP), resetting it via SAMR, and by resetting
+    # the lockoutTime.
     def test_userPassword_lockout_with_clear_change_krb5_ldap_userAccountControl(self):
         self._test_userPassword_lockout_with_clear_change(self.lockout1krb5_creds,
                                                           self.lockout2krb5_ldb,
