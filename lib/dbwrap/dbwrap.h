@@ -45,6 +45,7 @@ enum dbwrap_lock_order {
 #define DBWRAP_REPLACE	TDB_REPLACE	/* Replace record */
 #define DBWRAP_INSERT	TDB_INSERT	/* Don't overwrite an existing entry */
 #define DBWRAP_MODIFY	TDB_MODIFY	/* Don't create an existing entry    */
+#define DBWRAP_STORE_PERSISTENT 0x100	/* Store a persistent record */
 
 #define DBWRAP_TDB_FLAGS (DBWRAP_REPLACE | DBWRAP_INSERT | DBWRAP_MODIFY)
 
