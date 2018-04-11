@@ -252,7 +252,7 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
                 os.mkdir(l_name)
             else:
                 data = conn.loadfile(r_name)
-                file(l_name, 'w').write(data)
+                open(l_name, 'w').write(data)
 
 
 def copy_directory_local_to_remote(conn, localdir, remotedir):
@@ -274,7 +274,7 @@ def copy_directory_local_to_remote(conn, localdir, remotedir):
                 r_dirs.append(r_name)
                 conn.mkdir(r_name)
             else:
-                data = file(l_name, 'r').read()
+                data = open(l_name, 'r').read()
                 conn.savefile(r_name, data)
 
 
@@ -943,7 +943,7 @@ class cmd_create(Command):
             os.mkdir(os.path.join(gpodir, "Machine"))
             os.mkdir(os.path.join(gpodir, "User"))
             gpt_contents = "[General]\r\nVersion=0\r\n"
-            file(os.path.join(gpodir, "GPT.INI"), "w").write(gpt_contents)
+            open(os.path.join(gpodir, "GPT.INI"), "w").write(gpt_contents)
         except Exception as e:
             raise CommandError("Error Creating GPO files", e)
 

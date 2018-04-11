@@ -806,7 +806,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
     domainpart_file = os.path.join(dns_dir, partfile[domaindn])
     try:
         os.mkdir(dns_samldb_dir)
-        file(domainpart_file, 'w').close()
+        open(domainpart_file, 'w').close()
 
         # Fill the basedn and @OPTION records in domain partition
         dom_url = "%s://%s" % (backend_store, domainpart_file)
