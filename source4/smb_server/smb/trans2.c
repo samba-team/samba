@@ -876,7 +876,12 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 	r = talloc_zero(req, struct dfs_GetDFSReferral);
 	NT_STATUS_HAVE_NO_MEMORY(r);
 
-	ldb = samdb_connect(r, req->tcon->ntvfs->event_ctx, lp_ctx, system_session(lp_ctx), 0);
+	ldb = samdb_connect(r,
+			    req->tcon->ntvfs->event_ctx,
+			    lp_ctx,
+			    system_session(lp_ctx),
+			    NULL,
+			    0);
 	if (ldb == NULL) {
 		DEBUG(2,(__location__ ": Failed to open samdb\n"));
 		talloc_free(r);

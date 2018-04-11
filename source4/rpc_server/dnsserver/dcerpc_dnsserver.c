@@ -119,8 +119,12 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 	dsstate->lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 
 	/* FIXME: create correct auth_session_info for connecting user */
-	dsstate->samdb = samdb_connect(dsstate, dce_call->event_ctx, dsstate->lp_ctx,
-				dce_call->conn->auth_state.session_info, 0);
+	dsstate->samdb = samdb_connect(dsstate,
+				       dce_call->event_ctx,
+				       dsstate->lp_ctx,
+				       dce_call->conn->auth_state.session_info,
+				       dce_call->conn->remote_address,
+				       0);
 	if (dsstate->samdb == NULL) {
 		DEBUG(0,("dnsserver: Failed to open samdb"));
 		goto failed;

@@ -148,7 +148,12 @@ bool torture_net_become_dc(struct torture_context *torture)
 	private_dir = talloc_asprintf(s, "%s/%s", location, "private");
 	lpcfg_set_cmdline(lp_ctx, "private dir", private_dir);
 	torture_comment(torture, "Reopen the SAM LDB with system credentials and all replicated data: %s\n", private_dir);
-	ldb = samdb_connect(s, torture->ev, lp_ctx, system_session(lp_ctx), 0);
+	ldb = samdb_connect(s,
+			    torture->ev,
+			    lp_ctx,
+			    system_session(lp_ctx),
+			    NULL,
+			    0);
 	torture_assert_goto(torture, ldb != NULL, ret, cleanup,
 				      talloc_asprintf(torture,
 				      "Failed to open '%s/sam.ldb'\n", private_dir));

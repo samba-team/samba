@@ -119,8 +119,12 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 		       "Failed to fetch the gpo update command");
 
 	/* Open and read the samba db and store the initial password settings */
-	samdb = samdb_connect(ctx, tctx->ev, tctx->lp_ctx,
-			      system_session(tctx->lp_ctx), 0);
+	samdb = samdb_connect(ctx,
+			      tctx->ev,
+			      tctx->lp_ctx,
+			      system_session(tctx->lp_ctx),
+			      NULL,
+			      0);
 	torture_assert(tctx, samdb, "Failed to connect to the samdb");
 
 	ret = ldb_search(samdb, ctx, &result, ldb_get_default_basedn(samdb),

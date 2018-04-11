@@ -838,8 +838,12 @@ static void dns_task_init(struct task_server *task)
 		return;
 	}
 
-	dns->samdb = samdb_connect(dns, dns->task->event_ctx, dns->task->lp_ctx,
-			      system_session(dns->task->lp_ctx), 0);
+	dns->samdb = samdb_connect(dns,
+				   dns->task->event_ctx,
+				   dns->task->lp_ctx,
+				   system_session(dns->task->lp_ctx),
+				   NULL,
+				   0);
 	if (!dns->samdb) {
 		task_server_terminate(task, "dns: samdb_connect failed", true);
 		return;

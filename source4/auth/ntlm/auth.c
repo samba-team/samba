@@ -713,7 +713,12 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * 
 	if (sam_ctx) {
 		ctx->sam_ctx = sam_ctx;
 	} else {
-		ctx->sam_ctx = samdb_connect(ctx, ctx->event_ctx, ctx->lp_ctx, system_session(ctx->lp_ctx), 0);
+		ctx->sam_ctx = samdb_connect(ctx,
+					     ctx->event_ctx,
+					     ctx->lp_ctx,
+					     system_session(ctx->lp_ctx),
+					     NULL,
+					     0);
 	}
 
 	for (i=0; methods && methods[i] ; i++) {

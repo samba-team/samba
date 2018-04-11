@@ -56,7 +56,12 @@ static WERROR kccsrv_connect_samdb(struct kccsrv_service *service, struct loadpa
 {
 	const struct GUID *ntds_guid;
 
-	service->samdb = samdb_connect(service, service->task->event_ctx, lp_ctx, service->system_session_info, 0);
+	service->samdb = samdb_connect(service,
+				       service->task->event_ctx,
+				       lp_ctx,
+				       service->system_session_info,
+				       NULL,
+				       0);
 	if (!service->samdb) {
 		return WERR_DS_UNAVAILABLE;
 	}

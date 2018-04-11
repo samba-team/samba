@@ -180,6 +180,7 @@ NTSTATUS kpasswd_samdb_set_password(TALLOC_CTX *mem_ctx,
 			      event_ctx,
 			      lp_ctx,
 			      session_info,
+			      NULL,
 			      0);
 	if (samdb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

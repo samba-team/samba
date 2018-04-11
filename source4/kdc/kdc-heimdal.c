@@ -305,8 +305,12 @@ static void kdc_task_init(struct task_server *task)
 
 
 	/* get a samdb connection */
-	kdc->samdb = samdb_connect(kdc, kdc->task->event_ctx, kdc->task->lp_ctx,
-				   system_session(kdc->task->lp_ctx), 0);
+	kdc->samdb = samdb_connect(kdc,
+				   kdc->task->event_ctx,
+				   kdc->task->lp_ctx,
+				   system_session(kdc->task->lp_ctx),
+				   NULL,
+				   0);
 	if (!kdc->samdb) {
 		DEBUG(1,("kdc_task_init: unable to connect to samdb\n"));
 		task_server_terminate(task, "kdc: krb5_init_context samdb connect failed", true);

@@ -76,7 +76,9 @@ static int dfs_samba4_connect(struct vfs_handle_struct *handle,
 	data->sam_ctx = samdb_connect(data,
 				      data->ev,
 				      data->lp_ctx,
-				      system_session(data->lp_ctx), 0);
+				      system_session(data->lp_ctx),
+				      NULL,
+				      0);
 	if (!data->sam_ctx) {
 		DEBUG(0, ("samdb_connect failed\n"));
 		SMB_VFS_NEXT_DISCONNECT(handle);

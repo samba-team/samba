@@ -1245,11 +1245,12 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 	state->secrets         = NULL;
 	state->trusted_domains = NULL;
 
-	state->sam_ldb         = samdb_connect(mem_ctx, 
+	state->sam_ldb         = samdb_connect(mem_ctx,
 					       ctx->event_ctx,
 					       ctx->lp_ctx,
 					       r->in.session_info,
-						   0);
+					       NULL,
+					       0);
 	if (!state->sam_ldb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}

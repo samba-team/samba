@@ -79,8 +79,12 @@ NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Start a SAM with user privileges for the password change */
-	samdb = samdb_connect(mem_ctx, event_ctx, lp_ctx,
-			      session_info, 0);
+	samdb = samdb_connect(mem_ctx,
+			      event_ctx,
+			      lp_ctx,
+			      session_info,
+			      NULL,
+			      0);
 	if (!samdb) {
 		*error_string = "Failed to open samdb";
 		return NT_STATUS_ACCESS_DENIED;

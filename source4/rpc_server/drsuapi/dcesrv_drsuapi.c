@@ -96,8 +96,13 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	/*
 	 * connect to the samdb
 	 */
-	b_state->sam_ctx = samdb_connect(b_state, dce_call->event_ctx, 
-					 dce_call->conn->dce_ctx->lp_ctx, auth_info, 0);
+	b_state->sam_ctx = samdb_connect(
+		b_state,
+		dce_call->event_ctx,
+		dce_call->conn->dce_ctx->lp_ctx,
+		auth_info,
+		dce_call->conn->remote_address,
+		0);
 	if (!b_state->sam_ctx) {
 		return WERR_FOOBAR;
 	}
@@ -110,9 +115,14 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 		werr = drs_security_level_check(dce_call, NULL, SECURITY_RO_DOMAIN_CONTROLLER,
 						samdb_domain_sid(b_state->sam_ctx));
 		if (W_ERROR_IS_OK(werr)) {
-			b_state->sam_ctx_system = samdb_connect(b_state, dce_call->event_ctx,
-								dce_call->conn->dce_ctx->lp_ctx,
-								system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
+			b_state->sam_ctx_system
+			= samdb_connect(
+				b_state,
+				dce_call->event_ctx,
+				dce_call->conn->dce_ctx->lp_ctx,
+				system_session(dce_call->conn->dce_ctx->lp_ctx),
+				dce_call->conn->remote_address,
+				0);
 			if (!b_state->sam_ctx_system) {
 				return WERR_FOOBAR;
 			}

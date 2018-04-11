@@ -303,6 +303,7 @@ void mitkdc_task_init(struct task_server *task)
 				   kdc->task->event_ctx,
 				   kdc->task->lp_ctx,
 				   system_session(kdc->task->lp_ctx),
+				   NULL,
 				   0);
 	if (kdc->samdb == NULL) {
 		task_server_terminate(task,

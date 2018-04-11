@@ -238,10 +238,11 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 	db_context = talloc_new(event_ctx);
 
 	samdb_connect(db_context,
-			event_ctx,
-			cmdline_lp_ctx,
-			system_session(cmdline_lp_ctx),
-			0);
+		      event_ctx,
+		      cmdline_lp_ctx,
+		      system_session(cmdline_lp_ctx),
+		      NULL,
+		      0);
 	privilege_connect(db_context, cmdline_lp_ctx);
 
 	/* we deliberately leave these open, which allows them to be

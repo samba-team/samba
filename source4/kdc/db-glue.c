@@ -2774,8 +2774,12 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	}
 
 	/* Setup the link to LDB */
-	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx, base_ctx->ev_ctx,
-					  base_ctx->lp_ctx, session_info, 0);
+	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx,
+					  base_ctx->ev_ctx,
+					  base_ctx->lp_ctx,
+					  session_info,
+					  NULL,
+					  0);
 	if (kdc_db_ctx->samdb == NULL) {
 		DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot open samdb for KDC backend!"));
 		talloc_free(kdc_db_ctx);

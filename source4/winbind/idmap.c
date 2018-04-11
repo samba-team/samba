@@ -175,7 +175,12 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	idmap_ctx->samdb = samdb_connect(idmap_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
+	idmap_ctx->samdb = samdb_connect(idmap_ctx,
+					 ev_ctx,
+					 lp_ctx,
+					 system_session(lp_ctx),
+					 NULL,
+					 0);
 	if (idmap_ctx->samdb == NULL) {
 		DEBUG(0, ("Failed to load sam.ldb in idmap_init\n"));
 		goto fail;

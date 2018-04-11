@@ -660,8 +660,12 @@ static void dnsupdate_task_init(struct task_server *task)
 		return;
 	}
 
-	service->samdb = samdb_connect(service, service->task->event_ctx, task->lp_ctx,
-				       service->system_session_info, 0);
+	service->samdb = samdb_connect(service,
+				       service->task->event_ctx,
+				       task->lp_ctx,
+				       service->system_session_info,
+				       NULL,
+				       0);
 	if (!service->samdb) {
 		task_server_terminate(task, "dnsupdate: Failed to connect to local samdb\n",
 				      true);

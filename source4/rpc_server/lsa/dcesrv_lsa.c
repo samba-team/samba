@@ -3180,6 +3180,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	struct lsa_secret_state *secret_state;
 	struct dcesrv_handle *handle;
 	struct ldb_message **msgs, *msg;
+	struct ldb_context *samdb = NULL;
 	const char *attrs[] = {
 		NULL
 	};
@@ -3233,8 +3234,14 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		/* We need to connect to the database as system, as this is one
 		 * of the rare RPC calls that must read the secrets (and this
 		 * is denied otherwise) */
-		secret_state->sam_ldb = talloc_reference(secret_state,
-							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx), 0));
+		samdb = samdb_connect(
+			mem_ctx,
+			dce_call->event_ctx,
+			dce_call->conn->dce_ctx->lp_ctx,
+			system_session(dce_call->conn->dce_ctx->lp_ctx),
+			dce_call->conn->remote_address,
+			0);
+		secret_state->sam_ldb = talloc_reference(secret_state, samdb);
 		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
 
 		/* search for the secret record */
@@ -3337,6 +3344,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 	struct lsa_secret_state *secret_state;
 	struct dcesrv_handle *handle;
 	struct ldb_message **msgs;
+	struct ldb_context *samdb = NULL;
 	const char *attrs[] = {
 		NULL
 	};
@@ -3372,8 +3380,14 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		name = &r->in.name.string[2];
 		/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
-		secret_state->sam_ldb = talloc_reference(secret_state,
-							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx), 0));
+		samdb = samdb_connect(
+			mem_ctx,
+			dce_call->event_ctx,
+			dce_call->conn->dce_ctx->lp_ctx,
+			system_session(dce_call->conn->dce_ctx->lp_ctx),
+			dce_call->conn->remote_address,
+			0);
+		secret_state->sam_ldb = talloc_reference(secret_state, samdb);
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {

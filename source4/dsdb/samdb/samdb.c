@@ -54,7 +54,7 @@ int samdb_connect_url(TALLOC_CTX *mem_ctx,
 		      struct auth_session_info *session_info,
 		      unsigned int flags,
 		      const char *url,
-		      struct tsocket_address *remote_address,
+		      const struct tsocket_address *remote_address,
 		      struct ldb_context **ldb_ret,
 		      char **errstring)
 {
@@ -107,7 +107,7 @@ int samdb_connect_url(TALLOC_CTX *mem_ctx,
 	 */
 	if (remote_address != NULL) {
 		ldb_set_opaque(ldb, "remoteAddress",
-			       remote_address);
+			       discard_const(remote_address));
 		*ldb_ret = ldb;
 		return LDB_SUCCESS;
 	}
@@ -134,12 +134,20 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev_ctx,
 				  struct loadparm_context *lp_ctx,
 				  struct auth_session_info *session_info,
+				  const struct tsocket_address *remote_address,
 				  unsigned int flags)
 {
 	char *errstring;
 	struct ldb_context *ldb;
-	int ret = samdb_connect_url(mem_ctx, ev_ctx, lp_ctx, session_info, flags,
-				    "sam.ldb", NULL, &ldb, &errstring);
+	int ret = samdb_connect_url(mem_ctx,
+				    ev_ctx,
+				    lp_ctx,
+				    session_info,
+				    flags,
+				    "sam.ldb",
+				    remote_address,
+				    &ldb,
+				    &errstring);
 	if (ret == LDB_SUCCESS) {
 		return ldb;
 	}

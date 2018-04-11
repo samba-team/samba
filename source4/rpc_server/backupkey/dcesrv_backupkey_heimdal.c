@@ -1814,9 +1814,12 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	ldb_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
+	ldb_ctx = samdb_connect(mem_ctx,
+				dce_call->event_ctx,
 				dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
+				system_session(dce_call->conn->dce_ctx->lp_ctx),
+				dce_call->conn->remote_address,
+				0);
 
 	if (samdb_rodc(ldb_ctx, &is_rodc) != LDB_SUCCESS) {
 		talloc_unlink(mem_ctx, ldb_ctx);
