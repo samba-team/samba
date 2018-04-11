@@ -39,7 +39,6 @@ struct schema_load_private_data {
 	uint64_t in_transaction;
 	uint64_t in_read_transaction;
 	struct tdb_wrap *metadata;
-	uint64_t schema_seq_num_read_lock;
 	uint64_t schema_seq_num_cache;
 	int tdb_seqnum;
 
@@ -201,16 +200,26 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 		return schema;
 	}
 
-	if (private_data->in_transaction > 0) {
-
+	if (schema != NULL) {
 		/*
-		 * If the refresh is not an expected part of a larger
-		 * transaction, then we don't allow a schema reload during a
-		 * transaction. This stops others from modifying our schema
-		 * behind our backs
+		 * If we have a schema already (not in the startup)
+		 * and we are in a read or write transaction, then
+		 * avoid a schema reload, it can't have changed
 		 */
-		if (ldb_get_opaque(ldb, "dsdb_schema_refresh_expected") != (void *)1) {
-			return schema;
+		if (private_data->in_transaction > 0
+		    || private_data->in_read_transaction > 0 ) {
+			/*
+			 * If the refresh is not an expected part of a
+			 * larger transaction, then we don't allow a
+			 * schema reload during a transaction. This
+			 * stops others from modifying our schema
+			 * behind our backs
+			 */
+			if (ldb_get_opaque(ldb,
+					   "dsdb_schema_refresh_expected")
+			    != (void *)1) {
+				return schema;
+			}
 		}
 	}
 
@@ -229,19 +238,9 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	 * continue to hit the database to get the highest USN.
 	 */
 
-	if (private_data->in_read_transaction > 0) {
-		/*
-		 * We must give a static value of the metadata sequence number
-		 * during a read lock, otherwise, we will fail to load the
-		 * schema at runtime.
-		 */
-		schema_seq_num = private_data->schema_seq_num_read_lock;
-		ret = LDB_SUCCESS;
-	} else {
-		ret = schema_metadata_get_uint64(private_data,
-						 DSDB_METADATA_SCHEMA_SEQ_NUM,
-						 &schema_seq_num, 0);
-	}
+	ret = schema_metadata_get_uint64(private_data,
+					 DSDB_METADATA_SCHEMA_SEQ_NUM,
+					 &schema_seq_num, 0);
 
 	if (schema != NULL) {
 		if (ret == LDB_SUCCESS) {
@@ -616,32 +615,26 @@ static int schema_read_lock(struct ldb_module *module)
 {
 	struct schema_load_private_data *private_data =
 		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
-	uint64_t schema_seq_num = 0;
+	int ret;
 
 	if (private_data == NULL) {
 		return ldb_next_read_lock(module);
 	}
 
-	private_data->in_read_transaction++;
+	ret = ldb_next_read_lock(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	if (private_data->in_transaction == 0 &&
-	    private_data->in_read_transaction == 1) {
-		/*
-		 * This appears to fail during the init path, so do not bother
-		 * checking the return, and return 0 (reload schema).
-		 */
-		schema_metadata_get_uint64(private_data,
-					   DSDB_METADATA_SCHEMA_SEQ_NUM,
-					   &schema_seq_num, 0);
-
-		private_data->schema_seq_num_read_lock = schema_seq_num;
-
+	    private_data->in_read_transaction == 0) {
 		/* Try the schema refresh now */
 		dsdb_get_schema(ldb_module_get_ctx(module), NULL);
 	}
 
-	return ldb_next_read_lock(module);
+	private_data->in_read_transaction++;
 
+	return LDB_SUCCESS;
 }
 
 static int schema_read_unlock(struct ldb_module *module)
@@ -653,10 +646,6 @@ static int schema_read_unlock(struct ldb_module *module)
 		return ldb_next_read_unlock(module);
 	}
 
-	if (private_data->in_transaction == 0 &&
-	    private_data->in_read_transaction == 1) {
-		private_data->schema_seq_num_read_lock = 0;
-	}
 	private_data->in_read_transaction--;
 
 	return ldb_next_read_unlock(module);
