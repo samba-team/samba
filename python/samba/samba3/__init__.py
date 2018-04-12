@@ -142,7 +142,7 @@ class IdmapDatabase(DbDatabase):
 
     def ids(self):
         """Retrieve a list of all ids in this database."""
-        for k in self.db.iterkeys():
+        for k in self.db:
             if k.startswith(IDMAP_USER_PREFIX):
                 yield k.rstrip(b"\0").split(b" ")
             if k.startswith(IDMAP_GROUP_PREFIX):
@@ -213,7 +213,7 @@ class SecretsDatabase(DbDatabase):
         return self.db.get("SECRETS/DOMGUID/%s" % host)
 
     def ldap_dns(self):
-        for k in self.db.iterkeys():
+        for k in self.db:
             if k.startswith("SECRETS/LDAP_BIND_PW/"):
                 yield k[len("SECRETS/LDAP_BIND_PW/"):].rstrip("\0")
 
@@ -222,7 +222,7 @@ class SecretsDatabase(DbDatabase):
 
         :return: Iterator over the names of domains in this database.
         """
-        for k in self.db.iterkeys():
+        for k in self.db:
             if k.startswith("SECRETS/SID/"):
                 yield k[len("SECRETS/SID/"):].rstrip("\0")
 
@@ -248,7 +248,7 @@ class SecretsDatabase(DbDatabase):
         return self.db.get("SECRETS/$DOMTRUST.ACC/%s" % host)
 
     def trusted_domains(self):
-        for k in self.db.iterkeys():
+        for k in self.db:
             if k.startswith("SECRETS/$DOMTRUST.ACC/"):
                 yield k[len("SECRETS/$DOMTRUST.ACC/"):].rstrip("\0")
 
