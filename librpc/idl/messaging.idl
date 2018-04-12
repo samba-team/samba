@@ -140,8 +140,13 @@ interface messaging
 		MSG_NTVFS_OPLOCK_BREAK          = 0x0703,
 		MSG_DREPL_ALLOCATE_RID          = 0x0704,
 
-		/* Called during authentication and authorization to allow out-of- */
+		/*
+		 * Audit, Authentication and Authorisation event
+		 * messages
+		 */
 		MSG_AUTH_LOG                    = 0x0800,
+		MSG_DSDB_LOG                    = 0x0801,
+		MSG_DSDB_PWD_LOG                = 0x0802,
 
 		/* dbwrap messages 4001-4999 (0x0FA0 - 0x1387) */
 		/* MSG_DBWRAP_TDB2_CHANGES		= 4001, */
@@ -178,5 +183,7 @@ interface messaging
 	} messaging_reclog;
 
         /* This allows this well known service name to be referenced in python and C */
-        const string AUTH_EVENT_NAME = "auth_event";
+        const string AUTH_EVENT_NAME  = "auth_event";
+	const string DSDB_EVENT_NAME = "dsdb_event";
+	const string DSDB_PWD_EVENT_NAME   = "dsdb_password_event";
 }
