@@ -527,7 +527,7 @@ NTSTATUS nbt_set_unexpected_handler(struct nbt_name_socket *nbtsock,
 */
 _PUBLIC_ NTSTATUS nbt_rcode_to_ntstatus(uint8_t rcode)
 {
-	int i;
+	size_t i;
 	struct {
 		enum nbt_rcode rcode;
 		NTSTATUS status;
