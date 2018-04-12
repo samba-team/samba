@@ -37,6 +37,7 @@
 #include "../lib/util/dlinklist.h"
 #include "lib/util/util_paths.h"
 #include <tdb.h>
+#include <unistd.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LDB
