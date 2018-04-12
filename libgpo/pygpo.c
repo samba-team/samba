@@ -28,6 +28,11 @@
 #include "auth/credentials/pycredentials.h"
 #include "libcli/util/pyerrors.h"
 #include "python/py3compat.h"
+#include "libgpo/gpo_proto.h"
+#include "registry.h"
+#include "registry/reg_api.h"
+#include "../libcli/registry/util_reg.h"
+#include "../libgpo/gpext/gpext.h"
 
 /* A Python C API module to use LIBGPO */
 
@@ -383,6 +388,64 @@ out:
 	return ret;
 }
 
+static void get_gp_registry_context(TALLOC_CTX *ctx,
+				    uint32_t desired_access,
+				    struct gp_registry_context **reg_ctx)
+{
+	struct security_token *token;
+	WERROR werr;
+
+	lp_load_initial_only(get_dyn_CONFIGFILE());
+
+	token = registry_create_system_token(ctx);
+	if (!token) {
+		PyErr_SetString(PyExc_MemoryError,
+				"Failed to create system token");
+		return;
+	}
+	werr = gp_init_reg_ctx(ctx, KEY_WINLOGON_GPEXT_PATH, desired_access,
+			       token, reg_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		PyErr_SetNTSTATUS(werror_to_ntstatus(werr));
+		return;
+	}
+}
+
+static PyObject *py_register_gp_extension(PyObject * self, PyObject * args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *module_path = NULL;
+	const char *guid_name = NULL;
+	WERROR werr;
+	struct gp_registry_context *reg_ctx = NULL;
+	struct registry_key *key = NULL;
+	PyObject *ret = NULL;
+
+	if (!PyArg_ParseTuple(args, "ss", &guid_name, &module_path)) {
+		return NULL;
+	}
+
+	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	werr = gp_store_reg_subkey(frame, guid_name,
+				   reg_ctx->curr_key, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+	werr = gp_store_reg_val_sz(frame, key, "DllName", module_path);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+
+	ret = Py_True;
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 /* Global methods aka do not need a special pyobject type */
 static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self,
 					       PyObject * args)
@@ -587,6 +650,8 @@ static PyTypeObject ads_ADSType = {
 };
 
 static PyMethodDef py_gpo_methods[] = {
+	{"register_gp_extension", (PyCFunction)py_register_gp_extension,
+		METH_VARARGS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
 		METH_VARARGS, NULL},
