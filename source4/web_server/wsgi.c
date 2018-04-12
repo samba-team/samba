@@ -204,7 +204,7 @@ static PyObject *py_input_readline(PyObject *_self)
 static PyObject *py_input_readlines(PyObject *_self, PyObject *args, PyObject *kwargs)
 {
 	const char *kwnames[] = { "hint", NULL };
-	int hint;
+	int hint = 0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", discard_const_p(char *, kwnames), &hint))
 		return NULL;
