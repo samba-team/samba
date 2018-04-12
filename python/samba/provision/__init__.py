@@ -37,10 +37,14 @@ import logging
 import time
 import uuid
 import socket
-import urllib
 import string
 import tempfile
 import samba.dsdb
+
+try:
+    from urllib.parse import quote as urllib_quote  # py3
+except ImportError:
+    from urllib import quote as urllib_quote  # fall back to py2
 
 import ldb
 
@@ -774,11 +778,11 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     f = open(smbconf, 'w')
     try:
         f.write("[globals]\n")
-        for key, val in global_settings.iteritems():
+        for key, val in global_settings.items():
             f.write("\t%s = %s\n" % (key, val))
         f.write("\n")
 
-        for name, path in shares.iteritems():
+        for name, path in shares.items():
             f.write("[%s]\n" % name)
             f.write("\tpath = %s\n" % path)
             f.write("\tread only = no\n")
@@ -2189,7 +2193,7 @@ def provision(logger, session_info, smbconf=None,
     if paths.sysvol and not os.path.exists(paths.sysvol):
         os.makedirs(paths.sysvol, 0o775)
 
-    ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
+    ldapi_url = "ldapi://%s" % urllib_quote(paths.s4_ldapi_path, safe="")
 
     schema = Schema(domainsid, invocationid=invocationid,
         schemadn=names.schemadn, base_schema=base_schema)

@@ -129,7 +129,7 @@ def shorten_vertex_names(edges, vertices, suffix=',...', aggressive=False):
                 break
         else:
             map = dict((k, v.replace(',CN=Servers,', ',**,'))
-                       for k, v in map.iteritems())
+                       for k, v in map.items())
             replacements.append(('**', 'CN=Servers'))
 
         for v in vertices2:
@@ -137,7 +137,7 @@ def shorten_vertex_names(edges, vertices, suffix=',...', aggressive=False):
                 break
         else:
             map = dict((k, v.replace('CN=NTDS Settings,', '*,'))
-                       for k, v in map.iteritems())
+                       for k, v in map.items())
             replacements.append(('*', 'CN=NTDS Settings'))
 
         edges2 = [(map.get(a, a), map.get(b, b)) for a, b in edges2]
@@ -463,11 +463,11 @@ def find_transitive_distance(vertices, edges):
     for i in range(inf):
         changed = False
         new_distances = {}
-        for v, d in distances.iteritems():
+        for v, d in distances.items():
             new_d = d.copy()
             new_distances[v] = new_d
-            for dest, cost in d.iteritems():
-                for leaf, cost2 in distances[dest].iteritems():
+            for dest, cost in d.items():
+                for leaf, cost2 in distances[dest].items():
                     new_cost = cost + cost2
                     old_cost = d.get(leaf, inf)
                     if new_cost < old_cost:
@@ -497,7 +497,7 @@ def get_transitive_colourer(colours, n_vertices):
         n = 1 + int(n_vertices ** 0.5)
 
         def f(link):
-            return scale[min(link * m / n, m - 1)]
+            return scale[min(link * m // n, m - 1)]
 
     else:
         def f(link):

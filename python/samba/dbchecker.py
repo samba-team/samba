@@ -1963,13 +1963,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         # If we modify the pass-by-reference attrs variable, then we get a
         # replPropertyMetadata for every object that we check.
         attrs = list(attrs)
-        if "dn" in map(str.lower, attrs):
+        attrs_lower = list(map(str.lower, attrs))
+        if "dn" in attrs_lower:
             attrs.append("name")
-        if "distinguishedname" in map(str.lower, attrs):
+        if "distinguishedname" in attrs_lower:
             attrs.append("name")
-        if str(dn.get_rdn_name()).lower() in map(str.lower, attrs):
+        if str(dn.get_rdn_name()).lower() in attrs_lower:
             attrs.append("name")
-        if 'name' in map(str.lower, attrs):
+        if 'name' in attrs_lower:
             attrs.append(dn.get_rdn_name())
             attrs.append("isDeleted")
             attrs.append("systemFlags")
@@ -2247,7 +2248,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             error_count += 1
             self.err_missing_objectclass(dn)
 
-        if ("*" in attrs or "name" in map(str.lower, attrs)):
+        if ("*" in attrs or "name" in attrs_lower):
             if name_val is None:
                 error_count += 1
                 self.report("ERROR: Not fixing missing 'name' on '%s'" % (str(obj.dn)))
@@ -2306,7 +2307,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 self.fix_metadata(obj, att)
 
         if self.is_fsmo_role(dn):
-            if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in map(str.lower, attrs)):
+            if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in attrs_lower):
                 self.err_no_fsmoRoleOwner(obj)
                 error_count += 1
 

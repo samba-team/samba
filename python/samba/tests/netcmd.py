@@ -36,14 +36,13 @@ class NetCmdTestCase(samba.tests.TestCase):
         return cmd.outf.getvalue(), cmd.errf.getvalue()
 
     def iter_all_subcommands(self):
-        todo = []
-        todo.extend(cmd_sambatool.subcommands.items())
+        todo = list(cmd_sambatool.subcommands.items())
         while todo:
             (path, cmd) = todo.pop()
             yield path, cmd
             subcmds = getattr(cmd, "subcommands", {})
             todo.extend([(path + " " + k, v) for (k, v) in
-                subcmds.iteritems()])
+                subcmds.items()])
 
 
 class TestParmTests(NetCmdTestCase):

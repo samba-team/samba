@@ -178,7 +178,7 @@ def get_partition_maps(samdb):
     }
 
     long_to_short = {}
-    for s, l in short_to_long.iteritems():
+    for s, l in short_to_long.items():
         long_to_short[l] = s
 
     return short_to_long, long_to_short
@@ -266,18 +266,18 @@ class cmd_reps(GraphCommand):
                 # get_reps_tables() returns two dictionaries mapping
                 # dns to NCReplica objects
                 c, n = remote_dsa.get_rep_tables()
-                for part, rep in c.iteritems():
+                for part, rep in c.items():
                     if partition is None or part == partition:
                         nc_reps[part]['current'].append((dsa_dn, rep))
-                for part, rep in n.iteritems():
+                for part, rep in n.items():
                     if partition is None or part == partition:
                         nc_reps[part]['needed'].append((dsa_dn, rep))
 
         all_edges = {'needed':  {'to': [], 'from': []},
                      'current': {'to': [], 'from': []}}
 
-        for partname, part in nc_reps.iteritems():
-            for state, edgelists in all_edges.iteritems():
+        for partname, part in nc_reps.items():
+            for state, edgelists in all_edges.items():
                 for dsa_dn, rep in part[state]:
                     short_name = long_partitions.get(partname, partname)
                     for r in rep.rep_repsFrom:
@@ -302,12 +302,12 @@ class cmd_reps(GraphCommand):
                 'from': "RepsFrom objects for %s",
                 'to': "RepsTo objects for %s",
             }
-            for state, edgelists in all_edges.iteritems():
-                for direction, items in edgelists.iteritems():
+            for state, edgelists in all_edges.items():
+                for direction, items in edgelists.items():
                     part_edges = defaultdict(list)
                     for src, dest, part in items:
                         part_edges[part].append((src, dest))
-                    for part, edges in part_edges.iteritems():
+                    for part, edges in part_edges.items():
                         s = distance_matrix(None, edges,
                                             utf8=utf8,
                                             colour=color_scheme,
@@ -324,8 +324,8 @@ class cmd_reps(GraphCommand):
         dot_vertices = set()
         used_colours = {}
         key_set = set()
-        for state, edgelist in all_edges.iteritems():
-            for direction, items in edgelist.iteritems():
+        for state, edgelist in all_edges.items():
+            for direction, items in edgelist.items():
                 for src, dest, part in items:
                     colour = used_colours.setdefault((part),
                                                      colour_hash((part,
@@ -472,7 +472,7 @@ class cmd_ntdsconn(GraphCommand):
                 source_denies = []
                 dest_denies = []
                 both_deny = []
-                for e, conn in edges.iteritems():
+                for e, conn in edges.items():
                     if conn.dest_attests:
                         graph_edges.append(e)
                         if not conn.src_attests:
@@ -517,7 +517,7 @@ class cmd_ntdsconn(GraphCommand):
         edge_styles = []
         edge_labels = []
         n_servers = len(dsas)
-        for k, e in sorted(edges.iteritems()):
+        for k, e in sorted(edges.items()):
             dot_edges.append(k)
             if e.observations == n_servers or not talk_to_remote:
                 edge_colours.append('#000000')
@@ -573,6 +573,6 @@ class cmd_visualize(SuperCommand):
     """Produces graphical representations of Samba network state"""
     subcommands = {}
 
-    for k, v in globals().iteritems():
+    for k, v in globals().items():
         if k.startswith('cmd_'):
             subcommands[k[4:]] = v()

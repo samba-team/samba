@@ -30,8 +30,7 @@ import xml.etree.ElementTree as ET
 class TestCase(samba.tests.TestCaseInTempDir):
 
     def _format_message(self, parameters, message):
-        parameters = list(parameters)
-        parameters = map(str, parameters)
+        parameters = list(map(str, parameters))
         parameters.sort()
         return message + '\n\n    %s' % ('\n    '.join(parameters))
 
@@ -197,10 +196,11 @@ class SmbDotConfTests(TestCase):
             p = subprocess.Popen(program + ["-s", self.smbconf,
                     "--section-name", section, "--parameter-name", param],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
-            if p[0].upper().strip() != default.upper():
-                if not (p[0].upper().strip() == "" and default == '""'):
+            result = p[0].decode().upper().strip()
+            if result != default.upper():
+                if not (result == "" and default == '""'):
                     doc_triple = "%s\n      Expected: %s" % (param, default)
-                    failset.add("%s\n      Got: %s" % (doc_triple, p[0].upper().strip()))
+                    failset.add("%s\n      Got: %s" % (doc_triple, result))
 
         if len(failset) > 0:
             self.fail(self._format_message(failset,
@@ -227,10 +227,11 @@ class SmbDotConfTests(TestCase):
                     "--section-name", section, "--parameter-name", param,
                     "--option", "%s = %s" % (param, default)],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
-            if p[0].upper().strip() != default.upper():
-                if not (p[0].upper().strip() == "" and default == '""'):
+            result = p[0].decode().upper().strip()
+            if result != default.upper():
+                if not (result == "" and default == '""'):
                     doc_triple = "%s\n      Expected: %s" % (param, default)
-                    failset.add("%s\n      Got: %s" % (doc_triple, p[0].upper().strip()))
+                    failset.add("%s\n      Got: %s" % (doc_triple, result))
 
         if len(failset) > 0:
             self.fail(self._format_message(failset,
@@ -285,10 +286,11 @@ class SmbDotConfTests(TestCase):
                     "--section-name", section, "--parameter-name", param,
                     "--option", "%s = %s" % (param, value_to_use)],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
-            if p[0].upper().strip() != value_to_use.upper():
+            result = p[0].decode().upper().strip()
+            if result != value_to_use.upper():
                 # currently no way to distinguish command lists
                 if param_type == 'list':
-                    if ", ".join(p[0].upper().strip().split()) == value_to_use.upper():
+                    if ", ".join(result.split()) == value_to_use.upper():
                         continue
 
                 # currently no way to identify octal
@@ -320,7 +322,7 @@ class SmbDotConfTests(TestCase):
 
             # testparm doesn't display a value if they are equivalent
             if (value_to_use.lower() != opposite_value.lower()):
-                for line in p[0].splitlines():
+                for line in p[0].decode().splitlines():
                     if not line.strip().startswith(param):
                         continue
 
@@ -352,7 +354,7 @@ class SmbDotConfTests(TestCase):
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
         output = ""
 
-        for line in p[0].splitlines():
+        for line in p[0].decode().splitlines():
             if line.strip().startswith('#'):
                 continue
             if line.strip().startswith("idmap config *"):

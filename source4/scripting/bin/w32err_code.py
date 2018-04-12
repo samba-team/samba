@@ -23,10 +23,15 @@ from __future__ import print_function
 import re
 import os
 import sys
-import urllib
 import pprint
 from xml.dom import minidom
 from optparse import OptionParser, OptionGroup
+
+try:
+    from urllib.request import urlopen as urllib_urlopen  # py3
+except ImportError:
+    from urllib import urlopen as urllib_urlopen  # fall back to py2
+
 
 _wspp_werror_url = 'http://msdn.microsoft.com/en-us/library/cc231199%28PROT.10%29.aspx'
 
@@ -110,7 +115,7 @@ class WerrorHtmlParser(object):
     def _load_url(self, url):
         html_str = ""
         try:
-            fp = urllib.urlopen(url)
+            fp = urllib_urlopen(url)
             for line in fp:
                 html_str += line.strip()
             fp.close()
@@ -194,7 +199,7 @@ class WerrorGenerator(object):
         fp.close()
 
     def _lookup_error_by_name(self, err_name, defined_errors):
-        for err in defined_errors.itervalues():
+        for err in defined_errors.values():
             if err['err_name'] == err_name:
                 return err
         return None
@@ -212,7 +217,7 @@ class WerrorGenerator(object):
         new_errors = {}
         diff_code_errors = []
         diff_name_errors = []
-        for err_def in errors.itervalues():
+        for err_def in errors.values():
             add_error = True
             # try get defined error by code
             if defined_errors.has_key(err_def['code']):

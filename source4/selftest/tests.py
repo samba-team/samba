@@ -563,7 +563,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     py_path = list(extra_path)
     if py_path:
         environ["PYTHONPATH"] = ":".join(["$PYTHONPATH"] + py_path)
-    args = ["%s=%s" % item for item in environ.iteritems()]
+    args = ["%s=%s" % item for item in environ.items()]
     args += [subunitrun, "$LISTOPT", "$LOADLIST", module]
     args += extra_args
     if name is None:
@@ -576,10 +576,10 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
 
 planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.sam")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.sam", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dsdb", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dsdb_lock")
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.bare")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.bare", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.unix")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.timecmd")
@@ -619,13 +619,17 @@ planpythontestsuite("none", "samba.tests.samba_tool.help")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.sites")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.dnscmd")
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho", py3_compatible=True)
 
 planoldpythontestsuite("nt4_dc", "samba.tests.netbios", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+planoldpythontestsuite("ad_dc:local", "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 
-planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite(
+    "ad_dc_ntvfs:local", "samba.tests.dcerpc.registry",
+    extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+
 planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("chgdcpass", "samba.tests.dcerpc.raw_protocol", extra_args=['-U"$USERNAME%$PASSWORD"'])
@@ -711,10 +715,15 @@ planoldpythontestsuite("fl2000dc:local",
                        "samba.tests.encrypted_secrets",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.lsa_string")
+planpythontestsuite("ad_dc_ntvfs:local",
+                    "samba.tests.lsa_string",
+                    py3_compatible=True)
+
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.krb5_credentials",
+                       py3_compatible=True,
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+
 for env in ["ad_dc_ntvfs", "vampire_dc", "promoted_dc"]:
     planoldpythontestsuite(env,
                            "samba.tests.py_credentials",

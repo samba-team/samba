@@ -41,9 +41,9 @@ have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
 with_pam = ("WITH_PAM" in config_hash)
 pam_wrapper_so_path=config_hash["LIBPAM_WRAPPER_SO_PATH"]
 
-planpythontestsuite("none", "samba.tests.source")
+planpythontestsuite("none", "samba.tests.source", py3_compatible=True)
 if have_man_pages_support:
-    planpythontestsuite("none", "samba.tests.docs")
+    planpythontestsuite("none", "samba.tests.docs", py3_compatible=True)
 
 try:
     import testscenarios
@@ -152,7 +152,7 @@ planpythontestsuite("none", "samba.tests.policy", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.kcc.graph", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.kcc.graph_utils", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.kcc.ldif_import_export")
-planpythontestsuite("none", "samba.tests.graph")
+planpythontestsuite("none", "samba.tests.graph", py3_compatible=True)
 plantestsuite("wafsamba.duplicate_symbols", "none", [os.path.join(srcdir(), "buildtools/wafsamba/test_duplicate_symbol.sh")])
 planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.tdb_util", py3_compatible=True)

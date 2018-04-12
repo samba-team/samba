@@ -1581,7 +1581,9 @@ class Site(object):
         # Which is a fancy way of saying "sort all the nTDSDSA objects
         # in the site by guid in ascending order".   Place sorted list
         # in D_sort[]
-        D_sort = sorted(self.rw_dsa_table.values(), cmp=sort_dsa_by_guid)
+        D_sort = sorted(
+            self.rw_dsa_table.values(),
+            key=lambda dsa: ndr_pack(dsa.dsa_guid))
 
         # double word number of 100 nanosecond intervals since 1600s
 
@@ -1669,7 +1671,7 @@ class Site(object):
         #
         # Note: We don't want to divide by zero here so they must
         #       have meant "f" instead of "o!interSiteTopologyFailover"
-        k_idx = (i_idx + ((self.nt_now - t_time) / f)) % len(D_sort)
+        k_idx = (i_idx + ((self.nt_now - t_time) // f)) % len(D_sort)
 
         # The local writable DC acts as an ISTG for its site if and
         # only if dk is the nTDSDSA object for the local DC. If the
@@ -2219,11 +2221,6 @@ def get_dsa_config_rep(dsa):
 
     raise KCCError("Unable to find config NC replica for (%s)" %
                    dsa.dsa_dnstr)
-
-
-def sort_dsa_by_guid(dsa1, dsa2):
-    "use ndr_pack for GUID comparison, as appears correct in some places"""
-    return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
 
 
 def new_connection_schedule():

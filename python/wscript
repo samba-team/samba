@@ -39,23 +39,21 @@ def configure(conf):
         f.close()
 
 def build(bld):
-    bld.SAMBA_LIBRARY('samba_python',
-                      source=[],
-                      deps='''
-                           LIBPYTHON
-                           pytalloc-util
-                           pyrpc_util
-                           ''',
-                      grouping_library=True,
-                      private_library=True,
-                      pyembed=True,
-                      enabled=bld.PYTHON_BUILD_IS_ENABLED())
+
 
     for env in bld.gen_python_environments():
         pytalloc_util = bld.pyembed_libname('pytalloc-util')
         pyparam_util = bld.pyembed_libname('pyparam_util')
         libpython = bld.pyembed_libname('LIBPYTHON')
-
+        pyrpc_util = bld.pyembed_libname('pyrpc_util')
+        samba_python = bld.pyembed_libname('samba_python')
+        bld.SAMBA_LIBRARY(samba_python,
+                      source=[],
+                      deps='%s %s %s' % (libpython, pytalloc_util, pyrpc_util),
+                      grouping_library=True,
+                      private_library=True,
+                      pyembed=True,
+                      enabled=bld.PYTHON_BUILD_IS_ENABLED())
         bld.SAMBA_PYTHON('python_glue',
                          source='pyglue.c',
                          deps='''
