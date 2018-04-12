@@ -52,10 +52,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <talloc.h>
-
-#define TEVENT_DEPRECATED 1
 #include <tevent.h>
-
 #include <ldb.h>
 #include <ldb_module.h>
 #include <ldb_private.h>
