@@ -1078,7 +1078,7 @@ static const char **PyList_AsStrList(TALLOC_CTX *mem_ctx, PyObject *list,
 		const char *str = NULL;
 		Py_ssize_t size;
 		PyObject *item = PyList_GetItem(list, i);
-		if (!PyStr_Check(item)) {
+		if (!(PyStr_Check(item) || PyUnicode_Check(item))) {
 			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
 			talloc_free(ret);
 			return NULL;
@@ -2861,7 +2861,7 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 
 	me->name = talloc_strdup(me, attr_name);
 	me->flags = flags;
-	if (PyBytes_Check(set_obj) || PyStr_Check(set_obj)) {
+	if (PyBytes_Check(set_obj) || PyUnicode_Check(set_obj)) {
 		me->num_values = 1;
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		if (PyBytes_Check(set_obj)) {
@@ -2897,7 +2897,7 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 					return NULL;
 				}
 				msg = _msg;
-			} else if (PyStr_Check(obj)) {
+			} else if (PyUnicode_Check(obj)) {
 				msg = PyStr_AsUTF8AndSize(obj, &size);
 				if (msg == NULL) {
 					talloc_free(me);
@@ -3069,7 +3069,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 
 	if (py_elements != NULL) {
 		Py_ssize_t i;
-		if (PyBytes_Check(py_elements) || PyStr_Check(py_elements)) {
+		if (PyBytes_Check(py_elements) || PyUnicode_Check(py_elements)) {
 			char *_msg = NULL;
 			el->num_values = 1;
 			el->values = talloc_array(el, struct ldb_val, 1);
@@ -3110,7 +3110,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 					char *_msg = NULL;
 					result = PyBytes_AsStringAndSize(item, &_msg, &size);
 					msg = _msg;
-				} else if (PyStr_Check(item)) {
+				} else if (PyUnicode_Check(item)) {
 					msg = PyStr_AsUTF8AndSize(item, &size);
 					result = (msg == NULL) ? -1 : 0;
 				} else {
