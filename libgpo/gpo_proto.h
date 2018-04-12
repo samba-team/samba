@@ -53,6 +53,14 @@ WERROR gp_store_reg_val_sz(TALLOC_CTX *mem_ctx,
 			   struct registry_key *key,
 			   const char *val_name,
 			   const char *val);
+WERROR gp_store_reg_val_dword(TALLOC_CTX *mem_ctx,
+                              struct registry_key *key,
+                              const char *val_name,
+                              uint32_t val);
+WERROR gp_read_reg_val_dword(TALLOC_CTX *mem_ctx,
+                             struct registry_key *key,
+                             const char *val_name,
+                             uint32_t *val);
 WERROR gp_read_reg_val_sz(TALLOC_CTX *mem_ctx,
 			  struct registry_key *key,
 			  const char *val_name,

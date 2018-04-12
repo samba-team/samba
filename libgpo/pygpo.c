@@ -28,6 +28,12 @@
 #include "auth/credentials/pycredentials.h"
 #include "libcli/util/pyerrors.h"
 #include "python/py3compat.h"
+#include "libgpo/gpo_proto.h"
+#include "registry.h"
+#include "registry/reg_api.h"
+#include "../libcli/registry/util_reg.h"
+#include "../libgpo/gpext/gpext.h"
+#include "register.h"
 
 /* A Python C API module to use LIBGPO */
 
@@ -383,6 +389,37 @@ out:
 	return ret;
 }
 
+static PyObject *py_register_gp_extension(PyObject * self, PyObject *args,
+					  PyObject *kwds)
+{
+	const char *module_path = NULL;
+	const char *guid_name = NULL;
+	PyObject *ret = NULL;
+	int cret = 0;
+	const char *smb_conf = NULL;
+	const char *gp_ext_cls = NULL;
+	int machine = 1, user = 1;
+	static const char *kwlist[] = {"guid", "gp_ext_cls", "path",
+				       "smb_conf", "machine", "user"};
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sss|sii",
+					 discard_const_p(char *, kwlist),
+					 &guid_name, &gp_ext_cls, &module_path,
+					 &smb_conf, &machine, &user)) {
+		return NULL;
+	}
+
+	cret = register_gp_extension(guid_name, gp_ext_cls, module_path,
+				     smb_conf, machine, user);
+	if (cret == 0) {
+		goto out;
+	}
+
+	ret = Py_True;
+out:
+	return ret;
+}
+
 /* Global methods aka do not need a special pyobject type */
 static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self,
 					       PyObject * args)
@@ -587,6 +624,8 @@ static PyTypeObject ads_ADSType = {
 };
 
 static PyMethodDef py_gpo_methods[] = {
+	{"register_gp_extension", (PyCFunction)py_register_gp_extension,
+		METH_VARARGS | METH_KEYWORDS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
 		METH_VARARGS, NULL},
