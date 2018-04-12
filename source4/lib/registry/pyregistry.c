@@ -250,7 +250,9 @@ static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwar
 	const char *kwnames[] = { "location", "lp_ctx", "session_info", "credentials", NULL };
 	WERROR result;
 	struct loadparm_context *lp_ctx;
-	PyObject *py_lp_ctx, *py_session_info, *py_credentials;
+	PyObject *py_lp_ctx = Py_None;
+	PyObject *py_session_info = Py_None;
+	PyObject *py_credentials = Py_None;
 	struct auth_session_info *session_info;
 	struct cli_credentials *credentials;
 	char *location;
@@ -312,7 +314,9 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 	struct registry_context *reg_ctx;
 	WERROR result;
 	struct loadparm_context *lp_ctx;
-	PyObject *py_lp_ctx, *py_session_info, *py_credentials;
+	PyObject *py_lp_ctx = Py_None;
+	PyObject *py_session_info = Py_None;
+	PyObject *py_credentials = Py_None;
 	struct auth_session_info *session_info;
 	struct cli_credentials *credentials;
 	TALLOC_CTX *mem_ctx;
