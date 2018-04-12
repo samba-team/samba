@@ -1907,7 +1907,7 @@ static PyObject *py_pdb_enum_group_mapping(PyObject *self, PyObject *args)
 	enum lsa_SidType sid_name_use;
 	int lsa_sidtype_value = SID_NAME_UNKNOWN;
 	int unix_only = 0;
-	PyObject *py_domain_sid;
+	PyObject *py_domain_sid = Py_None;
 	struct dom_sid *domain_sid = NULL;
 	GROUP_MAP **gmap = NULL;
 	GROUP_MAP *group_map;
@@ -1915,7 +1915,6 @@ static PyObject *py_pdb_enum_group_mapping(PyObject *self, PyObject *args)
 	PyObject *py_gmap_list, *py_group_map;
 	int i;
 
-	py_domain_sid = Py_None;
 	Py_INCREF(Py_None);
 
 	if (!PyArg_ParseTuple(args, "|O!ii:enum_group_mapping", dom_sid_Type, &py_domain_sid,
@@ -2602,10 +2601,9 @@ static PyObject *py_pdb_search_aliases(PyObject *self, PyObject *args)
 	struct pdb_search *search;
 	struct samr_displayentry *entry;
 	PyObject *py_aliaslist, *py_dict;
-	PyObject *py_domain_sid;
+	PyObject *py_domain_sid = Py_None;
 	struct dom_sid *domain_sid = NULL;
 
-	py_domain_sid = Py_None;
 	Py_INCREF(Py_None);
 
 	if (!PyArg_ParseTuple(args, "|O!:search_aliases", dom_sid_Type, &py_domain_sid)) {
