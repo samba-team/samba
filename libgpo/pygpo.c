@@ -183,7 +183,14 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	}
 
 	if (lp_obj) {
-		bool ok;
+		bool ok = py_check_dcerpc_type(lp_obj, "samba.param",
+					       "LoadParm");
+		if (!ok) {
+			PyErr_Format(PyExc_TypeError,
+				     "Expected samba.param.LoadParm "
+				     "for lp argument");
+			return -1;
+		}
 		lp_ctx = pytalloc_get_type(lp_obj, struct loadparm_context);
 		if (lp_ctx == NULL) {
 			return -1;

@@ -50,6 +50,13 @@ class GPOTests(tests.TestCase):
             assert gpos[i].ds_path == ds_paths[i], \
               'ds_path did not match expected %s' % gpos[i].ds_path
 
+
+    def test_gpo_ads_does_not_segfault(self):
+        try:
+            ads = gpo.ADS_STRUCT(self.server, 42, self.creds)
+        except:
+            pass
+
     def test_gpt_version(self):
         global gpt_data
         local_path = self.lp.get("path", "sysvol")
