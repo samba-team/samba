@@ -411,6 +411,34 @@ static void get_gp_registry_context(TALLOC_CTX *ctx,
 	}
 }
 
+static PyObject *py_unregister_gp_extension(PyObject * self, PyObject * args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *guid_name = NULL;
+	struct gp_registry_context *reg_ctx = NULL;
+	WERROR werr;
+	PyObject *ret = Py_False;
+
+	if (!PyArg_ParseTuple(args, "s", &guid_name)) {
+		return NULL;
+	}
+
+	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	werr = reg_deletekey_recursive(reg_ctx->curr_key, guid_name);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+
+	ret = Py_True;
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 static PyObject *py_register_gp_extension(PyObject * self, PyObject * args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -651,6 +679,8 @@ static PyTypeObject ads_ADSType = {
 
 static PyMethodDef py_gpo_methods[] = {
 	{"register_gp_extension", (PyCFunction)py_register_gp_extension,
+		METH_VARARGS, NULL},
+	{"unregister_gp_extension", (PyCFunction)py_unregister_gp_extension,
 		METH_VARARGS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
