@@ -140,14 +140,19 @@ setup_ctdb ()
 			rm -vf "${CTDB_BASE}/events.d/"*
 		fi
 
-		cat >"${CTDB_BASE}/ctdbd.conf" <<EOF
-CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
-CTDB_NODE_ADDRESS="${node_ip}"
-CTDB_LOGGING="file:${CTDB_BASE}/log.ctdb"
-CTDB_DEBUGLEVEL=INFO
-CTDB_DBDIR="${db_dir}/volatile"
-CTDB_DBDIR_PERSISTENT="${db_dir}/persistent"
-CTDB_DBDIR_STATE="${db_dir}/state"
+		cat >"${CTDB_BASE}/ctdb.conf" <<EOF
+[logging]
+	location = file:${CTDB_BASE}/log.ctdb
+	log level = INFO
+
+[cluster]
+	recovery lock = ${SIMPLE_TESTS_VAR_DIR}/rec.lock
+	node address = ${node_ip}
+
+[database]
+	volatile database directory = ${db_dir}/volatile
+	persistent database directory = ${db_dir}/persistent
+	state database directory = ${db_dir}/state
 EOF
 	done
 }
