@@ -580,7 +580,7 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 
 		for (i = 0; i < el->num_values; i++) {
 			PyObject *item = PyList_GetItem(el_list, i);
-			if (!PyStr_Check(item)) {
+			if (!(PyStr_Check(item) || PyUnicode_Check(item))) {
 				PyErr_Format(PyExc_TypeError, "ldif_elements should be strings");
 				talloc_free(tmp_ctx);
 				return NULL;
