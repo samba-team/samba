@@ -16,6 +16,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+int unregister_gp_extension(const char *guid_name,
+                            const char *smb_conf);
 int register_gp_extension(const char *guid_name,
                           const char *gp_ext_cls,
                           const char *module_path,

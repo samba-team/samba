@@ -50,6 +50,30 @@ static void get_gp_registry_context(TALLOC_CTX *ctx,
 	}
 }
 
+int unregister_gp_extension(const char *guid_name,
+			    const char *smb_conf)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct gp_registry_context *reg_ctx = NULL;
+	WERROR werr;
+	int ret = 0;
+
+	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx, smb_conf);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	werr = reg_deletekey_recursive(reg_ctx->curr_key, guid_name);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+
+	ret = 1;
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 int register_gp_extension(const char *guid_name,
 			  const char *gp_ext_cls,
 			  const char *module_path,

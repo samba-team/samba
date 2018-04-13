@@ -389,6 +389,27 @@ out:
 	return ret;
 }
 
+static PyObject *py_unregister_gp_extension(PyObject * self, PyObject * args)
+{
+	const char *guid_name = NULL;
+	PyObject *ret = Py_False;
+	int cret = 0;
+	const char *smb_conf = NULL;
+
+	if (!PyArg_ParseTuple(args, "s|s", &guid_name, &smb_conf)) {
+		return NULL;
+	}
+
+	cret = unregister_gp_extension(guid_name, smb_conf);
+	if (cret == 0) {
+		goto out;
+	}
+
+	ret = Py_True;
+out:
+	return ret;
+}
+
 static PyObject *py_register_gp_extension(PyObject * self, PyObject *args,
 					  PyObject *kwds)
 {
@@ -626,6 +647,8 @@ static PyTypeObject ads_ADSType = {
 static PyMethodDef py_gpo_methods[] = {
 	{"register_gp_extension", (PyCFunction)py_register_gp_extension,
 		METH_VARARGS | METH_KEYWORDS, NULL},
+	{"unregister_gp_extension", (PyCFunction)py_unregister_gp_extension,
+		METH_VARARGS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
 		METH_VARARGS, NULL},
