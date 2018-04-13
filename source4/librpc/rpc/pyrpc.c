@@ -50,28 +50,32 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 {
 	ZERO_STRUCTP(syntax_id);
 
-	if (PyStr_Check(object)) {
+	if (PyStr_Check(object) || PyUnicode_Check(object)) {
 		return PyString_AsGUID(object, &syntax_id->uuid);
 	} else if (PyTuple_Check(object)) {
+		PyObject *item = NULL;
 		if (PyTuple_Size(object) < 1 || PyTuple_Size(object) > 2) {
 			PyErr_SetString(PyExc_ValueError, "Syntax ID tuple has invalid size");
 			return false;
 		}
 
-		if (!PyStr_Check(PyTuple_GetItem(object, 0))) {
+		item = PyTuple_GetItem(object, 0);
+		if (!(PyStr_Check(item) || PyUnicode_Check(item))) {
 			PyErr_SetString(PyExc_ValueError, "Expected GUID as first element in tuple");
 			return false;
 		}
 
-		if (!PyString_AsGUID(PyTuple_GetItem(object, 0), &syntax_id->uuid)) 
+		if (!PyString_AsGUID(item, &syntax_id->uuid)) {
 			return false;
+		}
 
-		if (!PyInt_Check(PyTuple_GetItem(object, 1))) {
+		item = PyTuple_GetItem(object, 1);
+		if (!PyInt_Check(item)) {
 			PyErr_SetString(PyExc_ValueError, "Expected version as second element in tuple");
 			return false;
 		}
 
-		syntax_id->if_version = PyInt_AsLong(PyTuple_GetItem(object, 1));
+		syntax_id->if_version = PyInt_AsLong(item);
 		return true;
 	}
 
