@@ -2,9 +2,11 @@
 
 nodes="${CTDB_BASE}/nodes"
 
-# ssh options can't be used so discard them
+# Only try to respect ssh -n option, others can't be used so discard them
+close_stdin=false
 while : ; do
 	case "$1" in
+	-n) close_stdin=true ; shift ;;
 	-*) shift ;;
 	*) break ;;
 	esac
@@ -42,5 +44,8 @@ fi
 export CTDB_SOCKET="${CTDB_BASE}/ctdbd.socket"
 export CTDB_PIDFILE="${CTDB_BASE}/ctdbd.pid"
 
-# Now
-exec sh -c "$command"
+if $close_stdin ; then
+	exec sh -c "$command" <&-
+else
+	exec sh -c "$command"
+fi
