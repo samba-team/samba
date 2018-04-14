@@ -87,12 +87,8 @@ build_ctdb_options ()
 	ctdb_options="${ctdb_options}${ctdb_options:+ }${1}${sep}${val}"
     }
 
-    if [ -z "$CTDB_RECOVERY_LOCK" ] ; then
-        echo "No recovery lock specified. Starting CTDB without split brain prevention."
-    fi
-    maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
-
     # build up ctdb_options variable from optional parameters
+    maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
     maybe_set "--logging"                "$CTDB_LOGGING"
     maybe_set "--listen"                 "$CTDB_NODE_ADDRESS"
     maybe_set "--dbdir"                  "$CTDB_DBDIR"
