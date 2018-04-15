@@ -204,6 +204,15 @@ struct dsdb_control_password_acl_validation {
 	bool pwd_reset;
 };
 
+/*
+ * Used to pass the current transaction identifier from the audit_log
+ * module to group membership auditing module
+ */
+#define DSDB_CONTROL_TRANSACTION_IDENTIFIER_OID "1.3.6.1.4.1.7165.4.3.34"
+struct dsdb_control_transaction_identifier {
+	struct GUID transaction_guid;
+};
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
