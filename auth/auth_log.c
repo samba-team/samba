@@ -77,21 +77,21 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui);
  */
 static void log_json(struct imessaging_context *msg_ctx,
 		     struct loadparm_context *lp_ctx,
-		     struct json_object *context,
+		     struct json_object *object,
 		     const char *type,
 		     int debug_class,
 		     int debug_level)
 {
 	char* json = NULL;
 
-	if (context->error) {
+	if (object->error) {
 		return;
 	}
 
-	json = json_dumps(context->root, 0);
+	json = json_dumps(object->root, 0);
 	if (json == NULL) {
 		DBG_ERR("Unable to convert JSON object to string\n");
-		context->error = true;
+		object->error = true;
 		return;
 	}
 
@@ -140,12 +140,12 @@ static void log_authentication_event_json(
 	struct dom_sid *sid,
 	int debug_level)
 {
-	struct json_object context = json_new_object();
+	struct json_object wrapper = json_new_object();
 	struct json_object authentication;
 	char negotiate_flags[11];
 
-	json_add_timestamp(&context);
-	json_add_string(&context, "type", AUTH_JSON_TYPE);
+	json_add_timestamp(&wrapper);
+	json_add_string(&wrapper, "type", AUTH_JSON_TYPE);
 
 	authentication = json_new_object();
 	json_add_version(&authentication, AUTH_MAJOR, AUTH_MINOR);
@@ -196,15 +196,15 @@ static void log_authentication_event_json(
 		     "netlogonTrustAccountSid",
 		     ui->netlogon_trust_account.sid);
 	json_add_string(&authentication, "passwordType", get_password_type(ui));
-	json_add_object(&context,AUTH_JSON_TYPE, &authentication);
+	json_add_object(&wrapper, AUTH_JSON_TYPE, &authentication);
 
 	log_json(msg_ctx,
 		 lp_ctx,
-		 &context,
+		 &wrapper,
 		 AUTH_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
 		 debug_level);
-	json_free(&context);
+	json_free(&wrapper);
 }
 
 /*
@@ -238,12 +238,12 @@ static void log_successful_authz_event_json(
 	struct auth_session_info *session_info,
 	int debug_level)
 {
-	struct json_object context = json_new_object();
+	struct json_object wrapper = json_new_object();
 	struct json_object authorization;
 	char account_flags[11];
 
-	json_add_timestamp(&context);
-	json_add_string(&context, "type", AUTHZ_JSON_TYPE);
+	json_add_timestamp(&wrapper);
+	json_add_string(&wrapper, "type", AUTHZ_JSON_TYPE);
 	authorization = json_new_object();
 	json_add_version(&authorization, AUTHZ_MAJOR, AUTHZ_MINOR);
 	json_add_address(&authorization, "localAddress", local);
@@ -276,15 +276,15 @@ static void log_successful_authz_event_json(
 		 "0x%08X",
 		 session_info->info->acct_flags);
 	json_add_string(&authorization, "accountFlags", account_flags);
-	json_add_object(&context, AUTHZ_JSON_TYPE, &authorization);
+	json_add_object(&wrapper, AUTHZ_JSON_TYPE, &authorization);
 
 	log_json(msg_ctx,
 		 lp_ctx,
-		 &context,
+		 &wrapper,
 		 AUTHZ_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
 		 debug_level);
-	json_free(&context);
+	json_free(&wrapper);
 }
 
 #else
