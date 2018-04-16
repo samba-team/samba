@@ -30,45 +30,75 @@ ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 # shellcheck disable=SC2120
 build_ctdb_options ()
 {
-    ctdb_options=""
+	maybe_set ()
+	{
+		_section="$1"
+		_key="$2"
+		_val="$3"
+		_check="$4"
 
-    maybe_set ()
-    {
-	# If the given variable isn't set then do nothing
-	[ -n "$2" ] || return
-	# If a required value for the variable and it doesn't match,
-	# then do nothing
-	[ -z "$3" -o "$3" = "$2" ] || return
+		# If the given variable isn't set then do nothing
+		[ -n "$_val" ] || return
+		# If a value is required for the variable and it doesn't
+		# match, then do nothing
+		if [ -n "$_check" -a "$_check" != "$_val" ] ; then
+			return
+		fi
 
-	val="'$2'"
-	case "$1" in
-	    --*) sep="=" ;;
-	    -*)  sep=" " ;;
-	esac
-	# For these options we're only passing a value-less flag.
-	if [ -n "$3" ] ; then
-	    val=""
-	    sep=""
+		# Configuration file handling needs true/false, not yes/no
+		case "$_val" in
+		yes) _val="true"  ;;
+		no)  _val="false" ;;
+		esac
+
+		if grep -q "^\\[${_section}\\]\\$" "$_conf_file" ; then
+			# Section already exists...
+			# Must escape leading TAB or sed eats it
+			sed -i -e "/\\[${_section}\\]/a\
+\\	${_key} = ${_val}
+" "${_conf_file}"
+		else
+			# Section does not exist and needs to be created...
+			# Note literal TAB for indentation in here document
+			cat >>"${_conf_file}" <<EOF
+
+[${_section}]
+	${_key} = ${_val}
+EOF
+		fi
+	}
+
+	# Only write a new style configuration file if it doesn't already
+	# exist
+	_conf_file="${CTDB_BASE}/ctdb.conf"
+	if [ -f "$_conf_file" ] ; then
+		return
 	fi
 
-	ctdb_options="${ctdb_options}${ctdb_options:+ }${1}${sep}${val}"
-    }
+	touch "$_conf_file"
 
-    # build up ctdb_options variable from optional parameters
-    maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
-    maybe_set "--logging"                "$CTDB_LOGGING"
-    maybe_set "--listen"                 "$CTDB_NODE_ADDRESS"
-    maybe_set "--dbdir"                  "$CTDB_DBDIR"
-    maybe_set "--dbdir-persistent"       "$CTDB_DBDIR_PERSISTENT"
-    maybe_set "--dbdir-state"            "$CTDB_DBDIR_STATE"
-    maybe_set "--transport"              "$CTDB_TRANSPORT"
-    maybe_set "-d"                       "$CTDB_DEBUGLEVEL"
-    maybe_set "--start-as-disabled"      "$CTDB_START_AS_DISABLED"    "yes"
-    maybe_set "--start-as-stopped "      "$CTDB_START_AS_STOPPED"     "yes"
-    maybe_set "--no-recmaster"           "$CTDB_CAPABILITY_RECMASTER" "no"
-    maybe_set "--no-lmaster"             "$CTDB_CAPABILITY_LMASTER"   "no"
-    maybe_set "--nosetsched"             "$CTDB_NOSETSCHED"           "yes"
-    maybe_set "--script-log-level"       "$CTDB_SCRIPT_LOG_LEVEL"
+	# Create configuration file from old style options
+	maybe_set "cluster" "recovery lock"      "$CTDB_RECOVERY_LOCK"
+	maybe_set "logging" "location"           "$CTDB_LOGGING"
+	maybe_set "cluster" "node address"       "$CTDB_NODE_ADDRESS"
+	maybe_set "database" "volatile database directory" \
+		  "$CTDB_DBDIR"
+	maybe_set "database" "persistent database directory" \
+		  "$CTDB_DBDIR_PERSISTENT"
+	maybe_set "database" "state database directory" \
+		  "$CTDB_DBDIR_STATE"
+	maybe_set "cluster" "transport"          "$CTDB_TRANSPORT"
+	maybe_set "logging" "log level"          "$CTDB_DEBUGLEVEL"
+	maybe_set "legacy" "start as disabled"   "$CTDB_START_AS_DISABLED" "yes"
+	maybe_set "legacy" "start as stopped"   "$CTDB_START_AS_STOPPED" "yes"
+	maybe_set "legacy" "recmaster capability" \
+		  "$CTDB_CAPABILITY_RECMASTER" "no"
+	maybe_set "legacy" "lmaster capability" \
+		  "$CTDB_CAPABILITY_LMASTER"   "no"
+	maybe_set "legacy" "no realtime"         "$CTDB_NOSETSCHED" "yes"
+	maybe_set "legacy" "script log level"    "$CTDB_SCRIPT_LOG_LEVEL"
+	maybe_set "database" "volatile uses tmpfs" \
+		  "$CTDB_DBDIR_USES_TMPFS" "yes"
 }
 
 export_debug_variables ()
@@ -87,7 +117,7 @@ start()
 
     export_debug_variables
 
-    eval "$ctdbd" "$ctdb_options" || return 1
+    eval "$ctdbd" || return 1
 
     # Wait until ctdbd has started and is ready to respond to clients.
     _timeout="${CTDB_STARTUP_TIMEOUT:-10}"
