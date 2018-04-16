@@ -3820,6 +3820,20 @@ static void netlogon_creds_cli_SendToSam_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+NTSTATUS netlogon_creds_cli_SendToSam_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		netlogon_creds_cli_SendToSam_cleanup(req, status);
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS netlogon_creds_cli_SendToSam(struct netlogon_creds_cli_context *context,
 				      struct dcerpc_binding_handle *b,
 				      struct netr_SendToSamBase *message)
@@ -3827,7 +3841,7 @@ NTSTATUS netlogon_creds_cli_SendToSam(struct netlogon_creds_cli_context *context
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
@@ -3840,8 +3854,7 @@ NTSTATUS netlogon_creds_cli_SendToSam(struct netlogon_creds_cli_context *context
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-
-	/* Ignore the result */
+	status = netlogon_creds_cli_SendToSam_recv(req);
  fail:
 	TALLOC_FREE(frame);
 	return status;
