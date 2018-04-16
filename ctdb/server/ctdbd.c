@@ -43,31 +43,6 @@
 
 #include "ctdb_config.h"
 
-static struct {
-	const char *debuglevel;
-	const char *transport;
-	const char *myaddress;
-	const char *logging;
-	const char *recovery_lock;
-	const char *db_dir;
-	const char *db_dir_persistent;
-	const char *db_dir_state;
-	int         nosetsched;
-	int         start_as_disabled;
-	int         start_as_stopped;
-	int         no_lmaster;
-	int         no_recmaster;
-	int	    script_log_level;
-} options = {
-	.debuglevel = "NOTICE",
-	.transport = "tcp",
-	.logging = "file:" LOGDIR "/log.ctdb",
-	.db_dir = CTDB_VARDIR "/volatile",
-	.db_dir_persistent = CTDB_VARDIR "/persistent",
-	.db_dir_state = CTDB_VARDIR "/state",
-	.script_log_level = DEBUG_ERR,
-};
-
 int script_log_level;
 bool fast_start;
 
@@ -174,21 +149,8 @@ int main(int argc, const char *argv[])
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
-		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
-		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
-		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
-		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
-		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
-		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
-		{ "dbdir-state", 0, POPT_ARG_STRING, &options.db_dir_state, 0, "directory for internal state tdb files", NULL },
-		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock, 0, "recovery lock", "lock" },
-		{ "nosetsched", 0, POPT_ARG_NONE, &options.nosetsched, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
-		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
-		{ "start-as-stopped", 0, POPT_ARG_NONE, &options.start_as_stopped, 0, "Node starts in stopped state", NULL },
-		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
-		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
-		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, 0, "log level of event script output", NULL },
+		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0,
+		  "don't fork", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;

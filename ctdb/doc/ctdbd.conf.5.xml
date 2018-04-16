@@ -61,11 +61,7 @@
       <manvolnum>1</manvolnum></citerefentry> and are converted into
       command-line arguments to
       <citerefentry><refentrytitle>ctdbd</refentrytitle>
-      <manvolnum>1</manvolnum></citerefentry>.  Correspondence with
-      <citerefentry><refentrytitle>ctdbd</refentrytitle>
-      <manvolnum>1</manvolnum></citerefentry> options is shown for
-      each variable.  The the documentation for the relevant options
-      for more details.
+      <manvolnum>1</manvolnum></citerefentry>.
     </para>
 
     <para>
@@ -78,7 +74,7 @@
 	<term>CTDB_CAPABILITY_LMASTER=yes|no</term>
 	<listitem>
 	  <para>
-	    Defaults to yes.  Corresponds to <option>--no-lmaster</option>.
+	    Defaults to yes.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -87,8 +83,7 @@
 	<term>CTDB_CAPABILITY_RECMASTER=yes|no</term>
 	<listitem>
 	  <para>
-	    Defaults to yes.  Corresponds to
-	    <option>--no-recmaster</option>.
+	    Defaults to yes.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -99,9 +94,6 @@
 	  <para>
 	    Defaults to <filename>/usr/local/var/lib/ctdb/volatile</filename>.
 	  </para>
-	  <para>
-	    Corresponds to <option>--dbdir</option>.
-	  </para>
 	</listitem>
       </varlistentry>
 
@@ -111,9 +103,6 @@
 	  <para>
 	    Defaults to <filename>/usr/local/var/lib/ctdb/persistent</filename>.
 	  </para>
-	  <para>
-	    Corresponds to <option>--dbdir-persistent</option>.
-	  </para>
 	</listitem>
       </varlistentry>
 
@@ -122,9 +111,6 @@
 	<listitem>
 	  <para>
 	    Defaults to <filename>/usr/local/var/lib/ctdb/state</filename>.
-	  </para>
-	  <para>
-	    Corresponds to <option>--dbdir-state</option>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -160,8 +146,7 @@
 	<term>CTDB_DEBUGLEVEL=<parameter>DEBUGLEVEL</parameter></term>
 	<listitem>
 	  <para>
-	    Default is NOTICE.  Corresponds to <option>-d</option> or
-	    <option>--debug</option>.
+	    Default is NOTICE.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -173,7 +158,6 @@
 	    STRING specifies where ctdbd will write its log. The
 	    default is
 	    file:<filename>/usr/local/var/log/log.ctdb</filename>.
-	    Corresponds to <option>--logging</option>.
 	  </para>
 	  <para>
 	    Valid values are:
@@ -252,7 +236,7 @@
 	<term>CTDB_NOSETSCHED=yes|no</term>
 	<listitem>
 	  <para>
-	    Defaults to no.  Corresponds to <option>--nosetsched</option>.
+	    Defaults to no.
 	  </para>
 	  <para>
 	    Usually CTDB runs with real-time priority.	If you are running
@@ -267,7 +251,6 @@
 	<listitem>
 	  <para>
 	    IPADDR is the private IP address that ctdbd will bind to.
-	    Corresponds to <option>--listen</option>.
 	  </para>
 	  <para>
 	    By default ctdbd will select the first address from the
@@ -297,8 +280,7 @@
 	  <para>
 	    No default, but the default configuration file specifies
 	    <filename>/some/place/on/shared/storage</filename>, which
-	    should be change to a useful value.  Corresponds to
-	    <option>--reclock</option>.
+	    should be change to a useful value.
 	  </para>
 	  <para>
 	    For information about the recovery lock please see the
@@ -313,8 +295,7 @@
 	<term>CTDB_SCRIPT_LOG_LEVEL=<parameter>DEBUGLEVEL</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to ERR.  Corresponds to
-	    <option>--script-log-level</option>.
+	    Defaults to ERR.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -323,8 +304,7 @@
 	<term>CTDB_START_AS_DISABLED=yes|no</term>
 	<listitem>
 	  <para>
-	    Default is no.  Corresponds to
-	    <option>--start-as-disabled</option>.
+	    Default is no.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -333,8 +313,7 @@
 	<term>CTDB_START_AS_STOPPED=yes|no</term>
 	<listitem>
 	  <para>
-	    Default is no.  Corresponds to
-	    <option>--start-as-stopped</option>.
+	    Default is no.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -343,8 +322,7 @@
 	<term>CTDB_TRANSPORT=tcp|infiniband</term>
 	<listitem>
 	  <para>
-	    Defaults to tcp.  Corresponds to
-	    <option>--transport</option>.
+	    Defaults to tcp.
 	  </para>
 	</listitem>
       </varlistentry>
