@@ -137,18 +137,6 @@ start()
 	ulimit -n "$CTDB_MAX_OPEN_FILES"
     fi
 
-    case "$CTDB_LOGGING" in
-	syslog:udp|syslog:udp-rfc5424)
-	    logger -t ctdbd "CTDB is being run with ${CTDB_LOGGING}.  If nothing is logged then check your syslogd configuration"
-	    ;;
-	syslog|syslog:*) : ;;
-	file:*)
-	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGGING#file:}"
-	    ;;
-	*)
-	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in log.ctdb"
-    esac
-
     eval "$ctdbd" "$ctdb_options" || return 1
 
     # Wait until ctdbd has started and is ready to respond to clients.
