@@ -67,7 +67,7 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(iface);
 	/* the list of mailslots that we are interested in */
-	int i;
+	size_t i;
 
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
