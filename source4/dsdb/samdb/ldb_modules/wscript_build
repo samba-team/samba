@@ -40,6 +40,7 @@ bld.SAMBA_BINARY('test_encrypted_secrets',
             DSDB_MODULE_HELPERS
         ''',
         install=False)
+
 #
 # These tests require JANSSON, so we only build them if we are doing a selftest
 # build.
@@ -59,6 +60,18 @@ if bld.CONFIG_GET('ENABLE_SELFTEST'):
             install=False)
     bld.SAMBA_BINARY('test_audit_log',
             source='tests/test_audit_log.c',
+            deps='''
+                talloc
+                samba-util
+                samdb-common
+                samdb
+                cmocka
+                audit_logging
+                DSDB_MODULE_HELPERS
+            ''',
+            install=False)
+    bld.SAMBA_BINARY('test_group_audit',
+            source='tests/test_group_audit.c',
             deps='''
                 talloc
                 samba-util

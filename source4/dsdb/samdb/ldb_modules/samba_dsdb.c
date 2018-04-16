@@ -313,6 +313,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 		"rdn_name",
 		"subtree_delete",
 		"repl_meta_data",
+		"group_audit_log",
 		"encrypted_secrets",
 		"operational",
 		"unique_object_sids",

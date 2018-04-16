@@ -1526,6 +1526,7 @@ sub provision_ad_dc_ntvfs($$)
         auth event notification = true
 	dsdb event notification = true
 	dsdb password event notification = true
+	dsdb group change notification = true
 	server schannel = auto
 	";
 	my $ret = $self->provision($prefix,
@@ -1900,6 +1901,7 @@ sub provision_ad_dc($$$$$$)
         auth event notification = true
 	dsdb event notification = true
 	dsdb password event notification = true
+	dsdb group change notification = true
         $smbconf_args
 ";
 

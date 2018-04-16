@@ -693,6 +693,10 @@ if have_heimdal_support:
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+    planoldpythontestsuite("ad_dc:local", "samba.tests.group_audit",
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'CLIENT_IP': '127.0.0.11',
+                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
 
 planoldpythontestsuite("fl2008r2dc:local",
                        "samba.tests.getdcname",

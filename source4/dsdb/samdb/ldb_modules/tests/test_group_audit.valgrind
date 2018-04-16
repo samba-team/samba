@@ -1,0 +1,19 @@
+{
+   ldb_modules_load modules not are freed
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:__talloc_with_prefix
+   fun:__talloc
+   fun:_talloc_named_const
+   fun:talloc_named_const
+   fun:ldb_register_module
+   fun:ldb_init_module
+   fun:ldb_modules_load_path
+   fun:ldb_modules_load_dir
+   fun:ldb_modules_load_path
+   fun:ldb_modules_load
+   fun:ldb_init
+}
+
+
