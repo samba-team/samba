@@ -3025,7 +3025,8 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (argc == 0) {
 		struct ctdb_connection_list *clist;
-		int i, num_failed;
+		int i;
+		unsigned int num_failed;
 
 		/* Client first but the src/dst logic is confused */
 		ret = ctdb_connection_list_read(mem_ctx, false, &clist);

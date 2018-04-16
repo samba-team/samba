@@ -1068,7 +1068,7 @@ static struct tevent_req *push_database_send(
 	struct tevent_req *req, *subreq;
 	struct push_database_state *state;
 	uint32_t *old_list, *new_list;
-	int old_count, new_count;
+	unsigned int old_count, new_count;
 	int i;
 
 	req = tevent_req_create(mem_ctx, &state, struct push_database_state);
@@ -2359,7 +2359,8 @@ static void recovery_active_done(struct tevent_req *subreq)
 	struct ctdb_req_control request;
 	struct ctdb_vnn_map *vnnmap;
 	int *err_list;
-	int ret, count, i;
+	int ret, i;
+	unsigned int count;
 	bool status;
 
 	status = ctdb_client_control_multi_recv(subreq, &ret, NULL, &err_list,

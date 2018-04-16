@@ -477,7 +477,8 @@ bool ipalloc_lcp2(struct ipalloc_state *ipalloc_state)
 {
 	uint32_t *lcp2_imbalances;
 	bool *rebalance_candidates;
-	int numnodes, num_rebalance_candidates, i;
+	int numnodes, i;
+	bool have_rebalance_candidates;
 	bool ret = true;
 
 	unassign_unsuitable_ips(ipalloc_state);
@@ -500,13 +501,14 @@ bool ipalloc_lcp2(struct ipalloc_state *ipalloc_state)
 	 * continuing on...
 	 */
 	numnodes = ipalloc_state->num;
-	num_rebalance_candidates = 0;
+	have_rebalance_candidates = false;
 	for (i=0; i<numnodes; i++) {
 		if (rebalance_candidates[i]) {
-			num_rebalance_candidates++;
+			have_rebalance_candidates = true;
+			break;
 		}
 	}
-	if (num_rebalance_candidates == 0) {
+	if (!have_rebalance_candidates) {
 		goto finished;
 	}
 
