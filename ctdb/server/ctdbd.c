@@ -22,6 +22,7 @@
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/network.h"
+#include "system/syslog.h"
 
 #include <popt.h>
 #include <talloc.h>
@@ -259,6 +260,13 @@ int main(int argc, const char *argv[])
 	/* Log to stderr when running as interactive */
 	if (interactive) {
 		options.logging = "file:";
+	}
+
+	if (strcmp(options.logging, "syslog") != 0) {
+		/* This can help when CTDB logging is misconfigured */
+		syslog(LOG_DAEMON|LOG_NOTICE,
+		       "CTDB logging to location %s",
+		       options.logging);
 	}
 
 	/* Initialize logging and set the debug level */
