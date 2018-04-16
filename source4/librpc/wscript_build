@@ -293,6 +293,12 @@ for env in bld.gen_python_environments():
                 cflags_end=gen_cflags
 		)
 
+	bld.SAMBA_PYTHON('python_preg',
+		source='../../librpc/gen_ndr/py_preg.c',
+		deps='NDR_PREG pytalloc-util pyrpc_util',
+		realname='samba/dcerpc/preg.so',
+                cflags_end=gen_cflags
+		)
 
 	bld.SAMBA_PYTHON('python_initshutdown',
 		source='../../librpc/gen_ndr/py_initshutdown.c',
