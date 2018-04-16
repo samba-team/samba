@@ -119,7 +119,9 @@ static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
 		return false;
 
 	data->type = r->type;
-	data->data = data_blob_talloc(data, r->data, r->size);
+
+	ndr_push_union_blob(&data->data, mem_ctx, &r->data, r->type,
+			    (ndr_push_flags_fn_t)ndr_push_winreg_Data);
 
 	entry = talloc_zero(mem_ctx, struct gp_registry_entry);
 	if (!entry)
