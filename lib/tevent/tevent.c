@@ -429,6 +429,25 @@ static int tevent_common_context_constructor(struct tevent_context *ev)
 	return 0;
 }
 
+void tevent_common_check_double_free(TALLOC_CTX *ptr, const char *reason)
+{
+	void *parent_ptr = talloc_parent(ptr);
+	size_t parent_blocks = talloc_total_blocks(parent_ptr);
+
+	if (parent_ptr != NULL && parent_blocks == 0) {
+		/*
+		 * This is an implicit talloc free, as we still have a parent
+		 * but it's already being destroyed. Note that
+		 * talloc_total_blocks(ptr) also just returns 0 if a
+		 * talloc_free(ptr) is still in progress of freeing all
+		 * children.
+		 */
+		return;
+	}
+
+	tevent_abort(NULL, reason);
+}
+
 /*
   create a event_context structure for a specific implemementation.
   This must be the first events call, and all subsequent calls pass

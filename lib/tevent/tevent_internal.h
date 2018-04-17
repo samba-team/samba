@@ -248,6 +248,8 @@ void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 
 void tevent_abort(struct tevent_context *ev, const char *reason);
 
+void tevent_common_check_double_free(TALLOC_CTX *ptr, const char *reason);
+
 struct tevent_context {
 	/* the specific events implementation */
 	const struct tevent_ops *ops;
