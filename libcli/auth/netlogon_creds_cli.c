@@ -215,6 +215,7 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 {
 	char *fname;
 	struct db_context *global_db;
+	int hash_size;
 
 	if (netlogon_creds_cli_global_db != NULL) {
 		return NT_STATUS_OK;
@@ -225,12 +226,18 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	global_db = dbwrap_local_open(NULL, lp_ctx,
-				      fname, 0,
-				      TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-				      O_RDWR|O_CREAT,
-				      0600, DBWRAP_LOCK_ORDER_2,
-				      DBWRAP_FLAG_NONE);
+	hash_size = lpcfg_tdb_hash_size(lp_ctx, fname);
+
+	global_db = dbwrap_local_open(
+		NULL,
+		lp_ctx,
+		fname,
+		hash_size,
+		TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+		O_RDWR|O_CREAT,
+		0600,
+		DBWRAP_LOCK_ORDER_2,
+		DBWRAP_FLAG_NONE);
 	if (global_db == NULL) {
 		DEBUG(0,("netlogon_creds_cli_open_global_db: Failed to open %s - %s\n",
 			 fname, strerror(errno)));
