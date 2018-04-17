@@ -1317,7 +1317,7 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 
 	last_set_time = secrets_fetch_pass_last_set_time(domain);
 	if (last_set_time == 0) {
-		return NT_STATUS_OK;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 	unix_to_nt_time(&last_set_nt, last_set_time);
 
