@@ -591,7 +591,7 @@ planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.bare", py3_compatib
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.unix", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.timecmd", py3_compatible=True)
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.join")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.join", py3_compatible=True)
 
 planpythontestsuite("none", "samba.tests.samba_tool.visualize")
 
