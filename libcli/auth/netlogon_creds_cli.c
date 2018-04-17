@@ -215,7 +215,7 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 {
 	char *fname;
 	struct db_context *global_db;
-	int hash_size;
+	int hash_size, tdb_flags;
 
 	if (netlogon_creds_cli_global_db != NULL) {
 		return NT_STATUS_OK;
@@ -227,13 +227,16 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 	}
 
 	hash_size = lpcfg_tdb_hash_size(lp_ctx, fname);
+	tdb_flags = lpcfg_tdb_flags(
+		lp_ctx,
+		TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH);
 
 	global_db = dbwrap_local_open(
 		NULL,
 		lp_ctx,
 		fname,
 		hash_size,
-		TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+		tdb_flags,
 		O_RDWR|O_CREAT,
 		0600,
 		DBWRAP_LOCK_ORDER_2,
