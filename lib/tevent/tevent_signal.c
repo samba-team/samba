@@ -184,31 +184,22 @@ static int tevent_common_signal_list_destructor(struct tevent_common_signal_list
 */
 static int tevent_signal_destructor(struct tevent_signal *se)
 {
-	struct tevent_common_signal_list *sl =
-		talloc_get_type_abort(se->additional_data,
-		struct tevent_common_signal_list);
+	TALLOC_FREE(se->additional_data);
 
-	if (se->event_ctx) {
-		struct tevent_context *ev = se->event_ctx;
-
-		DLIST_REMOVE(ev->signal_events, se);
+	if (se->event_ctx != NULL) {
+		DLIST_REMOVE(se->event_ctx->signal_events, se);
 	}
-
-	se->additional_data = NULL;
-	talloc_free(sl);
 
 	if (sig_state->sig_handlers[se->signum] == NULL) {
 		/* restore old handler, if any */
 		if (sig_state->oldact[se->signum]) {
 			sigaction(se->signum, sig_state->oldact[se->signum], NULL);
-			talloc_free(sig_state->oldact[se->signum]);
-			sig_state->oldact[se->signum] = NULL;
+			TALLOC_FREE(sig_state->oldact[se->signum]);
 		}
 #ifdef SA_SIGINFO
 		if (se->sa_flags & SA_SIGINFO) {
 			if (sig_state->sig_info[se->signum]) {
-				talloc_free(sig_state->sig_info[se->signum]);
-				sig_state->sig_info[se->signum] = NULL;
+				TALLOC_FREE(sig_state->sig_info[se->signum]);
 			}
 		}
 #endif
