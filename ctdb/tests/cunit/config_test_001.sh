@@ -22,6 +22,8 @@ ok <<EOF
 [logging]
 	# location = ${logging_location}
 	# log level = ERROR
+[event]
+	# debug script = 
 EOF
 unit_test ctdb-config dump
 
