@@ -368,13 +368,8 @@ for n in $nodes ; do
 		if $verbose ; then
 			echo >&2 ; echo ">> NODE: $n <<" >&2
 		fi
-
 		{
-			exec 3>&1
-			{
-				$ssh_cmd "$n" "$command" 3>&- |
-					stdout_filter >&3
-			} 2>&1 | stderr_filter
+			$ssh_cmd "$n" "$command" | stdout_filter
 		} || retcode=$?
 	fi
 done
