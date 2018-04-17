@@ -15,7 +15,13 @@ remove_files ()
 
 test_cleanup remove_files
 
+# Get the default values that are dependent on install prefix
+logging_location=$(ctdb-config get "logging" "location")
+
 ok <<EOF
+[logging]
+	# location = ${logging_location}
+	# log level = ERROR
 EOF
 unit_test ctdb-config dump
 
