@@ -354,21 +354,21 @@ class DCJoinContext(object):
 
     def get_dnsHostName(ctx):
         res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
-        return res[0]["dnsHostName"][0]
+        return str(res[0]["dnsHostName"][0])
 
     def get_domain_name(ctx):
         '''get netbios name of the domain from the partitions record'''
         partitions_dn = ctx.samdb.get_partitions_dn()
         res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
                                expression='ncName=%s' % ldb.binary_encode(str(ctx.samdb.get_default_basedn())))
-        return res[0]["nETBIOSName"][0]
+        return str(res[0]["nETBIOSName"][0])
 
     def get_forest_domain_name(ctx):
         '''get netbios name of the domain from the partitions record'''
         partitions_dn = ctx.samdb.get_partitions_dn()
         res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
                                expression='ncName=%s' % ldb.binary_encode(str(ctx.samdb.get_root_basedn())))
-        return res[0]["nETBIOSName"][0]
+        return str(res[0]["nETBIOSName"][0])
 
     def get_parent_partition_dn(ctx):
         '''get the parent domain partition DN from parent DNS name'''

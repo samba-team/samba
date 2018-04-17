@@ -891,7 +891,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         # If more than one directory is a parent of this path, then at least
         # one configured path is a subdir of another. Use closest match.
         if len(matching_dirs) > 1:
-            arc_path, fs_path = max(matching_dirs, key=lambda (_, p): len(p))
+            arc_path, fs_path = max(matching_dirs, key=lambda p: len(p[1]))
         arc_path += path[len(fs_path):]
 
         return arc_path
