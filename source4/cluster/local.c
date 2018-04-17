@@ -55,20 +55,21 @@ static struct db_context *local_db_tmp_open(struct cluster_ops *ops,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	char *path, *dbname;
 	struct db_context *db;
-	int hash_size;
+	int hash_size, tdb_flags;
 
 	dbname = talloc_asprintf(mem_ctx, "%s.tdb", dbbase);
 
 	path = smbd_tmp_path(tmp_ctx, lp_ctx, dbname);
 
 	hash_size = lpcfg_tdb_hash_size(lp_ctx, path);
+	tdb_flags = lpcfg_tdb_flags(lp_ctx, flags);
 
 	db = dbwrap_local_open(
 		mem_ctx,
 		lp_ctx,
 		path,
 		hash_size,
-		flags,
+		tdb_flags,
 		O_RDWR|O_CREAT,
 		0600,
 		DBWRAP_LOCK_ORDER_NONE,
