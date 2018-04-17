@@ -42,20 +42,21 @@ struct db_context *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 {
 	struct db_context *db_sc = NULL;
 	char *fname = lpcfg_private_db_path(mem_ctx, lp_ctx, "schannel_store");
-	int hash_size;
+	int hash_size, tdb_flags;
 
 	if (!fname) {
 		return NULL;
 	}
 
 	hash_size = lpcfg_tdb_hash_size(lp_ctx, fname);
+	tdb_flags = lpcfg_tdb_flags(lp_ctx, TDB_CLEAR_IF_FIRST|TDB_NOSYNC);
 
 	db_sc = dbwrap_local_open(
 		mem_ctx,
 		lp_ctx,
 		fname,
 		hash_size,
-		TDB_CLEAR_IF_FIRST|TDB_NOSYNC,
+		tdb_flags,
 		O_RDWR|O_CREAT,
 		0600,
 		DBWRAP_LOCK_ORDER_NONE,
