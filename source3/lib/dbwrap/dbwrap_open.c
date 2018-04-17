@@ -186,6 +186,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		if (hash_size == 0) {
 			hash_size = lpcfg_tdb_hash_size(lp_ctx, name);
 		}
+		tdb_flags = lpcfg_tdb_flags(lp_ctx, tdb_flags);
 
 		result = dbwrap_local_open(mem_ctx, lp_ctx, name, hash_size,
 					   tdb_flags, open_flags, mode,
