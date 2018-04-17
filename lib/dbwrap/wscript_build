@@ -1,6 +1,6 @@
 SRC = '''dbwrap.c dbwrap_util.c dbwrap_rbt.c dbwrap_tdb.c
          dbwrap_local_open.c'''
-DEPS= '''samba-util util_tdb samba-errors tdb tdb-wrap samba-hostconfig tevent tevent-util'''
+DEPS= '''samba-util util_tdb samba-errors tdb tdb-wrap tevent tevent-util'''
 
 bld.SAMBA_LIBRARY('dbwrap',
                   source=SRC,
