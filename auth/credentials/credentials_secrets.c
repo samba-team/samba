@@ -238,16 +238,25 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 {
 	struct db_context *db_ctx;
 	char *secrets_tdb_path;
+	int hash_size;
 
 	secrets_tdb_path = lpcfg_private_db_path(cred, lp_ctx, "secrets");
 	if (secrets_tdb_path == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	db_ctx = dbwrap_local_open(cred, lp_ctx, secrets_tdb_path, 0,
-				   TDB_DEFAULT, O_RDWR, 0600,
-				   DBWRAP_LOCK_ORDER_1,
-				   DBWRAP_FLAG_NONE);
+	hash_size = lpcfg_tdb_hash_size(lp_ctx, secrets_tdb_path);
+
+	db_ctx = dbwrap_local_open(
+		cred,
+		lp_ctx,
+		secrets_tdb_path,
+		hash_size,
+		TDB_DEFAULT,
+		O_RDWR,
+		0600,
+		DBWRAP_LOCK_ORDER_1,
+		DBWRAP_FLAG_NONE);
 	TALLOC_FREE(secrets_tdb_path);
 
 	/*
