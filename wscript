@@ -35,6 +35,7 @@ def system_mitkrb5_callback(option, opt, value, parser):
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
+    opt.RECURSE('auth')
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
     opt.RECURSE('packaging')
@@ -205,6 +206,7 @@ def configure(conf):
     # system-provided or embedded Heimdal build
     if conf.CONFIG_GET('KRB5_VENDOR') in (None, 'heimdal'):
         conf.RECURSE('source4/heimdal_build')
+    conf.RECURSE('auth')
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/dsdb/samdb/ldb_modules')
     conf.RECURSE('source4/ntvfs/sysdep')

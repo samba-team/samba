@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+import Logs, Options, Utils
+import samba3
+
+def set_options(opt):
+    help = ("Build with JSON auth audit support (default=auto). "
+            "This requires the jansson devel package.")
+
+    opt.SAMBA3_ADD_OPTION('json-audit', default=None, help=(help))
+
+    return
+
+def configure(conf):
+    conf.SET_TARGET_TYPE('json-audit', 'EMPTY')
+
+    if Options.options.with_json_audit != False:
+        if conf.CHECK_CFG(package='jansson', args='--cflags --libs',
+                          msg='Checking for jansson'):
+            conf.CHECK_FUNCS_IN('json_object', 'jansson')
+
+    if not conf.CONFIG_GET('HAVE_JSON_OBJECT'):
+        if Options.options.with_json_audit == True:
+            conf.fatal('JSON support requested, but no suitable jansson '
+                       'library found')
+        if conf.CONFIG_GET('ENABLE_SELFTEST') and \
+          (not Options.options.without_ad_dc):
+            raise Utils.WafError('jansson JSON library required for '
+                                 '--enable-selftest when building the AD DC')
+        Logs.info("Building without jansson json log support")
+
