@@ -20,6 +20,9 @@
 
 from samba.dcerpc import unixinfo
 from samba.tests import RpcInterfaceTestCase
+from samba.compat import text_type as txt_type
+from samba.compat import PY3 as is_py3
+import samba.compat
 
 class UnixinfoTests(RpcInterfaceTestCase):
 
@@ -31,16 +34,18 @@ class UnixinfoTests(RpcInterfaceTestCase):
         infos = self.conn.GetPWUid(list(range(512)))
         self.assertEquals(512, len(infos))
         self.assertEquals("/bin/false", infos[0].shell)
-        self.assertTrue(isinstance(infos[0].homedir, unicode))
+        self.assertTrue(isinstance(infos[0].homedir, txt_type))
 
     def test_getpwuid(self):
-        infos = self.conn.GetPWUid(map(long, range(512)))
-        self.assertEquals(512, len(infos))
-        self.assertEquals("/bin/false", infos[0].shell)
-        self.assertTrue(isinstance(infos[0].homedir, unicode))
+        # This test only relevant in PY2
+        if not is_py3:
+            infos = self.conn.GetPWUid(map(long, range(512)))
+            self.assertEquals(512, len(infos))
+            self.assertEquals("/bin/false", infos[0].shell)
+            self.assertTrue(isinstance(infos[0].homedir, txt_type))
 
     def test_gidtosid(self):
-        self.conn.GidToSid(1000L)
+        self.conn.GidToSid(1000)
 
     def test_uidtosid(self):
         self.conn.UidToSid(1000)
