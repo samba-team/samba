@@ -238,7 +238,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 {
 	struct db_context *db_ctx;
 	char *secrets_tdb_path;
-	int hash_size;
+	int hash_size, tdb_flags;
 
 	secrets_tdb_path = lpcfg_private_db_path(cred, lp_ctx, "secrets");
 	if (secrets_tdb_path == NULL) {
@@ -246,13 +246,14 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	}
 
 	hash_size = lpcfg_tdb_hash_size(lp_ctx, secrets_tdb_path);
+	tdb_flags = lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT);
 
 	db_ctx = dbwrap_local_open(
 		cred,
 		lp_ctx,
 		secrets_tdb_path,
 		hash_size,
-		TDB_DEFAULT,
+		tdb_flags,
 		O_RDWR,
 		0600,
 		DBWRAP_LOCK_ORDER_1,
