@@ -25,7 +25,6 @@
 #include <tevent.h>
 #include "libcli/util/ntstatus.h"
 #include "tdb.h"
-#include "lib/param/loadparm.h"
 
 struct db_record;
 struct db_context;
@@ -231,7 +230,6 @@ TDB_DATA dbwrap_merge_dbufs(TALLOC_CTX *mem_ctx,
  * This opens a tdb file
  */
 struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
-				     struct loadparm_context *lp_ctx,
 				     const char *name,
 				     int hash_size, int tdb_flags,
 				     int open_flags, mode_t mode,

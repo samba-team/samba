@@ -66,7 +66,6 @@ static struct db_context *local_db_tmp_open(struct cluster_ops *ops,
 
 	db = dbwrap_local_open(
 		mem_ctx,
-		lp_ctx,
 		path,
 		hash_size,
 		tdb_flags,

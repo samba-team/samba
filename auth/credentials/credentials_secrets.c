@@ -250,7 +250,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 
 	db_ctx = dbwrap_local_open(
 		cred,
-		lp_ctx,
 		secrets_tdb_path,
 		hash_size,
 		tdb_flags,

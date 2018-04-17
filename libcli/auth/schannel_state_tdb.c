@@ -53,7 +53,6 @@ struct db_context *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 
 	db_sc = dbwrap_local_open(
 		mem_ctx,
-		lp_ctx,
 		fname,
 		hash_size,
 		tdb_flags,

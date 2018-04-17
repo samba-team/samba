@@ -233,7 +233,6 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 
 	global_db = dbwrap_local_open(
 		NULL,
-		lp_ctx,
 		fname,
 		hash_size,
 		tdb_flags,
