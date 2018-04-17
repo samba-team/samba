@@ -30,6 +30,10 @@ if PY3:
     integer_types = int,
     string_types = str
     text_type = str
+
+    # alias
+    import io
+    StringIO = io.StringIO
 else:
     # compat functions
     from urllib import quote as urllib_quote
@@ -39,3 +43,7 @@ else:
     integer_types = (int, long)
     string_types = basestring
     text_type = unicode
+
+    # alias
+    import StringIO
+    StringIO = StringIO.StringIO
