@@ -31,7 +31,10 @@ from samba.credentials import (
     DONT_USE_KERBEROS
 )
 from samba import NTSTATUSError
-from samba.ntstatus import NT_STATUS_OBJECT_NAME_NOT_FOUND
+from samba.ntstatus import (
+    NT_STATUS_OBJECT_NAME_NOT_FOUND,
+    NT_STATUS_NO_SUCH_DOMAIN
+)
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 import samba
 samba.ensure_third_party_module("dns", "dnspython")
@@ -432,9 +435,11 @@ def packet_lsarpc_39(packet, conversation, context):
     try:
         c.QueryTrustedDomainInfoBySid(pol_handle, domsid, level)
     except NTSTATUSError as error:
-        # Object Not found is the expected result, anything else is a
-        # failure.
-        if not check_runtime_error(error, NT_STATUS_OBJECT_NAME_NOT_FOUND):
+        # Object Not found is the expected result from samba,
+        # while No Such Domain is the expected result from windows,
+        # anything else is a failure.
+        if not check_runtime_error(error, NT_STATUS_OBJECT_NAME_NOT_FOUND) \
+                and not check_runtime_error(error, NT_STATUS_NO_SUCH_DOMAIN):
             raise
     return True
 
