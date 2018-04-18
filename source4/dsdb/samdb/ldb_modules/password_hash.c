@@ -95,6 +95,8 @@ struct ph_context {
 	struct ldb_request *dom_req;
 	struct ldb_reply *dom_res;
 
+	struct ldb_reply *pso_res;
+
 	struct ldb_reply *search_res;
 
 	struct ldb_message *update_msg;
@@ -2527,13 +2529,19 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	struct ldb_message *mod_msg = NULL;
+	struct ldb_message *pso_msg = NULL;
 	NTSTATUS status;
 	int ret;
+
+	/* PSO search result is optional (NULL if no PSO applies) */
+	if (io->ac->pso_res != NULL) {
+		pso_msg = io->ac->pso_res->message;
+	}
 
 	status = dsdb_update_bad_pwd_count(io->ac, ldb,
 					   io->ac->search_res->message,
 					   io->ac->dom_res->message,
-					   NULL, /* TODO: support PSO */
+					   pso_msg,
 					   &mod_msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -3837,12 +3845,150 @@ static int password_hash_mod_search_self(struct ph_context *ac);
 static int ph_mod_search_callback(struct ldb_request *req, struct ldb_reply *ares);
 static int password_hash_mod_do_mod(struct ph_context *ac);
 
+/*
+ * LDB callback handler for searching for a user's PSO. Once we have all the
+ * Password Settings that apply to the user, we can continue with the modify
+ * operation
+ */
+static int get_pso_data_callback(struct ldb_request *req,
+				 struct ldb_reply *ares)
+{
+	struct ldb_context *ldb = NULL;
+	struct ph_context *ac = NULL;
+	int ret = LDB_SUCCESS;
+
+	ac = talloc_get_type(req->context, struct ph_context);
+	ldb = ldb_module_get_ctx(ac->module);
+
+	if (!ares) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+				       ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+
+		/* check status was initialized by the domain query */
+		if (ac->status == NULL) {
+			talloc_free(ares);
+			ldb_set_errstring(ldb, "Uninitialized status");
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			goto done;
+		}
+
+		if (ac->pso_res != NULL) {
+			DBG_ERR("Too many PSO results for %s",
+				ldb_dn_get_linearized(ac->search_res->message->dn));
+			talloc_free(ac->pso_res);
+		}
+
+		/* store the PSO result (we may need its lockout settings) */
+		ac->pso_res = talloc_steal(ac, ares);
+		ret = LDB_SUCCESS;
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore */
+		talloc_free(ares);
+		ret = LDB_SUCCESS;
+		break;
+
+	case LDB_REPLY_DONE:
+		talloc_free(ares);
+
+		/*
+		 * perform the next step of the modify operation (this code
+		 * shouldn't get called in the 'user add' case)
+		 */
+		if (ac->req->operation == LDB_MODIFY) {
+			ret = password_hash_mod_do_mod(ac);
+		} else {
+			ret = LDB_ERR_OPERATIONS_ERROR;
+		}
+		break;
+	}
+
+done:
+	if (ret != LDB_SUCCESS) {
+		struct ldb_reply *new_ares;
+
+		new_ares = talloc_zero(ac->req, struct ldb_reply);
+		if (new_ares == NULL) {
+			ldb_oom(ldb);
+			return ldb_module_done(ac->req, NULL, NULL,
+					       LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		new_ares->error = ret;
+		if ((ret != LDB_ERR_OPERATIONS_ERROR) && (ac->change_status)) {
+			/* On success and trivial errors a status control is being
+			 * added (used for example by the "samdb_set_password" call) */
+			ldb_reply_add_control(new_ares,
+					      DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID,
+					      false,
+					      ac->status);
+		}
+
+		return ldb_module_done(ac->req, new_ares->controls,
+				       new_ares->response, new_ares->error);
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+ * Builds and returns a search request to lookup up the PSO that applies to
+ * the user in question. Returns NULL if no PSO applies, or could not be found
+ */
+static struct ldb_request * build_pso_data_request(struct ph_context *ac)
+{
+	/* attrs[] is returned from this function in
+	   pso_req->op.search.attrs, so it must be static, as
+	   otherwise the compiler can put it on the stack */
+	static const char * const attrs[] = { "msDS-LockoutThreshold",
+					      "msDS-LockoutObservationWindow",
+					      NULL };
+	struct ldb_context *ldb = NULL;
+	struct ldb_request *pso_req = NULL;
+	struct ldb_dn *pso_dn = NULL;
+	TALLOC_CTX *mem_ctx = ac;
+	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
+
+	/* if a PSO applies to the user, we need to lookup the PSO as well */
+	pso_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, ac->search_res->message,
+					 "msDS-ResultantPSO");
+	if (pso_dn == NULL) {
+		return NULL;
+	}
+
+	ret = ldb_build_search_req(&pso_req, ldb, mem_ctx, pso_dn,
+				   LDB_SCOPE_BASE, NULL, attrs, NULL,
+				   ac, get_pso_data_callback,
+				   ac->dom_req);
+
+	/* log errors, but continue with the default domain settings */
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Error %d constructing PSO query for user %s", ret,
+			ldb_dn_get_linearized(ac->search_res->message->dn));
+	}
+	LDB_REQ_SET_LOCATION(pso_req);
+	return pso_req;
+}
+
+
 static int get_domain_data_callback(struct ldb_request *req,
 				    struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
 	struct loadparm_context *lp_ctx;
+	struct ldb_request *pso_req = NULL;
 	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct ph_context);
@@ -3933,7 +4079,20 @@ static int get_domain_data_callback(struct ldb_request *req,
 			break;
 
 		case LDB_MODIFY:
-			ret = password_hash_mod_do_mod(ac);
+
+			/*
+			 * The user may have an optional PSO applied. If so,
+			 * query the PSO to get the Fine-Grained Password Policy
+			 * for the user, before we perform the modify
+			 */
+			pso_req = build_pso_data_request(ac);
+			if (pso_req != NULL) {
+				ret = ldb_next_request(ac->module, pso_req);
+			} else {
+
+				/* no PSO, so we can perform the modify now */
+				ret = password_hash_mod_do_mod(ac);
+			}
 			break;
 
 		default:
@@ -4491,6 +4650,7 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 	struct ldb_context *ldb;
 	static const char * const attrs[] = { "objectClass",
 					      "userAccountControl",
+					      "msDS-ResultantPSO",
 					      "msDS-User-Account-Control-Computed",
 					      "pwdLastSet",
 					      "sAMAccountName",
