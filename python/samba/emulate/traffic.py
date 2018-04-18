@@ -343,6 +343,7 @@ class ReplayContext(object):
 
         res = db.search(db.domain_dn(),
                         scope=ldb.SCOPE_SUBTREE,
+                        controls=["paged_results:1:1000"],
                         attrs=['dn'])
 
         # find a list of dns for each pattern
