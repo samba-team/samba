@@ -204,8 +204,8 @@ def compile_graph_key(key_items, nodes_above=[], elisions=None,
             if short[0] == ',' and long[0] == ',':
                 short = short[1:]
                 long = long[1:]
-            elision_str += ('\nelision%d[shape=plaintext; style=solid; '
-                            'label="\“%s”  means  “%s”\\r"]\n'
+            elision_str += (u'\nelision%d[shape=plaintext; style=solid; '
+                            u'label="\“%s”  means  “%s”\\r"]\n'
                             % ((i, short, long)))
 
     above_lines = []
@@ -519,14 +519,14 @@ def distance_matrix(vertices, edges,
     write = lines.append
 
     if utf8:
-        vertical = '│'
-        horizontal = '─'
-        corner = '╭'
+        vertical = u'│'
+        horizontal = u'─'
+        corner = u'╭'
         #diagonal = '╲'
-        diagonal = '·'
-        #missing = '🕱'
-        missing = '-'
-        right_arrow = '←'
+        diagonal = u'·'
+        #missing = u'🕱'
+        missing = u'-'
+        right_arrow = u'←'
     else:
         vertical, horizontal, corner, diagonal, missing = '|-,0-'
         right_arrow = '<-'
