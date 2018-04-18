@@ -326,7 +326,10 @@ def packet_ldap_3(packet, conversation, context):
     samdb = context.get_ldap_connection()
     dn = context.get_matching_dn(dn_sig)
 
-    samdb.search(dn, scope=int(scope), attrs=attrs.split(','))
+    samdb.search(dn,
+                 scope=int(scope),
+                 attrs=attrs.split(','),
+                 controls=["paged_results:1:1000"])
     return True
 
 
