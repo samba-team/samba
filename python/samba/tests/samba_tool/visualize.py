@@ -200,7 +200,7 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                                             '-H', self.dburl,
                                             '--color=no', '-S')
         self.assertCmdSuccess(result, ascii, err)
-        for c in ('│', '─', '╭'):
+        for c in (u'│', u'─', u'╭'):
             self.assertTrue(c in utf8, 'UTF8 should contain %s' % c)
             self.assertTrue(c not in ascii, 'ASCII should not contain %s' % c)
 
@@ -319,9 +319,9 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                                           '-o', '-')
         self.assertCmdSuccess(result, dot, err)
         self.remove_files(dbfile)
-        print(dot)
+        print(dot.encode('utf8'))
 
-        self.assertStringsEqual(EXPECTED_DOT_NTDSCONN_DISCONNECTED, dot,
+        self.assertStringsEqual(EXPECTED_DOT_NTDSCONN_DISCONNECTED, dot.encode('utf8'),
                                 strip=True)
 
     def test_dot_ntdsconn_disconnected_to_file(self):
