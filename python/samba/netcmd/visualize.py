@@ -123,7 +123,8 @@ class GraphCommand(Command):
             os.close(fd)
         else:
             f = open(fn, 'w', encoding=encoding)
-
+        if isinstance(s, str):
+            s = s.decode('utf8')
         f.write(s)
         f.close()
         return fn
