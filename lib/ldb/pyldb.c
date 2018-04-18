@@ -1213,7 +1213,7 @@ static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwa
 	const char * const kwnames[] = { "url", "flags", "options", NULL };
 	struct ldb_context *ldb_ctx;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|zIO",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "z|IO",
 					 discard_const_p(char *, kwnames),
 					 &url, &flags, &py_options))
 		return NULL;
