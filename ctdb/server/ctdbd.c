@@ -165,7 +165,7 @@ static struct ctdb_context *ctdb_init(struct tevent_context *ev)
 */
 int main(int argc, const char *argv[])
 {
-	struct ctdb_context *ctdb;
+	struct ctdb_context *ctdb = NULL;
 	int interactive = 0;
 	const char *ctdb_socket;
 
@@ -198,38 +198,9 @@ int main(int argc, const char *argv[])
 	const char *ctdb_base;
 	const char *t;
 
-	/* Environment variable overrides default */
-	ctdbd_pidfile = getenv("CTDB_PIDFILE");
-	if (ctdbd_pidfile == NULL) {
-		ctdbd_pidfile = CTDB_RUNDIR "/ctdbd.pid";
-	}
-
-	/* Environment variable overrides default */
-	ctdb_socket = getenv("CTDB_SOCKET");
-	if (ctdb_socket == NULL) {
-		ctdb_socket = CTDB_SOCKET;
-	}
-
-	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
-
-	while ((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt) {
-		default:
-			fprintf(stderr, "Invalid option %s: %s\n", 
-				poptBadOption(pc, 0), poptStrerror(opt));
-			exit(1);
-		}
-	}
-
-	/* If there are extra arguments then exit with usage message */
-	extra_argv = poptGetArgs(pc);
-	if (extra_argv) {
-		extra_argv++;
-		if (extra_argv[0])  {
-			poptPrintHelp(pc, stdout, 0);
-			exit(1);
-		}
-	}
+	/*
+	 * Basic setup
+	 */
 
 	talloc_enable_null_tracking();
 
@@ -248,63 +219,6 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* Log to stderr when running as interactive */
-	if (interactive) {
-		options.logging = "file:";
-	}
-
-	/* Initialize logging and set the debug level */
-	if (!ctdb_logging_init(ctdb, options.logging, options.debuglevel)) {
-		exit(1);
-	}
-	setenv("CTDB_LOGGING", options.logging, 1);
-	setenv("CTDB_DEBUGLEVEL", debug_level_to_string(DEBUGLEVEL), 1);
-
-	ret = ctdb_set_socketname(ctdb, ctdb_socket);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR, ("ctdb_set_socketname() failed\n"));
-		exit(1);
-	}
-
-	ctdb->start_as_disabled = options.start_as_disabled;
-	ctdb->start_as_stopped  = options.start_as_stopped;
-
-	script_log_level = options.script_log_level;
-
-	DEBUG(DEBUG_NOTICE,("CTDB starting on node\n"));
-
-	if (options.recovery_lock == NULL) {
-		DEBUG(DEBUG_WARNING, ("Recovery lock not set\n"));
-	}
-	ctdb->recovery_lock = options.recovery_lock;
-
-	ctdb_tunables_set_defaults(ctdb);
-
-	ret = ctdb_set_transport(ctdb, options.transport);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR,("ctdb_set_transport failed - %s\n",
-				 ctdb_errstr(ctdb)));
-		exit(1);
-	}
-
-	/* tell ctdb what address to listen on */
-	if (options.myaddress) {
-		ret = ctdb_set_address(ctdb, options.myaddress);
-		if (ret == -1) {
-			DEBUG(DEBUG_ERR,("ctdb_set_address failed - %s\n",
-					 ctdb_errstr(ctdb)));
-			exit(1);
-		}
-	}
-
-	/* set ctdbd capabilities */
-	if (options.no_lmaster != 0) {
-		ctdb->capabilities &= ~CTDB_CAP_LMASTER;
-	}
-	if (options.no_recmaster != 0) {
-		ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
-	}
-
 	/* Default value for CTDB_BASE - don't override */
 	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
 	ctdb_base = getenv("CTDB_BASE");
@@ -313,13 +227,87 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	/*
+	 * Command-line option handling
+	 */
+
+	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
+
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			fprintf(stderr, "Invalid option %s: %s\n", 
+				poptBadOption(pc, 0), poptStrerror(opt));
+			goto fail;
+		}
+	}
+
+	/* If there are extra arguments then exit with usage message */
+	extra_argv = poptGetArgs(pc);
+	if (extra_argv) {
+		extra_argv++;
+		if (extra_argv[0])  {
+			poptPrintHelp(pc, stdout, 0);
+			goto fail;
+		}
+	}
+
+	/*
+	 * Logging setup/options
+	 */
+
+	/* Log to stderr when running as interactive */
+	if (interactive) {
+		options.logging = "file:";
+	}
+
+	/* Initialize logging and set the debug level */
+	if (!ctdb_logging_init(ctdb, options.logging, options.debuglevel)) {
+		goto fail;
+	}
+	setenv("CTDB_LOGGING", options.logging, 1);
+	setenv("CTDB_DEBUGLEVEL", debug_level_to_string(DEBUGLEVEL), 1);
+
+	script_log_level = options.script_log_level;
+
+	D_NOTICE("CTDB starting on node\n");
+
+	/*
+	 * Cluster setup/options
+	 */
+
+	ret = ctdb_set_transport(ctdb, options.transport);
+	if (ret == -1) {
+		D_ERR("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
+		goto fail;
+	}
+
+	if (options.recovery_lock == NULL) {
+		D_WARNING("Recovery lock not set\n");
+	}
+	ctdb->recovery_lock = options.recovery_lock;
+
+	/* tell ctdb what address to listen on */
+	if (options.myaddress) {
+		ret = ctdb_set_address(ctdb, options.myaddress);
+		if (ret == -1) {
+			D_ERR("ctdb_set_address failed - %s\n",
+			      ctdb_errstr(ctdb));
+			goto fail;
+		}
+	}
+
 	/* tell ctdb what nodes are available */
 	ctdb->nodes_file = talloc_asprintf(ctdb, "%s/nodes", ctdb_base);
 	if (ctdb->nodes_file == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		exit(1);
+		DBG_ERR(" Out of memory\n");
+		goto fail;
 	}
 	ctdb_load_nodes_file(ctdb);
+
+	/*
+	 * Database setup/options
+	 */
 
 	ctdb->db_directory = options.db_dir;
 	mkdir_p_or_die(ctdb->db_directory, 0700);
@@ -330,12 +318,42 @@ int main(int argc, const char *argv[])
 	ctdb->db_directory_state = options.db_dir_state;
 	mkdir_p_or_die(ctdb->db_directory_state, 0700);
 
+	if (options.max_persistent_check_errors < 0) {
+		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;
+	} else {
+		ctdb->max_persistent_check_errors =
+			(uint64_t)options.max_persistent_check_errors;
+	}
+
+	/*
+	 * Legacy setup/options
+	 */
+
+	ctdb->start_as_disabled = options.start_as_disabled;
+	ctdb->start_as_stopped  = options.start_as_stopped;
+
+	/* set ctdbd capabilities */
+	if (options.no_lmaster != 0) {
+		ctdb->capabilities &= ~CTDB_CAP_LMASTER;
+	}
+	if (options.no_recmaster != 0) {
+		ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
+	}
+
+	ctdb->do_setsched = (options.nosetsched != 1);
+
+	/*
+	 * Miscellaneous setup
+	 */
+
+	ctdb_tunables_set_defaults(ctdb);
+
 	ctdb->event_script_dir = talloc_asprintf(ctdb,
 						 "%s/events.d",
 						 ctdb_base);
 	if (ctdb->event_script_dir == NULL) {
 		DBG_ERR("Out of memory\n");
-		exit(1);
+		goto fail;
 	}
 
 	ctdb->notification_script = talloc_asprintf(ctdb,
@@ -343,10 +361,29 @@ int main(int argc, const char *argv[])
 						    ctdb_base);
 	if (ctdb->notification_script == NULL) {
 		D_ERR("Unable to set notification script\n");
-		exit(1);
+		goto fail;
 	}
 
-	ctdb->do_setsched = (options.nosetsched != 1);
+	/*
+	 * Testing and debug options
+	 */
+
+	/* Environment variable overrides default */
+	ctdbd_pidfile = getenv("CTDB_PIDFILE");
+	if (ctdbd_pidfile == NULL) {
+		ctdbd_pidfile = CTDB_RUNDIR "/ctdbd.pid";
+	}
+
+	/* Environment variable overrides default */
+	ctdb_socket = getenv("CTDB_SOCKET");
+	if (ctdb_socket == NULL) {
+		ctdb_socket = CTDB_SOCKET;
+	}
+	ret = ctdb_set_socketname(ctdb, ctdb_socket);
+	if (ret == -1) {
+		D_ERR("ctdb_set_socketname() failed\n");
+		goto fail;
+	}
 
 	t = getenv("CTDB_TEST_MODE");
 	if (t != NULL) {
@@ -355,12 +392,10 @@ int main(int argc, const char *argv[])
 		fast_start = true;
 	}
 
-	if (options.max_persistent_check_errors < 0) {
-		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;
-	} else {
-		ctdb->max_persistent_check_errors = (uint64_t)options.max_persistent_check_errors;
-	}
-
 	/* start the protocol running (as a child) */
 	return ctdb_start_daemon(ctdb, interactive?false:true);
+
+fail:
+	talloc_free(ctdb);
+	exit(1);
 }
