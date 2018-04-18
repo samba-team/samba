@@ -1579,51 +1579,6 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 }
 
 /*
-  initialise the ctdb daemon for client applications
-
-  NOTE: In current code the daemon does not fork. This is for testing purposes only
-  and to simplify the code.
-*/
-struct ctdb_context *ctdb_init(struct tevent_context *ev)
-{
-	int ret;
-	struct ctdb_context *ctdb;
-
-	ctdb = talloc_zero(ev, struct ctdb_context);
-	if (ctdb == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " talloc_zero failed.\n"));
-		return NULL;
-	}
-	ctdb->ev  = ev;
-	/* Wrap early to exercise code. */
-	ret = reqid_init(ctdb, INT_MAX-200, &ctdb->idr);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("reqid_init failed (%s)\n", strerror(ret)));
-		talloc_free(ctdb);
-		return NULL;
-	}
-
-	ret = srvid_init(ctdb, &ctdb->srv);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("srvid_init failed (%s)\n", strerror(ret)));
-		talloc_free(ctdb);
-		return NULL;
-	}
-
-	ret = ctdb_set_socketname(ctdb, CTDB_SOCKET);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_set_socketname failed.\n"));
-		talloc_free(ctdb);
-		return NULL;
-	}
-
-	ctdb->statistics.statistics_start_time = timeval_current();
-
-	return ctdb;
-}
-
-
-/*
   set some ctdb flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)

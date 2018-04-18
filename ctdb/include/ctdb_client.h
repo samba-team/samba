@@ -239,11 +239,6 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 			       struct ctdb_tunable_list *tunables);
 
 /*
-  initialise ctdb subsystem
-*/
-struct ctdb_context *ctdb_init(struct tevent_context *ev);
-
-/*
   set some flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);

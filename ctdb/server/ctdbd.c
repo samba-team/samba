@@ -95,6 +95,43 @@ static const struct ctdb_upcalls ctdb_upcalls = {
 	.node_connected = ctdb_node_connected
 };
 
+static struct ctdb_context *ctdb_init(struct tevent_context *ev)
+{
+	int ret;
+	struct ctdb_context *ctdb;
+
+	ctdb = talloc_zero(ev, struct ctdb_context);
+	if (ctdb == NULL) {
+		DBG_ERR("Memory error\n");
+		return NULL;
+	}
+	ctdb->ev  = ev;
+	/* Wrap early to exercise code. */
+	ret = reqid_init(ctdb, INT_MAX-200, &ctdb->idr);
+	if (ret != 0) {
+		D_ERR("reqid_init failed (%s)\n", strerror(ret));
+		talloc_free(ctdb);
+		return NULL;
+	}
+
+	ret = srvid_init(ctdb, &ctdb->srv);
+	if (ret != 0) {
+		D_ERR("srvid_init failed (%s)\n", strerror(ret));
+		talloc_free(ctdb);
+		return NULL;
+	}
+
+	ret = ctdb_set_socketname(ctdb, CTDB_SOCKET);
+	if (ret != 0) {
+		DBG_ERR("ctdb_set_socketname failed.\n");
+		talloc_free(ctdb);
+		return NULL;
+	}
+
+	ctdb->statistics.statistics_start_time = timeval_current();
+
+	return ctdb;
+}
 
 
 /*
