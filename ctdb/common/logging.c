@@ -25,6 +25,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "system/syslog.h"
+#include "system/dir.h"
 
 #include "lib/util/time_basic.h"
 #include "lib/util/sys_rw.h"
@@ -152,6 +153,37 @@ static int file_log_state_destructor(struct file_log_state *state)
 		state->fd = -1;
 	}
 	return 0;
+}
+
+static bool file_log_validate(const char *option)
+{
+	char *t, *dir;
+	struct stat st;
+	int ret;
+
+	if (option == NULL || strcmp(option, "-") == 0) {
+		return true;
+	}
+
+	t = strdup(option);
+	if (t == NULL) {
+		return false;
+	}
+
+	dir = dirname(t);
+
+	ret = stat(dir, &st);
+	if (ret != 0) {
+		free(t);
+		return false;
+	}
+
+	if (! S_ISDIR(st.st_mode)) {
+		free(t);
+		return false;
+	}
+
+	return true;
 }
 
 static int file_log_setup(TALLOC_CTX *mem_ctx, const char *option,
@@ -510,6 +542,23 @@ static int syslog_log_setup_udp(TALLOC_CTX *mem_ctx, const char *app_name,
 	return 0;
 }
 
+static bool syslog_log_validate(const char *option)
+{
+	if (option == NULL) {
+		return true;
+#ifdef _PATH_LOG
+	} else if (strcmp(option, "nonblocking") == 0) {
+		return true;
+#endif
+	} else if (strcmp(option, "udp") == 0) {
+		return true;
+	} else if (strcmp(option, "udp-rfc5424") == 0) {
+		return true;
+	}
+
+	return false;
+}
+
 static int syslog_log_setup(TALLOC_CTX *mem_ctx, const char *option,
 			    const char *app_name)
 {
@@ -530,6 +579,7 @@ static int syslog_log_setup(TALLOC_CTX *mem_ctx, const char *option,
 
 struct log_backend {
 	const char *name;
+	bool (*validate)(const char *option);
 	int (*setup)(TALLOC_CTX *mem_ctx,
 		     const char *option,
 		     const char *app_name);
@@ -538,10 +588,12 @@ struct log_backend {
 static struct log_backend log_backend[] = {
 	{
 		.name = "file",
+		.validate = file_log_validate,
 		.setup = file_log_setup,
 	},
 	{
 		.name = "syslog",
+		.validate = syslog_log_validate,
 		.setup = syslog_log_setup,
 	},
 };
@@ -591,6 +643,30 @@ static int log_backend_parse(TALLOC_CTX *mem_ctx,
 
 	talloc_free(t);
 	return 0;
+}
+
+bool logging_validate(const char *logging)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct log_backend *backend;
+	char *option;
+	int ret;
+	bool status;
+
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		return false;
+	}
+
+	ret = log_backend_parse(tmp_ctx, logging, &backend, &option);
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	status = backend->validate(option);
+	talloc_free(tmp_ctx);
+	return status;
 }
 
 /* Initialise logging */

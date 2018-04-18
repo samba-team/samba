@@ -37,6 +37,7 @@ bool debug_level_parse(const char *log_string, int *log_level);
 const char *debug_level_to_string(int log_level);
 int debug_level_from_string(const char *log_string);
 
+bool logging_validate(const char *logging);
 int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 		 const char *debuglevel, const char *app_name);
 
