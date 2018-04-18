@@ -109,9 +109,11 @@ class GraphCommand(Command):
         If fn is visualize.TEMP_FILE, write to a temporary file
         Otherwise fn should be a filename to write to.
         """
-        encoding = None;
+        encoding = None
         if utf8:
-            encoding = 'utf8';
+            encoding = 'utf8'
+        if isinstance(s, str):
+            s = s.decode('utf8')
         if fn is None or fn == '-':
             # we're just using stdout (a.k.a self.outf)
             print(s, file=self.outf)
@@ -123,8 +125,6 @@ class GraphCommand(Command):
             os.close(fd)
         else:
             f = open(fn, 'w', encoding=encoding)
-        if isinstance(s, str):
-            s = s.decode('utf8')
         f.write(s)
         f.close()
         return fn
