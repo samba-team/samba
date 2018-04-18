@@ -37,7 +37,7 @@ def print_err(*args, **kwargs):
 def main():
 
     desc = ("Generates network traffic 'conversations' based on <summary-file>"
-            " (which should the output file produced by either traffic_learner"
+            " (which should be the output file produced by either traffic_learner"
             " or traffic_summary.pl). This traffic is sent to <dns-hostname>,"
             " which is the full DNS hostname of the DC being tested.")
 
