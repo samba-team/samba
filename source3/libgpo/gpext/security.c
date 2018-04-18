@@ -150,7 +150,7 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 					      const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
 					      const struct GROUP_POLICY_OBJECT *changed_gpo_list)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	char *unix_path = NULL;
 	struct gp_inifile_context *ini_ctx = NULL;
 	const struct GROUP_POLICY_OBJECT *gpo;
