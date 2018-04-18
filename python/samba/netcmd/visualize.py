@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Visualisation tools
 #
 # Copyright (C) Andrew Bartlett 2015, 2018
@@ -37,6 +38,7 @@ import re
 from samba.kcc import KCC, ldif_import_export
 from samba.kcc.kcc_utils import KCCError
 from samba.compat import text_type
+from io import open
 
 COMMON_OPTIONS = [
     Option("-H", "--URL", help="LDB URL for database or target server",
@@ -99,7 +101,7 @@ class GraphCommand(Command):
 
         return kcc, dsas
 
-    def write(self, s, fn=None, suffix='.dot'):
+    def write(self, s, fn=None, suffix='.dot', utf8=None):
         """Decide whether we're dealing with a filename, a tempfile, or
         stdout, and write accordingly.
 
@@ -111,18 +113,20 @@ class GraphCommand(Command):
         If fn is visualize.TEMP_FILE, write to a temporary file
         Otherwise fn should be a filename to write to.
         """
+        encoding = None;
+        if utf8:
+            encoding = 'utf8';
         if fn is None or fn == '-':
             # we're just using stdout (a.k.a self.outf)
             print(s, file=self.outf)
             return
-
         if fn is TEMP_FILE:
             fd, fn = tempfile.mkstemp(prefix='samba-tool-visualise',
                                       suffix=suffix)
-            f = open(fn, 'w')
+            f = open(fn, 'w', encoding=encoding)
             os.close(fd)
         else:
-            f = open(fn, 'w')
+            f = open(fn, 'w', encoding=encoding)
 
         f.write(s)
         f.close()
@@ -347,7 +351,7 @@ class cmd_reps(GraphCommand):
                                             grouping_function=get_dnstr_site)
 
                         s = "\n%s\n%s" % (header_strings[direction] % part, s)
-                        self.write(s, output)
+                        self.write(s, output, utf8=utf8)
             return
 
         edge_colours = []
@@ -396,7 +400,7 @@ class cmd_reps(GraphCommand):
         if format == 'xdot':
             self.call_xdot(s, output)
         else:
-            self.write(s, output)
+            self.write(s, output, utf8=utf8)
 
 
 class NTDSConn(object):
@@ -593,7 +597,7 @@ class cmd_ntdsconn(GraphCommand):
 
             self.write('\n%s\n\n%s\n%s' % (title,
                                            s,
-                                           epilog), output)
+                                           epilog), output, utf8=utf8)
             return
 
         dot_edges = []
@@ -654,7 +658,7 @@ class cmd_ntdsconn(GraphCommand):
         if format == 'xdot':
             self.call_xdot(s, output)
         else:
-            self.write(s, output)
+            self.write(s, output, utf8=utf8)
 
 
 class cmd_visualize(SuperCommand):
