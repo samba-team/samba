@@ -76,18 +76,20 @@ struct dsdb_control_current_partition {
 
 #define DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID "1.3.6.1.4.1.7165.4.3.8"
 
+struct dsdb_user_pwd_settings {
+	uint32_t pwdProperties;
+	uint32_t pwdHistoryLength;
+	int64_t maxPwdAge;
+	int64_t minPwdAge;
+	uint32_t minPwdLength;
+	bool store_cleartext;
+	const char *netbios_domain;
+	const char *dns_domain;
+	const char *realm;
+};
+
 struct dsdb_control_password_change_status {
-	struct {
-		uint32_t pwdProperties;
-		uint32_t pwdHistoryLength;
-		int64_t maxPwdAge;
-		int64_t minPwdAge;
-		uint32_t minPwdLength;
-		bool store_cleartext;
-		const char *netbios_domain;
-		const char *dns_domain;
-		const char *realm;
-	} domain_data;
+	struct dsdb_user_pwd_settings domain_data;
 	enum samPwdChangeReason reject_reason;
 };
 
