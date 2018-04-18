@@ -399,7 +399,7 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
         f = open(dot_file)
         dot = f.read()
         f.close()
-        self.assertStringsEqual(EXPECTED_DOT_NTDSCONN_DISCONNECTED, dot)
+        self.assertStringsEqual(EXPECTED_DOT_NTDSCONN_DISCONNECTED, dot.encode('utf8'))
 
         self.remove_files(dbfile, dot_file)
 
