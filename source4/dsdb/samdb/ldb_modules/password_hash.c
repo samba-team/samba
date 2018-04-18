@@ -3855,6 +3855,9 @@ static int get_pso_data_callback(struct ldb_request *req,
 {
 	struct ldb_context *ldb = NULL;
 	struct ph_context *ac = NULL;
+	bool domain_complexity = true;
+	bool pso_complexity = true;
+	struct dsdb_user_pwd_settings *settings = NULL;
 	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct ph_context);
@@ -3878,6 +3881,47 @@ static int get_pso_data_callback(struct ldb_request *req,
 			ldb_set_errstring(ldb, "Uninitialized status");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto done;
+		}
+
+		/*
+		 * use the PSO's values instead of the domain defaults (the PSO
+		 * attributes should always exist, but use the domain default
+		 * values as a fallback).
+		 */
+		settings = &ac->status->domain_data;
+		settings->store_cleartext =
+			ldb_msg_find_attr_as_bool(ares->message,
+						  "msDS-PasswordReversibleEncryptionEnabled",
+						  settings->store_cleartext);
+
+		settings->pwdHistoryLength =
+			ldb_msg_find_attr_as_uint(ares->message,
+						  "msDS-PasswordHistoryLength",
+						  settings->pwdHistoryLength);
+		settings->maxPwdAge =
+			ldb_msg_find_attr_as_int64(ares->message,
+						   "msDS-MaximumPasswordAge",
+						   settings->maxPwdAge);
+		settings->minPwdAge =
+			ldb_msg_find_attr_as_int64(ares->message,
+						   "msDS-MinimumPasswordAge",
+						   settings->minPwdAge);
+		settings->minPwdLength =
+			ldb_msg_find_attr_as_uint(ares->message,
+						  "msDS-MinimumPasswordLength",
+						  settings->minPwdLength);
+		domain_complexity =
+			(settings->pwdProperties & DOMAIN_PASSWORD_COMPLEX);
+		pso_complexity =
+			ldb_msg_find_attr_as_bool(ares->message,
+						  "msDS-PasswordComplexityEnabled",
+						   domain_complexity);
+
+		/* set or clear the complexity bit if required */
+		if (pso_complexity && !domain_complexity) {
+			settings->pwdProperties |= DOMAIN_PASSWORD_COMPLEX;
+		} else if (domain_complexity && !pso_complexity) {
+			settings->pwdProperties &= ~DOMAIN_PASSWORD_COMPLEX;
 		}
 
 		if (ac->pso_res != NULL) {
@@ -3949,7 +3993,13 @@ static struct ldb_request * build_pso_data_request(struct ph_context *ac)
 	/* attrs[] is returned from this function in
 	   pso_req->op.search.attrs, so it must be static, as
 	   otherwise the compiler can put it on the stack */
-	static const char * const attrs[] = { "msDS-LockoutThreshold",
+	static const char * const attrs[] = { "msDS-PasswordComplexityEnabled",
+					      "msDS-PasswordReversibleEncryptionEnabled",
+					      "msDS-PasswordHistoryLength",
+					      "msDS-MaximumPasswordAge",
+					      "msDS-MinimumPasswordAge",
+					      "msDS-MinimumPasswordLength",
+					      "msDS-LockoutThreshold",
 					      "msDS-LockoutObservationWindow",
 					      NULL };
 	struct ldb_context *ldb = NULL;
