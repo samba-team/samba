@@ -129,7 +129,32 @@ static struct ctdb_context *ctdb_init(struct tevent_context *ev)
 		return NULL;
 	}
 
+	gettimeofday(&ctdb->ctdbd_start_time, NULL);
+
+	gettimeofday(&ctdb->last_recovery_started, NULL);
+	gettimeofday(&ctdb->last_recovery_finished, NULL);
+
+	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
+	ctdb->recovery_master  = (uint32_t)-1;
+
+	ctdb->upcalls = &ctdb_upcalls;
+
 	ctdb->statistics.statistics_start_time = timeval_current();
+
+	ctdb->capabilities = CTDB_CAP_DEFAULT;
+
+	/*
+	 * Initialise this node's PNN to the unknown value.  This will
+	 * be set to the correct value by either ctdb_add_node() as
+	 * part of loading the nodes file or by
+	 * ctdb_tcp_listen_automatic() when the transport is
+	 * initialised.  At some point we should de-optimise this and
+	 * pull it out into ctdb_start_daemon() so it is done clearly
+	 * and only in one place.
+	 */
+	ctdb->pnn = CTDB_UNKNOWN_PNN;
+
+	ctdb->do_checkpublicip = true;
 
 	return ctdb;
 }
@@ -248,13 +273,6 @@ int main(int argc, const char *argv[])
 
 	DEBUG(DEBUG_NOTICE,("CTDB starting on node\n"));
 
-	gettimeofday(&ctdb->ctdbd_start_time, NULL);
-	gettimeofday(&ctdb->last_recovery_started, NULL);
-	gettimeofday(&ctdb->last_recovery_finished, NULL);
-	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
-	ctdb->recovery_master  = (uint32_t)-1;
-	ctdb->upcalls          = &ctdb_upcalls;
-
 	if (options.recovery_lock == NULL) {
 		DEBUG(DEBUG_WARNING, ("Recovery lock not set\n"));
 	}
@@ -280,23 +298,12 @@ int main(int argc, const char *argv[])
 	}
 
 	/* set ctdbd capabilities */
-	ctdb->capabilities = CTDB_CAP_DEFAULT;
 	if (options.no_lmaster != 0) {
 		ctdb->capabilities &= ~CTDB_CAP_LMASTER;
 	}
 	if (options.no_recmaster != 0) {
 		ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
 	}
-
-	/* Initialise this node's PNN to the unknown value.  This will
-	 * be set to the correct value by either ctdb_add_node() as
-	 * part of loading the nodes file or by
-	 * ctdb_tcp_listen_automatic() when the transport is
-	 * initialised.  At some point we should de-optimise this and
-	 * pull it out into ctdb_start_daemon() so it is done clearly
-	 * and only in one place.
-	 */
-	ctdb->pnn = -1;
 
 	/* Default value for CTDB_BASE - don't override */
 	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
@@ -340,8 +347,6 @@ int main(int argc, const char *argv[])
 	}
 
 	ctdb->do_setsched = (options.nosetsched != 1);
-
-	ctdb->do_checkpublicip = true;
 
 	t = getenv("CTDB_TEST_MODE");
 	if (t != NULL) {
