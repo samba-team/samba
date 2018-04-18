@@ -106,6 +106,7 @@ static struct ctdb_context *ctdb_init(struct tevent_context *ev)
 		return NULL;
 	}
 	ctdb->ev  = ev;
+
 	/* Wrap early to exercise code. */
 	ret = reqid_init(ctdb, INT_MAX-200, &ctdb->idr);
 	if (ret != 0) {
@@ -258,13 +259,6 @@ int main(int argc, const char *argv[])
 		DEBUG(DEBUG_WARNING, ("Recovery lock not set\n"));
 	}
 	ctdb->recovery_lock = options.recovery_lock;
-
-	TALLOC_FREE(ctdb->idr);
-	ret = reqid_init(ctdb, 0, &ctdb->idr);;
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("reqid_init failed (%s)\n", strerror(ret)));
-		exit(1);
-	}
 
 	ctdb_tunables_set_defaults(ctdb);
 
