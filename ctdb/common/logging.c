@@ -528,27 +528,78 @@ static int syslog_log_setup(TALLOC_CTX *mem_ctx, const char *option,
 	return EINVAL;
 }
 
+struct log_backend {
+	const char *name;
+	int (*setup)(TALLOC_CTX *mem_ctx,
+		     const char *option,
+		     const char *app_name);
+};
+
+static struct log_backend log_backend[] = {
+	{
+		.name = "file",
+		.setup = file_log_setup,
+	},
+	{
+		.name = "syslog",
+		.setup = syslog_log_setup,
+	},
+};
+
+static int log_backend_parse(TALLOC_CTX *mem_ctx,
+			     const char *logging,
+			     struct log_backend **backend,
+			     char **backend_option)
+{
+	struct log_backend *b = NULL;
+	char *t, *name, *option;
+	int i;
+
+	t = talloc_strdup(mem_ctx, logging);
+	if (t == NULL) {
+		return ENOMEM;
+	}
+
+	name = strtok(t, ":");
+	if (name == NULL) {
+		talloc_free(t);
+		return EINVAL;
+	}
+	option = strtok(NULL, ":");
+
+	for (i=0; i<ARRAY_SIZE(log_backend); i++) {
+		if (strcmp(log_backend[i].name, name) == 0) {
+			b = &log_backend[i];
+		}
+	}
+
+	if (b == NULL) {
+		talloc_free(t);
+		return ENOENT;
+	}
+
+	*backend = b;
+	if (option != NULL) {
+		*backend_option = talloc_strdup(mem_ctx, option);
+		if (*backend_option == NULL) {
+			talloc_free(t);
+			return ENOMEM;
+		}
+	} else {
+		*backend_option = NULL;
+	}
+
+	talloc_free(t);
+	return 0;
+}
+
 /* Initialise logging */
 int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 		 const char *debug_level, const char *app_name)
 {
-	struct {
-		const char *name;
-		int (*setup)(TALLOC_CTX *mem_ctx, const char *option,
-			     const char *app_name);
-	} log_backend[] = {
-		{
-			.name = "file",
-			.setup = file_log_setup,
-		},
-		{
-			.name = "syslog",
-			.setup = syslog_log_setup,
-		},
-	};
-	int (*setup)(TALLOC_CTX *, const char *, const char *) = NULL;
-	char *str, *name, *option;
-	int ret, i;
+	struct log_backend *backend = NULL;
+	char *option = NULL;
+	int ret;
 
 	setup_logging(app_name, DEBUG_STDERR);
 
@@ -566,35 +617,17 @@ int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 		return EINVAL;
 	}
 
-	str = talloc_strdup(mem_ctx, logging);
-	if (str == NULL) {
-		return ENOMEM;
-	}
-
-	name = strtok(str, ":");
-	if (name == NULL) {
-		talloc_free(str);
-		return EINVAL;
-	}
-	option = strtok(NULL, ":");
-	/*
-	 * option can be NULL here, both setup()
-	 * backends handle this.
-	 */
-
-	for (i=0; i<ARRAY_SIZE(log_backend); i++) {
-		if (strcmp(log_backend[i].name, name) == 0) {
-			setup = log_backend[i].setup;
+	ret = log_backend_parse(mem_ctx, logging, &backend, &option);
+	if (ret != 0) {
+		if (ret == ENOENT) {
+			fprintf(stderr, "Invalid logging option \'%s\'\n",
+				logging);
 		}
+		talloc_free(option);
+		return ret;
 	}
 
-	if (setup == NULL) {
-		talloc_free(str);
-		fprintf(stderr, "Invalid logging option \'%s\'\n", logging);
-		return EINVAL;
-	}
-
-	ret = setup(mem_ctx, option, app_name);
-	talloc_free(str);
+	ret = backend->setup(mem_ctx, option, app_name);
+	talloc_free(option);
 	return ret;
 }
