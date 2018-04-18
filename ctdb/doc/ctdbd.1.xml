@@ -398,41 +398,6 @@
   </refsect1>
 
   <refsect1>
-    <title>DEBUGGING OPTIONS</title>
-
-    <variablelist>
-
-      <varlistentry>
-	<term>--torture</term>
-	<listitem>
-	  <para>
-	    This option is only used for development and testing of
-	    CTDB.  It adds artificial errors and failures to the
-	    common codepaths in ctdbd to verify that ctdbd can recover
-	    correctly from failures.
-	  </para>
-	  <para>
-	    <emphasis>Do not use this option</emphasis> unless you are
-	    developing and testing new functionality in CTDB.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--valgrinding</term>
-	<listitem>
-	  <para>
-	    This is a debugging option. This option is only used when
-	    debugging ctdbd.  This enables additional debugging
-	    capabilities and implies --nosetsched.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-    </variablelist>
-  </refsect1>
-
-  <refsect1>
     <title>SEE ALSO</title>
     <para>
       <citerefentry><refentrytitle>ctdb</refentrytitle>

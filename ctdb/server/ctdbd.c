@@ -48,7 +48,6 @@ static struct {
 	const char *db_dir;
 	const char *db_dir_persistent;
 	const char *db_dir_state;
-	int         valgrinding;
 	int         nosetsched;
 	int         start_as_disabled;
 	int         start_as_stopped;
@@ -56,7 +55,6 @@ static struct {
 	int         no_recmaster;
 	int	    script_log_level;
 	int         max_persistent_check_errors;
-	int         torture;
 } options = {
 	.debuglevel = "NOTICE",
 	.transport = "tcp",
@@ -119,7 +117,6 @@ int main(int argc, const char *argv[])
 		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
 		{ "dbdir-state", 0, POPT_ARG_STRING, &options.db_dir_state, 0, "directory for internal state tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock, 0, "recovery lock", "lock" },
-		{ "valgrinding", 0, POPT_ARG_NONE, &options.valgrinding, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.nosetsched, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
 		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
 		{ "start-as-stopped", 0, POPT_ARG_NONE, &options.start_as_stopped, 0, "Node starts in stopped state", NULL },
@@ -129,7 +126,6 @@ int main(int argc, const char *argv[])
 		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
 		  &options.max_persistent_check_errors, 0,
 		  "max allowed persistent check errors (default 0)", NULL },
-		{ "torture", 0, POPT_ARG_NONE, &options.torture, 0, "enable nastiness in library", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -187,10 +183,6 @@ int main(int argc, const char *argv[])
 	if (ctdb == NULL) {
 		fprintf(stderr, "Failed to init ctdb\n");
 		exit(1);
-	}
-
-	if (options.torture == 1) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
 	}
 
 	/* Log to stderr when running as interactive */
@@ -316,11 +308,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ctdb->valgrinding = (options.valgrinding == 1);
 	ctdb->do_setsched = (options.nosetsched != 1);
-	if (ctdb->valgrinding) {
-		ctdb->do_setsched = false;
-	}
 
 	ctdb->do_checkpublicip = true;
 
