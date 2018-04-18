@@ -509,10 +509,17 @@ def build(bld):
                                              ctdb_statistics.c
                                              ctdb_update_record.c
                                              ctdb_lock.c ctdb_fork.c
-                                             ctdb_tunnel.c ctdb_client.c'''),
+                                             ctdb_tunnel.c ctdb_client.c
+                                             ctdb_config.c
+                                          '''),
                      includes='include',
                      deps='''ctdb-common ctdb-system ctdb-protocol
                              ctdb-tcp ctdb-util replace sys_rw popt
+                             ctdb-logging-conf
+                             ctdb-cluster-conf
+                             ctdb-database-conf
+                             ctdb-event-conf
+                             ctdb-legacy-conf
                              talloc tevent tdb-wrap tdb talloc_report''' +
                           ib_deps,
                      install_path='${SBINDIR}',
