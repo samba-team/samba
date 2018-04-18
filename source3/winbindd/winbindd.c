@@ -535,6 +535,7 @@ static struct winbindd_dispatch_table {
 	/* Miscellaneous */
 
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
+	{ WINBINDD_PING, winbindd_ping, "PING" },
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
 	  "INTERFACE_VERSION" },
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
@@ -565,8 +566,6 @@ struct winbindd_async_dispatch_table {
 };
 
 static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
-	{ WINBINDD_PING, "PING",
-	  wb_ping_send, wb_ping_recv },
 	{ WINBINDD_LOOKUPSID, "LOOKUPSID",
 	  winbindd_lookupsid_send, winbindd_lookupsid_recv },
 	{ WINBINDD_LOOKUPSIDS, "LOOKUPSIDS",

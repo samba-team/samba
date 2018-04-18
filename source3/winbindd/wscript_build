@@ -198,7 +198,6 @@ bld.SAMBA3_BINARY('winbindd',
                  winbindd_idmap.c
                  winbindd_locator.c
                  winbindd_ndr.c
-                 wb_ping.c
                  wb_lookupsid.c
                  wb_lookupsids.c
                  wb_lookupname.c
