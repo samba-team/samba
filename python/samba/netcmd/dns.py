@@ -1095,6 +1095,11 @@ class cmd_cleanup_record(Command):
         "credopts": options.CredentialsOptions,
     }
 
+    takes_options = [
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),
+    ]
+
     def run(self, server, dnshostname, sambaopts=None, credopts=None,
             versionopts=None, verbose=False, quiet=False):
         lp = sambaopts.get_loadparm()
