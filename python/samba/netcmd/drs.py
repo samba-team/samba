@@ -647,7 +647,7 @@ class cmd_drs_clone_dc_database(Command):
     takes_options = [
         Option("--server", help="DC to join", type=str),
         Option("--targetdir", help="where to store provision (required)", type=str),
-        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("--include-secrets", help="Also replicate secret values", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true")
        ]

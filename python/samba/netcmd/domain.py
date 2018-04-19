@@ -119,7 +119,7 @@ common_provision_join_options = [
            "(default is %s)" % get_default_backend_store()),
     Option("--targetdir", metavar="DIR",
            help="Set target directory (where to store provision)", type=str),
-    Option("--quiet", help="Be quiet", action="store_true"),
+    Option("-q", "--quiet", help="Be quiet", action="store_true"),
 ]
 
 common_join_options = [
@@ -751,7 +751,7 @@ class cmd_domain_demote(Command):
                metavar="URL", dest="H"),
         Option("--remove-other-dead-server", help="Dead DC (name or NTDS GUID) "
                "to remove ALL references to (rather than this DC)", type=str),
-        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         ]
 
@@ -1045,7 +1045,7 @@ class cmd_domain_level(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"), # unused
         Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
             help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)"),
         Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
@@ -1352,7 +1352,7 @@ class cmd_domain_passwordsettings_set(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"), # unused
         Option("--complexity", type="choice", choices=["on","off","default"],
           help="The password complexity (on | off | default). Default is 'on'"),
         Option("--store-plaintext", type="choice", choices=["on","off","default"],
@@ -1557,7 +1557,7 @@ class cmd_domain_classicupgrade(Command):
                   help="Path to samba classic DC testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
         Option("--targetdir", type="string", metavar="DIR",
                   help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
-        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
@@ -3969,7 +3969,7 @@ class cmd_domain_schema_upgrade(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"), #unused
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--schema", type="choice", metavar="SCHEMA",
                choices=["2012", "2012_R2"],
@@ -4219,7 +4219,7 @@ class cmd_domain_functional_prep(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--function-level", type="choice", metavar="FUNCTION_LEVEL",
                choices=["2008_R2", "2012", "2012_R2"],

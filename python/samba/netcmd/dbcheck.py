@@ -66,7 +66,7 @@ class cmd_dbcheck(Command):
                help="cross naming context boundaries"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
             help="Print more details of checking"),
-        Option("--quiet", dest="quiet", action="store_true", default=False,
+        Option("-q", "--quiet", action="store_true", default=False,
             help="don't print details of checking"),
         Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
         Option("--reindex", dest="reindex", default=False, action="store_true", help="force database re-index"),
