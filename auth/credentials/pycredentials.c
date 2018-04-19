@@ -130,7 +130,7 @@ static PyObject *py_creds_get_ntlm_response(PyObject *self, PyObject *args, PyOb
 	ret = Py_BuildValue("{sis" PYARG_BYTES_LEN "s" PYARG_BYTES_LEN
 			            "s" PYARG_BYTES_LEN "s" PYARG_BYTES_LEN "}",
 			    "flags", flags,
-			    "lm_reponse",
+			    "lm_response",
 			    (const char *)lm_response.data, lm_response.length,
 			    "nt_response",
 			    (const char *)nt_response.data, nt_response.length,
