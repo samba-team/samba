@@ -22,7 +22,7 @@
 #define _READ_AND_X_RESPONSE_HPP
 
 class ReadAndXResponse {
-  ReadAndXReponse(const uint8_t *data, size_t size);
+  ReadAndXResponse(const uint8_t *data, size_t size);
 
   uint8_t word_count;
   uint8_t and_x_command;

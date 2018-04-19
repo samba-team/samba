@@ -515,7 +515,7 @@ static bool torture_krb5_post_recv_tgs_req_krbtgt_canon_test(struct torture_krb5
 
 	torture_assert_str_equal(test_context->tctx,
 				 test_context->tgs_rep.ticket.sname.name_string.val[0], "krbtgt",
-				 "Mismatch in name between reponse and expected response, expected krbtgt");
+				 "Mismatch in name between response and expected response, expected krbtgt");
 	torture_assert_str_equal(test_context->tctx,
 				 test_context->tgs_rep.ticket.sname.name_string.val[1], test_context->test_data->real_realm,
 				 "Mismatch in realm part of krbtgt/ in expected response, expected krbtgt/REALM@REALM");
