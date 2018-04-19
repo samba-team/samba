@@ -134,7 +134,7 @@ common_join_options = [
            "BIND9_DLZ uses samba4 AD to store zone information, "
            "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
            default="SAMBA_INTERNAL"),
-    Option("--verbose", help="Be verbose", action="store_true")
+    Option("-v", "--verbose", help="Be verbose", action="store_true")
 ]
 
 common_ntvfs_options = [
@@ -752,7 +752,7 @@ class cmd_domain_demote(Command):
         Option("--remove-other-dead-server", help="Dead DC (name or NTDS GUID) "
                "to remove ALL references to (rather than this DC)", type=str),
         Option("--quiet", help="Be quiet", action="store_true"),
-        Option("--verbose", help="Be verbose", action="store_true"),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
         ]
 
     takes_optiongroups = {
@@ -1558,7 +1558,7 @@ class cmd_domain_classicupgrade(Command):
         Option("--targetdir", type="string", metavar="DIR",
                   help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
         Option("--quiet", help="Be quiet", action="store_true"),
-        Option("--verbose", help="Be verbose", action="store_true"),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
@@ -3970,7 +3970,7 @@ class cmd_domain_schema_upgrade(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--quiet", help="Be quiet", action="store_true"),
-        Option("--verbose", help="Be verbose", action="store_true"),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--schema", type="choice", metavar="SCHEMA",
                choices=["2012", "2012_R2"],
                help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
@@ -4220,7 +4220,7 @@ class cmd_domain_functional_prep(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--quiet", help="Be quiet", action="store_true"),
-        Option("--verbose", help="Be verbose", action="store_true"),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--function-level", type="choice", metavar="FUNCTION_LEVEL",
                choices=["2008_R2", "2012", "2012_R2"],
                help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
