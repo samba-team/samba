@@ -152,7 +152,7 @@ nodes_list ()
 	# format string must contain no variables.  Some shells will
 	# expand a tab if it is in an argument but others won't.
 	if [ -n "$_options" ] ; then
-		printf "%s\t%s\n" "$_ip" "$_options"
+		printf '%s\t%s\n' "$_ip" "$_options"
 	else
 		echo "$_ip"
 	fi

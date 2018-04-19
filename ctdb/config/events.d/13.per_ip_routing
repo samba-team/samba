@@ -158,7 +158,7 @@ ensure_table_id_for_ip ()
 	# If the new table id is legal then add it to the file and
 	# print it.
 	if [ "$_new" -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] ; then
-	    printf "%d\t%s\n" "$_new" "$_label" >>"$rt_tables"
+	    printf '%d\t%s\n' "$_new" "$_label" >>"$rt_tables"
 	    return 0
 	else
 	    return 1
@@ -211,7 +211,7 @@ get_config_for_ip ()
     else
 	while read _i _rest ; do
 	    if [ "$_ip" = "$_i" ] ; then
-		printf "%s\t%s\n" "$_ip" "$_rest"
+		printf '%s\t%s\n' "$_ip" "$_rest"
 	    fi
 	done <"$CTDB_PER_IP_ROUTING_CONF"
     fi

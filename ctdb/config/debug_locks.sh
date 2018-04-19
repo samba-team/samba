@@ -39,7 +39,7 @@ loadconfig
     while read pid rest ; do
 	pname=$(readlink "/proc/${pid}/exe")
 	echo "$pid $pname $rest"
-    done | sed -e "$sed_cmd" | grep "\.tdb" )
+    done | sed -e "$sed_cmd" | grep '\.tdb' )
 
     if [ -n "$out" ]; then
 	# Log information about locks
@@ -54,7 +54,7 @@ loadconfig
 	done
 	# Use word splitting to squash whitespace
 	# shellcheck disable=SC2086
-	pids=$(echo $all_pids | tr " " "\n" | sort -u)
+	pids=$(echo $all_pids | tr ' ' '\n' | sort -u)
 
 	# For each process waiting, log stack trace
 	for pid in $pids ; do

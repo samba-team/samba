@@ -25,9 +25,9 @@ fi
 get_all_interfaces ()
 {
     # Get all the interfaces listed in the public_addresses file
-    all_interfaces=$(sed -e "s/^[^\t ]*[\t ]*//" \
-			 -e "s/,/ /g" \
-			 -e "s/[\t ]*$//" "$ctdb_public_addresses")
+    all_interfaces=$(sed -e 's/^[^\t ]*[\t ]*//' \
+			 -e 's/,/ /g' \
+			 -e 's/[\t ]*$//' "$ctdb_public_addresses")
 
     # Get the interfaces for which CTDB has public IPs configured.
     # That is, for all but the 1st line, get the 1st field.
