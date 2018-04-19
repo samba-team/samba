@@ -143,17 +143,6 @@
 	    Defaults to <filename>/usr/local/var/lib/ctdb/volatile</filename>.
 	  </para>
 	  <para>
-	    Apart from a DIRECTORY, this can take a special value of
-	    the form
-	    <option>tmpfs</option><optional>:<parameter>OPTIONS</parameter></optional>.
-	    OPTIONS is a comma-separated list of any permissible
-	    options to the tmpfs filesystem.  The only pre-specified
-	    default is <option>mode=700</option>, which can
-	    overridden by specifying <option>mode</option> in
-	    OPTIONS.  It probably makes sense to specify a maximum
-	    <option>size</option>.
-	  </para>
-	  <para>
 	    Corresponds to <option>--dbdir</option>.
 	  </para>
 	</listitem>

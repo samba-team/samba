@@ -26,39 +26,6 @@ ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 
 ############################################################
 
-# If necessary, mount volatile database directory on tmpfs
-dbdir_tmpfs_start ()
-{
-    if [ -z "$CTDB_DBDIR_TMPFS_OPTIONS" ] ; then
-	return
-    fi
-
-    # Shortcut for readability
-    _opts="$CTDB_DBDIR_TMPFS_OPTIONS"
-
-    mkdir -p "$CTDB_DBDIR" || exit $?
-
-    # If already mounted then remount, otherwise mount
-    if findmnt -t tmpfs "$CTDB_DBDIR" >/dev/null ; then
-	mount -t tmpfs -o "remount,$_opts" none "$CTDB_DBDIR" || \
-	    exit $?
-    else
-	mount -t tmpfs -o "$_opts" none "$CTDB_DBDIR" || exit $?
-    fi
-}
-
-# If necessary, unmount volatile database tmpfs directory on exit
-dbdir_tmpfs_stop ()
-{
-    if [ -z "$CTDB_DBDIR_TMPFS_OPTIONS" ] ; then
-	return
-    fi
-
-    if [ -d "$CTDB_DBDIR" ] && findmnt -t tmpfs "$CTDB_DBDIR" >/dev/null ; then
-	umount "$CTDB_DBDIR"
-    fi
-}
-
 # Only the nested function references its arguments
 # shellcheck disable=SC2120
 build_ctdb_options ()
@@ -115,8 +82,6 @@ export_debug_variables ()
 
 start()
 {
-    dbdir_tmpfs_start
-
     # build_ctdb_options() takes no arguments
     # shellcheck disable=SC2119
     build_ctdb_options
@@ -170,8 +135,6 @@ stop()
 		drop_all_public_ips >/dev/null 2>&1
 		return 1
 	fi
-
-	dbdir_tmpfs_stop
 
 	return 0
 }
