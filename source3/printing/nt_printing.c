@@ -1205,7 +1205,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 				 "to rename [%s] to [%s]: %s\n",
 				 smb_fname_old->base_name, new_name,
 				 nt_errstr(status)));
-			ret = WERR_ACCESS_DENIED;
+			ret = WERR_APP_INIT_FAILURE;
 			goto out;
 		}
 	}
