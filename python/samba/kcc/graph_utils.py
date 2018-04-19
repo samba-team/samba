@@ -22,8 +22,6 @@ from __future__ import print_function
 import os
 import itertools
 
-from samba.kcc.debug import null_debug, PURPLE, MAGENTA, DARK_YELLOW, RED
-from samba.kcc.debug import DARK_GREEN, C_NORMAL, GREY
 from samba.graph import dot_graph
 
 
@@ -323,9 +321,9 @@ def verify_and_dot(basename, edges, vertices=None, label=None,
                               properties=properties)
         if errors:
             title = '%s %s' % (basename, label or '')
-            debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
+            debug("%s FAILED:" % title)
             for p, e, doc in errors:
-                debug(" %18s: %s%s%s" % (p, DARK_YELLOW, e, RED))
+                debug(" %18s: %s" % (p, e))
             if fatal:
                 raise GraphError("The '%s' graph lacks the following "
                                  "properties:\n%s" %
@@ -338,6 +336,6 @@ def list_verify_tests():
         if k.startswith('verify_graph_'):
             print(k.replace('verify_graph_', ''))
             if v.__doc__:
-                print('    %s%s%s' % (GREY, v.__doc__.rstrip(), C_NORMAL))
+                print('    %s' % (v.__doc__.rstrip()))
             else:
                 print()
