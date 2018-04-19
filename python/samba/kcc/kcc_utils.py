@@ -993,7 +993,7 @@ class NTDSConnection(object):
             self.schedule = ndr_unpack(drsblobs.schedule, msg["schedule"][0])
 
         if "whenCreated" in msg:
-            self.whenCreated = ldb.string_to_time(msg["whenCreated"][0])
+            self.whenCreated = ldb.string_to_time(msg["whenCreated"][0].decode('utf8'))
 
         if "fromServer" in msg:
             dsdn = dsdb_Dn(samdb, msg["fromServer"][0].decode('utf8'))
@@ -1919,10 +1919,10 @@ class Transport(object):
             self.options = int(msg["options"][0])
 
         if "transportAddressAttribute" in msg:
-            self.address_attr = str(msg["transportAddressAttribute"][0])
+            self.address_attr = msg["transportAddressAttribute"][0].decode('utf8')
 
         if "name" in msg:
-            self.name = str(msg["name"][0])
+            self.name = msg["name"][0].decode('utf8')
 
         if "bridgeheadServerListBL" in msg:
             for value in msg["bridgeheadServerListBL"]:
