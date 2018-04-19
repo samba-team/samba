@@ -18,6 +18,7 @@
 
 import optparse, samba
 from samba import getopt as options
+from samba import colour
 from ldb import LdbError
 import sys, traceback
 import textwrap
@@ -188,6 +189,29 @@ class Command(object):
         logger = logging.getLogger(name)
         logger.addHandler(logging.StreamHandler(self.errf))
         return logger
+
+    def apply_colour_choice(self, requested):
+        """Heuristics to work out whether the user wants colour output, from a
+        --color=yes|no|auto option. This alters the ANSI 16 bit colour
+        "constants" in the colour module to be either real colours or empty
+        strings.
+        """
+        requested = requested.lower()
+        if requested == 'no':
+            colour.switch_colour_off()
+
+        elif requested == 'yes':
+            colour.switch_colour_on()
+
+        elif requested == 'auto':
+            if (hasattr(self.outf, 'isatty') and self.outf.isatty()):
+                colour.switch_colour_on()
+            else:
+                colour.switch_colour_off()
+
+        else:
+            raise CommandError("Unknown --color option: %s "
+                               "please choose from yes, no, auto")
 
 
 class SuperCommand(Command):
