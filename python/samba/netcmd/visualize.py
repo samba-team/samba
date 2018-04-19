@@ -392,7 +392,7 @@ class cmd_ntdsconn(GraphCommand):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         local_kcc, dsas = self.get_kcc_and_dsas(H, lp, creds)
-
+        local_dsa_dn = local_kcc.my_dsa_dnstr.split(',', 1)[1]
         vertices = set()
         attested_edges = []
         for dsa_dn in dsas:
@@ -452,7 +452,7 @@ class cmd_ntdsconn(GraphCommand):
                 # If we are not talking to remote servers, we list all
                 # the connections.
                 graph_edges = edges.keys()
-                title = 'NTDS Connections known to %s' % dsa_dn
+                title = 'NTDS Connections known to %s' % local_dsa_dn
                 epilog = ''
 
             else:
@@ -556,7 +556,7 @@ class cmd_ntdsconn(GraphCommand):
         if talk_to_remote:
             title = 'NTDS Connections'
         else:
-            title = 'NTDS Connections known to %s' % dsa_dn
+            title = 'NTDS Connections known to %s' % local_dsa_dn
 
         s = dot_graph(sorted(vertices), dot_edges,
                       directed=True,
