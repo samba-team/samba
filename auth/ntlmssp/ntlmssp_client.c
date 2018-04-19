@@ -777,7 +777,11 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->unicode = gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "unicode", true);
 
-	ntlmssp_state->use_nt_response = gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "send_nt_reponse", true);
+	ntlmssp_state->use_nt_response = \
+		gensec_setting_bool(gensec_security->settings,
+				    "ntlmssp_client",
+				    "send_nt_response",
+				    true);
 
 	ntlmssp_state->allow_lm_response = lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx);
 
