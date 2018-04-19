@@ -43,14 +43,6 @@
 
 #define WB_REPLACE_CHAR		'_'
 
-struct sid_ctr {
-	struct dom_sid *sid;
-	bool finished;
-	const char *domain;
-	const char *name;
-	enum lsa_SidType type;
-};
-
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
