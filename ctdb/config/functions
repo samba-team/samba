@@ -11,7 +11,6 @@ export CTDB_BASE
 # CTDB_VARDIR is used elsewhere
 # shellcheck disable=SC2034
 CTDB_VARDIR="/usr/local/var/lib/ctdb"
-ctdb_rundir="/usr/local/var/run/ctdb"
 
 CTDB="${CTDB:-/usr/local/bin/ctdb}"
 
@@ -31,30 +30,6 @@ fi
 
 #######################################
 # pull in a system config file, if any
-
-rewrite_ctdb_options ()
-{
-    case "$CTDB_DBDIR" in
-	tmpfs|tmpfs:*)
-	    _opts_defaults="mode=700"
-	    # Get any extra options specified after colon
-	    if [ "$CTDB_DBDIR" = "tmpfs" ] ; then
-		_opts=""
-	    else
-		_opts="${CTDB_DBDIR#tmpfs:}"
-	    fi
-	    # It is OK to repeat mount options - last value wins.
-	    # CTDB_DBDIR_TMPFS_OPTIONS is used by ctdbd_wrapper
-	    # shellcheck disable=SC2034
-	    CTDB_DBDIR_TMPFS_OPTIONS="${_opts_defaults}${_opts:+,}${_opts}"
-
-	    CTDB_DBDIR="${ctdb_rundir}/CTDB_DBDIR"
-	    ;;
-	*)
-	    # shellcheck disable=SC2034
-	    CTDB_DBDIR_TMPFS_OPTIONS=""
-    esac
-}
 
 load_system_config ()
 {
@@ -77,7 +52,6 @@ loadconfig() {
 	if [ -r "$_config" ] ; then
 		. "$_config"
 	fi
-	rewrite_ctdb_options
 }
 
 load_script_options ()
