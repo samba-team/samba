@@ -112,7 +112,7 @@ class GraphCommand(Command):
         encoding = None
         if utf8:
             encoding = 'utf8'
-        if isinstance(s, str):
+        if not isinstance(s, text_type):
             s = s.decode('utf8')
         if fn is None or fn == '-':
             # we're just using stdout (a.k.a self.outf)
@@ -439,7 +439,7 @@ class cmd_ntdsconn(GraphCommand):
             for msg in res:
                 msgdn = str(msg.dn)
                 dest_dn = msgdn[msgdn.index(',') + 1:]
-                attested_edges.append((msg['fromServer'][0],
+                attested_edges.append((msg['fromServer'][0].decode('utf8'),
                                        dest_dn, ntds_dn))
 
         # now we overlay all the graphs and generate styles accordingly
