@@ -770,6 +770,12 @@ sub setup_simpleserver
 	full_audit:success = none
 	full_audit:failure = none
 
+[vfs_aio_pthread]
+	path = $prefix_abs/share
+	read only = no
+	vfs objects = aio_pthread
+	aio_pthread:aio open = yes
+
 [vfs_aio_fork]
 	path = $prefix_abs/share
         vfs objects = aio_fork
