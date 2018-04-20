@@ -550,7 +550,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 	s->chunk.req5 = NULL;
 	s->chunk.req8 = NULL;
 	s->chunk.req10 = NULL;
-	if (py_req) {
+	if (py_req != Py_None) {
 		switch (req_level) {
 		case 0:
 			break;
