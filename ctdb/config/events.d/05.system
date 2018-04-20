@@ -169,6 +169,9 @@ END {
 
 case "$1" in
 monitor)
+	# Load/cache database options from configuration file
+	ctdb_get_db_options
+
 	monitor_filesystem_usage
 	monitor_memory_usage
 	;;

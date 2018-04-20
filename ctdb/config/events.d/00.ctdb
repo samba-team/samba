@@ -133,6 +133,9 @@ init)
 	mkdir -p "$CTDB_SCRIPT_VARDIR" || \
 	    die "mkdir -p ${CTDB_SCRIPT_VARDIR} - failed - $?" $?
 
+	# Load/cache database options from configuration file
+	ctdb_get_db_options
+
 	if select_tdb_checker ; then
 	    check_persistent_databases || exit $?
 	    check_non_persistent_databases

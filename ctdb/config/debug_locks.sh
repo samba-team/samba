@@ -12,12 +12,8 @@
 
 . "${CTDB_BASE}/functions"
 
-# Default fallback location for database directories.
-# These can be overwritten from CTDB configuration
-CTDB_DBDIR="${CTDB_VARDIR}/volatile"
-CTDB_DBDIR_PERSISTENT="${CTDB_VARDIR}/persistent"
-
-load_script_options
+# Load/cache database options from configuration file
+ctdb_get_db_options
 
 (
     flock -n 9 || exit 1
