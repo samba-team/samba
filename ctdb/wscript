@@ -464,6 +464,10 @@ def build(bld):
                      deps='''ctdb-util samba-util talloc replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-cluster-conf',
+                        source='cluster/cluster_conf.c',
+                        deps='ctdb-util')
+
     bld.SAMBA_SUBSYSTEM('ctdb-event-conf',
                         source='event/event_conf.c',
                         deps='ctdb-util')
