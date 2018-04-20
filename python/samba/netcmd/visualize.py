@@ -409,7 +409,7 @@ class cmd_ntdsconn(GraphCommand):
                 res = local_kcc.samdb.search(dsa_dn,
                                              scope=SCOPE_BASE,
                                              attrs=["dNSHostName"])
-                dns_name = res[0]["dNSHostName"][0]
+                dns_name = res[0]["dNSHostName"][0].decode('utf8')
                 try:
                     samdb = self.get_db("ldap://%s" % dns_name, sambaopts,
                                         credopts)
