@@ -56,7 +56,7 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_lp_ctx))
 		return NULL;
 
-	ldb = pyldb_Ldb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 
 	lp_ctx = lpcfg_from_py_object(ldb, py_lp_ctx);
 	if (lp_ctx == NULL) {
@@ -84,7 +84,7 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ldb = pyldb_Ldb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 
 	ldb_set_opaque(ldb, "credentials", creds);
 
@@ -104,7 +104,7 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "si", &py_opaque_name, &value))
 		return NULL;
 
-	ldb = pyldb_Ldb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 
 	/* see if we have a cached copy */
 	old_val = (int *)ldb_get_opaque(ldb, py_opaque_name);
@@ -161,7 +161,7 @@ static PyObject *py_ldb_set_utf8_casefold(PyObject *self,
 {
 	struct ldb_context *ldb;
 
-	ldb = pyldb_Ldb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
@@ -195,7 +195,7 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 	if (!ret)
 		return NULL;
 
-	ldb = pyldb_Ldb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 
 	info = PyAuthSession_AsSession(py_session_info);
 
@@ -216,7 +216,7 @@ static PyObject *py_ldb_samba_schema_attribute_add(PyLdbObject *self,
 	if (!PyArg_ParseTuple(args, "sIs", &attribute, &flags, &syntax))
 		return NULL;
 
-	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
+	ldb_ctx = pyldb_Ldb_AsLdbContext((PyObject *)self);
 
 	s = ldb_samba_syntax_by_name(ldb_ctx, syntax);
 	ret = ldb_schema_attribute_add_with_syntax(ldb_ctx, attribute,
@@ -235,7 +235,7 @@ static PyObject *py_ldb_register_samba_handlers(PyObject *self,
 
 	/* XXX: Perhaps call this from PySambaLdb's init function ? */
 
-	ldb = pyldb_Ldb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 	ret = ldb_register_samba_handlers(ldb);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_error, ret, ldb);
