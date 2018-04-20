@@ -593,7 +593,7 @@ planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.timecmd", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.join", py3_compatible=True)
 
-planpythontestsuite("none", "samba.tests.samba_tool.visualize")
+planpythontestsuite("none", "samba.tests.samba_tool.visualize", py3_compatible=True)
 
 
 # test fsmo show
@@ -1037,7 +1037,7 @@ for env in [
                                 },
                            extra_path=[os.path.join(srcdir(), "samba/python"), ]
                            )
-    planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs")
+    planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs", py3_compatible=True)
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.kcc.kcc_utils")
 
