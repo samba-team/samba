@@ -444,6 +444,10 @@ static void pthreadpool_server_exit(struct pthreadpool *pool)
 static bool pthreadpool_get_job(struct pthreadpool *p,
 				struct pthreadpool_job *job)
 {
+	if (p->shutdown) {
+		return false;
+	}
+
 	if (p->num_jobs == 0) {
 		return false;
 	}
@@ -601,10 +605,9 @@ static void *pthreadpool_server(void *arg)
 			}
 		}
 
-		if ((pool->num_jobs == 0) && pool->shutdown) {
+		if (pool->shutdown) {
 			/*
-			 * No more work to do and we're asked to shut down, so
-			 * exit
+			 * we're asked to shut down, so exit
 			 */
 			pthreadpool_server_exit(pool);
 			return NULL;
