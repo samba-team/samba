@@ -847,7 +847,7 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 	}
 
 	# Create to users alice and bob!
-	my $user_account_array = ["alice", "bob"];
+	my $user_account_array = ["alice", "bob", "jane"];
 
 	foreach my $user_account (@{$user_account_array}) {
 		my $samba_tool_cmd = "";
@@ -861,6 +861,23 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 			return undef;
 		}
 	}
+
+	my $ldbmodify = "";
+	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
+
+	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
+	my $user_dn = "cn=jane,cn=users,$base_dn";
+
+	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
+	print LDIF "dn: $user_dn
+changetype: modify
+replace: userPrincipalName
+userPrincipalName: jane.doe\@$ctx->{realm}
+-
+";
+	close(LDIF);
 
 	return $ret;
 }
