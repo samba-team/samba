@@ -205,7 +205,7 @@ def HEIMDAL_GENERATOR(name, rule, source='', target='',
         target=target,
         shell=isinstance(rule, str),
         update_outputs=True,
-        before='cc',
+        before='c',
         ext_out='.c',
         vars=[rule],
         samba_type='GENERATOR',
@@ -912,8 +912,12 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
 if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
     # here is the asn1 compiler build rule
     HEIMDAL_BINARY('asn1_compile',
-    'lib/asn1/main.c lib/asn1/gen.c lib/asn1/gen_copy.c lib/asn1/gen_decode.c lib/asn1/gen_encode.c lib/asn1/gen_free.c lib/asn1/gen_glue.c lib/asn1/gen_length.c lib/asn1/gen_seq.c lib/asn1/gen_template.c lib/asn1/hash.c lib/asn1/symbol.c lib/asn1/asn1parse.c lib/asn1/lex.c',
-    use_hostcc=True,
+        'lib/asn1/gen.c lib/asn1/gen_copy.c '
+        'lib/asn1/gen_decode.c lib/asn1/gen_encode.c lib/asn1/gen_free.c '
+        'lib/asn1/gen_glue.c lib/asn1/gen_length.c lib/asn1/gen_seq.c '
+        'lib/asn1/gen_template.c lib/asn1/hash.c lib/asn1/symbol.c '
+        'lib/asn1/asn1parse.c lib/asn1/lex.c lib/asn1/main.c',
+        use_hostcc=True,
         use_global_deps=False,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1',
