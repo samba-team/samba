@@ -3870,6 +3870,104 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Test identifies a bug where the Samba server will not trigger a lease break
+ * for a handle caching lease held by a client when the underlying file is
+ * deleted.
+ * Test:
+ * 	Connect session2.
+ * 	open file in session1
+ * 		session1 should have RWH lease.
+ * 	open file in session2
+ * 		lease break sent to session1 to downgrade lease to RH
+ * 	close file in session 2
+ * 	unlink file in session 2
+ * 		lease break sent to session1 to downgrade lease to R
+ * 	Cleanup
+ */
+static bool test_lease_unlink(struct torture_context *tctx,
+			      struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	bool ret = true;
+	struct smbcli_options transport2_options;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smb2_transport *transport2;
+	struct smb2_handle h1 = {{ 0 }};
+	struct smb2_handle h2 = {{ 0 }};
+	const char *fname = "lease_unlink.dat";
+	uint32_t caps;
+	struct smb2_create io1;
+	struct smb2_create io2;
+	struct smb2_lease ls1;
+	struct smb2_lease ls2;
+
+	caps = smb2cli_conn_server_capabilities(
+			tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	/* Connect 2nd connection */
+	transport2_options = transport1->options;
+	transport2_options.client_guid = GUID_random();
+	if (!torture_smb2_connection_ext(tctx, 0, &transport2_options, &tree2)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		return false;
+	}
+	transport2 = tree2->session->transport;
+
+	/* Set lease handlers */
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	transport2->lease.handler = torture_lease_handler;
+	transport2->lease.private_data = tree2;
+
+
+	smb2_lease_create(&io1, &ls1, false, fname, LEASE1,
+				smb2_util_lease_state("RHW"));
+	smb2_lease_create(&io2, &ls2, false, fname, LEASE2,
+				smb2_util_lease_state("RHW"));
+
+	smb2_util_unlink(tree1, fname);
+
+	torture_comment(tctx, "Client opens fname with session 1\n");
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RHW", true, LEASE1, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	torture_comment(tctx, "Client opens fname with session 2\n");
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io2, "RH", true, LEASE2, 0);
+	CHECK_VAL(lease_break_info.count, 1);
+	CHECK_BREAK_INFO("RHW", "RH", LEASE1);
+
+	torture_comment(tctx,
+		"Client closes and then unlinks fname with session 2\n");
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	smb2_util_close(tree2, h2);
+	smb2_util_unlink(tree2, fname);
+	CHECK_VAL(lease_break_info.count, 1);
+	CHECK_BREAK_INFO("RH", "R", LEASE1);
+
+done:
+	smb2_util_close(tree1, h1);
+	smb2_util_close(tree2, h2);
+	smb2_util_unlink(tree1, fname);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -3909,6 +4007,7 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "v2_rename", test_lease_v2_rename);
 	torture_suite_add_1smb2_test(suite, "dynamic_share", test_lease_dynamic_share);
 	torture_suite_add_1smb2_test(suite, "timeout", test_lease_timeout);
+	torture_suite_add_1smb2_test(suite, "unlink", test_lease_unlink);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
