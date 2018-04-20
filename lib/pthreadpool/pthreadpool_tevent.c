@@ -301,6 +301,15 @@ struct tevent_req *pthreadpool_tevent_job_send(
 	state->fn = fn;
 	state->private_data = private_data;
 
+	if (pool == NULL) {
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
+	if (pool->pool == NULL) {
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
+
 	state->im = tevent_create_immediate(state);
 	if (tevent_req_nomem(state->im, req)) {
 		return tevent_req_post(req, ev);
