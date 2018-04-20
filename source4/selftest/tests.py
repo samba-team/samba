@@ -774,6 +774,9 @@ planoldpythontestsuite("ad_dc",
                        "samba.tests.net_join",
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
                        py3_compatible=True)
+planoldpythontestsuite("ad_dc",
+                       "samba.tests.segfault",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 # Need to test the password hashing in multiple environments to ensure that
 # all the possible options are covered
 #
