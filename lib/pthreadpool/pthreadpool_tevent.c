@@ -289,8 +289,7 @@ struct tevent_req *pthreadpool_tevent_job_send(
 	}
 
 	ret = pthreadpool_tevent_register_ev(pool, ev);
-	if (ret != 0) {
-		tevent_req_error(req, errno);
+	if (tevent_req_error(req, ret)) {
 		return tevent_req_post(req, ev);
 	}
 
