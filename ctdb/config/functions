@@ -244,6 +244,43 @@ ctdb_get_ip_address ()
     cat "$_ip_addr_file"
 }
 
+# Cached retrieval of database options for use by event scripts.
+#
+# If the variables are already set then they should not be overwritten
+# - this should only happen during event script testing.
+ctdb_get_db_options ()
+{
+	_db_opts_file="${CTDB_SCRIPT_VARDIR}/db_options.cache"
+
+	if [ ! -f "$_db_opts_file" ] ; then
+		{
+			ctdb_translate_option "database" \
+					      "volatile database directory" \
+					      "CTDB_DBDIR"
+			ctdb_translate_option "database" \
+					      "persistent database directory" \
+					      "CTDB_DBDIR_PERSISTENT"
+			ctdb_translate_option "database" \
+					      "state database directory" \
+					      "CTDB_DBDIR_STATE"
+		} >"$_db_opts_file"
+	fi
+
+	. "$_db_opts_file"
+}
+
+ctdb_translate_option ()
+{
+	_section="$1"
+	_opt="$2"
+	_variable="$3"
+
+	# ctdb-config already prints an error if something goes wrong
+	_t=$("${CTDB_HELPER_BINDIR}/ctdb-config" get "$_section" "$_opt") || \
+		exit $?
+	echo "${_variable}=\"${_t}\""
+}
+
 ######################################################
 # wrapper around /proc/ settings to allow them to be hooked
 # for testing
