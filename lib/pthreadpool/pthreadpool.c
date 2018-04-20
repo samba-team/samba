@@ -750,3 +750,49 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 
 	return res;
 }
+
+size_t pthreadpool_cancel_job(struct pthreadpool *pool, int job_id,
+			      void (*fn)(void *private_data), void *private_data)
+{
+	int res;
+	size_t i, j;
+	size_t num = 0;
+
+	res = pthread_mutex_lock(&pool->mutex);
+	if (res != 0) {
+		return res;
+	}
+
+	for (i = 0, j = 0; i < pool->num_jobs; i++) {
+		size_t idx = (pool->head + i) % pool->jobs_array_len;
+		size_t new_idx = (pool->head + j) % pool->jobs_array_len;
+		struct pthreadpool_job *job = &pool->jobs[idx];
+
+		if ((job->private_data == private_data) &&
+		    (job->id == job_id) &&
+		    (job->fn == fn))
+		{
+			/*
+			 * Just skip the entry.
+			 */
+			num++;
+			continue;
+		}
+
+		/*
+		 * If we already removed one or more jobs (so j will be smaller
+		 * then i), we need to fill possible gaps in the logical list.
+		 */
+		if (j < i) {
+			pool->jobs[new_idx] = *job;
+		}
+		j++;
+	}
+
+	pool->num_jobs -= num;
+
+	res = pthread_mutex_unlock(&pool->mutex);
+	assert(res == 0);
+
+	return num;
+}
