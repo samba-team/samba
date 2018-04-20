@@ -202,6 +202,20 @@ plantestsuite("samba3.wbinfo_name_lookup", env,
               [ os.path.join(srcdir(),
                             "nsswitch/tests/test_wbinfo_name_lookup.sh"),
                 '$DOMAIN', '$REALM', '$DC_USERNAME' ])
+
+env = "ad_member:local"
+plantestsuite("samba3.wbinfo_user_info", env,
+              [ os.path.join(srcdir(),
+                            "nsswitch/tests/test_wbinfo_user_info.sh"),
+                '$DOMAIN', '$REALM', 'alice', 'alice', 'jane', 'jane.doe' ])
+
+env = "fl2008r2dc:local"
+plantestsuite("samba3.wbinfo_user_info", env,
+              [ os.path.join(srcdir(),
+                            "nsswitch/tests/test_wbinfo_user_info.sh"),
+                '$TRUST_DOMAIN', '$TRUST_REALM', 'alice', 'alice', 'jane', 'jane.doe' ])
+
+env = "ad_member"
 t = "WBCLIENT-MULTI-PING"
 plantestsuite("samba3.smbtorture_s3.%s" % t, env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//foo/bar', '""', '""', smbtorture3, ""])
 plantestsuite("samba3.substitutions", env, [os.path.join(samba3srcdir, "script/tests/test_substitutions.sh"), "$SERVER", "alice", "Secret007", "$PREFIX"])
