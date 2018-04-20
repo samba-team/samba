@@ -10,6 +10,24 @@ load_script_options
 
 ctdb_setup_state_dir "service" "reclock"
 
+ctdb_get_reclock_option ()
+{
+	_reclock_opt_file="${CTDB_SCRIPT_VARDIR}/recovery_lock.cache"
+
+	if [ -f "$_reclock_opt_file" ] ; then
+		. "$_reclock_opt_file"
+		return
+	fi
+
+	ctdb_translate_option "cluster" \
+			      "recovery lock" \
+			      "CTDB_RECOVERY_LOCK" >"$_reclock_opt_file"
+
+	. "$_reclock_opt_file"
+}
+
+ctdb_get_reclock_option
+
 # If CTDB_RECOVERY_LOCK specifies a helper then exit because this
 # script can't do anything useful.
 case "$CTDB_RECOVERY_LOCK" in
