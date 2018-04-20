@@ -12,7 +12,7 @@ def set_options(opt):
     return
 
 def configure(conf):
-    conf.SET_TARGET_TYPE('json-audit', 'EMPTY')
+    conf.SET_TARGET_TYPE('jansson', 'EMPTY')
 
     if Options.options.with_json_audit != False:
         if conf.CHECK_CFG(package='jansson', args='--cflags --libs',
