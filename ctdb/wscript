@@ -468,6 +468,10 @@ def build(bld):
                         source='cluster/cluster_conf.c',
                         deps='ctdb-util')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-database-conf',
+                        source='database/database_conf.c',
+                        deps='ctdb-util')
+
     bld.SAMBA_SUBSYSTEM('ctdb-event-conf',
                         source='event/event_conf.c',
                         deps='ctdb-util')
