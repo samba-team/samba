@@ -8,8 +8,9 @@ exit 1;
 fi
 
 DOMAIN=$1
-DC_USERNAME=$2
-shift 2
+REALM=$2
+DC_USERNAME=$3
+shift 3
 
 failed=0
 sambabindir="$BINDIR"
@@ -20,6 +21,10 @@ wbinfo="$VALGRIND $sambabindir/wbinfo"
 # Correct query is expected to work
 testit "name-to-sid.single-separator" \
        $wbinfo -n $DOMAIN/$DC_USERNAME || \
+	failed=$(expr $failed + 1)
+
+testit "name-to-sid.upn" \
+       $wbinfo -n $DC_USERNAME@$REALM || \
 	failed=$(expr $failed + 1)
 
 # Two separator characters should fail
