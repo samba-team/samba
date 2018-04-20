@@ -34,6 +34,9 @@ from samba.tests import delete_force
 from samba.dcerpc import security, samr
 from samba.ndr import ndr_unpack
 from samba.tests.pso import PasswordSettings
+from samba.net import Net
+from samba import NTSTATUSError, ntstatus
+import ctypes
 
 parser = optparse.OptionParser("password_lockout.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -1279,6 +1282,120 @@ userPassword: """ + userpass + """
                                               kerberos_state=DONT_USE_KERBEROS)
         self._testing_add_user(lockout4ntlm_creds,
                                lockOutObservationWindow=self.lockout_observation_window)
+
+    def _test_samr_password_change(self, creds, other_creds, lockout_threshold=3):
+        """Tests user lockout by using bad password in SAMR password_change"""
+
+        # create a connection for SAMR using another user's credentials
+        lp = self.get_loadparm()
+        net = Net(other_creds, lp, server=self.host)
+
+        # work out the initial account values for this user
+        username = creds.get_username()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=("greater", 0),
+                                  badPwdCountOnly=True)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+        logonCount = int(res[0]["logonCount"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+
+        # prove we can change the user password (using the correct password)
+        new_password = "thatsAcomplPASS2"
+        net.change_password(newpassword=new_password.encode('utf-8'),
+                            username=username,
+                            oldpassword=creds.get_password())
+        creds.set_password(new_password)
+
+        # try entering 'x' many bad passwords in a row to lock the user out
+        new_password = "thatsAcomplPASS3"
+        for i in range(lockout_threshold):
+            badPwdCount = i + 1
+            try:
+                print("Trying bad password, attempt #%u" % badPwdCount)
+                net.change_password(newpassword=new_password.encode('utf-8'),
+                                    username=creds.get_username(),
+                                    oldpassword="bad-password")
+                self.fail("Invalid SAMR change_password accepted")
+            except NTSTATUSError as e:
+                enum = ctypes.c_uint32(e[0]).value
+                self.assertEquals(enum, ntstatus.NT_STATUS_WRONG_PASSWORD)
+
+            # check the status of the account is updated after each bad attempt
+            account_flags = 0
+            lockoutTime = None
+            if badPwdCount >= lockout_threshold:
+                account_flags = dsdb.UF_LOCKOUT
+                lockoutTime = ("greater", badPasswordTime)
+
+            res = self._check_account(userdn,
+                                      badPwdCount=badPwdCount,
+                                      badPasswordTime=("greater", badPasswordTime),
+                                      logonCount=logonCount,
+                                      lastLogon=lastLogon,
+                                      lastLogonTimestamp=lastLogonTimestamp,
+                                      lockoutTime=lockoutTime,
+                                      userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
+                                      msDSUserAccountControlComputed=account_flags)
+            badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        # the user is now locked out
+        lockoutTime = int(res[0]["lockoutTime"][0])
+
+        # check the user remains locked out regardless of whether they use a
+        # good or a bad password now
+        for password in (creds.get_password(), "bad-password"):
+            try:
+                print("Trying password %s" % password)
+                net.change_password(newpassword=new_password.encode('utf-8'),
+                                    username=creds.get_username(),
+                                    oldpassword=password)
+                self.fail("Invalid SAMR change_password accepted")
+            except NTSTATUSError as e:
+                enum = ctypes.c_uint32(e[0]).value
+                self.assertEquals(enum, ntstatus.NT_STATUS_ACCOUNT_LOCKED_OUT)
+
+            res = self._check_account(userdn,
+                                      badPwdCount=lockout_threshold,
+                                      badPasswordTime=badPasswordTime,
+                                      logonCount=logonCount,
+                                      lastLogon=lastLogon,
+                                      lastLogonTimestamp=lastLogonTimestamp,
+                                      lockoutTime=lockoutTime,
+                                      userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
+                                      msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
+
+        # reset the user account lockout
+        self._reset_samr(res)
+
+        # check bad password counts are reset
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
+                                  lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+
+        # check we can change the user password successfully now
+        net.change_password(newpassword=new_password.encode('utf-8'),
+                            username=username,
+                            oldpassword=creds.get_password())
+        creds.set_password(new_password)
+
+    def test_samr_change_password(self):
+        self._test_samr_password_change(self.lockout1ntlm_creds,
+                                        other_creds=self.lockout2ntlm_creds)
+
+    # same as above, but use a PSO to enforce the lockout
+    def test_pso_samr_change_password(self):
+        self.use_pso_lockout_settings(self.lockout1ntlm_creds)
+        self._test_samr_password_change(self.lockout1ntlm_creds,
+                                        other_creds=self.lockout2ntlm_creds)
 
 host_url = "ldap://%s" % host
 
