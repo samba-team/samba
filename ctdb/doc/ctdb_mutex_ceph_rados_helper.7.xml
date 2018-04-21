@@ -23,11 +23,13 @@
       for CTDB.  When configured, split brain avoidance during CTDB recovery
       will be handled using locks against an object located in a Ceph RADOS
       pool.
-      To enable this functionality, include the following line in your CTDB
-      config file:
+      To enable this functionality, include the following line in the
+      <literal>[cluster]</literal> section of
+      <citerefentry><refentrytitle>ctdb.conf</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>:
     </para>
     <screen format="linespecific">
-CTDB_RECOVERY_LOCK="!ctdb_mutex_ceph_rados_helper [Cluster] [User] [Pool] [Object]"
+recovery lock = !ctdb_mutex_ceph_rados_helper [Cluster] [User] [Pool] [Object]
 
 Cluster: Ceph cluster name (e.g. ceph)
 User: Ceph cluster user name (e.g. client.admin)

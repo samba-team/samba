@@ -99,10 +99,13 @@
 
     <para>
       By default, the recovery lock is implemented using a file
-      (specified by <parameter>CTDB_RECOVERY_LOCK</parameter>)
-      residing in shared storage (usually) on a cluster filesystem.
-      To support a recovery lock the cluster filesystem must support
-      lock coherence.  See
+      (specified by <parameter>recovery lock</parameter> in the
+      <literal>[cluster]</literal> section of
+      <citerefentry><refentrytitle>ctdb.conf</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>) residing in shared
+      storage (usually) on a cluster filesystem.  To support a
+      recovery lock the cluster filesystem must support lock
+      coherence.  See
       <citerefentry><refentrytitle>ping_pong</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry> for more details.
     </para>
@@ -110,12 +113,11 @@
     <para>
       The recovery lock can also be implemented using an arbitrary
       cluster mutex call-out by using an exclamation point ('!') as
-      the first character of
-      <parameter>CTDB_RECOVERY_LOCK</parameter>.  For example, a value
-      of <command>!/usr/local/bin/myhelper recovery</command> would
-      run the given helper with the specified arguments.  See the
-      source code relating to cluster mutexes for clues about writing
-      call-outs.
+      the first character of <parameter>recovery lock</parameter>.
+      For example, a value of <command>!/usr/local/bin/myhelper
+      recovery</command> would run the given helper with the specified
+      arguments.  See the source code relating to cluster mutexes for
+      clues about writing call-outs.
     </para>
 
     <para>
@@ -989,14 +991,14 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
   </refsect1>
 
   <refsect1>
-    <title>DEBUG LEVELS</title>
+    <title>LOG LEVELS</title>
 
     <para>
-      Valid values for DEBUGLEVEL are:
+      Valid log levels, in increasing order of verbosity, are:
     </para>
 
     <simplelist>
-      <member>ERR</member>
+      <member>ERROR</member>
       <member>WARNING</member>
       <member>NOTICE</member>
       <member>INFO</member>
@@ -1073,6 +1075,9 @@ CTDB_CAPABILITY_RECMASTER=no
 
       <citerefentry><refentrytitle>ping_pong</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb.conf</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>,
 
       <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>,

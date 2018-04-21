@@ -1057,10 +1057,11 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
 	    <para>
 	      Default is to warn for each filesystem containing a
-	      database directory (<envar>CTDB_DBDIR</envar>,
-	      <envar>CTDB_DBDIR_PERSISTENT</envar>,
-	      <envar>CTDB_DBDIR_STATE</envar>) with a threshold of
-	      90%.
+	      database directory
+	      (<literal>volatile&nbsp;database&nbsp;directory</literal>,
+	      <literal>persistent&nbsp;database&nbsp;directory</literal>,
+	      <literal>state&nbsp;database&nbsp;directory</literal>)
+	      with a threshold of 90%.
 	    </para>
 	  </listitem>
 	</varlistentry>
