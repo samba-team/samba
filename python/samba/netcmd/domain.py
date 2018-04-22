@@ -99,6 +99,8 @@ from samba.provision.common import (
     FILL_DRS
 )
 
+from samba.netcmd.pso import cmd_domain_passwordsettings_pso
+
 string_version_to_constant = {
     "2008_R2" : DS_DOMAIN_FUNCTION_2008_R2,
     "2012": DS_DOMAIN_FUNCTION_2012,
@@ -1530,6 +1532,7 @@ class cmd_domain_passwordsettings(SuperCommand):
     """Manage password policy settings."""
 
     subcommands = {}
+    subcommands["pso"] = cmd_domain_passwordsettings_pso()
     subcommands["show"] = cmd_domain_passwordsettings_show()
     subcommands["set"] = cmd_domain_passwordsettings_set()
 

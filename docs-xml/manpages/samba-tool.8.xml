@@ -334,6 +334,51 @@
 </refsect3>
 
 <refsect3>
+	<title>domain passwordsettings pso</title>
+	<para>Manage fine-grained Password Settings Objects (PSOs).</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso apply <replaceable>pso-name</replaceable> <replaceable>user-or-group-name</replaceable> [options]</title>
+	<para>Applies a PSO's password policy to a user or group.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso create <replaceable>pso-name</replaceable> <replaceable>precedence</replaceable> [options]</title>
+	<para>Creates a new Password Settings Object (PSO).</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso delete <replaceable>pso-name</replaceable> [options]</title>
+	<para>Deletes a Password Settings Object (PSO).</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso list [options]</title>
+	<para>Lists all Password Settings Objects (PSOs).</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso set <replaceable>pso-name</replaceable> [options]</title>
+	<para>Modifies a Password Settings Object (PSO).</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso show <replaceable>user-name</replaceable> [options]</title>
+	<para>Displays a Password Settings Object (PSO).</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso show-user <replaceable>pso-name</replaceable> [options]</title>
+	<para>Displays the Password Settings that apply to a user.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings pso unapply <replaceable>pso-name</replaceable> <replaceable>user-or-group-name</replaceable> [options]</title>
+	<para>Updates a PSO to no longer apply to a user or group.</para>
+</refsect3>
+
+<refsect3>
 	<title>domain provision</title>
 	<para>Promote an existing domain member or NT4 PDC to an AD DC.</para>
 </refsect3>
