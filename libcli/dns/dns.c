@@ -97,7 +97,6 @@ static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 
 	if (!tevent_req_set_endtime(req, ev,
 				timeval_current_ofs(DNS_REQUEST_TIMEOUT, 0))) {
-		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 

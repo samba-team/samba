@@ -1666,7 +1666,6 @@ static struct tevent_req *name_queries_send(
 	if (!tevent_req_set_endtime(
 		    subreq, state->ev,
 		    timeval_current_ofs(0, state->timeout_msec * 1000))) {
-		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, name_queries_done, req);
@@ -1749,7 +1748,6 @@ static void name_queries_next(struct tevent_req *subreq)
 	if (!tevent_req_set_endtime(
 		    subreq, state->ev,
 		    timeval_current_ofs(0, state->timeout_msec * 1000))) {
-		tevent_req_oom(req);
 		return;
 	}
 	state->subreqs[state->num_sent] = subreq;
@@ -1986,7 +1984,6 @@ static struct tevent_req *query_wins_list_send(
 	}
 	if (!tevent_req_set_endtime(subreq, state->ev,
 				    timeval_current_ofs(2, 0))) {
-		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, query_wins_list_done, req);
@@ -2033,7 +2030,6 @@ static void query_wins_list_done(struct tevent_req *subreq)
 	}
 	if (!tevent_req_set_endtime(subreq, state->ev,
 				    timeval_current_ofs(2, 0))) {
-		tevent_req_oom(req);
 		return;
 	}
 	tevent_req_set_callback(subreq, query_wins_list_done, req);

@@ -163,7 +163,6 @@ struct tevent_req *smb2_session_setup_spnego_send(
 
 	ok = tevent_req_set_endtime(req, ev, endtime);
 	if (!ok) {
-		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 

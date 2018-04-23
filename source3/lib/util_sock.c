@@ -577,7 +577,6 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 		if (!tevent_req_set_endtime(
 			    subreq, state->ev,
 			    timeval_current_ofs_usec(state->wait_usec))) {
-			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
 		state->connect_subreq = subreq;

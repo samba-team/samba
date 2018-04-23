@@ -663,7 +663,6 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!tevent_req_set_endtime(req, state->caller.ev, end)) {
-		tevent_req_oom(req);
 		goto post;
 	}
 

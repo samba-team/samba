@@ -1026,7 +1026,8 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 #endif
 
 /**
- * @brief Set a timeout for an async request.
+ * @brief Set a timeout for an async request. On failure, "req" is already
+ *        set to state TEVENT_REQ_NO_MEMORY.
  *
  * @param[in]  req      The request to set the timeout for.
  *

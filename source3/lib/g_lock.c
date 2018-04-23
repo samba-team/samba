@@ -387,7 +387,6 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	if (!tevent_req_set_endtime(
 		    fn_state.watch_req, state->ev,
 		    timeval_current_ofs(5 + sys_random() % 5, 0))) {
-		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(fn_state.watch_req, g_lock_lock_retry, req);
@@ -441,7 +440,6 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	if (!tevent_req_set_endtime(
 		    fn_state.watch_req, state->ev,
 		    timeval_current_ofs(5 + sys_random() % 5, 0))) {
-		tevent_req_oom(req);
 		return;
 	}
 	tevent_req_set_callback(fn_state.watch_req, g_lock_lock_retry, req);
