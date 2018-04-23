@@ -252,7 +252,7 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
                 os.mkdir(l_name)
             else:
                 data = conn.loadfile(r_name)
-                open(l_name, 'w').write(data)
+                open(l_name, 'wb').write(data)
 
 
 def copy_directory_local_to_remote(conn, localdir, remotedir):
@@ -274,7 +274,7 @@ def copy_directory_local_to_remote(conn, localdir, remotedir):
                 r_dirs.append(r_name)
                 conn.mkdir(r_name)
             else:
-                data = open(l_name, 'r').read()
+                data = open(l_name, 'rb').read()
                 conn.savefile(r_name, data)
 
 
@@ -835,7 +835,7 @@ class cmd_fetch(Command):
             raise CommandError("GPO '%s' does not exist" % gpo)
 
         # verify UNC path
-        unc = msg['gPCFileSysPath'][0]
+        unc = msg['gPCFileSysPath'][0].decode('utf8')
         try:
             [dom_name, service, sharepath] = parse_unc(unc)
         except ValueError:
@@ -1056,7 +1056,7 @@ class cmd_del(Command):
         # Check if valid GPO
         try:
             msg = get_gpo_info(self.samdb, gpo=gpo)[0]
-            unc_path = msg['gPCFileSysPath'][0]
+            unc_path = msg['gPCFileSysPath'][0].decode('utf8')
         except Exception:
             raise CommandError("GPO '%s' does not exist" % gpo)
 
@@ -1133,7 +1133,7 @@ class cmd_aclcheck(Command):
 
         for m in msg:
             # verify UNC path
-            unc = m['gPCFileSysPath'][0]
+            unc = m['gPCFileSysPath'][0].decode('utf8')
             try:
                 [dom_name, service, sharepath] = parse_unc(unc)
             except ValueError:
