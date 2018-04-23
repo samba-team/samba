@@ -74,7 +74,7 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
             base=self.samdb.get_config_basedn(),
             expression="ncName=%s" % self.samdb.get_default_basedn(),
             attrs=["nETBIOSName"])
-        self.netbios_domain = res[0]["nETBIOSName"][0]
+        self.netbios_domain = res[0]["nETBIOSName"][0].decode('utf8')
         self.runsubcmd("user",
                        "create",
                        USER_NAME,

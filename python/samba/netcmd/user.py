@@ -55,6 +55,7 @@ from samba.netcmd import (
     Option,
     )
 
+from samba.compat import string_types
 
 try:
     import io
@@ -975,7 +976,7 @@ class GetPasswordCommand(Command):
             unicodePwd = obj["unicodePwd"][0]
             if add_unicodePwd:
                 del obj["unicodePwd"]
-        account_name = obj["sAMAccountName"][0]
+        account_name = obj["sAMAccountName"][0].decode('utf8')
         if add_sAMAcountName:
             del obj["sAMAccountName"]
         if "userPrincipalName" in obj:
@@ -1157,6 +1158,8 @@ class GetPasswordCommand(Command):
                                  primary_wdigest)
             try:
                 digest = binascii.hexlify(bytearray(digests.hashes[i-1].hash))
+                if not isinstance(digest, string_types):
+                    digest = digest.decode('utf8')
                 return "%s:%s:%s" % (user, realm, digest)
             except IndexError:
                 return None
