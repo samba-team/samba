@@ -383,6 +383,7 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
 
         self.outf.write("User '%s' created successfully\n" % username)
 
+from samba.compat import string_types
 
 class cmd_user_add(cmd_user_create):
     __doc__ = cmd_user_create.__doc__
@@ -977,7 +978,7 @@ class GetPasswordCommand(Command):
             unicodePwd = obj["unicodePwd"][0]
             if add_unicodePwd:
                 del obj["unicodePwd"]
-        account_name = obj["sAMAccountName"][0]
+        account_name = obj["sAMAccountName"][0].decode('utf8')
         if add_sAMAcountName:
             del obj["sAMAccountName"]
         if "userPrincipalName" in obj:
@@ -1159,6 +1160,8 @@ class GetPasswordCommand(Command):
                                  primary_wdigest)
             try:
                 digest = binascii.hexlify(bytearray(digests.hashes[i-1].hash))
+                if not isinstance(digest, string_types):
+                    digest = digest.decode('utf8')
                 return "%s:%s:%s" % (user, realm, digest)
             except IndexError:
                 return None
