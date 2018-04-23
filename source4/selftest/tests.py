@@ -591,7 +591,7 @@ planpythontestsuite("none", "samba.tests.samba_tool.visualize", py3_compatible=T
 
 # test fsmo show
 for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
-    planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo")
+    planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo", py3_compatible=True)
 
 # test user.edit
 for env in ["ad_dc:local", "ad_dc_ntvfs:local", "fl2000dc:local", "fl2003dc:local", "fl2008r2dc:local"]:
