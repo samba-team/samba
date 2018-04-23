@@ -549,6 +549,8 @@ static const char *default_classname_table[] = {
 	[DBGC_DSDB_PWD_AUDIT_JSON] = "dsdb_password_json_audit",
 	[DBGC_DSDB_TXN_AUDIT]  =	"dsdb_transaction_audit",
 	[DBGC_DSDB_TXN_AUDIT_JSON] = "dsdb_transaction_json_audit",
+	[DBGC_DSDB_GROUP_AUDIT] =	"dsdb_group_audit",
+	[DBGC_DSDB_GROUP_AUDIT_JSON] = "dsdb_group_json_audit",
 };
 
 /*
