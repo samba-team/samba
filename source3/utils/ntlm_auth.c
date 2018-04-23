@@ -593,7 +593,11 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 
-	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	result = winbindd_priv_request_response(
+		NULL,
+		WINBINDD_PAM_AUTH_CRAP,
+		&request,
+		&response);
 	SAFE_FREE(request.extra_data.data);
 
 	/* Display response */
