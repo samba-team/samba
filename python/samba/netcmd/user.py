@@ -56,6 +56,7 @@ from samba.netcmd import (
 )
 from samba.compat import text_type
 from samba.compat import get_bytes
+from samba.compat import get_string
 
 try:
     import io
@@ -1169,7 +1170,7 @@ class GetPasswordCommand(Command):
                                  primary_wdigest)
             try:
                 digest = binascii.hexlify(bytearray(digests.hashes[i - 1].hash))
-                return "%s:%s:%s" % (user, realm, text_type(digest, 'utf8'))
+                return "%s:%s:%s" % (user, realm, get_string(digest))
             except IndexError:
                 return None
 
