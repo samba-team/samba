@@ -1,0 +1,14 @@
+# If using SYSV init, install this as /etc/sysconfig/ctdb,
+# /etc/default/ctdb or similar
+
+# Allow 1M open files
+ulimit -n 1048576
+
+# Allow core files to be created
+ulimit -c unlimited
+
+# Useful if default detection doesn't work
+# CTDB_INIT_STYLE=debian
+
+# If ctdbd takes a long time to start
+# CTDB_STARTUP_TIMEOUT=20

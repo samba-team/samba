@@ -6,6 +6,7 @@ After=network-online.target time-sync.target
 [Service]
 Type=forking
 LimitCORE=infinity
+LimitNOFILE=1048576
 PIDFile=/run/ctdb/ctdbd.pid
 ExecStart=/usr/sbin/ctdbd_wrapper start
 ExecStop=/usr/sbin/ctdbd_wrapper stop
