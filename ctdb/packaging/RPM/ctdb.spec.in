@@ -224,6 +224,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/ltdbtool.1.gz
 %{_mandir}/man1/ping_pong.1.gz
 %{_mandir}/man5/ctdb-script.options.5.gz
+%{_mandir}/man5/ctdb.sysconfig.5.gz
 %{_mandir}/man5/ctdbd.conf.5.gz
 %{_mandir}/man7/ctdb.7.gz
 %{_mandir}/man7/ctdb-statistics.7.gz

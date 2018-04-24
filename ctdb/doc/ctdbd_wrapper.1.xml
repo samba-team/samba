@@ -58,6 +58,9 @@
       <citerefentry><refentrytitle>ctdbd</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
 
+      <citerefentry><refentrytitle>ctdb.sysconfig</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>,
+
       <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>,
 
