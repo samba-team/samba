@@ -361,12 +361,14 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 
 	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
 
 	ev = s4_event_context_init(mem_ctx);
 	if (ev == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
