@@ -399,9 +399,11 @@ def build(bld):
                                              logging.c rb_tree.c tunable.c
                                              pidfile.c run_proc.c
                                              hash_count.c run_event.c
-                                             sock_client.c version.c'''),
+                                             sock_client.c version.c
+                                             cmdline.c
+                                          '''),
                         deps='''samba-util sys_rw tevent-util
-                                replace talloc tevent tdb''')
+                                replace talloc tevent tdb popt''')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol',
                         source=bld.SUBDIR('protocol',
@@ -748,6 +750,7 @@ def build(bld):
         'sock_io_test',
         'hash_count_test',
         'run_event_test',
+        'cmdline_test'
     ]
 
     for target in ctdb_unit_tests:
@@ -755,7 +758,7 @@ def build(bld):
 
         bld.SAMBA_BINARY(target,
                          source=src,
-                         deps='''talloc tevent tdb tevent-util
+                         deps='''talloc tevent tdb tevent-util popt
                                  LIBASYNC_REQ samba-util sys_rw''',
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
