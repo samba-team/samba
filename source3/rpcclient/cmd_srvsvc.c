@@ -883,6 +883,8 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
+	d_printf("Received %d entries.\n", total_entries);
+
  done:
 	return result;
 }
