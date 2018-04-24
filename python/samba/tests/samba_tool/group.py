@@ -114,7 +114,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.assertTrue(len(grouplist) > 0, "no groups found in samdb")
 
         for groupobj in grouplist:
-            name = groupobj.get("samaccountname", idx=0)
+            name = groupobj.get("samaccountname", idx=0).decode('utf8')
             found = self.assertMatch(out, name,
                                      "group '%s' not found" % name)
 
@@ -135,7 +135,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.assertTrue(len(grouplist) > 0, "no groups found in samdb")
 
         for groupobj in grouplist:
-            name = groupobj.get("samAccountName", idx=0)
+            name = groupobj.get("samAccountName", idx=0).decode('utf8')
             found = self.assertMatch(out, name, "group '%s' not found" % name)
 
     def test_move(self):
