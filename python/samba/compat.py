@@ -30,6 +30,7 @@ if PY3:
     integer_types = int,
     string_types = str
     text_type = str
+    binary_type = bytes
 
     # alias
     import io
@@ -43,6 +44,7 @@ else:
     integer_types = (int, long)
     string_types = basestring
     text_type = unicode
+    binary_type = str
 
     # alias
     import StringIO
