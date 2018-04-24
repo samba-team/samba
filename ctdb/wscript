@@ -504,6 +504,11 @@ def build(bld):
                                           '''),
                         deps='ctdb-protocol-basic')
 
+    bld.SAMBA_LIBRARY('ctdb-event-client',
+                      source='event/event_client.c',
+                      deps='ctdb-event-protocol ctdb-util tevent talloc',
+                      private_library=True)
+
     bld.SAMBA_BINARY('ctdb-eventd',
                      source=bld.SUBDIR('event',
                                        '''event_cmd.c
