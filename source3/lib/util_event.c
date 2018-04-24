@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "util_event.h"
 
 struct idle_event {
 	struct tevent_timer *te;

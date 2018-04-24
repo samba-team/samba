@@ -43,6 +43,7 @@
 #include "lib/util/sys_rw_data.h"
 #include "system/threads.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
+#include "util_event.h"
 
 /* Internal message queue for deferred opens. */
 struct pending_message_list {

@@ -19,6 +19,10 @@
 */
 
 /* The following definitions come from lib/util_event.c  */
+
+#include "replace.h"
+#include <tevent.h>
+
 struct idle_event;
 
 struct idle_event *event_add_idle(struct tevent_context *event_ctx,

@@ -260,7 +260,6 @@ typedef char fstring[FSTRING_LEN];
 
 #include <talloc.h>
 #include <tevent.h>
-#include "util_event.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"

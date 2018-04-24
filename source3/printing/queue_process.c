@@ -34,6 +34,7 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "auth.h"
 #include "nt_printing.h"
+#include "util_event.h"
 
 extern pid_t start_spoolssd(struct tevent_context *ev_ctx,
 			    struct messaging_context *msg_ctx);
