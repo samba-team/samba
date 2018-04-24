@@ -139,6 +139,10 @@ static int gather_sessioninfo(const char *key, struct sessionid *session,
 		return 0;
 	}
 
+	if (!process_exists(session->pid)) {
+		return 0;
+	}
+
 	sesslist->sessions = talloc_realloc(
 		sesslist->mem_ctx, sesslist->sessions, struct sessionid,
 		sesslist->count+1);
