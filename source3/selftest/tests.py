@@ -631,6 +631,12 @@ plantestsuite("samba3.blackbox.smbclient.encryption_off", "simpleserver",
                "$USERNAME", "$PASSWORD", "$SERVER",
                smbclient3])
 
+plantestsuite("samba3.blackbox.rpcclient_netsessenum", "ad_member",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_rpcclient_netsessenum.sh"),
+               "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD", "$SERVER",
+               os.path.join(bindir(), "rpcclient"), smbtorture3, "tmp"])
+
 # The ktest environment uses:
 # server min protocol = SMB3_00
 # client max protocol = SMB3
