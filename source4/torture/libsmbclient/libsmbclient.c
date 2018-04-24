@@ -223,6 +223,100 @@ static bool torture_libsmbclient_opendir(struct torture_context *tctx)
 	return ret;
 }
 
+static bool torture_libsmbclient_readdirplus(struct torture_context *tctx)
+{
+	SMBCCTX *ctx;
+	int ret = -1;
+	int dhandle = -1;
+	int fhandle = -1;
+	bool found = false;
+	const char *filename = NULL;
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			"option --option=torture:smburl="
+			"smb://user:password@server/share missing\n");
+	}
+
+	torture_assert(tctx, torture_libsmbclient_init_context(tctx, &ctx), "");
+	smbc_set_context(ctx);
+
+	filename = talloc_asprintf(tctx,
+				"%s/test_readdirplus.txt",
+				smburl);
+	if (filename == NULL) {
+		torture_fail(tctx,
+			"talloc fail\n");
+	}
+	/* Ensure the file doesn't exist. */
+	smbc_unlink(filename);
+
+	/* Create it. */
+	fhandle = smbc_creat(filename, 0666);
+	if (fhandle < 0) {
+		torture_fail(tctx,
+			talloc_asprintf(tctx,
+				"failed to create file '%s': %s",
+				filename,
+				strerror(errno)));
+	}
+	ret = smbc_close(fhandle);
+	torture_assert_int_equal(tctx,
+		ret,
+		0,
+		talloc_asprintf(tctx,
+			"failed to close handle for '%s'",
+			filename));
+
+	dhandle = smbc_opendir(smburl);
+	if (dhandle < 0) {
+		int saved_errno = errno;
+		smbc_unlink(filename);
+		torture_fail(tctx,
+			talloc_asprintf(tctx,
+				"failed to obtain "
+				"directory handle for '%s' : %s",
+				smburl,
+				strerror(saved_errno)));
+	}
+
+	/* Readdirplus to ensure we see the new file. */
+	for (;;) {
+		const struct libsmb_file_info *exstat =
+			smbc_readdirplus(dhandle);
+		if (exstat == NULL) {
+			break;
+		}
+		if (strcmp(exstat->name, "test_readdirplus.txt") == 0) {
+			found = true;
+			break;
+		}
+	}
+
+	/* Remove it again. */
+	smbc_unlink(filename);
+	ret = smbc_closedir(dhandle);
+	torture_assert_int_equal(tctx,
+		ret,
+		0,
+		talloc_asprintf(tctx,
+			"failed to close directory handle for '%s'",
+			smburl));
+
+	smbc_free_context(ctx, 1);
+
+	if (!found) {
+		torture_fail(tctx,
+			talloc_asprintf(tctx,
+				"failed to find file '%s'",
+				filename));
+	}
+
+	return true;
+}
+
+
 /* note the strdup for string options on smbc_set calls. I think libsmbclient is
  * really doing something wrong here: in smbc_free_context libsmbclient just
  * calls free() on the string options so it assumes the callers have malloced
@@ -298,6 +392,8 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "setConfiguration", torture_libsmbclient_setConfiguration);
 	torture_suite_add_simple_test(suite, "options", torture_libsmbclient_options);
 	torture_suite_add_simple_test(suite, "opendir", torture_libsmbclient_opendir);
+	torture_suite_add_simple_test(suite, "readdirplus",
+		torture_libsmbclient_readdirplus);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 

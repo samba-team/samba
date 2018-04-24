@@ -544,8 +544,12 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:wksname=samba3rpctest')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD --option=torture:wksname=samba3rpctest')
     elif t == "libsmbclient":
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%%$PASSWORD --option=torture:replace_smbconf=%s' % os.path.join(srcdir(), "testdata/samba3/smb_new.conf"))
-        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%%$PASSWORD --option=torture:replace_smbconf=%s' % os.path.join(srcdir(), "testdata/samba3/smb_new.conf"))
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%%$PASSWORD '
+                                    '--option=torture:smburl=smb://$USERNAME:$PASSWORD@$SERVER/tmp '
+                                    '--option=torture:replace_smbconf=%s' % os.path.join(srcdir(), "testdata/samba3/smb_new.conf"))
+        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%%$PASSWORD '
+                                    '--option=torture:smburl=smb://$USERNAME:$PASSWORD@$SERVER/tmp '
+                                    '--option=torture:replace_smbconf=%s' % os.path.join(srcdir(), "testdata/samba3/smb_new.conf"))
     else:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
