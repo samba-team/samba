@@ -97,13 +97,28 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socke
 	if (PyTuple_Check(obj)) {
 		if (PyTuple_Size(obj) == 2) {
 			name->name = PyStr_AsString(PyTuple_GetItem(obj, 0));
+			if (name->name == NULL) {
+				goto err;
+			}
 			name->type = PyInt_AsLong(PyTuple_GetItem(obj, 1));
+			if (name->type == -1 && PyErr_Occurred()) {
+				goto err;
+			}
 			name->scope = NULL;
 			return true;
 		} else if (PyTuple_Size(obj) == 3) {
 			name->name = PyStr_AsString(PyTuple_GetItem(obj, 0));
+			if (name->name == NULL) {
+				goto err;
+			}
 			name->scope = PyStr_AsString(PyTuple_GetItem(obj, 1));
+			if (name->scope == NULL) {
+				goto err;
+			}
 			name->type = PyInt_AsLong(PyTuple_GetItem(obj, 2));
+			if (name->type == -1 && PyErr_Occurred()) {
+				goto err;
+			}
 			return true;
 		} else {
 			PyErr_SetString(PyExc_TypeError, "Invalid tuple size");
@@ -114,11 +129,14 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socke
 	if (PyStr_Check(obj) || PyUnicode_Check(obj)) {
 		/* FIXME: Parse string to be able to interpret things like RHONWYN<02> ? */
 		name->name = PyStr_AsString(obj);
+		if (name->name == NULL) {
+			goto err;
+		}
 		name->scope = NULL;
 		name->type = 0;
 		return true;
 	}
-
+err:
 	PyErr_SetString(PyExc_TypeError, "Invalid type for object");
 	return false;
 }

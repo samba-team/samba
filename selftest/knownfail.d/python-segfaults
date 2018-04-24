@@ -5,4 +5,3 @@ samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_hive_open_ldb
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_net_replicate_chunk_1
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_net_replicate_init__1
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_net_replicate_init__3
-samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_netbios_query_name
