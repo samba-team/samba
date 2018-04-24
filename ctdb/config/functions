@@ -44,16 +44,6 @@ load_system_config ()
 	fi
 }
 
-loadconfig() {
-
-	load_system_config "ctdb"
-
-	_config="${CTDB_BASE}/ctdbd.conf"
-	if [ -r "$_config" ] ; then
-		. "$_config"
-	fi
-}
-
 # load_script_options [ component script ]
 #   script is an event script name relative to a component
 #   component is currently ignored
@@ -66,8 +56,6 @@ load_script_options ()
 	else
 		die "usage: load_script_options [ component script ]"
 	fi
-
-	loadconfig
 
 	_options="${CTDB_BASE}/script.options"
 

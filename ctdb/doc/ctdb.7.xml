@@ -1079,9 +1079,6 @@ CTDB_CAPABILITY_RECMASTER=no
       <citerefentry><refentrytitle>ctdb.conf</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>,
 
-      <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
-      <manvolnum>5</manvolnum></citerefentry>,
-
       <citerefentry><refentrytitle>ctdb-script.options</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>,
 

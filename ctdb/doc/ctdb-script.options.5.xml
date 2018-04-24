@@ -62,13 +62,6 @@
     </variablelist>
 
     <para>
-      For short-term backward compatibility the CTDB configuration
-      file (see
-      <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
-      <manvolnum>5</manvolnum></citerefentry>) is also loaded.
-    </para>
-
-    <para>
       These files should include simple shell-style variable
       assignments and shell-style comments.
     </para>

@@ -51,7 +51,6 @@ manpages_misc = [
     'ctdb.conf.5',
     'ctdb-script.options.5',
     'ctdb.sysconfig.5',
-    'ctdbd.conf.5',
     'ctdb.7',
     'ctdb-statistics.7',
     'ctdb-tunables.7',

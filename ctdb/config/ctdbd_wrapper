@@ -20,103 +20,14 @@ fi
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_system_config "ctdb"
 
 ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 
 ############################################################
 
-# Only the nested function references its arguments
-# shellcheck disable=SC2120
-build_ctdb_options ()
-{
-	maybe_set ()
-	{
-		_section="$1"
-		_key="$2"
-		_val="$3"
-		_check="$4"
-
-		# If the given variable isn't set then do nothing
-		[ -n "$_val" ] || return
-		# If a value is required for the variable and it doesn't
-		# match, then do nothing
-		if [ -n "$_check" -a "$_check" != "$_val" ] ; then
-			return
-		fi
-
-		# Configuration file handling needs true/false, not yes/no
-		case "$_val" in
-		yes) _val="true"  ;;
-		no)  _val="false" ;;
-		esac
-
-		if grep -q "^\\[${_section}\\]\\$" "$_conf_file" ; then
-			# Section already exists...
-			# Must escape leading TAB or sed eats it
-			sed -i -e "/\\[${_section}\\]/a\
-\\	${_key} = ${_val}
-" "${_conf_file}"
-		else
-			# Section does not exist and needs to be created...
-			# Note literal TAB for indentation in here document
-			cat >>"${_conf_file}" <<EOF
-
-[${_section}]
-	${_key} = ${_val}
-EOF
-		fi
-	}
-
-	# Only write a new style configuration file if it doesn't already
-	# exist
-	_conf_file="${CTDB_BASE}/ctdb.conf"
-	if [ -f "$_conf_file" ] ; then
-		return
-	fi
-
-	touch "$_conf_file"
-
-	# Create configuration file from old style options
-	maybe_set "cluster" "recovery lock"      "$CTDB_RECOVERY_LOCK"
-	maybe_set "logging" "location"           "$CTDB_LOGGING"
-	maybe_set "cluster" "node address"       "$CTDB_NODE_ADDRESS"
-	maybe_set "database" "volatile database directory" \
-		  "$CTDB_DBDIR"
-	maybe_set "database" "persistent database directory" \
-		  "$CTDB_DBDIR_PERSISTENT"
-	maybe_set "database" "state database directory" \
-		  "$CTDB_DBDIR_STATE"
-	maybe_set "cluster" "transport"          "$CTDB_TRANSPORT"
-	maybe_set "logging" "log level"          "$CTDB_DEBUGLEVEL"
-	maybe_set "legacy" "start as disabled"   "$CTDB_START_AS_DISABLED" "yes"
-	maybe_set "legacy" "start as stopped"   "$CTDB_START_AS_STOPPED" "yes"
-	maybe_set "legacy" "recmaster capability" \
-		  "$CTDB_CAPABILITY_RECMASTER" "no"
-	maybe_set "legacy" "lmaster capability" \
-		  "$CTDB_CAPABILITY_LMASTER"   "no"
-	maybe_set "legacy" "no realtime"         "$CTDB_NOSETSCHED" "yes"
-	maybe_set "legacy" "script log level"    "$CTDB_SCRIPT_LOG_LEVEL"
-	maybe_set "database" "volatile uses tmpfs" \
-		  "$CTDB_DBDIR_USES_TMPFS" "yes"
-}
-
-export_debug_variables ()
-{
-    [ -n "$CTDB_DEBUG_HUNG_SCRIPT" ] && export CTDB_DEBUG_HUNG_SCRIPT
-    [ -n "$CTDB_DEBUG_LOCKS" ] && export CTDB_DEBUG_LOCKS
-}
-
-############################################################
-
 start()
 {
-    # build_ctdb_options() takes no arguments
-    # shellcheck disable=SC2119
-    build_ctdb_options
-
-    export_debug_variables
-
     eval "$ctdbd" || return 1
 
     # Wait until ctdbd has started and is ready to respond to clients.

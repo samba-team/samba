@@ -781,9 +781,6 @@ MonitorInterval=20
       <citerefentry><refentrytitle>ctdb.conf</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>,
 
-      <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
-      <manvolnum>5</manvolnum></citerefentry>,
-
       <citerefentry><refentrytitle>ctdb</refentrytitle>
       <manvolnum>7</manvolnum></citerefentry>,
 
