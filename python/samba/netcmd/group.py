@@ -356,7 +356,7 @@ class cmd_group_list(Command):
                     self.outf.write("\n")
         else:
             for msg in res:
-                self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
+                self.outf.write("%s\n" % msg.get("samaccountname", idx=0).decode('utf8'))
 
 class cmd_group_list_members(Command):
     """List all members of an AD group.
@@ -416,7 +416,7 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
                 member_name = msg.get("samAccountName", idx=0)
                 if member_name is None:
                     member_name = msg.get("cn", idx=0)
-                self.outf.write("%s\n" % member_name)
+                self.outf.write("%s\n" % member_name.decode('utf8'))
 
         except Exception as e:
             raise CommandError('Failed to list members of "%s" group ' % groupname, e)
