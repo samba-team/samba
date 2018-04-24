@@ -56,6 +56,7 @@ from samba.netcmd import (
     )
 
 from samba.compat import string_types
+from samba.compat import binary_type
 
 try:
     import io
@@ -714,7 +715,9 @@ class cmd_user_password(Command):
                 self.outf.write("Sorry, passwords do not match.\n")
 
         try:
-            net.change_password(password.encode('utf-8'))
+            if isinstance(password, binary_type):
+                password = password.decode('utf8')
+            net.change_password(password)
         except Exception as msg:
             # FIXME: catch more specific exception
             raise CommandError("Failed to change password : %s" % msg)
