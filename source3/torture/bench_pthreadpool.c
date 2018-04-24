@@ -58,7 +58,11 @@ bool run_bench_pthreadpool(int dummy)
 		}
 	}
 
-	pthreadpool_pipe_destroy(pool);
+	if (ret != 1) {
+		return false;
+	}
 
-	return (ret == 1);
+	ret = pthreadpool_pipe_destroy(pool);
+
+	return (ret == 0);
 }
