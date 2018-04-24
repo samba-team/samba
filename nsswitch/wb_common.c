@@ -420,13 +420,13 @@ static int winbind_open_pipe_sock(struct winbindd_context *ctx,
 			ctx->winbindd_fd = fd;
 			ctx->is_privileged = 1;
 		}
+
+		SAFE_FREE(response.extra_data.data);
 	}
 
 	if ((need_priv != 0) && (ctx->is_privileged == 0)) {
 		return -1;
 	}
-
-	SAFE_FREE(response.extra_data.data);
 
 	return ctx->winbindd_fd;
 #else
