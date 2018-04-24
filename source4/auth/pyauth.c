@@ -190,6 +190,10 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 	}
 
 	ldb_ctx = pyldb_Ldb_AsLdbContext(py_ldb);
+	if (ldb_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	if (py_dn == Py_None) {
 		user_dn = NULL;
