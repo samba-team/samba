@@ -249,18 +249,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_MAX_OPEN_FILES=<parameter>NUM</parameter></term>
-	<listitem>
-	  <para>
-	    NUM is the maximum number of open files.
-	  </para>
-	  <para>
-	    There is no default.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_NOSETSCHED=yes|no</term>
 	<listitem>
 	  <para>
@@ -357,18 +345,6 @@
 	  <para>
 	    Default is no.  Corresponds to
 	    <option>--start-as-stopped</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_SUPPRESS_COREFILE=yes|no</term>
-	<listitem>
-	  <para>
-	    Whether CTDB core files should be suppressed.
-	  </para>
-	  <para>
-	    Default is no.
 	  </para>
 	</listitem>
       </varlistentry>
