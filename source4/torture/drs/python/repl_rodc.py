@@ -623,7 +623,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         packed_attrs = []
         unpacked_attrs = []
         for attribute in revealed_users:
-            dsdb_dn = dsdb_Dn(self.ldb_dc1, attribute)
+            dsdb_dn = dsdb_Dn(self.ldb_dc1, attribute.decode('utf8'))
             metadata = ndr_unpack(drsblobs.replPropertyMetaData1, dsdb_dn.get_bytes())
             if user_dn in attribute:
                 unpacked_attrs.append(metadata)

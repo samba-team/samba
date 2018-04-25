@@ -739,7 +739,7 @@ class DirectoryServiceAgent(object):
                 for value in res[0][k]:
                     # Turn dn into a dsdb_Dn so we can use
                     # its methods to parse a binary DN
-                    dsdn = dsdb_Dn(samdb, value)
+                    dsdn = dsdb_Dn(samdb, value.decode('utf8'))
                     flags = dsdn.get_binary_integer()
                     dnstr = str(dsdn.dn)
 
@@ -986,7 +986,7 @@ class NTDSConnection(object):
                            "for (%s)" % (self.dnstr))
 
         if "transportType" in msg:
-            dsdn = dsdb_Dn(samdb, msg["transportType"][0])
+            dsdn = dsdb_Dn(samdb, msg["transportType"][0].decode('utf8'))
             self.load_connection_transport(samdb, str(dsdn.dn))
 
         if "schedule" in msg:
@@ -996,7 +996,7 @@ class NTDSConnection(object):
             self.whenCreated = ldb.string_to_time(msg["whenCreated"][0])
 
         if "fromServer" in msg:
-            dsdn = dsdb_Dn(samdb, msg["fromServer"][0])
+            dsdn = dsdb_Dn(samdb, msg["fromServer"][0].decode('utf8'))
             self.from_dnstr = str(dsdn.dn)
             assert self.from_dnstr is not None
 
@@ -1363,7 +1363,7 @@ class Partition(NamingContext):
                 continue
 
             for value in msg[k]:
-                dsdn = dsdb_Dn(samdb, value)
+                dsdn = dsdb_Dn(samdb, value.decode('utf8'))
                 dnstr = str(dsdn.dn)
 
                 if k == "nCName":
@@ -1926,7 +1926,7 @@ class Transport(object):
 
         if "bridgeheadServerListBL" in msg:
             for value in msg["bridgeheadServerListBL"]:
-                dsdn = dsdb_Dn(samdb, value)
+                dsdn = dsdb_Dn(samdb, value.decode('utf8'))
                 dnstr = str(dsdn.dn)
                 if dnstr not in self.bridgehead_list:
                     self.bridgehead_list.append(dnstr)
@@ -2188,7 +2188,7 @@ class SiteLink(object):
 
         if "siteList" in msg:
             for value in msg["siteList"]:
-                dsdn = dsdb_Dn(samdb, value)
+                dsdn = dsdb_Dn(samdb, value.decode('utf8'))
                 guid = misc.GUID(dsdn.dn.get_extended_component('GUID'))
                 if guid not in self.site_list:
                     self.site_list.append(guid)
