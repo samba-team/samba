@@ -233,7 +233,7 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
                         for value in msg[k]:
                             # Some of these have binary DNs so
                             # use dsdb_Dn to split out relevent parts
-                            dsdn = dsdb_Dn(samdb, value)
+                            dsdn = dsdb_Dn(samdb, value.decode('utf8'))
                             dnstr = str(dsdn.dn)
                             if dnstr not in nclist:
                                 nclist.append(dnstr)
