@@ -128,7 +128,7 @@ bool srprs_hex(const char** ptr, size_t len, unsigned* u)
 	const char *str = *ptr;
 	const char *pos = *ptr;
 	int ret;
-	int i;
+	size_t i;
 	char buf[8+1] = {};
 
 	assert((len >= 1) && (len <= 8));
