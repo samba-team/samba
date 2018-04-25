@@ -72,7 +72,29 @@ size_t pthreadpool_max_threads(struct pthreadpool *pool);
 size_t pthreadpool_queued_jobs(struct pthreadpool *pool);
 
 /**
+ * @brief Stop a pthreadpool
+ *
+ * Stop a pthreadpool. If jobs are submitted, but not yet active in
+ * a thread, they won't get executed. If a job has already been
+ * submitted to a thread, the job function will continue running, and
+ * the signal function might still be called.
+ *
+ * This allows a multi step shutdown using pthreadpool_stop(),
+ * pthreadpool_cancel_job() and pthreadpool_destroy().
+ *
+ * @param[in]	pool		The pool to stop
+ * @return			success: 0, failure: errno
+ *
+ * @see pthreadpool_cancel_job()
+ * @see pthreadpool_destroy()
+ */
+int pthreadpool_stop(struct pthreadpool *pool);
+
+/**
  * @brief Destroy a pthreadpool
+ *
+ * This basically implies pthreadpool_stop() if the pool
+ * isn't already stopped.
  *
  * Destroy a pthreadpool. If jobs are submitted, but not yet active in
  * a thread, they won't get executed. If a job has already been
@@ -84,6 +106,8 @@ size_t pthreadpool_queued_jobs(struct pthreadpool *pool);
  *
  * @param[in]	pool		The pool to destroy
  * @return			success: 0, failure: errno
+ *
+ * @see pthreadpool_stop()
  */
 int pthreadpool_destroy(struct pthreadpool *pool);
 
@@ -125,6 +149,8 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
  * @return			The number of canceled jobs
  *
  * @see pthreadpool_add_job()
+ * @see pthreadpool_stop()
+ * @see pthreadpool_destroy()
  */
 size_t pthreadpool_cancel_job(struct pthreadpool *pool, int job_id,
 			      void (*fn)(void *private_data), void *private_data);

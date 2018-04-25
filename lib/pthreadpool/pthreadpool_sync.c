@@ -22,6 +22,8 @@
 #include "pthreadpool.h"
 
 struct pthreadpool {
+	bool stopped;
+
 	/*
 	 * Indicate job completion
 	 */
@@ -45,6 +47,7 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 	if (pool == NULL) {
 		return ENOMEM;
 	}
+	pool->stopped = false;
 	pool->signal_fn = signal_fn;
 	pool->signal_fn_private_data = signal_fn_private_data;
 
@@ -65,6 +68,10 @@ size_t pthreadpool_queued_jobs(struct pthreadpool *pool)
 int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 			void (*fn)(void *private_data), void *private_data)
 {
+	if (pool->stopped) {
+		return EINVAL;
+	}
+
 	fn(private_data);
 
 	return pool->signal_fn(job_id, fn, private_data,
@@ -74,6 +81,12 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 size_t pthreadpool_cancel_job(struct pthreadpool *pool, int job_id,
 			      void (*fn)(void *private_data), void *private_data)
 {
+	return 0;
+}
+
+int pthreadpool_stop(struct pthreadpool *pool)
+{
+	pool->stopped = true;
 	return 0;
 }
 
