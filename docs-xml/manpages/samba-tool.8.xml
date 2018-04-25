@@ -460,6 +460,26 @@
 </refsect3>
 
 <refsect2>
+	<title>forest</title>
+	<para>Manage Forest configuration.</para>
+</refsect2>
+
+<refsect3>
+	<title>forest directory_service</title>
+	<para>Manage directory_service behaviour for the forest.</para>
+</refsect3>
+
+<refsect3>
+	<title>forest directory_service dsheuristics <replaceable>VALUE</replaceable></title>
+	<para>Modify dsheuristics directory_service configuration for the forest.</para>
+</refsect3>
+
+<refsect3>
+	<title>forest directory_service show</title>
+	<para>Show current directory_service configuration for the forest.</para>
+</refsect3>
+
+<refsect2>
 	<title>fsmo</title>
 	<para>Manage Flexible Single Master Operations (FSMO).</para>
 </refsect2>
