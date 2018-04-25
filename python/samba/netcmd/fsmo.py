@@ -47,7 +47,7 @@ def get_fsmo_roleowner(samdb, roledn, role):
         raise
 
     if 'fSMORoleOwner' in res[0]:
-        master_owner = (ldb.Dn(samdb, res[0]["fSMORoleOwner"][0]))
+        master_owner = (ldb.Dn(samdb, res[0]["fSMORoleOwner"][0].decode('utf8')))
     else:
         master_owner = None
 
@@ -72,9 +72,9 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
     if 'fSMORoleOwner' in res[0]:
         try:
             master_guid = str(misc.GUID(ldb.Dn(samdb,
-                              res[0]['fSMORoleOwner'][0])
+                              res[0]['fSMORoleOwner'][0].decode('utf8'))
                               .get_extended_component('GUID')))
-            master_owner = str(ldb.Dn(samdb, res[0]['fSMORoleOwner'][0]))
+            master_owner = str(ldb.Dn(samdb, res[0]['fSMORoleOwner'][0].decode('utf8')))
         except LdbError as e3:
             (num, msg) = e3.args
             raise CommandError("No GUID found in naming master DN %s : %s \n" %

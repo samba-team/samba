@@ -270,7 +270,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   scope=ldb.SCOPE_BASE,
                                   attrs=['msDS-RevealOnDemandGroup'])
 
-        group = res[0]['msDS-RevealOnDemandGroup'][0]
+        group = res[0]['msDS-RevealOnDemandGroup'][0].decode('utf8')
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.rwdc_db, group)
@@ -314,7 +314,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   scope=ldb.SCOPE_BASE,
                                   attrs=['msDS-RevealOnDemandGroup'])
 
-        group = res[0]['msDS-RevealOnDemandGroup'][0]
+        group = res[0]['msDS-RevealOnDemandGroup'][0].decode('utf8')
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.rwdc_db, group)
@@ -1121,7 +1121,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                                   scope=ldb.SCOPE_BASE,
                                   attrs=['msDS-RevealOnDemandGroup'])
 
-        group = res[0]['msDS-RevealOnDemandGroup'][0]
+        group = res[0]['msDS-RevealOnDemandGroup'][0].decode('utf8')
 
         user_dn, username, password = self._new_user()
         creds1 = make_creds(username, password)

@@ -220,10 +220,10 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     names.configdn = current[0]["configurationNamingContext"][0]
     names.schemadn = current[0]["schemaNamingContext"][0]
     if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
-                                       current[0]["defaultNamingContext"][0]))):
+                                       current[0]["defaultNamingContext"][0].decode('utf8')))):
         raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
                                  "is not the same ..." % (paths.samdb,
-                                    str(current[0]["defaultNamingContext"][0]),
+                                    str(current[0]["defaultNamingContext"][0].decode('utf8')),
                                     paths.smbconf, basedn)))
 
     names.domaindn=current[0]["defaultNamingContext"][0]
@@ -1920,7 +1920,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
             msg = ldb.Message(ldb.Dn(samdb,
                                      samdb.searchone("distinguishedName",
                                                      expression="samAccountName=%s$" % names.netbiosname,
-                                                     scope=ldb.SCOPE_SUBTREE)))
+                                                     scope=ldb.SCOPE_SUBTREE).decode('utf8')))
             msg["msDS-SupportedEncryptionTypes"] = ldb.MessageElement(
                 elements=kerberos_enctypes, flags=ldb.FLAG_MOD_REPLACE,
                 name="msDS-SupportedEncryptionTypes")

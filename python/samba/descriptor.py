@@ -415,7 +415,7 @@ def get_wellknown_sds(samdb):
     for nc in current[0]["namingContexts"]:
 
         dnsforestdn = ldb.Dn(samdb, "DC=ForestDnsZones,%s" % (str(samdb.get_root_basedn())))
-        if ldb.Dn(samdb, nc) == dnsforestdn:
+        if ldb.Dn(samdb, nc.decode('utf8')) == dnsforestdn:
             c = (ldb.Dn(samdb, "%s" % str(dnsforestdn)), get_dns_partition_descriptor)
             subcontainers.append(c)
             c = (ldb.Dn(samdb, "CN=Infrastructure,%s" % str(dnsforestdn)),
@@ -430,7 +430,7 @@ def get_wellknown_sds(samdb):
             continue
 
         dnsdomaindn = ldb.Dn(samdb, "DC=DomainDnsZones,%s" % (str(samdb.domain_dn())))
-        if ldb.Dn(samdb, nc) == dnsdomaindn:
+        if ldb.Dn(samdb, nc.decode('utf8')) == dnsdomaindn:
             c = (ldb.Dn(samdb, "%s" % str(dnsdomaindn)), get_dns_partition_descriptor)
             subcontainers.append(c)
             c = (ldb.Dn(samdb, "CN=Infrastructure,%s" % str(dnsdomaindn)),

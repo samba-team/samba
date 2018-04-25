@@ -73,11 +73,11 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                        "server_dn": self.ldb_dc2.get_serverName()}
 
         msgs = self.ldb_dc1.search(scope=ldb.SCOPE_BASE, base=fsmo_info_1["server_dn"], attrs=["serverReference"])
-        fsmo_info_1["server_acct_dn"] = ldb.Dn(self.ldb_dc1, msgs[0]["serverReference"][0])
+        fsmo_info_1["server_acct_dn"] = ldb.Dn(self.ldb_dc1, msgs[0]["serverReference"][0].decode('utf8'))
         fsmo_info_1["rid_set_dn"] = ldb.Dn(self.ldb_dc1, "CN=RID Set") + fsmo_info_1["server_acct_dn"]
 
         msgs = self.ldb_dc2.search(scope=ldb.SCOPE_BASE, base=fsmo_info_2["server_dn"], attrs=["serverReference"])
-        fsmo_info_2["server_acct_dn"] = ldb.Dn(self.ldb_dc2, msgs[0]["serverReference"][0])
+        fsmo_info_2["server_acct_dn"] = ldb.Dn(self.ldb_dc2, msgs[0]["serverReference"][0].decode('utf8'))
         fsmo_info_2["rid_set_dn"] = ldb.Dn(self.ldb_dc2, "CN=RID Set") + fsmo_info_2["server_acct_dn"]
 
         # determine the owner dc
@@ -282,7 +282,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             res = new_ldb.search(base=ldb.Dn(new_ldb, new_ldb.get_serverName()),
                                  scope=ldb.SCOPE_BASE, attrs=["serverReference"])
             # 2. Get server reference
-            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0])
+            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0].decode('utf8'))
 
             # Assert that no RID Set has been set
             res = new_ldb.search(base=server_ref_dn,
@@ -356,7 +356,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             res = new_ldb.search(base=ldb.Dn(new_ldb, new_ldb.get_serverName()),
                                  scope=ldb.SCOPE_BASE, attrs=["serverReference"])
             # 2. Get server reference
-            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0])
+            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0].decode('utf8'))
 
             # Assert that no RID Set has been set
             res = new_ldb.search(base=server_ref_dn,
@@ -407,7 +407,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             res = new_ldb.search(base=ldb.Dn(new_ldb, new_ldb.get_serverName()),
                                  scope=ldb.SCOPE_BASE, attrs=["serverReference"])
             # 2. Get server reference
-            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0])
+            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0].decode('utf8'))
 
             # Assert that no RID Set has been set
             res = new_ldb.search(base=server_ref_dn,
@@ -457,7 +457,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             res = new_ldb.search(base=ldb.Dn(new_ldb, new_ldb.get_serverName()),
                                  scope=ldb.SCOPE_BASE, attrs=["serverReference"])
             # 2. Get server reference
-            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0])
+            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0].decode('utf8'))
 
             # Assert that no RID Set has been set
             res = new_ldb.search(base=server_ref_dn,
@@ -500,7 +500,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             res = new_ldb.search(base=ldb.Dn(new_ldb, new_ldb.get_serverName()),
                                  scope=ldb.SCOPE_BASE, attrs=["serverReference"])
             # 2. Get server reference
-            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0])
+            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0].decode('utf8'))
 
             # 3. Assert we get the RID Set
             res = new_ldb.search(base=server_ref_dn,
@@ -532,14 +532,14 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             res = new_ldb.search(base=ldb.Dn(new_ldb, new_ldb.get_serverName()),
                                  scope=ldb.SCOPE_BASE, attrs=["serverReference"])
             # 2. Get server reference
-            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0])
+            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0].decode('utf8'))
 
             # 3. Assert we get the RID Set
             res = new_ldb.search(base=server_ref_dn,
                                  scope=ldb.SCOPE_BASE, attrs=['rIDSetReferences'])
 
             self.assertTrue("rIDSetReferences" in res[0])
-            rid_set_dn = ldb.Dn(new_ldb, res[0]["rIDSetReferences"][0])
+            rid_set_dn = ldb.Dn(new_ldb, res[0]["rIDSetReferences"][0].decode('utf8'))
 
             # 4. Add a new user (triggers RID set work)
             new_ldb.newuser("ridalloctestuser", "P@ssword!")
@@ -610,15 +610,14 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             res = new_ldb.search(base=ldb.Dn(new_ldb, new_ldb.get_serverName()),
                                  scope=ldb.SCOPE_BASE, attrs=["serverReference"])
             # 2. Get server reference
-            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0])
+            server_ref_dn = ldb.Dn(new_ldb, res[0]['serverReference'][0].decode('utf8'))
 
             # 3. Assert we get the RID Set
             res = new_ldb.search(base=server_ref_dn,
                                  scope=ldb.SCOPE_BASE, attrs=['rIDSetReferences'])
 
             self.assertTrue("rIDSetReferences" in res[0])
-            rid_set_dn = ldb.Dn(new_ldb, res[0]["rIDSetReferences"][0])
-
+            rid_set_dn = ldb.Dn(new_ldb, res[0]["rIDSetReferences"][0].decode('utf8'))
             # 4. Seize the RID Manager role
             (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "-s", smbconf, "--force")
             self.assertCmdSuccess(result, out, err)
