@@ -135,11 +135,10 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 	struct pthreadpool_tevent_glue *glue = NULL;
 	int ret;
 
-	ret = pthreadpool_destroy(pool->pool);
+	ret = pthreadpool_stop(pool->pool);
 	if (ret != 0) {
 		return ret;
 	}
-	pool->pool = NULL;
 
 	for (job = pool->jobs; job != NULL; job = njob) {
 		njob = job->next;
@@ -158,6 +157,12 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 		TALLOC_FREE(glue);
 	}
 	pool->glue_list = NULL;
+
+	ret = pthreadpool_destroy(pool->pool);
+	if (ret != 0) {
+		return ret;
+	}
+	pool->pool = NULL;
 
 	return 0;
 }
