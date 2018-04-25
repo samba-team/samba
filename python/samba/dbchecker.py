@@ -144,11 +144,11 @@ class dbcheck(object):
 
         for nc in self.ncs:
             try:
-                dn = self.samdb.get_wellknown_dn(ldb.Dn(self.samdb, nc),
+                dn = self.samdb.get_wellknown_dn(ldb.Dn(self.samdb, nc.decode('utf8')),
                                                  dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
                 self.deleted_objects_containers.append(dn)
             except KeyError:
-                self.ncs_lacking_deleted_containers.append(ldb.Dn(self.samdb, nc))
+                self.ncs_lacking_deleted_containers.append(ldb.Dn(self.samdb, nc.decode('utf8')))
 
         domaindns_zone = 'DC=DomainDnsZones,%s' % self.samdb.get_default_basedn()
         forestdns_zone = 'DC=ForestDnsZones,%s' % self.samdb.get_root_basedn()
@@ -178,13 +178,13 @@ class dbcheck(object):
         res = self.samdb.search(base=ldb.Dn(self.samdb, self.samdb.get_serverName()),
                                 scope=ldb.SCOPE_BASE, attrs=["serverReference"])
         # 2. Get server reference
-        self.server_ref_dn = ldb.Dn(self.samdb, res[0]['serverReference'][0])
+        self.server_ref_dn = ldb.Dn(self.samdb, res[0]['serverReference'][0].decode('utf8'))
 
         # 3. Get RID Set
         res = self.samdb.search(base=self.server_ref_dn,
                                 scope=ldb.SCOPE_BASE, attrs=['rIDSetReferences'])
         if "rIDSetReferences" in res[0]:
-            self.rid_set_dn = ldb.Dn(self.samdb, res[0]['rIDSetReferences'][0])
+            self.rid_set_dn = ldb.Dn(self.samdb, res[0]['rIDSetReferences'][0].decode('utf8'))
         else:
             self.rid_set_dn = None
 
@@ -2483,7 +2483,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             error_count += 1
             if not self.confirm('Change dsServiceName to GUID form?'):
                 return error_count
-            res = self.samdb.search(base=ldb.Dn(self.samdb, obj['dsServiceName'][0]),
+            res = self.samdb.search(base=ldb.Dn(self.samdb, obj['dsServiceName'][0].decode('utf8')),
                                     scope=ldb.SCOPE_BASE, attrs=['objectGUID'])
             guid_str = str(ndr_unpack(misc.GUID, res[0]['objectGUID'][0]))
             m = ldb.Message()

@@ -274,7 +274,7 @@ class KCC(object):
                                                      scope=ldb.SCOPE_BASE,
                                                      attrs=["dsServiceName"])
                 dn = ldb.Dn(self.samdb,
-                            service_name_res[0]["dsServiceName"][0])
+                            service_name_res[0]["dsServiceName"][0].decode('utf8'))
 
                 res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                         attrs=["objectGUID"])

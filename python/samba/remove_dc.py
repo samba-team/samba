@@ -230,7 +230,7 @@ def offline_remove_server(samdb, logger,
     dc_name = str(msgs[0]["cn"][0])
 
     try:
-        computer_dn = ldb.Dn(samdb, msgs[0]["serverReference"][0])
+        computer_dn = ldb.Dn(samdb, msgs[0]["serverReference"][0].decode('utf8'))
     except KeyError:
         computer_dn = None
 
@@ -295,7 +295,7 @@ def offline_remove_ntds_dc(samdb,
     res = samdb.search("",
                        scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
     assert len(res) == 1
-    my_serviceName = ldb.Dn(samdb, res[0]["dsServiceName"][0])
+    my_serviceName = ldb.Dn(samdb, res[0]["dsServiceName"][0].decode('utf8'))
     server_dn = ntds_dn.parent()
 
     if my_serviceName == ntds_dn:

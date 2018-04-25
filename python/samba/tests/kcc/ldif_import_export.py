@@ -104,7 +104,7 @@ class LdifImportExportTests(samba.tests.TestCaseInTempDir):
                                         scope=ldb.SCOPE_BASE,
                                         attrs=["dsServiceName"])
         dn = ldb.Dn(samdb,
-                    service_name_res[0]["dsServiceName"][0])
+                    service_name_res[0]["dsServiceName"][0].decode('utf8'))
         self.assertEqual(dn, ldb.Dn(samdb, "CN=NTDS Settings," + dsa))
         self.remove_files(dburl)
 
@@ -128,7 +128,7 @@ class LdifImportExportTests(samba.tests.TestCaseInTempDir):
                                             scope=ldb.SCOPE_BASE,
                                             attrs=["dsServiceName"])
             dn = ldb.Dn(samdb,
-                        service_name_res[0]["dsServiceName"][0])
+                        service_name_res[0]["dsServiceName"][0].decode('utf8'))
             self.assertEqual(dn, ldb.Dn(samdb, "CN=NTDS Settings," + dsa))
             self.remove_files(dburl)
 

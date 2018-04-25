@@ -418,7 +418,7 @@ class DynamicTokenTest(samba.tests.TestCase):
             if "memberOf" in obj:
                 for dn in obj["memberOf"]:
                     first = obj.dn.get_casefold()
-                    second = ldb.Dn(self.admin_ldb, dn).get_casefold()
+                    second = ldb.Dn(self.admin_ldb, dn.decode('utf8')).get_casefold()
                     aSet.add((first, second))
                     aSetR.add((second, first))
                     vSet.add(first)
@@ -476,7 +476,7 @@ class DynamicTokenTest(samba.tests.TestCase):
             if "memberOf" in obj:
                 for dn in obj["memberOf"]:
                     first = obj.dn.get_casefold()
-                    second = ldb.Dn(self.admin_ldb, dn).get_casefold()
+                    second = ldb.Dn(self.admin_ldb, dn.decode('utf8')).get_casefold()
                     aSet.add((first, second))
                     aSetR.add((second, first))
                     vSet.add(first)

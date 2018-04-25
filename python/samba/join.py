@@ -388,7 +388,7 @@ class dc_join(object):
         if not 'fSMORoleOwner' in res[0]:
             raise DCJoinException("Can't find naming master on partition DN %s in %s" % (ctx.partition_dn, ctx.samdb.url))
         try:
-            master_guid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['fSMORoleOwner'][0]).get_extended_component('GUID')))
+            master_guid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['fSMORoleOwner'][0].decode('utf8')).get_extended_component('GUID')))
         except KeyError:
             raise DCJoinException("Can't find GUID in naming master on partition DN %s" % res[0]['fSMORoleOwner'][0])
 
@@ -880,7 +880,7 @@ class dc_join(object):
             raise DCJoinException("Can't find naming context on partition DN %s in %s" % (ctx.partition_dn, ctx.samdb.url))
 
         try:
-            ctx.names.domainguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
+            ctx.names.domainguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0].decode('utf8')).get_extended_component('GUID')))
         except KeyError:
             raise DCJoinException("Can't find GUID in naming master on partition DN %s" % res[0]['ncName'][0])
 
