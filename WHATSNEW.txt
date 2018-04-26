@@ -1,4 +1,112 @@
                    =============================
+                   Release Notes for Samba 4.8.1
+                           April 26, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.8 release series.
+
+
+Changes since 4.8.0:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13244: s3: ldap: Ensure the ADS_STRUCT pointer doesn't get freed on
+     error, we don't own it here.
+   * BUG 13270: s3: smbd: Fix possible directory fd leak if the underlying OS
+     doesn't support fdopendir().
+   * BUG 13319: Round-tripping ACL get/set through vfs_fruit will increase the
+     number of ACE entries without limit.
+   * BUG 13347: s3: smbd: SMB2: Add DBGC_SMB2_CREDITS class to specifically
+     debug credit issues.
+   * BUG 13358: s3: smbd: Files or directories can't be opened DELETE_ON_CLOSE
+     without delete access.
+   * BUG 13372: s3: smbd: Fix memory leak in vfswrap_getwd().
+   * BUG 13375: s3: smbd: Unix extensions attempts to change wrong field in
+     fchown call.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 13337: ms_schema/samba-tool visualize: Fix python2.6 incompatibility.
+
+o  Timur I. Bakeyev <timur@iXsystems.com>
+   * BUG 13352: Fix invocation of gnutls_aead_cipher_encrypt().
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13328: Windows 10 cannot logon on Samba NT4 domain.
+   * BUG 13332: winbindd: Recover loss of netlogon secure channel in case the
+     peer DC is rebooted.
+   * BUG 13363: s3:smbd: Don't use the directory cache for SMB2/3.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13356: ctdb-client: Fix bugs in client code.
+   * BUG 13359: ctdb-scripts: Drop "net serverid wipe" from 50.samba event
+     script.
+
+o  Lutz Justen <ljusten@google.com>
+   * BUG 13368: s3: lib: messages: Don't use the result of sec_init() before
+     calling sec_init().
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13273: libads: Fix the build '--without-ads'.
+   * BUG 13332: winbind: Keep "force_reauth" in invalidate_cm_connection,
+     add 'smbcontrol disconnect-dc'.
+   * BUG 13343: vfs_virusfilter: Fix CIDs 1428738-1428740.
+   * BUG 13367: dsdb: Fix CID 1034966 Uninitialized scalar variable.
+   * BUG 13370: rpc_server: Fix core dump in dfsgetinfo.
+   * BUG 13382: smbclient: Fix notify.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13215: Fix smbd panic if the client-supplied channel sequence number
+     wraps.
+   * BUG 13328: Windows 10 cannot logon on Samba NT4 domain.
+   * BUG 13342: lib/util: Remove unused '#include <sys/syscall.h>' from
+     tests/tfork.c.
+   * BUG 13343:	Fix build errors with cc from developerstudio 12.5 on Solaris.
+   * BUG 13344: Fix the picky-developer build on FreeBSD 11.
+   * BUG 13345: s3:modules: Fix the build of vfs_aixacl2.c.
+
+o  Anton Nefedov
+   * BUG 13338: s3:smbd: map nterror on smb2_flush errorpath.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13341: lib:replace: Fix linking when libtirpc-devel overwrites system
+     headers.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13312: winbindd: 'wbinfo --name-to-sid' returns misleading result on
+     invalid query.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13376: s3:passdb: Do not return OK if we don't have pinfo set up.
+
+o  Eric Vannier <evannier@google.com>
+   * BUG 13302: Allow AESNI to be used on all processor supporting AESNI.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.8.0
                            March 13, 2018
                    =============================
