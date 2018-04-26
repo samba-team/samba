@@ -135,7 +135,7 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
     # By using a set here, duplicates via (eg) example.com/Configuration
     # do not matter, they become just example.com
     a_names_to_remove_from \
-        = set(dns_name_from_dn(dn) for dn in ncs)
+        = set(dns_name_from_dn(dn.decode('utf8')) for dn in ncs)
 
     def a_rec_to_remove(dnsRecord):
         if dnsRecord.wType == DNS_TYPE_A or dnsRecord.wType == DNS_TYPE_AAAA:
