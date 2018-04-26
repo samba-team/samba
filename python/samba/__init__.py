@@ -29,6 +29,7 @@ import ldb
 import samba.param
 from samba import _glue
 from samba._ldb import Ldb as _Ldb
+from samba.compat import string_types
 
 
 def source_tree_topdir():
@@ -249,8 +250,8 @@ def substitute_var(text, values):
     """
 
     for (name, value) in values.items():
-        assert isinstance(name, str), "%r is not a string" % name
-        assert isinstance(value, str), "Value %r for %s is not a string" % (value, name)
+        assert isinstance(name, string_types), "%r is not a string" % name
+        assert isinstance(value, string_types), "Value %r for %s is not a string" % (value, name)
         text = text.replace("${%s}" % name, value)
 
     return text
