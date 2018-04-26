@@ -523,6 +523,13 @@ def build(bld):
                              talloc tevent replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
+    bld.SAMBA_BINARY('ctdb-event',
+                        source='event/event_tool.c',
+                        cflags='-DCTDB_EVENT_TOOL',
+                        deps='''ctdb-event-client ctdb-event-protocol
+                                ctdb-util samba-util talloc replace''',
+                        install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_BINARY('ctdbd',
                      source='server/ctdbd.c ' +
                                bld.SUBDIR('server',
