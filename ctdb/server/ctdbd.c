@@ -60,7 +60,7 @@ static struct {
 	.debuglevel = "NOTICE",
 	.transport = "tcp",
 	.logging = "file:" LOGDIR "/log.ctdb",
-	.db_dir = CTDB_VARDIR,
+	.db_dir = CTDB_VARDIR "/volatile",
 	.db_dir_persistent = CTDB_VARDIR "/persistent",
 	.db_dir_state = CTDB_VARDIR "/state",
 	.script_log_level = DEBUG_ERR,

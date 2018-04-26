@@ -131,7 +131,6 @@ setup_ctdb ()
 		local node_ip=$(sed -n -e "$(($pnn + 1))p" "$nodes_file")
 
 		local db_dir="${CTDB_BASE}/db"
-		mkdir -p "${db_dir}/persistent"
 
 		if $no_event_scripts ; then
 			rm -vf "${CTDB_BASE}/events.d/"*
@@ -142,7 +141,7 @@ CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
 CTDB_NODE_ADDRESS="${node_ip}"
 CTDB_LOGGING="file:${CTDB_BASE}/log.ctdb"
 CTDB_DEBUGLEVEL=INFO
-CTDB_DBDIR="${db_dir}"
+CTDB_DBDIR="${db_dir}/volatile"
 CTDB_DBDIR_PERSISTENT="${db_dir}/persistent"
 CTDB_DBDIR_STATE="${db_dir}/state"
 EOF

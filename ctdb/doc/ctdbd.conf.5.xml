@@ -140,7 +140,7 @@
 	<term>CTDB_DBDIR=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
+	    Defaults to <filename>/usr/local/var/lib/ctdb/volatile</filename>.
 	  </para>
 	  <para>
 	    Apart from a DIRECTORY, this can take a special value of

@@ -14,7 +14,7 @@
 
 # Default fallback location for database directories.
 # These can be overwritten from CTDB configuration
-CTDB_DBDIR="${CTDB_VARDIR}"
+CTDB_DBDIR="${CTDB_VARDIR}/volatile"
 CTDB_DBDIR_PERSISTENT="${CTDB_VARDIR}/persistent"
 
 loadconfig
