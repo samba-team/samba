@@ -477,8 +477,6 @@ struct winbindd_domain *find_default_route_domain(void);
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
 bool parse_domain_user(const char *domuser, fstring domain, fstring user);
-bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
-			      char **domain, char **user);
 bool canonicalize_username(fstring username_inout, fstring domain, fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume);
 char *fill_domain_username_talloc(TALLOC_CTX *ctx,
