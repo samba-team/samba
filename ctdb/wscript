@@ -837,7 +837,7 @@ def build(bld):
                      deps='samba-util ctdb-system popt',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
-    bld.SAMBA_SUBSYSTEM('protocol-tests-common',
+    bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-common',
                         source=bld.SUBDIR('tests/src',
                                           '''protocol_common.c
                                              protocol_common_ctdb.c
@@ -861,7 +861,7 @@ def build(bld):
 
         bld.SAMBA_BINARY(target,
                          source=src,
-                         deps='''protocol-tests-common
+                         deps='''ctdb-protocol-tests-common
                                  samba-util talloc tdb''',
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
