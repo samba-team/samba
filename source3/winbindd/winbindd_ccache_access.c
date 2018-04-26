@@ -199,8 +199,11 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	if (!canonicalize_username(state->request->data.ccache_ntlm_auth.user,
-				name_domain, name_user)) {
+	ok = canonicalize_username(state->request->data.ccache_ntlm_auth.user,
+				   name_namespace,
+				   name_domain,
+				   name_user);
+	if (!ok) {
 		DEBUG(5,("winbindd_ccache_ntlm_auth: cannot parse domain and user from name [%s]\n",
 			state->request->data.ccache_ntlm_auth.user));
 		request_error(state);
@@ -316,8 +319,9 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 void winbindd_ccache_save(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	fstring name_domain, name_user;
+	fstring name_namespace, name_domain, name_user;
 	NTSTATUS status;
+	bool ok;
 
 	/* Ensure null termination */
 	state->request->data.ccache_save.user[
@@ -331,8 +335,11 @@ void winbindd_ccache_save(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	if (!canonicalize_username(state->request->data.ccache_save.user,
-				   name_domain, name_user)) {
+	ok = canonicalize_username(state->request->data.ccache_save.user,
+				   name_namespace,
+				   name_domain,
+				   name_user);
+	if (!ok) {
 		DEBUG(5,("winbindd_ccache_save: cannot parse domain and user "
 			 "from name [%s]\n",
 			 state->request->data.ccache_save.user));
