@@ -1620,9 +1620,11 @@ bool parse_domain_user(const char *domuser,
    really should be changed to use this instead of doing things
    by hand. JRA. */
 
-bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
+bool canonicalize_username(fstring username_inout,
+			   fstring namespace,
+			   fstring domain,
+			   fstring user)
 {
-	fstring namespace;
 	bool ok;
 
 	ok = parse_domain_user(username_inout, namespace, domain, user);

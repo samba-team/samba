@@ -481,7 +481,10 @@ bool parse_domain_user(const char *domuser,
 		       fstring namespace,
 		       fstring domain,
 		       fstring user);
-bool canonicalize_username(fstring username_inout, fstring domain, fstring user);
+bool canonicalize_username(fstring username_inout,
+			   fstring namespace,
+			   fstring domain,
+			   fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume);
 char *fill_domain_username_talloc(TALLOC_CTX *ctx,
 				  const char *domain,

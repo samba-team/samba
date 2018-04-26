@@ -35,10 +35,11 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_pam_logoff_state *state;
 	struct winbindd_domain *domain;
-	fstring name_domain, user;
+	fstring name_namespace, name_domain, user;
 	uid_t caller_uid;
 	gid_t caller_gid;
 	int res;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_pam_logoff_state);
@@ -60,12 +61,15 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	if (!canonicalize_username(request->data.logoff.user, name_domain,
-				   user)) {
+	ok = canonicalize_username(request->data.logoff.user,
+				   name_namespace,
+				   name_domain,
+				   user);
+	if (!ok) {
 		goto failed;
 	}
 
-	domain = find_auth_domain(request->flags, name_domain);
+	domain = find_auth_domain(request->flags, name_namespace);
 	if (domain == NULL) {
 		goto failed;
 	}

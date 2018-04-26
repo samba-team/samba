@@ -36,9 +36,10 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 	struct tevent_req *req, *subreq;
 	struct winbindd_pam_chauthtok_state *state;
 	struct winbindd_domain *contact_domain;
-	fstring domain, user;
+	fstring namespace, domain, user;
 	char *mapped_user;
 	NTSTATUS status;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_pam_chauthtok_state);
@@ -62,15 +63,18 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 		fstrcpy(request->data.chauthtok.user, mapped_user);
 	}
 
-	if (!canonicalize_username(request->data.chauthtok.user, domain,
-				   user)) {
+	ok = canonicalize_username(request->data.chauthtok.user,
+				   namespace,
+				   domain,
+				   user);
+	if (!ok) {
 		DEBUG(10, ("winbindd_pam_chauthtok: canonicalize_username %s "
 			   "failed with\n", request->data.chauthtok.user));
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
 
-	contact_domain = find_domain_from_name(domain);
+	contact_domain = find_domain_from_name(namespace);
 	if (contact_domain == NULL) {
 		DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] "
 			  "as %s is not a trusted domain\n",

@@ -36,9 +36,10 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_pam_auth_state *state;
 	struct winbindd_domain *domain;
-	fstring name_domain, name_user;
+	fstring name_namespace, name_domain, name_user;
 	char *mapped = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_pam_auth_state);
@@ -71,12 +72,16 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		fstrcpy(request->data.auth.user, mapped);
 	}
 
-	if (!canonicalize_username(request->data.auth.user, name_domain, name_user)) {
+	ok = canonicalize_username(request->data.auth.user,
+				   name_namespace,
+				   name_domain,
+				   name_user);
+	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
 
-	domain = find_auth_domain(request->flags, name_domain);
+	domain = find_auth_domain(request->flags, name_namespace);
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
