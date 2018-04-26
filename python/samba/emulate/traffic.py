@@ -670,7 +670,8 @@ class ReplayContext(object):
 
     def get_samr_context(self, new=False):
         if not self.samr_contexts or new:
-            self.samr_contexts.append(SamrContext(self.server))
+            self.samr_contexts.append(
+                SamrContext(self.server, lp=self.lp, creds=self.creds))
         return self.samr_contexts[-1]
 
     def get_netlogon_connection(self):
@@ -707,7 +708,7 @@ class ReplayContext(object):
 class SamrContext(object):
     """State/Context associated with a samr connection.
     """
-    def __init__(self, server):
+    def __init__(self, server, lp=None, creds=None):
         self.connection    = None
         self.handle        = None
         self.domain_handle = None
@@ -716,10 +717,16 @@ class SamrContext(object):
         self.user_handle   = None
         self.rids          = None
         self.server        = server
+        self.lp            = lp
+        self.creds         = creds
 
     def get_connection(self):
         if not self.connection:
-            self.connection = samr.samr("ncacn_ip_tcp:%s" % (self.server))
+            self.connection = samr.samr(
+                "ncacn_ip_tcp:%s[seal]" % (self.server),
+                lp_ctx=self.lp,
+                credentials=self.creds)
+
         return self.connection
 
     def get_handle(self):
