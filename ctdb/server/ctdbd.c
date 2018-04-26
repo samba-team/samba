@@ -141,6 +141,7 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	poptContext pc;
 	struct tevent_context *ev;
+	const char *ctdb_base;
 
 	/* Environment variable overrides default */
 	ctdbd_pidfile = getenv("CTDB_PIDFILE");
@@ -280,10 +281,14 @@ int main(int argc, const char *argv[])
 
 	/* Default value for CTDB_BASE - don't override */
 	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
+	ctdb_base = getenv("CTDB_BASE");
+	if (ctdb_base == NULL) {
+		D_ERR("CTDB_BASE not set\n");
+		exit(1);
+	}
 
 	/* tell ctdb what nodes are available */
-	ctdb->nodes_file =
-		talloc_asprintf(ctdb, "%s/nodes", getenv("CTDB_BASE"));
+	ctdb->nodes_file = talloc_asprintf(ctdb, "%s/nodes", ctdb_base);
 	if (ctdb->nodes_file == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		exit(1);
@@ -301,7 +306,7 @@ int main(int argc, const char *argv[])
 
 	ctdb->event_script_dir = talloc_asprintf(ctdb,
 						 "%s/events.d",
-						 getenv("CTDB_BASE"));
+						 ctdb_base);
 	if (ctdb->event_script_dir == NULL) {
 		DBG_ERR("Out of memory\n");
 		exit(1);
