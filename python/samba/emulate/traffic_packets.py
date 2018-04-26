@@ -935,9 +935,25 @@ def packet_srvsvc_16(packet, conversation, context):
 
 
 def packet_srvsvc_21(packet, conversation, context):
-    # NetSrvGetInfo
+    """NetSrvGetInfo
+
+    FIXME: Level changed from 102 to 101 here, to bypass Windows error.
+
+    Level 102 will cause WERR_ACCESS_DENIED error against Windows, because:
+
+        > If the level is 102 or 502, the Windows implementation checks whether
+        > the caller is a member of one of the groups previously mentioned or
+        > is a member of the Power Users local group.
+
+    It passed against Samba since this check is not implemented by Samba yet.
+
+    refer to:
+
+        https://msdn.microsoft.com/en-us/library/cc247297.aspx#Appendix_A_80
+
+    """
     srvsvc = context.get_srvsvc_connection()
     server_unc = "\\\\" + context.server
-    level = 102
+    level = 101
     srvsvc.NetSrvGetInfo(server_unc, level)
     return True
