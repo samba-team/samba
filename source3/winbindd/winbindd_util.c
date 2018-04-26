@@ -1602,18 +1602,6 @@ bool parse_domain_user(const char *domuser, fstring domain, fstring user)
 	return strupper_m(domain);
 }
 
-bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
-			      char **domain, char **user)
-{
-	fstring fstr_domain, fstr_user;
-	if (!parse_domain_user(domuser, fstr_domain, fstr_user)) {
-		return False;
-	}
-	*domain = talloc_strdup(mem_ctx, fstr_domain);
-	*user = talloc_strdup(mem_ctx, fstr_user);
-	return ((*domain != NULL) && (*user != NULL));
-}
-
 /* Ensure an incoming username from NSS is fully qualified. Replace the
    incoming fstring with DOMAIN <separator> user. Returns the same
    values as parse_domain_user() but also replaces the incoming username.
