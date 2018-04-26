@@ -26,6 +26,7 @@ from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dsdb import (
+    ATYPE_SECURITY_GLOBAL_GROUP,
     GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
@@ -500,6 +501,85 @@ class cmd_group_move(Command):
         self.outf.write('Moved group "%s" into "%s"\n' %
                         (groupname, full_new_parent_dn))
 
+class cmd_group_show(Command):
+    """Display a group AD object.
+
+This command displays a group object and it's attributes in the Active
+Directory domain.
+The group name specified on the command is the sAMAccountName of the group.
+
+The command may be run from the root userid or another authorized userid.
+
+The -H or --URL= option can be used to execute the command against a remote
+server.
+
+Example1:
+samba-tool group show Group1 -H ldap://samba.samdom.example.com \
+-U administrator --password=passw1rd
+
+Example1 shows how to display a group's attributes in the domain against a remote
+LDAP server.
+
+The -H parameter is used to specify the remote target server.
+
+Example2:
+samba-tool group show Group2
+
+Example2 shows how to display a group's attributes in the domain against a local
+LDAP server.
+
+Example3:
+samba-tool group show Group3 --attributes=member,objectGUID
+
+Example3 shows how to display a users objectGUID and member attributes.
+"""
+    synopsis = "%prog <group name> [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+        Option("--attributes",
+               help=("Comma separated list of attributes, "
+                     "which will be printed."),
+               type=str, dest="group_attrs"),
+    ]
+
+    takes_args = ["groupname"]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, groupname, credopts=None, sambaopts=None, versionopts=None,
+            H=None, group_attrs=None):
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        attrs = None
+        if group_attrs:
+            attrs = group_attrs.split(",")
+
+        filter = ("(&(sAMAccountType=%d)(sAMAccountName=%s))" %
+                     ( ATYPE_SECURITY_GLOBAL_GROUP,
+                       ldb.binary_encode(groupname)))
+
+        domaindn = samdb.domain_dn()
+
+        try:
+            res = samdb.search(base=domaindn, expression=filter,
+                               scope=ldb.SCOPE_SUBTREE, attrs=attrs)
+            user_dn = res[0].dn
+        except IndexError:
+            raise CommandError('Unable to find group "%s"' % (groupname))
+
+        for msg in res:
+            user_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+            self.outf.write(user_ldif)
+
 class cmd_group(SuperCommand):
     """Group management."""
 
@@ -511,3 +591,4 @@ class cmd_group(SuperCommand):
     subcommands["list"] = cmd_group_list()
     subcommands["listmembers"] = cmd_group_list_members()
     subcommands["move"] = cmd_group_move()
+    subcommands["show"] = cmd_group_show()

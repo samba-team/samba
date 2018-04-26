@@ -170,6 +170,16 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err,
                               "Failed to delete ou '%s'" % full_ou_dn)
 
+    def test_show(self):
+        """Assert that we can show a group correctly."""
+        (result, out, err) = self.runsubcmd("group", "show", "Domain Users",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertIn("dn: CN=Domain Users,CN=Users,DC=samba,DC=example,DC=com", out)
+
     def _randomGroup(self, base={}):
         """create a group with random attribute values, you can specify base attributes"""
         group = {
