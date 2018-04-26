@@ -76,7 +76,8 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 
 		enum lsa_SidType type;
 
-		if (!lookup_cached_name(domain->name,
+		if (!lookup_cached_name(domain->name, /* namespace */
+					domain->name,
 					user,
 					&cred_sid,
 					&type)) {

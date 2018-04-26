@@ -1,4 +1,3 @@
-^samba3\.wbinfo_user_info\.user_info\.upn\.jane\.doe.ad_member
 ^samba3\.wbinfo_user_info\.name_to_sid\.upn\.testdenied_upn.ad_member
 ^samba3\.wbinfo_user_info\.user_info\.upn\.testdenied_upn.ad_member
 ^samba3\.wbinfo_user_info\.user_info\.domain\.alice.fl2008r2dc

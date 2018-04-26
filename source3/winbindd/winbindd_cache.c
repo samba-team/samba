@@ -3221,7 +3221,8 @@ bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	return NT_STATUS_IS_OK(status);
 }
 
-bool lookup_cached_name(const char *domain_name,
+bool lookup_cached_name(const char *namespace,
+			const char *domain_name,
 			const char *name,
 			struct dom_sid *sid,
 			enum lsa_SidType *type)
@@ -3230,7 +3231,7 @@ bool lookup_cached_name(const char *domain_name,
 	NTSTATUS status;
 	bool original_online_state;
 
-	domain = find_lookup_domain_from_name(domain_name);
+	domain = find_lookup_domain_from_name(namespace);
 	if (domain == NULL) {
 		return false;
 	}

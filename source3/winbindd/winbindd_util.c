@@ -1575,28 +1575,37 @@ static bool assume_domain(const char *domain)
 	return False;
 }
 
-/* Parse a string of the form DOMAIN\user into a domain and a user */
-
-bool parse_domain_user(const char *domuser, fstring domain, fstring user)
+/* Parse a DOMAIN\user or UPN string into a domain, namespace and a user */
+bool parse_domain_user(const char *domuser,
+		       fstring namespace,
+		       fstring domain,
+		       fstring user)
 {
-	char *p = strchr(domuser,*lp_winbind_separator());
+	char *p = NULL;
 
-	if ( !p ) {
-		fstrcpy(user, domuser);
-		p = strchr(domuser, '@');
+	if (strlen(domuser) == 0) {
+		return false;
+	}
 
-		if ( assume_domain(lp_workgroup()) && p == NULL) {
-			fstrcpy(domain, lp_workgroup());
-		} else if (p != NULL) {
-			fstrcpy(domain, p + 1);
-			user[PTR_DIFF(p, domuser)] = 0;
-		} else {
-			return False;
-		}
-	} else {
-		fstrcpy(user, p+1);
+	p = strchr(domuser, *lp_winbind_separator());
+	if (p != NULL) {
+		fstrcpy(user, p + 1);
 		fstrcpy(domain, domuser);
-		domain[PTR_DIFF(p, domuser)] = 0;
+		domain[PTR_DIFF(p, domuser)] = '\0';
+		fstrcpy(namespace, domain);
+	} else {
+		fstrcpy(user, domuser);
+
+		domain[0] = '\0';
+		namespace[0] = '\0';
+		p = strchr(domuser, '@');
+		if (p != NULL) {
+			/* upn */
+			fstrcpy(namespace, p + 1);
+		} else if (assume_domain(lp_workgroup())) {
+			fstrcpy(domain, lp_workgroup());
+			fstrcpy(namespace, domain);
+		}
 	}
 
 	return strupper_m(domain);
@@ -1613,7 +1622,11 @@ bool parse_domain_user(const char *domuser, fstring domain, fstring user)
 
 bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
 {
-	if (!parse_domain_user(username_inout, domain, user)) {
+	fstring namespace;
+	bool ok;
+
+	ok = parse_domain_user(username_inout, namespace, domain, user);
+	if (!ok) {
 		return False;
 	}
 	slprintf(username_inout, sizeof(fstring) - 1, "%s%c%s",
