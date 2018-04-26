@@ -645,7 +645,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	const char *principal_s = NULL;
 	const char *service = NULL;
 	char *realm = NULL;
-	fstring name_domain, name_user;
+	fstring name_namespace, name_domain, name_user;
 	time_t ticket_lifetime = 0;
 	time_t renewal_until = 0;
 	ADS_STRUCT *ads;
@@ -658,6 +658,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	const char *local_service;
 	uint32_t i;
 	struct netr_SamInfo6 *info6_copy = NULL;
+	bool ok;
 
 	*info6 = NULL;
 
@@ -693,7 +694,10 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	/* 3rd step:
 	 * do kerberos auth and setup ccache as the user */
 
-	parse_domain_user(user, name_domain, name_user);
+	ok = parse_domain_user(user, name_namespace, name_domain, name_user);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	realm = talloc_strdup(mem_ctx, domain->alt_name);
 	if (realm == NULL) {
@@ -975,7 +979,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 {
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
 	uint16_t max_allowed_bad_attempts;
-	fstring name_domain, name_user;
+	fstring name_namespace, name_domain, name_user;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	uchar new_nt_pass[NT_HASH_LEN];
@@ -996,10 +1000,14 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request->data.auth.user, name_domain, name_user);
+	parse_domain_user(state->request->data.auth.user,
+			  name_namespace,
+			  name_domain,
+			  name_user);
 
 
-	if (!lookup_cached_name(name_domain,
+	if (!lookup_cached_name(name_namespace,
+				name_domain,
 				name_user,
 				&sid,
 				&type)) {
@@ -1244,19 +1252,28 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 						struct netr_SamInfo6 **info6)
 {
 	struct winbindd_domain *contact_domain;
-	fstring name_domain, name_user;
+	fstring name_namespace, name_domain, name_user;
 	NTSTATUS result;
+	bool ok;
 
 	DEBUG(10,("winbindd_dual_pam_auth_kerberos\n"));
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request->data.auth.user, name_domain, name_user);
+	ok = parse_domain_user(state->request->data.auth.user,
+			       name_namespace,
+			       name_domain,
+			       name_user);
+	if (!ok) {
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
 
 	/* what domain should we contact? */
 
 	if ( IS_DC ) {
-		if (!(contact_domain = find_domain_from_name(name_domain))) {
+		contact_domain = find_domain_from_name(name_namespace);
+		if (contact_domain == NULL) {
 			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
 				  state->request->data.auth.user, name_domain, name_user, name_domain));
 			result = NT_STATUS_NO_SUCH_USER;
@@ -1270,7 +1287,7 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		contact_domain = find_domain_from_name(name_domain);
+		contact_domain = find_domain_from_name(name_namespace);
 		if (contact_domain == NULL) {
 			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
 				  state->request->data.auth.user, name_domain, name_user, name_domain));
@@ -1662,19 +1679,23 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	unsigned char local_nt_response[24];
-	fstring name_domain, name_user;
+	fstring name_namespace, name_domain, name_user;
 	NTSTATUS result;
 	uint8_t authoritative = 0;
 	uint32_t flags = 0;
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
 	struct netr_SamBaseInfo *base_info = NULL;
+	bool ok;
 
 	DEBUG(10,("winbindd_dual_pam_auth_samlogon\n"));
 
 	/* Parse domain and username */
 
-	parse_domain_user(user, name_domain, name_user);
+	ok = parse_domain_user(user, name_namespace, name_domain, name_user);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/*
 	 * We check against domain->name instead of
@@ -1869,12 +1890,13 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 {
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
 	NTSTATUS krb5_result = NT_STATUS_OK;
-	fstring name_domain, name_user;
+	fstring name_namespace, name_domain, name_user;
 	char *mapped_user;
 	fstring domain_user;
 	uint16_t validation_level = UINT16_MAX;
 	union netr_Validation *validation = NULL;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
+	bool ok;
 
 	/* Ensure null termination */
 	state->request->data.auth.user[sizeof(state->request->data.auth.user)-1]='\0';
@@ -1900,7 +1922,14 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		mapped_user = state->request->data.auth.user;
 	}
 
-	parse_domain_user(mapped_user, name_domain, name_user);
+	ok = parse_domain_user(mapped_user,
+			       name_namespace,
+			       name_domain,
+			       name_user);
+	if (!ok) {
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto process_result;
+	}
 
 	if ( mapped_user != state->request->data.auth.user ) {
 		fstr_sprintf( domain_user, "%s%c%s", name_domain,
@@ -2490,15 +2519,20 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	struct samr_DomInfo1 *info = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	fstring domain, user;
+	fstring namespace, domain, user;
 	struct dcerpc_binding_handle *b = NULL;
+	bool ok;
 
 	ZERO_STRUCT(dom_pol);
 
 	DEBUG(3, ("[%5lu]: dual pam chauthtok %s\n", (unsigned long)state->pid,
 		  state->request->data.auth.user));
 
-	if (!parse_domain_user(state->request->data.chauthtok.user, domain, user)) {
+	ok = parse_domain_user(state->request->data.chauthtok.user,
+			       namespace,
+			       domain,
+			       user);
+	if (!ok) {
 		goto done;
 	}
 
@@ -2707,7 +2741,7 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	DATA_BLOB old_nt_hash_enc;
 	DATA_BLOB new_lm_password;
 	DATA_BLOB old_lm_hash_enc;
-	fstring  domain,user;
+	fstring  namespace, domain, user;
 	struct policy_handle dom_pol;
 	struct winbindd_domain *contact_domain = domainSt;
 	struct rpc_pipe_client *cli = NULL;
@@ -2720,8 +2754,9 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		sizeof(state->request->data.chng_pswd_auth_crap.user)-1]=0;
 	state->request->data.chng_pswd_auth_crap.domain[
 		sizeof(state->request->data.chng_pswd_auth_crap.domain)-1]=0;
-	*domain = 0;
-	*user = 0;
+	domain[0] = '\0';
+	namespace[0] = '\0';
+	user[0] = '\0';
 
 	DEBUG(3, ("[%5lu]: pam change pswd auth crap domain: %s user: %s\n",
 		  (unsigned long)state->pid,
@@ -2738,8 +2773,16 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	if (*state->request->data.chng_pswd_auth_crap.domain) {
 		fstrcpy(domain,state->request->data.chng_pswd_auth_crap.domain);
 	} else {
-		parse_domain_user(state->request->data.chng_pswd_auth_crap.user,
-				  domain, user);
+		bool ok;
+
+		ok = parse_domain_user(state->request->data.chng_pswd_auth_crap.user,
+				       namespace,
+				       domain,
+				       user);
+		if (!ok) {
+			result = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
 
 		if(!*domain) {
 			DEBUG(3,("no domain specified with username (%s) - "

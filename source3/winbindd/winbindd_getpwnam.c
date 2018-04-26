@@ -23,6 +23,7 @@
 
 struct winbindd_getpwnam_state {
 	struct tevent_context *ev;
+	fstring namespace;
 	fstring domname;
 	fstring username;
 	struct dom_sid sid;
@@ -42,6 +43,7 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 	struct winbindd_getpwnam_state *state;
 	char *domuser, *mapped_user;
 	NTSTATUS status;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_getpwnam_state);
@@ -65,14 +67,18 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 		domuser = mapped_user;
 	}
 
-	if (!parse_domain_user(domuser, state->domname, state->username)) {
+	ok = parse_domain_user(domuser,
+			       state->namespace,
+			       state->domname,
+			       state->username);
+	if (!ok) {
 		DEBUG(5, ("Could not parse domain user: %s\n", domuser));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
 	subreq = wb_lookupname_send(state, ev,
-				    state->domname,
+				    state->namespace,
 				    state->domname,
 				    state->username,
 				    LOOKUP_NAME_NO_NSS);

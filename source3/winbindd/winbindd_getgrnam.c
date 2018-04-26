@@ -22,7 +22,7 @@
 
 struct winbindd_getgrnam_state {
 	struct tevent_context *ev;
-	fstring name_domain, name_group;
+	fstring name_namespace, name_domain, name_group;
 	struct dom_sid sid;
 	const char *domname;
 	const char *name;
@@ -42,6 +42,7 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 	struct winbindd_getgrnam_state *state;
 	char *tmp;
 	NTSTATUS nt_status;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_getgrnam_state);
@@ -66,7 +67,15 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 
 	/* Parse domain and groupname */
 
-	parse_domain_user(tmp, state->name_domain, state->name_group);
+	ok = parse_domain_user(tmp,
+			       state->name_namespace,
+			       state->name_domain,
+			       state->name_group);
+	if (!ok) {
+		DBG_INFO("Could not parse domain user: %s\n", tmp);
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
 
 	/* if no domain or our local domain and no local tdb group, default to
 	 * our local domain for aliases */
@@ -77,7 +86,7 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = wb_lookupname_send(state, ev,
-				    state->name_domain,
+				    state->name_namespace,
 				    state->name_domain,
 				    state->name_group,
 				    0);
