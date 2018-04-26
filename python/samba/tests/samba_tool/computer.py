@@ -186,7 +186,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
 
         for computerobj in computerlist:
             name = computerobj.get("samaccountname", idx=0)
-            found = self.assertMatch(out, name,
+            found = self.assertMatch(out, str(name),
                                      "computer '%s' not found" % name)
 
     def test_move(self):
@@ -324,5 +324,5 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         names = set()
         for computer in computer_list:
             for name in computer.get('servicePrincipalName', []):
-                names.add(name)
+                names.add(str(name))
         return names == set(expected_service_principal_names)

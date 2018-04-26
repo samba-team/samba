@@ -376,7 +376,7 @@ sudo is used so a computer may run the command as root.
             computer_dn = res[0].dn
             computer_ac = int(res[0]["userAccountControl"][0])
             if "dNSHostName" in res[0]:
-                computer_dns_host_name = res[0]["dNSHostName"][0]
+                computer_dns_host_name = str(res[0]["dNSHostName"][0])
             else:
                 computer_dns_host_name = None
         except IndexError:

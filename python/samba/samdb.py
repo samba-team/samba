@@ -743,7 +743,7 @@ accountExpires: %u
     def host_dns_name(self):
         """return the DNS name of this host"""
         res = self.search(base='', scope=ldb.SCOPE_BASE, attrs=['dNSHostName'])
-        return res[0]['dNSHostName'][0]
+        return str(res[0]['dNSHostName'][0])
 
     def domain_dns_name(self):
         """return the DNS name of the domain root"""
