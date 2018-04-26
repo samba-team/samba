@@ -611,7 +611,7 @@ planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user_virtualCryptSHA"
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_password_script", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.group", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.ou", py3_compatible=True)
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.computer")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.computer", py3_compatible=True)
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
 planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check")
 planpythontestsuite("none", "samba.tests.samba_tool.help")
