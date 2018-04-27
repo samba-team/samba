@@ -1606,7 +1606,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
 
     for policy in res:
         acl = ndr_unpack(security.descriptor,
-                         str(policy["nTSecurityDescriptor"])).as_sddl()
+                         policy["nTSecurityDescriptor"][0]).as_sddl()
         policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
         set_dir_acl(policy_path, dsacl2fsacl(acl, domainsid), lp,
                     str(domainsid), use_ntvfs,
@@ -1767,7 +1767,7 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
 
     for policy in res:
         acl = ndr_unpack(security.descriptor,
-                         str(policy["nTSecurityDescriptor"])).as_sddl()
+                         policy["nTSecurityDescriptor"][0]).as_sddl()
         policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
         check_dir_acl(policy_path, dsacl2fsacl(acl, domainsid), lp,
                       domainsid, direct_db_access)
