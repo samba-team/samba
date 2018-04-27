@@ -23,6 +23,7 @@
 #
 
 from __future__ import print_function
+from __future__ import division
 import samba.getopt as options
 import ldb
 import string
@@ -2331,7 +2332,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             # 512 bytes and a 2 bytes confounder is required.
             #
             def random_trust_secret(length):
-                pw = samba.generate_random_machine_password(length/2, length/2)
+                pw = samba.generate_random_machine_password(length//2, length//2)
                 return string_to_byte_array(pw.encode('utf-16-le'))
 
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_INBOUND:
