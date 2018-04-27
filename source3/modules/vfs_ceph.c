@@ -37,6 +37,7 @@
 #include "cephfs/libcephfs.h"
 #include "smbprofile.h"
 #include "modules/posixacl_xattr.h"
+#include "lib/util/tevent_unix.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -567,6 +568,56 @@ static int cephwrap_fsync(struct vfs_handle_struct *handle, files_struct *fsp)
 	DBG_DEBUG("[CEPH] cephwrap_fsync\n");
 	result = ceph_fsync(handle->data, fsp->fh->fd, false);
 	WRAP_RETURN(result);
+}
+
+/*
+ * Fake up an async ceph fsync by calling the sychronous API.
+ */
+
+static struct tevent_req *cephwrap_fsync_send(struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					files_struct *fsp)
+{
+	struct tevent_req *req = NULL;
+	struct vfs_aio_state *state = NULL;
+	int ret = -1;
+
+	DBG_DEBUG("[CEPH] cephwrap_fsync_send\n");
+
+	req = tevent_req_create(mem_ctx, &state, struct vfs_aio_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* Make sync call. */
+	ret = ceph_fsync(handle->data, fsp->fh->fd, false);
+
+	if (ret != 0) {
+		/* ceph_fsync returns -errno on error. */
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+
+	/* Mark it as done. */
+	tevent_req_done(req);
+	/* Return and schedule the completion of the call. */
+	return tevent_req_post(req, ev);
+}
+
+static int cephwrap_fsync_recv(struct tevent_req *req,
+				struct vfs_aio_state *vfs_aio_state)
+{
+	struct vfs_aio_state *state =
+		tevent_req_data(req, struct vfs_aio_state);
+
+	DBG_DEBUG("[CEPH] cephwrap_fsync_recv\n");
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+	*vfs_aio_state = *state;
+	return 0;
 }
 
 #ifdef HAVE_CEPH_STATX
@@ -1440,6 +1491,8 @@ static struct vfs_fn_pointers ceph_fns = {
 	.recvfile_fn = cephwrap_recvfile,
 	.rename_fn = cephwrap_rename,
 	.fsync_fn = cephwrap_fsync,
+	.fsync_send_fn = cephwrap_fsync_send,
+	.fsync_recv_fn = cephwrap_fsync_recv,
 	.stat_fn = cephwrap_stat,
 	.fstat_fn = cephwrap_fstat,
 	.lstat_fn = cephwrap_lstat,
