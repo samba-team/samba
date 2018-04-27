@@ -28,6 +28,7 @@ __docformat__ = "restructuredText"
 
 from samba.compat import urllib_quote
 from samba.compat import string_types
+from samba.compat import binary_type
 from base64 import b64encode
 import errno
 import os
@@ -2275,7 +2276,8 @@ def provision(logger, session_info, smbconf=None,
             adminpass = samba.generate_random_password(12, 32)
             adminpass_generated = True
         else:
-            adminpass = unicode(adminpass, 'utf-8')
+            if isinstance(adminpass, binary_type):
+                adminpass = adminpass.decode('utf-8')
             adminpass_generated = False
 
         if samdb_fill == FILL_FULL:
