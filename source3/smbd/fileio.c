@@ -1057,7 +1057,7 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
-		ret = SMB_VFS_FSYNC(fsp);
+		ret = smb_vfs_fsync_sync(fsp);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
