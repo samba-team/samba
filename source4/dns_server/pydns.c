@@ -44,7 +44,7 @@
 		PyErr_SetString(PyExc_TypeError, "ldb Dn object required"); \
 		return NULL; \
 	} \
-	dn = pyldb_Dn_AsDn(py_ldb_dn);
+	dn = pyldb_Dn_AS_DN(py_ldb_dn);
 
 static PyObject *py_dnsp_DnssrvRpcRecord_get_list(struct dnsp_DnssrvRpcRecord *records,
 						  uint16_t num_records)

@@ -48,7 +48,7 @@
 		PyErr_SetString(PyExc_TypeError, "ldb Dn object required"); \
 		return NULL; \
 	} \
-	dn = pyldb_Dn_AsDn(py_ldb_dn);
+	dn = pyldb_Dn_AS_DN(py_ldb_dn);
 
 static PyObject *py_ldb_get_exception(void)
 {

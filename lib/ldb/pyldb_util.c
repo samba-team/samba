@@ -109,7 +109,7 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	}
 
 	if (PyObject_TypeCheck(object, PyLdb_Dn_Type)) {
-		*dn = pyldb_Dn_AsDn(object);
+		*dn = pyldb_Dn_AS_DN(object);
 		return true;
 	}
 

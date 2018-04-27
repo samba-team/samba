@@ -50,7 +50,7 @@ typedef struct {
 
 PyObject *pyldb_Dn_FromDn(struct ldb_dn *);
 bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
-#define pyldb_Dn_AsDn(pyobj) ((PyLdbDnObject *)pyobj)->dn
+#define pyldb_Dn_AS_DN(pyobj) ((PyLdbDnObject *)pyobj)->dn
 
 bool pyldb_check_type(PyObject *obj, const char *type_name);
 
