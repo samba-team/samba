@@ -1217,6 +1217,7 @@ struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp);
 int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *state);
 
+int smb_vfs_fsync_sync(files_struct *fsp);
 int smb_vfs_call_stat(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname);
 int smb_vfs_call_fstat(struct vfs_handle_struct *handle,

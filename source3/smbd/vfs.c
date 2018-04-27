@@ -1988,6 +1988,45 @@ int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *vfs_aio_sta
 	return state->retval;
 }
 
+/*
+ * Synchronous version of fsync, built from backend
+ * async VFS primitives. Uses a temporary sub-event
+ * context (NOT NESTED).
+ */
+
+int smb_vfs_fsync_sync(files_struct *fsp)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_req *req = NULL;
+	struct vfs_aio_state aio_state = { 0 };
+	int ret = -1;
+	bool ok;
+	struct tevent_context *ev = samba_tevent_context_init(frame);
+
+	if (ev == NULL) {
+		goto out;
+	}
+
+	req = SMB_VFS_FSYNC_SEND(talloc_tos(), ev, fsp);
+	if (req == NULL) {
+		goto out;
+	}
+
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		goto out;
+	}
+
+	ret = SMB_VFS_FSYNC_RECV(req, &aio_state);
+
+  out:
+
+	TALLOC_FREE(frame);
+	if (aio_state.error != 0) {
+		errno = aio_state.error;
+	}
+	return ret;
+}
 
 int smb_vfs_call_stat(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname)
