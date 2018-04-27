@@ -644,6 +644,15 @@ class ReplayContext(object):
             return self.ldap_connections[-1]
 
         def simple_bind(creds):
+            """
+            To run simple bind against Windows, we need to run
+            following commands in PowerShell:
+
+                Install-windowsfeature ADCS-Cert-Authority
+                Install-AdcsCertificationAuthority -CAType EnterpriseRootCA
+                Restart-Computer
+
+            """
             return SamDB('ldaps://%s' % self.server,
                          credentials=creds,
                          lp=self.lp)
