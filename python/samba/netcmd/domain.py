@@ -102,6 +102,8 @@ from samba.provision.common import (
 from samba.netcmd.pso import cmd_domain_passwordsettings_pso
 from samba.netcmd.domain_backup import cmd_domain_backup
 
+from samba.compat import binary_type
+
 string_version_to_constant = {
     "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
     "2012": DS_DOMAIN_FUNCTION_2012,
@@ -570,8 +572,9 @@ class cmd_domain_provision(Command):
     def _adminpass_issue(self, adminpass):
         """Returns error string for a bad administrator password,
         or None if acceptable"""
-
-        if len(adminpass.decode('utf-8')) < DEFAULT_MIN_PWD_LENGTH:
+        if isinstance(adminpass, binary_type):
+            adminpass = adminpass.decode('utf8')
+        if len(adminpass) < DEFAULT_MIN_PWD_LENGTH:
             return "Administrator password does not meet the default minimum" \
                 " password length requirement (%d characters)" \
                 % DEFAULT_MIN_PWD_LENGTH
