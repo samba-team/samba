@@ -928,7 +928,7 @@ def packet_srvsvc_16(packet, conversation, context):
     # NetShareGetInfo
     s = context.get_srvsvc_connection()
     server_unc = "\\\\" + context.server
-    share_name = "netlogon"
+    share_name = "IPC$"
     level = 1
     s.NetShareGetInfo(server_unc, share_name, level)
     return True
