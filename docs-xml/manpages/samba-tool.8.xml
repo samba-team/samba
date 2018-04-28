@@ -738,6 +738,26 @@
 </refsect3>
 
 <refsect2>
+	<title>schema</title>
+	<para>Manage and query schema.</para>
+</refsect2>
+
+<refsect3>
+	<title>schema attribute modify <replaceable>attribute</replaceable> [options]</title>
+	<para>Modify the behaviour of an attribute in schema.</para>
+</refsect3>
+
+<refsect3>
+	<title>schema attribute show <replaceable>attribute</replaceable> [options]</title>
+	<para>Display an attribute schema definition.</para>
+</refsect3>
+
+<refsect3>
+	<title>schema objectclass show <replaceable>objectclass</replaceable> [options]</title>
+	<para>Display an objectclass schema definition.</para>
+</refsect3>
+
+<refsect2>
 	<title>sites</title>
 	<para>Manage sites.</para>
 </refsect2>

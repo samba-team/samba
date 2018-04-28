@@ -90,6 +90,10 @@ class SamDB(samba.Ldb):
         '''return the domain DN'''
         return str(self.get_default_basedn())
 
+    def schema_dn(self):
+        '''return the schema partition dn'''
+        return str(self.get_schema_basedn())
+
     def disable_account(self, search_filter):
         """Disables an account
 

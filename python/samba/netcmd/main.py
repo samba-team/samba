@@ -70,6 +70,7 @@ class cmd_sambatool(SuperCommand):
     subcommands["ldapcmp"] = None
     subcommands["ntacl"] = None
     subcommands["rodc"] = None
+    subcommands["schema"] = None
     subcommands["sites"] = None
     subcommands["spn"] = None
     subcommands["testparm"] = None
