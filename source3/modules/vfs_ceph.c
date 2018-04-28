@@ -562,14 +562,6 @@ static int cephwrap_rename(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_fsync(struct vfs_handle_struct *handle, files_struct *fsp)
-{
-	int result;
-	DBG_DEBUG("[CEPH] cephwrap_fsync\n");
-	result = ceph_fsync(handle->data, fsp->fh->fd, false);
-	WRAP_RETURN(result);
-}
-
 /*
  * Fake up an async ceph fsync by calling the sychronous API.
  */
@@ -1490,7 +1482,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.sendfile_fn = cephwrap_sendfile,
 	.recvfile_fn = cephwrap_recvfile,
 	.rename_fn = cephwrap_rename,
-	.fsync_fn = cephwrap_fsync,
 	.fsync_send_fn = cephwrap_fsync_send,
 	.fsync_recv_fn = cephwrap_fsync_recv,
 	.stat_fn = cephwrap_stat,

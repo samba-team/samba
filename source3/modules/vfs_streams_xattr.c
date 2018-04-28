@@ -1323,18 +1323,6 @@ static int streams_xattr_fchmod(vfs_handle_struct *handle,
 	return 0;
 }
 
-static int streams_xattr_fsync(vfs_handle_struct *handle, files_struct *fsp)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_FSYNC(handle, fsp);
-	}
-
-	return 0;
-}
-
 static ssize_t streams_xattr_fgetxattr(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       const char *name,
@@ -1683,7 +1671,6 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 
 	.fchown_fn = streams_xattr_fchown,
 	.fchmod_fn = streams_xattr_fchmod,
-	.fsync_fn = streams_xattr_fsync,
 
 	.fgetxattr_fn = streams_xattr_fgetxattr,
 	.flistxattr_fn = streams_xattr_flistxattr,

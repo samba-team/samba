@@ -1127,20 +1127,6 @@ static int vfswrap_rename(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_fsync(vfs_handle_struct *handle, files_struct *fsp)
-{
-#ifdef HAVE_FSYNC
-	int result;
-
-	START_PROFILE(syscall_fsync);
-	result = fsync(fsp->fh->fd);
-	END_PROFILE(syscall_fsync);
-	return result;
-#else
-	return 0;
-#endif
-}
-
 static int vfswrap_stat(vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
@@ -3036,7 +3022,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.sendfile_fn = vfswrap_sendfile,
 	.recvfile_fn = vfswrap_recvfile,
 	.rename_fn = vfswrap_rename,
-	.fsync_fn = vfswrap_fsync,
 	.fsync_send_fn = vfswrap_fsync_send,
 	.fsync_recv_fn = vfswrap_fsync_recv,
 	.stat_fn = vfswrap_stat,

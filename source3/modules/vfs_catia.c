@@ -2078,23 +2078,6 @@ static off_t catia_lseek(vfs_handle_struct *handle,
 	return result;
 }
 
-static int catia_fsync(vfs_handle_struct *handle, files_struct *fsp)
-{
-	struct catia_cache *cc = NULL;
-	int ret;
-
-	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
-	if (ret != 0) {
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_FSYNC(handle, fsp);
-
-	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
-
-	return ret;
-}
-
 struct catia_fsync_state {
 	int ret;
 	struct vfs_aio_state vfs_aio_state;
@@ -2495,7 +2478,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.pwrite_recv_fn = catia_pwrite_recv,
 	.lseek_fn = catia_lseek,
 	.rename_fn = catia_rename,
-	.fsync_fn = catia_fsync,
 	.fsync_send_fn = catia_fsync_send,
 	.fsync_recv_fn = catia_fsync_recv,
 	.stat_fn = catia_stat,

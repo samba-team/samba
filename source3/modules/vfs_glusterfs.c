@@ -931,12 +931,6 @@ static int vfs_gluster_rename(struct vfs_handle_struct *handle,
 			   smb_fname_dst->base_name);
 }
 
-static int vfs_gluster_fsync(struct vfs_handle_struct *handle,
-			     files_struct *fsp)
-{
-	return glfs_fsync(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp));
-}
-
 static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 						 *handle, TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
@@ -1471,7 +1465,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.sendfile_fn = vfs_gluster_sendfile,
 	.recvfile_fn = vfs_gluster_recvfile,
 	.rename_fn = vfs_gluster_rename,
-	.fsync_fn = vfs_gluster_fsync,
 	.fsync_send_fn = vfs_gluster_fsync_send,
 	.fsync_recv_fn = vfs_gluster_fsync_recv,
 

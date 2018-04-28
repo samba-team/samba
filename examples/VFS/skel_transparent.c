@@ -388,11 +388,6 @@ static int skel_rename(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 }
 
-static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
-{
-	return SMB_VFS_NEXT_FSYNC(handle, fsp);
-}
-
 struct skel_fsync_state {
 	int ret;
 	struct vfs_aio_state vfs_aio_state;
@@ -1140,7 +1135,6 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.sendfile_fn = skel_sendfile,
 	.recvfile_fn = skel_recvfile,
 	.rename_fn = skel_rename,
-	.fsync_fn = skel_fsync,
 	.fsync_send_fn = skel_fsync_send,
 	.fsync_recv_fn = skel_fsync_recv,
 	.stat_fn = skel_stat,

@@ -245,8 +245,10 @@
 /* Version 37 - Rename SMB_VFS_STRICT_LOCK to
                 SMB_VFS_STRICT_LOCK_CHECK */
 /* Version 38 - Remove SMB_VFS_INIT_SEARCH_OP */
+/* Version 39 - Remove SMB_VFS_FSYNC
+		Only implement async versions. */
 
-#define SMB_VFS_INTERFACE_VERSION 38
+#define SMB_VFS_INTERFACE_VERSION 39
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -707,7 +709,6 @@ struct vfs_fn_pointers {
 	int (*rename_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname_src,
 			 const struct smb_filename *smb_fname_dst);
-	int (*fsync_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 	struct tevent_req *(*fsync_send_fn)(struct vfs_handle_struct *handle,
 					    TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
@@ -1208,8 +1209,6 @@ ssize_t smb_vfs_call_recvfile(struct vfs_handle_struct *handle, int fromfd,
 int smb_vfs_call_rename(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname_src,
 			const struct smb_filename *smb_fname_dst);
-int smb_vfs_call_fsync(struct vfs_handle_struct *handle,
-		       struct files_struct *fsp);
 
 struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
 					   TALLOC_CTX *mem_ctx,

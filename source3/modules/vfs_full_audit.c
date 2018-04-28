@@ -1286,18 +1286,6 @@ static int smb_full_audit_rename(vfs_handle_struct *handle,
 	return result;    
 }
 
-static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp)
-{
-	int result;
-	
-	result = SMB_VFS_NEXT_FSYNC(handle, fsp);
-
-	do_log(SMB_VFS_OP_FSYNC, (result >= 0), handle, "%s",
-	       fsp_str_do_log(fsp));
-
-	return result;    
-}
-
 struct smb_full_audit_fsync_state {
 	vfs_handle_struct *handle;
 	files_struct *fsp;
@@ -2531,7 +2519,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.sendfile_fn = smb_full_audit_sendfile,
 	.recvfile_fn = smb_full_audit_recvfile,
 	.rename_fn = smb_full_audit_rename,
-	.fsync_fn = smb_full_audit_fsync,
 	.fsync_send_fn = smb_full_audit_fsync_send,
 	.fsync_recv_fn = smb_full_audit_fsync_recv,
 	.stat_fn = smb_full_audit_stat,
