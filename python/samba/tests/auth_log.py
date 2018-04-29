@@ -94,6 +94,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[2], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the third message it should be an Authentication
         # if we are expecting 4 messages
@@ -148,6 +149,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[3], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
 
     def test_rpc_ncacn_np_ntlm_dns_sign(self):
@@ -277,6 +279,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[1], msg["Authorization"]["authType"])
         self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the second message it should be an Authentication
         msg = messages[1]
@@ -301,6 +304,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[1], msg["Authorization"]["authType"])
         self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the second message it should be an Authentication
         msg = messages[1]
@@ -1313,3 +1317,4 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals("schannel",  msg["Authorization"]["authType"])
         self.assertEquals("SEAL", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))

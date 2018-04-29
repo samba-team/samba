@@ -27,6 +27,7 @@ from samba.dcerpc import srvsvc, dnsserver
 import time
 import json
 import os
+import re
 from samba import smb
 from samba.samdb import SamDB
 
@@ -120,3 +121,10 @@ class AuthLogTestBase(samba.tests.TestCase):
             return sd != "NETLOGON"
 
         return list(filter(is_not_netlogon, messages))
+
+    GUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    #
+    # Is the supplied GUID string correctly formatted
+    #
+    def is_guid(self, guid):
+        return re.match(self.GUID_RE, guid)

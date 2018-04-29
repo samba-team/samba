@@ -115,6 +115,7 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals("ncalrpc", msg["Authorization"]["authType"])
         self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
     def test_netlogon_bad_machine_name(self):
         self._test_netlogon("bad_name",

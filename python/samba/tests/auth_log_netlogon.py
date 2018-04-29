@@ -114,6 +114,7 @@ class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals("ncalrpc", msg["Authorization"]["authType"])
         self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the fourth message it should be a NETLOGON Authentication
         msg = messages[3]

@@ -171,6 +171,7 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals("ncalrpc", msg["Authorization"]["authType"])
         self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
 
     def test_ncalrpc_samlogon(self):
