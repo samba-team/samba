@@ -77,6 +77,16 @@ class SchemaCmdTestCase(SambaToolCmdTest):
 
         self.assertCmdSuccess(result, out, err)
 
+    def test_show_oc_attribute(self):
+        """Tests that we can modify searchFlags of an attribute"""
+        (result, out, err) = self.runsubcmd("schema", "attribute",
+                              "show_oc", "cn",
+                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                              "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                            os.environ["DC_PASSWORD"]))
+
+        self.assertCmdSuccess(result, out, err)
+
     def test_display_objectclass(self):
         """Tests that we can display schema objectclasses"""
         (result, out, err) = self.runsubcmd("schema", "objectclass",

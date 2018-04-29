@@ -202,6 +202,55 @@ class cmd_schema_attribute_show(Command):
         user_ldif = samdb.write_ldif(res[0], ldb.CHANGETYPE_NONE)
         self.outf.write(user_ldif)
 
+class cmd_schema_attribute_show_oc(Command):
+    """Show what objectclasses MAY or MUST contain an attribute.
+
+    This is useful to determine "if I need uid, what objectclasses could be
+    applied to achieve this."
+    """
+    synopsis = "%prog attribute [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+        }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+                type=str, metavar="URL", dest="H"),
+        ]
+
+    takes_args = ["attribute"]
+
+    def run(self, attribute, H=None, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
+        samdb = SamDB(url=H, session_info=system_session(),
+            credentials=creds, lp=lp)
+
+        schema_dn = samdb.schema_dn()
+
+        may_filt = '(&(objectClass=classSchema)' \
+         '(|(mayContain={0})(systemMayContain={0})))'.format(attribute)
+        must_filt = '(&(objectClass=classSchema)' \
+         '(|(mustContain={0})(systemMustContain={0})))'.format(attribute)
+
+        may_res = samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
+                           expression=may_filt, attrs=['cn'])
+        must_res = samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
+                           expression=must_filt, attrs=['cn'])
+
+        self.outf.write('--- MAY contain ---\n')
+        for msg in may_res:
+            self.outf.write('%s\n' % msg['cn'][0])
+
+        self.outf.write('--- MUST contain ---\n')
+        for msg in must_res:
+            self.outf.write('%s\n' % msg['cn'][0])
+
+
 class cmd_schema_objectclass_show(Command):
     """Show details about an objectClass from the schema.
 
@@ -248,6 +297,7 @@ class cmd_schema_attribute(SuperCommand):
     subcommands = {}
     subcommands["modify"] = cmd_schema_attribute_modify()
     subcommands["show"] = cmd_schema_attribute_show()
+    subcommands["show_oc"] = cmd_schema_attribute_show_oc()
 
 class cmd_schema_objectclass(SuperCommand):
     """Query and manage objectclasses in the schema partition."""

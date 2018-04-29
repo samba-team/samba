@@ -753,6 +753,11 @@
 </refsect3>
 
 <refsect3>
+	<title>schema attribute show_oc <replaceable>attribute</replaceable> [options]</title>
+	<para>Show objectclasses that MAY or MUST contain this attribute.</para>
+</refsect3>
+
+<refsect3>
 	<title>schema objectclass show <replaceable>objectclass</replaceable> [options]</title>
 	<para>Display an objectclass schema definition.</para>
 </refsect3>
