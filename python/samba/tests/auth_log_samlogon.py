@@ -19,14 +19,8 @@
     Tests auth logging tests that exercise SamLogon
 """
 
-from samba import auth
 import samba.tests
-from samba.messaging import Messaging
-from samba.dcerpc.messaging import MSG_AUTH_LOG, AUTH_EVENT_NAME
-import time
-import json
 import os
-from samba import smb
 from samba.samdb import SamDB
 import samba.tests.auth_log_base
 from samba.credentials import (
@@ -41,6 +35,7 @@ from samba.auth import system_session
 from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
+
 
 class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
 
@@ -63,9 +58,8 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         self.samlogon_dn   = ("cn=%s,cn=users,%s" %
                               (self.netbios_name, self.base_dn))
 
-
     def tearDown(self):
-        super(AuthLogTestsSamLogon , self).tearDown()
+        super(AuthLogTestsSamLogon, self).tearDown()
         delete_force(self.ldb, self.samlogon_dn)
 
     def _test_samlogon(self, binding, creds, checkFunction):
@@ -119,7 +113,6 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         eol.AvId = ntlmssp.MsvAvEOL
         target_info.pair = [domainname, computername, eol]
 
-
         target_info_blob = ndr_pack(target_info)
 
         response = creds.get_ntlm_response(flags=CLI_CRED_NTLMv2_AUTH,
@@ -144,14 +137,13 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
 
         validation_level = samba.dcerpc.netlogon.NetlogonValidationSamInfo4
 
-
-        result = netlogon_conn.netr_LogonSamLogonEx(os.environ["SERVER"],
-                                               machine_creds.get_workstation(),
-                                               logon_level, logon,
-                                               validation_level, netr_flags)
+        result = netlogon_conn.netr_LogonSamLogonEx(
+            os.environ["SERVER"],
+            machine_creds.get_workstation(),
+            logon_level, logon,
+            validation_level, netr_flags)
 
         (validation, authoritative, netr_flags_out) = result
-
 
         messages = self.waitForMessages(isLastExpectedMessage, netlogon_conn)
         checkFunction(messages)
@@ -172,7 +164,6 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("ncalrpc", msg["Authorization"]["authType"])
         self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
-
 
     def test_ncalrpc_samlogon(self):
 

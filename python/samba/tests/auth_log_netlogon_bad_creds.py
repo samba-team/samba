@@ -38,6 +38,7 @@ from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dcerpc.netlogon import NETLOGON_NEG_STRONG_KEYS
 
+
 class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
 
     def setUp(self):

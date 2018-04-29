@@ -19,34 +19,31 @@ from __future__ import print_function
 """Tests for the Auth and AuthZ logging.
 """
 
-from samba import auth
 import samba.tests
 from samba.messaging import Messaging
 from samba.dcerpc.messaging import MSG_AUTH_LOG, AUTH_EVENT_NAME
-from samba.dcerpc import srvsvc, dnsserver
 import time
 import json
 import os
 import re
-from samba import smb
-from samba.samdb import SamDB
+
 
 class AuthLogTestBase(samba.tests.TestCase):
 
     def setUp(self):
         super(AuthLogTestBase, self).setUp()
         lp_ctx = self.get_loadparm()
-        self.msg_ctx = Messaging((1,), lp_ctx=lp_ctx);
+        self.msg_ctx = Messaging((1,), lp_ctx=lp_ctx)
         self.msg_ctx.irpc_add_name(AUTH_EVENT_NAME)
 
-        def messageHandler( context, msgType, src, message):
+        def messageHandler(context, msgType, src, message):
             # This does not look like sub unit output and it
             # makes these tests much easier to debug.
             print(message)
             jsonMsg = json.loads(message)
-            context["messages"].append( jsonMsg)
+            context["messages"].append(jsonMsg)
 
-        self.context = { "messages": []}
+        self.context = {"messages": []}
         self.msg_handler_and_context = (messageHandler, self.context)
         self.msg_ctx.register(self.msg_handler_and_context,
                               msg_type=MSG_AUTH_LOG)
@@ -62,20 +59,19 @@ class AuthLogTestBase(samba.tests.TestCase):
             self.msg_ctx.deregister(self.msg_handler_and_context,
                                     msg_type=MSG_AUTH_LOG)
 
-
     def waitForMessages(self, isLastExpectedMessage, connection=None):
         """Wait for all the expected messages to arrive
         The connection is passed through to keep the connection alive
         until all the logging messages have been received.
         """
 
-        def completed( messages):
+        def completed(messages):
             for message in messages:
-                if isRemote( message) and isLastExpectedMessage( message):
+                if isRemote(message) and isLastExpectedMessage(message):
                     return True
             return False
 
-        def isRemote( message):
+        def isRemote(message):
             remote = None
             if message["type"] == "Authorization":
                 remote = message["Authorization"]["remoteAddress"]
@@ -93,19 +89,19 @@ class AuthLogTestBase(samba.tests.TestCase):
         self.connection = connection
 
         start_time = time.time()
-        while not completed( self.context["messages"]):
+        while not completed(self.context["messages"]):
             self.msg_ctx.loop_once(0.1)
             if time.time() - start_time > 1:
                 self.connection = None
                 return []
 
         self.connection = None
-        return filter( isRemote, self.context["messages"])
+        return filter(isRemote, self.context["messages"])
 
     # Discard any previously queued messages.
     def discardMessages(self):
         self.msg_ctx.loop_once(0.001)
-        while len( self.context["messages"]):
+        while len(self.context["messages"]):
             self.msg_ctx.loop_once(0.001)
         self.context["messages"] = []
 
@@ -123,6 +119,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         return list(filter(is_not_netlogon, messages))
 
     GUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+
     #
     # Is the supplied GUID string correctly formatted
     #

@@ -18,19 +18,12 @@
 """Tests for the Auth and AuthZ logging.
 """
 
-from samba import auth
 import samba.tests
-from samba.messaging import Messaging
-from samba.dcerpc.messaging import MSG_AUTH_LOG, AUTH_EVENT_NAME
+from samba.credentials import DONT_USE_KERBEROS
 from samba.dcerpc.dcerpc import AS_SYSTEM_MAGIC_PATH_TOKEN
 from samba.dcerpc import samr
-import time
-import json
-import os
-from samba import smb
-from samba.samdb import SamDB
 import samba.tests.auth_log_base
-from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
+
 
 class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
 
@@ -39,25 +32,23 @@ class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
         self.remoteAddress = AS_SYSTEM_MAGIC_PATH_TOKEN
 
     def tearDown(self):
-        super(AuthLogTestsNcalrpc , self).tearDown()
-
+        super(AuthLogTestsNcalrpc, self).tearDown()
 
     def _test_rpc_ncaclrpc(self, authTypes, binding, creds,
                            protection, checkFunction):
 
-        def isLastExpectedMessage( msg):
+        def isLastExpectedMessage(msg):
             return (
                 msg["type"] == "Authorization" and
                 msg["Authorization"]["serviceDescription"]  == "DCE/RPC" and
                 msg["Authorization"]["authType"]            == authTypes[0] and
-                msg["Authorization"]["transportProtection"] == protection
-            )
+                msg["Authorization"]["transportProtection"] == protection)
 
         if binding:
             binding = "[%s]" % binding
 
         samr.samr("ncalrpc:%s" % binding, self.get_loadparm(), creds)
-        messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.waitForMessages(isLastExpectedMessage)
         checkFunction(messages, authTypes, protection)
 
     def rpc_ncacn_np_ntlm_check(self, messages, authTypes, protection):
@@ -81,9 +72,9 @@ class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("Authentication", msg["type"])
         self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
         self.assertEquals("DCE/RPC",
-                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[2], msg["Authentication"]["authDescription"])
-
+                          msg["Authentication"]["serviceDescription"])
+        self.assertEquals(authTypes[2],
+                          msg["Authentication"]["authDescription"])
 
     def test_ncalrpc_ntlm_dns_sign(self):
 
