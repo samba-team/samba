@@ -421,7 +421,7 @@ def build(bld):
                         source='protocol/protocol_util.c',
                         deps='replace talloc tdb')
 
-    bld.SAMBA_SUBSYSTEM('ctdb-client2',
+    bld.SAMBA_SUBSYSTEM('ctdb-client',
                         source=bld.SUBDIR('client',
                                           '''client_connect.c client_call.c
                                              client_message.c client_control.c
@@ -479,7 +479,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c',
-                     deps='''ctdb-client2 ctdb-protocol ctdb-protocol-util
+                     deps='''ctdb-client ctdb-protocol ctdb-protocol-util
                              ctdb-util ctdb-system samba-util sys_rw popt''',
                      install_path='${BINDIR}',
                      manpages='ctdb.1')
@@ -492,7 +492,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_event',
                      source='tools/ctdb_event.c',
-                     deps='''ctdb-client2 ctdb-protocol ctdb-protocol-util
+                     deps='''ctdb-client ctdb-protocol ctdb-protocol-util
                              ctdb-util ctdb-system samba-util replace''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
@@ -518,13 +518,13 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_recovery_helper',
                      source='server/ctdb_recovery_helper.c',
-                     deps='''ctdb-client2 ctdb-protocol ctdb-util
+                     deps='''ctdb-client ctdb-protocol ctdb-util
                              samba-util sys_rw replace tdb''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_takeover_helper',
                      source='server/ctdb_takeover_helper.c',
-                     deps='''ctdb-client2 ctdb-protocol ctdb-util
+                     deps='''ctdb-client ctdb-protocol ctdb-util
                              samba-util sys_rw replace ctdb-ipalloc popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
@@ -568,7 +568,7 @@ def build(bld):
         bld.SAMBA_BINARY('pmdactdb',
                          source='utils/pmda/pmda_ctdb.c',
                          includes='include',
-                         deps='''ctdb-client2 ctdb-protocol ctdb-util
+                         deps='''ctdb-client ctdb-protocol ctdb-util
                                  samba-util pcp_pmda pcp''',
                          install_path='${CTDB_PMDADIR}')
         bld.INSTALL_FILES('${CTDB_PMDADIR}', 'utils/pmda/Install',
@@ -835,7 +835,7 @@ def build(bld):
         bld.SAMBA_BINARY(target,
                          source=src,
                          includes='include',
-                         deps='''ctdb-client2 ctdb-protocol ctdb-util
+                         deps='''ctdb-client ctdb-protocol ctdb-util
                                  samba-util ctdb-tests-common''',
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
