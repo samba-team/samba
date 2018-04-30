@@ -32,8 +32,3 @@ build_samba_ad_dc:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-ad-dc     --verbose --tail --testbase /tmp/samba-testbase
 
-build_samba_ad_dc_2:
-  <<: *private_template
-  script:
-    # this one takes about 1 hours to finish
-    - python script/autobuild.py samba-ad-dc-2     --verbose --tail --testbase /tmp/samba-testbase
