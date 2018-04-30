@@ -342,6 +342,189 @@ static ssize_t vfs_read_data(files_struct *fsp,
 }
 
 /****************************************************************************
+ Detect the major and minor version of a PE file.
+ Returns:
+
+ 1 if file is a PE file and we got version numbers,
+ 0 if this file is a PE file and we couldn't get the version numbers,
+ -1 on error.
+
+ NB. buf is passed into and freed inside this function. This is a
+ bad API design, but fixing this is a task for another day.
+****************************************************************************/
+
+static int handle_pe_file(files_struct *fsp,
+				char *fname,
+				char *buf,
+				uint32_t *major,
+				uint32_t *minor)
+{
+	unsigned int i;
+	unsigned int num_sections;
+	unsigned int section_table_bytes;
+	ssize_t byte_count;
+	off_t oret;
+	off_t pos;
+	int ret = -1;
+
+	/* Just skip over optional header to get to section table */
+	pos = SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-
+		(NE_HEADER_SIZE-PE_HEADER_SIZE);
+
+	oret = SMB_VFS_LSEEK(fsp, pos, SEEK_CUR);
+	if (oret == (off_t)-1) {
+		DBG_NOTICE("File [%s] Windows optional header "
+			"too short, errno = %d\n",
+			fname,
+			errno);
+		goto out;
+	}
+
+	/* get the section table */
+	num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
+	section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
+	if (section_table_bytes == 0) {
+		goto out;
+	}
+
+	SAFE_FREE(buf);
+	buf = (char *)SMB_MALLOC(section_table_bytes);
+	if (buf == NULL) {
+		DBG_ERR("PE file [%s] section table malloc "
+			"failed bytes = %d\n",
+			fname,
+			section_table_bytes);
+		goto out;
+	}
+
+	byte_count = vfs_read_data(fsp, buf, section_table_bytes);
+	if (byte_count < section_table_bytes) {
+		DBG_NOTICE("PE file [%s] Section header too short, "
+			"bytes read = %lu\n",
+			fname,
+			(unsigned long)byte_count);
+		goto out;
+	}
+
+	/*
+	 * Iterate the section table looking for
+	 * the resource section ".rsrc"
+	 */
+	for (i = 0; i < num_sections; i++) {
+		int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
+
+		if (strcmp(".rsrc",
+			&buf[sec_offset+ PE_HEADER_SECT_NAME_OFFSET]) == 0) {
+			unsigned int section_pos = IVAL(buf,
+					sec_offset+
+					PE_HEADER_SECT_PTR_DATA_OFFSET);
+			unsigned int section_bytes = IVAL(buf,
+					sec_offset+
+					PE_HEADER_SECT_SIZE_DATA_OFFSET);
+
+			if (section_bytes == 0) {
+				goto out;
+			}
+
+			SAFE_FREE(buf);
+			buf=(char *)SMB_MALLOC(section_bytes);
+			if (buf == NULL) {
+				DBG_ERR("PE file [%s] version malloc "
+					"failed bytes = %d\n",
+					fname,
+					section_bytes);
+				goto out;
+			}
+
+			/*
+			 * Seek to the start of the .rsrc
+			 * section info
+			 */
+			oret = SMB_VFS_LSEEK(fsp,
+					section_pos,
+					SEEK_SET);
+			if (oret == (off_t)-1) {
+				DBG_NOTICE("PE file [%s] too short for "
+					"section info, errno = %d\n",
+					fname,
+					errno);
+				goto out;
+			}
+
+			byte_count = vfs_read_data(fsp,
+						buf,
+						section_bytes);
+			if (byte_count < section_bytes) {
+				DBG_NOTICE("PE file "
+					"[%s] .rsrc section too short, "
+					"bytes read = %lu\n",
+					 fname,
+					(unsigned long)byte_count);
+				goto out;
+			}
+
+			if (section_bytes < VS_VERSION_INFO_UNICODE_SIZE) {
+				goto out;
+			}
+
+			for (i=0;
+				i< section_bytes - VS_VERSION_INFO_UNICODE_SIZE;
+					i++) {
+				/*
+				 * Scan for 1st 3 unicoded bytes
+				 * followed by word aligned magic
+				 * value.
+				 */
+				int mpos;
+				bool magic_match = false;
+
+				if (buf[i] == 'V' &&
+						buf[i+1] == '\0' &&
+						buf[i+2] == 'S') {
+					magic_match = true;
+				}
+
+				if (magic_match == false) {
+					continue;
+				}
+
+				/* Align to next long address */
+				mpos = (i + sizeof(VS_SIGNATURE)*2 +
+					3) & 0xfffffffc;
+
+				if (IVAL(buf,mpos) == VS_MAGIC_VALUE) {
+					*major = IVAL(buf,
+							mpos+ VS_MAJOR_OFFSET);
+					*minor = IVAL(buf,
+							mpos+ VS_MINOR_OFFSET);
+
+					DBG_INFO("PE file [%s] Version = "
+						"%08x:%08x (%d.%d.%d.%d)\n",
+						fname,
+						*major,
+						*minor,
+						(*major>>16)&0xffff,
+						*major&0xffff,
+						(*minor>>16)&0xffff,
+						*minor&0xffff);
+					ret = 1;
+					goto out;
+				}
+			}
+		}
+	}
+
+	/* Version info not found, fall back to origin date/time */
+	DBG_DEBUG("PE file [%s] has no version info\n", fname);
+	ret = 0;
+
+  out:
+
+	SAFE_FREE(buf);
+	return ret;
+}
+
+/****************************************************************************
  Version information in Microsoft files is held in a VS_VERSION_INFO structure.
  There are two case to be covered here: PE (Portable Executable) and NE (New
  Executable) files. Both files support the same INFO structure, but PE files
@@ -420,165 +603,11 @@ static int get_file_version(files_struct *fsp,
 	 * or an NE (New Executable).
 	 */
 	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
-		unsigned int num_sections;
-		unsigned int section_table_bytes;
-
-		/* Just skip over optional header to get to section table */
-		pos = SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-
-			(NE_HEADER_SIZE-PE_HEADER_SIZE);
-
-		oret = SMB_VFS_LSEEK(fsp, pos, SEEK_CUR);
-		if (oret == (off_t)-1) {
-			DBG_NOTICE("File [%s] Windows optional header "
-				"too short, errno = %d\n",
-				fname,
-				errno);
-			goto error_exit;
-		}
-
-		/* get the section table */
-		num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
-		section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
-		if (section_table_bytes == 0) {
-			goto error_exit;
-		}
-
-		SAFE_FREE(buf);
-		buf = (char *)SMB_MALLOC(section_table_bytes);
-		if (buf == NULL) {
-			DBG_ERR("PE file [%s] section table malloc "
-				"failed bytes = %d\n",
-				fname,
-				section_table_bytes);
-			goto error_exit;
-		}
-
-		byte_count = vfs_read_data(fsp, buf, section_table_bytes);
-		if (byte_count < section_table_bytes) {
-			DBG_NOTICE("PE file [%s] "
-				"Section header too short, bytes read = %lu\n",
-				fname,
-				(unsigned long)byte_count);
-			goto error_exit;
-		}
-
-		/*
-		 * Iterate the section table looking for
-		 * the resource section ".rsrc"
-		 */
-		for (i = 0; i < num_sections; i++) {
-			int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
-
-			if (strcmp(".rsrc",
-					&buf[sec_offset+
-						PE_HEADER_SECT_NAME_OFFSET])
-							== 0) {
-				unsigned int section_pos =
-					IVAL(buf,
-						sec_offset+
-						PE_HEADER_SECT_PTR_DATA_OFFSET);
-				unsigned int section_bytes =
-					IVAL(buf,
-						sec_offset+
-						PE_HEADER_SECT_SIZE_DATA_OFFSET);
-
-				if (section_bytes == 0) {
-					goto error_exit;
-				}
-
-				SAFE_FREE(buf);
-				buf=(char *)SMB_MALLOC(section_bytes);
-				if (buf == NULL) {
-					DBG_ERR("PE file [%s] version malloc "
-						"failed bytes = %d\n",
-						fname,
-						section_bytes);
-					goto error_exit;
-				}
-
-				/*
-				 * Seek to the start of the .rsrc
-				 * section info
-				 */
-				oret = SMB_VFS_LSEEK(fsp,
-						section_pos,
-						SEEK_SET);
-				if (oret == (off_t)-1) {
-					DBG_NOTICE("PE file [%s] too short for "
-						"section info, errno = %d\n",
-						fname,
-						errno);
-					goto error_exit;
-				}
-
-				byte_count = vfs_read_data(fsp,
-							buf,
-							section_bytes);
-				if (byte_count < section_bytes) {
-					DBG_NOTICE("PE file "
-						"[%s] .rsrc section too short, "
-						"bytes read = %lu\n",
-						 fname,
-						(unsigned long)byte_count);
-					goto error_exit;
-				}
-
-				if (section_bytes <
-						VS_VERSION_INFO_UNICODE_SIZE) {
-					goto error_exit;
-				}
-
-				for (i=0;
-					i< section_bytes-
-						VS_VERSION_INFO_UNICODE_SIZE;
-						i++) {
-					/*
-					 * Scan for 1st 3 unicoded bytes
-					 * followed by word aligned magic
-					 * value.
-					 */
-					if (buf[i] == 'V' &&
-							buf[i+1] == '\0' &&
-							buf[i+2] == 'S') {
-						/* Align to next long address */
-						int mpos =
-							(i +
-							sizeof(VS_SIGNATURE)*2 +
-							 3) & 0xfffffffc;
-
-						if (IVAL(buf,mpos) ==
-								VS_MAGIC_VALUE) {
-							*major = IVAL(buf,
-								mpos+
-								VS_MAJOR_OFFSET);
-							*minor = IVAL(buf,
-								mpos+
-								VS_MINOR_OFFSET);
-
-							DBG_INFO("PE file [%s] "
-								"Version = "
-								"%08x:%08x "
-								"(%d.%d.%d.%d)\n",
-								fname,
-								*major,
-								*minor,
-								(*major>>16)&0xffff,
-								*major&0xffff,
-								(*minor>>16)&0xffff,
-								*minor&0xffff);
-							SAFE_FREE(buf);
-							return 1;
-						}
-					}
-				}
-			}
-		}
-
-		/* Version info not found, fall back to origin date/time */
-		DBG_DEBUG("PE file [%s] has no version info\n", fname);
-		SAFE_FREE(buf);
-		return 0;
-
+		return handle_pe_file(fsp,
+					fname,
+					buf,
+					major,
+					minor);
 	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) ==
 			NE_HEADER_SIGNATURE) {
 		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) !=
