@@ -8,7 +8,7 @@ setup
 
 FAKE_TDBTOOL_SUPPORTS_CHECK="yes"
 
-db="${CTDB_DBDIR}/persistent/foo.tdb.0"
+db="${CTDB_DBDIR_PERSISTENT}/foo.tdb.0"
 touch "$db"
 FAKE_TDB_IS_OK="no"
 
