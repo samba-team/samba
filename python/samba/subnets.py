@@ -22,7 +22,7 @@
 
 import ldb
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, LdbError
-from sites import SiteNotFoundException
+from .sites import SiteNotFoundException
 
 class SubnetException(Exception):
     """Base element for Subnet errors"""

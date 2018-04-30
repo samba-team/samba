@@ -17,7 +17,7 @@
 #
 
 import samba.getopt as options
-import common
+from . import common
 from samba.net import Net
 
 from samba.netcmd import (
