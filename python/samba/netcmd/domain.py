@@ -100,6 +100,7 @@ from samba.provision.common import (
 )
 
 from samba.netcmd.pso import cmd_domain_passwordsettings_pso
+from samba.netcmd.domain_backup import cmd_domain_backup
 
 string_version_to_constant = {
     "2008_R2" : DS_DOMAIN_FUNCTION_2008_R2,
@@ -4334,3 +4335,4 @@ class cmd_domain(SuperCommand):
     subcommands["tombstones"] = cmd_domain_tombstones()
     subcommands["schemaupgrade"] = cmd_domain_schema_upgrade()
     subcommands["functionalprep"] = cmd_domain_functional_prep()
+    subcommands["backup"] = cmd_domain_backup()

@@ -292,6 +292,16 @@
 </refsect2>
 
 <refsect3>
+	<title>domain backup</title>
+	<para>Create or restore a backup of the domain.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain backup online</title>
+	<para>Copy a running DC's current DB into a backup tar file.</para>
+</refsect3>
+
+<refsect3>
 	<title>domain classicupgrade [options] <replaceable>classic_smb_conf</replaceable></title>
 	<para>Upgrade from Samba classic (NT4-like) database to Samba AD DC
 	database.</para>
