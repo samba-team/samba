@@ -26,7 +26,7 @@ import samba.tests
 from samba import gensec
 from samba.credentials import Credentials
 from samba.tests import TestCase
-
+from samba.ndr import ndr_pack, ndr_unpack
 
 class RawDCERPCTest(TestCase):
     """A raw DCE/RPC Test case."""
@@ -424,7 +424,7 @@ class RawDCERPCTest(TestCase):
 
             if hexdump:
                 sys.stderr.write("stub_out: %d\n%s" % (len(stub_out), self.hexdump(stub_out)))
-            samba.ndr.ndr_unpack_out(io, stub_out, bigendian=bigendian, ndr64=ndr64,
+            ndr_unpack_out(io, stub_out, bigendian=bigendian, ndr64=ndr64,
                                      allow_remaining=allow_remaining)
             if ndr_print:
                 sys.stderr.write("out: %s" % samba.ndr.ndr_print_out(io))
@@ -441,7 +441,7 @@ class RawDCERPCTest(TestCase):
         ctx = self.prepare_presentation(samba.dcerpc.epmapper.abstract_syntax(),
                                         transfer, context_id=0)
 
-        data1 = samba.ndr.ndr_pack(abstract)
+        data1 = ndr_pack(abstract)
         lhs1 = samba.dcerpc.epmapper.epm_lhs()
         lhs1.protocol = samba.dcerpc.epmapper.EPM_PROTOCOL_UUID
         lhs1.lhs_data = data1[:18]
@@ -450,7 +450,7 @@ class RawDCERPCTest(TestCase):
         floor1 = samba.dcerpc.epmapper.epm_floor()
         floor1.lhs = lhs1
         floor1.rhs = rhs1
-        data2 = samba.ndr.ndr_pack(transfer)
+        data2 = ndr_pack(transfer)
         lhs2 = samba.dcerpc.epmapper.epm_lhs()
         lhs2.protocol = samba.dcerpc.epmapper.EPM_PROTOCOL_UUID
         lhs2.lhs_data = data2[:18]
@@ -515,7 +515,7 @@ class RawDCERPCTest(TestCase):
         if hexdump is None:
             hexdump = self.do_hexdump
         try:
-            req_pdu = samba.ndr.ndr_pack(req)
+            req_pdu = ndr_pack(req)
             if ndr_print:
                 sys.stderr.write("send_pdu: %s" % samba.ndr.ndr_print(req))
             if hexdump:
@@ -573,7 +573,7 @@ class RawDCERPCTest(TestCase):
             rep_pdu = self.recv_raw(hexdump=hexdump, timeout=timeout)
             if rep_pdu is None:
                 return (None,None)
-            rep = samba.ndr.ndr_unpack(samba.dcerpc.dcerpc.ncacn_packet, rep_pdu, allow_remaining=True)
+            rep = ndr_unpack(samba.dcerpc.dcerpc.ncacn_packet, rep_pdu, allow_remaining=True)
             if ndr_print:
                 sys.stderr.write("recv_pdu: %s" % samba.ndr.ndr_print(rep))
             self.assertEqual(rep.frag_length, len(rep_pdu))
@@ -607,7 +607,7 @@ class RawDCERPCTest(TestCase):
             a.auth_context_id= auth_context_id
             a.credentials = auth_blob
 
-            ai = samba.ndr.ndr_pack(a)
+            ai = ndr_pack(a)
             if ndr_print:
                 sys.stderr.write("generate_auth: %s" % samba.ndr.ndr_print(a))
             if hexdump:
@@ -628,7 +628,7 @@ class RawDCERPCTest(TestCase):
 
         if hexdump:
             sys.stderr.write("parse_auth: %d\n%s" % (len(auth_info), self.hexdump(auth_info)))
-        a = samba.ndr.ndr_unpack(samba.dcerpc.dcerpc.auth, auth_info, allow_remaining=True)
+        a = ndr_unpack(samba.dcerpc.dcerpc.auth, auth_info, allow_remaining=True)
         if ndr_print:
             sys.stderr.write("parse_auth: %s" % samba.ndr.ndr_print(a))
 
@@ -661,7 +661,7 @@ class RawDCERPCTest(TestCase):
         p.call_id = call_id
         p.u = payload
 
-        pdu = samba.ndr.ndr_pack(p)
+        pdu = ndr_pack(p)
         p.frag_length = len(pdu)
 
         return p
