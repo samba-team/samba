@@ -105,7 +105,7 @@ static int test_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
   this function is also used for restore
 */
 static int backup_tdb(const char *old_name, const char *new_name,
-		      int hash_size, int nolock)
+		      int hash_size, int nolock, bool readonly)
 {
 	TDB_CONTEXT *tdb;
 	TDB_CONTEXT *tdb_new;
@@ -145,8 +145,17 @@ static int backup_tdb(const char *old_name, const char *new_name,
 		return 1;
 	}
 
-	if (tdb_transaction_start(tdb) != 0) {
-		printf("Failed to start transaction on old tdb\n");
+	if (readonly) {
+		if (tdb_lockall_read(tdb) != 0) {
+			printf("Failed to obtain read only lock on old tdb\n");
+			tdb_close(tdb);
+			tdb_close(tdb_new);
+			unlink(tmp_name);
+			free(tmp_name);
+			return 1;
+		}
+	} else if (tdb_transaction_start(tdb) != 0) {
+		printf("Failed to start transaction on db\n");
 		tdb_close(tdb);
 		tdb_close(tdb_new);
 		unlink(tmp_name);
@@ -167,7 +176,15 @@ static int backup_tdb(const char *old_name, const char *new_name,
 	failed = 0;
 
 	/* traverse and copy */
-	count1 = tdb_traverse(tdb, copy_fn, (void *)tdb_new);
+	if (readonly) {
+		count1 = tdb_traverse_read(tdb,
+					   copy_fn,
+					   (void *)tdb_new);
+	} else {
+		count1 = tdb_traverse(tdb,
+				      copy_fn,
+				      (void *)tdb_new);
+	}
 	if (count1 < 0 || failed) {
 		fprintf(stderr,"failed to copy %s\n", old_name);
 		tdb_close(tdb);
@@ -251,7 +268,7 @@ static int verify_tdb(const char *fname, const char *bak_name)
 	/* count is < 0 means an error */
 	if (count < 0) {
 		printf("restoring %s\n", fname);
-		return backup_tdb(bak_name, fname, 0, 0);
+		return backup_tdb(bak_name, fname, 0, 0, 0);
 	}
 
 	printf("%s : %d records\n", fname, count);
@@ -282,6 +299,7 @@ static void usage(void)
 	printf("   -v            verify mode (restore if corrupt)\n");
 	printf("   -n hashsize   set the new hash size for the backup\n");
 	printf("   -l            open without locking to back up mutex dbs\n");
+	printf("   -r            open with read only locking\n");
 }
 
  int main(int argc, char *argv[])
@@ -292,11 +310,12 @@ static void usage(void)
 	int verify = 0;
 	int hashsize = 0;
 	int nolock = 0;
+	bool readonly = false;
 	const char *suffix = ".bak";
 
 	log_ctx.log_fn = tdb_log;
 
-	while ((c = getopt(argc, argv, "vhs:n:l")) != -1) {
+	while ((c = getopt(argc, argv, "vhs:n:lr")) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
@@ -313,6 +332,8 @@ static void usage(void)
 		case 'l':
 			nolock = 1;
 			break;
+		case 'r':
+			readonly = true;
 		}
 	}
 
@@ -337,7 +358,7 @@ static void usage(void)
 		} else {
 			if (file_newer(fname, bak_name) &&
 			    backup_tdb(fname, bak_name, hashsize,
-				       nolock) != 0) {
+				       nolock, readonly) != 0) {
 				ret = 1;
 			}
 		}
