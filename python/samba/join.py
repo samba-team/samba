@@ -1495,10 +1495,11 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
     logger.info("Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid))
 
 def join_clone(logger=None, server=None, creds=None, lp=None,
-               targetdir=None, domain=None, include_secrets=False):
+               targetdir=None, domain=None, include_secrets=False,
+               dns_backend="NONE"):
     """Join as a DC."""
     ctx = dc_join(logger, server, creds, lp, site=None, netbios_name=None, targetdir=targetdir, domain=domain,
-                  machinepass=None, use_ntvfs=False, dns_backend="NONE", promote_existing=False, clone_only=True)
+                  machinepass=None, use_ntvfs=False, dns_backend=dns_backend, promote_existing=False, clone_only=True)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
