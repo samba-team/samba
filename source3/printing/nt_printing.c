@@ -525,6 +525,173 @@ static int handle_pe_file(files_struct *fsp,
 }
 
 /****************************************************************************
+ Detect the major and minor version of an NE file.
+ Returns:
+
+ 1 if file is an NE file and we got version numbers,
+ 0 if this file is an NE file and we couldn't get the version numbers,
+ -1 on error.
+
+ NB. buf is passed into and freed inside this function. This is a
+ bad API design, but fixing this is a task for another day.
+****************************************************************************/
+
+static int handle_ne_file(files_struct *fsp,
+				char *fname,
+				char *buf,
+				uint32_t *major,
+				uint32_t *minor)
+{
+	unsigned int i;
+	ssize_t byte_count;
+	int ret = -1;
+
+	if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
+		DBG_NOTICE("NE file [%s] wrong target OS = 0x%x\n",
+			fname,
+			CVAL(buf,NE_HEADER_TARGET_OS_OFFSET));
+		/*
+		 * At this point, we assume the file is in error.
+		 * It still could be something else besides a NE file,
+		 * but it unlikely at this point.
+		 */
+		goto out;
+	}
+
+	/* Allocate a bit more space to speed up things */
+	SAFE_FREE(buf);
+	buf=(char *)SMB_MALLOC(VS_NE_BUF_SIZE);
+	if (buf == NULL) {
+		DBG_ERR("NE file [%s] malloc failed bytes  = %d\n",
+			fname,
+			PE_HEADER_SIZE);
+		goto out;
+	}
+
+	/*
+	 * This is a HACK! I got tired of trying to sort through the
+	 * messy 'NE' file format. If anyone wants to clean this up
+	 * please have at it, but this works. 'NE' files will
+	 * eventually fade away. JRR
+	 */
+	byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE);
+	while (byte_count > 0) {
+		/*
+		 * Cover case that should not occur in a well
+		 * formed 'NE' .dll file
+		 */
+		if (byte_count-VS_VERSION_INFO_SIZE <= 0) {
+			break;
+		}
+
+		for(i=0; i<byte_count; i++) {
+			/*
+			 * Fast skip past data that can't
+			 * possibly match
+			 */
+			if (buf[i] != 'V') {
+				byte_count = vfs_read_data(fsp,
+						buf,
+						VS_NE_BUF_SIZE);
+				continue;
+			}
+
+			/*
+			 * Potential match data crosses buf boundry,
+			 * move it to beginning of buf, and fill the
+			 * buf with as much as it will hold.
+			 */
+			if (i>byte_count-VS_VERSION_INFO_SIZE) {
+				ssize_t amount_read;
+				ssize_t amount_unused = byte_count-i;
+
+				memmove(buf, &buf[i], amount_unused);
+				amount_read = vfs_read_data(fsp,
+						&buf[amount_unused],
+						VS_NE_BUF_SIZE- amount_unused);
+				if (amount_read < 0) {
+					DBG_ERR("NE file [%s] Read "
+						"error, errno=%d\n",
+						fname,
+						errno);
+					goto out;
+				}
+
+				if (amount_read + amount_unused <
+						amount_read) {
+					/* Check for integer wrap. */
+					break;
+				}
+
+				byte_count = amount_read +
+					     amount_unused;
+				if (byte_count < VS_VERSION_INFO_SIZE) {
+					break;
+				}
+
+				i = 0;
+			}
+
+			/*
+			 * Check that the full signature string and
+			 * the magic number that follows exist (not
+			 * a perfect solution, but the chances that this
+			 * occurs in code is, well, remote. Yes I know
+			 * I'm comparing the 'V' twice, as it is
+			 * simpler to read the code.
+			 */
+			if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
+				/*
+				 * Compute skip alignment to next
+				 * long address.
+				 */
+				off_t cpos = SMB_VFS_LSEEK(fsp,
+						0,
+						SEEK_CUR);
+
+				int skip = -(cpos - (byte_count - i) +
+					 sizeof(VS_SIGNATURE)) & 3;
+				if (IVAL(buf,
+					i+sizeof(VS_SIGNATURE)+skip)
+						!= 0xfeef04bd) {
+					byte_count = vfs_read_data(fsp,
+							buf,
+							VS_NE_BUF_SIZE);
+					continue;
+				}
+
+				*major = IVAL(buf,
+					i+sizeof(VS_SIGNATURE)+
+					skip+VS_MAJOR_OFFSET);
+				*minor = IVAL(buf,
+					i+sizeof(VS_SIGNATURE)+
+					skip+VS_MINOR_OFFSET);
+				DBG_INFO("NE file [%s] Version "
+					"= %08x:%08x (%d.%d.%d.%d)\n",
+					fname,
+					*major,
+					*minor,
+					(*major>>16)&0xffff,
+					*major&0xffff,
+					(*minor>>16)&0xffff,
+					*minor&0xffff);
+				ret = 1;
+				goto out;
+			}
+		}
+	}
+
+	/* Version info not found, fall back to origin date/time */
+	DBG_ERR("NE file [%s] Version info not found\n", fname);
+	ret = 0;
+
+  out:
+
+	SAFE_FREE(buf);
+	return ret;
+}
+
+/****************************************************************************
  Version information in Microsoft files is held in a VS_VERSION_INFO structure.
  There are two case to be covered here: PE (Portable Executable) and NE (New
  Executable) files. Both files support the same INFO structure, but PE files
@@ -537,7 +704,6 @@ static int get_file_version(files_struct *fsp,
 				uint32_t *major,
 				uint32_t *minor)
 {
-	int     i;
 	char    *buf = NULL;
 	ssize_t byte_count;
 	off_t pos;
@@ -610,147 +776,11 @@ static int get_file_version(files_struct *fsp,
 					minor);
 	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) ==
 			NE_HEADER_SIGNATURE) {
-		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) !=
-				NE_HEADER_TARGOS_WIN ) {
-			DBG_NOTICE("NE file [%s] wrong target OS = 0x%x\n",
-				fname,
-				CVAL(buf,NE_HEADER_TARGET_OS_OFFSET));
-			/*
-			 * At this point, we assume the file is in error.
-			 * It still could be something else besides a NE file,
-			 * but it unlikely at this point.
-			 */
-			goto error_exit;
-		}
-
-		/* Allocate a bit more space to speed up things */
-		SAFE_FREE(buf);
-		buf=(char *)SMB_MALLOC(VS_NE_BUF_SIZE);
-		if (buf == NULL) {
-			DBG_ERR("NE file [%s] malloc failed bytes  = %d\n",
-				fname,
-				PE_HEADER_SIZE);
-			goto error_exit;
-		}
-
-		/*
-		 * This is a HACK! I got tired of trying to sort through the
-		 * messy 'NE' file format. If anyone wants to clean this up
-		 * please have at it, but this works. 'NE' files will
-		 * eventually fade away. JRR
-		 */
-		byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE);
-		while (byte_count > 0) {
-			/*
-			 * Cover case that should not occur in a well
-			 * formed 'NE' .dll file
-			 */
-			if (byte_count-VS_VERSION_INFO_SIZE <= 0) {
-				break;
-			}
-
-			for(i=0; i<byte_count; i++) {
-				/*
-				 * Fast skip past data that can't
-				 * possibly match
-				 */
-				if (buf[i] != 'V') {
-					byte_count = vfs_read_data(fsp,
-							buf,
-							VS_NE_BUF_SIZE);
-					continue;
-				}
-
-				/*
-				 * Potential match data crosses buf boundry,
-				 * move it to beginning of buf, and fill the
-				 * buf with as much as it will hold.
-				 */
-				if (i>byte_count-VS_VERSION_INFO_SIZE) {
-					ssize_t amount_read;
-					ssize_t amount_unused = byte_count-i;
-
-					memmove(buf, &buf[i], amount_unused);
-					amount_read = vfs_read_data(fsp,
-						&buf[amount_unused],
-						VS_NE_BUF_SIZE- amount_unused);
-					if (amount_read < 0) {
-						DBG_ERR("NE file [%s] Read "
-							"error, errno=%d\n",
-							fname,
-							errno);
-						goto error_exit;
-					}
-
-					if (amount_read + amount_unused <
-							amount_read) {
-						/* Check for integer wrap. */
-						break;
-					}
-
-					byte_count = amount_read +
-						     amount_unused;
-					if (byte_count < VS_VERSION_INFO_SIZE) {
-						break;
-					}
-
-					i = 0;
-				}
-
-				/*
-				 * Check that the full signature string and
-				 * the magic number that follows exist (not
-				 * a perfect solution, but the chances that this
-				 * occurs in code is, well, remote. Yes I know
-				 * I'm comparing the 'V' twice, as it is
-				 * simpler to read the code.
-				 */
-				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
-					/*
-					 * Compute skip alignment to next
-					 * long address.
-					 */
-					off_t cpos = SMB_VFS_LSEEK(fsp,
-							0,
-							SEEK_CUR);
-
-					int skip = -(cpos - (byte_count - i) +
-						 sizeof(VS_SIGNATURE)) & 3;
-					if (IVAL(buf,
-						i+sizeof(VS_SIGNATURE)+skip)
-							!= 0xfeef04bd) {
-						byte_count = vfs_read_data(fsp,
-								buf,
-								VS_NE_BUF_SIZE);
-						continue;
-					}
-
-					*major = IVAL(buf,
-						i+sizeof(VS_SIGNATURE)+
-						skip+VS_MAJOR_OFFSET);
-					*minor = IVAL(buf,
-						i+sizeof(VS_SIGNATURE)+
-						skip+VS_MINOR_OFFSET);
-					DBG_INFO("NE file [%s] Version "
-						"= %08x:%08x (%d.%d.%d.%d)\n",
-						fname,
-						*major,
-						*minor,
-						(*major>>16)&0xffff,
-						*major&0xffff,
-						(*minor>>16)&0xffff,
-						*minor&0xffff);
-					SAFE_FREE(buf);
-					return 1;
-				}
-			}
-		}
-
-		/* Version info not found, fall back to origin date/time */
-		DBG_ERR("NE file [%s] Version info not found\n", fname);
-		SAFE_FREE(buf);
-		return 0;
-
+		return handle_ne_file(fsp,
+					fname,
+					buf,
+					major,
+					minor);
 	} else {
 		/*
 		 * Assume this isn't an error... the file just
@@ -759,6 +789,7 @@ static int get_file_version(files_struct *fsp,
 		DBG_NOTICE("File [%s] unknown file format, signature = 0x%x\n",
 			fname,
 			IVAL(buf,PE_HEADER_SIGNATURE_OFFSET));
+		/* Fallthrough into no_version_info: */
 	}
 
 	no_version_info:
