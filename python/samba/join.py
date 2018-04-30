@@ -57,7 +57,7 @@ class DCJoinContext(object):
                  netbios_name=None, targetdir=None, domain=None,
                  machinepass=None, use_ntvfs=False, dns_backend=None,
                  promote_existing=False, plaintext_secrets=False,
-                 backend_store=None):
+                 backend_store=None, forced_local_samdb=None):
         if site is None:
             site = "Default-First-Site-Name"
 
@@ -79,16 +79,20 @@ class DCJoinContext(object):
         ctx.creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
         ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
 
-        if server is not None:
-            ctx.server = server
-        else:
-            ctx.logger.info("Finding a writeable DC for domain '%s'" % domain)
-            ctx.server = ctx.find_dc(domain)
-            ctx.logger.info("Found DC %s" % ctx.server)
+        ctx.server = server
+        ctx.forced_local_samdb = forced_local_samdb
 
-        ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
-                          session_info=system_session(),
-                          credentials=ctx.creds, lp=ctx.lp)
+        if forced_local_samdb:
+            ctx.samdb = forced_local_samdb
+            ctx.server = ctx.samdb.url
+        else:
+            if not ctx.server:
+                ctx.logger.info("Finding a writeable DC for domain '%s'" % domain)
+                ctx.server = ctx.find_dc(domain)
+                ctx.logger.info("Found DC %s" % ctx.server)
+            ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
+                              session_info=system_session(),
+                              credentials=ctx.creds, lp=ctx.lp)
 
         try:
             ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL, attrs=["dn"])
@@ -563,7 +567,9 @@ class DCJoinContext(object):
         '''add the ntdsdsa object'''
 
         rec = ctx.join_ntdsdsa_obj()
-        if ctx.RODC:
+        if ctx.forced_local_samdb:
+            ctx.samdb.add(rec, controls=["relax:0"])
+        elif ctx.RODC:
             ctx.samdb.add(rec, ["rodc_join:1:1"])
         else:
             ctx.DsAddEntry([rec])
@@ -572,7 +578,7 @@ class DCJoinContext(object):
         res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
         ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
 
-    def join_add_objects(ctx):
+    def join_add_objects(ctx, specified_sid=None):
         '''add the various objects needed for the join'''
         if ctx.acct_dn:
             print("Adding %s" % ctx.acct_dn)
@@ -602,12 +608,18 @@ class DCJoinContext(object):
             elif ctx.promote_existing:
                 rec["msDS-RevealOnDemandGroup"] = []
 
+            if specified_sid:
+                rec["objectSid"] = ndr_pack(specified_sid)
+
             if ctx.promote_existing:
                 if ctx.promote_from_dn != ctx.acct_dn:
                     ctx.samdb.rename(ctx.promote_from_dn, ctx.acct_dn)
                 ctx.samdb.modify(ldb.Message.from_dict(ctx.samdb, rec, ldb.FLAG_MOD_REPLACE))
             else:
-                ctx.samdb.add(rec)
+                controls = None
+                if specified_sid is not None:
+                    controls = ["relax:0"]
+                ctx.samdb.add(rec, controls=controls)
 
         if ctx.krbtgt_dn:
             ctx.add_krbtgt_account()

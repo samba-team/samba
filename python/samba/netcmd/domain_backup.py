@@ -21,42 +21,25 @@ import sys
 import tarfile
 import logging
 import shutil
+import tempfile
 import samba
 import samba.getopt as options
 from samba.samdb import SamDB
 import ldb
 from samba import smb
-from samba.ntacls import backup_online
+from samba.ntacls import backup_online, backup_restore
 from samba.auth import system_session
 from samba.join import DCJoinContext, join_clone
 from samba.dcerpc.security import dom_sid
 from samba.netcmd import Option, CommandError
-import traceback
+from samba.dcerpc import misc
+from samba import Ldb
+from fsmo import cmd_fsmo_seize
+from samba.provision import make_smbconf
+from samba.upgradehelpers import update_krbtgt_account_password
+from samba.remove_dc import remove_dc
+from samba.provision import secretsdb_self_join
 
-tmpdir = 'backup_temp_dir'
-
-
-def rm_tmp():
-    if os.path.exists(tmpdir):
-        shutil.rmtree(tmpdir)
-
-
-def using_tmp_dir(func):
-    def inner(*args, **kwargs):
-        try:
-            rm_tmp()
-            os.makedirs(tmpdir)
-            rval = func(*args, **kwargs)
-            rm_tmp()
-            return rval
-        except Exception as e:
-            rm_tmp()
-
-            # print a useful stack-trace for unexpected exceptions
-            if type(e) is not CommandError:
-                traceback.print_exc()
-            raise e
-    return inner
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.
@@ -175,7 +158,6 @@ class cmd_domain_backup_online(samba.netcmd.Command):
                help="Directory to write the backup file to"),
        ]
 
-    @using_tmp_dir
     def run(self, sambaopts=None, credopts=None, server=None, targetdir=None):
         logger = self.get_logger()
         logger.setLevel(logging.DEBUG)
@@ -189,6 +171,8 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         if not os.path.exists(targetdir):
             logger.info('Creating targetdir %s...' % targetdir)
             os.makedirs(targetdir)
+
+        tmpdir = tempfile.mkdtemp(dir=targetdir)
 
         # Run a clone join on the remote
         ctx = join_clone(logger=logger, creds=creds, lp=lp,
@@ -224,6 +208,203 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         backup_file = backup_filepath(targetdir, realm, time_str)
         create_backup_tar(logger, tmpdir, backup_file)
 
+        shutil.rmtree(tmpdir)
+
+
+class cmd_domain_backup_restore(cmd_fsmo_seize):
+    '''Restore the domain's DB from a backup-file.
+
+    This restores a previously backed up copy of the domain's DB on a new DC.
+
+    Note that the restored DB will not contain the original DC that the backup
+    was taken from (or any other DCs in the original domain). Only the new DC
+    (specified by --newservername) will be present in the restored DB.
+
+    Samba can then be started against the restored DB. Any existing DCs for the
+    domain should be shutdown before the new DC is started. Other DCs can then
+    be joined to the new DC to recover the network.
+
+    Note that this command should be run as the root user - it will fail
+    otherwise.'''
+
+    synopsis = ("%prog --backup-file=<tar-file> --targetdir=<output-dir> "
+                "--newservername=<DC-name>")
+    takes_options = [
+        Option("--backup-file", help="Path to backup file", type=str),
+        Option("--targetdir", help="Path to write to", type=str),
+        Option("--newservername", help="Name for new server", type=str),
+    ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    def run(self, sambaopts=None, credopts=None, backup_file=None,
+            targetdir=None, newservername=None):
+        if not (backup_file and os.path.exists(backup_file)):
+            raise CommandError('Backup file not found.')
+        if targetdir is None:
+            raise CommandError('Please specify a target directory')
+        if os.path.exists(targetdir) and os.listdir(targetdir):
+            raise CommandError('Target directory is not empty')
+        if not newservername:
+            raise CommandError('Server name required')
+
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+
+        # ldapcmp prefers the server's netBIOS name in upper-case
+        newservername = newservername.upper()
+
+        # extract the backup .tar to a temp directory
+        targetdir = os.path.abspath(targetdir)
+        tf = tarfile.open(backup_file)
+        tf.extractall(targetdir)
+        tf.close()
+
+        # use the smb.conf that got backed up, by default (save what was
+        # actually backed up, before we mess with it)
+        smbconf = os.path.join(targetdir, 'etc', 'smb.conf')
+        shutil.copyfile(smbconf, smbconf + ".orig")
+
+        # if a smb.conf was specified on the cmd line, then use that instead
+        cli_smbconf = sambaopts.get_loadparm_path()
+        if cli_smbconf:
+            logger.info("Using %s as restored domain's smb.conf" % cli_smbconf)
+            shutil.copyfile(cli_smbconf, smbconf)
+
+        lp = samba.param.LoadParm()
+        lp.load(smbconf)
+
+        # open a DB connection to the restored DB
+        private_dir = os.path.join(targetdir, 'private')
+        samdb_path = os.path.join(private_dir, 'sam.ldb')
+        samdb = SamDB(url=samdb_path, session_info=system_session(), lp=lp)
+
+        # Create account using the join_add_objects function in the join object
+        # We need namingContexts, account control flags, and the sid saved by
+        # the backup process.
+        res = samdb.search(base="", scope=ldb.SCOPE_BASE,
+                           attrs=['namingContexts'])
+        ncs = [str(r) for r in res[0].get('namingContexts')]
+
+        creds = credopts.get_credentials(lp)
+        ctx = DCJoinContext(logger, creds=creds, lp=lp,
+                            forced_local_samdb=samdb,
+                            netbios_name=newservername)
+        ctx.nc_list = ncs
+        ctx.full_nc_list = ncs
+        ctx.userAccountControl = (samba.dsdb.UF_SERVER_TRUST_ACCOUNT |
+                                  samba.dsdb.UF_TRUSTED_FOR_DELEGATION)
+
+        # rewrite the smb.conf to make sure it uses the new targetdir settings.
+        # (This doesn't update all filepaths in a customized config, but it
+        # corrects the same paths that get set by a new provision)
+        logger.info('Updating basic smb.conf settings...')
+        make_smbconf(smbconf, newservername, ctx.domain_name,
+                     ctx.realm, targetdir, lp=lp,
+                     serverrole="active directory domain controller")
+
+        # Get the SID saved by the backup process and create account
+        res = samdb.search(base=ldb.Dn(samdb, "@SAMBA_DSDB"),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['sidForRestore'])
+        sid = res[0].get('sidForRestore')[0]
+        logger.info('Creating account with SID: ' + str(sid))
+        ctx.join_add_objects(specified_sid=dom_sid(sid))
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, '@ROOTDSE')
+        ntds_guid = str(ctx.ntds_guid)
+        m["dsServiceName"] = ldb.MessageElement("<GUID=%s>" % ntds_guid,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                "dsServiceName")
+        samdb.modify(m)
+
+        secrets_path = os.path.join(private_dir, 'secrets.ldb')
+        secrets_ldb = Ldb(secrets_path, session_info=system_session(), lp=lp)
+        secretsdb_self_join(secrets_ldb, domain=ctx.domain_name,
+                            realm=ctx.realm, dnsdomain=ctx.dnsdomain,
+                            netbiosname=ctx.myname, domainsid=ctx.domsid,
+                            machinepass=ctx.acct_pass,
+                            key_version_number=ctx.key_version_number,
+                            secure_channel_type=misc.SEC_CHAN_BDC)
+
+        # Seize DNS roles
+        domain_dn = samdb.domain_dn()
+        forest_dn = samba.dn_from_dns_name(samdb.forest_dns_name())
+        domaindns_dn = ("CN=Infrastructure,DC=DomainDnsZones,", domain_dn)
+        forestdns_dn = ("CN=Infrastructure,DC=ForestDnsZones,", forest_dn)
+        for dn_prefix, dns_dn in [forestdns_dn, domaindns_dn]:
+            if dns_dn not in ncs:
+                continue
+            full_dn = dn_prefix + dns_dn
+            m = ldb.Message()
+            m.dn = ldb.Dn(samdb, full_dn)
+            m["fSMORoleOwner"] = ldb.MessageElement(samdb.get_dsServiceName(),
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    "fSMORoleOwner")
+            samdb.modify(m)
+
+        # Seize other roles
+        for role in ['rid', 'pdc', 'naming', 'infrastructure', 'schema']:
+            self.seize_role(role, samdb, force=True)
+
+        # Get all DCs and remove them (this ensures these DCs cannot
+        # replicate because they will not have a password)
+        search_expr = "(&(objectClass=Server)(serverReference=*))"
+        res = samdb.search(samdb.get_config_basedn(), scope=ldb.SCOPE_SUBTREE,
+                           expression=search_expr)
+        for m in res:
+            cn = m.get('cn')[0]
+            if cn != newservername:
+                remove_dc(samdb, logger, cn)
+
+        # Remove the repsFrom and repsTo from each NC to ensure we do
+        # not try (and fail) to talk to the old DCs
+        for nc in ncs:
+            msg = ldb.Message()
+            msg.dn = ldb.Dn(samdb, nc)
+
+            msg["repsFrom"] = ldb.MessageElement([],
+                                                 ldb.FLAG_MOD_REPLACE,
+                                                 "repsFrom")
+            msg["repsTo"] = ldb.MessageElement([],
+                                                 ldb.FLAG_MOD_REPLACE,
+                                                 "repsTo")
+            samdb.modify(msg)
+
+        # Update the krbtgt passwords twice, ensuring no tickets from
+        # the old domain are valid
+        update_krbtgt_account_password(samdb)
+        update_krbtgt_account_password(samdb)
+
+        # restore the sysvol directory from the backup tar file, including the
+        # original NTACLs. Note that the backup_restore() will fail if not root
+        sysvol_tar = os.path.join(targetdir, 'sysvol.tar.gz')
+        dest_sysvol_dir = lp.get('path', 'sysvol')
+        if not os.path.exists(dest_sysvol_dir):
+            os.makedirs(dest_sysvol_dir)
+        backup_restore(sysvol_tar, dest_sysvol_dir, samdb, smbconf)
+        os.remove(sysvol_tar)
+
+        # Remove DB markers added by the backup process
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, "@SAMBA_DSDB")
+        m["backupDate"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
+                                             "backupDate")
+        m["sidForRestore"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
+                                                "sidForRestore")
+        samdb.modify(m)
+
+        logger.info("Backup file successfully restored to %s" % targetdir)
+        logger.info("Please check the smb.conf settings are correct before "
+                    "starting samba.")
+
+
 class cmd_domain_backup(samba.netcmd.SuperCommand):
-    '''Domain backup'''
-    subcommands = {'online': cmd_domain_backup_online()}
+    '''Create or restore a backup of the domain.'''
+    subcommands = {'online': cmd_domain_backup_online(),
+                   'restore': cmd_domain_backup_restore()}

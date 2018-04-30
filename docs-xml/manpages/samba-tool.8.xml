@@ -302,6 +302,11 @@
 </refsect3>
 
 <refsect3>
+	<title>domain backup restore</title>
+	<para>Restore the domain's DB from a backup-file.</para>
+</refsect3>
+
+<refsect3>
 	<title>domain classicupgrade [options] <replaceable>classic_smb_conf</replaceable></title>
 	<para>Upgrade from Samba classic (NT4-like) database to Samba AD DC
 	database.</para>
