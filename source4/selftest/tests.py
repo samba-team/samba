@@ -734,6 +734,8 @@ planoldpythontestsuite("ad_dc",
 planoldpythontestsuite("ad_dc:local",
                        "samba.tests.domain_backup",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("none",
+                       "samba.tests.domain_backup_offline")
 # Encrypted secrets
 # ensure default provision (ad_dc) and join (vampire_dc)
 # encrypt secret values on disk.
