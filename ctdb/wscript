@@ -421,12 +421,6 @@ def build(bld):
                         source='protocol/protocol_util.c',
                         deps='replace talloc tdb')
 
-    bld.SAMBA_SUBSYSTEM('ctdb-client',
-                        source=bld.SUBDIR('client', 'ctdb_client.c'),
-                        includes='include',
-                        deps='''replace popt talloc tevent tdb
-                                samba-util tdb-wrap ctdb-util''')
-
     bld.SAMBA_SUBSYSTEM('ctdb-client2',
                         source=bld.SUBDIR('client',
                                           '''client_connect.c client_call.c
@@ -474,11 +468,11 @@ def build(bld):
                                              ctdb_statistics.c
                                              ctdb_update_record.c
                                              ctdb_lock.c ctdb_fork.c
-                                             ctdb_tunnel.c'''),
+                                             ctdb_tunnel.c ctdb_client.c'''),
                      includes='include',
-                     deps='''ctdb-client ctdb-common ctdb-system ctdb-protocol
+                     deps='''ctdb-common ctdb-system ctdb-protocol
                              ctdb-tcp ctdb-util replace sys_rw popt
-                             talloc tevent tdb talloc_report''' +
+                             talloc tevent tdb-wrap tdb talloc_report''' +
                           ib_deps,
                      install_path='${SBINDIR}',
                      manpages='ctdbd.1')
