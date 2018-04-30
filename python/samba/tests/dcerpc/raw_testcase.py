@@ -138,7 +138,7 @@ class RawDCERPCTest(TestCase):
         ctx_list = [ctx]
 
         if auth_context is not None:
-            from_server = ""
+            from_server = b""
             (finished, to_server) = auth_context["gensec"].update(from_server)
             self.assertFalse(finished)
 
@@ -147,7 +147,7 @@ class RawDCERPCTest(TestCase):
                                            auth_context_id=auth_context["auth_context_id"],
                                            auth_blob=to_server)
         else:
-            auth_info = ""
+            auth_info = b""
 
         req = self.generate_bind(call_id=call_id,
                                  pfc_flags=pfc_flags,
@@ -331,14 +331,14 @@ class RawDCERPCTest(TestCase):
             else:
                 sig_size = 16
 
-            zero_sig = "\x00"*sig_size
+            zero_sig = b"\x00"*sig_size
             auth_info = self.generate_auth(auth_type=auth_context["auth_type"],
                                            auth_level=auth_context["auth_level"],
                                            auth_pad_length=auth_pad_length,
                                            auth_context_id=auth_context["auth_context_id"],
                                            auth_blob=zero_sig)
         else:
-            auth_info=""
+            auth_info=b""
 
         pfc_flags =  samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST
         pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST
@@ -613,7 +613,7 @@ class RawDCERPCTest(TestCase):
             if hexdump:
                 sys.stderr.write("generate_auth: %d\n%s" % (len(ai), self.hexdump(ai)))
         else:
-            ai = ""
+            ai = b""
 
         return ai
 
