@@ -636,7 +636,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
-		result = SMB_VFS_READ(fsp, data, n);
+		result = sys_read(fsp->fh->fd, data, n);
 		fsp->fh->pos = 0;
 	}
 
