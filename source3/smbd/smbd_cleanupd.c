@@ -71,7 +71,7 @@ struct tevent_req *smbd_cleanupd_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = messaging_register(msg, NULL, MSG_SMB_UNLOCK,
+	status = messaging_register(msg, NULL, MSG_SMB_BRL_VALIDATE,
 				    smbd_cleanupd_unlock);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);

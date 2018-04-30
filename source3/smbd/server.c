@@ -757,7 +757,7 @@ static void cleanup_timeout_fn(struct tevent_context *event_ctx,
 	parent->cleanup_te = NULL;
 
 	messaging_send_buf(parent->msg_ctx, parent->cleanupd,
-			   MSG_SMB_UNLOCK, NULL, 0);
+			   MSG_SMB_BRL_VALIDATE, NULL, 0);
 }
 
 static void cleanupd_started(struct tevent_req *req)
