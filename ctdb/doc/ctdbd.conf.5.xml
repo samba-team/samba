@@ -1554,30 +1554,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_VALGRIND=yes|no|<parameter>COMMAND</parameter></term>
-	<listitem>
-	  <para>
-	    If "yes", this causes
-	    <citerefentry><refentrytitle>ctdbd</refentrytitle>
-	    <manvolnum>1</manvolnum></citerefentry> to be run under
-	    <citerefentry><refentrytitle>valgrind</refentrytitle>
-	    <manvolnum>1</manvolnum></citerefentry> with logs going to
-	    <filename>/usr/local/var/log/ctdb_valgrind</filename>.  If neither
-	    "yes" nor "no" then the value is assumed to be a COMMAND
-	    (e.g. a <command>valgrind</command> variation, a
-	    <citerefentry><refentrytitle>gdb</refentrytitle>
-	    <manvolnum>1</manvolnum></citerefentry> command) that is
-	    used in place of the default <command>valgrind</command>
-	    command.  In either case, the <option>--valgrind</option>
-	    option is passed to <command>ctdbd</command>.
-	  </para>
-	  <para>
-	    Default is no.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_VARDIR=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>

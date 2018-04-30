@@ -141,15 +141,6 @@ start()
 	ulimit -n "$CTDB_MAX_OPEN_FILES"
     fi
 
-    if [ -n "$CTDB_VALGRIND" -a "$CTDB_VALGRIND" != "no" ] ; then
-	if [ "$CTDB_VALGRIND" = "yes" ] ; then
-	    ctdbd="valgrind -q --log-file=/usr/local/var/log/ctdb_valgrind ${ctdbd}"
-	else
-	    ctdbd="${CTDB_VALGRIND} ${ctdbd}"
-	fi
-	ctdb_options="${ctdb_options} --valgrinding"
-    fi
-
     case "$CTDB_LOGGING" in
 	syslog:udp|syslog:udp-rfc5424)
 	    logger -t ctdbd "CTDB is being run with ${CTDB_LOGGING}.  If nothing is logged then check your syslogd configuration"
