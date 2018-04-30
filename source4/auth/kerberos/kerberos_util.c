@@ -633,7 +633,7 @@ krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
 		krb5_kt_free_entry(context, &entry);
 		/* Make sure we do not double free */
 		ZERO_STRUCT(entry);
-	} while (code != 0);
+	} while (code == 0);
 
 	krb5_kt_end_seq_get(context, keytab, &cursor);
 
