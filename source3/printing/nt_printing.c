@@ -316,7 +316,7 @@ const char *get_short_archi(const char *long_archi)
  (note: EINTR re-read differs from vfs_write_data)
 ****************************************************************************/
 
-static ssize_t vfs_read_data(files_struct *fsp,
+static ssize_t printing_read_data(files_struct *fsp,
 				char *buf,
 				size_t byte_count)
 {
@@ -397,7 +397,7 @@ static int handle_pe_file(files_struct *fsp,
 		goto out;
 	}
 
-	byte_count = vfs_read_data(fsp, buf, section_table_bytes);
+	byte_count = printing_read_data(fsp, buf, section_table_bytes);
 	if (byte_count < section_table_bytes) {
 		DBG_NOTICE("PE file [%s] Section header too short, "
 			"bytes read = %lu\n",
@@ -451,7 +451,7 @@ static int handle_pe_file(files_struct *fsp,
 				goto out;
 			}
 
-			byte_count = vfs_read_data(fsp,
+			byte_count = printing_read_data(fsp,
 						buf,
 						section_bytes);
 			if (byte_count < section_bytes) {
@@ -574,7 +574,7 @@ static int handle_ne_file(files_struct *fsp,
 	 * please have at it, but this works. 'NE' files will
 	 * eventually fade away. JRR
 	 */
-	byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE);
+	byte_count = printing_read_data(fsp, buf, VS_NE_BUF_SIZE);
 	while (byte_count > 0) {
 		/*
 		 * Cover case that should not occur in a well
@@ -590,7 +590,7 @@ static int handle_ne_file(files_struct *fsp,
 			 * possibly match
 			 */
 			if (buf[i] != 'V') {
-				byte_count = vfs_read_data(fsp,
+				byte_count = printing_read_data(fsp,
 						buf,
 						VS_NE_BUF_SIZE);
 				continue;
@@ -606,7 +606,7 @@ static int handle_ne_file(files_struct *fsp,
 				ssize_t amount_unused = byte_count-i;
 
 				memmove(buf, &buf[i], amount_unused);
-				amount_read = vfs_read_data(fsp,
+				amount_read = printing_read_data(fsp,
 						&buf[amount_unused],
 						VS_NE_BUF_SIZE- amount_unused);
 				if (amount_read < 0) {
@@ -654,7 +654,7 @@ static int handle_ne_file(files_struct *fsp,
 				if (IVAL(buf,
 					i+sizeof(VS_SIGNATURE)+skip)
 						!= 0xfeef04bd) {
-					byte_count = vfs_read_data(fsp,
+					byte_count = printing_read_data(fsp,
 							buf,
 							VS_NE_BUF_SIZE);
 					continue;
@@ -717,7 +717,7 @@ static int get_file_version(files_struct *fsp,
 		goto error_exit;
 	}
 
-	byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE);
+	byte_count = printing_read_data(fsp, buf, DOS_HEADER_SIZE);
 	if (byte_count < DOS_HEADER_SIZE) {
 		DBG_NOTICE("File [%s] DOS header too short, bytes read = %lu\n",
 			 fname,
@@ -749,9 +749,10 @@ static int get_file_version(files_struct *fsp,
 		 */
 		goto no_version_info;
 	}
+	pos = oret; /* Update new position. */
 
 	/* Note: DOS_HEADER_SIZE and NE_HEADER_SIZE are incidentally same */
-	byte_count = vfs_read_data(fsp, buf, NE_HEADER_SIZE);
+	byte_count = printing_read_data(fsp, buf, NE_HEADER_SIZE);
 	if (byte_count < NE_HEADER_SIZE) {
 		DBG_NOTICE("File [%s] Windows header too short, "
 			"bytes read = %lu\n",
