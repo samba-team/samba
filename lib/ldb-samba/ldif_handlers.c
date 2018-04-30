@@ -1706,7 +1706,8 @@ const struct ldb_schema_syntax *ldb_samba_syntax_by_lDAPDisplayName(struct ldb_c
 	return s;
 }
 
-static const char *secret_attributes[] = {DSDB_SECRET_ATTRIBUTES, "secret", NULL};
+static const char *secret_attributes[] = {DSDB_SECRET_ATTRIBUTES, "secret",
+                                          "priorSecret", NULL};
 
 /*
   register the samba ldif handlers
