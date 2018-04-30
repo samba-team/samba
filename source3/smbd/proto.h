@@ -1228,7 +1228,6 @@ void sys_utmp_yield(const char *username, const char *hostname,
 bool vfs_init_custom(connection_struct *conn, const char *vfs_object);
 bool smbd_vfs_init(connection_struct *conn);
 NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname);
-ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_write_data(struct smb_request *req,
 			files_struct *fsp,
 			const char *buffer,

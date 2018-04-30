@@ -312,6 +312,34 @@ const char *get_short_archi(const char *long_archi)
 }
 
 /****************************************************************************
+ Read data from fsp on the vfs.
+ (note: EINTR re-read differs from vfs_write_data)
+****************************************************************************/
+
+static ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
+{
+	size_t total=0;
+
+	while (total < byte_count) {
+		ssize_t ret = SMB_VFS_READ(fsp, buf + total,
+					byte_count - total);
+
+		if (ret == 0) {
+			return total;
+		}
+		if (ret == -1) {
+			if (errno == EINTR) {
+				continue;
+			} else {
+				return -1;
+			}
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+
+/****************************************************************************
  Version information in Microsoft files is held in a VS_VERSION_INFO structure.
  There are two case to be covered here: PE (Portable Executable) and NE (New
  Executable) files. Both files support the same INFO structure, but PE files
