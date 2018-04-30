@@ -445,7 +445,52 @@ static PyGetSetDef py_lp_ctx_getset[] = {
 
 static PyObject *py_lp_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	return pytalloc_reference(type, loadparm_init_global(false));
+	const char *kwnames[] = {"filename_for_non_global_lp", NULL};
+	PyObject *lp_ctx;
+	const char *non_global_conf = NULL;
+	struct loadparm_context *ctx;
+
+	if (!PyArg_ParseTupleAndKeywords(args,
+					 kwargs,
+					 "|s",
+					 discard_const_p(char *,
+							 kwnames),
+					 &non_global_conf)) {
+		return NULL;
+	}
+
+	/*
+	 * by default, any LoadParm python objects map to a single global
+	 * underlying object. The filename_for_non_global_lp arg overrides this
+	 * default behaviour and creates a separate underlying LoadParm object.
+	 */
+	if (non_global_conf != NULL) {
+		bool ok;
+		ctx = loadparm_init(NULL);
+		if (ctx == NULL) {
+			PyErr_NoMemory();
+			return NULL;
+		}
+
+		lp_ctx = pytalloc_reference(type, ctx);
+		if (lp_ctx == NULL) {
+			PyErr_NoMemory();
+			return NULL;
+		}
+
+		ok = lpcfg_load_no_global(
+			PyLoadparmContext_AsLoadparmContext(lp_ctx),
+			non_global_conf);
+		if (!ok) {
+			PyErr_Format(PyExc_ValueError,
+				     "Could not load non-global conf %s",
+				     non_global_conf);
+			return NULL;
+		}
+		return lp_ctx;
+	} else{
+		return pytalloc_reference(type, loadparm_init_global(false));
+	}
 }
 
 static Py_ssize_t py_lp_ctx_len(PyObject *self)

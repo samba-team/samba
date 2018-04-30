@@ -3148,7 +3148,8 @@ bool lpcfg_load_default(struct loadparm_context *lp_ctx)
  *
  * Return True on success, False on failure.
  */
-bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
+static bool lpcfg_load_internal(struct loadparm_context *lp_ctx,
+				const char *filename, bool set_global)
 {
 	char *n2;
 	bool bRetval;
@@ -3183,7 +3184,7 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 	   for a missing smb.conf */
 	reload_charcnv(lp_ctx);
 
-	if (bRetval == true) {
+	if (bRetval == true && set_global) {
 		/* set this up so that any child python tasks will
 		   find the right smb.conf */
 		setenv("SMB_CONF_PATH", filename, 1);
@@ -3195,6 +3196,16 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 	}
 
 	return bRetval;
+}
+
+bool lpcfg_load_no_global(struct loadparm_context *lp_ctx, const char *filename)
+{
+    return lpcfg_load_internal(lp_ctx, filename, false);
+}
+
+bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
+{
+    return lpcfg_load_internal(lp_ctx, filename, true);
 }
 
 /**
