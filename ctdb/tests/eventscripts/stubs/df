@@ -16,10 +16,11 @@ esac
 
 fs="${1:-/}"
 
-# Anything starting with CTDB_DBDIR gets canonicalised to CTDB_DBDIR.
-# This helps with the setting of defaults for the filesystem checks.
-if [ "${fs#${CTDB_DBDIR}}" != "$fs" ] ; then
-    fs="$CTDB_DBDIR"
+# Anything starting with CTDB_DBDIR_BASE gets canonicalised to
+# CTDB_DBDIR_BASE.  This helps with the setting of defaults for the
+# filesystem checks.
+if [ "${fs#${CTDB_DBDIR_BASE}}" != "$fs" ] ; then
+    fs="$CTDB_DBDIR_BASE"
 fi
 
 # A default, for tests that don't initialise this...

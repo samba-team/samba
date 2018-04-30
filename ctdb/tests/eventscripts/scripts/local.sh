@@ -85,9 +85,11 @@ setup_script_options ()
 
 setup_dbdir ()
 {
-	export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
-	export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR}/persistent"
-	export CTDB_DBDIR_STATE="${CTDB_DBDIR}/state"
+	export CTDB_DBDIR_BASE="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
+	export CTDB_DBDIR="$CTDB_DBDIR_BASE"
+	export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR_BASE}/persistent"
+	export CTDB_DBDIR_STATE="${CTDB_DBDIR_BASE}/state"
+	mkdir -p "$CTDB_DBDIR"
 	mkdir -p "$CTDB_DBDIR_PERSISTENT"
 	mkdir -p "$CTDB_DBDIR_STATE"
 }

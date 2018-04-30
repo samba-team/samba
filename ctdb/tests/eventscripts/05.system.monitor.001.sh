@@ -8,6 +8,6 @@ setup
 
 set_fs_usage 100
 ok <<EOF
-WARNING: Filesystem ${CTDB_DBDIR} utilization 100% >= threshold 90%
+WARNING: Filesystem ${CTDB_DBDIR_BASE} utilization 100% >= threshold 90%
 EOF
 simple_test
