@@ -316,7 +316,9 @@ const char *get_short_archi(const char *long_archi)
  (note: EINTR re-read differs from vfs_write_data)
 ****************************************************************************/
 
-static ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
+static ssize_t vfs_read_data(files_struct *fsp,
+				char *buf,
+				size_t byte_count)
 {
 	size_t total=0;
 
@@ -347,128 +349,223 @@ static ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
  returns -1 on error, 1 on version info found, and 0 on no version info found.
 ****************************************************************************/
 
-static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint32_t *minor)
+static int get_file_version(files_struct *fsp,
+				char *fname,
+				uint32_t *major,
+				uint32_t *minor)
 {
 	int     i;
 	char    *buf = NULL;
 	ssize_t byte_count;
+	off_t pos;
+	off_t oret;
 
-	if ((buf=(char *)SMB_MALLOC(DOS_HEADER_SIZE)) == NULL) {
-		DEBUG(0,("get_file_version: PE file [%s] DOS Header malloc failed bytes = %d\n",
-				fname, DOS_HEADER_SIZE));
+	buf=(char *)SMB_MALLOC(DOS_HEADER_SIZE);
+	if (buf == NULL) {
+		DBG_ERR("PE file [%s] DOS Header malloc failed bytes = %d\n",
+			fname,
+			DOS_HEADER_SIZE);
 		goto error_exit;
 	}
 
-	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %lu\n",
-			 fname, (unsigned long)byte_count));
+	byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE);
+	if (byte_count < DOS_HEADER_SIZE) {
+		DBG_NOTICE("File [%s] DOS header too short, bytes read = %lu\n",
+			 fname,
+			(unsigned long)byte_count);
 		goto no_version_info;
 	}
 
 	/* Is this really a DOS header? */
 	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
-		DEBUG(6,("get_file_version: File [%s] bad DOS magic = 0x%x\n",
-				fname, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
+		DBG_INFO("File [%s] bad DOS magic = 0x%x\n",
+			fname,
+			SVAL(buf,DOS_HEADER_MAGIC_OFFSET));
 		goto no_version_info;
 	}
 
-	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (SMB_VFS_LSEEK(fsp, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (off_t)-1) {
-		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
-				fname, errno));
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+	/*
+	 * Skip OEM header (if any) and the
+	 * DOS stub to start of Windows header.
+	 */
+	pos = SVAL(buf,DOS_HEADER_LFANEW_OFFSET);
+	oret = SMB_VFS_LSEEK(fsp, pos, SEEK_SET);
+	if (oret == (off_t)-1) {
+		DBG_NOTICE("File [%s] too short, errno = %d\n",
+			fname,
+			errno);
+		/*
+		 * Assume this isn't an error...
+		 * the file just looks sort of like a PE/NE file.
+		 */
 		goto no_version_info;
 	}
 
 	/* Note: DOS_HEADER_SIZE and NE_HEADER_SIZE are incidentally same */
-	if ((byte_count = vfs_read_data(fsp, buf, NE_HEADER_SIZE)) < NE_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %lu\n",
-			 fname, (unsigned long)byte_count));
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+	byte_count = vfs_read_data(fsp, buf, NE_HEADER_SIZE);
+	if (byte_count < NE_HEADER_SIZE) {
+		DBG_NOTICE("File [%s] Windows header too short, "
+			"bytes read = %lu\n",
+			fname,
+			(unsigned long)byte_count);
+		/*
+		 * Assume this isn't an error...
+		 * the file just looks sort of like a PE/NE file
+		 */
 		goto no_version_info;
 	}
 
-	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
+	/*
+	 * The header may be a PE (Portable Executable)
+	 * or an NE (New Executable).
+	 */
 	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
 		unsigned int num_sections;
 		unsigned int section_table_bytes;
 
 		/* Just skip over optional header to get to section table */
-		if (SMB_VFS_LSEEK(fsp,
-				SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-(NE_HEADER_SIZE-PE_HEADER_SIZE),
-				SEEK_CUR) == (off_t)-1) {
-			DEBUG(3,("get_file_version: File [%s] Windows optional header too short, errno = %d\n",
-				fname, errno));
+		pos = SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-
+			(NE_HEADER_SIZE-PE_HEADER_SIZE);
+
+		oret = SMB_VFS_LSEEK(fsp, pos, SEEK_CUR);
+		if (oret == (off_t)-1) {
+			DBG_NOTICE("File [%s] Windows optional header "
+				"too short, errno = %d\n",
+				fname,
+				errno);
 			goto error_exit;
 		}
 
 		/* get the section table */
 		num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
 		section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
-		if (section_table_bytes == 0)
+		if (section_table_bytes == 0) {
 			goto error_exit;
+		}
 
 		SAFE_FREE(buf);
-		if ((buf=(char *)SMB_MALLOC(section_table_bytes)) == NULL) {
-			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
-					fname, section_table_bytes));
+		buf = (char *)SMB_MALLOC(section_table_bytes);
+		if (buf == NULL) {
+			DBG_ERR("PE file [%s] section table malloc "
+				"failed bytes = %d\n",
+				fname,
+				section_table_bytes);
 			goto error_exit;
 		}
 
-		if ((byte_count = vfs_read_data(fsp, buf, section_table_bytes)) < section_table_bytes) {
-			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %lu\n",
-				 fname, (unsigned long)byte_count));
+		byte_count = vfs_read_data(fsp, buf, section_table_bytes);
+		if (byte_count < section_table_bytes) {
+			DBG_NOTICE("PE file [%s] "
+				"Section header too short, bytes read = %lu\n",
+				fname,
+				(unsigned long)byte_count);
 			goto error_exit;
 		}
 
-		/* Iterate the section table looking for the resource section ".rsrc" */
+		/*
+		 * Iterate the section table looking for
+		 * the resource section ".rsrc"
+		 */
 		for (i = 0; i < num_sections; i++) {
 			int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
 
-			if (strcmp(".rsrc", &buf[sec_offset+PE_HEADER_SECT_NAME_OFFSET]) == 0) {
-				unsigned int section_pos   = IVAL(buf,sec_offset+PE_HEADER_SECT_PTR_DATA_OFFSET);
-				unsigned int section_bytes = IVAL(buf,sec_offset+PE_HEADER_SECT_SIZE_DATA_OFFSET);
+			if (strcmp(".rsrc",
+					&buf[sec_offset+
+						PE_HEADER_SECT_NAME_OFFSET])
+							== 0) {
+				unsigned int section_pos =
+					IVAL(buf,
+						sec_offset+
+						PE_HEADER_SECT_PTR_DATA_OFFSET);
+				unsigned int section_bytes =
+					IVAL(buf,
+						sec_offset+
+						PE_HEADER_SECT_SIZE_DATA_OFFSET);
 
-				if (section_bytes == 0)
+				if (section_bytes == 0) {
 					goto error_exit;
+				}
 
 				SAFE_FREE(buf);
-				if ((buf=(char *)SMB_MALLOC(section_bytes)) == NULL) {
-					DEBUG(0,("get_file_version: PE file [%s] version malloc failed bytes = %d\n",
-							fname, section_bytes));
+				buf=(char *)SMB_MALLOC(section_bytes);
+				if (buf == NULL) {
+					DBG_ERR("PE file [%s] version malloc "
+						"failed bytes = %d\n",
+						fname,
+						section_bytes);
 					goto error_exit;
 				}
 
-				/* Seek to the start of the .rsrc section info */
-				if (SMB_VFS_LSEEK(fsp, section_pos, SEEK_SET) == (off_t)-1) {
-					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
-							fname, errno));
+				/*
+				 * Seek to the start of the .rsrc
+				 * section info
+				 */
+				oret = SMB_VFS_LSEEK(fsp,
+						section_pos,
+						SEEK_SET);
+				if (oret == (off_t)-1) {
+					DBG_NOTICE("PE file [%s] too short for "
+						"section info, errno = %d\n",
+						fname,
+						errno);
 					goto error_exit;
 				}
 
-				if ((byte_count = vfs_read_data(fsp, buf, section_bytes)) < section_bytes) {
-					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %lu\n",
-						 fname, (unsigned long)byte_count));
+				byte_count = vfs_read_data(fsp,
+							buf,
+							section_bytes);
+				if (byte_count < section_bytes) {
+					DBG_NOTICE("PE file "
+						"[%s] .rsrc section too short, "
+						"bytes read = %lu\n",
+						 fname,
+						(unsigned long)byte_count);
 					goto error_exit;
 				}
 
-				if (section_bytes < VS_VERSION_INFO_UNICODE_SIZE)
+				if (section_bytes <
+						VS_VERSION_INFO_UNICODE_SIZE) {
 					goto error_exit;
+				}
 
-				for (i=0; i<section_bytes-VS_VERSION_INFO_UNICODE_SIZE; i++) {
-					/* Scan for 1st 3 unicoded bytes followed by word aligned magic value */
-					if (buf[i] == 'V' && buf[i+1] == '\0' && buf[i+2] == 'S') {
+				for (i=0;
+					i< section_bytes-
+						VS_VERSION_INFO_UNICODE_SIZE;
+						i++) {
+					/*
+					 * Scan for 1st 3 unicoded bytes
+					 * followed by word aligned magic
+					 * value.
+					 */
+					if (buf[i] == 'V' &&
+							buf[i+1] == '\0' &&
+							buf[i+2] == 'S') {
 						/* Align to next long address */
-						int pos = (i + sizeof(VS_SIGNATURE)*2 + 3) & 0xfffffffc;
+						int mpos =
+							(i +
+							sizeof(VS_SIGNATURE)*2 +
+							 3) & 0xfffffffc;
 
-						if (IVAL(buf,pos) == VS_MAGIC_VALUE) {
-							*major = IVAL(buf,pos+VS_MAJOR_OFFSET);
-							*minor = IVAL(buf,pos+VS_MINOR_OFFSET);
+						if (IVAL(buf,mpos) ==
+								VS_MAGIC_VALUE) {
+							*major = IVAL(buf,
+								mpos+
+								VS_MAJOR_OFFSET);
+							*minor = IVAL(buf,
+								mpos+
+								VS_MINOR_OFFSET);
 
-							DEBUG(6,("get_file_version: PE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
-									  fname, *major, *minor,
-									  (*major>>16)&0xffff, *major&0xffff,
-									  (*minor>>16)&0xffff, *minor&0xffff));
+							DBG_INFO("PE file [%s] "
+								"Version = "
+								"%08x:%08x "
+								"(%d.%d.%d.%d)\n",
+								fname,
+								*major,
+								*minor,
+								(*major>>16)&0xffff,
+								*major&0xffff,
+								(*minor>>16)&0xffff,
+								*minor&0xffff);
 							SAFE_FREE(buf);
 							return 1;
 						}
@@ -478,40 +575,68 @@ static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint
 		}
 
 		/* Version info not found, fall back to origin date/time */
-		DEBUG(10,("get_file_version: PE file [%s] has no version info\n", fname));
+		DBG_DEBUG("PE file [%s] has no version info\n", fname);
 		SAFE_FREE(buf);
 		return 0;
 
-	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) == NE_HEADER_SIGNATURE) {
-		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
-			DEBUG(3,("get_file_version: NE file [%s] wrong target OS = 0x%x\n",
-					fname, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
-			/* At this point, we assume the file is in error. It still could be something
-			 * else besides a NE file, but it unlikely at this point. */
+	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) ==
+			NE_HEADER_SIGNATURE) {
+		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) !=
+				NE_HEADER_TARGOS_WIN ) {
+			DBG_NOTICE("NE file [%s] wrong target OS = 0x%x\n",
+				fname,
+				CVAL(buf,NE_HEADER_TARGET_OS_OFFSET));
+			/*
+			 * At this point, we assume the file is in error.
+			 * It still could be something else besides a NE file,
+			 * but it unlikely at this point.
+			 */
 			goto error_exit;
 		}
 
 		/* Allocate a bit more space to speed up things */
 		SAFE_FREE(buf);
-		if ((buf=(char *)SMB_MALLOC(VS_NE_BUF_SIZE)) == NULL) {
-			DEBUG(0,("get_file_version: NE file [%s] malloc failed bytes  = %d\n",
-					fname, PE_HEADER_SIZE));
+		buf=(char *)SMB_MALLOC(VS_NE_BUF_SIZE);
+		if (buf == NULL) {
+			DBG_ERR("NE file [%s] malloc failed bytes  = %d\n",
+				fname,
+				PE_HEADER_SIZE);
 			goto error_exit;
 		}
 
-		/* This is a HACK! I got tired of trying to sort through the messy
-		 * 'NE' file format. If anyone wants to clean this up please have at
-		 * it, but this works. 'NE' files will eventually fade away. JRR */
-		while((byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE)) > 0) {
-			/* Cover case that should not occur in a well formed 'NE' .dll file */
-			if (byte_count-VS_VERSION_INFO_SIZE <= 0) break;
+		/*
+		 * This is a HACK! I got tired of trying to sort through the
+		 * messy 'NE' file format. If anyone wants to clean this up
+		 * please have at it, but this works. 'NE' files will
+		 * eventually fade away. JRR
+		 */
+		byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE);
+		while (byte_count > 0) {
+			/*
+			 * Cover case that should not occur in a well
+			 * formed 'NE' .dll file
+			 */
+			if (byte_count-VS_VERSION_INFO_SIZE <= 0) {
+				break;
+			}
 
 			for(i=0; i<byte_count; i++) {
-				/* Fast skip past data that can't possibly match */
-				if (buf[i] != 'V') continue;
+				/*
+				 * Fast skip past data that can't
+				 * possibly match
+				 */
+				if (buf[i] != 'V') {
+					byte_count = vfs_read_data(fsp,
+							buf,
+							VS_NE_BUF_SIZE);
+					continue;
+				}
 
-				/* Potential match data crosses buf boundry, move it to beginning
-				 * of buf, and fill the buf with as much as it will hold. */
+				/*
+				 * Potential match data crosses buf boundry,
+				 * move it to beginning of buf, and fill the
+				 * buf with as much as it will hold.
+				 */
 				if (i>byte_count-VS_VERSION_INFO_SIZE) {
 					ssize_t amount_read;
 					ssize_t amount_unused = byte_count-i;
@@ -521,9 +646,10 @@ static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint
 						&buf[amount_unused],
 						VS_NE_BUF_SIZE- amount_unused);
 					if (amount_read < 0) {
-
-						DEBUG(0,("get_file_version: NE file [%s] Read error, errno=%d\n",
-								 fname, errno));
+						DBG_ERR("NE file [%s] Read "
+							"error, errno=%d\n",
+							fname,
+							errno);
 						goto error_exit;
 					}
 
@@ -542,22 +668,49 @@ static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint
 					i = 0;
 				}
 
-				/* Check that the full signature string and the magic number that
-				 * follows exist (not a perfect solution, but the chances that this
-				 * occurs in code is, well, remote. Yes I know I'm comparing the 'V'
-				 * twice, as it is simpler to read the code. */
+				/*
+				 * Check that the full signature string and
+				 * the magic number that follows exist (not
+				 * a perfect solution, but the chances that this
+				 * occurs in code is, well, remote. Yes I know
+				 * I'm comparing the 'V' twice, as it is
+				 * simpler to read the code.
+				 */
 				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
-					/* Compute skip alignment to next long address */
-					int skip = -(SMB_VFS_LSEEK(fsp, 0, SEEK_CUR) - (byte_count - i) +
-								 sizeof(VS_SIGNATURE)) & 3;
-					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
+					/*
+					 * Compute skip alignment to next
+					 * long address.
+					 */
+					off_t cpos = SMB_VFS_LSEEK(fsp,
+							0,
+							SEEK_CUR);
 
-					*major = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MAJOR_OFFSET);
-					*minor = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MINOR_OFFSET);
-					DEBUG(6,("get_file_version: NE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
-							  fname, *major, *minor,
-							  (*major>>16)&0xffff, *major&0xffff,
-							  (*minor>>16)&0xffff, *minor&0xffff));
+					int skip = -(cpos - (byte_count - i) +
+						 sizeof(VS_SIGNATURE)) & 3;
+					if (IVAL(buf,
+						i+sizeof(VS_SIGNATURE)+skip)
+							!= 0xfeef04bd) {
+						byte_count = vfs_read_data(fsp,
+								buf,
+								VS_NE_BUF_SIZE);
+						continue;
+					}
+
+					*major = IVAL(buf,
+						i+sizeof(VS_SIGNATURE)+
+						skip+VS_MAJOR_OFFSET);
+					*minor = IVAL(buf,
+						i+sizeof(VS_SIGNATURE)+
+						skip+VS_MINOR_OFFSET);
+					DBG_INFO("NE file [%s] Version "
+						"= %08x:%08x (%d.%d.%d.%d)\n",
+						fname,
+						*major,
+						*minor,
+						(*major>>16)&0xffff,
+						*major&0xffff,
+						(*minor>>16)&0xffff,
+						*minor&0xffff);
 					SAFE_FREE(buf);
 					return 1;
 				}
@@ -565,14 +718,19 @@ static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint
 		}
 
 		/* Version info not found, fall back to origin date/time */
-		DEBUG(0,("get_file_version: NE file [%s] Version info not found\n", fname));
+		DBG_ERR("NE file [%s] Version info not found\n", fname);
 		SAFE_FREE(buf);
 		return 0;
 
-	} else
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
-		DEBUG(3,("get_file_version: File [%s] unknown file format, signature = 0x%x\n",
-				fname, IVAL(buf,PE_HEADER_SIGNATURE_OFFSET)));
+	} else {
+		/*
+		 * Assume this isn't an error... the file just
+		 * looks sort of like a PE/NE file.
+		 */
+		DBG_NOTICE("File [%s] unknown file format, signature = 0x%x\n",
+			fname,
+			IVAL(buf,PE_HEADER_SIGNATURE_OFFSET));
+	}
 
 	no_version_info:
 		SAFE_FREE(buf);
