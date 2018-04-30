@@ -36,7 +36,7 @@ cluster_is_healthy
 
 try_command_on_node -v 0 "$CTDB listvars"
 
-echo "Veryifying all variable values using \"ctdb getvar\"..."
+echo "Verifying all variable values using \"ctdb getvar\"..."
 
 echo "$out" |
 while read var x val ; do
