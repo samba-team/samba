@@ -866,7 +866,7 @@ def build(bld):
         bld.SAMBA_BINARY('ibwrapper_test',
                          source='ib/ibwrapper_test.c',
                          includes='include',
-                         deps='replace talloc ctdb-client ctdb-common sys_rw' +
+                         deps='replace talloc ctdb-common sys_rw' +
                               ib_deps,
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
