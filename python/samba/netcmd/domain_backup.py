@@ -35,7 +35,7 @@ from samba.dcerpc.security import dom_sid
 from samba.netcmd import Option, CommandError
 from samba.dcerpc import misc, security
 from samba import Ldb
-from fsmo import cmd_fsmo_seize
+from . fsmo import cmd_fsmo_seize
 from samba.provision import make_smbconf
 from samba.upgradehelpers import update_krbtgt_account_password
 from samba.remove_dc import remove_dc
