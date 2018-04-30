@@ -42,6 +42,12 @@ bld.SAMBA_SUBSYSTEM('auth4_sam',
 	deps=''
 	)
 
+bld.SAMBA_BINARY('test_kerberos',
+        source='tests/kerberos.c',
+        deps='cmocka authkrb5 krb5samba com_err CREDENTIALS_KRB5',
+        local_include=False,
+        install=False
+        )
 
 for env in bld.gen_python_environments():
 	pytalloc_util = bld.pyembed_libname('pytalloc-util')

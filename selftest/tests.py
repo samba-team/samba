@@ -187,5 +187,7 @@ plantestsuite("samba.unittests.tldap", "none",
               [os.path.join(bindir(), "default/source3/test_tldap")])
 plantestsuite("samba.unittests.rfc1738", "none",
               [os.path.join(bindir(), "default/lib/util/test_rfc1738")])
+plantestsuite("samba.unittests.kerberos", "none",
+              [os.path.join(bindir(), "test_kerberos")])
 plantestsuite("samba.unittests.ms_fnmatch", "none",
               [os.path.join(bindir(), "default/lib/util/test_ms_fnmatch")])
