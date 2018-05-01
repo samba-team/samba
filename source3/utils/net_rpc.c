@@ -5232,7 +5232,13 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 	if (argc == 0) {
 		f = stdin;
 	} else {
-		f = fopen(argv[0], "r");
+		if (strequal(argv[0], "-")) {
+			f = stdin;
+		} else {
+			f = fopen(argv[0], "r");
+		}
+		argv++;
+		argc--;
 	}
 
 	if (f == NULL) {
@@ -5260,6 +5266,17 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 	info_ctr.ctr.ctr1 = &ctr1;
 
 	b = pipe_hnd->binding_handle;
+
+	if (argc != 0) {
+		/* Show results only for shares listed on the command line. */
+		while (*argv) {
+			const char *netname = *argv++;
+			d_printf("%s\n", netname);
+			show_userlist(pipe_hnd, cli, mem_ctx, netname,
+				      num_tokens, tokens);
+		}
+		goto done;
+	}
 
 	/* Issue the NetShareEnum RPC call and retrieve the response */
 	nt_status = dcerpc_srvsvc_NetShareEnumAll(b,
