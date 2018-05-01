@@ -374,7 +374,7 @@ static ssize_t printing_pread_data(files_struct *fsp,
 ****************************************************************************/
 
 static int handle_pe_file(files_struct *fsp,
-				off_t in_pos_unused,
+				off_t in_pos,
 				char *fname,
 				char *buf,
 				uint32_t *major,
@@ -384,23 +384,18 @@ static int handle_pe_file(files_struct *fsp,
 	unsigned int num_sections;
 	unsigned int section_table_bytes;
 	ssize_t byte_count;
-	off_t oret;
-	off_t pos;
-	off_t in_pos = -1;
+	off_t rel_pos;
 	int ret = -1;
 
 	/* Just skip over optional header to get to section table */
-	pos = SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-
+	rel_pos = SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-
 		(NE_HEADER_SIZE-PE_HEADER_SIZE);
 
-	oret = SMB_VFS_LSEEK(fsp, pos, SEEK_CUR);
-	if (oret == (off_t)-1) {
-		DBG_NOTICE("File [%s] Windows optional header "
-			"too short, errno = %d\n",
-			fname,
-			errno);
+	if (in_pos + rel_pos < in_pos) {
+		/* Integer wrap. */
 		goto out;
 	}
+	in_pos = rel_pos + in_pos;
 
 	/* get the section table */
 	num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
@@ -459,19 +454,10 @@ static int handle_pe_file(files_struct *fsp,
 			}
 
 			/*
-			 * Seek to the start of the .rsrc
+			 * Read from the start of the .rsrc
 			 * section info
 			 */
-			oret = SMB_VFS_LSEEK(fsp,
-					section_pos,
-					SEEK_SET);
-			if (oret == (off_t)-1) {
-				DBG_NOTICE("PE file [%s] too short for "
-					"section info, errno = %d\n",
-					fname,
-					errno);
-				goto out;
-			}
+			in_pos = section_pos;
 
 			byte_count = printing_pread_data(fsp,
 						buf,
