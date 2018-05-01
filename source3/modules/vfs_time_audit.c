@@ -648,25 +648,6 @@ static int smb_time_audit_close(vfs_handle_struct *handle, files_struct *fsp)
 	return result;
 }
 
-static ssize_t smb_time_audit_read(vfs_handle_struct *handle,
-				   files_struct *fsp, void *data, size_t n)
-{
-	ssize_t result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fsp("read", timediff, fsp);
-	}
-
-	return result;
-}
-
 static ssize_t smb_time_audit_pread(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    void *data, size_t n, off_t offset)
@@ -2677,7 +2658,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.open_fn = smb_time_audit_open,
 	.create_file_fn = smb_time_audit_create_file,
 	.close_fn = smb_time_audit_close,
-	.read_fn = smb_time_audit_read,
 	.pread_fn = smb_time_audit_pread,
 	.pread_send_fn = smb_time_audit_pread_send,
 	.pread_recv_fn = smb_time_audit_pread_recv,

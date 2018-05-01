@@ -220,13 +220,6 @@ static int skel_close_fn(vfs_handle_struct *handle, files_struct *fsp)
 	return -1;
 }
 
-static ssize_t skel_vfs_read(vfs_handle_struct *handle, files_struct *fsp,
-			     void *data, size_t n)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp,
 			  void *data, size_t n, off_t offset)
 {
@@ -949,7 +942,6 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.open_fn = skel_open,
 	.create_file_fn = skel_create_file,
 	.close_fn = skel_close_fn,
-	.read_fn = skel_vfs_read,
 	.pread_fn = skel_pread,
 	.pread_send_fn = skel_pread_send,
 	.pread_recv_fn = skel_pread_recv,

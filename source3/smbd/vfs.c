@@ -1704,13 +1704,6 @@ int smb_vfs_call_close(struct vfs_handle_struct *handle,
 	return handle->fns->close_fn(handle, fsp);
 }
 
-ssize_t smb_vfs_call_read(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, void *data, size_t n)
-{
-	VFS_FIND(read);
-	return handle->fns->read_fn(handle, fsp, data, n);
-}
-
 ssize_t smb_vfs_call_pread(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, void *data, size_t n,
 			   off_t offset)

@@ -146,11 +146,6 @@
 #define SMB_VFS_NEXT_CLOSE(handle, fsp) \
 	smb_vfs_call_close((handle)->next, (fsp))
 
-#define SMB_VFS_READ(fsp, data, n) \
-	smb_vfs_call_read((fsp)->conn->vfs_handles, (fsp), (data), (n))
-#define SMB_VFS_NEXT_READ(handle, fsp, data, n) \
-	smb_vfs_call_read((handle)->next, (fsp), (data), (n))
-
 #define SMB_VFS_PREAD(fsp, data, n, off) \
 	smb_vfs_call_pread((fsp)->conn->vfs_handles, (fsp), (data), (n), (off))
 #define SMB_VFS_NEXT_PREAD(handle, fsp, data, n, off) \

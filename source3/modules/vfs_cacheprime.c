@@ -146,23 +146,6 @@ static ssize_t cprime_sendfile(
                                      header, offset, count);
 }
 
-static ssize_t cprime_read(
-                vfs_handle_struct * handle,
-                files_struct *      fsp,
-                void *              data,
-                size_t              count)
-{
-        off_t offset;
-
-        offset = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
-        if (offset >= 0 && g_readbuf)  {
-                prime_cache(handle, fsp, offset, count);
-                SMB_VFS_LSEEK(fsp, offset, SEEK_SET);
-        }
-
-        return SMB_VFS_NEXT_READ(handle, fsp, data, count);
-}
-
 static ssize_t cprime_pread(
                 vfs_handle_struct * handle,
                 files_struct *      fsp,
@@ -180,7 +163,6 @@ static ssize_t cprime_pread(
 static struct vfs_fn_pointers vfs_cacheprime_fns = {
     .sendfile_fn = cprime_sendfile,
     .pread_fn = cprime_pread,
-    .read_fn = cprime_read,
     .connect_fn = cprime_connect,
 };
 

@@ -458,18 +458,6 @@ static int cephwrap_close(struct vfs_handle_struct *handle, files_struct *fsp)
 	WRAP_RETURN(result);
 }
 
-static ssize_t cephwrap_read(struct vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
-{
-	ssize_t result;
-
-	DBG_DEBUG("[CEPH] read(%p, %p, %p, %llu)\n", handle, fsp, data, llu(n));
-
-	/* Using -1 for the offset means read/write rather than pread/pwrite */
-	result = ceph_read(handle->data, fsp->fh->fd, data, n, -1);
-	DBG_DEBUG("[CEPH] read(...) = %llu\n", llu(result));
-	WRAP_RETURN(result);
-}
-
 static ssize_t cephwrap_pread(struct vfs_handle_struct *handle, files_struct *fsp, void *data,
 			size_t n, off_t offset)
 {
@@ -1474,7 +1462,6 @@ static struct vfs_fn_pointers ceph_fns = {
 
 	.open_fn = cephwrap_open,
 	.close_fn = cephwrap_close,
-	.read_fn = cephwrap_read,
 	.pread_fn = cephwrap_pread,
 	.write_fn = cephwrap_write,
 	.pwrite_fn = cephwrap_pwrite,

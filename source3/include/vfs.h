@@ -247,6 +247,8 @@
 /* Version 38 - Remove SMB_VFS_INIT_SEARCH_OP */
 /* Version 39 - Remove SMB_VFS_FSYNC
 		Only implement async versions. */
+/* Version 39 - Remove SMB_VFS_READ
+		All users are now pread or async versions. */
 
 #define SMB_VFS_INTERFACE_VERSION 39
 
@@ -685,7 +687,6 @@ struct vfs_fn_pointers {
 				   const struct smb2_create_blobs *in_context_blobs,
 				   struct smb2_create_blobs *out_context_blobs);
 	int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
-	ssize_t (*read_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
 	ssize_t (*pread_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, off_t offset);
 	struct tevent_req *(*pread_send_fn)(struct vfs_handle_struct *handle,
 					    TALLOC_CTX *mem_ctx,
@@ -1170,8 +1171,6 @@ NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  struct smb2_create_blobs *out_context_blobs);
 int smb_vfs_call_close(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp);
-ssize_t smb_vfs_call_read(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, void *data, size_t n);
 ssize_t smb_vfs_call_pread(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, void *data, size_t n,
 			   off_t offset);

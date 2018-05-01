@@ -1032,19 +1032,6 @@ static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp)
 	return result;
 }
 
-static ssize_t smb_full_audit_read(vfs_handle_struct *handle, files_struct *fsp,
-			  void *data, size_t n)
-{
-	ssize_t result;
-
-	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
-
-	do_log(SMB_VFS_OP_READ, (result >= 0), handle, "%s",
-	       fsp_str_do_log(fsp));
-
-	return result;
-}
-
 static ssize_t smb_full_audit_pread(vfs_handle_struct *handle, files_struct *fsp,
 			   void *data, size_t n, off_t offset)
 {
@@ -2507,7 +2494,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.open_fn = smb_full_audit_open,
 	.create_file_fn = smb_full_audit_create_file,
 	.close_fn = smb_full_audit_close,
-	.read_fn = smb_full_audit_read,
 	.pread_fn = smb_full_audit_pread,
 	.pread_send_fn = smb_full_audit_pread_send,
 	.pread_recv_fn = smb_full_audit_pread_recv,

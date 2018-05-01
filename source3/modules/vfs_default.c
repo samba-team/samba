@@ -614,16 +614,6 @@ static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp)
 	return result;
 }
 
-static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
-{
-	ssize_t result;
-
-	START_PROFILE_BYTES(syscall_read, n);
-	result = sys_read(fsp->fh->fd, data, n);
-	END_PROFILE_BYTES(syscall_read);
-	return result;
-}
-
 static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void *data,
 			size_t n, off_t offset)
 {
@@ -2990,7 +2980,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.open_fn = vfswrap_open,
 	.create_file_fn = vfswrap_create_file,
 	.close_fn = vfswrap_close,
-	.read_fn = vfswrap_read,
 	.pread_fn = vfswrap_pread,
 	.pread_send_fn = vfswrap_pread_send,
 	.pread_recv_fn = vfswrap_pread_recv,
