@@ -13,7 +13,7 @@
 
 <refnamediv>
 	<refname>vfs_linux_xfs_sgid</refname>
-	<refpurpose></refpurpose>
+	<refpurpose>Workaround XFS sgid bit not inherited during mkdir with default acl on Linux older than 3.1</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -31,9 +31,12 @@
 
 	<para>
 	<command>vfs_linux_xfs_sgid</command> is a VFS module to work around an
-	old Linux XFS bug that still exists: Under certain circumstances the
-	SGID bit is not inherited (<ulink url="http://oss.sgi.com/bugzilla/show_bug.cgi?id=280">
-	http://oss.sgi.com/bugzilla/show_bug.cgi?id=280</ulink>).
+	old Linux XFS bug fixed in 3.11: the SGID bit is not inherited during mkdir
+	when a default ACL is set
+	(<ulink url="https://web.archive.org/web/20160320180937/http://oss.sgi.com/bugzilla/show_bug.cgi?id=280">
+	https://web.archive.org/web/20160320180937/http://oss.sgi.com/bugzilla/show_bug.cgi?id=280
+	</ulink> fixed by <ulink url="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=42c49d7f249c2487f36d3314753d5d8ebcee8249">
+	https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=42c49d7f249c2487f36d3314753d5d8ebcee8249</ulink>).
 	The <command>vfs_linux_xfs_sgid</command> VFS module will work around this
 	bug by manually setting the SGID bit after a <command>mkdir</command>
 	if the parent directory had the SGID bit set.
