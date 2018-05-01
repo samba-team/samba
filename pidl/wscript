@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, Logs
+import os, string, Logs
 from samba_utils import MODE_755
 
 # This function checks if a perl module is installed on the system.
@@ -67,7 +67,8 @@ def build(bld):
     bld.SET_BUILD_GROUP('final')
     if 'POD2MAN' in bld.env and bld.env['POD2MAN'] != '':
         for src, manpage in pidl_manpages.iteritems():
-            bld(rule='${POD2MAN} -c "Samba Documentation" ${SRC} ${TGT}',
+            section = string.rsplit(manpage, ".", 1)[1]
+            bld(rule='${POD2MAN} -c "Samba Documentation" -s %s ${SRC} ${TGT}' % section,
                 shell=True,
                 source=src,
                 install_path=os.path.dirname(bld.EXPAND_VARIABLES('${MANDIR}/'+manpage)),
