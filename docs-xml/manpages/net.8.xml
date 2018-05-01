@@ -26,6 +26,7 @@
 		<arg choice="opt">-w|--workgroup workgroup</arg>
 		<arg choice="opt">-W|--myworkgroup myworkgroup</arg>
 		<arg choice="opt">-U|--user user</arg>
+		<arg choice="opt">-A|--authentication-file authfile</arg>
 		<arg choice="opt">-I|--ipaddress ip-address</arg>
 		<arg choice="opt">-p|--port port</arg>
 		<arg choice="opt">-n myname</arg>

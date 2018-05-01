@@ -50,6 +50,7 @@
 #include "messages.h"
 #include "cmdline_contexts.h"
 #include "lib/gencache.h"
+#include "auth/credentials/credentials.h"
 
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"
@@ -904,6 +905,26 @@ static struct functable net_func[] = {
 };
 
 
+static void get_credentials_file(struct net_context *c,
+				 const char *file)
+{
+	struct cli_credentials *cred = cli_credentials_init(c);
+
+	if (cred == NULL) {
+		d_printf("ERROR: Unable to allocate memory!\n");
+		exit(-1);
+	}
+
+	if (!cli_credentials_parse_file(cred, file, CRED_GUESS_FILE)) {
+		exit(-1);
+	}
+
+	c->opt_user_name = cli_credentials_get_username(cred);
+	c->opt_user_specified = (c->opt_user_name != NULL);
+	c->opt_password = cli_credentials_get_password(cred);
+	c->opt_target_workgroup = cli_credentials_get_domain(cred);
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -923,6 +944,7 @@ static struct functable net_func[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
 		{"workgroup",	'w', POPT_ARG_STRING, &c->opt_target_workgroup},
 		{"user",	'U', POPT_ARG_STRING, &c->opt_user_name, 'U'},
+		{"authentication-file", 'A', POPT_ARG_STRING, &c->opt_user_name, 'A', "Get the credentials from a file", "FILE"},
 		{"ipaddress",	'I', POPT_ARG_STRING, 0,'I'},
 		{"port",	'p', POPT_ARG_INT,    &c->opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &c->opt_requester_name},
@@ -1024,6 +1046,9 @@ static struct functable net_func[] = {
 				*p = 0;
 				c->opt_password = p+1;
 			}
+			break;
+		case 'A':
+			get_credentials_file(c, c->opt_user_name);
 			break;
 		default:
 			d_fprintf(stderr, _("\nInvalid option %s: %s\n"),
