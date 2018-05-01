@@ -564,7 +564,9 @@ def packet_rpc_netlogon_30(packet, conversation, context):
     pwd.data = filler + [ord(x) for x in newpass]
     context.machine_creds.encrypt_netr_crypt_password(pwd)
     c.netr_ServerPasswordSet2(context.server,
-                              context.machine_creds.get_workstation(),
+                              # must ends with $, so use get_username instead
+                              # of get_workstation here
+                              context.machine_creds.get_username(),
                               SEC_CHAN_WKSTA,
                               context.netbios_name,
                               auth,
