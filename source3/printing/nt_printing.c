@@ -546,7 +546,7 @@ static int handle_pe_file(files_struct *fsp,
 ****************************************************************************/
 
 static int handle_ne_file(files_struct *fsp,
-				off_t in_pos_unused,
+				off_t in_pos,
 				char *fname,
 				char *buf,
 				uint32_t *major,
@@ -555,7 +555,6 @@ static int handle_ne_file(files_struct *fsp,
 	unsigned int i;
 	ssize_t byte_count;
 	int ret = -1;
-	off_t in_pos = -1;
 
 	if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
 		DBG_NOTICE("NE file [%s] wrong target OS = 0x%x\n",
@@ -658,10 +657,7 @@ static int handle_ne_file(files_struct *fsp,
 				 * Compute skip alignment to next
 				 * long address.
 				 */
-				off_t cpos = SMB_VFS_LSEEK(fsp,
-						0,
-						SEEK_CUR);
-
+				off_t cpos = in_pos;
 				int skip = -(cpos - (byte_count - i) +
 					 sizeof(VS_SIGNATURE)) & 3;
 				if (IVAL(buf,
