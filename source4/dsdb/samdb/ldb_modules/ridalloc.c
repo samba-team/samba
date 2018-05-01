@@ -443,6 +443,12 @@ int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
+	/* clear the cache so we don't get an old ntds_guid */
+	if (ldb_set_opaque(ldb, "cache.ntds_guid", NULL) != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb_module_get_ctx(module));
+	}
+
 	our_ntds_guid = samdb_ntds_objectGUID(ldb_module_get_ctx(module));
 	if (!our_ntds_guid) {
 		talloc_free(tmp_ctx);
