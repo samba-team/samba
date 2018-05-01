@@ -44,6 +44,7 @@
 #include "nsswitch/winbind_client.h"
 #include "libds/common/roles.h"
 #include "lib/util/tfork.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -232,23 +233,63 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
   pre-open the key databases. This saves a lot of time in child
   processes
  */
-static void prime_ldb_databases(struct tevent_context *event_ctx)
+static int prime_ldb_databases(struct tevent_context *event_ctx, bool *am_backup)
 {
-	TALLOC_CTX *db_context;
-	db_context = talloc_new(event_ctx);
+	struct ldb_result *res = NULL;
+	struct ldb_dn *samba_dsdb_dn = NULL;
+	struct ldb_context *ldb_ctx = NULL;
+	struct ldb_context *pdb = NULL;
+	static const char *attrs[] = { "backupDate", NULL };
+	const char *msg = NULL;
+	int ret;
+	TALLOC_CTX *db_context = talloc_new(event_ctx);
+	if (db_context == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	samdb_connect(db_context,
-		      event_ctx,
-		      cmdline_lp_ctx,
-		      system_session(cmdline_lp_ctx),
-		      NULL,
-		      0);
-	privilege_connect(db_context, cmdline_lp_ctx);
+	*am_backup = false;
 
-	/* we deliberately leave these open, which allows them to be
+	/* note we deliberately leave these open, which allows them to be
 	 * re-used in ldb_wrap_connect() */
-}
+	ldb_ctx = samdb_connect(db_context,
+				event_ctx,
+				cmdline_lp_ctx,
+				system_session(cmdline_lp_ctx),
+				NULL,
+				0);
+	if (ldb_ctx == NULL) {
+		talloc_free(db_context);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	pdb = privilege_connect(db_context, cmdline_lp_ctx);
+	if (pdb == NULL) {
+		talloc_free(db_context);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
+	/* check the root DB object to see if it's marked as a backup */
+	samba_dsdb_dn = ldb_dn_new(db_context, ldb_ctx, "@SAMBA_DSDB");
+	if (!samba_dsdb_dn) {
+		talloc_free(db_context);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_search_dn(ldb_ctx, db_context, &res, samba_dsdb_dn, attrs,
+			     DSDB_FLAG_AS_SYSTEM);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(db_context);
+		return ret;
+	}
+
+	if (res->count > 0) {
+		msg = ldb_msg_find_attr_as_string(res->msgs[0], "backupDate",
+						  NULL);
+		if (msg != NULL) {
+			*am_backup = true;
+		}
+	}
+	return LDB_SUCCESS;
+}
 
 /*
   called when a fatal condition occurs in a child task
@@ -366,7 +407,9 @@ static int binary_smbd_main(const char *binary_name,
 	bool opt_fork = true;
 	bool opt_interactive = false;
 	bool opt_no_process_group = false;
+	bool db_is_backup = false;
 	int opt;
+	int ret;
 	poptContext pc;
 #define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
 	STATIC_service_MODULES_PROTO;
@@ -631,7 +674,17 @@ static int binary_smbd_main(const char *binary_name,
 			"and exited. Check logs for details", EINVAL);
 	};
 
-	prime_ldb_databases(state->event_ctx);
+	ret = prime_ldb_databases(state->event_ctx, &db_is_backup);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(state);
+		exit_daemon("Samba failed to prime database", EINVAL);
+	}
+
+	if (db_is_backup) {
+		TALLOC_FREE(state);
+		exit_daemon("Database is a backup. Please run samba-tool domain"
+			    " backup restore", EINVAL);
+	}
 
 	status = setup_parent_messaging(state, cmdline_lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
