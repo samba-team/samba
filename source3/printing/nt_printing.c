@@ -374,6 +374,7 @@ static ssize_t printing_pread_data(files_struct *fsp,
 ****************************************************************************/
 
 static int handle_pe_file(files_struct *fsp,
+				off_t in_pos_unused,
 				char *fname,
 				char *buf,
 				uint32_t *major,
@@ -559,6 +560,7 @@ static int handle_pe_file(files_struct *fsp,
 ****************************************************************************/
 
 static int handle_ne_file(files_struct *fsp,
+				off_t in_pos_unused,
 				char *fname,
 				char *buf,
 				uint32_t *major,
@@ -784,6 +786,7 @@ static int get_file_version(files_struct *fsp,
 	 */
 	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
 		return handle_pe_file(fsp,
+					in_pos,
 					fname,
 					buf,
 					major,
@@ -791,6 +794,7 @@ static int get_file_version(files_struct *fsp,
 	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) ==
 			NE_HEADER_SIGNATURE) {
 		return handle_ne_file(fsp,
+					in_pos,
 					fname,
 					buf,
 					major,
