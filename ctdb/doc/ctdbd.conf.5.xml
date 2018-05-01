@@ -184,6 +184,50 @@
       </varlistentry>
 
       <varlistentry>
+	<term>CTDB_DEBUG_HUNG_SCRIPT=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME is a script to run to log debug information when
+	    an event script times out.
+	  </para>
+	  <para>
+	    Default is <filename>/usr/local/etc/ctdb/debug-hung-script.sh</filename>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_DEBUG_HUNG_SCRIPT_STACKPAT=<parameter>REGEXP</parameter></term>
+	<listitem>
+	  <para>
+	    REGEXP specifies interesting processes for which stack
+	    traces should be logged when debugging hung eventscripts
+	    and those processes are matched in pstree output.  REGEXP
+	    is an extended regexp so choices are separated by pipes
+	    ('|').  However, REGEXP should not contain parentheses.
+	    See also <citetitle>CTDB_DEBUG_HUNG_SCRIPT</citetitle>.
+	  </para>
+	  <para>
+	    Default is "exportfs|rpcinfo".
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_DEBUG_LOCKS=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME is a script to run to log debug information when
+	    an CTDB fails to freeze databases during recovery.
+	  </para>
+	  <para>
+	    No default, usually
+	    <filename>/usr/local/etc/ctdb/debug_locks.sh</filename>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>CTDB_DEBUGLEVEL=<parameter>DEBUGLEVEL</parameter></term>
 	<listitem>
 	  <para>
@@ -272,6 +316,18 @@
 	      </listitem>
 	    </varlistentry>
 	  </variablelist>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_MAX_OPEN_FILES=<parameter>NUM</parameter></term>
+	<listitem>
+	  <para>
+	    NUM is the maximum number of open files.
+	  </para>
+	  <para>
+	    There is no default.
+	  </para>
 	</listitem>
       </varlistentry>
 
@@ -383,6 +439,18 @@
 	  <para>
 	    Default is no.  Corresponds to
 	    <option>--start-as-stopped</option>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_SUPPRESS_COREFILE=yes|no</term>
+	<listitem>
+	  <para>
+	    Whether CTDB core files should be suppressed.
+	  </para>
+	  <para>
+	    Default is no.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -1304,6 +1372,45 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
     <refsect2>
       <title>
+	DATABASE SETUP
+      </title>
+
+      <para>
+	CTDB checks the consistency of databases during startup.
+      </para>
+
+      <refsect3>
+	<title>Eventscripts</title>
+
+	<simplelist>
+	  <member><filename>00.ctdb</filename></member>
+	</simplelist>
+
+      </refsect3>
+
+      <variablelist>
+
+	<varlistentry>
+	  <term>CTDB_MAX_CORRUPT_DB_BACKUPS=<parameter>NUM</parameter></term>
+	  <listitem>
+	    <para>
+	      NUM is the maximum number of volatile TDB database backups
+	      to be kept (for each database) when a corrupt database is
+	      found during startup.  Volatile TDBs are zeroed during
+	      startup so backups are needed to debug any corruption that
+	      occurs before a restart.
+	    </para>
+	    <para>
+	      Default is 10.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+      </variablelist>
+    </refsect2>
+
+    <refsect2>
+      <title>
 	SYSTEM RESOURCE MONITORING CONFIGURATION
       </title>
 
@@ -1405,28 +1512,15 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
   <refsect1>
     <title>
-      DEBUG AND TEST
+      TEST OPTIONS
     </title>
 
     <para>
-      Variable in this section are for debugging and testing CTDB.
-      They should not generally be needed.
+      Variable in this section are for testing CTDB.  They should not
+      generally be needed.
     </para>
 
     <variablelist>
-
-      <varlistentry>
-	<term>CTDB_DEBUG_HUNG_SCRIPT=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME is a script to run to log debug information when
-	    an event script times out.
-	  </para>
-	  <para>
-	    Default is <filename>/usr/local/etc/ctdb/debug-hung-script.sh</filename>.
-	  </para>
-	</listitem>
-      </varlistentry>
 
       <varlistentry>
 	<term>CTDB_DEBUG_HUNG_SCRIPT_LOGFILE=<parameter>FILENAME</parameter></term>
@@ -1439,37 +1533,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  <para>
 	    No default.  Messages go to stdout/stderr and are logged
 	    to the same place as other CTDB log messages.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_DEBUG_HUNG_SCRIPT_STACKPAT=<parameter>REGEXP</parameter></term>
-	<listitem>
-	  <para>
-	    REGEXP specifies interesting processes for which stack
-	    traces should be logged when debugging hung eventscripts
-	    and those processes are matched in pstree output.  REGEXP
-	    is an extended regexp so choices are separated by pipes
-	    ('|').  However, REGEXP should not contain parentheses.
-	    See also <citetitle>CTDB_DEBUG_HUNG_SCRIPT</citetitle>.
-	  </para>
-	  <para>
-	    Default is "exportfs|rpcinfo".
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_DEBUG_LOCKS=<parameter>FILENAME</parameter></term>
-	<listitem>
-	  <para>
-	    FILENAME is a script to run to log debug information when
-	    an CTDB fails to freeze databases during recovery.
-	  </para>
-	  <para>
-	    No default, usually
-	    <filename>/usr/local/etc/ctdb/debug_locks.sh</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -1489,51 +1552,11 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_MAX_CORRUPT_DB_BACKUPS=<parameter>NUM</parameter></term>
-	<listitem>
-	  <para>
-	    NUM is the maximum number of volatile TDB database backups
-	    to be kept (for each database) when a corrupt database is
-	    found during startup.  Volatile TDBs are zeroed during
-	    startup so backups are needed to debug any corruption that
-	    occurs before a restart.
-	  </para>
-	  <para>
-	    Default is 10.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_MAX_OPEN_FILES=<parameter>NUM</parameter></term>
-	<listitem>
-	  <para>
-	    NUM is the maximum number of open files.
-	  </para>
-	  <para>
-	    There is no default.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_RUN_TIMEOUT_MONITOR=yes|no</term>
 	<listitem>
 	  <para>
 	    Whether CTDB should simulate timing out monitor events.
 	    This uses the <filename>99.timeout</filename> eventscript.
-	  </para>
-	  <para>
-	    Default is no.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_SUPPRESS_COREFILE=yes|no</term>
-	<listitem>
-	  <para>
-	    Whether CTDB core files should be suppressed.
 	  </para>
 	  <para>
 	    Default is no.
