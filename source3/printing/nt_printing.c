@@ -324,17 +324,15 @@ static ssize_t printing_pread_data(files_struct *fsp,
 	size_t total=0;
 	off_t in_pos = *poff;
 
-	in_pos = SMB_VFS_LSEEK(fsp, in_pos, SEEK_SET);
-	if (in_pos == (off_t)-1) {
-		return -1;
-	}
 	/* Don't allow integer wrap on read. */
 	if (in_pos + byte_count < in_pos) {
 		return -1;
 	}
 
 	while (total < byte_count) {
-		ssize_t ret = SMB_VFS_READ(fsp, buf + total,
+		ssize_t ret = read_file(fsp,
+					buf + total,
+					in_pos,
 					byte_count - total);
 
 		if (ret == 0) {
