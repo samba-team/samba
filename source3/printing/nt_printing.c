@@ -732,9 +732,7 @@ static int get_file_version(files_struct *fsp,
 {
 	char    *buf = NULL;
 	ssize_t byte_count;
-	off_t pos;
-	off_t oret;
-	off_t in_pos = -1;
+	off_t in_pos = fsp->fh->pos;
 
 	buf=(char *)SMB_MALLOC(DOS_HEADER_SIZE);
 	if (buf == NULL) {
@@ -764,19 +762,7 @@ static int get_file_version(files_struct *fsp,
 	 * Skip OEM header (if any) and the
 	 * DOS stub to start of Windows header.
 	 */
-	pos = SVAL(buf,DOS_HEADER_LFANEW_OFFSET);
-	oret = SMB_VFS_LSEEK(fsp, pos, SEEK_SET);
-	if (oret == (off_t)-1) {
-		DBG_NOTICE("File [%s] too short, errno = %d\n",
-			fname,
-			errno);
-		/*
-		 * Assume this isn't an error...
-		 * the file just looks sort of like a PE/NE file.
-		 */
-		goto no_version_info;
-	}
-	pos = oret; /* Update new position. */
+	in_pos = SVAL(buf,DOS_HEADER_LFANEW_OFFSET);
 
 	/* Note: DOS_HEADER_SIZE and NE_HEADER_SIZE are incidentally same */
 	byte_count = printing_pread_data(fsp, buf, &in_pos, NE_HEADER_SIZE);
