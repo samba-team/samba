@@ -304,6 +304,96 @@ static WERROR cmd_drsuapi_getdcinfo(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_drsuapi_writeaccountspn(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx, int argc,
+					  const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+
+	struct GUID bind_guid;
+	struct policy_handle bind_handle;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	struct drsuapi_DsNameString *spn_names = NULL;
+
+	int i = 0;
+	uint32_t level_out;
+	union drsuapi_DsWriteAccountSpnRequest req;
+	union drsuapi_DsWriteAccountSpnResult result;
+
+	if (argc < 4) {
+		printf("usage: %s [add|replace|delete] dn [spn_names]+\n", argv[0]);
+		return WERR_OK;
+	}
+
+	req.req1.unknown1 = 0;  /* Unused, must be 0 */
+	req.req1.object_dn = argv[2];
+	req.req1.count = argc - 3;
+
+	if (strcmp(argv[1], "add") == 0) {
+		req.req1.operation = DRSUAPI_DS_SPN_OPERATION_ADD;
+	} else if (strcmp(argv[1], "replace") == 0) {
+		req.req1.operation = DRSUAPI_DS_SPN_OPERATION_REPLACE;
+	} else if (strcmp(argv[1], "delete") == 0) {
+		req.req1.operation = DRSUAPI_DS_SPN_OPERATION_DELETE;
+	} else {
+		printf("usage: %s [add|replace|delete] dn [spn_names]+\n", argv[0]);
+		return WERR_OK;
+	}
+
+	spn_names = talloc_zero_array(mem_ctx,
+				      struct drsuapi_DsNameString,
+				      req.req1.count);
+	W_ERROR_HAVE_NO_MEMORY(spn_names);
+
+	for (i=0; i<req.req1.count; i++) {
+		spn_names[i].str = argv[i + 3];
+	}
+
+	req.req1.spn_names = spn_names;
+
+	GUID_from_string(DRSUAPI_DS_BIND_GUID, &bind_guid);
+
+	status = dcerpc_drsuapi_DsBind(b, mem_ctx,
+				       &bind_guid,
+				       NULL,
+				       &bind_handle,
+				       &werr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	status = dcerpc_drsuapi_DsWriteAccountSpn(b, mem_ctx,
+						  &bind_handle,
+						  1,
+						  &req,
+						  &level_out,
+						  &result,
+						  &werr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto out;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+
+ out:
+	if (is_valid_policy_hnd(&bind_handle)) {
+		WERROR _werr;
+		dcerpc_drsuapi_DsUnbind(b, mem_ctx, &bind_handle, &_werr);
+	}
+
+	return werr;
+}
+
 static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx, int argc,
 				       const char **argv)
@@ -588,5 +678,6 @@ struct cmd_set drsuapi_commands[] = {
 	{ "dscracknames", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_cracknames, &ndr_table_drsuapi, NULL, "Crack Name", "" },
 	{ "dsgetdcinfo", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getdcinfo, &ndr_table_drsuapi, NULL, "Get Domain Controller Info", "" },
 	{ "dsgetncchanges", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getncchanges, &ndr_table_drsuapi, NULL, "Get NC Changes", "" },
+	{ "dswriteaccountspn", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_writeaccountspn, &ndr_table_drsuapi, NULL, "Write Account SPN", "" },
 	{ NULL }
 };
