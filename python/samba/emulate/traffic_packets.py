@@ -242,7 +242,13 @@ def packet_drsuapi_12(packet, conversation, context):
 def packet_drsuapi_13(packet, conversation, context):
     # DsWriteAccountSpn
     req = drsuapi.DsWriteAccountSpnRequest1()
-    req.operation = drsuapi.DRSUAPI_DS_SPN_OPERATION_ADD
+    req.operation = drsuapi.DRSUAPI_DS_SPN_OPERATION_REPLACE
+    req.unknown1 = 0  # Unused, must be 0
+    req.object_dn = context.user_dn
+    req.count = 1  # only 1 name
+    spn_name = drsuapi.DsNameString()
+    spn_name.str = 'foo/{}'.format(context.username)
+    req.spn_names = [spn_name]
     (drs, handle) = context.get_drsuapi_connection_pair()
     (level, res) = drs.DsWriteAccountSpn(handle, 1, req)
     return True

@@ -28,6 +28,7 @@ from samba.emulate import traffic
 
 from samba.samdb import SamDB
 import samba.tests
+from samba import sd_utils
 
 
 class TrafficEmulatorPacketTests(samba.tests.TestCase):
@@ -78,6 +79,11 @@ class TrafficEmulatorPacketTests(samba.tests.TestCase):
                                     self.userpass)
 
         self.context.generate_process_local_config(account, self.conversation)
+
+        # grant user write permission to do things like write account SPN
+        sdutils = sd_utils.SDUtils(self.ldb)
+        mod = "(A;;WP;;;PS)"
+        sdutils.dacl_add_ace(self.context.user_dn, mod)
 
     def tearDown(self):
         super(TrafficEmulatorPacketTests, self).tearDown()
