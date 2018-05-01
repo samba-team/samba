@@ -26,7 +26,8 @@ import samba.tests
 from samba import gensec
 from samba.credentials import Credentials
 from samba.tests import TestCase
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.ndr import ndr_pack, ndr_unpack, ndr_unpack_out
+from samba.compat import text_type
 
 class RawDCERPCTest(TestCase):
     """A raw DCE/RPC Test case."""
@@ -164,7 +165,7 @@ class RawDCERPCTest(TestCase):
             self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
             self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
             self.assertEquals(len(rep.u._pad), 3)
-            self.assertEquals(rep.u._pad, '\0' * 3)
+            self.assertEquals(rep.u._pad, b'\0' * 3)
             return
         self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
                         pfc_flags=pfc_flags)
@@ -316,7 +317,7 @@ class RawDCERPCTest(TestCase):
                 sys.stderr.write("stub_in: %d\n%s" % (len(stub_in), self.hexdump(stub_in)))
         else:
             # only used for sig_size calculation
-            stub_in = '\xff' * samba.dcerpc.dcerpc.DCERPC_AUTH_PAD_ALIGNMENT
+            stub_in = b'\xff' * samba.dcerpc.dcerpc.DCERPC_AUTH_PAD_ALIGNMENT
 
         sig_size = 0
         if auth_context is not None:
@@ -324,7 +325,7 @@ class RawDCERPCTest(TestCase):
             auth_pad_length = 0
             if mod_len > 0:
                 auth_pad_length = samba.dcerpc.dcerpc.DCERPC_AUTH_PAD_ALIGNMENT - mod_len
-            stub_in += '\x00' * auth_pad_length
+            stub_in += b'\x00' * auth_pad_length
 
             if auth_context["g_auth_level"] >= samba.dcerpc.dcerpc.DCERPC_AUTH_LEVEL_PACKET:
                 sig_size = auth_context["gensec"].sig_size(len(stub_in))
@@ -461,19 +462,19 @@ class RawDCERPCTest(TestCase):
         floor2.rhs = rhs2
         lhs3 = samba.dcerpc.epmapper.epm_lhs()
         lhs3.protocol = samba.dcerpc.epmapper.EPM_PROTOCOL_NCACN
-        lhs3.lhs_data = ""
+        lhs3.lhs_data = b""
         floor3 = samba.dcerpc.epmapper.epm_floor()
         floor3.lhs = lhs3
         floor3.rhs.minor_version = 0
         lhs4 = samba.dcerpc.epmapper.epm_lhs()
         lhs4.protocol = samba.dcerpc.epmapper.EPM_PROTOCOL_TCP
-        lhs4.lhs_data = ""
+        lhs4.lhs_data = b""
         floor4 = samba.dcerpc.epmapper.epm_floor()
         floor4.lhs = lhs4
         floor4.rhs.port = self.tcp_port
         lhs5 = samba.dcerpc.epmapper.epm_lhs()
         lhs5.protocol = samba.dcerpc.epmapper.EPM_PROTOCOL_IP
-        lhs5.lhs_data = ""
+        lhs5.lhs_data = b""
         floor5 = samba.dcerpc.epmapper.epm_floor()
         floor5.lhs = lhs5
         floor5.rhs.ipaddr = "0.0.0.0"
@@ -645,7 +646,7 @@ class RawDCERPCTest(TestCase):
         if getattr(payload, 'auth_info', None):
             ai = payload.auth_info
         else:
-            ai = ""
+            ai = b""
 
         p = samba.dcerpc.dcerpc.ncacn_packet()
         p.rpc_vers = rpc_vers
@@ -679,7 +680,7 @@ class RawDCERPCTest(TestCase):
         if getattr(p.u, 'auth_info', None):
             ai = p.u.auth_info
         else:
-            ai = ""
+            ai = b""
 
         self.assertEqual(p.rpc_vers, rpc_vers)
         self.assertEqual(p.rpc_vers_minor, rpc_vers_minor)
@@ -706,7 +707,7 @@ class RawDCERPCTest(TestCase):
                       max_recv_frag=5840,
                       assoc_group_id=0,
                       ctx_list=[],
-                      auth_info="",
+                      auth_info=b"",
                       ndr_print=None, hexdump=None):
 
         b = samba.dcerpc.dcerpc.bind()
@@ -732,7 +733,7 @@ class RawDCERPCTest(TestCase):
                        max_recv_frag=5840,
                        assoc_group_id=0,
                        ctx_list=[],
-                       auth_info="",
+                       auth_info=b"",
                        ndr_print=None, hexdump=None):
 
         a = samba.dcerpc.dcerpc.bind()
@@ -754,7 +755,7 @@ class RawDCERPCTest(TestCase):
     def generate_auth3(self, call_id,
                        pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
-                       auth_info="",
+                       auth_info=b"",
                        ndr_print=None, hexdump=None):
 
         a = samba.dcerpc.dcerpc.auth3()
@@ -776,7 +777,7 @@ class RawDCERPCTest(TestCase):
                          opnum=None,
                          object=None,
                          stub=None,
-                         auth_info="",
+                         auth_info=b"",
                          ndr_print=None, hexdump=None):
 
         if alloc_hint is None:
@@ -804,7 +805,7 @@ class RawDCERPCTest(TestCase):
     def generate_co_cancel(self, call_id,
                            pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                                        samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
-                           auth_info="",
+                           auth_info=b"",
                            ndr_print=None, hexdump=None):
 
         c = samba.dcerpc.dcerpc.co_cancel()
@@ -821,7 +822,7 @@ class RawDCERPCTest(TestCase):
     def generate_orphaned(self, call_id,
                           pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                                       samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
-                          auth_info="",
+                          auth_info=b"",
                           ndr_print=None, hexdump=None):
 
         o = samba.dcerpc.dcerpc.orphaned()
