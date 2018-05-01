@@ -56,8 +56,5 @@ session = system_session()
 ldbs = get_ldbs(paths, creds, session, lp)
 ldbs.startTransactions()
 
-names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
-                                      paths, smbconf, lp)
-
-update_krbtgt_account_password(ldbs.sam, names)
+update_krbtgt_account_password(ldbs.sam)
 ldbs.groupedCommit()

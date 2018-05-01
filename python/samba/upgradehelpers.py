@@ -645,11 +645,10 @@ def update_dns_account_password(samdb, secrets_ldb, names):
 
         secrets_ldb.modify(msg)
 
-def update_krbtgt_account_password(samdb, names):
+def update_krbtgt_account_password(samdb):
     """Update (change) the password of the krbtgt account
 
-    :param samdb: An LDB object related to the sam.ldb file of a given provision
-    :param names: List of key provision parameters"""
+    :param samdb: An LDB object related to the sam.ldb file of a given provision"""
 
     expression = "samAccountName=krbtgt"
     res = samdb.search(expression=expression, attrs=[])
