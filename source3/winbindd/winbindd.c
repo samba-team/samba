@@ -539,7 +539,6 @@ static struct winbindd_dispatch_table {
 	  "WINBINDD_PRIV_PIPE_DIR" },
 
 	/* Credential cache access */
-	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
 	{ WINBINDD_CCACHE_SAVE, winbindd_ccache_save, "CCACHE_SAVE" },
 
 	/* End of list */
@@ -570,6 +569,9 @@ static struct winbindd_bool_dispatch_table {
 	{ WINBINDD_DC_INFO,
 	  winbindd_dc_info,
 	  "DC_INFO" },
+	{ WINBINDD_CCACHE_NTLMAUTH,
+	  winbindd_ccache_ntlm_auth,
+	  "NTLMAUTH" },
 };
 
 struct winbindd_async_dispatch_table {
