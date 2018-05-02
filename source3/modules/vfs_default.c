@@ -660,7 +660,7 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be sought on. */
-		result = SMB_VFS_WRITE(fsp, data, n);
+		result = sys_write(fsp->fh->fd, data, n);
 	}
 
 #else /* HAVE_PWRITE */
