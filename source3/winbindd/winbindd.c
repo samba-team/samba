@@ -521,22 +521,6 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 	_exit(0);
 }
 
-static struct winbindd_dispatch_table {
-	enum winbindd_cmd cmd;
-	void (*fn)(struct winbindd_cli_state *state);
-	const char *winbindd_cmd_name;
-} dispatch_table[] = {
-
-	/* Enumeration functions */
-
-
-	/* Miscellaneous */
-
-	/* End of list */
-
-	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
-};
-
 static struct winbindd_bool_dispatch_table {
 	enum winbindd_cmd cmd;
 	bool (*fn)(struct winbindd_cli_state *state);
@@ -678,7 +662,6 @@ static void wb_request_done(struct tevent_req *req);
 
 static void process_request(struct winbindd_cli_state *state)
 {
-	struct winbindd_dispatch_table *table = dispatch_table;
 	struct winbindd_async_dispatch_table *atable;
 	size_t i;
 	bool ok;
@@ -742,16 +725,6 @@ static void process_request(struct winbindd_cli_state *state)
 	}
 	state->response->result = WINBINDD_PENDING;
 	state->response->length = sizeof(struct winbindd_response);
-
-	for (table = dispatch_table; table->fn; table++) {
-		if (state->request->cmd == table->cmd) {
-			DEBUG(10,("process_request: request fn %s\n",
-				  table->winbindd_cmd_name ));
-			state->cmd_name = table->winbindd_cmd_name;
-			table->fn(state);
-			return;
-		}
-	}
 
 	for (i=0; i<ARRAY_SIZE(bool_dispatch_table); i++) {
 		if (bool_dispatch_table[i].cmd == state->request->cmd) {
