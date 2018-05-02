@@ -11,5 +11,10 @@ setup ()
 {
 	export CTDB_RECOVERY_LOCK="${EVENTSCRIPTS_TESTS_VAR_DIR}/rec.lock"
 
+	cat >>"${CTDB_BASE}/ctdb.conf" <<EOF
+[cluster]
+	recovery lock = $CTDB_RECOVERY_LOCK
+EOF
+
 	test_cleanup cleanup_reclock
 }
