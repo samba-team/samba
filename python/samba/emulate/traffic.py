@@ -42,8 +42,11 @@ from samba.drs_utils import drs_DsBind
 import traceback
 from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from samba.auth import system_session
-from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
-from samba.dsdb import UF_NORMAL_ACCOUNT
+from samba.dsdb import (
+    UF_NORMAL_ACCOUNT,
+    UF_SERVER_TRUST_ACCOUNT,
+    UF_TRUSTED_FOR_DELEGATION
+)
 from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba import gensec
 from samba import sd_utils
@@ -1657,7 +1660,7 @@ def create_machine_account(ldb, instance_id, netbios_name, machinepass):
         "objectclass": "computer",
         "sAMAccountName": "%s$" % netbios_name,
         "userAccountControl":
-        str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD),
+            str(UF_TRUSTED_FOR_DELEGATION | UF_SERVER_TRUST_ACCOUNT),
         "unicodePwd": utf16pw})
     end = time.time()
     duration = end - start
