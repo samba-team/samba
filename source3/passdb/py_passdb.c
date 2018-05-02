@@ -3945,6 +3945,7 @@ MODULE_INIT_FUNC(passdb)
 
 	dom_sid_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "dom_sid");
 	if (dom_sid_Type == NULL) {
+		Py_DECREF(mod);
 		talloc_free(frame);
 		return NULL;
 	}
@@ -3953,6 +3954,7 @@ MODULE_INIT_FUNC(passdb)
 	security_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "descriptor");
 	Py_DECREF(mod);
 	if (security_Type == NULL) {
+		Py_DECREF(dom_sid_Type);
 		talloc_free(frame);
 		return NULL;
 	}
@@ -3960,6 +3962,8 @@ MODULE_INIT_FUNC(passdb)
 	/* Import GUID type from dcerpc.misc */
 	mod = PyImport_ImportModule("samba.dcerpc.misc");
 	if (mod == NULL) {
+		Py_DECREF(security_Type);
+		Py_DECREF(dom_sid_Type);
 		talloc_free(frame);
 		return NULL;
 	}
@@ -3967,6 +3971,8 @@ MODULE_INIT_FUNC(passdb)
 	guid_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "GUID");
 	Py_DECREF(mod);
 	if (guid_Type == NULL) {
+		Py_DECREF(security_Type);
+		Py_DECREF(dom_sid_Type);
 		talloc_free(frame);
 		return NULL;
 	}
