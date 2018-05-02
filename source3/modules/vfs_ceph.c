@@ -1113,15 +1113,10 @@ static int cephwrap_ftruncate(struct vfs_handle_struct *handle, files_struct *fs
 		goto done;
 	}
 
-	if (SMB_VFS_LSEEK(fsp, len-1, SEEK_SET) != len -1)
+	if (SMB_VFS_PWRITE(fsp, &c, 1, len-1)!=1) {
 		goto done;
+	}
 
-	if (SMB_VFS_WRITE(fsp, &c, 1)!=1)
-		goto done;
-
-	/* Seek to where we were */
-	if (SMB_VFS_LSEEK(fsp, currpos, SEEK_SET) != currpos)
-		goto done;
 	result = 0;
 
   done:
