@@ -560,7 +560,7 @@ static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	wsize = SMB_VFS_WRITE(vfs->files[fd], vfs->data, size);
+	wsize = write_file(NULL, vfs->files[fd], vfs->data, 0, size);
 
 	if (wsize == -1) {
 		printf("write: error=%d (%s)\n", errno, strerror(errno));
