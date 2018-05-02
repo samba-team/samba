@@ -34,7 +34,8 @@ static PyObject *ldb_module = NULL;
  */
 static PyTypeObject * PyLdb_GetPyType(const char *typename)
 {
-	PyObject *py_obj = NULL;
+	PyTypeObject *type = NULL;
+	bool ok;
 
 	if (ldb_module == NULL) {
 		ldb_module = PyImport_ImportModule("ldb");
@@ -43,9 +44,26 @@ static PyTypeObject * PyLdb_GetPyType(const char *typename)
 		}
 	}
 
-	py_obj = PyObject_GetAttrString(ldb_module, typename);
+	type = (PyTypeObject *)PyObject_GetAttrString(ldb_module, typename);
 
-	return (PyTypeObject*)py_obj;
+
+	if (type == NULL) {
+		PyErr_Format(PyExc_NameError,
+			     "Unable to find type %s in ldb module",
+			     typename);
+		return NULL;
+	}
+
+	ok = PyType_Check(type);
+	if (! ok) {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected type ldb.%s, not %s",
+			     typename, Py_TYPE(type)->tp_name);
+		Py_DECREF(type);
+		return NULL;
+	}
+
+	return type;
 }
 
 bool pyldb_check_type(PyObject *obj, const char *typename)
