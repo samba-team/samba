@@ -536,7 +536,6 @@ static struct winbindd_dispatch_table {
 
 	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_DC_INFO, winbindd_dc_info, "DC_INFO" },
-	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
 	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
 	  "WINBINDD_PRIV_PIPE_DIR" },
 
@@ -566,6 +565,9 @@ static struct winbindd_bool_dispatch_table {
 	{ WINBINDD_DOMAIN_NAME,
 	  winbindd_domain_name,
 	  "DOMAIN_NAME" },
+	{ WINBINDD_NETBIOS_NAME,
+	  winbindd_netbios_name,
+	  "NETBIOS_NAME" },
 };
 
 struct winbindd_async_dispatch_table {

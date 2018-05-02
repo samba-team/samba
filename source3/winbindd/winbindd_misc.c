@@ -543,13 +543,13 @@ bool winbindd_domain_name(struct winbindd_cli_state *state)
 
 /* What's my name again? */
 
-void winbindd_netbios_name(struct winbindd_cli_state *state)
+bool winbindd_netbios_name(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: request netbios name\n",
 		  (unsigned long)state->pid));
 
 	fstrcpy(state->response->data.netbios_name, lp_netbios_name());
-	request_ok(state);
+	return true;
 }
 
 /* Where can I find the privileged pipe? */
