@@ -9,7 +9,7 @@ cleanup_reclock ()
 
 setup ()
 {
-	export CTDB_RECOVERY_LOCK="${EVENTSCRIPTS_TESTS_VAR_DIR}/rec.lock"
+	CTDB_RECOVERY_LOCK="${EVENTSCRIPTS_TESTS_VAR_DIR}/rec.lock"
 
 	cat >>"${CTDB_BASE}/ctdb.conf" <<EOF
 [cluster]
