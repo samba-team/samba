@@ -398,53 +398,6 @@ NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname)
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
-/****************************************************************************
- Write data to a fd on the vfs.
-****************************************************************************/
-
-ssize_t vfs_write_data(struct smb_request *req,
-			files_struct *fsp,
-			const char *buffer,
-			size_t N)
-{
-	size_t total=0;
-	ssize_t ret;
-
-	if (req && req->unread_bytes) {
-		int sockfd = req->xconn->transport.sock;
-		int old_flags;
-		SMB_ASSERT(req->unread_bytes == N);
-		/* VFS_RECVFILE must drain the socket
-		 * before returning. */
-		req->unread_bytes = 0;
-		/* Ensure the socket is blocking. */
-		old_flags = fcntl(sockfd, F_GETFL, 0);
-		if (set_blocking(sockfd, true) == -1) {
-			return (ssize_t)-1;
-		}
-		ret = SMB_VFS_RECVFILE(sockfd,
-					fsp,
-					(off_t)-1,
-					N);
-		if (fcntl(sockfd, F_SETFL, old_flags) == -1) {
-			return (ssize_t)-1;
-		}
-		return ret;
-	}
-
-	while (total < N) {
-		ret = SMB_VFS_WRITE(fsp, buffer + total, N - total);
-
-		if (ret == -1)
-			return -1;
-		if (ret == 0)
-			return total;
-
-		total += ret;
-	}
-	return (ssize_t)total;
-}
-
 ssize_t vfs_pwrite_data(struct smb_request *req,
 			files_struct *fsp,
 			const char *buffer,

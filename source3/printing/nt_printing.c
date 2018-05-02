@@ -313,7 +313,6 @@ const char *get_short_archi(const char *long_archi)
 
 /****************************************************************************
  Read data from fsp on the vfs.
- (note: EINTR re-read differs from vfs_write_data)
 ****************************************************************************/
 
 static ssize_t printing_pread_data(files_struct *fsp,
