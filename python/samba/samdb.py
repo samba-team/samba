@@ -508,7 +508,7 @@ member: %s
             raise Exception('Illegal computername "%s"' % computername)
         samaccountname = "%s$" % cn
 
-        computercontainer_dn = "CN=Users,%s" % self.domain_dn()
+        computercontainer_dn = "CN=Computers,%s" % self.domain_dn()
         if computerou:
             computercontainer_dn = self.normalize_dn_in_domain(computerou)
 
