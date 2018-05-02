@@ -353,6 +353,10 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 
 	if (py_ldb != Py_None) {
 		ldb = pyldb_Ldb_AsLdbContext(py_ldb);
+		if (ldb == NULL) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 	}
 
 	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
