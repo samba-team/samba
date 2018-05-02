@@ -1,8 +1,11 @@
 /*
- * Copyright (c) 2005-2008 Jelmer Vernooij <jelmer@samba.org>
- * Copyright (C) 2006-2014 Stefan Metzmacher <metze@samba.org>
- * Copyright (C) 2013-2014 Andreas Schneider <asn@samba.org>
+ * BSD 3-Clause License
  *
+ * Copyright (c) 2005-2008, Jelmer Vernooij <jelmer@samba.org>
+ * Copyright (c) 2006-2018, Stefan Metzmacher <metze@samba.org>
+ * Copyright (c) 2013-2018, Andreas Schneider <asn@samba.org>
+ * Copyright (c) 2014-2017, Michael Adam <obnox@samba.org>
+ * Copyright (c) 2016-2018, Anoop C S <anoopcs@redhat.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +34,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
  */
 
 /*
@@ -111,7 +113,7 @@ enum swrap_dbglvl_e {
 # ifdef HAVE_FALLTHROUGH_ATTRIBUTE
 #  define FALL_THROUGH __attribute__ ((fallthrough))
 # else /* HAVE_FALLTHROUGH_ATTRIBUTE */
-#  define FALL_THROUGH
+#  define FALL_THROUGH ((void)0)
 # endif /* HAVE_FALLTHROUGH_ATTRIBUTE */
 #endif /* FALL_THROUGH */
 
@@ -142,6 +144,10 @@ enum swrap_dbglvl_e {
 	} while(0)
 #endif
 
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
+#endif
+
 #ifndef discard_const
 #define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 #endif
@@ -169,67 +175,25 @@ enum swrap_dbglvl_e {
 # endif
 #endif
 
-/* Macros for accessing mutexes */
-# define SWRAP_LOCK(m) do { \
-	pthread_mutex_lock(&(m ## _mutex)); \
-} while(0)
-
-# define SWRAP_UNLOCK(m) do { \
-	pthread_mutex_unlock(&(m ## _mutex)); \
-} while(0)
-
 /* Add new global locks here please */
 # define SWRAP_LOCK_ALL \
-	SWRAP_LOCK(libc_symbol_binding); \
+	swrap_mutex_lock(&libc_symbol_binding_mutex); \
 
 # define SWRAP_UNLOCK_ALL \
-	SWRAP_UNLOCK(libc_symbol_binding); \
+	swrap_mutex_unlock(&libc_symbol_binding_mutex); \
 
+#define SOCKET_INFO_CONTAINER(si) \
+	(struct socket_info_container *)(si)
 
-#define SWRAP_DLIST_ADD(list,item) do { \
-	if (!(list)) { \
-		(item)->prev	= NULL; \
-		(item)->next	= NULL; \
-		(list)		= (item); \
-	} else { \
-		(item)->prev	= NULL; \
-		(item)->next	= (list); \
-		(list)->prev	= (item); \
-		(list)		= (item); \
-	} \
-} while (0)
+#define SWRAP_LOCK_SI(si) do { \
+	struct socket_info_container *sic = SOCKET_INFO_CONTAINER(si); \
+	swrap_mutex_lock(&sic->meta.mutex); \
+} while(0)
 
-#define SWRAP_DLIST_REMOVE(list,item) do { \
-	if ((list) == (item)) { \
-		(list)		= (item)->next; \
-		if (list) { \
-			(list)->prev	= NULL; \
-		} \
-	} else { \
-		if ((item)->prev) { \
-			(item)->prev->next	= (item)->next; \
-		} \
-		if ((item)->next) { \
-			(item)->next->prev	= (item)->prev; \
-		} \
-	} \
-	(item)->prev	= NULL; \
-	(item)->next	= NULL; \
-} while (0)
-
-#define SWRAP_DLIST_ADD_AFTER(list, item, el) \
-do { \
-	if ((list) == NULL || (el) == NULL) { \
-		SWRAP_DLIST_ADD(list, item); \
-	} else { \
-		(item)->prev = (el); \
-		(item)->next = (el)->next; \
-		(el)->next = (item); \
-		if ((item)->next != NULL) { \
-			(item)->next->prev = (item); \
-		} \
-	} \
-} while (0)
+#define SWRAP_UNLOCK_SI(si) do { \
+	struct socket_info_container *sic = SOCKET_INFO_CONTAINER(si); \
+	swrap_mutex_unlock(&sic->meta.mutex); \
+} while(0)
 
 #if defined(HAVE_GETTIMEOFDAY_TZ) || defined(HAVE_GETTIMEOFDAY_TZ_VOID)
 #define swrapGetTimeOfDay(tval) gettimeofday(tval,NULL)
@@ -259,7 +223,6 @@ do { \
 
 #define SOCKET_MAX_SOCKETS 1024
 
-
 /*
  * Maximum number of socket_info structures that can
  * be used. Can be overriden by the environment variable
@@ -267,7 +230,7 @@ do { \
  */
 #define SOCKET_WRAPPER_MAX_SOCKETS_DEFAULT 65535
 
-#define SOCKET_WRAPPER_MAX_SOCKETS_LIMIT 256000
+#define SOCKET_WRAPPER_MAX_SOCKETS_LIMIT 262140
 
 /* This limit is to avoid broadcast sendto() needing to stat too many
  * files.  It may be raised (with a performance cost) to up to 254
@@ -287,25 +250,10 @@ struct swrap_address {
 	} sa;
 };
 
-struct socket_info_fd {
-	struct socket_info_fd *prev, *next;
-	int fd;
-
-	/*
-	 * Points to corresponding index in array of
-	 * socket_info structures
-	 */
-	int si_index;
-};
-
 int first_free;
 
 struct socket_info
 {
-	unsigned int refcount;
-
-	int next_free;
-
 	int family;
 	int type;
 	int protocol;
@@ -330,18 +278,53 @@ struct socket_info
 	} io;
 };
 
-static struct socket_info *sockets;
-static size_t max_sockets = 0;
+struct socket_info_meta
+{
+	unsigned int refcount;
+	int next_free;
+	pthread_mutex_t mutex;
+};
+
+struct socket_info_container
+{
+	struct socket_info info;
+	struct socket_info_meta meta;
+};
+
+static struct socket_info_container *sockets;
+
+static size_t socket_info_max = 0;
 
 /*
- * While socket file descriptors are passed among different processes, the
- * numerical value gets changed. So its better to store it locally to each
- * process rather than including it within socket_info which will be shared.
+ * Allocate the socket array always on the limit value. We want it to be
+ * at least bigger than the default so if we reach the limit we can
+ * still deal with duplicate fds pointing to the same socket_info.
  */
-static struct socket_info_fd *socket_fds;
+static size_t socket_fds_max = SOCKET_WRAPPER_MAX_SOCKETS_LIMIT;
 
-/* The mutex for accessing the global libc.symbols */
+/* Hash table to map fds to corresponding socket_info index */
+static int *socket_fds_idx;
+
+/* Mutex to synchronize access to global libc.symbols */
 static pthread_mutex_t libc_symbol_binding_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Mutex for syncronizing port selection during swrap_auto_bind() */
+static pthread_mutex_t autobind_start_mutex;
+
+/* Mutex to guard the initialization of array of socket_info structures */
+static pthread_mutex_t sockets_mutex;
+
+/* Mutex to guard the socket reset in swrap_close() and swrap_remove_stale() */
+static pthread_mutex_t socket_reset_mutex;
+
+/* Mutex to synchronize access to first free index in socket_info array */
+static pthread_mutex_t first_free_mutex;
+
+/* Mutex to synchronize access to packet capture dump file */
+static pthread_mutex_t pcap_dump_mutex;
+
+/* Mutex for synchronizing mtu value fetch*/
+static pthread_mutex_t mtu_update_mutex;
 
 /* Function prototypes */
 
@@ -349,6 +332,19 @@ bool socket_wrapper_enabled(void);
 
 void swrap_constructor(void) CONSTRUCTOR_ATTRIBUTE;
 void swrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
+
+#ifndef HAVE_GETPROGNAME
+static const char *getprogname(void)
+{
+#if defined(HAVE_PROGRAM_INVOCATION_SHORT_NAME)
+	return program_invocation_short_name;
+#elif defined(HAVE_GETEXECNAME)
+	return getexecname();
+#else
+	return NULL;
+#endif /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
+}
+#endif /* HAVE_GETPROGNAME */
 
 static void swrap_log(enum swrap_dbglvl_e dbglvl, const char *func, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define SWRAP_LOG(dbglvl, ...) swrap_log((dbglvl), __func__, __VA_ARGS__)
@@ -362,6 +358,7 @@ static void swrap_log(enum swrap_dbglvl_e dbglvl,
 	const char *d;
 	unsigned int lvl = 0;
 	const char *prefix = "SWRAP";
+	const char *progname = getprogname();
 
 	d = getenv("SOCKET_WRAPPER_DEBUGLEVEL");
 	if (d != NULL) {
@@ -391,9 +388,17 @@ static void swrap_log(enum swrap_dbglvl_e dbglvl,
 			break;
 	}
 
+	if (progname == NULL) {
+		progname = "<unknown>";
+	}
+
 	fprintf(stderr,
-		"%s(%d) - %s: %s\n",
-		prefix, (int)getpid(), func, buffer);
+		"%s[%s (%u)] - %s: %s\n",
+		prefix,
+		progname,
+		(unsigned int)getpid(),
+		func,
+		buffer);
 }
 
 /*********************************************************
@@ -582,7 +587,15 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 	int i;
 
 #ifdef RTLD_DEEPBIND
-	flags |= RTLD_DEEPBIND;
+	const char *env = getenv("LD_PRELOAD");
+
+	/* Don't do a deepbind if we run with libasan */
+	if (env != NULL && strlen(env) < 1024) {
+		const char *p = strstr(env, "libasan.so");
+		if (p == NULL) {
+			flags |= RTLD_DEEPBIND;
+		}
+	}
 #endif
 
 	switch (lib) {
@@ -670,34 +683,62 @@ static void *_swrap_bind_symbol(enum swrap_lib lib, const char *fn_name)
 	return func;
 }
 
+static void swrap_mutex_lock(pthread_mutex_t *mutex)
+{
+	int ret;
+
+	ret = pthread_mutex_lock(mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR, "Couldn't lock pthread mutex - %s",
+			  strerror(ret));
+	}
+}
+
+static void swrap_mutex_unlock(pthread_mutex_t *mutex)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR, "Couldn't unlock pthread mutex - %s",
+			  strerror(ret));
+	}
+}
+
+/*
+ * These macros have a thread race condition on purpose!
+ *
+ * This is an optimization to avoid locking each time we check if the symbol is
+ * bound.
+ */
 #define swrap_bind_symbol_libc(sym_name) \
 	if (swrap.libc.symbols._libc_##sym_name.obj == NULL) { \
-		SWRAP_LOCK(libc_symbol_binding); \
+		swrap_mutex_lock(&libc_symbol_binding_mutex); \
 		if (swrap.libc.symbols._libc_##sym_name.obj == NULL) { \
 			swrap.libc.symbols._libc_##sym_name.obj = \
 				_swrap_bind_symbol(SWRAP_LIBC, #sym_name); \
 		} \
-		SWRAP_UNLOCK(libc_symbol_binding); \
+		swrap_mutex_unlock(&libc_symbol_binding_mutex); \
 	}
 
 #define swrap_bind_symbol_libsocket(sym_name) \
 	if (swrap.libc.symbols._libc_##sym_name.obj == NULL) { \
-		SWRAP_LOCK(libc_symbol_binding); \
+		swrap_mutex_lock(&libc_symbol_binding_mutex); \
 		if (swrap.libc.symbols._libc_##sym_name.obj == NULL) { \
 			swrap.libc.symbols._libc_##sym_name.obj = \
 				_swrap_bind_symbol(SWRAP_LIBSOCKET, #sym_name); \
 		} \
-		SWRAP_UNLOCK(libc_symbol_binding); \
+		swrap_mutex_unlock(&libc_symbol_binding_mutex); \
 	}
 
 #define swrap_bind_symbol_libnsl(sym_name) \
 	if (swrap.libc.symbols._libc_##sym_name.obj == NULL) { \
-		SWRAP_LOCK(libc_symbol_binding); \
+		swrap_mutex_lock(&libc_symbol_binding_mutex); \
 		if (swrap.libc.symbols._libc_##sym_name.obj == NULL) { \
 			swrap.libc.symbols._libc_##sym_name.obj = \
 				_swrap_bind_symbol(SWRAP_LIBNSL, #sym_name); \
 		} \
-		SWRAP_UNLOCK(libc_symbol_binding); \
+		swrap_mutex_unlock(&libc_symbol_binding_mutex); \
 	}
 
 /****************************************************************************
@@ -1194,6 +1235,45 @@ static size_t socket_length(int family)
 	return 0;
 }
 
+static struct socket_info *swrap_get_socket_info(int si_index)
+{
+	return (struct socket_info *)(&(sockets[si_index].info));
+}
+
+static int swrap_get_refcount(struct socket_info *si)
+{
+	struct socket_info_container *sic = SOCKET_INFO_CONTAINER(si);
+	return sic->meta.refcount;
+}
+
+static void swrap_inc_refcount(struct socket_info *si)
+{
+	struct socket_info_container *sic = SOCKET_INFO_CONTAINER(si);
+
+	sic->meta.refcount += 1;
+}
+
+static void swrap_dec_refcount(struct socket_info *si)
+{
+	struct socket_info_container *sic = SOCKET_INFO_CONTAINER(si);
+
+	sic->meta.refcount -= 1;
+}
+
+static int swrap_get_next_free(struct socket_info *si)
+{
+	struct socket_info_container *sic = SOCKET_INFO_CONTAINER(si);
+
+	return sic->meta.next_free;
+}
+
+static void swrap_set_next_free(struct socket_info *si, int next_free)
+{
+	struct socket_info_container *sic = SOCKET_INFO_CONTAINER(si);
+
+	sic->meta.next_free = next_free;
+}
+
 static const char *socket_wrapper_dir(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DIR");
@@ -1216,8 +1296,10 @@ static unsigned int socket_wrapper_mtu(void)
 	const char *s;
 	char *endp;
 
+	swrap_mutex_lock(&mtu_update_mutex);
+
 	if (max_mtu != 0) {
-		return max_mtu;
+		goto done;
 	}
 
 	max_mtu = SOCKET_WRAPPER_MTU_DEFAULT;
@@ -1238,20 +1320,44 @@ static unsigned int socket_wrapper_mtu(void)
 	max_mtu = tmp;
 
 done:
+	swrap_mutex_unlock(&mtu_update_mutex);
 	return max_mtu;
+}
+
+static int socket_wrapper_init_mutex(pthread_mutex_t *m)
+{
+	pthread_mutexattr_t ma;
+	int ret;
+
+	ret = pthread_mutexattr_init(&ma);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_ERRORCHECK);
+	if (ret != 0) {
+		goto done;
+	}
+
+	ret = pthread_mutex_init(m, &ma);
+
+done:
+	pthread_mutexattr_destroy(&ma);
+
+	return ret;
 }
 
 static size_t socket_wrapper_max_sockets(void)
 {
 	const char *s;
-	unsigned long tmp;
+	size_t tmp;
 	char *endp;
 
-	if (max_sockets != 0) {
-		return max_sockets;
+	if (socket_info_max != 0) {
+		return socket_info_max;
 	}
 
-	max_sockets = SOCKET_WRAPPER_MAX_SOCKETS_DEFAULT;
+	socket_info_max = SOCKET_WRAPPER_MAX_SOCKETS_DEFAULT;
 
 	s = getenv("SOCKET_WRAPPER_MAX_SOCKETS");
 	if (s == NULL || s[0] == '\0') {
@@ -1262,44 +1368,125 @@ static size_t socket_wrapper_max_sockets(void)
 	if (s == endp) {
 		goto done;
 	}
-	if (tmp == 0 || tmp > SOCKET_WRAPPER_MAX_SOCKETS_LIMIT) {
+	if (tmp == 0) {
+		tmp = SOCKET_WRAPPER_MAX_SOCKETS_DEFAULT;
 		SWRAP_LOG(SWRAP_LOG_ERROR,
-			  "Invalid number of sockets specified, using default.");
-		goto done;
+			  "Invalid number of sockets specified, "
+			  "using default (%zu)",
+			  tmp);
 	}
 
-	max_sockets = tmp;
+	if (tmp > SOCKET_WRAPPER_MAX_SOCKETS_LIMIT) {
+		tmp = SOCKET_WRAPPER_MAX_SOCKETS_LIMIT;
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Invalid number of sockets specified, "
+			  "using maximum (%zu).",
+			  tmp);
+	}
+
+	socket_info_max = tmp;
 
 done:
-	return max_sockets;
+	return socket_info_max;
+}
+
+static void socket_wrapper_init_fds_idx(void)
+{
+	int *tmp = NULL;
+	size_t i;
+
+	if (socket_fds_idx != NULL) {
+		return;
+	}
+
+	tmp = (int *)calloc(socket_fds_max, sizeof(int));
+	if (tmp == NULL) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to allocate socket fds index array: %s",
+			  strerror(errno));
+		exit(-1);
+	}
+
+	for (i = 0; i < socket_fds_max; i++) {
+		tmp[i] = -1;
+	}
+
+	socket_fds_idx = tmp;
 }
 
 static void socket_wrapper_init_sockets(void)
 {
+	size_t max_sockets;
 	size_t i;
+	int ret;
+
+	swrap_mutex_lock(&sockets_mutex);
 
 	if (sockets != NULL) {
+		swrap_mutex_unlock(&sockets_mutex);
 		return;
 	}
 
+	socket_wrapper_init_fds_idx();
+
+	/* Needs to be called inside the sockets_mutex lock here. */
 	max_sockets = socket_wrapper_max_sockets();
 
-	sockets = (struct socket_info *)calloc(max_sockets,
-					       sizeof(struct socket_info));
+	sockets = (struct socket_info_container *)calloc(max_sockets,
+					sizeof(struct socket_info_container));
 
 	if (sockets == NULL) {
 		SWRAP_LOG(SWRAP_LOG_ERROR,
-			  "Failed to allocate sockets array.\n");
+			  "Failed to allocate sockets array: %s",
+			  strerror(errno));
+		swrap_mutex_unlock(&sockets_mutex);
 		exit(-1);
 	}
+
+	swrap_mutex_lock(&first_free_mutex);
 
 	first_free = 0;
 
 	for (i = 0; i < max_sockets; i++) {
-		sockets[i].next_free = i+1;
+		swrap_set_next_free(&sockets[i].info, i+1);
+		ret = socket_wrapper_init_mutex(&sockets[i].meta.mutex);
+		if (ret != 0) {
+			SWRAP_LOG(SWRAP_LOG_ERROR,
+				  "Failed to initialize pthread mutex");
+			goto done;
+		}
 	}
 
-	sockets[max_sockets-1].next_free = -1;
+	/* mark the end of the free list */
+	swrap_set_next_free(&sockets[max_sockets-1].info, -1);
+
+	ret = socket_wrapper_init_mutex(&autobind_start_mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to initialize pthread mutex");
+		goto done;
+	}
+
+	ret = socket_wrapper_init_mutex(&pcap_dump_mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to initialize pthread mutex");
+		goto done;
+	}
+
+	ret = socket_wrapper_init_mutex(&mtu_update_mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to initialize pthread mutex");
+		goto done;
+	}
+
+done:
+	swrap_mutex_unlock(&first_free_mutex);
+	swrap_mutex_unlock(&sockets_mutex);
+	if (ret != 0) {
+		exit(-1);
+	}
 }
 
 bool socket_wrapper_enabled(void)
@@ -1330,23 +1517,108 @@ static unsigned int socket_wrapper_default_iface(void)
 	return 1;/* 127.0.0.1 */
 }
 
-/*
- * Return the first free entry (if any) and make
- * it re-usable again (by nulling it out)
- */
-static int socket_wrapper_first_free_index(void)
+static void set_socket_info_index(int fd, int idx)
 {
-	int next_free;
+	socket_fds_idx[fd] = idx;
+	/* This builtin issues a full memory barrier. */
+	__sync_synchronize();
+}
 
-	if (first_free == -1) {
+static void reset_socket_info_index(int fd)
+{
+	set_socket_info_index(fd, -1);
+}
+
+static int find_socket_info_index(int fd)
+{
+	if (fd < 0) {
 		return -1;
 	}
 
-	next_free = sockets[first_free].next_free;
-	ZERO_STRUCT(sockets[first_free]);
-	sockets[first_free].next_free = next_free;
+	if (socket_fds_idx == NULL) {
+		return -1;
+	}
 
-	return first_free;
+	if ((size_t)fd >= socket_fds_max) {
+		/*
+		 * Do not add a log here as some applications do stupid things
+		 * like:
+		 *
+		 *     for (fd = 0; fd <= getdtablesize(); fd++) {
+		 *         close(fd)
+		 *     };
+		 *
+		 * This would produce millions of lines of debug messages.
+		 */
+#if 0
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Looking for a socket info for the fd %d is over the "
+			  "max socket index limit of %zu.",
+			  fd,
+			  socket_fds_max);
+#endif
+		return -1;
+	}
+
+	/* This builtin issues a full memory barrier. */
+	__sync_synchronize();
+	return socket_fds_idx[fd];
+}
+
+static int swrap_add_socket_info(struct socket_info *si_input)
+{
+	struct socket_info *si = NULL;
+	int si_index = -1;
+
+	if (si_input == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	swrap_mutex_lock(&first_free_mutex);
+	if (first_free == -1) {
+		errno = ENFILE;
+		goto out;
+	}
+
+	si_index = first_free;
+	si = swrap_get_socket_info(si_index);
+
+	SWRAP_LOCK_SI(si);
+
+	first_free = swrap_get_next_free(si);
+	*si = *si_input;
+	swrap_inc_refcount(si);
+
+	SWRAP_UNLOCK_SI(si);
+
+out:
+	swrap_mutex_unlock(&first_free_mutex);
+
+	return si_index;
+}
+
+static int swrap_create_socket(struct socket_info *si, int fd)
+{
+	int idx;
+
+	if ((size_t)fd >= socket_fds_max) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "The max socket index limit of %zu has been reached, "
+			  "trying to add %d",
+			  socket_fds_max,
+			  fd);
+		return -1;
+	}
+
+	idx = swrap_add_socket_info(si);
+	if (idx == -1) {
+		return -1;
+	}
+
+	set_socket_info_index(fd, idx);
+
+	return idx;
 }
 
 static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, socklen_t *len)
@@ -1716,30 +1988,6 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	return 0;
 }
 
-static struct socket_info_fd *find_socket_info_fd(int fd)
-{
-	struct socket_info_fd *f;
-
-	for (f = socket_fds; f; f = f->next) {
-		if (f->fd == fd) {
-			return f;
-		}
-	}
-
-	return NULL;
-}
-
-static int find_socket_info_index(int fd)
-{
-	struct socket_info_fd *fi = find_socket_info_fd(fd);
-
-	if (fi == NULL) {
-		return -1;
-	}
-
-	return fi->si_index;
-}
-
 static struct socket_info *find_socket_info(int fd)
 {
 	int idx = find_socket_info_index(fd);
@@ -1748,7 +1996,7 @@ static struct socket_info *find_socket_info(int fd)
 		return NULL;
 	}
 
-	return &sockets[idx];
+	return swrap_get_socket_info(idx);
 }
 
 #if 0 /* FIXME */
@@ -1777,7 +2025,7 @@ static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
 	}
 
 	for (f = socket_fds; f; f = f->next) {
-		struct socket_info *s = &sockets[f->si_index];
+		struct socket_info *s = swrap_get_socket_info(f->si_index);
 
 		if (s == last_s) {
 			continue;
@@ -1845,33 +2093,43 @@ static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
 
 static void swrap_remove_stale(int fd)
 {
-	struct socket_info_fd *fi = find_socket_info_fd(fd);
 	struct socket_info *si;
 	int si_index;
 
-	if (fi == NULL) {
+	SWRAP_LOG(SWRAP_LOG_TRACE, "remove stale wrapper for %d", fd);
+
+	swrap_mutex_lock(&socket_reset_mutex);
+
+	si_index = find_socket_info_index(fd);
+	if (si_index == -1) {
+		swrap_mutex_unlock(&socket_reset_mutex);
 		return;
 	}
 
-	si_index = fi->si_index;
+	reset_socket_info_index(fd);
 
-	SWRAP_LOG(SWRAP_LOG_TRACE, "remove stale wrapper for %d", fd);
-	SWRAP_DLIST_REMOVE(socket_fds, fi);
-	free(fi);
+	si = swrap_get_socket_info(si_index);
 
-	si = &sockets[si_index];
-	si->refcount--;
+	swrap_mutex_lock(&first_free_mutex);
+	SWRAP_LOCK_SI(si);
 
-	if (si->refcount > 0) {
-		return;
+	swrap_dec_refcount(si);
+
+	if (swrap_get_refcount(si) > 0) {
+		goto out;
 	}
 
 	if (si->un_addr.sun_path[0] != '\0') {
 		unlink(si->un_addr.sun_path);
 	}
 
-	si->next_free = first_free;
+	swrap_set_next_free(si, first_free);
 	first_free = si_index;
+
+out:
+	SWRAP_UNLOCK_SI(si);
+	swrap_mutex_unlock(&first_free_mutex);
+	swrap_mutex_unlock(&socket_reset_mutex);
 }
 
 static int sockaddr_convert_to_un(struct socket_info *si,
@@ -2729,9 +2987,11 @@ static void swrap_pcap_dump_packet(struct socket_info *si,
 	size_t packet_len = 0;
 	int fd;
 
+	swrap_mutex_lock(&pcap_dump_mutex);
+
 	file_name = swrap_pcap_init_file();
 	if (!file_name) {
-		return;
+		goto done;
 	}
 
 	packet = swrap_pcap_marshall_packet(si,
@@ -2741,18 +3001,21 @@ static void swrap_pcap_dump_packet(struct socket_info *si,
 					    len,
 					    &packet_len);
 	if (packet == NULL) {
-		return;
+		goto done;
 	}
 
 	fd = swrap_pcap_get_fd(file_name);
 	if (fd != -1) {
 		if (write(fd, packet, packet_len) != (ssize_t)packet_len) {
 			free(packet);
-			return;
+			goto done;
 		}
 	}
 
 	free(packet);
+
+done:
+	swrap_mutex_unlock(&pcap_dump_mutex);
 }
 
 /****************************************************************************
@@ -2784,10 +3047,10 @@ int signalfd(int fd, const sigset_t *mask, int flags)
 
 static int swrap_socket(int family, int type, int protocol)
 {
-	struct socket_info *si;
-	struct socket_info_fd *fi;
+	struct socket_info *si = NULL;
+	struct socket_info _si = { 0 };
 	int fd;
-	int idx;
+	int ret;
 	int real_type = type;
 
 	/*
@@ -2866,14 +3129,7 @@ static int swrap_socket(int family, int type, int protocol)
 	/* Check if we have a stale fd and remove it */
 	swrap_remove_stale(fd);
 
-	idx = socket_wrapper_first_free_index();
-	if (idx == -1) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	si = &sockets[idx];
-
+	si = &_si;
 	si->family = family;
 
 	/* however, the rest of the socket_wrapper code expects just
@@ -2895,6 +3151,7 @@ static int swrap_socket(int family, int type, int protocol)
 		memcpy(&si->myname.sa.in, &sin, si->myname.sa_socklen);
 		break;
 	}
+#ifdef HAVE_IPV6
 	case AF_INET6: {
 		struct sockaddr_in6 sin6 = {
 			.sin6_family = AF_INET6,
@@ -2904,30 +3161,22 @@ static int swrap_socket(int family, int type, int protocol)
 		memcpy(&si->myname.sa.in6, &sin6, si->myname.sa_socklen);
 		break;
 	}
+#endif
 	default:
 		errno = EINVAL;
 		return -1;
 	}
 
-	fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
-	if (fi == NULL) {
-		errno = ENOMEM;
+	ret = swrap_create_socket(si, fd);
+	if (ret == -1) {
 		return -1;
 	}
 
-	si->refcount = 1;
-	first_free = si->next_free;
-	si->next_free = 0;
-
-	fi->fd = fd;
-	fi->si_index = idx;
-
-	SWRAP_DLIST_ADD(socket_fds, fi);
-
 	SWRAP_LOG(SWRAP_LOG_TRACE,
-		  "Created %s socket for protocol %s",
-		  si->family == AF_INET ? "IPv4" : "IPv6",
-		  si->type == SOCK_DGRAM ? "UDP" : "TCP");
+		  "Created %s socket for protocol %s, fd=%d",
+		  family == AF_INET ? "IPv4" : "IPv6",
+		  real_type == SOCK_DGRAM ? "UDP" : "TCP",
+		  fd);
 
 	return fd;
 }
@@ -3014,7 +3263,7 @@ static int swrap_accept(int s,
 			int flags)
 {
 	struct socket_info *parent_si, *child_si;
-	struct socket_info_fd *child_fi;
+	struct socket_info new_si = { 0 };
 	int fd;
 	int idx;
 	struct swrap_address un_addr = {
@@ -3041,15 +3290,25 @@ static int swrap_accept(int s,
 #endif
 	}
 
+
+	/*
+	 * prevent parent_si from being altered / closed
+	 * while we read it
+	 */
+	SWRAP_LOCK_SI(parent_si);
+
 	/*
 	 * assume out sockaddr have the same size as the in parent
 	 * socket family
 	 */
 	in_addr.sa_socklen = socket_length(parent_si->family);
 	if (in_addr.sa_socklen <= 0) {
+		SWRAP_UNLOCK_SI(parent_si);
 		errno = EINVAL;
 		return -1;
 	}
+
+	SWRAP_UNLOCK_SI(parent_si);
 
 #ifdef HAVE_ACCEPT4
 	ret = libc_accept4(s, &un_addr.sa.s, &un_addr.sa_socklen, flags);
@@ -3067,6 +3326,8 @@ static int swrap_accept(int s,
 
 	fd = ret;
 
+	SWRAP_LOCK_SI(parent_si);
+
 	ret = sockaddr_convert_from_un(parent_si,
 				       &un_addr.sa.un,
 				       un_addr.sa_socklen,
@@ -3074,26 +3335,12 @@ static int swrap_accept(int s,
 				       &in_addr.sa.s,
 				       &in_addr.sa_socklen);
 	if (ret == -1) {
+		SWRAP_UNLOCK_SI(parent_si);
 		close(fd);
 		return ret;
 	}
 
-	idx = socket_wrapper_first_free_index();
-	if (idx == -1) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	child_si = &sockets[idx];
-
-	child_fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
-	if (child_fi == NULL) {
-		close(fd);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	child_fi->fd = fd;
+	child_si = &new_si;
 
 	child_si->family = parent_si->family;
 	child_si->type = parent_si->type;
@@ -3101,6 +3348,8 @@ static int swrap_accept(int s,
 	child_si->bound = 1;
 	child_si->is_server = 1;
 	child_si->connected = 1;
+
+	SWRAP_UNLOCK_SI(parent_si);
 
 	child_si->peername = (struct swrap_address) {
 		.sa_socklen = in_addr.sa_socklen,
@@ -3119,7 +3368,6 @@ static int swrap_accept(int s,
 			       &un_my_addr.sa.s,
 			       &un_my_addr.sa_socklen);
 	if (ret == -1) {
-		free(child_fi);
 		close(fd);
 		return ret;
 	}
@@ -3131,7 +3379,6 @@ static int swrap_accept(int s,
 				       &in_my_addr.sa.s,
 				       &in_my_addr.sa_socklen);
 	if (ret == -1) {
-		free(child_fi);
 		close(fd);
 		return ret;
 	}
@@ -3145,18 +3392,20 @@ static int swrap_accept(int s,
 	};
 	memcpy(&child_si->myname.sa.ss, &in_my_addr.sa.ss, in_my_addr.sa_socklen);
 
-	child_si->refcount = 1;
-	first_free = child_si->next_free;
-	child_si->next_free = 0;
-
-	child_fi->si_index = idx;
-
-	SWRAP_DLIST_ADD(socket_fds, child_fi);
+	idx = swrap_create_socket(&new_si, fd);
+	if (idx == -1) {
+		close (fd);
+		return -1;
+	}
 
 	if (addr != NULL) {
-		swrap_pcap_dump_packet(child_si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
-		swrap_pcap_dump_packet(child_si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
-		swrap_pcap_dump_packet(child_si, addr, SWRAP_ACCEPT_ACK, NULL, 0);
+		struct socket_info *si = swrap_get_socket_info(idx);
+
+		SWRAP_LOCK_SI(si);
+		swrap_pcap_dump_packet(si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
+		swrap_pcap_dump_packet(si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
+		swrap_pcap_dump_packet(si, addr, SWRAP_ACCEPT_ACK, NULL, 0);
+		SWRAP_UNLOCK_SI(si);
 	}
 
 	return fd;
@@ -3197,6 +3446,8 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 	int ret;
 	int port;
 	struct stat st;
+
+	swrap_mutex_lock(&autobind_start_mutex);
 
 	if (autobind_start_init != 1) {
 		autobind_start_init = 1;
@@ -3316,6 +3567,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 	ret = 0;
 
 done:
+	swrap_mutex_unlock(&autobind_start_mutex);
 	return ret;
 }
 
@@ -3336,6 +3588,8 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 	if (!si) {
 		return libc_connect(s, serv_addr, addrlen);
 	}
+
+	SWRAP_LOCK_SI(si);
 
 	if (si->bound == 0) {
 		ret = swrap_auto_bind(s, si, serv_addr->sa_family);
@@ -3420,6 +3674,7 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 	}
 
 done:
+	SWRAP_UNLOCK_SI(si);
 	return ret;
 }
 
@@ -3447,6 +3702,8 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	if (!si) {
 		return libc_bind(s, myaddr, addrlen);
 	}
+
+	SWRAP_LOCK_SI(si);
 
 	switch (si->family) {
 	case AF_INET: {
@@ -3495,14 +3752,16 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 
 	if (bind_error != 0) {
 		errno = bind_error;
-		return -1;
+		ret = -1;
+		goto out;
 	}
 
 #if 0 /* FIXME */
 	in_use = check_addr_port_in_use(myaddr, addrlen);
 	if (in_use) {
 		errno = EADDRINUSE;
-		return -1;
+		ret = -1;
+		goto out;
 	}
 #endif
 
@@ -3516,7 +3775,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 				     1,
 				     &si->bcast);
 	if (ret == -1) {
-		return -1;
+		goto out;
 	}
 
 	unlink(un_addr.sa.un.sun_path);
@@ -3530,6 +3789,9 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	if (ret == 0) {
 		si->bound = 1;
 	}
+
+out:
+	SWRAP_UNLOCK_SI(si);
 
 	return ret;
 }
@@ -3634,15 +3896,20 @@ static int swrap_listen(int s, int backlog)
 		return libc_listen(s, backlog);
 	}
 
+	SWRAP_LOCK_SI(si);
+
 	if (si->bound == 0) {
 		ret = swrap_auto_bind(s, si, si->family);
 		if (ret == -1) {
 			errno = EADDRINUSE;
-			return ret;
+			goto out;
 		}
 	}
 
 	ret = libc_listen(s, backlog);
+
+out:
+	SWRAP_UNLOCK_SI(si);
 
 	return ret;
 }
@@ -3810,26 +4077,34 @@ static int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
 	socklen_t len;
+	int ret = -1;
 
 	if (!si) {
 		return libc_getpeername(s, name, addrlen);
 	}
 
+	SWRAP_LOCK_SI(si);
+
 	if (si->peername.sa_socklen == 0)
 	{
 		errno = ENOTCONN;
-		return -1;
+		goto out;
 	}
 
 	len = MIN(*addrlen, si->peername.sa_socklen);
 	if (len == 0) {
-		return 0;
+		ret = 0;
+		goto out;
 	}
 
 	memcpy(name, &si->peername.sa.ss, len);
 	*addrlen = si->peername.sa_socklen;
 
-	return 0;
+	ret = 0;
+out:
+	SWRAP_UNLOCK_SI(si);
+
+	return ret;
 }
 
 #ifdef HAVE_ACCEPT_PSOCKLEN_T
@@ -3849,20 +4124,28 @@ static int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
 	socklen_t len;
+	int ret = -1;
 
 	if (!si) {
 		return libc_getsockname(s, name, addrlen);
 	}
 
+	SWRAP_LOCK_SI(si);
+
 	len = MIN(*addrlen, si->myname.sa_socklen);
 	if (len == 0) {
-		return 0;
+		ret = 0;
+		goto out;
 	}
 
 	memcpy(name, &si->myname.sa.ss, len);
 	*addrlen = si->myname.sa_socklen;
 
-	return 0;
+	ret = 0;
+out:
+	SWRAP_UNLOCK_SI(si);
+
+	return ret;
 }
 
 #ifdef HAVE_ACCEPT_PSOCKLEN_T
@@ -3897,6 +4180,8 @@ static int swrap_getsockopt(int s, int level, int optname,
 				       optval,
 				       optlen);
 	}
+
+	SWRAP_LOCK_SI(si);
 
 	if (level == SOL_SOCKET) {
 		switch (optname) {
@@ -3980,6 +4265,7 @@ static int swrap_getsockopt(int s, int level, int optname,
 	ret = -1;
 
 done:
+	SWRAP_UNLOCK_SI(si);
 	return ret;
 }
 
@@ -4016,7 +4302,11 @@ static int swrap_setsockopt(int s, int level, int optname,
 				       optname,
 				       optval,
 				       optlen);
-	} else if (level == IPPROTO_TCP) {
+	}
+
+	SWRAP_LOCK_SI(si);
+
+	if (level == IPPROTO_TCP) {
 		switch (optname) {
 #ifdef TCP_NODELAY
 		case TCP_NODELAY: {
@@ -4080,6 +4370,7 @@ static int swrap_setsockopt(int s, int level, int optname,
 	}
 
 done:
+	SWRAP_UNLOCK_SI(si);
 	return ret;
 }
 
@@ -4104,6 +4395,8 @@ static int swrap_vioctl(int s, unsigned long int r, va_list va)
 		return libc_vioctl(s, r, va);
 	}
 
+	SWRAP_LOCK_SI(si);
+
 	va_copy(ap, va);
 
 	rc = libc_vioctl(s, r, va);
@@ -4122,6 +4415,7 @@ static int swrap_vioctl(int s, unsigned long int r, va_list va)
 
 	va_end(ap);
 
+	SWRAP_UNLOCK_SI(si);
 	return rc;
 }
 
@@ -4427,7 +4721,7 @@ static ssize_t swrap_sendmsg_before(int fd,
 				    int *bcast)
 {
 	size_t i, len = 0;
-	ssize_t ret;
+	ssize_t ret = -1;
 
 	if (to_un) {
 		*to_un = NULL;
@@ -4439,13 +4733,15 @@ static ssize_t swrap_sendmsg_before(int fd,
 		*bcast = 0;
 	}
 
+	SWRAP_LOCK_SI(si);
+
 	switch (si->type) {
 	case SOCK_STREAM: {
 		unsigned long mtu;
 
 		if (!si->connected) {
 			errno = ENOTCONN;
-			return -1;
+			goto out;
 		}
 
 		if (msg->msg_iovlen == 0) {
@@ -4488,14 +4784,14 @@ static ssize_t swrap_sendmsg_before(int fd,
 
 			if (msg_name == NULL) {
 				errno = ENOTCONN;
-				return -1;
+				goto out;
 			}
 
 
 			ret = sockaddr_convert_to_un(si, msg_name, msg->msg_namelen,
 						     tmp_un, 0, bcast);
 			if (ret == -1) {
-				return -1;
+				goto out;
 			}
 
 			if (to_un) {
@@ -4511,13 +4807,14 @@ static ssize_t swrap_sendmsg_before(int fd,
 		if (si->bound == 0) {
 			ret = swrap_auto_bind(fd, si, si->family);
 			if (ret == -1) {
+				SWRAP_UNLOCK_SI(si);
 				if (errno == ENOTSOCK) {
 					swrap_remove_stale(fd);
-					return -ENOTSOCK;
+					ret = -ENOTSOCK;
 				} else {
 					SWRAP_LOG(SWRAP_LOG_ERROR, "swrap_sendmsg_before failed");
-					return -1;
 				}
+				return ret;
 			}
 		}
 
@@ -4532,7 +4829,7 @@ static ssize_t swrap_sendmsg_before(int fd,
 					     0,
 					     NULL);
 		if (ret == -1) {
-			return -1;
+			goto out;
 		}
 
 		ret = libc_connect(fd,
@@ -4545,14 +4842,14 @@ static ssize_t swrap_sendmsg_before(int fd,
 		}
 
 		if (ret == -1) {
-			return ret;
+			goto out;
 		}
 
 		si->defer_connect = 0;
 		break;
 	default:
 		errno = EHOSTUNREACH;
-		return -1;
+		goto out;
 	}
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -4563,7 +4860,7 @@ static ssize_t swrap_sendmsg_before(int fd,
 		ret = swrap_sendmsg_filter_cmsghdr(msg, &cmbuf, &cmlen);
 		if (ret < 0) {
 			free(cmbuf);
-			return -1;
+			goto out;
 		}
 
 		if (cmlen == 0) {
@@ -4577,7 +4874,11 @@ static ssize_t swrap_sendmsg_before(int fd,
 	}
 #endif
 
-	return 0;
+	ret = 0;
+out:
+	SWRAP_UNLOCK_SI(si);
+
+	return ret;
 }
 
 static void swrap_sendmsg_after(int fd,
@@ -4631,6 +4932,8 @@ static void swrap_sendmsg_after(int fd,
 	}
 	len = ofs;
 
+	SWRAP_LOCK_SI(si);
+
 	switch (si->type) {
 	case SOCK_STREAM:
 		if (ret == -1) {
@@ -4654,6 +4957,8 @@ static void swrap_sendmsg_after(int fd,
 		break;
 	}
 
+	SWRAP_UNLOCK_SI(si);
+
 	free(buf);
 	errno = saved_errno;
 }
@@ -4664,7 +4969,9 @@ static int swrap_recvmsg_before(int fd,
 				struct iovec *tmp_iov)
 {
 	size_t i, len = 0;
-	ssize_t ret;
+	int ret = -1;
+
+	SWRAP_LOCK_SI(si);
 
 	(void)fd; /* unused */
 
@@ -4673,7 +4980,7 @@ static int swrap_recvmsg_before(int fd,
 		unsigned int mtu;
 		if (!si->connected) {
 			errno = ENOTCONN;
-			return -1;
+			goto out;
 		}
 
 		if (msg->msg_iovlen == 0) {
@@ -4701,7 +5008,7 @@ static int swrap_recvmsg_before(int fd,
 	case SOCK_DGRAM:
 		if (msg->msg_name == NULL) {
 			errno = EINVAL;
-			return -1;
+			goto out;
 		}
 
 		if (msg->msg_iovlen == 0) {
@@ -4711,6 +5018,7 @@ static int swrap_recvmsg_before(int fd,
 		if (si->bound == 0) {
 			ret = swrap_auto_bind(fd, si, si->family);
 			if (ret == -1) {
+				SWRAP_UNLOCK_SI(si);
 				/*
 				 * When attempting to read or write to a
 				 * descriptor, if an underlying autobind fails
@@ -4719,21 +5027,25 @@ static int swrap_recvmsg_before(int fd,
 				 */
 				if (errno == ENOTSOCK) {
 					swrap_remove_stale(fd);
-					return -ENOTSOCK;
+					ret = -ENOTSOCK;
 				} else {
 					SWRAP_LOG(SWRAP_LOG_ERROR,
 						  "swrap_recvmsg_before failed");
-					return -1;
 				}
+				return ret;
 			}
 		}
 		break;
 	default:
 		errno = EHOSTUNREACH;
-		return -1;
+		goto out;
 	}
 
-	return 0;
+	ret = 0;
+out:
+	SWRAP_UNLOCK_SI(si);
+
+	return ret;
 }
 
 static int swrap_recvmsg_after(int fd,
@@ -4765,6 +5077,8 @@ static int swrap_recvmsg_after(int fd,
 		avail += msg->msg_iov[i].iov_len;
 	}
 
+	SWRAP_LOCK_SI(si);
+
 	/* Convert the socket address before we leave */
 	if (si->type == SOCK_DGRAM && un_addr != NULL) {
 		rc = sockaddr_convert_from_un(si,
@@ -4793,6 +5107,7 @@ static int swrap_recvmsg_after(int fd,
 	buf = (uint8_t *)malloc(remain);
 	if (buf == NULL) {
 		/* we just not capture the packet */
+		SWRAP_UNLOCK_SI(si);
 		errno = saved_errno;
 		return -1;
 	}
@@ -4850,11 +5165,13 @@ done:
 	    msg->msg_control != NULL) {
 		rc = swrap_msghdr_add_socket_info(si, msg);
 		if (rc < 0) {
+			SWRAP_UNLOCK_SI(si);
 			return -1;
 		}
 	}
 #endif
 
+	SWRAP_UNLOCK_SI(si);
 	return rc;
 }
 
@@ -5026,11 +5343,16 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 				    un_addr.sa_socklen);
 		}
 
+		SWRAP_LOCK_SI(si);
+
 		swrap_pcap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+
+		SWRAP_UNLOCK_SI(si);
 
 		return len;
 	}
 
+	SWRAP_LOCK_SI(si);
 	/*
 	 * If it is a dgram socket and we are connected, don't include the
 	 * 'to' address.
@@ -5050,6 +5372,8 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 				  (struct sockaddr *)msg.msg_name,
 				  msg.msg_namelen);
 	}
+
+	SWRAP_UNLOCK_SI(si);
 
 	swrap_sendmsg_after(s, si, &msg, to, ret);
 
@@ -5382,6 +5706,8 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 #endif
 	omsg->msg_iovlen = msg.msg_iovlen;
 
+	SWRAP_LOCK_SI(si);
+
 	/*
 	 * From the manpage:
 	 *
@@ -5400,6 +5726,8 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 		memcpy(omsg->msg_name, msg.msg_name, msg.msg_namelen);
 		omsg->msg_namelen = msg.msg_namelen;
 	}
+
+	SWRAP_UNLOCK_SI(si);
 
 	return ret;
 }
@@ -5436,12 +5764,17 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 
 	ZERO_STRUCT(msg);
 
+	SWRAP_LOCK_SI(si);
+
 	if (si->connected == 0) {
 		msg.msg_name = omsg->msg_name;             /* optional address */
 		msg.msg_namelen = omsg->msg_namelen;       /* size of address */
 	}
 	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
 	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
+
+	SWRAP_UNLOCK_SI(si);
+
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	if (msg.msg_controllen > 0 && msg.msg_control != NULL) {
 		/* omsg is a const so use a local buffer for modifications */
@@ -5507,8 +5840,12 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 			libc_sendmsg(s, &msg, flags);
 		}
 
+		SWRAP_LOCK_SI(si);
+
 		swrap_pcap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
 		free(buf);
+
+		SWRAP_UNLOCK_SI(si);
 
 		return len;
 	}
@@ -5639,28 +5976,32 @@ ssize_t writev(int s, const struct iovec *vector, int count)
 
 static int swrap_close(int fd)
 {
-	struct socket_info_fd *fi = find_socket_info_fd(fd);
 	struct socket_info *si = NULL;
 	int si_index;
 	int ret;
 
-	if (fi == NULL) {
+	swrap_mutex_lock(&socket_reset_mutex);
+
+	si_index = find_socket_info_index(fd);
+	if (si_index == -1) {
+		swrap_mutex_unlock(&socket_reset_mutex);
 		return libc_close(fd);
 	}
 
-	si_index = fi->si_index;
+	reset_socket_info_index(fd);
 
-	SWRAP_DLIST_REMOVE(socket_fds, fi);
-	free(fi);
+	si = swrap_get_socket_info(si_index);
+
+	swrap_mutex_lock(&first_free_mutex);
+	SWRAP_LOCK_SI(si);
 
 	ret = libc_close(fd);
 
-	si = &sockets[si_index];
-	si->refcount--;
+	swrap_dec_refcount(si);
 
-	if (si->refcount > 0) {
+	if (swrap_get_refcount(si) > 0) {
 		/* there are still references left */
-		return ret;
+		goto out;
 	}
 
 	if (si->myname.sa_socklen > 0 && si->peername.sa_socklen > 0) {
@@ -5676,8 +6017,13 @@ static int swrap_close(int fd)
 		unlink(si->un_addr.sun_path);
 	}
 
-	si->next_free = first_free;
+	swrap_set_next_free(si, first_free);
 	first_free = si_index;
+
+out:
+	SWRAP_UNLOCK_SI(si);
+	swrap_mutex_unlock(&first_free_mutex);
+	swrap_mutex_unlock(&socket_reset_mutex);
 
 	return ret;
 }
@@ -5694,37 +6040,34 @@ int close(int fd)
 static int swrap_dup(int fd)
 {
 	struct socket_info *si;
-	struct socket_info_fd *src_fi, *fi;
+	int dup_fd, idx;
 
-	src_fi = find_socket_info_fd(fd);
-	if (src_fi == NULL) {
+	idx = find_socket_info_index(fd);
+	if (idx == -1) {
 		return libc_dup(fd);
 	}
 
-	si = &sockets[src_fi->si_index];
+	si = swrap_get_socket_info(idx);
 
-	fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
-	if (fi == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	fi->fd = libc_dup(fd);
-	if (fi->fd == -1) {
+	dup_fd = libc_dup(fd);
+	if (dup_fd == -1) {
 		int saved_errno = errno;
-		free(fi);
 		errno = saved_errno;
 		return -1;
 	}
 
-	si->refcount++;
-	fi->si_index = src_fi->si_index;
+	SWRAP_LOCK_SI(si);
+
+	swrap_inc_refcount(si);
+
+	SWRAP_UNLOCK_SI(si);
 
 	/* Make sure we don't have an entry for the fd */
-	swrap_remove_stale(fi->fd);
+	swrap_remove_stale(dup_fd);
 
-	SWRAP_DLIST_ADD_AFTER(socket_fds, fi, src_fi);
-	return fi->fd;
+	set_socket_info_index(dup_fd, idx);
+
+	return dup_fd;
 }
 
 int dup(int fd)
@@ -5739,14 +6082,14 @@ int dup(int fd)
 static int swrap_dup2(int fd, int newfd)
 {
 	struct socket_info *si;
-	struct socket_info_fd *src_fi, *fi;
+	int dup_fd, idx;
 
-	src_fi = find_socket_info_fd(fd);
-	if (src_fi == NULL) {
+	idx = find_socket_info_index(fd);
+	if (idx == -1) {
 		return libc_dup2(fd, newfd);
 	}
 
-	si = &sockets[src_fi->si_index];
+	si = swrap_get_socket_info(idx);
 
 	if (fd == newfd) {
 		/*
@@ -5764,28 +6107,25 @@ static int swrap_dup2(int fd, int newfd)
 		swrap_close(newfd);
 	}
 
-	fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
-	if (fi == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	fi->fd = libc_dup2(fd, newfd);
-	if (fi->fd == -1) {
+	dup_fd = libc_dup2(fd, newfd);
+	if (dup_fd == -1) {
 		int saved_errno = errno;
-		free(fi);
 		errno = saved_errno;
 		return -1;
 	}
 
-	si->refcount++;
-	fi->si_index = src_fi->si_index;
+	SWRAP_LOCK_SI(si);
+
+	swrap_inc_refcount(si);
+
+	SWRAP_UNLOCK_SI(si);
 
 	/* Make sure we don't have an entry for the fd */
-	swrap_remove_stale(fi->fd);
+	swrap_remove_stale(dup_fd);
 
-	SWRAP_DLIST_ADD_AFTER(socket_fds, fi, src_fi);
-	return fi->fd;
+	set_socket_info_index(dup_fd, idx);
+
+	return dup_fd;
 }
 
 int dup2(int fd, int newfd)
@@ -5799,42 +6139,37 @@ int dup2(int fd, int newfd)
 
 static int swrap_vfcntl(int fd, int cmd, va_list va)
 {
-	struct socket_info_fd *src_fi, *fi;
 	struct socket_info *si;
-	int rc;
+	int rc, dup_fd, idx;
 
-	src_fi = find_socket_info_fd(fd);
-	if (src_fi == NULL) {
+	idx = find_socket_info_index(fd);
+	if (idx == -1) {
 		return libc_vfcntl(fd, cmd, va);
 	}
 
-	si = &sockets[src_fi->si_index];
+	si = swrap_get_socket_info(idx);
 
 	switch (cmd) {
 	case F_DUPFD:
-		fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
-		if (fi == NULL) {
-			errno = ENOMEM;
-			return -1;
-		}
-
-		fi->fd = libc_vfcntl(fd, cmd, va);
-		if (fi->fd == -1) {
+		dup_fd = libc_vfcntl(fd, cmd, va);
+		if (dup_fd == -1) {
 			int saved_errno = errno;
-			free(fi);
 			errno = saved_errno;
 			return -1;
 		}
 
-		si->refcount++;
-		fi->si_index = src_fi->si_index;
+		SWRAP_LOCK_SI(si);
+
+		swrap_inc_refcount(si);
+
+		SWRAP_UNLOCK_SI(si);
 
 		/* Make sure we don't have an entry for the fd */
-		swrap_remove_stale(fi->fd);
+		swrap_remove_stale(dup_fd);
 
-		SWRAP_DLIST_ADD_AFTER(socket_fds, fi, src_fi);
+		set_socket_info_index(dup_fd, idx);
 
-		rc = fi->fd;
+		rc = dup_fd;
 		break;
 	default:
 		rc = libc_vfcntl(fd, cmd, va);
@@ -5924,6 +6259,8 @@ static void swrap_thread_child(void)
  ***************************/
 void swrap_constructor(void)
 {
+	int ret;
+
 	/*
 	* If we hold a lock and the application forks, then the child
 	* is not able to unlock the mutex and we are in a deadlock.
@@ -5932,6 +6269,27 @@ void swrap_constructor(void)
 	pthread_atfork(&swrap_thread_prepare,
 		       &swrap_thread_parent,
 		       &swrap_thread_child);
+
+	ret = socket_wrapper_init_mutex(&sockets_mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to initialize pthread mutex");
+		exit(-1);
+	}
+
+	ret = socket_wrapper_init_mutex(&socket_reset_mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to initialize pthread mutex");
+		exit(-1);
+	}
+
+	ret = socket_wrapper_init_mutex(&first_free_mutex);
+	if (ret != 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to initialize pthread mutex");
+		exit(-1);
+	}
 }
 
 /****************************
@@ -5944,14 +6302,18 @@ void swrap_constructor(void)
  */
 void swrap_destructor(void)
 {
-	struct socket_info_fd *s = socket_fds;
+	size_t i;
 
-	while (s != NULL) {
-		swrap_close(s->fd);
-		s = socket_fds;
+	if (socket_fds_idx != NULL) {
+		for (i = 0; i < socket_fds_max; ++i) {
+			if (socket_fds_idx[i] != -1) {
+				swrap_close(i);
+			}
+		}
+		SAFE_FREE(socket_fds_idx);
 	}
 
-	free(sockets);
+	SAFE_FREE(sockets);
 
 	if (swrap.libc.handle != NULL) {
 		dlclose(swrap.libc.handle);
