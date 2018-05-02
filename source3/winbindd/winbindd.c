@@ -535,9 +535,6 @@ static struct winbindd_dispatch_table {
 	/* Miscellaneous */
 
 	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
-	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
-	  "WINBINDD_PRIV_PIPE_DIR" },
-
 	/* Credential cache access */
 
 	/* End of list */
@@ -574,6 +571,9 @@ static struct winbindd_bool_dispatch_table {
 	{ WINBINDD_CCACHE_SAVE,
 	  winbindd_ccache_save,
 	  "CCACHE_SAVE" },
+	{ WINBINDD_PRIV_PIPE_DIR,
+	  winbindd_priv_pipe_dir,
+	  "WINBINDD_PRIV_PIPE_DIR" },
 };
 
 struct winbindd_async_dispatch_table {
