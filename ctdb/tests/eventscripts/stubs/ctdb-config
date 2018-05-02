@@ -1,0 +1,2 @@
+#!/bin/sh
+exec $VALGRIND "${CTDB_SCRIPTS_HELPER_BINDIR}/ctdb-config" "$@"
