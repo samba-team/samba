@@ -116,6 +116,11 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	}
 
 	ret = PyObject_New(dcerpc_InterfaceObject, type);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	ret->pipe = NULL;
 	ret->binding_handle = NULL;
 	ret->mem_ctx = talloc_new(NULL);
