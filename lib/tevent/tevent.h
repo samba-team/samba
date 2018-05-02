@@ -1349,6 +1349,191 @@ bool tevent_req_is_error(struct tevent_req *req,
 void tevent_req_received(struct tevent_req *req);
 
 /**
+ * @brief Mark a tevent_req for profiling
+ *
+ * This will turn on profiling for this tevent_req an all subreqs that
+ * are directly started as helper requests off this
+ * tevent_req. subreqs are chained by walking up the talloc_parent
+ * hierarchy at a subreq's tevent_req_create. This means to get the
+ * profiling chain right the subreq that needs to be profiled as part
+ * of this tevent_req's profile must be a talloc child of the requests
+ * state variable.
+ *
+ * @param[in] req The request to do tracing for
+ *
+ * @return        False if the profile could not be activated
+ */
+bool tevent_req_set_profile(struct tevent_req *req);
+
+struct tevent_req_profile;
+
+/**
+ * @brief Get the a request's profile for inspection
+ *
+ * @param[in] req The request to get the profile from
+ *
+ * @return        The request's profile
+ */
+const struct tevent_req_profile *tevent_req_get_profile(
+	struct tevent_req *req);
+
+/**
+ * @brief Move the profile out of a request
+ *
+ * This function detaches the request's profile from the request, so
+ * that the profile can outlive the request in a _recv function.
+ *
+ * @param[in] req     The request to move the profile out of
+ * @param[in] mem_ctx The new talloc context for the profile
+ *
+ * @return            The moved profile
+ */
+
+struct tevent_req_profile *tevent_req_move_profile(struct tevent_req *req,
+						   TALLOC_CTX *mem_ctx);
+
+/**
+ * @brief Get a profile description
+ *
+ * @param[in] profile  The profile to be queried
+ * @param[in] req_name The name of the request (state's name)
+ *
+ * "req_name" after this call is still in talloc-posession of "profile"
+ */
+void tevent_req_profile_get_name(const struct tevent_req_profile *profile,
+				 const char **req_name);
+
+/**
+ * @brief Get a profile's start event data
+ *
+ * @param[in] profile        The profile to be queried
+ * @param[in] start_location The location where this event started
+ * @param[in] start_time     The time this event started
+ *
+ * "start_location" after this call is still in talloc-posession of "profile"
+ */
+void tevent_req_profile_get_start(const struct tevent_req_profile *profile,
+				  const char **start_location,
+				  struct timeval *start_time);
+
+/**
+ * @brief Get a profile's stop event data
+ *
+ * @param[in] profile        The profile to be queried
+ * @param[in] stop_location  The location where this event stopped
+ * @param[in] stop_time      The time this event stopped
+ *
+ * "stop_location" after this call is still in talloc-posession of "profile"
+ */
+void tevent_req_profile_get_stop(const struct tevent_req_profile *profile,
+				 const char **stop_location,
+				 struct timeval *stop_time);
+
+/**
+ * @brief Get a profile's result data
+ *
+ * @param[in] pid        The process where this profile was taken
+ * @param[in] state      The status the profile's tevent_req finished with
+ * @param[in] user_error The user error of the profile's tevent_req
+ */
+void tevent_req_profile_get_status(const struct tevent_req_profile *profile,
+				   pid_t *pid,
+				   enum tevent_req_state *state,
+				   uint64_t *user_error);
+
+/**
+ * @brief Retrieve the first subreq's profile from a profile
+ *
+ * @param[in] profile The profile to query
+ *
+ * @return The first tevent subreq's profile
+ */
+const struct tevent_req_profile *tevent_req_profile_get_subprofiles(
+	const struct tevent_req_profile *profile);
+
+/**
+ * @brief Walk the chain of subreqs
+ *
+ * @param[in] profile The subreq's profile to walk
+ *
+ * @return The next subprofile in the list
+ */
+const struct tevent_req_profile *tevent_req_profile_next(
+	const struct tevent_req_profile *profile);
+
+/**
+ * @brief Create a fresh tevent_req_profile
+ *
+ * @param[in] mem_ctx The talloc context to hang the fresh struct off
+ *
+ * @return The fresh struct
+ */
+struct tevent_req_profile *tevent_req_profile_create(TALLOC_CTX *mem_ctx);
+
+/**
+ * @brief Set a profile's name
+ *
+ * @param[in] profile The profile to set the name for
+ * @param[in] name    The new name for the profile
+ *
+ * @return True if the internal talloc_strdup succeeded
+ */
+bool tevent_req_profile_set_name(struct tevent_req_profile *profile,
+				 const char *name);
+
+/**
+ * @brief Set a profile's start event
+ *
+ * @param[in] profile        The profile to set the start data for
+ * @param[in] start_location The new start location
+ * @param[in] start_time     The new start time
+ *
+ * @return True if the internal talloc_strdup succeeded
+ */
+bool tevent_req_profile_set_start(struct tevent_req_profile *profile,
+				  const char *start_location,
+				  struct timeval start_time);
+
+/**
+ * @brief Set a profile's stop event
+ *
+ * @param[in] profile        The profile to set the stop data for
+ * @param[in] stop_location  The new stop location
+ * @param[in] stop_time      The new stop time
+ *
+ * @return True if the internal talloc_strdup succeeded
+ */
+bool tevent_req_profile_set_stop(struct tevent_req_profile *profile,
+				 const char *stop_location,
+				 struct timeval stop_time);
+
+/**
+ * @brief Set a profile's exit status
+ *
+ * @param[in] profile    The profile to set the exit status for
+ * @param[in] pid        The process where this profile was taken
+ * @param[in] state      The status the profile's tevent_req finished with
+ * @param[in] user_error The user error of the profile's tevent_req
+ */
+void tevent_req_profile_set_status(struct tevent_req_profile *profile,
+				   pid_t pid,
+				   enum tevent_req_state state,
+				   uint64_t user_error);
+
+/**
+ * @brief Add a subprofile to a profile
+ *
+ * @param[in] parent_profile The profile to be modified
+ * @param[in] sub_profile The subreqs profile profile to be added
+ *
+ * "subreq" is talloc_move'ed into "parent_profile", so the talloc
+ * ownership of "sub_profile" changes
+ */
+
+void tevent_req_profile_append_sub(struct tevent_req_profile *parent_profile,
+				   struct tevent_req_profile **sub_profile);
+
+/**
  * @brief Create a tevent subrequest at a given time.
  *
  * The idea is that always the same syntax for tevent requests.

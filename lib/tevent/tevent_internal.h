@@ -164,7 +164,26 @@ struct tevent_req {
 		 *
 		 */
 		struct tevent_timer *timer;
+
+		/**
+		 * @brief The place where profiling data is kept
+		 */
+		struct tevent_req_profile *profile;
 	} internal;
+};
+
+struct tevent_req_profile {
+	struct tevent_req_profile *prev, *next;
+	struct tevent_req_profile *parent;
+	const char *req_name;
+	pid_t pid;
+	const char *start_location;
+	struct timeval start_time;
+	const char *stop_location;
+	struct timeval stop_time;
+	enum tevent_req_state state;
+	uint64_t user_error;
+	struct tevent_req_profile *subprofiles;
 };
 
 struct tevent_fd {
