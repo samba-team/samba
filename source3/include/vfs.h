@@ -249,6 +249,8 @@
 		Only implement async versions. */
 /* Version 39 - Remove SMB_VFS_READ
 		All users are now pread or async versions. */
+/* Version 39 - Remove SMB_VFS_WRITE
+		All users are now pwrite or async versions. */
 
 #define SMB_VFS_INTERFACE_VERSION 39
 
@@ -695,7 +697,6 @@ struct vfs_fn_pointers {
 					    void *data,
 					    size_t n, off_t offset);
 	ssize_t (*pread_recv_fn)(struct tevent_req *req, struct vfs_aio_state *state);
-	ssize_t (*write_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);
 	ssize_t (*pwrite_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, off_t offset);
 	struct tevent_req *(*pwrite_send_fn)(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,
@@ -1182,9 +1183,6 @@ struct tevent_req *smb_vfs_call_pread_send(struct vfs_handle_struct *handle,
 					   size_t n, off_t offset);
 ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req, struct vfs_aio_state *state);
 
-ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, const void *data,
-			   size_t n);
 ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, const void *data,
 			    size_t n, off_t offset);

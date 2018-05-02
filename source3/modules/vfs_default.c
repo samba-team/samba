@@ -638,16 +638,6 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	return result;
 }
 
-static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
-{
-	ssize_t result;
-
-	START_PROFILE_BYTES(syscall_write, n);
-	result = sys_write(fsp->fh->fd, data, n);
-	END_PROFILE_BYTES(syscall_write);
-	return result;
-}
-
 static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, const void *data,
 			size_t n, off_t offset)
 {
@@ -2967,7 +2957,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.pread_fn = vfswrap_pread,
 	.pread_send_fn = vfswrap_pread_send,
 	.pread_recv_fn = vfswrap_pread_recv,
-	.write_fn = vfswrap_write,
 	.pwrite_fn = vfswrap_pwrite,
 	.pwrite_send_fn = vfswrap_pwrite_send,
 	.pwrite_recv_fn = vfswrap_pwrite_recv,

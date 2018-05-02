@@ -732,26 +732,6 @@ static ssize_t smb_time_audit_pread_recv(struct tevent_req *req,
 	return state->ret;
 }
 
-static ssize_t smb_time_audit_write(vfs_handle_struct *handle,
-				    files_struct *fsp,
-				    const void *data, size_t n)
-{
-	ssize_t result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fsp("write", timediff, fsp);
-	}
-
-	return result;
-}
-
 static ssize_t smb_time_audit_pwrite(vfs_handle_struct *handle,
 				     files_struct *fsp,
 				     const void *data, size_t n,
@@ -2661,7 +2641,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.pread_fn = smb_time_audit_pread,
 	.pread_send_fn = smb_time_audit_pread_send,
 	.pread_recv_fn = smb_time_audit_pread_recv,
-	.write_fn = smb_time_audit_write,
 	.pwrite_fn = smb_time_audit_pwrite,
 	.pwrite_send_fn = smb_time_audit_pwrite_send,
 	.pwrite_recv_fn = smb_time_audit_pwrite_recv,

@@ -1729,14 +1729,6 @@ ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req,
 	return state->retval;
 }
 
-ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, const void *data,
-			   size_t n)
-{
-	VFS_FIND(write);
-	return handle->fns->write_fn(handle, fsp, data, n);
-}
-
 ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, const void *data,
 			    size_t n, off_t offset)

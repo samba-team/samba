@@ -248,24 +248,6 @@ static int commit_open(
         return fd;
 }
 
-static ssize_t commit_write(
-        vfs_handle_struct * handle,
-        files_struct *      fsp,
-        const void *        data,
-        size_t              count)
-{
-        ssize_t ret;
-        ret = SMB_VFS_NEXT_WRITE(handle, fsp, data, count);
-
-        if (ret > 0) {
-                if (commit(handle, fsp, fsp->fh->pos, ret) == -1) {
-                        return -1;
-                }
-        }
-
-        return ret;
-}
-
 static ssize_t commit_pwrite(
         vfs_handle_struct * handle,
         files_struct *      fsp,
@@ -395,7 +377,6 @@ static int commit_ftruncate(
 static struct vfs_fn_pointers vfs_commit_fns = {
         .open_fn = commit_open,
         .close_fn = commit_close,
-        .write_fn = commit_write,
         .pwrite_fn = commit_pwrite,
         .pwrite_send_fn = commit_pwrite_send,
         .pwrite_recv_fn = commit_pwrite_recv,

@@ -471,22 +471,6 @@ static ssize_t cephwrap_pread(struct vfs_handle_struct *handle, files_struct *fs
 }
 
 
-static ssize_t cephwrap_write(struct vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
-{
-	ssize_t result;
-
-	DBG_DEBUG("[CEPH] write(%p, %p, %p, %llu)\n", handle, fsp, data, llu(n));
-
-	result = ceph_write(handle->data, fsp->fh->fd, data, n, -1);
-
-	DBG_DEBUG("[CEPH] write(...) = %llu\n", llu(result));
-	if (result < 0) {
-		WRAP_RETURN(result);
-	}
-	fsp->fh->pos += result;
-	return result;
-}
-
 static ssize_t cephwrap_pwrite(struct vfs_handle_struct *handle, files_struct *fsp, const void *data,
 			size_t n, off_t offset)
 {
@@ -1458,7 +1442,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.open_fn = cephwrap_open,
 	.close_fn = cephwrap_close,
 	.pread_fn = cephwrap_pread,
-	.write_fn = cephwrap_write,
 	.pwrite_fn = cephwrap_pwrite,
 	.lseek_fn = cephwrap_lseek,
 	.sendfile_fn = cephwrap_sendfile,
