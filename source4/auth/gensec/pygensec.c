@@ -176,7 +176,15 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 	}
 
 	if (py_auth_context != Py_None) {
-		auth_context = pytalloc_get_type(py_auth_context, struct auth4_context);
+		bool ok = py_check_dcerpc_type(py_auth_context,
+					       "samba.auth",
+					       "AuthContext");
+		if (!ok) {
+			return NULL;
+		}
+
+		auth_context = pytalloc_get_type(py_auth_context,
+						 struct auth4_context);
 		if (!auth_context) {
 			PyErr_Format(PyExc_TypeError,
 				     "Expected auth.AuthContext for auth_context argument, got %s",
