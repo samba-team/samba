@@ -510,14 +510,14 @@ void winbindd_ping(struct winbindd_cli_state *state)
 
 /* List various tidbits of information */
 
-void winbindd_info(struct winbindd_cli_state *state)
+bool winbindd_info(struct winbindd_cli_state *state)
 {
 
 	DEBUG(3, ("[%5lu]: request misc info\n", (unsigned long)state->pid));
 
 	state->response->data.info.winbind_separator = *lp_winbind_separator();
 	fstrcpy(state->response->data.info.samba_version, samba_version_string());
-	request_ok(state);
+	return true;
 }
 
 /* Tell the client the current interface version */

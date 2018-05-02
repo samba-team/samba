@@ -388,7 +388,7 @@ void winbindd_show_sequence(struct winbindd_cli_state *state);
 void winbindd_domain_info(struct winbindd_cli_state *state);
 void winbindd_dc_info(struct winbindd_cli_state *state);
 void winbindd_ping(struct winbindd_cli_state *state);
-void winbindd_info(struct winbindd_cli_state *state);
+bool winbindd_info(struct winbindd_cli_state *state);
 bool winbindd_interface_version(struct winbindd_cli_state *state);
 void winbindd_domain_name(struct winbindd_cli_state *state);
 void winbindd_netbios_name(struct winbindd_cli_state *state);
