@@ -166,6 +166,7 @@ else:
                           tevent_unix.c
                           tevent_ntstatus.c
                           tevent_werror.c
+                          tevent_req_profile.c
                       ''',
                       local_include=False,
                       public_deps='tevent samba-errors',
