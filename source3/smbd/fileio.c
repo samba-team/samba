@@ -115,18 +115,14 @@ static ssize_t real_write_file(struct smb_request *req,
 {
 	ssize_t ret;
 
-        if (pos == -1) {
-                ret = vfs_write_data(req, fsp, data, n);
-        } else {
-		fsp->fh->pos = pos;
-		if (pos && lp_strict_allocate(SNUM(fsp->conn) &&
-				!fsp->is_sparse)) {
-			if (vfs_fill_sparse(fsp, pos) == -1) {
-				return -1;
-			}
+	fsp->fh->pos = pos;
+	if (pos && lp_strict_allocate(SNUM(fsp->conn) &&
+			!fsp->is_sparse)) {
+		if (vfs_fill_sparse(fsp, pos) == -1) {
+			return -1;
 		}
-                ret = vfs_pwrite_data(req, fsp, data, n, pos);
 	}
+	ret = vfs_pwrite_data(req, fsp, data, n, pos);
 
 	DEBUG(10,("real_write_file (%s): pos = %.0f, size = %lu, returned %ld\n",
 		  fsp_str_dbg(fsp), (double)pos, (unsigned long)n, (long)ret));
