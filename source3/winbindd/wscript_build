@@ -249,6 +249,7 @@ bld.SAMBA3_BINARY('winbindd',
                  winbindd_change_machine_acct.c
                  winbindd_irpc.c
                  winbindd_ping_dc.c
+                 winbindd_domain_info.c
                  winbindd_pam_auth.c
                  winbindd_pam_logoff.c
                  winbindd_pam_chauthtok.c

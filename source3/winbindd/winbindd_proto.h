@@ -385,7 +385,6 @@ bool winbindd_list_trusted_domains(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
 							struct winbindd_cli_state *state);
 void winbindd_show_sequence(struct winbindd_cli_state *state);
-void winbindd_domain_info(struct winbindd_cli_state *state);
 bool winbindd_dc_info(struct winbindd_cli_state *state);
 bool winbindd_ping(struct winbindd_cli_state *state);
 bool winbindd_info(struct winbindd_cli_state *state);
@@ -941,7 +940,13 @@ struct tevent_req *winbindd_wins_byname_send(TALLOC_CTX *mem_ctx,
 					     struct winbindd_request *request);
 NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
 				   struct winbindd_response *presp);
-
+struct tevent_req *winbindd_domain_info_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct winbindd_cli_state *cli,
+	struct winbindd_request *request);
+NTSTATUS winbindd_domain_info_recv(struct tevent_req *req,
+				   struct winbindd_response *response);
 
 /* The following definitions come from winbindd/winbindd_samr.c  */
 

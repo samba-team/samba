@@ -532,9 +532,6 @@ static struct winbindd_dispatch_table {
 
 	/* Miscellaneous */
 
-	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
-	/* Credential cache access */
-
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
@@ -658,6 +655,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_wins_byip_send, winbindd_wins_byip_recv },
 	{ WINBINDD_WINS_BYNAME, "WINS_BYNAME",
 	  winbindd_wins_byname_send, winbindd_wins_byname_recv },
+	{ WINBINDD_DOMAIN_INFO, "DOMAIN_INFO",
+	  winbindd_domain_info_send, winbindd_domain_info_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
