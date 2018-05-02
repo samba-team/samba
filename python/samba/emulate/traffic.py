@@ -457,6 +457,7 @@ class ReplayContext(object):
         self.user_creds.set_workstation(self.netbios_name)
         self.user_creds.set_password(self.userpass)
         self.user_creds.set_username(self.username)
+        self.user_creds.set_domain(self.domain)
         if self.prefer_kerberos:
             self.user_creds.set_kerberos_state(MUST_USE_KERBEROS)
         else:
@@ -514,6 +515,7 @@ class ReplayContext(object):
         self.machine_creds.set_secure_channel_type(SEC_CHAN_WKSTA)
         self.machine_creds.set_password(self.machinepass)
         self.machine_creds.set_username(self.netbios_name + "$")
+        self.machine_creds.set_domain(self.domain)
         if self.prefer_kerberos:
             self.machine_creds.set_kerberos_state(MUST_USE_KERBEROS)
         else:
