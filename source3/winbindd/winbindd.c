@@ -554,6 +554,13 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
+static struct winbindd_bool_dispatch_table {
+	enum winbindd_cmd cmd;
+	bool (*fn)(struct winbindd_cli_state *state);
+	const char *cmd_name;
+} bool_dispatch_table[] = {
+};
+
 struct winbindd_async_dispatch_table {
 	enum winbindd_cmd cmd;
 	const char *cmd_name;
@@ -658,6 +665,8 @@ static void process_request(struct winbindd_cli_state *state)
 {
 	struct winbindd_dispatch_table *table = dispatch_table;
 	struct winbindd_async_dispatch_table *atable;
+	size_t i;
+	bool ok;
 
 	state->mem_ctx = talloc_named(state, 0, "winbind request");
 	if (state->mem_ctx == NULL)
@@ -725,13 +734,31 @@ static void process_request(struct winbindd_cli_state *state)
 				  table->winbindd_cmd_name ));
 			state->cmd_name = table->winbindd_cmd_name;
 			table->fn(state);
+			return;
+		}
+	}
+
+	for (i=0; i<ARRAY_SIZE(bool_dispatch_table); i++) {
+		if (bool_dispatch_table[i].cmd == state->request->cmd) {
 			break;
 		}
 	}
 
-	if (!table->fn) {
+	if (i == ARRAY_SIZE(bool_dispatch_table)) {
 		DEBUG(10,("process_request: unknown request fn number %d\n",
 			  (int)state->request->cmd ));
+		request_error(state);
+		return;
+	}
+
+	DBG_DEBUG("process_request: request fn %s\n",
+		  bool_dispatch_table[i].cmd_name);
+
+	ok = bool_dispatch_table[i].fn(state);
+
+	if (ok) {
+		request_ok(state);
+	} else {
 		request_error(state);
 	}
 }
