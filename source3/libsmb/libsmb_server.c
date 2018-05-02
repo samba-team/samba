@@ -500,7 +500,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 				 lp_client_max_protocol());
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(c);
-		errno = ETIMEDOUT;
+		errno = map_errno_from_nt_status(status);
 		return NULL;
 	}
 
