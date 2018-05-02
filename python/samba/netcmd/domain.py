@@ -1367,6 +1367,7 @@ class cmd_domain_passwordsettings(Command):
             msgs = []
             m = ldb.Message()
             m.dn = ldb.Dn(samdb, domain_dn)
+            pwd_props = int(samdb.get_pwdProperties())
 
             if complexity is not None:
                 if complexity == "on" or complexity == "default":
@@ -1458,7 +1459,7 @@ class cmd_domain_passwordsettings(Command):
                 if account_lockout_duration < 0 or account_lockout_duration > 99999:
                     raise CommandError("Maximum password age must be in the range of 0 to 99999!")
 
-                # days -> ticks
+                # minutes -> ticks
                 if account_lockout_duration == 0:
                     account_lockout_duration_ticks = -0x8000000000000000
                 else:
@@ -1487,7 +1488,7 @@ class cmd_domain_passwordsettings(Command):
                 if reset_account_lockout_after < 0 or reset_account_lockout_after > 99999:
                     raise CommandError("Maximum password age must be in the range of 0 to 99999!")
 
-                # days -> ticks
+                # minutes -> ticks
                 if reset_account_lockout_after == 0:
                     reset_account_lockout_after_ticks = -0x8000000000000000
                 else:
