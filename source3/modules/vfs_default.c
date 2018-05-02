@@ -664,24 +664,8 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	}
 
 #else /* HAVE_PWRITE */
-	off_t   curr;
-	int         lerrno;
-
-	curr = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
-	if (curr == -1) {
-		return -1;
-	}
-
-	if (SMB_VFS_LSEEK(fsp, offset, SEEK_SET) == -1) {
-		return -1;
-	}
-
-	result = SMB_VFS_WRITE(fsp, data, n);
-	lerrno = errno;
-
-	SMB_VFS_LSEEK(fsp, curr, SEEK_SET);
-	errno = lerrno;
-
+	errno = ENOSYS;
+	result = -1;
 #endif /* HAVE_PWRITE */
 
 	return result;
