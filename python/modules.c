@@ -25,16 +25,20 @@
 
 static bool PySys_PathPrepend(PyObject *list, const char *path)
 {
+	bool ok;
 	PyObject *py_path = PyStr_FromString(path);
-	if (py_path == NULL)
+	if (py_path == NULL) {
 		return false;
-
-	return (PyList_Insert(list, 0, py_path) == 0);
+	}
+	ok = PyList_Insert(list, 0, py_path) == 0;
+	Py_XDECREF(py_path);
+	return ok;
 }
 
 bool py_update_path(void)
 {
-	PyObject *mod_sys, *py_path;
+	PyObject *mod_sys = NULL;
+	PyObject *py_path = NULL;
 
 	mod_sys = PyImport_ImportModule("sys");
 	if (mod_sys == NULL) {
@@ -43,22 +47,27 @@ bool py_update_path(void)
 
 	py_path = PyObject_GetAttrString(mod_sys, "path");
 	if (py_path == NULL) {
-		return false;
-	}	
+		goto error;
+	}
 
 	if (!PyList_Check(py_path)) {
-		return false;
+		goto error;
 	}
 
 	if (!PySys_PathPrepend(py_path, dyn_PYTHONDIR)) {
-		return false;
+		goto error;
 	}
 
 	if (strcmp(dyn_PYTHONARCHDIR, dyn_PYTHONDIR) != 0) {
 		if (!PySys_PathPrepend(py_path, dyn_PYTHONARCHDIR)) {
-			return false;
+			goto error;
 		}
 	}
-
+	Py_XDECREF(py_path);
+	Py_XDECREF(mod_sys);
 	return true;
+error:
+	Py_XDECREF(py_path);
+	Py_XDECREF(mod_sys);
+	return false;
 }
