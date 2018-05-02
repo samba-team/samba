@@ -318,16 +318,31 @@ const char *get_short_archi(const char *long_archi)
 
 static ssize_t printing_pread_data(files_struct *fsp,
 				char *buf,
-				off_t *poff_unused,
+				off_t *poff,
 				size_t byte_count)
 {
 	size_t total=0;
+	off_t in_pos = *poff;
+
+	if (in_pos != (off_t)-1) {
+		in_pos = SMB_VFS_LSEEK(fsp, in_pos, SEEK_SET);
+		if (in_pos == (off_t)-1) {
+			return -1;
+		}
+		/* Don't allow integer wrap on read. */
+		if (in_pos + byte_count < in_pos) {
+			return -1;
+		}
+	}
 
 	while (total < byte_count) {
 		ssize_t ret = SMB_VFS_READ(fsp, buf + total,
 					byte_count - total);
 
 		if (ret == 0) {
+			if (*poff != (off_t)-1) {
+				*poff = in_pos;
+			}
 			return total;
 		}
 		if (ret == -1) {
@@ -337,7 +352,11 @@ static ssize_t printing_pread_data(files_struct *fsp,
 				return -1;
 			}
 		}
+		in_pos += ret;
 		total += ret;
+	}
+	if (*poff != (off_t)-1) {
+		*poff = in_pos;
 	}
 	return (ssize_t)total;
 }
