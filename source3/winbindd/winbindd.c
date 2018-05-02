@@ -536,8 +536,6 @@ static struct winbindd_dispatch_table {
 
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
 	{ WINBINDD_PING, winbindd_ping, "PING" },
-	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
-	  "INTERFACE_VERSION" },
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
 	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_DC_INFO, winbindd_dc_info, "DC_INFO" },
@@ -559,6 +557,9 @@ static struct winbindd_bool_dispatch_table {
 	bool (*fn)(struct winbindd_cli_state *state);
 	const char *cmd_name;
 } bool_dispatch_table[] = {
+	{ WINBINDD_INTERFACE_VERSION,
+	  winbindd_interface_version,
+	  "INTERFACE_VERSION" },
 };
 
 struct winbindd_async_dispatch_table {

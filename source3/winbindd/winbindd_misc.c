@@ -522,13 +522,13 @@ void winbindd_info(struct winbindd_cli_state *state)
 
 /* Tell the client the current interface version */
 
-void winbindd_interface_version(struct winbindd_cli_state *state)
+bool winbindd_interface_version(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: request interface version (version = %d)\n",
 		  (unsigned long)state->pid, WINBIND_INTERFACE_VERSION));
 
 	state->response->data.interface_version = WINBIND_INTERFACE_VERSION;
-	request_ok(state);
+	return true;
 }
 
 /* What domain are we a member of? */
