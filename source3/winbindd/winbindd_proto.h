@@ -386,7 +386,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 							struct winbindd_cli_state *state);
 void winbindd_show_sequence(struct winbindd_cli_state *state);
 void winbindd_domain_info(struct winbindd_cli_state *state);
-void winbindd_dc_info(struct winbindd_cli_state *state);
+bool winbindd_dc_info(struct winbindd_cli_state *state);
 bool winbindd_ping(struct winbindd_cli_state *state);
 bool winbindd_info(struct winbindd_cli_state *state);
 bool winbindd_interface_version(struct winbindd_cli_state *state);

@@ -452,7 +452,7 @@ static void domain_info_done(struct tevent_req *req)
 	request_ok(state->cli);
 }
 
-void winbindd_dc_info(struct winbindd_cli_state *cli)
+bool winbindd_dc_info(struct winbindd_cli_state *cli)
 {
 	struct winbindd_domain *domain;
 	char *dc_name, *dc_ip;
@@ -468,8 +468,7 @@ void winbindd_dc_info(struct winbindd_cli_state *cli)
 		if (domain == NULL) {
 			DEBUG(10, ("Could not find domain %s\n",
 				   cli->request->domain_name));
-			request_error(cli);
-			return;
+			return false;
 		}
 	} else {
 		domain = find_our_domain();
@@ -479,8 +478,7 @@ void winbindd_dc_info(struct winbindd_cli_state *cli)
 		    talloc_tos(), domain->name, &dc_name, &dc_ip)) {
 		DEBUG(10, ("fetch_current_dc_from_gencache(%s) failed\n",
 			   domain->name));
-		request_error(cli);
-		return;
+		return false;
 	}
 
 	cli->response->data.num_entries = 1;
@@ -491,15 +489,14 @@ void winbindd_dc_info(struct winbindd_cli_state *cli)
 	TALLOC_FREE(dc_ip);
 
 	if (cli->response->extra_data.data == NULL) {
-		request_error(cli);
-		return;
+		return false;
 	}
 
 	/* must add one to length to copy the 0 for string termination */
 	cli->response->length +=
 		strlen((char *)cli->response->extra_data.data) + 1;
 
-	request_ok(cli);
+	return true;
 }
 
 bool winbindd_ping(struct winbindd_cli_state *state)
