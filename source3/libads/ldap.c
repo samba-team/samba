@@ -3454,18 +3454,18 @@ bool ads_has_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machi
 
 	status = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
+		DEBUG(0,("ads_has_samaccountname: Failed to find account for %s\n",
 			lp_netbios_name()));
 		goto out;
 	}
 
 	if ( (count = ads_count_replies(ads, res)) != 1 ) {
-		DEBUG(1,("ads_get_dnshostname: %d entries returned!\n", count));
+		DEBUG(1,("ads_has_samaccountname: %d entries returned!\n", count));
 		goto out;
 	}
 
 	if ( (name = ads_pull_string(ads, ctx, res, "sAMAccountName")) == NULL ) {
-		DEBUG(0,("ads_get_dnshostname: No sAMAccountName attribute!\n"));
+		DEBUG(0,("ads_has_samaccountname: No sAMAccountName attribute!\n"));
 	}
 
 out:
