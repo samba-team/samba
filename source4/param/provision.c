@@ -199,13 +199,15 @@ static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
 	PyObject *mod_security, *dom_sid_Type;
 
 	mod_security = PyImport_ImportModule("samba.dcerpc.security");
-	if (mod_security == NULL)
+	if (mod_security == NULL) {
 		return NULL;
-
+	}
 	dom_sid_Type = PyObject_GetAttrString(mod_security, "dom_sid");
-	if (dom_sid_Type == NULL)
+	if (dom_sid_Type == NULL) {
+		Py_DECREF(mod_security);
 		return NULL;
-
+	}
+	Py_DECREF(mod_security);
 	return pytalloc_reference((PyTypeObject *)dom_sid_Type, sid);
 }
 
