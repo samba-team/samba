@@ -35,7 +35,6 @@ from samba.ntstatus import (
     NT_STATUS_OBJECT_NAME_NOT_FOUND,
     NT_STATUS_NO_SUCH_DOMAIN
 )
-from samba.dcerpc.misc import SEC_CHAN_WKSTA
 import samba
 samba.ensure_third_party_module("dns", "dnspython")
 import dns.resolver
@@ -573,7 +572,7 @@ def packet_rpc_netlogon_30(packet, conversation, context):
                               # must ends with $, so use get_username instead
                               # of get_workstation here
                               context.machine_creds.get_username(),
-                              SEC_CHAN_WKSTA,
+                              context.machine_creds.get_secure_channel_type(),
                               context.netbios_name,
                               auth,
                               pwd)
