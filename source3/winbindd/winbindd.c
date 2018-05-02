@@ -54,6 +54,7 @@
 static bool client_is_idle(struct winbindd_cli_state *state);
 static void remove_client(struct winbindd_cli_state *state);
 static void winbindd_setup_max_fds(void);
+static void request_ok(struct winbindd_cli_state *state);
 
 static bool opt_nocache = False;
 static bool interactive = False;
@@ -864,7 +865,7 @@ void request_error(struct winbindd_cli_state *state)
 	request_finished(state);
 }
 
-void request_ok(struct winbindd_cli_state *state)
+static void request_ok(struct winbindd_cli_state *state)
 {
 	SMB_ASSERT(state->response->result == WINBINDD_PENDING);
 	state->response->result = WINBINDD_OK;
