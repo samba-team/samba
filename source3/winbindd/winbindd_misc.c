@@ -533,12 +533,12 @@ bool winbindd_interface_version(struct winbindd_cli_state *state)
 
 /* What domain are we a member of? */
 
-void winbindd_domain_name(struct winbindd_cli_state *state)
+bool winbindd_domain_name(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: request domain name\n", (unsigned long)state->pid));
 
 	fstrcpy(state->response->data.domain_name, lp_workgroup());
-	request_ok(state);
+	return true;
 }
 
 /* What's my name again? */

@@ -534,7 +534,6 @@ static struct winbindd_dispatch_table {
 
 	/* Miscellaneous */
 
-	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
 	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_DC_INFO, winbindd_dc_info, "DC_INFO" },
 	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
@@ -564,6 +563,9 @@ static struct winbindd_bool_dispatch_table {
 	{ WINBINDD_PING,
 	  winbindd_ping,
 	  "PING" },
+	{ WINBINDD_DOMAIN_NAME,
+	  winbindd_domain_name,
+	  "DOMAIN_NAME" },
 };
 
 struct winbindd_async_dispatch_table {
