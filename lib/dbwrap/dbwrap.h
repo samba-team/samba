@@ -127,6 +127,11 @@ NTSTATUS dbwrap_traverse_read(struct db_context *db,
 			      int (*f)(struct db_record*, void*),
 			      void *private_data,
 			      int *count);
+NTSTATUS dbwrap_traverse_per_rec_persistent_read(
+	struct db_context *db,
+	int (*f)(struct db_record*, void*),
+	void *private_data,
+	int *count);
 NTSTATUS dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 			     void (*parser)(TDB_DATA key, TDB_DATA data,
 					    void *private_data),

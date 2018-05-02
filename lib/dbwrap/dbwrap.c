@@ -451,6 +451,30 @@ NTSTATUS dbwrap_traverse_read(struct db_context *db,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dbwrap_traverse_per_rec_persistent_read(
+	struct db_context *db,
+	int (*f)(struct db_record*, void*),
+	void *private_data,
+	int *count)
+{
+	int ret;
+
+	if (db->traverse_per_rec_persistent_read == NULL) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	ret = db->traverse_per_rec_persistent_read(db, f, private_data);
+	if (ret < 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (count != NULL) {
+		*count = ret;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static void dbwrap_null_parser(TDB_DATA key, TDB_DATA val, void* data)
 {
 	return;

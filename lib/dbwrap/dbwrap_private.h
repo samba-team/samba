@@ -49,6 +49,10 @@ struct db_context {
 			     int (*f)(struct db_record *rec,
 				      void *private_data),
 			     void *private_data);
+	int (*traverse_per_rec_persistent_read)(struct db_context *db,
+						int (*f)(struct db_record *rec,
+							 void *private_data),
+						void *private_data);
 	int (*get_seqnum)(struct db_context *db);
 	int (*transaction_start)(struct db_context *db);
 	NTSTATUS (*transaction_start_nonblock)(struct db_context *db);
