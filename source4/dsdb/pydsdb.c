@@ -744,10 +744,17 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 		return NULL;
 	}
 	py_ret = py_type->tp_alloc(py_type, 0);
+	if (py_ret == NULL) {
+		Py_DECREF(py_type);
+		PyErr_NoMemory();
+		return NULL;
+	}
 	ret = (PyLdbMessageElementObject *)py_ret;
 
 	ret->mem_ctx = talloc_new(NULL);
 	if (talloc_reference(ret->mem_ctx, new_el) == NULL) {
+		Py_DECREF(py_type);
+		Py_DECREF(py_ret);
 		PyErr_NoMemory();
 		return NULL;
 	}
