@@ -1027,7 +1027,7 @@ static void remove_client(struct winbindd_cli_state *state)
 	 * before closing the fd.
 	 *
 	 * Otherwise we might hit a race with close_conns_after_fork() (via
-	 * winbindd_reinit_after_fork()) where a file description
+	 * winbindd_reinit_after_fork()) where a file descriptor
 	 * is still open in a child, which means it's still active in
 	 * the parents epoll queue, but the related tevent_fd is already
 	 * already gone in the parent.
