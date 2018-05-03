@@ -1188,7 +1188,7 @@ class GetPasswordCommand(Command):
                 if b is not None:
                     u8 = get_utf8(a, b, username or account_name)
                     if u8 is not None:
-                        sv = get_crypt_value(str(algorithm), u8, rounds)
+                        sv = get_crypt_value(str(algorithm), u8.decode('utf8'), rounds)
                 if sv is None:
                     # Unable to calculate a hash with the specified
                     # number of rounds, fall back to the first hash using
@@ -1217,14 +1217,14 @@ class GetPasswordCommand(Command):
             for h in up.hashes:
                 if (scheme_match is None and
                       h.scheme == SCHEME and
-                      h.value.startswith(scheme_prefix)):
+                      h.value.decode('utf8').startswith(scheme_prefix)):
                     scheme_match = h.value
-                if h.scheme == SCHEME and h.value.startswith(prefix):
-                    return (h.value, scheme_match)
+                if h.scheme == SCHEME and h.value.decode('utf8').startswith(prefix):
+                    return (h.value.decode('utf8'), scheme_match.decode('utf8'))
 
             # No match on the number of rounds, return the value of the
             # first matching scheme
-            return (None, scheme_match)
+            return (None, scheme_match.decode('utf8'))
 
         # We use sort here in order to have a predictable processing order
         for a in sorted(virtual_attributes.keys()):
