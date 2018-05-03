@@ -48,6 +48,17 @@ static PyTypeObject * PyLdb_GetPyType(const char *typename)
 	return (PyTypeObject*)py_obj;
 }
 
+bool pyldb_check_type(PyObject *obj, const char *typename)
+{
+	bool ok = false;
+	PyTypeObject *type = PyLdb_GetPyType(typename);
+	if (type != NULL) {
+		ok = PyObject_TypeCheck(obj, type);
+		Py_DECREF(type);
+	}
+	return ok;
+}
+
 /**
  * Obtain a ldb DN from a Python object.
  *
