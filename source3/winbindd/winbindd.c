@@ -54,8 +54,6 @@
 static bool client_is_idle(struct winbindd_cli_state *state);
 static void remove_client(struct winbindd_cli_state *state);
 static void winbindd_setup_max_fds(void);
-static void request_ok(struct winbindd_cli_state *state);
-static void request_error(struct winbindd_cli_state *state);
 
 static bool opt_nocache = False;
 static bool interactive = False;
@@ -660,127 +658,206 @@ static struct winbindd_async_dispatch_table async_priv_table[] = {
 	{ 0, NULL, NULL, NULL }
 };
 
-static void wb_request_done(struct tevent_req *req);
+struct process_request_state {
+	struct winbindd_cli_state *cli_state;
+	struct tevent_context *ev;
+};
 
-static void process_request(struct winbindd_cli_state *state)
+static void process_request_done(struct tevent_req *subreq);
+static void process_request_written(struct tevent_req *subreq);
+
+static struct tevent_req *process_request_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct winbindd_cli_state *cli_state)
 {
+	struct tevent_req *req, *subreq;
+	struct process_request_state *state;
 	struct winbindd_async_dispatch_table *atable;
+	enum winbindd_cmd cmd = cli_state->request->cmd;
 	size_t i;
 	bool ok;
 
-	state->mem_ctx = talloc_named(state, 0, "winbind request");
-	if (state->mem_ctx == NULL)
-		return;
+	req = tevent_req_create(mem_ctx, &state,
+				struct process_request_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli_state = cli_state;
+	state->ev = ev;
+
+	SMB_ASSERT(cli_state->mem_ctx == NULL);
+	cli_state->mem_ctx = talloc_named(cli_state, 0, "winbind request");
+	if (tevent_req_nomem(cli_state->mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	cli_state->response = talloc_zero(
+		cli_state->mem_ctx,
+		struct winbindd_response);
+	if (tevent_req_nomem(cli_state->response, req)) {
+		return tevent_req_post(req, ev);
+	}
+	cli_state->response->result = WINBINDD_PENDING;
+	cli_state->response->length = sizeof(struct winbindd_response);
 
 	/* Remember who asked us. */
-	state->pid = state->request->pid;
+	cli_state->pid = cli_state->request->pid;
 
-	state->cmd_name = "unknown request";
-	state->recv_fn = NULL;
+	cli_state->cmd_name = "unknown request";
+	cli_state->recv_fn = NULL;
+
 	/* client is newest */
-	winbindd_promote_client(state);
-
-	/* Process command */
+	winbindd_promote_client(cli_state);
 
 	for (atable = async_nonpriv_table; atable->send_req; atable += 1) {
-		if (state->request->cmd == atable->cmd) {
+		if (cmd == atable->cmd) {
 			break;
 		}
 	}
 
-	if ((atable->send_req == NULL) && state->privileged) {
+	if ((atable->send_req == NULL) && cli_state->privileged) {
 		for (atable = async_priv_table; atable->send_req;
 		     atable += 1) {
-			if (state->request->cmd == atable->cmd) {
+			if (cmd == atable->cmd) {
 				break;
 			}
 		}
 	}
 
 	if (atable->send_req != NULL) {
-		struct tevent_req *req;
-
-		state->cmd_name = atable->cmd_name;
-		state->recv_fn = atable->recv_req;
+		cli_state->cmd_name = atable->cmd_name;
+		cli_state->recv_fn = atable->recv_req;
 
 		DEBUG(10, ("process_request: Handling async request %d:%s\n",
-			   (int)state->pid, state->cmd_name));
+			   (int)cli_state->pid, cli_state->cmd_name));
 
-		req = atable->send_req(state->mem_ctx, server_event_context(),
-				       state, state->request);
-		if (req == NULL) {
-			DEBUG(0, ("process_request: atable->send failed for "
-				  "%s\n", atable->cmd_name));
-			request_error(state);
-			return;
+		subreq = atable->send_req(
+			state,
+			state->ev,
+			cli_state,
+			cli_state->request);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(req, wb_request_done, state);
-		return;
+		tevent_req_set_callback(subreq, process_request_done, req);
+		return req;
 	}
-
-	state->response = talloc_zero(state->mem_ctx,
-				      struct winbindd_response);
-	if (state->response == NULL) {
-		DEBUG(10, ("talloc failed\n"));
-		remove_client(state);
-		return;
-	}
-	state->response->result = WINBINDD_PENDING;
-	state->response->length = sizeof(struct winbindd_response);
 
 	for (i=0; i<ARRAY_SIZE(bool_dispatch_table); i++) {
-		if (bool_dispatch_table[i].cmd == state->request->cmd) {
+		if (cmd == bool_dispatch_table[i].cmd) {
 			break;
 		}
 	}
 
-	if (i == ARRAY_SIZE(bool_dispatch_table)) {
-		DEBUG(10,("process_request: unknown request fn number %d\n",
-			  (int)state->request->cmd ));
-		request_error(state);
-		return;
+	ok = false;
+
+	if (i < ARRAY_SIZE(bool_dispatch_table)) {
+		DBG_DEBUG("process_request: request fn %s\n",
+			  bool_dispatch_table[i].cmd_name);
+		ok = bool_dispatch_table[i].fn(cli_state);
 	}
 
-	DBG_DEBUG("process_request: request fn %s\n",
-		  bool_dispatch_table[i].cmd_name);
+	cli_state->response->result = ok ? WINBINDD_OK : WINBINDD_ERROR;
 
-	ok = bool_dispatch_table[i].fn(state);
+	TALLOC_FREE(cli_state->io_req);
+	TALLOC_FREE(cli_state->request);
 
-	if (ok) {
-		request_ok(state);
-	} else {
-		request_error(state);
+	subreq = wb_resp_write_send(
+		state,
+		state->ev,
+		cli_state->out_queue,
+		cli_state->sock,
+		cli_state->response);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, process_request_written, req);
+
+	cli_state->io_req = subreq;
+
+	return req;
 }
 
-static void wb_request_done(struct tevent_req *req)
+static void process_request_done(struct tevent_req *subreq)
 {
-	struct winbindd_cli_state *state = tevent_req_callback_data(
-		req, struct winbindd_cli_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct process_request_state *state = tevent_req_data(
+		req, struct process_request_state);
+	struct winbindd_cli_state *cli_state = state->cli_state;
+	NTSTATUS status;
+	bool ok;
+
+	status = cli_state->recv_fn(subreq, cli_state->response);
+	TALLOC_FREE(subreq);
+
+	DBG_DEBUG("[%d:%s]: %s\n",
+		  (int)cli_state->pid,
+		  cli_state->cmd_name,
+		  nt_errstr(status));
+
+	ok = NT_STATUS_IS_OK(status);
+	cli_state->response->result = ok ? WINBINDD_OK : WINBINDD_ERROR;
+
+	TALLOC_FREE(cli_state->io_req);
+	TALLOC_FREE(cli_state->request);
+
+	subreq = wb_resp_write_send(
+		state,
+		state->ev,
+		cli_state->out_queue,
+		cli_state->sock,
+		cli_state->response);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, process_request_written, req);
+
+	cli_state->io_req = subreq;
+}
+
+static void process_request_written(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct process_request_state *state = tevent_req_data(
+		req, struct process_request_state);
+	struct winbindd_cli_state *cli_state = state->cli_state;
+	ssize_t ret;
+	int err;
+
+	cli_state->io_req = NULL;
+
+	ret = wb_resp_write_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+
+	DBG_DEBUG("[%d:%s]: delivered response to client\n",
+		  (int)cli_state->pid, cli_state->cmd_name);
+
+	TALLOC_FREE(cli_state->mem_ctx);
+	cli_state->response = NULL;
+	cli_state->cmd_name = "no request";
+	cli_state->recv_fn = NULL;
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS process_request_recv(struct tevent_req *req)
+{
 	NTSTATUS status;
 
-	state->response = talloc_zero(state->mem_ctx,
-				      struct winbindd_response);
-	if (state->response == NULL) {
-		DEBUG(0, ("wb_request_done[%d:%s]: talloc_zero failed - removing client\n",
-			  (int)state->pid, state->cmd_name));
-		remove_client(state);
-		return;
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
 	}
-	state->response->result = WINBINDD_PENDING;
-	state->response->length = sizeof(struct winbindd_response);
 
-	status = state->recv_fn(req, state->response);
-	TALLOC_FREE(req);
-
-	DEBUG(10,("wb_request_done[%d:%s]: %s\n",
-		  (int)state->pid, state->cmd_name, nt_errstr(status)));
-
-	if (!NT_STATUS_IS_OK(status)) {
-		request_error(state);
-		return;
-	}
-	request_ok(state);
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 /*
@@ -793,85 +870,9 @@ static void wb_request_done(struct tevent_req *req)
  * to call request_finished which schedules sending the response.
  */
 
-static void request_finished(struct winbindd_cli_state *state);
-
 static void winbind_client_request_read(struct tevent_req *req);
-static void winbind_client_response_written(struct tevent_req *req);
 static void winbind_client_activity(struct tevent_req *req);
-
-static void request_finished(struct winbindd_cli_state *state)
-{
-	struct tevent_req *req;
-
-	/* free client socket monitoring request */
-	TALLOC_FREE(state->io_req);
-
-	TALLOC_FREE(state->request);
-
-	req = wb_resp_write_send(state, server_event_context(),
-				 state->out_queue, state->sock,
-				 state->response);
-	if (req == NULL) {
-		DEBUG(10,("request_finished[%d:%s]: wb_resp_write_send() failed\n",
-			  (int)state->pid, state->cmd_name));
-		remove_client(state);
-		return;
-	}
-	tevent_req_set_callback(req, winbind_client_response_written, state);
-	state->io_req = req;
-}
-
-static void winbind_client_response_written(struct tevent_req *req)
-{
-	struct winbindd_cli_state *state = tevent_req_callback_data(
-		req, struct winbindd_cli_state);
-	ssize_t ret;
-	int err;
-
-	state->io_req = NULL;
-
-	ret = wb_resp_write_recv(req, &err);
-	TALLOC_FREE(req);
-	if (ret == -1) {
-		close(state->sock);
-		state->sock = -1;
-		DEBUG(2, ("Could not write response[%d:%s] to client: %s\n",
-			  (int)state->pid, state->cmd_name, strerror(err)));
-		remove_client(state);
-		return;
-	}
-
-	DEBUG(10,("winbind_client_response_written[%d:%s]: delivered response "
-		  "to client\n", (int)state->pid, state->cmd_name));
-
-	TALLOC_FREE(state->mem_ctx);
-	state->response = NULL;
-	state->cmd_name = "no request";
-	state->recv_fn = NULL;
-
-	req = wb_req_read_send(state, server_event_context(), state->sock,
-			       WINBINDD_MAX_EXTRA_DATA);
-	if (req == NULL) {
-		remove_client(state);
-		return;
-	}
-	tevent_req_set_callback(req, winbind_client_request_read, state);
-	state->io_req = req;
-}
-
-static void request_error(struct winbindd_cli_state *state)
-{
-	SMB_ASSERT(state->response->result == WINBINDD_PENDING);
-	state->response->result = WINBINDD_ERROR;
-	request_finished(state);
-}
-
-static void request_ok(struct winbindd_cli_state *state)
-{
-	SMB_ASSERT(state->response->result == WINBINDD_PENDING);
-	state->response->result = WINBINDD_OK;
-	request_finished(state);
-}
+static void winbind_client_processed(struct tevent_req *req);
 
 /* Process a new connection by adding it to the client connection list */
 
@@ -970,7 +971,13 @@ static void winbind_client_request_read(struct tevent_req *req)
 	tevent_req_set_callback(req, winbind_client_activity, state);
 	state->io_req = req;
 
-	process_request(state);
+	req = process_request_send(state, server_event_context(), state);
+	if (req == NULL) {
+		DBG_ERR("process_request_send failed\n");
+		remove_client(state);
+		return;
+	}
+	tevent_req_set_callback(req, winbind_client_processed, state);
 }
 
 static void winbind_client_activity(struct tevent_req *req)
@@ -1002,6 +1009,33 @@ static void winbind_client_activity(struct tevent_req *req)
 	}
 
 	remove_client(state);
+}
+
+static void winbind_client_processed(struct tevent_req *req)
+{
+	struct winbindd_cli_state *cli_state = tevent_req_callback_data(
+		req, struct winbindd_cli_state);
+	NTSTATUS status;
+
+	status = process_request_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("process_request failed: %s\n", nt_errstr(status));
+		remove_client(cli_state);
+		return;
+	}
+
+	req = wb_req_read_send(
+		cli_state,
+		server_event_context(),
+		cli_state->sock,
+		WINBINDD_MAX_EXTRA_DATA);
+	if (req == NULL) {
+		remove_client(cli_state);
+		return;
+	}
+	tevent_req_set_callback(req, winbind_client_request_read, cli_state);
+	cli_state->io_req = req;
 }
 
 /* Remove a client connection from client connection list */
