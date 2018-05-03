@@ -60,6 +60,7 @@ my $opt_libnss_wrapper_so_path = "";
 my $opt_libresolv_wrapper_so_path = "";
 my $opt_libsocket_wrapper_so_path = "";
 my $opt_libuid_wrapper_so_path = "";
+my $opt_libasan_so_path = "";
 my $opt_use_dns_faking = 0;
 my @testlists = ();
 
@@ -225,6 +226,7 @@ Preload cwrap:
  --resolv_wrapper_so_path=FILE the resolv_wrapper library to preload
  --socket_wrapper_so_path=FILE the socket_wrapper library to preload
  --uid_wrapper_so_path=FILE the uid_wrapper library to preload
+ --asan_so_path=FILE the asan library to preload
 
 DNS:
   --use-dns-faking          Fake DNS entries rather than talking to our
@@ -275,6 +277,7 @@ my $result = GetOptions (
 		'resolv_wrapper_so_path=s' => \$opt_libresolv_wrapper_so_path,
 		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
 		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path,
+		'asan_so_path=s' => \$opt_libasan_so_path,
 		'use-dns-faking' => \$opt_use_dns_faking
 	    );
 
@@ -377,6 +380,14 @@ if ($opt_socket_wrapper_pcap) {
 }
 
 my $ld_preload = $ENV{LD_PRELOAD};
+
+if ($opt_libasan_so_path) {
+	if ($ld_preload) {
+		$ld_preload = "$ld_preload:$opt_libasan_so_path";
+	} else {
+		$ld_preload = "$opt_libasan_so_path";
+	}
+}
 
 if ($opt_libnss_wrapper_so_path) {
 	if ($ld_preload) {

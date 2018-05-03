@@ -249,9 +249,32 @@ def cmd_testonly(opt):
         # GSS_KRB5_CRED_NO_CI_FLAGS_X
         env.OPTIONS += " --exclude=${srcdir}/selftest/skip.no-GSS_KRB5_CRED_NO_CI_FLAGS_X"
 
+    if env.ADDRESS_SANITIZER:
+        # We try to find the correct libasan automatically
+        libasan = Utils.cmd_output('ldd bin/texpect | grep libasan| cut -f 3 -d \ ',
+                                   silent=True).strip()
+
+        # Have the selftest.pl LD_PRELOAD libasan in the right spot
+        env.OPTIONS += " --asan_so_path=" + libasan
+
     subunit_cache = None
     # We use the full path rather than relative path to avoid problems on some platforms (ie. solaris 8).
     env.CORE_COMMAND = '${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/selftest/skip ${TESTLISTS} ${OPTIONS} ${TESTS}'
+
+    if env.ADDRESS_SANITIZER:
+        # For now we cannot run with leak detection
+        no_leak_check = "ASAN_OPTIONS=detect_leaks=0"
+        env.CORE_COMMAND = no_leak_check + " " + env.CORE_COMMAND
+
+        # We need to have the subunit filter and formatter preload
+        # libasan otherwise the tests fail at startup.
+        #
+        # Also, we do not care about leaks in python
+
+        asan_envs = no_leak_check + " LD_PRELOAD=" + libasan + ' '
+        env.FILTER_OPTIONS = asan_envs + env.FILTER_OPTIONS
+        env.SUBUNIT_FORMATTER = asan_envs + env.SUBUNIT_FORMATTER
+
     if Options.options.LIST:
         cmd = '${CORE_COMMAND} --list'
     else:
@@ -263,6 +286,7 @@ def cmd_testonly(opt):
             cmd += ' | tee %s | ${FORMAT_TEST_OUTPUT}' % subunit_cache
         else:
             cmd += ' | ${FILTER_OPTIONS}'
+
     runcmd = EXPAND_VARIABLES(opt, cmd)
 
     print("test: running %s" % runcmd)
