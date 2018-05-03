@@ -240,6 +240,14 @@ static bool check_user_ok(connection_struct *conn,
 		return false;
 	}
 
+	if (admin_user) {
+		DEBUG(2,("check_user_ok: user %s is an admin user. "
+			"Setting uid as %d\n",
+			ent->session_info->unix_info->unix_name,
+			sec_initial_uid() ));
+		ent->session_info->unix_token->uid = sec_initial_uid();
+	}
+
 	/*
 	 * It's actually OK to call check_user_ok() with
 	 * vuid == UID_FIELD_INVALID as called from change_to_user_by_session().
@@ -264,14 +272,6 @@ static bool check_user_ok(connection_struct *conn,
 
 	conn->read_only = readonly_share;
 	conn->share_access = share_access;
-
-	if (admin_user) {
-		DEBUG(2,("check_user_ok: user %s is an admin user. "
-			"Setting uid as %d\n",
-			conn->session_info->unix_info->unix_name,
-			sec_initial_uid() ));
-		conn->session_info->unix_token->uid = sec_initial_uid();
-	}
 
 	return(True);
 }
