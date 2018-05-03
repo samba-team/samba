@@ -307,7 +307,7 @@ static virusfilter_result virusfilter_fsav_scan(
 	virusfilter_result result = VIRUSFILTER_RESULT_CLEAN;
 	char *report = NULL;
 	char *reply = NULL;
-	char *reply_token, *reply_saveptr;
+	char *reply_token = NULL, *reply_saveptr = NULL;
 	bool ok;
 
 	DBG_INFO("Scanning file: %s/%s\n", cwd_fname, fname);
