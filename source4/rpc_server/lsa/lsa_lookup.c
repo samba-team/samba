@@ -805,7 +805,6 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 	state->r.out.result = status;
 	dcesrv_lsa_LookupSids_base_map(state);
-	TALLOC_FREE(state);
 	return status;
 }
 
@@ -1284,7 +1283,6 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 
 	state->r.out.result = status;
 	dcesrv_lsa_LookupNames_base_map(state);
-	TALLOC_FREE(state);
 	return status;
 }
 
@@ -1357,7 +1355,6 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	state->r.out.result = status;
 	dcesrv_lsa_LookupNames_base_map(state);
-	TALLOC_FREE(state);
 	return status;
 }
 
