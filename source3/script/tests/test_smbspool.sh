@@ -139,6 +139,36 @@ testit "vlp verify example.ps" \
 	test_vlp_verify \
 	|| failed=$(expr $failed + 1)
 
+testit "smbspool print example.ps via stdin" \
+	$samba_smbspool smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" < $SRCDIR/testdata/printing/example.ps || \
+	failed=$(expr $failed + 1)
+
+testit "vlp verify example.ps" \
+	test_vlp_verify \
+	|| failed=$(expr $failed + 1)
+
+DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
+export DEVICE_URI
+testit "smbspool print DEVICE_URI example.ps" \
+	$samba_smbspool 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
+	failed=$(expr $failed + 1)
+unset DEVICE_URI
+
+testit "vlp verify example.ps" \
+	test_vlp_verify \
+	|| failed=$(expr $failed + 1)
+
+DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
+export DEVICE_URI
+testit "smbspool print DEVICE_URI example.ps via stdin" \
+	$samba_smbspool 200 $USERNAME "Testprint" 1 "options" < $SRCDIR/testdata/printing/example.ps || \
+	failed=$(expr $failed + 1)
+unset DEVICE_URI
+
+testit "vlp verify example.ps" \
+	test_vlp_verify \
+	|| failed=$(expr $failed + 1)
+
 AUTH_INFO_REQUIRED="username,password"
 export AUTH_INFO_REQUIRED
 testit "smbspool_krb5(username,password) print example.ps" \

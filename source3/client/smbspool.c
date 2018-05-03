@@ -100,6 +100,9 @@ main(int argc,			/* I - Number of command-line arguments */
 	const char     *dev_uri;
 	const char     *config_file = NULL;
 	TALLOC_CTX     *frame = talloc_stackframe();
+	bool device_uri_cmdline = false;
+	const char *print_file = NULL;
+	const char *print_copies = NULL;
 	int cmp;
 	int len;
 
@@ -119,7 +122,12 @@ main(int argc,			/* I - Number of command-line arguments */
 		goto done;
 	}
 
-	if (argc < 7 || argc > 8) {
+	/*
+	 * We need at least 5 options if the DEVICE_URI is passed via an env
+	 * variable and printing data comes via stdin.
+	 * We don't accept more than 7 options in total, including optional.
+	 */
+	if (argc < 5 || argc > 8) {
 		fprintf(stderr,
 "Usage: %s [DEVICE_URI] job-id user title copies options [file]\n"
 "       The DEVICE_URI environment variable can also contain the\n"
@@ -131,37 +139,52 @@ main(int argc,			/* I - Number of command-line arguments */
 	}
 
 	/*
-         * If we have 7 arguments, print the file named on the command-line.
-         * Otherwise, print data from stdin...
-         */
-
+	 * If we have 6 arguments find out if we have the device_uri from the
+	 * command line or the print data
+	 */
 	if (argc == 7) {
-		/*
-	         * Print from Copy stdin to a temporary file...
-	         */
+		cmp = strncmp(argv[1], "smb://", 6);
+		if (cmp == 0) {
+			device_uri_cmdline = true;
+		} else {
+			print_copies = argv[4];
+			print_file = argv[6];
+		}
+	} else if (argc == 8) {
+		device_uri_cmdline = true;
+		print_copies = argv[5];
+		print_file = argv[7];
+	}
 
-		fp = stdin;
-		copies = 1;
-	} else if ((fp = fopen(argv[7], "rb")) == NULL) {
-		perror("ERROR: Unable to open print file");
-		goto done;
-	} else {
-		char *p = argv[5];
+	if (print_file != NULL) {
 		char *endp;
 
-		copies = strtol(p, &endp, 10);
-		if (p == endp) {
+		fp = fopen(print_file, "rb");
+		if (fp == NULL) {
+			perror("ERROR: Unable to open print file");
+			goto done;
+		}
+
+		copies = strtol(print_copies, &endp, 10);
+		if (print_copies == endp) {
 			perror("ERROR: Unable to determine number of copies");
 			goto done;
 		}
+	} else {
+		fp = stdin;
+		copies = 1;
 	}
 
 	/*
 	 * Find the URI ...
 	 */
-	dev_uri = getenv("DEVICE_URI");
-	if (dev_uri == NULL || strlen(dev_uri) == 0) {
+	if (device_uri_cmdline) {
 		dev_uri = argv[1];
+	} else {
+		dev_uri = getenv("DEVICE_URI");
+		if (dev_uri == NULL || strlen(dev_uri) == 0) {
+			dev_uri = "";
+		}
 	}
 
 	cmp = strncmp(dev_uri, "smb://", 6);
