@@ -27,6 +27,8 @@ from samba import (
         )
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
+from samba.compat import text_type
+from samba.tests import env_loadparm
 
 class UserCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool user subcommands"""
@@ -64,7 +66,13 @@ class UserCmdTestCase(SambaToolCmdTest):
         for user in self.users:
             if self._find_user(user["name"]):
                 self.runsubcmd("user", "delete", user["name"])
-
+        lp = env_loadparm()
+        # python3 tests running after python2 stumble because
+        # the cache is still there and '--cache-ldb-initialize'
+        # will fail
+        cachedb = lp.private_path("user-syncpasswords-cache.ldb")
+        if os.path.exists(cachedb):
+            os.remove(cachedb)
 
     def test_newuser(self):
         # try to add all the users again, this should fail
@@ -235,8 +243,12 @@ class UserCmdTestCase(SambaToolCmdTest):
             creds.set_password(newpasswd)
             nthash = creds.get_nt_hash()
             unicodePwd = base64.b64encode(creds.get_nt_hash()).decode('utf8')
-            virtualClearTextUTF8 = base64.b64encode(newpasswd).decode('utf8')
-            virtualClearTextUTF16 = base64.b64encode(unicode(newpasswd, 'utf-8').encode('utf-16-le')).decode('utf8')
+            if isinstance(newpasswd, text_type):
+                virtualClearTextUTF8 = base64.b64encode(newpasswd.encode('utf8')).decode('utf8')
+                virtualClearTextUTF16 = base64.b64encode(newpasswd.encode('utf-16-le')).decode('utf8')
+            else:
+                virtualClearTextUTF8 = base64.b64encode(text_type(newpasswd, 'utf8').encode('utf8')).decode('utf8')
+                virtualClearTextUTF16 = base64.b64encode(unicode(newpasswd, 'utf8').encode('utf-16-le')).decode('utf8')
 
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
@@ -364,7 +376,7 @@ class UserCmdTestCase(SambaToolCmdTest):
 
         for userobj in userlist:
             name = userobj.get("samaccountname", idx=0)
-            found = self.assertMatch(out, name,
+            found = self.assertMatch(out, name.decode('utf8'),
                                      "user '%s' not found" % name)
 
     def test_show(self):
