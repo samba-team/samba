@@ -56,6 +56,7 @@ from samba.netcmd import (
     )
 
 from samba.compat import string_types
+from samba.compat import text_type
 from samba.compat import binary_type
 
 try:
@@ -1052,7 +1053,8 @@ class GetPasswordCommand(Command):
 
         def get_utf8(a, b, username):
             try:
-                u = unicode(b, 'utf-16-le')
+                if isinstance(b, binary_type):
+                    u = b.decode('utf-16-le')
             except UnicodeDecodeError as e:
                 self.outf.write("WARNING: '%s': CLEARTEXT is invalid UTF-16-LE unable to generate %s\n" % (
                                 username, a))
@@ -1749,7 +1751,6 @@ samba-tool user syncpasswords --terminate \\
             sync_command = "%s" % os.path.abspath(script)
         else:
             sync_command = None
-
         dirsync_filter = filter
         if dirsync_filter is None:
             dirsync_filter = "(&" + \
@@ -1766,12 +1767,12 @@ samba-tool user syncpasswords --terminate \\
         ]
 
         dirsync_attrs = dirsync_secret_attrs + [
-            "pwdLastSet",
-            "sAMAccountName",
-            "userPrincipalName",
-            "userAccountControl",
-            "isDeleted",
-            "isRecycled",
+            u"pwdLastSet",
+            u"sAMAccountName",
+            u"userPrincipalName",
+            u"userAccountControl",
+            u"isDeleted",
+            u"isRecycled",
         ]
 
         password_attrs = None
@@ -1846,7 +1847,7 @@ samba-tool user syncpasswords --terminate \\
                                     attrs=cache_attrs)
             if len(res) == 1:
                 try:
-                    self.samdb_url = res[0]["samdbUrl"][0]
+                    self.samdb_url = res[0]["samdbUrl"][0].decode('utf8')
                 except KeyError as e:
                     self.samdb_url = None
             else:
@@ -1867,13 +1868,21 @@ samba-tool user syncpasswords --terminate \\
                 self.sync_command = sync_command
                 add_ldif  = "dn: %s\n" % self.cache_dn
                 add_ldif += "objectClass: userSyncPasswords\n"
-                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(self.samdb_url).decode('utf8')
-                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(self.dirsync_filter).decode('utf8')
+                to_encode = self.samdb_url;
+                # #TODO think about ensuring self.samdb_url are always text
+                # e.g. unicode in py2
+                if isinstance(to_encode, text_type):
+                    to_encode = to_encode.encode('utf8')
+                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(to_encode).decode('utf8')
+                to_encode = self.dirsync_filter
+                if isinstance(to_encode, text_type):
+                    to_encode = to_encode.encode('utf8')
+                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(to_encode).decode('utf8')
                 for a in self.dirsync_attrs:
-                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
+                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(a.encode('utf8')).decode('utf8')
                 add_ldif += "dirsyncControl: %s\n" % self.dirsync_controls[0]
                 for a in self.password_attrs:
-                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
+                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a.encode('utf8')).decode('utf8')
                 if self.decrypt_samba_gpg == True:
                     add_ldif += "decryptSambaGPG: TRUE\n"
                 else:
@@ -1889,22 +1898,22 @@ samba-tool user syncpasswords --terminate \\
                 ldif = self.cache.write_ldif(msg, ldb.CHANGETYPE_NONE)
                 self.outf.write("%s" % ldif)
             else:
-                self.dirsync_filter = res[0]["dirsyncFilter"][0]
+                self.dirsync_filter = res[0]["dirsyncFilter"][0].decode('utf8')
                 self.dirsync_attrs = []
                 for a in res[0]["dirsyncAttribute"]:
-                    self.dirsync_attrs.append(a)
-                self.dirsync_controls = [res[0]["dirsyncControl"][0], "extended_dn:1:0"]
+                    self.dirsync_attrs.append(a.decode('utf8'))
+                self.dirsync_controls = [res[0]["dirsyncControl"][0].decode('utf8'), "extended_dn:1:0"]
                 self.password_attrs = []
                 for a in res[0]["passwordAttribute"]:
-                    self.password_attrs.append(a)
-                decrypt_string = res[0]["decryptSambaGPG"][0]
+                    self.password_attrs.append(a.decode('utf8'))
+                decrypt_string = res[0]["decryptSambaGPG"][0].decode('utf8')
                 assert(decrypt_string in ["TRUE", "FALSE"])
                 if decrypt_string == "TRUE":
                     self.decrypt_samba_gpg = True
                 else:
                     self.decrypt_samba_gpg = False
                 if "syncCommand" in res[0]:
-                    self.sync_command = res[0]["syncCommand"][0]
+                    self.sync_command = res[0]["syncCommand"][0].decode('utf8')
                 else:
                     self.sync_command = None
                 if "currentPid" in res[0]:
@@ -2059,6 +2068,8 @@ samba-tool user syncpasswords --terminate \\
                 try:
                     os.ftruncate(self.lockfd, 0)
                     if buf is not None:
+                        if isinstance(buf, text_type):
+                            buf = buf.encode('utf8')
                         os.write(self.lockfd, buf)
                 except IOError as e3:
                     (err, msg) = e3.args
@@ -2178,7 +2189,7 @@ samba-tool user syncpasswords --terminate \\
             else:
                 log_msg("Getting changes\n")
             self.outf.write("dirsyncFilter: %s\n" % self.dirsync_filter)
-            self.outf.write("dirsyncControls: %r\n" % self.dirsync_controls)
+            self.outf.write("[2]dirsyncControls: %r\n" % self.dirsync_controls)
             self.outf.write("syncCommand: %s\n" % self.sync_command)
             dirsync_loop()
 
