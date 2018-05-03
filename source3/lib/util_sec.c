@@ -460,6 +460,24 @@ int set_thread_credentials(uid_t uid,
 	 * we know we have setresuid/setresgid
 	 * available.
 	 */
+#ifdef HAVE___THREAD
+	static struct {
+		bool active;
+		uid_t uid;
+		gid_t gid;
+		size_t setlen;
+		uintptr_t gidset;
+	} __thread cache;
+
+	if (cache.active &&
+	    cache.uid == uid &&
+	    cache.gid == gid &&
+	    cache.setlen == setlen &&
+	    (const gid_t *)cache.gidset == gidset)
+	{
+		return 0;
+	}
+#endif /* HAVE___THREAD */
 
 	/* Become root. */
 	/* Set ru=0, eu=0 */
@@ -485,6 +503,15 @@ int set_thread_credentials(uid_t uid,
 		smb_panic("set_thread_credentials failed\n");
 		return -1;
 	}
+
+#ifdef HAVE___THREAD
+	cache.active = true;
+	cache.uid = uid;
+	cache.gid = gid;
+	cache.setlen = setlen;
+	cache.gidset = (uintptr_t)gidset;
+#endif /* HAVE___THREAD */
+
 	return 0;
 #else
 	errno = ENOSYS;
