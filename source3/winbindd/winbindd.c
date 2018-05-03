@@ -1084,9 +1084,6 @@ static void winbind_client_processed(struct tevent_req *req)
 
 static void remove_client(struct winbindd_cli_state *state)
 {
-	char c = 0;
-	int nwritten;
-
 	/* It's a dead client - hold a funeral */
 
 	if (state == NULL) {
@@ -1113,6 +1110,9 @@ static void remove_client(struct winbindd_cli_state *state)
 	TALLOC_FREE(state->io_req);
 
 	if (state->sock != -1) {
+		char c = 0;
+		int nwritten;
+
 		/* tell client, we are closing ... */
 		nwritten = write(state->sock, &c, sizeof(c));
 		if (nwritten == -1) {
