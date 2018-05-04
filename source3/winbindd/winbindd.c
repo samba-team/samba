@@ -529,8 +529,6 @@ static struct winbindd_dispatch_table {
 
 	/* Enumeration functions */
 
-	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
-	  "LIST_TRUSTDOM" },
 
 	/* Miscellaneous */
 
@@ -574,6 +572,9 @@ static struct winbindd_bool_dispatch_table {
 	{ WINBINDD_PRIV_PIPE_DIR,
 	  winbindd_priv_pipe_dir,
 	  "WINBINDD_PRIV_PIPE_DIR" },
+	{ WINBINDD_LIST_TRUSTDOM,
+	  winbindd_list_trusted_domains,
+	  "LIST_TRUSTDOM" },
 };
 
 struct winbindd_async_dispatch_table {

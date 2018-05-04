@@ -203,25 +203,24 @@ static bool trust_is_transitive(struct winbindd_tdc_domain *domain)
 	return transitive;
 }
 
-void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
+bool winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 {
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
 	int extra_data_len = 0;
 	char *extra_data = NULL;
 	int i = 0;
+	bool ret = false;
 
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
 
 	if( !wcache_tdc_fetch_list( &dom_list, &num_domains )) {
-		request_error(state);	
 		goto done;
 	}
 
 	extra_data = talloc_strdup(state->mem_ctx, "");
 	if (extra_data == NULL) {
-		request_error(state);
 		goto done;
 	}
 
@@ -269,9 +268,10 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 		state->response->length += extra_data_len;
 	}
 
-	request_ok(state);	
+	ret = true;
 done:
 	TALLOC_FREE( dom_list );
+	return ret;
 }
 
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
