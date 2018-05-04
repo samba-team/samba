@@ -1067,7 +1067,7 @@ def reload_full_schema(samdb, names):
         schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
 
     prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
-    prefixmap_data = b64encode(prefixmap_data)
+    prefixmap_data = b64encode(prefixmap_data).decode('utf8')
 
     # We don't actually add this ldif, just parse it
     prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
