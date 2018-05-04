@@ -689,7 +689,7 @@ static void sock_daemon_run_startup_done(struct tevent_req *subreq)
 		return;
 	}
 
-	D_NOTICE("startup completed succesfully\n");
+	D_NOTICE("startup completed successfully\n");
 
 	status = sock_daemon_run_socket_listen(req);
 	if (! status) {
