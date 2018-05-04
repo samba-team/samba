@@ -26,7 +26,7 @@ from samba import irpc, messaging
 def show_sessions(conn):
     """show open sessions"""
 
-    sessions = conn.smbsrv_information(irpc.SMBSRV_INFO_SESSIONS).next()
+    sessions = next(conn.smbsrv_information(irpc.SMBSRV_INFO_SESSIONS))
     print "User                                  Client      Connected at"
     print "-" * 79
     for session in sessions:
@@ -37,7 +37,7 @@ def show_sessions(conn):
 def show_tcons(open_connection):
     """show open tree connects"""
     conn = open_connection("smb_server")
-    tcons = conn.smbsrv_information(irpc.SMBSRV_INFO_TCONS).next()
+    tcons = next(conn.smbsrv_information(irpc.SMBSRV_INFO_TCONS))
     print "Share                                 Client      Connected at"
     print "-" * 79
     for tcon in tcons:
@@ -47,7 +47,7 @@ def show_tcons(open_connection):
 def show_nbt(open_connection):
     """show nbtd information"""
     conn = open_connection("nbt_server")
-    stats = conn.nbtd_information(irpc.NBTD_INFO_STATISTICS).next()
+    stats = next(conn.nbtd_information(irpc.NBTD_INFO_STATISTICS))
     print "NBT server statistics:"
     fields = [("total_received", "Total received"),
               ("total_sent", "Total sent"),
