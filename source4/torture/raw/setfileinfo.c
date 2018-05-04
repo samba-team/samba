@@ -825,7 +825,7 @@ torture_raw_sfileinfo_eof(struct torture_context *tctx,
 	sfi.end_of_file_info.in.size = 200;
 	status = smb_raw_setpathinfo(cli2->tree, &sfi);
 
-	/* This should cause the client to retun invalid level. */
+	/* This should cause the client to return invalid level. */
 	if (TARGET_IS_W2K8(tctx) || TARGET_IS_WIN7(tctx)) {
 		/*
 		 * Windows sends back an invalid packet that smbclient sees

@@ -110,7 +110,7 @@ struct sock_daemon_funcs {
  *
  * @param[in] client The new socket client context
  * @param[in] private_data Private data set with the socket
- * @retun true if connection should be accepted, false otherwise
+ * @return true if connection should be accepted, false otherwise
  *
  *
  * disconnect() is called  when client closes connection
