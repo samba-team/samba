@@ -37,7 +37,7 @@
 #include <err.h>
 
 /*
- * Set `sa' to the unitialized address of address family `af'
+ * Set `sa' to the uninitialized address of address family `af'
  */
 
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
