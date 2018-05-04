@@ -26,6 +26,7 @@
 
 __docformat__ = "restructuredText"
 
+from samba.compat import urllib_quote
 from base64 import b64encode
 import errno
 import os
@@ -37,7 +38,6 @@ import logging
 import time
 import uuid
 import socket
-import urllib
 import string
 import tempfile
 import samba.dsdb
@@ -2189,7 +2189,7 @@ def provision(logger, session_info, smbconf=None,
     if paths.sysvol and not os.path.exists(paths.sysvol):
         os.makedirs(paths.sysvol, 0o775)
 
-    ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
+    ldapi_url = "ldapi://%s" % urllib_quote(paths.s4_ldapi_path, safe="")
 
     schema = Schema(domainsid, invocationid=invocationid,
         schemadn=names.schemadn, base_schema=base_schema)
