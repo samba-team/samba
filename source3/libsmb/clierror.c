@@ -35,7 +35,7 @@ const char *cli_errstr(struct cli_state *cli)
 	char *result;
 
 	if (!cli->initialised) {
-		fstrcpy(cli_error_message, "[Programmer's error] cli_errstr called on unitialized cli_stat struct!\n");
+		fstrcpy(cli_error_message, "[Programmer's error] cli_errstr called on uninitialized cli_stat struct!\n");
 		goto done;
 	}
 
