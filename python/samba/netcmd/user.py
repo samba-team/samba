@@ -2027,7 +2027,7 @@ samba-tool user syncpasswords --terminate \\
             if self.lockfd != -1:
                 got_exclusive = False
                 # Try 5 times to get the exclusiv lock.
-                for i in xrange(0, 5):
+                for i in range(0, 5):
                     try:
                         fcntl.lockf(self.lockfd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                         got_exclusive = True
