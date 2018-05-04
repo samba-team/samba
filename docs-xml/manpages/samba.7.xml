@@ -26,7 +26,7 @@
 	<para>The Samba software suite is a collection of programs
 	that implements the Server Message Block (commonly abbreviated
 	as SMB) protocol for UNIX systems and provides Active Directory
-	services. The first version of the SMB protcol is sometimes also
+	services. The first version of the SMB protocol is sometimes also
 	referred to as the Common Internet File System (CIFS). For a more
 	thorough description, see <ulink url="http://www.ubiqx.org/cifs/">
 	http://www.ubiqx.org/cifs/</ulink>. Samba also implements the NetBIOS
