@@ -2236,7 +2236,7 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 				(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("Failed to get trusted domain password for %s, "
-			  "attribute trustAuthOutgoing coult not be parsed %s.\n",
+			  "attribute trustAuthOutgoing could not be parsed %s.\n",
 			  domain,
 			  ndr_map_error2string(ndr_err)));
 		TALLOC_FREE(tmp_ctx);
@@ -2391,7 +2391,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 				(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("Failed to get trusted domain password for %s, "
-			  "attribute trustAuthOutgoing coult not be parsed %s.\n",
+			  "attribute trustAuthOutgoing could not be parsed %s.\n",
 			  domain,
 			  ndr_map_error2string(ndr_err)));
 		TALLOC_FREE(tmp_ctx);
@@ -2678,7 +2678,7 @@ static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 				(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(0, ("Failed to get trusted domain password for %s, "
-				  "attribute trustAuthOutgoing coult not be parsed %s.\n",
+				  "attribute trustAuthOutgoing could not be parsed %s.\n",
 				  domain,
 				  ndr_map_error2string(ndr_err)));
 			TALLOC_FREE(tmp_ctx);
