@@ -1521,7 +1521,7 @@ int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint3
 }
 
 /*
-  timer to check for seqnum changes in a ltdb and propogate them
+  timer to check for seqnum changes in a ltdb and propagate them
  */
 static void ctdb_ltdb_seqnum_check(struct tevent_context *ev,
 				   struct tevent_timer *te,
@@ -1531,7 +1531,7 @@ static void ctdb_ltdb_seqnum_check(struct tevent_context *ev,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	uint32_t new_seqnum = tdb_get_seqnum(ctdb_db->ltdb->tdb);
 	if (new_seqnum != ctdb_db->seqnum) {
-		/* something has changed - propogate it */
+		/* something has changed - propagate it */
 		TDB_DATA data;
 		data.dptr = (uint8_t *)&ctdb_db->db_id;
 		data.dsize = sizeof(uint32_t);

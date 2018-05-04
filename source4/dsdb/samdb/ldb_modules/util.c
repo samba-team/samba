@@ -688,7 +688,7 @@ int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
   place. For example, the recyclebin feature is marked as enabled both
   on the CN=Partitions,CN=Configurration object and on the NTDS DN of
   each DC in the forest. It seems likely that it is the job of the KCC
-  to propogate between the two
+  to propagate between the two
  */
 int dsdb_check_optional_feature(struct ldb_module *module, struct GUID op_feature_guid, bool *feature_enabled)
 {

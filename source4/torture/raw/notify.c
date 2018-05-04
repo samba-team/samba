@@ -1462,7 +1462,7 @@ static bool test_notify_tree(struct torture_context *tctx,
 		talloc_free(path);
 	}
 
-	/* give a bit of time for the events to propogate */
+	/* give a bit of time for the events to propagate */
 	tv = timeval_current();
 
 	do {
@@ -1485,7 +1485,7 @@ static bool test_notify_tree(struct torture_context *tctx,
 		}
 	} while (!all_done && timeval_elapsed(&tv) < 20);
 
-	torture_comment(tctx, "took %.4f seconds to propogate all events\n", timeval_elapsed(&tv));
+	torture_comment(tctx, "took %.4f seconds to propagate all events\n", timeval_elapsed(&tv));
 
 	for (i=0;i<ARRAY_SIZE(dirs);i++) {
 		torture_assert_int_equal_goto(tctx,
