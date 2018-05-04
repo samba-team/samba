@@ -253,7 +253,7 @@
 
 		  <varlistentry>
 		    <term>Request-User-Session-Key</term>
-		    <listitem><para>Upon successful authenticaiton, return
+		    <listitem><para>Upon successful authentication, return
 		    the user session key associated with the login.</para>
 		    <varlistentry>
 		      <term>Examples:</term>
@@ -264,7 +264,7 @@
 
 		  <varlistentry>
 		    <term>Request-LanMan-Session-Key</term>
-		    <listitem><para>Upon successful authenticaiton, return
+		    <listitem><para>Upon successful authentication, return
 		    the LANMAN session key associated with the login.
 		    </para>
 		    <varlistentry>
