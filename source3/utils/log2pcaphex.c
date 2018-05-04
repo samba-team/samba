@@ -281,7 +281,7 @@ static long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 		}
 		if(!fscanf(in, "%02X", &tmp)) {
 			if(!quiet)
-				fprintf(stderr, "%ld: Log message formated incorrectly. "
+				fprintf(stderr, "%ld: Log message formatted incorrectly. "
 				    "Only first %ld bytes are logged, packet trace will "
 				    "be incomplete\n", line_num, i-1);
 			while ((tmp = getc(in)) != '\n');

@@ -1220,7 +1220,7 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 		/*
 		 * The lookup of the last name failed..
 		 * It results in require_member_of_sid ends with ','
-		 * It is malformated parameter here, overwrite the last ','.
+		 * It is malformatted parameter here, overwrite the last ','.
 		 */
 		len = strlen(sid_list_buffer);
 		if ((len != 0) && (sid_list_buffer[len - 1] == ',')) {

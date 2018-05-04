@@ -231,7 +231,7 @@ static int net_printing_dump(struct net_context *c, int argc,
 			   "net printing dump [options] <file.tdb>\n"
 			   "    %s\n",
 			 _("Usage:"),
-			 _("Dump formated printer information of the tdb."));
+			 _("Dump formatted printer information of the tdb."));
 		d_printf(_("Valid options:\n"));
 		d_printf(_("    encoding=<CP>   Set the Code Page of the tdb file.\n"
 			   "                    See iconv -l for the list of CP values\n"
