@@ -65,7 +65,7 @@ bool srprs_char(const char** ptr, char c);
  *
  * @return true if matched
  */
-bool srprs_str(const char** ptr, const char* str, size_t len);
+bool srprs_str(const char** ptr, const char* str, ssize_t len);
 
 /**
  * Match a single character from a set.
