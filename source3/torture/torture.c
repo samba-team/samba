@@ -2159,7 +2159,7 @@ static bool run_locktest5(int dummy)
 	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, False);
 
-	printf("a different processs %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
+	printf("a different process %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
 
 	/* Unlock the process 2 lock. */
 	cli_unlock(cli2, fnum2, 0, 4);
@@ -2168,7 +2168,7 @@ static bool run_locktest5(int dummy)
 	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, False);
 
-	printf("the same processs on a different fnum %s get a read lock\n", ret?"can":"cannot");
+	printf("the same process on a different fnum %s get a read lock\n", ret?"can":"cannot");
 
 	/* Unlock the process 1 fnum3 lock. */
 	cli_unlock(cli1, fnum3, 0, 4);
@@ -2211,7 +2211,7 @@ static bool run_locktest5(int dummy)
 	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, True);
 
-	printf("a different processs %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
+	printf("a different process %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
 
 
  fail:
