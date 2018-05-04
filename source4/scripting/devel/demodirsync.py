@@ -74,7 +74,7 @@ savedcookie = cookie
 
 print("")
 print("Getting allusers with cookie")
-controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie))]
+controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
 (msgs, ctrls) = remote_ldb.searchex(expression="(samaccountname=*)", base=base, attrs=["objectClass"], controls=controls)
 if (len(ctrls)):
     for ctl in ctrls:
@@ -88,7 +88,7 @@ if cookie.blob.extra_length > 0:
 
 print("")
 print("Getting all the entries")
-controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie))]
+controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
 (msgs, ctrls) = remote_ldb.searchex(expression="(objectclass=*)", base=base, controls=controls)
 cont = 0
 if (len(ctrls)):
@@ -105,7 +105,7 @@ else:
     bigusn  = usn + 1000
 while (cont == "1"):
     print("")
-    controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie))]
+    controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
     (msgs, ctrls) = remote_ldb.searchex(expression="(objectclass=*)", base=base, controls=controls)
     if (len(ctrls)):
         for ctl in ctrls:
@@ -121,7 +121,7 @@ cookie.blob.highwatermark.tmp_highest_usn = usn - 2
 if cookie.blob.extra_length > 0:
     print("here")
     cookie.blob.extra.ctr.cursors[0].highest_usn = bigusn - 1
-controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie))]
+controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
 (msgs, ctrls) = remote_ldb.searchex(expression="(objectclass=*)", base=base, controls=controls)
 if (len(ctrls)):
     for ctl in ctrls:
@@ -136,7 +136,7 @@ cookie.blob.highwatermark.tmp_highest_usn = usn - 2
 if cookie.blob.extra_length > 0:
     cookie.blob.extra.ctr.cursors[0].source_dsa_invocation_id = misc.GUID("128a99bf-e2df-4832-ac0a-1fb625e530db")
     cookie.blob.extra.ctr.cursors[0].highest_usn = bigusn - 1
-controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie))]
+controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8'))
 (msgs, ctrls) = remote_ldb.searchex(expression="(objectclass=*)", base=base, controls=controls)
 if (len(ctrls)):
     for ctl in ctrls:
@@ -149,7 +149,7 @@ cookie.blob.highwatermark.highest_usn = 0
 cookie.blob.highwatermark.tmp_highest_usn = (usn - 2)
 if cookie.blob.extra_length > 0:
     cookie.blob.extra.ctr.cursors[0].highest_usn = (usn - 2)
-controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie))]
+controls=["dirsync:1:1:50:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
 (msgs, ctrls) = remote_ldb.searchex(expression="(objectclass=*)", base=base, controls=controls)
 if (len(ctrls)):
     for ctl in ctrls:
