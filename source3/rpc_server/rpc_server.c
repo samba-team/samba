@@ -674,7 +674,7 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 		goto out;
 	}
 
-	DEBUG(10, ("setup_tcpip_socket: openened socket fd %d for port %u\n",
+	DEBUG(10, ("setup_tcpip_socket: opened socket fd %d for port %u\n",
 		   state->fd, state->ep.port));
 
 	fde = tevent_add_fd(state->ev_ctx,
