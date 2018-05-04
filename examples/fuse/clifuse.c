@@ -484,6 +484,7 @@ static NTSTATUS parse_finfo_id_both_directory_info(uint8_t *dir_data,
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
+	finfo->btime_ts = interpret_long_date((const char *)dir_data + 8);
 	finfo->atime_ts = interpret_long_date((const char *)dir_data + 16);
 	finfo->mtime_ts = interpret_long_date((const char *)dir_data + 24);
 	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
