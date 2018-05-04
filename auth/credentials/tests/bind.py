@@ -96,7 +96,7 @@ operatingSystem: Windows Server 2003
 dn: """ + self.computer_dn + """
 changetype: modify
 replace: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')).decode('utf8') + """
 """)
 
         # do a simple bind and search with the machine account
