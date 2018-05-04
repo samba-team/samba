@@ -1211,7 +1211,7 @@ static int smbXsrv_tcon_global_traverse_fn(struct db_record *rec, void *data)
 
 	if (global_blob.version != SMBXSRV_VERSION_0) {
 		DEBUG(1,("Invalid record in smbXsrv_tcon_global.tdb:"
-			 "key '%s' unsuported version - %d\n",
+			 "key '%s' unsupported version - %d\n",
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
 			 (int)global_blob.version));
 		goto done;

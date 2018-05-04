@@ -1479,7 +1479,7 @@ static NTSTATUS smbXsrv_open_global_parse_record(TALLOC_CTX *mem_ctx,
 	if (global_blob.version != SMBXSRV_VERSION_0) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		DEBUG(1,("Invalid record in smbXsrv_open_global.tdb:"
-			 "key '%s' unsuported version - %d - %s\n",
+			 "key '%s' unsupported version - %d - %s\n",
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
 			 (int)global_blob.version,
 			 nt_errstr(status)));
