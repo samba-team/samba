@@ -34,6 +34,7 @@ import samba
 import binascii
 from hashlib import md5
 import crypt
+from samba.compat import text_type
 
 
 USER_NAME = "PasswordHashTestUser"
@@ -60,6 +61,9 @@ def get_package(sc, name):
 def calc_digest(user, realm, password):
 
     data = "%s:%s:%s" % (user, realm, password)
+    if isinstance(data, text_type):
+        data = data.encode('utf8')
+
     return md5(data).hexdigest()
 
 
