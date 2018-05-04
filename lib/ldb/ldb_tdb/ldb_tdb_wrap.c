@@ -74,6 +74,7 @@ struct ltdb_wrap {
 	struct tdb_context *tdb;
 	dev_t device;
 	ino_t inode;
+	pid_t pid;
 };
 
 static struct ltdb_wrap *tdb_list;
@@ -105,8 +106,24 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 	if (stat(path, &st) == 0) {
 		for (w=tdb_list;w;w=w->next) {
 			if (st.st_dev == w->device && st.st_ino == w->inode) {
+				pid_t pid = getpid();
+				int ret;
 				if (!talloc_reference(mem_ctx, w)) {
 					return NULL;
+				}
+				if (w->pid != pid) {
+					ret = tdb_reopen(w->tdb);
+					if (ret != 0) {
+						/*
+						 * Avoid use-after-free:
+						 * on fail the TDB
+						 * is closed!
+						 */
+						DLIST_REMOVE(tdb_list,
+							     w);
+						return NULL;
+					}
+					w->pid = pid;
 				}
 				return w->tdb;
 			}
@@ -135,6 +152,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 
 	w->device = st.st_dev;
 	w->inode  = st.st_ino;
+	w->pid    = getpid();
 
 	talloc_set_destructor(w, ltdb_wrap_destructor);
 
