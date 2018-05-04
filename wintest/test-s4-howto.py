@@ -269,12 +269,12 @@ def test_dcpromo(t, vm):
     child.expect("CN=Schema,CN=Configuration,${BASEDN}")
     child.expect("was successful")
 
-    t.info("Checking if new users propogate to windows")
+    t.info("Checking if new users propagate to windows")
     t.retry_cmd('bin/samba-tool user add test2 ${PASSWORD2}', ["created successfully"])
     t.retry_cmd("%s -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%%${PASSWORD2} -k no" % (smbclient), ['Sharename', 'Remote IPC'])
     t.retry_cmd("%s -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%%${PASSWORD2} -k yes" % (smbclient), ['Sharename', 'Remote IPC'])
 
-    t.info("Checking if new users on windows propogate to samba")
+    t.info("Checking if new users on windows propagate to samba")
     child.sendline("net user test3 ${PASSWORD3} /add")
     while True:
         i = child.expect(["The command completed successfully",
@@ -458,12 +458,12 @@ def test_join_as_dc(t, vm):
     child.expect("CN=Configuration,${WIN_BASEDN}")
     child.expect("was successful")
 
-    t.info("Checking if new users propogate to windows")
+    t.info("Checking if new users propagate to windows")
     t.retry_cmd('bin/samba-tool user add test2 ${PASSWORD2}', ["created successfully"])
     t.retry_cmd("%s -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%%${PASSWORD2} -k no" % (smbclient), ['Sharename', 'Remote IPC'])
     t.retry_cmd("%s -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%%${PASSWORD2} -k yes" % (smbclient), ['Sharename', 'Remote IPC'])
 
-    t.info("Checking if new users on windows propogate to samba")
+    t.info("Checking if new users on windows propagate to samba")
     child.sendline("net user test3 ${PASSWORD3} /add")
     child.expect("The command completed successfully")
     t.retry_cmd("%s -L ${HOSTNAME}.${WIN_REALM} -Utest3%%${PASSWORD3} -k no" % (smbclient), ['Sharename', 'IPC'])
@@ -538,14 +538,14 @@ def test_join_as_rodc(t, vm):
                    ordered=True,
                    regex=True)
 
-    t.info("Checking if new users on windows propogate to samba")
+    t.info("Checking if new users on windows propagate to samba")
     child.sendline("net user test3 ${PASSWORD3} /add")
     child.expect("The command completed successfully")
     t.retry_cmd("%s -L ${HOSTNAME}.${WIN_REALM} -Utest3%%${PASSWORD3} -k no" % (smbclient), ['Sharename', 'IPC'])
     t.retry_cmd("%s -L ${HOSTNAME}.${WIN_REALM} -Utest3%%${PASSWORD3} -k yes" % (smbclient), ['Sharename', 'IPC'])
 
     # should this work?
-    t.info("Checking if new users propogate to windows")
+    t.info("Checking if new users propagate to windows")
     t.cmd_contains('bin/samba-tool user add test2 ${PASSWORD2}', ['No RID Set DN'])
 
     t.info("Checking propogation of user deletion")

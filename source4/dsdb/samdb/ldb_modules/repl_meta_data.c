@@ -4731,7 +4731,7 @@ static int replmd_make_deleted_child_dn(TALLOC_CTX *tmp_ctx,
   their current values. This has the effect of changing these
   attributes to have been last updated by the current DC. This is
   needed to ensure that renames performed as part of conflict
-  resolution are propogated to other DCs
+  resolution are propagated to other DCs
  */
 static int replmd_name_modify(struct replmd_replicated_request *ar,
 			      struct ldb_request *req, struct ldb_dn *dn)

@@ -352,7 +352,7 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 			/* a batch oplock caches close calls, which
 			   means the client application might have
 			   already closed the file. We have to allow
-			   this close to propogate by sending a oplock
+			   this close to propagate by sending a oplock
 			   break request and suspending this call
 			   until the break is acknowledged or the file
 			   is closed */
