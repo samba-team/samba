@@ -695,7 +695,7 @@ krb5_ret_data(krb5_storage *sp,
 }
 
 /**
- * Store a string to the buffer. The data is formated as an len:uint32
+ * Store a string to the buffer. The data is formatted as an len:uint32
  * plus the string itself (not padded).
  *
  * @param sp the storage buffer to write to
