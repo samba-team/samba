@@ -582,7 +582,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         ctl = str(res.controls[0]).split(":")
         cookie = ndr_unpack(drsblobs.ldapControlDirSyncCookie, base64.b64decode(str(ctl[4])))
         cookie.blob.guid1 = misc.GUID("128a99bf-abcd-1234-abcd-1fb625e530db")
-        controls=["dirsync:1:0:0:%s" % base64.b64encode(ndr_pack(cookie))]
+        controls=["dirsync:1:0:0:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
                                     controls=controls)

@@ -2853,7 +2853,7 @@ nTSecurityDescriptor: """ + sddl)
             sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, self.domain_sid)
             desc_binary = ndr_pack(desc)
-            desc_base64 = base64.b64encode(desc_binary)
+            desc_base64 = base64.b64encode(desc_binary).decode('utf8')
             self.ldb.add_ldif("""
 dn: """ + user_dn + """
 objectclass: user
@@ -2877,7 +2877,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         try:
             sddl = "O:DUG:DUD:AI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, security.dom_sid('S-1-5-21'))
-            desc_base64 = base64.b64encode( ndr_pack(desc) )
+            desc_base64 = base64.b64encode( ndr_pack(desc) ).decode('utf8')
             self.ldb.add_ldif("""
 dn: """ + user_dn + """
 objectclass: user
@@ -3008,7 +3008,7 @@ sAMAccountName: """ + user_name)
             desc_sddl = desc.as_sddl(self.domain_sid)
             sddl = desc_sddl[:desc_sddl.find("(")] + "(A;;RPWP;;;AU)" + desc_sddl[desc_sddl.find("("):]
             desc = security.descriptor.from_sddl(sddl, self.domain_sid)
-            desc_base64 = base64.b64encode(ndr_pack(desc))
+            desc_base64 = base64.b64encode(ndr_pack(desc)).decode('utf8')
             mod = """
 dn: """ + user_dn + """
 changetype: modify
@@ -3036,7 +3036,7 @@ sAMAccountName: """ + user_name)
             # Modify descriptor
             sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, self.domain_sid)
-            desc_base64 = base64.b64encode(ndr_pack(desc))
+            desc_base64 = base64.b64encode(ndr_pack(desc)).decode('utf8')
             mod = """
 dn: """ + user_dn + """
 changetype: modify
