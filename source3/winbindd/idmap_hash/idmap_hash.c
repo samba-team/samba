@@ -110,7 +110,7 @@ static NTSTATUS idmap_hash_initialize(struct idmap_domain *dom)
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
-	int i;
+	size_t i;
 
 	DBG_ERR("The idmap_hash module is deprecated and should not be used. "
 		"Please migrate to a different plugin. This module will be "
