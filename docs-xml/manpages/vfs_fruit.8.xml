@@ -106,7 +106,7 @@
 	      </itemizedlist>
 
 	      <para>There's a set of per share options that come into play when
-	      <emphasis>fruit:aapl</emphasis> is enabled. These opions, listed
+	      <emphasis>fruit:aapl</emphasis> is enabled. These options, listed
 	      below, can be used to disable the computation of specific Mac
 	      metadata in the directory enumeration context, all are enabled by
 	      default:</para>
