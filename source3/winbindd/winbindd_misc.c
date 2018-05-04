@@ -209,7 +209,7 @@ bool winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 	size_t num_domains = 0;
 	int extra_data_len = 0;
 	char *extra_data = NULL;
-	int i = 0;
+	size_t i = 0;
 	bool ret = false;
 
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
@@ -277,7 +277,7 @@ done:
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
 							struct winbindd_cli_state *state)
 {
-	int i;
+	uint32_t i;
 	int extra_data_len = 0;
 	char *extra_data;
 	NTSTATUS result;
