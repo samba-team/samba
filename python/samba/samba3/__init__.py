@@ -163,7 +163,7 @@ class IdmapDatabase(DbDatabase):
     def get_sid(self, xid, id_type):
         """Retrive SID associated with a particular id and type.
 
-        :param xid: UID or GID to retrive SID for.
+        :param xid: UID or GID to retrieve SID for.
         :param id_type: Type of id specified - 'UID' or 'GID'
         """
         data = self.db.get("%s %s\0" % (id_type, str(xid)))

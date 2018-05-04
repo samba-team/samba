@@ -63,7 +63,7 @@ struct smbpasswd_privates
 	unsigned char smbpwd[16];
 	unsigned char smbntpwd[16];
 
-	/* retrive-once info */
+	/* retrieve-once info */
 	const char *smbpasswd_file;
 };
 
