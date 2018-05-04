@@ -567,7 +567,7 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum2, 0, 4, 0, READ_LOCK));
 	EXPECTED(ret, false);
 
-	torture_comment(tctx, "a different processs %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
+	torture_comment(tctx, "a different process %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
 
 	/* Unlock the process 2 lock. */
 	smbcli_unlock(cli2->tree, fnum2, 0, 4);
@@ -575,7 +575,7 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum3, 0, 4, 0, READ_LOCK));
 	EXPECTED(ret, false);
 
-	torture_comment(tctx, "the same processs on a different fnum %s get a read lock\n", ret?"can":"cannot");
+	torture_comment(tctx, "the same process on a different fnum %s get a read lock\n", ret?"can":"cannot");
 
 	/* Unlock the process 1 fnum3 lock. */
 	smbcli_unlock(cli1->tree, fnum3, 0, 4);
@@ -617,7 +617,7 @@ ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4)) &&
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum2, 0, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, true);
 
-	torture_comment(tctx, "a different processs %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
+	torture_comment(tctx, "a different process %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
 
 
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
