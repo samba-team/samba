@@ -869,7 +869,7 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	char *dest = NULL;
 	int ret;
 
-	/* Linux getnameinfo() man pages says port is unitialized if
+	/* Linux getnameinfo() man pages says port is uninitialized if
 	   service name is NULL. */
 
 	ret = sys_getnameinfo((const struct sockaddr *)pss,
