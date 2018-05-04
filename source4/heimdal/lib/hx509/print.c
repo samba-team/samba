@@ -969,7 +969,7 @@ hx509_validate_cert(hx509_context context,
 	    }
 	    validate_print(ctx,
 			   HX509_VALIDATE_F_VALIDATE|HX509_VALIDATE_F_VERBOSE,
-			   "checking extention: %s\n",
+			   "checking extension: %s\n",
 			   check_extension[j].name);
 	    (*check_extension[j].func)(ctx,
 				       &status,
@@ -977,7 +977,7 @@ hx509_validate_cert(hx509_context context,
 				       &t->extensions->val[i]);
 	}
     } else
-	validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "no extentions\n");
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "no extensions\n");
 
     if (status.isca) {
 	if (!status.haveSKI)

@@ -101,7 +101,7 @@ hdb_replace_extension(krb5_context context,
 	ext2 = hdb_find_extension(entry, ext->data.element);
     } else {
 	/*
-	 * This is an unknown extention, and we are asked to replace a
+	 * This is an unknown extension, and we are asked to replace a
 	 * possible entry in `entry' that is of the same type. This
 	 * might seem impossible, but ASN.1 CHOICE comes to our
 	 * rescue. The first tag in each branch in the CHOICE is
@@ -120,7 +120,7 @@ hdb_replace_extension(krb5_context context,
 			  &size);
 	if (ret) {
 	    krb5_set_error_message(context, ret, "hdb: failed to decode "
-				   "replacement hdb extention");
+				   "replacement hdb extension");
 	    return ret;
 	}
 
@@ -136,7 +136,7 @@ hdb_replace_extension(krb5_context context,
 			      &size);
 	    if (ret) {
 		krb5_set_error_message(context, ret, "hdb: failed to decode "
-				       "present hdb extention");
+				       "present hdb extension");
 		return ret;
 	    }
 
@@ -153,7 +153,7 @@ hdb_replace_extension(krb5_context context,
 	ret = copy_HDB_extension(ext, ext2);
 	if (ret)
 	    krb5_set_error_message(context, ret, "hdb: failed to copy replacement "
-				   "hdb extention");
+				   "hdb extension");
 	return ret;
     }
 
