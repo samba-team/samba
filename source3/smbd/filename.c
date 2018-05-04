@@ -1555,7 +1555,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  * @param pp_smb_fname	The final converted name will be allocated if the
  *			return is NT_STATUS_OK.
  *
- * @return NT_STATUS_OK if all operations completed succesfully, appropriate
+ * @return NT_STATUS_OK if all operations completed successfully, appropriate
  * 	   error otherwise.
  */
 static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,

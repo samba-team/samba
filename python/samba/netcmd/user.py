@@ -1605,7 +1605,7 @@ following dirsyncAttributes:
   userPrincipalName and userAccountControl.
 
 It recovers from LDAP disconnects and updates the cache in conservative way
-(in single steps after each succesfully processed change).  An error from
+(in single steps after each successfully processed change).  An error from
 the script (specified by '--script') will result in fatal error and this
 command will exit.  But the cache state should be still valid and can be
 resumed in the next "Sync Loop Run".
