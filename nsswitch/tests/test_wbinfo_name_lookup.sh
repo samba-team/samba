@@ -23,6 +23,10 @@ testit "name-to-sid.single-separator" \
        $wbinfo -n $DOMAIN/$DC_USERNAME || \
 	failed=$(expr $failed + 1)
 
+testit "name-to-sid.at_domain" \
+       $wbinfo -n $DOMAIN/ || \
+	failed=$(expr $failed + 1)
+
 testit "name-to-sid.upn" \
        $wbinfo -n $DC_USERNAME@$REALM || \
 	failed=$(expr $failed + 1)
