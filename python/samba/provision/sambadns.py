@@ -247,12 +247,12 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
 
     setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
         "ZONE_DN": domainzone_dn,
-        "SECDESC"      : b64encode(descriptor)
+        "SECDESC"      : b64encode(descriptor).decode('utf8')
         })
     if fill_level != FILL_SUBDOMAIN:
         setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
             "ZONE_DN": forestzone_dn,
-            "SECDESC"      : b64encode(descriptor)
+            "SECDESC"      : b64encode(descriptor).decode('utf8')
         })
 
     domainzone_guid = get_domainguid(samdb, domainzone_dn)
@@ -267,8 +267,8 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
         "ZONE_DNS": domainzone_dns,
         "CONFIGDN": configdn,
         "SERVERDN": serverdn,
-        "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc),
-        "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc),
+        "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc).decode('utf8'),
+        "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc).decode('utf8'),
         })
     setup_modify_ldif(samdb, setup_path("provision_dnszones_modify.ldif"), {
         "CONFIGDN": configdn,
@@ -287,8 +287,8 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
             "ZONE_DNS": forestzone_dns,
             "CONFIGDN": configdn,
             "SERVERDN": serverdn,
-            "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc),
-            "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc),
+            "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc).decode('utf8'),
+            "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc).decode('utf8'),
         })
         setup_modify_ldif(samdb, setup_path("provision_dnszones_modify.ldif"), {
             "CONFIGDN": configdn,
@@ -675,7 +675,7 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, binddns_dir, realm,
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
             "DNS_KEYTAB": dns_keytab_path,
-            "DNSPASS_B64": b64encode(dnspass.encode('utf-8')),
+            "DNSPASS_B64": b64encode(dnspass.encode('utf-8')).decode('utf8'),
             "KEY_VERSION_NUMBER": str(key_version_number),
             "HOSTNAME": names.hostname,
             "DNSNAME" : '%s.%s' % (
@@ -817,7 +817,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         dom_ldb.add(index_res[0])
 
         domainguid_line = "objectGUID: %s\n-" % domainguid
-        descr = b64encode(get_domain_descriptor(domainsid))
+        descr = b64encode(get_domain_descriptor(domainsid)).decode('utf8')
         setup_add_ldif(dom_ldb, setup_path("provision_basedn.ldif"), {
             "DOMAINDN" : names.domaindn,
             "DOMAINGUID" : domainguid_line,

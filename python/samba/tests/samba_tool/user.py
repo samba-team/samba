@@ -234,9 +234,9 @@ class UserCmdTestCase(SambaToolCmdTest):
             creds.set_anonymous()
             creds.set_password(newpasswd)
             nthash = creds.get_nt_hash()
-            unicodePwd = base64.b64encode(creds.get_nt_hash())
-            virtualClearTextUTF8 = base64.b64encode(newpasswd)
-            virtualClearTextUTF16 = base64.b64encode(unicode(newpasswd, 'utf-8').encode('utf-16-le'))
+            unicodePwd = base64.b64encode(creds.get_nt_hash()).decode('utf8')
+            virtualClearTextUTF8 = base64.b64encode(newpasswd).decode('utf8')
+            virtualClearTextUTF16 = base64.b64encode(unicode(newpasswd, 'utf-8').encode('utf-16-le')).decode('utf8')
 
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
