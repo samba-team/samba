@@ -2010,8 +2010,7 @@ class DomainTrustCommand(Command):
         self.outf.write("Namespaces[%d]%s:\n" % (
                         len(fti.entries), tln_string))
 
-        for i in xrange(0, len(fti.entries)):
-            e = fti.entries[i]
+        for i, e in enumerate(fti.entries):
 
             flags = e.flags
             collision_string = ""
@@ -3401,22 +3400,17 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             update_spn_vals.extend(stored_spn_vals)
 
             for upn in add_upn:
-                idx = None
-                for i in xrange(0, len(update_upn_vals)):
-                    v = update_upn_vals[i]
-                    if v.lower() != upn.lower():
-                        continue
-                    idx = i
-                    break
-                if idx is not None:
-                    raise CommandError("Entry already present for value[%s] specified for --add-upn-suffix" % upn)
+                for i, v in enumerate(update_upn_vals):
+                    if v.lower() == upn.lower():
+                        raise CommandError("Entry already present for "
+                                           "value[%s] specified for "
+                                           "--add-upn-suffix" % upn)
                 update_upn_vals.append(upn)
                 replace_upn = True
 
             for upn in delete_upn:
                 idx = None
-                for i in xrange(0, len(update_upn_vals)):
-                    v = update_upn_vals[i]
+                for i, v in enumerate(update_upn_vals):
                     if v.lower() != upn.lower():
                         continue
                     idx = i
@@ -3428,22 +3422,17 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                 replace_upn = True
 
             for spn in add_spn:
-                idx = None
-                for i in xrange(0, len(update_spn_vals)):
-                    v = update_spn_vals[i]
-                    if v.lower() != spn.lower():
-                        continue
-                    idx = i
-                    break
-                if idx is not None:
-                    raise CommandError("Entry already present for value[%s] specified for --add-spn-suffix" % spn)
+                for i, v in enumerate(update_spn_vals):
+                    if v.lower() == spn.lower():
+                        raise CommandError("Entry already present for "
+                                           "value[%s] specified for "
+                                           "--add-spn-suffix" % spn)
                 update_spn_vals.append(spn)
                 replace_spn = True
 
             for spn in delete_spn:
                 idx = None
-                for i in xrange(0, len(update_spn_vals)):
-                    v = update_spn_vals[i]
+                for i, v in enumerate(update_spn_vals):
                     if v.lower() != spn.lower():
                         continue
                     idx = i
@@ -3594,16 +3583,14 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
         update_forest_info.entries = entries
 
         if enable_all:
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME:
                     continue
                 if update_forest_info.entries[i].flags == 0:
                     continue
                 update_forest_info.entries[i].time = 0
                 update_forest_info.entries[i].flags &= ~lsa.LSA_TLN_DISABLED_MASK
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_DOMAIN_INFO:
                     continue
                 if update_forest_info.entries[i].flags == 0:
@@ -3614,8 +3601,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for tln in enable_tln:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME:
                     continue
                 if r.forest_trust_data.string.lower() != tln.lower():
@@ -3631,8 +3617,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for tln in disable_tln:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME:
                     continue
                 if r.forest_trust_data.string.lower() != tln.lower():
@@ -3649,8 +3634,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for tln_ex in add_tln_ex:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
                     continue
                 if r.forest_trust_data.string.lower() != tln_ex.lower():
@@ -3662,8 +3646,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
             tln_dot = ".%s" % tln_ex.lower()
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME:
                     continue
                 r_dot = ".%s" % r.forest_trust_data.string.lower()
@@ -3691,8 +3674,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for tln_ex in delete_tln_ex:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
                     continue
                 if r.forest_trust_data.string.lower() != tln_ex.lower():
@@ -3710,8 +3692,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for nb in enable_nb:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_DOMAIN_INFO:
                     continue
                 if r.forest_trust_data.netbios_domain_name.string.upper() != nb.upper():
@@ -3727,8 +3708,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for nb in disable_nb:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_DOMAIN_INFO:
                     continue
                 if r.forest_trust_data.netbios_domain_name.string.upper() != nb.upper():
@@ -3745,8 +3725,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for sid in enable_sid:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_DOMAIN_INFO:
                     continue
                 if r.forest_trust_data.domain_sid != sid:
@@ -3762,8 +3741,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         for sid in disable_sid:
             idx = None
-            for i in xrange(0, len(update_forest_info.entries)):
-                r = update_forest_info.entries[i]
+            for i, r in enumerate(update_forest_info.entries):
                 if r.type != lsa.LSA_FOREST_TRUST_DOMAIN_INFO:
                     continue
                 if r.forest_trust_data.domain_sid != sid:
