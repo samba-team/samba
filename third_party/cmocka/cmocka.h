@@ -2269,7 +2269,7 @@ enum cm_message_output {
 /**
  * @brief Function to set the output format for a test.
  *
- * The ouput format for the test can either be set globally using this
+ * The output format for the test can either be set globally using this
  * function or overriden with environment variable CMOCKA_MESSAGE_OUTPUT.
  *
  * The environment variable can be set to either STDOUT, SUBUNIT, TAP or XML.

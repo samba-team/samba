@@ -143,7 +143,7 @@ static enum ndr_err_code ndr_pull_compression_mszip_cab_chunk(struct ndr_pull *n
 		 * happen
 		 */
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "zlib inflate error not enough space for ouput (PULL)");
+				      "zlib inflate error not enough space for output (PULL)");
 	}
 	if (z_ret != Z_STREAM_END) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
