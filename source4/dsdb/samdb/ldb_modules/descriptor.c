@@ -416,7 +416,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	}
 
 	sddl_sd = sddl_encode(mem_ctx, final_sd, domain_sid);
-	DEBUG(10, ("Object %s created with desriptor %s\n\n", ldb_dn_get_linearized(dn), sddl_sd));
+	DEBUG(10, ("Object %s created with descriptor %s\n\n", ldb_dn_get_linearized(dn), sddl_sd));
 
 	linear_sd = talloc(mem_ctx, DATA_BLOB);
 	if (!linear_sd) {
