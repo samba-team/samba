@@ -312,7 +312,12 @@ class gp_ext(object):
         # Fixing the bug where only some Linux Boxes capitalize MACHINE
         try:
             blist = afile.split('/')
-            idx = afile.lower().split('/').index('machine')
+            index = None
+            if 'machine' in afile.lower():
+                index = 'machine'
+            elif 'user' in afile.lower():
+                index = 'user'
+            idx = afile.lower().split('/').index(index)
             for case in [
                             blist[idx].upper(),
                             blist[idx].capitalize(),
