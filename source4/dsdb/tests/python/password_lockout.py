@@ -427,9 +427,9 @@ userPassword: thatsAcomplPASS2x
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e7:
@@ -468,9 +468,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')).decode('utf8') + """
 """)
         userpass = "thatsAcomplPASS2x"
         creds.set_password(userpass)
@@ -664,9 +664,9 @@ userPassword: thatsAcomplPASS2XYZ
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e10:
@@ -696,9 +696,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(old_utf16) + """
+unicodePwd:: """ + base64.b64encode(old_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
 
         res = self._check_account(userdn,
@@ -717,9 +717,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(old_utf16) + """
+unicodePwd:: """ + base64.b64encode(old_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e11:
@@ -761,9 +761,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e12:
@@ -791,9 +791,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e13:
@@ -818,9 +818,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e14:
@@ -845,9 +845,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e15:
@@ -891,9 +891,9 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(old_utf16) + """
+unicodePwd:: """ + base64.b64encode(old_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
 
         res = self._check_account(userdn,
@@ -913,9 +913,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e16:
@@ -941,9 +941,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e17:
@@ -984,9 +984,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode(new_utf16) + """
+unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e18:

@@ -1375,9 +1375,9 @@ class AclCARTests(AclTests):
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 """)
         except LdbError as e24:
             (num, _) = e24.args
@@ -1402,9 +1402,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 """)
         except LdbError as e25:
             (num, _) = e25.args
@@ -1423,9 +1423,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 """)
 
     def test_change_password5(self):
@@ -1503,18 +1503,18 @@ userPassword: thatsAcomplPASS2
 dn: """ + self.get_user_dn(self.user_with_pc) + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).decode('utf8') + """
 """)
         #then someone else's
         self.ldb_user2.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 """)
 
     def test_reset_password1(self):
@@ -1524,7 +1524,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 replace: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).decode('utf8') + """
 """)
         except LdbError as e29:
             (num, _) = e29.args
@@ -1537,7 +1537,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) 
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 replace: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).decode('utf8') + """
 """)
 
     def test_reset_password2(self):
@@ -1577,7 +1577,7 @@ userPassword: thatsAcomplPASS1
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 replace: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).decode('utf8') + """
 """)
         except LdbError as e32:
             (num, _) = e32.args
@@ -1610,7 +1610,7 @@ userPassword: thatsAcomplPASS1
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 replace: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).decode('utf8') + """
 """)
 
     def test_reset_password6(self):
