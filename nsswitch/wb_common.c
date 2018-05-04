@@ -37,7 +37,7 @@ struct winbindd_context {
 
 static struct winbindd_context wb_global_ctx = {
 	.winbindd_fd = -1,
-	.is_privileged = 0,
+	.is_privileged = false,
 	.our_pid = 0
 };
 
@@ -371,7 +371,7 @@ static int winbind_open_pipe_sock(struct winbindd_context *ctx,
 		ctx->our_pid = getpid();
 	}
 
-	if ((need_priv != 0) && (ctx->is_privileged == 0)) {
+	if ((need_priv != 0) && !ctx->is_privileged) {
 		winbind_close_sock(ctx);
 	}
 
@@ -389,7 +389,7 @@ static int winbind_open_pipe_sock(struct winbindd_context *ctx,
 		return -1;
 	}
 
-	ctx->is_privileged = 0;
+	ctx->is_privileged = false;
 
 	/* version-check the socket */
 
@@ -422,13 +422,13 @@ static int winbind_open_pipe_sock(struct winbindd_context *ctx,
 		if (fd != -1) {
 			close(ctx->winbindd_fd);
 			ctx->winbindd_fd = fd;
-			ctx->is_privileged = 1;
+			ctx->is_privileged = true;
 		}
 
 		SAFE_FREE(response.extra_data.data);
 	}
 
-	if (ctx->is_privileged == 0) {
+	if (!ctx->is_privileged) {
 		return -1;
 	}
 
