@@ -34,6 +34,7 @@ from ldb import SCOPE_BASE, SCOPE_SUBTREE, LdbError
 import time
 from samba.kcc import KCC
 from samba.kcc.kcc_utils import KCCError
+from samba.compat import text_type
 
 COMMON_OPTIONS = [
     Option("-H", "--URL", help="LDB URL for database or target server",
@@ -161,7 +162,10 @@ def colour_hash(x):
     """Generate a randomish but consistent darkish colour based on the
     given object."""
     from hashlib import md5
-    c = int(md5(str(x)).hexdigest()[:6], base=16) & 0x7f7f7f
+    tmp_str = str(x)
+    if isinstance(tmp_str, text_type):
+        tmp_str = tmp_str.encode('utf8')
+    c = int(md5(tmp_str).hexdigest()[:6], base=16) & 0x7f7f7f
     return '#%06x' % c
 
 
