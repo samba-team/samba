@@ -17,6 +17,12 @@
 
 import os.path
 from samba.gpclass import gp_ext_setter, gp_inf_ext
+from samba.auth import system_session
+try:
+    from ldb import LdbError
+    from samba.samdb import SamDB
+except ImportError:
+    pass
 
 
 class inf_to_kdc_tdb(gp_ext_setter):
@@ -54,6 +60,16 @@ class inf_to_ldb(gp_ext_setter):
     to a GUID), hashmaps it to the Samba parameter, which then uses an ldb
     object to update the parameter to Samba4. Not registry oriented whatsoever.
     '''
+
+    def __init__(self, logger, gp_db, lp, creds, key, value):
+        super(inf_to_ldb, self).__init__(logger, gp_db, lp, creds, key, value)
+        try:
+            self.ldb = SamDB(self.lp.samdb_url(),
+                             session_info=system_session(),
+                             credentials=self.creds,
+                             lp=self.lp)
+        except (NameError, LdbError):
+            raise Exception('Failed to load SamDB for assigning Group Policy')
 
     def ch_minPwdAge(self, val):
         old_val = self.ldb.get_minPwdAge()
@@ -130,6 +146,8 @@ class gp_sec_ext(gp_inf_ext):
         return os.path.join(rootpath, "User/Registry.pol")
 
     def apply_map(self):
+        if self.lp.get('server role') != 'active directory domain controller':
+            return {}
         return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
                                                          inf_to_ldb),
                                   "MaximumPasswordAge": ("maxPwdAge",
