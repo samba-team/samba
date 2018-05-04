@@ -35,7 +35,7 @@ try:
 except:
     SamDB = None
 from samba.gpclass import apply_gp, unapply_gp, GPOStorage
-from samba.gp_sec_ext import gp_sec_ext
+from samba.gp_ext_loader import get_gp_client_side_extensions
 import logging
 
 if __name__ == "__main__":
@@ -84,9 +84,11 @@ if __name__ == "__main__":
     cache_dir = lp.get('cache directory')
     store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
+    machine_exts = get_gp_client_side_extensions(logger)
     gp_extensions = []
     if opts.machine:
-        gp_extensions.append(gp_sec_ext(logger))
+        for ext in machine_exts:
+            gp_extensions.append(ext(logger))
     else:
         pass # User extensions
 
