@@ -3176,7 +3176,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					   new_dos_attributes,
 					   smb_fname->st.st_ex_mode,
 					   unx_mode, &new_unx_mode)) {
-			DEBUG(5,("open_file_ntcreate: attributes missmatch "
+			DEBUG(5,("open_file_ntcreate: attributes mismatch "
 				 "for file %s (%x %x) (0%o, 0%o)\n",
 				 smb_fname_str_dbg(smb_fname),
 				 existing_dos_attributes,

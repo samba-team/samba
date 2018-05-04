@@ -345,10 +345,10 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 
 	torture_assert(tctx, !GUID_compare(&r_sharemap_get.in.ShadowCopySetId,
 					   &map->ShadowCopySetId),
-		       "sc_set GUID missmatch in GetShareMapping");
+		       "sc_set GUID mismatch in GetShareMapping");
 	torture_assert(tctx, !GUID_compare(&r_sharemap_get.in.ShadowCopyId,
 					   &map->ShadowCopyId),
-		       "sc GUID missmatch in GetShareMapping");
+		       "sc GUID mismatch in GetShareMapping");
 
 done:
 	talloc_free(tmp_ctx);
