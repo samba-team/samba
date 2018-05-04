@@ -101,7 +101,7 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 
-	torture_comment(tctx, "Test if assoc_ctx is only valid on the conection it was created on\n");
+	torture_comment(tctx, "Test if assoc_ctx is only valid on the connection it was created on\n");
 
 	wrepl_socket1 = wrepl_socket_init(tctx, tctx->ev);
 	wrepl_socket2 = wrepl_socket_init(tctx, tctx->ev);
