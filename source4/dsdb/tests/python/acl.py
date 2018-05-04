@@ -951,14 +951,14 @@ class AclSearchTests(AclTests):
                                     scope=SCOPE_SUBTREE)
         ok_list = ['dn']
         self.assertEquals(len(res), 1)
-        res_list = res[0].keys()
+        res_list = list(res[0].keys())
         self.assertEquals(res_list, ok_list)
 
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_BASE, attrs=["ou"])
 
         self.assertEquals(len(res), 1)
-        res_list = res[0].keys()
+        res_list = list(res[0].keys())
         self.assertEquals(res_list, ok_list)
 
         #give read property on ou and assert user can only see dn and ou
@@ -969,7 +969,7 @@ class AclSearchTests(AclTests):
                                     scope=SCOPE_SUBTREE)
         ok_list = ['dn', 'ou']
         self.assertEquals(len(res), 1)
-        res_list = res[0].keys()
+        res_list = list(res[0].keys())
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         #give read property on Public Information and assert user can see ou and other members
@@ -980,7 +980,7 @@ class AclSearchTests(AclTests):
                                     scope=SCOPE_SUBTREE)
 
         ok_list = ['dn', 'objectClass', 'ou', 'distinguishedName', 'name', 'objectGUID', 'objectCategory']
-        res_list = res[0].keys()
+        res_list = list(res[0].keys())
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
     def test_search6(self):
@@ -1005,7 +1005,7 @@ class AclSearchTests(AclTests):
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
         ok_list = ['dn', 'ou']
-        res_list = res[0].keys()
+        res_list = list(res[0].keys())
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         #give read property on Public Information and assert user can see ou and other members
@@ -1015,7 +1015,7 @@ class AclSearchTests(AclTests):
                                    scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
         ok_list = ['dn', 'objectClass', 'ou', 'distinguishedName', 'name', 'objectGUID', 'objectCategory']
-        res_list = res[0].keys()
+        res_list = list(res[0].keys())
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
 #tests on ldap delete operations

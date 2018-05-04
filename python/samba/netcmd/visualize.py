@@ -51,7 +51,7 @@ COMMON_OPTIONS = [
            choices=['yes', 'no', 'auto']),
     Option("--color-scheme", help=("use this colour scheme "
                                    "(implies --color=yes)"),
-           choices=COLOUR_SETS.keys()),
+           choices=list(COLOUR_SETS.keys())),
     Option("-S", "--shorten-names",
            help="don't print long common suffixes",
            action='store_true', default=False),

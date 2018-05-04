@@ -1957,13 +1957,13 @@ class LdbMsgTests(TestCase):
         self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.msg["foo"] = [b"bla"]
         self.msg["bar"] = [b"bla"]
-        self.assertEqual(["dn", "foo", "bar"], self.msg.keys())
+        self.assertEqual(["dn", "foo", "bar"], list(self.msg.keys()))
 
     def test_keys_text(self):
         self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.msg["foo"] = ["bla"]
         self.msg["bar"] = ["bla"]
-        self.assertEqual(["dn", "foo", "bar"], self.msg.text.keys())
+        self.assertEqual(["dn", "foo", "bar"], list(self.msg.text.keys()))
 
     def test_dn(self):
         self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
