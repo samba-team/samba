@@ -186,7 +186,7 @@ class TestDnsForwarding(DNSTest):
                              host, str(port), id])
         self.subprocesses.append(p)
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-        for i in xrange(300):
+        for i in range(300):
             time.sleep(0.05)
             s.connect((host, port))
             try:
