@@ -29,11 +29,6 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 from samba import getopt as options
-from samba.auth import system_session
-try:
-    from samba.samdb import SamDB
-except:
-    SamDB = None
 from samba.gpclass import apply_gp, unapply_gp, GPOStorage
 from samba.gp_sec_ext import gp_sec_ext
 import logging
@@ -63,9 +58,7 @@ if __name__ == "__main__":
     else:
         url = opts.url
 
-    # Initialize the session
     creds = credopts.get_credentials(lp, fallback_machine=True)
-    session = system_session()
 
     # Set up logging
     logger = logging.getLogger('samba_gpoupdate')
@@ -86,19 +79,12 @@ if __name__ == "__main__":
 
     gp_extensions = []
     if opts.machine:
-        if lp.get('server role') == 'active directory domain controller':
-            gp_extensions.append(gp_sec_ext(logger))
+        gp_extensions.append(gp_sec_ext(logger))
     else:
         pass # User extensions
 
-    # Get a live instance of Samba
-    if SamDB:
-        test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
-    else:
-        test_ldb = None
-
     if not opts.unapply:
-        apply_gp(lp, creds, test_ldb, logger, store, gp_extensions)
+        apply_gp(lp, creds, logger, store, gp_extensions)
     else:
-        unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions)
+        unapply_gp(lp, creds, logger, store, gp_extensions)
 

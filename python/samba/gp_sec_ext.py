@@ -17,8 +17,17 @@
 
 import os.path
 from gpclass import gp_ext_setter, gp_inf_ext
+from samba.auth import system_session
+try:
+    from samba.samdb import SamDB
+except:
+    SamDB = None
 
 class inf_to_kdc_tdb(gp_ext_setter):
+    def __init__(self, logger, gp_db, lp, attribute, val, ldb):
+        super(inf_to_kdc_tdb, self).__init__(logger, gp_db, lp, attribute, val)
+        self.ldb = ldb
+
     def mins_to_hours(self):
         return '%d' % (int(self.val)/60)
 
@@ -52,6 +61,10 @@ class inf_to_ldb(gp_ext_setter):
     to a GUID), hashmaps it to the Samba parameter, which then uses an ldb
     object to update the parameter to Samba4. Not registry oriented whatsoever.
     '''
+
+    def __init__(self, logger, gp_db, lp, attribute, val, ldb):
+        super(inf_to_ldb, self).__init__(logger, gp_db, lp, attribute, val)
+        self.ldb = ldb
 
     def ch_minPwdAge(self, val):
         old_val = self.ldb.get_minPwdAge()
@@ -127,6 +140,13 @@ class gp_sec_ext(gp_inf_ext):
         return os.path.join(rootpath, "User/Registry.pol")
 
     def apply_map(self):
+        if SamDB:
+            self.ldb = SamDB(self.lp.samdb_url(),
+                             session_info=system_session(),
+                             credentials=self.creds,
+                             lp=self.lp)
+        else:
+            return {}
         return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
                                                          inf_to_ldb),
                                   "MaximumPasswordAge": ("maxPwdAge",
