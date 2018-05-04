@@ -390,7 +390,7 @@ objectClass: msTPM-InformationObjectsContainer
         self.raise_if_not_fix(op)
 
         descriptor = get_managed_service_accounts_descriptor(self.domain_sid)
-        managedservice_descr = b64encode(descriptor)
+        managedservice_descr = b64encode(descriptor).decode('utf8')
         managed_service_dn = "CN=Managed Service Accounts,%s" % \
             str(self.domain_dn)
 
