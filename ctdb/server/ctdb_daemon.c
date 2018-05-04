@@ -456,7 +456,7 @@ static void reprocess_deferred_call(struct tevent_context *ev,
 static int deferred_fetch_queue_destructor(struct ctdb_deferred_fetch_queue *dfq)
 {
 
-	/* need to reprocess the packets from the queue explicitely instead of
+	/* need to reprocess the packets from the queue explicitly instead of
 	   just using a normal destructor since we want, need, to
 	   call the clients in the same oder as the requests queued up
 	*/

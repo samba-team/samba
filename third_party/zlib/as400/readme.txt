@@ -106,6 +106,6 @@ Notes:  For AS400 ILE RPG programmers, a /copy member defining the ZLIB
 
         Remember that most foreign textual data are ASCII coded: this
                 implementation does not handle conversion from/to ASCII, so
-                text data code conversions must be done explicitely.
+                text data code conversions must be done explicitly.
 
         Always open zipped files in binary mode.
