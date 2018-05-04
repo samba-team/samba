@@ -318,7 +318,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	    if(i < 0) {
 		ret = errno;
 		krb5_set_error_message(context, ret,
-				       N_("open(%s) logile: %s", ""), fn,
+				       N_("open(%s) logfile: %s", ""), fn,
 				       strerror(ret));
 		free(fn);
 		return ret;
