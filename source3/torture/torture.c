@@ -11311,7 +11311,7 @@ static bool run_local_canonicalize_path(int dummy)
 		}
 		if (strcmp(d, dst[i]) != 0) {
 			d_fprintf(stderr,
-				"canonicalize missmatch %s -> %s != %s",
+				"canonicalize mismatch %s -> %s != %s",
 				src[i], d, dst[i]);
 			return false;
 		}
