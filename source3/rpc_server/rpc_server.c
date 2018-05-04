@@ -395,7 +395,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	/* And now start receiving and processing packets */
 	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 	if (!subreq) {
-		DEBUG(2, ("Failed to start receving packets\n"));
+		DEBUG(2, ("Failed to start receiving packets\n"));
 		goto fail;
 	}
 	tevent_req_set_callback(subreq, named_pipe_packet_process, npc);
@@ -494,7 +494,7 @@ void named_pipe_packet_process(struct tevent_req *subreq)
 		/* Wait for the next packet */
 		subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 		if (!subreq) {
-			DEBUG(2, ("Failed to start receving packets\n"));
+			DEBUG(2, ("Failed to start receiving packets\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
@@ -574,7 +574,7 @@ static void named_pipe_packet_done(struct tevent_req *subreq)
 	/* Wait for the next packet */
 	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 	if (!subreq) {
-		DEBUG(2, ("Failed to start receving packets\n"));
+		DEBUG(2, ("Failed to start receiving packets\n"));
 		sys_errno = ENOMEM;
 		goto fail;
 	}
@@ -1272,7 +1272,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 						       ncacn_conn->ev_ctx,
 						       ncacn_conn->tstream);
 		if (subreq == NULL) {
-			DEBUG(2, ("Failed to start receving packets\n"));
+			DEBUG(2, ("Failed to start receiving packets\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
@@ -1343,7 +1343,7 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 					       ncacn_conn->ev_ctx,
 					       ncacn_conn->tstream);
 	if (subreq == NULL) {
-		DEBUG(2, ("Failed to start receving packets\n"));
+		DEBUG(2, ("Failed to start receiving packets\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}

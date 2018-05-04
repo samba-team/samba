@@ -179,7 +179,7 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 
 	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 	if (subreq == NULL) {
-		DEBUG(2, ("Failed to start receving packets\n"));
+		DEBUG(2, ("Failed to start receiving packets\n"));
 		status = NT_STATUS_PIPE_BROKEN;
 		goto out;
 	}
