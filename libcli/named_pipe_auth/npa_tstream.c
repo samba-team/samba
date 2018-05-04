@@ -1402,7 +1402,7 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 
 	ret = tsocket_simple_int_recv(req, perrno);
 	if (ret != 0) {
-		DEBUG(2, ("Failed to accept named pipe conection: %s\n",
+		DEBUG(2, ("Failed to accept named pipe connection: %s\n",
 			  strerror(*perrno)));
 		tevent_req_received(req);
 		return -1;
@@ -1416,7 +1416,7 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 #else
 		*perrno = EINVAL;
 #endif
-		DEBUG(2, ("Failed to accept named pipe conection: %s => %s\n",
+		DEBUG(2, ("Failed to accept named pipe connection: %s => %s\n",
 			  nt_errstr(state->accept_status),
 			  strerror(*perrno)));
 		tevent_req_received(req);
