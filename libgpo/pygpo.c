@@ -33,6 +33,7 @@
 #include "registry/reg_api.h"
 #include "../libcli/registry/util_reg.h"
 #include "../libgpo/gpext/gpext.h"
+#include "registry/reg_objects.h"
 
 /* A Python C API module to use LIBGPO */
 
@@ -411,6 +412,54 @@ static void get_gp_registry_context(TALLOC_CTX *ctx,
 	}
 }
 
+static PyObject *py_list_gp_extensions(PyObject * self, PyObject * args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct gp_registry_context *reg_ctx = NULL;
+	WERROR werr;
+	PyObject *ret = NULL;
+	struct registry_key *parent;
+	int i;
+
+	get_gp_registry_context(frame, REG_KEY_READ, &reg_ctx);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	parent = reg_ctx->curr_key;
+
+	ret = PyDict_New();
+	if (ret == NULL) {
+		goto out;
+	}
+
+	for (i = regsubkey_ctr_numkeys(parent->subkeys); i > 0; i--) {
+		struct registry_key *subkey;
+		char *subkey_name = NULL;
+		const char *subkey_val = NULL;
+		PyObject *val = NULL;
+
+		subkey_name = regsubkey_ctr_specific_key(parent->subkeys, i-1);
+		werr = gp_read_reg_subkey(frame, reg_ctx,
+					  subkey_name, &subkey);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto out;
+		}
+		werr = gp_read_reg_val_sz(frame, subkey,
+					  "DllName", &subkey_val);
+		if (!W_ERROR_IS_OK(werr)) {
+			ret = NULL;
+			goto out;
+		}
+		val = PyStr_FromString(subkey_val);
+		PyDict_SetItemString(ret, subkey_name, val);
+	}
+
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 static PyObject *py_unregister_gp_extension(PyObject * self, PyObject * args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -682,6 +731,8 @@ static PyMethodDef py_gpo_methods[] = {
 		METH_VARARGS, NULL},
 	{"unregister_gp_extension", (PyCFunction)py_unregister_gp_extension,
 		METH_VARARGS, NULL},
+	{"list_gp_extensions", (PyCFunction)py_list_gp_extensions,
+		METH_NOARGS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
 		METH_VARARGS, NULL},
