@@ -43,6 +43,7 @@ def get_gp_ext_from_module(name, mod):
     return None
 
 def get_gp_client_side_extensions(logger, smb_conf):
+    user_exts = []
     machine_exts = []
     gp_exts = list_gp_extensions(smb_conf)
     for gp_ext in gp_exts.values():
@@ -52,5 +53,9 @@ def get_gp_client_side_extensions(logger, smb_conf):
             machine_exts.append(ext)
             logger.info('Loaded machine extension from %s: %s'
                         % (gp_ext['DllName'], ext.__name__))
-    return machine_exts
+        if ext and gp_ext['UserPolicy']:
+            user_exts.append(ext)
+            logger.info('Loaded user extension from %s: %s'
+                        % (gp_ext['DllName'], ext.__name__))
+    return (machine_exts, user_exts)
 
