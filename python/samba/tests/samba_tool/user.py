@@ -121,7 +121,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             return
 
         def find_package(packages, name, start_idx=0):
-            for i in xrange(start_idx, len(packages)):
+            for i in range(start_idx, len(packages)):
                 if packages[i].name == name:
                     return (i, packages[i])
             return (None, None)
