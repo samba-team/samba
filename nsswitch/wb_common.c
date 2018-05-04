@@ -632,9 +632,11 @@ static int winbindd_read_reply(struct winbindd_context *ctx,
  * send simple types of requests
  */
 
-NSS_STATUS winbindd_send_request(struct winbindd_context *ctx,
-				 int req_type, int need_priv,
-				 struct winbindd_request *request)
+static NSS_STATUS winbindd_send_request(
+	struct winbindd_context *ctx,
+	int req_type,
+	int need_priv,
+	struct winbindd_request *request)
 {
 	struct winbindd_request lrequest;
 
@@ -682,8 +684,8 @@ NSS_STATUS winbindd_send_request(struct winbindd_context *ctx,
  * Get results from winbindd request
  */
 
-NSS_STATUS winbindd_get_response(struct winbindd_context *ctx,
-				 struct winbindd_response *response)
+static NSS_STATUS winbindd_get_response(struct winbindd_context *ctx,
+					struct winbindd_response *response)
 {
 	struct winbindd_response lresponse;
 
