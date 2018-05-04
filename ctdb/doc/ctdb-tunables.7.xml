@@ -626,7 +626,7 @@ MonitorInterval=20
       <para>
 	Some databases have seqnum tracking enabled, so that samba will
 	be able to detect asynchronously when there has been updates
-	to the database.  Everytime a database is updated its sequence
+	to the database.  Every time a database is updated its sequence
 	number is increased.
       </para>
       <para>
