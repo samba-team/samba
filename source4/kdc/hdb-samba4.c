@@ -343,7 +343,7 @@ static void send_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 						  "winbind_server",
 						  &ndr_table_winbind);
 	if (irpc_handle == NULL) {
-		DEBUG(0, ("Winbind fowarding for [%s]\\[%s] failed, "
+		DEBUG(0, ("Winbind forwarding for [%s]\\[%s] failed, "
 			  "no winbind_server running!\n",
 			  user_info->mapped.domain_name, user_info->mapped.account_name));
 		return;
