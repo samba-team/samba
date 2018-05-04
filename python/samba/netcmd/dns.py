@@ -140,7 +140,7 @@ def ip4_array_string(array):
     ret = []
     if not array:
         return ret
-    for i in xrange(array.AddrCount):
+    for i in range(array.AddrCount):
         addr = inet_ntop(AF_INET, pack('I', array.AddrArray[i]))
         ret.append(addr)
     return ret
@@ -150,7 +150,7 @@ def dns_addr_array_string(array):
     ret = []
     if not array:
         return ret
-    for i in xrange(array.AddrCount):
+    for i in range(array.AddrCount):
         if array.AddrArray[i].MaxSa[0] == 0x02:
             x = "".join([chr(b) for b in array.AddrArray[i].MaxSa])[4:8]
             addr = inet_ntop(AF_INET, x)
@@ -523,7 +523,7 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
         elif record_type == dnsp.DNS_TYPE_TXT:
             if rec.data.count == urec.data.count:
                 found = True
-                for i in xrange(rec.data.count):
+                for i in range(rec.data.count):
                     found = found and \
                             (rec.data.str[i].str == urec.data.str[i].str)
 
