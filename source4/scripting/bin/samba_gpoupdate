@@ -84,13 +84,14 @@ if __name__ == "__main__":
     cache_dir = lp.get('cache directory')
     store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
-    machine_exts = get_gp_client_side_extensions(logger)
+    machine_exts, user_exts = get_gp_client_side_extensions(logger)
     gp_extensions = []
     if opts.machine:
         for ext in machine_exts:
             gp_extensions.append(ext(logger))
     else:
-        pass # User extensions
+        for ext in user_exts:
+            gp_extensions.append(ext(logger, creds))
 
     # Get a live instance of Samba
     if SamDB:

@@ -336,6 +336,11 @@ class gp_ext(object):
     def __str__(self):
         pass
 
+class gp_user_ext(gp_ext):
+    def __init__(self, logger, creds):
+        super(gp_user_ext, self).__init__(logger)
+        self.creds = creds
+
 class gp_ext_setter():
     __metaclass__ = ABCMeta
 

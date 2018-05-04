@@ -33,7 +33,7 @@ except ImportError:
     def import_file(name, location):
         return imp.load_source(name, location)
 
-def check_base(cls, base_names=['gp_ext']):
+def check_base(cls, base_names=['gp_ext', 'gp_user_ext']):
     bases = cls.__bases__
     for base in bases:
         if base.__name__ in base_names:
@@ -44,15 +44,19 @@ def check_base(cls, base_names=['gp_ext']):
 
 def get_gp_exts_from_module(mod):
     import inspect
+    user_exts = []
     machine_exts = []
     clses = inspect.getmembers(mod, inspect.isclass)
     for cls in clses:
         base = check_base(cls[-1])
         if base == 'gp_ext' and cls[-1].__module__ == mod.__name__:
             machine_exts.append(cls[-1])
-    return {'machine_exts': machine_exts}
+        elif base == 'gp_user_ext' and cls[-1].__module__ == mod.__name__:
+            user_exts.append(cls[-1])
+    return {'machine_exts': machine_exts, 'user_exts': user_exts}
 
 def get_gp_client_side_extensions(logger):
+    user_exts = []
     machine_exts = []
     gp_exts = gpo.list_gp_extensions()
     for gp_ext_file in gp_exts.values():
@@ -64,5 +68,10 @@ def get_gp_client_side_extensions(logger):
             logger.info('Loaded machine extensions from %s: %s'
                     % (gp_ext_file,
                     ' '.join([cls.__name__ for cls in exts['machine_exts']])))
-    return machine_exts
+        user_exts.extend(exts['user_exts'])
+        if len(exts['user_exts']) > 0:
+            logger.info('Loaded user extensions from %s: %s'
+                    % (gp_ext_file,
+                    ' '.join([cls.__name__ for cls in exts['user_exts']])))
+    return (machine_exts, user_exts)
 
