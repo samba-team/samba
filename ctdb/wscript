@@ -985,8 +985,8 @@ def build(bld):
 
     test_subdirs = [
         'complex',
+        'ctdb_eventd',
         'cunit',
-        'eventd',
         'eventscripts',
         'onnode',
         'shellcheck',
