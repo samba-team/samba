@@ -460,7 +460,7 @@ in libkrb5 would be difficult, but valuable.
 
 In the short-term, we deal with blocking by taking over the network
 send() and recv() functions, therefore making them 'semi-async'.  This
-doens't apply to DNS yet.These thread-safety context-variables will
+doesn't apply to DNS yet.These thread-safety context-variables will
 probably present porting problems, during the MIT port.  This will
 probably be most of the work in the port to MIT.
 

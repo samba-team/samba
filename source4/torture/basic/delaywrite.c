@@ -2924,7 +2924,7 @@ static bool test_delayed_write_update7(struct torture_context *tctx, struct smbc
 
 	if (finfo2.basic_info.out.write_time != finfo3.basic_info.out.write_time) {
 		torture_result(tctx, TORTURE_FAIL, 
-			"qpathinfo time doens't match fileinfo time");
+			"qpathinfo time doesn't match fileinfo time");
 		ret = false;
 	}
 
