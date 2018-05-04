@@ -125,7 +125,7 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 
 	torture_comment(tctx, "association context (conn2): 0x%x\n", associate2.out.assoc_ctx);
 
-	torture_comment(tctx, "Send a replication table query, with assoc 1 (conn2), the anwser should be on conn1\n");
+	torture_comment(tctx, "Send a replication table query, with assoc 1 (conn2), the answer should be on conn1\n");
 	ZERO_STRUCT(packet);
 	packet.opcode                      = WREPL_OPCODE_BITS;
 	packet.assoc_ctx                   = associate1.out.assoc_ctx;
