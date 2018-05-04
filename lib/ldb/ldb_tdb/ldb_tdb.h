@@ -36,6 +36,7 @@ struct kv_db_ops {
    ldb_context */
 struct ltdb_private {
 	const struct kv_db_ops *kv_ops;
+	struct ldb_module *module;
 	TDB_CONTEXT *tdb;
 	unsigned int connect_flags;
 	
@@ -75,6 +76,12 @@ struct ltdb_private {
 	 * greater than this length will be rejected.
 	 */
 	unsigned max_key_length;
+
+	/*
+	 * The PID that opened this database so we don't work in a
+	 * fork()ed child.
+	 */
+	pid_t pid;
 };
 
 struct ltdb_context {

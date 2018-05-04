@@ -100,6 +100,17 @@ static int ltdb_lock_read(struct ldb_module *module)
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int tdb_ret = 0;
 	int ret;
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	if (tdb_transaction_active(ltdb->tdb) == false &&
 	    ltdb->read_lock_count == 0) {
@@ -128,6 +139,17 @@ static int ltdb_unlock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 	if (!tdb_transaction_active(ltdb->tdb) && ltdb->read_lock_count == 1) {
 		tdb_unlockall_read(ltdb->tdb);
 		ltdb->read_lock_count--;
@@ -1447,21 +1469,69 @@ static int ltdb_rename(struct ltdb_context *ctx)
 
 static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
 {
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(ltdb->module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
 	return tdb_transaction_start(ltdb->tdb);
 }
 
 static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
 {
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(ltdb->module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
 	return tdb_transaction_cancel(ltdb->tdb);
 }
 
 static int ltdb_tdb_transaction_prepare_commit(struct ltdb_private *ltdb)
 {
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(ltdb->module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
 	return tdb_transaction_prepare_commit(ltdb->tdb);
 }
 
 static int ltdb_tdb_transaction_commit(struct ltdb_private *ltdb)
 {
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(ltdb->module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
 	return tdb_transaction_commit(ltdb->tdb);
 }
 
@@ -1469,6 +1539,18 @@ static int ltdb_start_trans(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(ltdb->module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	/* Do not take out the transaction lock on a read-only DB */
 	if (ltdb->read_only) {
@@ -1498,6 +1580,17 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 	int ret;
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	pid_t pid = getpid();
+
+	if (ltdb->pid != pid) {
+		ldb_asprintf_errstring(
+			ldb_module_get_ctx(module),
+			__location__": Reusing ldb opend by pid %d in "
+			"process %d\n",
+			ltdb->pid,
+			pid);
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	if (!ltdb->kv_ops->transaction_active(ltdb)) {
 		ldb_set_errstring(ldb_module_get_ctx(module),
@@ -2138,8 +2231,6 @@ int init_store(struct ltdb_private *ltdb,
 		      const char *options[],
 		      struct ldb_module **_module)
 {
-	struct ldb_module *module;
-
 	if (getenv("LDB_WARN_UNINDEXED")) {
 		ltdb->warn_unindexed = true;
 	}
@@ -2150,23 +2241,25 @@ int init_store(struct ltdb_private *ltdb,
 
 	ltdb->sequence_number = 0;
 
-	module = ldb_module_new(ldb, ldb, name, &ltdb_ops);
-	if (!module) {
+	ltdb->pid = getpid();
+
+	ltdb->module = ldb_module_new(ldb, ldb, name, &ltdb_ops);
+	if (!ltdb->module) {
 		ldb_oom(ldb);
 		talloc_free(ltdb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ldb_module_set_private(module, ltdb);
-	talloc_steal(module, ltdb);
+	ldb_module_set_private(ltdb->module, ltdb);
+	talloc_steal(ltdb->module, ltdb);
 
-	if (ltdb_cache_load(module) != 0) {
+	if (ltdb_cache_load(ltdb->module) != 0) {
 		ldb_asprintf_errstring(ldb, "Unable to load ltdb cache "
 				       "records for backend '%s'", name);
-		talloc_free(module);
+		talloc_free(ltdb->module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*_module = module;
+	*_module = ltdb->module;
 	/*
 	 * Set or override the maximum key length
 	 *
