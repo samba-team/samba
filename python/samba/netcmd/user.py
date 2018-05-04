@@ -1879,7 +1879,7 @@ samba-tool user syncpasswords --terminate \\
                 self.current_pid = None
                 self.outf.write("Initialized cache_ldb[%s]\n" % (cache_ldb))
                 msgs = self.cache.parse_ldif(add_ldif)
-                changetype,msg = msgs.next()
+                changetype,msg = next(msgs)
                 ldif = self.cache.write_ldif(msg, ldb.CHANGETYPE_NONE)
                 self.outf.write("%s" % ldif)
             else:
