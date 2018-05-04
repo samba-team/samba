@@ -4734,7 +4734,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 
 	/* If inheritable_components == false,
 	   se_create_child_secdesc()
-	   creates a security desriptor with a NULL dacl
+	   creates a security descriptor with a NULL dacl
 	   entry, but with SEC_DESC_DACL_PRESENT. We need
 	   to remove that flag. */
 
