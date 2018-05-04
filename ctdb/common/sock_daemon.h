@@ -30,7 +30,7 @@
  *
  * @brief A framework for a server based on unix-domain sockets.
  *
- * This abstraction allows to build simple servers that communicate using
+ * This abstraction allows one to build simple servers that communicate using
  * unix-domain sockets.  It takes care of the common boilerplate.
  */
 

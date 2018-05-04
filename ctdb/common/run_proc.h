@@ -28,7 +28,7 @@
  *
  * @brief Run a process and capture the output
  *
- * This abstraction allows to execute scripts with argumunts.
+ * This abstraction allows one to execute scripts with argumunts.
  */
 
 /**

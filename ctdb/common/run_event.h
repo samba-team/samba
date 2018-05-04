@@ -30,7 +30,7 @@
  *
  * @brief Run scripts in a directory with specific event arguments.
  *
- * This abstraction allows to execute multiple scripts in a directory
+ * This abstraction allows one to execute multiple scripts in a directory
  * (specified by script_dir) with given event and arguments.
  *
  * At one time, only one event can be run.  Multiple run_event calls
