@@ -1196,7 +1196,7 @@ krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
 /**
  * @brief Open a key table readonly or with readwrite access.
  *
- * Allows to use a different keytab than the default one using a relative
+ * Allows one to use a different keytab than the default one using a relative
  * path to the keytab.
  *
  * @param[in]  context  The library context
@@ -1334,7 +1334,7 @@ out:
 /**
  * @brief Open a key table readonly or with readwrite access.
  *
- * Allows to use a different keytab than the default one. The path needs to be
+ * Allows one to use a different keytab than the default one. The path needs to be
  * an absolute path or an error will be returned.
  *
  * @param[in]  context  The library context

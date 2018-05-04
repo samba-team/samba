@@ -45,7 +45,7 @@
 #include <time.h>
 
 /*
- * This allows to add a platform specific header file. Some embedded platforms
+ * This allows one to add a platform specific header file. Some embedded platforms
  * sometimes miss certain types and definitions.
  *
  * Example:
