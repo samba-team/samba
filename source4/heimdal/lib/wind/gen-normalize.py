@@ -51,7 +51,7 @@ ud = UnicodeData.read(sys.argv[1])
 
 def sortedKeys(d):
     """Return a sorted list of the keys of a dict"""
-    keys = d.keys()
+    keys = list(d.keys())
     keys.sort()
     return keys
 
