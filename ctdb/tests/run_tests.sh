@@ -263,6 +263,7 @@ export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 unit_tests="
 	ctdb_eventd
 	cunit
+	eventd
 	eventscripts
 	onnode
 	shellcheck

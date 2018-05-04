@@ -1,0 +1,11 @@
+#!/bin/sh
+
+case "$1" in
+"startup") sleep 5; exit 0 ;;
+"monitor") sleep 5; exit 0 ;;
+"event1") sleep 1; exit 0 ;;
+"event2") sleep 1; exit 0 ;;
+"event3") exit 3 ;;
+"timeout1") sleep 99 ;;
+*) exit 0 ;;
+esac

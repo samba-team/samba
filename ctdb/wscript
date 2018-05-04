@@ -987,6 +987,7 @@ def build(bld):
         'complex',
         'ctdb_eventd',
         'cunit',
+        'eventd',
         'eventscripts',
         'onnode',
         'shellcheck',

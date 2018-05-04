@@ -1,0 +1,9 @@
+#!/bin/sh
+
+case "$1" in
+"monitor") sleep 1; exit 0 ;;
+"event1") sleep 1; exit 0 ;;
+"event2") exit 2 ;;
+"timeout3") sleep 99 ;;
+*) exit 0 ;;
+esac
