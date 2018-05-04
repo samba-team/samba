@@ -298,7 +298,7 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
                     samdb, hostname, dns_conn,
                     change_owner_sd, samdb.host_dns_name(),
                     ip_address_list, self.get_logger())
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Failed to create computer '%s': " %
                                computername, e)
 
@@ -394,7 +394,7 @@ sudo is used so a computer may run the command as root.
                 remove_dns_references(
                     samdb, self.get_logger(), computer_dns_host_name,
                     ignore_no_name=True)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to remove computer "%s"' %
                                samaccountname, e)
         self.outf.write("Deleted computer %s\n" % computername)
@@ -569,7 +569,7 @@ class cmd_computer_move(Command):
         new_computer_dn.add_base(full_new_ou_dn)
         try:
             samdb.rename(computer_dn, new_computer_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to move computer "%s"' % computername, e)
         self.outf.write('Moved computer "%s" to "%s"\n' %
                         (computername, new_ou_dn))
