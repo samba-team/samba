@@ -50,6 +50,74 @@ static void get_gp_registry_context(TALLOC_CTX *ctx,
 	}
 }
 
+int list_gp_extensions(TALLOC_CTX *ctx,
+		       const char *smb_conf,
+		       struct gplist_dict **list)
+{
+	struct gp_registry_context *reg_ctx = NULL;
+	WERROR werr;
+	struct registry_key *parent;
+	int i, count = 0;
+	struct gplist_dict *itr = NULL;
+	int ret = 0;
+
+	get_gp_registry_context(ctx, REG_KEY_READ, &reg_ctx, smb_conf);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	parent = reg_ctx->curr_key;
+	count = regsubkey_ctr_numkeys(parent->subkeys);
+
+	if (count > 0) {
+		*list = talloc_zero(ctx, struct gplist_dict);
+		itr = *list;
+	}
+
+	for (i = count-1; i >= 0; i--) {
+		struct registry_key *subkey;
+		char *subkey_name = NULL;
+		const char *subkey_val = NULL;
+		uint32_t subkey_dword;
+
+		subkey_name = regsubkey_ctr_specific_key(parent->subkeys, i);
+		werr = gp_read_reg_subkey(ctx, reg_ctx,
+					  subkey_name, &subkey);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto out;
+		}
+		itr->guid = talloc_strdup(*list, subkey_name);
+		werr = gp_read_reg_val_sz(ctx, subkey,
+					  "DllName", &subkey_val);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->module_path = talloc_strdup(*list, subkey_val);
+		}
+		werr = gp_read_reg_val_sz(ctx, subkey,
+					  "ProcessGroupPolicy", &subkey_val);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->gp_ext_cls = talloc_strdup(*list, subkey_val);
+		}
+		werr = gp_read_reg_val_dword(ctx, subkey,
+					     "NoMachinePolicy", &subkey_dword);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->machine = !subkey_dword;
+		}
+		werr = gp_read_reg_val_dword(ctx, subkey,
+					     "NoUserPolicy", &subkey_dword);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->user = !subkey_dword;
+		}
+		if (i > 0) {
+			itr->next = talloc_zero(*list, struct gplist_dict);
+			itr = itr->next;
+		}
+	}
+
+	ret = 1;
+out:
+	return ret;
+}
+
 int unregister_gp_extension(const char *guid_name,
 			    const char *smb_conf)
 {

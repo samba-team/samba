@@ -389,6 +389,54 @@ out:
 	return ret;
 }
 
+static PyObject *py_list_gp_extensions(PyObject * self, PyObject * args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	PyObject *ret = NULL;
+	const char *smb_conf = NULL;
+	struct gplist_dict *list = NULL;
+
+	if (!PyArg_ParseTuple(args, "|s", &smb_conf)) {
+		return NULL;
+	}
+
+	if (!list_gp_extensions(frame, smb_conf, &list)) {
+		goto out;
+	}
+
+	ret = PyDict_New();
+	if (ret == NULL) {
+		goto out;
+	}
+
+	for (; list != NULL; list = list->next) {
+		PyObject *val;
+		PyObject *subitem = PyDict_New();
+		if (subitem == NULL) {
+			goto out;
+		}
+
+		if (list->module_path) {
+			val = PyStr_FromString(list->module_path);
+			PyDict_SetItemString(subitem, "DllName", val);
+		}
+		if (list->gp_ext_cls) {
+			val = PyStr_FromString(list->gp_ext_cls);
+			PyDict_SetItemString(subitem, "ProcessGroupPolicy", val);
+		}
+		PyDict_SetItemString(subitem, "MachinePolicy",
+				     list->machine ? Py_True : Py_False);
+		PyDict_SetItemString(subitem, "UserPolicy",
+				     list->user ? Py_True : Py_False);
+
+		PyDict_SetItemString(ret, list->guid, subitem);
+	}
+
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 static PyObject *py_unregister_gp_extension(PyObject * self, PyObject * args)
 {
 	const char *guid_name = NULL;
@@ -421,7 +469,7 @@ static PyObject *py_register_gp_extension(PyObject * self, PyObject *args,
 	const char *gp_ext_cls = NULL;
 	int machine = 1, user = 1;
 	static const char *kwlist[] = {"guid", "gp_ext_cls", "path",
-				       "smb_conf", "machine", "user"};
+				       "smb_conf", "machine", "user", NULL};
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sss|sii",
 					 discard_const_p(char *, kwlist),
@@ -648,6 +696,8 @@ static PyMethodDef py_gpo_methods[] = {
 	{"register_gp_extension", (PyCFunction)py_register_gp_extension,
 		METH_VARARGS | METH_KEYWORDS, NULL},
 	{"unregister_gp_extension", (PyCFunction)py_unregister_gp_extension,
+		METH_VARARGS, NULL},
+	{"list_gp_extensions", (PyCFunction)py_list_gp_extensions,
 		METH_VARARGS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
