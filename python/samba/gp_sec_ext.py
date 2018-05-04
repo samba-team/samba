@@ -127,6 +127,8 @@ class gp_sec_ext(gp_inf_ext):
         return os.path.join(rootpath, "User/Registry.pol")
 
     def apply_map(self):
+        if not self.ldb:
+            return {}
         return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
                                                          inf_to_ldb),
                                   "MaximumPasswordAge": ("maxPwdAge",

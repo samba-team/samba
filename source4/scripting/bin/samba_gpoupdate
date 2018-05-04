@@ -86,8 +86,7 @@ if __name__ == "__main__":
 
     gp_extensions = []
     if opts.machine:
-        if lp.get('server role') == 'active directory domain controller':
-            gp_extensions.append(gp_sec_ext(logger))
+        gp_extensions.append(gp_sec_ext(logger))
     else:
         pass # User extensions
 
