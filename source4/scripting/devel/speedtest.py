@@ -91,7 +91,7 @@ class SpeedTest(samba.tests.TestCase):
 dn: """ + user_dn + """
 sAMAccountName: """ + user_dn.split(",")[0][3:] + """
 objectClass: user
-unicodePwd:: """ + base64.b64encode(("\"%s\"" % self.user_pass).encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(("\"%s\"" % self.user_pass).encode('utf-16-le')).decode('utf8') + """
 url: www.example.com
 """
         self.ldb_admin.add_ldif(ldif)
