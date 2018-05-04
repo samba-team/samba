@@ -119,7 +119,7 @@ def get_crypt_value(alg, utf8pw, rounds=0):
     # we can ignore the possible == at the end
     # of the base64 string
     # we just need to replace '+' by '.'
-    b64salt = base64.b64encode(salt)[0:16].replace('+', '.')
+    b64salt = base64.b64encode(salt)[0:16].decode('utf8').replace('+', '.')
     crypt_salt = ""
     if rounds != 0:
         crypt_salt = "$%s$rounds=%s$%s$" % (alg, rounds, b64salt)
@@ -1247,7 +1247,7 @@ class GetPasswordCommand(Command):
                 h.update(u8)
                 h.update(salt)
                 bv = h.digest() + salt
-                v = "{SSHA}" + base64.b64encode(bv)
+                v = "{SSHA}" + base64.b64encode(bv).decode('utf8')
             elif a == "virtualCryptSHA256":
                 rounds = get_rounds(attr_opts[a])
                 x = get_virtual_crypt_value(a, 5, rounds, username, account_name)
@@ -1861,13 +1861,13 @@ samba-tool user syncpasswords --terminate \\
                 self.sync_command = sync_command
                 add_ldif  = "dn: %s\n" % self.cache_dn
                 add_ldif += "objectClass: userSyncPasswords\n"
-                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(self.samdb_url)
-                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(self.dirsync_filter)
+                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(self.samdb_url).decode('utf8')
+                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(self.dirsync_filter).decode('utf8')
                 for a in self.dirsync_attrs:
-                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(a)
+                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
                 add_ldif += "dirsyncControl: %s\n" % self.dirsync_controls[0]
                 for a in self.password_attrs:
-                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a)
+                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
                 if self.decrypt_samba_gpg == True:
                     add_ldif += "decryptSambaGPG: TRUE\n"
                 else:
