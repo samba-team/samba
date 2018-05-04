@@ -279,7 +279,7 @@
 		</varlistentry>
 		</variablelist>
 		  <warning><para>Implementers should take care to base64 encode
-		  any data (such as usernames/passwords) that may contain malicous user data, such as
+		  any data (such as usernames/passwords) that may contain malicious user data, such as
 		  a newline. They may also need to decode strings from
 		  the helper, which likewise may have been base64 encoded.</para></warning>
 		</listitem>
