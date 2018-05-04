@@ -25,6 +25,7 @@
 
 """Functions for setting up a Samba configuration (LDB and LDAP backends)."""
 
+from samba.compat import urllib_quote
 from base64 import b64encode
 import errno
 import ldb
@@ -183,7 +184,7 @@ class LDAPBackend(ProvisionBackend):
         if ldap_backend_forced_uri is not None:
             self.ldap_uri = ldap_backend_forced_uri
         else:
-            self.ldap_uri = "ldapi://%s" % urllib.quote(
+            self.ldap_uri = "ldapi://%s" % urllib_quote(
                 os.path.join(self.ldapdir, "ldapi"), safe="")
 
         if not os.path.exists(self.ldapdir):
