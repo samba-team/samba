@@ -103,7 +103,7 @@ class Command(object):
             force_traceback = True
 
         if isinstance(inner_exception, LdbError):
-            (ldb_ecode, ldb_emsg) = inner_exception
+            (ldb_ecode, ldb_emsg) = inner_exception.args
             self.errf.write("ERROR(ldb): %s - %s\n" % (message, ldb_emsg))
         elif isinstance(inner_exception, AssertionError):
             self.errf.write("ERROR(assert): %s\n" % message)
