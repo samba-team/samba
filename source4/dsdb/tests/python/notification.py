@@ -163,7 +163,7 @@ delete: otherLoginWorkstations
         max_notifications = 5
 
         notifies = [None] * (max_notifications + 1)
-        for i in xrange(0, max_notifications + 1):
+        for i in range(0, max_notifications + 1):
             notifies[i] = self.ldb.search_iterator(base=self.base_dn,
                                                    expression="(objectClass=*)",
                                                    scope=ldb.SCOPE_SUBTREE,
@@ -172,7 +172,7 @@ delete: otherLoginWorkstations
                                                    timeout=1)
         num_admin_limit = 0
         num_time_limit = 0
-        for i in xrange(0, max_notifications + 1):
+        for i in range(0, max_notifications + 1):
             try:
                 for msg in notifies[i]:
                     continue
