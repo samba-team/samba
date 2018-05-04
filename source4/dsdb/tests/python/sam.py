@@ -2536,7 +2536,7 @@ class SamTests(samba.tests.TestCase):
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
     def find_repl_meta_data(self, rpmd, attid):
-        for i in xrange(0, rpmd.ctr.count):
+        for i in range(0, rpmd.ctr.count):
             m = rpmd.ctr.array[i]
             if m.attid == attid:
                 return m
