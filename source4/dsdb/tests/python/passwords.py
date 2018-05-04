@@ -213,9 +213,9 @@ unicodePwd: YYYYYYYYYYYYYYYY
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 """)
 
         # Wrong old password
@@ -224,9 +224,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS4\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS4\"".encode('utf-16-le')).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e4:
@@ -240,9 +240,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS4\"".encode('utf-16-le')) 
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e5:
@@ -366,9 +366,9 @@ userPassword: thatsAcomplPASS2
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: clearTextPassword
-clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS1".encode('utf-16-le')) + """
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS1".encode('utf-16-le')).decode('utf8') + """
 add: clearTextPassword
-clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le')) + """
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le')).decode('utf8') + """
 """)
             # this passes against s4
         except LdbError as e11:
@@ -383,9 +383,9 @@ clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le'
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: clearTextPassword
-clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS3".encode('utf-16-le')) + """
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS3".encode('utf-16-le')).decode('utf8') + """
 add: clearTextPassword
-clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS4".encode('utf-16-le')) + """
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS4".encode('utf-16-le')).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e12:
@@ -401,9 +401,9 @@ clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS4".encode('utf-16-le'
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: clearTextPassword
-clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le')) + """
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le')).decode('utf8') + """
 add: clearTextPassword
-clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le')) + """
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le')).decode('utf8') + """
 """)
             self.fail()
         except LdbError as e13:
@@ -659,7 +659,7 @@ changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS2
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).decode('utf8') + """
 """)
              # this passes against s4
         except LdbError as e30:
@@ -671,7 +671,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')) 
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).decode('utf8') + """
 add: userPassword
 userPassword: thatsAcomplPASS4
 """)
@@ -1130,7 +1130,7 @@ dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: unicodePwd
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).decode('utf8') + """
 """)
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)

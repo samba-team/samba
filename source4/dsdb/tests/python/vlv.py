@@ -69,7 +69,7 @@ def encode_vlv_control(critical=1,
     if offset is not None:
         m = "%d:%d" % (offset, n)
     elif ':' in gte or '\x00' in gte:
-        gte = base64.b64encode(gte)
+        gte = base64.b64encode(gte).decode('utf8')
         m = "base64>=%s" % gte
     else:
         m = ">=%s" % gte

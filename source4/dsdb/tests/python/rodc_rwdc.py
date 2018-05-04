@@ -31,7 +31,7 @@ from samba.dcerpc import security, samr
 import password_lockout_base
 
 def passwd_encode(pw):
-    return base64.b64encode(('"%s"' % pw).encode('utf-16-le'))
+    return base64.b64encode(('"%s"' % pw).encode('utf-16-le')).decode('utf8')
 
 
 class RodcRwdcTestException(Exception):
