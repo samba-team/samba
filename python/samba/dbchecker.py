@@ -293,7 +293,7 @@ class dbcheck(object):
                     # as the original one, so that on replication we
                     # merge, rather than conflict.
                     proposed_objectguid = dsdb_dn.dn.get_extended_component("GUID")
-                listwko.append(o)
+                listwko.append(o.decode('utf8'))
 
             if proposed_objectguid is not None:
                 guid_suffix = "\nobjectGUID: %s" % str(misc.GUID(proposed_objectguid))
