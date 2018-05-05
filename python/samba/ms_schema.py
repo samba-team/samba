@@ -288,7 +288,8 @@ def __parse_schema_file(filename, objectClass):
 
     out = []
 
-    f = open(filename, "rU")
+    from io import open
+    f = open(filename, "r", encoding='latin-1')
     for entry in __read_raw_entries(f):
         out.append(__write_ldif_one(__transform_entry(entry, objectClass)))
 

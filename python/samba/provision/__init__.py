@@ -27,6 +27,7 @@
 __docformat__ = "restructuredText"
 
 from samba.compat import urllib_quote
+from samba.compat import string_types
 from base64 import b64encode
 import errno
 import os
@@ -1070,7 +1071,7 @@ def setup_encrypted_secrets_key(path):
     finally:
         os.umask(umask_original)
 
-    with os.fdopen(fd, 'w') as f:
+    with os.fdopen(fd, 'wb') as f:
         key = samba.generate_random_bytes(16)
         f.write(key)
 
@@ -1561,8 +1562,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
         ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
         names.ntdsguid = samdb.searchone(basedn=ntds_dn,
-            attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
-        assert isinstance(names.ntdsguid, str)
+            attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE).decode('utf8')
+        assert isinstance(names.ntdsguid, string_types)
 
     return samdb
 
@@ -1938,8 +1939,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                      backend_store=backend_store)
 
         domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
-                                     attribute="objectGUID")
-        assert isinstance(domainguid, str)
+                                     attribute="objectGUID").decode('utf8')
+        assert isinstance(domainguid, string_types)
 
     lastProvisionUSNs = get_last_provision_usn(samdb)
     maxUSN = get_max_usn(samdb, str(names.rootdn))
