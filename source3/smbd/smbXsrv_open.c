@@ -1684,3 +1684,36 @@ NTSTATUS smbXsrv_replay_cleanup(const struct GUID *client_guid,
 	}
 	return status;
 }
+
+NTSTATUS smbXsrv_open_global_traverse_per_rec_persistent_read(
+	int (*fn)(struct db_record *rec,
+		  struct smbXsrv_open_global0 *global,
+		  TDB_DATA *rc_open_global_key,
+		  void *private_data),
+	void *private_data)
+{
+
+	NTSTATUS status;
+	int count = 0;
+	struct smbXsrv_open_global_traverse_state state = {
+		.fn = fn,
+		.private_data = private_data,
+	};
+
+	become_root();
+	status = smbXsrv_open_global_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		unbecome_root();
+		DEBUG(0, ("Failed to initialize open_global: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	unbecome_root();
+
+	status = dbwrap_traverse_per_rec_persistent_read(
+		smbXsrv_open_global_db_ctx,
+		smbXsrv_open_global_traverse_fn,
+		&state,
+		&count);
+	return status;
+}

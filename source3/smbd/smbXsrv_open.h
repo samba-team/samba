@@ -83,6 +83,12 @@ NTSTATUS smbXsrv_open_global_traverse(
 		  TDB_DATA *rc_open_global_key,
 		  void *private_data),
 	void *private_data);
+NTSTATUS smbXsrv_open_global_traverse_per_rec_persistent_read(
+	int (*fn)(struct db_record *rec,
+		  struct smbXsrv_open_global0 *global,
+		  TDB_DATA *rc_open_global_key,
+		  void *private_data),
+	void *private_data);
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);
 NTSTATUS smbXsrv_replay_cleanup(const struct GUID *client_guid,
