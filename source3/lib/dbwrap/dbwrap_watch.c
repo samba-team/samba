@@ -718,6 +718,31 @@ static int dbwrap_watched_traverse_read(struct db_context *db,
 	return ret;
 }
 
+static int dbwrap_watched_traverse_per_rec_persistent_read(
+		struct db_context *db,
+		int (*fn)(struct db_record *rec,
+			  void *private_data),
+		void *private_data)
+{
+	struct db_watched_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_watched_ctx);
+	struct dbwrap_watched_traverse_state state;
+	NTSTATUS status;
+	int ret;
+
+	state = (struct dbwrap_watched_traverse_state) {
+		.fn = fn,
+		.private_data = private_data,
+	};
+
+	status = dbwrap_traverse_per_rec_persistent_read(
+		ctx->backend, dbwrap_watched_traverse_fn, &state, &ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return ret;
+}
+
 static int dbwrap_watched_get_seqnum(struct db_context *db)
 {
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
@@ -920,6 +945,7 @@ struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 	db->do_locked = dbwrap_watched_do_locked;
 	db->traverse = dbwrap_watched_traverse;
 	db->traverse_read = dbwrap_watched_traverse_read;
+	db->traverse_per_rec_persistent_read = dbwrap_watched_traverse_per_rec_persistent_read;
 	db->get_seqnum = dbwrap_watched_get_seqnum;
 	db->transaction_start = dbwrap_watched_transaction_start;
 	db->transaction_commit = dbwrap_watched_transaction_commit;
