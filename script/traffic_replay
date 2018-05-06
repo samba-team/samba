@@ -156,7 +156,7 @@ def main():
     lp = sambaopts.get_loadparm()
     creds = credopts.get_credentials(lp)
 
-    domain = opts.workgroup
+    domain = creds.get_domain()
     if domain:
         lp.set("workgroup", domain)
     else:
