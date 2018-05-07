@@ -13,8 +13,8 @@ failed=0
 
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
 
-testit "wbinfo returns domain SID" $wbinfo -n "@$DOMAIN" || exit 1
-DOMAIN_SID=$($wbinfo -n "@$DOMAIN" | cut -f 1 -d " ")
+testit "wbinfo returns domain SID" $wbinfo -n "$DOMAIN/" || exit 1
+DOMAIN_SID=$($wbinfo -n "$DOMAIN/" | cut -f 1 -d " ")
 echo "Domain $DOMAIN has SID $DOMAIN_SID"
 
 # Find an unused uid and SID

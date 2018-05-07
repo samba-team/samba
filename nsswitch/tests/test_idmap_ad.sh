@@ -20,7 +20,7 @@ failed=0
 
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
 
-DOMAIN_SID=$($wbinfo -n "@$DOMAIN" | cut -f 1 -d " ")
+DOMAIN_SID=$($wbinfo -n "$DOMAIN/" | cut -f 1 -d " ")
 if [ $? -ne 0 ] ; then
     echo "Could not find domain SID" | subunit_fail_test "test_idmap_ad"
     exit 1
