@@ -141,10 +141,13 @@ class gp_sec_ext(gp_inf_ext):
 
     def apply_map(self):
         if SamDB:
-            self.ldb = SamDB(self.lp.samdb_url(),
-                             session_info=system_session(),
-                             credentials=self.creds,
-                             lp=self.lp)
+            try:
+                self.ldb = SamDB(self.lp.samdb_url(),
+                                 session_info=system_session(),
+                                 credentials=self.creds,
+                                 lp=self.lp)
+            except:
+                return {}
         else:
             return {}
         return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
