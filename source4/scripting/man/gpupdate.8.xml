@@ -59,6 +59,9 @@
 <para><option>-X</option>, <option>--unapply</option>
        Unapply Group Policy</para>
 
+<para><option>--target</option>
+       {Computer | User}</para>
+
 <para>Samba Common Options:</para>
 
 <para><option>-s </option>FILE, <option>--configfile</option>=<emphasis remap="I">FILE</emphasis>
