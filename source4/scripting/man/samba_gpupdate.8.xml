@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
-<refentry id="samba_gpoupdate.8">
+<refentry id="samba_gpupdate.8">
 <refentryinfo><date>2017-07-11</date></refentryinfo>
 
 <refmeta>
@@ -12,17 +12,17 @@
 </refmeta>
 
 <refnamediv>
-	<refname>samba_gpoupdate</refname>
+	<refname>samba_gpupdate</refname>
 	<refpurpose>apply group policy</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>samba_gpoupdate</command>
+		<command>samba_gpupdate</command>
 	</cmdsynopsis>
 
 	<cmdsynopsis>
-		<command>samba_gpoupdate</command>
+		<command>samba_gpupdate</command>
 		<arg choice="opt">
 		<replaceable>options</replaceable>
 		</arg>
@@ -37,7 +37,7 @@
 	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry> suite.</para>
 
-	<para><command>samba_gpoupdate</command> a script for
+	<para><command>samba_gpupdate</command> a script for
 	applying and unapplying Group Policy. Group Policy
 	application is experimental. Currently this applies
 	password policies (minimum/maximum password age,

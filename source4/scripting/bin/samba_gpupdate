@@ -39,7 +39,7 @@ from samba.gp_sec_ext import gp_sec_ext
 import logging
 
 if __name__ == "__main__":
-    parser = optparse.OptionParser('samba_gpoupdate [options]')
+    parser = optparse.OptionParser('samba_gpupdate [options]')
     sambaopts = options.SambaOptions(parser)
 
     # Get the command line options
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     session = system_session()
 
     # Set up logging
-    logger = logging.getLogger('samba_gpoupdate')
+    logger = logging.getLogger('samba_gpupdate')
     logger.addHandler(logging.StreamHandler(sys.stdout))
     logger.setLevel(logging.CRITICAL)
     log_level = lp.log_level()
