@@ -35,6 +35,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
+#include "dlinklist.h"
 #include "ldb_module.h"
 
 struct message_store {
@@ -48,13 +49,12 @@ struct message_store {
 struct private_data;
 
 struct results_store {
+	struct results_store *prev, *next;
 
 	struct private_data *priv;
 
 	char *cookie;
 	time_t timestamp;
-
-	struct results_store *next;
 
 	struct message_store *first;
 	struct message_store *last;
@@ -75,22 +75,8 @@ struct private_data {
 static int store_destructor(struct results_store *del)
 {
 	struct private_data *priv = del->priv;
-	struct results_store *loop;
-
-	if (priv->store == del) {
-		priv->store = del->next;
-		return 0;
-	}
-
-	for (loop = priv->store; loop; loop = loop->next) {
-		if (loop->next == del) {
-			loop->next = del->next;
-			return 0;
-		}
-	}
-
-	/* is not in list ? */
-	return -1;
+	DLIST_REMOVE(priv->store, del);
+	return 0;
 }
 
 static struct results_store *new_store(struct private_data *priv)
@@ -120,8 +106,7 @@ static struct results_store *new_store(struct private_data *priv)
 	newr->first_ref = NULL;
 	newr->controls = NULL;
 
-	newr->next = priv->store;
-	priv->store = newr;
+	DLIST_ADD(priv->store, newr);
 
 	talloc_set_destructor(newr, store_destructor);
 
