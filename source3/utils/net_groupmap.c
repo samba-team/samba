@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001.
  *  Copyright (C) Gerald Carter                2003,
  *  Copyright (C) Volker Lendecke              2004
  *

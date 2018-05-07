@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  account policy storage
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001
  *  Copyright (C) Andrew Bartlett              2002
  *  Copyright (C) Guenther Deschner            2004-2005
  *
