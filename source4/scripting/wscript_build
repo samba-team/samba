@@ -5,8 +5,8 @@ from samba_utils import MODE_755
 sbin_files = ''
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
     sbin_files = 'bin/samba_dnsupdate bin/samba_spnupdate bin/samba_upgradedns bin/samba_kcc '
-sbin_files += 'bin/samba_gpoupdate'
-man_files = 'man/samba_gpoupdate.8'
+sbin_files += 'bin/samba-gpupdate'
+man_files = 'man/samba-gpupdate.8'
 
 if sbin_files:
     bld.INSTALL_FILES('${SBINDIR}',

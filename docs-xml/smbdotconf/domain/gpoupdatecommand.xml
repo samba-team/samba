@@ -5,7 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option sets the command that is called to apply GPO policies.
-        The samba_gpoupdate script applies System Access and Kerberos Policies
+        The samba-gpupdate script applies System Access and Kerberos Policies
 	to the KDC. System Access policies set minPwdAge, maxPwdAge,
 	minPwdLength, and pwdProperties in the samdb. Kerberos Policies set
 	kdc:service ticket lifetime, kdc:user ticket lifetime, and kdc:renewal
@@ -13,6 +13,6 @@
 	</para>
 </description>
 
-<value type="default">&pathconfig.SCRIPTSBINDIR;/samba_gpoupdate</value>
+<value type="default">&pathconfig.SCRIPTSBINDIR;/samba-gpupdate</value>
 <value type="example">/usr/local/sbin/gpoupdate</value>
 </samba:parameter>
