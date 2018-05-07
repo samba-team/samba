@@ -22,6 +22,7 @@
 import os
 import samba.getopt as options
 import ldb
+import re
 
 from samba.auth import system_session
 from samba.netcmd import (
@@ -44,6 +45,7 @@ import uuid
 from samba.ntacls import dsacl2fsacl
 from samba.dcerpc import nbt
 from samba.net import Net
+from samba.gp_parse import GPParser, GPNoParserException
 
 
 def samdb_connect(ctx):
@@ -231,6 +233,41 @@ def parse_unc(unc):
         return tmp
     raise ValueError("Invalid UNC string: %s" % unc)
 
+
+def find_parser(name, flags=re.IGNORECASE):
+    return GPParser()
+
+
+def backup_directory_remote_to_local(conn, remotedir, localdir):
+    SUFFIX = '.SAMBABACKUP'
+    if not os.path.isdir(localdir):
+        os.mkdir(localdir)
+    r_dirs = [ remotedir ]
+    l_dirs = [ localdir ]
+    while r_dirs:
+        r_dir = r_dirs.pop()
+        l_dir = l_dirs.pop()
+
+        dirlist = conn.list(r_dir, attribs=attr_flags)
+        dirlist.sort()
+        for e in dirlist:
+            r_name = r_dir + '\\' + e['name']
+            l_name = os.path.join(l_dir, e['name'])
+
+            if e['attrib'] & smb.FILE_ATTRIBUTE_DIRECTORY:
+                r_dirs.append(r_name)
+                l_dirs.append(l_name)
+                os.mkdir(l_name)
+            else:
+                data = conn.loadfile(r_name)
+                with file(l_name + SUFFIX, 'w') as f:
+                    f.write(data)
+
+                parser = find_parser(e['name'])
+                parser.parse(data)
+                parser.write_xml(l_name + '.xml')
+
+
 attr_flags = smb.FILE_ATTRIBUTE_SYSTEM | \
              smb.FILE_ATTRIBUTE_DIRECTORY | \
              smb.FILE_ATTRIBUTE_ARCHIVE | \
@@ -246,6 +283,7 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
         l_dir = l_dirs.pop()
 
         dirlist = conn.list(r_dir, attribs=attr_flags)
+        dirlist.sort()
         for e in dirlist:
             r_name = r_dir + '\\' + e['name']
             l_name = os.path.join(l_dir, e['name'])
@@ -269,6 +307,7 @@ def copy_directory_local_to_remote(conn, localdir, remotedir):
         r_dir = r_dirs.pop()
 
         dirlist = os.listdir(l_dir)
+        dirlist.sort()
         for e in dirlist:
             l_name = os.path.join(l_dir, e)
             r_name = r_dir + '\\' + e
@@ -874,6 +913,79 @@ class cmd_fetch(Command):
         self.outf.write('GPO copied to %s\n' % gpodir)
 
 
+class cmd_backup(Command):
+    """Backup a GPO."""
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ['gpo']
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--tmpdir", help="Temporary directory for copying policy files", type=str)
+        ]
+
+    def run(self, gpo, H=None, tmpdir=None, sambaopts=None, credopts=None, versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        samdb_connect(self)
+        try:
+            msg = get_gpo_info(self.samdb, gpo)[0]
+        except Exception:
+            raise CommandError("GPO '%s' does not exist" % gpo)
+
+        # verify UNC path
+        unc = msg['gPCFileSysPath'][0]
+        try:
+            [dom_name, service, sharepath] = parse_unc(unc)
+        except ValueError:
+            raise CommandError("Invalid GPO path (%s)" % unc)
+
+        # SMB connect to DC
+        try:
+            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
+        except Exception:
+            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
+
+        # Copy GPT
+        if tmpdir is None:
+            tmpdir = "/tmp"
+        if not os.path.isdir(tmpdir):
+            raise CommandError("Temoprary directory '%s' does not exist" % tmpdir)
+
+        localdir = os.path.join(tmpdir, "policy")
+        if not os.path.isdir(localdir):
+            os.mkdir(localdir)
+
+        gpodir = os.path.join(localdir, gpo)
+        if os.path.isdir(gpodir):
+            raise CommandError("GPO directory '%s' already exists, refusing to overwrite" % gpodir)
+
+        try:
+            os.mkdir(gpodir)
+            backup_directory_remote_to_local(conn, sharepath, gpodir)
+        except Exception as e:
+            # FIXME: Catch more specific exception
+            raise CommandError("Error copying GPO from DC", e)
+        self.outf.write('GPO copied to %s\n' % gpodir)
+
+
 class cmd_create(Command):
     """Create an empty GPO."""
 
@@ -1179,3 +1291,4 @@ class cmd_gpo(SuperCommand):
     subcommands["create"] = cmd_create()
     subcommands["del"] = cmd_del()
     subcommands["aclcheck"] = cmd_aclcheck()
+    subcommands["backup"] = cmd_backup()
