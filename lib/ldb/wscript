@@ -374,6 +374,11 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_tdb_test',
+                         source='tests/ldb_tdb_test.c',
+                         deps='cmocka ldb',
+                         install=False)
+
         bld.SAMBA_BINARY('ldb_msg_test',
                          source='tests/ldb_msg.c',
                          deps='cmocka ldb',
@@ -416,7 +421,8 @@ def test(ctx):
                      'ldb_tdb_mod_op_test',
                      'ldb_tdb_guid_mod_op_test',
                      'ldb_msg_test',
-                     'ldb_tdb_kv_ops_test']:
+                     'ldb_tdb_kv_ops_test',
+                     'ldb_tdb_test']:
             cmd = os.path.join(Utils.g_module.blddir, test_exe)
             cmocka_ret = cmocka_ret or samba_utils.RUN_COMMAND(cmd)
 
