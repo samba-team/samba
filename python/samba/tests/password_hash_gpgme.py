@@ -28,12 +28,14 @@ kerberos newer keys are generated.
 from samba.tests.password_hash import (
     PassWordHashTests,
     get_package,
-    USER_PASS
+    USER_PASS,
+    USER_NAME
 )
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 import binascii
-
+from samba.tests.pso import PasswordSettings
+import samba
 
 class PassWordHashGpgmeTests(PassWordHashTests):
 
@@ -124,6 +126,67 @@ class PassWordHashGpgmeTests(PassWordHashTests):
         ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
                         binascii.a2b_hex(ct_package.data))
         self.assertEquals(USER_PASS.encode('utf-16-le'), ct.cleartext)
+
+    def assert_cleartext(self, expect_cleartext, password=None):
+        """Checks cleartext is (or isn't) returned as expected"""
+        sc = self.get_supplemental_creds()
+        if expect_cleartext:
+            (pos, ct_package) = get_package(sc, "Primary:CLEARTEXT")
+            self.assertTrue(ct_package != None, "Failed to retrieve cleartext")
+
+            # Check the clear-text value is correct.
+            ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
+                            binascii.a2b_hex(ct_package.data))
+            self.assertEquals(password.encode('utf-16-le'), ct.cleartext)
+        else:
+            ct_package = get_package(sc, "Primary:CLEARTEXT")
+            self.assertTrue(ct_package == None,
+                            "Got cleartext when we shouldn't have")
+
+    def test_supplementalCredentials_cleartext_pso(self):
+        """Checks that a PSO's cleartext setting can override the domain's"""
+
+        # create a user that stores plain-text passwords
+        self.add_user(clear_text=True)
+
+        # check that clear-text is present in the supplementary-credentials
+        self.assert_cleartext(expect_cleartext=True, password=USER_PASS)
+
+        # create a PSO overriding the plain-text setting & apply it to the user
+        no_plaintext_pso = PasswordSettings("no-plaintext-PSO", self.ldb,
+                                            precedence=200,
+                                            store_plaintext=False)
+        self.addCleanup(self.ldb.delete, no_plaintext_pso.dn)
+        userdn = "cn=" + USER_NAME + ",cn=users," + self.base_dn
+        no_plaintext_pso.apply_to(userdn)
+
+        # set the password to update the cleartext password stored
+        new_password = samba.generate_random_password(32, 32)
+        self.ldb.setpassword("(sAMAccountName=%s)" % USER_NAME, new_password)
+
+        # this time cleartext shouldn't be in the supplementary creds
+        self.assert_cleartext(expect_cleartext=False)
+
+        # unapply PSO, update password, and check we get the cleartext again
+        no_plaintext_pso.unapply(userdn)
+        new_password = samba.generate_random_password(32, 32)
+        self.ldb.setpassword("(sAMAccountName=%s)" % USER_NAME, new_password)
+        self.assert_cleartext(expect_cleartext=True, password=new_password)
+
+        # Now update the domain setting and check we no longer get cleartext
+        self.set_store_cleartext(False)
+        new_password = samba.generate_random_password(32, 32)
+        self.ldb.setpassword("(sAMAccountName=%s)" % USER_NAME, new_password)
+        self.assert_cleartext(expect_cleartext=False)
+
+        # create a PSO overriding the domain setting & apply it to the user
+        plaintext_pso = PasswordSettings("plaintext-PSO", self.ldb,
+                                         precedence=100, store_plaintext=True)
+        self.addCleanup(self.ldb.delete, plaintext_pso.dn)
+        plaintext_pso.apply_to(userdn)
+        new_password = samba.generate_random_password(32, 32)
+        self.ldb.setpassword("(sAMAccountName=%s)" % USER_NAME, new_password)
+        self.assert_cleartext(expect_cleartext=True, password=new_password)
 
     def test_userPassword_multiple_hashes(self):
         self.add_user(options=[(

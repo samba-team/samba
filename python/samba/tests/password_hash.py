@@ -70,6 +70,17 @@ class PassWordHashTests(TestCase):
         self.lp = samba.tests.env_loadparm()
         super(PassWordHashTests, self).setUp()
 
+    def set_store_cleartext(self, cleartext):
+        # get the current pwdProperties
+        pwdProperties = self.ldb.get_pwdProperties()
+        # update the clear-text properties flag
+        props = int(pwdProperties)
+        if cleartext:
+            props |= DOMAIN_PASSWORD_STORE_CLEARTEXT
+        else:
+            props &= ~DOMAIN_PASSWORD_STORE_CLEARTEXT
+        self.ldb.set_pwdProperties(str(props))
+
     # Add a user to ldb, this will exercise the password_hash code
     # and calculate the appropriate supplemental credentials
     def add_user(self, options=None, clear_text=False, ldb=None):
@@ -109,14 +120,11 @@ class PassWordHashTests(TestCase):
 
         account_control = 0
         if clear_text:
-            # get the current pwdProperties
+            # Restore the current domain setting on exit.
             pwdProperties = self.ldb.get_pwdProperties()
-            # enable clear text properties
-            props = int(pwdProperties)
-            props |= DOMAIN_PASSWORD_STORE_CLEARTEXT
-            self.ldb.set_pwdProperties(str(props))
-            # Restore the value on exit.
             self.addCleanup(self.ldb.set_pwdProperties, pwdProperties)
+            # Update the domain setting
+            self.set_store_cleartext(clear_text)
             account_control |= UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
 
         # (Re)adds the test user USER_NAME with password USER_PASS
