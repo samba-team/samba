@@ -1080,6 +1080,14 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	data_blob_free(&ntlmssp_state->challenge_blob);
 
 	if (gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		if (gensec_security->want_features & GENSEC_FEATURE_LDAP_STYLE) {
+			/*
+			 * We need to handle NTLMSSP_NEGOTIATE_SIGN as
+			 * NTLMSSP_NEGOTIATE_SEAL if GENSEC_FEATURE_LDAP_STYLE
+			 * is requested.
+			 */
+			ntlmssp_state->force_wrap_seal = true;
+		}
 		nt_status = ntlmssp_sign_init(ntlmssp_state);
 	}
 
