@@ -94,10 +94,15 @@ if __name__ == "__main__":
             gp_extensions.append(ext(logger, creds))
 
     # Get a live instance of Samba
+    test_ldb = None
     if SamDB:
-        test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
-    else:
-        test_ldb = None
+        try:
+            test_ldb = SamDB(url,
+                             session_info=session,
+                             credentials=creds,
+                             lp=lp)
+        except:
+            test_ldb = None
 
     if not opts.unapply:
         apply_gp(lp, creds, test_ldb, logger, store, gp_extensions)
