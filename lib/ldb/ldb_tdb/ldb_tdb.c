@@ -2355,6 +2355,7 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	ltdb->kv_ops = &key_value_ops;
 
+	errno = 0;
 	/* note that we use quite a large default hash size */
 	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000,
 				   tdb_flags, open_flags,
