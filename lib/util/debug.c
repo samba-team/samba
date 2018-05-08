@@ -480,8 +480,8 @@ static void debug_set_backends(const char *param)
 static void debug_backends_log(const char *msg, int msg_level)
 {
 	char msg_no_nl[FORMAT_BUFR_SIZE];
-	unsigned i;
-	int len;
+	size_t i;
+	size_t len;
 
 	/*
 	 * Some backends already add an extra newline, so also provide
@@ -551,7 +551,7 @@ static const char *default_classname_table[] = {
  */
 static const int debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
 
-static int debug_num_classes = 0;
+static size_t debug_num_classes = 0;
 int     *DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
 
 
@@ -630,7 +630,7 @@ utility lists registered debug class names's
 char *debug_list_class_names_and_levels(void)
 {
 	char *buf = NULL;
-	int i;
+	size_t i;
 	/* prepare strings */
 	for (i = 0; i < debug_num_classes; i++) {
 		buf = talloc_asprintf_append(buf,
@@ -651,7 +651,7 @@ char *debug_list_class_names_and_levels(void)
 
 static int debug_lookup_classname_int(const char* classname)
 {
-	int i;
+	size_t i;
 
 	if (!classname) return -1;
 
@@ -741,7 +741,7 @@ static int debug_lookup_classname(const char *classname)
 
 static void debug_dump_status(int level)
 {
-	int q;
+	size_t q;
 
 	DEBUG(level, ("INFO: Current debug levels:\n"));
 	for (q = 0; q < debug_num_classes; q++) {
@@ -790,7 +790,7 @@ bool debug_parse_levels(const char *params_str)
 	size_t str_len = strlen(params_str);
 	char str[str_len+1];
 	char *tok, *saveptr;
-	int i;
+	size_t i;
 
 	/* Just in case */
 	debug_init();
