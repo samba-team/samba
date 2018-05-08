@@ -198,16 +198,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
 %dir %{_libexecdir}/ctdb
-%{_libexecdir}/ctdb/ctdb_eventd
-%{_libexecdir}/ctdb/ctdb_lock_helper
-%{_libexecdir}/ctdb/ctdb_recovery_helper
-%{_libexecdir}/ctdb/ctdb_takeover_helper
-%{_libexecdir}/ctdb/ctdb_mutex_fcntl_helper
-%{_libexecdir}/ctdb/ctdb_event
-%{_libexecdir}/ctdb/ctdb_natgw
-%{_libexecdir}/ctdb/ctdb_lvs
-%{_libexecdir}/ctdb/ctdb_killtcp
-%{_libexecdir}/ctdb/smnotify
+%{_libexecdir}/ctdb/*
 %dir %{_libdir}
 %{_libdir}/ctdb/lib*
 %{_mandir}/man1/ctdb.1.gz
