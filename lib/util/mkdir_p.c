@@ -49,11 +49,11 @@ int mkdir_p(const char *dir, int mode)
 
 	/* Create ancestors */
 	len = strlen(dir);
-	if (len >= PATH_MAX) {
+	ret = snprintf(t, sizeof(t), "%s", dir);
+	if (ret != len) {
 		errno = ENAMETOOLONG;
 		return -1;
 	}
-	strncpy(t, dir, len+1);
 
 	ret = mkdir_p(dirname(t), mode);
 	if (ret != 0) {
