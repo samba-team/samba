@@ -390,6 +390,12 @@ static int handle_pe_file(files_struct *fsp,
 
 	/* get the section table */
 	num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
+
+	if (num_sections >= (UINT_MAX / PE_HEADER_SECT_HEADER_SIZE)) {
+		/* Integer wrap. */
+		goto out;
+	}
+
 	section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
 	if (section_table_bytes == 0) {
 		goto out;
