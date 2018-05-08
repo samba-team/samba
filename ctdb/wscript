@@ -454,6 +454,12 @@ def build(bld):
                         includes='include',
                         deps='ctdb-protocol-util replace talloc tevent')
 
+    bld.SAMBA_BINARY('ctdb-path',
+                     source='common/path_tool.c',
+                     cflags='-DCTDB_PATH_TOOL',
+                     deps='''ctdb-util samba-util talloc replace popt''',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_BINARY('ctdbd',
                      source='server/ctdbd.c ' +
                                bld.SUBDIR('server',
