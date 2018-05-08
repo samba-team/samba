@@ -1693,7 +1693,7 @@ extern pid_t background_lpq_updater_pid;
 static void print_queue_update(struct messaging_context *msg_ctx,
 			       int snum, bool force)
 {
-	fstring key;
+	char key[268];
 	fstring sharename;
 	char *lpqcommand = NULL;
 	char *lprmcommand = NULL;
