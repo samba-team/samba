@@ -113,7 +113,9 @@ setup_ctdb_base ()
 	if [ -d "$CTDB_BASE" ] ; then
 		rm -r "$CTDB_BASE"
 	fi
-	mkdir -p  "$CTDB_BASE" || die "Failed to create CTDB_BASE=$CTDB_BASE"
+	mkdir -p "$CTDB_BASE" || die "Failed to create CTDB_BASE=$CTDB_BASE"
+	mkdir -p "${CTDB_BASE}/run" || die "Failed to create ${CTDB_BASE}/run"
+	mkdir -p "${CTDB_BASE}/var" || die "Failed to create ${CTDB_BASE}/var"
 
 	for _i ; do
 		cp -pr "${CTDB_SCRIPTS_BASE}/${_i}" "${CTDB_BASE}/"
