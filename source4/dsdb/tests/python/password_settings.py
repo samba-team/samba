@@ -129,11 +129,6 @@ class PasswordSettingsTestCase(PasswordTestCase):
                         "Expected PSO %s, not %s" %(pso.name,
                                                     str(resultant_pso)))
 
-        # temporarily returning early here will just test the resultant-PSO
-        # constructed attribute. Remove this return to also test min password
-        # length, complexity, and password-history
-        return
-
         # we're mirroring the pwd_history for the user, so make sure this is
         # up-to-date, before we start making password changes
         if user.last_pso:
