@@ -1211,30 +1211,31 @@ static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 				TALLOC_CTX *ctx,
 				const struct smb_filename *smb_fname)
 {
-	char *result;
+	char *result = NULL;
 	const char *path = smb_fname->base_name;
 	size_t len = strlen(path);
 	struct smb_filename *result_fname = NULL;
+	int r = -1;
 
-	result = SMB_MALLOC_ARRAY(char, PATH_MAX+1);
 	if (len && (path[0] == '/')) {
-		int r = asprintf(&result, "%s", path);
-		if (r < 0) return NULL;
+		r = asprintf(&result, "%s", path);
 	} else if ((len >= 2) && (path[0] == '.') && (path[1] == '/')) {
 		if (len == 2) {
-			int r = asprintf(&result, "%s",
+			r = asprintf(&result, "%s",
 					handle->conn->connectpath);
-			if (r < 0) return NULL;
 		} else {
-			int r = asprintf(&result, "%s/%s",
+			r = asprintf(&result, "%s/%s",
 					handle->conn->connectpath, &path[2]);
-			if (r < 0) return NULL;
 		}
 	} else {
-		int r = asprintf(&result, "%s/%s",
+		r = asprintf(&result, "%s/%s",
 				handle->conn->connectpath, path);
-		if (r < 0) return NULL;
 	}
+
+	if (r < 0) {
+		return NULL;
+	}
+
 	DBG_DEBUG("[CEPH] realpath(%p, %s) = %s\n", handle, path, result);
 	result_fname = synthetic_smb_fname(ctx,
 				result,
