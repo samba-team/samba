@@ -121,7 +121,7 @@
 	<term>--computerou=COMPUTEROU</term>
 	<listitem><para>
 	DN of alternative location (with or without domainDN counterpart) to
-	default CN=Users in which new computer object will be created.
+	default CN=Computers in which new computer object will be created.
 	E.g. 'OU=OUname'.
 	</para></listitem>
 	</varlistentry>
