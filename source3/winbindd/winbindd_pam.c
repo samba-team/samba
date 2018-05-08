@@ -159,7 +159,7 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 	/* We've been asked to return the unix username, per
 	   'winbind use default domain' settings and the like */
 
-	const char *nt_username, *nt_domain;
+	const char *nt_username, *nt_domain, *unix_username;
 
 	nt_domain = talloc_strdup(mem_ctx, info3->base.logon_domain.string);
 	if (!nt_domain) {
@@ -175,8 +175,15 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 		nt_username = name_user;
 	}
 
-	fill_domain_username(resp->data.auth.unix_username,
-			     nt_domain, nt_username, true);
+	unix_username = fill_domain_username_talloc(mem_ctx,
+						    nt_domain,
+						    nt_username,
+						    true);
+	if (unix_username == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fstrcpy(resp->data.auth.unix_username, unix_username);
 
 	DEBUG(5, ("Setting unix username to [%s]\n",
 		  resp->data.auth.unix_username));

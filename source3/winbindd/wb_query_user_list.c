@@ -104,11 +104,14 @@ static void wb_query_user_list_done(struct tevent_req *subreq)
 
 	for (i=0; i<state->names.num_principals; i++) {
 		struct wbint_Principal *p = &state->names.principals[i];
-		fstring name;
+		const char *name;
 		int ret;
 
-		fill_domain_username(name, state->domain_name, p->name, true);
-
+		name = fill_domain_username_talloc(state, state->domain_name, p->name, true);
+		if (name == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 		ret = strv_add(state, &state->users, name);
 		if (ret != 0) {
 			tevent_req_nterror(req, map_nt_error_from_unix(ret));
