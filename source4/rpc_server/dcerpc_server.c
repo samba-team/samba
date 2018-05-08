@@ -359,7 +359,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		 * Because one endpoint can only have one process
 		 * model, we add a new IP_TCP endpoint for each model.
 		 *
-		 * This woks in conjunction with the forced overwrite
+		 * This works in conjunction with the forced overwrite
 		 * of ep->use_single_process below.
 		 */
 		if (ep->use_single_process != use_single_process
