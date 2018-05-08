@@ -1190,26 +1190,6 @@ bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
 
     We always canonicalize as UPPERCASE DOMAIN, lowercase username.
 */
-void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume)
-{
-	fstring tmp_user;
-
-	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
-		can_assume = false;
-	}
-
-	fstrcpy(tmp_user, user);
-	(void)strlower_m(tmp_user);
-
-	if (can_assume && assume_domain(domain)) {
-		strlcpy(name, tmp_user, sizeof(fstring));
-	} else {
-		slprintf(name, sizeof(fstring) - 1, "%s%c%s",
-			 domain, *lp_winbind_separator(),
-			 tmp_user);
-	}
-}
-
 /**
  * talloc version of fill_domain_username()
  * return NULL on talloc failure.
