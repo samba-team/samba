@@ -616,7 +616,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	char dname[256];
+	char dname[128];
 	char fname[256];
 	char fname2[256];
 	struct smb2_handle _dh1;
