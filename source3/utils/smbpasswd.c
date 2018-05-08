@@ -368,36 +368,44 @@ static int process_root(int local_flags)
 
 	if (local_flags & LOCAL_TRUST_ACCOUNT) {
 		/* add the $ automatically */
-		static fstring buf;
+		size_t user_name_len = strlen(user_name);
 
-		/*
-		 * Remove any trailing '$' before we
-		 * generate the initial machine password.
-		 */
-
-		if (user_name[strlen(user_name)-1] == '$') {
-			user_name[strlen(user_name)-1] = 0;
+		if (user_name[user_name_len - 1] == '$') {
+			user_name_len--;
+		} else {
+			if (user_name_len + 2 > sizeof(user_name)) {
+				fprintf(stderr, "machine name too long\n");
+				exit(1);
+			}
+			user_name[user_name_len] = '$';
+			user_name[user_name_len + 1] = '\0';
 		}
 
 		if (local_flags & LOCAL_ADD_USER) {
 		        SAFE_FREE(new_passwd);
-			new_passwd = smb_xstrdup(user_name);
+
+			/*
+			 * Remove any trailing '$' before we
+			 * generate the initial machine password.
+			 */
+			new_passwd = smb_xstrndup(user_name, user_name_len);
 			if (!strlower_m(new_passwd)) {
 				fprintf(stderr, "strlower_m %s failed\n",
 					new_passwd);
 				exit(1);
 			}
 		}
-
-		/*
-		 * Now ensure the username ends in '$' for
-		 * the machine add.
-		 */
-
-		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
-		strlcpy(user_name, buf, sizeof(user_name));
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
-		static fstring buf;
+		size_t user_name_len = strlen(user_name);
+
+		if (user_name[user_name_len - 1] != '$') {
+			if (user_name_len + 2 > sizeof(user_name)) {
+				fprintf(stderr, "machine name too long\n");
+				exit(1);
+			}
+			user_name[user_name_len] = '$';
+			user_name[user_name_len + 1] = '\0';
+		}
 
 		if ((local_flags & LOCAL_ADD_USER) && (new_passwd == NULL)) {
 			/*
@@ -409,11 +417,6 @@ static int process_root(int local_flags)
 				exit(1);
 			}
 		}
-
-		/* prepare uppercased and '$' terminated username */
-		slprintf(buf, sizeof(buf) - 1, "%s$", user_name);
-		strlcpy(user_name, buf, sizeof(user_name));
-
 	} else {
 
 		if (remote_machine != NULL) {
