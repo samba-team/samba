@@ -82,6 +82,10 @@ static int schema_metadata_open(struct ldb_module *module)
 	filename = ldb_relative_path(ldb,
 				     tmp_ctx,
 				     "sam.ldb.d/metadata.tdb");
+	if (filename == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_module_oom(module);
+	}
 
 	open_flags = O_RDWR;
 	if (stat(filename, &statbuf) != 0) {
