@@ -34,7 +34,7 @@
 bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 		const char *dom_name, const char *gr_name, gid_t unix_gid)
 {
-	fstring full_group_name;
+	const char *full_group_name;
 	char *mapped_name = NULL;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
@@ -43,17 +43,21 @@ bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 
 	/* Basic whitespace replacement */
 	if (NT_STATUS_IS_OK(nt_status)) {
-		fill_domain_username(full_group_name, dom_name,
+		full_group_name = fill_domain_username_talloc(mem_ctx, dom_name,
 				     mapped_name, true);
 	}
 	/* Mapped to an aliase */
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED)) {
-		fstrcpy(full_group_name, mapped_name);
+		full_group_name = mapped_name;
 	}
 	/* no change */
 	else {
-		fill_domain_username( full_group_name, dom_name,
+		full_group_name = fill_domain_username_talloc(mem_ctx, dom_name,
 				      gr_name, True );
+	}
+
+	if (full_group_name == NULL) {
+		return false;
 	}
 
 	gr->gr_gid = unix_gid;
