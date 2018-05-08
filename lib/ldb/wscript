@@ -551,11 +551,11 @@ def test(ctx):
                  'ldb_msg_test',
                  'ldb_tdb_kv_ops_test',
                  'ldb_tdb_test',
+                 'ldb_mdb_mod_op_test',
                  'ldb_lmdb_test']
                  # we don't want to run ldb_lmdb_size_test (which proves we can
                  # fit > 4G of data into the DB), it would fill up the disk on
                  # many of our test instances
-
     for test_exe in test_exes:
             cmd = os.path.join(Utils.g_module.blddir, test_exe)
             cmocka_ret = cmocka_ret or samba_utils.RUN_COMMAND(cmd)
