@@ -2166,7 +2166,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
             local_tdo_forest.count = 0
             local_tdo_forest.entries = []
 
-        self.outf.write("TrusteDomain:\n\n");
+        self.outf.write("TrustedDomain:\n\n");
         self.outf.write("NetbiosName:    %s\n" % local_tdo_info.netbios_name.string)
         if local_tdo_info.netbios_name.string != local_tdo_info.domain_name.string:
             self.outf.write("DnsName:        %s\n" % local_tdo_info.domain_name.string)
