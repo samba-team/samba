@@ -3820,6 +3820,210 @@ static void test_ldb_talloc_destructor_transaction_cleanup(void **state)
 	}
 }
 
+static void test_transaction_start_across_fork(void **state)
+{
+	struct ldb_context *ldb1 = NULL;
+	int ret;
+	struct ldbtest_ctx *test_ctx = NULL;
+	int pipes[2];
+	char buf[2];
+	int wstatus;
+	pid_t pid, child_pid;
+
+	test_ctx = talloc_get_type_abort(*state, struct ldbtest_ctx);
+
+	/*
+	 * Open the database
+	 */
+	ldb1 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb1, test_ctx->dbpath, 0, NULL);
+	assert_int_equal(ret, 0);
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	child_pid = fork();
+	if (child_pid == 0) {
+		close(pipes[0]);
+		ret = ldb_transaction_start(ldb1);
+		if (ret != LDB_ERR_PROTOCOL_ERROR) {
+			print_error(__location__": ldb_transaction_start "
+				    "returned (%d) %s\n",
+				    ret,
+				    ldb1->err_string);
+			exit(LDB_ERR_OTHER);
+		}
+
+		ret = write(pipes[1], "GO", 2);
+		if (ret != 2) {
+			print_error(__location__
+				      " write returned (%d)",
+				      ret);
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		exit(LDB_SUCCESS);
+	}
+	close(pipes[1]);
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	pid = waitpid(child_pid, &wstatus, 0);
+	assert_int_equal(pid, child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+}
+
+static void test_transaction_commit_across_fork(void **state)
+{
+	struct ldb_context *ldb1 = NULL;
+	int ret;
+	struct ldbtest_ctx *test_ctx = NULL;
+	int pipes[2];
+	char buf[2];
+	int wstatus;
+	pid_t pid, child_pid;
+
+	test_ctx = talloc_get_type_abort(*state, struct ldbtest_ctx);
+
+	/*
+	 * Open the database
+	 */
+	ldb1 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb1, test_ctx->dbpath, 0, NULL);
+	assert_int_equal(ret, 0);
+
+	ret = ldb_transaction_start(ldb1);
+	assert_int_equal(ret, 0);
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	child_pid = fork();
+	if (child_pid == 0) {
+		close(pipes[0]);
+		ret = ldb_transaction_commit(ldb1);
+
+		if (ret != LDB_ERR_PROTOCOL_ERROR) {
+			print_error(__location__": ldb_transaction_commit "
+				    "returned (%d) %s\n",
+				    ret,
+				    ldb1->err_string);
+			exit(LDB_ERR_OTHER);
+		}
+
+		ret = write(pipes[1], "GO", 2);
+		if (ret != 2) {
+			print_error(__location__
+				      " write returned (%d)",
+				      ret);
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		exit(LDB_SUCCESS);
+	}
+	close(pipes[1]);
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	pid = waitpid(child_pid, &wstatus, 0);
+	assert_int_equal(pid, child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+}
+
+static void test_lock_read_across_fork(void **state)
+{
+	struct ldb_context *ldb1 = NULL;
+	int ret;
+	struct ldbtest_ctx *test_ctx = NULL;
+	int pipes[2];
+	char buf[2];
+	int wstatus;
+	pid_t pid, child_pid;
+
+	test_ctx = talloc_get_type_abort(*state, struct ldbtest_ctx);
+
+	/*
+	 * Open the database
+	 */
+	ldb1 = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ldb1, test_ctx->dbpath, 0, NULL);
+	assert_int_equal(ret, 0);
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	child_pid = fork();
+	if (child_pid == 0) {
+		struct ldb_dn *basedn;
+		struct ldb_result *result = NULL;
+
+		close(pipes[0]);
+
+		basedn = ldb_dn_new_fmt(test_ctx, test_ctx->ldb, "dc=test");
+		assert_non_null(basedn);
+
+		ret = ldb_search(test_ctx->ldb,
+				 test_ctx,
+				 &result,
+				 basedn,
+				 LDB_SCOPE_BASE,
+				 NULL,
+				 NULL);
+		if (ret != LDB_ERR_PROTOCOL_ERROR) {
+			print_error(__location__": ldb_search "
+				    "returned (%d) %s\n",
+				    ret,
+				    ldb1->err_string);
+			exit(LDB_ERR_OTHER);
+		}
+
+		ret = write(pipes[1], "GO", 2);
+		if (ret != 2) {
+			print_error(__location__
+				      " write returned (%d)",
+				      ret);
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		exit(LDB_SUCCESS);
+	}
+	close(pipes[1]);
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	pid = waitpid(child_pid, &wstatus, 0);
+	assert_int_equal(pid, child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+
+	{
+		/*
+		 * Ensure that the search actually succeeds on the opening
+		 * pid
+		 */
+		struct ldb_dn *basedn;
+		struct ldb_result *result = NULL;
+
+		close(pipes[0]);
+
+		basedn = ldb_dn_new_fmt(test_ctx, test_ctx->ldb, "dc=test");
+		assert_non_null(basedn);
+
+		ret = ldb_search(test_ctx->ldb,
+				 test_ctx,
+				 &result,
+				 basedn,
+				 LDB_SCOPE_BASE,
+				 NULL,
+				 NULL);
+		assert_int_equal(0, ret);
+	}
+}
 
 int main(int argc, const char **argv)
 {
@@ -3982,6 +4186,18 @@ int main(int argc, const char **argv)
 			ldb_guid_index_test_teardown),
 		cmocka_unit_test_setup_teardown(
 			test_ldb_talloc_destructor_transaction_cleanup,
+			ldbtest_setup,
+			ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(
+			test_transaction_start_across_fork,
+			ldbtest_setup,
+			ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(
+			test_transaction_commit_across_fork,
+			ldbtest_setup,
+			ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(
+			test_lock_read_across_fork,
 			ldbtest_setup,
 			ldbtest_teardown),
 	};
