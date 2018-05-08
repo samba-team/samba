@@ -4,6 +4,7 @@ import Options
 
 def configure(conf):
     conf.CHECK_HEADERS('float.h')
+    conf.CHECK_FUNCS('stpcpy')
 
     if conf.CHECK_POPT():
         conf.define('USING_SYSTEM_POPT', 1)
@@ -12,8 +13,9 @@ def build(bld):
     if bld.CONFIG_SET('USING_SYSTEM_POPT'):
         return
 
+    cflags = '-DPACKAGE="popt" -DPOPT_SYSCONFDIR="%s"' % bld.env.SYSCONFDIR
     bld.SAMBA_LIBRARY('popt',
-                      source='findme.c popt.c poptconfig.c popthelp.c poptparse.c',
-                      cflags='-DDBL_EPSILON=__DBL_EPSILON__',
+                      source='popt.c poptconfig.c popthelp.c poptint.c poptparse.c',
+                      cflags=cflags,
                       allow_warnings=True,
                       private_library=True)
