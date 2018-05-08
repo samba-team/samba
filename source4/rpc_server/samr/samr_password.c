@@ -107,6 +107,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	struct ldb_message **res;
 	const char * const attrs[] = { "objectSid", "dBCSPwd",
 				       "userAccountControl",
+				       "msDS-ResultantPSO",
 				       "msDS-User-Account-Control-Computed",
 				       "badPwdCount", "badPasswordTime",
 				       "samAccountName",
@@ -301,6 +302,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct ldb_message **res;
 	const char * const attrs[] = { "unicodePwd", "dBCSPwd",
 				       "userAccountControl",
+				       "msDS-ResultantPSO",
 				       "msDS-User-Account-Control-Computed",
 				       "badPwdCount", "badPasswordTime",
 				       "objectSid", NULL };
