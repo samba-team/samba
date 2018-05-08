@@ -400,7 +400,7 @@ def build(bld):
                                              pidfile.c run_proc.c
                                              hash_count.c run_event.c
                                              sock_client.c version.c
-                                             cmdline.c
+                                             cmdline.c path.c
                                           '''),
                         deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb popt''')
