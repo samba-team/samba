@@ -97,6 +97,11 @@ enum search_type {
 	ACCOUNT_GROUPS
 };
 
+static int get_pso_for_user(struct ldb_module *module,
+			    struct ldb_message *user_msg,
+			    struct ldb_request *parent,
+			    struct ldb_message **pso_msg);
+
 /*
   construct a canonical name from a message
 */
@@ -769,6 +774,36 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 	return ret;
 }
 
+/*
+ * Returns the Effective-LockoutDuration for a user
+ */
+static int64_t get_user_lockout_duration(struct ldb_module *module,
+				         struct ldb_message *user_msg,
+				         struct ldb_request *parent,
+					 struct ldb_dn *nc_root)
+{
+	int ret;
+	struct ldb_message *pso = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	/* if a PSO applies to the user, use its lockoutDuration */
+	ret = get_pso_for_user(module, user_msg, parent, &pso);
+	if (ret != LDB_SUCCESS) {
+
+		/* log the error, but fallback to the domain default */
+		DBG_ERR("Error retrieving PSO for %s\n",
+			ldb_dn_get_linearized(user_msg->dn));
+	}
+
+	if (pso != NULL) {
+		return ldb_msg_find_attr_as_int64(pso,
+					          "msDS-LockoutDuration", 0);
+	}
+
+	/* otherwise return the default domain value */
+	return samdb_search_int64(ldb, user_msg, 0, nc_root, "lockoutDuration",
+				  NULL);
+}
 
 /*
   construct msDS-User-Account-Control-Computed attr
@@ -806,9 +841,13 @@ static int construct_msds_user_account_control_computed(struct ldb_module *modul
 
 		int64_t lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
 		if (lockoutTime != 0) {
-			int64_t lockoutDuration = samdb_search_int64(ldb,
-								     msg, 0, nc_root,
-								     "lockoutDuration", NULL);
+			int64_t lockoutDuration;
+
+			lockoutDuration = get_user_lockout_duration(module, msg,
+								    parent,
+								    nc_root);
+
+			/* zero locks out until the administrator intervenes */
 			if (lockoutDuration >= 0) {
 				msDS_User_Account_Control_Computed |= UF_LOCKOUT;
 			} else if (lockoutTime - lockoutDuration >= now) {
@@ -953,6 +992,7 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	const char *attrs[] = {
 		"msDS-PasswordSettingsPrecedence",
 		"objectGUID",
+		"msDS-LockoutDuration",
 		NULL
 	};
 
@@ -1164,6 +1204,21 @@ struct op_attributes_replace {
 	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *);
 };
 
+/* the 'extra_attrs' required for msDS-ResultantPSO */
+#define RESULTANT_PSO_COMPUTED_ATTRS \
+	"msDS-PSOApplied", \
+	"userAccountControl", \
+	"objectSid", \
+	"msDS-SecondaryKrbTgtNumber", \
+	"primaryGroupID"
+
+/*
+ * any other constructed attributes that want to work out the PSO also need to
+ * include objectClass (this gets included via 'replace' for msDS-ResultantPSO)
+ */
+#define PSO_ATTR_DEPENDENCIES \
+	RESULTANT_PSO_COMPUTED_ATTRS, \
+	"objectClass"
 
 static const char *objectSid_attr[] =
 {
@@ -1183,6 +1238,7 @@ static const char *user_account_control_computed_attrs[] =
 {
 	"lockoutTime",
 	"pwdLastSet",
+	PSO_ATTR_DEPENDENCIES,
 	NULL
 };
 
@@ -1195,11 +1251,7 @@ static const char *user_password_expiry_time_computed_attrs[] =
 
 static const char *resultant_pso_computed_attrs[] =
 {
-	"msDS-PSOApplied",
-	"userAccountControl",
-	"objectSid",
-	"msDS-SecondaryKrbTgtNumber",
-	"primaryGroupID",
+	RESULTANT_PSO_COMPUTED_ATTRS,
 	NULL
 };
 
