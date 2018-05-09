@@ -79,6 +79,28 @@ interface misc
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} winreg_Data;
 
+	/*
+	 * We duplicate the above winreg_Data for usage in the GPO python
+	 * parsers which cannot handle nstring_array. This should be only
+	 * temporary, until we can get PIDL to generate the correct bindings.
+	 */
+	typedef [nodiscriminant,public,flag(NDR_LITTLE_ENDIAN)] union {
+		[case(REG_NONE)];
+		[case(REG_SZ)] nstring string;
+		[case(REG_EXPAND_SZ)] nstring string;
+		[case(REG_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;
+		[case(REG_DWORD)] uint32 value;
+		[case(REG_DWORD_BIG_ENDIAN),flag(NDR_BIG_ENDIAN)] uint32 value;
+		/*
+		 * There are no python handlers for nstring_array.
+		 * Prefer a fallback to DATA_BLOB instead.
+		 *
+		 * [case(REG_MULTI_SZ)] nstring_array string_array;
+		 */
+		[case(REG_QWORD)] hyper qword;
+		[default,flag(NDR_REMAINING)] DATA_BLOB data;
+	} winreg_Data_GPO;
+
 	/* SAM database types */
 	typedef [public,v1_enum] enum {
 		SAM_DATABASE_DOMAIN  = 0, /* Domain users and groups */
