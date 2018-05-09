@@ -70,7 +70,7 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 	struct winbindd_pw *pw = state->pw;
 	struct wbint_userinfo *info;
 	fstring acct_name;
-	const char *output_username;
+	const char *output_username = NULL;
 	char *mapped_name = NULL;
 	char *tmp;
 	NTSTATUS status;
