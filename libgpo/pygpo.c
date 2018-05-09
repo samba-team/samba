@@ -391,12 +391,13 @@ out:
 
 static void get_gp_registry_context(TALLOC_CTX *ctx,
 				    uint32_t desired_access,
-				    struct gp_registry_context **reg_ctx)
+				    struct gp_registry_context **reg_ctx,
+				    const char *smb_conf)
 {
 	struct security_token *token;
 	WERROR werr;
 
-	lp_load_initial_only(get_dyn_CONFIGFILE());
+	lp_load_initial_only(smb_conf ? smb_conf : get_dyn_CONFIGFILE());
 
 	token = registry_create_system_token(ctx);
 	if (!token) {
@@ -420,8 +421,13 @@ static PyObject *py_list_gp_extensions(PyObject * self, PyObject * args)
 	PyObject *ret = NULL;
 	struct registry_key *parent;
 	int i;
+	const char *smb_conf = NULL;
 
-	get_gp_registry_context(frame, REG_KEY_READ, &reg_ctx);
+	if (!PyArg_ParseTuple(args, "|s", &smb_conf)) {
+		return NULL;
+	}
+
+	get_gp_registry_context(frame, REG_KEY_READ, &reg_ctx, smb_conf);
 	if (!reg_ctx) {
 		goto out;
 	}
@@ -467,12 +473,13 @@ static PyObject *py_unregister_gp_extension(PyObject * self, PyObject * args)
 	struct gp_registry_context *reg_ctx = NULL;
 	WERROR werr;
 	PyObject *ret = Py_False;
+	const char *smb_conf = NULL;
 
-	if (!PyArg_ParseTuple(args, "s", &guid_name)) {
+	if (!PyArg_ParseTuple(args, "s|s", &guid_name, &smb_conf)) {
 		return NULL;
 	}
 
-	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx);
+	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx, smb_conf);
 	if (!reg_ctx) {
 		goto out;
 	}
@@ -497,12 +504,13 @@ static PyObject *py_register_gp_extension(PyObject * self, PyObject * args)
 	struct gp_registry_context *reg_ctx = NULL;
 	struct registry_key *key = NULL;
 	PyObject *ret = NULL;
+	const char *smb_conf = NULL;
 
-	if (!PyArg_ParseTuple(args, "ss", &guid_name, &module_path)) {
+	if (!PyArg_ParseTuple(args, "ss|s", &guid_name, &module_path, &smb_conf)) {
 		return NULL;
 	}
 
-	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx);
+	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx, smb_conf);
 	if (!reg_ctx) {
 		goto out;
 	}
@@ -732,7 +740,7 @@ static PyMethodDef py_gpo_methods[] = {
 	{"unregister_gp_extension", (PyCFunction)py_unregister_gp_extension,
 		METH_VARARGS, NULL},
 	{"list_gp_extensions", (PyCFunction)py_list_gp_extensions,
-		METH_NOARGS, NULL},
+		METH_VARARGS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
 		METH_VARARGS, NULL},
