@@ -741,7 +741,7 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	char linebuf[LINEBUF_SIZE + 1];
 	char readbuf[1024];
 	int c;
-	fstring ascii_p16;
+	char ascii_p16[FSTRING_LEN + 20];
 	fstring encode_bits;
 	unsigned char *p = NULL;
 	size_t linebuf_len = 0;
