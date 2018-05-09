@@ -702,7 +702,7 @@ planoldpythontestsuite("ad_dc",
 # ad_dc:local functional_level >= 2008, gpg keys available
 planoldpythontestsuite("ad_dc:local",
                        "samba.tests.password_hash_gpgme",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 # ad_dc_ntvfs:local functional level >= 2008, gpg keys not available
 planoldpythontestsuite("ad_dc_ntvfs:local",
                        "samba.tests.password_hash_fl2008",
