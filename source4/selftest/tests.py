@@ -752,11 +752,11 @@ planoldpythontestsuite("ad_dc_ntvfs:local",
 # fl2003dc:local functional level < 2008, gpg keys not available
 planoldpythontestsuite("fl2003dc:local",
                        "samba.tests.password_hash_fl2003",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 # ad_dc: wDigest values over ldap
 planoldpythontestsuite("ad_dc",
                        "samba.tests.password_hash_ldap",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc:local",
                        "samba.tests.domain_backup",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
