@@ -272,7 +272,7 @@ struct run_event_context {
 };
 
 
-int run_event_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+int run_event_init(TALLOC_CTX *mem_ctx, struct run_proc_context *run_proc_ctx,
 		   const char *script_dir, const char *debug_prog,
 		   struct run_event_context **out)
 {
@@ -285,11 +285,7 @@ int run_event_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return ENOMEM;
 	}
 
-	ret = run_proc_init(run_ctx, ev, &run_ctx->run_proc_ctx);
-	if (ret != 0) {
-		talloc_free(run_ctx);
-		return ret;
-	}
+	run_ctx->run_proc_ctx = run_proc_ctx;
 
 	ret = stat(script_dir, &st);
 	if (ret != 0) {

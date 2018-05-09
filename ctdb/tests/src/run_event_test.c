@@ -160,6 +160,7 @@ int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
+	struct run_proc_context *run_proc_ctx;
 	struct run_event_context *run_ctx;
 	int ret;
 
@@ -180,7 +181,13 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	ret = run_event_init(mem_ctx, ev, argv[1], NULL, &run_ctx);
+	ret = run_proc_init(mem_ctx, ev, &run_proc_ctx);
+	if (ret != 0) {
+		fprintf(stderr, "run_proc_init() failed, ret=%d\n", ret);
+		exit(1);
+	}
+
+	ret = run_event_init(mem_ctx, run_proc_ctx, argv[1], NULL, &run_ctx);
 	if (ret != 0) {
 		fprintf(stderr, "run_event_init() failed, ret=%d\n", ret);
 		exit(1);

@@ -75,7 +75,7 @@ struct run_event_script_list {
  * @param[out] result New run_event context
  * @return 0 on success, errno on error
  */
-int run_event_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+int run_event_init(TALLOC_CTX *mem_ctx, struct run_proc_context *run_proc_ctx,
 		   const char *script_dir, const char *debug_prog,
 		   struct run_event_context **result);
 

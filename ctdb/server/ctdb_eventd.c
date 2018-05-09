@@ -50,6 +50,7 @@ struct eventd_client {
 };
 
 struct eventd_context {
+	struct run_proc_context *run_proc_ctx;
 	struct run_event_context *run_ctx;
 
 	/* result of last execution */
@@ -78,7 +79,16 @@ static int eventd_context_init(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	ret = run_event_init(ectx, ev, script_dir, debug_script,
+	ret = run_proc_init(ectx, ev, &ectx->run_proc_ctx);
+	if (ret != 0) {
+		talloc_free(ectx);
+		return ret;
+	}
+
+	ret = run_event_init(ectx,
+			     ectx->run_proc_ctx,
+			     script_dir,
+			     debug_script,
 			     &ectx->run_ctx);
 	if (ret != 0) {
 		talloc_free(ectx);
