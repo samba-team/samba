@@ -27,15 +27,19 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/blocking.h"
+#include "lib/util/dlinklist.h"
 
-#include "common/db_hash.h"
 #include "common/run_proc.h"
 
 /*
  * Process abstraction
  */
 
+struct run_proc_context;
+
 struct proc_context {
+	struct proc_context *prev, *next;
+
 	pid_t pid;
 
 	int fd;
@@ -47,7 +51,10 @@ struct proc_context {
 	struct tevent_req *req;
 };
 
-static struct proc_context *proc_new(TALLOC_CTX *mem_ctx)
+static int proc_destructor(struct proc_context *proc);
+
+static struct proc_context *proc_new(TALLOC_CTX *mem_ctx,
+				     struct run_proc_context *run_ctx)
 {
 	struct proc_context *proc;
 
@@ -59,7 +66,25 @@ static struct proc_context *proc_new(TALLOC_CTX *mem_ctx)
 	proc->pid = -1;
 	proc->fd = -1;
 
+	talloc_set_destructor(proc, proc_destructor);
+
 	return proc;
+}
+
+static void run_proc_kill(struct tevent_req *req);
+
+static int proc_destructor(struct proc_context *proc)
+{
+	if (proc->req != NULL) {
+		run_proc_kill(proc->req);
+	}
+
+	talloc_free(proc->fde);
+	if (proc->pid != -1) {
+		kill(-proc->pid, SIGKILL);
+	}
+
+	return 0;
 }
 
 static void proc_read_handler(struct tevent_context *ev,
@@ -125,6 +150,7 @@ static int proc_start(struct proc_context *proc, struct tevent_context *ev,
 	proc->fde = tevent_add_fd(ev, proc, fd[0], TEVENT_FD_READ,
 				  proc_read_handler, proc);
 	if (proc->fde == NULL) {
+		close(fd[0]);
 		return ENOMEM;
 	}
 
@@ -169,91 +195,13 @@ static void proc_read_handler(struct tevent_context *ev,
 	return;
 
 fail:
-	kill(-proc->pid, SIGKILL);
+	if (proc->pid != -1) {
+		kill(-proc->pid, SIGKILL);
+		proc->pid = -1;
+	}
 close:
 	TALLOC_FREE(proc->fde);
 	proc->fd = -1;
-}
-
-/*
- * Processes database
- */
-
-static int proc_db_init(TALLOC_CTX *mem_ctx, struct db_hash_context **result)
-{
-	struct db_hash_context *pdb = NULL;
-	int ret;
-
-	ret = db_hash_init(pdb, "proc_db", 1001, DB_HASH_COMPLEX, &pdb);
-	if (ret != 0) {
-		return ret;
-	}
-
-	*result = pdb;
-	return 0;
-}
-
-static int proc_db_add(struct db_hash_context *pdb, pid_t pid,
-		       struct proc_context *proc)
-{
-	return db_hash_insert(pdb, (uint8_t *)&pid, sizeof(pid_t),
-			      (uint8_t *)&proc, sizeof(struct proc_context *));
-}
-
-static int proc_db_remove(struct db_hash_context *pdb, pid_t pid)
-{
-	return db_hash_delete(pdb, (uint8_t *)&pid, sizeof(pid_t));
-}
-
-static int proc_db_fetch_parser(uint8_t *keybuf, size_t keylen,
-				uint8_t *databuf, size_t datalen,
-				void *private_data)
-{
-	struct proc_context **result = (struct proc_context **)private_data;
-
-	if (datalen != sizeof(struct proc_context *)) {
-		return EINVAL;
-	}
-
-	*result = *(struct proc_context **)databuf;
-	return 0;
-}
-
-static int proc_db_fetch(struct db_hash_context *pdb, pid_t pid,
-			 struct proc_context **result)
-{
-	return db_hash_fetch(pdb, (uint8_t *)&pid, sizeof(pid_t),
-			     proc_db_fetch_parser, result);
-}
-
-static int proc_db_killall_parser(uint8_t *keybuf, size_t keylen,
-				  uint8_t *databuf, size_t datalen,
-				  void *private_data)
-{
-	struct db_hash_context *pdb = talloc_get_type_abort(
-		private_data, struct db_hash_context);
-	struct proc_context *proc;
-	pid_t pid;
-
-	if (keylen != sizeof(pid_t) ||
-	    datalen != sizeof(struct proc_context *)) {
-		/* skip */
-		return 0;
-	}
-
-	pid = *(pid_t *)keybuf;
-	proc = talloc_steal(pdb, *(struct proc_context **)databuf);
-
-	TALLOC_FREE(proc->req);
-	TALLOC_FREE(proc->fde);
-
-	kill(-pid, SIGKILL);
-	return 0;
-}
-
-static void proc_db_killall(struct db_hash_context *pdb)
-{
-	(void) db_hash_traverse(pdb, proc_db_killall_parser, pdb, NULL);
 }
 
 
@@ -264,7 +212,7 @@ static void proc_db_killall(struct db_hash_context *pdb)
 struct run_proc_context {
 	struct tevent_context *ev;
 	struct tevent_signal *se;
-	struct db_hash_context *pdb;
+	struct proc_context *plist;
 };
 
 static void run_proc_signal_handler(struct tevent_context *ev,
@@ -278,7 +226,6 @@ int run_proc_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		  struct run_proc_context **result)
 {
 	struct run_proc_context *run_ctx;
-	int ret;
 
 	run_ctx = talloc_zero(mem_ctx, struct run_proc_context);
 	if (run_ctx == NULL) {
@@ -291,12 +238,6 @@ int run_proc_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	if (run_ctx->se == NULL) {
 		talloc_free(run_ctx);
 		return ENOMEM;
-	}
-
-	ret = proc_db_init(run_ctx, &run_ctx->pdb);
-	if (ret != 0) {
-		talloc_free(run_ctx);
-		return ret;
 	}
 
 	talloc_set_destructor(run_ctx, run_proc_context_destructor);
@@ -314,7 +255,7 @@ static void run_proc_signal_handler(struct tevent_context *ev,
 		private_data, struct run_proc_context);
 	struct proc_context *proc;
 	pid_t pid = -1;
-	int ret, status;
+	int status;
 
 again:
 	pid = waitpid(-1, &status, WNOHANG);
@@ -326,10 +267,15 @@ again:
 		return;
 	}
 
-	ret = proc_db_fetch(run_ctx->pdb, pid, &proc);
-	if (ret != 0) {
+	for (proc = run_ctx->plist; proc != NULL; proc = proc->next) {
+		if (proc->pid == pid) {
+			break;
+		}
+	}
+
+	if (proc == NULL) {
 		/* unknown process */
-		return;
+		goto again;
 	}
 
 	/* Mark the process as terminated */
@@ -354,27 +300,30 @@ again:
 		run_proc_done(proc->req);
 	}
 
-	proc_db_remove(run_ctx->pdb, pid);
-	talloc_free(proc);
+	DLIST_REMOVE(run_ctx->plist, proc);
 
 	goto again;
-
 }
 
 static int run_proc_context_destructor(struct run_proc_context *run_ctx)
 {
+	struct proc_context *proc;
+
 	/* Get rid of signal handler */
 	TALLOC_FREE(run_ctx->se);
 
 	/* Kill any pending processes */
-	proc_db_killall(run_ctx->pdb);
-	TALLOC_FREE(run_ctx->pdb);
+	while ((proc = run_ctx->plist) != NULL) {
+		DLIST_REMOVE(run_ctx->plist, proc);
+		talloc_free(proc);
+	}
 
 	return 0;
 }
 
 struct run_proc_state {
 	struct tevent_context *ev;
+	struct run_proc_context *run_ctx;
 	struct proc_context *proc;
 
 	struct run_proc_result result;
@@ -402,6 +351,7 @@ struct tevent_req *run_proc_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->ev = ev;
+	state->run_ctx = run_ctx;
 	state->pid = -1;
 
 	ret = stat(path, &st);
@@ -417,10 +367,13 @@ struct tevent_req *run_proc_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->proc = proc_new(run_ctx);
+	state->proc = proc_new(run_ctx, run_ctx);
 	if (tevent_req_nomem(state->proc, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	state->proc->req = req;
+	DLIST_ADD(run_ctx->plist, state->proc);
 
 	ret = proc_start(state->proc, ev, path, argv, stdin_fd);
 	if (ret != 0) {
@@ -428,14 +381,7 @@ struct tevent_req *run_proc_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->proc->req = req;
 	talloc_set_destructor(state, run_proc_state_destructor);
-
-	ret = proc_db_add(run_ctx->pdb, state->proc->pid, state->proc);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
 
 	if (! tevent_timeval_is_zero(&timeout)) {
 		struct tevent_req *subreq;
@@ -455,9 +401,8 @@ static int run_proc_state_destructor(struct run_proc_state *state)
 	/* Do not get rid of the child process if timeout has occurred */
 	if (state->proc->req != NULL) {
 		state->proc->req = NULL;
-		if (state->proc->pid != -1) {
-			kill(-state->proc->pid, SIGTERM);
-		}
+		DLIST_REMOVE(state->run_ctx->plist, state->proc);
+		talloc_free(state->proc);
 	}
 
 	return 0;
@@ -474,6 +419,18 @@ static void run_proc_done(struct tevent_req *req)
 	if (state->proc->output != NULL) {
 		state->output = talloc_steal(state, state->proc->output);
 	}
+
+	tevent_req_done(req);
+}
+
+static void run_proc_kill(struct tevent_req *req)
+{
+	struct run_proc_state *state = tevent_req_data(
+		req, struct run_proc_state);
+
+	state->proc->req = NULL;
+
+	state->result.sig = SIGKILL;
 
 	tevent_req_done(req);
 }
