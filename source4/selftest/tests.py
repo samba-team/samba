@@ -793,7 +793,7 @@ for env in ["ad_dc_ntvfs", "vampire_dc", "promoted_dc"]:
                            extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.emulate.traffic",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.emulate.traffic_packet",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
