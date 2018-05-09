@@ -470,6 +470,57 @@ static ssize_t cephwrap_pread(struct vfs_handle_struct *handle, files_struct *fs
 	WRAP_RETURN(result);
 }
 
+struct cephwrap_pread_state {
+	ssize_t bytes_read;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+/*
+ * Fake up an async ceph read by calling the synchronous API.
+ */
+static struct tevent_req *cephwrap_pread_send(struct vfs_handle_struct *handle,
+					      TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct files_struct *fsp,
+					      void *data,
+					      size_t n, off_t offset)
+{
+	struct tevent_req *req = NULL;
+	struct cephwrap_pread_state *state = NULL;
+	int ret = -1;
+
+	DBG_DEBUG("[CEPH] %s\n", __func__);
+	req = tevent_req_create(mem_ctx, &state, struct cephwrap_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ret = ceph_read(handle->data, fsp->fh->fd, data, n, offset);
+	if (ret < 0) {
+		/* ceph returns -errno on error. */
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+
+	state->bytes_read = ret;
+	tevent_req_done(req);
+	/* Return and schedule the completion of the call. */
+	return tevent_req_post(req, ev);
+}
+
+static ssize_t cephwrap_pread_recv(struct tevent_req *req,
+				   struct vfs_aio_state *vfs_aio_state)
+{
+	struct cephwrap_pread_state *state =
+		tevent_req_data(req, struct cephwrap_pread_state);
+
+	DBG_DEBUG("[CEPH] %s\n", __func__);
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->bytes_read;
+}
 
 static ssize_t cephwrap_pwrite(struct vfs_handle_struct *handle, files_struct *fsp, const void *data,
 			size_t n, off_t offset)
@@ -480,6 +531,58 @@ static ssize_t cephwrap_pwrite(struct vfs_handle_struct *handle, files_struct *f
 	result = ceph_write(handle->data, fsp->fh->fd, data, n, offset);
 	DBG_DEBUG("[CEPH] pwrite(...) = %llu\n", llu(result));
 	WRAP_RETURN(result);
+}
+
+struct cephwrap_pwrite_state {
+	ssize_t bytes_written;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+/*
+ * Fake up an async ceph write by calling the synchronous API.
+ */
+static struct tevent_req *cephwrap_pwrite_send(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct files_struct *fsp,
+					       const void *data,
+					       size_t n, off_t offset)
+{
+	struct tevent_req *req = NULL;
+	struct cephwrap_pwrite_state *state = NULL;
+	int ret = -1;
+
+	DBG_DEBUG("[CEPH] %s\n", __func__);
+	req = tevent_req_create(mem_ctx, &state, struct cephwrap_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ret = ceph_write(handle->data, fsp->fh->fd, data, n, offset);
+	if (ret < 0) {
+		/* ceph returns -errno on error. */
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+
+	state->bytes_written = ret;
+	tevent_req_done(req);
+	/* Return and schedule the completion of the call. */
+	return tevent_req_post(req, ev);
+}
+
+static ssize_t cephwrap_pwrite_recv(struct tevent_req *req,
+				    struct vfs_aio_state *vfs_aio_state)
+{
+	struct cephwrap_pwrite_state *state =
+		tevent_req_data(req, struct cephwrap_pwrite_state);
+
+	DBG_DEBUG("[CEPH] %s\n", __func__);
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->bytes_written;
 }
 
 static off_t cephwrap_lseek(struct vfs_handle_struct *handle, files_struct *fsp, off_t offset, int whence)
@@ -535,7 +638,7 @@ static int cephwrap_rename(struct vfs_handle_struct *handle,
 }
 
 /*
- * Fake up an async ceph fsync by calling the sychronous API.
+ * Fake up an async ceph fsync by calling the synchronous API.
  */
 
 static struct tevent_req *cephwrap_fsync_send(struct vfs_handle_struct *handle,
@@ -1443,7 +1546,11 @@ static struct vfs_fn_pointers ceph_fns = {
 	.open_fn = cephwrap_open,
 	.close_fn = cephwrap_close,
 	.pread_fn = cephwrap_pread,
+	.pread_send_fn = cephwrap_pread_send,
+	.pread_recv_fn = cephwrap_pread_recv,
 	.pwrite_fn = cephwrap_pwrite,
+	.pwrite_send_fn = cephwrap_pwrite_send,
+	.pwrite_recv_fn = cephwrap_pwrite_recv,
 	.lseek_fn = cephwrap_lseek,
 	.sendfile_fn = cephwrap_sendfile,
 	.recvfile_fn = cephwrap_recvfile,
