@@ -57,7 +57,7 @@ class NetlogonServiceTests(TestCase):
         except NTSTATUSError as e:
             # On non-DC test environments, netlogon should not be running on
             # the server, so we expect the test to fail here
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND:
                 self.fail("netlogon service is not running")
             else:

@@ -56,7 +56,7 @@ class NtlmDisabledTests(TestCase):
             self.assertIsNotNone(conn)
         except NTSTATUSError as e:
             # NTLM might be blocked on this server
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_NTLM_BLOCKED:
                 self.fail("NTLM is disabled on this server")
             else:
@@ -77,7 +77,7 @@ class NtlmDisabledTests(TestCase):
             conn.ChangePasswordUser2(server, username, None, None, True, None, None)
         except NTSTATUSError as e:
             # changing passwords should be rejected when NTLM is disabled
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_NTLM_BLOCKED:
                 self.fail("NTLM is disabled on this server")
             elif enum == ntstatus.NT_STATUS_WRONG_PASSWORD:

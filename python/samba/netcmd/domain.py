@@ -1715,7 +1715,7 @@ class DomainTrustCommand(Command):
         if runtime is None:
             return False
 
-        err32 = self._uint32(runtime[0])
+        err32 = self._uint32(runtime.args[0])
         if err32 == val:
             return True
 
@@ -1723,24 +1723,24 @@ class DomainTrustCommand(Command):
 
     class LocalRuntimeError(CommandError):
         def __init__(exception_self, self, runtime, message):
-            err32 = self._uint32(runtime[0])
-            errstr = runtime[1]
+            err32 = self._uint32(runtime.args[0])
+            errstr = runtime.args[1]
             msg = "LOCAL_DC[%s]: %s - ERROR(0x%08X) - %s" % (
                   self.local_server, message, err32, errstr)
             CommandError.__init__(exception_self, msg)
 
     class RemoteRuntimeError(CommandError):
         def __init__(exception_self, self, runtime, message):
-            err32 = self._uint32(runtime[0])
-            errstr = runtime[1]
+            err32 = self._uint32(runtime.args[0])
+            errstr = runtime.args[1]
             msg = "REMOTE_DC[%s]: %s - ERROR(0x%08X) - %s" % (
                   self.remote_server, message, err32, errstr)
             CommandError.__init__(exception_self, msg)
 
     class LocalLdbError(CommandError):
         def __init__(exception_self, self, ldb_error, message):
-            errval = ldb_error[0]
-            errstr = ldb_error[1]
+            errval = ldb_error.args[0]
+            errstr = ldb_error.args[1]
             msg = "LOCAL_DC[%s]: %s - ERROR(%d) - %s" % (
                   self.local_server, message, errval, errstr)
             CommandError.__init__(exception_self, msg)
