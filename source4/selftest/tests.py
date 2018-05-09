@@ -767,16 +767,16 @@ planoldpythontestsuite("none",
 # encrypt secret values on disk.
 planoldpythontestsuite("ad_dc:local",
                        "samba.tests.encrypted_secrets",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("vampire_dc:local",
                        "samba.tests.encrypted_secrets",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 # The fl2000dc environment is provisioned with the --plaintext_secrets option
 # so this test will fail, which proves the secrets are not being encrypted.
 # There is an entry in known_fail.d.
 planoldpythontestsuite("fl2000dc:local",
                        "samba.tests.encrypted_secrets",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 
 planpythontestsuite("none",
                     "samba.tests.lsa_string",
