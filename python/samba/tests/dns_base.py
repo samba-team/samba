@@ -166,18 +166,18 @@ class DNSTest(TestCaseInTempDir):
 
         return (response, recv_packet[2:])
 
-    def make_txt_update(self, prefix, txt_array):
+    def make_txt_update(self, prefix, txt_array, domain=None):
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
         updates = []
 
-        name = self.get_dns_domain()
+        name = domain or self.get_dns_domain()
         u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
         updates.append(u)
         self.finish_name_packet(p, updates)
 
         updates = []
         r = dns.res_rec()
-        r.name = "%s.%s" % (prefix, self.get_dns_domain())
+        r.name = "%s.%s" % (prefix, name)
         r.rr_type = dns.DNS_QTYPE_TXT
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
@@ -190,8 +190,8 @@ class DNSTest(TestCaseInTempDir):
 
         return p
 
-    def check_query_txt(self, prefix, txt_array):
-        name = "%s.%s" % (prefix, self.get_dns_domain())
+    def check_query_txt(self, prefix, txt_array, zone=None):
+        name = "%s.%s" % (prefix, zone or self.get_dns_domain())
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
