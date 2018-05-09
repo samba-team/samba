@@ -275,6 +275,29 @@ tasks = {
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain")
+
+                      ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs + ' --disable-python', "text/plain"),
+                      ("talloc-make", "cd lib/talloc && make", "text/plain"),
+                      ("talloc-install", "cd lib/talloc && make install", "text/plain"),
+
+                      ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs + ' --disable-python', "text/plain"),
+                      ("tdb-make", "cd lib/tdb && make", "text/plain"),
+                      ("tdb-install", "cd lib/tdb && make install", "text/plain"),
+
+                      ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs + ' --disable-python', "text/plain"),
+                      ("tevent-make", "cd lib/tevent && make", "text/plain"),
+                      ("tevent-install", "cd lib/tevent && make install", "text/plain"),
+
+                      ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs + ' --disable-python', "text/plain"),
+                      ("ldb-make", "cd lib/ldb && make", "text/plain"),
+                      ("ldb-install", "cd lib/ldb && make install", "text/plain"),
+
+                      # retry against installed library packages
+                      ("libs-configure", "./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc " + samba_libs_configure_libs, "text/plain"),
+                      ("libs-make", "make -j", "text/plain"),
+                      ("libs-install", "make install", "text/plain"),
+                      ("libs-check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                      ("libs-clean", "make clean", "text/plain")
                       ],
 
 
