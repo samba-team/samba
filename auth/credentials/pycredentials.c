@@ -659,7 +659,7 @@ static PyObject *py_creds_new_client_authenticator(PyObject *self,
 	netlogon_creds_client_authenticator(
 		nc,
 		&auth);
-	ret = Py_BuildValue("{ss#si}",
+	ret = Py_BuildValue("{s"PYARG_BYTES_LEN"si}",
 			    "credential",
 			    (const char *) &auth.cred, sizeof(auth.cred),
 			    "timestamp", auth.timestamp);
