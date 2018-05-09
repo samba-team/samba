@@ -583,7 +583,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
 
 
 planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
+planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python",  py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.sam", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dsdb", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dsdb_lock", py3_compatible=True)
