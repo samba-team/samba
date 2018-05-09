@@ -422,6 +422,7 @@ static bool test_one_durable_v2_open_lease(struct torture_context *tctx,
 					   struct smb2_tree *tree,
 					   const char *fname,
 					   bool request_persistent,
+					   bool share_is_so,
 					   struct durable_open_vs_lease test)
 {
 	NTSTATUS status;
@@ -432,10 +433,21 @@ static bool test_one_durable_v2_open_lease(struct torture_context *tctx,
 	struct smb2_create io;
 	struct smb2_lease ls;
 	uint64_t lease;
+	uint8_t expected_lease_granted;
+	bool expected_durable;
 
 	smb2_util_unlink(tree, fname);
 
 	lease = random();
+
+	expected_lease_granted = smb2_util_lease_state(test.type);
+	expected_durable = test.durable;
+	if (share_is_so) {
+		expected_lease_granted &= SMB2_LEASE_READ;
+		if (!request_persistent) {
+			expected_durable = false;
+		}
+	}
 
 	smb2_lease_create_share(&io, &ls, false /* dir */, fname,
 				smb2_util_share_access(test.share_mode),
@@ -452,13 +464,15 @@ static bool test_one_durable_v2_open_lease(struct torture_context *tctx,
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, test.durable);
+	CHECK_VAL(io.out.durable_open_v2, expected_durable);
 	CHECK_VAL(io.out.persistent_open, test.persistent);
-	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
-	CHECK_VAL(io.out.lease_response.lease_key.data[0], lease);
-	CHECK_VAL(io.out.lease_response.lease_key.data[1], ~lease);
-	CHECK_VAL(io.out.lease_response.lease_state,
-		  smb2_util_lease_state(test.type));
+	if (smb2_util_lease_state(test.type) != 0) {
+		CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+		CHECK_VAL(io.out.lease_response.lease_key.data[0], lease);
+		CHECK_VAL(io.out.lease_response.lease_key.data[1], ~lease);
+		CHECK_VAL(io.out.lease_response.lease_state,
+			  expected_lease_granted);
+	}
 done:
 	if (h != NULL) {
 		smb2_util_close(tree, *h);
@@ -473,6 +487,7 @@ static bool test_durable_v2_open_lease_table(struct torture_context *tctx,
 					     struct smb2_tree *tree,
 					     const char *fname,
 					     bool request_persistent,
+					     bool share_is_so,
 					     struct durable_open_vs_lease *table,
 					     uint8_t num_tests)
 {
@@ -486,6 +501,7 @@ static bool test_durable_v2_open_lease_table(struct torture_context *tctx,
 						     tree,
 						     fname,
 						     request_persistent,
+						     share_is_so,
 						     table[i]);
 		if (ret == false) {
 			goto done;
@@ -504,17 +520,23 @@ bool test_durable_v2_open_lease(struct torture_context *tctx,
 	char fname[256];
 	bool ret = true;
 	uint32_t caps;
+	uint32_t share_capabilities;
+	bool share_is_so;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
 	if (!(caps & SMB2_CAP_LEASING)) {
 		torture_skip(tctx, "leases are not supported");
 	}
 
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_lease_%s.dat", generate_random_str(tctx, 8));
 
 	ret = test_durable_v2_open_lease_table(tctx, tree, fname,
 					       false, /* request_persistent */
+					       share_is_so,
 					       durable_open_vs_lease_table,
 					       NUM_LEASE_OPEN_TESTS);
 
@@ -4926,6 +4948,7 @@ bool test_persistent_open_lease(struct torture_context *tctx,
 	uint32_t caps;
 	uint32_t share_capabilities;
 	bool share_is_ca;
+	bool share_is_so;
 	struct durable_open_vs_lease *table;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
@@ -4938,6 +4961,7 @@ bool test_persistent_open_lease(struct torture_context *tctx,
 
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_ca = share_capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
 	if (share_is_ca) {
 		table = persistent_open_lease_ca_table;
@@ -4947,6 +4971,7 @@ bool test_persistent_open_lease(struct torture_context *tctx,
 
 	ret = test_durable_v2_open_lease_table(tctx, tree, fname,
 					       true, /* request_persistent */
+					       share_is_so,
 					       table,
 					       NUM_LEASE_OPEN_TESTS);
 
