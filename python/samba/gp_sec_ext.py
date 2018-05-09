@@ -129,21 +129,7 @@ class gp_sec_ext(gp_inf_ext):
     def __str__(self):
         return "Security GPO extension"
 
-    def list(self, rootpath):
-        return os.path.join(rootpath,
-            "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
-
     def apply_map(self):
-        if SamDB:
-            try:
-                self.ldb = SamDB(self.lp.samdb_url(),
-                                 session_info=system_session(),
-                                 credentials=self.creds,
-                                 lp=self.lp)
-            except:
-                return {}
-        else:
-            return {}
         return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
                                                          inf_to_ldb),
                                   "MaximumPasswordAge": ("maxPwdAge",
@@ -167,4 +153,25 @@ class gp_sec_ext(gp_inf_ext):
                                     ),
                                    }
                }
+
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
+        if SamDB:
+            try:
+                ldb = SamDB(self.lp.samdb_url(),
+                            session_info=system_session(),
+                            credentials=self.creds,
+                            lp=self.lp)
+            except:
+                return
+        else:
+            return
+        inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
+        for gpo in deleted_gpo_list:
+            pass
+
+        for gpo in changed_gpo_list:
+            if gpo.file_sys_path:
+                self.gp_db.set_guid(gpo.name)
+                path = gpo.file_sys_path.split('\\sysvol\\')[-1]
+                self.parse(os.path.join(path, inf_file))
 

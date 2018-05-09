@@ -325,7 +325,7 @@ class gp_ext(object):
         self.gp_db = store.get_gplog(creds.get_username())
 
     @abstractmethod
-    def list(self, rootpath):
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         pass
 
     @abstractmethod
@@ -400,7 +400,7 @@ class gp_ext_setter():
 
 class gp_inf_ext(gp_ext):
     @abstractmethod
-    def list(self, rootpath):
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         pass
 
     @abstractmethod
@@ -478,30 +478,35 @@ def apply_gp(lp, creds, logger, store, gp_extensions):
     if not sysvol:
         gpo.check_refresh_gpo_list(ads, gpos)
 
+    changed_gpos = []
     for gpo_obj in gpos:
-        guid = gpo_obj.name
-        if guid == 'Local Policy':
+        if not gpo_obj.file_sys_path:
             continue
-        path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
+        guid = gpo_obj.name
+        path = gpo_obj.file_sys_path.split('\\sysvol\\')[-1]
+        path = path.replace('\\', '/')
         version = gpo_version(lp, path, sysvol)
         if version != store.get_int(guid):
             logger.info('GPO %s has changed' % guid)
-            gp_db.state(GPOSTATE.APPLY)
-        else:
-            gp_db.state(GPOSTATE.ENFORCE)
-        gp_db.set_guid(guid)
-        store.start()
-        for ext in gp_extensions:
-            try:
-                ext.parse(ext.list(path))
-            except Exception as e:
-                logger.error('Failed to parse gpo %s for extension %s' % \
-                    (guid, str(ext)))
-                logger.error('Message was: ' + str(e))
-                store.cancel()
-                continue
+            changed_gpos.append(gpo_obj)
+
+    store.start()
+    for ext in gp_extensions:
+        try:
+            ext.process_group_policy([], changed_gpos)
+        except Exception as e:
+            logger.error('Failed to apply extension  %s' % str(ext))
+            logger.error('Message was: ' + str(e))
+            continue
+    for gpo_obj in gpos:
+        if not gpo_obj.file_sys_path:
+            continue
+        guid = gpo_obj.name
+        path = gpo_obj.file_sys_path.split('\\sysvol\\')[-1]
+        path = path.replace('\\', '/')
+        version = gpo_version(lp, path, sysvol)
         store.store(guid, '%i' % version)
-        store.commit()
+    store.commit()
 
 def unapply_log(gp_db):
     while True:
