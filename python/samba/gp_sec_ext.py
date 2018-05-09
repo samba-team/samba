@@ -166,3 +166,14 @@ class gp_sec_ext(gp_inf_ext):
                                     }
                 }
 
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
+        if self.lp.get('server role') != 'active directory domain controller':
+            return
+        inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
+
+        for gpo in changed_gpo_list:
+            if gpo.file_sys_path:
+                self.gp_db.set_guid(gpo.name)
+                path = os.path.join(gpo.file_sys_path, inf_file)
+                self.parse(path)
+
