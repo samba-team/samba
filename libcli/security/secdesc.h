@@ -97,9 +97,5 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 					const struct dom_sid *owner_sid,
 					const struct dom_sid *group_sid,
 					bool container);
-NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
-					struct sec_desc_buf **ppsdb,
-					const struct security_descriptor *parent_ctr,
-					bool container);
 
 #endif /* _SECDESC_H_ */

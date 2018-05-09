@@ -636,31 +636,3 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	}
 	return NT_STATUS_OK;
 }
-
-NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
-					struct sec_desc_buf **ppsdb,
-					const struct security_descriptor *parent_ctr,
-					bool container)
-{
-	NTSTATUS status;
-	size_t size = 0;
-	struct security_descriptor *sd = NULL;
-
-	*ppsdb = NULL;
-	status = se_create_child_secdesc(ctx,
-					&sd,
-					&size,
-					parent_ctr,
-					parent_ctr->owner_sid,
-					parent_ctr->group_sid,
-					container);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	*ppsdb = make_sec_desc_buf(ctx, size, sd);
-	if (!*ppsdb) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
