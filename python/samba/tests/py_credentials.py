@@ -39,7 +39,10 @@ from samba.dsdb import (
 from samba.ndr import ndr_pack
 from samba.samdb import SamDB
 from samba import NTSTATUSError, ntstatus
+from samba.compat import binary_type
+
 import ctypes
+
 
 """
 Integration tests for pycredentials
@@ -47,6 +50,9 @@ Integration tests for pycredentials
 
 MACHINE_NAME = "PCTM"
 USER_NAME    = "PCTU"
+
+def dump_hex(s1):
+  return ":".join("{:02x}".format(c if isinstance(c, int) else ord(c)) for c in s1)
 
 class PyCredentialsTests(TestCase):
 
@@ -123,7 +129,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:
@@ -150,7 +156,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:
@@ -176,7 +182,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:
@@ -204,7 +210,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:
@@ -234,10 +240,10 @@ class PyCredentialsTests(TestCase):
         newpass = samba.generate_random_password(PWD_LEN, PWD_LEN)
         encoded = newpass.encode('utf-16-le')
         pwd_len = len(encoded)
-        filler  = [ord(x) for x in os.urandom(DATA_LEN-pwd_len)]
+        filler  = [x if isinstance(x, int) else ord(x) for x in os.urandom(DATA_LEN-pwd_len)]
         pwd = netlogon.netr_CryptPassword()
         pwd.length = pwd_len
-        pwd.data = filler + [ord(x) for x in encoded]
+        pwd.data = filler + [x if isinstance(x, int) else ord(x) for x in encoded]
         self.machine_creds.encrypt_netr_crypt_password(pwd)
         c.netr_ServerPasswordSet2(self.server,
                                   self.machine_creds.get_workstation(),
@@ -267,9 +273,11 @@ class PyCredentialsTests(TestCase):
         # run failed
         delete_force(self.ldb, self.machine_dn)
 
-        utf16pw = unicode(
-            '"' + self.machine_pass.encode('utf-8') + '"', 'utf-8'
-        ).encode('utf-16-le')
+        if isinstance(self.machine_pass, binary_type):
+             utf16pw = self.machine_pass.decode('utf8')
+        else:
+             utf16pw = self.machine_pass
+        utf16pw = ('"%s"' % utf16pw).encode('utf-16-le')
         self.ldb.add({
             "dn": self.machine_dn,
             "objectclass": "computer",
@@ -297,9 +305,11 @@ class PyCredentialsTests(TestCase):
         # run failed
         delete_force(self.ldb, self.user_dn)
 
-        utf16pw = unicode(
-            '"' + self.user_pass.encode('utf-8') + '"', 'utf-8'
-        ).encode('utf-16-le')
+        if isinstance(self.user_pass, binary_type):
+            utf16pw = self.user_pass.decode('utf8')
+        else:
+            utf16pw = self.user_pass
+        utf16pw = ('"%s"' % utf16pw).encode('utf-16-le')
         self.ldb.add({
             "dn": self.user_dn,
             "objectclass": "user",
@@ -319,7 +329,7 @@ class PyCredentialsTests(TestCase):
     def get_authenticator(self, c):
         auth = self.machine_creds.new_client_authenticator();
         current  = netr_Authenticator()
-        current.cred.data = [ord(x) for x in auth["credential"]]
+        current.cred.data = [x if isinstance(x, int) else ord(x) for x in auth["credential"]]
         current.timestamp = auth["timestamp"]
 
         subsequent = netr_Authenticator()
@@ -367,10 +377,10 @@ def samlogon_logon_info(domain_name, computer_name, creds,
 
     logon = netlogon.netr_NetworkInfo()
 
-    logon.challenge     = [ord(x) for x in challenge]
+    logon.challenge     = [x if isinstance(x, int) else ord(x) for x in challenge]
     logon.nt            = netlogon.netr_ChallengeResponse()
     logon.nt.length     = len(response["nt_response"])
-    logon.nt.data       = [ord(x) for x in response["nt_response"]]
+    logon.nt.data       = [x if isinstance(x, int) else ord(x) for x in response["nt_response"]]
     logon.identity_info = netlogon.netr_IdentityInfo()
 
     (username, domain)  = creds.get_ntlm_username_domain()
