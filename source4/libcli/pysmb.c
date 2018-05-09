@@ -534,7 +534,11 @@ static PyMethodDef py_smb_methods[] = {
 		PY_DESC_PY3_BYTES
 		" str to file." },
 	{ "list", (PyCFunction)py_smb_list, METH_VARARGS|METH_KEYWORDS,
-		"list(path) -> directory contents as a dictionary\n\n \
+		"list(path, access_mask='*', attribs=DEFAULT_ATTRS) -> \
+directory contents as a dictionary\n \
+		DEFAULT_ATTRS: FILE_ATTRIBUTE_SYSTEM | \
+FILE_ATTRIBUTE_DIRECTORY | \
+FILE_ATTRIBUTE_ARCHIVE\n\n \
 		List contents of a directory. The keys are, \n \
 		\tname: Long name of the directory item\n \
 		\tshort_name: Short name of the directory item\n \
