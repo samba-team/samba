@@ -116,6 +116,13 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
         '--option=clientldapsaslwrapping=plain',
         '--sign',
         '--encrypt',
+        '-k yes --option=clientldapsaslwrapping=plain',
+        '-k yes --sign',
+        '-k yes --encrypt',
+        '-k no --option=clientldapsaslwrapping=plain',
+        '-k no --sign --option=ntlmssp_client:ldap_style_send_seal=no',
+        '-k no --sign',
+        '-k no --encrypt',
     ]
 
     for auth_option in auth_options:
