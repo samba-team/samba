@@ -417,8 +417,7 @@ static void *tfork_thread(void *p)
 	struct tfork *t = NULL;
 	int status;
 	pid_t child;
-	pthread_t *ptid = (pthread_t *)p;
-	uint64_t tid;
+	uint64_t tid = (uint64_t)pthread_self();
 	uint64_t *result = NULL;
 	int up[2];
 	ssize_t nread;
@@ -428,8 +427,6 @@ static void *tfork_thread(void *p)
 	if (ret != 0) {
 		pthread_exit(NULL);
 	}
-
-	tid = (uint64_t)*ptid;
 
 	t = tfork_create();
 	if (t == NULL) {
@@ -480,7 +477,7 @@ static bool test_tfork_threads(struct torture_context *tctx)
 #endif
 
 	for (i = 0; i < num_threads; i++) {
-		ret = pthread_create(&threads[i], NULL, tfork_thread, &threads[i]);
+		ret = pthread_create(&threads[i], NULL, tfork_thread, NULL);
 		torture_assert_goto(tctx, ret == 0, ok, done,
 				    "pthread_create failed\n");
 	}
