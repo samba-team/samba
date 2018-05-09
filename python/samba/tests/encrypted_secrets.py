@@ -80,4 +80,4 @@ class EncryptedSecretsTests(TestCase):
         self.assertTrue(len(res) > 0)
         self.assertTrue("requiredFeatures" in res[0])
         required_features = res[0]["requiredFeatures"]
-        self.assertTrue("encryptedSecrets" in required_features)
+        self.assertTrue(b"encryptedSecrets" in required_features)
