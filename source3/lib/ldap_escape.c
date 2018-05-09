@@ -76,7 +76,7 @@ char *escape_ldap_string(TALLOC_CTX *mem_ctx, const char *s)
 			output = tmp;
 
 			p = &output[i];
-			strncpy (p, sub, 3);
+			memcpy(p, sub, 3);
 			p += 3;
 			i += 3;
 
