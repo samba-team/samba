@@ -26,27 +26,6 @@
 #include "lib/tevent_wait.h"
 
 /****************************************************************************
- Statics plus accessor functions.
-*****************************************************************************/
-
-static int outstanding_aio_calls;
-
-int get_outstanding_aio_calls(void)
-{
-	return outstanding_aio_calls;
-}
-
-void increment_outstanding_aio_calls(void)
-{
-	outstanding_aio_calls++;
-}
-
-void decrement_outstanding_aio_calls(void)
-{
-	outstanding_aio_calls--;
-}
-
-/****************************************************************************
  The buffer we keep around whilst an aio request is in process.
 *****************************************************************************/
 
@@ -67,12 +46,6 @@ struct aio_extra {
 bool aio_write_through_requested(struct aio_extra *aio_ex)
 {
 	return aio_ex->write_through;
-}
-
-static int aio_extra_destructor(struct aio_extra *aio_ex)
-{
-	decrement_outstanding_aio_calls();
-	return 0;
 }
 
 /****************************************************************************
@@ -101,9 +74,7 @@ static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-	talloc_set_destructor(aio_ex, aio_extra_destructor);
 	aio_ex->fsp = fsp;
-	increment_outstanding_aio_calls();
 	return aio_ex;
 }
 
@@ -523,11 +494,9 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	}
 
 	DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write for file "
-		  "%s, offset %.0f, len = %u (mid = %u) "
-		  "outstanding_aio_calls = %d\n",
+		  "%s, offset %.0f, len = %u (mid = %u)\n",
 		  fsp_str_dbg(fsp), (double)startpos, (unsigned int)numtowrite,
-		  (unsigned int)aio_ex->smbreq->mid,
-		  get_outstanding_aio_calls() ));
+		  (unsigned int)aio_ex->smbreq->mid));
 
 	return NT_STATUS_OK;
 }
@@ -906,13 +875,11 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	 */
 
 	DEBUG(10,("smb2: scheduled aio_write for file "
-		"%s, offset %.0f, len = %u (mid = %u) "
-		"outstanding_aio_calls = %d\n",
+		"%s, offset %.0f, len = %u (mid = %u)\n",
 		fsp_str_dbg(fsp),
 		(double)in_offset,
 		(unsigned int)in_data.length,
-		(unsigned int)aio_ex->smbreq->mid,
-		get_outstanding_aio_calls() ));
+		(unsigned int)aio_ex->smbreq->mid));
 
 	return NT_STATUS_OK;
 }

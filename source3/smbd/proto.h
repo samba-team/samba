@@ -66,9 +66,6 @@ void srv_set_signing(struct smbXsrv_connection *conn,
 
 /* The following definitions come from smbd/aio.c  */
 
-int get_outstanding_aio_calls(void);
-void increment_outstanding_aio_calls(void);
-void decrement_outstanding_aio_calls(void);
 struct aio_extra;
 bool aio_write_through_requested(struct aio_extra *aio_ex);
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
