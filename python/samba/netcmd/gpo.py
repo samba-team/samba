@@ -231,6 +231,10 @@ def parse_unc(unc):
         return tmp
     raise ValueError("Invalid UNC string: %s" % unc)
 
+attr_flags = smb.FILE_ATTRIBUTE_SYSTEM | \
+             smb.FILE_ATTRIBUTE_DIRECTORY | \
+             smb.FILE_ATTRIBUTE_ARCHIVE | \
+             smb.FILE_ATTRIBUTE_HIDDEN
 
 def copy_directory_remote_to_local(conn, remotedir, localdir):
     if not os.path.isdir(localdir):
@@ -241,7 +245,7 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
         r_dir = r_dirs.pop()
         l_dir = l_dirs.pop()
 
-        dirlist = conn.list(r_dir)
+        dirlist = conn.list(r_dir, attribs=attr_flags)
         for e in dirlist:
             r_name = r_dir + '\\' + e['name']
             l_name = os.path.join(l_dir, e['name'])
