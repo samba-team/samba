@@ -1328,7 +1328,6 @@ bld.SAMBA3_BINARY('spotlight2sparql',
 ########################## INCLUDES #################################
 
 bld.RECURSE('auth')
-bld.RECURSE('libgpo/gpext')
 bld.RECURSE('librpc')
 bld.RECURSE('librpc/idl')
 bld.RECURSE('libsmb')
