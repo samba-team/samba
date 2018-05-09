@@ -35,11 +35,11 @@ try:
 except:
     SamDB = None
 from samba.gpclass import apply_gp, unapply_gp, GPOStorage
-from samba.gp_sec_ext import gp_sec_ext
+from samba.gp_ext_loader import get_gp_client_side_extensions
 import logging
 
 if __name__ == "__main__":
-    parser = optparse.OptionParser('samba_gpoupdate [options]')
+    parser = optparse.OptionParser('gpupdate [options]')
     sambaopts = options.SambaOptions(parser)
 
     # Get the command line options
@@ -49,8 +49,8 @@ if __name__ == "__main__":
     parser.add_option('-H', '--url', dest='url', help='URL for the samdb')
     parser.add_option('-X', '--unapply', help='Unapply Group Policy',
                       action='store_true')
-    parser.add_option('-M', '--machine', help='Apply machine policy',
-                      action='store_true', default=False)
+    parser.add_option('--target', default='Computer', help='{Computer | User}',
+                      choices=['Computer', 'User'])
     parser.add_option_group(credopts)
 
     # Set the options and the arguments
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     session = system_session()
 
     # Set up logging
-    logger = logging.getLogger('samba_gpoupdate')
+    logger = logging.getLogger('gpupdate')
     logger.addHandler(logging.StreamHandler(sys.stdout))
     logger.setLevel(logging.CRITICAL)
     log_level = lp.log_level()
@@ -84,18 +84,25 @@ if __name__ == "__main__":
     cache_dir = lp.get('cache directory')
     store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
+    machine_exts, user_exts = get_gp_client_side_extensions(logger)
     gp_extensions = []
-    if opts.machine:
-        if lp.get('server role') == 'active directory domain controller':
-            gp_extensions.append(gp_sec_ext(logger))
-    else:
-        pass # User extensions
+    if opts.target == 'Computer':
+        for ext in machine_exts:
+            gp_extensions.append(ext(logger))
+    elif opts.target == 'User':
+        for ext in user_exts:
+            gp_extensions.append(ext(logger, creds))
 
     # Get a live instance of Samba
+    test_ldb = None
     if SamDB:
-        test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
-    else:
-        test_ldb = None
+        try:
+            test_ldb = SamDB(url,
+                             session_info=session,
+                             credentials=creds,
+                             lp=lp)
+        except:
+            test_ldb = None
 
     if not opts.unapply:
         apply_gp(lp, creds, test_ldb, logger, store, gp_extensions)

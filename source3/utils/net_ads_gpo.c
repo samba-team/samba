@@ -369,92 +369,6 @@ out:
 	return 0;
 }
 
-static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
-{
-	TALLOC_CTX *mem_ctx;
-	ADS_STRUCT *ads;
-	ADS_STATUS status;
-	const char *dn = NULL;
-	struct GROUP_POLICY_OBJECT *gpo_list;
-	uint32_t uac = 0;
-	uint32_t flags = 0;
-	struct security_token *token = NULL;
-	const char *filter = NULL;
-
-	if (argc < 1 || c->display_usage) {
-		d_printf("Usage:\n"
-			 "net ads gpo apply <username|machinename>\n"
-			 "  Apply GPOs for machine/user\n"
-			 "    username\tUsername to apply GPOs for\n"
-			 "    machinename\tMachine to apply GPOs for\n");
-		return -1;
-	}
-
-	mem_ctx = talloc_init("net_ads_gpo_apply");
-	if (mem_ctx == NULL) {
-		goto out;
-	}
-
-	if (argc >= 2) {
-		filter = cse_gpo_name_to_guid_string(argv[1]);
-	}
-
-	status = ads_startup(c, false, &ads);
-	/* filter = cse_gpo_name_to_guid_string("Security"); */
-
-	if (!ADS_ERR_OK(status)) {
-		d_printf("got: %s\n", ads_errstr(status));
-		goto out;
-	}
-
-	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
-	if (!ADS_ERR_OK(status)) {
-		d_printf("failed to find samaccount for %s: %s\n",
-			argv[0], ads_errstr(status));
-		goto out;
-	}
-
-	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
-		flags |= GPO_LIST_FLAG_MACHINE;
-	}
-
-	if (c->opt_verbose) {
-		flags |= GPO_INFO_FLAG_VERBOSE;
-	}
-
-	d_printf("%s: '%s' has dn: '%s'\n",
-		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
-		argv[0], dn);
-
-	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
-		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
-	} else {
-		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
-	}
-
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, token, &gpo_list);
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	status = ADS_ERROR_NT(gpo_process_gpo_list(mem_ctx, token, NULL, gpo_list,
-						   filter, flags));
-	if (!ADS_ERR_OK(status)) {
-		d_printf("failed to process gpo list: %s\n",
-			ads_errstr(status));
-		goto out;
-	}
-
-out:
-	ads_destroy(&ads);
-	talloc_destroy(mem_ctx);
-	return 0;
-}
-
 static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
@@ -635,14 +549,6 @@ out:
 int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
-		{
-			"apply",
-			net_ads_gpo_apply,
-			NET_TRANSPORT_ADS,
-			"Apply GPO to container",
-			"net ads gpo apply\n"
-			"    Apply GPO to container"
-		},
 		{
 			"getgpo",
 			net_ads_gpo_get_gpo,
