@@ -111,7 +111,7 @@ class PassWordHashTests(TestCase):
         res = self.ldb.search(base=self.ldb.get_config_basedn(),
                               expression="ncName=%s" % self.ldb.get_default_basedn(),
                               attrs=["nETBIOSName"])
-        self.netbios_domain = res[0]["nETBIOSName"][0]
+        self.netbios_domain = str(res[0]["nETBIOSName"][0])
         self.dns_domain = self.ldb.domain_dns_name()
 
         # Gets back the basedn
@@ -161,7 +161,7 @@ class PassWordHashTests(TestCase):
     # Calculate and validate a Wdigest value
     def check_digest(self, user, realm, password, digest):
         expected = calc_digest(user, realm, password)
-        actual = binascii.hexlify(bytearray(digest))
+        actual = binascii.hexlify(bytearray(digest)).decode('utf8')
         error = "Digest expected[%s], actual[%s], " \
                 "user[%s], realm[%s], pass[%s]" % \
                 (expected, actual, user, realm, password)
@@ -312,7 +312,7 @@ class PassWordHashTests(TestCase):
         for (tag, alg, rounds) in expected:
             self.assertEquals(tag, up.hashes[i].scheme)
 
-            data = up.hashes[i].value.split("$")
+            data = up.hashes[i].value.decode('utf8').split("$")
             # Check we got the expected crypt algorithm
             self.assertEquals(alg, data[1])
 
@@ -323,7 +323,7 @@ class PassWordHashTests(TestCase):
 
             # Calculate the expected hash value
             expected = crypt.crypt(USER_PASS, cmd)
-            self.assertEquals(expected, up.hashes[i].value)
+            self.assertEquals(expected, up.hashes[i].value.decode('utf8'))
             i += 1
 
     # Check that the correct nt_hash was stored for userPassword
