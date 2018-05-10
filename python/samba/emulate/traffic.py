@@ -1963,25 +1963,16 @@ def generate_stats(statsdir, timing_file):
     else:
         failure_rate = failed / duration
 
-    # print the stats in more human-readable format when stdout is going to the
-    # console (as opposed to being redirected to a file)
-    if sys.stdout.isatty():
-        print("Total conversations:   %10d" % conversations)
-        print("Successful operations: %10d (%.3f per second)"
-              % (successful, success_rate))
-        print("Failed operations:     %10d (%.3f per second)"
-              % (failed, failure_rate))
-    else:
-        print("(%d, %d, %d, %.3f, %.3f)" %
-              (conversations, successful, failed, success_rate, failure_rate))
+    print("Total conversations:   %10d" % conversations)
+    print("Successful operations: %10d (%.3f per second)"
+          % (successful, success_rate))
+    print("Failed operations:     %10d (%.3f per second)"
+          % (failed, failure_rate))
 
-    if sys.stdout.isatty():
-        print("Protocol    Op Code  Description                               "
-              " Count       Failed         Mean       Median          "
-              "95%        Range          Max")
-    else:
-        print("proto\top_code\tdesc\tcount\tfailed\tmean\tmedian\t95%\trange"
-              "\tmax")
+    print("Protocol    Op Code  Description                               "
+          " Count       Failed         Mean       Median          "
+          "95%        Range          Max")
+
     protocols = sorted(latencies.keys())
     for protocol in protocols:
         packet_types = sorted(latencies[protocol], key=opcode_key)
