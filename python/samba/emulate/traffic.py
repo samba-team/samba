@@ -282,12 +282,11 @@ class Packet(object):
             return False
 
         fn_name = 'packet_%s_%s' % (self.protocol, self.opcode)
-        try:
-            fn = getattr(traffic_packets, fn_name)
-            if fn is traffic_packets.null_packet:
-                return False
-        except AttributeError:
+        fn = getattr(traffic_packets, fn_name, None)
+        if not fn:
             print("missing packet %s" % fn_name, file=sys.stderr)
+            return False
+        if fn is traffic_packets.null_packet:
             return False
         return True
 
