@@ -23,6 +23,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -147,8 +148,29 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!CHECK_WRITE(fsp)) {
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return tevent_req_post(req, ev);
+		bool allow_dir_flush = false;
+		uint32_t flush_access = FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY;
+
+		if (!fsp->is_directory) {
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		/*
+		 * Directories are not writable in the conventional
+		 * sense, but if opened with *either*
+		 * FILE_ADD_FILE or FILE_ADD_SUBDIRECTORY
+		 * they can be flushed.
+		 */
+
+		if ((fsp->access_mask & flush_access) != 0) {
+			allow_dir_flush = true;
+		}
+
+		if (allow_dir_flush == false) {
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	if (fsp->fh->fd == -1) {
