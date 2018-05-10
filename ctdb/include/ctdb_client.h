@@ -243,7 +243,6 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
 
-int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname);
 const char *ctdb_get_socketname(struct ctdb_context *ctdb);
 
 /* return pnn of this node */
