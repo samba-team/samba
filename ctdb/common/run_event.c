@@ -659,6 +659,11 @@ struct tevent_req *run_event_send(TALLOC_CTX *mem_ctx,
 	state->timeout = timeout;
 	state->cancelled = false;
 
+	state->script_list = talloc_zero(state, struct run_event_script_list);
+	if (tevent_req_nomem(state->script_list, req)) {
+		return tevent_req_post(req, ev);
+	}
+
 	/*
 	 * If monitor event is running,
 	 *   cancel the running monitor event and run new event
@@ -673,11 +678,6 @@ struct tevent_req *run_event_send(TALLOC_CTX *mem_ctx,
 		if (monitor_running) {
 			run_event_cancel(current_req);
 		} else if (strcmp(event_str, "monitor") == 0) {
-			state->script_list = talloc_zero(
-				state, struct run_event_script_list);
-			if (tevent_req_nomem(state->script_list, req)) {
-				return tevent_req_post(req, ev);
-			}
 			state->script_list->summary = -ECANCELED;
 			tevent_req_done(req);
 			return tevent_req_post(req, ev);
@@ -714,14 +714,16 @@ static void run_event_trigger(struct tevent_req *req, void *private_data)
 	struct tevent_req *subreq;
 	struct run_event_state *state = tevent_req_data(
 		req, struct run_event_state);
+	struct run_event_script_list *script_list;
 	int ret;
 	bool is_monitor = false;
 
 	D_DEBUG("Running event %s with args \"%s\"\n", state->event_str,
 		state->arg_str == NULL ? "(null)" : state->arg_str);
 
-	ret = get_script_list(state, run_event_script_dir(state->run_ctx),
-			      &state->script_list);
+	ret = get_script_list(state,
+			      run_event_script_dir(state->run_ctx),
+			      &script_list);
 	if (ret != 0) {
 		D_ERR("get_script_list() failed, ret=%d\n", ret);
 		tevent_req_error(req, ret);
@@ -729,11 +731,13 @@ static void run_event_trigger(struct tevent_req *req, void *private_data)
 	}
 
 	/* No scripts */
-	if (state->script_list == NULL ||
-	    state->script_list->num_scripts == 0) {
+	if (script_list == NULL || script_list->num_scripts == 0) {
 		tevent_req_done(req);
 		return;
 	}
+
+	talloc_free(state->script_list);
+	state->script_list = script_list;
 
 	ret = script_args(state, state->event_str, state->arg_str,
 			  &state->argv);

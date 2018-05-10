@@ -16,12 +16,10 @@ EOF
 simple_test run monitor 30
 
 required_result 0 <<EOF
-Event monitor has never run
 EOF
 simple_test status monitor
 
 required_result 0 <<EOF
-Event monitor has never passed
 EOF
 simple_test status monitor lastpass
 
