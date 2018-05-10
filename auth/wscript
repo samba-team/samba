@@ -4,7 +4,7 @@ import Logs, Options, Utils
 import samba3
 
 def set_options(opt):
-    help = ("Build with JSON auth audit support (default=auto). "
+    help = ("Build with JSON auth audit support (default=True). "
             "This requires the jansson devel package.")
 
     opt.SAMBA3_ADD_OPTION('json-audit', default=None, help=(help))
@@ -20,9 +20,13 @@ def configure(conf):
             conf.CHECK_FUNCS_IN('json_object', 'jansson')
 
     if not conf.CONFIG_GET('HAVE_JSON_OBJECT'):
-        if Options.options.with_json_audit == True:
-            conf.fatal('JSON support requested, but no suitable jansson '
-                       'library found')
+        if Options.options.with_json_audit != False:
+            conf.fatal("JSON support not found. "
+                       "Try installing libjansson-dev or jansson-devel. "
+                       "Otherwise, use --without-json-audit to build without "
+                       "JSON support. "
+                       "JSON support is required for the JSON "
+                       "formatted audit log feature")
         if conf.CONFIG_GET('ENABLE_SELFTEST') and \
           (not Options.options.without_ad_dc):
             raise Utils.WafError('jansson JSON library required for '
