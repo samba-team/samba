@@ -109,7 +109,7 @@ systemOnly: FALSE
 
         idx_res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
 
-        self.assertIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
+        self.assertIn(attr_ldap_name, [x.decode('utf8') for x in idx_res[0]["@IDXATTR"]])
 
 
     def test_AddUnIndexedAttribute(self):
@@ -133,7 +133,7 @@ systemOnly: FALSE
 
         idx_res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
 
-        self.assertNotIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
+        self.assertNotIn(attr_ldap_name, [x.decode('utf8') for x in idx_res[0]["@IDXATTR"]])
 
 
     def test_AddTwoIndexedAttributes(self):
@@ -171,8 +171,8 @@ systemOnly: FALSE
 
         idx_res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
 
-        self.assertIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
-        self.assertIn(attr_ldap_name2, [str(x) for x in idx_res[0]["@IDXATTR"]])
+        self.assertIn(attr_ldap_name, [x.decode('utf8') for x in idx_res[0]["@IDXATTR"]])
+        self.assertIn(attr_ldap_name2, [x.decode('utf8') for x in idx_res[0]["@IDXATTR"]])
 
     def test_modify_at_attributes(self):
         m = {"dn": "@ATTRIBUTES",
