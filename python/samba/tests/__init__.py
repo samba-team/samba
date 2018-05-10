@@ -38,12 +38,10 @@ import samba.dcerpc.base
 from samba.compat import PY3, text_type
 from samba.compat import string_types
 from random import randint
-if not PY3:
-    # Py2 only
-    from samba.samdb import SamDB
-    import samba.ndr
-    import samba.dcerpc.dcerpc
-    import samba.dcerpc.epmapper
+from samba.samdb import SamDB
+import samba.ndr
+import samba.dcerpc.dcerpc
+import samba.dcerpc.epmapper
 
 try:
     from unittest import SkipTest
