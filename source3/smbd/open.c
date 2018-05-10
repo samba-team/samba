@@ -5051,7 +5051,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x private_flags = 0x%x "
-		  "ea_list = 0x%p, sd = 0x%p, "
+		  "ea_list = %p, sd = %p, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
@@ -5594,7 +5594,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
 		  "private_flags = 0x%x "
-		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
+		  "root_dir_fid = 0x%x, ea_list = %p, sd = %p, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,

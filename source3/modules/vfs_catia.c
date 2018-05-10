@@ -251,9 +251,9 @@ static void catia_debug_cc(int lvl,
 			   files_struct *fsp,
 			   const char *location)
 {
-	DEBUG(lvl, ("%s: cc [0x%p] cc->busy [0x%p] "
+	DEBUG(lvl, ("%s: cc [%p] cc->busy [%p] "
 		    "is_fsp_ext [%s] "
-		    "fsp [0x%p] fsp name [%s] "
+		    "fsp [%p] fsp name [%s] "
 		    "orig_fname [%s] "
 		    "fname [%s] "
 		    "orig_base_fname [%s] "

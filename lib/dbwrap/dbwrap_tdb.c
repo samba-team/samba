@@ -142,7 +142,7 @@ static struct db_record *db_tdb_fetch_locked_internal(
 	state.result->storev = db_tdb_storev;
 	state.result->delete_rec = db_tdb_delete;
 
-	DEBUG(10, ("Allocated locked data 0x%p\n", state.result));
+	DEBUG(10, ("Allocated locked data %p\n", state.result));
 
 	return state.result;
 }
