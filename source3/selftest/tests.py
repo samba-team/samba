@@ -54,7 +54,6 @@ try:
 finally:
     f.close()
 
-have_libarchive = ("HAVE_LIBARCHIVE" in config_hash)
 have_linux_kernel_oplocks = ("HAVE_KERNEL_OPLOCKS_LINUX" in config_hash)
 have_inotify = ("HAVE_INOTIFY" in config_hash)
 have_ldwrap = ("HAVE_LDWRAP" in config_hash)
@@ -295,31 +294,29 @@ for env in ["fileserver"]:
     # tar command tests
     #
 
-    # tar command enabled only if built with libarchive
-    if have_libarchive:
-        # Test smbclient/tarmode
-        plantestsuite("samba3.blackbox.smbclient_tarmode.NT1", env,
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.sh"),
-                       '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD',
-                       '$LOCAL_PATH/tarmode', '$PREFIX', smbclient3, configuration, "-mNT1"])
-        plantestsuite("samba3.blackbox.smbclient_tarmode.SMB3", env,
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.sh"),
-                       '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD',
-                       '$LOCAL_PATH/tarmode', '$PREFIX', smbclient3, configuration, "-mSMB3"])
+    # Test smbclient/tarmode
+    plantestsuite("samba3.blackbox.smbclient_tarmode.NT1", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.sh"),
+                   '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD',
+                   '$LOCAL_PATH/tarmode', '$PREFIX', smbclient3, configuration, "-mNT1"])
+    plantestsuite("samba3.blackbox.smbclient_tarmode.SMB3", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.sh"),
+                   '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD',
+                   '$LOCAL_PATH/tarmode', '$PREFIX', smbclient3, configuration, "-mSMB3"])
 
-        # Test suite for new smbclient/tar with libarchive (GSoC 13)
-        plantestsuite("samba3.blackbox.smbclient_tar.NT1", env,
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
-                       '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tmp',
-                       '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH/tarmode',
-                       '-d', '$PREFIX', '-b', smbclient3,
-                       '--subunit', '--', configuration, '-mNT1'])
-        plantestsuite("samba3.blackbox.smbclient_tar.SMB3", env,
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
-                       '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tmp',
-                       '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH/tarmode',
-                       '-d', '$PREFIX', '-b', smbclient3,
-                       '--subunit', '--', configuration, '-mSMB3'])
+    # Test suite for new smbclient/tar with libarchive (GSoC 13)
+    plantestsuite("samba3.blackbox.smbclient_tar.NT1", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
+                   '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tmp',
+                   '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH/tarmode',
+                   '-d', '$PREFIX', '-b', smbclient3,
+                   '--subunit', '--', configuration, '-mNT1'])
+    plantestsuite("samba3.blackbox.smbclient_tar.SMB3", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
+                   '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tmp',
+                   '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH/tarmode',
+                   '-d', '$PREFIX', '-b', smbclient3,
+                   '--subunit', '--', configuration, '-mSMB3'])
 
 plantestsuite("samba3.blackbox.net_usershare", "fileserver:local", [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
 

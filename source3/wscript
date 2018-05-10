@@ -228,6 +228,10 @@ main() {
                        "build without libarchive support. "
                        "libarchive support is required for the smbclient "
                        "tar-file mode")
+    elif conf.CONFIG_GET('ENABLE_SELFTEST'):
+        raise Utils.WafError('libarchive library required for '
+                             '--enable-selftest')
+
 
     # check for DMAPI libs
     if Options.options.with_dmapi == False:
