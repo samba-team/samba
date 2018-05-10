@@ -1172,8 +1172,11 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	psd->revision = orig_psd->revision;
-	/* All our SD's are self relative. */
-	psd->type = orig_psd->type | SEC_DESC_SELF_RELATIVE;
+	if (security_info_sent & SECINFO_DACL) {
+		psd->type = orig_psd->type;
+		/* All our SD's are self relative. */
+		psd->type |= SEC_DESC_SELF_RELATIVE;
+	}
 
 	if ((security_info_sent & SECINFO_OWNER) && (orig_psd->owner_sid != NULL)) {
 		if (!dom_sid_equal(orig_psd->owner_sid, psd->owner_sid)) {
