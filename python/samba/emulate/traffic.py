@@ -948,18 +948,8 @@ class Conversation(object):
         :param s: start of the window
         :param e: end of the window
         """
-
-        new_packets = []
-        for p in self.packets:
-            if p.timestamp < s or p.timestamp > e:
-                continue
-            new_packets.append(p)
-
-        self.packets = new_packets
-        if new_packets:
-            self.start_time = new_packets[0].timestamp
-        else:
-            self.start_time = None
+        self.packets = [p for p in self.packets if s <= p.timestamp <= e]
+        self.start_time = self.packets[0].timestamp if self.packets else None
 
     def renormalise_times(self, start_time):
         """Adjust the packet start times relative to the new start time."""
