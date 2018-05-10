@@ -70,7 +70,6 @@ static int get_script_list(TALLOC_CTX *mem_ctx,
 				  script_dir, ret);
 		}
 		*out = NULL;
-		ret = 0;
 		goto done;
 	}
 
@@ -296,7 +295,7 @@ int run_event_init(TALLOC_CTX *mem_ctx, struct run_proc_context *run_proc_ctx,
 
 	if (! S_ISDIR(st.st_mode)) {
 		talloc_free(run_ctx);
-		return EINVAL;
+		return ENOTDIR;
 	}
 
 	run_ctx->script_dir = talloc_strdup(run_ctx, script_dir);
