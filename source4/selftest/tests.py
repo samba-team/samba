@@ -765,7 +765,7 @@ planoldpythontestsuite("ad_dc_ntvfs",
 for env in ["ad_dc_ntvfs:local", "ad_dc:local",
             "fl2003dc:local", "fl2008r2dc:local",
             "promoted_dc:local"]:
-    planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol")
+    planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol", py3_compatible=True)
 
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.tokengroups.krb5.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/token_group.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '-k', 'yes', '$LOADLIST', '$LISTOPT'])
