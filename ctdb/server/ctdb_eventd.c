@@ -436,8 +436,7 @@ static struct tevent_req *command_script_list_send(
 		return tevent_req_post(req, ev);
 	}
 
-	ret = run_event_script_list(eventd_run_context(ectx), state->reply,
-				    &s);
+	ret = run_event_list(eventd_run_context(ectx), state->reply, &s);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);

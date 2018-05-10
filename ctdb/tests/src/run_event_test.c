@@ -110,7 +110,7 @@ static void do_list(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct run_event_script_list *script_list = NULL;
 	int ret, i;
 
-	ret = run_event_script_list(run_ctx, mem_ctx, &script_list);
+	ret = run_event_list(run_ctx, mem_ctx, &script_list);
 	if (ret != 0) {
 		printf("Script list failed with result=%d\n", ret);
 		return;

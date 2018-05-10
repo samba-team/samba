@@ -87,9 +87,9 @@ int run_event_init(TALLOC_CTX *mem_ctx, struct run_proc_context *run_proc_ctx,
  * @param[out] output List of valid scripts
  * @return 0 on success, errno on failure
  */
-int run_event_script_list(struct run_event_context *run_ctx,
-			  TALLOC_CTX *mem_ctx,
-			  struct run_event_script_list **output);
+int run_event_list(struct run_event_context *run_ctx,
+		   TALLOC_CTX *mem_ctx,
+		   struct run_event_script_list **output);
 
 /**
  * @brief Enable a script

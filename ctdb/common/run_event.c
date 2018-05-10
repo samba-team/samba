@@ -389,9 +389,9 @@ static int run_event_script_status(struct run_event_script *script)
 	return ret;
 }
 
-int run_event_script_list(struct run_event_context *run_ctx,
-			  TALLOC_CTX *mem_ctx,
-			  struct run_event_script_list **output)
+int run_event_list(struct run_event_context *run_ctx,
+		   TALLOC_CTX *mem_ctx,
+		   struct run_event_script_list **output)
 {
 	struct run_event_script_list *script_list;
 	int ret, i;
