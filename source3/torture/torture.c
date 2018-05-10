@@ -11650,6 +11650,7 @@ static struct {
 	{ "SMB2-MULTI-CHANNEL", run_smb2_multi_channel },
 	{ "SMB2-SESSION-REAUTH", run_smb2_session_reauth },
 	{ "SMB2-FTRUNCATE", run_smb2_ftruncate },
+	{ "SMB2-DIR-FSYNC", run_smb2_dir_fsync },
 	{ "CLEANUP1", run_cleanup1 },
 	{ "CLEANUP2", run_cleanup2 },
 	{ "CLEANUP3", run_cleanup3 },

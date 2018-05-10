@@ -101,6 +101,7 @@ bool run_smb2_tcon_dependence(int dummy);
 bool run_smb2_multi_channel(int dummy);
 bool run_smb2_session_reauth(int dummy);
 bool run_smb2_ftruncate(int dummy);
+bool run_smb2_dir_fsync(int dummy);
 bool run_chain3(int dummy);
 bool run_local_conv_auth_info(int dummy);
 bool run_local_sprintf_append(int dummy);
