@@ -1501,6 +1501,283 @@ done:
 }
 
 /*
+ * This is basically a copy of test_inheritance_flags() with an additional twist
+ * to change the owner of the testfile, verifying that the security descriptor
+ * flags are not altered.
+ */
+static bool test_sd_flags_vs_chown(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	struct smb2_create io;
+	const char *dname = BASEDIR "\\inheritance";
+	const char *fname1 = BASEDIR "\\inheritance\\testfile";
+	bool ret = true;
+	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
+	int i, j;
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
+	struct security_descriptor *sd, *sd2, *sd_orig=NULL;
+	struct security_descriptor *owner_sd = NULL;
+	const char *owner_sid_string = NULL;
+	struct dom_sid *owner_sid = NULL;
+	struct dom_sid world_sid = global_sid_World;
+	struct {
+		uint32_t parent_set_sd_type; /* 3 options */
+		uint32_t parent_set_ace_inherit; /* 1 option */
+		uint32_t parent_get_sd_type;
+		uint32_t parent_get_ace_inherit;
+		uint32_t child_get_sd_type;
+		uint32_t child_get_ace_inherit;
+	} tflags[16] = {{0}}; /* 2^4 */
+
+	owner_sd = security_descriptor_dacl_create(tctx,
+						   0,
+						   SID_WORLD,
+						   NULL,
+						   NULL);
+	torture_assert_not_null_goto(tctx, owner_sd, ret, done,
+				     "security_descriptor_dacl_create failed\n");
+
+	for (i = 0; i < 15; i++) {
+		torture_comment(tctx, "i=%d:", i);
+
+		if (i & 1) {
+			tflags[i].parent_set_sd_type |=
+			    SEC_DESC_DACL_AUTO_INHERITED;
+			torture_comment(tctx, "AUTO_INHERITED, ");
+		}
+		if (i & 2) {
+			tflags[i].parent_set_sd_type |=
+			    SEC_DESC_DACL_AUTO_INHERIT_REQ;
+			torture_comment(tctx, "AUTO_INHERIT_REQ, ");
+		}
+		if (i & 4) {
+			tflags[i].parent_set_sd_type |=
+			    SEC_DESC_DACL_PROTECTED;
+			torture_comment(tctx, "PROTECTED, ");
+			tflags[i].parent_get_sd_type |=
+			    SEC_DESC_DACL_PROTECTED;
+		}
+		if (i & 8) {
+			tflags[i].parent_set_ace_inherit |=
+			    SEC_ACE_FLAG_INHERITED_ACE;
+			torture_comment(tctx, "INHERITED, ");
+			tflags[i].parent_get_ace_inherit |=
+			    SEC_ACE_FLAG_INHERITED_ACE;
+		}
+
+		if ((tflags[i].parent_set_sd_type &
+		    (SEC_DESC_DACL_AUTO_INHERITED | SEC_DESC_DACL_AUTO_INHERIT_REQ)) ==
+		    (SEC_DESC_DACL_AUTO_INHERITED | SEC_DESC_DACL_AUTO_INHERIT_REQ)) {
+			tflags[i].parent_get_sd_type |=
+			    SEC_DESC_DACL_AUTO_INHERITED;
+			tflags[i].child_get_sd_type |=
+			    SEC_DESC_DACL_AUTO_INHERITED;
+			tflags[i].child_get_ace_inherit |=
+			    SEC_ACE_FLAG_INHERITED_ACE;
+			torture_comment(tctx, "  ... parent is AUTO INHERITED");
+		}
+
+		if (tflags[i].parent_set_ace_inherit &
+		    SEC_ACE_FLAG_INHERITED_ACE) {
+			tflags[i].parent_get_ace_inherit =
+			    SEC_ACE_FLAG_INHERITED_ACE;
+			torture_comment(tctx, "  ... parent ACE is INHERITED");
+		}
+
+		torture_comment(tctx, "\n");
+	}
+
+	if (!smb2_util_setup_dir(tctx, tree, BASEDIR))
+		return false;
+
+	torture_comment(tctx, "TESTING ACL INHERITANCE FLAGS\n");
+
+	ZERO_STRUCT(io);
+	io.level = RAW_OPEN_SMB2;
+	io.in.create_flags = 0;
+	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	io.in.alloc_size = 0;
+	io.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.in.security_flags = 0;
+	io.in.fname = dname;
+
+	torture_comment(tctx, "creating initial directory %s\n", dname);
+	status = smb2_create(tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	handle = io.out.file.handle;
+
+	torture_comment(tctx, "getting original sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = handle;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	status = smb2_getinfo_file(tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd_orig = q.query_secdesc.out.sd;
+
+	owner_sid = sd_orig->owner_sid;
+	owner_sid_string = dom_sid_string(tctx, sd_orig->owner_sid);
+	torture_comment(tctx, "owner_sid is %s\n", owner_sid_string);
+
+	for (i=0; i < ARRAY_SIZE(tflags); i++) {
+		torture_comment(tctx, "setting a new sd on directory, pass #%d\n", i);
+
+		sd = security_descriptor_dacl_create(tctx,
+						tflags[i].parent_set_sd_type,
+						NULL, NULL,
+						owner_sid_string,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						SEC_FILE_WRITE_DATA | SEC_STD_WRITE_DAC,
+						SEC_ACE_FLAG_OBJECT_INHERIT |
+						SEC_ACE_FLAG_CONTAINER_INHERIT |
+						tflags[i].parent_set_ace_inherit,
+						SID_WORLD,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						SEC_FILE_ALL | SEC_STD_ALL,
+						0,
+						NULL);
+		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+		set.set_secdesc.in.file.handle = handle;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+		set.set_secdesc.in.sd = sd;
+		status = smb2_setinfo_file(tree, &set);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		/*
+		 * Check DACL we just set, except change the bits to what they
+		 * should be.
+		 */
+		torture_comment(tctx, "  checking new sd\n");
+
+		/* REQ bit should always be false. */
+		sd->type &= ~SEC_DESC_DACL_AUTO_INHERIT_REQ;
+
+		if ((tflags[i].parent_get_sd_type & SEC_DESC_DACL_AUTO_INHERITED) == 0)
+			sd->type &= ~SEC_DESC_DACL_AUTO_INHERITED;
+
+		q.query_secdesc.in.file.handle = handle;
+		q.query_secdesc.in.secinfo_flags = SECINFO_DACL;
+		status = smb2_getinfo_file(tree, tctx, &q);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_SECURITY_DESCRIPTOR(q.query_secdesc.out.sd, sd);
+
+		/* Create file. */
+		torture_comment(tctx, "  creating file %s\n", fname1);
+		io.in.fname = fname1;
+		io.in.create_options = 0;
+		io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+		io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+		io.in.create_disposition = NTCREATEX_DISP_CREATE;
+		status = smb2_create(tree, tctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		handle2 = io.out.file.handle;
+		CHECK_ACCESS_FLAGS(handle2, SEC_RIGHTS_FILE_ALL);
+
+		q.query_secdesc.in.file.handle = handle2;
+		q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+		status = smb2_getinfo_file(tree, tctx, &q);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		torture_comment(tctx, "  checking sd on file %s\n", fname1);
+		sd2 = security_descriptor_dacl_create(tctx,
+						 tflags[i].child_get_sd_type,
+						 owner_sid_string, NULL,
+						 owner_sid_string,
+						 SEC_ACE_TYPE_ACCESS_ALLOWED,
+						 SEC_FILE_WRITE_DATA | SEC_STD_WRITE_DAC,
+						 tflags[i].child_get_ace_inherit,
+						 NULL);
+		CHECK_SECURITY_DESCRIPTOR(q.query_secdesc.out.sd, sd2);
+
+		/*
+		 * Set new sd on file ... prove that the bits have nothing to
+		 * do with the parents bits when manually setting an ACL. The
+		 * _AUTO_INHERITED bit comes directly from the ACL set.
+		 */
+		for (j = 0; j < ARRAY_SIZE(tflags); j++) {
+			torture_comment(tctx, "  setting new file sd, pass #%d\n", j);
+
+			/* Change sd type. */
+			sd2->type &= ~(SEC_DESC_DACL_AUTO_INHERITED |
+			    SEC_DESC_DACL_AUTO_INHERIT_REQ |
+			    SEC_DESC_DACL_PROTECTED);
+			sd2->type |= tflags[j].parent_set_sd_type;
+
+			sd2->dacl->aces[0].flags &=
+			    ~SEC_ACE_FLAG_INHERITED_ACE;
+			sd2->dacl->aces[0].flags |=
+			    tflags[j].parent_set_ace_inherit;
+
+			set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+			set.set_secdesc.in.file.handle = handle2;
+			set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+			set.set_secdesc.in.sd = sd2;
+			status = smb2_setinfo_file(tree, &set);
+			CHECK_STATUS(status, NT_STATUS_OK);
+
+			/* Check DACL we just set. */
+			sd2->type &= ~SEC_DESC_DACL_AUTO_INHERIT_REQ;
+			if ((tflags[j].parent_get_sd_type & SEC_DESC_DACL_AUTO_INHERITED) == 0)
+				sd2->type &= ~SEC_DESC_DACL_AUTO_INHERITED;
+
+			q.query_secdesc.in.file.handle = handle2;
+			q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+			status = smb2_getinfo_file(tree, tctx, &q);
+			CHECK_STATUS(status, NT_STATUS_OK);
+
+			CHECK_SECURITY_DESCRIPTOR(q.query_secdesc.out.sd, sd2);
+
+			/*
+			 * Check that changing ownder doesn't affect SD flags.
+			 *
+			 * Do this by first changing ownder to world and then
+			 * back to the original ownder. Afterwards compare SD,
+			 * should be the same.
+			 */
+			owner_sd->owner_sid = &world_sid;
+			set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+			set.set_secdesc.in.file.handle = handle2;
+			set.set_secdesc.in.secinfo_flags = SECINFO_OWNER;
+			set.set_secdesc.in.sd = owner_sd;
+			status = smb2_setinfo_file(tree, &set);
+			CHECK_STATUS(status, NT_STATUS_OK);
+
+			owner_sd->owner_sid = owner_sid;
+			set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+			set.set_secdesc.in.file.handle = handle2;
+			set.set_secdesc.in.secinfo_flags = SECINFO_OWNER;
+			set.set_secdesc.in.sd = owner_sd;
+			status = smb2_setinfo_file(tree, &set);
+			CHECK_STATUS(status, NT_STATUS_OK);
+
+			q.query_secdesc.in.file.handle = handle2;
+			q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+			status = smb2_getinfo_file(tree, tctx, &q);
+			CHECK_STATUS(status, NT_STATUS_OK);
+
+			CHECK_SECURITY_DESCRIPTOR(q.query_secdesc.out.sd, sd2);
+			torture_assert_goto(tctx, ret, ret, done, "CHECK_SECURITY_DESCRIPTOR failed\n");
+		}
+
+		smb2_util_close(tree, handle2);
+		smb2_util_unlink(tree, fname1);
+	}
+
+done:
+	smb2_util_close(tree, handle);
+	smb2_deltree(tree, BASEDIR);
+	smb2_tdis(tree);
+	smb2_logoff(tree->session);
+	return ret;
+}
+
+/*
   test dynamic acl inheritance
   Note: This test was copied from raw/acls.c.
 */
@@ -2098,6 +2375,7 @@ struct torture_suite *torture_smb2_acls_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "OWNER", test_owner_bits);
 	torture_suite_add_1smb2_test(suite, "INHERITANCE", test_inheritance);
 	torture_suite_add_1smb2_test(suite, "INHERITFLAGS", test_inheritance_flags);
+	torture_suite_add_1smb2_test(suite, "SDFLAGSVSCHOWN", test_sd_flags_vs_chown);
 	torture_suite_add_1smb2_test(suite, "DYNAMIC", test_inheritance_dynamic);
 #if 0
 	/* XXX This test does not work against XP or Vista. */
