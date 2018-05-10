@@ -794,12 +794,12 @@ class Conversation(object):
         if p.is_really_a_packet():
             self.packets.append(p)
 
-    def add_short_packet(self, timestamp, p, extra, client=True):
+    def add_short_packet(self, timestamp, protocol, opcode, extra,
+                         client=True):
         """Create a packet from a timestamp, and 'protocol:opcode' pair, and a
         (possibly empty) list of extra data. If client is True, assume
         this packet is from the client to the server.
         """
-        protocol, opcode = p.split(':', 1)
         src, dest = self.guess_client_server()
         if not client:
             src, dest = dest, src
@@ -1220,7 +1220,7 @@ class TrafficModel(object):
                 timestamp += wait
                 if hard_stop is not None and timestamp > hard_stop:
                     break
-                c.add_short_packet(timestamp, p, extra)
+                c.add_short_packet(timestamp, protocol, opcode, extra)
 
             key = key[1:] + (p,)
 
