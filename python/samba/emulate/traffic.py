@@ -46,6 +46,7 @@ from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dsdb import UF_NORMAL_ACCOUNT
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba import gensec
+from samba import sd_utils
 
 SLEEP_OVERHEAD = 3e-4
 
@@ -1689,6 +1690,11 @@ def create_user_account(ldb, instance_id, username, userpass):
         "userAccountControl": str(UF_NORMAL_ACCOUNT),
         "unicodePwd": utf16pw
     })
+
+    # grant user write permission to do things like write account SPN
+    sdutils = sd_utils.SDUtils(ldb)
+    sdutils.dacl_add_ace(user_dn,  "(A;;WP;;;PS)")
+
     end = time.time()
     duration = end - start
     print("%f\t0\tcreate\tuser\t%f\tTrue\t" % (end, duration))
