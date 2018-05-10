@@ -811,9 +811,12 @@ class Conversation(object):
         src, dest = self.guess_client_server()
         if not client:
             src, dest = dest, src
-
-        desc = OP_DESCRIPTIONS.get((protocol, opcode), '')
-        ip_protocol = IP_PROTOCOLS.get(protocol, '06')
+        key = (protocol, opcode)
+        desc = OP_DESCRIPTIONS[key] if key in OP_DESCRIPTIONS else ''
+        if protocol in IP_PROTOCOLS:
+            ip_protocol = IP_PROTOCOLS[protocol]
+        else:
+            ip_protocol = '06'
         packet = Packet(timestamp - self.start_time, ip_protocol,
                         '', src, dest,
                         protocol, opcode, desc, extra)
