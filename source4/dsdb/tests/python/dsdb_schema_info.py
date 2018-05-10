@@ -57,8 +57,8 @@ class SchemaInfoTestCase(samba.tests.TestCase):
         # fetch rootDSE
         res = self.sam_db.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
-        self.schema_dn = res[0]["schemaNamingContext"][0]
-        self.base_dn = res[0]["defaultNamingContext"][0]
+        self.schema_dn = res[0]["schemaNamingContext"][0].decode('utf8')
+        self.base_dn = res[0]["defaultNamingContext"][0].decode('utf8')
         self.forest_level = int(res[0]["forestFunctionality"][0])
 
         # get DC invocation_id
