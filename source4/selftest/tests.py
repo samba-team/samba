@@ -897,7 +897,7 @@ for env in ["ad_dc_ntvfs"]:
     planoldpythontestsuite(env, "tombstone_reanimation",
                            name="samba4.tombstone_reanimation.python",
                            environ={'TEST_SERVER': '$SERVER', 'TEST_USERNAME': '$USERNAME', 'TEST_PASSWORD': '$PASSWORD'},
-                           extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')]
+                           extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], py3_compatible=True
                            )
 
 # this is a basic sanity-check of Kerberos/NTLM user login
