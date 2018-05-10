@@ -41,9 +41,6 @@ if [ -z "$CTDB_BASE" ] ; then
 	exit 1
 fi
 
-export CTDB_SOCKET="${CTDB_BASE}/run/ctdbd.socket"
-export CTDB_PIDFILE="${CTDB_BASE}/run/ctdbd.pid"
-
 if $close_stdin ; then
 	exec sh -c "$command" <&-
 else
