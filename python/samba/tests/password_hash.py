@@ -29,6 +29,7 @@ from samba.dcerpc import drsblobs
 from samba.dcerpc.samr import DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.dsdb import UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
 from samba.tests import delete_force
+from samba.tests.password_test import PasswordCommon
 import ldb
 import samba
 import binascii
@@ -101,25 +102,10 @@ class PassWordHashTests(TestCase):
         # Gets back the configuration basedn
         configuration_dn = self.ldb.get_config_basedn().get_linearized()
 
-        # Get the old "dSHeuristics" if it was set
-        dsheuristics = self.ldb.get_dsheuristics()
+        # permit password changes during this test
+        PasswordCommon.allow_password_changes(self, self.ldb)
 
-        # Set the "dSHeuristics" to activate the correct "userPassword"
-        # behaviour
-        self.ldb.set_dsheuristics("000000001")
-
-        # Reset the "dSHeuristics" as they were before
-        self.addCleanup(self.ldb.set_dsheuristics, dsheuristics)
-
-        # Get the old "minPwdAge"
-        minPwdAge = self.ldb.get_minPwdAge()
-
-        # Set it temporarily to "0"
-        self.ldb.set_minPwdAge("0")
         self.base_dn = self.ldb.domain_dn()
-
-        # Reset the "minPwdAge" as it was before
-        self.addCleanup(self.ldb.set_minPwdAge, minPwdAge)
 
         account_control = 0
         if clear_text:

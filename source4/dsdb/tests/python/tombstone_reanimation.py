@@ -30,6 +30,7 @@ from samba.dcerpc import misc
 from samba.dcerpc import security
 from samba.dcerpc import drsblobs
 from samba.dcerpc.drsuapi import *
+from samba.tests.password_test import PasswordCommon
 
 import samba.tests
 from ldb import (SCOPE_BASE, FLAG_MOD_ADD, FLAG_MOD_DELETE, FLAG_MOD_REPLACE, Dn, Message,
@@ -49,21 +50,12 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         self.base_dn = self.samdb.domain_dn()
         self.schema_dn = self.samdb.get_schema_basedn().get_linearized()
         self.configuration_dn = self.samdb.get_config_basedn().get_linearized()
-        # Get the old "dSHeuristics" if it was set
-        self.dsheuristics = self.samdb.get_dsheuristics()
-        # Set the "dSHeuristics" to activate the correct "userPassword" behaviour
-        self.samdb.set_dsheuristics("000000001")
-        # Get the old "minPwdAge"
-        self.minPwdAge = self.samdb.get_minPwdAge()
-        # Set it temporary to "0"
-        self.samdb.set_minPwdAge("0")
+
+        # permit password changes during this test
+        PasswordCommon.allow_password_changes(self, self.samdb)
 
     def tearDown(self):
         super(RestoredObjectAttributesBaseTestCase, self).tearDown()
-        # Reset the "dSHeuristics" as they were before
-        self.samdb.set_dsheuristics(self.dsheuristics)
-        # Reset the "minPwdAge" as it was before
-        self.samdb.set_minPwdAge(self.minPwdAge)
 
     def GUID_string(self, guid):
         return self.samdb.schema_format_value("objectGUID", guid)

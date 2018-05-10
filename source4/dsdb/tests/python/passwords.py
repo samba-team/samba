@@ -19,6 +19,7 @@ sys.path.insert(0, "bin/python")
 import samba
 
 from samba.tests.subunitrun import SubunitOptions, TestProgram
+from samba.tests.password_test import PasswordTestCase
 
 import samba.getopt as options
 
@@ -35,6 +36,7 @@ from samba import gensec
 from samba.samdb import SamDB
 import samba.tests
 from samba.tests import delete_force
+from password_lockout_base import BasePasswordTestCase
 
 parser = optparse.OptionParser("passwords.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -64,7 +66,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # Tests start here
 #
 
-class PasswordTests(samba.tests.TestCase):
+class PasswordTests(PasswordTestCase):
 
     def setUp(self):
         super(PasswordTests, self).setUp()
@@ -76,24 +78,10 @@ class PasswordTests(samba.tests.TestCase):
         # Gets back the configuration basedn
         configuration_dn = self.ldb.get_config_basedn().get_linearized()
 
-        # Get the old "dSHeuristics" if it was set
-        dsheuristics = self.ldb.get_dsheuristics()
+        # permit password changes during this test
+        self.allow_password_changes()
 
-        # Set the "dSHeuristics" to activate the correct "userPassword" behaviour
-        self.ldb.set_dsheuristics("000000001")
-
-        # Reset the "dSHeuristics" as they were before
-        self.addCleanup(self.ldb.set_dsheuristics, dsheuristics)
-
-        # Get the old "minPwdAge"
-        minPwdAge = self.ldb.get_minPwdAge()
-
-        # Set it temporarily to "0"
-        self.ldb.set_minPwdAge("0")
         self.base_dn = self.ldb.domain_dn()
-
-        # Reset the "minPwdAge" as it was before
-        self.addCleanup(self.ldb.set_minPwdAge, minPwdAge)
 
         # (Re)adds the test user "testuser" with no password atm
         delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)

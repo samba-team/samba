@@ -14,10 +14,11 @@ import samba.tests
 from samba.tests import delete_force
 from samba.dcerpc import security, samr
 from samba.ndr import ndr_unpack
+from samba.tests.password_test import PasswordTestCase
 
 import time
 
-class BasePasswordTestCase(samba.tests.TestCase):
+class BasePasswordTestCase(PasswordTestCase):
     def _open_samr_user(self, res):
         self.assertTrue("objectSid" in res[0])
 
@@ -272,18 +273,11 @@ userPassword: """ + userpass + """
         self.template_creds.set_gensec_features(self.global_creds.get_gensec_features())
         self.template_creds.set_kerberos_state(self.global_creds.get_kerberos_state())
 
-
         # Gets back the basedn
         base_dn = self.ldb.domain_dn()
 
         # Gets back the configuration basedn
         configuration_dn = self.ldb.get_config_basedn().get_linearized()
-
-        # Get the old "dSHeuristics" if it was set
-        dsheuristics = self.ldb.get_dsheuristics()
-
-        # Reset the "dSHeuristics" as they were before
-        self.addCleanup(self.ldb.set_dsheuristics, dsheuristics)
 
         res = self.ldb.search(base_dn,
                          scope=SCOPE_BASE, attrs=["lockoutDuration", "lockOutObservationWindow", "lockoutThreshold"])
@@ -335,17 +329,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         self.ldb.modify(m)
 
-        # Set the "dSHeuristics" to activate the correct "userPassword" behaviour
-        self.ldb.set_dsheuristics("000000001")
-
-        # Get the old "minPwdAge"
-        minPwdAge = self.ldb.get_minPwdAge()
-
-        # Reset the "minPwdAge" as it was before
-        self.addCleanup(self.ldb.set_minPwdAge, minPwdAge)
-
-        # Set it temporarely to "0"
-        self.ldb.set_minPwdAge("0")
+        # update DC to allow password changes for the duration of this test
+        self.allow_password_changes()
 
         self.base_dn = self.ldb.domain_dn()
 

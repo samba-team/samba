@@ -31,6 +31,7 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS
 import samba.tests
 from samba.tests import delete_force
 import samba.dsdb
+from samba.tests.password_test import PasswordCommon
 
 parser = optparse.OptionParser("acl.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -650,18 +651,9 @@ class AclSearchTests(AclTests):
 
     def setUp(self):
         super(AclSearchTests, self).setUp()
-        # Get the old "dSHeuristics" if it was set
-        dsheuristics = self.ldb_admin.get_dsheuristics()
-        # Reset the "dSHeuristics" as they were before
-        self.addCleanup(self.ldb_admin.set_dsheuristics, dsheuristics)
-        # Set the "dSHeuristics" to activate the correct "userPassword" behaviour
-        self.ldb_admin.set_dsheuristics("000000001")
-        # Get the old "minPwdAge"
-        minPwdAge = self.ldb_admin.get_minPwdAge()
-        # Reset the "minPwdAge" as it was before
-        self.addCleanup(self.ldb_admin.set_minPwdAge, minPwdAge)
-        # Set it temporarely to "0"
-        self.ldb_admin.set_minPwdAge("0")
+
+        # permit password changes during this test
+        PasswordCommon.allow_password_changes(self, self.ldb_admin)
 
         self.u1 = "search_u1"
         self.u2 = "search_u2"

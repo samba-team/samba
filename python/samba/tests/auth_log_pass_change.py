@@ -29,6 +29,7 @@ from samba.net import Net
 import samba
 from subprocess import call
 from ldb import LdbError
+from samba.tests.password_test import PasswordCommon
 
 USER_NAME = "authlogtestuser"
 USER_PASS = samba.generate_random_password(32, 32)
@@ -53,25 +54,10 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         base_dn = self.ldb.domain_dn()
         print("base_dn %s" % base_dn)
 
-        # Get the old "dSHeuristics" if it was set
-        dsheuristics = self.ldb.get_dsheuristics()
+        # permit password changes during this test
+        PasswordCommon.allow_password_changes(self, self.ldb)
 
-        # Set the "dSHeuristics" to activate the correct "userPassword"
-        # behaviour
-        self.ldb.set_dsheuristics("000000001")
-
-        # Reset the "dSHeuristics" as they were before
-        self.addCleanup(self.ldb.set_dsheuristics, dsheuristics)
-
-        # Get the old "minPwdAge"
-        minPwdAge = self.ldb.get_minPwdAge()
-
-        # Set it temporarily to "0"
-        self.ldb.set_minPwdAge("0")
         self.base_dn = self.ldb.domain_dn()
-
-        # Reset the "minPwdAge" as it was before
-        self.addCleanup(self.ldb.set_minPwdAge, minPwdAge)
 
         # (Re)adds the test user USER_NAME with password USER_PASS
         delete_force(self.ldb, "cn=" + USER_NAME + ",cn=users," + self.base_dn)
