@@ -807,7 +807,8 @@ planoldpythontestsuite("rodc:local", "replica_sync_rodc",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
 		       name="samba4.drs.replica_sync_rodc.python(rodc)",
 		       environ={'DC1': '$DC_SERVER', 'DC2': '$RODC_DC_SERVER'},
-		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
+                       py3_compatible=True)
 
 planoldpythontestsuite("ad_dc_ntvfs", "password_settings",
                        extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
