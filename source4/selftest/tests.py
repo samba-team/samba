@@ -825,7 +825,7 @@ plantestsuite("samba4.user_account_control.python(ad_dc_ntvfs)", "ad_dc_ntvfs", 
 planoldpythontestsuite("ad_dc_ntvfs", "dsdb_schema_info",
                        extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
                        name="samba4.schemaInfo.python(ad_dc_ntvfs)",
-                       extra_args=['-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'])
+        extra_args=['-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'], py3_compatible=True)
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dsdb_schema_attributes")
 
