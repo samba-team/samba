@@ -197,11 +197,11 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     names.adminpass = None
 
     # NT domain, kerberos realm, root dn, domain dn, domain dns name
-    names.domain = string.upper(lp.get("workgroup"))
+    names.domain = lp.get("workgroup").upper()
     names.realm = lp.get("realm")
     names.dnsdomain = names.realm.lower()
     basedn = samba.dn_from_dns_name(names.dnsdomain)
-    names.realm = string.upper(names.realm)
+    names.realm = names.realm.upper()
     # netbiosname
     # Get the netbiosname first (could be obtained from smb.conf in theory)
     res = secretsdb.search(expression="(flatname=%s)" %
