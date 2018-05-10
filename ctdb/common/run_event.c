@@ -814,6 +814,7 @@ static void run_event_next_script(struct tevent_req *subreq)
 	state->script_subreq = NULL;
 	if (! status) {
 		D_ERR("run_proc failed for %s, ret=%d\n", script->name, ret);
+		run_event_stop_running(state->run_ctx);
 		tevent_req_error(req, ret);
 		return;
 	}
