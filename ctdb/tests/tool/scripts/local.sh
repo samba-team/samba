@@ -2,6 +2,9 @@
 
 [ -n "$TEST_VAR_DIR" ] || die "TEST_VAR_DIR unset"
 
+PATH="${PATH}:${CTDB_SCRIPTS_TOOLS_HELPER_DIR}"
+PATH="${PATH}:${CTDB_SCRIPTS_HELPER_BINDIR}"
+
 setup_ctdb_base "$TEST_VAR_DIR" "unit_tool" \
 		functions
 
@@ -11,9 +14,9 @@ else
     debug () { : ; }
 fi
 
-ctdbd_socket="${CTDB_BASE}/ctdbd.socket"
-ctdbd_pidfile="${CTDB_BASE}/ctdbd.pid"
-ctdbd_dbdir="${CTDB_BASE}/ctdbd.db"
+ctdbd_socket=$(ctdb-path socket "ctdbd")
+ctdbd_pidfile=$(ctdb-path pidfile "ctdbd")
+ctdbd_dbdir=$(ctdb-path vardir append "db")
 
 define_test ()
 {
