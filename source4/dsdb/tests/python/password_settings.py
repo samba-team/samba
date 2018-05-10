@@ -794,4 +794,66 @@ unicodePwd:: %s
 """ % (userdn, password)
         self.ldb.modify_ldif(ldif)
 
+    def set_domain_pwdHistoryLength(self, value):
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb, self.ldb.domain_dn())
+        m["pwdHistoryLength"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "pwdHistoryLength")
+        self.ldb.modify(m)
+
+    def test_domain_pwd_history(self):
+        """Non-PSO test for domain's pwdHistoryLength setting"""
+
+        # restore the current pwdHistoryLength setting after the test completes
+        curr_hist_len = str(self.pwd_defaults.history_len)
+        self.addCleanup(self.set_domain_pwdHistoryLength, curr_hist_len)
+
+        self.set_domain_pwdHistoryLength("4")
+        user = self.add_user("testuser")
+
+        initial_pwd = user.get_password()
+        passwords = ["First12#", "Second12#", "Third12#", "Fourth12#"]
+
+        # we should be able to set the password to new values OK
+        for pwd in passwords:
+            self.assert_password_valid(user, pwd)
+
+        # the 2nd time round it should fail because they're in the history now
+        for pwd in passwords:
+            self.assert_password_invalid(user, pwd)
+
+        # but the initial password is now outside the history, so should be OK
+        self.assert_password_valid(user, initial_pwd)
+
+        # if we set the history to zero, all the old passwords should now be OK
+        self.set_domain_pwdHistoryLength("0")
+        for pwd in passwords:
+            self.assert_password_valid(user, pwd)
+
+    def test_domain_pwd_history_zero(self):
+        """Non-PSO test for pwdHistoryLength going from zero to non-zero"""
+
+        # restore the current pwdHistoryLength setting after the test completes
+        curr_hist_len = str(self.pwd_defaults.history_len)
+        self.addCleanup(self.set_domain_pwdHistoryLength, curr_hist_len)
+
+        self.set_domain_pwdHistoryLength("0")
+        user = self.add_user("testuser")
+
+        initial_pwd = user.get_password()
+        self.assert_password_valid(user, "NewPwd12#")
+        # we can set the exact same password again because there's no history
+        self.assert_password_valid(user, "NewPwd12#")
+
+        # There is a difference in behaviour here between Windows and Samba.
+        # When going from zero to non-zero password-history, Windows treats
+        # the current user's password as invalid (even though the password has
+        # not been altered since the setting changed). Whereas Samba accepts
+        # the current password (because it's not in the history until the
+        # *next* time the user's password changes.
+        self.set_domain_pwdHistoryLength("1")
+        self.assert_password_invalid(user, "NewPwd12#")
+
+
+
+
 
