@@ -799,7 +799,7 @@ planoldpythontestsuite("ad_dc_ntvfs",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.blackbox.traffic_replay",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.blackbox.traffic_learner",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
