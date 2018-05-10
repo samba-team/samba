@@ -55,7 +55,6 @@ setup_ctdbd ()
 	$VALGRIND fake_ctdbd -d "$FAKE_CTDBD_DEBUGLEVEL" \
 		  -s "$ctdbd_socket" -p "$ctdbd_pidfile" \
 		  -D "$ctdbd_dbdir"
-	export CTDB_SOCKET="$ctdbd_socket"
 	# This current translates to a 6 second timeout for the
 	# important controls
 	ctdb setvar TakeoverTimeout 2
