@@ -38,6 +38,7 @@
 #include "common/reqid.h"
 #include "common/system.h"
 #include "common/common.h"
+#include "common/path.h"
 #include "common/logging.h"
 #include "common/logging_conf.h"
 
@@ -100,9 +101,16 @@ static struct ctdb_context *ctdb_init(struct tevent_context *ev)
 		return NULL;
 	}
 
-	ret = ctdb_set_socketname(ctdb, CTDB_SOCKET);
-	if (ret != 0) {
-		DBG_ERR("ctdb_set_socketname failed.\n");
+	ctdb->daemon.name = path_socket(ctdb, "ctdbd");
+	if (ctdb->daemon.name == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		talloc_free(ctdb);
+		return NULL;
+	}
+
+	ctdbd_pidfile = path_pidfile(ctdb, "ctdbd");
+	if (ctdbd_pidfile == NULL) {
+		DBG_ERR("Memory allocation error\n");
 		talloc_free(ctdb);
 		return NULL;
 	}
@@ -145,7 +153,6 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb = NULL;
 	int interactive = 0;
-	const char *ctdb_socket;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -355,23 +362,6 @@ int main(int argc, const char *argv[])
 	/*
 	 * Testing and debug options
 	 */
-
-	/* Environment variable overrides default */
-	ctdbd_pidfile = getenv("CTDB_PIDFILE");
-	if (ctdbd_pidfile == NULL) {
-		ctdbd_pidfile = CTDB_RUNDIR "/ctdbd.pid";
-	}
-
-	/* Environment variable overrides default */
-	ctdb_socket = getenv("CTDB_SOCKET");
-	if (ctdb_socket == NULL) {
-		ctdb_socket = CTDB_SOCKET;
-	}
-	ret = ctdb_set_socketname(ctdb, ctdb_socket);
-	if (ret == -1) {
-		D_ERR("ctdb_set_socketname() failed\n");
-		goto fail;
-	}
 
 	t = getenv("CTDB_TEST_MODE");
 	if (t != NULL) {
