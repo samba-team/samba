@@ -37,6 +37,7 @@
 
 #include "common/db_hash.h"
 #include "common/logging.h"
+#include "common/path.h"
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
 #include "protocol/protocol_util.h"
@@ -6119,9 +6120,10 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 		goto fail;
 	}
 
-	ctdb_socket = getenv("CTDB_SOCKET");
+	ctdb_socket = path_socket(ctdb, "ctdbd");
 	if (ctdb_socket == NULL) {
-		ctdb_socket = CTDB_SOCKET;
+		fprintf(stderr, "Memory allocation error\n");
+		goto fail;
 	}
 
 	ret = ctdb_client_init(ctdb, ctdb->ev, ctdb_socket, &ctdb->client);
