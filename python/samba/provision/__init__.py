@@ -219,8 +219,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                "configurationNamingContext","rootDomainNamingContext",
                "namingContexts"])
 
-    names.configdn = current[0]["configurationNamingContext"][0]
-    names.schemadn = current[0]["schemaNamingContext"][0]
+    names.configdn = current[0]["configurationNamingContext"][0].decode('utf8')
+    names.schemadn = current[0]["schemaNamingContext"][0].decode('utf8')
     if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
                                        current[0]["defaultNamingContext"][0].decode('utf8')))):
         raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
@@ -237,12 +237,12 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     for i in range(0, len(names.ncs)):
         nc = names.ncs[i]
 
-        dnsforestdn = "DC=ForestDnsZones,%s" % (str(names.rootdn))
+        dnsforestdn = "DC=ForestDnsZones,%s" % (names.rootdn.decode('utf8'))
         if nc == dnsforestdn:
             names.dnsforestdn = dnsforestdn
             continue
 
-        dnsdomaindn = "DC=DomainDnsZones,%s" % (str(names.domaindn))
+        dnsdomaindn = "DC=DomainDnsZones,%s" % (names.domaindn.decode('utf8'))
         if nc == dnsdomaindn:
             names.dnsdomaindn = dnsdomaindn
             continue
@@ -442,7 +442,7 @@ def get_last_provision_usn(sam):
         p = re.compile(r'-')
         if entry[0].get("provisionnerID"):
             for e in entry[0]["provisionnerID"]:
-                myids.append(str(e))
+                myids.append(e.decode('utf8'))
         for r in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
             tab1 = str(r).split(';')
             if len(tab1) == 2:
