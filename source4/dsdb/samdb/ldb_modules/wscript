@@ -7,7 +7,7 @@ def set_options(opt):
     help += "This requires gpgme devel and python packages "
     help += "(e.g. libgpgme11-dev, python-gpgme on debian/ubuntu)."
 
-    opt.SAMBA3_ADD_OPTION('gpgme', default=None, help=(help))
+    opt.SAMBA3_ADD_OPTION('gpgme', default=True, help=(help))
 
     return
 
@@ -24,7 +24,8 @@ def configure(conf):
 
     conf.SET_TARGET_TYPE('gpgme', 'EMPTY')
 
-    if Options.options.with_gpgme != False:
+    if not Options.options.without_ad_dc \
+       and Options.options.with_gpgme != False:
         conf.find_program('gpgme-config', var='GPGME_CONFIG')
 
         if conf.env.GPGME_CONFIG:
@@ -36,7 +37,11 @@ def configure(conf):
             conf.DEFINE('ENABLE_GPGME', '1')
 
         if not conf.CONFIG_SET('ENABLE_GPGME'):
-            if Options.options.with_gpgme == True:
-                conf.fatal('GPGME support requested, but no suitable GPGME library found, eg libgpgme11-dev and python-gpgme')
-            else:
-                Logs.warn('no suitable GPGME library found')
+            conf.fatal("GPGME support not found. "
+                       "Try installing libgpgme11-dev or gpgme-devel "
+		       "and python-gpgme. "
+                       "Otherwise, use --without-gpgme to build without "
+                       "GPGME support or --without-ad-dc to build without "
+		       "the Samba AD DC. "
+                       "GPGME support is required for the GPG encrypted "
+                       "password sync feature")
