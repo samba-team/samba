@@ -284,7 +284,6 @@ enum mangled_names_options {MANGLED_NAMES_NO, MANGLED_NAMES_YES, MANGLED_NAMES_I
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
 	char *dnsdomain;						\
-	char *realm_original;						\
 	int rpc_low_port;						\
 	int rpc_high_port;
 
