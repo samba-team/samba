@@ -55,7 +55,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('dmapi', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('fam', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
-    opt.SAMBA3_ADD_OPTION('libarchive', default=None)
+    opt.SAMBA3_ADD_OPTION('libarchive', default=True)
 
     opt.SAMBA3_ADD_OPTION('cluster-support', default=False)
 
@@ -218,12 +218,16 @@ main() {
     # None means autodetect, True/False means enable/disable
     conf.SET_TARGET_TYPE('archive', 'EMPTY')
     if Options.options.with_libarchive is not False:
-        libarchive_mandatory = Options.options.with_libarchive == True
         Logs.info("Checking for libarchive existence")
         if conf.CHECK_HEADERS('archive.h') and conf.CHECK_LIB('archive', shlib=True):
             conf.CHECK_FUNCS_IN('archive_read_support_filter_all archive_read_free', 'archive')
-        elif libarchive_mandatory:
-            conf.fatal('libarchive support requested, but not found')
+        else:
+            conf.fatal("libarchive support not found. "
+                       "Try installing libarchive-dev or libarchive-devel. "
+                       "Otherwise, use --without-libarchive to "
+                       "build without libarchive support. "
+                       "libarchive support is required for the smbclient "
+                       "tar-file mode")
 
     # check for DMAPI libs
     if Options.options.with_dmapi == False:

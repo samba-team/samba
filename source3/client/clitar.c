@@ -1837,7 +1837,7 @@ static NTSTATUS path_base_name(TALLOC_CTX *ctx, const char *path, char **_base)
 
 #else
 
-#define NOT_IMPLEMENTED DEBUG(0, ("tar mode not compiled. build with --with-libarchive\n"))
+#define NOT_IMPLEMENTED DEBUG(0, ("tar mode not compiled. build used --without-libarchive\n"))
 
 int cmd_block(void)
 {
