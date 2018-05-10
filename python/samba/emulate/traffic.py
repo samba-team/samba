@@ -50,6 +50,7 @@ from samba.dsdb import (
 from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba import gensec
 from samba import sd_utils
+from samba.compat import get_string
 
 SLEEP_OVERHEAD = 3e-4
 
@@ -436,8 +437,8 @@ class ReplayContext(object):
            than that requested, but not significantly.
         """
         if not failed_last_time:
-            if (self.badpassword_frequency > 0 and
-               random.random() < self.badpassword_frequency):
+            if (self.badpassword_frequency and self.badpassword_frequency > 0
+                and random.random() < self.badpassword_frequency):
                 try:
                     f(bad)
                 except:
@@ -718,7 +719,7 @@ class ReplayContext(object):
     def get_authenticator(self):
         auth = self.machine_creds.new_client_authenticator()
         current  = netr_Authenticator()
-        current.cred.data = [ord(x) for x in auth["credential"]]
+        current.cred.data = [x if isinstance(x, int) else ord(x) for x in auth["credential"]]
         current.timestamp = auth["timestamp"]
 
         subsequent = netr_Authenticator()
@@ -1658,9 +1659,8 @@ def create_machine_account(ldb, instance_id, netbios_name, machinepass):
 
     ou = ou_name(ldb, instance_id)
     dn = "cn=%s,%s" % (netbios_name, ou)
-    utf16pw = unicode(
-        '"' + machinepass.encode('utf-8') + '"', 'utf-8'
-    ).encode('utf-16-le')
+    utf16pw = ('"%s"' % get_string(machinepass)).encode('utf-16-le')
+
     start = time.time()
     ldb.add({
         "dn": dn,
@@ -1678,9 +1678,7 @@ def create_user_account(ldb, instance_id, username, userpass):
     """Create a user account via ldap."""
     ou = ou_name(ldb, instance_id)
     user_dn = "cn=%s,%s" % (username, ou)
-    utf16pw = unicode(
-        '"' + userpass.encode('utf-8') + '"', 'utf-8'
-    ).encode('utf-16-le')
+    utf16pw = ('"%s"' % get_string(userpass)).encode('utf-16-le')
     start = time.time()
     ldb.add({
         "dn": user_dn,
