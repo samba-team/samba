@@ -31,8 +31,10 @@ from samba.credentials import (
     DONT_USE_KERBEROS
 )
 from samba import NTSTATUSError
-from samba.ntstatus import NT_STATUS_OBJECT_NAME_NOT_FOUND
-from samba.dcerpc.misc import SEC_CHAN_WKSTA
+from samba.ntstatus import (
+    NT_STATUS_OBJECT_NAME_NOT_FOUND,
+    NT_STATUS_NO_SUCH_DOMAIN
+)
 import samba
 samba.ensure_third_party_module("dns", "dnspython")
 import dns.resolver
@@ -239,7 +241,13 @@ def packet_drsuapi_12(packet, conversation, context):
 def packet_drsuapi_13(packet, conversation, context):
     # DsWriteAccountSpn
     req = drsuapi.DsWriteAccountSpnRequest1()
-    req.operation = drsuapi.DRSUAPI_DS_SPN_OPERATION_ADD
+    req.operation = drsuapi.DRSUAPI_DS_SPN_OPERATION_REPLACE
+    req.unknown1 = 0  # Unused, must be 0
+    req.object_dn = context.user_dn
+    req.count = 1  # only 1 name
+    spn_name = drsuapi.DsNameString()
+    spn_name.str = 'foo/{}'.format(context.username)
+    req.spn_names = [spn_name]
     (drs, handle) = context.get_drsuapi_connection_pair()
     (level, res) = drs.DsWriteAccountSpn(handle, 1, req)
     return True
@@ -326,7 +334,10 @@ def packet_ldap_3(packet, conversation, context):
     samdb = context.get_ldap_connection()
     dn = context.get_matching_dn(dn_sig)
 
-    samdb.search(dn, scope=int(scope), attrs=attrs.split(','))
+    samdb.search(dn,
+                 scope=int(scope),
+                 attrs=attrs.split(','),
+                 controls=["paged_results:1:1000"])
     return True
 
 
@@ -429,9 +440,11 @@ def packet_lsarpc_39(packet, conversation, context):
     try:
         c.QueryTrustedDomainInfoBySid(pol_handle, domsid, level)
     except NTSTATUSError as error:
-        # Object Not found is the expected result, anything else is a
-        # failure.
-        if not check_runtime_error(error, NT_STATUS_OBJECT_NAME_NOT_FOUND):
+        # Object Not found is the expected result from samba,
+        # while No Such Domain is the expected result from windows,
+        # anything else is a failure.
+        if not check_runtime_error(error, NT_STATUS_OBJECT_NAME_NOT_FOUND) \
+                and not check_runtime_error(error, NT_STATUS_NO_SUCH_DOMAIN):
             raise
     return True
 
@@ -556,8 +569,10 @@ def packet_rpc_netlogon_30(packet, conversation, context):
     pwd.data = filler + [ord(x) for x in newpass]
     context.machine_creds.encrypt_netr_crypt_password(pwd)
     c.netr_ServerPasswordSet2(context.server,
-                              context.machine_creds.get_workstation(),
-                              SEC_CHAN_WKSTA,
+                              # must ends with $, so use get_username instead
+                              # of get_workstation here
+                              context.machine_creds.get_username(),
+                              context.machine_creds.get_secure_channel_type(),
                               context.netbios_name,
                               auth,
                               pwd)
@@ -920,16 +935,32 @@ def packet_srvsvc_16(packet, conversation, context):
     # NetShareGetInfo
     s = context.get_srvsvc_connection()
     server_unc = "\\\\" + context.server
-    share_name = "netlogon"
+    share_name = "IPC$"
     level = 1
     s.NetShareGetInfo(server_unc, share_name, level)
     return True
 
 
 def packet_srvsvc_21(packet, conversation, context):
-    # NetSrvGetInfo
+    """NetSrvGetInfo
+
+    FIXME: Level changed from 102 to 101 here, to bypass Windows error.
+
+    Level 102 will cause WERR_ACCESS_DENIED error against Windows, because:
+
+        > If the level is 102 or 502, the Windows implementation checks whether
+        > the caller is a member of one of the groups previously mentioned or
+        > is a member of the Power Users local group.
+
+    It passed against Samba since this check is not implemented by Samba yet.
+
+    refer to:
+
+        https://msdn.microsoft.com/en-us/library/cc247297.aspx#Appendix_A_80
+
+    """
     srvsvc = context.get_srvsvc_connection()
     server_unc = "\\\\" + context.server
-    level = 102
+    level = 101
     srvsvc.NetSrvGetInfo(server_unc, level)
     return True

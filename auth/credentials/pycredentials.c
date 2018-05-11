@@ -680,6 +680,16 @@ static PyObject *py_creds_set_secure_channel_type(PyObject *self, PyObject *args
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_get_secure_channel_type(PyObject *self, PyObject *args)
+{
+	enum netr_SchannelType channel_type = SEC_CHAN_NULL;
+
+	channel_type = cli_credentials_get_secure_channel_type(
+		PyCredentials_AsCliCredentials(self));
+
+	return PyInt_FromLong(channel_type);
+}
+
 static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 						      PyObject *args)
 {
@@ -815,6 +825,8 @@ static PyMethodDef py_creds_methods[] = {
 		"Get a new client NETLOGON_AUTHENTICATOR"},
 	{ "set_secure_channel_type", py_creds_set_secure_channel_type,
 	  METH_VARARGS, NULL },
+	{ "get_secure_channel_type", py_creds_get_secure_channel_type,
+	  METH_VARARGS },
 	{ "encrypt_netr_crypt_password",
 		py_creds_encrypt_netr_crypt_password,
 		METH_VARARGS,
