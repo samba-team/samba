@@ -79,6 +79,7 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 						      PyObject *set_obj,
 						      unsigned int flags,
 						      const char *attr_name);
+static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
 #define PyStr_Check PyUnicode_Check
@@ -89,6 +90,16 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 #define PyInt_FromLong PyLong_FromLong
+
+static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
+{
+	PyObject* result = NULL;
+	PyObject* args = NULL;
+	args = Py_BuildValue("(y#)", msg, size);
+	result = PyLdbBytesType.tp_new(&PyLdbBytesType, args, NULL);
+	Py_DECREF(args);
+	return result;
+}
 #else
 #define PyStr_Check PyString_Check
 #define PyStr_FromString PyString_FromString
@@ -96,6 +107,7 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 #define PyStr_FromFormat PyString_FromFormat
 #define PyStr_FromFormatV PyString_FromFormatV
 #define PyStr_AsUTF8 PyString_AsString
+#define PyLdbBytes_FromStringAndSize PyString_FromStringAndSize
 
 const char *PyStr_AsUTF8AndSize(PyObject *pystr, Py_ssize_t *sizeptr);
 const char *
@@ -270,10 +282,34 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
 				      ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
 }
+static PyObject *py_ldb_bytes_str(PyBytesObject *self)
+{
+	char *msg = NULL;
+	Py_ssize_t size;
+	int result = 0;
+	if (!PyBytes_Check(self)) {
+		PyErr_Format(PyExc_TypeError,"Unexpected type");
+		return NULL;
+	}
+	result = PyBytes_AsStringAndSize((PyObject *)self, &msg, &size);
+	if (result != 0) {
+		PyErr_Format(PyExc_TypeError, "Failed to extract bytes");
+		return NULL;
+	}
+	return PyUnicode_FromStringAndSize(msg, size);
+}
+
+static PyTypeObject PyLdbBytesType = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "ldb.bytes",
+	.tp_doc = "str/bytes (with custom str)",
+        .tp_str = (reprfunc)py_ldb_bytes_str,
+	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
+};
 
 static PyObject *PyObject_FromLdbValue(const struct ldb_val *val)
 {
-	return PyBytes_FromStringAndSize((const char *)val->data, val->length);
+	return PyLdbBytes_FromStringAndSize((const char *)val->data, val->length);
 }
 
 static PyObject *PyStr_FromLdbValue(const struct ldb_val *val)
@@ -2990,7 +3026,7 @@ static PyObject *py_ldb_msg_element_find(PyLdbMessageElementObject *self, Py_ssi
 		PyErr_SetString(PyExc_IndexError, "Out of range");
 		return NULL;
 	}
-	return PyBytes_FromStringAndSize((char *)el->values[idx].data, el->values[idx].length);
+	return PyLdbBytes_FromStringAndSize((char *)el->values[idx].data, el->values[idx].length);
 }
 
 static PySequenceMethods py_ldb_msg_element_seq = {
@@ -4122,6 +4158,11 @@ static struct PyModuleDef moduledef = {
 static PyObject* module_init(void)
 {
 	PyObject *m;
+
+	PyLdbBytesType.tp_base = &PyBytes_Type;
+	if (PyType_Ready(&PyLdbBytesType) < 0) {
+		return NULL;
+	}
 
 	if (PyType_Ready(&PyLdbDn) < 0)
 		return NULL;
