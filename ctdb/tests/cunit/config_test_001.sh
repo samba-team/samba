@@ -22,6 +22,10 @@ ok <<EOF
 [logging]
 	# location = ${logging_location}
 	# log level = ERROR
+[cluster]
+	# transport = tcp
+	# node address = 
+	# recovery lock = 
 [event]
 	# debug script = 
 EOF
