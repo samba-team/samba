@@ -25,7 +25,7 @@ import "misc.idl";
 		[charset(DOS),value(";"),noprint] uint8 _sep2[2];
 		winreg_Type type;
 		[charset(DOS),value(";"),noprint] uint8 _sep3[2];
-		uint32 size;
+		[value(ndr_size_winreg_Data_GPO(&data,type,ndr->flags))] uint32 size;
 		[charset(DOS),value(";"),noprint] uint8 _sep4[2];
 		[subcontext(0),subcontext_size(size),flag(NDR_REMAINING), switch_is(type)] winreg_Data_GPO data;
 		[charset(DOS),value("]"),noprint] uint8 _closing_bracket[2];

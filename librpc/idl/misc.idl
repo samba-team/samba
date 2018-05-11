@@ -84,7 +84,7 @@ interface misc
 	 * parsers which cannot handle nstring_array. This should be only
 	 * temporary, until we can get PIDL to generate the correct bindings.
 	 */
-	typedef [nodiscriminant,public,flag(NDR_LITTLE_ENDIAN)] union {
+	typedef [nodiscriminant,public,flag(NDR_LITTLE_ENDIAN),gensize] union {
 		[case(REG_NONE)];
 		[case(REG_SZ)] nstring string;
 		[case(REG_EXPAND_SZ)] nstring string;
