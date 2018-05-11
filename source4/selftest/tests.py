@@ -870,7 +870,7 @@ for env in ['rodc']:
     plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", '-Utestdenied%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testdenied")
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient4])
 
-planpythontestsuite("rodc:local", "samba.tests.samba_tool.rodc")
+planpythontestsuite("rodc:local", "samba.tests.samba_tool.rodc", py3_compatible=True)
 
 plantestsuite("samba.blackbox.rpcclient_samlogon", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
 								  "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
