@@ -907,7 +907,7 @@ for env in ["offlinebackupdc", "restoredc", "renamedc", "labdc"]:
                             "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM",
                             '$LOADLIST', '$LISTOPT'])
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc", py3_compatible=True)
 planpythontestsuite("ad_dc:local", "samba.tests.posixacl", py3_compatible=True)
 planpythontestsuite("ad_dc_no_nss:local", "samba.tests.posixacl", py3_compatible=True)
 plantestsuite_loadlist("samba4.deletetest.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"),
