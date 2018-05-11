@@ -42,6 +42,7 @@
 #include <errno.h>
 #include <string.h>
 #include "tini.h"
+#include <wchar.h>
 
 static bool c_isspace(char c)
 {
@@ -52,31 +53,51 @@ static bool c_isspace(char c)
 	return isspace(uc);
 }
 
-static int next_content(FILE *f)
+static wint_t next_content(FILE *f, enum tini_encoding encoding)
 {
-	int c;
+	wint_t c;
 
-	for (c = fgetc(f); c != EOF; c = fgetc(f)) {
-		if (!c_isspace(c)) {
-			break;
+	if (encoding == UTF16LE) {
+		for (c = fgetwc(f); c != EOF; c = fgetwc(f)) {
+			if (!c_isspace(c)) {
+				break;
+			}
+			if (c == '\n') {
+				break;
+			}
 		}
-		if (c == '\n') {
-			break;
+	} else {
+		for (c = fgetc(f); c != EOF; c = fgetc(f)) {
+			if (!c_isspace(c)) {
+				break;
+			}
+			if (c == '\n') {
+				break;
+			}
 		}
 	}
 
 	return c;
 }
 
-static int next_end_of_line(FILE *f)
+static wint_t next_end_of_line(FILE *f, enum tini_encoding encoding)
 {
-	int c;
+	wint_t c;
 
-	for (c = fgetc(f); c != EOF; c = fgetc(f)) {
-		if (c == '\n') {
-			break;
+	if (encoding == UTF16LE) {
+		for (c = fgetwc(f); c != EOF; c = fgetwc(f)) {
+			if (c == '\n') {
+				break;
+			}
+		}
+	} else {
+		for (c = fgetc(f); c != EOF; c = fgetc(f)) {
+			if (c == '\n') {
+				break;
+			}
 		}
 	}
+
 	return c;
 }
 
@@ -96,6 +117,15 @@ static bool make_space(char **buf, size_t *buflen, size_t position)
 	return true;
 }
 
+static wint_t fgetc_func(FILE *stream, enum tini_encoding encoding)
+{
+	if (encoding == UTF16LE) {
+		return fgetwc(stream);
+	} else {
+		return fgetc(stream);
+	}
+}
+
 /*
  * Get a conf line into *pbuf (which must be a malloc'ed buffer already).
  *
@@ -106,9 +136,10 @@ static bool make_space(char **buf, size_t *buflen, size_t position)
  * Zaps multiple spaces into one
  */
 
-static int get_line(FILE *f, char **pbuf, size_t *pbuflen)
+static int get_line(FILE *f, char **pbuf, size_t *pbuflen,
+		    enum tini_encoding encoding)
 {
-	int c;
+	wint_t c;
 	char *buf;
 	size_t buflen, pos;
 
@@ -118,7 +149,7 @@ static int get_line(FILE *f, char **pbuf, size_t *pbuflen)
 
 next_line:
 
-	c = next_content(f);
+	c = next_content(f, encoding);
 	if (c == EOF) {
 		return ENOENT;
 	}
@@ -127,7 +158,7 @@ next_line:
 		/*
 		 * Line starting with a comment, skip
 		 */
-		c = next_end_of_line(f);
+		c = next_end_of_line(f, encoding);
 		if (c == EOF) {
 			return ENOENT;
 		}
@@ -141,7 +172,7 @@ next_line:
 		goto next_line;
 	}
 
-	for ( ; c != EOF ; c = fgetc(f)) {
+	for ( ; c != EOF ; c = fgetc_func(f, encoding)) {
 
 		if (c == '\n') {
 
@@ -269,6 +300,7 @@ bool tini_parse(FILE *f,
 		bool (*sfunc)(const char *section, void *private_data),
 		bool (*pfunc)(const char *name, const char *value,
 			      void *private_data),
+		enum tini_encoding encoding,
 		void *private_data)
 {
 	char *buf;
@@ -285,7 +317,7 @@ bool tini_parse(FILE *f,
 		int ret;
 		bool ok;
 
-		ret = get_line(f, &buf, &buflen);
+		ret = get_line(f, &buf, &buflen, encoding);
 
 		if (ret == ENOENT) {
 			/* No lines anymore */

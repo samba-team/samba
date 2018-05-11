@@ -37,9 +37,15 @@
 
 #include <stdio.h>
 
+enum tini_encoding {
+	UTF16LE,
+	ASCII,
+};
+
 bool tini_parse(FILE *f,
 		bool allow_empty_value,
 		bool (*sfunc)(const char *section, void *private_data),
 		bool (*pfunc)(const char *name, const char *value,
 			      void *private_data),
+		enum tini_encoding encoding,
 		void *private_data);

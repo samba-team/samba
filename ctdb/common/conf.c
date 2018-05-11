@@ -936,6 +936,7 @@ static int conf_load_internal(struct conf_context *conf)
 			false,
 			conf_load_section,
 			conf_load_option,
+			ASCII,
 			&state);
 	fclose(fp);
 	if (!ok) {
