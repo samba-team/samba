@@ -26,6 +26,7 @@ import samba.tests
 import os
 import binascii
 from samba.compat import PY3
+from samba.dcerpc import misc
 
 class CredentialsTests(samba.tests.TestCaseInTempDir):
 
@@ -114,6 +115,13 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         #self.assertEqual(None, self.creds.get_workstation())
         self.creds.set_workstation("myworksta")
         self.assertEqual("myworksta", self.creds.get_workstation())
+
+    def test_secure_channel_type(self):
+        self.assertEqual(misc.SEC_CHAN_NULL,
+                         self.creds.get_secure_channel_type())
+        self.creds.set_secure_channel_type(misc.SEC_CHAN_BDC)
+        self.assertEqual(misc.SEC_CHAN_BDC,
+                         self.creds.get_secure_channel_type())
 
     def test_get_nt_hash(self):
         password="geheim"
