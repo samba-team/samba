@@ -533,6 +533,7 @@ static void dcesrv_lsa_LookupSids_base_done(struct tevent_req *subreq)
 	status = dcerpc_lsa_LookupSids3_recv(subreq, state->mem_ctx,
 					     &state->wb.result);
 	TALLOC_FREE(subreq);
+	TALLOC_FREE(state->wb.irpc_handle);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
 			 nt_errstr(status)));
@@ -598,7 +599,6 @@ static void dcesrv_lsa_LookupSids_base_done(struct tevent_req *subreq)
  finished:
 	state->r.out.result = status;
 	dcesrv_lsa_LookupSids_base_map(state);
-	TALLOC_FREE(state);
 
 	status = dcesrv_reply(dce_call);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -660,7 +660,6 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 
 	state->r.out.result = status;
 	dcesrv_lsa_LookupSids_base_map(state);
-	TALLOC_FREE(state);
 	return status;
 }
 
@@ -734,7 +733,6 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 
 	state->r.out.result = status;
 	dcesrv_lsa_LookupSids_base_map(state);
-	TALLOC_FREE(state);
 	return status;
 }
 
@@ -1155,6 +1153,7 @@ static void dcesrv_lsa_LookupNames_base_done(struct tevent_req *subreq)
 	status = dcerpc_lsa_LookupNames4_recv(subreq, state->mem_ctx,
 					      &state->wb.result);
 	TALLOC_FREE(subreq);
+	TALLOC_FREE(state->wb.irpc_handle);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
 			 nt_errstr(status)));
@@ -1220,7 +1219,6 @@ static void dcesrv_lsa_LookupNames_base_done(struct tevent_req *subreq)
  finished:
 	state->r.out.result = status;
 	dcesrv_lsa_LookupNames_base_map(state);
-	TALLOC_FREE(state);
 
 	status = dcesrv_reply(dce_call);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1433,7 +1431,6 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 
 	state->r.out.result = status;
 	dcesrv_lsa_LookupNames_base_map(state);
-	TALLOC_FREE(state);
 	return status;
 }
 
@@ -1504,7 +1501,6 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	state->r.out.result = status;
 	dcesrv_lsa_LookupNames_base_map(state);
-	TALLOC_FREE(state);
 	return status;
 }
 
