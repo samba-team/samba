@@ -1,7 +1,5 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# Augment PATH with stubs/ directory.
-
 if "$TEST_VERBOSE" ; then
 	debug () { echo "$@" ; }
 else
@@ -62,11 +60,6 @@ setup_ctdbd ()
 	# important controls
 	ctdb setvar TakeoverTimeout 2
 	test_cleanup cleanup_ctdbd
-}
-
-ctdbd_getpid ()
-{
-	cat "$ctdbd_pidfile"
 }
 
 # Render non-printable characters.  The helper prints the status as
