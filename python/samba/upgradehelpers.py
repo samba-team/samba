@@ -489,7 +489,7 @@ def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
         raise ProvisioningError("Unable to find msDs-KeyVersionNumber")
     else:
         for e in entry:
-            if hashDns.has_key(str(e.dn).lower()):
+            if str(e.dn).lower() in hashDns:
                 val = e.get("msDs-KeyVersionNumber")
                 if not val:
                     val = "0"
@@ -689,7 +689,7 @@ def search_constructed_attrs_stored(samdb, rootdn, attrs):
     for ent in entry:
         for att in attrs:
             if ent.get(att):
-                if hashAtt.has_key(att):
+                if att in hashAtt:
                     hashAtt[att][str(ent.dn).lower()] = str(ent[att])
                 else:
                     hashAtt[att] = {}
