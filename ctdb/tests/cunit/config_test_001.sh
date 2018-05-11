@@ -42,6 +42,13 @@ ok <<EOF
 	# lock debug script = 
 [event]
 	# debug script = 
+[legacy]
+	# no realtime = false
+	# recmaster capability = true
+	# lmaster capability = true
+	# start as stopped = false
+	# start as disabled = false
+	# script log level = ERROR
 EOF
 unit_test ctdb-config dump
 

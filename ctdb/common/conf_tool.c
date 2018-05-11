@@ -32,6 +32,7 @@
 #include "cluster/cluster_conf.h"
 #include "database/database_conf.h"
 #include "event/event_conf.h"
+#include "server/legacy_conf.h"
 
 #include "common/conf_tool.h"
 
@@ -242,6 +243,7 @@ int conf_tool_run(struct conf_tool_context *ctx, int *result)
 	cluster_conf_init(ctx->conf);
 	database_conf_init(ctx->conf);
 	event_conf_init(ctx->conf);
+	legacy_conf_init(ctx->conf);
 
 	if (! conf_valid(ctx->conf)) {
 		D_ERR("Failed to define configuration options\n");
