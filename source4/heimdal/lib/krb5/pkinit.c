@@ -1921,7 +1921,7 @@ _krb5_pk_load_id(krb5_context context,
 				 NULL, *chain_list);
 	if (ret) {
 	    pk_copy_error(context, context->hx509ctx, ret,
-			  "Failed to laod chain %s",
+			  "Failed to load chain %s",
 			  *chain_list);
 	    goto out;
 	}

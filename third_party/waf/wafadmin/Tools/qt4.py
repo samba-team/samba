@@ -302,7 +302,7 @@ def detect_qt4(conf):
 
 	paths = []
 
-	# the path to qmake has been given explicitely
+	# the path to qmake has been given explicitly
 	if qtbin:
 		paths = [qtbin]
 

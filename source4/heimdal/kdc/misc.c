@@ -123,7 +123,7 @@ _kdc_db_fetch(krb5_context context,
 	     * HDB_ERR_NOT_FOUND_HERE (used to indicate to Samba that
 	     * the RODC on which this code is running does not have
 	     * the key we need, and so a proxy to the KDC is required)
-	     * have specific meaning, and need to be propogated up.
+	     * have specific meaning, and need to be propagated up.
 	     */
 	    goto out;
 	}
