@@ -33,6 +33,7 @@ from samba.dcerpc import drsblobs
 from hashlib import md5
 import random
 import string
+from samba.compat import text_type
 
 USER_NAME = "WdigestTestUser"
 # Create a random 32 character password, containing only letters and
@@ -45,6 +46,9 @@ USER_PASS = ''.join(random.choice(string.ascii_uppercase +
 #
 def calc_digest(user, realm, password):
     data = "%s:%s:%s" % (user, realm, password)
+    if isinstance(data, text_type):
+        data = data.encode('utf8')
+
     return "%s:%s:%s" % (user, realm, md5(data).hexdigest())
 
 

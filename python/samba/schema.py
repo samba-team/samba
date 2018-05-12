@@ -122,7 +122,7 @@ class Schema(object):
             setup_path("provision_schema_basedn_modify.ldif"),
             {"SCHEMADN": schemadn, "OBJVERSION" : schema_version})
 
-        descr = b64encode(get_schema_descriptor(domain_sid))
+        descr = b64encode(get_schema_descriptor(domain_sid)).decode('utf8')
         self.schema_dn_add = read_and_sub_file(
             setup_path("provision_schema_basedn.ldif"),
             {"SCHEMADN": schemadn, "DESCRIPTOR": descr})
@@ -136,7 +136,7 @@ class Schema(object):
             for map in additional_prefixmap:
                 self.prefixmap_data += "%s\n" % map
 
-        self.prefixmap_data = b64encode(self.prefixmap_data)
+        self.prefixmap_data = b64encode(self.prefixmap_data).decode('utf8')
 
         # We don't actually add this ldif, just parse it
         prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (self.schemadn, self.prefixmap_data)

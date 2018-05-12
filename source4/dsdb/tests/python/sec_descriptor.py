@@ -96,7 +96,7 @@ systemOnly: FALSE
             if isinstance(desc, str):
                 ldif += "nTSecurityDescriptor: %s" % desc
             elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
+                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc)).decode('utf8')
         _ldb.add_ldif(ldif)
         return class_dn
 
@@ -113,7 +113,7 @@ instanceType: 4
             if isinstance(desc, str):
                 ldif += "nTSecurityDescriptor: %s" % desc
             elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
+                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc)).decode('utf8')
         _ldb.add_ldif(ldif)
 
     def create_configuration_specifier(self, _ldb, object_dn, desc=None):
@@ -127,7 +127,7 @@ showInAdvancedViewOnly: TRUE
             if isinstance(desc, str):
                 ldif += "nTSecurityDescriptor: %s" % desc
             elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
+                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc)).decode('utf8')
         _ldb.add_ldif(ldif)
 
     def get_ldb_connection(self, target_username, target_password):

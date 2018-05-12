@@ -21,7 +21,7 @@ import tdb
 sys.path.insert(0, "bin/python")
 from samba import NTSTATUSError
 from ConfigParser import ConfigParser
-from StringIO import StringIO
+from samba.compat import StringIO
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree
 import re

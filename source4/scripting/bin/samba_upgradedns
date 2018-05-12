@@ -469,7 +469,7 @@ if __name__ == '__main__':
             setup_add_ldif(ldbs.sam, setup_path("provision_dns_add_samba.ldif"), {
                     "DNSDOMAIN": dnsdomain,
                     "DOMAINDN": domaindn,
-                    "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
+                    "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')).decode('utf8'),
                     "HOSTNAME" : hostname,
                     "DNSNAME" : dnsname }
                            )

@@ -85,7 +85,7 @@ class DescrGetter:
         ldif_entry = ["dn: " + dn,
                       "changetype: modify",
                       "replace: nTSecurityDescriptor",
-                      "nTSecurityDescriptor::  " + base64.b64encode(ndr_pack(descr))]
+                      "nTSecurityDescriptor::  " + base64.b64encode(ndr_pack(descr)).decode('utf8')]
 
         for line in ldif_entry:
             length = 79
