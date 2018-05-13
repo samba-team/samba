@@ -120,6 +120,21 @@ common_provision_join_options = [
     Option("--quiet", help="Be quiet", action="store_true"),
 ]
 
+common_join_options = [
+    Option("--server", help="DC to join", type=str),
+    Option("--site", help="site to join", type=str),
+    Option("--domain-critical-only",
+           help="only replicate critical domain objects",
+           action="store_true"),
+    Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
+           choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
+           help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
+           "BIND9_DLZ uses samba4 AD to store zone information, "
+           "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
+           default="SAMBA_INTERNAL"),
+    Option("--verbose", help="Be verbose", action="store_true")
+]
+
 common_ntvfs_options = [
         Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
                action="store_true")
@@ -573,20 +588,8 @@ class cmd_domain_dcpromo(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_options = [
-        Option("--server", help="DC to join", type=str),
-        Option("--site", help="site to join", type=str),
-        Option("--domain-critical-only",
-               help="only replicate critical domain objects",
-               action="store_true"),
-        Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
-               choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
-                   "BIND9_DLZ uses samba4 AD to store zone information, "
-                   "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-               default="SAMBA_INTERNAL"),
-        Option("--verbose", help="Be verbose", action="store_true")
-        ]
+    takes_options = []
+    takes_options.extend(common_join_options)
 
     takes_options.extend(common_provision_join_options)
 
@@ -650,27 +653,16 @@ class cmd_domain_join(Command):
     }
 
     takes_options = [
-        Option("--server", help="DC to join", type=str),
-        Option("--site", help="site to join", type=str),
         Option("--parent-domain", help="parent domain to create subdomain under", type=str),
-        Option("--domain-critical-only",
-               help="only replicate critical domain objects",
-               action="store_true"),
         Option("--adminpass", type="string", metavar="PASSWORD",
                help="choose adminstrator password when joining as a subdomain (otherwise random)"),
-        Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
-               choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
-                   "BIND9_DLZ uses samba4 AD to store zone information, "
-                   "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-               default="SAMBA_INTERNAL"),
-        Option("--verbose", help="Be verbose", action="store_true")
        ]
 
     ntvfs_options = [
         Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
                action="store_true")
     ]
+    takes_options.extend(common_join_options)
     takes_options.extend(common_provision_join_options)
 
     if samba.is_ntvfs_fileserver_built():
