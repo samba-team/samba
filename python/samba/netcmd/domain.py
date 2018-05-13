@@ -106,6 +106,8 @@ string_version_to_constant = {
 }
 
 common_provision_join_options = [
+    Option("--machinepass", type="string", metavar="PASSWORD",
+           help="choose machine password (otherwise random)"),
     Option("--targetdir", metavar="DIR",
            help="Set target directory (where to store provision)", type=str),
     Option("--quiet", help="Be quiet", action="store_true"),
@@ -216,8 +218,6 @@ class cmd_domain_provision(Command):
                 help="choose admin password (otherwise random)"),
          Option("--krbtgtpass", type="string", metavar="PASSWORD",
                 help="choose krbtgt password (otherwise random)"),
-         Option("--machinepass", type="string", metavar="PASSWORD",
-                help="choose machine password (otherwise random)"),
          Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                 choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
                 help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
@@ -574,8 +574,6 @@ class cmd_domain_dcpromo(Command):
         Option("--domain-critical-only",
                help="only replicate critical domain objects",
                action="store_true"),
-        Option("--machinepass", type=str, metavar="PASSWORD",
-               help="choose machine password (otherwise random)"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
@@ -654,8 +652,6 @@ class cmd_domain_join(Command):
         Option("--domain-critical-only",
                help="only replicate critical domain objects",
                action="store_true"),
-        Option("--machinepass", type=str, metavar="PASSWORD",
-               help="choose machine password (otherwise random)"),
         Option("--adminpass", type="string", metavar="PASSWORD",
                help="choose adminstrator password when joining as a subdomain (otherwise random)"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
