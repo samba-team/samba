@@ -107,7 +107,8 @@ string_version_to_constant = {
 
 common_provision_join_options = [
     Option("--targetdir", metavar="DIR",
-           help="Set target directory (where to store provision)", type=str)
+           help="Set target directory (where to store provision)", type=str),
+    Option("--quiet", help="Be quiet", action="store_true"),
 ]
 
 def get_testparm_var(testparm, smbconf, varname):
@@ -232,7 +233,6 @@ class cmd_domain_provision(Command):
                 help="choose 'nobody' user"),
          Option("--users", type="string", metavar="GROUPNAME",
                 help="choose 'users' group"),
-         Option("--quiet", help="Be quiet", action="store_true"),
          Option("--blank", action="store_true",
                 help="do not add users or groups, just the structure"),
          Option("--server-role", type="choice", metavar="ROLE",
@@ -582,7 +582,6 @@ class cmd_domain_dcpromo(Command):
                    "BIND9_DLZ uses samba4 AD to store zone information, "
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
                default="SAMBA_INTERNAL"),
-        Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
         ]
 
@@ -668,7 +667,6 @@ class cmd_domain_join(Command):
         Option("--plaintext-secrets", action="store_true",
                help="Store secret/sensitive values as plain text on disk" +
                     "(default is to encrypt secret/ensitive values)"),
-        Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
        ]
 
