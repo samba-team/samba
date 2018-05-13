@@ -39,7 +39,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                     "EXAMPLE",
                     "\n.COM",
                     "!@#$%^&*()_",
-                    "HIGH\xFFBYTE",
+                    u"HIGH\xFFBYTE",
                     "@.EXAMPLE.COM",
                     "."]
         bad_dns = ["...",
