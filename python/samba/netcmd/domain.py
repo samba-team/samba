@@ -105,6 +105,11 @@ string_version_to_constant = {
     "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
 }
 
+common_provision_join_options = [
+    Option("--targetdir", metavar="DIR",
+           help="Set target directory (where to store provision)", type=str)
+]
+
 def get_testparm_var(testparm, smbconf, varname):
     errfile = open(os.devnull, 'w')
     p = subprocess.Popen([testparm, '-s', '-l',
@@ -246,8 +251,6 @@ class cmd_domain_provision(Command):
                 help="The initial nextRid value (only needed for upgrades).  Default is 1000."),
          Option("--partitions-only",
                 help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true"),
-         Option("--targetdir", type="string", metavar="DIR",
-                help="Set target directory"),
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
          Option("--plaintext-secrets", action="store_true",
                 help="Store secret/sensitive values as plain text on disk" +
@@ -285,6 +288,8 @@ class cmd_domain_provision(Command):
                "auto tries to make an inteligent guess based on the user rights and system capabilities",
                default="auto")
     ]
+
+    takes_options.extend(common_provision_join_options)
 
     if os.getenv('TEST_LDAP', "no") == "yes":
         takes_options.extend(openldap_options)
@@ -566,7 +571,6 @@ class cmd_domain_dcpromo(Command):
     takes_options = [
         Option("--server", help="DC to join", type=str),
         Option("--site", help="site to join", type=str),
-        Option("--targetdir", help="where to store provision", type=str),
         Option("--domain-critical-only",
                help="only replicate critical domain objects",
                action="store_true"),
@@ -581,6 +585,8 @@ class cmd_domain_dcpromo(Command):
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
         ]
+
+    takes_options.extend(common_provision_join_options)
 
     ntvfs_options = [
          Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
@@ -645,7 +651,6 @@ class cmd_domain_join(Command):
     takes_options = [
         Option("--server", help="DC to join", type=str),
         Option("--site", help="site to join", type=str),
-        Option("--targetdir", help="where to store provision", type=str),
         Option("--parent-domain", help="parent domain to create subdomain under", type=str),
         Option("--domain-critical-only",
                help="only replicate critical domain objects",
@@ -671,6 +676,8 @@ class cmd_domain_join(Command):
         Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
                action="store_true")
     ]
+    takes_options.extend(common_provision_join_options)
+
     if samba.is_ntvfs_fileserver_built():
         takes_options.extend(ntvfs_options)
 
