@@ -48,6 +48,7 @@ manpages_misc = [
     'ctdb_diagnostics.1',
     'ctdbd_wrapper.1',
     'onnode.1',
+    'ctdb.conf.5',
     'ctdb-script.options.5',
     'ctdb.sysconfig.5',
     'ctdbd.conf.5',

@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+
+<refentry id="ctdb.conf.5">
+
+  <refmeta>
+    <refentrytitle>ctdb.conf</refentrytitle>
+    <manvolnum>5</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>ctdb.conf</refname>
+    <refpurpose>CTDB configuration file</refpurpose>
+  </refnamediv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    <para>
+      This file contains CTDB configuration options that affect the
+      operation of CTDB daemons and command-line tools.  The default
+      location of this file is
+      <filename>/usr/local/etc/ctdb/ctdb.conf</filename>.
+    </para>
+
+    <para>
+      Note that this is a Samba-style configuration file, so it has a
+      very different syntax to previous CTDB configuration files.
+    </para>
+
+    <para>
+      For event script options please see
+      <citerefentry><refentrytitle>ctdb-script.options</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>.
+    </para>
+
+    <para>
+      Configuration options are grouped into several sections below.
+      There are only a few options in each section, allowing them to
+      be ordered (approximately) in decreasing order of importance.
+    </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>
+      LOGGING CONFIGURATION
+    </title>
+
+    <para>
+      Options in this section control CTDB's logging.  They are valid
+      within the <emphasis>logging</emphasis> section of file,
+      indicated by <literal>[logging]</literal>.
+    </para>
+
+    <variablelist>
+
+      <varlistentry>
+	<term>log level = <parameter>LOGLEVEL</parameter></term>
+	<listitem>
+	  <para>
+	    LOGLEVEL is a string that controls the verbosity of
+	    ctdbd's logging.  See the <citetitle>LOG
+	    LEVELS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more details.
+	  </para>
+	  <para>
+	    Default: <literal>NOTICE</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>location = <parameter>STRING</parameter></term>
+	<listitem>
+	  <para>
+	    STRING specifies where ctdbd will write its log.
+	  </para>
+	  <para>
+	    Valid values are:
+	  </para>
+	  <variablelist>
+	    <varlistentry>
+	      <term>file:<parameter>FILENAME</parameter></term>
+	      <listitem>
+		<para>
+		  FILENAME where ctdbd will write its log. This is usually
+		  <filename>/usr/local/var/log/log.ctdb</filename>.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term>syslog<optional>:<parameter>METHOD</parameter></optional></term>
+	      <listitem>
+		<para>
+		  CTDB will log to syslog.  By default this will use
+		  the syslog(3) API.
+		</para>
+		<para>
+		  If METHOD is specified then it specifies an
+		  extension that causes logging to be done in a
+		  non-blocking fashion.  This can be useful under
+		  heavy loads that might cause the syslog daemon to
+		  dequeue messages too slowly, which would otherwise
+		  cause CTDB to block when logging.  METHOD must be
+		  one of:
+		</para>
+		<variablelist>
+		  <varlistentry>
+		    <term>nonblocking</term>
+		    <listitem>
+		      <para>
+			CTDB will log to syslog via
+			<filename>/dev/log</filename> in non-blocking
+			mode.
+		      </para>
+		    </listitem>
+		  </varlistentry>
+		  <varlistentry>
+		    <term>udp</term>
+		    <listitem>
+		      <para>
+			CTDB will log to syslog via UDP to
+			localhost:514.  The syslog daemon must be
+			configured to listen on (at least)
+			localhost:514.  Most implementations will log
+			the messages against hostname "localhost" -
+			this is a limit of the implementation for
+			compatibility with more syslog daemon
+			implementations.
+		      </para>
+		    </listitem>
+		  </varlistentry>
+		  <varlistentry>
+		    <term>udp-rfc5424</term>
+		    <listitem>
+		      <para>
+			As with "udp" but messages are sent in RFC5424
+			format.  This method will log the correct
+			hostname but is not as widely implemented in
+			syslog daemons.
+		      </para>
+		    </listitem>
+		  </varlistentry>
+		</variablelist>
+	      </listitem>
+	    </varlistentry>
+	  </variablelist>
+	  <para>
+	    Default:
+	    file:<filename>/usr/local/var/log/log.ctdb</filename>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>
+      CLUSTER CONFIGURATION
+    </title>
+
+    <para>
+      Options in this section affect the CTDB cluster setup. They
+      are valid within the <emphasis>cluster</emphasis> section of
+      file, indicated by <literal>[cluster]</literal>.
+    </para>
+
+    <variablelist>
+
+      <varlistentry>
+	<term>recovery lock = <parameter>LOCK</parameter></term>
+	<listitem>
+	  <para>
+	    LOCK specifies the cluster-wide mutex used to detect and
+	    prevent a partitioned cluster (or "split brain").
+	  </para>
+	  <para>
+	    For information about the recovery lock please see the
+	    <citetitle>RECOVERY LOCK</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
+	  </para>
+	  <para>
+	    Default: NONE.  However, uses of a recovery lock is
+	    <emphasis>strongly recommended</emphasis>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>node address = <parameter>IPADDR</parameter></term>
+	<listitem>
+	  <para>
+	    IPADDR is the private IP address that ctdbd will bind to.
+	  </para>
+	  <para>
+	    This option is only required when automatic address
+	    detection can not be used.  This can be the case when
+	    running multiple ctdbd daemons/nodes on the same physical
+	    host (usually for testing), using InfiniBand for the
+	    private network or on Linux when sysctl
+	    net.ipv4.ip_nonlocal_bind=1.
+	  </para>
+	  <para>
+	    Default: CTDB selects the first address from the nodes
+	    list that it can bind to.  See also the <citetitle>PRIVATE
+	    ADDRESS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>transport = tcp|ib</term>
+	<listitem>
+	  <para>
+	    This option specifies which transport to use for ctdbd
+	    internode communications on the private network.
+	  </para>
+	  <para>
+	    <literal>ib</literal> means InfiniBand.  The InfiniBand
+	    support is not regularly tested.  If it is known to be
+	    broken then it may be disabled so that a value of
+	    <literal>ib</literal> is considered invalid.
+	  </para>
+	  <para>
+	    Default: <literal>tcp</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>
+      DATABASE CONFIGURATION
+    </title>
+
+    <para>
+      Options in this section affect the CTDB database setup. They
+      are valid within the <emphasis>database</emphasis> section of
+      file, indicated by <literal>[database]</literal>.
+    </para>
+
+    <variablelist>
+
+      <varlistentry>
+	<term>volatile database directory = <parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY on local storage where CTDB keeps a local copy
+	    of volatile TDB databases.  This directory is local for
+	    each node and should not be stored on the shared cluster
+	    filesystem.
+	  </para>
+	  <para>
+	    Mounting a tmpfs (or similar memory filesystem) on this
+	    directory can provide a significant performance
+	    improvement when there is I/O contention on the local
+	    disk.
+	  </para>
+	  <para>
+	    Default: <filename>/usr/local/var/lib/ctdb/volatile</filename>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>persistent database directory=<parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY on local storage where CTDB keeps a local copy
+	    of persistent TDB databases.  This directory is local for
+	    each node and should not be stored on the shared cluster
+	    filesystem.
+	  </para>
+	  <para>
+	    Default: <filename>/usr/local/var/lib/ctdb/persistent</filename>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>state database directory = <parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY on local storage where CTDB keeps a local copy
+	    of internal state TDB databases.  This directory is local
+	    for each node and should not be stored on the shared
+	    cluster filesystem.
+	  </para>
+	  <para>
+	    Default: <filename>/usr/local/var/lib/ctdb/state</filename>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>lock debug script = <parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME is a script used by CTDB's database locking code
+	    to attempt to provide debugging information when CTDB is
+	    unable to lock an entire database or a record.
+	  </para>
+	  <para>
+	    This script should be a bare filename relative to the CTDB
+	    configuration directory
+	    (<filename>/usr/local/etc/ctdb/</filename>).  Any
+	    directory prefix is ignored and the path is calculated
+	    relative to this directory.
+	  </para>
+	  <para>
+	    CTDB provides a lock debugging script and installs it as
+	    <filename>/usr/local/etc/ctdb/debug_locks.sh</filename>.
+	  </para>
+	  <para>
+	    Default: NONE
+	  </para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>
+      EVENT HANDLING CONFIGURATION
+    </title>
+
+    <para>
+      Options in this section affect CTDB event handling. They are
+      valid within the <emphasis>event</emphasis> section of file,
+      indicated by <literal>[event]</literal>.
+    </para>
+
+    <variablelist>
+
+      <varlistentry>
+	<term>debug script = <parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME is a script used by CTDB's event handling code to
+	    attempt to provide debugging information when an event
+	    times out.
+	  </para>
+	  <para>
+	    This script should be a bare filename relative to the CTDB
+	    configuration directory
+	    (<filename>/usr/local/etc/ctdb/</filename>).  Any
+	    directory prefix is ignored and the path is calculated
+	    relative to this directory.
+	  </para>
+	  <para>
+	    CTDB provides a script for debugging timed out event
+	    scripts and installs it as
+	    <filename>/usr/local/etc/ctdb/debug-hung-script.sh</filename>.
+	  </para>
+	  <para>
+	    Default: NONE
+	  </para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>
+      LEGACY CONFIGURATION
+    </title>
+
+    <para>
+      Options in this section affect legacy CTDB setup. They are valid
+      within the <emphasis>legacy</emphasis> section of file,
+      indicated by <literal>[legacy]</literal>.
+    </para>
+
+    <variablelist>
+
+      <varlistentry>
+	<term>ctdb start as stopped = true|false</term>
+	<listitem>
+	  <para>
+	    If set to <literal>true</literal> CTDB starts in the
+	    STOPPED state.
+	  </para>
+	  <para>
+	    To allow the node to take part in the cluster it must be
+	    manually continued with the the <command>ctdb
+	    continue</command> command.
+	  </para>
+	  <para>
+	    Please see the <citetitle>NODE STATES</citetitle> section
+	    in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information about the STOPPED state.
+	  </para>
+	  <para>
+	    Default: <literal>false</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>start as disabled = true|false</term>
+	<listitem>
+	  <para>
+	    If set to <literal>true</literal> CTDB starts in the
+	    DISABLED state.
+	  </para>
+	  <para>
+	    To allow the node to host public IP addresses and
+	    services, it must be manually enabled using the
+	    <command>ctdb enable</command> command.
+	  </para>
+	  <para>
+	    Please see the <citetitle>NODE STATES</citetitle> section
+	    in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information about the DISABLED state.
+	  </para>
+	  <para>
+	    Default: <literal>false</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>no realtime = true|false</term>
+	<listitem>
+	  <para>
+	    Usually CTDB runs with real-time priority. This helps it
+	    to perform effectively on a busy system, such as when
+	    there are thousands of Samba clients. If you are running
+	    CTDB on a platform that does not support real-time
+	    priority, you can set this to <literal>true</literal>.
+	  </para>
+	  <para>
+	    Default: <literal>false</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>recmaster capability = true|false</term>
+	<listitem>
+	  <para>
+	    Indicates whether a node can become the recovery master
+	    for the cluster. If this is set to
+	    <literal>false</literal> then the node will not be able to
+	    become the recovery master for the cluster. This feature
+	    is primarily used for making a cluster span across a WAN
+	    link and use CTDB as a WAN-accelerator.
+	  </para>
+	  <para>
+	    Please see the <citetitle>REMOTE CLUSTER NODES</citetitle>
+	    section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	  <para>
+	    Default: <literal>true</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>lmaster capability = true|false</term>
+	<listitem>
+	  <para>
+	    Indicates whether a node can become a location master for
+	    records in a database. If this is set to
+	    <literal>false</literal> then the node will not be part of
+	    the vnnmap. This feature is primarily used for making a
+	    cluster span across a WAN link and use CTDB as a
+	    WAN-accelerator.
+	  </para>
+	  <para>
+	    Please see the <citetitle>REMOTE CLUSTER NODES</citetitle>
+	    section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	  <para>
+	    Default: <literal>true</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>script log level = <parameter>LOGLEVEL</parameter></term>
+	<listitem>
+	  <para>
+	    This option sets the debug level of event script output to
+	    LOGLEVEL.
+	  </para>
+	  <para>
+	    See the <citetitle>DEBUG LEVELS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	  <para>
+	    Default: <literal>ERROR</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+
+  </refsect1>
+
+  <refsect1>
+    <title>FILES</title>
+
+    <simplelist>
+      <member><filename>/usr/local/etc/ctdb/ctdb.conf</filename></member>
+    </simplelist>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+    <para>
+      <citerefentry><refentrytitle>ctdbd</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>onnode</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb.sysconfig</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb-script.options</refentrytitle>
+      <manvolnum>5</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb-tunables</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
+      <ulink url="http://ctdb.samba.org/"/>
+    </para>
+  </refsect1>
+
+  <info>
+    <author>
+      <contrib>
+	This documentation was written by
+	Amitay Isaacs,
+	Martin Schwenke
+      </contrib>
+    </author>
+
+    <copyright>
+      <year>2007</year>
+      <holder>Andrew Tridgell</holder>
+      <holder>Ronnie Sahlberg</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </info>
+
+</refentry>
