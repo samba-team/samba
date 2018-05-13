@@ -221,8 +221,6 @@ class cmd_domain_provision(Command):
                 default="SAMBA_INTERNAL"),
          Option("--dnspass", type="string", metavar="PASSWORD",
                 help="choose dns password (otherwise random)"),
-         Option("--ldapadminpass", type="string", metavar="PASSWORD",
-                help="choose password to set between Samba and its LDAP backend (otherwise random)"),
          Option("--root", type="string", metavar="USERNAME",
                 help="choose 'root' unix username"),
          Option("--nobody", type="string", metavar="USERNAME",
@@ -232,9 +230,6 @@ class cmd_domain_provision(Command):
          Option("--quiet", help="Be quiet", action="store_true"),
          Option("--blank", action="store_true",
                 help="do not add users or groups, just the structure"),
-         Option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE",
-                help="Test initialisation support for unsupported LDAP backend type (fedora-ds or openldap) DO NOT USE",
-                choices=["fedora-ds", "openldap"]),
          Option("--server-role", type="choice", metavar="ROLE",
                 choices=["domain controller", "dc", "member server", "member", "standalone"],
                 help="The server role (domain controller | dc | member server | member | standalone). Default is dc.",
@@ -253,8 +248,6 @@ class cmd_domain_provision(Command):
                 help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true"),
          Option("--targetdir", type="string", metavar="DIR",
                 help="Set target directory"),
-         Option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
-                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
          Option("--plaintext-secrets", action="store_true",
                 help="Store secret/sensitive values as plain text on disk" +
@@ -266,6 +259,13 @@ class cmd_domain_provision(Command):
         ]
 
     openldap_options = [
+        Option("--ldapadminpass", type="string", metavar="PASSWORD",
+               help="choose password to set between Samba and its LDAP backend (otherwise random)"),
+        Option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE",
+               help="Test initialisation support for unsupported LDAP backend type (fedora-ds or openldap) DO NOT USE",
+               choices=["fedora-ds", "openldap"]),
+        Option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
+                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
         Option("--ldap-dryrun-mode", help="Configure LDAP backend, but do not run any binaries and exit early.  Used only for the test environment.  DO NOT USE",
                action="store_true"),
         Option("--slapd-path", type="string", metavar="SLAPD-PATH",
