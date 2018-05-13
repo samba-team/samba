@@ -111,6 +111,10 @@ common_provision_join_options = [
     Option("--plaintext-secrets", action="store_true",
            help="Store secret/sensitive values as plain text on disk" +
            "(default is to encrypt secret/ensitive values)"),
+    Option("--backend-store", type="choice", metavar="BACKENDSTORE",
+           choices=["tdb", "mdb"],
+           help="Specify the database backend to be used "
+           "(default is %s)" % get_default_backend_store()),
     Option("--targetdir", metavar="DIR",
            help="Set target directory (where to store provision)", type=str),
     Option("--quiet", help="Be quiet", action="store_true"),
@@ -255,10 +259,6 @@ class cmd_domain_provision(Command):
          Option("--partitions-only",
                 help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true"),
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
-         Option("--backend-store", type="choice", metavar="BACKENDSTORE",
-                choices=["tdb", "mdb"],
-                help="Specify the database backend to be used "
-                     "(default is %s)" % get_default_backend_store()),
         ]
 
     openldap_options = [
@@ -599,7 +599,8 @@ class cmd_domain_dcpromo(Command):
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, parent_domain=None, machinepass=None,
             use_ntvfs=False, dns_backend=None,
-            quiet=False, verbose=False, plaintext_secrets=False):
+            quiet=False, verbose=False, plaintext_secrets=False,
+            backend_store=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -623,13 +624,15 @@ class cmd_domain_dcpromo(Command):
                     domain_critical_only=domain_critical_only,
                     machinepass=machinepass, use_ntvfs=use_ntvfs,
                     dns_backend=dns_backend,
-                    promote_existing=True, plaintext_secrets=plaintext_secrets)
+                    promote_existing=True, plaintext_secrets=plaintext_secrets,
+                    backend_store=backend_store)
         elif role == "RODC":
             join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
                       machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend,
-                      promote_existing=True, plaintext_secrets=plaintext_secrets)
+                      promote_existing=True, plaintext_secrets=plaintext_secrets,
+                      backend_store=backend_store)
         else:
             raise CommandError("Invalid role '%s' (possible values: DC, RODC)" % role)
 
@@ -678,7 +681,9 @@ class cmd_domain_join(Command):
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, parent_domain=None, machinepass=None,
             use_ntvfs=False, dns_backend=None, adminpass=None,
-            quiet=False, verbose=False, plaintext_secrets=False):
+            quiet=False, verbose=False,
+            plaintext_secrets=False,
+            backend_store=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -711,14 +716,16 @@ class cmd_domain_join(Command):
                     domain_critical_only=domain_critical_only,
                     machinepass=machinepass, use_ntvfs=use_ntvfs,
                     dns_backend=dns_backend,
-                    plaintext_secrets=plaintext_secrets)
+                    plaintext_secrets=plaintext_secrets,
+                    backend_store=backend_store)
         elif role == "RODC":
             join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
                       machinepass=machinepass, use_ntvfs=use_ntvfs,
                       dns_backend=dns_backend,
-                      plaintext_secrets=plaintext_secrets)
+                      plaintext_secrets=plaintext_secrets,
+                      backend_store=backend_store)
         elif role == "SUBDOMAIN":
             if not adminpass:
                 logger.info("Administrator password will be set randomly!")
@@ -732,7 +739,8 @@ class cmd_domain_join(Command):
                            targetdir=targetdir, machinepass=machinepass,
                            use_ntvfs=use_ntvfs, dns_backend=dns_backend,
                            adminpass=adminpass,
-                           plaintext_secrets=plaintext_secrets)
+                           plaintext_secrets=plaintext_secrets,
+                           backend_store=backend_store)
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
 
