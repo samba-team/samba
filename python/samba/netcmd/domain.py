@@ -120,6 +120,11 @@ common_provision_join_options = [
     Option("--quiet", help="Be quiet", action="store_true"),
 ]
 
+common_ntvfs_options = [
+        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+               action="store_true")
+]
+
 def get_testparm_var(testparm, smbconf, varname):
     errfile = open(os.devnull, 'w')
     p = subprocess.Popen([testparm, '-s', '-l',
@@ -280,7 +285,6 @@ class cmd_domain_provision(Command):
         ]
 
     ntvfs_options = [
-        Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
         Option("--use-xattrs", type="choice", choices=["yes","no","auto"],
                metavar="[yes|no|auto]",
                help="Define if we should use the native fs capabilities or a tdb file for "
@@ -295,7 +299,8 @@ class cmd_domain_provision(Command):
         takes_options.extend(openldap_options)
 
     if samba.is_ntvfs_fileserver_built():
-         takes_options.extend(ntvfs_options)
+        takes_options.extend(common_ntvfs_options)
+        takes_options.extend(ntvfs_options)
 
     takes_args = []
 
@@ -585,12 +590,8 @@ class cmd_domain_dcpromo(Command):
 
     takes_options.extend(common_provision_join_options)
 
-    ntvfs_options = [
-         Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
-    ]
-
     if samba.is_ntvfs_fileserver_built():
-         takes_options.extend(ntvfs_options)
+         takes_options.extend(common_ntvfs_options)
 
 
     takes_args = ["domain", "role?"]
@@ -1573,8 +1574,6 @@ class cmd_domain_classicupgrade(Command):
     ]
 
     ntvfs_options = [
-        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
-               action="store_true"),
         Option("--use-xattrs", type="choice", choices=["yes","no","auto"],
                metavar="[yes|no|auto]",
                help="Define if we should use the native fs capabilities or a tdb file for "
@@ -1583,6 +1582,7 @@ class cmd_domain_classicupgrade(Command):
                default="auto")
     ]
     if samba.is_ntvfs_fileserver_built():
+        takes_options.extend(common_ntvfs_options)
         takes_options.extend(ntvfs_options)
 
     takes_args = ["smbconf"]
