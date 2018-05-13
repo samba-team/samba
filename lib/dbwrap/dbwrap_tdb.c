@@ -58,7 +58,7 @@ static void db_tdb_log_key(const char *prefix, TDB_DATA key)
 	}
 	keystr = hex_encode_talloc(frame, (unsigned char *)(key.dptr),
 				   len);
-	DEBUG(10, ("%s key %s\n", prefix, keystr));
+	DBG_DEBUG("%s key %s\n", prefix, keystr);
 	TALLOC_FREE(frame);
 }
 
@@ -142,7 +142,7 @@ static struct db_record *db_tdb_fetch_locked_internal(
 	state.result->storev = db_tdb_storev;
 	state.result->delete_rec = db_tdb_delete;
 
-	DEBUG(10, ("Allocated locked data %p\n", state.result));
+	DBG_DEBUG("Allocated locked data %p\n", state.result);
 
 	return state.result;
 }

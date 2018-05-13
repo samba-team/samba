@@ -5047,7 +5047,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	DEBUG(10,("create_file_unixpath: access_mask = 0x%x "
+	DBG_DEBUG("create_file_unixpath: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x private_flags = 0x%x "
@@ -5060,7 +5060,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  (unsigned int)private_flags,
-		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
+		  ea_list, sd, smb_fname_str_dbg(smb_fname));
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		status = NT_STATUS_NOT_SUPPORTED;
@@ -5589,7 +5589,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	NTSTATUS status;
 	bool stream_name = false;
 
-	DEBUG(10,("create_file: access_mask = 0x%x "
+	DBG_DEBUG("create_file: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
@@ -5604,7 +5604,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)oplock_request,
 		  (unsigned int)private_flags,
 		  (unsigned int)root_dir_fid,
-		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
+		  ea_list, sd, smb_fname_str_dbg(smb_fname));
 
 	/*
 	 * Calculate the filename from the root_dir_if if necessary.
