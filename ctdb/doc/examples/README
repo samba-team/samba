@@ -1,11 +1,16 @@
 This directory includes...
 
-Sample CTDB cluster configurations
+Sample CTDB configuration files:
+
+  o ctdb.conf        - Main configuration file
+  o 11.natgw.options - Options for the 11.natgw event script
+  o 91.lvs.options   - Options for the 91.lvs event script
+
+Sample old-style CTDB cluster configurations
 
   o cluster.conf  - Basic cluster setup
   o natgw.conf    - Basic cluster setup with NAT gateway feature
   o external.conf - Basic cluster setup with externally managed public IP addresses
-
 
 Sample 60.nfs configuration for NFS ganesha - callout script and
 .check file

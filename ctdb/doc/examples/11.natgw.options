@@ -1,0 +1,25 @@
+# NAT gateway configuration
+#
+# See ctdb.conf for main cluster configuration details
+#
+# Cluster provides file services on following IP addresses
+#
+#    10.1.1.101 - 10.1.1.106
+#
+# When a node is not hosting any IPs, it cannot connect to network
+# infrastructure (e.g. DNS, Active Directory, ...).
+#
+# Using NAT gateway feature of CTDB allows a node not hosting IPs to connect
+# to network infrastructure using the additional CTDB_NATGW_PUBLIC_IP.
+
+# ---------- /etc/ctdb/natgw_nodes ----------
+# 192.168.1.1
+# 192.168.1.2
+# 192.168.1.3
+# ---------- /etc/ctdb/natgw_nodes ----------
+#
+CTDB_NATGW_PUBLIC_IP=10.1.1.121/24
+CTDB_NATGW_PUBLIC_IFACE=eth1
+CTDB_NATGW_DEFAULT_GATEWAY=10.1.1.254
+CTDB_NATGW_PRIVATE_NETWORK=192.168.1.0/24
+CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
