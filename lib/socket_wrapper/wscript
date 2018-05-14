@@ -109,6 +109,6 @@ def build(bld):
         # breaks preloading!
         bld.SAMBA_LIBRARY('socket_wrapper',
                           source='socket_wrapper.c',
-                          deps='dl',
+                          deps='dl tirpc',
                           install=False,
                           realname='libsocket-wrapper.so')
