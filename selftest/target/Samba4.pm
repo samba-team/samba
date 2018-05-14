@@ -1403,6 +1403,7 @@ sub provision_vampire_dc($$$)
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} --domain-critical-only";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs";
+	$cmd .= " --backend-store=mdb";
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
@@ -1937,6 +1938,8 @@ sub provision_ad_dc($$$$$$)
 	copy = print1
 ";
 
+	my $extra_provision_options = undef;
+	push (@{$extra_provision_options}, "--backend-store=mdb");
 	print "PROVISIONING AD DC...\n";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -1949,7 +1952,7 @@ sub provision_ad_dc($$$$$$)
 				   undef,
 				   $extra_smbconf_options,
 				   $extra_smbconf_shares,
-				   undef);
+				   $extra_provision_options);
 	unless (defined $ret) {
 		return undef;
 	}
