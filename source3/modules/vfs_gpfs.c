@@ -48,7 +48,6 @@ struct gpfs_config_data {
 	bool ftruncate;
 	bool getrealfilename;
 	bool dfreequota;
-	bool prealloc;
 	bool acl;
 	bool settimes;
 	bool recalls;
@@ -1944,40 +1943,10 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
-		       struct files_struct *fsp, uint32_t mode,
-		       off_t offset, off_t len)
+			      struct files_struct *fsp, uint32_t mode,
+			      off_t offset, off_t len)
 {
-	int ret;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	if (!config->prealloc) {
-		/* you should better not run fallocate() on GPFS at all */
-		errno = ENOTSUP;
-		return -1;
-	}
-
-	if (mode != 0) {
-		DEBUG(10, ("unmapped fallocate flags: %lx\n",
-		      (unsigned long)mode));
-		errno = ENOTSUP;
-		return -1;
-	}
-
-	ret = gpfswrap_prealloc(fsp->fh->fd, offset, len);
-
-	if (ret == -1 && errno != ENOSYS) {
-		DEBUG(0, ("GPFS prealloc failed: %s\n", strerror(errno)));
-	} else if (ret == -1 && errno == ENOSYS) {
-		DEBUG(10, ("GPFS prealloc not supported.\n"));
-	} else {
-		DEBUG(10, ("GPFS prealloc succeeded.\n"));
-	}
-
-	return ret;
+	return SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
 }
 
 static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
@@ -2151,9 +2120,6 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 
 	config->dfreequota = lp_parm_bool(SNUM(handle->conn), "gpfs",
 					  "dfreequota", false);
-
-	config->prealloc = lp_parm_bool(SNUM(handle->conn), "gpfs",
-				   "prealloc", true);
 
 	config->acl = lp_parm_bool(SNUM(handle->conn), "gpfs", "acl", true);
 
