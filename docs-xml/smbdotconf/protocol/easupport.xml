@@ -24,8 +24,11 @@
     access to this tight space via extended attribute support could consume all
     of it by unsuspecting client applications, which would prevent changing
     system metadata due to lack of space.
+
+    The default has changed to yes in Samba release 4.9.0 and above to allow better Windows
+    fileserver compatibility in a default install.
     </para>
 </description>
 
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>

@@ -21,7 +21,10 @@
 	extended attribute by earlier versions of Samba, but they will not be able to read the create
 	time stored there. Storing the create time separately from the normal filesystem meta-data
 	allows Samba to faithfully reproduce NTFS semantics on top of a POSIX filesystem.
+
+	The default has changed to yes in Samba release 4.9.0 and above to allow better Windows
+	fileserver compatibility in a default install.
 	</para>
 </description>
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>

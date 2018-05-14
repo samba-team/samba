@@ -61,9 +61,16 @@ REMOVED FEATURES
 smb.conf changes
 ================
 
+As the most popular Samba install platforms (Linux and FreeBSD) both
+support extended attributes by default, the parameters "map readonly",
+"store dos attributes" and "ea support" have had their defaults changed
+to allow better Windows fileserver compatibility in a default install.
+
   Parameter Name                     Description             Default
   --------------                     -----------             -------
-
+  map readonly                       Default changed              no
+  store dos attributes               Default changed             yes
+  ea support                         Default changed             yes
 
 KNOWN ISSUES
 ============

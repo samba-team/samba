@@ -2880,7 +2880,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "strict sync", "yes");
 
-	lpcfg_do_global_parameter(lp_ctx, "map readonly", "yes");
+	lpcfg_do_global_parameter(lp_ctx, "map readonly", "no");
 
 	lpcfg_do_global_parameter(lp_ctx, "allow trusted domains", "yes");
 
@@ -2999,6 +2999,10 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "prefork children", "1");
 
 	lpcfg_do_global_parameter(lp_ctx, "check parent directory delete on close", "no");
+
+	lpcfg_do_global_parameter(lp_ctx, "ea support", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "store dos attributes", "yes");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
