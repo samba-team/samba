@@ -377,7 +377,7 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
 
 	if (override_prefixmap) {
 		PyDict_SetItemString(parameters, "override_prefixmap",
-				     PyStr_FromStringAndSize((const char *)override_prefixmap->data,
+				     PyBytes_FromStringAndSize((const char *)override_prefixmap->data,
 								override_prefixmap->length));
 	}
 
