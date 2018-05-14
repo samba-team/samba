@@ -589,7 +589,11 @@ member: %s
             if len(res) > 1:
                 raise Exception('Matched %u multiple users with filter "%s"' % (len(res), search_filter))
             user_dn = res[0].dn
-            pw = text_type(b'"' + password.encode('utf-8') + b'"', 'utf-8').encode('utf-16-le')
+            if not isinstance(password, text_type):
+                pw = password.decode('utf-8')
+            else:
+                pw = password
+            pw = ('"' + pw + '"').encode('utf-16-le')
             setpw = """
 dn: %s
 changetype: modify
