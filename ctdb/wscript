@@ -752,6 +752,9 @@ def build(bld):
     bld.install_dir(bld.env.CTDB_RUNDIR)
     bld.install_dir(bld.env.CTDB_VARDIR)
 
+    for d in ['volatile', 'persistent', 'state']:
+        bld.install_dir(os.path.join(bld.env.CTDB_VARDIR, d))
+
     # Unit tests
     ctdb_unit_tests = [
         'db_hash_test',
