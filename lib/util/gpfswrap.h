@@ -37,7 +37,6 @@ int gpfswrap_set_winattrs_path(char *pathname, int flags,
 int gpfswrap_set_winattrs(int fd, int flags, struct gpfs_winattr *attrs);
 int gpfswrap_get_winattrs_path(char *pathname, struct gpfs_winattr *attrs);
 int gpfswrap_get_winattrs(int fd, struct gpfs_winattr *attrs);
-int gpfswrap_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes);
 int gpfswrap_ftruncate(int fd, gpfs_off64_t length);
 int gpfswrap_lib_init(int flags);
 int gpfswrap_set_times_path(char *pathname, int flags,
