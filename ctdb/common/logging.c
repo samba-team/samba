@@ -173,13 +173,12 @@ static bool file_log_validate(const char *option)
 	dir = dirname(t);
 
 	ret = stat(dir, &st);
+	free(t);
 	if (ret != 0) {
-		free(t);
 		return false;
 	}
 
 	if (! S_ISDIR(st.st_mode)) {
-		free(t);
 		return false;
 	}
 
