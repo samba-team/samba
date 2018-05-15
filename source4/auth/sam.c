@@ -68,6 +68,14 @@ const char *server_attrs[] = {
 };
 
 const char *user_attrs[] = {
+	/*
+	 * This ordering (having msDS-ResultantPSO first) is
+	 * important.  By processing this attribute first it is
+	 * available in the operational module for the other PSO
+	 * attribute calcuations to use.
+	 */
+	"msDS-ResultantPSO",
+
 	KRBTGT_ATTRS,
 
 	"logonHours",
@@ -103,7 +111,6 @@ const char *user_attrs[] = {
 	"badPasswordTime",
 	"lmPwdHistory",
 	"ntPwdHistory",
-	"msDS-ResultantPSO",
 	NULL,
 };
 

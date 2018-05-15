@@ -1145,10 +1145,17 @@ static int get_pso_for_user(struct ldb_module *module,
 	unsigned int num_groupSIDs = 0;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *best_pso = NULL;
+	struct ldb_dn *pso_dn = NULL;
 	int ret;
 	struct ldb_message_element *el = NULL;
 	TALLOC_CTX *tmp_ctx = NULL;
 	int pso_count = 0;
+	struct ldb_result *res = NULL;
+	static const char *attrs[] = {
+		"msDS-LockoutDuration",
+		"msDS-MaximumPasswordAge",
+		NULL
+	};
 
 	*pso_msg = NULL;
 
@@ -1160,6 +1167,31 @@ static int get_pso_for_user(struct ldb_module *module,
 	}
 
 	tmp_ctx = talloc_new(user_msg);
+
+	/*
+	 * Several different constructed attributes try to use the PSO info. If
+	 * we've already constructed the msDS-ResultantPSO for this user, we can
+	 * just re-use the result, rather than calculating it from scratch again
+	 */
+	pso_dn = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, user_msg,
+					 "msDS-ResultantPSO");
+
+	if (pso_dn != NULL) {
+		ret = dsdb_module_search_dn(module, tmp_ctx, &res, pso_dn,
+					    attrs, DSDB_FLAG_NEXT_MODULE,
+					    parent);
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("Error %d retrieving PSO %s\n", ret,
+				ldb_dn_get_linearized(pso_dn));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		if (res->count == 1) {
+			*pso_msg = res->msgs[0];
+			return LDB_SUCCESS;
+		}
+	}
 
 	/*
 	 * if any PSOs apply directly to the user, they are considered first
@@ -1190,7 +1222,7 @@ static int get_pso_for_user(struct ldb_module *module,
 	 * If no valid PSO applies directly to the user, then try its groups.
 	 * The group expansion is expensive, so check there are actually
 	 * PSOs in the DB first (which is a quick search). Note in the above
-	 * case we could tell that a PSO applied to the user, based on info
+	 * cases we could tell that a PSO applied to the user, based on info
 	 * already retrieved by the user search.
 	 */
 	ret = get_pso_count(module, tmp_ctx, parent, &pso_count);
@@ -1661,7 +1693,10 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	ac->attrs_to_replace_size = 0;
 	/* in the list of attributes we are looking for, rename any
 	   attributes to the alias for any hidden attributes that can
-	   be fetched directly using non-hidden names */
+	   be fetched directly using non-hidden names.
+	   Note that order here can affect performance, e.g. we should process
+	   msDS-ResultantPSO before msDS-User-Account-Control-Computed (as the
+	   latter is also dependent on the PSO information) */
 	for (a=0;ac->attrs && ac->attrs[a];a++) {
 		if (check_keep_control_for_attribute(ac->controls_flags, ac->attrs[a])) {
 			continue;
