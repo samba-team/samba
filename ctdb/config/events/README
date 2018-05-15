@@ -1,7 +1,10 @@
-The events.d/ directory contains event scripts used by CTDB.  Event
+The events/ directory contains event scripts used by CTDB.  Event
 scripts are triggered on certain events, such as startup, monitoring
 or public IP allocation.  Scripts may be specific to services,
 networking or internal CTDB operations.
+
+Scripts are divided into subdirectories for different CTDB components.
+Right now the only component is "legacy".
 
 All event scripts start with the prefix 'NN.' where N is a digit.  The
 event scripts are run in sequence based on NN.  Thus 10.interface will

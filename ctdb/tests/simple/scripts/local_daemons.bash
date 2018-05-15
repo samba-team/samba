@@ -137,7 +137,7 @@ setup_ctdb ()
 		done
 
 		if $no_event_scripts ; then
-			rm -vf "${CTDB_BASE}/events.d/"*
+			rm -vf "${CTDB_BASE}/events/legacy/"*
 		fi
 
 		cat >"${CTDB_BASE}/ctdb.conf" <<EOF

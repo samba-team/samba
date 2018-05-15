@@ -350,7 +350,7 @@ int main(int argc, const char *argv[])
 	ctdb_tunables_set_defaults(ctdb);
 
 	ctdb->event_script_dir = talloc_asprintf(ctdb,
-						 "%s/events.d",
+						 "%s/events/legacy",
 						 ctdb_base);
 	if (ctdb->event_script_dir == NULL) {
 		DBG_ERR("Out of memory\n");

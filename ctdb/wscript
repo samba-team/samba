@@ -731,7 +731,7 @@ def build(bld):
         return pd['file_list']
 
     etc_subdirs = [
-        'events.d',
+        'events/legacy',
         'nfs-checks.d'
     ]
 

@@ -40,7 +40,7 @@ else
 fi
 
 setup_ctdb_base "$EVENTSCRIPTS_TESTS_VAR_DIR" "etc-ctdb" \
-		events.d \
+		events \
 		functions \
 		nfs-checks.d \
 		nfs-linux-kernel-callout \
@@ -85,7 +85,7 @@ setup_script_options ()
 	fi
 
 	if [ -n "$_script" ] ; then
-		_options="${CTDB_BASE}/events.d/${_script}.options"
+		_options="${CTDB_BASE}/events/legacy/${_script}.options"
 	else
 		_options="${script_dir}/${script%.script}.options"
 	fi
@@ -458,12 +458,12 @@ define_test ()
 	[0-9][0-9].*.*)
 	    script="${_f%.*}"
 	    event="${_f##*.}"
-	    script_dir="${CTDB_BASE}/events.d"
+	    script_dir="${CTDB_BASE}/events/legacy"
 	    ;;
 	[0-9][0-9].*)
 	    script="$_f"
 	    unset event
-	    script_dir="${CTDB_BASE}/events.d"
+	    script_dir="${CTDB_BASE}/events/legacy"
 	    ;;
 	*.*)
 	    script="${_f%.*}"

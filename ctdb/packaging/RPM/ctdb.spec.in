@@ -131,8 +131,8 @@ install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/notify.d
 
 # This is a hack. All documents should be installed in /usr/share/doc.
-rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d/README
-cp config/events.d/README README.eventscripts
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events/README
+cp config/events/README README.eventscripts
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/nfs-checks.d/README
 cp config/nfs-checks.d/README README.nfs-checks.d
 cp config/notify.d.README README.notify.d
@@ -179,8 +179,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/sudoers.d/ctdb
 %dir %{_sysconfdir}/ctdb
 %{_sysconfdir}/ctdb/functions
-%dir %{_sysconfdir}/ctdb/events.d
-%{_sysconfdir}/ctdb/events.d/*
+%dir %{_sysconfdir}/ctdb/events
+%{_sysconfdir}/ctdb/events/*
 %dir %{_sysconfdir}/ctdb/nfs-checks.d
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/00.portmapper.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/10.status.check

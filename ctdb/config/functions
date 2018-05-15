@@ -64,7 +64,7 @@ load_script_options ()
 	fi
 
 	if [ -n "$_script" ] ; then
-		_s="${CTDB_BASE}/events.d/${_script}"
+		_s="${CTDB_BASE}/events/legacy/${_script}"
 	else
 		_s="${0%.script}"
 	fi

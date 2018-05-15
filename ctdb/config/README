@@ -6,9 +6,9 @@ Selected highlights:
 
     An initscript for starting ctdbd at boot time.
 
-  events.d/
+  events/
 
-    Eventscripts.  See events.d/README for more details.
+    Eventscripts.  See events/README for more details.
 
   functions
 
