@@ -306,9 +306,9 @@ class UserCmdTestCase(SambaToolCmdTest):
 
 
     def test_setexpiry(self):
-        twodays = time.time() + (2 * 24 * 60 * 60)
-
         for user in self.users:
+            twodays = time.time() + (2 * 24 * 60 * 60)
+
             (result, out, err) = self.runsubcmd("user", "setexpiry", user["name"],
                                                 "--days=2",
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
@@ -316,7 +316,6 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err, "Can we run setexpiry with names")
             self.assertIn("Expiry for user '%s' set to 2 days." % user["name"], out)
 
-        for user in self.users:
             found = self._find_user(user["name"])
 
             expires = nttime2unix(int("%s" % found.get("accountExpires")))
