@@ -431,6 +431,15 @@ def get_gpo_list(dc_hostname, creds, lp):
         gpos = ads.get_gpo_list(creds.get_username())
     return (ads, gpos)
 
+def get_deleted_gpos_list(gp_db, gpos):
+    ret = []
+    applied_gpos = gp_db.get_applied()
+    current_guids = [p.name for p in gpos]
+    for g in applied_gpos:
+        if g[0] not in current_guids:
+            ret.append(g)
+    return ret
+
 def gpo_version(lp, path, sysvol):
     # gpo.gpo_get_sysvol_gpt_version() reads the GPT.INI from a local file.
     # If we don't have a sysvol path locally (if we're not a kdc), then
@@ -446,6 +455,7 @@ def apply_gp(lp, creds, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
     dc_hostname = get_dc_hostname(creds, lp)
     ads, gpos = get_gpo_list(dc_hostname, creds, lp)
+    del_gpos = get_deleted_gpos_list(gp_db, gpos)
     sysvol = lp.get("path", "sysvol")
     if not sysvol:
         gpo.check_refresh_gpo_list(ads, gpos)
@@ -465,7 +475,7 @@ def apply_gp(lp, creds, logger, store, gp_extensions):
     store.start()
     for ext in gp_extensions:
         try:
-            ext.process_group_policy([], changed_gpos)
+            ext.process_group_policy(del_gpos, changed_gpos)
         except Exception as e:
             logger.error('Failed to apply extension  %s' % str(ext))
             logger.error('Message was: ' + str(e))
