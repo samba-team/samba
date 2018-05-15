@@ -268,11 +268,11 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
                 print("Link Tgt %s... <-- Src %s"
                       %(target.dn[:25], l.identifier.guid))
-		state = "Del"
-		if l.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:
-		    state = "Act"
-		print("  v%u %s changed %u" %(l.meta_data.version, state,
-		      l.meta_data.originating_change_time))
+                state = "Del"
+                if l.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:
+                    state = "Act"
+                print("  v%u %s changed %u" %(l.meta_data.version, state,
+                    l.meta_data.originating_change_time))
 
             print("HWM:     %d" %(ctr6.new_highwatermark.highest_usn))
             print("Tmp HWM: %d" %(ctr6.new_highwatermark.tmp_highest_usn))
@@ -424,7 +424,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         req8.destination_dsa_guid = misc.GUID(dest_dsa) if dest_dsa else misc.GUID()
         req8.source_dsa_invocation_id = misc.GUID(invocation_id)
         req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn = unicode(nc_dn_str)
+        req8.naming_context.dn = str(nc_dn_str)
         req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
         req8.highwatermark.tmp_highest_usn = 0
         req8.highwatermark.reserved_usn = 0
@@ -454,7 +454,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         req10.destination_dsa_guid = misc.GUID(dest_dsa) if dest_dsa else misc.GUID()
         req10.source_dsa_invocation_id = misc.GUID(invocation_id)
         req10.naming_context = drsuapi.DsReplicaObjectIdentifier()
-        req10.naming_context.dn = unicode(nc_dn_str)
+        req10.naming_context.dn = str(nc_dn_str)
         req10.highwatermark = drsuapi.DsReplicaHighWaterMark()
         req10.highwatermark.tmp_highest_usn = 0
         req10.highwatermark.reserved_usn = 0
