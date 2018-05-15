@@ -439,6 +439,27 @@ COLOUR_SETS = {
     }
 }
 
+CHARSETS = {
+    'utf8': {
+        'vertical': '│',
+        'horizontal': '─',
+        'corner': '╭',
+        #'diagonal': '╲',
+        'diagonal': '·',
+        #'missing': '🕱',
+        'missing': '-',
+        'right_arrow': '←',
+    },
+    'ascii': {
+        'vertical': '|',
+        'horizontal': '-',
+        'corner': ',',
+        'diagonal': '0',
+        'missing': '-',
+        'right_arrow': '<-',
+    }
+}
+
 
 def find_transitive_distance(vertices, edges):
     all_vertices = (set(vertices) |
@@ -518,18 +539,13 @@ def distance_matrix(vertices, edges,
     lines = []
     write = lines.append
 
-    if utf8:
-        vertical = '│'
-        horizontal = '─'
-        corner = '╭'
-        #diagonal = '╲'
-        diagonal = '·'
-        #missing = '🕱'
-        missing = '-'
-        right_arrow = '←'
-    else:
-        vertical, horizontal, corner, diagonal, missing = '|-,0-'
-        right_arrow = '<-'
+    charset = CHARSETS['utf8' if utf8 else 'ascii']
+    vertical = charset['vertical']
+    horizontal = charset['horizontal']
+    corner = charset['corner']
+    diagonal = charset['diagonal']
+    missing = charset['missing']
+    right_arrow = charset['right_arrow']
 
     colours = COLOUR_SETS[colour]
 
