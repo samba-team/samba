@@ -68,8 +68,6 @@ check_persistent_databases ()
     _dir="${CTDB_DBDIR_PERSISTENT:-${CTDB_VARDIR}/persistent}"
     [ -d "$_dir" ] || return 0
 
-    [ "${CTDB_MAX_PERSISTENT_CHECK_ERRORS:-0}" = "0" ] || return 0
-
     for _db in "$_dir/"*.tdb.*[0-9] ; do
 	[ -r "$_db" ] || continue
 	check_tdb "$_db" || \
