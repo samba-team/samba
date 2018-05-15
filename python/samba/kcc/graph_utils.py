@@ -294,7 +294,7 @@ def verify_graph(edges, vertices=None, directed=False, properties=()):
         try:
             f(edges, vertices, edge_vertices)
         except GraphError as e:
-            errors.append((p, e))
+            errors.append((p, e, f.__doc__))
 
     return errors
 
@@ -319,13 +319,13 @@ def verify_and_dot(basename, edges, vertices=None, label=None,
         if errors:
             title = '%s %s' % (basename, label or '')
             debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
-            for p, e in errors:
+            for p, e, doc in errors:
                 debug(" %18s: %s%s%s" % (p, DARK_YELLOW, e, RED))
             if fatal:
                 raise GraphError("The '%s' graph lacks the following "
                                  "properties:\n%s" %
-                                 (title, '\n'.join('%s: %s' % x
-                                                   for x in errors)))
+                                 (title, '\n'.join('%s: %s' % (p, e)
+                                                   for p, e, doc in errors)))
 
 
 def list_verify_tests():

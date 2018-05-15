@@ -188,7 +188,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
                                       properties=('complete', 'connected'))
                 if errors:
                     DEBUG('spanning tree edge set %s FAILED' % edgeType)
-                    for p, e in errors:
+                    for p, e, doc in errors:
                         DEBUG("%18s: %s" % (p, e))
                     raise KCCError("spanning tree failed")
 
