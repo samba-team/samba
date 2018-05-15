@@ -135,9 +135,11 @@ class gp_log:
             apply_log = user_obj.find('applylog')
             if apply_log is None:
                 apply_log = etree.SubElement(user_obj, 'applylog')
-            item = etree.SubElement(apply_log, 'guid')
-            item.attrib['count'] = '%d' % (len(apply_log)-1)
-            item.attrib['value'] = guid
+            prev = apply_log.find('guid[@value="%s"]' % guid)
+            if prev is None:
+                item = etree.SubElement(apply_log, 'guid')
+                item.attrib['count'] = '%d' % (len(apply_log)-1)
+                item.attrib['value'] = guid
 
     def store(self, gp_ext_name, attribute, old_val):
         ''' Store an attribute in the gp_log
