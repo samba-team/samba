@@ -34,6 +34,7 @@ from samba.descriptor import get_wellknown_sds, get_diff_sds
 from samba.auth import system_session, admin_session
 from samba.netcmd import CommandError
 from samba.netcmd.fsmo import get_fsmo_roleowner
+from samba.compat import text_type
 
 
 class dbcheck(object):
@@ -1426,7 +1427,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         list_attid = []
         in_schema_nc = dn.is_child_of(self.schema_dn)
 
-        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
         obj = repl.ctr
 
         for o in repl.ctr.array:
@@ -1496,7 +1497,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         sd_attr = "nTSecurityDescriptor"
         sd_val = obj[sd_attr]
 
-        sd = ndr_unpack(security.descriptor, str(sd_val))
+        sd = ndr_unpack(security.descriptor, sd_val[0])
 
         is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
         if is_deleted:
@@ -1670,7 +1671,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def has_replmetadata_zero_invocationid(self, dn, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                          str(repl_meta_data))
+                          repl_meta_data)
         ctr = repl.ctr
         found = False
         for o in ctr.array:
@@ -1691,7 +1692,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def err_replmetadata_zero_invocationid(self, dn, attr, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                          str(repl_meta_data))
+                          repl_meta_data)
         ctr = repl.ctr
         now = samba.unix2nttime(int(time.time()))
         found = False
@@ -1940,9 +1941,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             else:
                 instancetype |= dsdb.INSTANCE_TYPE_NC_ABOVE
 
-        if self.write_ncs is not None and str(nc_root) in self.write_ncs:
+        if self.write_ncs is not None and str(nc_root) in [text_type(x, encoding='utf8') for x in self.write_ncs]:
             instancetype |= dsdb.INSTANCE_TYPE_WRITE
-
         return instancetype
 
     def get_wellknown_sd(self, dn):
@@ -2061,17 +2061,17 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
                                 (len(obj[attrname]), attrname, str(obj.dn)))
                 else:
-                    object_rdn_val = obj[attrname][0]
+                    object_rdn_val = str(obj[attrname][0])
 
             if str(attrname).lower() == 'isdeleted':
-                if obj[attrname][0] != "FALSE":
+                if obj[attrname][0].decode('utf8') != "FALSE":
                     isDeleted = True
 
             if str(attrname).lower() == 'systemflags':
                 systemFlags = int(obj[attrname][0])
 
             if str(attrname).lower() == 'replpropertymetadata':
-                if self.has_replmetadata_zero_invocationid(dn, obj[attrname]):
+                if self.has_replmetadata_zero_invocationid(dn, obj[attrname][0]):
                     error_count += 1
                     self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname])
                     # We don't continue, as we may also have other fixes for this attribute
@@ -2079,7 +2079,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                 try:
                     (set_attrs_from_md, list_attid_from_md, wrong_attids) \
-                        = self.process_metadata(dn, obj[attrname])
+                        = self.process_metadata(dn, obj[attrname][0])
                 except KeyError:
                     error_count += 1
                     self.err_replmetadata_unknown_attid(dn, attrname, obj[attrname])
@@ -2239,7 +2239,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if str(attrname).lower() == "instancetype":
                 calculated_instancetype = self.calculate_instancetype(dn)
-                if len(obj["instanceType"]) != 1 or obj["instanceType"][0] != str(calculated_instancetype):
+                if len(obj["instanceType"]) != 1 or obj["instanceType"][0].decode('utf8') != str(calculated_instancetype):
                     error_count += 1
                     self.err_wrong_instancetype(obj, calculated_instancetype)
 
