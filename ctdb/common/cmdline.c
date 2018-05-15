@@ -337,7 +337,7 @@ static int cmdline_match(struct cmdline_context *cmdline)
 		size_t len;
 		char *t, *str;
 		int n = 0;
-		bool match;
+		bool match = false;
 
 		cmd = &cmdline->commands[i];
 		len = strlcpy(name, cmd->name, sizeof(name));
