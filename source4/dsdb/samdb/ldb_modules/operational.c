@@ -982,6 +982,43 @@ static bool pso_is_supported(struct ldb_context *ldb, struct ldb_message *msg)
 }
 
 /*
+ * Returns the number of PSO objects that exist in the DB
+ */
+static int get_pso_count(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+			 struct ldb_request *parent, int *pso_count)
+{
+	static const char * const attrs[] = { NULL };
+	int ret;
+	struct ldb_dn *domain_dn = NULL;
+	struct ldb_dn *psc_dn = NULL;
+	struct ldb_result *res = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	domain_dn = ldb_get_default_basedn(ldb);
+	psc_dn = ldb_dn_new_fmt(mem_ctx, ldb,
+			        "CN=Password Settings Container,CN=System,%s",
+				ldb_dn_get_linearized(domain_dn));
+	if (psc_dn == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	/* get the number of PSO children */
+	ret = dsdb_module_search(module, mem_ctx, &res, psc_dn,
+				 LDB_SCOPE_ONELEVEL, attrs,
+				 DSDB_FLAG_NEXT_MODULE, parent,
+				 "(objectClass=msDS-PasswordSettings)");
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	*pso_count = res->count;
+	talloc_free(res);
+	talloc_free(psc_dn);
+
+	return LDB_SUCCESS;
+}
+
+/*
  * Compares two PSO objects returned by a search, to work out the better PSO.
  * The PSO with the lowest precedence is better, otherwise (if the precedence
  * is equal) the PSO with the lower GUID wins.
@@ -1111,6 +1148,7 @@ static int get_pso_for_user(struct ldb_module *module,
 	int ret;
 	struct ldb_message_element *el = NULL;
 	TALLOC_CTX *tmp_ctx = NULL;
+	int pso_count = 0;
 
 	*pso_msg = NULL;
 
@@ -1150,8 +1188,24 @@ static int get_pso_for_user(struct ldb_module *module,
 
 	/*
 	 * If no valid PSO applies directly to the user, then try its groups.
-	 * Work out the SIDs of any account groups the user is a member of
+	 * The group expansion is expensive, so check there are actually
+	 * PSOs in the DB first (which is a quick search). Note in the above
+	 * case we could tell that a PSO applied to the user, based on info
+	 * already retrieved by the user search.
 	 */
+	ret = get_pso_count(module, tmp_ctx, parent, &pso_count);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Error %d determining PSOs in system\n", ret);
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (pso_count == 0) {
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	/* Work out the SIDs of any account groups the user is a member of */
 	ret = get_group_sids(ldb, tmp_ctx, user_msg,
 			     "msDS-ResultantPSO", ACCOUNT_GROUPS,
 			     &groupSIDs, &num_groupSIDs);
