@@ -23,7 +23,10 @@ from samba import NTSTATUSError
 from ConfigParser import ConfigParser
 from StringIO import StringIO
 from abc import ABCMeta, abstractmethod
-import xml.etree.ElementTree as etree
+try:
+    import lxml.etree as etree
+except ImportError:
+    import xml.etree.ElementTree as etree
 import re
 from samba.net import Net
 from samba.dcerpc import nbt
@@ -227,7 +230,7 @@ class gp_log:
 
     def commit(self):
         ''' Write gp_log changes to disk '''
-        self.gpostore.store(self.username, etree.tostring(self.gpdb, 'utf-8'))
+        self.gpostore.store(self.username, etree.tostring(self.gpdb))
 
 class GPOStorage:
     def __init__(self, log_file):
