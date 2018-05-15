@@ -6,9 +6,9 @@ define_test "eventscript directory with random files"
 
 setup_eventd
 
-touch "$eventd_scriptdir/README"
+touch "$eventd_scriptdir/README.script"
 
-cat > "$eventd_scriptdir/a.sh" <<EOF
+cat > "$eventd_scriptdir/a.script" <<EOF
 #!/bin/sh
 
 exit 1
@@ -25,9 +25,9 @@ EOF
 simple_test script enable README
 
 required_result 22 <<EOF
-Script name a.sh is invalid
+Script name a is invalid
 EOF
-simple_test script disable a.sh
+simple_test script disable a
 
 required_result 2 <<EOF
 Script 00.test does not exist

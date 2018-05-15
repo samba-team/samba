@@ -6,12 +6,12 @@ define_test "queue events"
 
 setup_eventd
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 sleep 5
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 required_result 0 <<EOF
 EOF

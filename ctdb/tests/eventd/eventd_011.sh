@@ -6,7 +6,7 @@ define_test "multiple events"
 
 setup_eventd
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 echo "args: \$*"
@@ -20,7 +20,7 @@ monitor)
 	;;
 esac
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 required_result 0 <<EOF
 EOF

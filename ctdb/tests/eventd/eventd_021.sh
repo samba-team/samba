@@ -4,12 +4,12 @@
 
 define_test "debug script"
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 sleep 99
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 cat > "$eventd_scriptdir/debug.sh" <<EOF
 #!/bin/sh

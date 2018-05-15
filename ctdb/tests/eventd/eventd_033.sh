@@ -4,7 +4,7 @@
 
 define_test "timeouts with multiple scripts"
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 case "\$1" in
@@ -17,9 +17,9 @@ monitor|ipreallocated)
 esac
 
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
-cat > "$eventd_scriptdir/02.test" <<EOF
+cat > "$eventd_scriptdir/02.test.script" <<EOF
 #!/bin/sh
 
 case "\$1" in
@@ -32,9 +32,9 @@ startup|ipreallocated)
 esac
 
 EOF
-chmod +x "$eventd_scriptdir/02.test"
+chmod +x "$eventd_scriptdir/02.test.script"
 
-cat > "$eventd_scriptdir/03.test" <<EOF
+cat > "$eventd_scriptdir/03.test.script" <<EOF
 #!/bin/sh
 
 case "\$1" in
@@ -47,7 +47,7 @@ startup|monitor)
 esac
 
 EOF
-chmod +x "$eventd_scriptdir/03.test"
+chmod +x "$eventd_scriptdir/03.test.script"
 
 setup_eventd
 

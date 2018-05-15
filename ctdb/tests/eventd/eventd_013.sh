@@ -6,12 +6,12 @@ define_test "cancel running monitor event"
 
 setup_eventd
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 sleep 5
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 required_result 125 <<EOF
 Event monitor got cancelled

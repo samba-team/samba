@@ -4,7 +4,7 @@
 
 define_test "takeip event"
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 echo \$*
@@ -14,7 +14,7 @@ if [ \$# -ne 4 ] ; then
 fi
 exit 0
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 setup_eventd
 

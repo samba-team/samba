@@ -4,13 +4,13 @@
 
 define_test "status output in debug script"
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 echo "Sleeping for 99 seconds"
 sleep 99
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 cat > "$eventd_scriptdir/debug.sh" <<EOF
 #!/bin/sh
@@ -33,7 +33,7 @@ simple_test run monitor 5
 sleep 5
 
 required_result 0 <<EOF
-01.test,PID $eventd_scriptdir/01.test monitor
+01.test.script,PID $eventd_scriptdir/01.test.script monitor
   \`-sleep,PID 99
 01.test              TIMEDOUT   DATETIME
   OUTPUT: Sleeping for 99 seconds

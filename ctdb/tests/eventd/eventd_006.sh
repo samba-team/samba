@@ -6,13 +6,13 @@ define_test "timing out event script"
 
 setup_eventd
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 sleep 10
 exit 0
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 required_result 62 <<EOF
 Event monitor timed out

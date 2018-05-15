@@ -20,7 +20,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/dir.h"
-#include "system/locale.h"
+#include "system/glob.h"
 #include "system/wait.h"
 
 #include <talloc.h>
@@ -39,34 +39,15 @@
 
 static int script_filter(const struct dirent *de)
 {
-	size_t namelen = strlen(de->d_name);
-	char *ptr;
+	int ret;
 
-	/* Ignore . and .. */
-	if (namelen < 3) {
-		return 0;
+	/* Match a script pattern */
+	ret = fnmatch("[0-9][0-9].*.script", de->d_name, 0);
+	if (ret == 0) {
+		return 1;
 	}
 
-	/* Skip filenames with ~ */
-	ptr = strchr(de->d_name, '~');
-	if (ptr != NULL) {
-		return 0;
-	}
-
-	/* Filename should start with [0-9][0-9]. */
-	if ((! isdigit(de->d_name[0])) ||
-	    (! isdigit(de->d_name[1])) ||
-	    (de->d_name[2] != '.')) {
-		return 0;
-	}
-
-	/* Ignore filenames with multiple '.'s */
-	ptr = index(&de->d_name[3], '.');
-	if (ptr != NULL) {
-		return 0;
-	}
-
-	return 1;
+	return 0;
 }
 
 static int get_script_list(TALLOC_CTX *mem_ctx,
@@ -75,6 +56,7 @@ static int get_script_list(TALLOC_CTX *mem_ctx,
 {
 	struct dirent **namelist = NULL;
 	struct run_event_script_list *script_list;
+	size_t ls;
 	int count, ret;
 	int i;
 
@@ -113,10 +95,13 @@ static int get_script_list(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	ls = strlen(".script");
 	for (i=0; i<count; i++) {
 		struct run_event_script *s = &script_list->script[i];
 
-		s->name = talloc_strdup(script_list, namelist[i]->d_name);
+		s->name = talloc_strndup(script_list,
+					 namelist[i]->d_name,
+					 strlen(namelist[i]->d_name) - ls);
 		if (s->name == NULL) {
 			ret = ENOMEM;
 			talloc_free(script_list);
@@ -142,11 +127,20 @@ static int script_chmod(TALLOC_CTX *mem_ctx, const char *script_dir,
 {
 	DIR *dirp;
 	struct dirent *de;
+	char script_file[PATH_MAX];
 	int ret, new_mode;
 	char *filename;
 	struct stat st;
 	bool found;
 	int fd = -1;
+
+	ret = snprintf(script_file,
+		       sizeof(script_file),
+		       "%s.script",
+		       script_name);
+	if (ret >= sizeof(script_file)) {
+		return ENAMETOOLONG;
+	}
 
 	dirp = opendir(script_dir);
 	if (dirp == NULL) {
@@ -155,7 +149,7 @@ static int script_chmod(TALLOC_CTX *mem_ctx, const char *script_dir,
 
 	found = false;
 	while ((de = readdir(dirp)) != NULL) {
-		if (strcmp(de->d_name, script_name) == 0) {
+		if (strcmp(de->d_name, script_file) == 0) {
 
 			/* check for valid script names */
 			ret = script_filter(de);
@@ -174,7 +168,7 @@ static int script_chmod(TALLOC_CTX *mem_ctx, const char *script_dir,
 		return ENOENT;
 	}
 
-	filename = talloc_asprintf(mem_ctx, "%s/%s", script_dir, script_name);
+	filename = talloc_asprintf(mem_ctx, "%s/%s", script_dir, script_file);
 	if (filename == NULL) {
 		return ENOMEM;
 	}
@@ -422,7 +416,7 @@ int run_event_script_list(struct run_event_context *run_ctx,
 		struct stat st;
 		char *path = NULL;
 
-		path = talloc_asprintf(mem_ctx, "%s/%s",
+		path = talloc_asprintf(mem_ctx, "%s/%s.script",
 				       run_event_script_dir(run_ctx),
 				       script->name);
 		if (path == NULL) {
@@ -779,7 +773,7 @@ static struct tevent_req *run_event_run_script(struct tevent_req *req)
 
 	script = &state->script_list->script[state->index];
 
-	path = talloc_asprintf(state, "%s/%s",
+	path = talloc_asprintf(state, "%s/%s.script",
 			       run_event_script_dir(state->run_ctx),
 			       script->name);
 	if (path == NULL) {

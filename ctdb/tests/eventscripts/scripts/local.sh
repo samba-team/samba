@@ -456,12 +456,12 @@ define_test ()
 
     case "$_f" in
 	[0-9][0-9].*.*)
-	    script="${_f%.*}"
+	    script="${_f%.*}.script"
 	    event="${_f##*.}"
 	    script_dir="${CTDB_BASE}/events/legacy"
 	    ;;
 	[0-9][0-9].*)
-	    script="$_f"
+	    script="${_f}.script"
 	    unset event
 	    script_dir="${CTDB_BASE}/events/legacy"
 	    ;;
@@ -479,9 +479,11 @@ define_test ()
     [ -r "${script_dir}/${script}" ] || \
 	die "Internal error - unable to find script \"${script_dir}/${script}\""
 
-    printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
+    script_short="${script%.script}"
 
-    _f="${TEST_SUBDIR}/scripts/${script}.sh"
+    printf "%-17s %-10s %-4s - %s\n\n" "$script_short" "$event" "$_num" "$desc"
+
+    _f="${TEST_SUBDIR}/scripts/${script_short}.sh"
     if [ -r "$_f" ] ; then
 	    . "$_f"
     fi

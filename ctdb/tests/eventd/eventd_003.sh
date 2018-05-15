@@ -6,7 +6,7 @@ define_test "disabled event script"
 
 setup_eventd
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 exit 0

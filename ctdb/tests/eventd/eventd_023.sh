@@ -4,13 +4,13 @@
 
 define_test "redirected status output in debug script"
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 echo "Sleeping for 99 seconds"
 sleep 99
 EOF
-chmod +x "$eventd_scriptdir/01.test"
+chmod +x "$eventd_scriptdir/01.test.script"
 
 cat > "$eventd_scriptdir/debug.sh" <<EOF
 #!/bin/sh

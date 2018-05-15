@@ -4,14 +4,14 @@
 
 define_test "multiple scripts"
 
-cat > "$eventd_scriptdir/01.test" <<EOF
+cat > "$eventd_scriptdir/01.test.script" <<EOF
 #!/bin/sh
 
 sleep 1
 EOF
 
-cp "$eventd_scriptdir/01.test" "$eventd_scriptdir/02.test"
-cp "$eventd_scriptdir/01.test" "$eventd_scriptdir/03.test"
+cp "$eventd_scriptdir/01.test.script" "$eventd_scriptdir/02.test.script"
+cp "$eventd_scriptdir/01.test.script" "$eventd_scriptdir/03.test.script"
 
 setup_eventd
 
