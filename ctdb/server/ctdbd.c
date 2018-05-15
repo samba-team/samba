@@ -55,7 +55,6 @@ static struct {
 	int         no_lmaster;
 	int         no_recmaster;
 	int	    script_log_level;
-	int         max_persistent_check_errors;
 } options = {
 	.debuglevel = "NOTICE",
 	.transport = "tcp",
@@ -187,9 +186,6 @@ int main(int argc, const char *argv[])
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
 		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, 0, "log level of event script output", NULL },
-		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
-		  &options.max_persistent_check_errors, 0,
-		  "max allowed persistent check errors (default 0)", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -320,13 +316,6 @@ int main(int argc, const char *argv[])
 	ctdb->db_directory = options.db_dir;
 	ctdb->db_directory_persistent = options.db_dir_persistent;
 	ctdb->db_directory_state = options.db_dir_state;
-
-	if (options.max_persistent_check_errors < 0) {
-		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;
-	} else {
-		ctdb->max_persistent_check_errors =
-			(uint64_t)options.max_persistent_check_errors;
-	}
 
 	/*
 	 * Legacy setup/options
