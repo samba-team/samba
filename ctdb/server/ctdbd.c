@@ -318,13 +318,8 @@ int main(int argc, const char *argv[])
 	 */
 
 	ctdb->db_directory = options.db_dir;
-	mkdir_p_or_die(ctdb->db_directory, 0700);
-
 	ctdb->db_directory_persistent = options.db_dir_persistent;
-	mkdir_p_or_die(ctdb->db_directory_persistent, 0700);
-
 	ctdb->db_directory_state = options.db_dir_state;
-	mkdir_p_or_die(ctdb->db_directory_state, 0700);
 
 	if (options.max_persistent_check_errors < 0) {
 		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;
