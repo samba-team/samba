@@ -131,6 +131,10 @@ setup_ctdb ()
 		local node_ip=$(sed -n -e "$(($pnn + 1))p" "$nodes_file")
 
 		local db_dir="${CTDB_BASE}/db"
+		local d
+		for d in "volatile" "persistent" "state" ; do
+			mkdir -p "${db_dir}/${d}"
+		done
 
 		if $no_event_scripts ; then
 			rm -vf "${CTDB_BASE}/events.d/"*
