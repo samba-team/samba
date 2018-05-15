@@ -989,6 +989,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	struct netr_SamInfo3 *my_info3;
 	time_t kickoff_time, must_change_time;
 	bool password_good = false;
+	bool ok;
 #ifdef HAVE_KRB5
 	struct winbindd_tdc_domain *tdc_domain = NULL;
 #endif
@@ -1001,11 +1002,14 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request->data.auth.user,
-			  name_namespace,
-			  name_domain,
-			  name_user);
-
+	ok = parse_domain_user(state->request->data.auth.user,
+			       name_namespace,
+			       name_domain,
+			       name_user);
+	if (!ok) {
+		DBG_DEBUG("parse_domain_user failed\n");
+		return NT_STATUS_NO_SUCH_USER;
+	}
 
 	if (!lookup_cached_name(name_namespace,
 				name_domain,
