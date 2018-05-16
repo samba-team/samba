@@ -350,7 +350,7 @@ static void add_version(struct json_context *context, int major, int minor)
 static void add_timestamp(struct json_context *context)
 {
 	char buffer[40];	/* formatted time less usec and timezone */
-	char timestamp[50];	/* the formatted ISO 8601 time stamp	 */
+	char timestamp[65];	/* the formatted ISO 8601 time stamp	 */
 	char tz[10];		/* formatted time zone			 */
 	struct tm* tm_info;	/* current local time			 */
 	struct timeval tv;	/* current system time			 */
