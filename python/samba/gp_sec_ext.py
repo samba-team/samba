@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os.path
-from gpclass import gp_ext_setter, gp_inf_ext
+from samba.gpclass import gp_ext_setter, gp_inf_ext
 from samba.auth import system_session
 try:
     from samba.samdb import SamDB
