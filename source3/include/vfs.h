@@ -253,6 +253,8 @@
 		All users are now pwrite or async versions. */
 /* Version 39 - Remove SMB_VFS_CHMOD_ACL - no longer used. */
 /* Version 39 - Remove SMB_VFS_FCHMOD_ACL - no longer used. */
+/* Version 39 - Remove struct dfree_cached_info pointer from
+		connection struct */
 
 #define SMB_VFS_INTERFACE_VERSION 39
 
@@ -411,14 +413,6 @@ typedef struct {
 	bool is_wild;
 } name_compare_entry;
 
-struct dfree_cached_info {
-	time_t last_dfree_time;
-	uint64_t dfree_ret;
-	uint64_t bsize;
-	uint64_t dfree;
-	uint64_t dsize;
-};
-
 struct share_params {
 	int service;
 };
@@ -481,7 +475,6 @@ typedef struct connection_struct {
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
 	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
-	struct dfree_cached_info *dfree_info;
 	struct trans_state *pending_trans;
 
 	struct rpc_pipe_client *spoolss_pipe;
