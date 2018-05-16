@@ -22,6 +22,7 @@ import os
 import optparse
 import tempfile
 import shutil
+import random
 
 sys.path.insert(0, "bin/python")
 
@@ -67,6 +68,8 @@ def main():
     parser.add_option('-c', '--clean-up',
                       action="store_true",
                       help='Clean up the generated groups and user accounts')
+    parser.add_option('--random-seed', type='int', default=0,
+                      help='Use to keep randomness consistent across multiple runs')
 
     model_group = optparse.OptionGroup(parser, 'Traffic Model Options',
                                        'These options alter the traffic '
@@ -154,6 +157,9 @@ def main():
         print_err(("Please use --fixed-password to specify a password"
                              " for the users created as part of this test"))
         sys.exit(1)
+
+    if opts.random_seed:
+        random.seed(opts.random_seed)
 
     lp = sambaopts.get_loadparm()
     creds = credopts.get_credentials(lp)

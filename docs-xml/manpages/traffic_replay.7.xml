@@ -30,6 +30,7 @@
 		<arg choice="opt">-B, --badpassword-frequency &lt;frequency&gt;</arg>
 		<arg choice="opt">--dns-rate &lt;rate&gt;</arg>
 		<arg choice="opt">-t, --timing-data &lt;file&gt;</arg>
+		<arg choice="opt">--random-seed &lt;seed&gt;</arg>
 		<arg choice="opt">-U, --username user</arg>
 		<arg choice="opt">--password &lt;password&gt;</arg>
 		<arg choice="opt">-W --workgroup &lt;workgroup&gt;</arg>
@@ -137,6 +138,16 @@
 	</varlistentry>
 
 	<varlistentry>
+	<term>random-seed</term>
+	<listitem><para>
+	A number to seed the random number generator with. When traffic is
+	generated from a model-file, use this option to keep the traffic
+	consistent across multiple test runs. This allows you to compare the
+	performance of Samba between different releases.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
 	<term>Traffic Model Options</term>
 	<listitem><para>
 	When the summary-file is a traffic-model (produced by
@@ -187,7 +198,7 @@
 		<para>
 		For taking performance measurements over several test runs,
 		it's recommended to use this option and replay the traffic from
-		a traffic-summary file.
+		a traffic-summary file, or to use the --random-seed option.
 		</para></listitem>
 		</varlistentry>
 	</itemizedlist>
@@ -474,7 +485,8 @@
 	<para>The traffic generated is an approximation of what was seen in
 	the network capture. The traffic generation involves some randomness,
 	so running the same command multiple times may result in slightly
-	different traffic being generated.</para>
+	different traffic being generated (although you can avoid this, by
+	specifying the --random-seed option).</para>
 
 	<para>As well as changing how long the model runs for, you can also
 	change how many conversations get generated and how fast the traffic
