@@ -65,9 +65,8 @@ def verify_graph_connected(edges, vertices, edge_vertices):
     if not edges:
         if len(vertices) <= 1:
             return
-        raise GraphError("disconnected vertices were found:\n"
-                         "vertices: %s\n edges: %s" %
-                         (sorted(vertices), sorted(edges)))
+        raise GraphError("all vertices are disconnected because "
+                         "there are no edges:")
 
     remaining_edges = list(edges)
     reached = set(remaining_edges.pop())
@@ -87,16 +86,23 @@ def verify_graph_connected(edges, vertices, edge_vertices):
             del remaining_edges[i]
 
     if remaining_edges or reached != set(vertices):
-        raise GraphError("graph is not connected:\n vertices: %s\n edges: %s\n"
-                         " reached: %s\n remaining edges: %s" %
-                         (sorted(vertices), sorted(edges),
-                          sorted(reached), sorted(remaining_edges)))
+        s = ("the graph is not connected, "
+             "as the following vertices are unreachable:\n ")
+        s += '\n '.join(v for v in sorted(vertices)
+                        if v not in reached)
+        raise GraphError(s)
 
 
 def verify_graph_connected_under_edge_failures(edges, vertices, edge_vertices):
     """The graph stays connected when any single edge is removed."""
     for subset in itertools.combinations(edges, len(edges) - 1):
-        verify_graph_connected(subset, vertices, edge_vertices)
+        try:
+            verify_graph_connected(subset, vertices, edge_vertices)
+        except GraphError as e:
+            for edge in edges:
+                if edge not in subset:
+                    raise GraphError("The graph will be disconnected when the "
+                                     "connection from %s to %s fails" % edge)
 
 
 def verify_graph_connected_under_vertex_failures(edges, vertices,
@@ -109,8 +115,7 @@ def verify_graph_connected_under_vertex_failures(edges, vertices,
 
 
 def verify_graph_forest(edges, vertices, edge_vertices):
-    """The graph contains no loops. A forest that is also connected is a
-    tree."""
+    """The graph contains no loops."""
     trees = [set(e) for e in edges]
     while True:
         for a, b in itertools.combinations(trees, 2):
