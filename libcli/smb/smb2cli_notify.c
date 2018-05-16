@@ -52,15 +52,18 @@ struct tevent_req *smb2cli_notify_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct smb2cli_notify_state *state;
 	uint8_t *fixed;
+	uint16_t watch_tree;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_notify_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	watch_tree = recursive ? SMB2_WATCH_TREE : 0;
 	fixed = state->fixed;
 	SSVAL(fixed, 0, 32);
-	SSVAL(fixed, 2, recursive ? SMB2_WATCH_TREE : 0);
+	SSVAL(fixed, 2, watch_tree);
 	SIVAL(fixed, 4, output_buffer_length);
 	SBVAL(fixed, 8, fid_persistent);
 	SBVAL(fixed, 16, fid_volatile);
