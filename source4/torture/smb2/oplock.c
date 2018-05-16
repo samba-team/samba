@@ -4976,7 +4976,8 @@ static void child_sig_term_handler(struct tevent_context *ev,
 				void *private_data)
 {
 	int *pstatus = (int *)private_data;
-	int status;
+	int status = 0;
+
 	wait(&status);
 	if (WIFEXITED(status)) {
 		*pstatus = WEXITSTATUS(status);
