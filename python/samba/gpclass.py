@@ -290,8 +290,11 @@ class GPOStorage:
 class gp_ext(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, logger):
+    def __init__(self, logger, lp, creds, store):
         self.logger = logger
+        self.lp = lp
+        self.creds = creds
+        self.gp_db = store.get_gplog(creds.get_username())
 
     @abstractmethod
     def list(self, rootpath):
@@ -305,10 +308,7 @@ class gp_ext(object):
     def read(self, policy):
         pass
 
-    def parse(self, afile, conn, gp_db, lp):
-        self.gp_db = gp_db
-        self.lp = lp
-
+    def parse(self, afile, conn):
         # Fixing the bug where only some Linux Boxes capitalize MACHINE
         try:
             blist = afile.split('/')
@@ -460,7 +460,7 @@ def apply_gp(lp, creds, logger, store, gp_extensions):
         store.start()
         for ext in gp_extensions:
             try:
-                ext.parse(ext.list(path), conn, gp_db, lp)
+                ext.parse(ext.list(path), conn)
             except Exception as e:
                 logger.error('Failed to parse gpo %s for extension %s' % \
                     (guid, str(ext)))

@@ -81,7 +81,7 @@ if __name__ == "__main__":
     gp_extensions = []
     if opts.machine:
         for ext in machine_exts:
-            gp_extensions.append(ext(logger))
+            gp_extensions.append(ext(logger, lp, creds, store))
     else:
         pass # User extensions
 
