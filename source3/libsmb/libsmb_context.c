@@ -659,24 +659,16 @@ smbc_init_context(SMBCCTX *context)
         DEBUG(1, ("Using netbios name %s.\n", smbc_getNetbiosName(context)));
 
         if (!smbc_getWorkgroup(context)) {
-                char *workgroup;
+                const char *workgroup;
 
                 if (lp_workgroup()) {
-                        workgroup = SMB_STRDUP(lp_workgroup());
-                }
-                else {
+                        workgroup = lp_workgroup();
+                } else {
                         /* TODO: Think about a decent default workgroup */
-                        workgroup = SMB_STRDUP("samba");
-                }
-
-                if (!workgroup) {
-                        TALLOC_FREE(frame);
-                        errno = ENOMEM;
-                        return NULL;
+                        workgroup = "samba";
                 }
 
                 smbc_setWorkgroup(context, workgroup);
-		SAFE_FREE(workgroup);
 
 		if (!smbc_getWorkgroup(context)) {
                         TALLOC_FREE(frame);
