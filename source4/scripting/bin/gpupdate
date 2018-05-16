@@ -41,7 +41,6 @@ if __name__ == "__main__":
     parser.add_option_group(sambaopts)
     parser.add_option_group(options.VersionOptions(parser))
     credopts = options.CredentialsOptions(parser)
-    parser.add_option('-H', '--url', dest='url', help='URL for the samdb')
     parser.add_option('-X', '--unapply', help='Unapply Group Policy',
                       action='store_true')
     parser.add_option('--target', default='Computer', help='{Computer | User}',
@@ -53,10 +52,6 @@ if __name__ == "__main__":
 
     # Set the loadparm context
     lp = sambaopts.get_loadparm()
-    if not opts.url:
-        url = lp.samdb_url()
-    else:
-        url = opts.url
 
     creds = credopts.get_credentials(lp, fallback_machine=True)
 
