@@ -316,68 +316,193 @@ static bool torture_libsmbclient_readdirplus(struct torture_context *tctx)
 	return true;
 }
 
-
-/* note the strdup for string options on smbc_set calls. I think libsmbclient is
- * really doing something wrong here: in smbc_free_context libsmbclient just
- * calls free() on the string options so it assumes the callers have malloced
- * them before setting them via smbc_set calls. */
-
-#define TEST_OPTION_INT(option, val) \
-	torture_comment(tctx, "Testing smbc_set" #option "\n");\
-	smbc_set ##option(ctx, val);\
-	torture_comment(tctx, "Testing smbc_get" #option "\n");\
-	torture_assert_int_equal(tctx, smbc_get ##option(ctx), val, "failed " #option);
-
-#define TEST_OPTION_STRING(option, val) \
-	torture_comment(tctx, "Testing smbc_set" #option "\n");\
-	smbc_set ##option(ctx, strdup(val));\
-	torture_comment(tctx, "Testing smbc_get" #option "\n");\
-	torture_assert_str_equal(tctx, smbc_get ##option(ctx), val, "failed " #option);
-
 bool torture_libsmbclient_configuration(struct torture_context *tctx)
 {
 	SMBCCTX *ctx;
+	bool ok = true;
 
 	ctx = smbc_new_context();
 	torture_assert(tctx, ctx, "failed to get new context");
 	torture_assert(tctx, smbc_init_context(ctx), "failed to init context");
 
-	TEST_OPTION_INT(Debug, DEBUGLEVEL);
-	TEST_OPTION_STRING(NetbiosName, "torture_netbios");
-	TEST_OPTION_STRING(Workgroup, "torture_workgroup");
-	TEST_OPTION_STRING(User, "torture_user");
-	TEST_OPTION_INT(Timeout, 12345);
+	torture_comment(tctx, "Testing smbc_(set|get)Debug\n");
+	smbc_setDebug(ctx, DEBUGLEVEL);
+	torture_assert_int_equal_goto(tctx,
+				      smbc_getDebug(ctx),
+				      DEBUGLEVEL,
+				      ok,
+				      done,
+				      "failed to set DEBUGLEVEL");
 
+	torture_comment(tctx, "Testing smbc_(set|get)NetbiosName\n");
+	smbc_setNetbiosName(ctx, discard_const("torture_netbios"));
+	torture_assert_str_equal_goto(tctx,
+				      smbc_getNetbiosName(ctx),
+				      "torture_netbios",
+				      ok,
+				      done,
+				      "failed to set NetbiosName");
+
+	torture_comment(tctx, "Testing smbc_(set|get)Workgroup\n");
+	smbc_setWorkgroup(ctx, discard_const("torture_workgroup"));
+	torture_assert_str_equal_goto(tctx,
+				      smbc_getWorkgroup(ctx),
+				      "torture_workgroup",
+				      ok,
+				      done,
+				      "failed to set Workgroup");
+
+	torture_comment(tctx, "Testing smbc_(set|get)User\n");
+	smbc_setUser(ctx, "torture_user");
+	torture_assert_str_equal_goto(tctx,
+				      smbc_getUser(ctx),
+				      "torture_user",
+				      ok,
+				      done,
+				      "failed to set User");
+
+	torture_comment(tctx, "Testing smbc_(set|get)Timeout\n");
+	smbc_setTimeout(ctx, 12345);
+	torture_assert_int_equal_goto(tctx,
+				      smbc_getTimeout(ctx),
+				      12345,
+				      ok,
+				      done,
+				      "failed to set Timeout");
+
+done:
 	smbc_free_context(ctx, 1);
 
-	return true;
+	return ok;
 }
 
 bool torture_libsmbclient_options(struct torture_context *tctx)
 {
 	SMBCCTX *ctx;
+	bool ok = true;
 
 	ctx = smbc_new_context();
 	torture_assert(tctx, ctx, "failed to get new context");
 	torture_assert(tctx, smbc_init_context(ctx), "failed to init context");
 
-	TEST_OPTION_INT(OptionDebugToStderr, true);
-	TEST_OPTION_INT(OptionFullTimeNames, true);
-	TEST_OPTION_INT(OptionOpenShareMode, SMBC_SHAREMODE_DENY_ALL);
-	/* FIXME: OptionUserData */
-	TEST_OPTION_INT(OptionSmbEncryptionLevel, SMBC_ENCRYPTLEVEL_REQUEST);
-	TEST_OPTION_INT(OptionCaseSensitive, false);
-	TEST_OPTION_INT(OptionBrowseMaxLmbCount, 2);
-	TEST_OPTION_INT(OptionUrlEncodeReaddirEntries, true);
-	TEST_OPTION_INT(OptionOneSharePerServer, true);
-	TEST_OPTION_INT(OptionUseKerberos, false);
-	TEST_OPTION_INT(OptionFallbackAfterKerberos, false);
-	TEST_OPTION_INT(OptionNoAutoAnonymousLogin, true);
-	TEST_OPTION_INT(OptionUseCCache, true);
+	torture_comment(tctx, "Testing smbc_(set|get)OptionDebugToStderr\n");
+	smbc_setOptionDebugToStderr(ctx, true);
+	torture_assert_goto(tctx,
+			    smbc_getOptionDebugToStderr(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionDebugToStderr");
 
+	torture_comment(tctx, "Testing smbc_(set|get)OptionFullTimeNames\n");
+	smbc_setOptionFullTimeNames(ctx, true);
+	torture_assert_goto(tctx,
+			    smbc_getOptionFullTimeNames(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionFullTimeNames");
+
+	torture_comment(tctx, "Testing smbc_(set|get)OptionOpenShareMode\n");
+	smbc_setOptionOpenShareMode(ctx, SMBC_SHAREMODE_DENY_ALL);
+	torture_assert_int_equal_goto(tctx,
+				      smbc_getOptionOpenShareMode(ctx),
+				      SMBC_SHAREMODE_DENY_ALL,
+				      ok,
+				      done,
+				      "failed to set OptionOpenShareMode");
+
+	torture_comment(tctx, "Testing smbc_(set|get)OptionUserData\n");
+	smbc_setOptionUserData(ctx, (void *)discard_const("torture_user_data"));
+	torture_assert_str_equal_goto(tctx,
+				      (const char*)smbc_getOptionUserData(ctx),
+				      "torture_user_data",
+				      ok,
+				      done,
+				      "failed to set OptionUserData");
+
+	torture_comment(tctx,
+			"Testing smbc_(set|get)OptionSmbEncryptionLevel\n");
+	smbc_setOptionSmbEncryptionLevel(ctx, SMBC_ENCRYPTLEVEL_REQUEST);
+	torture_assert_int_equal_goto(tctx,
+				      smbc_getOptionSmbEncryptionLevel(ctx),
+				      SMBC_ENCRYPTLEVEL_REQUEST,
+				      ok,
+				      done,
+				      "failed to set OptionSmbEncryptionLevel");
+
+	torture_comment(tctx, "Testing smbc_(set|get)OptionCaseSensitive\n");
+	smbc_setOptionCaseSensitive(ctx, false);
+	torture_assert_goto(tctx,
+			    !smbc_getOptionCaseSensitive(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionCaseSensitive");
+
+	torture_comment(tctx,
+			"Testing smbc_(set|get)OptionBrowseMaxLmbCount\n");
+	smbc_setOptionBrowseMaxLmbCount(ctx, 2);
+	torture_assert_int_equal_goto(tctx,
+				      smbc_getOptionBrowseMaxLmbCount(ctx),
+				      2,
+				      ok,
+				      done,
+				      "failed to set OptionBrowseMaxLmbCount");
+
+	torture_comment(tctx,
+		       "Testing smbc_(set|get)OptionUrlEncodeReaddirEntries\n");
+	smbc_setOptionUrlEncodeReaddirEntries(ctx, true);
+	torture_assert_goto(tctx,
+			    smbc_getOptionUrlEncodeReaddirEntries(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionUrlEncodeReaddirEntries");
+
+	torture_comment(tctx,
+			"Testing smbc_(set|get)OptionOneSharePerServer\n");
+	smbc_setOptionOneSharePerServer(ctx, true);
+	torture_assert_goto(tctx,
+			    smbc_getOptionOneSharePerServer(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionOneSharePerServer");
+
+	torture_comment(tctx, "Testing smbc_(set|get)OptionUseKerberos\n");
+	smbc_setOptionUseKerberos(ctx, false);
+	torture_assert_goto(tctx,
+			    !smbc_getOptionUseKerberos(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionUseKerberos");
+
+	torture_comment(tctx,
+			"Testing smbc_(set|get)OptionFallbackAfterKerberos\n");
+	smbc_setOptionFallbackAfterKerberos(ctx, false);
+	torture_assert_goto(tctx,
+			    !smbc_getOptionFallbackAfterKerberos(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionFallbackAfterKerberos");
+
+	torture_comment(tctx,
+			"Testing smbc_(set|get)OptionNoAutoAnonymousLogin\n");
+	smbc_setOptionNoAutoAnonymousLogin(ctx, true);
+	torture_assert_goto(tctx,
+			    smbc_getOptionNoAutoAnonymousLogin(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionNoAutoAnonymousLogin");
+
+	torture_comment(tctx, "Testing smbc_(set|get)OptionUseCCache\n");
+	smbc_setOptionUseCCache(ctx, true);
+	torture_assert_goto(tctx,
+			    smbc_getOptionUseCCache(ctx),
+			    ok,
+			    done,
+			    "failed to set OptionUseCCache");
+
+done:
 	smbc_free_context(ctx, 1);
 
-	return true;
+	return ok;
 }
 
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
