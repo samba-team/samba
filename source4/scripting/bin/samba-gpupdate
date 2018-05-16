@@ -77,12 +77,12 @@ if __name__ == "__main__":
                                                             lp.configfile)
     gp_extensions = []
     if opts.target == 'Computer':
-        gp_extensions.append(gp_sec_ext(logger))
+        gp_extensions.append(gp_sec_ext(logger, lp, creds, store))
         for ext in machine_exts:
-            gp_extensions.append(ext(logger))
+            gp_extensions.append(ext(logger, lp, creds, store))
     elif opts.target == 'User':
         for ext in user_exts:
-            gp_extensions.append(ext(logger))
+            gp_extensions.append(ext(logger, lp, creds, store))
 
     if not opts.unapply:
         apply_gp(lp, creds, logger, store, gp_extensions)
