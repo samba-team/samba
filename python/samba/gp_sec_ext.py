@@ -139,12 +139,6 @@ class gp_sec_ext(gp_inf_ext):
         return os.path.join(rootpath,
                             "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
 
-    def listmachpol(self, rootpath):
-        return os.path.join(rootpath, "Machine/Registry.pol")
-
-    def listuserpol(self, rootpath):
-        return os.path.join(rootpath, "User/Registry.pol")
-
     def apply_map(self):
         if self.lp.get('server role') != 'active directory domain controller':
             return {}
