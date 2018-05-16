@@ -21,6 +21,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "lib/util_file.h"
+#include "lib/util/memcache.h"
 
 /****************************************************************************
  Normalise for DOS usage.
@@ -167,48 +168,108 @@ dfree_done:
 
 /****************************************************************************
  Potentially returned cached dfree info.
+
+ Depending on the file system layout and file system features, the free space
+ information can be different for different sub directories underneath a SMB
+ share. Store the cache information in memcache using the query path as the
+ key to accomodate this.
 ****************************************************************************/
 
 uint64_t get_dfree_info(connection_struct *conn, struct smb_filename *fname,
 			uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	int dfree_cache_time = lp_dfree_cache_time(SNUM(conn));
-	struct dfree_cached_info *dfc = conn->dfree_info;
+	struct dfree_cached_info *dfc = NULL;
+	struct dfree_cached_info dfc_new = { 0 };
 	uint64_t dfree_ret;
+	char tmpbuf[PATH_MAX];
+	char *full_path = NULL;
+	char *to_free = NULL;
+	char *key_path = NULL;
+	size_t len;
+	DATA_BLOB key, value;
+	bool found;
 
 	if (!dfree_cache_time) {
 		return sys_disk_free(conn, fname, bsize, dfree, dsize);
 	}
 
+	len = full_path_tos(conn->connectpath,
+			    fname->base_name,
+			    tmpbuf,
+			    sizeof(tmpbuf),
+			    &full_path,
+			    &to_free);
+	if (len == -1) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	if (VALID_STAT(fname->st) && S_ISREG(fname->st.st_ex_mode)) {
+		/*
+		 * In case of a file use the parent directory to reduce number
+		 * of cache entries.
+		 */
+		bool ok;
+
+		ok = parent_dirname(talloc_tos(),
+				    full_path,
+				    &key_path,
+				    NULL);
+		TALLOC_FREE(to_free); /* We're done with full_path */
+
+		if (!ok) {
+			errno = ENOMEM;
+			return -1;
+		}
+
+		/*
+		 * key_path is always a talloced object.
+		 */
+		to_free = key_path;
+	} else {
+		/*
+		 * key_path might not be a talloced object; rely on
+		 * to_free set from full_path_tos.
+		 */
+		key_path = full_path;
+	}
+
+	key = data_blob_const(key_path, strlen(key_path));
+	found = memcache_lookup(smbd_memcache(),
+				DFREE_CACHE,
+				key,
+				&value);
+	dfc = found ? (struct dfree_cached_info *)value.data : NULL;
+
 	if (dfc && (conn->lastused - dfc->last_dfree_time < dfree_cache_time)) {
-		/* Return cached info. */
+		DBG_DEBUG("Returning dfree cache entry for %s\n", key_path);
 		*bsize = dfc->bsize;
 		*dfree = dfc->dfree;
 		*dsize = dfc->dsize;
-		return dfc->dfree_ret;
+		dfree_ret = dfc->dfree_ret;
+		goto out;
 	}
 
 	dfree_ret = sys_disk_free(conn, fname, bsize, dfree, dsize);
 
 	if (dfree_ret == (uint64_t)-1) {
 		/* Don't cache bad data. */
-		return dfree_ret;
+		goto out;
 	}
 
-	/* No cached info or time to refresh. */
-	if (!dfc) {
-		dfc = talloc(conn, struct dfree_cached_info);
-		if (!dfc) {
-			return dfree_ret;
-		}
-		conn->dfree_info = dfc;
-	}
+	DBG_DEBUG("Creating dfree cache entry for %s\n", key_path);
+	dfc_new.bsize = *bsize;
+	dfc_new.dfree = *dfree;
+	dfc_new.dsize = *dsize;
+	dfc_new.dfree_ret = dfree_ret;
+	dfc_new.last_dfree_time = conn->lastused;
+	memcache_add(smbd_memcache(),
+		     DFREE_CACHE,
+		     key,
+		     data_blob_const(&dfc_new, sizeof(dfc_new)));
 
-	dfc->bsize = *bsize;
-	dfc->dfree = *dfree;
-	dfc->dsize = *dsize;
-	dfc->dfree_ret = dfree_ret;
-	dfc->last_dfree_time = conn->lastused;
-
+out:
+	TALLOC_FREE(to_free);
 	return dfree_ret;
 }
