@@ -102,9 +102,46 @@ char* audit_get_timestamp(TALLOC_CTX *frame)
 	return ts;
 }
 
-#ifdef HAVE_JANSSON
+/*
+ * @brief write an audit message to the audit logs.
+ *
+ * Write a human readable text audit message to the samba logs.
+ *
+ * @param prefix Text to be printed at the start of the log line
+ * @param message The content of the log line.
+ * @param debub_class The debug class to log the message with.
+ * @param debug_level The debug level to log the message with.
+ */
+void audit_log_human_text(const char* prefix,
+			  const char* message,
+			  int debug_class,
+			  int debug_level)
+{
+	DEBUGC(debug_class, debug_level, ("%s %s\n", prefix, message));
+}
 
-#include "system/time.h"
+#ifdef HAVE_JANSSON
+/*
+ * @brief write a json object to the samba audit logs.
+ *
+ * Write the json object to the audit logs as a formatted string
+ *
+ * @param prefix Text to be printed at the start of the log line
+ * @param message The content of the log line.
+ * @param debub_class The debug class to log the message with.
+ * @param debug_level The debug level to log the message with.
+ */
+void audit_log_json(
+	const char* prefix,
+	struct json_object* message,
+	int debug_class,
+	int debug_level)
+{
+	TALLOC_CTX *ctx = talloc_new(NULL);
+	char *s = json_to_string(ctx, message);
+	DEBUGC(debug_class, debug_level, ("JSON %s: %s\n", prefix, s));
+	TALLOC_FREE(ctx);
+}
 
 /*
  * @brief get a connection to the messaging event server.
@@ -192,14 +229,18 @@ void audit_message_send(
 	struct imessaging_context *msg_ctx,
 	const char *server_name,
 	uint32_t message_type,
-	const char *message)
+	struct json_object *message)
 {
 	struct server_id event_server;
 	NTSTATUS status;
-	DATA_BLOB message_blob = data_blob_string_const(message);
+
+	const char *message_string = NULL;
+	DATA_BLOB message_blob = data_blob_null;
+	TALLOC_CTX *ctx = talloc_new(NULL);
 
 	if (msg_ctx == NULL) {
 		DBG_DEBUG("No messaging context\n");
+		TALLOC_FREE(ctx);
 		return;
 	}
 
@@ -213,9 +254,12 @@ void audit_message_send(
 		DBG_ERR("get_event_server for %s returned (%s)\n",
 			server_name,
 			nt_errstr(status));
+		TALLOC_FREE(ctx);
 		return;
 	}
 
+	message_string = json_to_string(ctx, message);
+	message_blob = data_blob_string_const(message_string);
 	status = imessaging_send(
 		msg_ctx,
 		event_server,
@@ -232,6 +276,7 @@ void audit_message_send(
 			DBG_ERR("get_event_server for %s returned (%s)\n",
 				server_name,
 				nt_errstr(status));
+			TALLOC_FREE(ctx);
 			return;
 		}
 		imessaging_send(
@@ -240,6 +285,7 @@ void audit_message_send(
 			message_type,
 			&message_blob);
 	}
+	TALLOC_FREE(ctx);
 }
 
 /*
@@ -767,5 +813,65 @@ char *json_to_string(TALLOC_CTX *mem_ctx, struct json_object *object)
 	free(json);
 
 	return json_string;
+}
+
+/*
+ * @brief get a json array named "name" from the json object.
+ *
+ * Get the array attribute named name, creating it if it does not exist.
+ *
+ * @param object the json object.
+ * @param name the name of the array attribute
+ *
+ * @return The array object, will be created if it did not exist.
+ */
+struct json_object json_get_array(struct json_object *object, const char* name)
+{
+
+	struct json_object array = json_new_array();
+	json_t *a = NULL;
+
+	if (object->error) {
+		array.error = true;
+		return array;
+	}
+
+	a = json_object_get(object->root, name);
+	if (a == NULL) {
+		return array;
+	}
+	json_array_extend(array.root, a);
+
+	return array;
+}
+
+/*
+ * @brief get a json object named "name" from the json object.
+ *
+ * Get the object attribute named name, creating it if it does not exist.
+ *
+ * @param object the json object.
+ * @param name the name of the object attribute
+ *
+ * @return The object, will be created if it did not exist.
+ */
+struct json_object json_get_object(struct json_object *object, const char* name)
+{
+
+	struct json_object o = json_new_object();
+	json_t *v = NULL;
+
+	if (object->error) {
+		o.error = true;
+		return o;
+	}
+
+	v = json_object_get(object->root, name);
+	if (v == NULL) {
+		return o;
+	}
+	json_object_update(o.root, v);
+
+	return o;
 }
 #endif

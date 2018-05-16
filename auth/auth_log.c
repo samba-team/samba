@@ -82,31 +82,13 @@ static void log_json(struct imessaging_context *msg_ctx,
 		     int debug_class,
 		     int debug_level)
 {
-	char* json = NULL;
-
-	if (object->error) {
-		return;
-	}
-
-	json = json_dumps(object->root, 0);
-	if (json == NULL) {
-		DBG_ERR("Unable to convert JSON object to string\n");
-		object->error = true;
-		return;
-	}
-
-	DEBUGC(debug_class, debug_level, ("JSON %s: %s\n", type, json));
+	audit_log_json(type, object, debug_class, debug_level);
 	if (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx)) {
 		audit_message_send(msg_ctx,
 				   AUTH_EVENT_NAME,
 				   MSG_AUTH_LOG,
-				   json);
+				   object);
 	}
-
-	if (json) {
-		free(json);
-	}
-
 }
 
 /*

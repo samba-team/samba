@@ -492,6 +492,141 @@ static void test_json_to_string(void **state)
 }
 #endif
 
+static void test_json_get_array(void **state)
+{
+	struct json_object object;
+	struct json_object array;
+	struct json_object stored_array = json_new_array();
+	json_t *value = NULL;
+	json_t *o = NULL;
+	struct json_object o1;
+	struct json_object o2;
+
+	object = json_new_object();
+
+	array = json_get_array(&object, "not-there");
+	assert_false(array.error);
+	assert_non_null(array.root);
+	assert_true(json_is_array(array.root));
+	json_free(&array);
+
+	o1 = json_new_object();
+	json_add_string(&o1, "value", "value-one");
+	json_add_object(&stored_array, NULL, &o1);
+	json_add_object(&object, "stored_array", &stored_array);
+
+	array = json_get_array(&object, "stored_array");
+	assert_false(array.error);
+	assert_non_null(array.root);
+	assert_true(json_is_array(array.root));
+
+	assert_int_equal(1, json_array_size(array.root));
+
+	o = json_array_get(array.root, 0);
+	assert_non_null(o);
+	assert_true(json_is_object(o));
+
+	value = json_object_get(o, "value");
+	assert_non_null(value);
+	assert_true(json_is_string(value));
+
+	assert_string_equal("value-one", json_string_value(value));
+	json_free(&array);
+
+	/*
+	 * Now update the array and add it back to the object
+	 */
+	array = json_get_array(&object, "stored_array");
+	assert_true(json_is_array(array.root));
+	o2 = json_new_object();
+	json_add_string(&o2, "value", "value-two");
+	assert_false(o2.error);
+	json_add_object(&array, NULL, &o2);
+	assert_true(json_is_array(array.root));
+	json_add_object(&object, "stored_array", &array);
+	assert_true(json_is_array(array.root));
+
+	array = json_get_array(&object, "stored_array");
+	assert_non_null(array.root);
+	assert_true(json_is_array(array.root));
+	assert_false(array.error);
+	assert_true(json_is_array(array.root));
+
+	assert_int_equal(2, json_array_size(array.root));
+
+	o = json_array_get(array.root, 0);
+	assert_non_null(o);
+	assert_true(json_is_object(o));
+
+	assert_non_null(value);
+	assert_true(json_is_string(value));
+
+	assert_string_equal("value-one", json_string_value(value));
+
+	o = json_array_get(array.root, 1);
+	assert_non_null(o);
+	assert_true(json_is_object(o));
+
+	value = json_object_get(o, "value");
+	assert_non_null(value);
+	assert_true(json_is_string(value));
+
+	assert_string_equal("value-two", json_string_value(value));
+
+	json_free(&array);
+	json_free(&object);
+}
+
+static void test_json_get_object(void **state)
+{
+	struct json_object object;
+	struct json_object o1;
+	struct json_object o2;
+	struct json_object o3;
+	json_t *value = NULL;
+
+	object = json_new_object();
+
+	o1 = json_get_object(&object, "not-there");
+	assert_false(o1.error);
+	assert_non_null(o1.root);
+	assert_true(json_is_object(o1.root));
+	json_free(&o1);
+
+	o1 = json_new_object();
+	json_add_string(&o1, "value", "value-one");
+	json_add_object(&object, "stored_object", &o1);
+
+	o2 = json_get_object(&object, "stored_object");
+	assert_false(o2.error);
+	assert_non_null(o2.root);
+	assert_true(json_is_object(o2.root));
+
+	value = json_object_get(o2.root, "value");
+	assert_non_null(value);
+	assert_true(json_is_string(value));
+
+	assert_string_equal("value-one", json_string_value(value));
+
+	json_add_string(&o2, "value", "value-two");
+	json_add_object(&object, "stored_object", &o2);
+
+
+	o3 = json_get_object(&object, "stored_object");
+	assert_false(o3.error);
+	assert_non_null(o3.root);
+	assert_true(json_is_object(o3.root));
+
+	value = json_object_get(o3.root, "value");
+	assert_non_null(value);
+	assert_true(json_is_string(value));
+
+	assert_string_equal("value-two", json_string_value(value));
+
+	json_free(&o3);
+	json_free(&object);
+}
+
 static void test_audit_get_timestamp(void **state)
 {
 	const char *t = NULL;
@@ -549,6 +684,8 @@ int main(int argc, const char **argv)
 		cmocka_unit_test(test_json_add_sid),
 		cmocka_unit_test(test_json_add_guid),
 		cmocka_unit_test(test_json_to_string),
+		cmocka_unit_test(test_json_get_array),
+		cmocka_unit_test(test_json_get_object),
 #endif
 		cmocka_unit_test(test_audit_get_timestamp),
 	};
