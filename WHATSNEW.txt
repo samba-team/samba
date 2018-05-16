@@ -1,4 +1,95 @@
                    =============================
+                   Release Notes for Samba 4.8.2
+                            May 16, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.8 release series.
+
+Major bug fixes include:
+------------------------
+
+   o After update to 4.8.0 DC failed with "Failed to find our own
+     NTDS Settings objectGUID" (bug #13335).
+
+Changes since 4.8.1:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13380: s3: smbd: Generic fix for incorrect reporting of stream dos
+     attributes on a directory.
+   * BUG 13412: ceph: VFS: Add asynchronous fsync to ceph module, fake using
+     synchronous call.
+   * BUG 13419: s3: libsmbclient: Fix hard-coded connection error return of
+     ETIMEDOUT.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13306: ldb: Release ldb 1.3.3:
+     * Fix failure to upgrade to the GUID index DB format.
+     * Add tests for GUID index behaviour.
+   * BUG 13420: s4-lsa: Fix use-after-free in LSA server.
+   * BUG 13430: winbindd: Do re-connect if the RPC call fails in the passdb
+     case.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13416: s3:cleanupd: Sends MSG_SMB_UNLOCK twice to interested peers.
+   * BUG 13414: s3:cleanupd: Use MSG_SMB_BRL_VALIDATE to signal cleanupd
+     unclean process shutdown.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13425: vfs_ceph: add fake async pwrite/pread send/recv hooks.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13411: ctdb-client: Remove ununsed functions from old client code.
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 13395: printing: Return the same error code as windows does on upload
+     failures.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13335: After update to 4.8.0 DC failed with "Failed to find our own
+     NTDS Settings objectGUID".
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13400: nsswitch: Fix memory leak in winbind_open_pipe_sock() when the
+     privileged pipe is not accessable.
+   * BUG 13420: s4:lsa_lookup: remove TALLOC_FREE(state) after all
+     dcesrv_lsa_Lookup{Names,Sids}_base_map() calls.
+
+o  Vandana Rungta <vrungta@amazon.com>
+   * BUG 13424: s3: VFS: Fix memory leak in vfs_ceph.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13407: rpc_server: Fix NetSessEnum with stale sessions.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13417: s3:smbspool: Fix cmdline argument handling.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.8.1
                            April 26, 2018
                    =============================
@@ -103,8 +194,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.8.0
