@@ -195,22 +195,27 @@ static PyObject *py_net_change_password(py_net_Object *self, PyObject *args, PyO
 
 	mem_ctx = talloc_new(ev);
 	if (mem_ctx == NULL) {
+		PyMem_Free(discard_const_p(char, newpass));
+		PyMem_Free(discard_const_p(char, oldpass));
 		PyErr_NoMemory();
 		return NULL;
 	}
 
 	status = libnet_ChangePassword(self->libnet_ctx, mem_ctx, &r);
+
+	PyMem_Free(discard_const_p(char, newpass));
+	PyMem_Free(discard_const_p(char, oldpass));
+
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetNTSTATUS_and_string(status,
 					     r.generic.out.error_string
 					     ? r.generic.out.error_string
 					     : nt_errstr(status));
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
 	talloc_free(mem_ctx);
-	PyMem_Free(discard_const_p(char,newpass));
-	PyMem_Free(discard_const_p(char,oldpass));
 	Py_RETURN_NONE;
 }
 
