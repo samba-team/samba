@@ -1198,6 +1198,11 @@
 </refsect3>
 
 <refsect3>
+	<title>user getgroups <replaceable>username</replaceable></title>
+	<para>Get the direct group memberships of a user account.</para>
+</refsect3>
+
+<refsect3>
 	<title>user show <replaceable>username</replaceable> [options]</title>
 	<para>Display a user AD object.</para>
 
