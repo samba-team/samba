@@ -2073,7 +2073,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if str(attrname).lower() == 'replpropertymetadata':
                 if self.has_replmetadata_zero_invocationid(dn, obj[attrname][0]):
                     error_count += 1
-                    self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname])
+                    self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname][0])
                     # We don't continue, as we may also have other fixes for this attribute
                     # based on what other attributes we see.
 
