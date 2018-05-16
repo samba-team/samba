@@ -427,7 +427,7 @@ def gpo_version(lp, path):
     return int(gpo.gpo_get_sysvol_gpt_version(gpt_path)[1])
 
 
-def apply_gp(lp, creds, logger, store, gp_extensions):
+def apply_gp(lp, creds, logger, store, gp_extensions, force=False):
     gp_db = store.get_gplog(creds.get_username())
     dc_hostname = get_dc_hostname(creds, lp)
     gpos = get_gpo_list(dc_hostname, creds, lp)
@@ -439,16 +439,21 @@ def apply_gp(lp, creds, logger, store, gp_extensions):
                      % dc_hostname)
         return
 
-    changed_gpos = []
-    for gpo_obj in gpos:
-        if not gpo_obj.file_sys_path:
-            continue
-        guid = gpo_obj.name
-        path = check_safe_path(gpo_obj.file_sys_path).upper()
-        version = gpo_version(lp, path)
-        if version != store.get_int(guid):
-            logger.info('GPO %s has changed' % guid)
-            changed_gpos.append(gpo_obj)
+    if force:
+        changed_gpos = gpos
+        gp_db.state(GPOSTATE.ENFORCE)
+    else:
+        changed_gpos = []
+        for gpo_obj in gpos:
+            if not gpo_obj.file_sys_path:
+                continue
+            guid = gpo_obj.name
+            path = check_safe_path(gpo_obj.file_sys_path).upper()
+            version = gpo_version(lp, path)
+            if version != store.get_int(guid):
+                logger.info('GPO %s has changed' % guid)
+                changed_gpos.append(gpo_obj)
+        gp_db.state(GPOSTATE.APPLY)
 
     store.start()
     for ext in gp_extensions:
