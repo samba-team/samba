@@ -405,11 +405,12 @@ static void test_modify_of_objectSID_replicated(void **state)
 	assert_non_null(request);
 	original_request = request;
 
-	ldb_request_add_control(
+	rc = ldb_request_add_control(
 		request,
 		DSDB_CONTROL_REPLICATED_UPDATE_OID,
 		false,
 		NULL);
+	assert_int_equal(rc, LDB_SUCCESS);
 
 	rc = unique_object_sids_modify(test_ctx->module, request);
 
