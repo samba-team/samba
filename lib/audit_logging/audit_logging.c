@@ -569,7 +569,7 @@ void json_add_version(struct json_object *object, int major, int minor)
 void json_add_timestamp(struct json_object *object)
 {
 	char buffer[40];	/* formatted time less usec and timezone */
-	char timestamp[50];	/* the formatted ISO 8601 time stamp	 */
+	char timestamp[65];	/* the formatted ISO 8601 time stamp	 */
 	char tz[10];		/* formatted time zone			 */
 	struct tm* tm_info;	/* current local time			 */
 	struct timeval tv;	/* current system time			 */
