@@ -274,10 +274,10 @@ out:
  Setup the word count and byte count for a smb message.
 ********************************************************************/
 
-int srv_set_message(char *buf,
-                        int num_words,
-                        int num_bytes,
-                        bool zero)
+size_t srv_set_message(char *buf,
+		       size_t num_words,
+		       size_t num_bytes,
+		       bool zero)
 {
 	if (zero && (num_words || num_bytes)) {
 		memset(buf + smb_size,'\0',num_words*2 + num_bytes);

@@ -3926,9 +3926,9 @@ out:
  Setup readX header.
 ****************************************************************************/
 
-int setup_readX_header(char *outbuf, size_t smb_maxcnt)
+size_t setup_readX_header(char *outbuf, size_t smb_maxcnt)
 {
-	int outsize;
+	size_t outsize;
 
 	outsize = srv_set_message(outbuf,12,smb_maxcnt + 1 /* padding byte */,
 				  False);

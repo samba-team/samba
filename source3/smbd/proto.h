@@ -293,7 +293,12 @@ struct timespec get_change_timespec(connection_struct *conn,
 
 bool use_nt_status(void);
 void error_packet_set(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS ntstatus, int line, const char *file);
-int error_packet(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS ntstatus, int line, const char *file);
+size_t error_packet(char *outbuf,
+		    uint8_t eclass,
+		    uint32_t ecode,
+		    NTSTATUS ntstatus,
+		    int line,
+		    const char *file);
 void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
 		    int line, const char *file);
 void reply_force_dos_error(struct smb_request *req, uint8_t eclass, uint32_t ecode,
@@ -825,10 +830,10 @@ bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 		  bool no_signing, uint32_t seqnum,
 		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd);
-int srv_set_message(char *buf,
-                        int num_words,
-                        int num_bytes,
-                        bool zero);
+size_t srv_set_message(char *buf,
+		       size_t num_words,
+		       size_t num_bytes,
+		       bool zero);
 void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 				      uint64_t mid);
 bool schedule_deferred_open_message_smb(struct smbXsrv_connection *xconn,
@@ -955,7 +960,7 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 			    size_t smb_maxcnt);
 void reply_readbraw(struct smb_request *req);
 void reply_lockread(struct smb_request *req);
-int setup_readX_header(char *outbuf, size_t smb_maxcnt);
+size_t setup_readX_header(char *outbuf, size_t smb_maxcnt);
 void reply_read(struct smb_request *req);
 void reply_read_and_X(struct smb_request *req);
 void error_to_writebrawerr(struct smb_request *req);

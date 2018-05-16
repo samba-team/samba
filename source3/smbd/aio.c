@@ -239,7 +239,7 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	struct aio_extra *aio_ex = tevent_req_callback_data(
 		req, struct aio_extra);
 	files_struct *fsp = aio_ex->fsp;
-	int outsize;
+	size_t outsize;
 	char *outbuf = (char *)aio_ex->outbuf.data;
 	ssize_t nread;
 	struct vfs_aio_state vfs_aio_state;
@@ -276,7 +276,15 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 			   (int)aio_ex->nbyte, (int)nread ) );
 
 	}
-	_smb_setlen_large(outbuf, outsize - 4);
+
+	if (outsize <= 4) {
+		DBG_INFO("Invalid outsize (%zu)\n", outsize);
+		TALLOC_FREE(aio_ex);
+		return;
+	}
+	outsize -= 4;
+	_smb_setlen_large(outbuf, outsize);
+
 	show_msg(outbuf);
 	if (!srv_send_smb(aio_ex->smbreq->xconn, outbuf,
 			  true, aio_ex->smbreq->seqnum+1,
