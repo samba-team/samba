@@ -2247,7 +2247,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       uint16_t *_validation_level,
 			       union netr_Validation **_validation)
 {
-	uint16_t validation_level;
+	uint16_t validation_level = 0;
 	union netr_Validation *validation = NULL;
 	NTSTATUS result;
 
