@@ -457,7 +457,9 @@ struct tevent_req *ctdb_tunnel_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!tevent_timeval_is_zero(&timeout)) {
-		tevent_req_set_endtime(req, ev, timeout);
+		if (!tevent_req_set_endtime(req, ev, timeout)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	subreq = comm_write_send(state, ev, tctx->client->comm,
@@ -619,7 +621,9 @@ struct tevent_req *ctdb_tunnel_reply_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!tevent_timeval_is_zero(&timeout)) {
-		tevent_req_set_endtime(req, ev, timeout);
+		if (!tevent_req_set_endtime(req, ev, timeout)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	subreq = comm_write_send(state, ev, tctx->client->comm, pkt, pkt_len);

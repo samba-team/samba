@@ -247,7 +247,9 @@ struct tevent_req *sock_client_msg_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, sock_client_msg_done, req);
 
 	if (! timeval_is_zero(&timeout)) {
-		tevent_req_set_endtime(req, ev, timeout);
+		if (!tevent_req_set_endtime(req, ev, timeout)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	return req;
