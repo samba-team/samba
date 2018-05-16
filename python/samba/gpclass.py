@@ -308,8 +308,13 @@ class gp_ext(object):
     def read(self, policy):
         pass
 
-    def parse(self, afile, conn):
+    def parse(self, afile):
         # Fixing the bug where only some Linux Boxes capitalize MACHINE
+        sysvol = self.lp.get("path", "sysvol")
+        if sysvol:
+            local_path = sysvol
+        else:
+            local_path = self.lp.cache_path('gpo_cache')
         try:
             blist = afile.split('/')
             index = None
@@ -323,18 +328,18 @@ class gp_ext(object):
                             blist[idx].capitalize(),
                             blist[idx].lower()
                         ]:
-                bfile = '/'.join(blist[:idx]) + '/' + case + '/' + \
-                    '/'.join(blist[idx+1:])
-                try:
-                    return self.read(conn.loadfile(bfile.replace('/', '\\')))
-                except NTSTATUSError:
+                bfile = ('/'.join(blist[:idx]) + '/' + case + '/' + \
+                    '/'.join(blist[idx+1:])).replace('\\', '/')
+                data_file = os.path.join(local_path, bfile)
+                if os.path.exists(data_file):
+                    return self.read(open(data_file, 'r').read())
+                else:
                     continue
         except ValueError:
-            try:
-                return self.read(conn.loadfile(afile.replace('/', '\\')))
-            except Exception as e:
-                self.logger.error(str(e))
-                return None
+            data_file = os.path.join(local_path, afile).replace('\\', '/')
+            if os.path.exists(data_file):
+                return self.read(open(data_file, 'r').read())
+        return None
 
     @abstractmethod
     def __str__(self):
@@ -440,11 +445,6 @@ def gpo_version(lp, path, sysvol):
 def apply_gp(lp, creds, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
     dc_hostname = get_dc_hostname(creds, lp)
-    try:
-        conn =  smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
-    except:
-        logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
-        raise
     ads, gpos = get_gpo_list(dc_hostname, creds, lp)
     sysvol = lp.get("path", "sysvol")
     if not sysvol:
@@ -465,7 +465,7 @@ def apply_gp(lp, creds, logger, store, gp_extensions):
         store.start()
         for ext in gp_extensions:
             try:
-                ext.parse(ext.list(path), conn)
+                ext.parse(ext.list(path))
             except Exception as e:
                 logger.error('Failed to parse gpo %s for extension %s' % \
                     (guid, str(ext)))
