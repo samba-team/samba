@@ -29,7 +29,7 @@
 
 
 /** Get the netbios name used for making connections */
-char *
+const char *
 smbc_getNetbiosName(SMBCCTX *c)
 {
         return c->netbios_name;
@@ -37,7 +37,7 @@ smbc_getNetbiosName(SMBCCTX *c)
 
 /** Set the netbios name used for making connections */
 void
-smbc_setNetbiosName(SMBCCTX *c, char * netbios_name)
+smbc_setNetbiosName(SMBCCTX *c, const char *netbios_name)
 {
 	SAFE_FREE(c->netbios_name);
 	if (netbios_name) {
@@ -46,7 +46,7 @@ smbc_setNetbiosName(SMBCCTX *c, char * netbios_name)
 }
 
 /** Get the workgroup used for making connections */
-char *
+const char *
 smbc_getWorkgroup(SMBCCTX *c)
 {
         return c->workgroup;
@@ -54,7 +54,7 @@ smbc_getWorkgroup(SMBCCTX *c)
 
 /** Set the workgroup used for making connections */
 void
-smbc_setWorkgroup(SMBCCTX *c, char * workgroup)
+smbc_setWorkgroup(SMBCCTX *c, const char *workgroup)
 {
 	SAFE_FREE(c->workgroup);
 	if (workgroup) {
@@ -63,7 +63,7 @@ smbc_setWorkgroup(SMBCCTX *c, char * workgroup)
 }
 
 /** Get the username used for making connections */
-char *
+const char *
 smbc_getUser(SMBCCTX *c)
 {
         return c->user;

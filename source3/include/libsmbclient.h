@@ -537,22 +537,22 @@ int
 smbc_setConfiguration(SMBCCTX *c, const char *file);
 
 /** Get the netbios name used for making connections */
-char *
+const char *
 smbc_getNetbiosName(SMBCCTX *c);
 
 /** Set the netbios name used for making connections */
 void
-smbc_setNetbiosName(SMBCCTX *c, char * netbios_name);
+smbc_setNetbiosName(SMBCCTX *c, const char *netbios_name);
 
 /** Get the workgroup used for making connections */
-char *
+const char *
 smbc_getWorkgroup(SMBCCTX *c);
 
 /** Set the workgroup used for making connections */
-void smbc_setWorkgroup(SMBCCTX *c, char * workgroup);
+void smbc_setWorkgroup(SMBCCTX *c, const char *workgroup);
 
 /** Get the username used for making connections */
-char *
+const char *
 smbc_getUser(SMBCCTX *c);
 
 /** Set the username used for making connections */
