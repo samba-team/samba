@@ -305,32 +305,16 @@ class gp_ext(object):
     def read(self, policy):
         pass
 
-    def parse(self, afile, ldb, conn, gp_db, lp):
+    def parse(self, afile, ldb, gp_db, lp):
         self.ldb = ldb
         self.gp_db = gp_db
         self.lp = lp
 
-        # Fixing the bug where only some Linux Boxes capitalize MACHINE
-        try:
-            blist = afile.split('/')
-            idx = afile.lower().split('/').index('machine')
-            for case in [
-                            blist[idx].upper(),
-                            blist[idx].capitalize(),
-                            blist[idx].lower()
-                        ]:
-                bfile = '/'.join(blist[:idx]) + '/' + case + '/' + \
-                    '/'.join(blist[idx+1:])
-                try:
-                    return self.read(conn.loadfile(bfile.replace('/', '\\')))
-                except NTSTATUSError:
-                    continue
-        except ValueError:
-            try:
-                return self.read(conn.loadfile(afile.replace('/', '\\')))
-            except Exception as e:
-                self.logger.error(str(e))
-                return None
+        local_path = self.lp.cache_path('gpo_cache')
+        data_file = os.path.join(local_path, afile).replace('\\', '/')
+        if os.path.exists(data_file):
+            return self.read(open(data_file, 'r').read())
+        return None
 
     @abstractmethod
     def __str__(self):
@@ -466,11 +450,6 @@ def gpo_version(lp, path, sysvol):
 def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
     dc_hostname = get_dc_hostname(creds, lp)
-    try:
-        conn =  smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
-    except:
-        logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
-        raise
     gpos = get_gpo_list(dc_hostname, creds, lp)
     try:
         check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
@@ -494,7 +473,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         store.start()
         for ext in gp_extensions:
             try:
-                ext.parse(ext.list(path), test_ldb, conn, gp_db, lp)
+                ext.parse(ext.list(path), test_ldb, gp_db, lp)
             except Exception as e:
                 logger.error('Failed to parse gpo %s for extension %s' % \
                     (guid, str(ext)))
