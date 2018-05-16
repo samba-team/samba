@@ -1,6 +1,6 @@
-This directory should contain executable programs to handle CTDB event
-notifications.  The first and only argument passed to each program is
-the event, which is one of:
+This directory should contain executable programs ending in ".script"
+to handle CTDB event notifications.  The first and only argument
+passed to each program is the event, which is one of:
 
   init, setup, startup, unhealthy, healthy
 
@@ -34,5 +34,3 @@ Alternatively, email could be sent:
           mail -s "$(hostname) is HEALTHY" foo@example.com </dev/null >/dev/null 2>&1
           ;;
   esac
-
-When adding programs please note the exclusion patterns in notify.sh.

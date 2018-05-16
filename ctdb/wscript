@@ -772,7 +772,8 @@ def build(bld):
     bld.INSTALL_FILES('${SYSCONFDIR}/sudoers.d', 'ctdb.sudoers',
                       destname='ctdb')
 
-    bld.INSTALL_FILES('${CTDB_ETCDIR}/notify.d', 'config/notify.d.README',
+    bld.INSTALL_FILES('${CTDB_ETCDIR}/events/notification',
+                      'config/notification.README',
                       destname='README')
 
     bld.install_dir(bld.env.CTDB_LOGDIR)

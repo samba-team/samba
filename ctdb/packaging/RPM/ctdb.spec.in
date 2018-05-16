@@ -128,14 +128,14 @@ mkdir -p $RPM_BUILD_ROOT%{initdir}
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 %endif
 
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/notify.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events/notification
 
 # This is a hack. All documents should be installed in /usr/share/doc.
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events/README
 cp config/events/README README.eventscripts
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/nfs-checks.d/README
 cp config/nfs-checks.d/README README.nfs-checks.d
-cp config/notify.d.README README.notify.d
+cp config/notification.README README.notification
 
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
@@ -155,7 +155,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb.tunables
 %config(noreplace) %{_sysconfdir}/ctdb/script.options
 %{_sysconfdir}/ctdb/notify.sh
-%dir %{_sysconfdir}/ctdb/notify.d
+%dir %{_sysconfdir}/ctdb/events/notification
 %config(noreplace) %{_sysconfdir}/ctdb/debug-hung-script.sh
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
 %config(noreplace) %{_sysconfdir}/ctdb/debug_locks.sh
@@ -168,10 +168,8 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{initdir}/ctdb
 %endif
 
-%attr(755,root,root) %{_sysconfdir}/ctdb/notify.d
-
 %doc README COPYING
-%doc README.eventscripts README.notify.d
+%doc README.eventscripts README.notification
 %doc doc/recovery-process.txt
 %doc doc/cluster_mutex_helper.txt
 %doc doc/*.html

@@ -970,9 +970,10 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
     </para>
 
     <para>
-      The notification mechanism runs all executable files in
-      <filename>/usr/local/etc/ctdb/notify.d/</filename>, ignoring any
-      failures and continuing to run all files.
+      The notification mechanism runs all executable files ending in
+      ".script" in
+      <filename>/usr/local/etc/ctdb/events/notification/</filename>,
+      ignoring any failures and continuing to run all files.
     </para>
 
     <para>
