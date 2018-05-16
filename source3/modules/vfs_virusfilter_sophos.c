@@ -234,7 +234,7 @@ static virusfilter_result virusfilter_sophos_scan(
 	virusfilter_result result = VIRUSFILTER_RESULT_ERROR;
 	char *report = NULL;
 	char *reply = NULL;
-	char *reply_token, *reply_saveptr;
+	char *reply_token = NULL, *reply_saveptr = NULL;
 	int ret;
 	bool ok;
 
