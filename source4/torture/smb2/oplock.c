@@ -4873,17 +4873,20 @@ static int do_child_process(int pipefd, const char *name)
 
 	ret = fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE);
 	if (ret == -1) {
+		close(fd);
 		return 3;
 	}
 
 	ret = fcntl(fd, F_SETLEASE, F_WRLCK);
 	if (ret == -1) {
+		close(fd);
 		return 4;
 	}
 
 	/* Tell the parent we're ready. */
 	ret = sys_write(pipefd, &c, 1);
 	if (ret != 1) {
+		close(fd);
 		return 5;
 	}
 
@@ -4893,14 +4896,17 @@ static int do_child_process(int pipefd, const char *name)
 	/* Wait for RT_SIGNAL_LEASE or SIGALRM. */
 	ret = sigsuspend(&empty_set);
 	if (ret != -1 || errno != EINTR) {
+		close(fd);
 		return 6;
 	}
 
 	if (got_alarm == 1) {
+		close(fd);
 		return 10;
 	}
 
 	if (got_break != 1) {
+		close(fd);
 		return 7;
 	}
 
@@ -4913,6 +4919,7 @@ static int do_child_process(int pipefd, const char *name)
 	/* Remove our lease. */
 	ret = fcntl(fd, F_SETLEASE, F_UNLCK);
 	if (ret == -1) {
+		close(fd);
 		return 8;
 	}
 
