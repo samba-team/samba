@@ -641,7 +641,7 @@ sub provision_raw_step1($$)
 	rndc command = true
 	dns update command = $ctx->{samba_dnsupdate}
 	spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
-	gpo update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba-gpupdate -s $ctx->{smb_conf} -H $ctx->{privatedir}/sam.ldb --target=Computer
+	gpo update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba-gpupdate -s $ctx->{smb_conf} --target=Computer
 	dreplsrv:periodic_startup_interval = 0
 	dsdb:schema update allowed = yes
 

@@ -29,11 +29,6 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 from samba import getopt as options
-from samba.auth import system_session
-try:
-    from samba.samdb import SamDB
-except:
-    SamDB = None
 from samba.gpclass import apply_gp, unapply_gp, GPOStorage
 from samba.gp_sec_ext import gp_sec_ext
 from samba.gp_ext_loader import get_gp_client_side_extensions
@@ -47,7 +42,6 @@ if __name__ == "__main__":
     parser.add_option_group(sambaopts)
     parser.add_option_group(options.VersionOptions(parser))
     credopts = options.CredentialsOptions(parser)
-    parser.add_option('-H', '--url', dest='url', help='URL for the samdb')
     parser.add_option('-X', '--unapply', help='Unapply Group Policy',
                       action='store_true')
     parser.add_option('--target', default='Computer', help='{Computer | User}',
@@ -59,14 +53,8 @@ if __name__ == "__main__":
 
     # Set the loadparm context
     lp = sambaopts.get_loadparm()
-    if not opts.url:
-        url = lp.samdb_url()
-    else:
-        url = opts.url
 
-    # Initialize the session
     creds = credopts.get_credentials(lp, fallback_machine=True)
-    session = system_session()
 
     # Set up logging
     logger = logging.getLogger('samba-gpupdate')
@@ -89,22 +77,15 @@ if __name__ == "__main__":
                                                             lp.configfile)
     gp_extensions = []
     if opts.target == 'Computer':
-        if lp.get('server role') == 'active directory domain controller':
-            gp_extensions.append(gp_sec_ext(logger))
+        gp_extensions.append(gp_sec_ext(logger))
         for ext in machine_exts:
             gp_extensions.append(ext(logger))
     elif opts.target == 'User':
         for ext in user_exts:
             gp_extensions.append(ext(logger))
 
-    # Get a live instance of Samba
-    if SamDB:
-        test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
-    else:
-        test_ldb = None
-
     if not opts.unapply:
-        apply_gp(lp, creds, test_ldb, logger, store, gp_extensions)
+        apply_gp(lp, creds, logger, store, gp_extensions)
     else:
-        unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions)
+        unapply_gp(lp, creds, logger, store, gp_extensions)
 
