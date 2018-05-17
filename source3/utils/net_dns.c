@@ -75,6 +75,7 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 
 		if (!ERR_DNS_IS_OK(err)) {
 			DEBUG(3,("DoDNSUpdate: failed to probe DNS\n"));
+			goto error;
 		}
 
 		if ((dns_response_code(resp->flags) == DNS_NO_ERROR) &&
