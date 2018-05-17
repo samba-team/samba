@@ -715,6 +715,8 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 	struct mdb_env_wrap *w;
 	struct stat st;
 	pid_t pid = getpid();
+	int fd = 0;
+	unsigned v;
 
 	if (stat(path, &st) == 0) {
 		for (w=mdb_list;w;w=w->next) {
@@ -782,7 +784,20 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 		return ldb_mdb_err_map(ret);
 	}
 
-	if (stat(path, &st) != 0) {
+	ret = mdb_env_get_fd(*env, &fd);
+	if (ret != 0) {
+		ldb_asprintf_errstring(ldb,
+				       "Could not obtain DB FD %s: %s\n",
+				       path, mdb_strerror(ret));
+		TALLOC_FREE(w);
+		return ldb_mdb_err_map(ret);
+	}
+
+	/* Just as for TDB: on exec, don't inherit the fd */
+	v = fcntl(fd, F_GETFD, 0);
+	fcntl(fd, F_SETFD, v | FD_CLOEXEC);
+
+	if (fstat(fd, &st) != 0) {
 		ldb_asprintf_errstring(
 			ldb,
 			"Could not stat %s:\n",
