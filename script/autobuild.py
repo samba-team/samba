@@ -80,9 +80,9 @@ samba_configure_params = " --picky-developer ${PREFIX} ${EXTRA_PYTHON} --with-pr
 samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
-samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX} ${EXTRA_PYTHON}"
+samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"
 samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,NONE"
-samba_libs_configure_samba = samba_libs_configure_base + " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent"
+samba_libs_configure_samba = samba_libs_configure_base + " ${EXTRA_PYTHON} --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent"
 
 if os.environ.get("AUTOBUILD_NO_EXTRA_PYTHON", "0") == "1":
     extra_python = ""
@@ -198,19 +198,19 @@ tasks = {
 
     "samba-libs" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                      ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs, "text/plain"),
+                      ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs + " ${EXTRA_PYTHON}", "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
                       ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
-                      ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs, "text/plain"),
+                      ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs + " ${EXTRA_PYTHON}", "text/plain"),
                       ("tdb-make", "cd lib/tdb && make", "text/plain"),
                       ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
-                      ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs, "text/plain"),
+                      ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs + " ${EXTRA_PYTHON}", "text/plain"),
                       ("tevent-make", "cd lib/tevent && make", "text/plain"),
                       ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs, "text/plain"),
+                      ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs + " ${EXTRA_PYTHON}", "text/plain"),
                       ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
