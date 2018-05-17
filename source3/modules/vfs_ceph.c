@@ -957,21 +957,6 @@ static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, 
 
 	DBG_DEBUG("[CEPH] fchmod(%p, %p, %d)\n", handle, fsp, mode);
 
-	/*
-	 * We need to do this due to the fact that the default POSIX ACL
-	 * chmod modifies the ACL *mask* for the group owner, not the
-	 * group owner bits directly. JRA.
-	 */
-
-	{
-		int saved_errno = errno; /* We might get ENOSYS */
-		if ((result = SMB_VFS_FCHMOD_ACL(fsp, mode)) == 0) {
-			return result;
-		}
-		/* Error - return the old errno. */
-		errno = saved_errno;
-	}
-
 #if defined(HAVE_FCHMOD)
 	result = ceph_fchmod(handle->data, fsp->fh->fd, mode);
 	DBG_DEBUG("[CEPH] fchmod(...) = %d\n", result);
