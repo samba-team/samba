@@ -3776,13 +3776,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if (!posix_open && new_file_created && !def_acl) {
+		if (unx_mode != smb_fname->st.st_ex_mode) {
+			/* We might get ENOSYS in the next call.. */
+			int saved_errno = errno;
 
-		int saved_errno = errno; /* We might get ENOSYS in the next
-					  * call.. */
-
-		if (SMB_VFS_FCHMOD_ACL(fsp, unx_mode) == -1 &&
-		    errno == ENOSYS) {
-			errno = saved_errno; /* Ignore ENOSYS */
+			if (SMB_VFS_FCHMOD_ACL(fsp, unx_mode) == -1 &&
+			    errno == ENOSYS) {
+				errno = saved_errno; /* Ignore ENOSYS */
+			}
 		}
 
 	} else if (new_unx_mode) {
