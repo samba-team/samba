@@ -54,10 +54,8 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_open) \
 	SMBPROFILE_STATS_BASIC(syscall_createfile) \
 	SMBPROFILE_STATS_BASIC(syscall_close) \
-	SMBPROFILE_STATS_BYTES(syscall_read) \
 	SMBPROFILE_STATS_BYTES(syscall_pread) \
 	SMBPROFILE_STATS_BYTES(syscall_asys_pread) \
-	SMBPROFILE_STATS_BYTES(syscall_write) \
 	SMBPROFILE_STATS_BYTES(syscall_pwrite) \
 	SMBPROFILE_STATS_BYTES(syscall_asys_pwrite) \
 	SMBPROFILE_STATS_BASIC(syscall_lseek) \
@@ -65,7 +63,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BYTES(syscall_recvfile) \
 	SMBPROFILE_STATS_BASIC(syscall_rename) \
 	SMBPROFILE_STATS_BASIC(syscall_rename_at) \
-	SMBPROFILE_STATS_BASIC(syscall_fsync) \
 	SMBPROFILE_STATS_BASIC(syscall_asys_fsync) \
 	SMBPROFILE_STATS_BASIC(syscall_stat) \
 	SMBPROFILE_STATS_BASIC(syscall_fstat) \
