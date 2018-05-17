@@ -68,4 +68,8 @@ bool trust_forest_info_tln_match(
 bool trust_forest_info_tln_ex_match(
 		const struct lsa_ForestTrustInformation2 *info,
 		const char *tln);
+bool trust_forest_info_match_tln_namespace(
+		const struct lsa_ForestTrustInformation2 *info,
+		const char *tln);
+
 #endif /* _LIBCLI_AUTH_UTIL_LSARPC_H_ */
