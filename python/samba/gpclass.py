@@ -229,6 +229,34 @@ class gp_log:
                     ret.append((attr.attrib['name'], attr.text, func))
         return ret
 
+    def get_applied(self):
+        ''' Return a list of applied ext guids
+        return              - List of tuples containing the guid of a gpo, then
+                              a dictionary of policies and their values prior
+                              policy application. These are sorted so that the
+                              most recently applied settings are removed first.
+        '''
+        guids = []
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        if user_obj is not None:
+            apply_log = user_obj.find('applylog')
+            if apply_log is None:
+                return guids
+            for i in reversed(range(0, len(apply_log))):
+                guid_obj = apply_log.find('guid[@count="%d"]' % i)
+                guid = guid_obj.attrib['value']
+                guid_settings = user_obj.find('guid[@value="%s"]' % guid)
+                exts = guid_settings.findall('gp_ext')
+                settings = {}
+                for ext in exts:
+                    attr_dict = {}
+                    attrs = ext.findall('attribute')
+                    for attr in attrs:
+                        attr_dict[attr.attrib['name']] = attr.text
+                    settings[ext.attrib['name']] = attr_dict
+                guids.append((guid, settings))
+        return guids
+
     def delete(self, gp_ext_name, attribute):
         ''' Remove an attribute from the gp_log
         param gp_ext_name   - name of extension from which to remove the
