@@ -507,26 +507,20 @@ def apply_gp(lp, creds, logger, store, gp_extensions):
     store.commit()
 
 
-def unapply_log(gp_db):
-    while True:
-        item = gp_db.apply_log_pop()
-        if item:
-            yield item
-        else:
-            break
-
-
 def unapply_gp(lp, creds, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
     gp_db.state(GPOSTATE.UNAPPLY)
-    for gpo_guid in unapply_log(gp_db):
-        gp_db.set_guid(gpo_guid)
-        unapply_attributes = gp_db.list(gp_extensions)
-        for attr in unapply_attributes:
-            attr_obj = attr[-1](logger, gp_db, lp, attr[0], attr[1])
-            attr_obj.mapper()[attr[0]][0](attr[1])  # Set the old value
-            gp_db.delete(str(attr_obj), attr[0])
-        gp_db.commit()
+    # Treat all applied gpos as deleted
+    del_gpos = gp_db.get_applied_settings(gp_db.get_applied_guids())
+    store.start()
+    for ext in gp_extensions:
+        try:
+            ext.process_group_policy(del_gpos, [])
+        except Exception as e:
+            logger.error('Failed to unapply extension  %s' % str(ext))
+            logger.error('Message was: ' + str(e))
+            continue
+    store.commit()
 
 
 def parse_gpext_conf(smb_conf):
