@@ -942,13 +942,6 @@ static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 }
 
-static int skel_chmod_acl(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	return SMB_VFS_NEXT_CHMOD_ACL(handle, smb_fname, mode);
-}
-
 static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   mode_t mode)
 {
@@ -1181,7 +1174,6 @@ struct vfs_fn_pointers skel_transparent_fns = {
 
 	/* POSIX ACL operations. */
 
-	.chmod_acl_fn = skel_chmod_acl,
 	.fchmod_acl_fn = skel_fchmod_acl,
 
 	.sys_acl_get_file_fn = skel_sys_acl_get_file,

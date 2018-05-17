@@ -101,7 +101,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(get_nt_acl) \
 	SMBPROFILE_STATS_BASIC(fget_nt_acl) \
 	SMBPROFILE_STATS_BASIC(fset_nt_acl) \
-	SMBPROFILE_STATS_BASIC(chmod_acl) \
 	SMBPROFILE_STATS_BASIC(fchmod_acl) \
 	SMBPROFILE_STATS_SECTION_END \
 	\

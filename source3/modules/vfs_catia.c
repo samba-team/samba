@@ -1128,44 +1128,6 @@ catia_get_nt_acl(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static int
-catia_chmod_acl(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		mode_t mode)
-{
-	char *mapped_name = NULL;
-	struct smb_filename *mapped_smb_fname = NULL;
-	NTSTATUS status;
-	int ret;
-	int saved_errno;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&mapped_name,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
-					mapped_name,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (mapped_smb_fname == NULL) {
-		TALLOC_FREE(mapped_name);
-		errno = ENOMEM;
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_CHMOD_ACL(handle, mapped_smb_fname, mode);
-	saved_errno = errno;
-	TALLOC_FREE(mapped_name);
-	TALLOC_FREE(mapped_smb_fname);
-	errno = saved_errno;
-	return ret;
-}
-
 static SMB_ACL_T
 catia_sys_acl_get_file(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
@@ -2516,7 +2478,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.fset_nt_acl_fn = catia_fset_nt_acl,
 
 	/* POSIX ACL operations. */
-	.chmod_acl_fn = catia_chmod_acl,
 	.fchmod_acl_fn = catia_fchmod_acl,
 
 	.sys_acl_get_file_fn = catia_sys_acl_get_file,

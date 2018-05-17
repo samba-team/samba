@@ -2159,30 +2159,6 @@ static NTSTATUS smb_time_audit_audit_file(struct vfs_handle_struct *handle,
 	return result;
 }
 
-
-
-static int smb_time_audit_chmod_acl(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CHMOD_ACL(handle, smb_fname, mode);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("chmod_acl",
-			timediff,
-			smb_fname->base_name);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_fchmod_acl(vfs_handle_struct *handle,
 				     files_struct *fsp, mode_t mode)
 {
@@ -2702,7 +2678,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.get_nt_acl_fn = smb_time_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_time_audit_fset_nt_acl,
 	.audit_file_fn = smb_time_audit_audit_file,
-	.chmod_acl_fn = smb_time_audit_chmod_acl,
 	.fchmod_acl_fn = smb_time_audit_fchmod_acl,
 	.sys_acl_get_file_fn = smb_time_audit_sys_acl_get_file,
 	.sys_acl_get_fd_fn = smb_time_audit_sys_acl_get_fd,

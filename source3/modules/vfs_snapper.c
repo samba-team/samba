@@ -2955,50 +2955,6 @@ static int snapper_gmt_setxattr(struct vfs_handle_struct *handle,
 	return ret;
 }
 
-static int snapper_gmt_chmod_acl(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	time_t timestamp;
-	char *stripped;
-	ssize_t ret;
-	int saved_errno;
-	char *conv;
-	struct smb_filename *conv_smb_fname = NULL;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(),
-				handle,
-				smb_fname->base_name,
-				&timestamp,
-				&stripped)) {
-		return -1;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_CHMOD_ACL(handle, smb_fname, mode);
-	}
-	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return -1;
-	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
-		TALLOC_FREE(conv);
-		errno = ENOMEM;
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_CHMOD_ACL(handle, conv_smb_fname, mode);
-	saved_errno = errno;
-	TALLOC_FREE(conv);
-	TALLOC_FREE(conv_smb_fname);
-	errno = saved_errno;
-	return ret;
-}
-
 static int snapper_gmt_get_real_filename(struct vfs_handle_struct *handle,
 					 const char *path,
 					 const char *name,
@@ -3172,7 +3128,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.listxattr_fn = snapper_gmt_listxattr,
 	.removexattr_fn = snapper_gmt_removexattr,
 	.setxattr_fn = snapper_gmt_setxattr,
-	.chmod_acl_fn = snapper_gmt_chmod_acl,
 	.chflags_fn = snapper_gmt_chflags,
 	.get_real_filename_fn = snapper_gmt_get_real_filename,
 };

@@ -703,39 +703,6 @@ static struct smb_filename *cap_realpath(vfs_handle_struct *handle,
 	return return_fname;
 }
 
-static int cap_chmod_acl(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	struct smb_filename *cap_smb_fname = NULL;
-	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
-	int ret;
-	int saved_errno;
-
-	/* If the underlying VFS doesn't have ACL support... */
-	if (!cappath) {
-		errno = ENOMEM;
-		return -1;
-	}
-	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
-					cappath,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (cap_smb_fname == NULL) {
-		TALLOC_FREE(cappath);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_CHMOD_ACL(handle, cap_smb_fname, mode);
-	saved_errno = errno;
-	TALLOC_FREE(cappath);
-	TALLOC_FREE(cap_smb_fname);
-	errno = saved_errno;
-	return ret;
-}
-
 static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				SMB_ACL_TYPE_T type,
@@ -1056,7 +1023,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.link_fn = cap_link,
 	.mknod_fn = cap_mknod,
 	.realpath_fn = cap_realpath,
-	.chmod_acl_fn = cap_chmod_acl,
 	.sys_acl_get_file_fn = cap_sys_acl_get_file,
 	.sys_acl_set_file_fn = cap_sys_acl_set_file,
 	.sys_acl_delete_def_file_fn = cap_sys_acl_delete_def_file,

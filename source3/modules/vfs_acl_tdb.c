@@ -496,7 +496,6 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.fget_nt_acl_fn = acl_tdb_fget_nt_acl,
 	.get_nt_acl_fn = acl_tdb_get_nt_acl,
 	.fset_nt_acl_fn = acl_tdb_fset_nt_acl,
-	.chmod_acl_fn = chmod_acl_acl_module_common,
 	.fchmod_acl_fn = fchmod_acl_acl_module_common,
 	.sys_acl_set_file_fn = sys_acl_set_file_tdb,
 	.sys_acl_set_fd_fn = sys_acl_set_fd_tdb

@@ -2015,39 +2015,6 @@ out:
 }
 
 /*
- * Success: return 0
- * Failure: set errno, return -1
- */
-static int mh_chmod_acl(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		mode_t mode)
-{
-	int status;
-	struct smb_filename *clientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_chmod_acl\n"));
-	if (!is_in_media_files(smb_fname->base_name))
-	{
-		status = SMB_VFS_NEXT_CHMOD_ACL(handle, smb_fname, mode);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_CHMOD_ACL(handle, clientFname, mode);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
-/*
  * Success: return acl pointer
  * Failure: set errno, return NULL
  */
@@ -2337,8 +2304,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.get_nt_acl_fn = mh_get_nt_acl,
 
 	/* POSIX ACL operations. */
-
-	.chmod_acl_fn = mh_chmod_acl,
 
 	.sys_acl_get_file_fn = mh_sys_acl_get_file,
 	.sys_acl_set_file_fn = mh_sys_acl_set_file,

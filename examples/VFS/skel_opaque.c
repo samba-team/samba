@@ -751,14 +751,6 @@ static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static int skel_chmod_acl(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   mode_t mode)
 {
@@ -1005,7 +997,6 @@ struct vfs_fn_pointers skel_opaque_fns = {
 
 	/* POSIX ACL operations. */
 
-	.chmod_acl_fn = skel_chmod_acl,
 	.fchmod_acl_fn = skel_fchmod_acl,
 
 	.sys_acl_get_file_fn = skel_sys_acl_get_file,

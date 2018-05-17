@@ -41,7 +41,6 @@
         <member>chdir</member>
         <member>chflags</member>
         <member>chmod</member>
-        <member>chmod_acl</member>
         <member>chown</member>
         <member>close</member>
         <member>closedir</member>
