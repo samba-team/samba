@@ -930,37 +930,6 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 	return NT_STATUS_OK;
 }
 
-
-static NTSTATUS cmd_chmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
-{
-	struct smb_filename *smb_fname = NULL;
-	mode_t mode;
-	if (argc != 3) {
-		printf("Usage: chmod_acl <path> <mode>\n");
-		return NT_STATUS_OK;
-	}
-
-	mode = atoi(argv[2]);
-
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					argv[1],
-					NULL,
-					NULL,
-					ssf_flags());
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (SMB_VFS_CHMOD_ACL(vfs->conn, smb_fname, mode) == -1) {
-		printf("chmod_acl: error=%d (%s)\n", errno, strerror(errno));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	printf("chmod_acl: ok\n");
-	return NT_STATUS_OK;
-}
-
-
 static NTSTATUS cmd_fchmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd;
@@ -2055,7 +2024,6 @@ struct cmd_set vfs_commands[] = {
 	{ "set_nt_acl", cmd_set_nt_acl, "VFS open() and fset_nt_acl()", 
 	  "set_nt_acl <file>\n" },
 	{ "fchmod_acl",   cmd_fchmod_acl,   "VFS fchmod_acl()",    "fchmod_acl <fd> <mode>" },
-	{ "chmod_acl",   cmd_chmod_acl,   "VFS chmod_acl()",    "chmod_acl <path> <mode>" },
 	{ "sys_acl_get_file", cmd_sys_acl_get_file, "VFS sys_acl_get_file()", "sys_acl_get_file <path>" },
 	{ "sys_acl_get_fd", cmd_sys_acl_get_fd, "VFS sys_acl_get_fd()", "sys_acl_get_fd <fd>" },
 	{ "sys_acl_blob_get_file", cmd_sys_acl_blob_get_file,
