@@ -124,7 +124,6 @@
 		<listitem><para><command>get_nt_acl</command> - VFS get_nt_acl()</para></listitem>
 		<listitem><para><command>fset_nt_acl</command> - VFS fset_nt_acl()</para></listitem>
 		<listitem><para><command>set_nt_acl</command> - VFS open() and fset_nt_acl()</para></listitem>
-		<listitem><para><command>fchmod_acl</command> - VFS fchmod_acl()</para></listitem>
 		<listitem><para><command>sys_acl_get_file</command> - VFS sys_acl_get_file()</para></listitem>
 		<listitem><para><command>sys_acl_get_fd</command> - VFS sys_acl_get_fd()</para></listitem>
 		<listitem><para><command>sys_acl_blob_get_file</command> - VFS sys_acl_blob_get_file()</para></listitem>
