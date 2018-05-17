@@ -50,7 +50,6 @@
         <member>disconnect</member>
         <member>disk_free</member>
         <member>fchmod</member>
-        <member>fchmod_acl</member>
         <member>fchown</member>
         <member>fget_nt_acl</member>
         <member>fgetxattr</member>

@@ -1731,25 +1731,6 @@ static int catia_sys_acl_set_fd(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int catia_fchmod_acl(vfs_handle_struct *handle,
-			    files_struct *fsp,
-			    mode_t mode)
-{
-	struct catia_cache *cc = NULL;
-	int ret;
-
-	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
-	if (ret != 0) {
-		return ret;
-	}
-
-	ret = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
-
-	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
-
-	return ret;
-}
-
 static NTSTATUS catia_fget_nt_acl(vfs_handle_struct *handle,
 				  files_struct *fsp,
 				  uint32_t security_info,
@@ -2478,8 +2459,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.fset_nt_acl_fn = catia_fset_nt_acl,
 
 	/* POSIX ACL operations. */
-	.fchmod_acl_fn = catia_fchmod_acl,
-
 	.sys_acl_get_file_fn = catia_sys_acl_get_file,
 	.sys_acl_get_fd_fn = catia_sys_acl_get_fd,
 	.sys_acl_blob_get_fd_fn = catia_sys_acl_blob_get_fd,

@@ -324,7 +324,6 @@ static struct {
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
 	{ SMB_VFS_OP_AUDIT_FILE,	"audit_file" },
-	{ SMB_VFS_OP_FCHMOD_ACL,	"fchmod_acl" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FILE,	"sys_acl_get_file" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FD,	"sys_acl_get_fd" },
 	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,	"sys_acl_blob_get_file" },
@@ -2130,19 +2129,6 @@ static NTSTATUS smb_full_audit_audit_file(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
-				     mode_t mode)
-{
-	int result;
-	
-	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
-
-	do_log(SMB_VFS_OP_FCHMOD_ACL, (result >= 0), handle,
-	       "%s|%o", fsp_str_do_log(fsp), mode);
-
-	return result;
-}
-
 static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				SMB_ACL_TYPE_T type,
@@ -2529,7 +2515,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_nt_acl_fn = smb_full_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,
 	.audit_file_fn = smb_full_audit_audit_file,
-	.fchmod_acl_fn = smb_full_audit_fchmod_acl,
 	.sys_acl_get_file_fn = smb_full_audit_sys_acl_get_file,
 	.sys_acl_get_fd_fn = smb_full_audit_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = smb_full_audit_sys_acl_blob_get_file,

@@ -252,6 +252,7 @@
 /* Version 39 - Remove SMB_VFS_WRITE
 		All users are now pwrite or async versions. */
 /* Version 39 - Remove SMB_VFS_CHMOD_ACL - no longer used. */
+/* Version 39 - Remove SMB_VFS_FCHMOD_ACL - no longer used. */
 
 #define SMB_VFS_INTERFACE_VERSION 39
 
@@ -917,8 +918,6 @@ struct vfs_fn_pointers {
 
 	/* POSIX ACL operations. */
 
-	int (*fchmod_acl_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
-
 	SMB_ACL_T (*sys_acl_get_file_fn)(struct vfs_handle_struct *handle,
 					 const struct smb_filename *smb_fname,
 					 SMB_ACL_TYPE_T type,
@@ -1408,8 +1407,6 @@ NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
 int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle,
 				const struct smb_filename *file,
 				mode_t mode);
-int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
-			    struct files_struct *fsp, mode_t mode);
 SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
 					SMB_ACL_TYPE_T type,

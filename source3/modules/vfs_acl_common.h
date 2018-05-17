@@ -44,9 +44,6 @@ int fchmod_acl_module_common(struct vfs_handle_struct *handle,
 int chmod_acl_acl_module_common(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				mode_t mode);
-int fchmod_acl_acl_module_common(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp, mode_t mode);
-
 NTSTATUS get_nt_acl_common(
 	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
 				    vfs_handle_struct *handle,

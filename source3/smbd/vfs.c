@@ -2490,13 +2490,6 @@ NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
 					  access_denied);
 }
 
-int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
-			    struct files_struct *fsp, mode_t mode)
-{
-	VFS_FIND(fchmod_acl);
-	return handle->fns->fchmod_acl_fn(handle, fsp, mode);
-}
-
 SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
 					SMB_ACL_TYPE_T type,

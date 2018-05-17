@@ -2674,21 +2674,6 @@ static NTSTATUS vfswrap_audit_file(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK; /* Nothing to do here ... */
 }
 
-static int vfswrap_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
-{
-#ifdef HAVE_NO_ACL
-	errno = ENOSYS;
-	return -1;
-#else
-	int result;
-
-	START_PROFILE(fchmod_acl);
-	result = fchmod_acl(fsp, mode);
-	END_PROFILE(fchmod_acl);
-	return result;
-#endif
-}
-
 static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,
 					  const struct smb_filename *smb_fname,
 					  SMB_ACL_TYPE_T type,
@@ -2949,8 +2934,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.audit_file_fn = vfswrap_audit_file,
 
 	/* POSIX ACL operations. */
-
-	.fchmod_acl_fn = vfswrap_fchmod_acl,
 
 	.sys_acl_get_file_fn = vfswrap_sys_acl_get_file,
 	.sys_acl_get_fd_fn = vfswrap_sys_acl_get_fd,

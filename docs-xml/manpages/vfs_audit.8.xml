@@ -47,7 +47,6 @@
 	<member>unlink</member>
 	<member>chmod</member>
 	<member>fchmod</member>
-	<member>fchmod_acl</member>
 	</simplelist>
 
 	<para>This module is stackable.</para>

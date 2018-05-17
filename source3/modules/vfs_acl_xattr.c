@@ -323,7 +323,6 @@ static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.fget_nt_acl_fn = acl_xattr_fget_nt_acl,
 	.get_nt_acl_fn = acl_xattr_get_nt_acl,
 	.fset_nt_acl_fn = acl_xattr_fset_nt_acl,
-	.fchmod_acl_fn = fchmod_acl_acl_module_common,
 	.sys_acl_set_file_fn = sys_acl_set_file_xattr,
 	.sys_acl_set_fd_fn = sys_acl_set_fd_xattr
 };

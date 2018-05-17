@@ -630,8 +630,6 @@ struct vfs_ops example_ops = {
 	NULL,				/* fset_nt_acl */
 	NULL,				/* set_nt_acl */
 
-	NULL,				/* fchmod_acl */
-
 	NULL,				/* sys_acl_get_entry */
 	NULL,				/* sys_acl_get_tag_type */
 	NULL,				/* sys_acl_get_permset */

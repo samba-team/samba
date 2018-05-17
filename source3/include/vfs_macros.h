@@ -460,11 +460,6 @@
 #define SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd) \
 	smb_vfs_call_fset_nt_acl((handle)->next, (fsp), (security_info_sent), (psd))
 
-#define SMB_VFS_FCHMOD_ACL(fsp, mode) \
-	smb_vfs_call_fchmod_acl((fsp)->conn->vfs_handles, (fsp), (mode))
-#define SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode) \
-	smb_vfs_call_fchmod_acl((handle)->next, (fsp), (mode))
-
 #define SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname, type, mem_ctx)		\
 	smb_vfs_call_sys_acl_get_file((conn)->vfs_handles, (smb_fname), (type), (mem_ctx))
 #define SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname, type, mem_ctx)		\
