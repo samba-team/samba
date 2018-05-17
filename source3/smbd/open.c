@@ -3806,12 +3806,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * an overwritten file.
 		 */
 
-		int ret = SMB_VFS_FCHMOD(fsp, new_unx_mode);
-		if (ret == -1) {
-			DBG_INFO("failed to reset "
+		if (new_unx_mode != smb_fname->st.st_ex_mode) {
+			int ret = SMB_VFS_FCHMOD(fsp, new_unx_mode);
+			if (ret == -1) {
+				DBG_INFO("failed to reset "
 				  "attributes of file %s to 0%o\n",
 				  smb_fname_str_dbg(smb_fname),
 				  (unsigned int)new_unx_mode);
+			}
 		}
 	}
 
