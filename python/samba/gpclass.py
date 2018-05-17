@@ -357,37 +357,13 @@ class gp_ext_setter(object):
 
 class gp_inf_ext(gp_ext):
     def read(self, policy):
-        ret = False
-        inftable = self.apply_map()
-
-        current_section = None
-
-        # So here we would declare a boolean,
-        # that would get changed to TRUE.
-        #
-        # If at any point in time a GPO was applied,
-        # then we return that boolean at the end.
-
         inf_conf = ConfigParser()
         inf_conf.optionxform = str
         try:
             inf_conf.readfp(StringIO(policy))
         except:
             inf_conf.readfp(StringIO(policy.decode('utf-16')))
-
-        for section in inf_conf.sections():
-            current_section = inftable.get(section)
-            if not current_section:
-                continue
-            for key, value in inf_conf.items(section):
-                if current_section.get(key):
-                    (att, setter) = current_section.get(key)
-                    value = value.encode('ascii', 'ignore')
-                    ret = True
-                    setter(self.logger, self.gp_db, self.lp,
-                           self.creds, att, value).update_samba()
-                    self.gp_db.commit()
-        return ret
+        return inf_conf
 
 
 ''' Fetch the hostname of a writable DC '''

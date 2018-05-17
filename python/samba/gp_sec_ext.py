@@ -166,10 +166,24 @@ class gp_sec_ext(gp_inf_ext):
         if self.lp.get('server role') != 'active directory domain controller':
             return
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
+        apply_map = self.apply_map()
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
                 self.gp_db.set_guid(gpo.name)
                 path = os.path.join(gpo.file_sys_path, inf_file)
-                self.parse(path)
+                inf_conf = self.parse(path)
+                if not inf_conf:
+                    continue
+                for section in inf_conf.sections():
+                    current_section = apply_map.get(section)
+                    if not current_section:
+                        continue
+                    for key, value in inf_conf.items(section):
+                        if current_section.get(key):
+                            (att, setter) = current_section.get(key)
+                            value = value.encode('ascii', 'ignore')
+                            setter(self.logger, self.gp_db, self.lp,
+                                   self.creds, att, value).update_samba()
+                            self.gp_db.commit()
 
