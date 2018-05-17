@@ -693,7 +693,8 @@ planoldpythontestsuite("fl2008r2dc:local",
 
 planoldpythontestsuite("ad_dc",
                        "samba.tests.net_join_no_spnego",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'],
+                       py3_compatible=True)
 planoldpythontestsuite("ad_dc",
                        "samba.tests.net_join",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
