@@ -3806,32 +3806,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * an overwritten file.
 		 */
 
-		int ret = -1;
-
-		/* Attributes need changing. File already existed. */
-
-		{
-			int saved_errno = errno; /* We might get ENOSYS in the
-						  * next call.. */
-			ret = SMB_VFS_FCHMOD_ACL(fsp, new_unx_mode);
-
-			if (ret == -1 && errno == ENOSYS) {
-				errno = saved_errno; /* Ignore ENOSYS */
-			} else {
-				DEBUG(5, ("open_file_ntcreate: reset "
-					  "attributes of file %s to 0%o\n",
-					  smb_fname_str_dbg(smb_fname),
-					  (unsigned int)new_unx_mode));
-				ret = 0; /* Don't do the fchmod below. */
-			}
-		}
-
-		if ((ret == -1) &&
-		    (SMB_VFS_FCHMOD(fsp, new_unx_mode) == -1))
-			DEBUG(5, ("open_file_ntcreate: failed to reset "
+		int ret = SMB_VFS_FCHMOD(fsp, new_unx_mode);
+		if (ret == -1) {
+			DBG_INFO("failed to reset "
 				  "attributes of file %s to 0%o\n",
 				  smb_fname_str_dbg(smb_fname),
-				  (unsigned int)new_unx_mode));
+				  (unsigned int)new_unx_mode);
+		}
 	}
 
 	{
