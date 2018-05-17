@@ -49,6 +49,7 @@ import time
 import re
 import os
 import tempfile
+from samba.compat import text_type
 
 
 class DCJoinException(Exception):
@@ -483,6 +484,7 @@ class DCJoinContext(object):
                     v = [rec[a]]
                 else:
                     v = rec[a]
+                v = [x.encode('utf8') if isinstance(x, text_type) else x for x in v]
                 rattr = ctx.tmp_samdb.dsdb_DsReplicaAttribute(ctx.tmp_samdb, a, v)
                 attrs.append(rattr)
 
