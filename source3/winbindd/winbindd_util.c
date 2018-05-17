@@ -1690,6 +1690,52 @@ struct winbindd_domain *find_trust_from_name_noinit(const char *domain_name)
 	return NULL;
 }
 
+struct winbindd_domain *find_routing_from_namespace_noinit(const char *namespace)
+{
+	struct winbindd_domain *domain;
+
+	/* Search through list */
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		bool match;
+
+		match = strequal(namespace, domain->name);
+		if (match) {
+			break;
+		}
+
+		if (domain->alt_name == NULL) {
+			continue;
+		}
+
+		match = strequal(namespace, domain->alt_name);
+		if (match) {
+			break;
+		}
+
+		if (domain->fti == NULL) {
+			continue;
+		}
+
+		match = trust_forest_info_match_tln_namespace(domain->fti,
+							      namespace);
+		if (match) {
+			break;
+		}
+	}
+
+	if (domain == NULL) {
+		/* Not found */
+		return NULL;
+	}
+
+	if (domain->routing_domain != NULL) {
+		return domain->routing_domain;
+	}
+
+	return domain;
+}
+
 struct winbindd_domain *find_domain_from_name(const char *domain_name)
 {
 	struct winbindd_domain *domain;

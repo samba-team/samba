@@ -515,6 +515,7 @@ void winbindd_ping_offline_domains(struct tevent_context *ev,
 bool init_domain_list(void);
 struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name);
 struct winbindd_domain *find_trust_from_name_noinit(const char *domain_name);
+struct winbindd_domain *find_routing_from_namespace_noinit(const char *name_space);
 struct winbindd_domain *find_domain_from_name(const char *domain_name);
 struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid);
 struct winbindd_domain *find_trust_from_sid_noinit(const struct dom_sid *sid);
