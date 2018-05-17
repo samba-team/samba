@@ -5537,6 +5537,9 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 		  (intmax_t)offset);
 
 	if (fio == NULL) {
+		if (offset == 0 && global_fruit_config.nego_aapl) {
+			return SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
+		}
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 	}
 
