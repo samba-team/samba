@@ -129,8 +129,18 @@ class gp_sec_ext(gp_inf_ext):
     def __str__(self):
         return "Security GPO extension"
 
-    def apply_map(self):
-        return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
+        if SamDB:
+            try:
+                ldb = SamDB(self.lp.samdb_url(),
+                            session_info=system_session(),
+                            credentials=self.creds,
+                            lp=self.lp)
+            except:
+                return
+        else:
+            return
+        apmp = {"System Access": {"MinimumPasswordAge": ("minPwdAge",
                                                          inf_to_ldb),
                                   "MaximumPasswordAge": ("maxPwdAge",
                                                          inf_to_ldb),
@@ -153,18 +163,6 @@ class gp_sec_ext(gp_inf_ext):
                                     ),
                                    }
                }
-
-    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
-        if SamDB:
-            try:
-                ldb = SamDB(self.lp.samdb_url(),
-                            session_info=system_session(),
-                            credentials=self.creds,
-                            lp=self.lp)
-            except:
-                return
-        else:
-            return
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
         for gpo in deleted_gpo_list:
             pass
@@ -173,5 +171,18 @@ class gp_sec_ext(gp_inf_ext):
             if gpo.file_sys_path:
                 self.gp_db.set_guid(gpo.name)
                 path = gpo.file_sys_path.split('\\sysvol\\')[-1]
-                self.parse(os.path.join(path, inf_file))
+                inf_conf = self.parse(os.path.join(path, inf_file))
+                if not inf_conf:
+                    continue
+                for section in inf_conf.sections():
+                    current_section = apmp.get(section)
+                    if not current_section:
+                        continue
+                    for key, value in inf_conf.items(section):
+                        if current_section.get(key):
+                            (att, setter) = current_section.get(key)
+                            value = value.encode('ascii', 'ignore')
+                            setter(self.logger, self.gp_db, self.lp, att,
+                                   value, ldb).update_samba()
+                            self.gp_db.commit()
 
