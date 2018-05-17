@@ -4103,19 +4103,6 @@ static int copy_access_posix_acl(connection_struct *conn,
 }
 
 /****************************************************************************
- Do a chmod by setting the ACL USER_OBJ, GROUP_OBJ and OTHER bits in an ACL
- and set the mask to rwx. Needed to preserve complex ACLs set by NT.
- Note that name is in UNIX character set.
-****************************************************************************/
-
-int chmod_acl(connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	return copy_access_posix_acl(conn, smb_fname, smb_fname, mode);
-}
-
-/****************************************************************************
  Check for an existing default POSIX ACL on a directory.
 ****************************************************************************/
 
@@ -4162,31 +4149,6 @@ int inherit_access_posix_acl(connection_struct *conn,
 		return 0;
 
 	return copy_access_posix_acl(conn, inherit_from_fname, smb_fname, mode);
-}
-
-/****************************************************************************
- Do an fchmod by setting the ACL USER_OBJ, GROUP_OBJ and OTHER bits in an ACL
- and set the mask to rwx. Needed to preserve complex ACLs set by NT.
-****************************************************************************/
-
-int fchmod_acl(files_struct *fsp, mode_t mode)
-{
-	connection_struct *conn = fsp->conn;
-	SMB_ACL_T posix_acl = NULL;
-	int ret = -1;
-
-	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, talloc_tos())) == NULL)
-		return -1;
-
-	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
-		goto done;
-
-	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, posix_acl);
-
-  done:
-
-	TALLOC_FREE(posix_acl);
-	return ret;
 }
 
 /****************************************************************************

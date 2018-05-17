@@ -782,14 +782,10 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 int get_acl_group_bits( connection_struct *conn,
 			const struct smb_filename *smb_fname,
 			mode_t *mode);
-int chmod_acl(connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn,
 			const char *inherit_from_dir,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
-int fchmod_acl(files_struct *fsp, mode_t mode);
 bool set_unix_posix_default_acl(connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint16_t num_def_acls, const char *pdata);
