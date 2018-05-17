@@ -1524,7 +1524,7 @@ class cmd_domain_passwordsettings_set(Command):
               ldb.FLAG_MOD_REPLACE, "lockOutObservationWindow")
             msgs.append("Duration to reset account lockout after changed!")
 
-        if max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
+        if max_pwd_age and max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
             raise CommandError("Maximum password age (%d) must be greater than minimum password age (%d)!" % (max_pwd_age, min_pwd_age))
 
         if len(m) == 0:
