@@ -1983,27 +1983,6 @@ static int vfswrap_chmod(vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE(syscall_chmod);
-
-	/*
-	 * We need to do this due to the fact that the default POSIX ACL
-	 * chmod modifies the ACL *mask* for the group owner, not the
-	 * group owner bits directly. JRA.
-	 */
-
-
-	{
-		int saved_errno = errno; /* We might get ENOSYS */
-		result = SMB_VFS_CHMOD_ACL(handle->conn,
-				smb_fname,
-				mode);
-		if (result == 0) {
-			END_PROFILE(syscall_chmod);
-			return result;
-		}
-		/* Error - return the old errno. */
-		errno = saved_errno;
-	}
-
 	result = chmod(smb_fname->base_name, mode);
 	END_PROFILE(syscall_chmod);
 	return result;
