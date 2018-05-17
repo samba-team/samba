@@ -3777,12 +3777,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (!posix_open && new_file_created && !def_acl) {
 		if (unx_mode != smb_fname->st.st_ex_mode) {
-			/* We might get ENOSYS in the next call.. */
-			int saved_errno = errno;
-
-			if (SMB_VFS_FCHMOD_ACL(fsp, unx_mode) == -1 &&
-			    errno == ENOSYS) {
-				errno = saved_errno; /* Ignore ENOSYS */
+			int ret = SMB_VFS_FCHMOD(fsp, unx_mode);
+			if (ret == -1) {
+				DBG_INFO("failed to reset "
+				  "attributes of file %s to 0%o\n",
+				  smb_fname_str_dbg(smb_fname),
+				  (unsigned int)unx_mode);
 			}
 		}
 
