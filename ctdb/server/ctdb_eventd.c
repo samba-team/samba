@@ -271,7 +271,8 @@ static struct tevent_req *command_run_send(TALLOC_CTX *mem_ctx,
 				eventd_run_context(state->ectx),
 				ctdb_event_to_string(state->event),
 				request->rdata.data.run->arg_str,
-				tevent_timeval_current_ofs(timeout, 0));
+				tevent_timeval_current_ofs(timeout, 0),
+				false);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

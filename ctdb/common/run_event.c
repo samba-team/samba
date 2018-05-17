@@ -612,6 +612,7 @@ struct run_event_state {
 	const char *event_str;
 	const char *arg_str;
 	struct timeval timeout;
+	bool continue_on_failure;
 
 	struct run_event_script_list *script_list;
 	const char **argv;
@@ -632,7 +633,8 @@ struct tevent_req *run_event_send(TALLOC_CTX *mem_ctx,
 				  struct run_event_context *run_ctx,
 				  const char *event_str,
 				  const char *arg_str,
-				  struct timeval timeout)
+				  struct timeval timeout,
+				  bool continue_on_failure)
 {
 	struct tevent_req *req, *current_req;
 	struct run_event_state *state;
@@ -656,6 +658,7 @@ struct tevent_req *run_event_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 	state->timeout = timeout;
+	state->continue_on_failure = continue_on_failure;
 	state->cancelled = false;
 
 	state->script_list = talloc_zero(state, struct run_event_script_list);
@@ -836,19 +839,22 @@ static void run_event_next_script(struct tevent_req *subreq)
 	/* If a script fails, stop running */
 	script->summary = run_event_script_status(script);
 	if (script->summary != 0 && script->summary != -ENOEXEC) {
-		state->script_list->num_scripts = state->index + 1;
-
-		if (script->summary == -ETIME && pid != -1) {
-			run_event_debug(req, pid);
-		}
-
 		state->script_list->summary = script->summary;
-		D_NOTICE("%s event %s\n", state->event_str,
-			 (script->summary == -ETIME) ? "timed out" : "failed");
 
-		run_event_stop_running(state->run_ctx);
-		tevent_req_done(req);
-		return;
+		if (! state->continue_on_failure) {
+			state->script_list->num_scripts = state->index + 1;
+
+			if (script->summary == -ETIME && pid != -1) {
+				run_event_debug(req, pid);
+			}
+			D_NOTICE("%s event %s\n", state->event_str,
+				 (script->summary == -ETIME) ?
+				  "timed out" :
+				  "failed");
+			run_event_stop_running(state->run_ctx);
+			tevent_req_done(req);
+			return;
+		}
 	}
 
 	state->index += 1;

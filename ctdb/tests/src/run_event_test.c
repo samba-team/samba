@@ -76,7 +76,13 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	arg_str = compact_args(argv, argc, 5);
 
-	req = run_event_send(mem_ctx, ev, run_ctx, argv[4], arg_str, timeout);
+	req = run_event_send(mem_ctx,
+			     ev,
+			     run_ctx,
+			     argv[4],
+			     arg_str,
+			     timeout,
+			     false);
 	if (req == NULL) {
 		fprintf(stderr, "run_proc_send() failed\n");
 		return;

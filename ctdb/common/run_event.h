@@ -120,6 +120,7 @@ int run_event_script_disable(struct run_event_context *run_ctx,
  * @param[in] event_str The event argument to the script
  * @param[in] arg_str Event arguments to the script
  * @param[in] timeout How long to wait for execution
+ * @param[in] continue_on_failure Whether to continue to run events on failure
  * @return new tevent request, or NULL on failure
  *
  * arg_str contains optional arguments for an event.
@@ -129,7 +130,8 @@ struct tevent_req *run_event_send(TALLOC_CTX *mem_ctx,
 				  struct run_event_context *run_ctx,
 				  const char *event_str,
 				  const char *arg_str,
-				  struct timeval timeout);
+				  struct timeval timeout,
+				  bool continue_on_failure);
 
 /**
  * @brief Async computation end to run an event
