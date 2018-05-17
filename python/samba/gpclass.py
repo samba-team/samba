@@ -146,24 +146,6 @@ class gp_log:
                 item.attrib['count'] = '%d' % (len(apply_log) - 1)
                 item.attrib['value'] = guid
 
-    def apply_log_pop(self):
-        ''' Pop a GPO guid from the applylog
-        return              - last applied GPO guid
-
-        Removes the GPO guid last added to the list, which is the most recently
-        applied GPO.
-        '''
-        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
-        apply_log = user_obj.find('applylog')
-        if apply_log is not None:
-            ret = apply_log.find('guid[@count="%d"]' % (len(apply_log) - 1))
-            if ret is not None:
-                apply_log.remove(ret)
-                return ret.attrib['value']
-            if len(apply_log) == 0 and apply_log in user_obj:
-                user_obj.remove(apply_log)
-        return None
-
     def store(self, gp_ext_name, attribute, old_val):
         ''' Store an attribute in the gp_log
         param gp_ext_name   - Name of the extension applying policy
@@ -202,38 +184,6 @@ class gp_log:
             if attr is not None:
                 return attr.text
         return None
-
-    def list(self, gp_extensions):
-        ''' Return a list of attributes, their previous values, and functions
-            to set them
-        param gp_extensions - list of extension objects, for retrieving attr to
-                              func mappings
-        return              - list of (attr, value, apply_func) tuples for
-                              unapplying policy
-        '''
-        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
-        guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
-        assert guid_obj is not None, "gpo guid was not set"
-        ret = []
-        data_maps = {}
-        for gp_ext in gp_extensions:
-            data_maps.update(gp_ext.apply_map())
-        exts = guid_obj.findall('gp_ext')
-        if exts is not None:
-            for ext in exts:
-                attrs = ext.findall('attribute')
-                for attr in attrs:
-                    func = None
-                    if attr.attrib['name'] in data_maps[ext.attrib['name']]:
-                        func = data_maps[ext.attrib['name']][attr.attrib['name']][-1]
-                    else:
-                        for dmap in data_maps[ext.attrib['name']].keys():
-                            if data_maps[ext.attrib['name']][dmap][0] == \
-                               attr.attrib['name']:
-                                func = data_maps[ext.attrib['name']][dmap][-1]
-                                break
-                    ret.append((attr.attrib['name'], attr.text, func))
-        return ret
 
     def get_applied_guids(self):
         ''' Return a list of applied ext guids
