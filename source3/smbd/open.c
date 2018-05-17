@@ -2530,7 +2530,6 @@ static void setup_kernel_oplock_poll_open(struct timeval request_time,
 static bool open_match_attributes(connection_struct *conn,
 				  uint32_t old_dos_attr,
 				  uint32_t new_dos_attr,
-				  mode_t existing_unx_mode,
 				  mode_t new_unx_mode,
 				  mode_t *returned_unx_mode)
 {
@@ -2547,10 +2546,9 @@ static bool open_match_attributes(connection_struct *conn,
 	}
 
 	DEBUG(10,("open_match_attributes: old_dos_attr = 0x%x, "
-		  "existing_unx_mode = 0%o, new_dos_attr = 0x%x "
+		  "new_dos_attr = 0x%x "
 		  "returned_unx_mode = 0%o\n",
 		  (unsigned int)old_dos_attr,
-		  (unsigned int)existing_unx_mode,
 		  (unsigned int)new_dos_attr,
 		  (unsigned int)*returned_unx_mode ));
 
@@ -3174,7 +3172,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	     (create_disposition == FILE_OVERWRITE_IF))) {
 		if (!open_match_attributes(conn, existing_dos_attributes,
 					   new_dos_attributes,
-					   smb_fname->st.st_ex_mode,
 					   unx_mode, &new_unx_mode)) {
 			DEBUG(5,("open_file_ntcreate: attributes mismatch "
 				 "for file %s (%x %x) (0%o, 0%o)\n",
