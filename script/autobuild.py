@@ -274,7 +274,7 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                      ("clean", "make clean", "text/plain")
+                      ("clean", "make clean", "text/plain"),
 
                       ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs + ' --disable-python', "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
