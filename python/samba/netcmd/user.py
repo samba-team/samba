@@ -119,7 +119,7 @@ def get_crypt_value(alg, utf8pw, rounds=0):
     # we can ignore the possible == at the end
     # of the base64 string
     # we just need to replace '+' by '.'
-    b64salt = base64.b64encode(salt)[0:16].replace('+', '.').decode('utf8')
+    b64salt = base64.b64encode(salt)[0:16].replace(b'+', b'.').decode('utf8')
     crypt_salt = ""
     if rounds != 0:
         crypt_salt = "$%s$rounds=%s$%s$" % (alg, rounds, b64salt)
