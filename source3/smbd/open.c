@@ -3786,6 +3786,25 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 	} else if (new_unx_mode) {
+		/*
+		 * We only get here in the case of:
+		 *
+		 * a). Not a POSIX open.
+		 * b). File already existed.
+		 * c). File was overwritten.
+		 * d). Requested DOS attributes didn't match
+		 *     the DOS attributes on the existing file.
+		 *
+		 * In that case new_unx_mode has been set
+		 * equal to the calculated mode (including
+		 * possible inheritance of the mode from the
+		 * containing directory).
+		 *
+		 * Note this mode was calculated with the
+		 * DOS attribute FILE_ATTRIBUTE_ARCHIVE added,
+		 * so the mode change here is suitable for
+		 * an overwritten file.
+		 */
 
 		int ret = -1;
 
