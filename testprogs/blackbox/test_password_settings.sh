@@ -64,6 +64,7 @@ testit "reset password policies beside of minimum password age of 0 days" \
 TEST_USERNAME="$(mktemp -u alice-XXXXXX)"
 TEST_PASSWORD="testPaSS@00%"
 TEST_PASSWORD_NEW="testPaSS@01%"
+TEST_PASSWORD_NON_ASCII="Täst123"
 TEST_PASSWORD_SHORT="secret"
 TEST_PASSWORD_WEAK="Supersecret"
 TEST_PRINCIPAL="$TEST_USERNAME@$REALM"
@@ -99,6 +100,22 @@ testit "change user password with 'samba-tool user password' (unforced)" \
 TEST_PASSWORD_OLD=$TEST_PASSWORD
 TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@02%"
+
+testit "kinit with user password" \
+	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
+
+test_smbclient "Test login with user kerberos ccache" \
+	"ls" "$SMB_UNC" -k yes || failed=`expr $failed + 1`
+
+###########################################################
+### Change the users password
+###########################################################
+
+testit "change user (non-ascii) password with 'samba-tool user password' (unforced)" \
+	$VALGRIND $samba_tool user password -W$DOMAIN -U$TEST_USERNAME%$TEST_PASSWORD -k no --newpassword=$TEST_PASSWORD_NON_ASCII || failed=`expr $failed + 1`
+
+TEST_PASSWORD_OLD=$TEST_PASSWORD_NEW
+TEST_PASSWORD=$TEST_PASSWORD_NON_ASCII
 
 testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
