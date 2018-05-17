@@ -165,7 +165,22 @@ class gp_sec_ext(gp_inf_ext):
                }
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
         for gpo in deleted_gpo_list:
-            pass
+            self.gp_db.set_guid(gpo[0])
+            for section in gpo[1].keys():
+                current_section = apmp.get(section)
+                if not current_section:
+                    continue
+                for key, value in gpo[1][section].items():
+                    setter = None
+                    for _, tup in current_section.items():
+                        if tup[0] == key:
+                            setter = tup[1]
+                    if setter:
+                        value = value.encode('ascii', 'ignore')
+                        setter(self.logger, self.gp_db, self.lp, key,
+                               value, ldb).delete()
+                        self.gp_db.delete(section, key)
+                        self.gp_db.commit()
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
