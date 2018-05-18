@@ -165,7 +165,7 @@ def drs_get_rodc_partial_attribute_set(samdb):
                               "searchFlags"])
 
     for r in res:
-        ldap_display_name = r["lDAPDisplayName"][0]
+        ldap_display_name = r["lDAPDisplayName"][0].decode('utf8')
         if "systemFlags" in r:
             system_flags      = r["systemFlags"][0]
             if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
