@@ -1291,6 +1291,38 @@ class MaxIndexKeyLengthTestsLmdb(MaxIndexKeyLengthTests):
     def tearDown(self):
         super(MaxIndexKeyLengthTestsLmdb, self).tearDown()
 
+
+# Run the index truncation tests against an lmdb backend
+class RejectSubDBIndex(LdbBaseTest):
+
+    def setUp(self):
+        self.prefix = MDB_PREFIX
+        super(RejectSubDBIndex, self).setUp()
+        self.testdir = tempdir()
+        self.filename = os.path.join(self.testdir,
+                                     "reject_subidx_test.ldb")
+        self.l = ldb.Ldb(self.url(),
+                         options=[
+                             "modules:rdn_name"])
+
+    def tearDown(self):
+        super(RejectSubDBIndex, self).tearDown()
+
+    def test_try_subdb_index(self):
+        try:
+            self.l.add({"dn": "@INDEXLIST",
+                    "@IDX_LMDB_SUBDB": [b"1"],
+                    "@IDXONE": [b"1"],
+                    "@IDXONE": [b"1"],
+                    "@IDXGUID": [b"objectUUID"],
+                    "@IDX_DN_GUID": [b"GUID"],
+            })
+        except ldb.LdbError as e:
+            code = e.args[0]
+            string = e.args[1]
+            self.assertEqual(ldb.ERR_OPERATIONS_ERROR, code)
+            self.assertIn("sub-database index", string)
+
 if __name__ == '__main__':
     import unittest
     unittest.TestProgram()

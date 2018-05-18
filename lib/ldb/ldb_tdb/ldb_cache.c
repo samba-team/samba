@@ -238,7 +238,7 @@ static int ltdb_index_load(struct ldb_module *module,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *indexlist_dn;
-	int r;
+	int r, lmdb_subdb_version;
 
 	if (ldb->schema.index_handler_override) {
 		/*
@@ -290,6 +290,20 @@ static int ltdb_index_load(struct ldb_module *module,
 	ltdb->cache->GUID_index_dn_component
 		= ldb_msg_find_attr_as_string(ltdb->cache->indexlist,
 					      LTDB_IDX_DN_GUID, NULL);
+
+	lmdb_subdb_version
+		= ldb_msg_find_attr_as_int(ltdb->cache->indexlist,
+					   LTDB_IDX_LMDB_SUBDB, 0);
+
+	if (lmdb_subdb_version != 0) {
+		ldb_set_errstring(ldb,
+				  "FATAL: This ldb_mdb database has "
+				  "been written in a new verson of LDB "
+				  "using a sub-database index that "
+				  "is not understood by ldb "
+				  LDB_VERSION);
+		return -1;
+	}
 
 	return 0;
 }
