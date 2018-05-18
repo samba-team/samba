@@ -4779,7 +4779,7 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 
 static NTSTATUS make_default_acl_posix(TALLOC_CTX *ctx,
 				       const char *name,
-				       SMB_STRUCT_STAT *psbuf,
+				       const SMB_STRUCT_STAT *psbuf,
 				       struct security_descriptor **ppdesc)
 {
 	struct dom_sid owner_sid, group_sid;
@@ -4886,7 +4886,7 @@ static NTSTATUS make_default_acl_posix(TALLOC_CTX *ctx,
 
 static NTSTATUS make_default_acl_windows(TALLOC_CTX *ctx,
 					 const char *name,
-					 SMB_STRUCT_STAT *psbuf,
+					 const SMB_STRUCT_STAT *psbuf,
 					 struct security_descriptor **ppdesc)
 {
 	struct dom_sid owner_sid, group_sid;
@@ -4958,7 +4958,7 @@ static NTSTATUS make_default_acl_windows(TALLOC_CTX *ctx,
 
 static NTSTATUS make_default_acl_everyone(TALLOC_CTX *ctx,
 					  const char *name,
-					  SMB_STRUCT_STAT *psbuf,
+					  const SMB_STRUCT_STAT *psbuf,
 					  struct security_descriptor **ppdesc)
 {
 	struct dom_sid owner_sid, group_sid;
@@ -5022,7 +5022,7 @@ NTSTATUS make_default_filesystem_acl(
 	TALLOC_CTX *ctx,
 	enum default_acl_style acl_style,
 	const char *name,
-	SMB_STRUCT_STAT *psbuf,
+	const SMB_STRUCT_STAT *psbuf,
 	struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
