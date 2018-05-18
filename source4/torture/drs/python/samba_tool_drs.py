@@ -70,8 +70,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         #      Repl epoch: 0
         out = self.check_output("samba-tool drs bind %s %s" % (self.dc1,
                                                                self.cmdline_creds))
-        self.assertTrue("Site GUID:" in out)
-        self.assertTrue("Repl epoch:" in out)
+        self.assertTrue("Site GUID:" in out.decode('utf8'))
+        self.assertTrue("Repl epoch:" in out.decode('utf8'))
 
     def test_samba_tool_kcc(self):
         """Tests 'samba-tool drs kcc' command."""
@@ -79,8 +79,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         # Output should be like 'Consistency check on <DC> successful.'
         out = self.check_output("samba-tool drs kcc %s %s" % (self.dc1,
                                                               self.cmdline_creds))
-        self.assertTrue("Consistency check on" in out)
-        self.assertTrue("successful" in out)
+        self.assertTrue(b"Consistency check on" in out)
+        self.assertTrue(b"successful" in out)
 
     def test_samba_tool_options(self):
         """Tests 'samba-tool drs options' command
@@ -88,7 +88,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         # Output should be like 'Current DSA options: IS_GC <OTHER_FLAGS>'
         out = self.check_output("samba-tool drs options %s %s" % (self.dc1,
                                                                   self.cmdline_creds))
-        self.assertTrue("Current DSA options:" in out)
+        self.assertTrue(b"Current DSA options:" in out)
 
     def test_samba_tool_replicate(self):
         """Tests 'samba-tool drs replicate' command."""
@@ -99,8 +99,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
                                                                           self.dc2,
                                                                           nc_name,
                                                                           self.cmdline_creds))
-        self.assertTrue("Replicate from" in out)
-        self.assertTrue("was successful" in out)
+        self.assertTrue(b"Replicate from" in out)
+        self.assertTrue(b"was successful" in out)
 
     def test_samba_tool_replicate_async(self):
         """Tests 'samba-tool drs replicate --async-op' command."""
@@ -111,8 +111,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
                                                                                      self.dc2,
                                                                                      nc_name,
                                                                                      self.cmdline_creds))
-        self.assertTrue("Replicate from" in out)
-        self.assertTrue("was started" in out)
+        self.assertTrue(b"Replicate from" in out)
+        self.assertTrue(b"was started" in out)
 
     def test_samba_tool_replicate_local_online(self):
         """Tests 'samba-tool drs replicate --local-online' command."""
@@ -122,8 +122,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs replicate --local-online %s %s %s" % (self.dc1,
                                                                                       self.dc2,
                                                                                       nc_name))
-        self.assertTrue("Replicate from" in out)
-        self.assertTrue("was successful" in out)
+        self.assertTrue(b"Replicate from" in out)
+        self.assertTrue(b"was successful" in out)
 
     def test_samba_tool_replicate_local_online_async(self):
         """Tests 'samba-tool drs replicate --local-online --async-op' command."""
@@ -133,8 +133,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs replicate --local-online --async-op %s %s %s" % (self.dc1,
                                                                                                  self.dc2,
                                                                                                  nc_name))
-        self.assertTrue("Replicate from" in out)
-        self.assertTrue("was started" in out)
+        self.assertTrue(b"Replicate from" in out)
+        self.assertTrue(b"was started" in out)
 
     def test_samba_tool_replicate_local_machine_creds(self):
         """Tests 'samba-tool drs replicate --local -P' command (uses machine creds)."""
@@ -144,8 +144,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs replicate -P --local %s %s %s" % (self.dc1,
                                                                                   self.dc2,
                                                                                   nc_name))
-        self.assertTrue("Incremental" in out)
-        self.assertTrue("was successful" in out)
+        self.assertTrue(b"Incremental" in out)
+        self.assertTrue(b"was successful" in out)
 
     def test_samba_tool_replicate_local(self):
         """Tests 'samba-tool drs replicate --local' command (uses machine creds)."""
@@ -156,7 +156,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         def get_num_obj_links(output):
             num_objs = None
             num_links = None
-            for word in output.split(" "):
+            for word in output.decode('utf8').split(" "):
                 try:
                     int(word)
                     if num_objs is None:
@@ -170,15 +170,15 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
 
         out = self.check_output("samba-tool drs replicate --local --full-sync %s %s %s %s"
                                 % (self.dc1, self.dc2, nc_name, self.cmdline_creds))
-        self.assertTrue("was successful" in out)
-        self.assertTrue("Full" in out)
+        self.assertTrue(b"was successful" in out)
+        self.assertTrue(b"Full" in out)
 
         (first_obj, _) = get_num_obj_links(out)
 
         out = self.check_output("samba-tool drs replicate --local %s %s %s %s"
                                 % (self.dc1, self.dc2, nc_name, self.cmdline_creds))
-        self.assertTrue("was successful" in out)
-        self.assertTrue("Incremental" in out)
+        self.assertTrue(b"was successful" in out)
+        self.assertTrue(b"Incremental" in out)
 
         (second_obj, _) = get_num_obj_links(out)
 
@@ -257,8 +257,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs replicate -P %s %s %s" % (self.dc1,
                                                                           self.dc2,
                                                                           nc_name))
-        self.assertTrue("Replicate from" in out)
-        self.assertTrue("was successful" in out)
+        self.assertTrue(b"Replicate from" in out)
+        self.assertTrue(b"was successful" in out)
 
     def test_samba_tool_replicate_machine_creds(self):
         """Tests 'samba-tool drs replicate' command with implicit machine creds."""
@@ -268,8 +268,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs replicate %s %s %s" % (self.dc1,
                                                                        self.dc2,
                                                                        nc_name))
-        self.assertTrue("Replicate from" in out)
-        self.assertTrue("was successful" in out)
+        self.assertTrue(b"Replicate from" in out)
+        self.assertTrue(b"was successful" in out)
 
     def test_samba_tool_drs_clone_dc(self):
         """Tests 'samba-tool drs clone-dc-database' command."""
@@ -300,8 +300,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
             krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
         self.assertRaises(KeyError, get_krbtgt_pw)
 
-        server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
-        ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn)
+        server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name)).decode('utf8')
+        ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn).decode('utf8')
 
         res = samdb.search(base=str(server_nc_name),
                            expression="(&(objectclass=user)(cn=dns-%s))" % (self.dc2),
@@ -365,7 +365,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertEqual(ds_name, server_ds_name)
         self.assertEqual(ldap_service_name, server_ldap_service_name)
 
-        server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
+        server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name)).decode('utf8')
         ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn)
 
         res = samdb.search(base=str(server_nc_name),
