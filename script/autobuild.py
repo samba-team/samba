@@ -523,7 +523,8 @@ class buildlist(object):
     def write_system_info(self):
         filename = 'system-info.txt'
         f = open(filename, 'w')
-        for cmd in ['uname -a', 'free', 'cat /proc/cpuinfo', 'cc --version']:
+        for cmd in ['uname -a', 'free', 'cat /proc/cpuinfo',
+                    'cc --version', 'df -m .', 'df -m %s' % testbase]:
             print('### %s' % cmd, file=f)
             print(run_cmd(cmd, output=True, checkfail=False), file=f)
             print(file=f)
