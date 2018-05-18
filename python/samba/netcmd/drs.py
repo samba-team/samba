@@ -21,7 +21,7 @@
 import samba.getopt as options
 import ldb
 import logging
-import common
+from . import common
 import json
 
 from samba.auth import system_session
