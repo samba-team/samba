@@ -520,11 +520,225 @@ static int fake_acls_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t 
 	return 0;
 }
 
+/*
+ * Implement the chmod uid/mask/other mode changes on a fake ACL.
+ */
+
+static int fake_acl_process_chmod(SMB_ACL_T *pp_the_acl,
+				uid_t owner,
+				mode_t mode)
+{
+	bool got_mask = false;
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	mode_t umode = 0;
+	mode_t mmode = 0;
+	mode_t omode = 0;
+	int ret = -1;
+	SMB_ACL_T the_acl = *pp_the_acl;
+
+	/* Split the mode into u/mask/other masks. */
+	umode = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
+	mmode = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
+	omode = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
+
+	while (1) {
+		SMB_ACL_ENTRY_T entry;
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
+		uid_t *puid = NULL;
+
+		ret = sys_acl_get_entry(the_acl,
+					entry_id,
+					&entry);
+		if (ret == 0) {
+			/* End of ACL */
+			break;
+		}
+		if (ret == -1) {
+			return -1;
+		}
+
+		ret = sys_acl_get_tag_type(entry, &tagtype);
+		if (ret == -1) {
+			return -1;
+		}
+		ret = sys_acl_get_permset(entry, &permset);
+		if (ret == -1) {
+			return -1;
+		}
+		switch (tagtype) {
+			case SMB_ACL_USER_OBJ:
+				map_acl_perms_to_permset(umode, &permset);
+				break;
+			case SMB_ACL_USER:
+				puid = (uid_t *)sys_acl_get_qualifier(entry);
+				if (puid == NULL) {
+					return -1;
+				}
+				if (owner != *puid) {
+					break;
+				}
+				map_acl_perms_to_permset(umode, &permset);
+				break;
+			case SMB_ACL_GROUP_OBJ:
+			case SMB_ACL_GROUP:
+				/* Ignore all group entries. */
+				break;
+			case SMB_ACL_MASK:
+				map_acl_perms_to_permset(mmode, &permset);
+				got_mask = true;
+				break;
+			case SMB_ACL_OTHER:
+				map_acl_perms_to_permset(omode, &permset);
+				break;
+			default:
+				errno = EINVAL;
+				return -1;
+		}
+		ret = sys_acl_set_permset(entry, permset);
+		if (ret == -1) {
+			return -1;
+		}
+		/* Move to next entry. */
+		entry_id = SMB_ACL_NEXT_ENTRY;
+	}
+
+	/*
+	 * If we didn't see a mask entry, add one.
+	 */
+
+	if (!got_mask) {
+		SMB_ACL_ENTRY_T mask_entry;
+		SMB_ACL_PERMSET_T mask_permset;
+		ret = sys_acl_create_entry(&the_acl, &mask_entry);
+		if (ret == -1) {
+			return -1;
+		}
+		map_acl_perms_to_permset(mmode, &mask_permset);
+		ret = sys_acl_set_permset(mask_entry, mask_permset);
+		if (ret == -1) {
+			return -1;
+		}
+		ret = sys_acl_set_tag_type(mask_entry, SMB_ACL_MASK);
+		if (ret == -1) {
+			return -1;
+		}
+		/* In case we were realloced and moved. */
+		*pp_the_acl = the_acl;
+	}
+
+	return 0;
+}
+
+static int fake_acls_chmod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname_in,
+			mode_t mode)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret = -1;
+	SMB_ACL_T the_acl = NULL;
+	struct smb_filename *smb_fname = cp_smb_filename_nostream(talloc_tos(),
+						smb_fname_in);
+
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	/*
+	 * Passthrough first to preserve the
+	 * S_ISUID | S_ISGID | S_ISVTX
+	 * bits.
+	 */
+
+	ret = SMB_VFS_NEXT_CHMOD(handle,
+				smb_fname,
+				mode);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	the_acl = fake_acls_sys_acl_get_file(handle,
+				smb_fname,
+				SMB_ACL_TYPE_ACCESS,
+				talloc_tos());
+	if (the_acl == NULL) {
+		TALLOC_FREE(frame);
+		if (errno == ENOATTR) {
+			/* No ACL on this file. Just passthrough. */
+			return 0;
+		}
+		return -1;
+	}
+	ret = fake_acl_process_chmod(&the_acl,
+			smb_fname->st.st_ex_uid,
+			mode);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	ret = fake_acls_sys_acl_set_file(handle,
+				smb_fname,
+				SMB_ACL_TYPE_ACCESS,
+				the_acl);
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+static int fake_acls_fchmod(vfs_handle_struct *handle,
+			files_struct *fsp,
+			mode_t mode)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret = -1;
+	SMB_ACL_T the_acl = NULL;
+
+	/*
+	 * Passthrough first to preserve the
+	 * S_ISUID | S_ISGID | S_ISVTX
+	 * bits.
+	 */
+
+	ret = SMB_VFS_NEXT_FCHMOD(handle,
+				fsp,
+				mode);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	the_acl = fake_acls_sys_acl_get_fd(handle,
+				fsp,
+				talloc_tos());
+	if (the_acl == NULL) {
+		TALLOC_FREE(frame);
+		if (errno == ENOATTR) {
+			/* No ACL on this file. Just passthrough. */
+			return 0;
+		}
+		return -1;
+	}
+	ret = fake_acl_process_chmod(&the_acl,
+			fsp->fsp_name->st.st_ex_uid,
+			mode);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	ret = fake_acls_sys_acl_set_fd(handle,
+				fsp,
+				the_acl);
+	TALLOC_FREE(frame);
+	return ret;
+}
 
 static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.stat_fn = fake_acls_stat,
 	.lstat_fn = fake_acls_lstat,
 	.fstat_fn = fake_acls_fstat,
+	.chmod_fn = fake_acls_chmod,
+	.fchmod_fn = fake_acls_fchmod,
 	.sys_acl_get_file_fn = fake_acls_sys_acl_get_file,
 	.sys_acl_get_fd_fn = fake_acls_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
