@@ -1594,11 +1594,11 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 
 	ret &= write_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM_NAME,
-			    (off_t)1<<32, 10, rfork_content);
+			    (off_t)64*1024*1024, 10, rfork_content);
 
 	ret &= check_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM_NAME,
-			    (off_t)1<<32, 10, 0, 10, rfork_content);
+			    (off_t)64*1024*1024, 10, 0, 10, rfork_content);
 
 	/* Truncate back to size of 1 byte */
 
