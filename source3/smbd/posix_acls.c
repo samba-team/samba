@@ -889,7 +889,7 @@ mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
  an SMB_ACL_PERMSET_T.
 ****************************************************************************/
 
-static int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
+int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
 {
 	if (sys_acl_clear_perms(*p_permset) ==  -1)
 		return -1;
