@@ -201,9 +201,15 @@ def build(bld):
     bld.RECURSE('lib/tdb')
 
     if bld.env.standalone_ldb:
+        if not 'PACKAGE_VERSION' in bld.env:
+            bld.env.PACKAGE_VERSION = VERSION
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
         private_library = False
     else:
         private_library = True
+    # we're not currently linking against the ldap libs, but ldb.pc.in
+    # has @LDAP_LIBS@
+    bld.env.LDAP_LIBS = ''
 
     LDB_MAP_SRC = bld.SUBDIR('ldb_map',
                              'ldb_map.c ldb_map_inbound.c ldb_map_outbound.c')
@@ -224,13 +230,6 @@ def build(bld):
     if bld.PYTHON_BUILD_IS_ENABLED():
         if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
             for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-                # we're not currently linking against the ldap libs, but ldb.pc.in
-                # has @LDAP_LIBS@
-                bld.env.LDAP_LIBS = ''
-
-                if not 'PACKAGE_VERSION' in bld.env:
-                    bld.env.PACKAGE_VERSION = VERSION
-                    bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
                 name = bld.pyembed_libname('pyldb-util')
                 bld.SAMBA_LIBRARY(name,
