@@ -14,6 +14,9 @@ before_script:
       sudo swapon /samba-swap;
     fi
 
+after_script:
+  - tar -xf logs.tar.gz system-info.txt -O
+
 .shared_template: &shared_template
   stage: build
   tags:
@@ -24,63 +27,61 @@ build_samba_none_env:
   <<: *shared_template
   script:
     # this one takes about 1 hours to finish
-    - python script/autobuild.py samba-none-env    --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-none-env    --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_nopython:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-nopython   --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-nopython   --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_systemkrb5:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-systemkrb5 --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-systemkrb5 --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_xc:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-xc         --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-xc         --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_o3:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-o3         --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-o3         --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_ad_dc_2:
   <<: *shared_template
   script:
     # this one takes about 1 hours to finish
-    - python script/autobuild.py samba-ad-dc-2     --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-ad-dc-2     --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_libs:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-libs       --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-libs       --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_static:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-static     --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-static     --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_ctdb:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-ctdb       --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-ctdb       --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_ctdb:
   <<: *shared_template
   script:
-    - python script/autobuild.py ctdb             --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py ctdb             --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_others:
   <<: *shared_template
   script:
-    - python script/autobuild.py ldb              --verbose --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py pidl             --verbose --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py replace          --verbose --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py talloc           --verbose --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py tdb              --verbose --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py tevent           --verbose --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py ldb              --verbose --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py pidl             --verbose --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py replace          --verbose --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py talloc           --verbose --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py tdb              --verbose --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py tevent           --verbose --keeplogs --tail --testbase /tmp/samba-testbase
 
-after_script:
-  - echo "Build finished!"
