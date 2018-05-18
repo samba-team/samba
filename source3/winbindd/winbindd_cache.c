@@ -1123,7 +1123,7 @@ do_query:
 
 	/* If its not in cache and we are offline, then fail */
 
-	if ( get_global_winbindd_state_offline() || !domain->online ) {
+	if (is_domain_offline(domain)) {
 		DEBUG(8,("resolve_username_to_alias: rejecting query "
 			 "in offline mode\n"));
 		return NT_STATUS_NOT_FOUND;
@@ -1203,7 +1203,7 @@ do_query:
 
 	/* If its not in cache and we are offline, then fail */
 
-	if ( get_global_winbindd_state_offline() || !domain->online ) {
+	if (is_domain_offline(domain)) {
 		DEBUG(8,("resolve_alias_to_username: rejecting query "
 			 "in offline mode\n"));
 		return NT_STATUS_NOT_FOUND;
