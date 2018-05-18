@@ -142,7 +142,12 @@ ctdb_test_run ()
     $no_header || ctdb_test_begin "$name"
 
     local status=0
-    timeout $TEST_TIMEOUT "$@" || status=$?
+    if [ -x "$1" ] ; then
+	    timeout $TEST_TIMEOUT "$@" || status=$?
+    else
+	    echo "TEST IS NOT EXECUTABLE"
+	    status=1
+    fi
 
     $no_header || ctdb_test_end "$name" "$status" "$*"
 
@@ -186,7 +191,6 @@ run_one_test ()
 {
     local f="$1"
 
-    [ -x "$f" ] || die "test \"$f\" is not executable"
     tests_total=$(($tests_total + 1))
 
     ctdb_test_run "$f" | tee "$tf" | show_progress
