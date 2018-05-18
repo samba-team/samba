@@ -828,7 +828,7 @@ NTSTATUS make_default_filesystem_acl(
 	TALLOC_CTX *ctx,
 	enum default_acl_style acl_style,
 	const char *name,
-	SMB_STRUCT_STAT *psbuf,
+	const SMB_STRUCT_STAT *psbuf,
 	struct security_descriptor **ppdesc);
 
 /* The following definitions come from smbd/process.c  */
