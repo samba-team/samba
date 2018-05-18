@@ -83,7 +83,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.test_ldb_dc = ldb_dc
 
     def _GUID_string(self, guid):
-        return self.test_ldb_dc.schema_format_value("objectGUID", guid)
+        return self.test_ldb_dc.schema_format_value("objectGUID", guid).decode('utf8')
 
     def _ldap_schemaUpdateNow(self, sam_db):
         rec = {"dn": "",
