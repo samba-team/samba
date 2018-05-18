@@ -602,7 +602,7 @@ static void rescan_forest_root_trusts( void )
 {
 	struct winbindd_tdc_domain *dom_list = NULL;
         size_t num_trusts = 0;
-	int i;
+	size_t i;
 	NTSTATUS status;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
@@ -679,7 +679,7 @@ static void rescan_forest_trusts( void )
 	struct winbindd_domain *d = NULL;
 	struct winbindd_tdc_domain *dom_list = NULL;
         size_t num_trusts = 0;
-	int i;
+	size_t i;
 	NTSTATUS status;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
