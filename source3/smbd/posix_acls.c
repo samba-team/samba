@@ -870,7 +870,7 @@ static mode_t convert_permset_to_mode_t(SMB_ACL_PERMSET_T permset)
  Map generic UNIX permissions to canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits).
 ****************************************************************************/
 
-static mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
+mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
 {
 	mode_t ret = 0;
 

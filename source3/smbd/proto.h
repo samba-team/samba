@@ -762,6 +762,7 @@ void reply_pipe_read_and_X(struct smb_request *req);
 
 /* The following definitions come from smbd/posix_acls.c  */
 
+mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask);
 uint32_t map_canon_ace_perms(int snum,
                                 enum security_ace_type *pacl_type,
                                 mode_t perms,
