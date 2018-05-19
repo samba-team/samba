@@ -273,3 +273,8 @@ out:
 	TALLOC_FREE(to_free);
 	return dfree_ret;
 }
+
+void flush_dfree_cache(void)
+{
+	memcache_flush(smbd_memcache(), DFREE_CACHE);
+}
