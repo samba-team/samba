@@ -129,6 +129,9 @@ NTSTATUS winbindd_ping_dc_recv(struct tevent_req *req,
 
 	if (state->dcname) {
 		presp->extra_data.data = talloc_strdup(presp, state->dcname);
+		if (presp->extra_data.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		presp->length += strlen((char *)presp->extra_data.data) + 1;
 	}
 
