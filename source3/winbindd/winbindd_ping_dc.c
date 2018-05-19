@@ -135,5 +135,6 @@ NTSTATUS winbindd_ping_dc_recv(struct tevent_req *req,
 		presp->length += strlen((char *)presp->extra_data.data) + 1;
 	}
 
-	return tevent_req_simple_recv_ntstatus(req);
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
