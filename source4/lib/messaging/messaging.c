@@ -433,9 +433,19 @@ fail:
 
 struct imessaging_post_state {
 	struct imessaging_context *msg_ctx;
+	struct imessaging_post_state **busy_ref;
 	size_t buf_len;
 	uint8_t buf[];
 };
+
+static int imessaging_post_state_destructor(struct imessaging_post_state *state)
+{
+	if (state->busy_ref != NULL) {
+		*state->busy_ref = NULL;
+		state->busy_ref = NULL;
+	}
+	return 0;
+}
 
 static void imessaging_post_handler(struct tevent_context *ev,
 				    struct tevent_immediate *ti,
@@ -443,8 +453,28 @@ static void imessaging_post_handler(struct tevent_context *ev,
 {
 	struct imessaging_post_state *state = talloc_get_type_abort(
 		private_data, struct imessaging_post_state);
+
+	/*
+	 * In usecases like using messaging_client_init() with irpc processing
+	 * we may free the imessaging_context during the messaging handler.
+	 * imessaging_post_state is a child of imessaging_context and
+	 * might be implicitly free'ed before the explicit TALLOC_FREE(state).
+	 *
+	 * The busy_ref pointer makes sure the destructor clears
+	 * the local 'state' variable.
+	 */
+
+	SMB_ASSERT(state->busy_ref == NULL);
+	state->busy_ref = &state;
+
 	imessaging_dgm_recv(ev, state->buf, state->buf_len, NULL, 0,
 			    state->msg_ctx);
+
+	if (state == NULL) {
+		return;
+	}
+
+	state->busy_ref = NULL;
 	TALLOC_FREE(state);
 }
 
@@ -461,6 +491,8 @@ static int imessaging_post_self(struct imessaging_context *msg,
 	}
 	talloc_set_name_const(state, "struct imessaging_post_state");
 
+	talloc_set_destructor(state, imessaging_post_state_destructor);
+
 	ti = tevent_create_immediate(state);
 	if (ti == NULL) {
 		TALLOC_FREE(state);
@@ -468,6 +500,7 @@ static int imessaging_post_self(struct imessaging_context *msg,
 	}
 
 	state->msg_ctx = msg;
+	state->busy_ref = NULL;
 	state->buf_len = buf_len;
 	memcpy(state->buf, buf, buf_len);
 
