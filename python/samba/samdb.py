@@ -762,6 +762,15 @@ accountExpires: %u
     def set_schema_from_ldb(self, ldb_conn, write_indices_and_attributes=True):
         dsdb._dsdb_set_schema_from_ldb(self, ldb_conn, write_indices_and_attributes)
 
+    def set_schema_update_now(self):
+        ldif = """
+dn:
+changetype: modify
+add: schemaUpdateNow
+schemaUpdateNow: 1
+"""
+        self.modify_ldif(ldif)
+
     def dsdb_DsReplicaAttribute(self, ldb, ldap_display_name, ldif_elements):
         '''convert a list of attribute values to a DRSUAPI DsReplicaAttribute'''
         return dsdb._dsdb_DsReplicaAttribute(ldb, ldap_display_name, ldif_elements)
