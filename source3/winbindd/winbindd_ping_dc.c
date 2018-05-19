@@ -70,6 +70,8 @@ struct tevent_req *winbindd_ping_dc_send(TALLOC_CTX *mem_ctx,
 			}
 
 			state->dcname = talloc_asprintf(state, "%s.%s", h, d);
+			TALLOC_FREE(h);
+
 			if (tevent_req_nomem(state->dcname, req)) {
 				return tevent_req_post(req, ev);
 			}
