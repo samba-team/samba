@@ -115,6 +115,12 @@ def build(bld):
                             source='libpamtest.c',
                             deps='dl pam')
 
+        bld.SAMBA_LIBRARY('pam_set_items',
+                          source='modules/pam_set_items.c',
+                          deps='pam',
+                          install=False,
+                          realname='pam_set_items.so')
+
         # Can be used to write pam tests in python
         for env in bld.gen_python_environments():
             bld.SAMBA_PYTHON('pypamtest',
