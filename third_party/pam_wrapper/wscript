@@ -7,15 +7,18 @@ VERSION="1.0.7"
 def find_library(library_names, lookup_paths):
     for directory in lookup_paths:
         for filename in library_names:
-            libpam_path = os.path.join(directory, filename)
-            if os.path.exists(libpam_path):
-                return libpam_path
+            so_path = os.path.join(directory, filename)
+            if os.path.exists(so_path):
+                return so_path
     return ''
 
 def configure(conf):
     if conf.CHECK_PAM_WRAPPER():
         conf.DEFINE('USING_SYSTEM_PAM_WRAPPER', 1)
         libpam_wrapper_so_path = 'libpam_wrapper.so'
+
+        pam_set_items_so_path = find_library(['pam_set_items.so'],
+                                             ['/usr/lib64/pam_wrapper', '/usr/lib/pam_wrapper'])
     else:
 
         if conf.CONFIG_SET("HAVE___THREAD"):
@@ -70,8 +73,10 @@ def configure(conf):
         # Create full path to pam_wrapper
         blddir = os.path.realpath(conf.bldnode.abspath())
         libpam_wrapper_so_path = blddir + '/default/third_party/pam_wrapper/libpam-wrapper.so'
+        pam_set_items_so_path = blddir + '/default/third_party/pam_wrapper/libpam-set-items.so'
 
     conf.DEFINE('LIBPAM_WRAPPER_SO_PATH', libpam_wrapper_so_path)
+    conf.DEFINE('PAM_SET_ITEMS_SO_PATH', pam_set_items_so_path)
     conf.DEFINE('PAM_WRAPPER', 1)
 
 def build(bld):
@@ -88,6 +93,12 @@ def build(bld):
         bld.SAMBA_SUBSYSTEM('libpamtest',
                             source='libpamtest.c',
                             deps='dl pam')
+
+        bld.SAMBA_LIBRARY('pam_set_items',
+                          source='modules/pam_set_items.c',
+                          deps='pam',
+                          install=False,
+                          realname='pam_set_items.so')
 
         # Can be used to write pam tests in python
         for env in bld.gen_python_environments():
