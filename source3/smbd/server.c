@@ -2430,19 +2430,19 @@ quic_disabled:
 		exit_daemon("Samba cannot init notification", EACCES);
 	}
 
-	if (!cleanupd_init(
-		    msg_ctx,
-		    cmdline_daemon_cfg->interactive,
-		    &parent->cleanupd)) {
-		exit_daemon("Samba cannot init the cleanupd", EACCES);
-	}
-
 	if (!messaging_parent_dgm_cleanup_init(msg_ctx)) {
 		exit(1);
 	}
 
 	if (!smbd_scavenger_init(NULL, msg_ctx, ev_ctx)) {
 		exit_daemon("Samba cannot init scavenging", EACCES);
+	}
+
+	if (!cleanupd_init(
+		    msg_ctx,
+		    cmdline_daemon_cfg->interactive,
+		    &parent->cleanupd)) {
+		exit_daemon("Samba cannot init the cleanupd", EACCES);
 	}
 
 	if (!W_ERROR_IS_OK(registry_init_full()))
