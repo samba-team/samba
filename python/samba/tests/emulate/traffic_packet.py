@@ -89,6 +89,7 @@ class TrafficEmulatorPacketTests(samba.tests.TestCase):
     def tearDown(self):
         super(TrafficEmulatorPacketTests, self).tearDown()
         traffic.clean_up_accounts(self.ldb, 1)
+        del self.ldb
         shutil.rmtree(self.tempdir)
 
     def test_packet_cldap_03(self):
