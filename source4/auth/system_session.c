@@ -29,6 +29,8 @@
 #include "auth/session.h"
 #include "auth/system_session_proto.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
 
 /*
   prevent the static system session being freed

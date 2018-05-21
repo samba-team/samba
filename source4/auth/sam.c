@@ -32,7 +32,10 @@
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 
-#define KRBTGT_ATTRS \
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
+#define KRBTGT_ATTRS				\
 	/* required for the krb5 kdc */		\
 	"objectClass",				\
 	"sAMAccountName",			\
