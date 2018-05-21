@@ -758,14 +758,6 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 			/* We accept subtree searches from a NULL base DN, ie over the whole DB */
 			ret = LDB_SUCCESS;
 		}
-	} else if (ldb_dn_is_valid(req->op.search.base) == false) {
-
-		/* We don't want invalid base DNs here */
-		ldb_asprintf_errstring(ldb,
-				       "Invalid Base DN: %s",
-				       ldb_dn_get_linearized(req->op.search.base));
-		ret = LDB_ERR_INVALID_DN_SYNTAX;
-
 	} else if (req->op.search.scope == LDB_SCOPE_BASE) {
 
 		/*
