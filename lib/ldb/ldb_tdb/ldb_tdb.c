@@ -515,6 +515,16 @@ static int ltdb_add_internal(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret = LDB_SUCCESS;
 	unsigned int i;
+	bool valid_dn = false;
+
+	/* Check the new DN is reasonable */
+	valid_dn = ldb_dn_validate(msg->dn);
+	if (valid_dn == false) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Invalid DN in ADD: %s",
+				       ldb_dn_get_linearized(msg->dn));
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
 
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
@@ -1292,6 +1302,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	int ret = LDB_SUCCESS;
 	TDB_DATA tdb_key, tdb_key_old;
 	struct ldb_dn *db_dn;
+	bool valid_dn = false;
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
@@ -1304,10 +1315,24 @@ static int ltdb_rename(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* Check the new DN is reasonable */
+	valid_dn = ldb_dn_validate(req->op.rename.newdn);
+	if (valid_dn == false) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Invalid New DN: %s",
+				       ldb_dn_get_linearized(req->op.rename.newdn));
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
 	/* we need to fetch the old record to re-add under the new name */
 	ret = ltdb_search_dn1(module, req->op.rename.olddn, msg,
 			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
-	if (ret != LDB_SUCCESS) {
+	if (ret == LDB_ERR_INVALID_DN_SYNTAX) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Invalid Old DN: %s",
+				       ldb_dn_get_linearized(req->op.rename.newdn));
+		return ret;
+	} else if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
 		return ret;
 	}
