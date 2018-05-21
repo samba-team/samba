@@ -23,6 +23,8 @@ import os
 import samba.getopt as options
 import ldb
 import re
+import xml.etree.ElementTree as ET
+import shutil
 
 from samba.auth import system_session
 from samba.netcmd import (
@@ -41,6 +43,7 @@ from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHE
 from samba.netcmd.common import netcmd_finddc
 from samba import policy
 from samba import smb
+from samba import NTSTATUSError
 import uuid
 from samba.ntacls import dsacl2fsacl
 from samba.dcerpc import nbt
@@ -297,7 +300,8 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
                 open(l_name, 'w').write(data)
 
 
-def copy_directory_local_to_remote(conn, localdir, remotedir):
+def copy_directory_local_to_remote(conn, localdir, remotedir,
+                                   ignore_existing=False):
     if not conn.chkpath(remotedir):
         conn.mkdir(remotedir)
     l_dirs = [ localdir ]
@@ -315,7 +319,11 @@ def copy_directory_local_to_remote(conn, localdir, remotedir):
             if os.path.isdir(l_name):
                 l_dirs.append(l_name)
                 r_dirs.append(r_name)
-                conn.mkdir(r_name)
+                try:
+                    conn.mkdir(r_name)
+                except NTSTATUSError:
+                    if not ignore_existing:
+                        raise
             else:
                 data = open(l_name, 'r').read()
                 conn.savefile(r_name, data)
@@ -1037,6 +1045,9 @@ class cmd_create(Command):
         # Create new GUID
         guid  = str(uuid.uuid4())
         gpo = "{%s}" % guid.upper()
+
+        self.gpo_name = gpo
+
         realm = cldap_ret.dns_domain
         unc_path = "\\\\%s\\sysvol\\%s\\Policies\\%s" % (realm, realm, gpo)
 
@@ -1045,12 +1056,14 @@ class cmd_create(Command):
             tmpdir = "/tmp"
         if not os.path.isdir(tmpdir):
             raise CommandError("Temporary directory '%s' does not exist" % tmpdir)
+        self.tmpdir = tmpdir
 
         localdir = os.path.join(tmpdir, "policy")
         if not os.path.isdir(localdir):
             os.mkdir(localdir)
 
         gpodir = os.path.join(localdir, gpo)
+        self.gpodir = gpodir
         if os.path.isdir(gpodir):
             raise CommandError("GPO directory '%s' already exists, refusing to overwrite" % gpodir)
 
@@ -1065,10 +1078,13 @@ class cmd_create(Command):
 
         # Connect to DC over SMB
         [dom_name, service, sharepath] = parse_unc(unc_path)
+        self.sharepath = sharepath
         try:
             conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
         except Exception as e:
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
+
+        self.conn = conn
 
         self.samdb.transaction_start()
         try:
@@ -1134,6 +1150,138 @@ class cmd_create(Command):
             self.samdb.transaction_commit()
 
         self.outf.write("GPO '%s' created as %s\n" % (displayname, gpo))
+
+
+class cmd_restore(cmd_create):
+    """Restore a GPO to a new container."""
+
+    synopsis = "%prog <displayname> <backup location> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ['displayname', 'backup']
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--tmpdir", help="Temporary directory for copying policy files", type=str),
+        Option("--entities", help="File defining XML entities to insert into DOCTYPE header", type=str)
+        ]
+
+    def restore_from_backup_to_local_dir(self, sourcedir, targetdir, dtd_header=''):
+        SUFFIX = '.SAMBABACKUP'
+
+        if not os.path.exists(targetdir):
+            os.mkdir(targetdir)
+
+        l_dirs = [ sourcedir ]
+        r_dirs = [ targetdir ]
+        while l_dirs:
+            l_dir = l_dirs.pop()
+            r_dir = r_dirs.pop()
+
+            dirlist = os.listdir(l_dir)
+            for e in dirlist:
+                l_name = os.path.join(l_dir, e)
+                r_name = os.path.join(r_dir, e)
+
+                if os.path.isdir(l_name):
+                    l_dirs.append(l_name)
+                    r_dirs.append(r_name)
+                    if not os.path.exists(r_name):
+                        os.mkdir(r_name)
+                else:
+                    if l_name.endswith('.xml'):
+                        # Restore the xml file if possible
+
+                        # Get the filename to find the parser
+                        to_parse = os.path.basename(l_name)[:-4]
+
+                        parser = find_parser(to_parse)
+                        try:
+                            with open(l_name, 'r') as ltemp:
+                                data = ltemp.read()
+                                # Load the XML file with the DTD (entity) header
+                                parser.load_xml(ET.fromstring(dtd_header + data))
+
+                                # Write out the substituted files in the output
+                                # location, ready to copy over.
+                                parser.write_binary(r_name[:-4])
+
+                        except GPNoParserException:
+                            # In the failure case, we fallback
+                            original_file = l_name[:-4] + SUFFIX
+                            shutil.copy2(original_file, r_name[:-4])
+
+                            self.outf.write('WARNING: No such parser for %s\n' % to_parse)
+                            self.outf.write('WARNING: Falling back to simple copy-restore.\n')
+                        except:
+                            import traceback
+                            traceback.print_exc()
+
+                            # In the failure case, we fallback
+                            original_file = l_name[:-4] + SUFFIX
+                            shutil.copy2(original_file, r_name[:-4])
+
+                            self.outf.write('WARNING: Error during parsing for %s\n' % l_name)
+                            self.outf.write('WARNING: Falling back to simple copy-restore.\n')
+
+    def run(self, displayname, backup, H=None, tmpdir=None, entities=None, sambaopts=None, credopts=None,
+            versionopts=None):
+
+        dtd_header = ''
+
+        if not os.path.exists(backup):
+            raise CommandError("Backup directory does not exist %s" % backup)
+
+        if entities is not None:
+            # DOCTYPE name is meant to match root element, but ElementTree does
+            # not seem to care, so this seems to be enough.
+
+            dtd_header = '<!DOCTYPE foobar [\n'
+
+            if not os.path.exists(entities):
+                raise CommandError("Entities file does not exist %s" %
+                                   entities)
+            with open(entities, 'r') as entities_file:
+                entities_content = entities_file.read()
+
+                # Do a basic regex test of the entities file format
+                if re.match('(\s*<!ENTITY\s*[a-zA-Z0-9_]+\s*.*?>)+\s*\Z',
+                            entities_content, flags=re.MULTILINE) is None:
+                    raise CommandError("Entities file does not appear to "
+                                       "conform to format\n"
+                                       'e.g. <!ENTITY entity "value">')
+                dtd_header += entities_content.strip()
+
+            dtd_header += '\n]>\n'
+
+        super(cmd_restore, self).run(displayname, H, tmpdir, sambaopts,
+                                    credopts, versionopts)
+
+        try:
+            # Iterate over backup files and restore with DTD
+            self.restore_from_backup_to_local_dir(backup, self.gpodir,
+                                                  dtd_header)
+
+            # Copy GPO files over SMB
+            copy_directory_local_to_remote(self.conn, self.gpodir,
+                                           self.sharepath,
+                                           ignore_existing=True)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self.outf.write(str(e) + '\n')
+
+            self.outf.write("Failed to restore GPO -- deleting...\n")
+            cmd = cmd_del()
+            cmd.run(self.gpo_name, H, sambaopts, credopts, versionopts)
+
+            raise CommandError("Failed to restore: %s" % e)
 
 
 class cmd_del(Command):
@@ -1292,3 +1440,4 @@ class cmd_gpo(SuperCommand):
     subcommands["del"] = cmd_del()
     subcommands["aclcheck"] = cmd_aclcheck()
     subcommands["backup"] = cmd_backup()
+    subcommands["restore"] = cmd_restore()
