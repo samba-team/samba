@@ -323,6 +323,9 @@ static char *parsetree_to_sql(struct ldb_module *module,
 		 	const char *cdn = ldb_dn_get_casefold(
 						ldb_dn_new(mem_ctx, ldb,
 							      (const char *)value.data));
+			if (cdn == NULL) {
+				return NULL;
+			}
 
 			return lsqlite3_tprintf(mem_ctx,
 						"SELECT eid FROM ldb_entry "
