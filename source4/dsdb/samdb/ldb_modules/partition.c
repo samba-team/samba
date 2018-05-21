@@ -394,32 +394,36 @@ static int partition_send_all(struct ldb_module *module,
 	return partition_call_first(ac);
 }
 
+struct partition_copy_context {
+	struct ldb_module *module;
+	struct partition_context *partition_context;
+	struct ldb_request *request;
+	struct ldb_dn *dn;
+};
 
-/**
- * send an operation to the top partition, then copy the resulting
- * object to all other partitions
+/*
+ * A special DN has been updated in the primary partition. Now propagate those
+ * changes to the remaining partitions.
+ *
+ * Note: that the operations are asyncchonous and this fuction is called
+ *       from partition_copy_all_callback_handler in response to an async
+ *       callback.
  */
-static int partition_copy_all(struct ldb_module *module,
-			      struct partition_context *ac,
-			      struct ldb_request *req,
-			      struct ldb_dn *dn)
+static int partition_copy_all_callback_action(
+	struct ldb_module *module,
+	struct partition_context *ac,
+	struct ldb_request *req,
+	struct ldb_dn *dn)
+
 {
+
 	unsigned int i;
-	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
-							      struct partition_private_data);
-	int ret, search_ret;
+	struct partition_private_data *data =
+		talloc_get_type(
+			ldb_module_get_private(module),
+			struct partition_private_data);
+	int search_ret;
 	struct ldb_result *res;
-
-	/* do the request on the top level sam.ldb synchronously */
-	ret = ldb_next_request(module, req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	/* now fetch the resulting object, and then copy it to all the
 	 * other partitions. We need this approach to cope with the
 	 * partitions getting out of sync. If for example the
@@ -428,7 +432,7 @@ static int partition_copy_all(struct ldb_module *module,
 	 * lead to an error
 	 */
 	search_ret = dsdb_module_search_dn(module, ac, &res, dn, NULL, DSDB_FLAG_NEXT_MODULE, req);
-	if (search_ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
+	if (search_ret != LDB_SUCCESS) {
 		return search_ret;
 	}
 
@@ -521,6 +525,161 @@ static int partition_copy_all(struct ldb_module *module,
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
 
+
+/*
+ * @brief call back function for the ldb operations on special DN's.
+ *
+ * As the LDB operations are async, and we wish to use the result
+ * the operations, a callback needs to be registered to process the results
+ * of the LDB operations.
+ *
+ * @param req the ldb request
+ * @param res the result of the operation
+ *
+ * @return the LDB_STATUS
+ */
+static int partition_copy_all_callback_handler(
+	struct ldb_request *req,
+	struct ldb_reply *ares)
+{
+	struct partition_copy_context *ac = NULL;
+	int error = ares->error;
+
+	ac = talloc_get_type(
+		req->context,
+		struct partition_copy_context);
+
+	if (!ares) {
+		return ldb_module_done(
+			ac->request,
+			NULL,
+			NULL,
+			LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	/* pass on to the callback */
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		return ldb_module_send_entry(
+			ac->request,
+			ares->message,
+			ares->controls);
+
+	case LDB_REPLY_REFERRAL:
+		return ldb_module_send_referral(
+			ac->request,
+			ares->referral);
+
+	case LDB_REPLY_DONE:
+		error = ares->error;
+		if (error == LDB_SUCCESS) {
+			error = partition_copy_all_callback_action(
+				ac->module,
+				ac->partition_context,
+				ac->request,
+				ac->dn);
+		}
+		return ldb_module_done(
+			ac->request,
+			ares->controls,
+			ares->response,
+			error);
+
+	default:
+		/* Can't happen */
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+}
+
+/**
+ * send an operation to the top partition, then copy the resulting
+ * object to all other partitions.
+ */
+static int partition_copy_all(
+	struct ldb_module *module,
+	struct partition_context *partition_context,
+	struct ldb_request *req,
+	struct ldb_dn *dn)
+{
+	struct ldb_request *new_req = NULL;
+	struct ldb_context *ldb = NULL;
+	struct partition_copy_context *context = NULL;
+
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	context = talloc_zero(req, struct partition_copy_context);
+	if (context == NULL) {
+		return ldb_oom(ldb);
+	}
+	context->module = module;
+	context->request = req;
+	context->dn = dn;
+	context->partition_context = partition_context;
+
+	switch (req->operation) {
+	case LDB_ADD:
+		ret = ldb_build_add_req(
+			&new_req,
+			ldb,
+			req,
+			req->op.add.message,
+			req->controls,
+			context,
+			partition_copy_all_callback_handler,
+			req);
+		break;
+	case LDB_MODIFY:
+		ret = ldb_build_mod_req(
+			&new_req,
+			ldb,
+			req,
+			req->op.mod.message,
+			req->controls,
+			context,
+			partition_copy_all_callback_handler,
+			req);
+		break;
+	case LDB_DELETE:
+		ret = ldb_build_del_req(
+			&new_req,
+			ldb,
+			req,
+			req->op.del.dn,
+			req->controls,
+			context,
+			partition_copy_all_callback_handler,
+			req);
+		break;
+	case LDB_RENAME:
+		ret = ldb_build_rename_req(
+			&new_req,
+			ldb,
+			req,
+			req->op.rename.olddn,
+			req->op.rename.newdn,
+			req->controls,
+			context,
+			partition_copy_all_callback_handler,
+			req);
+		break;
+	default:
+		/*
+		 * Shouldn't happen.
+		 */
+		ldb_debug(
+			ldb,
+			LDB_DEBUG_ERROR,
+			"Unexpected opertation type (%d)\n", req->operation);
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		break;
+	}
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return ldb_next_request(module, new_req);
+}
 /**
  * Figure out which backend a request needs to be aimed at.  Some
  * requests must be replicated to all backends
