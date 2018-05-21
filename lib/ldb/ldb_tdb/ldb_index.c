@@ -970,11 +970,20 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
+		bool valid_dn = false;
 		struct ldb_dn *dn
 			= ldb_dn_from_ldb_val(list,
 					      ldb_module_get_ctx(module),
 					      &tree->u.equality.value);
 		if (dn == NULL) {
+			/* If we can't parse it, no match */
+			list->dn = NULL;
+			list->count = 0;
+			return LDB_SUCCESS;
+		}
+
+		valid_dn = ldb_dn_validate(dn);
+		if (valid_dn == false) {
 			/* If we can't parse it, no match */
 			list->dn = NULL;
 			list->count = 0;
