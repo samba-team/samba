@@ -1172,11 +1172,20 @@ static int ldb_kv_index_dn_leaf(struct ldb_module *module,
 	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
 		enum key_truncation truncation = KEY_NOT_TRUNCATED;
+		bool valid_dn = false;
 		struct ldb_dn *dn
 			= ldb_dn_from_ldb_val(list,
 					      ldb_module_get_ctx(module),
 					      &tree->u.equality.value);
 		if (dn == NULL) {
+			/* If we can't parse it, no match */
+			list->dn = NULL;
+			list->count = 0;
+			return LDB_SUCCESS;
+		}
+
+		valid_dn = ldb_dn_validate(dn);
+		if (valid_dn == false) {
 			/* If we can't parse it, no match */
 			list->dn = NULL;
 			list->count = 0;
