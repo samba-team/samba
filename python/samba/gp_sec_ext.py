@@ -201,3 +201,21 @@ class gp_sec_ext(gp_inf_ext):
                                    value, ldb).update_samba()
                             self.gp_db.commit()
 
+if __name__ == "__main__":
+    from samba import gpo
+    import optparse
+    from samba import getopt as options
+    guid = '{827D319E-6EAC-11D2-A4EA-00C04F79F83A}'
+    name = 'gp_sec_ext'
+    path = os.path.abspath(__file__)
+
+    parser = optparse.OptionParser('%s [options]' % name)
+    sambaopts = options.SambaOptions(parser)
+    parser.add_option_group(sambaopts)
+
+    (opts, args) = parser.parse_args()
+    lp = sambaopts.get_loadparm()
+
+    gpo.register_gp_extension(guid, name, path, smb_conf=lp.configfile,
+                              machine=True, user=False)
+
