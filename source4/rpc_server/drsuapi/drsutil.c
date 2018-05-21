@@ -107,7 +107,7 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 		if (call) {
 			DEBUG(0,("%s refused for security token (level=%u)\n",
 				 call, (unsigned)level));
-			security_token_debug(0, 2, dce_call->conn->auth_state.session_info->security_token);
+			security_token_debug(DBGC_DRS_REPL, 2, dce_call->conn->auth_state.session_info->security_token);
 		}
 		return WERR_DS_DRA_ACCESS_DENIED;
 	}
@@ -170,7 +170,7 @@ static WERROR drs_security_access_check_log(struct ldb_context *sam_ctx,
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		DEBUG(3,("%s refused for security token on %s\n",
 			 ext_right, ldb_dn_get_linearized(dn)));
-		security_token_debug(2, 0, token);
+		security_token_debug(DBGC_DRS_REPL, 3, token);
 		return WERR_DS_DRA_ACCESS_DENIED;
 	} else if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Failed to perform access check on %s: %s\n", ldb_dn_get_linearized(dn), ldb_strerror(ret)));
