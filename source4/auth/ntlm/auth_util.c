@@ -29,6 +29,9 @@
 #include "librpc/gen_ndr/drsuapi.h"
 #include "dsdb/samdb/samdb.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /* this default function can be used by mostly all backends
  * which don't want to set a challenge
  */

@@ -34,6 +34,9 @@
 #include "auth/kerberos/kerberos_util.h"
 #include "libds/common/roles.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_context,
 						   TALLOC_CTX *mem_ctx,
                                                   void *server_returned_info,

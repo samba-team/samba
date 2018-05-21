@@ -28,6 +28,9 @@
 #include "../libcli/auth/pam_errors.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 _PUBLIC_ NTSTATUS auth4_unix_init(TALLOC_CTX *);
 
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info

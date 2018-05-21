@@ -27,6 +27,9 @@
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 struct authenticate_ldap_simple_bind_state {
 	bool using_tls;
 	struct auth4_context *auth_context;

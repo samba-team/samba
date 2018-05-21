@@ -37,6 +37,9 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libds/common/roles.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 NTSTATUS auth_sam_init(void);
 
 extern const char *user_attrs[];

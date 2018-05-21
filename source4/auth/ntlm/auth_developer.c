@@ -24,6 +24,9 @@
 #include "auth/ntlm/auth_proto.h"
 #include "libcli/security/security.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 _PUBLIC_ NTSTATUS auth4_developer_init(TALLOC_CTX *);
 
 static NTSTATUS name_to_ntstatus_want_check(struct auth_method_context *ctx,

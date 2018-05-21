@@ -24,6 +24,9 @@
 #include "auth/ntlm/auth_proto.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 _PUBLIC_ NTSTATUS auth4_anonymous_init(TALLOC_CTX *);
 
 /**

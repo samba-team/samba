@@ -35,6 +35,9 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth_sam.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 _PUBLIC_ NTSTATUS auth4_winbind_init(TALLOC_CTX *);
 
 static NTSTATUS winbind_want_check(struct auth_method_context *ctx,

@@ -20,6 +20,9 @@
 #include "includes.h"
 #include "auth/auth.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 NTSTATUS server_service_auth_init(TALLOC_CTX *ctx)
 {
 	return auth4_init();
