@@ -2003,8 +2003,6 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 				SMB_STRUCT_STAT *sbuf)
 {
 	struct gpfs_winattr attrs;
-	char *path = NULL;
-	NTSTATUS status;
 	struct gpfs_config_data *config;
 	int ret;
 
@@ -2016,24 +2014,17 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 		return false;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), fname, &path);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-
-	ret = gpfswrap_get_winattrs_path(path, &attrs);
+	ret = gpfswrap_get_winattrs_path(fname->base_name, &attrs);
 	if (ret == -1) {
-		TALLOC_FREE(path);
 		return false;
 	}
 
 	if ((attrs.winAttrs & GPFS_WINATTR_OFFLINE) != 0) {
-		DEBUG(10, ("%s is offline\n", path));
-		TALLOC_FREE(path);
+		DBG_DEBUG("%s is offline\n", fname->base_name);
 		return true;
 	}
-	DEBUG(10, ("%s is online\n", path));
-	TALLOC_FREE(path);
+
+	DBG_DEBUG("%s is online\n", fname->base_name);
 	return false;
 }
 
