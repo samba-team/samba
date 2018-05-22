@@ -243,8 +243,10 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 				      char **found_name)
 {
 	int result;
-	char *full_path;
-	char real_pathname[PATH_MAX+1];
+	char *full_path = NULL;
+	char *to_free = NULL;
+	char real_pathname[PATH_MAX+1], tmpbuf[PATH_MAX];
+	size_t full_path_len;
 	int buflen;
 	bool mangled;
 	struct gpfs_config_data *config;
@@ -264,8 +266,9 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 						      mem_ctx, found_name);
 	}
 
-	full_path = talloc_asprintf(talloc_tos(), "%s/%s", path, name);
-	if (full_path == NULL) {
+	full_path_len = full_path_tos(path, name, tmpbuf, sizeof(tmpbuf),
+				      &full_path, &to_free);
+	if (full_path_len == -1) {
 		errno = ENOMEM;
 		return -1;
 	}
@@ -275,7 +278,7 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 	result = gpfswrap_get_realfilename_path(full_path, real_pathname,
 						&buflen);
 
-	TALLOC_FREE(full_path);
+	TALLOC_FREE(to_free);
 
 	if ((result == -1) && (errno == ENOSYS)) {
 		return SMB_VFS_NEXT_GET_REAL_FILENAME(
