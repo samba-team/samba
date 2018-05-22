@@ -1888,23 +1888,15 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
         struct gpfs_winattr attrs;
         int ret;
-        char *path = NULL;
-        NTSTATUS status;
 	struct gpfs_config_data *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
 				return -1);
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
 	/* Try to use gpfs_set_times if it is enabled and available */
 	if (config->settimes) {
-		ret = smbd_gpfs_set_times_path(path, ft);
+		ret = smbd_gpfs_set_times_path(smb_fname->base_name, ft);
 
 		if (ret == 0 || (ret == -1 && errno != ENOSYS)) {
 			return ret;
@@ -1937,7 +1929,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
         attrs.creationTime.tv_sec = ft->create_time.tv_sec;
         attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
 
-	ret = gpfswrap_set_winattrs_path(discard_const_p(char, path),
+	ret = gpfswrap_set_winattrs_path(smb_fname->base_name,
 					 GPFS_WINATTR_SET_CREATION_TIME,
 					 &attrs);
         if(ret == -1 && errno != ENOSYS){
