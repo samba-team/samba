@@ -494,9 +494,17 @@ static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
 		return false;
 	}
 	if (!timeval_is_zero(&conn->limits.endtime)) {
-		tevent_req_set_endtime(subreq,
-				       conn->connection->event.ctx,
-				       conn->limits.endtime);
+		bool ok;
+		ok = tevent_req_set_endtime(subreq,
+					    conn->connection->event.ctx,
+					    conn->limits.endtime);
+		if (!ok) {
+			ldapsrv_terminate_connection(
+				conn,
+				"ldapsrv_call_read_next: "
+				"no memory for tevent_req_set_endtime");
+			return false;
+		}
 	}
 	tevent_req_set_callback(subreq, ldapsrv_call_read_done, conn);
 	conn->sockets.read_req = subreq;
