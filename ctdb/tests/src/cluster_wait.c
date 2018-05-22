@@ -58,6 +58,7 @@ struct tevent_req *cluster_wait_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cluster_wait_state *state;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state, struct cluster_wait_state);
 	if (req == NULL) {
@@ -95,7 +96,13 @@ struct tevent_req *cluster_wait_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, cluster_wait_sync_registered, req);
 
 	/* If cluster is not synchronized within 30 seconds, time out */
-	tevent_req_set_endtime(req, ev, tevent_timeval_current_ofs(30, 0));
+	ok = tevent_req_set_endtime(
+		req,
+		ev,
+		tevent_timeval_current_ofs(30, 0));
+	if (!ok) {
+		return tevent_req_post(req, ev);
+	}
 
 	return req;
 }
