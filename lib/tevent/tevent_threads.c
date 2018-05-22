@@ -28,8 +28,8 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
-#if defined(HAVE_PTHREAD)
-#include <pthread.h>
+#ifdef HAVE_PTHREAD
+#include "system/threads.h"
 
 struct tevent_immediate_list {
 	struct tevent_immediate_list *next, *prev;

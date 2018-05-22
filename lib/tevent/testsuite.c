@@ -32,7 +32,7 @@
 #include "torture/torture.h"
 #include "torture/local/proto.h"
 #ifdef HAVE_PTHREAD
-#include <pthread.h>
+#include "system/threads.h"
 #include <assert.h>
 #endif
 
