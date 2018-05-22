@@ -307,7 +307,7 @@ int main(int argc, const char *argv[])
 			     1);
 		if (ret != 0) {
 			D_ERR("Failed to set up lock debugging (%s)\n",
-			      strerror(ret));
+			      strerror(errno));
 			goto fail;
 		}
 	}
