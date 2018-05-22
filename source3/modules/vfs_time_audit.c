@@ -300,7 +300,7 @@ static NTSTATUS smb_time_audit_get_dfs_referrals(
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log("get_dfs_referrals(", timediff);
+		smb_time_audit_log("get_dfs_referrals", timediff);
 	}
 
 	return result;
