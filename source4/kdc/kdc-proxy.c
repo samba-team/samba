@@ -184,6 +184,7 @@ static void kdc_udp_proxy_resolve_done(struct composite_context *csubreq)
 	struct tevent_req *subreq;
 	struct tsocket_address *local_addr, *proxy_addr;
 	int ret;
+	bool ok;
 
 	status = resolve_name_recv(csubreq, state, &state->proxy.ip);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -234,8 +235,15 @@ static void kdc_udp_proxy_resolve_done(struct composite_context *csubreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, kdc_udp_proxy_recvfrom_done, req);
-	tevent_req_set_endtime(subreq, state->ev,
-			       timeval_current_ofs(state->kdc->proxy_timeout, 0));
+
+	ok = tevent_req_set_endtime(
+		subreq,
+		state->ev,
+		timeval_current_ofs(state->kdc->proxy_timeout, 0));
+	if (!ok) {
+		DBG_DEBUG("tevent_req_set_endtime failed\n");
+		return;
+	}
 
 	DEBUG(4,("kdc_udp_proxy: proxying request to %s[%s]\n",
 		 state->proxy.name.name, state->proxy.ip));
