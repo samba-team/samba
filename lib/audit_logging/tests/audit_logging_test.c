@@ -519,6 +519,7 @@ static void test_audit_get_timestamp(void **state)
 		struct tm tz;
 		c = strptime(c, " %Z", &tz);
 	}
+	assert_non_null(c);
 	assert_int_equal(0, strlen(c));
 
 	actual = mktime(&tm);
