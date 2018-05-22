@@ -104,6 +104,7 @@ static void ldapsrv_terminate_connection_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct ldapsrv_connection);
 	int sys_errno;
+	bool ok;
 
 	tstream_disconnect_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
@@ -130,9 +131,15 @@ static void ldapsrv_terminate_connection_done(struct tevent_req *subreq)
 					    conn->limits.reason);
 		return;
 	}
-	tevent_req_set_endtime(subreq,
-			       conn->connection->event.ctx,
-			       conn->limits.endtime);
+	ok = tevent_req_set_endtime(subreq,
+				    conn->connection->event.ctx,
+				    conn->limits.endtime);
+	if (!ok) {
+		TALLOC_FREE(conn->sockets.raw);
+		stream_terminate_connection(conn->connection,
+					    conn->limits.reason);
+		return;
+	}
 	tevent_req_set_callback(subreq, ldapsrv_terminate_connection_done, conn);
 }
 
