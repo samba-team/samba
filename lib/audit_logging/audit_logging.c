@@ -194,7 +194,7 @@ void audit_message_send(
 	uint32_t message_type,
 	const char *message)
 {
-	struct server_id event_server;
+	struct server_id event_server = {};
 	NTSTATUS status;
 	DATA_BLOB message_blob = data_blob_string_const(message);
 
