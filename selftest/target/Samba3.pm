@@ -2007,6 +2007,12 @@ sub provision($$$$$$$$$)
 	vfs objects = acl_xattr fake_acls xattr_tdb fake_dfq
 	admin users = $unix_name
 	include = $dfqconffile
+[dfq_cache]
+	path = $shrdir/dfree
+	vfs objects = acl_xattr fake_acls xattr_tdb fake_dfq
+	admin users = $unix_name
+	include = $dfqconffile
+	dfree cache time = 60
 [dfq_owner]
 	path = $shrdir/dfree
 	vfs objects = acl_xattr fake_acls xattr_tdb fake_dfq
