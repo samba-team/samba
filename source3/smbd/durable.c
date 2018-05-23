@@ -194,10 +194,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 
 	/* Ensure any pending write time updates are done. */
 	if (fsp->update_write_time_event) {
-		update_write_time_handler(fsp->conn->sconn->ev_ctx,
-					fsp->update_write_time_event,
-					timeval_current(),
-					(void *)fsp);
+		fsp_flush_write_time_update(fsp);
 	}
 
 	/*

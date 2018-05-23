@@ -320,10 +320,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32_t dosmode);
 /* The following definitions come from smbd/fileio.c  */
 
 ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n);
-void update_write_time_handler(struct tevent_context *ctx,
-                                      struct tevent_timer *te,
-                                      struct timeval now,
-                                      void *private_data);
+void fsp_flush_write_time_update(struct files_struct *fsp);
 void trigger_write_time_update(struct files_struct *fsp);
 void trigger_write_time_update_immediate(struct files_struct *fsp);
 void mark_file_modified(files_struct *fsp);
