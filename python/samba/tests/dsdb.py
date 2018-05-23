@@ -726,3 +726,22 @@ class DsdbTests(TestCase):
                                 str(part_dn) + "," + str(domain_dn)),
                          self.samdb.normalize_dn_in_domain(part_dn))
 
+class DsdbFullScanTests(TestCase):
+
+    def setUp(self):
+        super(DsdbFullScanTests, self).setUp()
+        self.lp = samba.tests.env_loadparm()
+        self.creds = Credentials()
+        self.creds.guess(self.lp)
+        self.session = system_session()
+
+
+    def test_sam_ldb_open_no_full_scan(self):
+        try:
+            self.samdb = SamDB(session_info=self.session,
+                               credentials=self.creds,
+                               lp=self.lp,
+                               options=["disable_full_db_scan_for_self_test:1"])
+        except LdbError as err:
+            estr = err.args[1]
+            self.fail("sam.ldb required a full scan to start up")
