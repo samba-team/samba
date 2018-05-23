@@ -40,6 +40,12 @@ struct ltdb_private {
 	bool reindex_failed;
 
 	const struct ldb_schema_syntax *GUID_index_syntax;
+
+	/*
+	 * To allow testing that ensures the DB does not fall back
+	 * to a full scan
+	 */
+	bool disable_full_db_scan;
 };
 
 struct ltdb_context {

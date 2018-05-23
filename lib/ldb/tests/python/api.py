@@ -646,9 +646,16 @@ class SearchTests(LdbBaseTest):
         super(SearchTests, self).setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "search_test.ldb")
+        options = ["modules:rdn_name"]
+        if hasattr(self, 'IDXCHECK'):
+            options.append("disable_full_db_scan_for_self_test:1")
         self.l = ldb.Ldb(self.url(),
                          flags=self.flags(),
-                         options=["modules:rdn_name"])
+                         options=options)
+        try:
+            self.l.add(self.index)
+        except AttributeError:
+            pass
 
         self.l.add({"dn": "@ATTRIBUTES",
                     "DC": "CASE_INSENSITIVE"})
@@ -929,6 +936,47 @@ class SearchTests(LdbBaseTest):
                               expression="(|(x=y)(y=b))")
         self.assertEqual(len(res11), 20)
 
+    def test_one_unindexable(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=samba,DC=org",
+                                  scope=ldb.SCOPE_ONELEVEL,
+                                  expression="(y=b*)")
+            if hasattr(self, 'IDX') and \
+               not hasattr(self, 'IDXONE') and \
+               hasattr(self, 'IDXCHECK'):
+                self.fail("Should have failed as un-indexed search")
+
+            self.assertEqual(len(res11), 9)
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+
+    def test_one_unindexable_presence(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=samba,DC=org",
+                                  scope=ldb.SCOPE_ONELEVEL,
+                                  expression="(y=*)")
+            if hasattr(self, 'IDX') and \
+               not hasattr(self, 'IDXONE') and \
+               hasattr(self, 'IDXCHECK'):
+                self.fail("Should have failed as un-indexed search")
+
+            self.assertEqual(len(res11), 24)
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+
+
     def test_subtree_and_or(self):
         """Testing a search"""
 
@@ -1009,6 +1057,45 @@ class SearchTests(LdbBaseTest):
                               expression="(@IDXONE=DC=SAMBA,DC=ORG)")
         self.assertEqual(len(res11), 0)
 
+    def test_subtree_unindexable(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=samba,DC=org",
+                                  scope=ldb.SCOPE_SUBTREE,
+                                  expression="(y=b*)")
+            if hasattr(self, 'IDX') and \
+               hasattr(self, 'IDXCHECK'):
+                self.fail("Should have failed as un-indexed search")
+
+            self.assertEqual(len(res11), 9)
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+
+    def test_subtree_unindexable_presence(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=samba,DC=org",
+                                  scope=ldb.SCOPE_SUBTREE,
+                                  expression="(y=*)")
+            if hasattr(self, 'IDX') and \
+               hasattr(self, 'IDXCHECK'):
+                self.fail("Should have failed as un-indexed search")
+
+            self.assertEqual(len(res11), 24)
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+
+
     def test_dn_filter_one(self):
         """Testing that a dn= filter succeeds
         (or fails with disallowDNFilter
@@ -1066,6 +1153,13 @@ class IndexedSearchTests(SearchTests):
                     "@IDXATTR": [b"x", b"y", b"ou"]})
         self.IDX = True
 
+class IndexedCheckSearchTests(IndexedSearchTests):
+    """Test searches using the index, to ensure the index doesn't
+       break things (full scan disabled)"""
+    def setUp(self):
+        self.IDXCHECK = True
+        super(IndexedCheckSearchTests, self).setUp()
+
 class IndexedSearchDnFilterTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
@@ -1088,6 +1182,14 @@ class IndexedAndOneLevelSearchTests(SearchTests):
                     "@IDXATTR": [b"x", b"y", b"ou"],
                     "@IDXONE": [b"1"]})
         self.IDX = True
+        self.IDXONE = True
+
+class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
+    """Test searches using the index including @IDXONE, to ensure
+       the index doesn't break things (full scan disabled)"""
+    def setUp(self):
+        self.IDXCHECK = True
+        super(IndexedCheckedAndOneLevelSearchTests, self).setUp()
 
 class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure

@@ -1965,6 +1965,22 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	ltdb->sequence_number = 0;
 
+	/*
+	 * Override full DB scans
+	 *
+	 * A full DB scan is expensive on a large database.  This
+	 * option is for testing to show that the full DB scan is not
+	 * triggered.
+	 */
+	{
+		const char *len_str =
+			ldb_options_find(ldb, options,
+					 "disable_full_db_scan_for_self_test");
+		if (len_str != NULL) {
+			ltdb->disable_full_db_scan = true;
+		}
+	}
+
 	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);
 	if (!module) {
 		ldb_oom(ldb);
