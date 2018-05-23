@@ -1624,6 +1624,15 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return conn;
 		}
+	} else if (flags & AS_GUEST) {
+		/*
+		 * Does this protocol need to be run as guest? (Only archane
+		 * messenger service requests have this...)
+		 */
+		if (!change_to_guest()) {
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return conn;
+		}
 	} else {
 		/* This call needs to be run as root */
 		change_to_root_user();
@@ -1654,17 +1663,6 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 			return conn;
 		}
 		conn->num_smb_operations++;
-	}
-
-	/*
-	 * Does this protocol need to be run as guest? (Only archane
-	 * messenger service requests have this...)
-	 */
-	if (flags & AS_GUEST) {
-		if (!change_to_guest()) {
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return conn;
-		}
 	}
 
 	/*
