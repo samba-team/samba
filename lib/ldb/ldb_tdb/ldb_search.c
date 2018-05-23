@@ -806,7 +806,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		 * callback error */
 		if ( ! ctx->request_terminated && ret != LDB_SUCCESS) {
 			/* Not indexed, so we need to do a full scan */
-			if (ltdb->warn_unindexed) {
+			if (ltdb->warn_unindexed || ltdb->disable_full_db_scan) {
 				/* useful for debugging when slow performance
 				 * is caused by unindexed searches */
 				char *expression = ldb_filter_from_tree(ctx, ctx->tree);
@@ -819,6 +819,7 @@ int ltdb_search(struct ltdb_context *ctx)
 
 				talloc_free(expression);
 			}
+
 			if (match_count != 0) {
 				/* the indexing code gave an error
 				 * after having returned at least one
@@ -831,6 +832,14 @@ int ltdb_search(struct ltdb_context *ctx)
 				ltdb->kv_ops->unlock_read(module);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
+
+			if (ltdb->disable_full_db_scan) {
+				ldb_set_errstring(ldb,
+						  "ldb FULL SEARCH disabled");
+				ltdb->kv_ops->unlock_read(module);
+				return LDB_ERR_INAPPROPRIATE_MATCHING;
+			}
+
 			ret = ltdb_search_full(ctx);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ldb, "Indexed and full searches both failed!\n");

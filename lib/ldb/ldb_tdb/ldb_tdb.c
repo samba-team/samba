@@ -2279,6 +2279,22 @@ int init_store(struct ltdb_private *ltdb,
 		}
 	}
 
+	/*
+	 * Override full DB scans
+	 *
+	 * A full DB scan is expensive on a large database.  This
+	 * option is for testing to show that the full DB scan is not
+	 * triggered.
+	 */
+	{
+		const char *len_str =
+			ldb_options_find(ldb, options,
+					 "disable_full_db_scan_for_self_test");
+		if (len_str != NULL) {
+			ltdb->disable_full_db_scan = true;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 

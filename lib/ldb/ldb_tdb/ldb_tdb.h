@@ -79,6 +79,12 @@ struct ltdb_private {
 	unsigned max_key_length;
 
 	/*
+	 * To allow testing that ensures the DB does not fall back
+	 * to a full scan
+	 */
+	bool disable_full_db_scan;
+
+	/*
 	 * The PID that opened this database so we don't work in a
 	 * fork()ed child.
 	 */
