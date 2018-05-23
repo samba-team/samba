@@ -123,7 +123,7 @@ static void delete_and_reload_printers_full(struct tevent_context *ev,
 	}
 
 	/* finally, purge old snums */
-	delete_and_reload_printers(ev, msg_ctx);
+	delete_and_reload_printers();
 
 	TALLOC_FREE(session_info);
 }

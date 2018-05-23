@@ -1694,7 +1694,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 	 * inventory on open as well.
 	 */
 	become_root();
-	delete_and_reload_printers(server_event_context(), p->msg_ctx);
+	delete_and_reload_printers();
 	unbecome_root();
 
 	/* some sanity check because you can open a printer or a print server */
@@ -4403,7 +4403,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 	 * printer process updates printer_list.tdb at regular intervals.
 	 */
 	become_root();
-	delete_and_reload_printers(server_event_context(), msg_ctx);
+	delete_and_reload_printers();
 	unbecome_root();
 
 	n_services = lp_numservices();

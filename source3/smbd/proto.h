@@ -1051,8 +1051,7 @@ const struct security_token *sec_ctx_active_token(void);
 
 struct memcache *smbd_memcache(void);
 bool snum_is_shared_printer(int snum);
-void delete_and_reload_printers(struct tevent_context *ev,
-				struct messaging_context *msg_ctx);
+void delete_and_reload_printers(void);
 bool reload_services(struct smbd_server_connection *sconn,
 		     bool (*snumused) (struct smbd_server_connection *, int),
 		     bool test);

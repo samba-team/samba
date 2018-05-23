@@ -48,13 +48,8 @@ bool snum_is_shared_printer(int snum)
  *
  * This function should normally only be called as a callback on a successful
  * pcap_cache_reload(), or on client enumeration.
- *
- * @param[in] ev        The event context.
- *
- * @param[in] msg_ctx   The messaging context.
  */
-void delete_and_reload_printers(struct tevent_context *ev,
-				struct messaging_context *msg_ctx)
+void delete_and_reload_printers(void)
 {
 	int n_services;
 	int pnum;
