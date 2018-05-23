@@ -199,7 +199,6 @@ static NTSTATUS btrfs_offload_read_recv(struct tevent_req *req,
 struct btrfs_offload_write_state {
 	struct vfs_handle_struct *handle;
 	off_t copied;
-	struct tevent_req *subreq;	/* non-null if passed to next VFS fn */
 };
 static void btrfs_offload_write_done(struct tevent_req *subreq);
 
@@ -215,6 +214,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 {
 	struct tevent_req *req = NULL;
 	struct btrfs_offload_write_state *state = NULL;
+	struct tevent_req *subreq = NULL;
 	struct btrfs_ioctl_clone_range_args cr_args;
 	struct lock_struct src_lck;
 	struct lock_struct dest_lck;
@@ -264,19 +264,19 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 	}
 
 	if (!handle_offload_write) {
-		state->subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
-								state,
-								ev,
-								fsctl,
-								token,
-								transfer_offset,
-								dest_fsp,
-								dest_off,
-								num);
-		if (tevent_req_nomem(state->subreq, req)) {
+		subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
+							 state,
+							 ev,
+							 fsctl,
+							 token,
+							 transfer_offset,
+							 dest_fsp,
+							 dest_off,
+							 num);
+		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(state->subreq,
+		tevent_req_set_callback(subreq,
 					btrfs_offload_write_done,
 					req);
 		return req;
@@ -345,20 +345,20 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 			  (unsigned long long)cr_args.src_offset,
 			  dest_fsp->fh->fd,
 			  (unsigned long long)cr_args.dest_offset));
-		state->subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
-								state,
-								ev,
-								fsctl,
-								token,
-								transfer_offset,
-								dest_fsp,
-								dest_off,
-								num);
-		if (tevent_req_nomem(state->subreq, req)) {
+		subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
+							 state,
+							 ev,
+							 fsctl,
+							 token,
+							 transfer_offset,
+							 dest_fsp,
+							 dest_off,
+							 num);
+		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
 		/* wait for subreq completion */
-		tevent_req_set_callback(state->subreq,
+		tevent_req_set_callback(subreq,
 					btrfs_offload_write_done,
 					req);
 		return req;
@@ -383,8 +383,9 @@ static void btrfs_offload_write_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(state->handle,
-						 state->subreq,
+						 subreq,
 						 &state->copied);
+	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
