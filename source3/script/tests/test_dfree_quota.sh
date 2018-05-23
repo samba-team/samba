@@ -130,6 +130,35 @@ test_smbclient_dfree() {
 	return $status
 }
 
+# Issue two queries to different directories in one session to test
+# caching effects
+test_smbclient_dfree_2() {
+	name="$1"
+	share="$2"
+	dir1="$3"
+	dir2="$4"
+	confs="$5"
+	expected="$6"
+	subunit_start_test "$name"
+	setup_conf $confs
+	output=$($VALGRIND $smbclient //$SERVER/$share \
+			   -c "cd $dir1; du; cd ..; cd $dir2 ; du" $@ 2>&1)
+	status=$?
+	if [ "$status" = "0" ]; then
+		received=$(echo "$output" | \
+				   awk '/blocks of size/ {print $1, $5, $6}' | \
+				   tr '\n' ' ')
+		if [ "$expected" = "$received" ]; then
+			subunit_pass_test "$name"
+		else
+			echo "$output" | subunit_fail_test "$name"
+		fi
+	else
+		echo "$output" | subunit_fail_test "$name"
+	fi
+	return $status
+}
+
 test_smbcquotas() {
 	name="$1"
     conf="$2"
@@ -163,6 +192,12 @@ test_smbclient_dfree "Test dfree subdir NT1 no quota" dfq "subdir1" "conf1 . con
 test_smbclient_dfree "Test large disk" dfq "." "conf3 ." "1125899906842624 1024. 3000" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 #basic quota test (SMB1 only)
 test_smbcquotas "Test user quota" confq1 $USERNAME "40960/4096000/3072000" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
+
+# Test dfree cache through queries in two different directories
+test_smbclient_dfree_2 "Test dfree cache" dfq_cache "." "subdir1" \
+		       "conf1 . conf2 subdir1" "10 1024. 5 20 1024. 10 " \
+		       -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 \
+	|| failed=`expr $failed + 1`
 
 #quota limit > disk size, remaining quota > disk free
 test_smbclient_dfree "Test dfree share root df vs quota case 1" dfq "." "confdfq1 ." "80 1024. 40" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
