@@ -96,10 +96,9 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 		if (!ERR_DNS_IS_OK(err)) goto error;
 
 		err = dns_update_transaction(mem_ctx, conn, req, &resp);
-		if (!ERR_DNS_IS_OK(err)) goto error;
-
 		if (!ERR_DNS_IS_OK(err)) {
 			DEBUG(3,("DoDNSUpdate: unsigned update failed\n"));
+			goto error;
 		}
 
 		if ((dns_response_code(resp->flags) == DNS_NO_ERROR) &&
