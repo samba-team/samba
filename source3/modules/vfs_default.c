@@ -1598,6 +1598,22 @@ struct vfswrap_offload_write_state {
 	size_t next_io_size;
 };
 
+static void vfswrap_offload_write_cleanup(struct tevent_req *req,
+					  enum tevent_req_state req_state)
+{
+	struct vfswrap_offload_write_state *state = tevent_req_data(
+		req, struct vfswrap_offload_write_state);
+	bool ok;
+
+	if (state->dst_fsp == NULL) {
+		return;
+	}
+
+	ok = change_to_user_by_fsp(state->dst_fsp);
+	SMB_ASSERT(ok);
+	state->dst_fsp = NULL;
+}
+
 static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req);
 
 static struct tevent_req *vfswrap_offload_write_send(
@@ -1616,6 +1632,7 @@ static struct tevent_req *vfswrap_offload_write_send(
 	size_t num = MIN(to_copy, COPYCHUNK_MAX_TOTAL_LEN);
 	files_struct *src_fsp = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct vfswrap_offload_write_state);
@@ -1632,6 +1649,8 @@ static struct tevent_req *vfswrap_offload_write_send(
 		.to_copy = to_copy,
 		.remaining = to_copy,
 	};
+
+	tevent_req_set_cleanup_fn(req, vfswrap_offload_write_cleanup);
 
 	switch (fsctl) {
 	case FSCTL_SRV_COPYCHUNK:
@@ -1673,6 +1692,12 @@ static struct tevent_req *vfswrap_offload_write_send(
 	status = vfs_offload_token_check_handles(fsctl, src_fsp, dest_fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	ok = change_to_user_by_fsp(src_fsp);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
 
@@ -1718,6 +1743,10 @@ static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 	struct tevent_req *subreq = NULL;
 	struct lock_struct read_lck;
 	bool ok;
+
+	/*
+	 * This is called under the context of state->src_fsp.
+	 */
 
 	state->next_io_size = MIN(state->remaining, talloc_array_length(state->buf));
 
@@ -1778,6 +1807,12 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 
 	state->src_off += nread;
 
+	ok = change_to_user_by_fsp(state->dst_fsp);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
 	init_strict_lock_struct(state->dst_fsp,
 				state->dst_fsp->op->global->open_persistent_id,
 				state->dst_off,
@@ -1815,6 +1850,7 @@ static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 	struct vfs_aio_state aio_state;
 	ssize_t nwritten;
 	NTSTATUS status;
+	bool ok;
 
 	nwritten = SMB_VFS_PWRITE_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
@@ -1839,6 +1875,12 @@ static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 	state->remaining -= nwritten;
 	if (state->remaining == 0) {
 		tevent_req_done(req);
+		return;
+	}
+
+	ok = change_to_user_by_fsp(state->src_fsp);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
