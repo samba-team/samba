@@ -79,7 +79,7 @@ void delete_and_reload_printers(struct tevent_context *ev,
 	reload_last_pcap_time = pcap_last_update;
 
 	/* Get pcap printers updated */
-	load_printers(ev, msg_ctx);
+	load_printers();
 
 	n_services = lp_numservices();
 	pnum = lp_servicenumber(PRINTERS_NAME);
@@ -110,7 +110,7 @@ void delete_and_reload_printers(struct tevent_context *ev,
 	}
 
 	/* Make sure deleted printers are gone */
-	load_printers(ev, msg_ctx);
+	load_printers();
 
 	talloc_free(frame);
 }

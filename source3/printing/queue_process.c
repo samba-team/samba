@@ -484,7 +484,7 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 {
 	if (background_lpq_updater_pid != -1) {
 		if (pcap_cache_loaded(NULL)) {
-			load_printers(ev_ctx, msg_ctx);
+			load_printers();
 		}
 		if (force) {
 			/* Send a sighup to the background process.

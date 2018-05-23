@@ -105,7 +105,7 @@ static void update_conf(struct tevent_context *ev,
 {
 	change_to_root_user();
 	lp_load_global(get_dyn_CONFIGFILE());
-	load_printers(ev, msg);
+	load_printers();
 
 	spoolss_reopen_logs(spoolss_child_id);
 	if (spoolss_child_id == 0) {
@@ -212,13 +212,9 @@ static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
 					 void *siginfo,
 					 void *pvt)
 {
-	struct messaging_context *msg_ctx;
-
-	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
-
 	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	load_printers(ev, msg_ctx);
+	load_printers();
 	spoolss_reopen_logs(spoolss_child_id);
 }
 
@@ -293,7 +289,7 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 	 * ourselves. If pcap has not been loaded yet, then ignore, we will get
 	 * a message as soon as the bq process completes the reload. */
 	if (pcap_cache_loaded(NULL)) {
-		load_printers(ev_ctx, msg_ctx);
+		load_printers();
 	}
 
 	/* try to reinit rpc queues */
@@ -704,7 +700,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	 * client enumeration anyway.
 	 */
 	if (pcap_cache_loaded(NULL)) {
-		load_printers(ev_ctx, msg_ctx);
+		load_printers();
 	}
 
 	mem_ctx = talloc_new(NULL);
