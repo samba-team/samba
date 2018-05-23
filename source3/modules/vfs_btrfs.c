@@ -298,11 +298,6 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 		return tevent_req_post(req, ev);
 	}
 
-	if (src_fsp->op == NULL || dest_fsp->op == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
-		return tevent_req_post(req, ev);
-	}
-
 	if (do_locking) {
 		init_strict_lock_struct(src_fsp,
 					src_fsp->op->global->open_persistent_id,
