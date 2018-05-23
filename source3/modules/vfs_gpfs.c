@@ -1612,7 +1612,16 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 	if (ret == -1 && errno == EACCES) {
 		ret = get_dos_attr_with_capability(smb_fname, &attrs);
 	}
-	if (ret == -1) {
+
+	if (ret == -1 && errno == EBADF) {
+		/*
+		 * Returned for directory listings in gpfs root for
+		 * .. entry which steps out of gpfs.
+		 */
+		DBG_DEBUG("Getting winattrs for %s returned EBADF.\n",
+			  smb_fname->base_name);
+		return map_nt_error_from_unix(errno);
+	} else if (ret == -1) {
 		DBG_WARNING("Getting winattrs failed for %s: %s\n",
 			    smb_fname->base_name, strerror(errno));
 		return map_nt_error_from_unix(errno);
