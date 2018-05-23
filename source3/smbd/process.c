@@ -1661,30 +1661,7 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 	 * messenger service requests have this...)
 	 */
 	if (flags & AS_GUEST) {
-		char *raddr;
-		bool ok;
-
 		if (!change_to_guest()) {
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return conn;
-		}
-
-		raddr = tsocket_address_inet_addr_string(xconn->remote_address,
-							 talloc_tos());
-		if (raddr == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return conn;
-		}
-
-		/*
-		 * Haven't we checked this in smbd_process already???
-		 */
-
-		ok = allow_access(lp_hosts_deny(-1), lp_hosts_allow(-1),
-				  xconn->remote_hostname, raddr);
-		TALLOC_FREE(raddr);
-
-		if (!ok) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return conn;
 		}
