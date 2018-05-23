@@ -418,6 +418,11 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 	return change_to_user_internal(conn, vuser->session_info, vuid);
 }
 
+bool change_to_user_by_fsp(struct files_struct *fsp)
+{
+	return change_to_user(fsp->conn, fsp->vuid);
+}
+
 static bool change_to_user_by_session(connection_struct *conn,
 				      const struct auth_session_info *session_info)
 {
@@ -602,6 +607,11 @@ bool become_user(connection_struct *conn, uint64_t vuid)
 	}
 
 	return True;
+}
+
+bool become_user_by_fsp(struct files_struct *fsp)
+{
+	return become_user(fsp->conn, fsp->vuid);
 }
 
 bool become_user_by_session(connection_struct *conn,
