@@ -1700,16 +1700,6 @@ static struct tevent_req *vfswrap_offload_write_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (src_fsp->op == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
-		return tevent_req_post(req, ev);
-	}
-
-	if (dest_fsp->op == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
-		return tevent_req_post(req, ev);
-	}
-
 	status = vfswrap_offload_write_loop(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
