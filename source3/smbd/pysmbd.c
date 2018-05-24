@@ -37,15 +37,9 @@ extern const struct generic_mapping file_generic_mapping;
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
-static int conn_free_wrapper(connection_struct *conn)
-{
-	conn_free(conn);
-	return 0;
-};
-
 static connection_struct *get_conn_tos(const char *service)
 {
-	connection_struct *conn;
+	struct conn_struct_tos *c = NULL;
 	int snum = -1;
 	NTSTATUS status;
 
@@ -62,15 +56,17 @@ static connection_struct *get_conn_tos(const char *service)
 		}
 	}
 
-	status = create_conn_struct(talloc_tos(), NULL, NULL, &conn, snum, "/",
-					    NULL);
+	status = create_conn_struct_tos(NULL,
+					snum,
+					"/",
+					NULL,
+					&c);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	/* Ignore read-only and share restrictions */
-	conn->read_only = false;
-	conn->share_access = SEC_RIGHTS_FILE_ALL;
-	talloc_set_destructor(conn, conn_free_wrapper);
-	return conn;
+	c->conn->read_only = false;
+	c->conn->share_access = SEC_RIGHTS_FILE_ALL;
+	return c->conn;
 }
 
 static int set_sys_acl_conn(const char *fname,
