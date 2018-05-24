@@ -968,13 +968,15 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
-				     struct ldb_module *module,
-				     struct ldb_request *req,
-				     struct security_descriptor *sd,
-				     struct dom_sid *sid,
-				     const struct dsdb_class *objectclass,
-				     bool userPassword)
+static int acl_check_password_rights(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_module *module,
+	struct ldb_request *req,
+	struct security_descriptor *sd,
+	struct dom_sid *sid,
+	const struct dsdb_class *objectclass,
+	bool userPassword,
+	struct  dsdb_control_password_acl_validation **control_for_response)
 {
 	int ret = LDB_SUCCESS;
 	unsigned int del_attr_cnt = 0, add_attr_cnt = 0, rep_attr_cnt = 0;
@@ -996,6 +998,12 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	/*
+	 * Set control_for_response to pav so it can be added to the response
+	 * and be passed up to the audit_log module which uses it to identify
+	 * password reset attempts.
+	 */
+	*control_for_response = pav;
 
 	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_CHANGE_OID);
 	if (c != NULL) {
@@ -1165,6 +1173,105 @@ checked:
 	return LDB_SUCCESS;
 }
 
+/*
+ * Context needed by acl_callback
+ */
+struct acl_callback_context {
+	struct ldb_request *request;
+	struct ldb_module *module;
+};
+
+/*
+ * @brief Copy the password validation control to the reply.
+ *
+ * Copy the dsdb_control_password_acl_validation control from the request,
+ * to the reply.  The control is used by the audit_log module to identify
+ * password rests.
+ *
+ * @param req the ldb request.
+ * @param ares the result, updated with the control.
+ */
+static void copy_password_acl_validation_control(
+	struct ldb_request *req,
+	struct ldb_reply *ares)
+{
+	struct ldb_control *pav_ctrl = NULL;
+	struct dsdb_control_password_acl_validation *pav = NULL;
+
+	pav_ctrl = ldb_request_get_control(
+		discard_const(req),
+		DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID);
+	if (pav_ctrl == NULL) {
+		return;
+	}
+
+	pav = talloc_get_type_abort(
+		pav_ctrl->data,
+		struct dsdb_control_password_acl_validation);
+	if (pav == NULL) {
+		return;
+	}
+	ldb_reply_add_control(
+		ares,
+		DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID,
+		false,
+		pav);
+}
+/*
+ * @brief call back function for acl_modify.
+ *
+ * Calls acl_copy to copy the dsdb_control_password_acl_validation from
+ * the request to the reply.
+ *
+ * @param req the ldb_request.
+ * @param ares the operation result.
+ *
+ * @return the LDB_STATUS
+ */
+static int acl_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct acl_callback_context *ac = NULL;
+
+	ac = talloc_get_type(req->context, struct acl_callback_context);
+
+	if (!ares) {
+		return ldb_module_done(
+			ac->request,
+			NULL,
+			NULL,
+			LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	/* pass on to the callback */
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		return ldb_module_send_entry(
+			ac->request,
+			ares->message,
+			ares->controls);
+
+	case LDB_REPLY_REFERRAL:
+		return ldb_module_send_referral(
+			ac->request,
+			ares->referral);
+
+	case LDB_REPLY_DONE:
+		/*
+		 * Copy the ACL control from the request to the response
+		 */
+		copy_password_acl_validation_control(req, ares);
+		return ldb_module_done(
+			ac->request,
+			ares->controls,
+			ares->response,
+			ares->error);
+
+	default:
+		/* Can't happen */
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+}
+
 static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
@@ -1187,6 +1294,10 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		"objectSid",
 		NULL
 	};
+	struct acl_callback_context *context = NULL;
+	struct ldb_request *new_req = NULL;
+	struct  dsdb_control_password_acl_validation *pav = NULL;
+	struct ldb_control **controls = NULL;
 
 	if (ldb_dn_is_special(msg->dn)) {
 		return ldb_next_request(module, req);
@@ -1324,6 +1435,14 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		} else if (ldb_attr_cmp("unicodePwd", el->name) == 0 ||
 			   (userPassword && ldb_attr_cmp("userPassword", el->name) == 0) ||
 			   ldb_attr_cmp("clearTextPassword", el->name) == 0) {
+			/*
+			 * Ideally we would do the acl_check_password_rights
+			 * before we checked the other attributes, i.e. in a
+			 * loop before the current one.
+			 * Have not done this as yet in order to limit the size
+			 * of the change. To limit the possibility of breaking
+			 * the ACL logic.
+			 */
 			if (password_rights_checked) {
 				continue;
 			}
@@ -1333,7 +1452,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 							sd,
 							sid,
 							objectclass,
-							userPassword);
+							userPassword,
+							&pav);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
@@ -1382,10 +1502,57 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 
 success:
 	talloc_free(tmp_ctx);
-	return ldb_next_request(module, req);
+	context = talloc_zero(req, struct acl_callback_context);
+
+	if (context == NULL) {
+		return ldb_oom(ldb);
+	}
+	context->request = req;
+	context->module  = module;
+	ret = ldb_build_mod_req(
+		&new_req,
+		ldb,
+		req,
+		req->op.mod.message,
+		req->controls,
+		context,
+		acl_callback,
+		req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return ldb_next_request(module, new_req);
 fail:
 	talloc_free(tmp_ctx);
-	return ret;
+	/*
+	 * We copy the pav into the result, so that the password reset
+	 * logging code in audit_log can log failed password reset attempts.
+	 */
+	if (pav) {
+		struct ldb_control *control = NULL;
+
+		controls = talloc_zero_array(req, struct ldb_control *, 2);
+		if (controls == NULL) {
+			return ldb_oom(ldb);
+		}
+
+		control = talloc(controls, struct ldb_control);
+
+		if (control == NULL) {
+			return ldb_oom(ldb);
+		}
+
+		control->oid= talloc_strdup(
+			control,
+			DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID);
+		if (control->oid == NULL) {
+			return ldb_oom(ldb);
+		}
+		control->critical	= false;
+		control->data	= pav;
+		*controls = control;
+	}
+	return ldb_module_done(req, controls, NULL, ret);
 }
 
 /* similar to the modify for the time being.
