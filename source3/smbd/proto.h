@@ -514,6 +514,22 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 				const char *path,
 				const struct auth_session_info *session_info,
 				struct smb_filename **poldcwd_fname);
+struct connection_struct;
+struct smb_filename;
+struct conn_struct_tos {
+	struct connection_struct *conn;
+	struct smb_filename *oldcwd_fname;
+};
+NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
+				int snum,
+				const char *path,
+				const struct auth_session_info *session_info,
+				struct conn_struct_tos **_c);
+NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
+				    int snum,
+				    const char *path,
+				    const struct auth_session_info *session_info,
+				    struct conn_struct_tos **_c);
 
 /* The following definitions come from smbd/negprot.c  */
 
