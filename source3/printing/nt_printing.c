@@ -986,6 +986,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 				   const char *driver_directory,
 				   WERROR *perr)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int cversion = -1;
 	NTSTATUS          nt_status;
 	struct smb_filename *smb_fname = NULL;
@@ -1003,6 +1004,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	if (strcmp(architecture, SPL_ARCH_WIN40) == 0) {
 		DEBUG(10,("get_correct_cversion: Driver is Win9x, cversion = 0\n"));
 		*perr = WERR_OK;
+		TALLOC_FREE(frame);
 		return 0;
 	}
 
@@ -1010,26 +1012,30 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	if (strcmp(architecture, SPL_ARCH_X64) == 0) {
 		DEBUG(10,("get_correct_cversion: Driver is x64, cversion = 3\n"));
 		*perr = WERR_OK;
+		TALLOC_FREE(frame);
 		return 3;
 	}
 
-	printdollar_snum = find_service(talloc_tos(), "print$", &printdollar);
+	printdollar_snum = find_service(frame, "print$", &printdollar);
 	if (!printdollar) {
 		*perr = WERR_NOT_ENOUGH_MEMORY;
+		TALLOC_FREE(frame);
 		return -1;
 	}
 	if (printdollar_snum == -1) {
 		*perr = WERR_BAD_NET_NAME;
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	printdollar_path = lp_path(talloc_tos(), printdollar_snum);
+	printdollar_path = lp_path(frame, printdollar_snum);
 	if (printdollar_path == NULL) {
 		*perr = WERR_NOT_ENOUGH_MEMORY;
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	working_dir = talloc_asprintf(talloc_tos(),
+	working_dir = talloc_asprintf(frame,
 				      "%s/%s",
 				      printdollar_path,
 				      architecture);
@@ -1038,13 +1044,13 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	 * directory, switch to the driver directory.
 	 */
 	if (driver_directory != NULL) {
-		working_dir = talloc_asprintf(talloc_tos(), "%s/%s/%s",
+		working_dir = talloc_asprintf(frame, "%s/%s/%s",
 					      printdollar_path,
 					      architecture,
 					      driver_directory);
 	}
 
-	nt_status = create_conn_struct_cwd(talloc_tos(),
+	nt_status = create_conn_struct_cwd(frame,
 					   server_event_context(),
 					   server_messaging_context(),
 					   &conn,
@@ -1055,6 +1061,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
 		*perr = ntstatus_to_werror(nt_status);
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
@@ -1163,13 +1170,11 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
  error_exit:
 	unbecome_user();
  error_free_conn:
-	TALLOC_FREE(smb_fname);
 	if (fsp != NULL) {
 		close_file(NULL, fsp, NORMAL_CLOSE);
 	}
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd_fname);
-		TALLOC_FREE(oldcwd_fname);
 		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
@@ -1177,6 +1182,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 		cversion = -1;
 	}
 
+	TALLOC_FREE(frame);
 	return cversion;
 }
 
