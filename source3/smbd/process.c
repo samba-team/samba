@@ -966,7 +966,7 @@ static void smbd_sig_term_handler(struct tevent_context *ev,
 	exit_server_cleanly("termination signal");
 }
 
-void smbd_setup_sig_term_handler(struct smbd_server_connection *sconn)
+static void smbd_setup_sig_term_handler(struct smbd_server_connection *sconn)
 {
 	struct tevent_signal *se;
 
@@ -996,7 +996,7 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 	reload_services(sconn, conn_snum_used, false);
 }
 
-void smbd_setup_sig_hup_handler(struct smbd_server_connection *sconn)
+static void smbd_setup_sig_hup_handler(struct smbd_server_connection *sconn)
 {
 	struct tevent_signal *se;
 

@@ -824,8 +824,6 @@ NTSTATUS make_default_filesystem_acl(
 
 /* The following definitions come from smbd/process.c  */
 
-void smbd_setup_sig_term_handler(struct smbd_server_connection *sconn);
-void smbd_setup_sig_hup_handler(struct smbd_server_connection *sconn);
 bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 		  bool no_signing, uint32_t seqnum,
 		  bool do_encrypt,
