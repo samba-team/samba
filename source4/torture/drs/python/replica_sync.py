@@ -43,6 +43,11 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsReplicaSyncTestCase, self).setUp()
+
+        # This OU avoids this test conflicting with anything
+        # that may already be in the DB
+        self.top_ou = samba.tests.create_test_ou(self.ldb_dc1,
+                                                 "replica_sync")
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
         self.ou1 = None
@@ -51,6 +56,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     def tearDown(self):
         self._cleanup_object(self.ou1)
         self._cleanup_object(self.ou2)
+        self._cleanup_dn(self.top_ou)
 
         # re-enable replication
         self._enable_inbound_repl(self.dnsname_dc1)
@@ -58,19 +64,22 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
         super(DrsReplicaSyncTestCase, self).tearDown()
 
+    def _cleanup_dn(self, dn):
+        try:
+            self.ldb_dc2.delete(dn, ["tree_delete:1"])
+        except LdbError as e:
+            (num, _) = e.args
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+        try:
+            self.ldb_dc1.delete(dn, ["tree_delete:1"])
+        except LdbError as e1:
+            (num, _) = e1.args
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
     def _cleanup_object(self, guid):
         """Cleans up a test object, if it still exists"""
         if guid is not None:
-            try:
-                self.ldb_dc2.delete('<GUID=%s>' % guid, ["tree_delete:1"])
-            except LdbError as e:
-                (num, _) = e.args
-                self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-            try:
-                self.ldb_dc1.delete('<GUID=%s>' % guid, ["tree_delete:1"])
-            except LdbError as e1:
-                (num, _) = e1.args
-                self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self._cleanup_dn('<GUID=%s>' % guid)
 
     def test_ReplEnabled(self):
         """Tests we can replicate when replication is enabled"""
@@ -112,9 +121,9 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         ldif = """
 dn: %s,%s
 objectClass: organizationalUnit
-""" % (name, self.domain_dn)
+""" % (name, self.top_ou)
         samdb.add_ldif(ldif)
-        res = samdb.search(base="%s,%s" % (name, self.domain_dn),
+        res = samdb.search(base="%s,%s" % (name, self.top_ou),
                            scope=SCOPE_BASE, attrs=["objectGUID"])
         return self._GUID_string(res[0]["objectGUID"][0])
 
@@ -311,7 +320,7 @@ objectClass: organizationalUnit
 
         # Create an OU and rename it on DC1
         self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Remote Rename Conflict orig")
-        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Remote Rename Conflict,%s" % self.domain_dn)
+        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Remote Rename Conflict,%s" % self.top_ou)
 
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
@@ -353,7 +362,7 @@ objectClass: organizationalUnit
 
         # Create conflicting objects on DC1 and DC2, where the DC2 object has been renamed
         self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Rename Local Conflict orig")
-        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Rename Local Conflict,%s" % self.domain_dn)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Rename Local Conflict,%s" % self.top_ou)
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
         self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Rename Local Conflict")
@@ -396,10 +405,10 @@ objectClass: organizationalUnit
 
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
 
-        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Remote Rename Conflict 3,%s" % self.top_ou)
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
-        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Remote Rename Conflict 3,%s" % self.top_ou)
 
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
 
@@ -444,10 +453,10 @@ objectClass: organizationalUnit
 
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
 
-        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Parent Remote Rename Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Parent Remote Rename Conflict 3,%s" % self.top_ou)
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
-        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Parent Remote Rename Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Parent Remote Rename Conflict 3,%s" % self.top_ou)
 
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
 
@@ -495,10 +504,10 @@ objectClass: organizationalUnit
 
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
 
-        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Rename Local Conflict 3,%s" % self.top_ou)
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
-        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Rename Local Conflict 3,%s" % self.top_ou)
 
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
 
@@ -606,12 +615,12 @@ objectClass: organizationalUnit
         # replicate them from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
-        self.ldb_dc1.rename("<GUID=%s>" % ou2_child, "OU=Test Child 3,OU=Original parent 2,%s" % self.domain_dn)
-        self.ldb_dc1.rename("<GUID=%s>" % ou1_child, "OU=Test Child 2,OU=Original parent 2,%s" % self.domain_dn)
-        self.ldb_dc1.rename("<GUID=%s>" % ou2_child, "OU=Test Child,OU=Original parent 2,%s" % self.domain_dn)
-        self.ldb_dc1.rename("<GUID=%s>" % ou3_child, "OU=Test CASE Child,OU=Original parent,%s" % self.domain_dn)
-        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Original parent 3,%s" % self.domain_dn)
-        self.ldb_dc2.rename("<GUID=%s>" % self.ou1, "OU=Original parent 2,%s" % self.domain_dn)
+        self.ldb_dc1.rename("<GUID=%s>" % ou2_child, "OU=Test Child 3,OU=Original parent 2,%s" % self.top_ou)
+        self.ldb_dc1.rename("<GUID=%s>" % ou1_child, "OU=Test Child 2,OU=Original parent 2,%s" % self.top_ou)
+        self.ldb_dc1.rename("<GUID=%s>" % ou2_child, "OU=Test Child,OU=Original parent 2,%s" % self.top_ou)
+        self.ldb_dc1.rename("<GUID=%s>" % ou3_child, "OU=Test CASE Child,OU=Original parent,%s" % self.top_ou)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Original parent 3,%s" % self.top_ou)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou1, "OU=Original parent 2,%s" % self.top_ou)
 
         # replicate them from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
@@ -632,9 +641,9 @@ objectClass: organizationalUnit
         self.assertEqual('Test Child 2', res1[0]["name"][0])
         self.assertEqual('Test Child', res2[0]["name"][0])
         self.assertEqual('Test CASE Child', res3[0]["name"][0])
-        self.assertEqual(str(res1[0].dn), "OU=Test Child 2,OU=Original parent 3,%s" % self.domain_dn)
-        self.assertEqual(str(res2[0].dn), "OU=Test Child,OU=Original parent 3,%s" % self.domain_dn)
-        self.assertEqual(str(res3[0].dn), "OU=Test CASE Child,OU=Original parent 2,%s" % self.domain_dn)
+        self.assertEqual(str(res1[0].dn), "OU=Test Child 2,OU=Original parent 3,%s" % self.top_ou)
+        self.assertEqual(str(res2[0].dn), "OU=Test Child,OU=Original parent 3,%s" % self.top_ou)
+        self.assertEqual(str(res3[0].dn), "OU=Test CASE Child,OU=Original parent 2,%s" % self.top_ou)
 
         # replicate them from DC2 to DC1
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
@@ -652,9 +661,9 @@ objectClass: organizationalUnit
         self.assertEqual('Test Child 2', res1[0]["name"][0])
         self.assertEqual('Test Child', res2[0]["name"][0])
         self.assertEqual('Test CASE Child', res3[0]["name"][0])
-        self.assertEqual(str(res1[0].dn), "OU=Test Child 2,OU=Original parent 3,%s" % self.domain_dn)
-        self.assertEqual(str(res2[0].dn), "OU=Test Child,OU=Original parent 3,%s" % self.domain_dn)
-        self.assertEqual(str(res3[0].dn), "OU=Test CASE Child,OU=Original parent 2,%s" % self.domain_dn)
+        self.assertEqual(str(res1[0].dn), "OU=Test Child 2,OU=Original parent 3,%s" % self.top_ou)
+        self.assertEqual(str(res2[0].dn), "OU=Test Child,OU=Original parent 3,%s" % self.top_ou)
+        self.assertEqual(str(res3[0].dn), "OU=Test CASE Child,OU=Original parent 2,%s" % self.top_ou)
 
         # Delete all objects by GUID on DC1
 
@@ -709,7 +718,7 @@ objectClass: organizationalUnit
 
         # Now pretend that the admin for one DC resolves the problem by
         # re-animating the object...
-        self.reanimate_object(self.ldb_dc1, self.ou1, "OU=Conflict object,%s" % self.domain_dn)
+        self.reanimate_object(self.ldb_dc1, self.ou1, "OU=Conflict object,%s" % self.top_ou)
 
         # ...whereas another admin just creates a user with the same name
         # again on a different DC
