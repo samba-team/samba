@@ -1559,18 +1559,20 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 
 static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	size_t cnt = 0;
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	const char *connect_path = lp_path(talloc_tos(), snum);
-	const char *msdfs_proxy = lp_msdfs_proxy(talloc_tos(), snum);
+	const char *connect_path = lp_path(frame, snum);
+	const char *msdfs_proxy = lp_msdfs_proxy(frame, snum);
 	connection_struct *conn;
 	NTSTATUS status;
 	struct smb_filename *cwd_fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 
 	if(*connect_path == '\0') {
+		TALLOC_FREE(frame);
 		return 0;
 	}
 
@@ -1578,7 +1580,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct_cwd(talloc_tos(),
+	status = create_conn_struct_cwd(frame,
 					server_event_context(),
 					server_messaging_context(),
 					&conn,
@@ -1589,6 +1591,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
+		TALLOC_FREE(frame);
 		return 0;
 	}
 
@@ -1600,7 +1603,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
+	smb_fname = synthetic_smb_fname(frame,
 					".",
 					NULL,
 					NULL,
@@ -1618,7 +1621,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	while ((dname = vfs_readdirname(conn, dirp, NULL, &talloced))
 	       != NULL) {
 		struct smb_filename *smb_dname =
-			synthetic_smb_fname(talloc_tos(),
+			synthetic_smb_fname(frame,
 					dname,
 					NULL,
 					NULL,
@@ -1636,11 +1639,10 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	SMB_VFS_CLOSEDIR(conn,dirp);
 
 out:
-	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd_fname);
-	TALLOC_FREE(cwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
+	TALLOC_FREE(frame);
 	return cnt;
 }
 
