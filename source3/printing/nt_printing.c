@@ -980,7 +980,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32_t get_correct_cversion(struct auth_session_info *session_info,
+static uint32_t get_correct_cversion(const struct auth_session_info *session_info,
 				   const char *architecture,
 				   const char *driverpath_in,
 				   const char *driver_directory,
@@ -1191,7 +1191,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 } while (0);
 
 static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
-					   struct auth_session_info *session_info,
+					   const struct auth_session_info *session_info,
 					   const char *architecture,
 					   const char **driver_path,
 					   const char **data_file,
@@ -1306,8 +1306,8 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
-			      struct auth_session_info *session_info,
-			      struct spoolss_AddDriverInfoCtr *r,
+			      const struct auth_session_info *session_info,
+			      const struct spoolss_AddDriverInfoCtr *r,
 			      uint32_t flags,
 			      const char **driver_directory)
 {
@@ -1472,8 +1472,8 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-WERROR move_driver_to_download_area(struct auth_session_info *session_info,
-				    struct spoolss_AddDriverInfoCtr *r,
+WERROR move_driver_to_download_area(const struct auth_session_info *session_info,
+				    const struct spoolss_AddDriverInfoCtr *r,
 				    const char *driver_directory)
 {
 	struct spoolss_AddDriverInfo3 *driver;
