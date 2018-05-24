@@ -1555,9 +1555,9 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	char *talloced = NULL;
 	const char *connect_path = lp_path(frame, snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(frame, snum);
-	connection_struct *conn;
+	struct conn_struct_tos *c = NULL;
+	connection_struct *conn = NULL;
 	NTSTATUS status;
-	struct smb_filename *cwd_fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 
 	if(*connect_path == '\0') {
@@ -1569,20 +1569,18 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct_cwd(frame,
-					server_event_context(),
-					server_messaging_context(),
-					&conn,
-					snum,
-					connect_path,
-					NULL,
-					&cwd_fname);
+	status = create_conn_struct_tos_cwd(server_messaging_context(),
+					    snum,
+					    connect_path,
+					    NULL,
+					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return 0;
 	}
+	conn = c->conn;
 
 	/* Count a link for the msdfs root - convention */
 	cnt = 1;
@@ -1628,9 +1626,6 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	SMB_VFS_CLOSEDIR(conn,dirp);
 
 out:
-	vfs_ChDir(conn, cwd_fname);
-	SMB_VFS_DISCONNECT(conn);
-	conn_free(conn);
 	TALLOC_FREE(frame);
 	return cnt;
 }
