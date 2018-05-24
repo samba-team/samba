@@ -43,10 +43,6 @@ COMMON_OPTIONS = [
            type=str, metavar="URL", dest="H"),
     Option("-o", "--output", help="write here (default stdout)",
            type=str, metavar="FILE", default=None),
-    Option("--dot", help="Graphviz dot output", dest='format',
-           const='dot', action='store_const'),
-    Option("--xdot", help="attempt to call Graphviz xdot", dest='format',
-           const='xdot', action='store_const'),
     Option("--distance", help="Distance matrix graph output (default)",
            dest='format', const='distance', action='store_const'),
     Option("--utf8", help="Use utf-8 Unicode characters",
@@ -65,6 +61,13 @@ COMMON_OPTIONS = [
            action='store_false', default=True, dest='key'),
 ]
 
+DOT_OPTIONS = [
+    Option("--dot", help="Graphviz dot output", dest='format',
+           const='dot', action='store_const'),
+    Option("--xdot", help="attempt to call Graphviz xdot", dest='format',
+           const='xdot', action='store_const'),
+]
+
 TEMP_FILE = '__temp__'
 
 
@@ -77,7 +80,7 @@ class GraphCommand(Command):
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
     }
-    takes_options = COMMON_OPTIONS
+    takes_options = COMMON_OPTIONS + DOT_OPTIONS
     takes_args = ()
 
     def get_db(self, H, sambaopts, credopts):
@@ -229,7 +232,7 @@ def get_partition(samdb, part):
 class cmd_reps(GraphCommand):
     "repsFrom/repsTo from every DSA"
 
-    takes_options = COMMON_OPTIONS + [
+    takes_options = COMMON_OPTIONS + DOT_OPTIONS + [
         Option("-p", "--partition", help="restrict to this partition",
                default=None),
     ]
@@ -426,7 +429,7 @@ class NTDSConn(object):
 
 class cmd_ntdsconn(GraphCommand):
     "Draw the NTDSConnection graph"
-    takes_options = COMMON_OPTIONS + [
+    takes_options = COMMON_OPTIONS + DOT_OPTIONS + [
         Option("--importldif", help="graph from samba_kcc generated ldif",
                default=None),
     ]
