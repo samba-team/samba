@@ -485,6 +485,6 @@ def create_test_ou(samdb, name):
     # objects can be slow to replicate out. So the OU created by a previous
     # testenv may still exist at the point that tests start on another testenv.
     rand = randint(1, 10000000)
-    dn = "OU=%s%d,%s" %(name, rand, samdb.get_default_basedn())
+    dn = ldb.Dn(samdb, "OU=%s%d,%s" %(name, rand, samdb.get_default_basedn()))
     samdb.add({ "dn": dn, "objectclass": "organizationalUnit"})
     return dn

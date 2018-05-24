@@ -46,7 +46,8 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # the vampire_dc), so we point this test directly at that DC
         self.set_test_ldb_dc(self.ldb_dc2)
 
-        self.ou = samba.tests.create_test_ou(self.test_ldb_dc, "getncchanges")
+        self.ou = str(samba.tests.create_test_ou(self.test_ldb_dc,
+                                                 "getncchanges"))
         self.base_dn = self.test_ldb_dc.get_default_basedn()
 
         self.default_conn = DcConnection(self, self.ldb_dc2, self.dnsname_dc2)
