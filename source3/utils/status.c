@@ -735,7 +735,6 @@ int main(int argc, const char *argv[])
 		struct notify_context *n;
 
 		n = notify_init(talloc_tos(), msg_ctx,
-				messaging_tevent_context(msg_ctx),
 				NULL, NULL);
 		if (n == NULL) {
 			goto done;

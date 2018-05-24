@@ -48,7 +48,6 @@ static int notify_context_destructor(struct notify_context *ctx);
 
 struct notify_context *notify_init(
 	TALLOC_CTX *mem_ctx, struct messaging_context *msg,
-	struct tevent_context *ev,
 	struct smbd_server_connection *sconn,
 	void (*callback)(struct smbd_server_connection *sconn,
 			 void *, struct timespec,

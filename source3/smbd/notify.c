@@ -539,7 +539,7 @@ void smbd_notifyd_restarted(struct messaging_context *msg,
 
 	TALLOC_FREE(sconn->notify_ctx);
 
-	sconn->notify_ctx = notify_init(sconn, sconn->msg_ctx, sconn->ev_ctx,
+	sconn->notify_ctx = notify_init(sconn, sconn->msg_ctx,
 					sconn, notify_callback);
 	if (sconn->notify_ctx == NULL) {
 		DBG_DEBUG("notify_init failed\n");
