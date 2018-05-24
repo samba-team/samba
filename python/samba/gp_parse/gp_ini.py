@@ -103,3 +103,80 @@ class GPIniParser(GPParser):
 
 class GPTIniParser(GPIniParser):
     encoding = 'utf-8'
+
+
+class GPFDeploy1IniParser(GPIniParser):
+    def build_xml_parameter(self, section_xml, section, key_ini, val_ini):
+        parent_return = super(GPFDeploy1IniParser,
+                              self).build_xml_parameter(section_xml, section,
+                                                        key_ini, val_ini)
+        # Add generalization metadata and parse out SID list
+        if section.lower() == 'folder_redirection':
+            # Process the header section
+            # {GUID} = S-1-1-0;S-1-1-0
+
+            # Remove the un-split SID values
+            key = parent_return.find('Value')
+            parent_return.remove(key)
+
+            sid_list = val_ini.strip().strip(';').split(';')
+
+            for sid in sid_list:
+                value = SubElement(parent_return, 'Value')
+                value.text = sid
+                value.attrib['user_id'] = 'TRUE'
+
+        else:
+            # Process redirection sections
+            # Only FullPath should be a network path
+            if key_ini == 'FullPath':
+                key = parent_return.find('Value')
+                key.attrib['network_path'] = 'TRUE'
+
+        return parent_return
+
+    def load_xml_parameter(self, param_xml, section):
+        # Re-join the SID list before entering ConfigParser
+        if section.lower() == 'folder_redirection':
+            key = param_xml.find('Key').text
+            values = param_xml.findall('Value')
+
+            if len(values) == 1:
+                # There appears to be a convention of a trailing semi-colon
+                # with only one value in the SID list.
+                value = values[0].text + ';'
+            else:
+                value = ';'.join([x.text for x in values])
+
+            self.ini_conf.set(section, key, value)
+
+            return (key, value)
+
+        # Do the normal ini code for other sections
+        return super(GPFDeploy1IniParser,
+                     self).load_xml_parameter(param_xml, section)
+
+    def build_xml_section(self, root_xml, sec_ini):
+        section = SubElement(root_xml, 'Section')
+
+        if (sec_ini.lower() != 'folder_redirection' and
+            sec_ini.lower() != 'version'):
+            guid, sid = sec_ini.split('_')
+            section.attrib['fdeploy_GUID'] = guid
+            section.attrib['fdeploy_SID'] = sid
+        else:
+            section.attrib['name'] = sec_ini
+
+        return section
+
+    def load_xml_section(self, section_xml):
+        # Construct the name from GUID + SID if no name exists
+        if 'name' in section_xml.attrib:
+            section_name = section_xml.attrib['name']
+        else:
+            guid = section_xml.attrib['fdeploy_GUID']
+            sid = section_xml.attrib['fdeploy_SID']
+            section_name = guid + '_' + sid
+
+        self.ini_conf.add_section(section_name)
+        return section_name

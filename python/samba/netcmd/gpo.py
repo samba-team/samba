@@ -50,7 +50,7 @@ from samba.dcerpc import nbt
 from samba.net import Net
 from samba.gp_parse import GPParser, GPNoParserException
 from samba.gp_parse.gp_pol import GPPolParser
-from samba.gp_parse.gp_ini import GPIniParser, GPTIniParser
+from samba.gp_parse.gp_ini import GPIniParser, GPTIniParser, GPFDeploy1IniParser
 from samba.gp_parse.gp_csv import GPAuditCsvParser
 from samba.gp_parse.gp_inf import GptTmplInfParser
 from samba.gp_parse.gp_aas import GPAasParser
@@ -243,6 +243,8 @@ def parse_unc(unc):
 
 
 def find_parser(name, flags=re.IGNORECASE):
+    if re.match('fdeploy1\.ini$', name, flags=flags):
+        return GPFDeploy1IniParser()
     if re.match('audit\.csv$', name, flags=flags):
         return GPAuditCsvParser()
     if re.match('GptTmpl\.inf$', name, flags=flags):
