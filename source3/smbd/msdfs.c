@@ -1082,15 +1082,17 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   int *consumedcntp,
 			   bool *self_referralp)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct connection_struct *conn;
 	char *targetpath = NULL;
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	bool dummy;
-	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
+	struct dfs_path *pdp = talloc_zero(frame, struct dfs_path);
 	struct smb_filename *oldcwd_fname = NULL;
 
 	if (!pdp) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1099,13 +1101,14 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path,
 				pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
 	jucn->service_name = talloc_strdup(ctx, pdp->servicename);
 	jucn->volume_name = talloc_strdup(ctx, pdp->reqpath);
 	if (!jucn->service_name || !jucn->volume_name) {
-		TALLOC_FREE(pdp);
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1114,15 +1117,17 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	if(snum < 0) {
 		char *service_name = NULL;
 		if ((snum = find_service(ctx, jucn->service_name, &service_name)) < 0) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_NOT_FOUND;
 		}
 		if (!service_name) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 		TALLOC_FREE(jucn->service_name);
 		jucn->service_name = talloc_strdup(ctx, service_name);
 		if (!jucn->service_name) {
-			TALLOC_FREE(pdp);
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -1131,7 +1136,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not "
 			"a dfs root.\n",
 			pdp->servicename, dfs_path));
-		TALLOC_FREE(pdp);
+		TALLOC_FREE(frame);
 		return NT_STATUS_NOT_FOUND;
 	}
 
@@ -1149,7 +1154,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		int refcount;
 
 		if (*lp_msdfs_proxy(talloc_tos(), snum) == '\0') {
-			TALLOC_FREE(pdp);
+			TALLOC_FREE(frame);
 			return self_ref(ctx,
 					dfs_path,
 					jucn,
@@ -1162,36 +1167,34 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
  		 * the configured target share.
  		 */
 
-		tmp = talloc_asprintf(talloc_tos(), "msdfs:%s",
-				      lp_msdfs_proxy(talloc_tos(), snum));
+		tmp = talloc_asprintf(frame, "msdfs:%s",
+				      lp_msdfs_proxy(frame, snum));
 		if (tmp == NULL) {
-			TALLOC_FREE(pdp);
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		if (!parse_msdfs_symlink(ctx, snum, tmp, &ref, &refcount)) {
-			TALLOC_FREE(tmp);
-			TALLOC_FREE(pdp);
+			TALLOC_FREE(frame);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		TALLOC_FREE(tmp);
 		jucn->referral_count = refcount;
 		jucn->referral_list = ref;
 		*consumedcntp = strlen(dfs_path);
-		TALLOC_FREE(pdp);
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct_cwd(ctx,
+	status = create_conn_struct_cwd(frame,
 					server_event_context(),
 					server_messaging_context(),
 					&conn,
 					snum,
-					lp_path(talloc_tos(), snum),
+					lp_path(frame, snum),
 					NULL,
 					&oldcwd_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(pdp);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -1205,7 +1208,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		conn->sconn->remote_address =
 			tsocket_address_copy(remote_address, conn->sconn);
 		if (conn->sconn->remote_address == NULL) {
-			TALLOC_FREE(pdp);
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -1213,7 +1216,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		conn->sconn->local_address =
 			tsocket_address_copy(local_address, conn->sconn);
 		if (conn->sconn->local_address == NULL) {
-			TALLOC_FREE(pdp);
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -1256,10 +1259,9 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	status = NT_STATUS_OK;
  err_exit:
 	vfs_ChDir(conn, oldcwd_fname);
-	TALLOC_FREE(oldcwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
-	TALLOC_FREE(pdp);
+	TALLOC_FREE(frame);
 	return status;
 }
 
