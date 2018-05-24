@@ -1646,9 +1646,9 @@ static int form_junctions(TALLOC_CTX *ctx,
 	const char *connect_path = lp_path(frame, snum);
 	char *service_name = lp_servicename(frame, snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(frame, snum);
-	connection_struct *conn;
+	struct conn_struct_tos *c = NULL;
+	connection_struct *conn = NULL;
 	struct referral *ref = NULL;
-	struct smb_filename *cwd_fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 
@@ -1666,20 +1666,18 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct_cwd(frame,
-					server_event_context(),
-					server_messaging_context(),
-					&conn,
-					snum,
-					connect_path,
-					NULL,
-					&cwd_fname);
+	status = create_conn_struct_tos_cwd(server_messaging_context(),
+					    snum,
+					    connect_path,
+					    NULL,
+					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return 0;
 	}
+	conn = c->conn;
 
 	/* form a junction for the msdfs root - convention
 	   DO NOT REMOVE THIS: NT clients will not work with us
@@ -1787,8 +1785,6 @@ out:
 		SMB_VFS_CLOSEDIR(conn,dirp);
 	}
 
-	vfs_ChDir(conn, cwd_fname);
-	conn_free(conn);
 	TALLOC_FREE(frame);
 	return cnt;
 }
