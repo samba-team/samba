@@ -1428,6 +1428,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 
 bool create_msdfs_link(const struct junction_map *jucn)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
 	struct smb_filename *cwd_fname = NULL;
 	char *msdfs_link = NULL;
@@ -1438,6 +1439,7 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	struct smb_filename *smb_fname = NULL;
 
 	if(!junction_to_local_path(jucn, &path, &conn, &cwd_fname)) {
+		TALLOC_FREE(frame);
 		return False;
 	}
 
@@ -1478,7 +1480,7 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	DEBUG(5,("create_msdfs_link: Creating new msdfs link: %s -> %s\n",
 		path, msdfs_link));
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
+	smb_fname = synthetic_smb_fname(frame,
 				path,
 				NULL,
 				NULL,
@@ -1506,16 +1508,16 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	ret = True;
 
 out:
-	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd_fname);
-	TALLOC_FREE(cwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
 bool remove_msdfs_link(const struct junction_map *jucn)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
 	struct smb_filename *cwd_fname = NULL;
 	connection_struct *conn;
@@ -1523,15 +1525,17 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 	struct smb_filename *smb_fname;
 
 	if (!junction_to_local_path(jucn, &path, &conn, &cwd_fname)) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
+	smb_fname = synthetic_smb_fname(frame,
 					path,
 					NULL,
 					NULL,
 					0);
 	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
 		errno = ENOMEM;
 		return false;
 	}
@@ -1540,11 +1544,10 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 		ret = True;
 	}
 
-	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd_fname);
-	TALLOC_FREE(cwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
