@@ -4570,7 +4570,7 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 				struct security_descriptor **sd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	connection_struct *conn;
+	struct conn_struct_tos *c = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
 						fname,
@@ -4588,14 +4588,11 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = create_conn_struct(ctx,
-				server_event_context(),
-				server_messaging_context(),
-				&conn,
-				-1,
-				"/",
-				NULL);
-
+	status = create_conn_struct_tos(server_messaging_context(),
+					-1,
+					"/",
+					NULL,
+					&c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("create_conn_struct returned %s.\n",
 			nt_errstr(status)));
@@ -4603,7 +4600,7 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 		return status;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn,
+	status = SMB_VFS_GET_NT_ACL(c->conn,
 				smb_fname,
 				security_info_wanted,
 				ctx,
@@ -4613,7 +4610,6 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 			  nt_errstr(status)));
 	}
 
-	conn_free(conn);
 	TALLOC_FREE(frame);
 
 	return status;
