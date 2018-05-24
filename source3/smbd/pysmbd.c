@@ -580,28 +580,28 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 	int security_info_wanted;
 	PyObject *py_sd;
 	struct security_descriptor *sd;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	TALLOC_CTX *frame = talloc_stackframe();
 	connection_struct *conn;
 	NTSTATUS status;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|z", discard_const_p(char *, kwnames),
 					 &fname, &security_info_wanted, &service)) {
-		TALLOC_FREE(tmp_ctx);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	conn = get_conn(tmp_ctx, service);
+	conn = get_conn(frame, service);
 	if (!conn) {
-		TALLOC_FREE(tmp_ctx);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	status = get_nt_acl_conn(tmp_ctx, fname, conn, security_info_wanted, &sd);
+	status = get_nt_acl_conn(frame, fname, conn, security_info_wanted, &sd);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	py_sd = py_return_ndr_struct("samba.dcerpc.security", "descriptor", sd, sd);
 
-	TALLOC_FREE(tmp_ctx);
+	TALLOC_FREE(frame);
 
 	return py_sd;
 }
@@ -662,28 +662,20 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	struct smb_acl_t *acl;
 	int acl_type;
 	TALLOC_CTX *frame = talloc_stackframe();
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	connection_struct *conn;
 	char *service = NULL;
 	struct smb_filename *smb_fname = NULL;
-
-	if (!tmp_ctx) {
-		PyErr_NoMemory();
-		return NULL;
-	}
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|z",
 					 discard_const_p(char *, kwnames),
 					 &fname, &acl_type, &service)) {
 		TALLOC_FREE(frame);
-		TALLOC_FREE(tmp_ctx);
 		return NULL;
 	}
 
 	conn = get_conn(frame, service);
 	if (!conn) {
 		TALLOC_FREE(frame);
-		TALLOC_FREE(tmp_ctx);
 		return NULL;
 	}
 
@@ -692,20 +684,17 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
-		TALLOC_FREE(tmp_ctx);
 		return NULL;
 	}
-	acl = SMB_VFS_SYS_ACL_GET_FILE( conn, smb_fname, acl_type, tmp_ctx);
+	acl = SMB_VFS_SYS_ACL_GET_FILE( conn, smb_fname, acl_type, frame);
 	if (!acl) {
 		TALLOC_FREE(frame);
-		TALLOC_FREE(tmp_ctx);
 		return PyErr_SetFromErrno(PyExc_OSError);
 	}
 
 	py_acl = py_return_ndr_struct("samba.dcerpc.smb_acl", "t", acl, acl);
 
 	TALLOC_FREE(frame);
-	TALLOC_FREE(tmp_ctx);
 
 	return py_acl;
 }
