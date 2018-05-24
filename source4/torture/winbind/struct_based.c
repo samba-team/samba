@@ -805,7 +805,27 @@ static bool torture_winbind_struct_show_sequence(struct torture_context *torture
 		ZERO_STRUCT(rep);
 		fstrcpy(req.domain_name, domlist[i].netbios_name);
 
-		DO_STRUCT_REQ_REP(WINBINDD_SHOW_SEQUENCE, &req, &rep);
+		ok = true;
+		DO_STRUCT_REQ_REP_EXT(WINBINDD_SHOW_SEQUENCE, &req, &rep,
+				      NSS_STATUS_SUCCESS,
+				      false, ok = false,
+				      "WINBINDD_SHOW_SEQUENCE");
+		if (ok == false) {
+			torture_warning(torture,
+					"WINBINDD_SHOW_SEQUENCE on "
+					"domain %s failed\n",
+					req.domain_name);
+
+			torture_comment(torture,
+					"Trust list for "
+					"WINBINDD_SHOW_SEQUENCE was:\n");
+			for (i=0; domlist[i].netbios_name; i++) {
+				torture_comment(torture, "%s\n",
+						domlist[i].netbios_name);
+			}
+
+			return false;
+		}
 
 		seq = rep.data.sequence_number;
 
