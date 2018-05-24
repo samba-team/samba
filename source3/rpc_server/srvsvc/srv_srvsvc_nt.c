@@ -2314,6 +2314,7 @@ WERROR _srvsvc_NetRemoteTOD(struct pipes_struct *p,
 WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 				  struct srvsvc_NetGetFileSecurity *r)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *smb_fname = NULL;
 	size_t sd_size;
 	char *servicename = NULL;
@@ -2333,7 +2334,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		werr = WERR_NERR_NETNAMENOTFOUND;
 		goto error_exit;
 	}
-	snum = find_service(talloc_tos(), r->in.share, &servicename);
+	snum = find_service(frame, r->in.share, &servicename);
 	if (!servicename) {
 		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto error_exit;
@@ -2344,11 +2345,11 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct_cwd(talloc_tos(),
+	nt_status = create_conn_struct_cwd(frame,
 					   server_event_context(),
 					   server_messaging_context(),
 					   &conn,
-					   snum, lp_path(talloc_tos(), snum),
+					   snum, lp_path(frame, snum),
 					   p->session_info, &oldcwd_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
@@ -2357,7 +2358,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = filename_convert(talloc_tos(),
+	nt_status = filename_convert(frame,
 					conn,
 					r->in.file,
 					ucf_flags,
@@ -2434,7 +2435,6 @@ error_exit:
 
 	if (oldcwd_fname) {
                 vfs_ChDir(conn, oldcwd_fname);
-                TALLOC_FREE(oldcwd_fname);
 	}
 
 	if (conn) {
@@ -2442,8 +2442,7 @@ error_exit:
 		conn_free(conn);
 	}
 
-	TALLOC_FREE(smb_fname);
-
+	TALLOC_FREE(frame);
 	return werr;
 }
 
