@@ -1083,13 +1083,13 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   bool *self_referralp)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct connection_struct *conn;
+	struct conn_struct_tos *c = NULL;
+	struct connection_struct *conn = NULL;
 	char *targetpath = NULL;
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	bool dummy;
 	struct dfs_path *pdp = talloc_zero(frame, struct dfs_path);
-	struct smb_filename *oldcwd_fname = NULL;
 
 	if (!pdp) {
 		TALLOC_FREE(frame);
@@ -1185,18 +1185,16 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct_cwd(frame,
-					server_event_context(),
-					server_messaging_context(),
-					&conn,
-					snum,
-					lp_path(frame, snum),
-					NULL,
-					&oldcwd_fname);
+	status = create_conn_struct_tos_cwd(server_messaging_context(),
+					    snum,
+					    lp_path(frame, snum),
+					    NULL,
+					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
+	conn = c->conn;
 
 	/*
 	 * TODO
@@ -1258,9 +1256,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	status = NT_STATUS_OK;
  err_exit:
-	vfs_ChDir(conn, oldcwd_fname);
-	SMB_VFS_DISCONNECT(conn);
-	conn_free(conn);
 	TALLOC_FREE(frame);
 	return status;
 }
