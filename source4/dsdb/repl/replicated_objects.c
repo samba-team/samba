@@ -727,6 +727,12 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		 * based on the cross-ref object.
 		 */
 		if (W_ERROR_EQUAL(status, WERR_DS_ADD_REPLICA_INHIBITED)) {
+			struct GUID_txt_buf guid_str;
+			DBG_ERR("Ignoring object outside partition %s %s: %s\n",
+				GUID_buf_string(&cur->object.identifier->guid,
+						&guid_str),
+				cur->object.identifier->dn,
+				win_errstr(status));
 			continue;
 		}
 
