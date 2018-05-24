@@ -2053,6 +2053,7 @@ err_out:
 bool delete_driver_files(const struct auth_session_info *session_info,
 			 const struct spoolss_DriverInfo8 *r)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	const char *short_arch;
 	connection_struct *conn;
 	NTSTATUS nt_status;
@@ -2062,30 +2063,34 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	bool ret = false;
 
 	if (!r) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 
 	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n",
 		r->driver_name, r->version));
 
-	printdollar_snum = find_service(talloc_tos(), "print$", &printdollar);
+	printdollar_snum = find_service(frame, "print$", &printdollar);
 	if (!printdollar) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 	if (printdollar_snum == -1) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 
-	nt_status = create_conn_struct_cwd(talloc_tos(),
+	nt_status = create_conn_struct_cwd(frame,
 					   server_event_context(),
 					   server_messaging_context(),
 					   &conn,
 					   printdollar_snum,
-					   lp_path(talloc_tos(), printdollar_snum),
+					   lp_path(frame, printdollar_snum),
 					   session_info, &oldcwd_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("delete_driver_files: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
+		TALLOC_FREE(frame);
 		return false;
 	}
 
@@ -2152,10 +2157,10 @@ bool delete_driver_files(const struct auth_session_info *session_info,
  err_free_conn:
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd_fname);
-		TALLOC_FREE(oldcwd_fname);
 		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
+	TALLOC_FREE(frame);
 	return ret;
 }
 
