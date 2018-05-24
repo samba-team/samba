@@ -1391,40 +1391,38 @@ bool create_junction(TALLOC_CTX *ctx,
  Forms a valid Unix pathname from the junction
  **********************************************************************/
 
-static bool junction_to_local_path(const struct junction_map *jucn,
-				   char **pp_path_out,
-				   connection_struct **conn_out,
-				   struct smb_filename **oldpath_fname)
+static bool junction_to_local_path_tos(const struct junction_map *jucn,
+				       char **pp_path_out,
+				       connection_struct **conn_out)
 {
+	struct conn_struct_tos *c = NULL;
 	int snum;
+	char *path_out = NULL;
 	NTSTATUS status;
 
 	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0) {
 		return False;
 	}
-	status = create_conn_struct_cwd(talloc_tos(),
-					server_event_context(),
-					server_messaging_context(),
-					conn_out,
-					snum,
-					lp_path(talloc_tos(), snum),
-					NULL,
-					oldpath_fname);
+	status = create_conn_struct_tos_cwd(server_messaging_context(),
+					    snum,
+					    lp_path(talloc_tos(), snum),
+					    NULL,
+					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
-	*pp_path_out = talloc_asprintf(*conn_out,
+	path_out = talloc_asprintf(c,
 			"%s/%s",
 			lp_path(talloc_tos(), snum),
 			jucn->volume_name);
-	if (!*pp_path_out) {
-		vfs_ChDir(*conn_out, *oldpath_fname);
-		SMB_VFS_DISCONNECT(*conn_out);
-		conn_free(*conn_out);
+	if (path_out == NULL) {
+		TALLOC_FREE(c);
 		return False;
 	}
+	*pp_path_out = path_out;
+	*conn_out = c->conn;
 	return True;
 }
 
@@ -1432,15 +1430,16 @@ bool create_msdfs_link(const struct junction_map *jucn)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
-	struct smb_filename *cwd_fname = NULL;
 	char *msdfs_link = NULL;
 	connection_struct *conn;
 	int i=0;
 	bool insert_comma = False;
 	bool ret = False;
 	struct smb_filename *smb_fname = NULL;
+	bool ok;
 
-	if(!junction_to_local_path(jucn, &path, &conn, &cwd_fname)) {
+	ok = junction_to_local_path_tos(jucn, &path, &conn);
+	if (!ok) {
 		TALLOC_FREE(frame);
 		return False;
 	}
@@ -1510,9 +1509,6 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	ret = True;
 
 out:
-	vfs_ChDir(conn, cwd_fname);
-	SMB_VFS_DISCONNECT(conn);
-	conn_free(conn);
 	TALLOC_FREE(frame);
 	return ret;
 }
@@ -1521,12 +1517,13 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
-	struct smb_filename *cwd_fname = NULL;
 	connection_struct *conn;
 	bool ret = False;
 	struct smb_filename *smb_fname;
+	bool ok;
 
-	if (!junction_to_local_path(jucn, &path, &conn, &cwd_fname)) {
+	ok = junction_to_local_path_tos(jucn, &path, &conn);
+	if (!ok) {
 		TALLOC_FREE(frame);
 		return false;
 	}
@@ -1546,9 +1543,6 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 		ret = True;
 	}
 
-	vfs_ChDir(conn, cwd_fname);
-	SMB_VFS_DISCONNECT(conn);
-	conn_free(conn);
 	TALLOC_FREE(frame);
 	return ret;
 }
