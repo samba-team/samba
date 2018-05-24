@@ -1482,6 +1482,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 				    const struct spoolss_AddDriverInfoCtr *r,
 				    const char *driver_directory)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct spoolss_AddDriverInfo3 *driver;
 	struct spoolss_AddDriverInfo3 converted_driver;
 	const char *short_architecture;
@@ -1490,7 +1491,6 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 	connection_struct *conn = NULL;
 	NTSTATUS nt_status;
 	int i;
-	TALLOC_CTX *ctx = talloc_tos();
 	int ver = 0;
 	struct smb_filename *oldcwd_fname = NULL;
 	char *printdollar = NULL;
@@ -1511,33 +1511,38 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		break;
 	default:
 		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)r->level));
+		TALLOC_FREE(frame);
 		return WERR_INVALID_LEVEL;
 	}
 
 	short_architecture = get_short_archi(driver->architecture);
 	if (!short_architecture) {
+		TALLOC_FREE(frame);
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	printdollar_snum = find_service(ctx, "print$", &printdollar);
+	printdollar_snum = find_service(frame, "print$", &printdollar);
 	if (!printdollar) {
+		TALLOC_FREE(frame);
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (printdollar_snum == -1) {
+		TALLOC_FREE(frame);
 		return WERR_BAD_NET_NAME;
 	}
 
-	nt_status = create_conn_struct_cwd(talloc_tos(),
+	nt_status = create_conn_struct_cwd(frame,
 					   server_event_context(),
 					   server_messaging_context(),
 					   &conn,
 					   printdollar_snum,
-					   lp_path(talloc_tos(), printdollar_snum),
+					   lp_path(frame, printdollar_snum),
 					   session_info, &oldcwd_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
 		err = ntstatus_to_werror(nt_status);
+		TALLOC_FREE(frame);
 		return err;
 	}
 
@@ -1554,7 +1559,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		goto err_free_conn;
 	}
 
-	new_dir = talloc_asprintf(ctx,
+	new_dir = talloc_asprintf(frame,
 				"%s/%d",
 				short_architecture,
 				driver->version);
@@ -1600,7 +1605,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 
 	if (driver->driver_path && strlen(driver->driver_path)) {
 
-		err = move_driver_file_to_download_area(ctx,
+		err = move_driver_file_to_download_area(frame,
 							conn,
 							driver->driver_path,
 							short_architecture,
@@ -1615,7 +1620,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 	if (driver->data_file && strlen(driver->data_file)) {
 		if (!strequal(driver->data_file, driver->driver_path)) {
 
-			err = move_driver_file_to_download_area(ctx,
+			err = move_driver_file_to_download_area(frame,
 								conn,
 								driver->data_file,
 								short_architecture,
@@ -1632,7 +1637,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		if (!strequal(driver->config_file, driver->driver_path) &&
 		    !strequal(driver->config_file, driver->data_file)) {
 
-			err = move_driver_file_to_download_area(ctx,
+			err = move_driver_file_to_download_area(frame,
 								conn,
 								driver->config_file,
 								short_architecture,
@@ -1650,7 +1655,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		    !strequal(driver->help_file, driver->data_file) &&
 		    !strequal(driver->help_file, driver->config_file)) {
 
-			err = move_driver_file_to_download_area(ctx,
+			err = move_driver_file_to_download_area(frame,
 								conn,
 								driver->help_file,
 								short_architecture,
@@ -1676,7 +1681,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 					}
 				}
 
-				err = move_driver_file_to_download_area(ctx,
+				err = move_driver_file_to_download_area(frame,
 									conn,
 									driver->dependent_files->string[i],
 									short_architecture,
@@ -1695,15 +1700,13 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
  err_exit:
 	unbecome_user();
  err_free_conn:
-	TALLOC_FREE(smb_dname);
-
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd_fname);
-		TALLOC_FREE(oldcwd_fname);
 		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
 
+	TALLOC_FREE(frame);
 	return err;
 }
 
