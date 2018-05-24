@@ -2321,11 +2321,11 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
 	WERROR werr;
+	struct conn_struct_tos *c = NULL;
 	connection_struct *conn = NULL;
 	struct sec_desc_buf *sd_buf = NULL;
 	files_struct *fsp = NULL;
 	int snum;
-	struct smb_filename *oldcwd_fname = NULL;
 	uint32_t ucf_flags = 0;
 
 	ZERO_STRUCT(st);
@@ -2345,18 +2345,18 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct_cwd(frame,
-					   server_event_context(),
-					   server_messaging_context(),
-					   &conn,
-					   snum, lp_path(frame, snum),
-					   p->session_info, &oldcwd_fname);
+	nt_status = create_conn_struct_tos_cwd(server_messaging_context(),
+					       snum,
+					       lp_path(frame, snum),
+					       p->session_info,
+					       &c);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
 			   nt_errstr(nt_status)));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
+	conn = c->conn;
 
 	nt_status = filename_convert(frame,
 					conn,
@@ -2431,15 +2431,6 @@ error_exit:
 
 	if (fsp) {
 		close_file(NULL, fsp, NORMAL_CLOSE);
-	}
-
-	if (oldcwd_fname) {
-                vfs_ChDir(conn, oldcwd_fname);
-	}
-
-	if (conn) {
-		SMB_VFS_DISCONNECT(conn);
-		conn_free(conn);
 	}
 
 	TALLOC_FREE(frame);
