@@ -240,7 +240,6 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 *********************************************************/
 
 static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
-			    struct tevent_context *ev,
 			    struct messaging_context *msg,
 			    connection_struct **pconn,
 			    int snum,
@@ -258,7 +257,12 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->ev_ctx = ev;
+	sconn->ev_ctx = samba_tevent_context_init(sconn);
+	if (sconn->ev_ctx == NULL) {
+		TALLOC_FREE(sconn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	sconn->msg_ctx = msg;
 
 	conn = conn_new(sconn);
@@ -387,7 +391,6 @@ NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
 				struct conn_struct_tos **_c)
 {
 	struct conn_struct_tos *c = NULL;
-	struct tevent_context *ev = NULL;
 	NTSTATUS status;
 
 	*_c = NULL;
@@ -397,15 +400,8 @@ NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ev = samba_tevent_context_init(c);
-	if (ev == NULL) {
-		TALLOC_FREE(c);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	become_root();
 	status = create_conn_struct_as_root(c,
-					    ev,
 					    msg,
 					    &c->conn,
 					    snum,
