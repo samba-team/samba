@@ -58,6 +58,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         if self.msg_handler_and_context:
             self.msg_ctx.deregister(self.msg_handler_and_context,
                                     msg_type=MSG_AUTH_LOG)
+            self.msg_ctx.irpc_remove_name(AUTH_EVENT_NAME)
 
     def waitForMessages(self, isLastExpectedMessage, connection=None):
         """Wait for all the expected messages to arrive
