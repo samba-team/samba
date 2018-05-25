@@ -1571,13 +1571,9 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 		}
 	}
 
-	if (session_tag != xconn->client->last_session_id) {
-		struct user_struct *vuser = NULL;
+	if (session != NULL) {
+		struct user_struct *vuser = session->compat;
 
-		xconn->client->last_session_id = session_tag;
-		if (session) {
-			vuser = session->compat;
-		}
 		if (vuser) {
 			set_current_user_info(
 				vuser->session_info->unix_info->sanitized_username,
