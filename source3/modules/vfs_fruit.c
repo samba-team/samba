@@ -5501,6 +5501,11 @@ static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
 	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	int ret;
 
+	if (fio == NULL) {
+		DBG_ERR("Failed to fetch fsp extension");
+		return -1;
+	}
+
 	switch (fio->config->rsrc) {
 	case FRUIT_RSRC_XATTR:
 		ret = fruit_ftruncate_rsrc_xattr(handle, fsp, offset);
