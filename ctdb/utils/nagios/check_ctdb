@@ -223,6 +223,10 @@ if ($info eq "scriptstatus") {
         if ($result == OK) {
             $result = $np->check_threshold(check => $error_script_count, warning => '0', critical => '0');
         }
+        if ($result == OK and $script_count == 0) {
+            $result = WARNING;
+            $output .= "no script run. ";
+        }
      }
     $np->nagios_exit($result, $output);
 } elsif ($info eq "ping") {
