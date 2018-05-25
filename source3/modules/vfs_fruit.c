@@ -4328,6 +4328,11 @@ static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (fio == NULL) {
+		DBG_ERR("Failed to fetch fsp extension");
+		return -1;
+	}
+
 	switch (fio->config->meta) {
 	case FRUIT_META_STREAM:
 		nwritten = fruit_pwrite_meta_stream(handle, fsp, data,
