@@ -4002,6 +4002,11 @@ static ssize_t fruit_pread_meta(vfs_handle_struct *handle,
 		return 0;
 	}
 
+	if (fio == NULL) {
+		DBG_ERR("Failed to fetch fsp extension");
+		return -1;
+	}
+
 	/* Yes, macOS always reads from offset 0 */
 	offset = 0;
 	to_return = MIN(n, AFP_INFO_SIZE);
