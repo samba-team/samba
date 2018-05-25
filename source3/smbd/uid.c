@@ -301,6 +301,10 @@ static bool change_to_user_internal(connection_struct *conn,
 		return true;
 	}
 
+	set_current_user_info(session_info->unix_info->sanitized_username,
+			      session_info->unix_info->unix_name,
+			      session_info->info->domain_name);
+
 	snum = SNUM(conn);
 
 	ok = check_user_ok(conn, vuid, session_info, snum);
@@ -467,6 +471,7 @@ bool smbd_unbecome_authenticated_pipe_user(void)
 static void push_conn_ctx(void)
 {
 	struct conn_ctx *ctx_p;
+	extern userdom_struct current_user_info;
 
 	/* Check we don't overflow our stack */
 
@@ -480,6 +485,7 @@ static void push_conn_ctx(void)
 
 	ctx_p->conn = current_user.conn;
 	ctx_p->vuid = current_user.vuid;
+	ctx_p->user_info = current_user_info;
 
 	DEBUG(4, ("push_conn_ctx(%llu) : conn_ctx_stack_ndx = %d\n",
 		(unsigned long long)ctx_p->vuid, conn_ctx_stack_ndx));
@@ -501,6 +507,9 @@ static void pop_conn_ctx(void)
 	conn_ctx_stack_ndx--;
 	ctx_p = &conn_ctx_stack[conn_ctx_stack_ndx];
 
+	set_current_user_info(ctx_p->user_info.smb_name,
+			      ctx_p->user_info.unix_name,
+			      ctx_p->user_info.domain);
 	current_user.conn = ctx_p->conn;
 	current_user.vuid = ctx_p->vuid;
 
