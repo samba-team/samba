@@ -34,6 +34,8 @@ class SambaOptions(optparse.OptionGroup):
     """General Samba-related command line options."""
 
     def __init__(self, parser):
+        from samba import fault_setup
+        fault_setup()
         from samba.param import LoadParm
         optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
         self.add_option("-s", "--configfile", action="callback",
