@@ -1571,9 +1571,16 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 		}
 	}
 
-	if (session != NULL) {
+	if (session != NULL && !(flags & AS_USER)) {
 		struct user_struct *vuser = session->compat;
 
+		/*
+		 * change_to_user() implies set_current_user_info()
+		 * and chdir_connect_service().
+		 *
+		 * So we only call set_current_user_info if
+		 * we don't have AS_USER specified.
+		 */
 		if (vuser) {
 			set_current_user_info(
 				vuser->session_info->unix_info->sanitized_username,
@@ -1601,6 +1608,10 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 
 		set_current_case_sensitive(conn, SVAL(req->inbuf,smb_flg));
 
+		/*
+		 * change_to_user() implies set_current_user_info()
+		 * and chdir_connect_service().
+		 */
 		if (!change_to_user(conn,session_tag)) {
 			DEBUG(0, ("Error: Could not change to user. Removing "
 				"deferred open, mid=%llu.\n",
