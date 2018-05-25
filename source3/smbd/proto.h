@@ -499,13 +499,6 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				bool allow_broken_path,
 				char **pp_name_out,
 				bool *ppath_contains_wcard);
-NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
-			    struct tevent_context *ev,
-			    struct messaging_context *msg,
-			    connection_struct **pconn,
-			    int snum,
-			    const char *path,
-			    const struct auth_session_info *session_info);
 struct connection_struct;
 struct smb_filename;
 struct conn_struct_tos {
