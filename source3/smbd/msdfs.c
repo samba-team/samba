@@ -386,68 +386,6 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	return status;
 }
 
-/********************************************************
- Fake up a connection struct for the VFS layer.
- Note: this performs a vfs connect and CHANGES CWD !!!! JRA.
-
- The old working directory is returned on *poldcwd, allocated on ctx.
-*********************************************************/
-
-NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
-				struct tevent_context *ev,
-				struct messaging_context *msg,
-				connection_struct **pconn,
-				int snum,
-				const char *path,
-				const struct auth_session_info *session_info,
-				struct smb_filename **poldcwd_fname)
-{
-	connection_struct *conn;
-	struct smb_filename *oldcwd_fname = NULL;
-	struct smb_filename smb_fname_connectpath = {0};
-
-	NTSTATUS status = create_conn_struct(ctx, ev,
-					     msg, &conn,
-					     snum, path,
-					     session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/*
-	 * Windows seems to insist on doing trans2getdfsreferral() calls on
-	 * the IPC$ share as the anonymous user. If we try to chdir as that
-	 * user we will fail.... WTF ? JRA.
-	 */
-
-	oldcwd_fname = vfs_GetWd(ctx, conn);
-	if (oldcwd_fname == NULL) {
-		status = map_nt_error_from_unix(errno);
-		DEBUG(3, ("vfs_GetWd failed: %s\n", strerror(errno)));
-		conn_free(conn);
-		return status;
-	}
-
-	smb_fname_connectpath = (struct smb_filename) {
-		.base_name = conn->connectpath
-	};
-
-	if (vfs_ChDir(conn, &smb_fname_connectpath) != 0) {
-		status = map_nt_error_from_unix(errno);
-		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. "
-			"Error was %s\n",
-			conn->connectpath, strerror(errno) ));
-		TALLOC_FREE(oldcwd_fname);
-		conn_free(conn);
-		return status;
-	}
-
-	*pconn = conn;
-	*poldcwd_fname = oldcwd_fname;
-
-	return NT_STATUS_OK;
-}
-
 static int conn_struct_tos_destructor(struct conn_struct_tos *c)
 {
 	if (c->oldcwd_fname != NULL) {

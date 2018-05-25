@@ -506,14 +506,6 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 			    int snum,
 			    const char *path,
 			    const struct auth_session_info *session_info);
-NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
-				struct tevent_context *ev,
-				struct messaging_context *msg,
-				connection_struct **pconn,
-				int snum,
-				const char *path,
-				const struct auth_session_info *session_info,
-				struct smb_filename **poldcwd_fname);
 struct connection_struct;
 struct smb_filename;
 struct conn_struct_tos {
