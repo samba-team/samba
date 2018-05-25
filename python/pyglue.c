@@ -170,6 +170,16 @@ static PyObject *py_get_debug_level(PyObject *self)
 	return PyInt_FromLong(DEBUGLEVEL);
 }
 
+static PyObject *py_fault_setup(PyObject *self)
+{
+	static bool done;
+	if (!done) {
+		fault_setup();
+		done = true;
+	}
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_is_ntvfs_fileserver_built(PyObject *self)
 {
 #ifdef WITH_NTVFS_FILESERVER
@@ -339,6 +349,8 @@ static PyMethodDef py_misc_methods[] = {
 		"set debug level" },
 	{ "get_debug_level", (PyCFunction)py_get_debug_level, METH_NOARGS,
 		"get debug level" },
+	{ "fault_setup", (PyCFunction)py_fault_setup, METH_NOARGS,
+		"setup the default samba panic handler" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"interface_ips(lp_ctx[, all_interfaces) -> list_of_ifaces\n"
 		"\n"

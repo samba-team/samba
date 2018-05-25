@@ -381,6 +381,7 @@ def arcfour_encrypt(key, data):
 
 version = _glue.version
 interface_ips = _glue.interface_ips
+fault_setup = _glue.fault_setup
 set_debug_level = _glue.set_debug_level
 get_debug_level = _glue.get_debug_level
 unix2nttime = _glue.unix2nttime
