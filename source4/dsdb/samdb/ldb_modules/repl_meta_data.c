@@ -3329,6 +3329,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_message_element *guid_el = NULL;
 	struct ldb_control *sd_propagation_control;
 	struct ldb_control *fix_links_control = NULL;
+	struct ldb_control *fix_dn_name_control = NULL;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
@@ -3384,6 +3385,69 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		fix_links_control->critical = false;
+		return ldb_next_request(module, req);
+	}
+
+	fix_dn_name_control = ldb_request_get_control(req,
+					DSDB_CONTROL_DBCHECK_FIX_LINK_DN_NAME);
+	if (fix_dn_name_control != NULL) {
+		struct dsdb_schema *schema = NULL;
+		const struct dsdb_attribute *sa = NULL;
+
+		if (req->op.mod.message->num_elements != 2) {
+			return ldb_module_operr(module);
+		}
+
+		if (req->op.mod.message->elements[0].flags != LDB_FLAG_MOD_DELETE) {
+			return ldb_module_operr(module);
+		}
+
+		if (req->op.mod.message->elements[1].flags != LDB_FLAG_MOD_ADD) {
+			return ldb_module_operr(module);
+		}
+
+		if (req->op.mod.message->elements[0].num_values != 1) {
+			return ldb_module_operr(module);
+		}
+
+		if (req->op.mod.message->elements[1].num_values != 1) {
+			return ldb_module_operr(module);
+		}
+
+		schema = dsdb_get_schema(ldb, req);
+		if (schema == NULL) {
+			return ldb_module_operr(module);
+		}
+
+		if (ldb_attr_cmp(req->op.mod.message->elements[0].name,
+				 req->op.mod.message->elements[1].name) != 0) {
+			return ldb_module_operr(module);
+		}
+
+		sa = dsdb_attribute_by_lDAPDisplayName(schema,
+				req->op.mod.message->elements[0].name);
+		if (sa == NULL) {
+			return ldb_module_operr(module);
+		}
+
+		if (sa->dn_format == DSDB_INVALID_DN) {
+			return ldb_module_operr(module);
+		}
+
+		if (sa->linkID != 0) {
+			return ldb_module_operr(module);
+		}
+
+		/*
+		 * If we are run from dbcheck and we are not updating
+		 * a link (as these would need to be sorted and so
+		 * can't go via such a simple update, then do not
+		 * trigger replicated updates and a new USN from this
+		 * change, it wasn't a real change, just a new
+		 * (correct) string DN
+		 */
+
+		fix_dn_name_control->critical = false;
 		return ldb_next_request(module, req);
 	}
 

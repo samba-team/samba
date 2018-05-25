@@ -130,6 +130,9 @@ struct dsdb_control_password_change {
 /* passed by dbcheck to fix duplicate linked attributes (bug #13095) */
 #define DSDB_CONTROL_DBCHECK_FIX_DUPLICATE_LINKS "1.3.6.1.4.1.7165.4.3.19.2"
 
+/* passed by dbcheck to fix the DN strong of a one-way-link (bug #13495) */
+#define DSDB_CONTROL_DBCHECK_FIX_LINK_DN_NAME "1.3.6.1.4.1.7165.4.3.19.3"
+
 /* passed when importing plain text password on upgrades */
 #define DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID "1.3.6.1.4.1.7165.4.3.20"
 

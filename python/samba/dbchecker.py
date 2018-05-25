@@ -650,7 +650,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
-        if self.do_modify(m, ["show_recycled:1"],
+        if self.do_modify(m, ["show_recycled:1",
+                              "local_oid:%s:1" % dsdb.DSDB_CONTROL_DBCHECK_FIX_LINK_DN_NAME],
                           "Failed to fix old DN string on attribute %s" % (attrname)):
             self.report("Fixed old DN string on attribute %s" % (attrname))
 
@@ -1289,14 +1290,22 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                                       res[0].dn, "SID")
                 continue
 
+            # Only for non-links, not even forward-only links
+            # (otherwise this breaks repl_meta_data):
+            #
             # Now we have checked the GUID and SID, offer to fix old
-            # DN strings as a non-error (for forward links with no
+            # DN strings as a non-error (DNs, not links so no
             # backlink).  Samba does not maintain this string
             # otherwise, so we don't increment error_count.
             if reverse_link_name is None:
-                if str(res[0].dn) != str(dsdb_dn.dn):
-                    self.err_dn_string_component_old(obj.dn, attrname, val, dsdb_dn,
-                                                     res[0].dn)
+                if linkID == 0 and str(res[0].dn) != str(dsdb_dn.dn):
+                    # Pass in the old/bad DN without the <GUID=...> part,
+                    # otherwise the LDB code will correct it on the way through
+                    # (Note: we still want to preserve the DSDB DN prefix in the
+                    # case of binary DNs)
+                    bad_dn = dsdb_dn.prefix + dsdb_dn.dn.get_linearized()
+                    self.err_dn_string_component_old(obj.dn, attrname, bad_dn,
+                                                     dsdb_dn, res[0].dn)
                 continue
 
             # check the reverse_link is correct if there should be one

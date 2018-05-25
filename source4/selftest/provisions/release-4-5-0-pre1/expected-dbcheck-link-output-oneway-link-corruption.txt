@@ -1,0 +1,5 @@
+Checking 228 objects
+NOTE: old (due to rename or delete) DN string component for seeAlso in object OU=dangling-from,DC=release-4-5-0-pre1,DC=samba,DC=corp - OU=dangling-ou,DC=release-4-5-0-pre1,DC=samba,DC=corp
+Change DN to <GUID=20600e7c-92bb-492e-9552-f3ed7f8a2cad>;OU=dangling-ou2,DC=release-4-5-0-pre1,DC=samba,DC=corp? [YES]
+Fixed old DN string on attribute seeAlso
+Checked 228 objects (0 errors)
