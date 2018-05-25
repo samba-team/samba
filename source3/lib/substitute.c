@@ -247,6 +247,17 @@ static const char *get_smb_user_name(void)
 void set_current_user_info(const char *smb_name, const char *unix_name,
 			   const char *domain)
 {
+	static const void *last_smb_name;
+	static const void *last_unix_name;
+	static const void *last_domain;
+
+	if (likely(last_smb_name == smb_name &&
+	    last_unix_name == unix_name &&
+	    last_domain == domain))
+	{
+		return;
+	}
+
 	fstrcpy(current_user_info.smb_name, smb_name);
 	fstrcpy(current_user_info.unix_name, unix_name);
 	fstrcpy(current_user_info.domain, domain);
@@ -255,6 +266,10 @@ void set_current_user_info(const char *smb_name, const char *unix_name,
 	 * has already been sanitised in register_existing_vuid. */
 
 	sub_set_smb_name(current_user_info.smb_name);
+
+	last_smb_name = smb_name;
+	last_unix_name = unix_name;
+	last_domain = domain;
 }
 
 /*******************************************************************
