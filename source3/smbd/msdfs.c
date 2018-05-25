@@ -430,13 +430,15 @@ NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = create_conn_struct(c,
-				    ev,
-				    msg,
-				    &c->conn,
-				    snum,
-				    path,
-				    session_info);
+	become_root();
+	status = create_conn_struct_as_root(c,
+					    ev,
+					    msg,
+					    &c->conn,
+					    snum,
+					    path,
+					    session_info);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(c);
 		return status;
