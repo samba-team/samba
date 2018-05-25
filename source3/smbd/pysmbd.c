@@ -194,7 +194,6 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 
 	SMB_VFS_CLOSE(fsp);
 
-	conn_free(conn);
 	TALLOC_FREE(frame);
 
 	umask(saved_umask);
