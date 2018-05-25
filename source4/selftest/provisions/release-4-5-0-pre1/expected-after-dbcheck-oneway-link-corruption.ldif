@@ -1,0 +1,19 @@
+# record 1
+dn: OU=dangling-ou2,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# record 2
+dn: OU=dangling-from,DC=release-4-5-0-pre1,DC=samba,DC=corp
+seeAlso: OU=dangling-ou2,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=DomainDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=ForestDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# returned 5 records
+# 2 entries
+# 3 referrals

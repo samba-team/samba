@@ -205,6 +205,67 @@ check_expected_after_dbcheck_forward_link_corruption() {
     fi
 }
 
+oneway_link_corruption() {
+    #
+    # Step1: add  OU "dangling-ou"
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/oneway_link_corruption.ldif
+    cat > $ldif <<EOF
+dn: OU=dangling-ou,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: organizationalUnit
+objectGUID: 20600e7c-92bb-492e-9552-f3ed7f8a2cad
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --relax $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    #
+    # Step2: add  msExchConfigurationContainer "dangling-msexch"
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/oneway_link_corruption2.ldif
+    cat > $ldif <<EOF
+dn: OU=dangling-from,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: organizationalUnit
+seeAlso: OU=dangling-ou,DC=release-4-5-0-pre1,DC=samba,DC=corp
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    #
+    # Step3: rename dangling-ou to dangling-ou2
+    #
+    # Because this is a one-way link we don't fix it at runtime
+    #
+    out=$(TZ=UTC $ldbrename -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb OU=dangling-ou,DC=release-4-5-0-pre1,DC=samba,DC=corp OU=dangling-ou2,DC=release-4-5-0-pre1,DC=samba,DC=corp)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+}
+
+dbcheck_oneway_link_corruption() {
+    dbcheck "-oneway-link-corruption" "0" ""
+    return $?
+}
+
+check_expected_after_dbcheck_oneway_link_corruption() {
+    tmpldif=$PREFIX_ABS/$RELEASE/expected-after-dbcheck-oneway-link-corruption.ldif.tmp
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(ou=dangling-ou)(ou=dangling-ou2)(ou=dangling-from))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted seeAlso > $tmpldif
+    diff $tmpldif $release_dir/expected-after-dbcheck-oneway-link-corruption.ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
 dbcheck_dangling_multi_valued() {
 
     $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --fix --yes
@@ -276,6 +337,10 @@ if [ -d $release_dir ]; then
     testit "dbcheck_forward_link_corruption" dbcheck_forward_link_corruption
     testit "check_expected_after_dbcheck_forward_link_corruption" check_expected_after_dbcheck_forward_link_corruption
     testit "forward_link_corruption_clean" dbcheck_clean
+    testit "oneway_link_corruption" oneway_link_corruption
+    testit "dbcheck_oneway_link_corruption" dbcheck_oneway_link_corruption
+    testit "check_expected_after_dbcheck_oneway_link_corruption" check_expected_after_dbcheck_oneway_link_corruption
+    testit "oneway_link_corruption_clean" dbcheck_clean
     testit "dangling_one_way_link" dangling_one_way_link
     testit "dbcheck_one_way" dbcheck_one_way
     testit "dbcheck_clean2" dbcheck_clean
