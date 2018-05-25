@@ -1960,10 +1960,6 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	set_current_user_info(session_info->unix_info->sanitized_username,
-			      session_info->unix_info->unix_name,
-			      session_info->info->domain_name);
-
 	return NT_STATUS_OK;
 }
 
@@ -2340,9 +2336,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	}
 
 	/*
-	 * Check if the client provided a valid session id,
-	 * if so smbd_smb2_request_check_session() calls
-	 * set_current_user_info().
+	 * Check if the client provided a valid session id.
 	 *
 	 * As some command don't require a valid session id
 	 * we defer the check of the session_status
@@ -2507,6 +2501,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 *
 		 * smbd_smb2_request_check_tcon()
 		 * calls change_to_user() on success.
+		 * Which implies set_current_user_info()
+		 * and chdir_current_service().
 		 */
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2522,6 +2518,22 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			return smbd_smb2_request_error(req,
 				NT_STATUS_ACCESS_DENIED);
 		}
+	} else if (call->need_session) {
+		struct auth_session_info *session_info = NULL;
+
+		/*
+		 * Unless we also have need_tcon (see above),
+		 * we still need to call set_current_user_info().
+		 */
+
+		session_info = req->session->global->auth_session_info;
+		if (session_info == NULL) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+
+		set_current_user_info(session_info->unix_info->sanitized_username,
+				      session_info->unix_info->unix_name,
+				      session_info->info->domain_name);
 	}
 
 	if (req->was_encrypted || encryption_desired) {
