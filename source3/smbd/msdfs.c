@@ -354,7 +354,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	}
 
 	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn, &conn->ts_res);
-	*pconn = conn;
+	*pconn = talloc_move(ctx, &conn);
 
 	return NT_STATUS_OK;
 }
@@ -416,7 +416,6 @@ NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
 		TALLOC_FREE(c);
 		return status;
 	}
-	talloc_steal(c, c->conn);
 
 	talloc_set_destructor(c, conn_struct_tos_destructor);
 
