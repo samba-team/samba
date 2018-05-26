@@ -1,4 +1,1 @@
 ^samba3.vfs.fruit streams_depot.OS X AppleDouble file conversion\(nt4_dc\)
-^samba3.vfs.fruit metadata_netatalk.read open rsrc after rename\(nt4_dc\)
-^samba3.vfs.fruit metadata_stream.read open rsrc after rename\(nt4_dc\)
-^samba3.vfs.fruit streams_depot.read open rsrc after rename\(nt4_dc\)
