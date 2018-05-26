@@ -1830,6 +1830,86 @@ done:
 	return ret;
 }
 
+static bool test_basefile_rename_with_open_stream(struct torture_context *tctx,
+						  struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_create create, create2;
+	struct smb2_handle h1 = {{0}}, h2 = {{0}};
+	const char *fname = "test_rename_openfile";
+	const char *sname = "test_rename_openfile:foo";
+	const char *fname_renamed = "test_rename_openfile_renamed";
+	union smb_setfileinfo sinfo;
+	const char *data = "test data";
+
+	ret = torture_smb2_connection(tctx, &tree2);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_smb2_connection failed\n");
+
+	torture_comment(tctx, "Creating file with stream\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	h1 = create.out.file.handle;
+
+	torture_comment(tctx, "Writing to stream\n");
+
+	status = smb2_util_write(tree, h1, data, 0, strlen(data));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
+	torture_comment(tctx, "Renaming base file\n");
+
+	ZERO_STRUCT(create2);
+	create2.in.desired_access = SEC_FILE_ALL;
+	create2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create2.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create2.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create2.in.fname = fname;
+
+	status = smb2_create(tree2, tctx, &create2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	h2 = create2.out.file.handle;
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h2;
+	sinfo.rename_information.in.new_name = fname_renamed;
+
+	status = smb2_setinfo_file(tree2, &sinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_ACCESS_DENIED, ret, done,
+		"smb2_setinfo_file didn't return NT_STATUS_ACCESS_DENIED\n");
+
+	smb2_util_close(tree2, h2);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree, fname_renamed);
+
+	return ret;
+}
 
 /*
    basic testing of streams calls SMB2
@@ -1850,6 +1930,8 @@ struct torture_suite *torture_smb2_streams_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "attributes", test_stream_attributes);
 	torture_suite_add_1smb2_test(suite, "delete", test_stream_delete);
 	torture_suite_add_1smb2_test(suite, "zero-byte", test_zero_byte_stream);
+	torture_suite_add_1smb2_test(suite, "basefile-rename-with-open-stream",
+					test_basefile_rename_with_open_stream);
 
 	suite->description = talloc_strdup(suite, "SMB2-STREAM tests");
 
