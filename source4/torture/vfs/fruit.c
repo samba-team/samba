@@ -3897,7 +3897,6 @@ static bool test_rename_and_read_rsrc(struct torture_context *tctx,
 	const char *fname_renamed = "test_rename_openfile_renamed";
 	const char *data = "1234567890";
 	union smb_setfileinfo sinfo;
-	struct smb2_read r;
 
 	ret = enable_aapl(tctx, tree);
 	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
@@ -3949,28 +3948,12 @@ static bool test_rename_and_read_rsrc(struct torture_context *tctx,
 	sinfo.rename_information.in.new_name = fname_renamed;
 
 	status = smb2_setinfo_file(tree, &sinfo);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_setinfo_file failed");
-
-	smb2_util_close(tree, h2);
-
-	ZERO_STRUCT(r);
-	r.in.file.handle = h1;
-	r.in.length      = 10;
-	r.in.offset      = 0;
-
-	torture_comment(tctx, "Read resource fork of renamed file\n");
-
-	status = smb2_read(tree, tree, &r);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_read failed");
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_ACCESS_DENIED, ret, done,
+		"smb2_setinfo_file failed");
 
 	smb2_util_close(tree, h1);
-
-	torture_assert_goto(tctx, r.out.data.length == 10, ret, done,
-			    talloc_asprintf(tctx, "smb2_read returned %jd bytes, expected 10\n",
-					    (intmax_t)r.out.data.length));
-
-	torture_assert_goto(tctx, memcmp(r.out.data.data, data, 10) == 0, ret, done,
-			    talloc_asprintf(tctx, "Bad data in stream\n"));
+	smb2_util_close(tree, h2);
 
 done:
 	smb2_util_unlink(tree, fname);
