@@ -6642,6 +6642,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		return status;
 	}
 
+	if (file_has_open_streams(fsp)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* Make a copy of the dst smb_fname structs */
 
 	smb_fname_dst = cp_smb_filename(ctx, smb_fname_dst_in);

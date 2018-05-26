@@ -1,2 +1,0 @@
-samba3.smb2.streams.basefile-rename-with-open-stream\(.*\)
-samba3.smb2.streams streams_xattr.basefile-rename-with-open-stream\(nt4_dc\)
