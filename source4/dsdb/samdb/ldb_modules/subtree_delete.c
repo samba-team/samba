@@ -38,19 +38,6 @@
 #include "dsdb/common/util.h"
 
 
-static int subtree_delete_sort(struct ldb_message **m1,
-			       struct ldb_message **m2,
-			       void *private_data)
-{
-	struct ldb_dn *dn1 = (*m1)->dn;
-	struct ldb_dn *dn2 = (*m2)->dn;
-
-	/*
-	 * This sorts in tree order, children first
-	 */
-	return ldb_dn_compare(dn1, dn2);
-}
-
 static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	static const char * const attrs[] = { NULL };
@@ -93,12 +80,6 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/*
-	 * First we sort the results from the leaf to the root
-	 */
-	LDB_TYPESAFE_QSORT(res->msgs, res->count, NULL,
-			   subtree_delete_sort);
-
-	/*
 	 * we need to start from the top since other LDB modules could
 	 * enforce constraints (eg "objectclass" and "samldb" do so).
 	 *
@@ -113,6 +94,12 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 		flags |= DSDB_MODIFY_RELAX;
 	}
 
+	/*
+	 * The net result of this code is that the leaf nodes are
+	 * deleted first, as the parent is only deleted once these
+	 * calls (and the delete calls recursive within these)
+	 * complete.
+	 */
 	for (i = 0; i < res->count; i++) {
 		ret = dsdb_module_del(module, res->msgs[i]->dn, flags, req);
 		if (ret != LDB_SUCCESS) {
