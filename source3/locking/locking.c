@@ -1318,3 +1318,34 @@ struct timespec get_share_mode_write_time(struct share_mode_lock *lck)
 	}
 	return d->old_write_time;
 }
+
+bool file_has_open_streams(files_struct *fsp)
+{
+	struct share_mode_lock *lock = NULL;
+	struct share_mode_data *d = NULL;
+	uint32_t i;
+
+	lock = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
+	if (lock == NULL) {
+		return false;
+	}
+	d = lock->data;
+
+	for (i = 0; i < d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+
+		if (share_mode_stale_pid(d, i)) {
+			continue;
+		}
+
+		if (e->private_options &
+		    NTCREATEX_OPTIONS_PRIVATE_STREAM_BASEOPEN)
+		{
+			TALLOC_FREE(lock);
+			return true;
+		}
+	}
+
+	TALLOC_FREE(lock);
+	return false;
+}
