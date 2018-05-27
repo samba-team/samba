@@ -5091,6 +5091,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	    && (!(private_flags & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
 		uint32_t base_create_disposition;
 		struct smb_filename *smb_fname_base = NULL;
+		uint32_t base_privflags;
 
 		if (create_options & FILE_DIRECTORY_FILE) {
 			status = NT_STATUS_NOT_A_DIRECTORY;
@@ -5141,13 +5142,17 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 		}
 
+		base_privflags = NTCREATEX_OPTIONS_PRIVATE_STREAM_BASEOPEN;
+
 		/* Open the base file. */
 		status = create_file_unixpath(conn, NULL, smb_fname_base, 0,
 					      FILE_SHARE_READ
 					      | FILE_SHARE_WRITE
 					      | FILE_SHARE_DELETE,
 					      base_create_disposition,
-					      0, 0, 0, NULL, 0, 0, NULL, NULL,
+					      0, 0, 0, NULL, 0,
+					      base_privflags,
+					      NULL, NULL,
 					      &base_fsp, NULL);
 		TALLOC_FREE(smb_fname_base);
 
