@@ -19,6 +19,7 @@ from ldb import ERR_NO_SUCH_OBJECT, ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_ENTRY_ALREA
 from ldb import ERR_UNWILLING_TO_PERFORM, ERR_OPERATIONS_ERROR
 from samba.samdb import SamDB
 from samba.tests import delete_force
+from samba import dsdb
 
 parser = optparse.OptionParser("deletetest.py [options] <host|file>")
 sambaopts = options.SambaOptions(parser)
@@ -56,7 +57,9 @@ class BaseDeleteTests(samba.tests.TestCase):
         print("SEARCH by GUID %s" % self.GUID_string(guid))
 
         res = self.ldb.search(base="<GUID=%s>" % self.GUID_string(guid),
-                         scope=SCOPE_BASE, controls=["show_deleted:1"])
+                              scope=SCOPE_BASE,
+                              controls=["show_deleted:1"],
+                              attrs=["*", "parentGUID"])
         self.assertEquals(len(res), 1)
         return res[0]
 
@@ -64,9 +67,10 @@ class BaseDeleteTests(samba.tests.TestCase):
         print("SEARCH by DN %s" % dn)
 
         res = self.ldb.search(expression="(objectClass=*)",
-                         base=dn,
-                         scope=SCOPE_BASE,
-                         controls=["show_deleted:1"])
+                              base=dn,
+                              scope=SCOPE_BASE,
+                              controls=["show_deleted:1"],
+                              attrs=["*", "parentGUID"])
         self.assertEquals(len(res), 1)
         return res[0]
 
@@ -352,6 +356,33 @@ class BasicTreeDeleteTests(BasicDeleteTests):
         self.objLive7 = self.search_dn(self.srv2)
         self.guid7=self.objLive7["objectGUID"][0]
 
+        self.deleted_objects_config_dn \
+            = self.ldb.get_wellknown_dn(self.ldb.get_config_basedn(),
+                                        dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+        deleted_objects_config_obj \
+            = self.search_dn(self.deleted_objects_config_dn)
+
+        self.deleted_objects_config_guid \
+            = deleted_objects_config_obj["objectGUID"][0]
+
+        self.deleted_objects_domain_dn \
+            = self.ldb.get_wellknown_dn(self.ldb.get_default_basedn(),
+                                        dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+        deleted_objects_domain_obj \
+            = self.search_dn(self.deleted_objects_domain_dn)
+
+        self.deleted_objects_domain_guid \
+            = deleted_objects_domain_obj["objectGUID"][0]
+
+        self.deleted_objects_domain_dn \
+            = self.ldb.get_wellknown_dn(self.ldb.get_default_basedn(),
+                                        dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+        sites_obj = self.search_dn("cn=sites,%s" \
+                                        % self.ldb.get_config_basedn())
+        self.sites_dn = sites_obj.dn
+        self.sites_guid \
+            = sites_obj["objectGUID"][0]
+
     def test_all(self):
         """Basic delete tests"""
 
@@ -360,6 +391,104 @@ class BasicTreeDeleteTests(BasicDeleteTests):
         self.ldb.delete(self.grp1)
         self.ldb.delete(self.srv1, ["tree_delete:1"])
         self.ldb.delete(self.sit1, ["tree_delete:1"])
+
+        self.check_all()
+
+    def test_tree_delete(self):
+        """Basic delete tests,
+           but use just one tree delete for the config records
+        """
+
+        self.ldb.delete(self.usr1)
+        self.ldb.delete(self.usr2)
+        self.ldb.delete(self.grp1)
+        self.ldb.delete(self.sit1, ["tree_delete:1"])
+
+        self.check_all()
+
+    def check_all(self):
+        objDeleted1 = self.search_guid(self.guid1)
+        objDeleted2 = self.search_guid(self.guid2)
+        objDeleted3 = self.search_guid(self.guid3)
+        objDeleted4 = self.search_guid(self.guid4)
+        objDeleted5 = self.search_guid(self.guid5)
+        objDeleted6 = self.search_guid(self.guid6)
+        objDeleted7 = self.search_guid(self.guid7)
+
+        self.del_attr_values(objDeleted1)
+        self.del_attr_values(objDeleted2)
+        self.del_attr_values(objDeleted3)
+        self.del_attr_values(objDeleted4)
+        self.del_attr_values(objDeleted5)
+        self.del_attr_values(objDeleted6)
+        self.del_attr_values(objDeleted7)
+
+        self.preserved_attributes_list(self.objLive1, objDeleted1)
+        self.preserved_attributes_list(self.objLive2, objDeleted2)
+        self.preserved_attributes_list(self.objLive3, objDeleted3)
+        self.preserved_attributes_list(self.objLive4, objDeleted4)
+        self.preserved_attributes_list(self.objLive5, objDeleted5)
+        self.preserved_attributes_list(self.objLive6, objDeleted6)
+        self.preserved_attributes_list(self.objLive7, objDeleted7)
+
+        self.check_rdn(self.objLive1, objDeleted1, "cn")
+        self.check_rdn(self.objLive2, objDeleted2, "cn")
+        self.check_rdn(self.objLive3, objDeleted3, "cn")
+        self.check_rdn(self.objLive4, objDeleted4, "cn")
+        self.check_rdn(self.objLive5, objDeleted5, "cn")
+        self.check_rdn(self.objLive6, objDeleted6, "cn")
+        self.check_rdn(self.objLive7, objDeleted7, "cn")
+
+        self.delete_deleted(self.ldb, self.usr1)
+        self.delete_deleted(self.ldb, self.usr2)
+        self.delete_deleted(self.ldb, self.grp1)
+        self.delete_deleted(self.ldb, self.sit1)
+        self.delete_deleted(self.ldb, self.ss1)
+        self.delete_deleted(self.ldb, self.srv1)
+        self.delete_deleted(self.ldb, self.srv2)
+
+        self.assertTrue("CN=Deleted Objects" in str(objDeleted1.dn))
+        self.assertEqual(objDeleted1.dn.parent(),
+                         self.deleted_objects_domain_dn)
+        self.assertEqual(objDeleted1["parentGUID"][0],
+                         self.deleted_objects_domain_guid)
+
+        self.assertTrue("CN=Deleted Objects" in str(objDeleted2.dn))
+        self.assertEqual(objDeleted2.dn.parent(),
+                         self.deleted_objects_domain_dn)
+        self.assertEqual(objDeleted2["parentGUID"][0],
+                         self.deleted_objects_domain_guid)
+
+        self.assertTrue("CN=Deleted Objects" in str(objDeleted3.dn))
+        self.assertEqual(objDeleted3.dn.parent(),
+                         self.deleted_objects_domain_dn)
+        self.assertEqual(objDeleted3["parentGUID"][0],
+                         self.deleted_objects_domain_guid)
+
+        self.assertFalse("CN=Deleted Objects" in str(objDeleted4.dn))
+        self.assertEqual(objDeleted4.dn.parent(),
+                         self.sites_dn)
+        self.assertEqual(objDeleted4["parentGUID"][0],
+                         self.sites_guid)
+
+        self.assertTrue("CN=Deleted Objects" in str(objDeleted5.dn))
+        self.assertEqual(objDeleted5.dn.parent(),
+                         self.deleted_objects_config_dn)
+        self.assertEqual(objDeleted5["parentGUID"][0],
+                         self.deleted_objects_config_guid)
+
+        self.assertFalse("CN=Deleted Objects" in str(objDeleted6.dn))
+        self.assertEqual(objDeleted6.dn.parent(),
+                         objDeleted4.dn)
+        self.assertEqual(objDeleted6["parentGUID"][0],
+                         objDeleted4["objectGUID"][0])
+
+        self.assertFalse("CN=Deleted Objects" in str(objDeleted7.dn))
+        self.assertEqual(objDeleted7.dn.parent(),
+                         objDeleted6.dn)
+        self.assertEqual(objDeleted7["parentGUID"][0],
+                         objDeleted6["objectGUID"][0])
+
 
         objDeleted1 = self.search_guid(self.guid1)
         objDeleted2 = self.search_guid(self.guid2)
@@ -402,12 +531,29 @@ class BasicTreeDeleteTests(BasicDeleteTests):
         self.delete_deleted(self.ldb, self.srv2)
 
         self.assertTrue("CN=Deleted Objects" in str(objDeleted1.dn))
+        self.assertEqual(objDeleted1.dn.parent(),
+                         self.deleted_objects_domain_dn)
+        self.assertEqual(objDeleted1["parentGUID"][0],
+                         self.deleted_objects_domain_guid)
         self.assertTrue("CN=Deleted Objects" in str(objDeleted2.dn))
+        self.assertEqual(objDeleted2.dn.parent(),
+                         self.deleted_objects_domain_dn)
+        self.assertEqual(objDeleted2["parentGUID"][0],
+                         self.deleted_objects_domain_guid)
         self.assertTrue("CN=Deleted Objects" in str(objDeleted3.dn))
+        self.assertEqual(objDeleted3.dn.parent(),
+                         self.deleted_objects_domain_dn)
+        self.assertEqual(objDeleted3["parentGUID"][0],
+                         self.deleted_objects_domain_guid)
         self.assertFalse("CN=Deleted Objects" in str(objDeleted4.dn))
         self.assertTrue("CN=Deleted Objects" in str(objDeleted5.dn))
+        self.assertEqual(objDeleted5.dn.parent(),
+                         self.deleted_objects_config_dn)
+        self.assertEqual(objDeleted5["parentGUID"][0],
+                         self.deleted_objects_config_guid)
         self.assertFalse("CN=Deleted Objects" in str(objDeleted6.dn))
         self.assertFalse("CN=Deleted Objects" in str(objDeleted7.dn))
+
 
 
 if not "://" in host:
