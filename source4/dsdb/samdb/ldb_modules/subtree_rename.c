@@ -154,14 +154,13 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 
 	ldb = ldb_module_get_ctx(module);
 
-	/* This gets complex:  We need to:
-	   - Do a search for all entires under this entry 
-	   - Wait for these results to appear
-	   - In the callback for each result, issue a modify request
-	   - That will include this rename, we hope
-	   - Wait for each modify result
-	   - Regain our sanity
-	*/
+	/*
+	 * This gets complex:  We need to:
+	 *  - Do a search for all entries under this entry
+	 *  - Wait for these results to appear
+	 *  - Do our own rename (in first callback)
+	 *  - In the callback for each result, issue a dsdb_module_rename()
+	 */
 
 	ac = subren_ctx_init(module, req);
 	if (!ac) {
