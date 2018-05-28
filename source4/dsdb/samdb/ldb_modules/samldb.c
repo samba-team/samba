@@ -3872,7 +3872,8 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	uint32_t rid;
 	NTSTATUS status;
 	int ret;
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
+	struct ldb_result *res_users = NULL;
 	const char * const attrs[] = { "objectSid", "isDeleted", NULL };
 	const char * const noattrs[] = { NULL };
 
@@ -3911,7 +3912,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	}
 
 	/* Deny delete requests from groups which are primary ones */
-	ret = dsdb_module_search(ac->module, ac, &res,
+	ret = dsdb_module_search(ac->module, ac, &res_users,
 				 ldb_get_default_basedn(ldb),
 				 LDB_SCOPE_SUBTREE, noattrs,
 				 DSDB_FLAG_NEXT_MODULE,
@@ -3920,7 +3921,14 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	if (res->count > 0) {
+	if (res_users->count > 0) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+				       "Refusing to delete %s, as it "
+				       "is still the primaryGroupID "
+				       "for %u users",
+				       ldb_dn_get_linearized(res->msgs[0]->dn),
+				       res_users->count);
+
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
