@@ -565,6 +565,9 @@ class PasswordSettingsTestCase(PasswordTestCase):
         admin_pso.apply_to(admin_users)
         self.assert_PSO_applied(user, admin_pso)
 
+        # restore the default primaryGroupID so we can safely delete the group
+        user.set_primary_group(domain_users)
+
     def test_pso_none_applied(self):
         """Tests cases where no Resultant PSO should be returned"""
 
