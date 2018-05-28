@@ -1310,6 +1310,9 @@ static bool list_union(struct ldb_context *ldb,
 	/*
 	 * Sort the lists (if not in GUID DN mode) so we can do
 	 * the de-duplication during the merge
+	 *
+	 * NOTE: This can sort the in-memory index values, as list or
+	 * list2 might not be a copy!
 	 */
 	ltdb_dn_list_sort(ltdb, list);
 	ltdb_dn_list_sort(ltdb, list2);
