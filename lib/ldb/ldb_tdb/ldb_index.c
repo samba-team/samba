@@ -1994,20 +1994,21 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 			}
 			/*
 			 * Here we load the index for the tree.
+			 *
+			 * We only care if this is successful, if the
+			 * index can't trim the result list down then
+			 * the ONELEVEL index is still good enough.
 			 */
 			ret = ltdb_index_dn(ac->module, ltdb, ac->tree,
 					    idx_one_tree_list);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(idx_one_tree_list);
-				talloc_free(dn_list);
-				return ret;
-			}
-
-			if (!list_intersect(ldb, ltdb,
-					    dn_list, idx_one_tree_list)) {
-				talloc_free(idx_one_tree_list);
-				talloc_free(dn_list);
-				return LDB_ERR_OPERATIONS_ERROR;
+			if (ret == LDB_SUCCESS) {
+				if (!list_intersect(ldb, ltdb,
+						    dn_list,
+						    idx_one_tree_list)) {
+					talloc_free(idx_one_tree_list);
+					talloc_free(dn_list);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
 			}
 		}
 		break;
