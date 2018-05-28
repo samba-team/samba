@@ -125,8 +125,8 @@ void torture_wait_for_oplock_break(struct torture_context *tctx)
 	bool timesup = false;
 	int old_count = break_info.count;
 
-	/* Wait .1 seconds for an oplock break */
-	ne = tevent_timeval_current_ofs(0, 100000);
+	/* Wait 1 second for an oplock break */
+	ne = tevent_timeval_current_ofs(0, 1000000);
 
 	te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup);
 	if (te == NULL) {

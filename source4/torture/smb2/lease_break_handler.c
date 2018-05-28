@@ -108,8 +108,8 @@ void torture_wait_for_lease_break(struct torture_context *tctx)
 	bool timesup = false;
 	int old_count = lease_break_info.count;
 
-	/* Wait .1 seconds for an lease break */
-	ne = tevent_timeval_current_ofs(0, 100000);
+	/* Wait 1 second for an lease break */
+	ne = tevent_timeval_current_ofs(0, 1000000);
 
 	te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup);
 	if (te == NULL) {
