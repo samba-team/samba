@@ -125,7 +125,7 @@ class cmd_schema_attribute_modify(Command):
                 str(searchflags_int), ldb.FLAG_MOD_REPLACE, 'searchFlags')
 
         samdb.modify(m)
-        print("modified %s" % attr_dn)
+        self.outf.write("modified %s" % attr_dn)
 
 class cmd_schema_attribute_show(Command):
     """Show details about an attribute from the schema.
