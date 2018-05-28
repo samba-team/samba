@@ -340,7 +340,7 @@ class ReplayContext(object):
         self.last_netlogon_bad        = False
         self.last_samlogon_bad        = False
         self.generate_ldap_search_tables()
-        self.next_conversation_id = itertools.count().next
+        self.next_conversation_id = next(itertools.count())
 
     def generate_ldap_search_tables(self):
         session = system_session()
@@ -375,7 +375,7 @@ class ReplayContext(object):
         # for k, v in self.dn_map.items():
         #     print >>sys.stderr, k, len(v)
 
-        for k, v in dn_map.items():
+        for k in list(dn_map.keys()):
             if k[-3:] != ',DC':
                 continue
             p = k[:-3]
