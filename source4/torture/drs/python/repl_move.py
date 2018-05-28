@@ -30,6 +30,7 @@
 from __future__ import print_function
 import time
 import uuid
+import samba.tests
 
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
@@ -63,8 +64,11 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
+        self.top_ou = samba.tests.create_test_ou(self.ldb_dc1,
+                                                 "replica_move")
+
         self.ou1_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU1")
-        self.ou1_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou1_dn.add_base(self.top_ou)
         ou1 = {}
         ou1["dn"] = self.ou1_dn
         ou1["objectclass"] = "organizationalUnit"
@@ -72,7 +76,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.add(ou1)
 
         self.ou2_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU2")
-        self.ou2_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou2_dn.add_base(self.top_ou)
         ou2 = {}
         ou2["dn"] = self.ou2_dn
         ou2["objectclass"] = "organizationalUnit"
@@ -89,13 +93,12 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
     def tearDown(self):
         try:
-            self.ldb_dc1.delete(self.ou1_dn, ["tree_delete:1"])
+            self.ldb_dc1.delete(self.top_ou, ["tree_delete:1"])
         except ldb.LdbError as e:
             (enum, string) = e.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
 
-        self.ldb_dc1.delete(self.ou2_dn, ["tree_delete:1"])
         self._enable_all_repl(self.dnsname_dc1)
         self._enable_all_repl(self.dnsname_dc2)
         super(DrsMoveObjectTestCase, self).tearDown()
@@ -265,7 +268,9 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -538,7 +543,9 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -720,7 +727,9 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -900,7 +909,9 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -1081,7 +1092,9 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -1404,7 +1417,9 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -1835,57 +1850,60 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self._disable_all_repl(self.dnsname_dc1)
         self._disable_all_repl(self.dnsname_dc2)
 
+        self.top_ou = samba.tests.create_test_ou(self.ldb_dc1,
+                                                 "replica_move")
+
         # make sure DCs are synchronized before the test
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
         self.ou1_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU1")
-        self.ou1_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou1_dn.add_base(self.top_ou)
         self.ou1 = {}
         self.ou1["dn"] = self.ou1_dn
         self.ou1["objectclass"] = "organizationalUnit"
         self.ou1["ou"] = self.ou1_dn.get_component_value(0)
 
         self.ou2_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU2,OU=DrsOU1")
-        self.ou2_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou2_dn.add_base(self.top_ou)
         self.ou2 = {}
         self.ou2["dn"] = self.ou2_dn
         self.ou2["objectclass"] = "organizationalUnit"
         self.ou2["ou"] = self.ou2_dn.get_component_value(0)
 
         self.ou2b_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU2B,OU=DrsOU1")
-        self.ou2b_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou2b_dn.add_base(self.top_ou)
         self.ou2b = {}
         self.ou2b["dn"] = self.ou2b_dn
         self.ou2b["objectclass"] = "organizationalUnit"
         self.ou2b["ou"] = self.ou2b_dn.get_component_value(0)
 
         self.ou2c_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU2C,OU=DrsOU1")
-        self.ou2c_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou2c_dn.add_base(self.top_ou)
 
         self.ou3_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU3,OU=DrsOU2,OU=DrsOU1")
-        self.ou3_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou3_dn.add_base(self.top_ou)
         self.ou3 = {}
         self.ou3["dn"] = self.ou3_dn
         self.ou3["objectclass"] = "organizationalUnit"
         self.ou3["ou"] = self.ou3_dn.get_component_value(0)
 
         self.ou4_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU4,OU=DrsOU3,OU=DrsOU2,OU=DrsOU1")
-        self.ou4_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou4_dn.add_base(self.top_ou)
         self.ou4 = {}
         self.ou4["dn"] = self.ou4_dn
         self.ou4["objectclass"] = "organizationalUnit"
         self.ou4["ou"] = self.ou4_dn.get_component_value(0)
 
         self.ou5_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU5,OU=DrsOU4,OU=DrsOU3,OU=DrsOU2,OU=DrsOU1")
-        self.ou5_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou5_dn.add_base(self.top_ou)
         self.ou5 = {}
         self.ou5["dn"] = self.ou5_dn
         self.ou5["objectclass"] = "organizationalUnit"
         self.ou5["ou"] = self.ou5_dn.get_component_value(0)
 
         self.ou6_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU6,OU=DrsOU5,OU=DrsOU4,OU=DrsOU3,OU=DrsOU2,OU=DrsOU1")
-        self.ou6_dn.add_base(self.ldb_dc1.get_default_basedn())
+        self.ou6_dn.add_base(self.top_ou)
         self.ou6 = {}
         self.ou6["dn"] = self.ou6_dn
         self.ou6["objectclass"] = "organizationalUnit"
@@ -1893,7 +1911,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
 
     def tearDown(self):
-        self.ldb_dc1.delete(self.ou1_dn, ["tree_delete:1"])
+        self.ldb_dc1.delete(self.top_ou, ["tree_delete:1"])
         self._enable_all_repl(self.dnsname_dc1)
         self._enable_all_repl(self.dnsname_dc2)
         super(DrsMoveBetweenTreeOfObjectTestCase, self).tearDown()
@@ -1949,7 +1967,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2005,7 +2025,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2099,7 +2121,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2188,7 +2212,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2288,7 +2314,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2348,7 +2376,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2394,7 +2424,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2449,7 +2481,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
@@ -2527,7 +2561,9 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
         # create user on DC1
         self.ldb_dc1.newuser(username=username,
-                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             userou="ou=%s,ou=%s"
+                             % (self.ou1_dn.get_component_value(0),
+                                self.top_ou.get_component_value(0)),
                              password=None, setpassword=False)
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
