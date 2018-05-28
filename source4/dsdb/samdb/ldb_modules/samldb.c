@@ -3929,6 +3929,10 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 				       ldb_dn_get_linearized(res->msgs[0]->dn),
 				       res_users->count);
 
+		/*
+		 * Yes, this seems very wrong, but we have a test
+		 * for this exact error code in sam.py
+		 */
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
