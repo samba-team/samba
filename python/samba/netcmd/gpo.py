@@ -48,7 +48,7 @@ import uuid
 from samba.ntacls import dsacl2fsacl
 from samba.dcerpc import nbt
 from samba.net import Net
-from samba.gp_parse import GPParser, GPNoParserException
+from samba.gp_parse import GPParser, GPNoParserException, GPGeneralizeException
 from samba.gp_parse.gp_pol import GPPolParser
 from samba.gp_parse.gp_ini import (
     GPIniParser,
@@ -965,10 +965,15 @@ class cmd_backup(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
-        Option("--tmpdir", help="Temporary directory for copying policy files", type=str)
+        Option("--tmpdir", help="Temporary directory for copying policy files", type=str),
+        Option("--generalize", help="Generalize XML entities to restore",
+               default=False, action='store_true'),
+        Option("--entities", help="File to export defining XML entities for the restore",
+               dest='ent_file', type=str)
         ]
 
-    def run(self, gpo, H=None, tmpdir=None, sambaopts=None, credopts=None, versionopts=None):
+    def run(self, gpo, H=None, tmpdir=None, generalize=False, sambaopts=None,
+            credopts=None, versionopts=None, ent_file=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -1020,7 +1025,78 @@ class cmd_backup(Command):
         except Exception as e:
             # FIXME: Catch more specific exception
             raise CommandError("Error copying GPO from DC", e)
+
         self.outf.write('GPO copied to %s\n' % gpodir)
+
+        if generalize:
+            self.outf.write('\nAttempting to generalize XML entities:\n')
+            entities = cmd_backup.generalize_xml_entities(self.outf, gpodir,
+                                                          gpodir)
+            import operator
+            ents = ''
+            for ent in sorted(entities.items(), key=operator.itemgetter(1)):
+                ents += '<!ENTITY {} "{}">\n'.format(ent[1].strip('&;'), ent[0])
+
+            if ent_file:
+                with open(ent_file, 'w') as f:
+                    f.write(ents)
+                self.outf.write('Entities successfully written to %s\n' %
+                                ent_file)
+            else:
+                self.outf.write('\nEntities:\n')
+                self.outf.write(ents)
+
+    @staticmethod
+    def generalize_xml_entities(outf, sourcedir, targetdir):
+        entities = {}
+
+        if not os.path.exists(targetdir):
+            os.mkdir(targetdir)
+
+        l_dirs = [ sourcedir ]
+        r_dirs = [ targetdir ]
+        while l_dirs:
+            l_dir = l_dirs.pop()
+            r_dir = r_dirs.pop()
+
+            dirlist = os.listdir(l_dir)
+            dirlist.sort()
+            for e in dirlist:
+                l_name = os.path.join(l_dir, e)
+                r_name = os.path.join(r_dir, e)
+
+                if os.path.isdir(l_name):
+                    l_dirs.append(l_name)
+                    r_dirs.append(r_name)
+                    if not os.path.exists(r_name):
+                        os.mkdir(r_name)
+                else:
+                    if l_name.endswith('.xml'):
+                        # Restore the xml file if possible
+
+                        # Get the filename to find the parser
+                        to_parse = os.path.basename(l_name)[:-4]
+
+                        parser = find_parser(to_parse)
+                        try:
+                            with open(l_name, 'r') as ltemp:
+                                data = ltemp.read()
+
+                            concrete_xml = ET.fromstring(data)
+                            found_entities = parser.generalize_xml(concrete_xml, r_name, entities)
+                        except GPGeneralizeException:
+                            outf.write('SKIPPING: Generalizing failed for %s\n' % to_parse)
+
+                    else:
+                        # No need to generalize non-xml files.
+                        #
+                        # TODO This could be improved with xml files stored in
+                        # the renamed backup file (with custom extension) by
+                        # inlining them into the exported backups.
+                        if not os.path.samefile(l_name, r_name):
+                            shutil.copy2(l_name, r_name)
+
+        return entities
 
 
 class cmd_create(Command):
@@ -1213,6 +1289,7 @@ class cmd_restore(cmd_create):
             r_dir = r_dirs.pop()
 
             dirlist = os.listdir(l_dir)
+            dirlist.sort()
             for e in dirlist:
                 l_name = os.path.join(l_dir, e)
                 r_name = os.path.join(r_dir, e)
