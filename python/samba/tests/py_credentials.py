@@ -123,7 +123,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:
@@ -150,7 +150,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:
@@ -176,7 +176,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:
@@ -204,7 +204,7 @@ class PyCredentialsTests(TestCase):
                                    validation_level,
                                    netr_flags)
         except NTSTATUSError as e:
-            enum = ctypes.c_uint32(e[0]).value
+            enum = ctypes.c_uint32(e.args[0]).value
             if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
                 self.fail("got wrong password error")
             else:

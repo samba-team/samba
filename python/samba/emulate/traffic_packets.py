@@ -47,7 +47,7 @@ def check_runtime_error(runtime, val):
     if runtime is None:
         return False
 
-    err32 = uint32(runtime[0])
+    err32 = uint32(runtime.args[0])
     if err32 == val:
         return True
 
