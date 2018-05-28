@@ -1821,7 +1821,12 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 				      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
 				      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			/* the record has disappeared? yes, this can happen */
+			/*
+			 * the record has disappeared? yes, this can
+			 * happen if the entry is deleted by something
+			 * operating in the callback (not another
+			 * process, as we have a read lock)
+			 */
 			talloc_free(msg);
 			continue;
 		}
