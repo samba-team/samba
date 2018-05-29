@@ -7249,6 +7249,19 @@ linked_attributes[0]:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/*
+	 * All attributes listed here must be dealt with in some way
+	 * by replmd_process_linked_attribute() otherwise in the case
+	 * of isDeleted: FALSE the modify will fail with:
+	 *
+	 * Failed to apply linked attribute change 'attribute 'isDeleted':
+	 * invalid modify flags on
+	 * 'CN=g1_1527570609273,CN=Users,DC=samba,DC=example,DC=com':
+	 * 0x0'
+	 *
+	 * This is becaue isDeleted is a Boolean, so FALSE is a
+	 * legitimate value (set by Samba's deletetest.py)
+	 */
 	attrs[0] = attr->lDAPDisplayName;
 	attrs[1] = "isDeleted";
 	attrs[2] = "isRecycled";
@@ -7629,6 +7642,9 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	 * recycled and tombstone objects.  We don't have to delete
 	 * any existing link, that should have happened when the
 	 * object deletion was replicated or initiated.
+	 *
+	 * This needs isDeleted and isRecycled to be included as
+	 * attributes in the search and so in msg if set.
 	 */
 	replmd_deletion_state(module, msg, &deletion_state, NULL);
 
@@ -7636,6 +7652,24 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
+
+	/*
+	 * Now that we know the deletion_state, remove the extra
+	 * attributes added for that purpose.  We need to do this
+	 * otherwise in the case of isDeleted: FALSE the modify will
+	 * fail with:
+	 *
+	 * Failed to apply linked attribute change 'attribute 'isDeleted':
+	 * invalid modify flags on
+	 * 'CN=g1_1527570609273,CN=Users,DC=samba,DC=example,DC=com':
+	 * 0x0'
+	 *
+	 * This is becaue isDeleted is a Boolean, so FALSE is a
+	 * legitimate value (set by Samba's deletetest.py)
+	 */
+
+	ldb_msg_remove_attr(msg, "isDeleted");
+	ldb_msg_remove_attr(msg, "isRecycled");
 
 	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
 	if (old_el == NULL) {
