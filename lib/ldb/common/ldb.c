@@ -425,6 +425,8 @@ int ldb_transaction_prepare_commit(struct ldb_context *ldb)
 		return LDB_SUCCESS;
 	}
 
+	ldb_reset_err_string(ldb);
+
 	status = next_module->ops->prepare_commit(next_module);
 	if (status != LDB_SUCCESS) {
 		ldb->transaction_active--;
