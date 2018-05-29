@@ -935,8 +935,9 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		} else if (cur_schema ) {
 			dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
 		}
-		DEBUG(0,(__location__ " Failed to prepare commit of transaction: %s\n",
-			 ldb_errstring(ldb)));
+		DBG_ERR(" Failed to prepare commit of transaction: %s (%s)\n",
+			ldb_errstring(ldb),
+			ldb_strerror(ret));
 		TALLOC_FREE(tmp_ctx);
 		return WERR_FOOBAR;
 	}
