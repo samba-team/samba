@@ -409,8 +409,8 @@ sub get_interface($)
     $interfaces{"vampire2000dc"} = 39;
 
     # update lib/socket_wrapper/socket_wrapper.c
-    #  #define MAX_WRAPPED_INTERFACES 40
-    # if you wish to have more than 40 interfaces
+    #  #define MAX_WRAPPED_INTERFACES 64
+    # if you wish to have more than 64 interfaces
 
     if (not defined($interfaces{$netbiosname})) {
 	die();
