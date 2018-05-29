@@ -56,9 +56,17 @@ class GPAuditCsvParser(GPParser):
 
             for line in self.lines:
                 child = SubElement(root, 'Row')
-                for e in [line[x] for x in self.header]:
+                for e, title in [(line[x], x) for x in self.header]:
                     value = SubElement(child, 'Value')
                     value.text = e
+
+                    # Metadata for generalization
+                    if title == 'Policy Target' and e != '':
+                        value.attrib['user_id'] = 'TRUE'
+                    if (title == 'Setting Value' and e != '' and
+                        (line['Subcategory'] == 'RegistryGlobalSacl' or
+                         line['Subcategory'] == 'FileGlobalSacl')):
+                        value.attrib['acl'] = 'TRUE'
 
             self.write_pretty_xml(root, f)
 
