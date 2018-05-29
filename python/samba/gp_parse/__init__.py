@@ -20,6 +20,7 @@
 from xml.dom import minidom
 from io import BytesIO
 from xml.etree.ElementTree import ElementTree, fromstring, tostring
+from hashlib import md5
 
 
 ENTITY_USER_ID = 0
@@ -79,8 +80,8 @@ class GPParser(object):
         minidom_parsed = minidom.parseString(temporary_bytes.getvalue())
         handle.write(minidom_parsed.toprettyxml(encoding=self.output_encoding))
 
-    def new_xml_entity(self, global_entities, ent_type):
-        identifier = str(len(global_entities)).zfill(4)
+    def new_xml_entity(self, name, ent_type):
+        identifier = md5(name).hexdigest()
 
         type_str = entity_type_to_string(ent_type)
 
@@ -109,7 +110,7 @@ class GPParser(object):
                 elem.text = global_entities[old_text]
                 entities.append((elem.text, old_text))
             else:
-                elem.text = self.new_xml_entity(global_entities,
+                elem.text = self.new_xml_entity(old_text,
                                                 ENTITY_USER_ID)
 
                 entities.append((elem.text, old_text))
@@ -128,7 +129,7 @@ class GPParser(object):
                 elem.text = global_entities[old_text]
                 entities.append((elem.text, old_text))
             else:
-                elem.text = self.new_xml_entity(global_entities,
+                elem.text = self.new_xml_entity(old_text,
                                                 ENTITY_SDDL_ACL)
 
                 entities.append((elem.text, old_text))
@@ -156,7 +157,7 @@ class GPParser(object):
                 to_put = global_entities[old_text]
                 entities.append((to_put, old_text))
             else:
-                to_put = self.new_xml_entity(global_entities,
+                to_put = self.new_xml_entity(old_text,
                                              ENTITY_NETWORK_PATH)
                 elem.text = to_put + remaining
 

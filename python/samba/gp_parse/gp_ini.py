@@ -25,7 +25,7 @@ from ConfigParser import ConfigParser
 from xml.etree.ElementTree import Element, SubElement
 from StringIO import StringIO
 
-from samba.gp_parse import GPParser
+from samba.gp_parse import GPParser, ENTITY_USER_ID
 
 # [MS-GPFR] Group Policy Folder Redirection
 # [MS-GPSCR] Scripts Extension
@@ -195,3 +195,23 @@ class GPFDeploy1IniParser(GPIniParser):
 
         self.ini_conf.add_section(section_name)
         return section_name
+
+    def custom_entities(self, root, global_entities):
+        entities = []
+        fdeploy_sids = root.findall('.//Section[@fdeploy_SID]')
+        fdeploy_sids.sort()
+
+        for sid in fdeploy_sids:
+            old_attrib = sid.attrib['fdeploy_SID']
+
+            if old_attrib in global_entities:
+                new_attrib = global_entities[old_attrib]
+            else:
+                new_attrib = self.new_xml_entity(old_attrib, ENTITY_USER_ID)
+                entities.append((new_attrib, old_attrib))
+
+                global_entities.update([(old_attrib, new_attrib)])
+
+            sid.attrib['fdeploy_SID'] = new_attrib
+
+        return entities
