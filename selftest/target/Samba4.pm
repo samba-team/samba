@@ -2142,6 +2142,7 @@ sub check_env($$)
 	ad_dc_no_nss         => [],
 	ad_dc_no_ntlm        => [],
 	ad_dc_ntvfs          => [],
+	backupfromdc         => [],
 
 	fl2008r2dc           => ["ad_dc"],
 	fl2003dc             => ["ad_dc"],
@@ -2158,6 +2159,8 @@ sub check_env($$)
 
 	s4member_dflt_domain => ["ad_dc_ntvfs"],
 	s4member             => ["ad_dc_ntvfs"],
+
+	restoredc            => ["backupfromdc"],
 
 	none                 => [],
 );
@@ -2567,6 +2570,215 @@ sub setup_ad_dc_no_ntlm
 	}
 
 	if (not defined($self->check_or_start($env, "prefork"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+# Sets up a DC that's solely used to do a domain backup from. We then use the
+# backupfrom-DC to create the restore-DC - this proves that the backup/restore
+# process will create a Samba DC that will actually start up.
+# We don't use the backup-DC for anything else because its domain will conflict
+# with the restore DC.
+sub setup_backupfromdc
+{
+	my ($self, $path) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->{target3}->have_ads()) {
+	       return "UNKNOWN";
+	}
+
+	my $env = $self->provision_ad_dc($path, "backupfromdc", "BACKUPDOMAIN",
+					 "backupdom.samba.example.com", "");
+	unless ($env) {
+		return undef;
+	}
+
+	if (not defined($self->check_or_start($env, "standard"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+# Creates a backup of a running testenv DC
+sub create_backup
+{
+	# note: dcvars contains the env info for the backup DC testenv
+	my ($self, $env, $dcvars, $backupdir, $backup_cmd) = @_;
+
+	# get all the env variables we pass in with the samba-tool command
+	my $cmd_env = "";
+	$cmd_env .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($env->{RESOLV_WRAPPER_CONF})) {
+		$cmd_env .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd_env .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
+	# Note: use the backupfrom-DC's krb5.conf to do the backup
+	$cmd_env .= " KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
+	$cmd_env .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+
+	# use samba-tool to create a backup from the 'backupfromdc' DC
+	my $cmd = "";
+	my $samba_tool = Samba::bindir_path($self, "samba-tool");
+	my $server = $dcvars->{DC_SERVER_IP};
+
+	$cmd .= "$cmd_env $samba_tool domain backup $backup_cmd --server=$server";
+	$cmd .= " --targetdir=$backupdir -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+
+	print "Executing: $cmd\n";
+	unless(system($cmd) == 0) {
+		warn("Failed to create backup using: \n$cmd");
+		return undef;
+	}
+
+	# get the name of the backup file created
+	opendir(DIR, $backupdir);
+	my @files = grep(/\.tar/, readdir(DIR));
+	closedir(DIR);
+
+	if(scalar @files != 1) {
+		warn("Backup file not found in directory $backupdir\n");
+		return undef;
+	}
+	my $backup_file = "$backupdir/$files[0]";
+	print "Using backup file $backup_file...\n";
+
+	return $backup_file;
+}
+
+# Restores a backup-file to populate a testenv for a new DC
+sub restore_backup_file
+{
+	my ($self, $backup_file, $restore_opts, $restoredir, $smbconf) = @_;
+
+	# pass the restore command the testenv's smb.conf that we've already
+	# generated. But move it to a temp-dir first, so that the restore doesn't
+	# overwrite it
+	my $tmpdir = File::Temp->newdir();
+	my $tmpconf = "$tmpdir/smb.conf";
+	my $cmd = "cp $smbconf $tmpconf";
+	unless(system($cmd) == 0) {
+		warn("Failed to backup smb.conf using: \n$cmd");
+		return -1;
+	}
+
+	my $samba_tool = Samba::bindir_path($self, "samba-tool");
+	$cmd = "$samba_tool domain backup restore --backup-file=$backup_file";
+	$cmd .= " --targetdir=$restoredir $restore_opts --configfile=$tmpconf";
+
+	print "Executing: $cmd\n";
+	unless(system($cmd) == 0) {
+		warn("Failed to restore backup using: \n$cmd");
+		return -1;
+	}
+
+	print "Restore complete\n";
+	return 0
+}
+
+# sets up the initial directory and returns the new testenv's env info
+# (without actually doing a 'domain join')
+sub prepare_dc_testenv
+{
+	my ($self, $prefix, $dcname, $domain, $realm, $password) = @_;
+
+	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
+					       $dcname,
+					       $domain,
+					       $realm,
+					       undef,
+					       "2008",
+					       $password,
+					       undef,
+					       undef);
+
+	# the restore uses a slightly different state-dir location to other testenvs
+	$ctx->{statedir} = "$ctx->{prefix_abs}/state";
+	push(@{$ctx->{directories}}, "$ctx->{statedir}");
+
+	# add support for sysvol/netlogon/tmp shares
+	$ctx->{share} = "$ctx->{prefix_abs}/share";
+	push(@{$ctx->{directories}}, "$ctx->{share}");
+
+	$ctx->{smb_conf_extra_options} = "
+	max xmit = 32K
+	server max protocol = SMB2
+
+[sysvol]
+	path = $ctx->{statedir}/sysvol
+	read only = no
+
+[netlogon]
+	path = $ctx->{statedir}/sysvol/$ctx->{dnsname}/scripts
+	read only = no
+
+[tmp]
+	path = $ctx->{share}
+	read only = no
+	posix:sharedelay = 10000
+	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 50000
+
+";
+
+	my $env = $self->provision_raw_step1($ctx);
+
+	$env->{DC_SERVER} = $env->{SERVER};
+	$env->{DC_SERVER_IP} = $env->{SERVER_IP};
+	$env->{DC_SERVER_IPV6} = $env->{SERVER_IPV6};
+	$env->{DC_NETBIOSNAME} = $env->{NETBIOSNAME};
+	$env->{DC_USERNAME} = $env->{USERNAME};
+	$env->{DC_PASSWORD} = $env->{PASSWORD};
+
+    return $env;
+}
+
+
+# Set up a DC testenv solely by using the samba-tool domain backup/restore
+# commands. This proves that we can backup an online DC ('backupfromdc') and
+# use the backup file to create a valid, working samba DC.
+sub setup_restoredc
+{
+	# note: dcvars contains the env info for the dependent testenv ('backupfromdc')
+	my ($self, $prefix, $dcvars) = @_;
+	print "Preparing RESTORE DC...\n";
+
+	my $env = $self->prepare_dc_testenv($prefix, "restoredc",
+					    $dcvars->{DOMAIN}, $dcvars->{REALM},
+					    $dcvars->{PASSWORD});
+
+	# create a backup of the 'backupfromdc'
+	my $backupdir = File::Temp->newdir();
+	my $backup_file = $self->create_backup($env, $dcvars, $backupdir, "online");
+	unless($backup_file) {
+		return undef;
+	}
+
+	# restore the backup file to populate the restore-DC testenv
+	my $restore_dir = abs_path($prefix);
+	my $ret = $self->restore_backup_file($backup_file,
+					     "--newservername=$env->{SERVER}",
+					     $restore_dir, $env->{SERVERCONFFILE});
+	unless ($ret == 0) {
+		return undef;
+	}
+
+	# start samba for the restored DC
+	if (not defined($self->check_or_start($env, "standard"))) {
 	    return undef;
 	}
 

@@ -246,7 +246,9 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
             raise CommandError('Backup file not found.')
         if targetdir is None:
             raise CommandError('Please specify a target directory')
-        if os.path.exists(targetdir) and os.listdir(targetdir):
+        # allow restoredc to install into a directory prepopulated by selftest
+        if (os.path.exists(targetdir) and os.listdir(targetdir) and
+            os.environ.get('SAMBA_SELFTEST') != '1'):
             raise CommandError('Target directory is not empty')
         if not newservername:
             raise CommandError('Server name required')

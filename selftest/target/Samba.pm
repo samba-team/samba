@@ -407,6 +407,8 @@ sub get_interface($)
     $interfaces{"fakednsforwarder2"} = 37;
     $interfaces{"s4member_dflt"} = 38;
     $interfaces{"vampire2000dc"} = 39;
+    $interfaces{"backupfromdc"} = 40;
+    $interfaces{"restoredc"} = 41;
 
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 64
