@@ -80,6 +80,10 @@ struct kccsrv_service {
 
 	time_t last_deleted_check;
 
+	time_t last_dns_scavenge;
+
+	time_t last_dns_tombstone_collection;
+
 	time_t last_full_scan_deleted_check;
 
 	bool am_rodc;

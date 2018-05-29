@@ -596,6 +596,76 @@ WERROR kccsrv_periodic_schedule(struct kccsrv_service *service, uint32_t next_in
 }
 
 /*
+ * check to see if any dns entries need scavenging
+ */
+static NTSTATUS kccsrv_dns_zone_scavenging(
+	struct kccsrv_service *s,
+	TALLOC_CTX *mem_ctx)
+{
+
+	time_t current_time = time(NULL);
+	time_t dns_scavenge_interval;
+	time_t dns_collection_interval;
+
+	NTSTATUS status;
+	char *error_string = NULL;
+
+	/*
+	 * Only perform zone scavenging if it's been enabled.
+	 */
+	if (!lpcfg_dns_zone_scavenging(s->task->lp_ctx)) {
+		return NT_STATUS_OK;
+	}
+
+	dns_scavenge_interval = lpcfg_parm_int(s->task->lp_ctx,
+					       NULL,
+					       "dnsserver",
+					       "scavenging_interval",
+					       2 * 60 * 60);
+	dns_collection_interval =
+	    lpcfg_parm_int(s->task->lp_ctx,
+			   NULL,
+			   "dnsserver",
+			   "tombstone_collection_interval",
+			   24 * 60 * 60);
+	if ((current_time - s->last_dns_scavenge) > dns_scavenge_interval) {
+		s->last_dns_scavenge = current_time;
+		status = dns_tombstone_records(mem_ctx, s->samdb,
+					       &error_string);
+		if (!NT_STATUS_IS_OK(status)) {
+			const char *err = NULL;
+			if (error_string != NULL) {
+				err = error_string;
+			} else {
+				err = nt_errstr(status);
+			}
+			DBG_ERR("DNS record scavenging process failed: %s",
+				err);
+			return status;
+		}
+	}
+
+	if ((current_time - s->last_dns_tombstone_collection) >
+	    dns_collection_interval) {
+		s->last_dns_tombstone_collection = current_time;
+		status = dns_delete_tombstones(mem_ctx, s->samdb,
+					       &error_string);
+		if (!NT_STATUS_IS_OK(status)) {
+			const char *err = NULL;
+			if (error_string != NULL) {
+				err = error_string;
+			} else {
+				err = nt_errstr(status);
+			}
+			DBG_ERR("DNS tombstone deletion failed: %s", err);
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
   check to see if any deleted objects need scavenging
  */
 static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
@@ -664,6 +734,11 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 	status = kccsrv_check_deleted(service, mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("kccsrv_check_deleted failed - %s\n", nt_errstr(status)));
+	}
+	status = kccsrv_dns_zone_scavenging(service, mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("kccsrv_dns_zone_scavenging failed - %s\n",
+			nt_errstr(status));
 	}
 	talloc_free(mem_ctx);
 }
