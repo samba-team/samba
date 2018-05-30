@@ -495,7 +495,7 @@ def call_nsupdate(d, op="add"):
         # Now find the SOA, or if we can't get a ticket to the SOA,
         # any server with an NS record we can get a ticket for.
         #
-        # Thanks to the Kerberos Crednetials cache this is not
+        # Thanks to the Kerberos Credentials cache this is not
         # expensive inside the loop
         server = get_krb5_rw_dns_server(creds, zone)
         f.write('server %s\n' % server)
