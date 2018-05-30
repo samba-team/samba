@@ -3167,8 +3167,6 @@ static NTSTATUS dcesrv_lsa_SetSystemAccessAccount(struct dcesrv_call_state *dce_
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
-
-
 /*
   lsa_CreateSecret
 */
@@ -3231,16 +3229,17 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 					ldb_binary_encode_string(mem_ctx, name));
 		NT_STATUS_HAVE_NO_MEMORY(name2);
 
-		/* We need to connect to the database as system, as this is one
-		 * of the rare RPC calls that must read the secrets (and this
-		 * is denied otherwise) */
-		samdb = samdb_connect(
-			mem_ctx,
-			dce_call->event_ctx,
-			dce_call->conn->dce_ctx->lp_ctx,
-			system_session(dce_call->conn->dce_ctx->lp_ctx),
-			dce_call->conn->remote_address,
-			0);
+		/*
+		 * We need to connect to the database as system, as this is
+		 * one of the rare RPC calls that must read the secrets
+		 * (and this is denied otherwise)
+		 *
+		 * We also save the current remote session details so they can
+		 * used by the audit logging module. This allows the audit
+		 * logging to report the remote users details, rather than the
+		 * system users details.
+		 */
+		samdb = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 		secret_state->sam_ldb = talloc_reference(secret_state, samdb);
 		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
 
@@ -3379,14 +3378,17 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		name = &r->in.name.string[2];
-		/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
-		samdb = samdb_connect(
-			mem_ctx,
-			dce_call->event_ctx,
-			dce_call->conn->dce_ctx->lp_ctx,
-			system_session(dce_call->conn->dce_ctx->lp_ctx),
-			dce_call->conn->remote_address,
-			0);
+		/*
+		 * We need to connect to the database as system, as this is
+		 * one of the rare RPC calls that must read the secrets
+		 * (and this is denied otherwise)
+		 *
+		 * We also save the current remote session details so they can
+		 * used by the audit logging module. This allows the audit
+		 * logging to report the remote users details, rather than the
+		 * system users details.
+		 */
+		samdb = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 		secret_state->sam_ldb = talloc_reference(secret_state, samdb);
 		secret_state->global = true;
 
