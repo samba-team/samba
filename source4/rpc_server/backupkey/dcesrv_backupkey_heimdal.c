@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_backupkey.h"
 #include "dsdb/common/util.h"
 #include "dsdb/samdb/samdb.h"
@@ -1814,13 +1815,12 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	ldb_ctx = samdb_connect(mem_ctx,
-				dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx),
-				dce_call->conn->remote_address,
-				0);
-
+	/*
+	 * Save the current remote session details so they can used by the
+	 * audit logging module. This allows the audit logging to report the
+	 * remote users details, rather than the system users details.
+	 */
+	ldb_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (samdb_rodc(ldb_ctx, &is_rodc) != LDB_SUCCESS) {
 		talloc_unlink(mem_ctx, ldb_ctx);
 		return WERR_INVALID_PARAMETER;
