@@ -186,3 +186,29 @@ bool dcesrv_common_validate_share_name(TALLOC_CTX *mem_ctx, const char *share_na
 
 	return true;
 }
+
+/*
+ * Open an ldb connection under the system session and save the remote users
+ * session details in a ldb_opaque. This will allow the audit logging to
+ * log the original session for operations performed in the system session.
+ */
+struct ldb_context *dcesrv_samdb_connect_as_system(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_call_state *dce_call)
+{
+	struct ldb_context *samdb = NULL;
+	samdb = samdb_connect(
+		mem_ctx,
+		dce_call->event_ctx,
+		dce_call->conn->dce_ctx->lp_ctx,
+		system_session(dce_call->conn->dce_ctx->lp_ctx),
+		dce_call->conn->remote_address,
+		0);
+	if (samdb) {
+		ldb_set_opaque(
+			samdb,
+			"networkSessionInfo",
+			dce_call->conn->auth_state.session_info);
+	}
+	return samdb;
+}
