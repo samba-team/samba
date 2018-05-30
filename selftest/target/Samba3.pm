@@ -2269,9 +2269,9 @@ force_user:x:$gid_force_user:
 	$createuser_env{NSS_WRAPPER_HOSTS} = $nss_wrapper_hosts;
 	$createuser_env{NSS_WRAPPER_HOSTNAME} = "${hostname}.samba.example.com";
 	if ($ENV{SAMBA_DNS_FAKING}) {
-		$createuser_env{RESOLV_WRAPPER_CONF} = $resolv_conf;
-	} else {
 		$createuser_env{RESOLV_WRAPPER_HOSTS} = $dns_host_file;
+	} else {
+		$createuser_env{RESOLV_WRAPPER_CONF} = $resolv_conf;
 	}
 
 	createuser($self, $unix_name, $password, $conffile, \%createuser_env) || die("Unable to create user");
