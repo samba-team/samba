@@ -258,11 +258,6 @@ static unsigned int dnsserver_update_soa(TALLOC_CTX *mem_ctx,
 	struct ldb_message_element *el;
 	enum ndr_err_code ndr_err;
 	int ret, i, serial = -1;
-	NTTIME t;
-
-	unix_to_nt_time(&t, time(NULL));
-	t /= 10*1000*1000; /* convert to seconds (NT time is in 100ns units) */
-	t /= 3600;         /* convert to hours */
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
 			"(&(objectClass=dnsNode)(name=@))");
@@ -285,7 +280,7 @@ static unsigned int dnsserver_update_soa(TALLOC_CTX *mem_ctx,
 		if (rec.wType == DNS_TYPE_SOA) {
 			serial = rec.data.soa.serial + 1;
 			rec.dwSerial = serial;
-			rec.dwTimeStamp = (uint32_t)t;
+			rec.dwTimeStamp = 0;
 			rec.data.soa.serial = serial;
 
 			ndr_err = ndr_push_struct_blob(&el->values[i], mem_ctx, &rec,
@@ -403,7 +398,6 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	struct ldb_message_element *el;
 	struct ldb_dn *dn;
 	enum ndr_err_code ndr_err;
-	NTTIME t;
 	int ret, i;
 	int serial;
 	WERROR werr;
@@ -431,12 +425,8 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 		return WERR_INTERNAL_DB_ERROR;
 	}
 
-	unix_to_nt_time(&t, time(NULL));
-	t /= 10*1000*1000; /* convert to seconds (NT time is in 100ns units) */
-	t /= 3600;         /* convert to hours */
-
 	rec->dwSerial = serial;
-	rec->dwTimeStamp = t;
+	rec->dwTimeStamp = 0;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
 			"(&(objectClass=dnsNode)(name=%s))",
@@ -524,7 +514,6 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	struct dnsp_DnssrvRpcRecord *arec = NULL, *drec = NULL;
 	struct ldb_message_element *el;
 	enum ndr_err_code ndr_err;
-	NTTIME t;
 	int ret, i;
 	int serial;
 	WERROR werr;
@@ -540,10 +529,7 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		return werr;
 	}
 
-	unix_to_nt_time(&t, time(NULL));
-	t /= 10*1000*1000;
-
-	arec->dwTimeStamp = t;
+	arec->dwTimeStamp = 0;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
 			"(&(objectClass=dnsNode)(name=%s)(!(dNSTombstoned=TRUE)))",
@@ -886,7 +872,6 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	struct dnsp_DnssrvRpcRecord *dns_rec;
 	struct dnsp_soa soa;
 	char *tmpstr, *server_fqdn, *soa_email;
-	NTTIME t;
 
 	/* We only support primary zones for now */
 	if (zone->zoneinfo->dwZoneType != DNS_ZONE_TYPE_PRIMARY) {
@@ -947,10 +932,6 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(soa_email, tmp_ctx);
 	talloc_free(tmpstr);
 
-	unix_to_nt_time(&t, time(NULL));
-	t /= 10*1000*1000; /* convert to seconds (NT time is in 100ns units) */
-	t /= 3600;         /* convert to hours */
-
 	/* SOA Record - values same as defined in provision/sambadns.py */
 	soa.serial = 1;
 	soa.refresh = 900;
@@ -964,7 +945,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dns_rec[0].rank = DNS_RANK_ZONE;
 	dns_rec[0].dwSerial = soa.serial;
 	dns_rec[0].dwTtlSeconds = 3600;
-	dns_rec[0].dwTimeStamp = (uint32_t)t;
+	dns_rec[0].dwTimeStamp = 0;
 	dns_rec[0].data.soa = soa;
 
 	/* NS Record */
@@ -972,7 +953,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dns_rec[1].rank = DNS_RANK_ZONE;
 	dns_rec[1].dwSerial = soa.serial;
 	dns_rec[1].dwTtlSeconds = 3600;
-	dns_rec[1].dwTimeStamp = (uint32_t)t;
+	dns_rec[1].dwTimeStamp = 0;
 	dns_rec[1].data.ns = server_fqdn;
 
 	/* Add @ Record */
