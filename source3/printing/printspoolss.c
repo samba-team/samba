@@ -309,6 +309,23 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type)
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
 
+	if (fsp->fh->private_options &
+	    NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE) {
+		int ret;
+
+		/*
+		 * Job was requested to be cancelled by setting
+		 * delete on close so truncate the job file.
+		 * print_job_end() which is called from
+		 * _spoolss_EndDocPrinter() will take
+		 * care of deleting it for us.
+		 */
+		ret = ftruncate(fsp->fh->fd, 0);
+		if (ret == -1) {
+			DBG_ERR("ftruncate failed: %s\n", strerror(errno));
+		}
+	}
+
 	b = fsp->conn->spoolss_pipe->binding_handle;
 
 	switch (close_type) {
