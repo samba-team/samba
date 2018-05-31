@@ -557,7 +557,7 @@ static void test_dsdb_audit_get_user_sid(void **state)
 	/*
 	 * Now add a NULL session info
 	 */
-	ldb_set_opaque(ldb, "sessionInfo", NULL);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 	sid = dsdb_audit_get_user_sid(module);
 	assert_null(sid);
 
@@ -565,7 +565,7 @@ static void test_dsdb_audit_get_user_sid(void **state)
 	 * Now add a session info with no user sid
 	 */
 	sess = talloc_zero(ctx, struct auth_session_info);
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 	sid = dsdb_audit_get_user_sid(module);
 	assert_null(sid);
 
@@ -636,7 +636,7 @@ static void test_dsdb_audit_get_actual_sid(void **state)
 	/*
 	 * Now add a NULL session info
 	 */
-	ldb_set_opaque(ldb, "networkSessionInfo", NULL);
+	ldb_set_opaque(ldb, DSDB_NETWORK_SESSION_INFO, NULL);
 	sid = dsdb_audit_get_actual_sid(ldb);
 	assert_null(sid);
 
@@ -644,7 +644,7 @@ static void test_dsdb_audit_get_actual_sid(void **state)
 	 * Now add a session info with no user sid
 	 */
 	sess = talloc_zero(ctx, struct auth_session_info);
-	ldb_set_opaque(ldb, "networkSessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_NETWORK_SESSION_INFO, sess);
 	sid = dsdb_audit_get_actual_sid(ldb);
 	assert_null(sid);
 
@@ -716,14 +716,14 @@ static void test_dsdb_audit_is_system_session(void **state)
 	/*
 	 * Now add a NULL session info
 	 */
-	ldb_set_opaque(ldb, "sessionInfo", NULL);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, NULL);
 	assert_false(dsdb_audit_is_system_session(module));
 
 	/*
 	 * Now add a session info with no user sid
 	 */
 	sess = talloc_zero(ctx, struct auth_session_info);
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 	assert_false(dsdb_audit_is_system_session(module));
 
 	/*
@@ -805,7 +805,7 @@ static void test_dsdb_audit_get_unique_session_token(void **state)
 	/*
 	 * Now add a NULL session info
 	 */
-	ldb_set_opaque(ldb, "sessionInfo", NULL);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, NULL);
 	guid = dsdb_audit_get_unique_session_token(module);
 	assert_null(guid);
 
@@ -815,7 +815,7 @@ static void test_dsdb_audit_get_unique_session_token(void **state)
 	 *      probably off.
 	 */
 	sess = talloc_zero(ctx, struct auth_session_info);
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 	guid = dsdb_audit_get_unique_session_token(module);
 	/*
 	 * We will get a GUID, but it's contents will be undefined
@@ -861,7 +861,7 @@ static void test_dsdb_audit_get_actual_unique_session_token(void **state)
 	/*
 	 * Now add a NULL session info
 	 */
-	ldb_set_opaque(ldb, "networkSessionInfo", NULL);
+	ldb_set_opaque(ldb, DSDB_NETWORK_SESSION_INFO, NULL);
 	guid = dsdb_audit_get_actual_unique_session_token(ldb);
 	assert_null(guid);
 
@@ -871,7 +871,7 @@ static void test_dsdb_audit_get_actual_unique_session_token(void **state)
 	 *      probably off.
 	 */
 	sess = talloc_zero(ctx, struct auth_session_info);
-	ldb_set_opaque(ldb, "networkSessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_NETWORK_SESSION_INFO, sess);
 	guid = dsdb_audit_get_actual_unique_session_token(ldb);
 	/*
 	 * We will get a GUID, but it's contents will be undefined

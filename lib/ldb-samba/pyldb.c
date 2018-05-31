@@ -29,6 +29,7 @@
 #include "ldb_wrap.h"
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "auth/pyauth.h"
+#include "source4/dsdb/common/util.h"
 
 
 static PyObject *pyldb_module;
@@ -194,7 +195,7 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 
 	info = PyAuthSession_AsSession(py_session_info);
 
-	ldb_set_opaque(ldb, "sessionInfo", info);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, info);
 
 	Py_RETURN_NONE;
 }

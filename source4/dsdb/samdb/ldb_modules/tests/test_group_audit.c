@@ -198,7 +198,7 @@ static void add_session_data(
 	sess->security_token = token;
 	GUID_from_string(session, &session_id);
 	sess->unique_session_token = session_id;
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 }
 
 static void test_get_transaction_id(void **state)

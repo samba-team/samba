@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/dcerpc_server.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "auth/auth.h"
 #include "param/param.h"
 #include "rpc_server/common/common.h"
@@ -207,7 +208,7 @@ struct ldb_context *dcesrv_samdb_connect_as_system(
 	if (samdb) {
 		ldb_set_opaque(
 			samdb,
-			"networkSessionInfo",
+			DSDB_NETWORK_SESSION_INFO,
 			dce_call->conn->auth_state.session_info);
 	}
 	return samdb;

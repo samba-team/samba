@@ -1596,7 +1596,10 @@ static bool b9_set_session_info(struct dlz_bind9_data *state, const char *name)
 		return true;
 	}
 
-	ret = ldb_set_opaque(state->samdb, "sessionInfo", state->session_info);
+	ret = ldb_set_opaque(
+		state->samdb,
+		DSDB_SESSION_INFO,
+		state->session_info);
 	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: unable to set session info");
 		return false;
@@ -1610,7 +1613,10 @@ static bool b9_set_session_info(struct dlz_bind9_data *state, const char *name)
  */
 static void b9_reset_session_info(struct dlz_bind9_data *state)
 {
-	ldb_set_opaque(state->samdb, "sessionInfo", system_session(state->lp));
+	ldb_set_opaque(
+		state->samdb,
+		DSDB_SESSION_INFO,
+		system_session(state->lp));
 }
 
 /*

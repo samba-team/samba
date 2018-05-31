@@ -361,7 +361,7 @@ static int dsdb_match_for_expunge(struct ldb_context *ldb,
 	}
 
 	session_info
-		= talloc_get_type(ldb_get_opaque(ldb, "sessionInfo"),
+		= talloc_get_type(ldb_get_opaque(ldb, DSDB_SESSION_INFO),
 				  struct auth_session_info);
 	if (security_session_user_level(session_info, NULL) != SECURITY_SYSTEM) {
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;

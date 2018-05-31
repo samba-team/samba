@@ -134,7 +134,7 @@ const struct dom_sid *dsdb_audit_get_actual_sid(struct ldb_context *ldb)
 	struct auth_session_info *session = NULL;
 	struct security_token *user_token = NULL;
 
-	opaque_session = ldb_get_opaque(ldb, "networkSessionInfo");
+	opaque_session = ldb_get_opaque(ldb, DSDB_NETWORK_SESSION_INFO);
 	if (opaque_session == NULL) {
 		return NULL;
 	}
@@ -240,7 +240,7 @@ const struct GUID *dsdb_audit_get_unique_session_token(
 	struct auth_session_info *session_info
 		= (struct auth_session_info *)ldb_get_opaque(
 			ldb,
-			"sessionInfo");
+			DSDB_SESSION_INFO);
 	if(!session_info) {
 		return NULL;
 	}
@@ -265,7 +265,7 @@ const struct GUID *dsdb_audit_get_actual_unique_session_token(
 	struct auth_session_info *session_info
 		= (struct auth_session_info *)ldb_get_opaque(
 			ldb,
-			"networkSessionInfo");
+			DSDB_NETWORK_SESSION_INFO);
 	if(!session_info) {
 		return NULL;
 	}

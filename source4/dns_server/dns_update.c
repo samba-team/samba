@@ -661,7 +661,10 @@ static WERROR handle_updates(struct dns_server *dns,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	if (tkey != NULL) {
-		ret = ldb_set_opaque(dns->samdb, "sessionInfo", tkey->session_info);
+		ret = ldb_set_opaque(
+			dns->samdb,
+			DSDB_SESSION_INFO,
+			tkey->session_info);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1, ("unable to set session info\n"));
 			werror = DNS_ERR(SERVER_FAILURE);
@@ -693,8 +696,10 @@ static WERROR handle_updates(struct dns_server *dns,
 	TALLOC_FREE(tmp_ctx);
 
 	if (tkey != NULL) {
-		ldb_set_opaque(dns->samdb, "sessionInfo",
-			       system_session(dns->task->lp_ctx));
+		ldb_set_opaque(
+			dns->samdb,
+			DSDB_SESSION_INFO,
+			system_session(dns->task->lp_ctx));
 	}
 
 	return WERR_OK;
@@ -703,8 +708,10 @@ failed:
 	ldb_transaction_cancel(dns->samdb);
 
 	if (tkey != NULL) {
-		ldb_set_opaque(dns->samdb, "sessionInfo",
-			       system_session(dns->task->lp_ctx));
+		ldb_set_opaque(
+			dns->samdb,
+			DSDB_SESSION_INFO,
+			system_session(dns->task->lp_ctx));
 	}
 
 	TALLOC_FREE(tmp_ctx);

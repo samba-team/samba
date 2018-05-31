@@ -33,6 +33,7 @@
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "param/param.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/util/util_paths.h"
@@ -146,7 +147,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
 	if (session_info) {
-		if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
+		if (ldb_set_opaque(ldb, DSDB_SESSION_INFO, session_info)) {
 			talloc_free(ldb);
 			return NULL;
 		}

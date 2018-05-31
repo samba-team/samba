@@ -39,7 +39,9 @@ struct security_token *acl_user_token(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		= (struct auth_session_info *)ldb_get_opaque(
+			ldb,
+			DSDB_SESSION_INFO);
 	if(!session_info) {
 		return NULL;
 	}
@@ -67,7 +69,9 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 	};
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		= (struct auth_session_info *)ldb_get_opaque(
+			ldb,
+			DSDB_SESSION_INFO);
 	if(!session_info) {
 		return ldb_operr(ldb);
 	}
@@ -231,7 +235,9 @@ const char *acl_user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		= (struct auth_session_info *)ldb_get_opaque(
+			ldb,
+			DSDB_SESSION_INFO);
 	if (!session_info) {
 		return "UNKNOWN (NULL)";
 	}

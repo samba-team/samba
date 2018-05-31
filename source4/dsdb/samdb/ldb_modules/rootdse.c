@@ -468,7 +468,9 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 	if (do_attribute_explicit(attrs, "tokenGroups")) {
 		/* Obtain the user's session_info */
 		struct auth_session_info *session_info
-			= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+			= (struct auth_session_info *)ldb_get_opaque(
+				ldb,
+				DSDB_SESSION_INFO);
 		if (session_info && session_info->security_token) {
 			/* The list of groups this user is in */
 			for (i = 0; i < session_info->security_token->num_sids; i++) {
@@ -734,7 +736,9 @@ static int rootdse_filter_operations(struct ldb_module *module, struct ldb_reque
 		return LDB_SUCCESS;
 	}
 
-	session_info = (struct auth_session_info *)ldb_get_opaque(ldb_module_get_ctx(module), "sessionInfo");
+	session_info = (struct auth_session_info *)ldb_get_opaque(
+		ldb_module_get_ctx(module),
+		DSDB_SESSION_INFO);
 	if (session_info) {
 		is_anonymous = security_token_is_anonymous(session_info->security_token);
 	}
@@ -1273,7 +1277,9 @@ static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_r
 	struct ldb_dn *op_feature_scope_dn;
 	struct ldb_message *op_feature_msg;
 	struct auth_session_info *session_info =
-				(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		(struct auth_session_info *)ldb_get_opaque(
+			ldb,
+			DSDB_SESSION_INFO);
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	int ret;
 	const char *guid_string;
@@ -1549,7 +1555,9 @@ static int rootdse_become_master(struct ldb_module *module,
 	struct fsmo_transfer_state *fsmo;
 	struct tevent_req *treq;
 
-	session_info = (struct auth_session_info *)ldb_get_opaque(ldb_module_get_ctx(module), "sessionInfo");
+	session_info = (struct auth_session_info *)ldb_get_opaque(
+		ldb_module_get_ctx(module),
+		DSDB_SESSION_INFO);
 	level = security_session_user_level(session_info, NULL);
 	if (level < SECURITY_ADMINISTRATOR) {
 		return ldb_error(ldb, LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS, "Denied rootDSE modify for non-administrator");

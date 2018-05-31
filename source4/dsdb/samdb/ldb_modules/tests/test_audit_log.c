@@ -444,7 +444,7 @@ static void test_operation_json(void **state)
 	sess->security_token = token;
 	GUID_from_string(SESSION, &session_id);
 	sess->unique_session_token = session_id;
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 
 	msg = talloc_zero(ctx, struct ldb_message);
 	dn = ldb_dn_new(ctx, ldb, DN);
@@ -639,7 +639,7 @@ static void test_as_system_operation_json(void **state)
 	sess->security_token = token;
 	GUID_from_string(SESSION, &session_id);
 	sess->unique_session_token = session_id;
-	ldb_set_opaque(ldb, "networkSessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_NETWORK_SESSION_INFO, sess);
 
 	sys_sess = talloc_zero(ctx, struct auth_session_info);
 	sys_token = talloc_zero(ctx, struct security_token);
@@ -648,7 +648,7 @@ static void test_as_system_operation_json(void **state)
 	sys_sess->security_token = sys_token;
 	GUID_from_string(SYS_SESSION, &sys_session_id);
 	sess->unique_session_token = sys_session_id;
-	ldb_set_opaque(ldb, "sessionInfo", sys_sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sys_sess);
 
 	msg = talloc_zero(ctx, struct ldb_message);
 	dn = ldb_dn_new(ctx, ldb, DN);
@@ -913,7 +913,7 @@ static void test_password_change_json(void **state)
 	sess->security_token = token;
 	GUID_from_string(SESSION, &session_id);
 	sess->unique_session_token = session_id;
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 
 	msg = talloc_zero(ctx, struct ldb_message);
 	dn = ldb_dn_new(ctx, ldb, DN);
@@ -1512,7 +1512,7 @@ static void test_operation_hr(void **state)
 	sess->security_token = token;
 	GUID_from_string(SESSION, &session_id);
 	sess->unique_session_token = session_id;
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 
 	msg = talloc_zero(ctx, struct ldb_message);
 	dn = ldb_dn_new(ctx, ldb, DN);
@@ -1614,7 +1614,7 @@ static void test_as_system_operation_hr(void **state)
 	sess->security_token = token;
 	GUID_from_string(SESSION, &session_id);
 	sess->unique_session_token = session_id;
-	ldb_set_opaque(ldb, "networkSessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_NETWORK_SESSION_INFO, sess);
 
 	sys_sess = talloc_zero(ctx, struct auth_session_info);
 	sys_token = talloc_zero(ctx, struct security_token);
@@ -1623,7 +1623,7 @@ static void test_as_system_operation_hr(void **state)
 	sys_sess->security_token = sys_token;
 	GUID_from_string(SYS_SESSION, &sys_session_id);
 	sess->unique_session_token = sys_session_id;
-	ldb_set_opaque(ldb, "sessionInfo", sys_sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sys_sess);
 
 	msg = talloc_zero(ctx, struct ldb_message);
 	dn = ldb_dn_new(ctx, ldb, DN);
@@ -1770,7 +1770,7 @@ static void test_password_change_hr(void **state)
 	sess->security_token = token;
 	GUID_from_string(SESSION, &session_id);
 	sess->unique_session_token = session_id;
-	ldb_set_opaque(ldb, "sessionInfo", sess);
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
 
 	msg = talloc_zero(ctx, struct ldb_message);
 	dn = ldb_dn_new(ctx, ldb, DN);

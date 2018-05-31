@@ -71,6 +71,12 @@ bool is_attr_in_list(const char * const * attrs, const char *attr);
 	"unicodePwd", \
 	"dBCSPwd"
 
+/*
+ * ldb opaque values used to pass the user session information to ldb modules
+ */
+#define DSDB_SESSION_INFO "sessionInfo"
+#define DSDB_NETWORK_SESSION_INFO "networkSessionInfo"
+
 struct GUID;
 
 char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
