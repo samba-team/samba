@@ -84,7 +84,7 @@ class TestUser:
         res = self.ldb.search(self.dn, attrs=['msDS-ResultantPSO'])
 
         if 'msDS-ResultantPSO' in res[0]:
-            return res[0]['msDS-ResultantPSO'][0]
+            return str(res[0]['msDS-ResultantPSO'][0])
         else:
             return None
 
