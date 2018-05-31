@@ -727,7 +727,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
         # defaults, to prove that the DC will reject bad passwords during a
         # user add
         userdn = "CN=testuser,%s" % self.ou
-        password = base64.b64encode("\"abcdef\"".encode('utf-16-le'))
+        password = base64.b64encode('"abcdef"'.encode('utf-16-le')).decode('utf8')
 
         # Note we use an LDIF operation to ensure that the password gets set
         # as part of the 'add' operation (whereas self.add_user() adds the user
@@ -751,7 +751,7 @@ unicodePwd:: %s
         # now use a password that meets the domain defaults, but doesn't meet
         # the PSO requirements. Note that Windows allows this, i.e. it doesn't
         # honour the PSO during the add operation
-        password = base64.b64encode("\"abcde12#\"".encode('utf-16-le'))
+        password = base64.b64encode('"abcde12#"'.encode('utf-16-le')).decode('utf8')
         ldif = """
 dn: %s
 objectClass: user
@@ -787,7 +787,7 @@ unicodePwd:: %s
                 self.assertTrue('0000052D' in msg, msg)
 
         # check setting a password that meets the PSO settings works
-        password = base64.b64encode("\"abcdefghijkl\"".encode('utf-16-le'))
+        password = base64.b64encode('"abcdefghijkl"'.encode('utf-16-le')).decode('utf8')
         ldif = """
 dn: %s
 changetype: modify
