@@ -131,11 +131,10 @@ void audit_log_human_text(const char* prefix,
  * @param debub_class The debug class to log the message with.
  * @param debug_level The debug level to log the message with.
  */
-void audit_log_json(
-	const char* prefix,
-	struct json_object* message,
-	int debug_class,
-	int debug_level)
+void audit_log_json(const char* prefix,
+		    struct json_object* message,
+		    int debug_class,
+		    int debug_level)
 {
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	char *s = json_to_string(ctx, message);
@@ -496,8 +495,8 @@ void json_assert_is_array(struct json_object *array) {
  *
  */
 void json_add_object(struct json_object *object,
-		const char* name,
-		struct json_object *value)
+		     const char* name,
+		     struct json_object *value)
 {
 	int rc = 0;
 	json_t *jv = NULL;
@@ -543,11 +542,10 @@ void json_add_object(struct json_object *object,
  * @param len the maximum number of characters to be copied.
  *
  */
-void json_add_stringn(
-	struct json_object *object,
-	const char *name,
-	const char *value,
-	const size_t len)
+void json_add_stringn(struct json_object *object,
+		      const char *name,
+		      const char *value,
+		      const size_t len)
 {
 
 	int rc = 0;
@@ -668,10 +666,9 @@ void json_add_timestamp(struct json_object *object)
  * @param address the tsocket_address.
  *
  */
-void json_add_address(
-	struct json_object *object,
-	const char *name,
-	const struct tsocket_address *address)
+void json_add_address(struct json_object *object,
+		      const char *name,
+		      const struct tsocket_address *address)
 {
 
 	if (object->error) {
@@ -707,10 +704,9 @@ void json_add_address(
  * @param sid the sid
  *
  */
-void json_add_sid(
-	struct json_object *object,
-	const char *name,
-	const struct dom_sid *sid)
+void json_add_sid(struct json_object *object,
+		  const char *name,
+		  const struct dom_sid *sid)
 {
 
 	if (object->error) {
@@ -745,10 +741,9 @@ void json_add_sid(
  *
  *
  */
-void json_add_guid(
-	struct json_object *object,
-	const char *name,
-	const struct GUID *guid)
+void json_add_guid(struct json_object *object,
+		   const char *name,
+		   const struct GUID *guid)
 {
 
 
@@ -785,7 +780,8 @@ void json_add_guid(
  * @return A string representation of the object or NULL if the object
  *         is invalid.
  */
-char *json_to_string(TALLOC_CTX *mem_ctx, struct json_object *object)
+char *json_to_string(TALLOC_CTX *mem_ctx,
+		     struct json_object *object)
 {
 	char *json = NULL;
 	char *json_string = NULL;
@@ -825,7 +821,8 @@ char *json_to_string(TALLOC_CTX *mem_ctx, struct json_object *object)
  *
  * @return The array object, will be created if it did not exist.
  */
-struct json_object json_get_array(struct json_object *object, const char* name)
+struct json_object json_get_array(struct json_object *object,
+				  const char* name)
 {
 
 	struct json_object array = json_new_array();
@@ -855,7 +852,8 @@ struct json_object json_get_array(struct json_object *object, const char* name)
  *
  * @return The object, will be created if it did not exist.
  */
-struct json_object json_get_object(struct json_object *object, const char* name)
+struct json_object json_get_object(struct json_object *object,
+				   const char* name)
 {
 
 	struct json_object o = json_new_object();
