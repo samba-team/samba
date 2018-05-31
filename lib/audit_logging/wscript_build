@@ -9,16 +9,17 @@ bld.SAMBA_SUBSYSTEM(
     source='audit_logging.c'
 )
 
-bld.SAMBA_BINARY(
-    'audit_logging_test',
-    source='tests/audit_logging_test.c',
-    deps='''
-        audit_logging
-        jansson
-        cmocka
-        talloc
-        samba-util
-        LIBTSOCKET
-    ''',
-    install=False
-)
+if bld.CONFIG_SET('ENABLE_SELFTEST'):
+    bld.SAMBA_BINARY(
+        'audit_logging_test',
+        source='tests/audit_logging_test.c',
+        deps='''
+             audit_logging
+             jansson
+             cmocka
+             talloc
+             samba-util
+             LIBTSOCKET
+        ''',
+        install=False
+    )

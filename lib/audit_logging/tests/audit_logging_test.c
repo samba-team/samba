@@ -59,7 +59,6 @@
 
 #include "lib/audit_logging/audit_logging.h"
 
-#ifdef HAVE_JANSSON
 static void test_json_add_int(void **state)
 {
 	struct json_object object;
@@ -490,7 +489,6 @@ static void test_json_to_string(void **state)
 	json_free(&object);
 	TALLOC_FREE(ctx);
 }
-#endif
 
 static void test_json_get_array(void **state)
 {
@@ -671,7 +669,6 @@ static void test_audit_get_timestamp(void **state)
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
-#ifdef HAVE_JANSSON
 		cmocka_unit_test(test_json_add_int),
 		cmocka_unit_test(test_json_add_bool),
 		cmocka_unit_test(test_json_add_string),
@@ -686,7 +683,6 @@ int main(int argc, const char **argv)
 		cmocka_unit_test(test_json_to_string),
 		cmocka_unit_test(test_json_get_array),
 		cmocka_unit_test(test_json_get_object),
-#endif
 		cmocka_unit_test(test_audit_get_timestamp),
 	};
 
