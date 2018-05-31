@@ -521,11 +521,9 @@ class cmd_domain_pwdsettings_pso_delete(Command):
         self.message("Deleted PSO %s" % psoname)
 
 
-def pso_cmp(a, b):
-    """Compares two PSO LDB search results"""
+def pso_key(a):
     a_precedence = int(a['msDS-PasswordSettingsPrecedence'][0])
-    b_precedence = int(b['msDS-PasswordSettingsPrecedence'][0])
-    return a_precedence - b_precedence
+    return a_precedence
 
 class cmd_domain_pwdsettings_pso_list(Command):
     """Lists all Password Settings Objects (PSOs)."""
@@ -561,7 +559,7 @@ class cmd_domain_pwdsettings_pso_list(Command):
             return
 
         # sort the PSOs so they're displayed in order of precedence
-        pso_list = sorted(res, cmp=pso_cmp)
+        pso_list = sorted(res, key=pso_key)
 
         self.outf.write("Precedence | PSO name\n")
         self.outf.write("--------------------------------------------------\n")
