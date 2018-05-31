@@ -721,9 +721,7 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 		return status;
 	}
 
-	if (store->tkeys[store->next_idx] != NULL) {
-		TALLOC_FREE(store->tkeys[store->next_idx]);
-	}
+	TALLOC_FREE(store->tkeys[store->next_idx]);
 
 	store->tkeys[store->next_idx] = k;
 	(store->next_idx)++;
