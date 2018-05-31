@@ -153,7 +153,8 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                                             '--color=no', '-S',
                                             '--xdot')
 
-        f = open(content)
+        from io import open as ioopen
+        f = ioopen(content)
         xdot = f.read()
         f.close()
         os.remove(fake_xdot)
@@ -396,6 +397,7 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                                           '--color=no', '-S', '--dot',
                                           '-o', dot_file)
         self.assertCmdSuccess(result, dot, err)
+        from io import open
         f = open(dot_file)
         dot = f.read()
         f.close()
