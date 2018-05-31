@@ -4560,6 +4560,78 @@ static bool run_deletetest(int dummy)
 	return correct;
 }
 
+/*
+  Exercise delete on close semantics - use on the PRINT1 share in torture
+  testing.
+ */
+static bool run_delete_print_test(int dummy)
+{
+	struct cli_state *cli1 = NULL;
+	const char *fname = "print_delete.file";
+	uint16_t fnum1 = (uint16_t)-1;
+	bool correct = false;
+	const char *buf = "print file data\n";
+	NTSTATUS status;
+
+	printf("starting print delete test\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF,
+			      0, 0, &fnum1, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_writeall(cli1,
+			fnum1,
+			0,
+			(const uint8_t *)buf,
+			0, /* offset */
+			strlen(buf), /* size */
+			NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("writing print file data failed (%s)\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_nt_delete_on_close(cli1, fnum1, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("setting delete_on_close failed (%s)\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed (%s)\n", nt_errstr(status));
+		goto fail;
+	}
+
+	printf("finished print delete test\n");
+
+	correct = true;
+
+  fail:
+
+	if (fnum1 != (uint16_t)-1) {
+		cli_close(cli1, fnum1);
+	}
+
+	if (cli1 && !torture_close_connection(cli1)) {
+		correct = false;
+	}
+	return correct;
+}
 
 /*
   Test wildcard delete.
@@ -11550,6 +11622,7 @@ static struct {
 	{"RENAME-ACCESS", run_rename_access, 0},
 	{"OWNER-RIGHTS", run_owner_rights, 0},
 	{"DELETE", run_deletetest, 0},
+	{"DELETE-PRINT", run_delete_print_test, 0},
 	{"WILDDELETE", run_wild_deletetest, 0},
 	{"DELETE-LN", run_deletetest_ln, 0},
 	{"PROPERTIES", run_properties, 0},
