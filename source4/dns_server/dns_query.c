@@ -869,6 +869,9 @@ static WERROR handle_tkey(struct dns_server *dns,
 			ret_tkey->rdata.tkey_record.key_data = talloc_memdup(ret_tkey,
 								reply.data,
 								reply.length);
+			if (ret_tkey->rdata.tkey_record.key_data == NULL) {
+				return WERR_NOT_ENOUGH_MEMORY;
+			}
 			state->sign = true;
 			state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
 			if (state->key_name == NULL) {
