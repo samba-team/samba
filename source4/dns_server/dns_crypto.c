@@ -123,7 +123,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	}
 
 	/* The TSIG record needs to be the last additional record */
-	if (found_tsig && i + 1 != packet->arcount) {
+	if (i + 1 != packet->arcount) {
 		DEBUG(1, ("TSIG record not the last additional record!\n"));
 		return DNS_ERR(FORMAT_ERROR);
 	}
