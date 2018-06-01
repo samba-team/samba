@@ -517,6 +517,8 @@ def get_transitive_colourer(colours, n_vertices):
         n = 1 + int(n_vertices ** 0.5)
 
         def f(link):
+            if not isinstance(link, int):
+                return ''
             return scale[min(link * m // n, m - 1)]
 
     else:
