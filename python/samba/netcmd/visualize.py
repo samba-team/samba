@@ -25,12 +25,14 @@ from collections import defaultdict
 import subprocess
 
 import tempfile
-import samba
 import samba.getopt as options
+from samba import dsdb
+from samba import nttime2unix
 from samba.netcmd import Command, SuperCommand, CommandError, Option
 from samba.samdb import SamDB
 from samba.graph import dot_graph
 from samba.graph import distance_matrix, COLOUR_SETS
+from samba.graph import full_matrix
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, LdbError
 import time
 import re
@@ -670,6 +672,140 @@ class cmd_ntdsconn(GraphCommand):
             self.call_xdot(s, output)
         else:
             self.write(s, output)
+
+
+class cmd_uptodateness(GraphCommand):
+    """visualize uptodateness vectors"""
+
+    takes_options = COMMON_OPTIONS + [
+        Option("-p", "--partition", help="restrict to this partition",
+               default=None),
+        Option("--max-digits", default=3, type=int,
+               help="display this many digits of out-of-date-ness"),
+    ]
+
+    def get_utdv(self, samdb, dn):
+        """This finds the uptodateness vector in the database."""
+        cursors = []
+        config_dn = samdb.get_config_basedn()
+        for c in dsdb._dsdb_load_udv_v2(samdb, dn):
+            inv_id = str(c.source_dsa_invocation_id)
+            res = samdb.search(base=config_dn,
+                               expression=("(&(invocationId=%s)"
+                                           "(objectClass=nTDSDSA))" % inv_id),
+                               attrs=["distinguishedName", "invocationId"])
+            settings_dn = res[0]["distinguishedName"][0]
+            prefix, dsa_dn = settings_dn.split(',', 1)
+            if prefix != 'CN=NTDS Settings':
+                raise CommandError("Expected NTDS Settings DN, got %s" %
+                                   settings_dn)
+
+            cursors.append((dsa_dn,
+                            inv_id,
+                            int(c.highest_usn),
+                            nttime2unix(c.last_sync_success)))
+        return cursors
+
+    def get_own_cursor(self, samdb):
+            res = samdb.search(base="",
+                               scope=SCOPE_BASE,
+                               attrs=["highestCommittedUSN"])
+            usn = int(res[0]["highestCommittedUSN"][0])
+            now = int(time.time())
+            return (usn, now)
+
+    def run(self, H=None, output=None, shorten_names=False,
+            key=True, talk_to_remote=False,
+            sambaopts=None, credopts=None, versionopts=None,
+            color=None, color_scheme=None,
+            utf8=False, format=None, importldif=None,
+            xdot=False, partition=None, max_digits=3):
+        if not talk_to_remote:
+            print("this won't work without talking to the remote servers "
+                  "(use -r)", file=self.outf)
+            return
+
+        # We use the KCC libraries in readonly mode to get the
+        # replication graph.
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        local_kcc, dsas = self.get_kcc_and_dsas(H, lp, creds)
+        self.samdb = local_kcc.samdb
+        partition = get_partition(self.samdb, partition)
+
+        short_partitions, long_partitions = get_partition_maps(self.samdb)
+        color_scheme = self.calc_distance_color_scheme(color,
+                                                       color_scheme,
+                                                       output)
+
+        for part_name, part_dn in short_partitions.items():
+            if partition not in (part_dn, None):
+                continue  # we aren't doing this partition
+
+            cursors = self.get_utdv(self.samdb, part_dn)
+
+            # we talk to each remote and make a matrix of the vectors
+            # -- for each partition
+            # normalise by oldest
+            utdv_edges = {}
+            for dsa_dn in dsas:
+                res = local_kcc.samdb.search(dsa_dn,
+                                             scope=SCOPE_BASE,
+                                             attrs=["dNSHostName"])
+                ldap_url = "ldap://%s" % res[0]["dNSHostName"][0]
+                try:
+                    samdb = self.get_db(ldap_url, sambaopts, credopts)
+                    cursors = self.get_utdv(samdb, part_dn)
+                    own_usn, own_time = self.get_own_cursor(samdb)
+                    remotes = {dsa_dn: own_usn}
+                    for dn, guid, usn, t in cursors:
+                        remotes[dn] = usn
+                except LdbError as e:
+                    print("Could not contact %s (%s)" % (ldap_url, e),
+                          file=sys.stderr)
+                    continue
+                utdv_edges[dsa_dn] = remotes
+
+            distances = {}
+            max_distance = 0
+            for dn1 in dsas:
+                try:
+                    peak = utdv_edges[dn1][dn1]
+                except KeyError as e:
+                    peak = 0
+                d = {}
+                distances[dn1] = d
+                for dn2 in dsas:
+                    if dn2 in utdv_edges:
+                        if dn1 in utdv_edges[dn2]:
+                            dist = peak - utdv_edges[dn2][dn1]
+                            d[dn2] = dist
+                            if dist > max_distance:
+                                max_distance = dist
+                        else:
+                            print("Missing dn %s from UTD vector" % dn1,
+                                  file=sys.stderr)
+                    else:
+                        print("missing dn %s from UTD vector list" % dn2,
+                              file=sys.stderr)
+
+            digits = min(max_digits, len(str(max_distance)))
+            if digits < 1:
+                digits = 1
+            c_scale = 10 ** digits
+
+            s = full_matrix(distances,
+                            utf8=utf8,
+                            colour=color_scheme,
+                            shorten_names=shorten_names,
+                            generate_key=key,
+                            grouping_function=get_dnstr_site,
+                            colour_scale=c_scale,
+                            digits=digits,
+                            ylabel='DC',
+                            xlabel='out-of-date-ness')
+
+            self.write('\n%s\n\n%s' % (part_name, s), output)
 
 
 class cmd_visualize(SuperCommand):
