@@ -624,7 +624,7 @@ def distance_matrix(vertices, edges,
             else:
                 ct = colour_transitive(link)
                 if link > 9:
-                    link = '+'
+                    link = '>'
                 row.append('%s%s%s' % (ct, link, c_reset))
 
         if row_comments is not None and row_comments[i]:
