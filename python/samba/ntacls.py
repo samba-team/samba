@@ -21,10 +21,34 @@ from __future__ import print_function
 
 
 import os
+import tarfile
+import tempfile
+import shutil
+
 import samba.xattr_native, samba.xattr_tdb, samba.posix_eadb
+from samba.samba3 import param as s3param
 from samba.dcerpc import security, xattr, idmap
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.samba3 import smbd
+from samba import smb
+
+# don't include volumes
+SMB_FILE_ATTRIBUTE_FLAGS = smb.FILE_ATTRIBUTE_SYSTEM | \
+                           smb.FILE_ATTRIBUTE_DIRECTORY | \
+                           smb.FILE_ATTRIBUTE_ARCHIVE | \
+                           smb.FILE_ATTRIBUTE_HIDDEN
+
+
+SECURITY_SECINFO_FLAGS = security.SECINFO_OWNER | \
+                         security.SECINFO_GROUP | \
+                         security.SECINFO_DACL  | \
+                         security.SECINFO_SACL
+
+
+# SEC_FLAG_SYSTEM_SECURITY is required otherwise get Access Denied
+SECURITY_SEC_FLAGS = security.SEC_FLAG_SYSTEM_SECURITY | \
+                     security.SEC_FLAG_MAXIMUM_ALLOWED
+
 
 class XattrBackendError(Exception):
     """A generic xattr backend error."""
@@ -247,3 +271,307 @@ def dsacl2fsacl(dssddl, sid, as_sddl=True):
         return fdescr
 
     return fdescr.as_sddl(sid)
+
+
+class SMBHelper:
+    """
+    A wrapper class for SMB connection
+
+    smb_path: path with separator "\\" other than "/"
+    """
+
+    def __init__(self, smb_conn, dom_sid):
+        self.smb_conn = smb_conn
+        self.dom_sid = dom_sid
+
+    def get_acl(self, smb_path, as_sddl=False):
+        assert '/' not in smb_path
+
+        ntacl_sd = self.smb_conn.get_acl(
+            smb_path, SECURITY_SECINFO_FLAGS, SECURITY_SEC_FLAGS)
+
+        return ntacl_sd.as_sddl(self.dom_sid) if as_sddl else ntacl_sd
+
+    def list(self, smb_path=''):
+        """
+        List file and dir base names in smb_path without recursive.
+        """
+        assert '/' not in smb_path
+        return self.smb_conn.list(smb_path, attribs=SMB_FILE_ATTRIBUTE_FLAGS)
+
+    def is_dir(self, attrib):
+        """
+        Check whether the attrib value is a directory.
+
+        attrib is from list method.
+        """
+        return bool(attrib & smb.FILE_ATTRIBUTE_DIRECTORY)
+
+    def join(self, root, name):
+        """
+        Join path with '\\'
+        """
+        return root + '\\' + name if root else name
+
+    def loadfile(self, smb_path):
+        assert '/' not in smb_path
+        return self.smb_conn.loadfile(smb_path)
+
+    def create_tree(self, tree, smb_path=''):
+        """
+        Create files as defined in tree
+        """
+        for name, content in tree.items():
+            fullname = self.join(smb_path, name)
+            if isinstance(content, dict):  # a dir
+                if not self.smb_conn.chkpath(fullname):
+                    self.smb_conn.mkdir(fullname)
+                self.create_tree(content, smb_path=fullname)
+            else:  # a file
+                self.smb_conn.savefile(fullname, content)
+
+    def get_tree(self, smb_path=''):
+        """
+        Get the tree structure via smb conn
+
+        self.smb_conn.list example:
+
+        [
+          {
+            'attrib': 16,
+            'mtime': 1528848309,
+            'name': 'dir1',
+            'short_name': 'dir1',
+            'size': 0L
+          }, {
+            'attrib': 32,
+            'mtime': 1528848309,
+            'name': 'file0.txt',
+            'short_name': 'file0.txt',
+            'size': 10L
+          }
+        ]
+        """
+        tree = {}
+        for item in self.list(smb_path):
+            name = item['name']
+            fullname = self.join(smb_path, name)
+            if self.is_dir(item['attrib']):
+                tree[name] = self.get_tree(smb_path=fullname)
+            else:
+                tree[name] = self.loadfile(fullname)
+        return tree
+
+    def get_ntacls(self, smb_path=''):
+        """
+        Get ntacl for each file and dir via smb conn
+        """
+        ntacls = {}
+        for item in self.list(smb_path):
+            name = item['name']
+            fullname = self.join(smb_path, name)
+            if self.is_dir(item['attrib']):
+                ntacls.update(self.get_ntacls(smb_path=fullname))
+            else:
+                ntacl_sd = self.get_acl(fullname)
+                ntacls[fullname] = ntacl_sd.as_sddl(self.dom_sid)
+        return ntacls
+
+    def delete_tree(self):
+        for item in self.list():
+            name = item['name']
+            if self.is_dir(item['attrib']):
+                self.smb_conn.deltree(name)
+            else:
+                self.smb_conn.unlink(name)
+
+
+class NtaclsHelper:
+
+    def __init__(self, service, samdb_url, smb_conf_path, dom_sid):
+        self.service = service
+        self.dom_sid = dom_sid
+
+        # this is important to help smbd find services.
+        self.lp = s3param.get_context()
+        self.lp.load(smb_conf_path)
+        self.lp.set("passdb backend", "samba_dsdb:%s" % samdb_url)
+
+        self.use_ntvfs = "smb" in self.lp.get("server services")
+
+    def getntacl(self, path, as_sddl=False, direct_db_access=None):
+        if direct_db_access is None:
+            direct_db_access = self.use_ntvfs
+
+        ntacl_sd = getntacl(
+            self.lp, path,
+            direct_db_access=direct_db_access,
+            service=self.service)
+
+        return ntacl_sd.as_sddl(self.dom_sid) if as_sddl else ntacl_sd
+
+    def setntacl(self, path, ntacl_sd):
+        # ntacl_sd can be obj or str
+        return setntacl(self.lp, path, ntacl_sd, self.dom_sid)
+
+
+def _create_ntacl_file(dst, ntacl_sddl_str):
+    with open(dst + '.NTACL', 'w') as f:
+        f.write(ntacl_sddl_str)
+
+
+def _read_ntacl_file(src):
+    with open(src + '.NTACL', 'r') as f:
+        return f.read()
+
+
+def backup_online(smb_conn, dest_tarfile_path, dom_sid):
+    """
+    Backup all files and dirs with ntacl for the serive behind smb_conn.
+
+    1. Create a temp dir as container dir
+    2. Backup all files with dir structure into container dir
+    3. Generate file.NTACL files for each file and dir in contianer dir
+    4. Create a tar file from container dir(without top level folder)
+    5. Delete contianer dir
+    """
+
+    if isinstance(dom_sid, str):
+        dom_sid = security.dom_sid(dom_sid)
+
+    smb_helper = SMBHelper(smb_conn, dom_sid)
+
+    remotedir = ''  # root dir
+
+    localdir = tempfile.mkdtemp()
+
+    r_dirs = [remotedir]
+    l_dirs = [localdir]
+
+    while r_dirs:
+        r_dir = r_dirs.pop()
+        l_dir = l_dirs.pop()
+
+        for e in smb_helper.list(smb_path=r_dir):
+            r_name = smb_helper.join(r_dir, e['name'])
+            l_name = os.path.join(l_dir, e['name'])
+
+            if smb_helper.is_dir(e['attrib']):
+                r_dirs.append(r_name)
+                l_dirs.append(l_name)
+                os.mkdir(l_name)
+            else:
+                data = smb_helper.loadfile(r_name)
+                with open(l_name, 'wb') as f:
+                    f.write(data)
+
+            # get ntacl for this entry and save alongside
+            ntacl_sddl_str = smb_helper.get_acl(r_name, as_sddl=True)
+            _create_ntacl_file(l_name, ntacl_sddl_str)
+
+    with tarfile.open(name=dest_tarfile_path, mode='w:gz') as tar:
+        for name in os.listdir(localdir):
+            path = os.path.join(localdir, name)
+            tar.add(path, arcname=name)
+
+    shutil.rmtree(localdir)
+
+
+def backup_offline(src_service_path, dest_tarfile_path, samdb_conn, smb_conf_path):
+    """
+    Backup files and ntacls to a tarfile for a service
+    """
+    service = src_service_path.rstrip('/').rsplit('/', 1)[-1]
+    tempdir = tempfile.mkdtemp()
+
+    dom_sid_str = samdb_conn.get_domain_sid()
+    dom_sid = security.dom_sid(dom_sid_str)
+
+    ntacls_helper = NtaclsHelper(service, samdb_conn, smb_conf_path, dom_sid)
+
+    for dirpath, dirnames, filenames in os.walk(src_service_path):
+        # each dir only cares about its direct children
+        rel_dirpath = os.path.relpath(dirpath, start=src_service_path)
+        dst_dirpath = os.path.join(tempdir, rel_dirpath)
+
+        # create sub dirs and NTACL file
+        for dirname in dirnames:
+            src = os.path.join(dirpath, dirname)
+            dst = os.path.join(dst_dirpath, dirname)
+            # mkdir with metadata
+            smbd.mkdir(dst, service)
+            ntacl_sddl_str = ntacls_helper.getntacl(src, as_sddl=True)
+            _create_ntacl_file(dst, ntacl_sddl_str)
+
+        # create files and NTACL file, then copy data
+        for filename in filenames:
+            src = os.path.join(dirpath, filename)
+            dst = os.path.join(dst_dirpath, filename)
+            # create an empty file with metadata
+            smbd.create_file(dst, service)
+            ntacl_sddl_str = ntacls_helper.getntacl(src, as_sddl=True)
+            _create_ntacl_file(dst, ntacl_sddl_str)
+
+            # now put data in
+            with open(src, 'rb') as src_file:
+                data = src_file.read()
+                with open(dst, 'wb') as dst_file:
+                    dst_file.write(data)
+
+    # add all files in tempdir to tarfile without a top folder
+    with tarfile.open(name=dest_tarfile_path, mode='w:gz') as tar:
+        for name in os.listdir(tempdir):
+            path = os.path.join(tempdir, name)
+            tar.add(path, arcname=name)
+
+    shutil.rmtree(tempdir)
+
+
+def backup_restore(src_tarfile_path, dst_service_path, samdb_conn, smb_conf_path):
+    """
+    Restore files and ntacls from a tarfile to a service
+    """
+    service = dst_service_path.rstrip('/').rsplit('/', 1)[-1]
+    tempdir = tempfile.mkdtemp()  # src files
+
+    dom_sid_str = samdb_conn.get_domain_sid()
+    dom_sid = security.dom_sid(dom_sid_str)
+
+    ntacls_helper = NtaclsHelper(service, samdb_conn, smb_conf_path, dom_sid)
+
+    with tarfile.open(src_tarfile_path) as f:
+        f.extractall(path=tempdir)
+        # e.g.: /tmp/tmpRNystY/{dir1,dir1.NTACL,...file1,file1.NTACL}
+
+    for dirpath, dirnames, filenames in os.walk(tempdir):
+        rel_dirpath = os.path.relpath(dirpath, start=tempdir)
+        dst_dirpath = os.path.normpath(
+            os.path.join(dst_service_path, rel_dirpath))
+
+        for dirname in dirnames:
+            if not dirname.endswith('.NTACL'):
+                src = os.path.join(dirpath, dirname)
+                dst = os.path.join(dst_dirpath, dirname)
+                if not os.path.isdir(dst):
+                    # dst must be absolute path for smbd API
+                    smbd.mkdir(dst, service)
+                ntacl_sddl_str = _read_ntacl_file(src)
+                ntacls_helper.setntacl(dst, ntacl_sddl_str)
+
+        for filename in filenames:
+            if not filename.endswith('.NTACL'):
+                src = os.path.join(dirpath, filename)
+                dst = os.path.join(dst_dirpath, filename)
+                if not os.path.isfile(dst):
+                    # dst must be absolute path for smbd API
+                    smbd.create_file(dst, service)
+                ntacl_sddl_str = _read_ntacl_file(src)
+                ntacls_helper.setntacl(dst, ntacl_sddl_str)
+
+                # now put data in
+                with open(src, 'rb') as src_file:
+                    data = src_file.read()
+                    with open(dst, 'wb') as dst_file:
+                        dst_file.write(data)
+
+    shutil.rmtree(tempdir)
