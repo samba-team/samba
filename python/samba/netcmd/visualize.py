@@ -188,6 +188,12 @@ def get_dnstr_site(dn):
     return dn
 
 
+def get_dnstrlist_site(t):
+    """Helper function for sorting and grouping lists of (DN, ...) tuples
+    by site, if possible."""
+    return get_dnstr_site(t[0])
+
+
 def colour_hash(x):
     """Generate a randomish but consistent darkish colour based on the
     given object."""
@@ -586,13 +592,12 @@ class cmd_ntdsconn(GraphCommand):
                     for e in source_denies:
                         epilog.append('  %s -> %s\n' % e)
 
-
             s = distance_matrix(vertices, graph_edges,
                                 utf8=utf8,
                                 colour=color_scheme,
                                 shorten_names=shorten_names,
                                 generate_key=key,
-                                grouping_function=get_dnstr_site,
+                                grouping_function=get_dnstrlist_site,
                                 row_comments=rodc_status)
 
             epilog = ''.join(epilog)
