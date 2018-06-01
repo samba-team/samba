@@ -61,91 +61,82 @@ def quote_graph_label(s, reformat=False):
     return "%s" % s
 
 
-def shorten_vertex_names(edges, vertices, suffix=',...', aggressive=False):
+def shorten_vertex_names(vertices, suffix=',...', aggressive=False):
     """Replace the common suffix (in practice, the base DN) of a number of
     vertices with a short string (default ",..."). If this seems
     pointless because the replaced string is very short or the results
     seem strange, the original vertices are retained.
 
-    :param edges: a sequence of vertex pairs to shorten
     :param vertices: a sequence of vertices to shorten
     :param suffix: the replacement string [",..."]
+    :param aggressive: replace certain common non-suffix strings
 
-    :return: tuple of (edges, vertices, replacement)
+    :return: tuple of (rename map, replacements)
 
-    If no change is made, the returned edges and vertices will be the
-    original lists  and replacement will be None.
-
-    If a change is made, replacement will be a tuple (new, original)
-    indicating the new suffix that replaces the old.
+    The rename map is a dictionary mapping the old vertex names to
+    their shortened versions. If no changes are made, replacements
+    will be empty.
     """
-    vlist = list(set(x[0] for x in edges) |
-                 set(x[1] for x in edges) |
-                 set(vertices))
+    vmap = dict((v, v) for v in vertices)
+    replacements = []
 
-    if len(vlist) < 2:
-        return edges, vertices, None
+    if len(vmap) > 1:
+        # walk backwards along all the strings until we meet a character
+        # that is not shared by all.
+        i = -1
+        vlist = vmap.values()
+        try:
+            while True:
+                c = set(x[i] for x in vlist)
+                if len(c) > 1 or c == {'*'}:
+                    break
+                i -= 1
+        except IndexError:
+            # We have indexed beyond the start of a string, which should
+            # only happen if one node is a strict suffix of all others.
+            return vmap, replacements
 
-    # walk backwards along all the strings until we meet a character
-    # that is not shared by all.
-    i = -1
-    try:
-        while True:
-            c = set(x[i] for x in vlist)
-            if len(c) > 1:
-                break
-            i -= 1
-    except IndexError:
-        # We have indexed beyond the start of a string, which should
-        # only happen if one node is a strict suffix of all others.
-        return edges, vertices, None
-
-    # add one to get to the last unanimous character.
-    i += 1
-
-    # now, we actually really want to split on a comma. So we walk
-    # back to a comma.
-    x = vlist[0]
-    while i < len(x) and x[i] != ',':
+        # add one to get to the last unanimous character.
         i += 1
 
-    if i >= -len(suffix):
-        # there is nothing to gain here
-        return edges, vertices, None
+        # now, we actually really want to split on a comma. So we walk
+        # back to a comma.
+        x = vlist[0]
+        while i < len(x) and x[i] != ',':
+            i += 1
 
-    edges2 = []
-    vertices2 = []
+        if i >= -len(suffix):
+            # there is nothing to gain here
+            return vmap, replacements
 
-    for a, b in edges:
-        edges2.append((a[:i] + suffix, b[:i] + suffix))
-    for a in vertices:
-        vertices2.append(a[:i] + suffix)
+        replacements.append((suffix, x[i:]))
 
-    replacements = [(suffix, a[i:])]
+        for k, v in vmap.items():
+            vmap[k] = v[:i] + suffix
 
     if aggressive:
         # Remove known common annoying strings
-        map = dict((v, v) for v in vertices2)
-        for v in vertices2:
+        for v in vmap.values():
             if ',CN=Servers,' not in v:
                 break
         else:
-            map = dict((k, v.replace(',CN=Servers,', ',**,'))
-                       for k, v in map.items())
+            vmap = dict((k, v.replace(',CN=Servers,', ',**,', 1))
+                       for k, v in vmap.items())
             replacements.append(('**', 'CN=Servers'))
 
-        for v in vertices2:
+        for v in vmap.values():
             if not v.startswith('CN=NTDS Settings,'):
                 break
         else:
-            map = dict((k, v.replace('CN=NTDS Settings,', '*,'))
-                       for k, v in map.items())
+            vmap = dict((k, v.replace('CN=NTDS Settings,', '*,', 1))
+                       for k, v in vmap.items())
             replacements.append(('*', 'CN=NTDS Settings'))
 
-        edges2 = [(map.get(a, a), map.get(b, b)) for a, b in edges2]
-        vertices2 = [map.get(a, a) for a in vertices2]
+    return vmap, replacements
 
-    return edges2, vertices2, replacements
+
+
+
 
 
 def compile_graph_key(key_items, nodes_above=[], elisions=None,
@@ -292,7 +283,13 @@ def dot_graph(vertices, edges,
         vertices = set(x[0] for x in edges) | set(x[1] for x in edges)
 
     if shorten_names:
-        edges, vertices, elisions = shorten_vertex_names(edges, vertices)
+        vlist = list(set(x[0] for x in edges) |
+                     set(x[1] for x in edges) |
+                     set(vertices))
+        vmap, elisions = shorten_vertex_names(vlist)
+        vertices = [vmap[x] for x in vertices]
+        edges = [(vmap[a], vmap[b]) for a, b in edges]
+
     else:
         elisions = None
 
@@ -566,10 +563,14 @@ def distance_matrix(vertices, edges,
         colour_list = [next(colour_cycle) for v in vertices]
 
     if shorten_names:
-        edges, vertices, replacements = shorten_vertex_names(edges,
-                                                             vertices,
-                                                             '+',
-                                                             aggressive=True)
+        vlist = list(set(x[0] for x in edges) |
+                     set(x[1] for x in edges) |
+                     set(vertices))
+        vmap, replacements = shorten_vertex_names(vlist, '+',
+                                                  aggressive=True)
+        vertices = [vmap[x] for x in vertices]
+        edges = [(vmap[a], vmap[b]) for a, b in edges]
+
 
     vlen = max(6, max(len(v) for v in vertices))
 
