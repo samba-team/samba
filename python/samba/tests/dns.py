@@ -1094,6 +1094,11 @@ class TestZones(DNSTest):
         self.assertEqual(recs[0].dwTimeStamp, 0)
 
     def test_dns_tombstone_custom_match_rule(self):
+        lp = self.get_loadparm()
+        self.samdb = SamDB(url = lp.samdb_url(), lp = lp,
+                           session_info=system_session(),
+                           credentials=self.creds)
+
         name,txt = 'agingtest', ['test txt']
         name2,txt2 = 'agingtest2', ['test txt2']
         name3,txt3 = 'agingtest3', ['test txt3']
@@ -1140,27 +1145,63 @@ class TestZones(DNSTest):
         self.assertEquals(len(res), 0)
 
     def test_basic_scavenging(self):
+        lp = self.get_loadparm()
+        self.samdb = SamDB(url = lp.samdb_url(), lp = lp,
+                           session_info=system_session(),
+                           credentials=self.creds)
+
         self.create_zone(self.zone, aging_enabled=True)
         interval = 1
         self.set_params(NoRefreshInterval=interval, RefreshInterval=interval,
                         zone=self.zone, Aging=1,
                         AllowUpdate = dnsp.DNS_ZONE_UPDATE_UNSECURE)
         name, txt = 'agingtest', ['test txt']
-        rec = self.dns_update_record(name,txt)
-        rec = self.dns_update_record(name+'2',txt)
+        name2, txt2 = 'agingtest2', ['test txt2']
+        name3, txt3 = 'agingtest3', ['test txt3']
+        self.dns_update_record(name,txt)
+        self.dns_update_record(name2,txt)
+        self.dns_update_record(name2,txt2)
+        self.dns_update_record(name3,txt)
+        self.dns_update_record(name3,txt2)
+        last_add = self.dns_update_record(name3,txt3)
+
         def mod_ts(rec):
             self.assertTrue(rec.dwTimeStamp > 0)
-            rec.dwTimeStamp -= interval*5
+            if rec.data.str == txt:
+                rec.dwTimeStamp -= interval*5
         self.ldap_modify_dnsrecs(name, mod_ts)
+        self.ldap_modify_dnsrecs(name2, mod_ts)
+        self.ldap_modify_dnsrecs(name3, mod_ts)
         self.assertTrue(callable(getattr(dsdb, '_scavenge_dns_records', None)))
         dsdb._scavenge_dns_records(self.samdb)
 
         recs = self.ldap_get_dns_records(name)
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
-        recs = self.ldap_get_dns_records(name+'2')
+
+        recs = self.ldap_get_dns_records(name2)
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TXT)
+        self.assertEqual(recs[0].data.str, txt2)
+
+        recs = self.ldap_get_dns_records(name3)
+        self.assertEqual(len(recs), 2)
+        txts = {str(r.data.str) for r in recs}
+        self.assertEqual(txts, {str(txt2),str(txt3)})
+        self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TXT)
+        self.assertEqual(recs[1].wType, dnsp.DNS_TYPE_TXT)
+
+        for make_it_work in [False, True]:
+            inc = -1 if make_it_work else 1
+            def mod_ts(rec):
+                rec.data = (last_add.dwTimeStamp - 24*14) + inc
+            self.ldap_modify_dnsrecs(name, mod_ts)
+            dsdb._dns_delete_tombstones(self.samdb)
+            recs = self.ldap_get_records(name)
+            if make_it_work:
+                self.assertEqual(len(recs), 0)
+            else:
+                self.assertEqual(len(recs), 1)
 
     def delete_zone(self, zone):
         self.rpc_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,

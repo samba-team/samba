@@ -32,6 +32,7 @@
 #include "param/pyparam.h"
 #include "lib/util/dlinklist.h"
 #include "dsdb/kcc/garbage_collect_tombstones.h"
+#include "dsdb/kcc/scavenge_dns_records.h"
 
 
 /* FIXME: These should be in a header file somewhere */
@@ -1150,6 +1151,74 @@ static PyObject *py_dsdb_allocate_rid(PyObject *self, PyObject *args)
 	return PyInt_FromLong(rid);
 }
 
+static PyObject *py_dns_delete_tombstones(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	NTSTATUS status;
+	struct ldb_context *ldb = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	char *error_string = NULL;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
+		return NULL;
+	}
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	mem_ctx = talloc_new(ldb);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	status = dns_delete_tombstones(mem_ctx, ldb, &error_string);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (error_string) {
+			PyErr_Format(PyExc_RuntimeError, "%s", error_string);
+		} else {
+			PyErr_SetNTSTATUS(status);
+		}
+		TALLOC_FREE(mem_ctx);
+		return NULL;
+	}
+
+	TALLOC_FREE(mem_ctx);
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_scavenge_dns_records(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	NTSTATUS status;
+	struct ldb_context *ldb = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	char *error_string = NULL;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
+		return NULL;
+	}
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	mem_ctx = talloc_new(ldb);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	status = dns_tombstone_records(mem_ctx, ldb, &error_string);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (error_string) {
+			PyErr_Format(PyExc_RuntimeError, "%s", error_string);
+		} else {
+			PyErr_SetNTSTATUS(status);
+		}
+		TALLOC_FREE(mem_ctx);
+		return NULL;
+	}
+
+	TALLOC_FREE(mem_ctx);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *py_list_dn;
@@ -1383,6 +1452,10 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_garbage_collect_tombstones", (PyCFunction)py_dsdb_garbage_collect_tombstones, METH_VARARGS,
 		"_dsdb_kcc_check_deleted(samdb, [dn], current_time, tombstone_lifetime)"
 		" -> (num_objects_expunged, num_links_expunged)" },
+	{ "_scavenge_dns_records", (PyCFunction)py_scavenge_dns_records,
+		METH_VARARGS, NULL},
+	{ "_dns_delete_tombstones", (PyCFunction)py_dns_delete_tombstones,
+		METH_VARARGS, NULL},
 	{ "_dsdb_create_own_rid_set", (PyCFunction)py_dsdb_create_own_rid_set, METH_VARARGS,
 		"_dsdb_create_own_rid_set(samdb)"
 		" -> None" },

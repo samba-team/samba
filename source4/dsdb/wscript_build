@@ -42,12 +42,17 @@ bld.SAMBA_LIBRARY('dsdb_garbage_collect_tombstones',
                   deps='samdb RPC_NDR_DRSUAPI',
                   private_library=True)
 
+bld.SAMBA_LIBRARY('scavenge_dns_records',
+                  source='kcc/scavenge_dns_records.c',
+                  deps='samdb RPC_NDR_DRSUAPI dnsserver_common',
+                  private_library=True)
+
 bld.SAMBA_MODULE('service_kcc',
 	source='kcc/kcc_service.c kcc/kcc_connection.c kcc/kcc_periodic.c kcc/kcc_drs_replica_info.c',
 	autoproto='kcc/kcc_service_proto.h',
 	subsystem='service',
 	init_function='server_service_kcc_init',
-	deps='samdb process_model RPC_NDR_IRPC RPC_NDR_DRSUAPI UTIL_RUNCMD dsdb_garbage_collect_tombstones',
+	deps='samdb process_model RPC_NDR_IRPC RPC_NDR_DRSUAPI UTIL_RUNCMD dsdb_garbage_collect_tombstones scavenge_dns_records',
 	internal_module=False,
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
@@ -71,6 +76,7 @@ for env in bld.gen_python_environments():
 		# the dependency on dcerpc here is because gensec
 		# depends on dcerpc but the waf circular dependency finder
 		# removes it so we end up with unresolved symbols.
-		deps='samdb %s dcerpc com_err %s %s dsdb_garbage_collect_tombstones' % (pyldb_util, pyrpc_util, pyparam_util),
+		deps='samdb %s dcerpc com_err %s %s dsdb_garbage_collect_tombstones scavenge_dns_records' %\
+			 (pyldb_util, pyrpc_util, pyparam_util),
 		realname='samba/dsdb.so'
 		)

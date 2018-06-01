@@ -145,7 +145,7 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 
 		element = ldb_msg_find_element(res->msgs[i], "dNSProperty");
 		if(element != NULL){
-			props = talloc_zero_array(mem_ctx,
+			props = talloc_zero_array(tmp_ctx,
 						  struct dnsp_DnsProperty,
 						  element->num_values);
 			for (j = 0; j < element->num_values; j++ ) {

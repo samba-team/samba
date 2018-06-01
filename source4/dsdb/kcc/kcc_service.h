@@ -91,6 +91,7 @@ struct kccsrv_service {
 struct kcc_connection_list;
 
 #include "dsdb/kcc/garbage_collect_tombstones.h"
+#include "dsdb/kcc/scavenge_dns_records.h"
 #include "dsdb/kcc/kcc_service_proto.h"
 
 #endif /* _DSDB_REPL_KCC_SERVICE_H_ */
