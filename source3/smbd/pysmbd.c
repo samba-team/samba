@@ -697,6 +697,48 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	return py_acl;
 }
 
+static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	const char * const kwnames[] = { "fname", "service", NULL };
+	char *fname, *service = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct connection_struct *conn = NULL;
+	struct smb_filename *smb_fname = NULL;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z", discard_const_p(char *, kwnames),
+					 &fname, &service)) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	conn = get_conn_tos(service);
+	if (!conn) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					fname,
+					NULL,
+					NULL,
+					lp_posix_pathnames()? SMB_FILENAME_POSIX_PATH : 0);
+
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+
+	if (SMB_VFS_MKDIR(conn, smb_fname, 00755) == -1) {
+		printf("mkdir error=%d (%s)\n", errno, strerror(errno));
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	TALLOC_FREE(frame);
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_smbd_methods[] = {
 	{ "have_posix_acls",
 		(PyCFunction)py_smbd_have_posix_acls, METH_NOARGS,
@@ -721,6 +763,9 @@ static PyMethodDef py_smbd_methods[] = {
 		NULL },
 	{ "unlink",
 		(PyCFunction)py_smbd_unlink, METH_VARARGS|METH_KEYWORDS,
+		NULL },
+	{ "mkdir",
+		(PyCFunction)py_smbd_mkdir, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ NULL }
 };
