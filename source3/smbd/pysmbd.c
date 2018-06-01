@@ -768,6 +768,51 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 	Py_RETURN_NONE;
 }
 
+
+/*
+  Create an empty file
+ */
+static PyObject *py_smbd_create_file(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	const char * const kwnames[] = { "fname", "service", NULL };
+	char *fname, *service = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct connection_struct *conn = NULL;
+	struct files_struct *fsp = NULL;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTupleAndKeywords(args,
+					 kwargs,
+					 "s|z",
+					 discard_const_p(char *,
+							 kwnames),
+					 &fname,
+					 &service)) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	conn = get_conn_tos(service);
+	if (!conn) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	status = init_files_struct(frame,
+				   fname,
+				   conn,
+				   O_CREAT|O_EXCL|O_RDWR,
+				   &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("init_files_struct failed: %s\n",
+			nt_errstr(status));
+	}
+
+	TALLOC_FREE(frame);
+	Py_RETURN_NONE;
+}
+
+
 static PyMethodDef py_smbd_methods[] = {
 	{ "have_posix_acls",
 		(PyCFunction)py_smbd_have_posix_acls, METH_NOARGS,
@@ -795,6 +840,9 @@ static PyMethodDef py_smbd_methods[] = {
 		NULL },
 	{ "mkdir",
 		(PyCFunction)py_smbd_mkdir, METH_VARARGS|METH_KEYWORDS,
+		NULL },
+	{ "create_file",
+		(PyCFunction)py_smbd_create_file, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ NULL }
 };
