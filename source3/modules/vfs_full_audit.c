@@ -191,8 +191,6 @@ typedef enum _vfs_op_type {
 
 	/* POSIX ACL operations. */
 
-	SMB_VFS_OP_FCHMOD_ACL,
-
 	SMB_VFS_OP_SYS_ACL_GET_FILE,
 	SMB_VFS_OP_SYS_ACL_GET_FD,
 	SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,
