@@ -105,7 +105,7 @@ class Ldb(_Ldb):
 
         # Allow admins to force non-sync ldb for all databases
         if lp is not None:
-            nosync_p = lp.get("nosync", "ldb")
+            nosync_p = lp.get("ldb:nosync")
             if nosync_p is not None and nosync_p:
                 flags |= ldb.FLG_NOSYNC
 
