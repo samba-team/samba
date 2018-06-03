@@ -186,7 +186,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         self.assertTrue(len(computerlist) > 0, "no computers found in samdb")
 
         for computerobj in computerlist:
-            name = computerobj.get("samaccountname", idx=0)
+            name = computerobj.get("samaccountname", idx=0).decode('utf8')
             found = self.assertMatch(out, name,
                                      "computer '%s' not found" % name)
 
@@ -265,7 +265,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             args += ' --service-principal-name={}'.format(service_principal_name)
 
         args = args.split()
-
+        print ('#### args %s %s' % (type(args), args))
         return self.runsubcmd('computer', 'create', *args)
 
     def _create_ou(self, ou):
@@ -325,5 +325,5 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         names = set()
         for computer in computer_list:
             for name in computer.get('servicePrincipalName', []):
-                names.add(name)
+                names.add(name.decode('utf8'))
         return names == set(expected_service_principal_names)

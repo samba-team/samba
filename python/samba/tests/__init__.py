@@ -36,13 +36,12 @@ import re
 import samba.auth
 import samba.dcerpc.base
 from samba.compat import PY3, text_type
+from samba.compat import string_types
 from random import randint
-if not PY3:
-    # Py2 only
-    from samba.samdb import SamDB
-    import samba.ndr
-    import samba.dcerpc.dcerpc
-    import samba.dcerpc.epmapper
+from samba.samdb import SamDB
+import samba.ndr
+import samba.dcerpc.dcerpc
+import samba.dcerpc.epmapper
 
 try:
     from unittest import SkipTest
@@ -50,7 +49,7 @@ except ImportError:
     class SkipTest(Exception):
         """Test skipped."""
 
-HEXDUMP_FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
+HEXDUMP_FILTER=bytearray([x if ((len(repr(chr(x)))==3) and (x < 127)) else ord('.') for x in range(256)])
 
 class TestCase(unittest.TestCase):
     """A Samba test case."""
@@ -80,16 +79,24 @@ class TestCase(unittest.TestCase):
     def hexdump(self, src):
         N = 0
         result = ''
+        is_string = isinstance(src, string_types)
         while src:
             ll = src[:8]
             lr = src[8:16]
             src = src[16:]
-            hl = ' '.join(["%02X" % ord(x) for x in ll])
-            hr = ' '.join(["%02X" % ord(x) for x in lr])
-            ll = ll.translate(HEXDUMP_FILTER)
-            lr = lr.translate(HEXDUMP_FILTER)
+            if is_string:
+                hl = ' '.join(["%02X" % ord(x) for x in ll])
+                hr = ' '.join(["%02X" % ord(x) for x in lr])
+                ll = ll.translate(HEXDUMP_FILTER)
+                lr = lr.translate(HEXDUMP_FILTER)
+            else:
+                hl = ' '.join(["%02X" % x for x in ll])
+                hr = ' '.join(["%02X" % x for x in lr])
+                ll = ll.translate(HEXDUMP_FILTER).decode('ascii')
+                lr = lr.translate(HEXDUMP_FILTER).decode('ascii')
             result += "[%04X] %-*s  %-*s  %s %s\n" % (N, 8*3, hl, 8*3, hr, ll, lr)
             N += 16
+        print ('### DUMP %s' % result)
         return result
 
     def insta_creds(self, template=None, username=None, userpass=None, kerberos_state=None):

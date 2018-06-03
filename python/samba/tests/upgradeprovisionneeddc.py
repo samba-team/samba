@@ -91,7 +91,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         hashAtt = search_constructed_attrs_stored(self.ldbs.sam,
                                                   self.names.rootdn,
                                                   ["msds-KeyVersionNumber"])
-        self.assertFalse(hashAtt.has_key("msds-KeyVersionNumber"))
+        self.assertFalse("msds-KeyVersionNumber" in hashAtt)
 
     def test_increment_calculated_keyversion_number(self):
         dn = "CN=Administrator,CN=Users,%s" % self.names.rootdn

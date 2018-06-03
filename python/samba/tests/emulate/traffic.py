@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # from pprint import pprint
-from cStringIO import StringIO
+from samba.compat import StringIO
 
 import samba.tests
 
@@ -93,8 +93,10 @@ class TrafficEmulatorTests(samba.tests.TestCase):
         f.seek(0)
         model2.load(f)
 
-        self.assertEqual(expected_ngrams, model2.ngrams)
-        self.assertEqual(expected_query_details, model2.query_details)
+        ngrams = {k: sorted(v) for k, v in model2.ngrams.items()}
+        details = {k: sorted(v) for k, v in model2.query_details.items()}
+        self.assertEqual(expected_ngrams, ngrams)
+        self.assertEqual(expected_query_details, details)
 
     def test_parse_ngrams(self):
         f = open(TEST_FILE)
@@ -156,5 +158,7 @@ class TrafficEmulatorTests(samba.tests.TestCase):
         f.seek(0)
         model2.load(f)
 
-        self.assertEqual(expected_ngrams, model2.ngrams)
-        self.assertEqual(expected_query_details, model2.query_details)
+        ngrams = {k: sorted(v) for k, v in model2.ngrams.items()}
+        details = {k: sorted(v) for k, v in model2.query_details.items()}
+        self.assertEqual(expected_ngrams, ngrams)
+        self.assertEqual(expected_query_details, details)

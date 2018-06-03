@@ -281,7 +281,7 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
                     expression=filters,
                     attrs=['primaryGroupID', 'objectSid'])
 
-                group = recs[0]['primaryGroupID'][0]
+                group = recs[0]['primaryGroupID'][0].decode('utf8')
                 owner = ndr_unpack(security.dom_sid, recs[0]["objectSid"][0])
 
                 dns_conn = dnsserver.dnsserver(
@@ -376,7 +376,7 @@ sudo is used so a computer may run the command as root.
             computer_dn = res[0].dn
             computer_ac = int(res[0]["userAccountControl"][0])
             if "dNSHostName" in res[0]:
-                computer_dns_host_name = res[0]["dNSHostName"][0]
+                computer_dns_host_name = res[0]["dNSHostName"][0].decode('utf8')
             else:
                 computer_dns_host_name = None
         except IndexError:

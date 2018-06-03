@@ -119,7 +119,7 @@ def get_crypt_value(alg, utf8pw, rounds=0):
     # we can ignore the possible == at the end
     # of the base64 string
     # we just need to replace '+' by '.'
-    b64salt = base64.b64encode(salt)[0:16].replace('+', '.').decode('utf8')
+    b64salt = base64.b64encode(salt)[0:16].replace(b'+', b'.').decode('utf8')
     crypt_salt = ""
     if rounds != 0:
         crypt_salt = "$%s$rounds=%s$%s$" % (alg, rounds, b64salt)
@@ -383,6 +383,9 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
 
         self.outf.write("User '%s' created successfully\n" % username)
 
+from samba.compat import string_types
+from samba.compat import text_type
+from samba.compat import binary_type
 
 class cmd_user_add(cmd_user_create):
     __doc__ = cmd_user_create.__doc__
@@ -977,7 +980,7 @@ class GetPasswordCommand(Command):
             unicodePwd = obj["unicodePwd"][0]
             if add_unicodePwd:
                 del obj["unicodePwd"]
-        account_name = obj["sAMAccountName"][0]
+        account_name = obj["sAMAccountName"][0].decode('utf8')
         if add_sAMAcountName:
             del obj["sAMAccountName"]
         if "userPrincipalName" in obj:
@@ -1050,7 +1053,8 @@ class GetPasswordCommand(Command):
 
         def get_utf8(a, b, username):
             try:
-                u = unicode(b, 'utf-16-le')
+                if isinstance(b, binary_type):
+                    u = b.decode('utf-16-le')
             except UnicodeDecodeError as e:
                 self.outf.write("WARNING: '%s': CLEARTEXT is invalid UTF-16-LE unable to generate %s\n" % (
                                 username, a))
@@ -1159,6 +1163,8 @@ class GetPasswordCommand(Command):
                                  primary_wdigest)
             try:
                 digest = binascii.hexlify(bytearray(digests.hashes[i-1].hash))
+                if not isinstance(digest, string_types):
+                    digest = digest.decode('utf8')
                 return "%s:%s:%s" % (user, realm, digest)
             except IndexError:
                 return None
@@ -1182,7 +1188,7 @@ class GetPasswordCommand(Command):
                 if b is not None:
                     u8 = get_utf8(a, b, username or account_name)
                     if u8 is not None:
-                        sv = get_crypt_value(str(algorithm), u8, rounds)
+                        sv = get_crypt_value(str(algorithm), u8.decode('utf8'), rounds)
                 if sv is None:
                     # Unable to calculate a hash with the specified
                     # number of rounds, fall back to the first hash using
@@ -1211,14 +1217,14 @@ class GetPasswordCommand(Command):
             for h in up.hashes:
                 if (scheme_match is None and
                       h.scheme == SCHEME and
-                      h.value.startswith(scheme_prefix)):
+                      h.value.decode('utf8').startswith(scheme_prefix)):
                     scheme_match = h.value
-                if h.scheme == SCHEME and h.value.startswith(prefix):
-                    return (h.value, scheme_match)
+                if h.scheme == SCHEME and h.value.decode('utf8').startswith(prefix):
+                    return (h.value.decode('utf8'), scheme_match.decode('utf8'))
 
             # No match on the number of rounds, return the value of the
             # first matching scheme
-            return (None, scheme_match)
+            return (None, scheme_match.decode('utf8'))
 
         # We use sort here in order to have a predictable processing order
         for a in sorted(virtual_attributes.keys()):
@@ -1745,7 +1751,6 @@ samba-tool user syncpasswords --terminate \\
             sync_command = "%s" % os.path.abspath(script)
         else:
             sync_command = None
-
         dirsync_filter = filter
         if dirsync_filter is None:
             dirsync_filter = "(&" + \
@@ -1762,12 +1767,12 @@ samba-tool user syncpasswords --terminate \\
         ]
 
         dirsync_attrs = dirsync_secret_attrs + [
-            "pwdLastSet",
-            "sAMAccountName",
-            "userPrincipalName",
-            "userAccountControl",
-            "isDeleted",
-            "isRecycled",
+            u"pwdLastSet",
+            u"sAMAccountName",
+            u"userPrincipalName",
+            u"userAccountControl",
+            u"isDeleted",
+            u"isRecycled",
         ]
 
         password_attrs = None
@@ -1842,7 +1847,7 @@ samba-tool user syncpasswords --terminate \\
                                     attrs=cache_attrs)
             if len(res) == 1:
                 try:
-                    self.samdb_url = res[0]["samdbUrl"][0]
+                    self.samdb_url = res[0]["samdbUrl"][0].decode('utf8')
                 except KeyError as e:
                     self.samdb_url = None
             else:
@@ -1863,13 +1868,21 @@ samba-tool user syncpasswords --terminate \\
                 self.sync_command = sync_command
                 add_ldif  = "dn: %s\n" % self.cache_dn
                 add_ldif += "objectClass: userSyncPasswords\n"
-                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(self.samdb_url).decode('utf8')
-                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(self.dirsync_filter).decode('utf8')
+                to_encode = self.samdb_url;
+                # #TODO think about ensuring self.samdb_url are always text
+                # e.g. unicode in py2
+                if isinstance(to_encode, text_type):
+                    to_encode = to_encode.encode('utf8')
+                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(to_encode).decode('utf8')
+                to_encode = self.dirsync_filter
+                if isinstance(to_encode, text_type):
+                    to_encode = to_encode.encode('utf8')
+                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(to_encode).decode('utf8')
                 for a in self.dirsync_attrs:
-                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
+                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(a.encode('utf8')).decode('utf8')
                 add_ldif += "dirsyncControl: %s\n" % self.dirsync_controls[0]
                 for a in self.password_attrs:
-                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
+                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a.encode('utf8')).decode('utf8')
                 if self.decrypt_samba_gpg == True:
                     add_ldif += "decryptSambaGPG: TRUE\n"
                 else:
@@ -1885,22 +1898,22 @@ samba-tool user syncpasswords --terminate \\
                 ldif = self.cache.write_ldif(msg, ldb.CHANGETYPE_NONE)
                 self.outf.write("%s" % ldif)
             else:
-                self.dirsync_filter = res[0]["dirsyncFilter"][0]
+                self.dirsync_filter = res[0]["dirsyncFilter"][0].decode('utf8')
                 self.dirsync_attrs = []
                 for a in res[0]["dirsyncAttribute"]:
-                    self.dirsync_attrs.append(a)
-                self.dirsync_controls = [res[0]["dirsyncControl"][0], "extended_dn:1:0"]
+                    self.dirsync_attrs.append(a.decode('utf8'))
+                self.dirsync_controls = [res[0]["dirsyncControl"][0].decode('utf8'), "extended_dn:1:0"]
                 self.password_attrs = []
                 for a in res[0]["passwordAttribute"]:
-                    self.password_attrs.append(a)
-                decrypt_string = res[0]["decryptSambaGPG"][0]
+                    self.password_attrs.append(a.decode('utf8'))
+                decrypt_string = res[0]["decryptSambaGPG"][0].decode('utf8')
                 assert(decrypt_string in ["TRUE", "FALSE"])
                 if decrypt_string == "TRUE":
                     self.decrypt_samba_gpg = True
                 else:
                     self.decrypt_samba_gpg = False
                 if "syncCommand" in res[0]:
-                    self.sync_command = res[0]["syncCommand"][0]
+                    self.sync_command = res[0]["syncCommand"][0].decode('utf8')
                 else:
                     self.sync_command = None
                 if "currentPid" in res[0]:
@@ -2055,6 +2068,8 @@ samba-tool user syncpasswords --terminate \\
                 try:
                     os.ftruncate(self.lockfd, 0)
                     if buf is not None:
+                        if isinstance(buf, text_type):
+                            buf = buf.encode('utf8')
                         os.write(self.lockfd, buf)
                 except IOError as e3:
                     (err, msg) = e3.args
@@ -2174,7 +2189,7 @@ samba-tool user syncpasswords --terminate \\
             else:
                 log_msg("Getting changes\n")
             self.outf.write("dirsyncFilter: %s\n" % self.dirsync_filter)
-            self.outf.write("dirsyncControls: %r\n" % self.dirsync_controls)
+            self.outf.write("[2]dirsyncControls: %r\n" % self.dirsync_controls)
             self.outf.write("syncCommand: %s\n" % self.sync_command)
             dirsync_loop()
 

@@ -43,6 +43,7 @@ import logging
 import talloc
 import random
 import time
+from samba.compat import text_type
 
 class DCJoinException(Exception):
 
@@ -358,21 +359,21 @@ class dc_join(object):
 
     def get_dnsHostName(ctx):
         res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
-        return res[0]["dnsHostName"][0]
+        return res[0]["dnsHostName"][0].decode('utf8')
 
     def get_domain_name(ctx):
         '''get netbios name of the domain from the partitions record'''
         partitions_dn = ctx.samdb.get_partitions_dn()
         res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
                                expression='ncName=%s' % ldb.binary_encode(str(ctx.samdb.get_default_basedn())))
-        return res[0]["nETBIOSName"][0]
+        return res[0]["nETBIOSName"][0].decode('utf8')
 
     def get_forest_domain_name(ctx):
         '''get netbios name of the domain from the partitions record'''
         partitions_dn = ctx.samdb.get_partitions_dn()
         res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
                                expression='ncName=%s' % ldb.binary_encode(str(ctx.samdb.get_root_basedn())))
-        return res[0]["nETBIOSName"][0]
+        return res[0]["nETBIOSName"][0].decode('utf8')
 
     def get_parent_partition_dn(ctx):
         '''get the parent domain partition DN from parent DNS name'''
@@ -488,6 +489,7 @@ class dc_join(object):
                     v = [rec[a]]
                 else:
                     v = rec[a]
+                v = [x.encode('utf8') if isinstance(x, text_type) else x for x in v]
                 rattr = ctx.tmp_samdb.dsdb_DsReplicaAttribute(ctx.tmp_samdb, a, v)
                 attrs.append(rattr)
 

@@ -741,7 +741,7 @@ accountExpires: %u
     def host_dns_name(self):
         """return the DNS name of this host"""
         res = self.search(base='', scope=ldb.SCOPE_BASE, attrs=['dNSHostName'])
-        return res[0]['dNSHostName'][0]
+        return res[0]['dNSHostName'][0].decode('utf8')
 
     def domain_dns_name(self):
         """return the DNS name of the domain root"""
@@ -1041,12 +1041,12 @@ schemaUpdateNow: 1
     def get_dsServiceName(self):
         '''get the NTDS DN from the rootDSE'''
         res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
-        return res[0]["dsServiceName"][0]
+        return res[0]["dsServiceName"][0].decode('utf8')
 
     def get_serverName(self):
         '''get the server DN from the rootDSE'''
         res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["serverName"])
-        return res[0]["serverName"][0]
+        return res[0]["serverName"][0].decode('utf8')
 
     def dns_lookup(self, dns_name, dns_partition=None):
         '''Do a DNS lookup in the database, returns the NDR database structures'''

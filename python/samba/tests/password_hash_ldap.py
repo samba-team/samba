@@ -48,6 +48,7 @@ from samba import drs_utils, net
 from samba.credentials import Credentials
 import binascii
 import os
+from samba.compat import binary_type
 
 def attid_equal(a1, a2):
     return (a1 & 0xffffffff) == (a2 & 0xffffffff)
@@ -70,7 +71,7 @@ class PassWordHashLDAPTests(PassWordHashTests):
         req8.destination_dsa_guid          = null_guid
         req8.source_dsa_invocation_id      = null_guid
         req8.naming_context                = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn             = unicode(dn)
+        req8.naming_context.dn             = dn.decode('utf8') if isinstance(dn, binary_type) else dn
 
         req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
         req8.highwatermark.tmp_highest_usn = 0

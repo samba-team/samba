@@ -101,6 +101,8 @@ from samba.provision.common import (
 
 from samba.netcmd.pso import cmd_domain_passwordsettings_pso
 
+from samba.compat import binary_type
+
 string_version_to_constant = {
     "2008_R2" : DS_DOMAIN_FUNCTION_2008_R2,
     "2012": DS_DOMAIN_FUNCTION_2012,
@@ -567,8 +569,9 @@ class cmd_domain_provision(Command):
     def _adminpass_issue(self, adminpass):
         """Returns error string for a bad administrator password,
         or None if acceptable"""
-
-        if len(adminpass.decode('utf-8')) < DEFAULT_MIN_PWD_LENGTH:
+        if isinstance(adminpass, binary_type):
+            adminpass = adminpass.decode('utf8')
+        if len(adminpass) < DEFAULT_MIN_PWD_LENGTH:
             return "Administrator password does not meet the default minimum" \
                 " password length requirement (%d characters)" \
                 % DEFAULT_MIN_PWD_LENGTH
@@ -1519,7 +1522,7 @@ class cmd_domain_passwordsettings_set(Command):
               ldb.FLAG_MOD_REPLACE, "lockOutObservationWindow")
             msgs.append("Duration to reset account lockout after changed!")
 
-        if max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
+        if max_pwd_age and max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
             raise CommandError("Maximum password age (%d) must be greater than minimum password age (%d)!" % (max_pwd_age, min_pwd_age))
 
         if len(m) == 0:

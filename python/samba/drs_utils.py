@@ -165,7 +165,7 @@ def drs_get_rodc_partial_attribute_set(samdb):
                               "searchFlags"])
 
     for r in res:
-        ldap_display_name = r["lDAPDisplayName"][0]
+        ldap_display_name = r["lDAPDisplayName"][0].decode('utf8')
         if "systemFlags" in r:
             system_flags      = r["systemFlags"][0]
             if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
@@ -319,7 +319,7 @@ class drs_Replicate(object):
                     schema=schema, req_level=req_level, req=req)
             except WERRORError as e:
                 # Check if retrying with the GET_TGT flag set might resolve this error
-                if self._should_retry_with_get_tgt(e[0], req):
+                if self._should_retry_with_get_tgt(e.args[0], req):
 
                     print("Missing target object - retrying with DRS_GET_TGT")
                     req.more_flags |= drsuapi.DRSUAPI_DRS_GET_TGT

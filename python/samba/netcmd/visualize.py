@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Visualisation tools
 #
 # Copyright (C) Andrew Bartlett 2015, 2018
@@ -37,6 +38,7 @@ import re
 from samba.kcc import KCC, ldif_import_export
 from samba.kcc.kcc_utils import KCCError
 from samba.compat import text_type
+from io import open
 
 COMMON_OPTIONS = [
     Option("-H", "--URL", help="LDB URL for database or target server",
@@ -99,7 +101,7 @@ class GraphCommand(Command):
 
         return kcc, dsas
 
-    def write(self, s, fn=None, suffix='.dot'):
+    def write(self, s, fn=None, suffix='.dot', utf8=None):
         """Decide whether we're dealing with a filename, a tempfile, or
         stdout, and write accordingly.
 
@@ -111,19 +113,22 @@ class GraphCommand(Command):
         If fn is visualize.TEMP_FILE, write to a temporary file
         Otherwise fn should be a filename to write to.
         """
+        encoding = None
+        if utf8:
+            encoding = 'utf8'
+        if not isinstance(s, text_type):
+            s = s.decode('utf8')
         if fn is None or fn == '-':
             # we're just using stdout (a.k.a self.outf)
             print(s, file=self.outf)
             return
-
         if fn is TEMP_FILE:
             fd, fn = tempfile.mkstemp(prefix='samba-tool-visualise',
                                       suffix=suffix)
-            f = open(fn, 'w')
+            f = open(fn, 'w', encoding=encoding)
             os.close(fd)
         else:
-            f = open(fn, 'w')
-
+            f = open(fn, 'w', encoding=encoding)
         f.write(s)
         f.close()
         return fn
@@ -347,7 +352,7 @@ class cmd_reps(GraphCommand):
                                             grouping_function=get_dnstr_site)
 
                         s = "\n%s\n%s" % (header_strings[direction] % part, s)
-                        self.write(s, output)
+                        self.write(s, output, utf8=utf8)
             return
 
         edge_colours = []
@@ -396,7 +401,7 @@ class cmd_reps(GraphCommand):
         if format == 'xdot':
             self.call_xdot(s, output)
         else:
-            self.write(s, output)
+            self.write(s, output, utf8=utf8)
 
 
 class NTDSConn(object):
@@ -454,7 +459,7 @@ class cmd_ntdsconn(GraphCommand):
                 res = local_kcc.samdb.search(dsa_dn,
                                              scope=SCOPE_BASE,
                                              attrs=["dNSHostName"])
-                dns_name = res[0]["dNSHostName"][0]
+                dns_name = res[0]["dNSHostName"][0].decode('utf8')
                 try:
                     samdb = self.get_db("ldap://%s" % dns_name, sambaopts,
                                         credopts)
@@ -490,7 +495,7 @@ class cmd_ntdsconn(GraphCommand):
             for msg in res:
                 msgdn = str(msg.dn)
                 dest_dn = msgdn[msgdn.index(',') + 1:]
-                attested_edges.append((msg['fromServer'][0],
+                attested_edges.append((msg['fromServer'][0].decode('utf8'),
                                        dest_dn, ntds_dn))
 
         if importldif and H == self._tmp_fn_to_delete:
@@ -593,7 +598,7 @@ class cmd_ntdsconn(GraphCommand):
 
             self.write('\n%s\n\n%s\n%s' % (title,
                                            s,
-                                           epilog), output)
+                                           epilog), output, utf8=utf8)
             return
 
         dot_edges = []
@@ -654,7 +659,7 @@ class cmd_ntdsconn(GraphCommand):
         if format == 'xdot':
             self.call_xdot(s, output)
         else:
-            self.write(s, output)
+            self.write(s, output, utf8=utf8)
 
 
 class cmd_visualize(SuperCommand):

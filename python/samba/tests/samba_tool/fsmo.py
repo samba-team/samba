@@ -36,7 +36,7 @@ class FsmoCmdTestCase(SambaToolCmdTest):
             res = samdb.search(base=ldb.Dn(samdb, "CN=Infrastructure,DC=DomainDnsZones") + samdb.get_default_basedn(),
                        scope=ldb.SCOPE_BASE, attrs=["fsmoRoleOwner"])
 
-            self.assertTrue("DomainDnsZonesMasterRole owner: " + res[0]["fsmoRoleOwner"][0] in out)
+            self.assertTrue("DomainDnsZonesMasterRole owner: " + res[0]["fsmoRoleOwner"][0].decode('utf8') in out)
         except ldb.LdbError as e:
             (enum, string) = e.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
@@ -47,4 +47,4 @@ class FsmoCmdTestCase(SambaToolCmdTest):
         res = samdb.search(base=samdb.get_default_basedn(),
                            scope=ldb.SCOPE_BASE, attrs=["fsmoRoleOwner"])
 
-        self.assertTrue("DomainNamingMasterRole owner: " + res[0]["fsmoRoleOwner"][0] in out)
+        self.assertTrue("DomainNamingMasterRole owner: " + res[0]["fsmoRoleOwner"][0].decode('utf8') in out)

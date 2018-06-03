@@ -97,7 +97,7 @@ static int py_GUID_init(PyObject *self, PyObject *args, PyObject *kwargs)
 		DATA_BLOB guid_val;
 		Py_ssize_t _size;
 
-		if (!IsPy3BytesOrString(str)) {
+		if (!IsPy3BytesOrString(str) && !PyUnicode_Check(str)) {
 			PyErr_SetString(PyExc_TypeError, "Expected a string or bytes argument to GUID()");
 			return -1;
 		}

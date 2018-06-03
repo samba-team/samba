@@ -130,7 +130,7 @@ class Schema(object):
         if override_prefixmap is not None:
             self.prefixmap_data = override_prefixmap
         else:
-            self.prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
+            self.prefixmap_data = open(setup_path("prefixMap.txt"), 'rb').read()
 
         if additional_prefixmap is not None:
             for map in additional_prefixmap:

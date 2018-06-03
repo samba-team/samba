@@ -43,8 +43,8 @@ class TrafficLearnerTests(BlackboxTestCase):
 
     def test_no_output_file(self):
         """Run the script with no output file specified"""
-        expected = ("No output file was specified to write the model to.\n"
-                    "Please specify a filename using the --out option.\n")
+        expected = (b"No output file was specified to write the model to.\n"
+                    b"Please specify a filename using the --out option.\n")
         actual = self.check_output(LEARNER)
         self.assertEquals(expected, actual)
 

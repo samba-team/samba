@@ -27,6 +27,8 @@
 __docformat__ = "restructuredText"
 
 from samba.compat import urllib_quote
+from samba.compat import string_types
+from samba.compat import binary_type
 from base64 import b64encode
 import errno
 import os
@@ -195,11 +197,11 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     names.adminpass = None
 
     # NT domain, kerberos realm, root dn, domain dn, domain dns name
-    names.domain = string.upper(lp.get("workgroup"))
+    names.domain = lp.get("workgroup").upper()
     names.realm = lp.get("realm")
     names.dnsdomain = names.realm.lower()
     basedn = samba.dn_from_dns_name(names.dnsdomain)
-    names.realm = string.upper(names.realm)
+    names.realm = names.realm.upper()
     # netbiosname
     # Get the netbiosname first (could be obtained from smb.conf in theory)
     res = secretsdb.search(expression="(flatname=%s)" %
@@ -217,8 +219,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                "configurationNamingContext","rootDomainNamingContext",
                "namingContexts"])
 
-    names.configdn = current[0]["configurationNamingContext"][0]
-    names.schemadn = current[0]["schemaNamingContext"][0]
+    names.configdn = current[0]["configurationNamingContext"][0].decode('utf8')
+    names.schemadn = current[0]["schemaNamingContext"][0].decode('utf8')
     if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
                                        current[0]["defaultNamingContext"][0].decode('utf8')))):
         raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
@@ -235,12 +237,12 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     for i in range(0, len(names.ncs)):
         nc = names.ncs[i]
 
-        dnsforestdn = "DC=ForestDnsZones,%s" % (str(names.rootdn))
+        dnsforestdn = "DC=ForestDnsZones,%s" % (names.rootdn.decode('utf8'))
         if nc == dnsforestdn:
             names.dnsforestdn = dnsforestdn
             continue
 
-        dnsdomaindn = "DC=DomainDnsZones,%s" % (str(names.domaindn))
+        dnsdomaindn = "DC=DomainDnsZones,%s" % (names.domaindn.decode('utf8'))
         if nc == dnsdomaindn:
             names.dnsdomaindn = dnsdomaindn
             continue
@@ -440,7 +442,7 @@ def get_last_provision_usn(sam):
         p = re.compile(r'-')
         if entry[0].get("provisionnerID"):
             for e in entry[0]["provisionnerID"]:
-                myids.append(str(e))
+                myids.append(e.decode('utf8'))
         for r in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
             tab1 = str(r).split(';')
             if len(tab1) == 2:
@@ -1070,7 +1072,7 @@ def setup_encrypted_secrets_key(path):
     finally:
         os.umask(umask_original)
 
-    with os.fdopen(fd, 'w') as f:
+    with os.fdopen(fd, 'wb') as f:
         key = samba.generate_random_bytes(16)
         f.write(key)
 
@@ -1561,8 +1563,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
         ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
         names.ntdsguid = samdb.searchone(basedn=ntds_dn,
-            attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
-        assert isinstance(names.ntdsguid, str)
+            attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE).decode('utf8')
+        assert isinstance(names.ntdsguid, string_types)
 
     return samdb
 
@@ -1605,7 +1607,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
 
     for policy in res:
         acl = ndr_unpack(security.descriptor,
-                         str(policy["nTSecurityDescriptor"])).as_sddl()
+                         policy["nTSecurityDescriptor"][0]).as_sddl()
         policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
         set_dir_acl(policy_path, dsacl2fsacl(acl, domainsid), lp,
                     str(domainsid), use_ntvfs,
@@ -1766,7 +1768,7 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
 
     for policy in res:
         acl = ndr_unpack(security.descriptor,
-                         str(policy["nTSecurityDescriptor"])).as_sddl()
+                         policy["nTSecurityDescriptor"][0]).as_sddl()
         policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
         check_dir_acl(policy_path, dsacl2fsacl(acl, domainsid), lp,
                       domainsid, direct_db_access)
@@ -1938,8 +1940,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                      backend_store=backend_store)
 
         domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
-                                     attribute="objectGUID")
-        assert isinstance(domainguid, str)
+                                     attribute="objectGUID").decode('utf8')
+        assert isinstance(domainguid, string_types)
 
     lastProvisionUSNs = get_last_provision_usn(samdb)
     maxUSN = get_max_usn(samdb, str(names.rootdn))
@@ -2274,7 +2276,8 @@ def provision(logger, session_info, smbconf=None,
             adminpass = samba.generate_random_password(12, 32)
             adminpass_generated = True
         else:
-            adminpass = unicode(adminpass, 'utf-8')
+            if isinstance(adminpass, binary_type):
+                adminpass = adminpass.decode('utf-8')
             adminpass_generated = False
 
         if samdb_fill == FILL_FULL:

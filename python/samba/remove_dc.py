@@ -135,7 +135,7 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
     # By using a set here, duplicates via (eg) example.com/Configuration
     # do not matter, they become just example.com
     a_names_to_remove_from \
-        = set(dns_name_from_dn(dn) for dn in ncs)
+        = set(dns_name_from_dn(dn.decode('utf8')) for dn in ncs)
 
     def a_rec_to_remove(dnsRecord):
         if dnsRecord.wType == DNS_TYPE_A or dnsRecord.wType == DNS_TYPE_AAAA:
@@ -218,7 +218,7 @@ def offline_remove_server(samdb, logger,
     res = samdb.search("",
                        scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
     assert len(res) == 1
-    my_serviceName = res[0]["dsServiceName"][0]
+    my_serviceName = res[0]["dsServiceName"][0].decode('utf8')
 
     # Confirm this is really a server object
     msgs = samdb.search(base=server_dn,
@@ -235,7 +235,7 @@ def offline_remove_server(samdb, logger,
         computer_dn = None
 
     try:
-        dnsHostName = msgs[0]["dnsHostName"][0]
+        dnsHostName = msgs[0]["dnsHostName"][0].decode('utf8')
     except KeyError:
         dnsHostName = None
 
@@ -265,7 +265,7 @@ def offline_remove_server(samdb, logger,
             samdb.delete(computer_dn, ["tree_delete:0"])
 
         if "dnsHostName" in msgs[0]:
-            dnsHostName = msgs[0]["dnsHostName"][0]
+            dnsHostName = msgs[0]["dnsHostName"][0].decode('utf8')
 
     if remove_dns_account:
         res = samdb.search(expression="(&(objectclass=user)(cn=dns-%s)(servicePrincipalName=DNS/%s))" %

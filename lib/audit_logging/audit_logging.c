@@ -230,7 +230,7 @@ void audit_message_send(
 	uint32_t message_type,
 	struct json_object *message)
 {
-	struct server_id event_server;
+	struct server_id event_server = {};
 	NTSTATUS status;
 
 	const char *message_string = NULL;
