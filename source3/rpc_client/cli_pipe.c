@@ -2725,7 +2725,7 @@ static void rpccli_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 {
 	void *struct_ptr = discard_const(_struct_ptr);
 
-	if (DEBUGLEVEL < 10) {
+	if (!CHECK_DEBUGLVLC(DBGC_RPC_PARSE, 10)) {
 		return;
 	}
 
