@@ -371,88 +371,6 @@ static NTSTATUS dsdb_trust_crossref_tdo_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static int dsdb_trust_find_tln_match_internal(const struct lsa_ForestTrustInformation *info,
-					      enum lsa_ForestTrustRecordType type,
-					      uint32_t disable_mask,
-					      const char *tln)
-{
-	uint32_t i;
-
-	for (i = 0; i < info->count; i++) {
-		struct lsa_ForestTrustRecord *e = info->entries[i];
-		struct lsa_StringLarge *t = NULL;
-		int cmp;
-
-		if (e == NULL) {
-			continue;
-		}
-
-		if (e->type != type) {
-			continue;
-		}
-
-		if (e->flags & disable_mask) {
-			continue;
-		}
-
-		switch (type) {
-		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
-			t = &e->forest_trust_data.top_level_name;
-			break;
-		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
-			t = &e->forest_trust_data.top_level_name_ex;
-			break;
-		default:
-			break;
-		}
-
-		if (t == NULL) {
-			continue;
-		}
-
-		cmp = dns_cmp(tln, t->string);
-		switch (cmp) {
-		case DNS_CMP_MATCH:
-		case DNS_CMP_FIRST_IS_CHILD:
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-static bool dsdb_trust_find_tln_match(const struct lsa_ForestTrustInformation *info,
-				      const char *tln)
-{
-	int m;
-
-	m = dsdb_trust_find_tln_match_internal(info,
-					       LSA_FOREST_TRUST_TOP_LEVEL_NAME,
-					       LSA_TLN_DISABLED_MASK,
-					       tln);
-	if (m != -1) {
-		return true;
-	}
-
-	return false;
-}
-
-static bool dsdb_trust_find_tln_ex_match(const struct lsa_ForestTrustInformation *info,
-					 const char *tln)
-{
-	int m;
-
-	m = dsdb_trust_find_tln_match_internal(info,
-					       LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX,
-					       0,
-					       tln);
-	if (m != -1) {
-		return true;
-	}
-
-	return false;
-}
-
 NTSTATUS dsdb_trust_local_tdo_info(TALLOC_CTX *mem_ctx,
 				   struct ldb_context *sam_ctx,
 				   struct lsa_TrustDomainInfoInfoEx **_tdo)
@@ -671,7 +589,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 			return status;
 		}
 
-		match = dsdb_trust_find_tln_match(info, dns);
+		match = trust_forest_info_tln_match(info, dns);
 		if (!match) {
 			/*
 			 * First the TOP_LEVEL_NAME, if required
@@ -727,7 +645,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		match = dsdb_trust_find_tln_match(info, dns);
+		match = trust_forest_info_tln_match(info, dns);
 		if (match) {
 			continue;
 		}
@@ -1397,8 +1315,8 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		ntln_excluded = dsdb_trust_find_tln_ex_match(ref_fti,
-							     ntln->string);
+		ntln_excluded = trust_forest_info_tln_ex_match(ref_fti,
+							       ntln->string);
 
 		/* check if this is already taken and not excluded */
 		for (r = 0; r < ref_fti->count; r++) {
@@ -1452,8 +1370,8 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 				 * If the conflicting tln is a child, check if
 				 * we have an exclusion record for it.
 				 */
-				m = dsdb_trust_find_tln_ex_match(new_fti,
-								 rtln->string);
+				m = trust_forest_info_tln_ex_match(new_fti,
+								   rtln->string);
 				if (m) {
 					continue;
 				}
@@ -1510,7 +1428,7 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		ntln_found = dsdb_trust_find_tln_match(ref_fti, ntln->string);
+		ntln_found = trust_forest_info_tln_match(ref_fti, ntln->string);
 
 		/* check if this is already taken and not excluded */
 		for (r = 0; r < ref_fti->count; r++) {
@@ -2761,7 +2679,7 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_routing_by_name(
 			continue;
 		}
 
-		exclude = dsdb_trust_find_tln_ex_match(d->fti, name);
+		exclude = trust_forest_info_tln_ex_match(d->fti, name);
 		if (exclude) {
 			continue;
 		}
