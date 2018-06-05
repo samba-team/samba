@@ -511,7 +511,7 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 	struct winbindd_domain *domain;
 
 	if (IS_DC) {
-		domain = find_domain_from_name_noinit(domain_name);
+		domain = find_routing_from_namespace_noinit(domain_name);
 		if (domain == NULL) {
 			DEBUG(3, ("Authentication for domain [%s] refused "
 				  "as it is not a trusted domain\n",
@@ -519,11 +519,7 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 			return NULL;
 		}
 
-		if (domain->secure_channel_type != SEC_CHAN_NULL) {
-			return domain;
-		}
-
-		return domain->routing_domain;
+		return domain;
 	}
 
 	if (strequal(domain_name, get_global_sam_name())) {

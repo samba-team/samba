@@ -1912,16 +1912,12 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 	if (IS_DC) {
 		struct winbindd_domain *domain = NULL;
 
-		domain = find_domain_from_name_noinit(domain_name);
+		domain = find_routing_from_namespace_noinit(domain_name);
 		if (domain == NULL) {
 			return NULL;
 		}
 
-		if (domain->secure_channel_type != SEC_CHAN_NULL) {
-			return domain;
-		}
-
-		return domain->routing_domain;
+		return domain;
 	}
 
 	return find_our_domain();
