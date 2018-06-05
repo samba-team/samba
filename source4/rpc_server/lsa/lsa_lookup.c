@@ -1819,7 +1819,6 @@ static NTSTATUS dcesrv_lsa_lookup_name_account(
 
 	if (!try_lookup) {
 		const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
-		const struct lsa_ForestTrustDomainInfo *di = NULL;
 
 		if (state->routing_table == NULL) {
 			status = dsdb_trust_routing_table_load(policy_state->sam_ldb,
@@ -1830,9 +1829,19 @@ static NTSTATUS dcesrv_lsa_lookup_name_account(
 			}
 		}
 
-		tdo = dsdb_trust_domain_by_name(state->routing_table,
-						item->hints.namespace,
-						&di);
+		if (item->hints.domain != item->hints.namespace) {
+			/*
+			 * This means the client asked for an UPN,
+			 * we need to find the domain by toplevel
+			 * name in order to handle uPNSuffixes too.
+			 */
+			tdo = dsdb_trust_routing_by_name(state->routing_table,
+							 item->hints.namespace);
+		} else {
+			tdo = dsdb_trust_domain_by_name(state->routing_table,
+							item->hints.namespace,
+							NULL);
+		}
 		if (tdo == NULL) {
 			/*
 			 * The name is not resolvable at all...
