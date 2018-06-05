@@ -24,6 +24,8 @@
 struct lsa_TrustDomainInfoAuthInfo;
 struct lsa_TrustDomainInfoBuffer;
 struct trustAuthInOutBlob;
+struct ForestTrustInfo;
+struct lsa_ForestTrustInformation;
 
 NTSTATUS auth_blob_2_auth_info(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB incoming, DATA_BLOB outgoing,
@@ -36,5 +38,12 @@ NTSTATUS auth_info_2_trustauth_inout(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_info_2_auth_blob(TALLOC_CTX *mem_ctx,
 			       struct lsa_TrustDomainInfoAuthInfo *auth_info,
 			       DATA_BLOB *incoming, DATA_BLOB *outgoing);
+
+NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustInformation *lfti,
+				struct ForestTrustInfo **_fti);
+NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
+				  const struct ForestTrustInfo *fti,
+				  struct lsa_ForestTrustInformation **_lfti);
 
 #endif /* _LIBCLI_AUTH_UTIL_LSARPC_H_ */

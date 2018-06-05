@@ -2,4 +2,4 @@
 
 bld.SAMBA_SUBSYSTEM('UTIL_LSARPC',
                     source='util_lsarpc.c',
-                    deps='NDR_LSA NDR_DRSBLOBS');
+                    deps='samba-security NDR_LSA NDR_DRSBLOBS');
