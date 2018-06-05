@@ -1434,7 +1434,7 @@ static void irpc_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 	bool print_in = false;
 	bool print_out = false;
 
-	if (DEBUGLEVEL >= 11) {
+	if (CHECK_DEBUGLVLC(DBGC_RPC_PARSE, 11)) {
 		print_in = true;
 		print_out = true;
 	}
