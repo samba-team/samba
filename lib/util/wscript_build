@@ -186,6 +186,7 @@ else:
                   source='''
                          base64.c
                          dprintf.c
+                         dns_cmp.c
                          fsusage.c
                          genrand_util.c
                          getpass.c
