@@ -24,7 +24,8 @@ from samba import dsdb
 from samba import werror
 from samba import WERRORError
 import samba, ldb
-
+from samba.dcerpc.drsuapi import DRSUAPI_ATTID_name
+import re
 
 class drsException(Exception):
     """Base element for drs errors"""
@@ -213,6 +214,12 @@ class drs_Replicate(object):
                 (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0 and
                 self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10)
 
+    def process_chunk(self, level, ctr, schema, req_level, req, first_chunk):
+        '''Processes a single chunk of received replication data'''
+        # pass the replication into the py_net.c python bindings for processing
+        self.net.replicate_chunk(self.replication_state, level, ctr,
+                                 schema=schema, req_level=req_level, req=req)
+
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
                   schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False,
                   replica_flags=None, full_sync=True, sync_forced=False, more_flags=0):
@@ -309,14 +316,15 @@ class drs_Replicate(object):
 
         num_objects = 0
         num_links = 0
+        first_chunk = True
+
         while True:
             (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, req_level, req)
             if ctr.first_object is None and ctr.object_count != 0:
                 raise RuntimeError("DsGetNCChanges: NULL first_object with object_count=%u" % (ctr.object_count))
 
             try:
-                self.net.replicate_chunk(self.replication_state, level, ctr,
-                    schema=schema, req_level=req_level, req=req)
+                self.process_chunk(level, ctr, schema, req_level, req, first_chunk)
             except WERRORError as e:
                 # Check if retrying with the GET_TGT flag set might resolve this error
                 if self._should_retry_with_get_tgt(e.args[0], req):
@@ -324,11 +332,14 @@ class drs_Replicate(object):
                     print("Missing target object - retrying with DRS_GET_TGT")
                     req.more_flags |= drsuapi.DRSUAPI_DRS_GET_TGT
 
-                    # try sending the request again
+                    # try sending the request again (this has the side-effect
+                    # of causing the DC to restart the replication from scratch)
+                    first_chunk = True
                     continue
                 else:
                     raise e
 
+            first_chunk = False
             num_objects += ctr.object_count
 
             # Cope with servers that do not return level 6, so do not return any links
@@ -342,3 +353,58 @@ class drs_Replicate(object):
             req.highwatermark = ctr.new_highwatermark
 
         return (num_objects, num_links)
+
+
+# Handles the special case of creating a new clone of a DB, while also renaming
+# the entire DB's objects on the way through
+class drs_ReplicateRenamer(drs_Replicate):
+    '''Uses DRS replication to rename the entire DB'''
+
+    def __init__(self, binding_string, lp, creds, samdb, invocation_id,
+                 old_base_dn, new_base_dn):
+        super(drs_ReplicateRenamer, self).__init__(binding_string, lp, creds,
+                                                   samdb, invocation_id)
+        self.old_base_dn = old_base_dn
+        self.new_base_dn = new_base_dn
+
+    def rename_dn(self, dn_str):
+        '''Uses string substitution to replace the base DN'''
+        return re.sub('%s$' % self.old_base_dn, self.new_base_dn, dn_str)
+
+    def update_name_attr(self, base_obj):
+        '''Updates the 'name' attribute for the base DN object'''
+        for attr in base_obj.attribute_ctr.attributes:
+            if attr.attid == DRSUAPI_ATTID_name:
+                base_dn = ldb.Dn(self.samdb, base_obj.identifier.dn)
+                new_name = base_dn.get_rdn_value()
+                attr.value_ctr.values[0].blob = new_name.encode('utf-16-le')
+
+    def rename_top_level_object(self, first_obj):
+        '''Renames the first/top-level object in a partition'''
+        old_dn = first_obj.identifier.dn
+        first_obj.identifier.dn = self.rename_dn(first_obj.identifier.dn)
+        print("Renaming partition %s --> %s" % (old_dn,
+                                                first_obj.identifier.dn))
+
+        # we also need to fix up the 'name' attribute for the base DN,
+        # otherwise the RDNs won't match
+        if first_obj.identifier.dn == self.new_base_dn:
+            self.update_name_attr(first_obj)
+
+    def process_chunk(self, level, ctr, schema, req_level, req, first_chunk):
+        '''Processes a single chunk of received replication data'''
+
+        # we need to rename the NC in every chunk - this gets used in searches
+        # when applying the chunk
+        if ctr.naming_context:
+            ctr.naming_context.dn = self.rename_dn(ctr.naming_context.dn)
+
+        # rename the first object in each partition. This will cause every
+        # subsequent object in the partiton to be renamed as a side-effect
+        if first_chunk and ctr.object_count != 0:
+            self.rename_top_level_object(ctr.first_object.object)
+
+        # then do the normal repl processing to apply this chunk to our DB
+        super(drs_ReplicateRenamer, self).process_chunk(level, ctr, schema,
+                                                        req_level, req,
+                                                        first_chunk)
