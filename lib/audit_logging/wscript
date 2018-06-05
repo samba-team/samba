@@ -3,7 +3,7 @@
 import Logs, Options, Utils
 import samba3
 
-def set_options(opt):
+def options(opt):
     help = ("Build with JSON auth audit support (default=True). "
             "This requires the jansson devel package.")
 
