@@ -4515,8 +4515,7 @@ static NTSTATUS dcesrv_lsa_lsaRQueryForestTrustInformation(struct dcesrv_call_st
 		return status;
 	}
 
-	status = dsdb_trust_forest_info_to_lsa(mem_ctx, trust_fti,
-					       &trust_lfti);
+	status = trust_forest_info_to_lsa(mem_ctx, trust_fti, &trust_lfti);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4702,7 +4701,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 			goto done;
 		}
 
-		status = dsdb_trust_forest_info_to_lsa(tdo, fti, &lfti);
+		status = trust_forest_info_to_lsa(tdo, fti, &lfti);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -4739,8 +4738,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		goto done;
 	}
 
-	status = dsdb_trust_forest_info_from_lsa(mem_ctx, step2_lfti,
-						 &trust_fti);
+	status = trust_forest_info_from_lsa(mem_ctx, step2_lfti, &trust_fti);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
