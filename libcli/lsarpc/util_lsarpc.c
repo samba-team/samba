@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/dns_cmp.h"
 #include "../librpc/gen_ndr/ndr_drsblobs.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "libcli/lsarpc/util_lsarpc.h"
@@ -586,4 +587,89 @@ NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 
 	*_lfti = lfti;
 	return NT_STATUS_OK;
+}
+
+static int trust_forest_info_tln_match_internal(
+		const struct lsa_ForestTrustInformation *info,
+		enum lsa_ForestTrustRecordType type,
+		uint32_t disable_mask,
+		const char *tln)
+{
+	uint32_t i;
+
+	for (i = 0; i < info->count; i++) {
+		struct lsa_ForestTrustRecord *e = info->entries[i];
+		struct lsa_StringLarge *t = NULL;
+		int cmp;
+
+		if (e == NULL) {
+			continue;
+		}
+
+		if (e->type != type) {
+			continue;
+		}
+
+		if (e->flags & disable_mask) {
+			continue;
+		}
+
+		switch (type) {
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+			t = &e->forest_trust_data.top_level_name;
+			break;
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+			t = &e->forest_trust_data.top_level_name_ex;
+			break;
+		default:
+			break;
+		}
+
+		if (t == NULL) {
+			continue;
+		}
+
+		cmp = dns_cmp(tln, t->string);
+		switch (cmp) {
+		case DNS_CMP_MATCH:
+		case DNS_CMP_FIRST_IS_CHILD:
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+bool trust_forest_info_tln_match(
+		const struct lsa_ForestTrustInformation *info,
+		const char *tln)
+{
+	int m;
+
+	m = trust_forest_info_tln_match_internal(info,
+					LSA_FOREST_TRUST_TOP_LEVEL_NAME,
+					LSA_TLN_DISABLED_MASK,
+					tln);
+	if (m != -1) {
+		return true;
+	}
+
+	return false;
+}
+
+bool trust_forest_info_tln_ex_match(
+		const struct lsa_ForestTrustInformation *info,
+		const char *tln)
+{
+	int m;
+
+	m = trust_forest_info_tln_match_internal(info,
+					LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX,
+					0,
+					tln);
+	if (m != -1) {
+		return true;
+	}
+
+	return false;
 }
