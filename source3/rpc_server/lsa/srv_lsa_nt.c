@@ -30,6 +30,7 @@
 /* This is the implementation of the lsa server code. */
 
 #include "includes.h"
+#include "../lib/util/dns_cmp.h"
 #include "ntdomain.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_scompat.h"
@@ -4390,52 +4391,6 @@ NTSTATUS _lsa_lsaRQueryForestTrustInformation(struct pipes_struct *p,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-#define DNS_CMP_MATCH 0
-#define DNS_CMP_FIRST_IS_CHILD 1
-#define DNS_CMP_SECOND_IS_CHILD 2
-#define DNS_CMP_NO_MATCH 3
-
-/* this function assumes names are well formed DNS names.
- * it doesn't validate them */
-static int dns_cmp(const char *s1, size_t l1,
-		   const char *s2, size_t l2)
-{
-	const char *p1, *p2;
-	size_t t1, t2;
-	int cret;
-
-	if (l1 == l2) {
-		if (strcasecmp_m(s1, s2) == 0) {
-			return DNS_CMP_MATCH;
-		}
-		return DNS_CMP_NO_MATCH;
-	}
-
-	if (l1 > l2) {
-		p1 = s1;
-		p2 = s2;
-		t1 = l1;
-		t2 = l2;
-		cret = DNS_CMP_FIRST_IS_CHILD;
-	} else {
-		p1 = s2;
-		p2 = s1;
-		t1 = l2;
-		t2 = l1;
-		cret = DNS_CMP_SECOND_IS_CHILD;
-	}
-
-	if (p1[t1 - t2 - 1] != '.') {
-		return DNS_CMP_NO_MATCH;
-	}
-
-	if (strcasecmp_m(&p1[t1 - t2], p2) == 0) {
-		return cret;
-	}
-
-	return DNS_CMP_NO_MATCH;
-}
-
 static NTSTATUS make_ft_info(TALLOC_CTX *mem_ctx,
 			     struct lsa_ForestTrustInformation *lfti,
 			     struct ForestTrustInfo *fti)
@@ -4517,8 +4472,6 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 	const char *nb_name = NULL;
 	struct dom_sid *sid = NULL;
 	const char *tname = NULL;
-	size_t dns_len = 0;
-	size_t tlen = 0;
 	uint32_t new_fti_idx;
 	uint32_t i;
 	/* use always TDO type, until we understand when Xref can be used */
@@ -4546,12 +4499,10 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 
 		case FOREST_TRUST_TOP_LEVEL_NAME:
 			dns_name = nrec->data.name.string;
-			dns_len = nrec->data.name.size;
 			break;
 
 		case LSA_FOREST_TRUST_DOMAIN_INFO:
 			dns_name = nrec->data.info.dns_name.string;
-			dns_len = nrec->data.info.dns_name.size;
 			nb_name = nrec->data.info.netbios_name.string;
 			sid = &nrec->data.info.sid;
 			break;
@@ -4567,22 +4518,19 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 			case FOREST_TRUST_TOP_LEVEL_NAME:
 				ex_rule = false;
 				tname = trec->data.name.string;
-				tlen = trec->data.name.size;
 				break;
 			case FOREST_TRUST_TOP_LEVEL_NAME_EX:
 				ex_rule = true;
 				tname = trec->data.name.string;
-				tlen = trec->data.name.size;
 				break;
 			case FOREST_TRUST_DOMAIN_INFO:
 				ex_rule = false;
 				tname = trec->data.info.dns_name.string;
-				tlen = trec->data.info.dns_name.size;
 				break;
 			default:
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			ret = dns_cmp(dns_name, dns_len, tname, tlen);
+			ret = dns_cmp(dns_name, tname);
 			switch (ret) {
 			case DNS_CMP_MATCH:
 				/* if it matches exclusion,
