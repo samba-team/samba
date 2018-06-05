@@ -21,6 +21,7 @@
 #include "ldb.h"
 #include "../lib/util/util_ldb.h"
 #include "../lib/util/dns_cmp.h"
+#include "../libcli/lsarpc/util_lsarpc.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
@@ -2834,7 +2835,7 @@ NTSTATUS dsdb_trust_routing_table_load(struct ldb_context *sam_ctx,
 				continue;
 			}
 
-			status = dsdb_trust_forest_info_to_lsa(d, fti, &d->fti);
+			status = trust_forest_info_to_lsa(d, fti, &d->fti);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(frame);
 				return status;
