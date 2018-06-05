@@ -798,7 +798,7 @@ class cmd_domain_demote(Command):
                 raise CommandError("Unable to search for servers")
 
             if (len(res) == 1):
-                raise CommandError("You are the latest server in the domain")
+                raise CommandError("You are the last server in the domain")
 
             server = None
             for e in res:
