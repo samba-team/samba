@@ -1047,3 +1047,23 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
+
+/*
+  see if two DNS names are the same
+ */
+bool dns_name_equal(const char *name1, const char *name2)
+{
+	size_t len1 = strlen(name1);
+	size_t len2 = strlen(name2);
+
+	if (len1 > 0 && name1[len1 - 1] == '.') {
+		len1--;
+	}
+	if (len2 > 0 && name2[len2 - 1] == '.') {
+		len2--;
+	}
+	if (len1 != len2) {
+		return false;
+	}
+	return strncasecmp(name1, name2, len1) == 0;
+}

@@ -38,7 +38,7 @@
 #include <popt.h>
 #include "lib/util/dlinklist.h"
 #include "dlz_minimal.h"
-#include "dns_server/dnsserver_common.h"
+#include "dnsserver_common.h"
 
 struct b9_options {
 	const char *url;
@@ -1479,25 +1479,6 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 
 	talloc_free(tmp_ctx);
 	return ISC_TRUE;
-}
-
-/*
-  see if two DNS names are the same
- */
-static bool dns_name_equal(const char *name1, const char *name2)
-{
-	size_t len1 = strlen(name1);
-	size_t len2 = strlen(name2);
-	if (name1[len1 - 1] == '.') {
-		len1--;
-	}
-	if (name2[len2 - 1] == '.') {
-		len2--;
-	}
-	if (len1 != len2) {
-		return false;
-	}
-	return strncasecmp_m(name1, name2, len1) == 0;
 }
 
 /*

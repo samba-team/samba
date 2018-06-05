@@ -190,7 +190,6 @@ char *dns_split_node_name(TALLOC_CTX *mem_ctx, const char *node_name, const char
 
 int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m2,
 			char *search_name);
-bool dns_name_equal(const char *name1, const char *name2);
 bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRecord *rec2);
 
 void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,

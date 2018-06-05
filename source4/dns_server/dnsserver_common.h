@@ -68,6 +68,7 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
 			  const char *name,
 			  struct ldb_dn **_dn);
+bool dns_name_equal(const char *name1, const char *name2);
 
 /*
  * For this routine, base_dn is generally NULL.  The exception comes
