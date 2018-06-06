@@ -798,7 +798,7 @@ class cmd_domain_demote(Command):
                 raise CommandError("Unable to search for servers")
 
             if (len(res) == 1):
-                raise CommandError("You are the latest server in the domain")
+                raise CommandError("You are the last server in the domain")
 
             server = None
             for e in res:
@@ -1027,6 +1027,10 @@ class cmd_domain_demote(Command):
                                     "%s,%s" % (s, str(newdn))))
             except ldb.LdbError as l:
                 pass
+
+        # get dns host name for target server to demote, remove dns references
+        remove_dc.remove_dns_references(remote_samdb, logger, samdb.host_dns_name(),
+                                        ignore_no_name=True)
 
         self.errf.write("Demote successful\n")
 
