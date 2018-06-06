@@ -6,7 +6,7 @@ bld.SAMBA_MODULE('TORTURE_GPO',
         apply.c
         ''',
 	subsystem='smbtorture',
-	deps='torture samba-util-core ldb',
+	deps='torture samba-util-core ldb gpext',
 	internal_module=True,
 	autoproto='proto.h',
 	init_function='torture_gpo_init'

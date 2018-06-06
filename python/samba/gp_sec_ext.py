@@ -16,9 +16,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os.path
-from gpclass import gp_ext_setter, gp_inf_ext
+from samba.gpclass import gp_ext_setter, gp_inf_ext
+from samba.auth import system_session
+try:
+    from samba.samdb import SamDB
+except:
+    SamDB = None
 
 class inf_to_kdc_tdb(gp_ext_setter):
+    def __init__(self, logger, gp_db, lp, attribute, val, ldb):
+        super(inf_to_kdc_tdb, self).__init__(logger, gp_db, lp, attribute, val)
+        self.ldb = ldb
+
     def mins_to_hours(self):
         return '%d' % (int(self.val)/60)
 
@@ -52,6 +61,10 @@ class inf_to_ldb(gp_ext_setter):
     to a GUID), hashmaps it to the Samba parameter, which then uses an ldb
     object to update the parameter to Samba4. Not registry oriented whatsoever.
     '''
+
+    def __init__(self, logger, gp_db, lp, attribute, val, ldb):
+        super(inf_to_ldb, self).__init__(logger, gp_db, lp, attribute, val)
+        self.ldb = ldb
 
     def ch_minPwdAge(self, val):
         old_val = self.ldb.get_minPwdAge()
@@ -116,18 +129,18 @@ class gp_sec_ext(gp_inf_ext):
     def __str__(self):
         return "Security GPO extension"
 
-    def list(self, rootpath):
-        return os.path.join(rootpath,
-            "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
-
-    def listmachpol(self, rootpath):
-        return os.path.join(rootpath, "Machine/Registry.pol")
-
-    def listuserpol(self, rootpath):
-        return os.path.join(rootpath, "User/Registry.pol")
-
-    def apply_map(self):
-        return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
+        if SamDB:
+            try:
+                ldb = SamDB(self.lp.samdb_url(),
+                            session_info=system_session(),
+                            credentials=self.creds,
+                            lp=self.lp)
+            except:
+                return
+        else:
+            return
+        apmp = {"System Access": {"MinimumPasswordAge": ("minPwdAge",
                                                          inf_to_ldb),
                                   "MaximumPasswordAge": ("maxPwdAge",
                                                          inf_to_ldb),
@@ -150,4 +163,59 @@ class gp_sec_ext(gp_inf_ext):
                                     ),
                                    }
                }
+        inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
+        for gpo in deleted_gpo_list:
+            self.gp_db.set_guid(gpo[0])
+            for section in gpo[1].keys():
+                current_section = apmp.get(section)
+                if not current_section:
+                    continue
+                for key, value in gpo[1][section].items():
+                    setter = None
+                    for _, tup in current_section.items():
+                        if tup[0] == key:
+                            setter = tup[1]
+                    if setter:
+                        value = value.encode('ascii', 'ignore')
+                        setter(self.logger, self.gp_db, self.lp, key,
+                               value, ldb).delete()
+                        self.gp_db.delete(section, key)
+                        self.gp_db.commit()
+
+        for gpo in changed_gpo_list:
+            if gpo.file_sys_path:
+                self.gp_db.set_guid(gpo.name)
+                path = gpo.file_sys_path.split('\\sysvol\\')[-1]
+                inf_conf = self.parse(os.path.join(path, inf_file))
+                if not inf_conf:
+                    continue
+                for section in inf_conf.sections():
+                    current_section = apmp.get(section)
+                    if not current_section:
+                        continue
+                    for key, value in inf_conf.items(section):
+                        if current_section.get(key):
+                            (att, setter) = current_section.get(key)
+                            value = value.encode('ascii', 'ignore')
+                            setter(self.logger, self.gp_db, self.lp, att,
+                                   value, ldb).update_samba()
+                            self.gp_db.commit()
+
+if __name__ == "__main__":
+    from samba import gpo
+    import optparse
+    from samba import getopt as options
+    guid = '{827D319E-6EAC-11D2-A4EA-00C04F79F83A}'
+    name = 'gp_sec_ext'
+    path = os.path.abspath(__file__)
+
+    parser = optparse.OptionParser('%s [options]' % name)
+    sambaopts = options.SambaOptions(parser)
+    parser.add_option_group(sambaopts)
+
+    (opts, args) = parser.parse_args()
+    lp = sambaopts.get_loadparm()
+
+    gpo.register_gp_extension(guid, name, path, smb_conf=lp.configfile,
+                              machine=True, user=False)
 

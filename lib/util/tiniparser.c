@@ -342,6 +342,7 @@ struct tiniparser_dictionary *tiniparser_load(const char *filename)
 			false,
 			section_parser,
 			value_parser,
+			ASCII,
 			d);
 	fclose(fp);
 	if (ret == false) {

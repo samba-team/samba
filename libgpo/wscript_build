@@ -3,7 +3,7 @@
 bld.SAMBA3_LIBRARY('gpext',
                    source='''gpext/gpext.c gpo_util.c gpo_ldap.c gpo_ini.c
                            gpo_fetch.c gpo_filesync.c
-                           gpo_sec.c gpo_reg.c''',
+                           gpo_sec.c gpo_reg.c register.c''',
                    deps='talloc ads TOKEN_UTIL auth',
                    private_library=True)
 

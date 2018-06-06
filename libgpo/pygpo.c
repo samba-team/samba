@@ -28,6 +28,12 @@
 #include "auth/credentials/pycredentials.h"
 #include "libcli/util/pyerrors.h"
 #include "python/py3compat.h"
+#include "libgpo/gpo_proto.h"
+#include "registry.h"
+#include "registry/reg_api.h"
+#include "../libcli/registry/util_reg.h"
+#include "../libgpo/gpext/gpext.h"
+#include "register.h"
 
 /* A Python C API module to use LIBGPO */
 
@@ -296,6 +302,193 @@ static PyObject* py_ads_connect(ADS *self)
 /* Parameter mapping and functions for the GP_EXT struct */
 void initgpo(void);
 
+static PyTypeObject ads_ADSType;
+
+static PyObject *py_check_refresh_gpo_list(PyObject * self,
+					   PyObject * args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	ADS *ads = NULL;
+	const char *cache_dir = NULL;
+	struct GROUP_POLICY_OBJECT *gpo_front = NULL;
+	struct GROUP_POLICY_OBJECT *gpo_ptr = NULL;
+	PyObject *gpo_list = NULL;
+	PyObject *gpo_obj = NULL;
+	NTSTATUS status;
+	PyObject *ret = NULL;
+	Py_ssize_t gp_list_len = 0;
+	int success = 0;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "OO|s", &ads, &gpo_list, &cache_dir)) {
+		goto out;
+	}
+	success = PyObject_TypeCheck(gpo_list, &PyList_Type);
+	if (!success) {
+		PyErr_SetString(PyExc_TypeError, "A gpo list was expected");
+		goto out;
+	}
+	gp_list_len = PyList_Size(gpo_list);
+	if (gp_list_len == 0) {
+		ret = Py_True;
+		goto out;
+	}
+	for (i = 0; i < gp_list_len; i++) {
+		struct GROUP_POLICY_OBJECT *gpo = NULL;
+
+		gpo_obj = PyList_GetItem(gpo_list, i);
+		if (!gpo_obj) {
+			goto out;
+		}
+
+		success = PyObject_TypeCheck(gpo_obj, &GPOType);
+		if (!success) {
+			PyErr_SetString(PyExc_TypeError,
+					"A gpo type was expected");
+			goto out;
+		}
+		gpo = (struct GROUP_POLICY_OBJECT *)pytalloc_get_ptr(gpo_obj);
+		if (gpo_ptr) {
+			gpo_ptr->next = talloc_memdup(frame, gpo,
+				sizeof(struct GROUP_POLICY_OBJECT));
+			gpo_ptr->next->prev = gpo_ptr;
+			gpo_ptr = gpo_ptr->next;
+		} else {
+			gpo_ptr = talloc_memdup(frame, gpo,
+				sizeof(struct GROUP_POLICY_OBJECT));
+			gpo_front = gpo_ptr;
+		}
+	}
+	gpo_ptr->next = NULL;
+
+	success = PyObject_TypeCheck(ads, &ads_ADSType);
+	if (!success) {
+		PyErr_SetString(PyExc_TypeError, "An ADS type was expected");
+		goto out;
+	}
+
+	if (!cache_dir) {
+		cache_dir = cache_path(GPO_CACHE_DIR);
+		if (!cache_dir) {
+			PyErr_SetString(PyExc_MemoryError,
+				"Failed to determine gpo cache dir");
+			goto out;
+		}
+	}
+
+	status = check_refresh_gpo_list(ads->ads_ptr, frame, cache_dir, 0,
+					gpo_front);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		goto out;
+	}
+
+	ret = Py_True;
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+static PyObject *py_list_gp_extensions(PyObject * self, PyObject * args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	PyObject *ret = NULL;
+	const char *smb_conf = NULL;
+	struct gplist_dict *list = NULL;
+
+	if (!PyArg_ParseTuple(args, "|s", &smb_conf)) {
+		return NULL;
+	}
+
+	if (!list_gp_extensions(frame, smb_conf, &list)) {
+		goto out;
+	}
+
+	ret = PyDict_New();
+	if (ret == NULL) {
+		goto out;
+	}
+
+	for (; list != NULL; list = list->next) {
+		PyObject *val;
+		PyObject *subitem = PyDict_New();
+		if (subitem == NULL) {
+			goto out;
+		}
+
+		if (list->module_path) {
+			val = PyStr_FromString(list->module_path);
+			PyDict_SetItemString(subitem, "DllName", val);
+		}
+		if (list->gp_ext_cls) {
+			val = PyStr_FromString(list->gp_ext_cls);
+			PyDict_SetItemString(subitem, "ProcessGroupPolicy", val);
+		}
+		PyDict_SetItemString(subitem, "MachinePolicy",
+				     list->machine ? Py_True : Py_False);
+		PyDict_SetItemString(subitem, "UserPolicy",
+				     list->user ? Py_True : Py_False);
+
+		PyDict_SetItemString(ret, list->guid, subitem);
+	}
+
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+static PyObject *py_unregister_gp_extension(PyObject * self, PyObject * args)
+{
+	const char *guid_name = NULL;
+	PyObject *ret = Py_False;
+	int cret = 0;
+	const char *smb_conf = NULL;
+
+	if (!PyArg_ParseTuple(args, "s|s", &guid_name, &smb_conf)) {
+		return NULL;
+	}
+
+	cret = unregister_gp_extension(guid_name, smb_conf);
+	if (cret == 0) {
+		goto out;
+	}
+
+	ret = Py_True;
+out:
+	return ret;
+}
+
+static PyObject *py_register_gp_extension(PyObject * self, PyObject *args,
+					  PyObject *kwds)
+{
+	const char *module_path = NULL;
+	const char *guid_name = NULL;
+	PyObject *ret = NULL;
+	int cret = 0;
+	const char *smb_conf = NULL;
+	const char *gp_ext_cls = NULL;
+	int machine = 1, user = 1;
+	static const char *kwlist[] = {"guid", "gp_ext_cls", "path",
+				       "smb_conf", "machine", "user", NULL};
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sss|sii",
+					 discard_const_p(char *, kwlist),
+					 &guid_name, &gp_ext_cls, &module_path,
+					 &smb_conf, &machine, &user)) {
+		return NULL;
+	}
+
+	cret = register_gp_extension(guid_name, gp_ext_cls, module_path,
+				     smb_conf, machine, user);
+	if (cret == 0) {
+		goto out;
+	}
+
+	ret = Py_True;
+out:
+	return ret;
+}
+
 /* Global methods aka do not need a special pyobject type */
 static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self,
 					       PyObject * args)
@@ -500,8 +693,17 @@ static PyTypeObject ads_ADSType = {
 };
 
 static PyMethodDef py_gpo_methods[] = {
+	{"register_gp_extension", (PyCFunction)py_register_gp_extension,
+		METH_VARARGS | METH_KEYWORDS, NULL},
+	{"unregister_gp_extension", (PyCFunction)py_unregister_gp_extension,
+		METH_VARARGS, NULL},
+	{"list_gp_extensions", (PyCFunction)py_list_gp_extensions,
+		METH_VARARGS, NULL},
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
+		METH_VARARGS, NULL},
+	{"check_refresh_gpo_list",
+		(PyCFunction)py_check_refresh_gpo_list,
 		METH_VARARGS, NULL},
 	{NULL}
 };

@@ -1,0 +1,190 @@
+/*
+   Unix SMB/CIFS implementation.
+   Copyright (C) David Mulder <dmulder@suse.com> 2018
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+#include "includes.h"
+#include "version.h"
+#include "gpo.h"
+#include "ads.h"
+#include "secrets.h"
+#include "../libds/common/flags.h"
+#include "libgpo/gpo_proto.h"
+#include "registry.h"
+#include "registry/reg_api.h"
+#include "../libcli/registry/util_reg.h"
+#include "../libgpo/gpext/gpext.h"
+#include "registry/reg_objects.h"
+#include "libgpo/register.h"
+
+static void get_gp_registry_context(TALLOC_CTX *ctx,
+				    uint32_t desired_access,
+				    struct gp_registry_context **reg_ctx,
+				    const char *smb_conf)
+{
+	struct security_token *token;
+	WERROR werr;
+
+	lp_load_initial_only(smb_conf ? smb_conf : get_dyn_CONFIGFILE());
+
+	token = registry_create_system_token(ctx);
+	if (!token) {
+		return;
+	}
+	werr = gp_init_reg_ctx(ctx, KEY_WINLOGON_GPEXT_PATH, desired_access,
+			       token, reg_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		return;
+	}
+}
+
+int list_gp_extensions(TALLOC_CTX *ctx,
+		       const char *smb_conf,
+		       struct gplist_dict **list)
+{
+	struct gp_registry_context *reg_ctx = NULL;
+	WERROR werr;
+	struct registry_key *parent;
+	int i, count = 0;
+	struct gplist_dict *itr = NULL;
+	int ret = 0;
+
+	get_gp_registry_context(ctx, REG_KEY_READ, &reg_ctx, smb_conf);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	parent = reg_ctx->curr_key;
+	count = regsubkey_ctr_numkeys(parent->subkeys);
+
+	if (count > 0) {
+		*list = talloc_zero(ctx, struct gplist_dict);
+		itr = *list;
+	}
+
+	for (i = count-1; i >= 0; i--) {
+		struct registry_key *subkey;
+		char *subkey_name = NULL;
+		const char *subkey_val = NULL;
+		uint32_t subkey_dword;
+
+		subkey_name = regsubkey_ctr_specific_key(parent->subkeys, i);
+		werr = gp_read_reg_subkey(ctx, reg_ctx,
+					  subkey_name, &subkey);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto out;
+		}
+		itr->guid = talloc_strdup(*list, subkey_name);
+		werr = gp_read_reg_val_sz(ctx, subkey,
+					  "DllName", &subkey_val);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->module_path = talloc_strdup(*list, subkey_val);
+		}
+		werr = gp_read_reg_val_sz(ctx, subkey,
+					  "ProcessGroupPolicy", &subkey_val);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->gp_ext_cls = talloc_strdup(*list, subkey_val);
+		}
+		werr = gp_read_reg_val_dword(ctx, subkey,
+					     "NoMachinePolicy", &subkey_dword);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->machine = !subkey_dword;
+		}
+		werr = gp_read_reg_val_dword(ctx, subkey,
+					     "NoUserPolicy", &subkey_dword);
+		if (W_ERROR_IS_OK(werr)) {
+			itr->user = !subkey_dword;
+		}
+		if (i > 0) {
+			itr->next = talloc_zero(*list, struct gplist_dict);
+			itr = itr->next;
+		}
+	}
+
+	ret = 1;
+out:
+	return ret;
+}
+
+int unregister_gp_extension(const char *guid_name,
+			    const char *smb_conf)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct gp_registry_context *reg_ctx = NULL;
+	WERROR werr;
+	int ret = 0;
+
+	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx, smb_conf);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	werr = reg_deletekey_recursive(reg_ctx->curr_key, guid_name);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+
+	ret = 1;
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+int register_gp_extension(const char *guid_name,
+			  const char *gp_ext_cls,
+			  const char *module_path,
+			  const char *smb_conf,
+			  int machine,
+			  int user)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	WERROR werr;
+	struct gp_registry_context *reg_ctx = NULL;
+	struct registry_key *key = NULL;
+	int ret = 0;
+
+	get_gp_registry_context(frame, REG_KEY_WRITE, &reg_ctx, smb_conf);
+	if (!reg_ctx) {
+		goto out;
+	}
+
+	werr = gp_store_reg_subkey(frame, guid_name,
+				   reg_ctx->curr_key, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+	werr = gp_store_reg_val_sz(frame, key, "DllName", module_path);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+	werr = gp_store_reg_val_sz(frame, key, "ProcessGroupPolicy",
+				   gp_ext_cls);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+	werr = gp_store_reg_val_dword(frame, key, "NoMachinePolicy", !machine);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+	werr = gp_store_reg_val_dword(frame, key, "NoUserPolicy", !user);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+
+	ret = 1;
+out:
+	TALLOC_FREE(frame);
+	return ret;
+}

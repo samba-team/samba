@@ -81,6 +81,34 @@
 #include "replace.h"
 #include "lib/util/samba_util.h"
 #include "tini.h"
+#include <wchar.h>
+
+static FILE* open_encoding(const char *filename, enum tini_encoding *encoding)
+{
+	FILE *f = NULL, *o;
+	int c[2] = { 0 };
+
+	o = fopen(filename, "r");
+	if (o == NULL) {
+		return NULL;
+	}
+	c[0] = fgetc(o);
+	c[1] = fgetc(o);
+	fclose(o);
+
+	if (c[0] == 0xFF && c[1] == 0xFE) {
+		f = fopen(filename, "r,ccs=UTF16LE");
+		if (f != NULL) {
+			fgetwc(f);
+		}
+		*encoding = UTF16LE;
+	} else {
+		f = fopen(filename, "r");
+		*encoding = ASCII;
+	}
+
+	return f;
+}
 
 bool pm_process(const char *filename,
 		bool (*sfunc)(const char *section, void *private_data),
@@ -90,13 +118,14 @@ bool pm_process(const char *filename,
 {
 	FILE *f;
 	bool ret;
+	enum tini_encoding encoding;
 
-	f = fopen(filename, "r");
+	f = open_encoding(filename, &encoding);
 	if (f == NULL) {
 		return false;
 	}
 
-	ret = tini_parse(f, false, sfunc, pfunc, private_data);
+	ret = tini_parse(f, false, sfunc, pfunc, encoding, private_data);
 
 	fclose(f);
 
@@ -113,13 +142,15 @@ bool pm_process_with_flags(const char *filename,
 {
 	FILE *f;
 	bool ret;
+	enum tini_encoding encoding;
 
-	f = fopen(filename, "r");
+	f = open_encoding(filename, &encoding);
 	if (f == NULL) {
 		return false;
 	}
 
-	ret = tini_parse(f, allow_empty_values, sfunc, pfunc, private_data);
+	ret = tini_parse(f, allow_empty_values, sfunc, pfunc, encoding,
+			 private_data);
 
 	fclose(f);
 

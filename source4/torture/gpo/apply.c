@@ -27,6 +27,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "torture/gpo/proto.h"
 #include <unistd.h>
+#include "libgpo/register.h"
 
 struct torture_suite *gpo_apply_suite(TALLOC_CTX *ctx)
 {
@@ -77,6 +78,9 @@ PasswordComplexity = %d\n\
 "
 #define GPTINI "addom.samba.example.com/Policies/"\
 	       "{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI"
+#define GP_SEC_GUID "{827D319E-6EAC-11D2-A4EA-00C04F79F83A}"
+#define GP_SEC_GP_EXT "./bin/python/samba/gp_sec_ext.py"
+#define GP_SEC_CLS "gp_sec_ext"
 
 bool torture_gpo_system_access_policies(struct torture_context *tctx)
 {
@@ -117,6 +121,10 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 	gpo_update_cmd = lpcfg_gpo_update_command(tctx->lp_ctx);
 	torture_assert(tctx, gpo_update_cmd && gpo_update_cmd[0],
 		       "Failed to fetch the gpo update command");
+
+	/* Enable the gp_ext */
+	register_gp_extension(GP_SEC_GUID, GP_SEC_CLS, GP_SEC_GP_EXT,
+			      tctx->lp_ctx->szConfigFile, 1, 0);
 
 	/* Open and read the samba db and store the initial password settings */
 	samdb = samdb_connect(ctx,
