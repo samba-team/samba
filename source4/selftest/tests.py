@@ -1053,8 +1053,14 @@ for env in [ "ktest", "ad_member", "ad_dc_no_ntlm" ]:
 
 # Demote the vampire DC, it must be the last test each DC, before the dbcheck
 for env in ['vampire_dc', 'promoted_dc', 'rodc']:
-    plantestsuite("samba4.blackbox.samba_tool_demote(%s)" % env, env, [os.path.join(samba4srcdir, "utils/tests/test_demote.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', '$DC_SERVER', '$PREFIX/%s' % env, smbclient4])
-
+    planoldpythontestsuite(env, "samba.tests.samba_tool.demote",
+                           name="samba.tests.samba_tool.demote",
+                           environ={
+                               'CONFIGFILE': '$PREFIX/%s/etc/smb.conf' % env
+                           },
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           extra_path=[os.path.join(srcdir(), "samba/python")]
+                           )
 # TODO: Verifying the databases really should be a part of the
 # environment teardown.
 # check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
