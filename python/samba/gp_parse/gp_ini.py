@@ -19,6 +19,7 @@
 
 import codecs
 import collections
+import re
 
 from ConfigParser import ConfigParser
 from xml.etree.ElementTree import Element, SubElement
@@ -103,6 +104,20 @@ class GPIniParser(GPParser):
 
 class GPTIniParser(GPIniParser):
     encoding = 'utf-8'
+
+
+class GPScriptsIniParser(GPIniParser):
+    def build_xml_parameter(self, section_xml, section, key_ini, val_ini):
+        parent_return = super(GPScriptsIniParser,
+                              self).build_xml_parameter(section_xml, section,
+                                                        key_ini, val_ini)
+
+        cmdline = re.match('\\d+CmdLine$', key_ini)
+        if cmdline is not None:
+            value = parent_return.find('Value')
+            value.attrib['network_path'] = 'TRUE'
+
+        return parent_return
 
 
 class GPFDeploy1IniParser(GPIniParser):
