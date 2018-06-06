@@ -49,10 +49,8 @@
 #define TRANSACTION_HR_TAG "DSDB Transaction"
 #define TRANSACTION_MAJOR 1
 #define TRANSACTION_MINOR 0
-/*
- * Currently we only log roll backs and prepare commit failures
- */
-#define TRANSACTION_LOG_LVL 5
+#define TRANSACTION_LOG_FAILURE_LVL 5
+#define TRANSACTION_LOG_COMPLETION_LVL 10
 
 #define REPLICATION_JSON_TYPE "replicatedUpdate"
 #define REPLICATION_HR_TAG "Replicated Update"
@@ -91,6 +89,11 @@ struct audit_context {
 	 * Unique transaction id for the current transaction
 	 */
 	struct GUID transaction_guid;
+	/*
+	 * Transaction start time, used to calculate the transaction
+	 * duration.
+	 */
+	struct timeval transaction_start;
 };
 
 /*
@@ -360,12 +363,15 @@ static struct json_object password_change_json(
  *
  * @param action a one word description of the event/action
  * @param transaction_id the GUID identifying the current transaction.
+ * @param status the status code returned by the operation
+ * @param duration the duration of the operation.
  *
  * @return a JSON object detailing the event
  */
 static struct json_object transaction_json(
 	const char *action,
-	struct GUID *transaction_id)
+	struct GUID *transaction_id,
+	const int64_t duration)
 {
 	struct json_object wrapper;
 	struct json_object audit;
@@ -374,6 +380,8 @@ static struct json_object transaction_json(
 	json_add_version(&audit, TRANSACTION_MAJOR, TRANSACTION_MINOR);
 	json_add_string(&audit, "action", action);
 	json_add_guid(&audit, "transactionId", transaction_id);
+	json_add_int(&audit, "duration", duration);
+
 
 	wrapper = json_new_object();
 	json_add_timestamp(&wrapper);
@@ -396,6 +404,7 @@ static struct json_object transaction_json(
  */
 static struct json_object commit_failure_json(
 	const char *action,
+	const int64_t duration,
 	int status,
 	const char *reason,
 	struct GUID *transaction_id)
@@ -407,6 +416,7 @@ static struct json_object commit_failure_json(
 	json_add_version(&audit, TRANSACTION_MAJOR, TRANSACTION_MINOR);
 	json_add_string(&audit, "action", action);
 	json_add_guid(&audit, "transactionId", transaction_id);
+	json_add_int(&audit, "duration", duration);
 	json_add_int(&audit, "statusCode", status);
 	json_add_string(&audit, "status", ldb_strerror(status));
 	json_add_string(&audit, "reason", reason);
@@ -719,13 +729,14 @@ static char *replicated_update_human_readable(
  *
  * @param mem_ctx The talloc context owning the returned string.
  * @param action a one word description of the event/action
- * @param transaction_id the GUID identifying the current transaction.
+ * @param duration the duration of the transaction.
  *
  * @return the log entry
  */
 static char *transaction_human_readable(
 	TALLOC_CTX *mem_ctx,
-	const char* action)
+	const char* action,
+	const int64_t duration)
 {
 	const char *timestamp = NULL;
 	char *log_entry = NULL;
@@ -736,9 +747,10 @@ static char *transaction_human_readable(
 
 	log_entry = talloc_asprintf(
 		mem_ctx,
-		"[%s] at [%s]",
+		"[%s] at [%s] duration [%ld]",
 		action,
-		timestamp);
+		timestamp,
+		duration);
 
 	TALLOC_FREE(ctx);
 	return log_entry;
@@ -759,6 +771,7 @@ static char *transaction_human_readable(
 static char *commit_failure_human_readable(
 	TALLOC_CTX *mem_ctx,
 	const char *action,
+	const int64_t duration,
 	int status,
 	const char *reason)
 {
@@ -771,9 +784,10 @@ static char *commit_failure_human_readable(
 
 	log_entry = talloc_asprintf(
 		mem_ctx,
-		"[%s] at [%s] status [%d] reason [%s]",
+		"[%s] at [%s] duration [%ld] status [%d] reason [%s]",
 		action,
 		timestamp,
+		duration,
 		status,
 		reason);
 
@@ -976,40 +990,47 @@ static void log_operation(
  * and send over the message bus.
  *
  * @param module the ldb_module
- * @param  action the transaction event i.e. begin, commit, roll back.
+ * @param action the transaction event i.e. begin, commit, roll back.
+ * @param log_level the logging level
  *
  */
 static void log_transaction(
 	struct ldb_module *module,
-	const char *action)
+	const char *action,
+	int log_level)
 {
 
 	struct audit_context *ac =
 		talloc_get_type(ldb_module_get_private(module),
 				struct audit_context);
+	const struct timeval now = timeval_current();
+	const int64_t duration = usec_time_diff(&now, &ac->transaction_start);
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT, TRANSACTION_LOG_LVL)) {
+	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT, log_level)) {
 		char* entry = NULL;
-		entry = transaction_human_readable(ctx, action);
+		entry = transaction_human_readable(ctx, action, duration);
 		audit_log_human_text(
 			TRANSACTION_HR_TAG,
 			entry,
 			DBGC_DSDB_TXN_AUDIT,
-			TRANSACTION_LOG_LVL);
+			log_level);
 		TALLOC_FREE(entry);
 	}
 #ifdef HAVE_JANSSON
-	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, TRANSACTION_LOG_LVL) ||
+	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, log_level) ||
 		(ac->msg_ctx && ac->send_samdb_events)) {
 		struct json_object json;
-		json = transaction_json(action, &ac->transaction_guid);
+		json = transaction_json(
+			action,
+			&ac->transaction_guid,
+			duration);
 		audit_log_json(
 			TRANSACTION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_TXN_AUDIT_JSON,
-			TRANSACTION_LOG_LVL);
+			log_level);
 		if (ac->send_samdb_events) {
 			audit_message_send(
 				ac->msg_ctx,
@@ -1044,29 +1065,35 @@ static void log_commit_failure(
 		talloc_get_type(ldb_module_get_private(module),
 				struct audit_context);
 	const char* reason = dsdb_audit_get_ldb_error_string(module, status);
+	const int log_level = TRANSACTION_LOG_FAILURE_LVL;
+	const struct timeval now = timeval_current();
+	const int64_t duration = usec_time_diff(&now, &ac->transaction_start);
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT, TRANSACTION_LOG_LVL)) {
+	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT, log_level)) {
+
 		char* entry = NULL;
 		entry = commit_failure_human_readable(
 			ctx,
 			action,
+			duration,
 			status,
 			reason);
 		audit_log_human_text(
 			TRANSACTION_HR_TAG,
 			entry,
 			DBGC_DSDB_TXN_AUDIT,
-			TRANSACTION_LOG_LVL);
+			TRANSACTION_LOG_FAILURE_LVL);
 		TALLOC_FREE(entry);
 	}
 #ifdef HAVE_JANSSON
-	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, TRANSACTION_LOG_LVL) ||
+	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, log_level) ||
 		(ac->msg_ctx && ac->send_samdb_events)) {
 		struct json_object json;
 		json = commit_failure_json(
 			action,
+			duration,
 			status,
 			reason,
 			&ac->transaction_guid);
@@ -1074,7 +1101,7 @@ static void log_commit_failure(
 			TRANSACTION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_TXN_AUDIT_JSON,
-			TRANSACTION_LOG_LVL);
+			log_level);
 		if (ac->send_samdb_events) {
 			audit_message_send(ac->msg_ctx,
 					   DSDB_EVENT_NAME,
@@ -1361,10 +1388,12 @@ static int log_start_transaction(struct ldb_module *module)
 
 	/*
 	 * We do not log transaction begins
-	 * however we do generate a new transaction_id
+	 * however we do generate a new transaction_id and record the start
+	 * time so that we can log the transaction duration.
 	 *
 	 */
 	ac->transaction_guid = GUID_random();
+	ac->transaction_start = timeval_current();
 	return ldb_next_start_trans(module);
 }
 
@@ -1410,18 +1439,20 @@ static int log_end_transaction(struct ldb_module *module)
 				struct audit_context);
 	int ret = 0;
 
+
+	ret = ldb_next_end_trans(module);
+	if (ret == LDB_SUCCESS) {
+		log_transaction(
+			module,
+			"commit",
+			TRANSACTION_LOG_COMPLETION_LVL);
+	} else {
+		log_commit_failure(module, "commit", ret);
+	}
 	/*
 	 * Clear the transaction id inserted by log_start_transaction
 	 */
 	memset(&ac->transaction_guid, 0, sizeof(struct GUID));
-
-	ret = ldb_next_end_trans(module);
-	if (ret != LDB_SUCCESS) {
-		/*
-		 * We currently only log commit failures
-		 */
-		log_commit_failure(module, "commit", ret);
-	}
 	return ret;
 }
 
@@ -1441,7 +1472,7 @@ static int log_del_transaction(struct ldb_module *module)
 		talloc_get_type(ldb_module_get_private(module),
 				struct audit_context);
 
-	log_transaction(module, "rollback");
+	log_transaction(module, "rollback", TRANSACTION_LOG_FAILURE_LVL);
 	memset(&ac->transaction_guid, 0, sizeof(struct GUID));
 	return ldb_next_del_trans(module);
 }

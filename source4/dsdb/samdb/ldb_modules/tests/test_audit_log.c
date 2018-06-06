@@ -1016,7 +1016,7 @@ static void test_transaction_json(void **state)
 	GUID_from_string(GUID, &guid);
 
 	before = time(NULL);
-	json = transaction_json("delete", &guid);
+	json = transaction_json("delete", &guid, 10000099);
 
 	assert_int_equal(3, json_object_size(json.root));
 
@@ -1033,7 +1033,7 @@ static void test_transaction_json(void **state)
 	audit = json_object_get(json.root, "dsdbTransaction");
 	assert_non_null(audit);
 	assert_true(json_is_object(audit));
-	assert_int_equal(3, json_object_size(audit));
+	assert_int_equal(4, json_object_size(audit));
 
 	o = json_object_get(audit, "version");
 	assert_non_null(o);
@@ -1048,6 +1048,11 @@ static void test_transaction_json(void **state)
 	assert_non_null(v);
 	assert_true(json_is_string(v));
 	assert_string_equal("delete", json_string_value(v));
+
+	v = json_object_get(audit, "duration");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(10000099, json_integer_value(v));
 
 	json_free(&json);
 
@@ -1074,6 +1079,7 @@ static void test_commit_failure_json(void **state)
 	before = time(NULL);
 	json = commit_failure_json(
 		"prepare",
+		987876,
 		LDB_ERR_OPERATIONS_ERROR,
 		"because",
 		&guid);
@@ -1093,7 +1099,7 @@ static void test_commit_failure_json(void **state)
 	audit = json_object_get(json.root, "dsdbTransaction");
 	assert_non_null(audit);
 	assert_true(json_is_object(audit));
-	assert_int_equal(6, json_object_size(audit));
+	assert_int_equal(7, json_object_size(audit));
 
 	o = json_object_get(audit, "version");
 	assert_non_null(o);
@@ -1125,6 +1131,11 @@ static void test_commit_failure_json(void **state)
 	assert_non_null(v);
 	assert_true(json_is_string(v));
 	assert_string_equal("because", json_string_value(v));
+
+	v = json_object_get(audit, "duration");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(987876, json_integer_value(v));
 
 	json_free(&json);
 
@@ -1829,14 +1840,14 @@ static void test_transaction_hr(void **state)
 
 	GUID_from_string(GUID, &guid);
 
-	line = transaction_human_readable(ctx, "delete");
+	line = transaction_human_readable(ctx, "delete", 23);
 	assert_non_null(line);
 
 	/*
 	 * We ignore the timestamp to make this test a little easier
 	 * to write.
 	 */
-	rs = "\\[delete] at \\[[^[]*\\]";
+	rs = "\\[delete] at \\[[^[]*\\] duration \\[23\\]";
 
 	ret = regcomp(&regex, rs, 0);
 	assert_int_equal(0, ret);
@@ -1871,6 +1882,7 @@ static void test_commit_failure_hr(void **state)
 	line = commit_failure_human_readable(
 		ctx,
 		"commit",
+		789345,
 		LDB_ERR_OPERATIONS_ERROR,
 		"because");
 
@@ -1880,7 +1892,8 @@ static void test_commit_failure_hr(void **state)
 	 * We ignore the timestamp to make this test a little easier
 	 * to write.
 	 */
-	rs = "\\[commit\\] at \\[[^[]*\\] status \\[1\\] reason \\[because\\]";
+	rs = "\\[commit\\] at \\[[^[]*\\] duration \\[789345\\] "
+	     "status \\[1\\] reason \\[because\\]";
 
 	ret = regcomp(&regex, rs, 0);
 	assert_int_equal(0, ret);
