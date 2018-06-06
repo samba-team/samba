@@ -375,8 +375,9 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 		return;
 	}
 	q->ctdb = ctdb;
-	q->hdr = talloc_memdup(ctdb, hdr, hdr->length);
+	q->hdr = talloc_memdup(q, hdr, hdr->length);
 	if (q->hdr == NULL) {
+		talloc_free(q);
 		DEBUG(DEBUG_ERR,("Error copying deferred packet to self\n"));
 		return;
 	}
