@@ -393,6 +393,9 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 	tsig->ttl = 0;
 	tsig->length = UINT16_MAX;
 	tsig->rdata.tsig_record.algorithm_name = talloc_strdup(tsig, "gss-tsig");
+	if (tsig->rdata.tsig_record.algorithm_name == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	tsig->rdata.tsig_record.time_prefix = 0;
 	tsig->rdata.tsig_record.time = current_time;
 	tsig->rdata.tsig_record.fudge = 300;
@@ -403,6 +406,9 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 	if (sig.length > 0) {
 		tsig->rdata.tsig_record.mac_size = sig.length;
 		tsig->rdata.tsig_record.mac = talloc_memdup(tsig, sig.data, sig.length);
+		if (tsig->rdata.tsig_record.mac == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
 	}
 
 	if (packet->arcount == 0) {
