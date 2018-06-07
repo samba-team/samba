@@ -239,7 +239,7 @@ class dc_join(object):
                    == res[0]["objectSID"][0]:
                     raise DCJoinException("Not removing account %s which "
                                        "looks like a Samba DC account "
-                                       "maching the password we already have.  "
+                                       "matching the password we already have.  "
                                        "To override, remove secrets.ldb and secrets.tdb"
                                     % ctx.samname)
 
