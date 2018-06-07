@@ -101,6 +101,8 @@ class cmd_drs_showrepl(Command):
     takes_options = [
         Option("--json", help="replication details in JSON format",
                dest='format', action='store_const', const='json'),
+        Option("--summary", help="summarize local DRS health",
+               dest='format', action='store_const', const='summary'),
         Option("--classic", help="print local replication details",
                dest='format', action='store_const', const='classic',
                default=DEFAULT_SHOWREPL_FORMAT),
@@ -170,6 +172,7 @@ class cmd_drs_showrepl(Command):
         self.verbose = verbose
 
         output_function = {
+            'summary': self.summary_output,
             'json': self.json_output,
             'classic': self.classic_output,
         }.get(format)
@@ -183,6 +186,37 @@ class cmd_drs_showrepl(Command):
         del data['site']
         del data['server']
         json.dump(data, self.outf, indent=2)
+
+    def summary_output(self):
+        """Print a short message if every seems fine, but print details of any
+        links that seem broken."""
+        failing_repsto = []
+        failing_repsfrom = []
+
+        local_data = self.get_local_repl_data()
+        for rep in local_data['repsTo']:
+            if rep["consecutive failures"] != 0 or rep["last success"] == 0:
+                failing_repsto.append(rep)
+
+        for rep in local_data['repsFrom']:
+            if rep["consecutive failures"] != 0 or rep["last success"] == 0:
+                failing_repsto.append(rep)
+
+        if failing_repsto or failing_repsfrom:
+            self.message(colour.c_RED("There are failing connections"))
+            if failing_repsto:
+                self.message(colour.c_RED("Failing outbound connections:"))
+                for rep in failing_repsto:
+                    self.print_neighbour(rep)
+            if failing_repsfrom:
+                self.message(colour.c_RED("Failing inbound connection:"))
+                for rep in failing_repsfrom:
+                    self.print_neighbour(rep)
+
+            return 1
+
+        self.message(colour.c_GREEN("[ALL GOOD]"))
+
 
     def get_local_repl_data(self):
         drsuapi_connect(self)
