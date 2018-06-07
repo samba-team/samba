@@ -33,6 +33,8 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/util_process.h"
 
+#include "protocol/protocol_util.h"
+
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
@@ -1156,6 +1158,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 		const char *addrstr;
 		const char *ifaces;
 		char *tok, *line;
+		int ret;
 
 		line = lines[i];
 		while ((*line == ' ') || (*line == '\t')) {
@@ -1179,11 +1182,21 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 		}
 		ifaces = tok;
 
-		if (!addrstr || !parse_ip_mask(addrstr, ifaces, &addr, &mask)) {
-			DEBUG(DEBUG_CRIT,("Badly formed line %u in public address list\n", i+1));
+		if (addrstr == NULL) {
+			D_ERR("Badly formed line %u in public address list\n",
+			      i+1);
 			talloc_free(lines);
 			return -1;
 		}
+
+		ret = ctdb_sock_addr_mask_from_string(addrstr, &addr, &mask);
+		if (ret != 0) {
+			D_ERR("Badly formed line %u in public address list\n",
+			      i+1);
+			talloc_free(lines);
+			return -1;
+		}
+
 		if (ctdb_add_public_address(ctdb, &addr, mask, ifaces, check_addresses)) {
 			DEBUG(DEBUG_CRIT,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);
