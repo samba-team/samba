@@ -3849,7 +3849,8 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("addip");
 	}
 
-	if (! parse_ip_mask(argv[0], argv[1], &addr, &mask)) {
+	ret = ctdb_sock_addr_mask_from_string(argv[0], &addr, &mask);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP/Mask %s\n", argv[0]);
 		return 1;
 	}
