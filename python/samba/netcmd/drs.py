@@ -101,6 +101,7 @@ class cmd_drs_showrepl(Command):
         Option("--classic", help="print local replication details",
                dest='format', action='store_const', const='classic',
                default=DEFAULT_SHOWREPL_FORMAT),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
     ]
 
     takes_args = ["DC?"]
@@ -153,12 +154,14 @@ class cmd_drs_showrepl(Command):
 
     def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None,
-            format=DEFAULT_SHOWREPL_FORMAT):
+            format=DEFAULT_SHOWREPL_FORMAT,
+            verbose=False):
         self.lp = sambaopts.get_loadparm()
         if DC is None:
             DC = common.netcmd_dnsname(self.lp)
         self.server = DC
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+        self.verbose = verbose
 
         output_function = {
             'json': self.json_output,
