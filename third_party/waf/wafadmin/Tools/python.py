@@ -253,7 +253,7 @@ LDVERSION = %r
 		result = conf.check(lib=name, uselib='PYEMBED', libpath=path)
 
 	if result:
-		env['LIBPATH_PYEMBED'] = path
+		env.append_unique('LIBPATH_PYEMBED', path)
 		env.append_value('LIB_PYEMBED', name)
 	else:
 		conf.log.write("\n\n### LIB NOT FOUND\n")
