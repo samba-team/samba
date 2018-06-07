@@ -24,11 +24,6 @@
 
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 
-bool parse_ip_mask(const char *str,
-		   const char *ifaces,
-		   ctdb_sock_addr *addr,
-		   unsigned *mask);
-
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
 
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
