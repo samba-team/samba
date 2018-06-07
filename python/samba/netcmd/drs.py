@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 import samba.getopt as options
 import ldb
 import logging
@@ -147,9 +146,7 @@ class cmd_drs_showrepl(Command):
         self.message("\t\tLast success @ %s" % d['last success'])
         self.message("")
 
-    def drsuapi_ReplicaInfo(self, info_type):
-        '''call a DsReplicaInfo'''
-
+    def get_neighbours(self, info_type):
         req1 = drsuapi.DsReplicaGetInfoRequest1()
         req1.info_type = info_type
         try:
@@ -157,7 +154,9 @@ class cmd_drs_showrepl(Command):
                 self.drsuapi_handle, 1, req1)
         except Exception as e:
             raise CommandError("DsReplicaGetInfo of type %u failed" % info_type, e)
-        return (info_type, info)
+
+        reps = [self.parse_neighbour(n) for n in info.array]
+        return reps
 
     def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None,
@@ -240,12 +239,8 @@ class cmd_drs_showrepl(Command):
         }
 
         conn = self.samdb.search(base=ntds_dn, expression="(objectClass=nTDSConnection)")
-        info = self.drsuapi_ReplicaInfo(
-            drsuapi.DRSUAPI_DS_REPLICA_INFO_NEIGHBORS)[1]
-        repsfrom =  [self.parse_neighbour(n) for n in info.array]
-        info = self.drsuapi_ReplicaInfo(
-            drsuapi.DRSUAPI_DS_REPLICA_INFO_REPSTO)[1]
-        repsto = [self.parse_neighbour(n) for n in info.array]
+        repsfrom = self.get_neighbours(drsuapi.DRSUAPI_DS_REPLICA_INFO_NEIGHBORS)
+        repsto = self.get_neighbours(drsuapi.DRSUAPI_DS_REPLICA_INFO_REPSTO)
 
         conn_details = []
         for c in conn:
