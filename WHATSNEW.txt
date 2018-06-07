@@ -72,6 +72,21 @@ to allow better Windows fileserver compatibility in a default install.
   store dos attributes               Default changed             yes
   ea support                         Default changed             yes
 
+VFS interface changes
+=====================
+
+The VFS ABI interface version has changed to 39. Function changes
+are:
+
+SMB_VFS_FSYNC: Removed: Only async versions are used.
+SMB_VFS_READ: Removed: Only PREAD or async versions are used.
+SMB_VFS_WRITE: Removed: Only PWRITE or async versions are used.
+SMB_VFS_CHMOD_ACL: Removed: Only CHMOD is used.
+SMB_VFS_FCHMOD_ACL: Removed: Only FCHMOD is used.
+
+Any external VFS modules will need to be updated to match these
+changes in order to work with 4.9.x.
+
 KNOWN ISSUES
 ============
 
