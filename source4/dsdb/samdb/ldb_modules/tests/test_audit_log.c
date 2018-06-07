@@ -81,7 +81,7 @@ static void test_has_password_changed(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	/*
 	 * Empty message
@@ -196,7 +196,7 @@ static void test_get_password_action(void **state)
 	struct dsdb_control_password_acl_validation *pav = NULL;
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	/*
 	 * Add request, will always be a reset
@@ -292,7 +292,7 @@ static void test_operation_json_empty(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	ac = talloc_zero(ctx, struct audit_context);
 
 	module = talloc_zero(ctx, struct ldb_module);
@@ -423,7 +423,7 @@ static void test_operation_json(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);
@@ -618,7 +618,7 @@ static void test_as_system_operation_json(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);
@@ -793,7 +793,7 @@ static void test_password_change_json_empty(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	ac = talloc_zero(ctx, struct audit_context);
 
 	module = talloc_zero(ctx, struct ldb_module);
@@ -892,7 +892,7 @@ static void test_password_change_json(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);
@@ -1151,7 +1151,7 @@ static void test_replicated_update_json_empty(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	ac = talloc_zero(ctx, struct audit_context);
 
 	module = talloc_zero(ctx, struct ldb_module);
@@ -1287,7 +1287,7 @@ static void test_replicated_update_json(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);
@@ -1419,7 +1419,7 @@ static void test_operation_hr_empty(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	ac = talloc_zero(ctx, struct audit_context);
 
 	module = talloc_zero(ctx, struct ldb_module);
@@ -1491,7 +1491,7 @@ static void test_operation_hr(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);
@@ -1593,7 +1593,7 @@ static void test_as_system_operation_hr(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);
@@ -1680,7 +1680,7 @@ static void test_password_change_hr_empty(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	ac = talloc_zero(ctx, struct audit_context);
 
 	module = talloc_zero(ctx, struct ldb_module);
@@ -1749,7 +1749,7 @@ static void test_password_change_hr(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);
@@ -2081,7 +2081,7 @@ static void test_replicated_update_hr_empty(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	ac = talloc_zero(ctx, struct audit_context);
 
 	module = talloc_zero(ctx, struct ldb_module);
@@ -2155,7 +2155,7 @@ static void test_replicated_update_hr(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	ac = talloc_zero(ctx, struct audit_context);
 	GUID_from_string(TRANSACTION, &transaction_id);

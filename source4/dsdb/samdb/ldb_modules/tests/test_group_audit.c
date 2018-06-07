@@ -259,7 +259,7 @@ static void test_audit_group_hr(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	GUID_from_string(TRANSACTION, &transaction_id);
 
@@ -627,7 +627,7 @@ static void test_audit_group_json(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	GUID_from_string(TRANSACTION, &transaction_id);
 

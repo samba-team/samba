@@ -469,7 +469,7 @@ static void test_dsdb_audit_get_remote_address(void **state)
 	 * Test a freshly initialized ldb
 	 * should return NULL
 	 */
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	ts = dsdb_audit_get_remote_address(ldb);
 	assert_null(ts);
 
@@ -503,7 +503,7 @@ static void test_dsdb_audit_get_ldb_error_string(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	module = talloc_zero(ctx, struct ldb_module);
 	module->ldb = ldb;
 
@@ -543,7 +543,7 @@ static void test_dsdb_audit_get_user_sid(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	module = talloc_zero(ctx, struct ldb_module);
 	module->ldb = ldb;
 
@@ -624,7 +624,7 @@ static void test_dsdb_audit_get_actual_sid(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	/*
 	 * Freshly initialised structures, will be no session data
@@ -703,7 +703,7 @@ static void test_dsdb_audit_is_system_session(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	module = talloc_zero(ctx, struct ldb_module);
 	module->ldb = ldb;
 
@@ -791,7 +791,7 @@ static void test_dsdb_audit_get_unique_session_token(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	module = talloc_zero(ctx, struct ldb_module);
 	module->ldb = ldb;
 
@@ -849,7 +849,7 @@ static void test_dsdb_audit_get_actual_unique_session_token(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	/*
 	 * Test a freshly initialized ldb
@@ -900,7 +900,7 @@ static void test_dsdb_audit_get_remote_host(void **state)
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 
 	/*
 	 * Test a freshly initialized ldb
@@ -946,7 +946,7 @@ static void test_dsdb_audit_get_primary_dn(void **state)
 
 	req = talloc_zero(ctx, struct ldb_request);
 	msg = talloc_zero(ctx, struct ldb_message);
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	dn = ldb_dn_new(ctx, ldb, DN);
 
 	/*
@@ -1112,7 +1112,7 @@ static void test_dsdb_audit_get_secondary_dn(void **state)
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
 	req = talloc_zero(ctx, struct ldb_request);
-	ldb = talloc_zero(ctx, struct ldb_context);
+	ldb = ldb_init(ctx, NULL);
 	dn = ldb_dn_new(ctx, ldb, DN);
 
 	/*
