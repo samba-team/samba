@@ -61,6 +61,8 @@ WERROR dns_get_zone_properties(struct ldb_context *samdb,
 			       TALLOC_CTX *mem_ctx,
 			       struct ldb_dn *zone_dn,
 			       struct dnsserver_zoneinfo *zoneinfo);
+bool dns_name_is_static(struct dnsp_DnssrvRpcRecord *records,
+			uint16_t rec_count);
 WERROR dns_common_replace(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,

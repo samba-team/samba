@@ -724,6 +724,23 @@ static WERROR check_name_list(TALLOC_CTX *mem_ctx, uint16_t rec_count,
 	return WERR_OK;
 }
 
+bool dns_name_is_static(struct dnsp_DnssrvRpcRecord *records,
+			uint16_t rec_count)
+{
+	int i = 0;
+	for (i = 0; i < rec_count; i++) {
+		if (records[i].wType == DNS_TYPE_TOMBSTONE) {
+			continue;
+		}
+
+		if (records[i].wType == DNS_TYPE_SOA ||
+		    records[i].dwTimeStamp == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 WERROR dns_get_zone_properties(struct ldb_context *samdb,
 			       TALLOC_CTX *mem_ctx,
 			       struct ldb_dn *zone_dn,

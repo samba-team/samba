@@ -1631,18 +1631,7 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		return ISC_R_NOMEMORY;
 	}
 
-	unix_to_nt_time(&t, time(NULL));
-	/*
-	 * convert to seconds (NT time is in 100ns units)
-	 */
-	t /= 10 * 1000 * 1000;
-	/*
-	 * convert to hours
-	 */
-	t /= 3600;
-
 	rec->rank        = DNS_RANK_ZONE;
-	rec->dwTimeStamp = (uint32_t)t;
 
 	if (!b9_parse(state, rdatastr, rec)) {
 		state->log(ISC_LOG_INFO, "samba_dlz: failed to parse rdataset '%s'", rdatastr);
@@ -1704,6 +1693,15 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 			return ISC_R_NOMEMORY;
 		}
 		num_recs++;
+
+		if (dns_name_is_static(recs, num_recs)) {
+			rec->dwTimeStamp = 0;
+		} else {
+			unix_to_nt_time(&t, time(NULL));
+			t /= 10 * 1000 * 1000; /* convert to seconds */
+			t /= 3600;	     /* convert to hours */
+			rec->dwTimeStamp = (uint32_t)t;
+		}
 	}
 
 	recs[i] = *rec;

@@ -1093,6 +1093,42 @@ class TestZones(DNSTest):
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].dwTimeStamp, 0)
 
+    def test_static_record_dynamic_update(self):
+        name,txt = 'agingtest', ['test txt']
+        txt2 = ['test txt2']
+        self.set_aging(enable=True)
+        rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        rec_buf.rec = TXTRecord(txt)
+        self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                          0, self.server_ip,
+                                          self.zone, name, rec_buf, None)
+
+        rec2 = self.dns_update_record(name, txt2)
+        self.assertEqual(rec2.dwTimeStamp, 0)
+
+    def test_dynamic_record_static_update(self):
+        name,txt = 'agingtest', ['test txt']
+        txt2 = ['test txt2']
+        txt3 = ['test txt3']
+        self.set_aging(enable=True)
+
+        self.dns_update_record(name, txt)
+
+        rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        rec_buf.rec = TXTRecord(txt2)
+        self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                          0, self.server_ip,
+                                          self.zone, name, rec_buf, None)
+
+        self.dns_update_record(name, txt3)
+
+        recs = self.ldap_get_dns_records(name)
+        # Put in dict because ldap recs might be out of order
+        recs = {str(r.data.str):r for r in recs}
+        self.assertNotEqual(recs[str(txt)].dwTimeStamp, 0)
+        self.assertEqual(recs[str(txt2)].dwTimeStamp, 0)
+        self.assertEqual(recs[str(txt3)].dwTimeStamp, 0)
+
     def test_dns_tombstone_custom_match_rule(self):
         lp = self.get_loadparm()
         self.samdb = SamDB(url = lp.samdb_url(), lp = lp,

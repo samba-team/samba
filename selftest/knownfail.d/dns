@@ -46,6 +46,8 @@ samba.tests.dns.__main__.TestZones.test_rpc_add_no_timestamp\(rodc:local\)
 samba.tests.dns.__main__.TestZones.test_basic_scavenging\(rodc:local\)
 samba.tests.dns.__main__.TestZones.test_dns_tombstone_custom_match_rule\(rodc:local\)
 samba.tests.dns.__main__.TestZones.test_dns_tombstone_custom_match_rule_fail\(rodc:local\)
+samba.tests.dns.__main__.TestZones.test_dynamic_record_static_update\(rodc:local\)
+samba.tests.dns.__main__.TestZones.test_static_record_dynamic_update\(rodc:local\)
 
 samba.tests.dns.__main__.TestZones.test_set_aging\(vampire_dc:local\)
 samba.tests.dns.__main__.TestZones.test_aging_update\(vampire_dc:local\)
@@ -53,6 +55,8 @@ samba.tests.dns.__main__.TestZones.test_aging_update_disabled\(vampire_dc:local\
 samba.tests.dns.__main__.TestZones.test_aging_refresh\(vampire_dc:local\)
 samba.tests.dns.__main__.TestZones.test_basic_scavenging\(vampire_dc:local\)
 samba.tests.dns.__main__.TestZones.test_dns_tombstone_custom_match_rule\(vampire_dc:local\)
+samba.tests.dns.__main__.TestZones.test_dynamic_record_static_update\(vampire_dc:local\)
+samba.tests.dns.__main__.TestZones.test_static_record_dynamic_update\(vampire_dc:local\)
 
 samba.tests.dns.__main__.TestComplexQueries.test_cname_two_chain\(vampire_dc:local\)
 samba.tests.dns.__main__.TestComplexQueries.test_one_a_query\(vampire_dc:local\)

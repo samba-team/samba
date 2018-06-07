@@ -38,7 +38,8 @@
 
 static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,
-			     struct dnsp_DnssrvRpcRecord *r);
+			     struct dnsp_DnssrvRpcRecord *r,
+			     bool name_is_static);
 
 static WERROR check_one_prerequisite(struct dns_server *dns,
 				     TALLOC_CTX *mem_ctx,
@@ -181,7 +182,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 	rec = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
 	W_ERROR_HAVE_NO_MEMORY(rec);
 
-	werror = dns_rr_to_dnsp(rec, pr, rec);
+	werror = dns_rr_to_dnsp(rec, pr, rec, dns_name_is_static(ans, acount));
 	W_ERROR_NOT_OK_RETURN(werror);
 
 	for (i = 0; i < acount; i++) {
@@ -297,7 +298,8 @@ static WERROR update_prescan(const struct dns_name_question *zone,
 
 static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,
-			     struct dnsp_DnssrvRpcRecord *r)
+			     struct dnsp_DnssrvRpcRecord *r,
+			     bool name_is_static)
 {
 	enum ndr_err_code ndr_err;
 	NTTIME t;
@@ -311,10 +313,14 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 	r->wType = (enum dns_record_type) rrec->rr_type;
 	r->dwTtlSeconds = rrec->ttl;
 	r->rank = DNS_RANK_ZONE;
-	unix_to_nt_time(&t, time(NULL));
-	t /= 10 * 1000 * 1000;
-	t /= 3600;
-	r->dwTimeStamp = t;
+	if (name_is_static) {
+		r->dwTimeStamp = 0;
+	} else {
+		unix_to_nt_time(&t, time(NULL));
+		t /= 10 * 1000 * 1000;
+		t /= 3600;
+		r->dwTimeStamp = t;
+	}
 
 	/* If we get QCLASS_ANY, we're done here */
 	if (rrec->rr_class == DNS_QCLASS_ANY) {
@@ -390,6 +396,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 	WERROR werror;
 	bool tombstoned = false;
 	bool needs_add = false;
+	bool name_is_static;
 
 	DEBUG(2, ("Looking at record: \n"));
 	if (DEBUGLVL(2)) {
@@ -432,6 +439,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 		first = rcount;
 	}
 
+	name_is_static = dns_name_is_static(recs, rcount);
+
 	if (update->rr_class == zone->question_class) {
 		if (update->rr_type == DNS_QTYPE_CNAME) {
 			/*
@@ -456,7 +465,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 					struct dnsp_DnssrvRpcRecord, rcount + 1);
 			W_ERROR_HAVE_NO_MEMORY(recs);
 
-			werror = dns_rr_to_dnsp(recs, update, &recs[rcount]);
+			werror = dns_rr_to_dnsp(
+			    recs, update, &recs[rcount], name_is_static);
 			W_ERROR_NOT_OK_RETURN(werror);
 			rcount += 1;
 
@@ -508,7 +518,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 				return WERR_OK;
 			}
 
-			werror = dns_rr_to_dnsp(mem_ctx, update, &recs[i]);
+			werror = dns_rr_to_dnsp(
+			    mem_ctx, update, &recs[i], name_is_static);
 			W_ERROR_NOT_OK_RETURN(werror);
 
 			for (i++; i < rcount; i++) {
@@ -532,7 +543,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 				struct dnsp_DnssrvRpcRecord, rcount+1);
 		W_ERROR_HAVE_NO_MEMORY(recs);
 
-		werror = dns_rr_to_dnsp(recs, update, &recs[rcount]);
+		werror =
+		    dns_rr_to_dnsp(recs, update, &recs[rcount], name_is_static);
 		W_ERROR_NOT_OK_RETURN(werror);
 
 		for (i = first; i < rcount; i++) {
@@ -618,7 +630,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 						struct dnsp_DnssrvRpcRecord);
 			W_ERROR_HAVE_NO_MEMORY(ns_rec);
 
-			werror = dns_rr_to_dnsp(ns_rec, update, ns_rec);
+			werror = dns_rr_to_dnsp(
+			    ns_rec, update, ns_rec, name_is_static);
 			W_ERROR_NOT_OK_RETURN(werror);
 
 			for (i = first; i < rcount; i++) {
@@ -635,7 +648,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 		del_rec = talloc(mem_ctx, struct dnsp_DnssrvRpcRecord);
 		W_ERROR_HAVE_NO_MEMORY(del_rec);
 
-		werror = dns_rr_to_dnsp(del_rec, update, del_rec);
+		werror =
+		    dns_rr_to_dnsp(del_rec, update, del_rec, name_is_static);
 		W_ERROR_NOT_OK_RETURN(werror);
 
 		for (i = first; i < rcount; i++) {
