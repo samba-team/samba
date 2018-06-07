@@ -38,7 +38,9 @@ from samba.dcerpc import drsuapi, misc
 from samba.join import join_clone
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
+from samba import colour
 import logging
+
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
@@ -103,6 +105,8 @@ class cmd_drs_showrepl(Command):
                dest='format', action='store_const', const='classic',
                default=DEFAULT_SHOWREPL_FORMAT),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
+        Option("--color", help="Use colour output (yes|no|auto)",
+               default='no'),
     ]
 
     takes_args = ["DC?"]
@@ -156,7 +160,8 @@ class cmd_drs_showrepl(Command):
     def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None,
             format=DEFAULT_SHOWREPL_FORMAT,
-            verbose=False):
+            verbose=False, color='no'):
+        self.apply_colour_choice(color)
         self.lp = sambaopts.get_loadparm()
         if DC is None:
             DC = common.netcmd_dnsname(self.lp)
