@@ -298,6 +298,47 @@ int ctdb_sock_addr_from_string(const char *str,
 	return ret;
 }
 
+int ctdb_sock_addr_mask_from_string(const char *str,
+				    ctdb_sock_addr *addr,
+				    unsigned int *mask)
+{
+	char *p;
+	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
+	unsigned int m;
+	char *endp = NULL;
+	ssize_t len;
+	bool ret;
+
+	if (addr == NULL || mask == NULL) {
+		return EINVAL;
+	}
+
+	len = strlcpy(s, str, sizeof(s));
+	if (len >= sizeof(s)) {
+		return EINVAL;
+	}
+
+	p = rindex(s, '/');
+	if (p == NULL) {
+		return EINVAL;
+	}
+
+	m = strtoul(p+1, &endp, 10);
+	if (endp == p+1 || *endp != '\0') {
+		/* Empty string or trailing garbage */
+		return EINVAL;
+	}
+
+	*p = '\0';
+	ret = ip_from_string(s, addr);
+
+	if (ret == 0) {
+		*mask = m;
+	}
+
+	return ret;
+}
+
 unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr)
 {
 	switch (addr->sa.sa_family) {
