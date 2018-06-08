@@ -143,20 +143,6 @@ void lockdown_memory(bool valgrinding)
 #endif
 }
 
-void mkdir_p_or_die(const char *dir, int mode)
-{
-	int ret;
-
-	ret = mkdir_p(dir, mode);
-	if (ret != 0) {
-		DEBUG(DEBUG_ALERT,
-		      ("ctdb exiting with error: "
-		       "failed to create directory \"%s\" (%s)\n",
-		       dir, strerror(errno)));
-		exit(1);
-	}
-}
-
 void ctdb_wait_for_process_to_exit(pid_t pid)
 {
 	while (kill(pid, 0) == 0 || errno != ESRCH) {

@@ -29,8 +29,6 @@ void reset_scheduler(void);
 
 void lockdown_memory(bool valgrinding);
 
-void mkdir_p_or_die(const char *dir, int mode);
-
 void ctdb_wait_for_process_to_exit(pid_t pid);
 
 bool ctdb_sys_check_iface_exists(const char *iface);
