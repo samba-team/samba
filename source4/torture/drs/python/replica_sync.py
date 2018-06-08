@@ -139,8 +139,8 @@ objectClass: organizationalUnit
         dodn = self._deleted_objects_dn(sam_ldb)
         # now check properties of the user
         name_cur = ou_cur["ou"][0]
-        self.assertEquals(ou_cur["isDeleted"][0], "TRUE")
-        self.assertTrue(not("objectCategory" in ou_cur))
+        self.assertEquals(ou_cur["isDeleted"][0], b"TRUE")
+        self.assertTrue(not(b"objectCategory" in ou_cur))
         self.assertTrue(dodn in str(ou_cur["dn"]),
                         "OU %s is deleted but it is not located under %s!" % (name_cur, dodn))
 
@@ -636,9 +636,9 @@ objectClass: organizationalUnit
         print(res1[0].dn)
         print(res2[0].dn)
         print(res3[0].dn)
-        self.assertEqual('Test Child 2', res1[0]["name"][0])
-        self.assertEqual('Test Child', res2[0]["name"][0])
-        self.assertEqual('Test CASE Child', res3[0]["name"][0])
+        self.assertEqual('Test Child 2', str(res1[0]["name"][0]))
+        self.assertEqual('Test Child', str(res2[0]["name"][0]))
+        self.assertEqual('Test CASE Child', str(res3[0]["name"][0]))
         self.assertEqual(str(res1[0].dn), "OU=Test Child 2,OU=Original parent 3,%s" % self.top_ou)
         self.assertEqual(str(res2[0].dn), "OU=Test Child,OU=Original parent 3,%s" % self.top_ou)
         self.assertEqual(str(res3[0].dn), "OU=Test CASE Child,OU=Original parent 2,%s" % self.top_ou)
@@ -656,9 +656,9 @@ objectClass: organizationalUnit
         print(res1[0].dn)
         print(res2[0].dn)
         print(res3[0].dn)
-        self.assertEqual('Test Child 2', res1[0]["name"][0])
-        self.assertEqual('Test Child', res2[0]["name"][0])
-        self.assertEqual('Test CASE Child', res3[0]["name"][0])
+        self.assertEqual('Test Child 2', str(res1[0]["name"][0]))
+        self.assertEqual('Test Child', str(res2[0]["name"][0]))
+        self.assertEqual('Test CASE Child', str(res3[0]["name"][0]))
         self.assertEqual(str(res1[0].dn), "OU=Test Child 2,OU=Original parent 3,%s" % self.top_ou)
         self.assertEqual(str(res2[0].dn), "OU=Test Child,OU=Original parent 3,%s" % self.top_ou)
         self.assertEqual(str(res3[0].dn), "OU=Test CASE Child,OU=Original parent 2,%s" % self.top_ou)

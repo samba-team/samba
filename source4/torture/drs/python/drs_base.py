@@ -40,6 +40,7 @@ from ldb import (
     FLAG_MOD_REPLACE,
 )
 from samba.compat import cmp_fn
+from samba.compat import get_string
 
 
 class DrsBaseTestCase(SambaToolCmdTest):
@@ -84,7 +85,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.test_ldb_dc = ldb_dc
 
     def _GUID_string(self, guid):
-        return self.test_ldb_dc.schema_format_value("objectGUID", guid)
+        return get_string(self.test_ldb_dc.schema_format_value("objectGUID", guid))
 
     def _ldap_schemaUpdateNow(self, sam_db):
         rec = {"dn": "",
