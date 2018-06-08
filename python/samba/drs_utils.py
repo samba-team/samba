@@ -65,7 +65,7 @@ def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid,
     """Send DS replica sync request.
 
     :param drsuapiBind: a drsuapi Bind object
-    :param drsuapi_handle: a drsuapi hanle on the drsuapi connection
+    :param drsuapi_handle: a drsuapi handle on the drsuapi connection
     :param source_dsa_guid: the guid of the source dsa for the replication
     :param naming_context: the DN of the naming context to replicate
     :param req_options: replication options for the DsReplicaSync call
@@ -91,7 +91,7 @@ def sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain):
     """Send RemoveDSServer request.
 
     :param drsuapiBind: a drsuapi Bind object
-    :param drsuapi_handle: a drsuapi hanle on the drsuapi connection
+    :param drsuapi_handle: a drsuapi handle on the drsuapi connection
     :param server_dsa_dn: a DN object of the server's dsa that we want to
         demote
     :param domain: a DN object of the server's domain
