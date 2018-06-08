@@ -993,7 +993,8 @@ for env in ['vampire_dc', 'promoted_dc']:
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.replica_sync.python(%s)" % env,
                            environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
+                           py3_compatible=True)
     planoldpythontestsuite(env, "delete_object",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.delete_object.python(%s)" % env,
