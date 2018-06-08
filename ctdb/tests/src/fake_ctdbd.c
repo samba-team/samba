@@ -40,6 +40,7 @@
 #include "common/logging.h"
 #include "common/tunable.h"
 #include "common/srvid.h"
+#include "common/system.h"
 
 #include "ipalloc_read_known_ips.h"
 
@@ -3050,8 +3051,6 @@ static struct tevent_req *client_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct client_state *state;
-	struct ucred cr;
-	socklen_t crl = sizeof(struct ucred);
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct client_state);
@@ -3064,12 +3063,7 @@ static struct tevent_req *client_send(TALLOC_CTX *mem_ctx,
 	state->ctdb = ctdb;
 	state->pnn = pnn;
 
-	ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-	state->pid = cr.pid;
+	(void) ctdb_get_peer_pid(fd, &state->pid);
 
 	ret = comm_setup(state, ev, fd, client_read_handler, req,
 			 client_dead_handler, req, &state->comm);
