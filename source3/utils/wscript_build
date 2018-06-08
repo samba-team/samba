@@ -238,7 +238,7 @@ bld.SAMBA3_BINARY('net',
                  KRBCLIENT
                  ndr-standard
                  msrpc3
-                 gpext
+                 gpo
                  ads
                  smbd_base
                  LIBADS_SERVER

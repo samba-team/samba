@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 
-bld.SAMBA3_LIBRARY('gpext',
-                   source='''gpext/gpext.c gpo_util.c gpo_ldap.c gpo_ini.c
-                           gpo_fetch.c gpo_filesync.c
-                           gpo_sec.c gpo_reg.c''',
+LIBGPO_SRC = '''gpo_ldap.c gpo_ini.c gpo_util.c gpo_fetch.c gpo_filesync.c
+                gpo_sec.c gpo_reg.c gpext/gpext.c'''
+
+bld.SAMBA3_LIBRARY('gpo',
+                   source='${LIBGPO_SRC}',
                    deps='talloc ads TOKEN_UTIL auth',
+                   vars=locals(),
+                   private_library=True)
+
+bld.SAMBA3_LIBRARY('gpext',
+                   source='''gpext/gpext.c''',
+                   deps='talloc ads TOKEN_UTIL auth gpo',
                    private_library=True)
 
 for env in bld.gen_python_environments():
