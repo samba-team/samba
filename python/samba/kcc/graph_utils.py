@@ -93,6 +93,9 @@ def verify_graph_connected(edges, vertices, edge_vertices):
 
 def verify_graph_connected_under_edge_failures(edges, vertices, edge_vertices):
     """The graph stays connected when any single edge is removed."""
+    if len(edges) == 0:
+        return verify_graph_connected(edges, vertices, edge_vertices)
+
     for subset in itertools.combinations(edges, len(edges) - 1):
         try:
             verify_graph_connected(subset, vertices, edge_vertices)
