@@ -219,6 +219,7 @@ static void test_json_add_timestamp(void **state)
 	time_t before;
 	time_t after;
 	time_t actual;
+	const int adjustment = 1;
 
 
 	object = json_new_object();
@@ -255,7 +256,10 @@ static void test_json_add_timestamp(void **state)
 
 	/*
 	 * The timestamp should be before <= actual <= after
+	 * but we adjust the times to cater for any precision issues.
 	 */
+	before -= adjustment;
+	after += adjustment;
 	assert_true(difftime(actual, before) >= 0);
 	assert_true(difftime(after, actual) >= 0);
 
