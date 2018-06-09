@@ -90,11 +90,12 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
                          r"DSA invocationId: %s" %
                          (HEX8_RE, GUID_RE, GUID_RE), header)
 
-        for p in ['DC=DomainDnsZones,DC=samba,DC=example,DC=com',
-                  'CN=Configuration,DC=samba,DC=example,DC=com',
+        # We don't assert the DomainDnsZones and ForestDnsZones are
+        # there because we don't know that they have been set up yet.
+
+        for p in ['CN=Configuration,DC=samba,DC=example,DC=com',
                   'DC=samba,DC=example,DC=com',
-                  'CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com',
-                  'DC=ForestDnsZones,DC=samba,DC=example,DC=com']:
+                  'CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com']:
             self.assertRegex(r'%s\n'
                              r'\tDefault-First-Site-Name\\[A-Z]+ via RPC\n'
                              r'\t\tDSA object GUID: %s\n'
