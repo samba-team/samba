@@ -2042,6 +2042,35 @@ def directory_create_or_exists(path, mode=0o755):
             else:
                 raise ProvisioningError("Failed to create directory %s: %s" % (path, e.strerror))
 
+def determine_host_ip(logger, lp, hostip=None):
+    if hostip is None:
+        logger.info("Looking up IPv4 addresses")
+        hostips = interface_ips_v4(lp)
+        if len(hostips) > 0:
+            hostip = hostips[0]
+            if len(hostips) > 1:
+                logger.warning("More than one IPv4 address found. Using %s",
+                    hostip)
+    if hostip == "127.0.0.1":
+        hostip = None
+    if hostip is None:
+        logger.warning("No IPv4 address will be assigned")
+
+    return hostip
+
+def determine_host_ip6(logger, lp, hostip6=None):
+    if hostip6 is None:
+        logger.info("Looking up IPv6 addresses")
+        hostips = interface_ips_v6(lp)
+        if hostips:
+            hostip6 = hostips[0]
+        if len(hostips) > 1:
+            logger.warning("More than one IPv6 address found. Using %s", hostip6)
+    if hostip6 is None:
+        logger.warning("No IPv6 address will be assigned")
+
+    return hostip6
+
 def provision(logger, session_info, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
@@ -2149,29 +2178,8 @@ def provision(logger, session_info, smbconf=None,
     paths.root_uid = root_uid;
     paths.root_gid = root_gid
 
-    if hostip is None:
-        logger.info("Looking up IPv4 addresses")
-        hostips = interface_ips_v4(lp)
-        if len(hostips) > 0:
-            hostip = hostips[0]
-            if len(hostips) > 1:
-                logger.warning("More than one IPv4 address found. Using %s",
-                    hostip)
-    if hostip == "127.0.0.1":
-        hostip = None
-    if hostip is None:
-        logger.warning("No IPv4 address will be assigned")
-
-    if hostip6 is None:
-        logger.info("Looking up IPv6 addresses")
-        hostips = interface_ips_v6(lp)
-        if hostips:
-            hostip6 = hostips[0]
-        if len(hostips) > 1:
-            logger.warning("More than one IPv6 address found. Using %s", hostip6)
-    if hostip6 is None:
-        logger.warning("No IPv6 address will be assigned")
-
+    hostip = determine_host_ip(logger, lp, hostip)
+    hostip6 = determine_host_ip6(logger, lp, hostip6)
     names.hostip = hostip
     names.hostip6 = hostip6
     names.domainguid = domainguid
