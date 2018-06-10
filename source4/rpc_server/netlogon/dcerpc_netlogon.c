@@ -557,6 +557,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(
 	log_authentication_event(
 		dce_call->conn->msg_ctx,
 		dce_call->conn->dce_ctx->lp_ctx,
+		NULL,
 		&ui,
 		status,
 		lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx),

@@ -2900,6 +2900,7 @@ static int check_password_restrictions_and_log(struct setup_password_fields_io *
 		}
 		log_authentication_event(msg_ctx,
 					 lp_ctx,
+					 NULL,
 					 &ui,
 					 status,
 					 domain_name,

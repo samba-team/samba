@@ -122,6 +122,9 @@ struct auth4_context {
 	/* SAM database for this local machine - to fill in local groups, or to authenticate local NTLM users */
 	struct ldb_context *sam_ctx;
 
+	/* The time this authentication started */
+	struct timeval start_time;
+
 	/* Private data for the callbacks on this auth context */
 	void *private_data;
 
@@ -178,6 +181,7 @@ struct auth4_context {
  */
 void log_authentication_event(struct imessaging_context *msg_ctx,
 			      struct loadparm_context *lp_ctx,
+			      const struct timeval *start_time,
 			      const struct auth_usersupplied_info *ui,
 			      NTSTATUS status,
 			      const char *account_name,

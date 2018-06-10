@@ -114,6 +114,7 @@ static void log_json(struct imessaging_context *msg_ctx,
 static void log_authentication_event_json(
 	struct imessaging_context *msg_ctx,
 	struct loadparm_context *lp_ctx,
+	const struct timeval *start_time,
 	const struct auth_usersupplied_info *ui,
 	NTSTATUS status,
 	const char *domain_name,
@@ -179,6 +180,22 @@ static void log_authentication_event_json(
 		     ui->netlogon_trust_account.sid);
 	json_add_string(&authentication, "passwordType", get_password_type(ui));
 	json_add_object(&wrapper, AUTH_JSON_TYPE, &authentication);
+
+	/*
+	 * While not a general-purpose profiling solution this will
+	 * assist some to determine how long NTLM and KDC
+	 * authentication takes once this process can handle it.  This
+	 * covers transactions elsewhere but not (eg) the delay while
+	 * this is waiting unread on the input socket.
+	 */
+	if (start_time != NULL) {
+		struct timeval current_time = timeval_current();
+		uint64_t duration =  usec_time_diff(&current_time,
+						    start_time);
+		json_add_int(&authentication,
+			     "duration",
+			     duration);
+	}
 
 	log_json(msg_ctx,
 		 lp_ctx,
@@ -296,6 +313,7 @@ static void log_no_json(struct imessaging_context *msg_ctx,
 static void log_authentication_event_json(
 	struct imessaging_context *msg_ctx,
 	struct loadparm_context *lp_ctx,
+	const struct timeval *start_time,
 	const struct auth_usersupplied_info *ui,
 	NTSTATUS status,
 	const char *domain_name,
@@ -470,6 +488,7 @@ static void log_authentication_event_human_readable(
 void log_authentication_event(
 	struct imessaging_context *msg_ctx,
 	struct loadparm_context *lp_ctx,
+	const struct timeval *start_time,
 	const struct auth_usersupplied_info *ui,
 	NTSTATUS status,
 	const char *domain_name,
@@ -498,7 +517,9 @@ void log_authentication_event(
 	}
 	if (CHECK_DEBUGLVLC(DBGC_AUTH_AUDIT_JSON, debug_level) ||
 	    (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx))) {
-		log_authentication_event_json(msg_ctx, lp_ctx,
+		log_authentication_event_json(msg_ctx,
+					      lp_ctx,
+					      start_time,
 					      ui,
 					      status,
 					      domain_name,

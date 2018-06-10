@@ -1094,6 +1094,7 @@ _kdc_as_rep(krb5_context context,
 	if (config->db[0] && config->db[0]->hdb_auth_status)
 		(config->db[0]->hdb_auth_status)(context, config->db[0], NULL,
 						 from_addr,
+						 &_kdc_now,
 						 client_name,
 						 NULL,
 						 HDB_AUTH_CLIENT_UNKNOWN);
@@ -1204,6 +1205,7 @@ _kdc_as_rep(krb5_context context,
 	    if (clientdb->hdb_auth_status)
 		    (clientdb->hdb_auth_status)(context, clientdb, client,
 						from_addr,
+						&_kdc_now,
 						client_name,
 						"PKINIT",
 						HDB_AUTH_PKINIT_SUCCESS);
@@ -1323,6 +1325,7 @@ _kdc_as_rep(krb5_context context,
 		if (clientdb->hdb_auth_status)
 		    (clientdb->hdb_auth_status)(context, clientdb, client,
 						from_addr,
+						&_kdc_now,
 						client_name,
 						str ? str : "unknown enctype",
 						HDB_AUTH_WRONG_PASSWORD);
@@ -1386,6 +1389,7 @@ _kdc_as_rep(krb5_context context,
 	    if (clientdb->hdb_auth_status)
 		    (clientdb->hdb_auth_status)(context, clientdb, client,
 						from_addr,
+						&_kdc_now,
 						client_name,
 						str ? str : "unknown enctype",
 						HDB_AUTH_CORRECT_PASSWORD);
@@ -1443,6 +1447,7 @@ _kdc_as_rep(krb5_context context,
     if (clientdb->hdb_auth_status)
 	(clientdb->hdb_auth_status)(context, clientdb, client,
 				    from_addr,
+				    &_kdc_now,
 				    client_name,
 				    NULL,
 				    HDB_AUTHZ_SUCCESS);

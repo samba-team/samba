@@ -430,6 +430,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["serviceDescription"])
         self.assertEquals("ENC-TS Pre-authentication",
                           msg["Authentication"]["authDescription"])
+        self.assertTrue(msg["Authentication"]["duration"] > 0)
 
         # Check the second message it should be an Authentication
         msg = messages[1]
@@ -439,6 +440,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["serviceDescription"])
         self.assertEquals("ENC-TS Pre-authentication",
                           msg["Authentication"]["authDescription"])
+        self.assertTrue(msg["Authentication"]["duration"] > 0)
 
     def test_ldap_ntlm(self):
 
@@ -463,6 +465,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("LDAP",
                           msg["Authentication"]["serviceDescription"])
         self.assertEquals("NTLMSSP", msg["Authentication"]["authDescription"])
+        self.assertTrue(msg["Authentication"]["duration"] > 0)
 
     def test_ldap_simple_bind(self):
         def isLastExpectedMessage(msg):

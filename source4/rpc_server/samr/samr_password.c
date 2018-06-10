@@ -68,6 +68,7 @@ static void log_password_change_event(struct imessaging_context *msg_ctx,
 
 	log_authentication_event(msg_ctx,
 				 lp_ctx,
+				 NULL,
 				 &ui,
 				 status,
 				 ui.mapped.domain_name,

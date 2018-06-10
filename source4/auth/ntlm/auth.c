@@ -479,6 +479,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 
 		log_authentication_event(state->auth_ctx->msg_ctx,
 					 state->auth_ctx->lp_ctx,
+					 &state->auth_ctx->start_time,
 					 state->user_info, status,
 					 NULL, NULL, NULL, NULL);
 		tevent_req_received(req);
@@ -493,6 +494,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 
 	log_authentication_event(state->auth_ctx->msg_ctx,
 				 state->auth_ctx->lp_ctx,
+				 &state->auth_ctx->start_time,
 				 state->user_info, status,
 				 state->user_info_dc->info->domain_name,
 				 state->user_info_dc->info->account_name,
@@ -712,6 +714,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * 
 	ctx->event_ctx			= ev;
 	ctx->msg_ctx			= msg;
 	ctx->lp_ctx			= lp_ctx;
+	ctx->start_time                 = timeval_current();
 
 	if (sam_ctx) {
 		ctx->sam_ctx = sam_ctx;

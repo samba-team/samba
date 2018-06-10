@@ -84,6 +84,9 @@ typedef NTSTATUS (*make_auth4_context_fn)(const struct auth_context *auth_contex
 struct auth_context {
 	DATA_BLOB challenge; 
 
+	/* What time did this start */
+	struct timeval start_time;
+
 	/* Who set this up in the first place? */ 
 	const char *challenge_set_by; 
 

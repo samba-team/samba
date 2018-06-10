@@ -249,6 +249,7 @@ typedef struct HDB{
      */
     krb5_error_code (*hdb_auth_status)(krb5_context, struct HDB *,
 				       hdb_entry_ex *, struct sockaddr *from_addr,
+				       struct timeval *start_time,
 				       const char *original_client_name,
 				       const char *auth_type,
 				       int);

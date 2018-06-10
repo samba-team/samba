@@ -300,7 +300,9 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	}
 
 	log_authentication_event(NULL, NULL,
-				 user_info, nt_status,
+				 &auth_context->start_time,
+				 user_info,
+				 nt_status,
 				 server_info->info3->base.logon_domain.string,
 				 server_info->info3->base.account_name.string,
 				 unix_username, &sid);
@@ -331,7 +333,15 @@ fail:
 		  user_info->client.account_name, user_info->mapped.account_name,
 		  nt_errstr(nt_status), *pauthoritative));
 
-	log_authentication_event(NULL, NULL, user_info, nt_status, NULL, NULL, NULL, NULL);
+	log_authentication_event(NULL,
+				 NULL,
+				 &auth_context->start_time,
+				 user_info,
+				 nt_status,
+				 NULL,
+				 NULL,
+				 NULL,
+				 NULL);
 
 	ZERO_STRUCTP(pserver_info);
 
@@ -372,6 +382,8 @@ static NTSTATUS make_auth_context(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("make_auth_context: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	ctx->start_time = timeval_current();
 
 	talloc_set_destructor((TALLOC_CTX *)ctx, auth_context_destructor);
 
