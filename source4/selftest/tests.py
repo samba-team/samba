@@ -812,7 +812,7 @@ plantestsuite_loadlist("samba4.ldap.vlv.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [py
 plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/linked_attributes.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
 # These should be the first tests run against testenvs created by backup/restore
-for env in ['restoredc']:
+for env in ['restoredc', 'renamedc']:
     # check that a restored DC matches the original DC (backupfromdc)
     plantestsuite("samba4.blackbox.ldapcmp_restore", env,
         ["PYTHON=%s" % python,
@@ -869,7 +869,7 @@ for env in ["ad_dc_ntvfs"]:
                            )
 
 # this is a basic sanity-check of Kerberos/NTLM user login
-for env in ["restoredc"]:
+for env in ["restoredc", "renamedc"]:
     plantestsuite_loadlist("samba4.ldap.login_basics.python(%s)" % env, env,
         [python, os.path.join(samba4srcdir, "dsdb/tests/python/login_basics.py"),
          "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM",
@@ -906,7 +906,7 @@ plansmbtorture4testsuite(t, "vampire_dc", ['$SERVER', '-U$USERNAME%$PASSWORD', '
 plansmbtorture4testsuite(t, "vampire_dc", ['$SERVER', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.%s.two" % t)
 
 # RPC smoke-tests for testenvs of interest (RODC, etc)
-for env in ['rodc', 'restoredc']:
+for env in ['rodc', 'restoredc', 'renamedc']:
     plansmbtorture4testsuite('rpc.echo', env, ['ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo")
     plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "yes", '-P', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo")
     plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", '-Utestallowed\ account%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testallowed")
@@ -1086,7 +1086,7 @@ for env in [
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.kcc.kcc_utils")
 
 for env in [ "simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
-             "ad_member", "restoredc" ]:
+             "ad_member", "restoredc", "renamedc" ]:
     planoldpythontestsuite(env, "netlogonsvc",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
                            name="samba.tests.netlogonsvc.python(%s)" % env)
@@ -1110,7 +1110,8 @@ for env in ['vampire_dc', 'promoted_dc', 'rodc']:
 # environment teardown.
 # check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
 for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
-            'vampire_dc', 'promoted_dc', 'backupfromdc', 'restoredc']:
+            'vampire_dc', 'promoted_dc', 'backupfromdc', 'restoredc',
+            'renamedc']:
     plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
 
 # cmocka tests not requiring a specific encironment

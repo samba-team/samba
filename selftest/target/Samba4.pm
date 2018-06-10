@@ -2161,6 +2161,7 @@ sub check_env($$)
 	s4member             => ["ad_dc_ntvfs"],
 
 	restoredc            => ["backupfromdc"],
+	renamedc             => ["backupfromdc"],
 
 	none                 => [],
 );
@@ -2772,6 +2773,50 @@ sub setup_restoredc
 	my $restore_dir = abs_path($prefix);
 	my $ret = $self->restore_backup_file($backup_file,
 					     "--newservername=$env->{SERVER}",
+					     $restore_dir, $env->{SERVERCONFFILE});
+	unless ($ret == 0) {
+		return undef;
+	}
+
+	# start samba for the restored DC
+	if (not defined($self->check_or_start($env, "standard"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+# Set up a DC testenv solely by using the 'samba-tool domain backup rename' and
+# restore commands. This proves that we can backup and rename an online DC
+# ('backupfromdc') and use the backup file to create a valid, working samba DC.
+sub setup_renamedc
+{
+	# note: dcvars contains the env info for the dependent testenv ('backupfromdc')
+	my ($self, $prefix, $dcvars) = @_;
+	print "Preparing RENAME DC...\n";
+
+	my $env = $self->prepare_dc_testenv($prefix, "renamedc",
+					    "RENAMEDOMAIN", "renamedom.samba.example.com",
+					    $dcvars->{PASSWORD});
+
+	# create a backup of the 'backupfromdc' which renames the domain
+	my $backupdir = File::Temp->newdir();
+	my $backup_args = "rename $env->{DOMAIN} $env->{REALM}";
+	my $backup_file = $self->create_backup($env, $dcvars, $backupdir,
+					       $backup_args);
+	unless($backup_file) {
+		return undef;
+	}
+
+	# restore the backup file to populate the rename-DC testenv
+	my $restore_dir = abs_path($prefix);
+	my $restore_opts =  "--newservername=$env->{SERVER} --host-ip=$env->{SERVER_IP}";
+	my $ret = $self->restore_backup_file($backup_file, $restore_opts,
 					     $restore_dir, $env->{SERVERCONFFILE});
 	unless ($ret == 0) {
 		return undef;

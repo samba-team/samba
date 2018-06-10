@@ -409,6 +409,7 @@ sub get_interface($)
     $interfaces{"vampire2000dc"} = 39;
     $interfaces{"backupfromdc"} = 40;
     $interfaces{"restoredc"} = 41;
+    $interfaces{"renamedc"} = 42;
 
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 64
