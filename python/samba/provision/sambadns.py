@@ -1039,7 +1039,7 @@ def create_dns_partitions(samdb, domainsid, names, domaindn, forestdn,
 def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
                              dnsdomain, dnsforest, hostname, hostip, hostip6,
                              domainguid, ntdsguid, dnsadmins_sid, autofill=True,
-                             fill_level=FILL_FULL):
+                             fill_level=FILL_FULL, add_root=True):
     """Fill data in various AD partitions
 
     :param samdb: LDB object connected to sam.ldb file
@@ -1060,7 +1060,8 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
 
     ##### Set up DC=DomainDnsZones,<DOMAINDN>
     # Add rootserver records
-    add_rootservers(samdb, domaindn, "DC=DomainDnsZones")
+    if add_root:
+        add_rootservers(samdb, domaindn, "DC=DomainDnsZones")
 
     # Add domain record
     add_domain_record(samdb, domaindn, "DC=DomainDnsZones", dnsdomain,

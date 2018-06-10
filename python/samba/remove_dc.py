@@ -102,7 +102,8 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
         (dn, primary_recs) = samdb.dns_lookup(dnsHostName)
     except RuntimeError as e4:
         (enum, estr) = e4.args
-        if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
+        if (enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST or
+            enum == werror.WERR_DNS_ERROR_RCODE_NAME_ERROR):
             if ignore_no_name:
                 remove_hanging_dns_references(samdb, logger,
                                               dnsHostNameUpper,

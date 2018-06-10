@@ -41,7 +41,10 @@ from samba.remove_dc import remove_dc
 from samba.provision import secretsdb_self_join
 from samba.dbchecker import dbcheck
 import re
-
+from samba.provision import guess_names, determine_host_ip, determine_host_ip6
+from samba.provision.sambadns import (fill_dns_data_partitions,
+                                      get_dnsadmins_sid,
+                                      get_domainguid)
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.
@@ -235,6 +238,10 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         Option("--backup-file", help="Path to backup file", type=str),
         Option("--targetdir", help="Path to write to", type=str),
         Option("--newservername", help="Name for new server", type=str),
+        Option("--host-ip", type="string", metavar="IPADDRESS",
+               help="set IPv4 ipaddress"),
+        Option("--host-ip6", type="string", metavar="IP6ADDRESS",
+               help="set IPv6 ipaddress"),
     ]
 
     takes_optiongroups = {
@@ -242,8 +249,41 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         "credopts": options.CredentialsOptions,
     }
 
+    def register_dns_zone(self, logger, samdb, lp, ntdsguid, host_ip,
+                          host_ip6):
+        '''
+        Registers the new realm's DNS objects when a renamed domain backup
+        is restored.
+        '''
+        names = guess_names(lp)
+        domaindn = names.domaindn
+        forestdn = samdb.get_root_basedn().get_linearized()
+        dnsdomain = names.dnsdomain.lower()
+        dnsforest = dnsdomain
+        hostname = names.netbiosname.lower()
+        domainsid = dom_sid(samdb.get_domain_sid())
+        dnsadmins_sid = get_dnsadmins_sid(samdb, domaindn)
+        domainguid = get_domainguid(samdb, domaindn)
+
+        # work out the IP address to use for the new DC's DNS records
+        host_ip = determine_host_ip(logger, lp, host_ip)
+        host_ip6 = determine_host_ip6(logger, lp, host_ip6)
+
+        if host_ip is None and host_ip6 is None:
+            raise CommandError('Please specify a host-ip for the new server')
+
+        logger.info("DNS realm was renamed to %s" % dnsdomain)
+        logger.info("Populating DNS partitions for new realm...")
+
+        # Add the DNS objects for the new realm (note: the backup clone already
+        # has the root server objects, so don't add them again)
+        fill_dns_data_partitions(samdb, domainsid, names.sitename, domaindn,
+                                 forestdn, dnsdomain, dnsforest, hostname,
+                                 host_ip, host_ip6, domainguid, ntdsguid,
+                                 dnsadmins_sid, add_root=False)
+
     def run(self, sambaopts=None, credopts=None, backup_file=None,
-            targetdir=None, newservername=None):
+            targetdir=None, newservername=None, host_ip=None, host_ip6=None):
         if not (backup_file and os.path.exists(backup_file)):
             raise CommandError('Backup file not found.')
         if targetdir is None:
@@ -314,7 +354,8 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         # Get the SID saved by the backup process and create account
         res = samdb.search(base=ldb.Dn(samdb, "@SAMBA_DSDB"),
                            scope=ldb.SCOPE_BASE,
-                           attrs=['sidForRestore'])
+                           attrs=['sidForRestore', 'backupRename'])
+        is_rename = True if 'backupRename' in res[0] else False
         sid = res[0].get('sidForRestore')[0]
         logger.info('Creating account with SID: ' + str(sid))
         ctx.join_add_objects(specified_sid=dom_sid(sid))
@@ -326,6 +367,13 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                                                 ldb.FLAG_MOD_REPLACE,
                                                 "dsServiceName")
         samdb.modify(m)
+
+        # if we renamed the backed-up domain, then we need to add the DNS
+        # objects for the new realm (we do this in the restore, now that we
+        # know the new DC's IP address)
+        if is_rename:
+            self.register_dns_zone(logger, samdb, lp, ctx.ntds_guid,
+                                   host_ip, host_ip6)
 
         secrets_path = os.path.join(private_dir, 'secrets.ldb')
         secrets_ldb = Ldb(secrets_path, session_info=system_session(), lp=lp)
@@ -376,8 +424,8 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                                                  ldb.FLAG_MOD_REPLACE,
                                                  "repsFrom")
             msg["repsTo"] = ldb.MessageElement([],
-                                                 ldb.FLAG_MOD_REPLACE,
-                                                 "repsTo")
+                                               ldb.FLAG_MOD_REPLACE,
+                                               "repsTo")
             samdb.modify(msg)
 
         # Update the krbtgt passwords twice, ensuring no tickets from
@@ -401,6 +449,9 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                                              "backupDate")
         m["sidForRestore"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
                                                 "sidForRestore")
+        if is_rename:
+            m["backupRename"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
+                                                   "backupRename")
         samdb.modify(m)
 
         logger.info("Backup file successfully restored to %s" % targetdir)
