@@ -114,16 +114,28 @@ class cmd_drs_showrepl(Command):
 
     def parse_neighbour(self, n):
         """Convert an ldb neighbour object into a python dictionary"""
+        dsa_objectguid = str(n.source_dsa_obj_guid)
         d = {
             'NC dn': n.naming_context_dn,
-            "DSA objectGUID": str(n.source_dsa_obj_guid),
+            "DSA objectGUID": dsa_objectguid,
             "last attempt time": nttime2string(n.last_attempt),
             "last attempt message": drs_errmsg(n.result_last_attempt),
             "consecutive failures": n.consecutive_sync_failures,
             "last success": nttime2string(n.last_success),
-            "NTDS DN": str(n.source_dsa_obj_dn)
+            "NTDS DN": str(n.source_dsa_obj_dn),
+            'is deleted': False
         }
 
+        try:
+            self.samdb.search(base="<GUID=%s>" % dsa_objectguid,
+                              scope=ldb.SCOPE_BASE,
+                              attrs=[])
+        except ldb.LdbError as e:
+            (errno, _) = e.args
+            if errno == ldb.ERR_NO_SUCH_OBJECT:
+                d['is deleted'] = True
+            else:
+                raise
         try:
             (site, server) = drs_parse_ntds_dn(n.source_dsa_obj_dn)
             d["DSA"] = "%s\%s" % (site, server)
@@ -194,10 +206,14 @@ class cmd_drs_showrepl(Command):
 
         local_data = self.get_local_repl_data()
         for rep in local_data['repsTo']:
+            if rep['is deleted']:
+                continue
             if rep["consecutive failures"] != 0 or rep["last success"] == 0:
                 failing_repsto.append(rep)
 
         for rep in local_data['repsFrom']:
+            if rep['is deleted']:
+                continue
             if rep["consecutive failures"] != 0 or rep["last success"] == 0:
                 failing_repsto.append(rep)
 
