@@ -100,6 +100,3 @@ case $cmd in
 	exit 0
 	;;
 esac
-
-echo "Invalid command $cmd"
-exit 1
