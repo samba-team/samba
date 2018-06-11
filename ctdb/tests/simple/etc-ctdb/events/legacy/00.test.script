@@ -1,10 +1,14 @@
 #!/bin/sh
 # event script for 'make test'
 
-cmd="$1"
+. "${CTDB_BASE}/functions"
+
+ctdb_check_args "$@"
+
+event="$1"
 shift
 
-case $cmd in 
+case "$event" in
     monitor)
 	echo "monitor event"
 	echo "monitor event stderr" >&2
@@ -35,10 +39,6 @@ case $cmd in
 	;;
 	
      takeip)
-	if [ $# != 3 ]; then
-	   echo "must supply interface, IP and maskbits"
-	   exit 1
-	fi
 	iface=$1
 	ip=$2
 	maskbits=$3
@@ -57,10 +57,6 @@ case $cmd in
      ##################################################
      # called when ctdbd wants to release an IP address
      releaseip)
-	if [ $# != 3 ]; then
-	   echo "must supply interface, IP and maskbits"
-	   exit 1
-	fi
 	iface=$1
 	ip=$2
 	maskbits=$3
