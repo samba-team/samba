@@ -39,33 +39,11 @@ case "$event" in
 	;;
 	
      takeip)
-	iface=$1
-	ip=$2
-	maskbits=$3
-
-	[ -n "$TEST_LOCAL_DAEMONS" ] || {
-	    /sbin/ip addr add $ip/$maskbits dev $iface || {
-		echo "Failed to add $ip/$maskbits on dev $iface"
-		exit 1
-	    }
-	}
 	echo "ctdb takeip event for $1 $2 $3"
 	exit 0;
 	;;
 
-
-     ##################################################
-     # called when ctdbd wants to release an IP address
      releaseip)
-	iface=$1
-	ip=$2
-	maskbits=$3
-	[ -n "$TEST_LOCAL_DAEMONS" ] || {
-	    /sbin/ip addr del $ip/$maskbits dev $iface || {
-		echo "Failed to del $ip on dev $iface"
-		exit 1
-	    }
-	}
 	echo "ctdb releaseip event for $1 $2 $3"
 	exit 0
 	;;
