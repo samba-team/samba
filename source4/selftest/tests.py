@@ -731,6 +731,9 @@ planoldpythontestsuite("fl2003dc:local",
 planoldpythontestsuite("ad_dc",
                        "samba.tests.password_hash_ldap",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc:local",
+                       "samba.tests.domain_backup",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 # Encrypted secrets
 # ensure default provision (ad_dc) and join (vampire_dc)
 # encrypt secret values on disk.
