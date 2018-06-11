@@ -115,7 +115,7 @@ setup_ctdb ()
 	local pnn
 	for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
 		setup_ctdb_base "$SIMPLE_TESTS_VAR_DIR" "node.${pnn}" \
-				functions notify.sh
+				functions notify.sh debug-hung-script.sh
 
 		cp "$nodes_file" "${CTDB_BASE}/nodes"
 
@@ -153,6 +153,9 @@ setup_ctdb ()
 	volatile database directory = ${db_dir}/volatile
 	persistent database directory = ${db_dir}/persistent
 	state database directory = ${db_dir}/state
+
+[event]
+	debug script = ${CTDB_BASE}/debug-hung-script.sh
 EOF
 	done
 }
