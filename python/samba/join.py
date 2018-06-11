@@ -43,6 +43,9 @@ import logging
 import talloc
 import random
 import time
+import re
+import os
+import tempfile
 
 class DCJoinException(Exception):
 
@@ -904,6 +907,12 @@ class DCJoinContext(object):
                                  dns_backend=ctx.dns_backend, adminpass=ctx.adminpass)
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
+    def create_replicator(ctx, repl_creds, binding_options):
+        '''Creates a new DRS object for managing replications'''
+        return drs_utils.drs_Replicate(
+                "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
+                ctx.lp, repl_creds, ctx.local_samdb, ctx.invocation_id)
+
     def join_replicate(ctx):
         """Replicate the SAM."""
 
@@ -929,9 +938,8 @@ class DCJoinContext(object):
             binding_options = "seal"
             if ctx.lp.log_level() >= 9:
                 binding_options += ",print"
-            repl = drs_utils.drs_Replicate(
-                "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
-                ctx.lp, repl_creds, ctx.local_samdb, ctx.invocation_id)
+
+            repl = ctx.create_replicator(repl_creds, binding_options)
 
             repl.replicate(ctx.schema_dn, source_dsa_invocation_id,
                     destination_dsa_guid, schema=True, rodc=ctx.RODC,
@@ -1614,3 +1622,89 @@ class DCCloneContext(DCJoinContext):
         ctx.join_provision()
         ctx.join_replicate()
         ctx.join_finalise()
+
+
+# Used to create a renamed backup of a DC. Renaming the domain means that the
+# cloned/backup DC can be started without interfering with the production DC.
+class DCCloneAndRenameContext(DCCloneContext):
+    """Clones a remote DC, renaming the domain along the way."""
+
+    def __init__(ctx, new_base_dn, new_domain_name, new_realm, logger=None,
+                 server=None, creds=None, lp=None, targetdir=None, domain=None,
+                 dns_backend=None, include_secrets=True):
+        super(DCCloneAndRenameContext, ctx).__init__(logger, server, creds, lp,
+                                                     targetdir=targetdir,
+                                                     domain=domain,
+                                                     dns_backend=dns_backend,
+                                                     include_secrets=include_secrets)
+        # store the new DN (etc) that we want the cloned DB to use
+        ctx.new_base_dn = new_base_dn
+        ctx.new_domain_name = new_domain_name
+        ctx.new_realm = new_realm
+
+    def create_replicator(ctx, repl_creds, binding_options):
+        """Creates a new DRS object for managing replications"""
+
+        # We want to rename all the domain objects, and the simplest way to do
+        # this is during replication. This is because the base DN of the top-
+        # level replicated object will flow through to all the objects below it
+        binding_str = "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options)
+        return drs_utils.drs_ReplicateRenamer(binding_str, ctx.lp, repl_creds,
+                                              ctx.local_samdb,
+                                              ctx.invocation_id,
+                                              ctx.base_dn, ctx.new_base_dn)
+
+    def create_non_global_lp(ctx, global_lp):
+        '''Creates a non-global LoadParm based on the global LP's settings'''
+
+        # the samba code shares a global LoadParm by default. Here we create a
+        # new LoadParm that retains the global settings, but any changes we
+        # make to it won't automatically affect the rest of the samba code.
+        # The easiest way to do this is to dump the global settings to a
+        # temporary smb.conf file, and then load the temp file into a new
+        # non-global LoadParm
+        fd, tmp_file = tempfile.mkstemp()
+        global_lp.dump(False, tmp_file)
+        local_lp = samba.param.LoadParm(filename_for_non_global_lp=tmp_file)
+        os.remove(tmp_file)
+        return local_lp
+
+    def rename_dn(ctx, dn_str):
+        '''Uses string substitution to replace the base DN'''
+        old_base_dn = ctx.base_dn
+        return re.sub('%s$' % old_base_dn, ctx.new_base_dn, dn_str)
+
+    # we want to override the normal DCCloneContext's join_provision() so that
+    # use the new domain DNs during the provision. We do this because:
+    # - it sets up smb.conf/secrets.ldb with the new realm/workgroup values
+    # - it sets up a default SAM DB that uses the new Schema DNs (without which
+    #   we couldn't apply the renamed DRS objects during replication)
+    def join_provision(ctx):
+        """Provision the local (renamed) SAM."""
+
+        print("Provisioning the new (renamed) domain...")
+
+        # the provision() calls make_smbconf() which uses lp.dump()/lp.load()
+        # to create a new smb.conf. By default, it uses the global LoadParm to
+        # do this, and so it would overwrite the realm/domain values globally.
+        # We still need the global LoadParm to retain the old domain's details,
+        # so we can connect to (and clone) the existing DC.
+        # So, copy the global settings into a non-global LoadParm, which we can
+        # then pass into provision(). This generates a new smb.conf correctly,
+        # without overwriting the global realm/domain values just yet.
+        non_global_lp = ctx.create_non_global_lp(ctx.lp)
+
+        # do the provision with the new/renamed domain DN values
+        presult = provision(ctx.logger, system_session(),
+                targetdir=ctx.targetdir, samdb_fill=FILL_DRS,
+                realm=ctx.new_realm, lp=non_global_lp,
+                rootdn=ctx.rename_dn(ctx.root_dn), domaindn=ctx.new_base_dn,
+                schemadn=ctx.rename_dn(ctx.schema_dn),
+                configdn=ctx.rename_dn(ctx.config_dn),
+                domain=ctx.new_domain_name, domainsid=ctx.domsid,
+                serverrole="active directory domain controller",
+                dns_backend=ctx.dns_backend)
+
+        print("Provision OK for renamed domain DN %s" % presult.domaindn)
+        ctx.local_samdb = presult.samdb
+        ctx.paths = presult.paths
