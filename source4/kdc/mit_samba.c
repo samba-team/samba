@@ -25,6 +25,7 @@
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "system/kerberos.h"
+#include <com_err.h>
 #include <kdb.h>
 #include <kadm5/kadm_err.h>
 #include "kdc/sdb.h"
@@ -54,6 +55,22 @@ void mit_samba_context_free(struct mit_samba_context *ctx)
 	talloc_free(ctx);
 }
 
+/*
+ * Implemant a callback to log to the MIT KDC log facility
+ *
+ * http://web.mit.edu/kerberos/krb5-devel/doc/plugindev/general.html#logging-from-kdc-and-kadmind-plugin-modules
+ */
+static void mit_samba_debug(void *private_ptr, int msg_level, const char *msg)
+{
+	int is_error = 1;
+
+	if (msg_level > 0) {
+		is_error = 0;
+	}
+
+	com_err("", is_error, "%s", msg);
+}
+
 int mit_samba_context_init(struct mit_samba_context **_ctx)
 {
 	NTSTATUS status;
@@ -80,7 +97,7 @@ int mit_samba_context_init(struct mit_samba_context **_ctx)
 		goto done;
 	}
 
-	setup_logging("mitkdc", DEBUG_DEFAULT_STDOUT);
+	debug_set_callback(NULL, mit_samba_debug);
 
 	/* init s4 configuration */
 	s4_conf_file = lpcfg_configfile(base_ctx.lp_ctx);
