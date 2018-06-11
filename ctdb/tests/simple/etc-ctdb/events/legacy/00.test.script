@@ -9,11 +9,10 @@ event="$1"
 shift
 
 case "$event" in
-     startup)
-	IFACES=`ctdb ifaces -X | grep -v '^|Name|LinkStatus|References|'`
-	for I in $IFACES; do
-		IFACE=`echo -n "$I" | cut -d '|' -f2`
-		ctdb setifacelink $IFACE up
+startup)
+	ifaces=$(ctdb ifaces -X | tail -n +2 | cut -d '|' -f2)
+	for i in $ifaces; do
+		ctdb setifacelink "$i" up
 	done
 	;;
 esac
