@@ -1310,8 +1310,17 @@ class cmd_restore(cmd_create):
                         try:
                             with open(l_name, 'r') as ltemp:
                                 data = ltemp.read()
-                                # Load the XML file with the DTD (entity) header
-                                parser.load_xml(ET.fromstring(dtd_header + data))
+                                xml_head = '<?xml version="1.0" encoding="utf-8"?>'
+
+                                if data.startswith(xml_head):
+                                    # It appears that sometimes the DTD rejects
+                                    # the xml header being after it.
+                                    data = data[len(xml_head):]
+
+                                    # Load the XML file with the DTD (entity) header
+                                    parser.load_xml(ET.fromstring(xml_head + dtd_header + data))
+                                else:
+                                    parser.load_xml(ET.fromstring(dtd_header + data))
 
                                 # Write out the substituted files in the output
                                 # location, ready to copy over.
