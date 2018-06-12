@@ -378,21 +378,20 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 	}
 
 	vuser = get_valid_user_struct(conn->sconn, vuid);
-
-	if ((current_user.conn == conn) &&
-		   (vuser != NULL) && (current_user.vuid == vuid) &&
-		   (current_user.ut.uid == vuser->session_info->unix_token->uid)) {
-		DEBUG(4,("Skipping user change - already "
-			 "user\n"));
-		return(True);
-	}
-
 	if (vuser == NULL) {
 		/* Invalid vuid sent */
 		DEBUG(2,("Invalid vuid %llu used on share %s.\n",
 			 (unsigned long long)vuid, lp_servicename(talloc_tos(),
 								  snum)));
 		return false;
+	}
+
+	if ((current_user.conn == conn) &&
+	    (current_user.vuid == vuid) &&
+	    (current_user.ut.uid == vuser->session_info->unix_token->uid))
+	{
+		DBG_INFO("Skipping user change - already user\n");
+		return true;
 	}
 
 	return change_to_user_internal(conn, vuser->session_info, vuid);
