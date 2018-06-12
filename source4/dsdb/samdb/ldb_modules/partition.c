@@ -405,7 +405,7 @@ struct partition_copy_context {
  * A special DN has been updated in the primary partition. Now propagate those
  * changes to the remaining partitions.
  *
- * Note: that the operations are asyncchonous and this fuction is called
+ * Note: that the operations are asynchronous and this function is called
  *       from partition_copy_all_callback_handler in response to an async
  *       callback.
  */
@@ -671,7 +671,7 @@ static int partition_copy_all(
 		ldb_debug(
 			ldb,
 			LDB_DEBUG_ERROR,
-			"Unexpected opertation type (%d)\n", req->operation);
+			"Unexpected operation type (%d)\n", req->operation);
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		break;
 	}
