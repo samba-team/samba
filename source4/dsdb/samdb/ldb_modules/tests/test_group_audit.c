@@ -189,11 +189,13 @@ static void add_session_data(
 	struct security_token *token = NULL;
 	struct dom_sid *sid = NULL;
 	struct GUID session_id;
+	bool ok;
 
 	sess = talloc_zero(ctx, struct auth_session_info);
 	token = talloc_zero(ctx, struct security_token);
 	sid = talloc_zero(ctx, struct dom_sid);
-	string_to_sid(sid, user_sid);
+	ok = string_to_sid(sid, user_sid);
+	assert_true(ok);
 	token->sids = sid;
 	sess->security_token = token;
 	GUID_from_string(session, &session_id);
