@@ -470,6 +470,9 @@ static void dsdb_audit_add_ldb_value(
 	struct json_object *array,
 	const struct ldb_val lv)
 {
+	bool base64;
+	int len;
+	struct json_object value;
 
 	json_assert_is_array(array);
 	if (json_is_invalid(array)) {
@@ -481,9 +484,10 @@ static void dsdb_audit_add_ldb_value(
 		return;
 	}
 
-	bool base64 = ldb_should_b64_encode(NULL, &lv);
-	int len = min(lv.length, MAX_LENGTH);
-	struct json_object value = json_new_object();
+	base64 = ldb_should_b64_encode(NULL, &lv);
+	len = min(lv.length, MAX_LENGTH);
+	value = json_new_object();
+
 	if (lv.length > MAX_LENGTH) {
 		json_add_bool(&value, "truncated", true);
 	}
