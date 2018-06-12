@@ -1172,6 +1172,7 @@ static int add_transaction_id(
 		talloc_get_type(ldb_module_get_private(module),
 				struct audit_context);
 	struct dsdb_control_transaction_identifier *transaction_id;
+	int ret;
 
 	transaction_id = talloc_zero(
 		req,
@@ -1181,11 +1182,11 @@ static int add_transaction_id(
 		return ldb_oom(ldb);
 	}
 	transaction_id->transaction_guid = ac->transaction_guid;
-	ldb_request_add_control(req,
-				DSDB_CONTROL_TRANSACTION_IDENTIFIER_OID,
-				false,
-				transaction_id);
-	return LDB_SUCCESS;
+	ret = ldb_request_add_control(req,
+				      DSDB_CONTROL_TRANSACTION_IDENTIFIER_OID,
+				      false,
+				      transaction_id);
+	return ret;
 
 }
 
