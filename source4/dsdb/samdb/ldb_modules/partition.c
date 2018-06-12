@@ -504,10 +504,14 @@ static int partition_copy_all_callback_action(
 								 req_msg->elements[el_idx].name) != NULL) {
 						continue;
 					}
-					ldb_msg_add_empty(modify_msg,
-							  req_msg->elements[el_idx].name,
-							  LDB_FLAG_MOD_REPLACE,
-							  NULL);
+					pret = ldb_msg_add_empty(
+						modify_msg,
+						req_msg->elements[el_idx].name,
+						LDB_FLAG_MOD_REPLACE,
+						NULL);
+					if (pret != LDB_SUCCESS) {
+						return pret;
+					}
 				}
 			}
 		}
