@@ -258,6 +258,27 @@ static PyObject *py_smb_rmdir(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+
+/*
+ * Remove a file
+ */
+static PyObject *py_smb_unlink(PyObject *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *filename;
+	struct smb_private_data *spdata;
+
+	if (!PyArg_ParseTuple(args, "s:unlink", &filename)) {
+		return NULL;
+	}
+
+	spdata = pytalloc_get_ptr(self);
+	status = smbcli_unlink(spdata->tree, filename);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 /*
  * Remove a directory and all its contents
  */
@@ -551,6 +572,9 @@ FILE_ATTRIBUTE_ARCHIVE\n\n \
 	{ "rmdir", py_smb_rmdir, METH_VARARGS,
 		"rmdir(path) -> None\n\n \
 		Delete a directory." },
+	{ "unlink", py_smb_unlink, METH_VARARGS,
+		"unlink(path) -> None\n\n \
+		Delete a file." },
 	{ "deltree", py_smb_deltree, METH_VARARGS,
 		"deltree(path) -> None\n\n \
 		Delete a directory and all its contents." },

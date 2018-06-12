@@ -53,6 +53,14 @@ class SMBTests(samba.tests.TestCase):
         self.assertIn('Policies',ls,
             msg='"Policies" directory not found in sysvol')
 
+    def test_unlink(self):
+        """
+        The smb.unlink API should delete file
+        """
+        self.conn.savefile(test_file, binary_contents);
+        self.conn.unlink(test_file)
+        self.assertFalse(self.conn.chkpath(test_file))
+
     def test_save_load_text(self):
 
         self.conn.savefile(test_file, test_contents.encode('utf8'))
