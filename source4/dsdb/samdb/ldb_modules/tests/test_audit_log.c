@@ -194,6 +194,7 @@ static void test_get_password_action(void **state)
 	struct ldb_request *req = NULL;
 	struct ldb_reply *reply = NULL;
 	struct dsdb_control_password_acl_validation *pav = NULL;
+	int ret;
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	ldb = ldb_init(ctx, NULL);
@@ -219,7 +220,8 @@ static void test_get_password_action(void **state)
 	/*
 	 * dsdb_control_password_acl_validation reset = false, expect "Change"
 	 */
-	ldb_build_mod_req(&req, ldb, ctx, NULL, NULL, NULL, NULL, NULL);
+	ret = ldb_build_mod_req(&req, ldb, ctx, NULL, NULL, NULL, NULL, NULL);
+	assert_int_equal(ret, LDB_SUCCESS);
 	reply = talloc_zero(ctx, struct ldb_reply);
 	pav = talloc_zero(req, struct dsdb_control_password_acl_validation);
 
