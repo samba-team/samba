@@ -293,6 +293,14 @@ static bool change_to_user_internal(connection_struct *conn,
 	gid_t *group_list = NULL;
 	bool ok;
 
+	if ((current_user.conn == conn) &&
+	    (current_user.vuid == vuid) &&
+	    (current_user.ut.uid == session_info->unix_token->uid))
+	{
+		DBG_INFO("Skipping user change - already user\n");
+		return true;
+	}
+
 	snum = SNUM(conn);
 
 	ok = check_user_ok(conn, vuid, session_info, snum);
@@ -386,14 +394,6 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 		return false;
 	}
 
-	if ((current_user.conn == conn) &&
-	    (current_user.vuid == vuid) &&
-	    (current_user.ut.uid == vuser->session_info->unix_token->uid))
-	{
-		DBG_INFO("Skipping user change - already user\n");
-		return true;
-	}
-
 	return change_to_user_internal(conn, vuser->session_info, vuid);
 }
 
@@ -402,13 +402,6 @@ static bool change_to_user_by_session(connection_struct *conn,
 {
 	SMB_ASSERT(conn != NULL);
 	SMB_ASSERT(session_info != NULL);
-
-	if ((current_user.conn == conn) &&
-	    (current_user.ut.uid == session_info->unix_token->uid)) {
-		DEBUG(7, ("Skipping user change - already user\n"));
-
-		return true;
-	}
 
 	return change_to_user_internal(conn, session_info, UID_FIELD_INVALID);
 }
