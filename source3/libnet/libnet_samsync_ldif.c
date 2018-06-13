@@ -646,7 +646,8 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 					   const char *suffix,
 					   int alloced)
 {
-	fstring username, logonscript, homedrive, homepath = "", homedir = "";
+	fstring username, logonscript, homedrive, homepath = "";
+	char homedir[262] = {0};
 	fstring hex_nt_passwd, hex_lm_passwd;
 	fstring description, profilepath, fullname, sambaSID;
 	char *flags, *user_rdn;
