@@ -176,6 +176,8 @@ bool set_current_service(connection_struct *conn, uint16_t flags, bool do_chdir)
 		return false;
 	}
 
+	set_current_case_sensitive(conn, flags);
+
 	if (do_chdir) {
 		ok = chdir_current_service(conn);
 		if (!ok) {
@@ -183,7 +185,6 @@ bool set_current_service(connection_struct *conn, uint16_t flags, bool do_chdir)
 		}
 	}
 
-	set_current_case_sensitive(conn, flags);
 	return true;
 }
 
