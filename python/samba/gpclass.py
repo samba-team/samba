@@ -29,6 +29,8 @@ from samba.net import Net
 from samba.dcerpc import nbt
 from samba import smb
 import samba.gpo as gpo
+from samba.param import LoadParm
+from uuid import UUID
 
 try:
     from enum import Enum
@@ -479,3 +481,37 @@ def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
             gp_db.delete(str(attr_obj), attr[0])
         gp_db.commit()
 
+def register_gp_extension(guid, name, path,
+                          smb_conf=None, machine=True, user=True):
+    # Check that the module exists
+    if not os.path.exists(path):
+        return False
+    # Check for valid guid
+    if not guid[0] == '{' or not guid[-1] == '}':
+        return False
+    try:
+        uuid = guid[1:-1]
+        UUID(uuid, version=4)
+    except:
+        return False
+
+    lp = LoadParm()
+    if smb_conf is not None:
+        lp.load(smb_conf)
+    else:
+        lp.load_default()
+    ext_conf = lp.cache_path('gpext.conf')
+    parser = ConfigParser()
+    parser.read(ext_conf)
+    if not guid in parser.sections():
+        parser.add_section(guid)
+    parser.set(guid, 'DllName', path)
+    parser.set(guid, 'ProcessGroupPolicy', name)
+    parser.set(guid, 'NoMachinePolicy', 0 if machine else 1)
+    parser.set(guid, 'NoUserPolicy', 0 if user else 1)
+
+    f = open(ext_conf, 'w')
+    parser.write(f)
+    f.close()
+
+    return True
