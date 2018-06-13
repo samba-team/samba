@@ -515,3 +515,31 @@ def register_gp_extension(guid, name, path,
     f.close()
 
     return True
+
+def unregister_gp_extension(guid, smb_conf=None):
+    # Check for valid guid
+    if not guid[0] == '{' or not guid[-1] == '}':
+        return False
+    try:
+        uuid = guid[1:-1]
+        UUID(uuid, version=4)
+    except:
+        return False
+
+    lp = LoadParm()
+    if smb_conf is not None:
+        lp.load(smb_conf)
+    else:
+        lp.load_default()
+    ext_conf = lp.cache_path('gpext.conf')
+    parser = ConfigParser()
+    parser.read(ext_conf)
+
+    if guid in parser.sections():
+        parser.remove_section(guid)
+
+    f = open(ext_conf, 'w')
+    parser.write(f)
+    f.close()
+
+    return True
