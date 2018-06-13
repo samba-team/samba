@@ -556,3 +556,15 @@ def register_gp_extension(guid, name, path,
     atomic_write_conf(lp, parser)
 
     return True
+
+def unregister_gp_extension(guid, smb_conf=None):
+    if not check_guid(guid):
+        return False
+
+    lp, parser = parse_gpext_conf(smb_conf)
+    if guid in parser.sections():
+        parser.remove_section(guid)
+
+    atomic_write_conf(lp, parser)
+
+    return True
