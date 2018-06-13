@@ -89,6 +89,8 @@ extern uint16_t fnf_handle;
 struct conn_ctx {
 	connection_struct *conn;
 	uint64_t vuid;
+	bool need_chdir;
+	bool done_chdir;
 	userdom_struct user_info;
 };
 /* A stack of current_user connection contexts. */

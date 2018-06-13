@@ -52,6 +52,8 @@ bool change_to_guest(void)
 
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
+	current_user.need_chdir = false;
+	current_user.done_chdir = false;
 
 	TALLOC_FREE(pass);
 
@@ -295,6 +297,7 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	if ((current_user.conn == conn) &&
 	    (current_user.vuid == vuid) &&
+	    (current_user.need_chdir == conn->tcon_done) &&
 	    (current_user.ut.uid == session_info->unix_token->uid))
 	{
 		DBG_INFO("Skipping user change - already user\n");
@@ -369,12 +372,26 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
+	current_user.need_chdir = conn->tcon_done;
 
-	DEBUG(5, ("Impersonated user: uid=(%d,%d), gid=(%d,%d)\n",
-		 (int)getuid(),
-		 (int)geteuid(),
-		 (int)getgid(),
-		 (int)getegid()));
+	if (current_user.need_chdir) {
+		ok = chdir_current_service(conn);
+		if (!ok) {
+			DBG_ERR("chdir_current_service() failed!\n");
+			return false;
+		}
+		current_user.done_chdir = true;
+	}
+
+	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
+		char cwdbuf[PATH_MAX+1] = { 0, };
+		DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
+			 (int)getuid(),
+			 (int)geteuid(),
+			 (int)getgid(),
+			 (int)getegid(),
+			 getcwd(cwdbuf, sizeof(cwdbuf)));
+	}
 
 	return true;
 }
@@ -424,6 +441,8 @@ bool smbd_change_to_root_user(void)
 
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
+	current_user.need_chdir = false;
+	current_user.done_chdir = false;
 
 	return(True);
 }
@@ -485,6 +504,8 @@ static void push_conn_ctx(void)
 
 	ctx_p->conn = current_user.conn;
 	ctx_p->vuid = current_user.vuid;
+	ctx_p->need_chdir = current_user.need_chdir;
+	ctx_p->done_chdir = current_user.done_chdir;
 	ctx_p->user_info = current_user_info;
 
 	DEBUG(4, ("push_conn_ctx(%llu) : conn_ctx_stack_ndx = %d\n",
@@ -510,11 +531,30 @@ static void pop_conn_ctx(void)
 	set_current_user_info(ctx_p->user_info.smb_name,
 			      ctx_p->user_info.unix_name,
 			      ctx_p->user_info.domain);
+
+	/*
+	 * Check if the current context did a chdir_current_service()
+	 * and restore the cwd_fname of the previous context
+	 * if needed.
+	 */
+	if (current_user.done_chdir && ctx_p->need_chdir) {
+		int ret;
+
+		ret = vfs_ChDir(ctx_p->conn, ctx_p->conn->cwd_fname);
+		if (ret != 0) {
+			DBG_ERR("vfs_ChDir() failed!\n");
+			smb_panic("vfs_ChDir() failed!\n");
+		}
+	}
+
 	current_user.conn = ctx_p->conn;
 	current_user.vuid = ctx_p->vuid;
+	current_user.need_chdir = ctx_p->need_chdir;
+	current_user.done_chdir = ctx_p->done_chdir;
 
-	ctx_p->conn = NULL;
-	ctx_p->vuid = UID_FIELD_INVALID;
+	*ctx_p = (struct conn_ctx) {
+		.vuid = UID_FIELD_INVALID,
+	};
 }
 
 /****************************************************************************
