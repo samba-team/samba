@@ -29,7 +29,7 @@ import ldb
 from samba import smb
 from samba.ntacls import backup_online, backup_restore
 from samba.auth import system_session
-from samba.join import DCJoinContext, join_clone
+from samba.join import DCJoinContext, join_clone, DCCloneAndRenameContext
 from samba.dcerpc.security import dom_sid
 from samba.netcmd import Option, CommandError
 from samba.dcerpc import misc
@@ -39,6 +39,8 @@ from samba.provision import make_smbconf
 from samba.upgradehelpers import update_krbtgt_account_password
 from samba.remove_dc import remove_dc
 from samba.provision import secretsdb_self_join
+from samba.dbchecker import dbcheck
+import re
 
 
 
@@ -406,7 +408,221 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                     "starting samba.")
 
 
+class cmd_domain_backup_rename(samba.netcmd.Command):
+    '''Copy a running DC's DB to backup file, renaming the domain in the process.
+
+    Where <new-domain> is the new domain's NetBIOS name, and <new-dnsrealm> is
+    the new domain's realm in DNS form.
+
+    This is similar to 'samba-tool backup online' in that it clones the DB of a
+    running DC. However, this option also renames all the domain entries in the
+    DB. Renaming the domain makes it possible to restore and start a new Samba
+    DC without it interfering with the existing Samba domain. In other words,
+    you could use this option to clone your production samba domain and restore
+    it to a separate pre-production environment that won't overlap or interfere
+    with the existing production Samba domain.
+
+    Note that:
+    - it's recommended to run 'samba-tool dbcheck' before taking a backup-file
+      and fix any errors it reports.
+    - all the domain's secrets are included in the backup file.
+    - although the DB contents can be untarred and examined manually, you need
+      to run 'samba-tool domain backup restore' before you can start a Samba DC
+      from the backup file.
+    - GPO and sysvol information will still refer to the old realm and will
+      need to be updated manually.
+    - if you specify 'keep-dns-realm', then the DNS records will need updating
+      in order to work (they will still refer to the old DC's IP instead of the
+      new DC's address).
+    - we recommend that you only use this option if you know what you're doing.
+    '''
+
+    synopsis = ("%prog <new-domain> <new-dnsrealm> --server=<DC-to-backup> "
+                "--targetdir=<output-dir>")
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("--server", help="The DC to backup", type=str),
+        Option("--targetdir", help="Directory to write the backup file",
+               type=str),
+        Option("--keep-dns-realm", action="store_true", default=False,
+               help="Retain the DNS entries for the old realm in the backup"),
+       ]
+
+    takes_args = ["new_domain_name", "new_dns_realm"]
+
+    def update_dns_root(self, logger, samdb, old_realm, delete_old_dns):
+        '''Updates dnsRoot for the partition objects to reflect the rename'''
+
+        # lookup the crossRef objects that hold the old realm's dnsRoot
+        partitions_dn = samdb.get_partitions_dn()
+        res = samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL,
+                           attrs=["dnsRoot"],
+                           expression='(&(objectClass=crossRef)(dnsRoot=*))')
+        new_realm = samdb.domain_dns_name()
+
+        # go through and add the new realm
+        for res_msg in res:
+            # dnsRoot can be multi-valued, so only look for the old realm
+            for dns_root in res_msg["dnsRoot"]:
+                dn = res_msg.dn
+                if old_realm in dns_root:
+                    new_dns_root = re.sub('%s$' % old_realm, new_realm,
+                                          dns_root)
+                    logger.info("Adding %s dnsRoot to %s" % (new_dns_root, dn))
+
+                    m = ldb.Message()
+                    m.dn = dn
+                    m["dnsRoot"] = ldb.MessageElement(new_dns_root,
+                                                      ldb.FLAG_MOD_ADD,
+                                                      "dnsRoot")
+                    samdb.modify(m)
+
+                    # optionally remove the dnsRoot for the old realm
+                    if delete_old_dns:
+                        logger.info("Removing %s dnsRoot from %s" % (dns_root,
+                                                                     dn))
+                        m["dnsRoot"] = ldb.MessageElement(dns_root,
+                                                          ldb.FLAG_MOD_DELETE,
+                                                          "dnsRoot")
+                        samdb.modify(m)
+
+    # Updates the CN=<domain>,CN=Partitions,CN=Configuration,... object to
+    # reflect the domain rename
+    def rename_domain_partition(self, logger, samdb, new_netbios_name):
+        '''Renames the domain parition object and updates its nETBIOSName'''
+
+        # lookup the crossRef object that holds the nETBIOSName (nCName has
+        # already been updated by this point, but the netBIOS hasn't)
+        base_dn = samdb.get_default_basedn()
+        nc_name = ldb.binary_encode(str(base_dn))
+        partitions_dn = samdb.get_partitions_dn()
+        res = samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL,
+                           attrs=["nETBIOSName"],
+                           expression='ncName=%s' % nc_name)
+
+        logger.info("Changing backup domain's NetBIOS name to %s" %
+                    new_netbios_name)
+        m = ldb.Message()
+        m.dn = res[0].dn
+        m["nETBIOSName"] = ldb.MessageElement(new_netbios_name,
+                                              ldb.FLAG_MOD_REPLACE,
+                                              "nETBIOSName")
+        samdb.modify(m)
+
+        # renames the object itself to reflect the change in domain
+        new_dn = "CN=%s,%s" % (new_netbios_name, partitions_dn)
+        logger.info("Renaming %s --> %s" % (res[0].dn, new_dn))
+        samdb.rename(res[0].dn, new_dn, controls=['relax:0'])
+
+    def delete_old_dns_zones(self, logger, samdb, old_realm):
+        # remove the top-level DNS entries for the old realm
+        basedn = samdb.get_default_basedn()
+        dn = "DC=%s,CN=MicrosoftDNS,DC=DomainDnsZones,%s" % (old_realm, basedn)
+        logger.info("Deleting old DNS zone %s" % dn)
+        samdb.delete(dn, ["tree_delete:1"])
+
+        forestdn = samdb.get_root_basedn().get_linearized()
+        dn = "DC=_msdcs.%s,CN=MicrosoftDNS,DC=ForestDnsZones,%s" % (old_realm,
+                                                                    forestdn)
+        logger.info("Deleting old DNS zone %s" % dn)
+        samdb.delete(dn, ["tree_delete:1"])
+
+    def fix_old_dn_attributes(self, samdb):
+        '''Fixes attributes (i.e. objectCategory) that still use the old DN'''
+
+        samdb.transaction_start()
+        # Just fix any mismatches in DN detected (leave any other errors)
+        chk = dbcheck(samdb, quiet=True, fix=True, yes=False,
+                      in_transaction=True)
+        # fix up incorrect objectCategory/etc attributes
+        setattr(chk, 'fix_all_old_dn_string_component_mismatch', 'ALL')
+        cross_ncs_ctrl = 'search_options:1:2'
+        controls = ['show_deleted:1', cross_ncs_ctrl]
+        chk.check_database(controls=controls)
+        samdb.transaction_commit()
+
+    def run(self, new_domain_name, new_dns_realm, sambaopts=None,
+            credopts=None, server=None, targetdir=None, keep_dns_realm=False):
+        logger = self.get_logger()
+        logger.setLevel(logging.INFO)
+
+        # Make sure we have all the required args.
+        check_online_backup_args(logger, credopts, server, targetdir)
+        delete_old_dns = not keep_dns_realm
+
+        new_dns_realm = new_dns_realm.lower()
+        new_domain_name = new_domain_name.upper()
+
+        new_base_dn = samba.dn_from_dns_name(new_dns_realm)
+        logger.info("New realm for backed up domain: %s" % new_dns_realm)
+        logger.info("New base DN for backed up domain: %s" % new_base_dn)
+        logger.info("New domain NetBIOS name: %s" % new_domain_name)
+
+        tmpdir = tempfile.mkdtemp(dir=targetdir)
+
+        # Clone and rename the remote server
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        ctx = DCCloneAndRenameContext(new_base_dn, new_domain_name,
+                                      new_dns_realm, logger=logger,
+                                      creds=creds, lp=lp, include_secrets=True,
+                                      dns_backend='SAMBA_INTERNAL',
+                                      server=server, targetdir=tmpdir)
+        ctx.do_join()
+
+        # get the paths used for the clone, then drop the old samdb connection
+        del ctx.local_samdb
+        paths = ctx.paths
+
+        # get a free RID to use as the new DC's SID (when it gets restored)
+        remote_sam = SamDB(url='ldap://' + server, credentials=creds,
+                           session_info=system_session(), lp=lp)
+        new_sid = get_sid_for_restore(remote_sam)
+        old_realm = remote_sam.domain_dns_name()
+
+        # Grab the remote DC's sysvol files and bundle them into a tar file.
+        # Note we end up with 2 sysvol dirs - the original domain's files (that
+        # use the old realm) backed here, as well as default files generated
+        # for the new realm as part of the clone/join.
+        sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
+        smb_conn = smb.SMB(server, "sysvol", lp=lp, creds=creds)
+        backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
+
+        # connect to the local DB (making sure we use the new/renamed config)
+        lp.load(paths.smbconf)
+        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
+
+        # Edit the cloned sam.ldb to mark it as a backup
+        time_str = get_timestamp()
+        add_backup_marker(samdb, "backupDate", time_str)
+        add_backup_marker(samdb, "sidForRestore", new_sid)
+        add_backup_marker(samdb, "backupRename", old_realm)
+
+        # fix up the DNS objects that are using the old dnsRoot value
+        self.update_dns_root(logger, samdb, old_realm, delete_old_dns)
+
+        # update the netBIOS name and the Partition object for the domain
+        self.rename_domain_partition(logger, samdb, new_domain_name)
+
+        if delete_old_dns:
+            self.delete_old_dns_zones(logger, samdb, old_realm)
+
+        logger.info("Fixing DN attributes after rename...")
+        self.fix_old_dn_attributes(samdb)
+
+        # Add everything in the tmpdir to the backup tar file
+        backup_file = backup_filepath(targetdir, new_dns_realm, time_str)
+        create_backup_tar(logger, tmpdir, backup_file)
+
+        shutil.rmtree(tmpdir)
+
+
 class cmd_domain_backup(samba.netcmd.SuperCommand):
     '''Create or restore a backup of the domain.'''
     subcommands = {'online': cmd_domain_backup_online(),
+                   'rename': cmd_domain_backup_rename(),
                    'restore': cmd_domain_backup_restore()}

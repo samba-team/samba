@@ -302,6 +302,11 @@
 </refsect3>
 
 <refsect3>
+	<title>domain backup rename</title>
+	<para>Copy a running DC's DB to backup file, renaming the domain in the process.</para>
+</refsect3>
+
+<refsect3>
 	<title>domain backup restore</title>
 	<para>Restore the domain's DB from a backup-file.</para>
 </refsect3>
