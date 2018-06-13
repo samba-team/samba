@@ -557,6 +557,19 @@ def register_gp_extension(guid, name, path,
 
     return True
 
+def list_gp_extensions(smb_conf=None):
+    _, parser = parse_gpext_conf(smb_conf)
+    results = {}
+    for guid in parser.sections():
+        results[guid] = {}
+        results[guid]['DllName'] = parser.get(guid, 'DllName')
+        results[guid]['ProcessGroupPolicy'] = \
+            parser.get(guid, 'ProcessGroupPolicy')
+        results[guid]['MachinePolicy'] = \
+            not int(parser.get(guid, 'NoMachinePolicy'))
+        results[guid]['UserPolicy'] = not int(parser.get(guid, 'NoUserPolicy'))
+    return results
+
 def unregister_gp_extension(guid, smb_conf=None):
     if not check_guid(guid):
         return False
