@@ -626,7 +626,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 			if (mem_ctx == NULL) {
 				return ldb_module_operr(module);
 			}
-			ret2 = ltdb_search_base(module, module,
+			ret2 = ltdb_search_base(module, mem_ctx,
 						msg->dn, &dn2);
 			TALLOC_FREE(mem_ctx);
 			if (ret2 == LDB_SUCCESS) {
