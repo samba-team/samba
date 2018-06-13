@@ -30,6 +30,8 @@ from samba.net import Net
 from samba.dcerpc import nbt
 from samba import smb
 import samba.gpo as gpo
+from samba.param import LoadParm
+from uuid import UUID
 from tempfile import NamedTemporaryFile
 
 try:
@@ -508,3 +510,49 @@ def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
             gp_db.delete(str(attr_obj), attr[0])
         gp_db.commit()
 
+def parse_gpext_conf(smb_conf):
+    lp = LoadParm()
+    if smb_conf is not None:
+        lp.load(smb_conf)
+    else:
+        lp.load_default()
+    ext_conf = lp.state_path('gpext.conf')
+    parser = ConfigParser()
+    parser.read(ext_conf)
+    return lp, parser
+
+def atomic_write_conf(lp, parser):
+    ext_conf = lp.state_path('gpext.conf')
+    with NamedTemporaryFile(delete=False, dir=os.path.dirname(ext_conf)) as f:
+        parser.write(f)
+        os.rename(f.name, ext_conf)
+
+def check_guid(guid):
+    # Check for valid guid with curly braces
+    if guid[0] != '{' or guid[-1] != '}' or len(guid) != 38:
+        return False
+    try:
+        UUID(guid, version=4)
+    except ValueError:
+        return False
+    return True
+
+def register_gp_extension(guid, name, path,
+                          smb_conf=None, machine=True, user=True):
+    # Check that the module exists
+    if not os.path.exists(path):
+        return False
+    if not check_guid(guid):
+        return False
+
+    lp, parser = parse_gpext_conf(smb_conf)
+    if not guid in parser.sections():
+        parser.add_section(guid)
+    parser.set(guid, 'DllName', path)
+    parser.set(guid, 'ProcessGroupPolicy', name)
+    parser.set(guid, 'NoMachinePolicy', 0 if machine else 1)
+    parser.set(guid, 'NoUserPolicy', 0 if user else 1)
+
+    atomic_write_conf(lp, parser)
+
+    return True
