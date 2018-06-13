@@ -1,0 +1,3 @@
+Machine Name,Policy Target,Subcategory,Subcategory GUID,Inclusion Setting,Exclusion Setting,Setting Value
+,System,Audit Credential Validation,{0cce923f-69ae-11d9-bed3-505054503030},Success,,1
+,System,Audit Kerberos Authentication Service,{0cce9242-69ae-11d9-bed3-505054503030},Failure,,2

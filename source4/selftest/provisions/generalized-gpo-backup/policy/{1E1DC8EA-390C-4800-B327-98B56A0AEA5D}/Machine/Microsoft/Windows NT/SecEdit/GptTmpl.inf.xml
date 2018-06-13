@@ -1,0 +1,87 @@
+<GptTmplInfFile>
+	<Section name="Unicode" />
+	<Section name="Version" />
+	<Section name="System Access">
+		<Parameter>
+			<Key>PasswordHistorySize</Key>
+			<Value>2</Value>
+		</Parameter>
+		<Parameter>
+			<Key>EnableGuestAccount</Key>
+			<Value>1</Value>
+		</Parameter>
+	</Section>
+	<Section name="Kerberos Policy">
+		<Parameter>
+			<Key>MaxRenewAge</Key>
+			<Value>100</Value>
+		</Parameter>
+	</Section>
+	<Section name="System Log" />
+	<Section name="Security Log" />
+	<Section name="Application Log">
+		<Parameter>
+			<Key>MaximumLogSize</Key>
+			<Value>16384</Value>
+		</Parameter>
+	</Section>
+	<Section name="Event Audit">
+		<Parameter>
+			<Key>AuditAccountLogon</Key>
+			<Value>1</Value>
+		</Parameter>
+	</Section>
+	<Section name="Registry Values">
+		<Parameter>
+			<Value>MACHINE\System\CurrentControlSet\Control\SecurePipeServers\Winreg\AllowedExactPaths\Machine=7,System\CurrentControlSet\Control\ProductOptions,System\CurrentControlSet\Control\Server Applications,Software\Microsoft\Windows NT\CurrentVersion</Value>
+		</Parameter>
+		<Parameter>
+			<Value>MACHINE\System\CurrentControlSet\Control\Lsa\FIPSAlgorithmPolicy\Enabled=4,0</Value>
+		</Parameter>
+		<Parameter>
+			<Value>MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\InactivityTimeoutSecs=4,1111</Value>
+		</Parameter>
+		<Parameter>
+			<Value>MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\EnableUIADesktopToggle=4,1</Value>
+		</Parameter>
+	</Section>
+	<Section name="Privilege Rights">
+		<Parameter>
+			<Key>SeTcbPrivilege</Key>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____d0970f5a1e19cb803f916c203d5c39c4__;</Value>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____7b7bc2512ee1fedcd76bdc68926d4f7b__;</Value>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____a3069f5a7a6530293ad8df6abd32af3d__;</Value>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____171d33a63ebd67f856552940ed491ad3__;</Value>
+		</Parameter>
+		<Parameter>
+			<Key>SeProfileSingleProcessPrivilege</Key>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____171d33a63ebd67f856552940ed491ad3__;</Value>
+		</Parameter>
+	</Section>
+	<Section name="Service General Setting">
+		<Parameter>
+			<Value>Dhcp</Value>
+			<Value>3</Value>
+			<Value acl="TRUE" />
+		</Parameter>
+	</Section>
+	<Section name="Registry Keys">
+		<Parameter>
+			<Value>MACHINE\SOFTWARE\Microsoft\TelnetServer\Defaults</Value>
+			<Value>0</Value>
+			<Value acl="TRUE">&SAMBA____SDDL_ACL____4ce8277be3f630300cbcf80a80e21cf4__;</Value>
+		</Parameter>
+	</Section>
+	<Section name="File Security" />
+	<Section name="Group Membership">
+		<Parameter>
+			<Key member_type="Memberof" user_id="TRUE">&SAMBA____USER_ID_____adb831a7fdd83dd1e2a309ce7591dff8__;</Key>
+			<Value user_id="TRUE" />
+		</Parameter>
+		<Parameter>
+			<Key member_type="Members" user_id="TRUE">&SAMBA____USER_ID_____adb831a7fdd83dd1e2a309ce7591dff8__;</Key>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____9fa835214b4fc8b6102c991f7d97c2f8__;</Value>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____bf8caafa94a19a6262bad2e8b6d4bce6__;</Value>
+		</Parameter>
+	</Section>
+</GptTmplInfFile>

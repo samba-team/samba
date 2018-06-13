@@ -1,0 +1,38 @@
+<IniFile>
+	<Section name="version">
+		<Parameter>
+			<Key>version</Key>
+			<Value>100</Value>
+		</Parameter>
+	</Section>
+	<Section name="Folder_Redirection">
+		<Parameter>
+			<Key>{33E28130-4E1E-4676-835A-98395C3BC3BB}</Key>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____fdf60b2473b319c8c341de5f62479a7d__;</Value>
+		</Parameter>
+		<Parameter>
+			<Key>{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}</Key>
+			<Value user_id="TRUE">&SAMBA____USER_ID_____7140932fff16ce85cc64d3caab588d0d__;</Value>
+		</Parameter>
+	</Section>
+	<Section fdeploy_GUID="{33E28130-4E1E-4676-835A-98395C3BC3BB}" fdeploy_SID="&SAMBA____USER_ID_____fdf60b2473b319c8c341de5f62479a7d__;">
+		<Parameter>
+			<Key>Flags</Key>
+			<Value>1219</Value>
+		</Parameter>
+		<Parameter>
+			<Key>FullPath</Key>
+			<Value network_path="TRUE">&SAMBA__NETWORK_PATH__82419dafed126a07d6b96c66fc943735__;\netlogon\%USERNAME%\Pictures</Value>
+		</Parameter>
+	</Section>
+	<Section fdeploy_GUID="{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}" fdeploy_SID="&SAMBA____USER_ID_____7140932fff16ce85cc64d3caab588d0d__;">
+		<Parameter>
+			<Key>Flags</Key>
+			<Value>1211</Value>
+		</Parameter>
+		<Parameter>
+			<Key>FullPath</Key>
+			<Value network_path="TRUE">&SAMBA__NETWORK_PATH__82419dafed126a07d6b96c66fc943735__;\netlogon\%USERNAME%\Desktop</Value>
+		</Parameter>
+	</Section>
+</IniFile>

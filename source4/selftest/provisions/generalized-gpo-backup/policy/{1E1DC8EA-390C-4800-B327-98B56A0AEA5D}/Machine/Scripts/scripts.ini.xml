@@ -1,0 +1,22 @@
+<IniFile>
+	<Section name="Shutdown">
+		<Parameter>
+			<Key>0CmdLine</Key>
+			<Value network_path="TRUE">&SAMBA__NETWORK_PATH__82419dafed126a07d6b96c66fc943735__;\netlogon\file.bat</Value>
+		</Parameter>
+		<Parameter>
+			<Key>0Parameters</Key>
+			<Value />
+		</Parameter>
+	</Section>
+	<Section name="Startup">
+		<Parameter>
+			<Key>0CmdLine</Key>
+			<Value network_path="TRUE">&SAMBA__NETWORK_PATH__0484cd41ded45a0728333a9c5e5ef619__;\netlogon\f.bat</Value>
+		</Parameter>
+		<Parameter>
+			<Key>0Parameters</Key>
+			<Value>abcd</Value>
+		</Parameter>
+	</Section>
+</IniFile>

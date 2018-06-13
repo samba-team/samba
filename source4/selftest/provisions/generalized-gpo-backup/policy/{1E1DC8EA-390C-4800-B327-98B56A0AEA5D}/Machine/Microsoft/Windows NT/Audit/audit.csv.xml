@@ -1,0 +1,29 @@
+<CsvFile>
+	<Row>
+		<Value>Machine Name</Value>
+		<Value>Policy Target</Value>
+		<Value>Subcategory</Value>
+		<Value>Subcategory GUID</Value>
+		<Value>Inclusion Setting</Value>
+		<Value>Exclusion Setting</Value>
+		<Value>Setting Value</Value>
+	</Row>
+	<Row>
+		<Value />
+		<Value user_id="TRUE">&SAMBA____USER_ID_____a45da96d0bf6575970f2d27af22be28a__;</Value>
+		<Value>Audit Credential Validation</Value>
+		<Value>{0cce923f-69ae-11d9-bed3-505054503030}</Value>
+		<Value>Success</Value>
+		<Value />
+		<Value>1</Value>
+	</Row>
+	<Row>
+		<Value />
+		<Value user_id="TRUE">&SAMBA____USER_ID_____a45da96d0bf6575970f2d27af22be28a__;</Value>
+		<Value>Audit Kerberos Authentication Service</Value>
+		<Value>{0cce9242-69ae-11d9-bed3-505054503030}</Value>
+		<Value>Failure</Value>
+		<Value />
+		<Value>2</Value>
+	</Row>
+</CsvFile>

@@ -1,0 +1,416 @@
+<PolFile num_entries="76" signature="PReg" version="1">
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\NetworkAccessProtection\ClientConfig\Enroll\HcsGroups</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\NetworkAccessProtection\ClientConfig\UI</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\ACRS\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\ACRS\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\ACRS\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\CA\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\CA\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\CA\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="3" type_name="REG_BINARY">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Disallowed\Certificates\1A6EFE6CBDFD7A053D03657197B0685755978B32</Key>
+		<ValueName>Blob</ValueName>
+		<Value>AwAAAAEAAAAUAAAAGm7+bL39egU9A2Vxl7BoV1WXizICAAAAAQAAALwAAAAcAAAAbAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAewAxAEMAQwA2AEMARABBADUALQA0AEUANAAzAC0ANABBAEYAQgAtAEIAQgA5AEEALQBBADEAQQA0AEUANwAwADkANQA1ADAANAB9AAAAAABNAGkAYwByAG8AcwBvAGYAdAAgAFMAbwBmAHQAdwBhAHIAZQAgAEsAZQB5ACAAUwB0AG8AcgBhAGcAZQAgAFAAcgBvAHYAaQBkAGUAcgAAAEcAAAABAAAAVAAAAHQAZQBzAHQAYwBvAG0AcAB1AHQAZQByAC4AcwA0AC4AZwBhAHIAbQBpAG4AZwAuAHcAZwB0AG4ALgBjAGEAdAAtAGkAdAAuAGMAbwAuAG4AegAAABQAAAABAAAAFAAAAHwFFtOCrbneR2koQvVakUnvvT4CIAAAAAEAAAAiAwAAMIIDHjCCAgagAwIBAgIQSy82jGyW475JxqvTp4RJKDANBgkqhkiG9w0BAQsFADAWMRQwEgYDVQQDDAtnYXJtaW5nLmNvbTAeFw0xODA0MTAwMTAzMjhaFw0xOTA0MTAwMTIzMjhaMBYxFDASBgNVBAMMC2dhcm1pbmcuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAl6xUvEcatvbHn9uOBxd8iBRcfILVUqtqeWw3wDTjX1J1JBZHS4Eqqv2r8n+KAXELkka2bvDCuF6mtZPuinxDthp4mCbWTmp6tTrtJAWrWZ1xlJJRbMZYUC4ffVd2+edAHmUzsw7Foatk4gx1Fuh3onvHkuAXTN1TYSMMR3Pq1sylWpjDftrgZOokywKYUugdEssuto1Tylhlvsd5sewkZGA2yfSPp79KUVc+TlWiA2ihELG+R83woTaAgYwR6LHb6PlJ67Lkx+/w/xXeLkmmes9y9savBPoMiQcN8RmVyyLhkI+uEz6UxH6juxs1Isp2ww7fe2X6Tr7jfEvyf1M3nwIDAQABo2gwZjAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMBMBYGA1UdEQQPMA2CC2dhcm1pbmcuY29tMB0GA1UdDgQWBBR8BRbTgq253kdpKEL1WpFJ770+AjANBgkqhkiG9w0BAQsFAAOCAQEAV1PpO2mIFA3bO3p0AP5J66QLEQJEm99G1CI9auhwAk8zPg51DLCP1LxSCeiR1rzBwxVORWHQkQfE3eLUhU+Ooji5oP1pSDP0mKgkllArl4X4TGxCdEB5ookJy5ZpNRFvZRlGYakHvNP3KRzxGkCBOYmGqwYMJ3Mp84RwQUrSqAXLTf3RRoZ1VXSHfW70dDh1mb0wYEggdr1u1aNSrl5Y1445h89PJKxS3Pm3fmPKLK/O9AQQUtoqNpLkEyZlObRqmS4GDpRexh/2ESWcEk2oC9usNXOwB8br5t+GJh14ptQPqvY8+6wW+iXgMOkk7b1XjjzSKTCglfE0zRPO3MIQ/A==</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Disallowed\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Disallowed\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\DPNGRA\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\DPNGRA\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\DPNGRA\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\FVE\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\FVE\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\FVE\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\FVE_NKP\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\FVE_NKP\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\FVE_NKP\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Root\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Root\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Root\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Trust\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Trust\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\Trust\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\TrustedPeople\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\TrustedPeople\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\TrustedPeople\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\TrustedPublisher\Certificates</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\TrustedPublisher\CRLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\SystemCertificates\TrustedPublisher\CTLs</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Version</ValueName>
+		<Value>1.0</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Application Name</ValueName>
+		<Value>adfdsafdsafsfdas.exe</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Protocol</ValueName>
+		<Value>TCP</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Local Port</ValueName>
+		<Value>*</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Local IP</ValueName>
+		<Value>*</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Local IP Prefix Length</ValueName>
+		<Value>*</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Remote Port</ValueName>
+		<Value>*</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Remote IP</ValueName>
+		<Value>*</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Remote IP Prefix Length</ValueName>
+		<Value>*</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>DSCP Value</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\QoS\abcd</Key>
+		<ValueName>Throttle Rate</ValueName>
+		<Value>11111</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers</Key>
+		<ValueName>DefaultLevel</ValueName>
+		<Value>262144</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers</Key>
+		<ValueName>TransparentEnabled</ValueName>
+		<Value>1</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers</Key>
+		<ValueName>PolicyScope</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="7" type_name="REG_MULTI_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers</Key>
+		<ValueName>ExecutableTypes</ValueName>
+		<Value>ADE</Value>
+		<Value>ADP</Value>
+		<Value>BAS</Value>
+		<Value>BAT</Value>
+		<Value>CHM</Value>
+		<Value>CMD</Value>
+		<Value>COM</Value>
+		<Value>CPL</Value>
+		<Value>CRT</Value>
+		<Value>EXE</Value>
+		<Value>HLP</Value>
+		<Value>HTA</Value>
+		<Value>INF</Value>
+		<Value>INS</Value>
+		<Value>ISP</Value>
+		<Value>LNK</Value>
+		<Value>MDB</Value>
+		<Value>MDE</Value>
+		<Value>MSC</Value>
+		<Value>MSI</Value>
+		<Value>MSP</Value>
+		<Value>MST</Value>
+		<Value>OCX</Value>
+		<Value>PCD</Value>
+		<Value>PIF</Value>
+		<Value>REG</Value>
+		<Value>SCR</Value>
+		<Value>SHS</Value>
+		<Value>URL</Value>
+		<Value>VB</Value>
+		<Value>WSC</Value>
+	</Entry>
+	<Entry type="11" type_name="REG_QWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{191cd7fa-f240-4a17-8986-94d480a6c8ca}</Key>
+		<ValueName>LastModified</ValueName>
+		<Value>131677984415641873</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{191cd7fa-f240-4a17-8986-94d480a6c8ca}</Key>
+		<ValueName>Description</ValueName>
+		<Value />
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{191cd7fa-f240-4a17-8986-94d480a6c8ca}</Key>
+		<ValueName>SaferFlags</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="2" type_name="REG_EXPAND_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{191cd7fa-f240-4a17-8986-94d480a6c8ca}</Key>
+		<ValueName>ItemData</ValueName>
+		<Value>%HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRoot%</Value>
+	</Entry>
+	<Entry type="11" type_name="REG_QWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{d2c34ab2-529a-46b2-b293-fc853fce72ea}</Key>
+		<ValueName>LastModified</ValueName>
+		<Value>131677984415641873</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{d2c34ab2-529a-46b2-b293-fc853fce72ea}</Key>
+		<ValueName>Description</ValueName>
+		<Value />
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{d2c34ab2-529a-46b2-b293-fc853fce72ea}</Key>
+		<ValueName>SaferFlags</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="2" type_name="REG_EXPAND_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\Safer\CodeIdentifiers\262144\Paths\{d2c34ab2-529a-46b2-b293-fc853fce72ea}</Key>
+		<ValueName>ItemData</ValueName>
+		<Value>%HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\ProgramFilesDir%</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Appx</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Dll</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Exe\77316093-2ca7-4011-aa80-c1d014e526f5</Key>
+		<ValueName>Value</ValueName>
+		<Value>&lt;FileHashRule Id="77316093-2ca7-4011-aa80-c1d014e526f5" Name="certreq.exe" Description="" UserOrGroupSid="S-1-1-0" Action="Allow"&gt;&lt;Conditions&gt;&lt;FileHashCondition&gt;&lt;FileHash Type="SHA256" Data="0xf24bf363f90b1d1b3f8790141c8dab51640ddb62f4afe39a4b5b3799a3ea43db" SourceFileName="certreq.exe" SourceFileLength="355840"/&gt;&lt;/FileHashCondition&gt;&lt;/Conditions&gt;&lt;/FileHashRule&gt;
+</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Exe\921cc481-6e17-4653-8f75-050b80acca20</Key>
+		<ValueName>Value</ValueName>
+		<Value>&lt;FilePathRule Id="921cc481-6e17-4653-8f75-050b80acca20" Name="(Default Rule) All files located in the Program Files folder" Description="Allows members of the Everyone group to run applications that are located in the Program Files folder." UserOrGroupSid="S-1-1-0" Action="Allow"&gt;&lt;Conditions&gt;&lt;FilePathCondition Path="%PROGRAMFILES%\*"/&gt;&lt;/Conditions&gt;&lt;/FilePathRule&gt;
+</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Exe\a61c8b2c-a319-4cd0-9690-d2177cad7b51</Key>
+		<ValueName>Value</ValueName>
+		<Value>&lt;FilePathRule Id="a61c8b2c-a319-4cd0-9690-d2177cad7b51" Name="(Default Rule) All files located in the Windows folder" Description="Allows members of the Everyone group to run applications that are located in the Windows folder." UserOrGroupSid="S-1-1-0" Action="Allow"&gt;&lt;Conditions&gt;&lt;FilePathCondition Path="%WINDIR%\*"/&gt;&lt;/Conditions&gt;&lt;/FilePathRule&gt;
+</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Exe\fd686d83-a829-4351-8ff4-27c7de5755d2</Key>
+		<ValueName>Value</ValueName>
+		<Value>&lt;FilePathRule Id="fd686d83-a829-4351-8ff4-27c7de5755d2" Name="(Default Rule) All files" Description="Allows members of the local Administrators group to run all applications." UserOrGroupSid="S-1-5-32-544" Action="Allow"&gt;&lt;Conditions&gt;&lt;FilePathCondition Path="*"/&gt;&lt;/Conditions&gt;&lt;/FilePathRule&gt;
+</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Msi</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="0" type_name="REG_NONE">
+		<Key>SOFTWARE\Policies\Microsoft\Windows\SrpV2\Script</Key>
+		<ValueName />
+		<Value>None</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\CurrentVersion\NetworkList\Signatures\EveryNetwork</Key>
+		<ValueName>IconReadOnly</ValueName>
+		<Value>1</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{62d7112d-902c-4a32-a83e-39928c424757}</Key>
+		<ValueName>ConfigOptions</ValueName>
+		<Value>2</Value>
+	</Entry>
+	<Entry type="7" type_name="REG_MULTI_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{62d7112d-902c-4a32-a83e-39928c424757}</Key>
+		<ValueName>Name</ValueName>
+		<Value>.111.111.111.in-addr.arpa</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{62d7112d-902c-4a32-a83e-39928c424757}</Key>
+		<ValueName>IPSECCARestriction</ValueName>
+		<Value />
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{62d7112d-902c-4a32-a83e-39928c424757}</Key>
+		<ValueName>DNSSECValidationRequired</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{62d7112d-902c-4a32-a83e-39928c424757}</Key>
+		<ValueName>DNSSECQueryIPSECRequired</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{62d7112d-902c-4a32-a83e-39928c424757}</Key>
+		<ValueName>DNSSECQueryIPSECEncryption</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{62d7112d-902c-4a32-a83e-39928c424757}</Key>
+		<ValueName>Version</ValueName>
+		<Value>1</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{7c88ff94-ed38-4f7d-93a2-d2842cfcc59b}</Key>
+		<ValueName>ConfigOptions</ValueName>
+		<Value>16</Value>
+	</Entry>
+	<Entry type="7" type_name="REG_MULTI_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{7c88ff94-ed38-4f7d-93a2-d2842cfcc59b}</Key>
+		<ValueName>Name</ValueName>
+		<Value>.</Value>
+	</Entry>
+	<Entry type="1" type_name="REG_SZ">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{7c88ff94-ed38-4f7d-93a2-d2842cfcc59b}</Key>
+		<ValueName>IPSECCARestriction</ValueName>
+		<Value />
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{7c88ff94-ed38-4f7d-93a2-d2842cfcc59b}</Key>
+		<ValueName>IDNConfig</ValueName>
+		<Value>0</Value>
+	</Entry>
+	<Entry type="4" type_name="REG_DWORD">
+		<Key>SOFTWARE\Policies\Microsoft\Windows NT\DNSClient\DnsPolicyConfig\{7c88ff94-ed38-4f7d-93a2-d2842cfcc59b}</Key>
+		<ValueName>Version</ValueName>
+		<Value>2</Value>
+	</Entry>
+</PolFile>

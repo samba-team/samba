@@ -1,0 +1,19 @@
+This backup was created by running:
+
+1. samba-tool gpo backup {2F840485-D0DE-4201-A1AB-F49557E52C15} --generalize /tmp/entities
+
+   With a GPO built from Windows GPO editor, export it out.
+
+2. Editing /tmp/entities to replace any domain information
+
+   Remove the domain specific file shares from the entity files.
+
+3. samba-tool gpo restore backup_for_test /tmp/policy/{2F840485-D0DE-4201-A1AB-F49557E52C15} --entities /tmp/entities
+
+   We do the restore and backup again so that binary inconsistencies can be ironed out.
+
+   This is quite clearly the case with the Registry.pol file where Windows cannot seem to decide how to null-terminated strings.
+
+4. samba-tool gpo backup {1E1DC8EA-390C-4800-B327-98B56A0AEA5D} --generalize
+
+   Export the GPO again in a more canonicalized form.

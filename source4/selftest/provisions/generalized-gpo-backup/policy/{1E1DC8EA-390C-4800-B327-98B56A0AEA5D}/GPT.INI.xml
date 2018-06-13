@@ -1,0 +1,12 @@
+<IniFile>
+	<Section name="General">
+		<Parameter>
+			<Key>Version</Key>
+			<Value>1179715</Value>
+		</Parameter>
+		<Parameter>
+			<Key>displayName</Key>
+			<Value>New Group Policy Object</Value>
+		</Parameter>
+	</Section>
+</IniFile>
