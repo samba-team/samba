@@ -38,6 +38,7 @@ from samba.dcerpc import drsuapi, misc
 from samba.join import join_clone
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
+import logging
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
