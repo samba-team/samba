@@ -1,0 +1,58 @@
+<!-- DTD for GPO backup files (may or may not actually parse) -->
+
+<!DOCTYPE UnknownFile [
+<!ELEMENT UnknownFile EMPTY>
+]>
+
+<!DOCTYPE PolFile [
+<!ELEMENT PolFile (Entry)*>
+<!ELEMENT Entry (Key, ValueName, Value+)>
+<!ELEMENT Key (#PCDATA)>
+<!ELEMENT ValueName (#PCDATA)>
+<!ELEMENT Value (#PCDATA)>
+
+<!ATTLIST PolFile signature CDATA #FIXED "PReg">
+<!ATTLIST PolFile version CDATA #REQUIRED>
+<!ATTLIST PolFile num_entries CDATA #REQUIRED>
+
+<!ATTLIST Entry type CDATA #REQUIRED>
+<!ATTLIST Entry type_name CDATA>
+]>
+
+<!DOCTYPE IniFile [
+<!ELEMENT IniFile (Section)*>
+<!ELEMENT Section (Parameter)*>
+<!ELEMENT Parameter (Key, Value)>
+<!ELEMENT Key (#PCDATA)>
+<!ELEMENT Value (#PCDATA)>
+
+<!ATTLIST Section name CDATA>
+<!ATTLIST Value user_id CDATA>
+<!ATTLIST Value acl CDATA>
+<!ATTLIST Value network_path CDATA>
+
+<!ATTLIST Section fdeploy_GUID CDATA>
+<!ATTLIST Section fdeploy_SID CDATA>
+]>
+
+<!DOCTYPE CsvFile [
+<!ELEMENT CsvFile (Row)+>
+<!ELEMENT Row (Value)+>
+<!ELEMENT Value (#PCDATA)>
+
+<!ATTLIST Value user_id CDATA>
+<!ATTLIST Value acl CDATA>
+]>
+
+<!DOCTYPE GptTmplInfFile [
+<!ELEMENT GptTmplInfFile (Section)+>
+<!ELEMENT Section (Parameter)*>
+<!ELEMENT Parameter (Key?,Value+)>
+<!ELEMENT Key (#PCDATA)>
+<!ELEMENT Value (#PCDATA)>
+
+<!ATTLIST Section name CDATA #REQUIRED>
+<!ATTLIST Value user_id CDATA>
+<!ATTLIST Value acl CDATA>
+<!ATTLIST Value network_path CDATA>
+]>
