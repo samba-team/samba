@@ -200,6 +200,7 @@ class drs_Replicate(object):
         if invocation_id == misc.GUID("00000000-0000-0000-0000-000000000000"):
             raise RuntimeError("Must not set GUID 00000000-0000-0000-0000-000000000000 as invocation_id")
         self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs, invocation_id)
+        self.more_flags = 0
 
     def _should_retry_with_get_tgt(self, error_code, req):
 
@@ -228,7 +229,7 @@ class drs_Replicate(object):
         # setup for a GetNCChanges call
         if self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10:
             req = drsuapi.DsGetNCChangesRequest10()
-            req.more_flags = more_flags
+            req.more_flags = (more_flags | self.more_flags)
             req_level = 10
         else:
             req_level = 8
@@ -366,6 +367,12 @@ class drs_ReplicateRenamer(drs_Replicate):
                                                    samdb, invocation_id)
         self.old_base_dn = old_base_dn
         self.new_base_dn = new_base_dn
+
+        # because we're renaming the DNs, we know we're going to have trouble
+        # resolving link targets. Normally we'd get to the end of replication
+        # only to find we need to retry the whole replication with the GET_TGT
+        # flag set. Always setting the GET_TGT flag avoids this extra work.
+        self.more_flags = drsuapi.DRSUAPI_DRS_GET_TGT
 
     def rename_dn(self, dn_str):
         '''Uses string substitution to replace the base DN'''
