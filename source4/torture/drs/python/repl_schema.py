@@ -308,9 +308,6 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
 
         This ensures that the server
         """
-        # disable automatic replication temporary
-        self._disable_all_repl(self.dnsname_dc1)
-        self._disable_all_repl(self.dnsname_dc2)
 
        # add new attributeSchema object
         (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-OU-S", 14)

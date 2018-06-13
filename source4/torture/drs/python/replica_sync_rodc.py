@@ -43,14 +43,12 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsReplicaSyncTestCase, self).setUp()
-        self._disable_inbound_repl(self.dnsname_dc1)
         self._disable_all_repl(self.dnsname_dc1)
         self.ou1 = None
         self.ou2 = None
 
     def tearDown(self):
         # re-enable replication
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_all_repl(self.dnsname_dc1)
 
         super(DrsReplicaSyncTestCase, self).tearDown()
