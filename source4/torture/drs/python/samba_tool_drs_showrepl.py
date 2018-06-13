@@ -129,8 +129,6 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs showrepl %s %s --json" %
                                 (self.dc1, self.cmdline_creds))
 
-        print(out)
-
         d = json.loads(out)
         self.assertEqual(set(d), set(['repsFrom',
                                       'repsTo',
