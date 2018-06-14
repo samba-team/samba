@@ -716,10 +716,10 @@ def full_matrix(rows,
         vertices.sort(key=grouping_function)
         colour_list = []
         for k, v in groupby(vertices, key=grouping_function):
-            c = colour_cycle.next()
+            c = next(colour_cycle)
             colour_list.extend(c for x in v)
     else:
-        colour_list = [colour_cycle.next() for v in vertices]
+        colour_list = [next(colour_cycle) for v in vertices]
 
     if shorten_names:
         vmap, replacements = shorten_vertex_names(vertices, '+',
@@ -812,7 +812,7 @@ def full_matrix(rows,
                    10 ** digits - 1))
 
     if shorten_names:
-        example_c = colour_cycle.next()
+        example_c = next(colour_cycle)
         for substitute, original in reversed(replacements):
             write("'%s%s%s' stands for '%s%s%s'" % (example_c,
                                                     substitute,
