@@ -70,12 +70,12 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         # Deleted Object base DN
         dodn = self._deleted_objects_dn(sam_ldb)
         # now check properties of the user
-        cn_orig = obj_orig["cn"][0]
-        cn_cur  = user_cur["cn"][0]
-        name_orig = obj_orig["name"][0]
-        name_cur  = user_cur["name"][0]
+        cn_orig = str(obj_orig["cn"][0])
+        cn_cur  = str(user_cur["cn"][0])
+        name_orig = str(obj_orig["name"][0])
+        name_cur  = str(user_cur["name"][0])
         if is_deleted:
-            self.assertEquals(user_cur["isDeleted"][0], "TRUE")
+            self.assertEquals(str(user_cur["isDeleted"][0]), "TRUE")
             self.assertFalse("objectCategory" in user_cur)
             self.assertFalse("sAMAccountType" in user_cur)
             self.assertFalse("description" in user_cur)
