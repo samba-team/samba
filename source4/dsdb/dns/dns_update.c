@@ -1,5 +1,5 @@
 /*
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
 
    DNS update service
 
