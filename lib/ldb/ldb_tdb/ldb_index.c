@@ -416,6 +416,7 @@ normal_index:
 				      "expected %d for %s",
 				      version, LTDB_INDEXING_VERSION,
 				      ldb_dn_get_linearized(dn));
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
@@ -433,14 +434,17 @@ normal_index:
 				      "expected %d for %s",
 				      version, LTDB_GUID_INDEXING_VERSION,
 				      ldb_dn_get_linearized(dn));
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		if (el->num_values == 0) {
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		if ((el->values[0].length % LTDB_GUID_SIZE) != 0) {
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
@@ -521,6 +525,7 @@ int ltdb_key_dn_from_idx(struct ldb_module *module,
 			const int flags = LDB_UNPACK_DATA_FLAG_NO_ATTRS;
 			struct ldb_message *rec = ldb_msg_new(ldb);
 			if (rec == NULL) {
+				TALLOC_FREE(list);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 

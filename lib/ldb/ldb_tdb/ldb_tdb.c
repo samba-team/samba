@@ -485,6 +485,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	}
 
 	if (ltdb->read_only) {
+		talloc_free(tdb_key_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -732,6 +733,7 @@ int ltdb_delete_noindex(struct ldb_module *module,
 	}
 
 	if (ltdb->read_only) {
+		talloc_free(tdb_key_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 

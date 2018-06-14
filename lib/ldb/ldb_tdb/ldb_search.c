@@ -397,7 +397,7 @@ int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
 	/* Shortcuts for the simple cases */
 	} else if (add_dn && i == 1) {
 		if (msg_add_distinguished_name(msg2) != 0) {
-			return -1;
+			goto failed;
 		}
 		*filtered_msg = msg2;
 		return 0;
@@ -463,7 +463,7 @@ int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
 
 	if (add_dn) {
 		if (msg_add_distinguished_name(msg2) != 0) {
-			return -1;
+			goto failed;
 		}
 	}
 
@@ -472,7 +472,7 @@ int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
 						struct ldb_message_element,
 						msg2->num_elements);
 		if (msg2->elements == NULL) {
-			return -1;
+			goto failed;
 		}
 	} else {
 		talloc_free(msg2->elements);
@@ -483,6 +483,7 @@ int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
 
 	return 0;
 failed:
+	TALLOC_FREE(msg2);
 	return -1;
 }
 
