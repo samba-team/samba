@@ -432,7 +432,7 @@ struct tevent_req *ctdb_tunnel_request_send(TALLOC_CTX *mem_ctx,
 
 	if (destnode == CTDB_BROADCAST_ALL ||
 	    destnode == CTDB_BROADCAST_VNNMAP ||
-	    destnode == CTDB_BROADCAST_ALL) {
+	    destnode == CTDB_BROADCAST_CONNECTED) {
 		state->wait_for_reply = false;
 	}
 	if (! state->wait_for_reply) {
