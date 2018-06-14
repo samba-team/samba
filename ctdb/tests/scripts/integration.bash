@@ -341,6 +341,7 @@ node_has_status ()
 	(frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
 	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
 	(recovered)    rpat='^Recovery mode:RECOVERY \(1\)$' ;;
+	(notlmaster)   rpat="^hash:.* lmaster:${pnn}\$" ;;
 	*)
 	    echo "node_has_status: unknown status \"$status\""
 	    return 1
