@@ -168,26 +168,6 @@ bool chdir_current_service(connection_struct *conn)
 	return true;
 }
 
-bool set_current_service(connection_struct *conn, uint16_t flags, bool do_chdir)
-{
-	bool ok;
-
-	if (conn == NULL)  {
-		return false;
-	}
-
-	set_current_case_sensitive(conn, flags);
-
-	if (do_chdir) {
-		ok = chdir_current_service(conn);
-		if (!ok) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 /****************************************************************************
  do some basic sainity checks on the share.  
  This function modifies dev, ecode.
