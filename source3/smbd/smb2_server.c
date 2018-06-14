@@ -1846,10 +1846,6 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!set_current_service(tcon->compat, 0, true)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	req->tcon = tcon;
 	req->last_tid = in_tid;
 
