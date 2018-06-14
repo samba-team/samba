@@ -842,13 +842,10 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 
 		DEBUG(10, ("Processing BLR = %p\n", blr));
 
-		/* We use set_current_service so connections with
-		 * pending locks are not marked as idle.
+		/*
+		 * Connections with pending locks are not marked as idle.
 		 */
-
-		set_current_service(blr->fsp->conn,
-				SVAL(blr->req->inbuf,smb_flg),
-				false);
+		blr->fsp->conn->lastused_count++;
 
 		/*
 		 * Remove the pending lock we're waiting on.
