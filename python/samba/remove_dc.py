@@ -240,8 +240,9 @@ def offline_remove_server(samdb, logger,
         dnsHostName = None
 
     if remove_server_obj:
-        # Remove the server DN
-        samdb.delete(server_dn)
+        # Remove the server DN (do a tree-delete as it could still have a
+        # 'DNS Settings' child object if it's a Windows DC)
+        samdb.delete(server_dn, ["tree_delete:0"])
 
     if computer_dn is not None:
         computer_msgs = samdb.search(base=computer_dn,
