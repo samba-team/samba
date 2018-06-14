@@ -387,8 +387,8 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	}
 
 	if (ctdb_db_volatile(ctdb_db)) {
-		/* normal database, traverse all nodes */	  
-		destination = CTDB_BROADCAST_VNNMAP;
+		/* volatile database, traverse all active nodes */
+		destination = CTDB_BROADCAST_ACTIVE;
 	} else {
 		int i;
 		/* persistent database, traverse one node, preferably

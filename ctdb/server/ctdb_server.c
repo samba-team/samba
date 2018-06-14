@@ -394,14 +394,18 @@ static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb,
 }
 
 /*
-  broadcast a packet to all nodes in the current vnnmap
+  broadcast a packet to all active nodes
 */
-static void ctdb_broadcast_packet_vnnmap(struct ctdb_context *ctdb, 
+static void ctdb_broadcast_packet_active(struct ctdb_context *ctdb,
 					 struct ctdb_req_header *hdr)
 {
 	int i;
-	for (i=0;i<ctdb->vnn_map->size;i++) {
-		hdr->destnode = ctdb->vnn_map->map[i];
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		hdr->destnode = ctdb->nodes[i]->pnn;
 		ctdb_queue_packet(ctdb, hdr);
 	}
 }
@@ -435,8 +439,8 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	case CTDB_BROADCAST_ALL:
 		ctdb_broadcast_packet_all(ctdb, hdr);
 		return;
-	case CTDB_BROADCAST_VNNMAP:
-		ctdb_broadcast_packet_vnnmap(ctdb, hdr);
+	case CTDB_BROADCAST_ACTIVE:
+		ctdb_broadcast_packet_active(ctdb, hdr);
 		return;
 	case CTDB_BROADCAST_CONNECTED:
 		ctdb_broadcast_packet_connected(ctdb, hdr);
