@@ -1535,9 +1535,15 @@ static void ctdb_ltdb_seqnum_check(struct tevent_context *ev,
 		TDB_DATA data;
 		data.dptr = (uint8_t *)&ctdb_db->db_id;
 		data.dsize = sizeof(uint32_t);
-		ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0,
-					 CTDB_CONTROL_UPDATE_SEQNUM, 0, CTDB_CTRL_FLAG_NOREPLY,
-					 data, NULL, NULL);		
+		ctdb_daemon_send_control(ctdb,
+					 CTDB_BROADCAST_ACTIVE,
+					 0,
+					 CTDB_CONTROL_UPDATE_SEQNUM,
+					 0,
+					 CTDB_CTRL_FLAG_NOREPLY,
+					 data,
+					 NULL,
+					 NULL);
 	}
 	ctdb_db->seqnum = new_seqnum;
 

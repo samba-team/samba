@@ -264,8 +264,8 @@ static void ctdb_pnn_print(uint32_t pnn, FILE *fp)
 		fprintf(fp, "CURRENT");
 	} else if (pnn == CTDB_BROADCAST_ALL) {
 		fprintf(fp, "ALL");
-	} else if (pnn == CTDB_BROADCAST_VNNMAP) {
-		fprintf(fp, "VNNMAP");
+	} else if (pnn == CTDB_BROADCAST_ACTIVE) {
+		fprintf(fp, "ACTIVE");
 	} else  if (pnn == CTDB_BROADCAST_CONNECTED) {
 		fprintf(fp, "CONNECTED");
 	} else if (pnn == CTDB_MULTICAST) {
