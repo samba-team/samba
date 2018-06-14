@@ -292,10 +292,9 @@
 	<title>Virtual Node Number (VNN) map</title>
 	<para>
 	  Consists of the number of virtual nodes and mapping from
-	  virtual node numbers to physical node numbers.  Virtual
-	  nodes host CTDB databases.  Only nodes that are
-	  participating in the VNN map can become lmaster or dmaster
-	  for database records.
+	  virtual node numbers to physical node numbers.  Only nodes
+	  that are participating in the VNN map can become lmaster for
+	  database records.
 	</para>
       </refsect3>
 
