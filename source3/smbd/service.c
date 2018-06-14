@@ -879,7 +879,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		dbgtext( "(pid %d)\n", (int)getpid() );
 	}
 
-	return status;
+	return NT_STATUS_OK;
 
   err_root_exit:
 
