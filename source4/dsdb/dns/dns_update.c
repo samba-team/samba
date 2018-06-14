@@ -327,8 +327,8 @@ static void dnsupdate_nameupdate_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (ret != 0) {
-		DEBUG(0,(__location__ ": Failed DNS update - with error code %d\n",
-			 sys_errno));
+		DBG_ERR("Failed DNS update - with error code %d: %s\n",
+			sys_errno, strerror(sys_errno));
 	} else {
 		DEBUG(3,("Completed DNS update check OK\n"));
 	}
