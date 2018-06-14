@@ -37,7 +37,7 @@ if [ -n "$1" ] && [ "$1" = "-h" -o "$1" = "--usage" ]; then
 	echo "in destinationdir for retpd days. Use - to leave an option unchanged."
 	echo "Default provisiondir: $FROMWHERE"
 	echo "Default destinationdir: $WHERE"
-	echo "Default destinationdir: $DAYS"
+	echo "Default retpd: $DAYS"
 	exit 0
 fi
 
