@@ -403,6 +403,7 @@ normal_index:
 				      "expected %d for %s",
 				      version, LTDB_INDEXING_VERSION,
 				      ldb_dn_get_linearized(dn));
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
@@ -420,14 +421,17 @@ normal_index:
 				      "expected %d for %s",
 				      version, LTDB_GUID_INDEXING_VERSION,
 				      ldb_dn_get_linearized(dn));
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		if (el->num_values != 1) {
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		if ((el->values[0].length % LTDB_GUID_SIZE) != 0) {
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
