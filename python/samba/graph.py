@@ -84,7 +84,7 @@ def shorten_vertex_names(vertices, suffix=',...', aggressive=False):
         # walk backwards along all the strings until we meet a character
         # that is not shared by all.
         i = -1
-        vlist = vmap.values()
+        vlist = list(vmap.values())
         try:
             while True:
                 c = set(x[i] for x in vlist)
