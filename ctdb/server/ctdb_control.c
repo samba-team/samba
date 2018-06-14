@@ -859,7 +859,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 		return -1;
 	}
 
-	if (((destnode == CTDB_BROADCAST_VNNMAP) || 
+	if (((destnode == CTDB_BROADCAST_ACTIVE) ||
 	     (destnode == CTDB_BROADCAST_ALL) ||
 	     (destnode == CTDB_BROADCAST_CONNECTED)) && 
 	    !(flags & CTDB_CTRL_FLAG_NOREPLY)) {
@@ -867,7 +867,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 		return -1;
 	}
 
-	if (destnode != CTDB_BROADCAST_VNNMAP && 
+	if (destnode != CTDB_BROADCAST_ACTIVE &&
 	    destnode != CTDB_BROADCAST_ALL && 
 	    destnode != CTDB_BROADCAST_CONNECTED && 
 	    (!ctdb_validate_pnn(ctdb, destnode) || 
