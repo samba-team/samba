@@ -268,101 +268,101 @@ static int set_acl_entry_perms(SMB_ACL_ENTRY_T entry, mode_t perm_mask)
 	return 0;
 }
 
-static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
+static SMB_ACL_T make_simple_acl(TALLOC_CTX *mem_ctx,
+			gid_t gid,
+			mode_t chmod_mode)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
-
 	mode_t mode = SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE;
 
 	mode_t mode_user = (chmod_mode & 0700) >> 6;
 	mode_t mode_group = (chmod_mode & 070) >> 3;
 	mode_t mode_other = chmod_mode &  07;
 	SMB_ACL_ENTRY_T entry;
-	SMB_ACL_T acl = sys_acl_init(frame);
+	SMB_ACL_T acl = sys_acl_init(mem_ctx);
 
 	if (!acl) {
 		return NULL;
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_USER_OBJ) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (set_acl_entry_perms(entry, mode_user) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_GROUP_OBJ) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (set_acl_entry_perms(entry, mode_group) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_OTHER) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (set_acl_entry_perms(entry, mode_other) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (gid != -1) {
 		if (sys_acl_create_entry(&acl, &entry) != 0) {
-			TALLOC_FREE(frame);
+			TALLOC_FREE(acl);
 			return NULL;
 		}
 
 		if (sys_acl_set_tag_type(entry, SMB_ACL_GROUP) != 0) {
-			TALLOC_FREE(frame);
+			TALLOC_FREE(acl);
 			return NULL;
 		}
 
 		if (sys_acl_set_qualifier(entry, &gid) != 0) {
-			TALLOC_FREE(frame);
+			TALLOC_FREE(acl);
 			return NULL;
 		}
 
 		if (set_acl_entry_perms(entry, mode_group) != 0) {
-			TALLOC_FREE(frame);
+			TALLOC_FREE(acl);
 			return NULL;
 		}
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_MASK) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (set_acl_entry_perms(entry, mode) != 0) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 	return acl;
@@ -386,9 +386,13 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject
 					 &fname, &mode, &gid, &service))
 		return NULL;
 
-	acl = make_simple_acl(gid, mode);
-
 	frame = talloc_stackframe();
+
+	acl = make_simple_acl(frame, gid, mode);
+	if (acl == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
 
 	conn = get_conn(frame, service);
 	if (!conn) {
@@ -396,7 +400,6 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject
 	}
 
 	ret = set_sys_acl_conn(fname, SMB_ACL_TYPE_ACCESS, acl, conn);
-	TALLOC_FREE(acl);
 
 	if (ret != 0) {
 		TALLOC_FREE(frame);
