@@ -1654,11 +1654,14 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 			}
 		}
 
-		if (!set_current_service(conn,SVAL(req->inbuf,smb_flg),
-					 (flags & (AS_USER|DO_CHDIR)
-					  ?True:False))) {
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return conn;
+		if (flags & DO_CHDIR) {
+			bool ok;
+
+			ok = chdir_current_service(conn);
+			if (!ok) {
+				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return conn;
+			}
 		}
 		conn->num_smb_operations++;
 	}
