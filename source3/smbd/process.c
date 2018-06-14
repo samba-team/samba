@@ -1599,6 +1599,8 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 			return NULL;
 		}
 
+		set_current_case_sensitive(conn, SVAL(req->inbuf,smb_flg));
+
 		if (!change_to_user(conn,session_tag)) {
 			DEBUG(0, ("Error: Could not change to user. Removing "
 				"deferred open, mid=%llu.\n",
