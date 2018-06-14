@@ -436,6 +436,7 @@ typedef struct connection_struct {
 	char *connectpath;
 	char *origpath;
 	struct smb_filename *cwd_fname; /* Working directory. */
+	bool tcon_done;
 
 	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
