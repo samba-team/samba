@@ -302,12 +302,6 @@ static void defer_rename_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = set_current_service(state->smb2req->tcon->compat, 0, true);
-	if (!ok) {
-		tevent_req_nterror(state->req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-
 	/* Do we still need to wait ? */
 	lck = get_existing_share_mode_lock(state->req, state->fsp->file_id);
 	if (lck == NULL) {
