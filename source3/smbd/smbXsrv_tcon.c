@@ -969,11 +969,11 @@ NTSTATUS smbXsrv_tcon_disconnect(struct smbXsrv_tcon *tcon, uint64_t vuid)
 	if (tcon->compat) {
 		bool ok;
 
-		ok = set_current_service(tcon->compat, 0, true);
+		ok = chdir_current_service(tcon->compat);
 		if (!ok) {
 			status = NT_STATUS_INTERNAL_ERROR;
 			DEBUG(0, ("smbXsrv_tcon_disconnect(0x%08x, '%s'): "
-				  "set_current_service() failed: %s\n",
+				  "chdir_current_service() failed: %s\n",
 				  tcon->global->tcon_global_id,
 				  tcon->global->share_name,
 				  nt_errstr(status)));
