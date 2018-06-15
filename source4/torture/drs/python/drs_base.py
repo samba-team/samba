@@ -65,14 +65,14 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.test_ldb_dc = self.ldb_dc1
 
         # cache some of RootDSE props
-        self.schema_dn = self.info_dc1["schemaNamingContext"][0]
-        self.domain_dn = self.info_dc1["defaultNamingContext"][0]
-        self.config_dn = self.info_dc1["configurationNamingContext"][0]
+        self.schema_dn = str(self.info_dc1["schemaNamingContext"][0])
+        self.domain_dn = str(self.info_dc1["defaultNamingContext"][0])
+        self.config_dn = str(self.info_dc1["configurationNamingContext"][0])
         self.forest_level = int(self.info_dc1["forestFunctionality"][0])
 
         # we will need DCs DNS names for 'samba-tool drs' command
-        self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
-        self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
+        self.dnsname_dc1 = str(self.info_dc1["dnsHostName"][0])
+        self.dnsname_dc2 = str(self.info_dc2["dnsHostName"][0])
 
         # for debugging the test code
         self._debug = False
