@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2005-2018 (ita)
@@ -571,6 +567,7 @@ def process_rule(self):
 	* stderr: standard error, set to None to prevent waf from capturing the text
 	* timeout: timeout for command execution (Python 3)
 	* always: whether to always run the command (False by default)
+	* deep_inputs: whether the task must depend on the input file tasks too (False by default)
 	"""
 	if not getattr(self, 'rule', None):
 		return
@@ -592,12 +589,13 @@ def process_rule(self):
 	cls_str = getattr(self, 'cls_str', None)
 	cls_keyword = getattr(self, 'cls_keyword', None)
 	use_cache = getattr(self, 'cache_rule', 'True')
+	deep_inputs = getattr(self, 'deep_inputs', False)
 
 	scan_val = has_deps = hasattr(self, 'deps')
 	if scan:
 		scan_val = id(scan)
 
-	key = Utils.h_list((name, self.rule, chmod, shell, color, cls_str, cls_keyword, scan_val, _vars))
+	key = Utils.h_list((name, self.rule, chmod, shell, color, cls_str, cls_keyword, scan_val, _vars, deep_inputs))
 
 	cls = None
 	if use_cache:
@@ -625,6 +623,9 @@ def process_rule(self):
 
 		if cls_keyword:
 			setattr(cls, 'keyword', self.cls_keyword)
+
+		if deep_inputs:
+			Task.deep_inputs(cls)
 
 		if scan:
 			cls.scan = self.scan

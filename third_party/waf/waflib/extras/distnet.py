@@ -1,9 +1,5 @@
 #! /usr/bin/env python
 # encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
-# encoding: utf-8
 
 """
 waf-powered distributed network builds, with a network cache.
@@ -406,7 +402,6 @@ class package_reader(Context.Context):
 			if x.pkgname == self.myproject:
 				continue
 			yield x
-		raise StopIteration
 
 	def execute(self):
 		self.compute_dependencies()

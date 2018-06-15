@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2005-2018 (ita)
@@ -517,11 +513,11 @@ def apply_implib(self):
 		node = self.path.find_resource(self.defs)
 		if not node:
 			raise Errors.WafError('invalid def file %r' % self.defs)
-		if 'msvc' in (self.env.CC_NAME, self.env.CXX_NAME):
-			self.env.append_value('LINKFLAGS', '/def:%s' % node.path_from(self.get_cwd()))
+		if self.env.def_PATTERN:
+			self.env.append_value('LINKFLAGS', self.env.def_PATTERN % node.path_from(self.get_cwd()))
 			self.link_task.dep_nodes.append(node)
 		else:
-			#gcc for windows takes *.def file a an input without any special flag
+			# gcc for windows takes *.def file as input without any special flag
 			self.link_task.inputs.append(node)
 
 	# where to put the import library

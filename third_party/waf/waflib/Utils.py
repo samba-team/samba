@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2005-2018 (ita)
@@ -203,6 +199,8 @@ class lazy_generator(object):
 		except AttributeError:
 			it = self.it = self.fun(*self.params)
 		return next(it)
+
+	next = __next__
 
 is_win32 = os.sep == '\\' or sys.platform == 'win32' # msys2
 """
@@ -435,6 +433,21 @@ def to_list(val):
 		return val.split()
 	else:
 		return val
+
+def console_encoding():
+	try:
+		import ctypes
+	except ImportError:
+		pass
+	else:
+		try:
+			codepage = ctypes.windll.kernel32.GetConsoleCP()
+		except AttributeError:
+			pass
+		else:
+			if codepage:
+				return 'cp%d' % codepage
+	return sys.stdout.encoding or ('cp1252' if is_win32 else 'latin-1')
 
 def split_path_unix(path):
 	return path.split('/')

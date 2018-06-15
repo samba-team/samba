@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Ali Sabil, 2007
@@ -44,7 +40,7 @@ def add_dbus_file(self, filename, prefix, mode):
 		self.meths.append('process_dbus')
 	self.dbus_lst.append([filename, prefix, mode])
 
-@before_method('apply_core')
+@before_method('process_source')
 def process_dbus(self):
 	"""
 	Processes the dbus files stored in the attribute *dbus_lst* to create :py:class:`waflib.Tools.dbus.dbus_binding_tool` instances.

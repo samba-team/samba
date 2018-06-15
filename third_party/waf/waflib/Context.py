@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2010-2018 (ita)
@@ -15,13 +11,13 @@ from waflib import Utils, Errors, Logs
 import waflib.Node
 
 # the following 3 constants are updated on each new release (do not touch)
-HEXVERSION=0x2000400
+HEXVERSION=0x2000800
 """Constant updated on new releases"""
 
-WAFVERSION="2.0.4"
+WAFVERSION="2.0.8"
 """Constant updated on new releases"""
 
-WAFREVISION="5996879673deb7166b61a299be317a738de6891e"
+WAFREVISION="f78fbc32bb355a3291c9b5f79bbe0c8dfe81282a"
 """Git revision when the waf version is updated"""
 
 ABI = 20
@@ -55,6 +51,9 @@ out_dir = ''
 """Location of the build directory (out), if the project was configured"""
 waf_dir = ''
 """Directory containing the waf modules"""
+
+default_encoding = Utils.console_encoding()
+"""Encoding to use when reading outputs from other processes"""
 
 g_module = None
 """
@@ -358,6 +357,8 @@ class Context(ctx):
 			if not isinstance(kw['cwd'], str):
 				kw['cwd'] = kw['cwd'].abspath()
 
+		encoding = kw.pop('decode_as', default_encoding)
+
 		try:
 			ret, out, err = Utils.run_process(cmd, kw, cargs)
 		except Exception as e:
@@ -365,14 +366,14 @@ class Context(ctx):
 
 		if out:
 			if not isinstance(out, str):
-				out = out.decode(sys.stdout.encoding or 'latin-1', errors='replace')
+				out = out.decode(encoding, errors='replace')
 			if self.logger:
 				self.logger.debug('out: %s', out)
 			else:
 				Logs.info(out, extra={'stream':sys.stdout, 'c1': ''})
 		if err:
 			if not isinstance(err, str):
-				err = err.decode(sys.stdout.encoding or 'latin-1', errors='replace')
+				err = err.decode(encoding, errors='replace')
 			if self.logger:
 				self.logger.error('err: %s' % err)
 			else:
@@ -408,17 +409,8 @@ class Context(ctx):
 		kw['shell'] = isinstance(cmd, str)
 		self.log_command(cmd, kw)
 
-		if 'quiet' in kw:
-			quiet = kw['quiet']
-			del kw['quiet']
-		else:
-			quiet = None
-
-		if 'output' in kw:
-			to_ret = kw['output']
-			del kw['output']
-		else:
-			to_ret = STDOUT
+		quiet = kw.pop('quiet', None)
+		to_ret = kw.pop('output', STDOUT)
 
 		if Logs.verbose and not kw['shell'] and not Utils.check_exe(cmd[0]):
 			raise Errors.WafError('Program %r not found!' % cmd[0])
@@ -444,15 +436,17 @@ class Context(ctx):
 			if not isinstance(kw['cwd'], str):
 				kw['cwd'] = kw['cwd'].abspath()
 
+		encoding = kw.pop('decode_as', default_encoding)
+
 		try:
 			ret, out, err = Utils.run_process(cmd, kw, cargs)
 		except Exception as e:
 			raise Errors.WafError('Execution failure: %s' % str(e), ex=e)
 
 		if not isinstance(out, str):
-			out = out.decode(sys.stdout.encoding or 'latin-1', errors='replace')
+			out = out.decode(encoding, errors='replace')
 		if not isinstance(err, str):
-			err = err.decode(sys.stdout.encoding or 'latin-1', errors='replace')
+			err = err.decode(encoding, errors='replace')
 
 		if out and quiet != STDOUT and quiet != BOTH:
 			self.to_log('out: %s' % out)

@@ -1,8 +1,4 @@
 #! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
 # encoding: UTF-8
 # Petar Forai
 # Thomas Nagy 2008-2010 (ita)
@@ -116,9 +112,16 @@ def swig_c(self):
 
 	c_tsk.set_run_after(self)
 
-	ge = self.generator.bld.producer
-	ge.outstanding.append(c_tsk)
-	ge.total += 1
+	# transfer weights from swig task to c task
+	if getattr(self, 'weight', None):
+		c_tsk.weight = self.weight
+	if getattr(self, 'tree_weight', None):
+		c_tsk.tree_weight = self.tree_weight
+
+	try:
+		self.more_tasks.append(c_tsk)
+	except AttributeError:
+		self.more_tasks = [c_tsk]
 
 	try:
 		ltask = self.generator.link_task
@@ -127,10 +130,9 @@ def swig_c(self):
 	else:
 		ltask.set_run_after(c_tsk)
 		# setting input nodes does not declare the build order
-		# because the build already started
+		# because the build already started, but it sets
+		# the dependency to enable rebuilds
 		ltask.inputs.append(c_tsk.outputs[0])
-		# set the build order after the build started:
-		ge.revdeps[c_tsk].add(ltask)
 
 	self.outputs.append(out_node)
 

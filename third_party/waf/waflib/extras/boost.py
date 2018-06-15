@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 #
@@ -58,8 +54,7 @@ from waflib import Utils, Logs, Errors
 from waflib.Configure import conf
 from waflib.TaskGen import feature, after_method
 
-BOOST_LIBS = ['/usr/lib/x86_64-linux-gnu', '/usr/lib/i386-linux-gnu',
-			  '/usr/lib', '/usr/local/lib', '/opt/local/lib', '/sw/lib', '/lib']
+BOOST_LIBS = ['/usr/lib', '/usr/local/lib', '/opt/local/lib', '/sw/lib', '/lib']
 BOOST_INCLUDES = ['/usr/include', '/usr/local/include', '/opt/local/include', '/sw/include']
 BOOST_VERSION_FILE = 'boost/version.hpp'
 BOOST_VERSION_CODE = '''
@@ -71,6 +66,21 @@ int main() { std::cout << BOOST_LIB_VERSION << ":" << BOOST_VERSION << std::endl
 BOOST_ERROR_CODE = '''
 #include <boost/system/error_code.hpp>
 int main() { boost::system::error_code c; }
+'''
+
+PTHREAD_CODE = '''
+#include <pthread.h>
+static void* f(void*) { return 0; }
+int main() {
+	pthread_t th;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_create(&th, &attr, &f, 0);
+	pthread_join(th, 0);
+	pthread_cleanup_push(0, 0);
+	pthread_cleanup_pop(0);
+	pthread_attr_destroy(&attr);
+}
 '''
 
 BOOST_THREAD_CODE = '''
@@ -309,6 +319,66 @@ def boost_get_libs(self, *k, **kw):
 
 	return  path.abspath(), match_libs(kw.get('lib'), False), match_libs(kw.get('stlib'), True)
 
+@conf
+def _check_pthread_flag(self, *k, **kw):
+	'''
+	Computes which flags should be added to CXXFLAGS and LINKFLAGS to compile in multi-threading mode
+
+	Yes, we *need* to put the -pthread thing in CPPFLAGS because with GCC3,
+	boost/thread.hpp will trigger a #error if -pthread isn't used:
+	  boost/config/requires_threads.hpp:47:5: #error "Compiler threading support
+	  is not turned on. Please set the correct command line options for
+	  threading: -pthread (Linux), -pthreads (Solaris) or -mthreads (Mingw32)"
+
+	Based on _BOOST_PTHREAD_FLAG(): https://github.com/tsuna/boost.m4/blob/master/build-aux/boost.m4
+    '''
+
+	var = kw.get('uselib_store', 'BOOST')
+
+	self.start_msg('Checking the flags needed to use pthreads')
+
+	# The ordering *is* (sometimes) important.  Some notes on the
+	# individual items follow:
+	# (none): in case threads are in libc; should be tried before -Kthread and
+	#       other compiler flags to prevent continual compiler warnings
+	# -lpthreads: AIX (must check this before -lpthread)
+	# -Kthread: Sequent (threads in libc, but -Kthread needed for pthread.h)
+	# -kthread: FreeBSD kernel threads (preferred to -pthread since SMP-able)
+	# -llthread: LinuxThreads port on FreeBSD (also preferred to -pthread)
+	# -pthread: GNU Linux/GCC (kernel threads), BSD/GCC (userland threads)
+	# -pthreads: Solaris/GCC
+	# -mthreads: MinGW32/GCC, Lynx/GCC
+	# -mt: Sun Workshop C (may only link SunOS threads [-lthread], but it
+	#      doesn't hurt to check since this sometimes defines pthreads too;
+	#      also defines -D_REENTRANT)
+	#      ... -mt is also the pthreads flag for HP/aCC
+	# -lpthread: GNU Linux, etc.
+	# --thread-safe: KAI C++
+	if Utils.unversioned_sys_platform() == "sunos":
+		# On Solaris (at least, for some versions), libc contains stubbed
+		# (non-functional) versions of the pthreads routines, so link-based
+		# tests will erroneously succeed.  (We need to link with -pthreads/-mt/
+		# -lpthread.)  (The stubs are missing pthread_cleanup_push, or rather
+		# a function called by this macro, so we could check for that, but
+		# who knows whether they'll stub that too in a future libc.)  So,
+		# we'll just look for -pthreads and -lpthread first:
+		boost_pthread_flags = ["-pthreads", "-lpthread", "-mt", "-pthread"]
+	else:
+		boost_pthread_flags = ["", "-lpthreads", "-Kthread", "-kthread", "-llthread", "-pthread",
+							   "-pthreads", "-mthreads", "-lpthread", "--thread-safe", "-mt"]
+
+	for boost_pthread_flag in boost_pthread_flags:
+		try:
+			self.env.stash()
+			self.env.append_value('CXXFLAGS_%s' % var, boost_pthread_flag)
+			self.env.append_value('LINKFLAGS_%s' % var, boost_pthread_flag)
+			self.check_cxx(code=PTHREAD_CODE, msg=None, use=var, execute=False)
+
+			self.end_msg(boost_pthread_flag)
+			return
+		except self.errors.ConfigurationError:
+			self.env.revert()
+	self.end_msg('None')
 
 @conf
 def check_boost(self, *k, **kw):
@@ -332,6 +402,11 @@ def check_boost(self, *k, **kw):
 		params[key] = value and value or kw.get(key, '')
 
 	var = kw.get('uselib_store', 'BOOST')
+
+	self.find_program('dpkg-architecture', var='DPKG_ARCHITECTURE', mandatory=False)
+	if self.env.DPKG_ARCHITECTURE:
+		deb_host_multiarch = self.cmd_and_log([self.env.DPKG_ARCHITECTURE[0], '-qDEB_HOST_MULTIARCH'])
+		BOOST_LIBS.insert(0, '/usr/lib/%s' % deb_host_multiarch.strip())
 
 	self.start_msg('Checking boost includes')
 	self.env['INCLUDES_%s' % var] = inc = self.boost_get_includes(**params)
@@ -360,32 +435,26 @@ def check_boost(self, *k, **kw):
 		Logs.pprint('CYAN', '	shared libs : %s' % libs)
 		Logs.pprint('CYAN', '	static libs : %s' % stlibs)
 
+	def has_shlib(lib):
+		return params['lib'] and lib in params['lib']
+	def has_stlib(lib):
+		return params['stlib'] and lib in params['stlib']
+	def has_lib(lib):
+		return has_shlib(lib) or has_stlib(lib)
+	if has_lib('thread'):
+		# not inside try_link to make check visible in the output
+		self._check_pthread_flag(k, kw)
 
 	def try_link():
-		if (params['lib'] and 'system' in params['lib']) or \
-			params['stlib'] and 'system' in params['stlib']:
+		if has_lib('system'):
 			self.check_cxx(fragment=BOOST_ERROR_CODE, use=var, execute=False)
-		if (params['lib'] and 'thread' in params['lib']) or \
-			params['stlib'] and 'thread' in params['stlib']:
+		if has_lib('thread'):
 			self.check_cxx(fragment=BOOST_THREAD_CODE, use=var, execute=False)
-
-		def is_log_mt():
-			'''Check if found boost_log library is multithread-safe'''
-			for lib in libs:
-				if lib.startswith('boost_log'):
-					lib_log = lib
-					break
-			return '-mt' in lib_log
-
-		if params['lib'] and 'log' in params['lib']:
-			self.env['DEFINES_%s' % var] += ['BOOST_LOG_DYN_LINK']
-			if not is_log_mt():
+		if has_lib('log'):
+			if not has_lib('thread'):
 				self.env['DEFINES_%s' % var] += ['BOOST_LOG_NO_THREADS']
-			self.check_cxx(fragment=BOOST_LOG_CODE, use=var, execute=False)
-		if params['stlib'] and 'log' in params['stlib']:
-			# Static linking is assumed by default
-			if not is_log_mt():
-				self.env['DEFINES_%s' % var] += ['BOOST_LOG_NO_THREADS']
+			if has_shlib('log'):
+				self.env['DEFINES_%s' % var] += ['BOOST_LOG_DYN_LINK']
 			self.check_cxx(fragment=BOOST_LOG_CODE, use=var, execute=False)
 
 	if params.get('linkage_autodetect', False):

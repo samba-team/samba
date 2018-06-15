@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/python
 # -*- coding: utf-8 vi:ts=4:noexpandtab
 # Tool to provide dedicated variables for cross-compilation

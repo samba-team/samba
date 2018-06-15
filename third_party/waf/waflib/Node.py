@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2005-2018 (ita)
@@ -630,11 +626,10 @@ class Node(object):
 					if maxdepth:
 						for k in node.ant_iter(accept=accept, maxdepth=maxdepth - 1, pats=npats, dir=dir, src=src, remove=remove, quiet=quiet):
 							yield k
-		raise StopIteration
 
 	def ant_glob(self, *k, **kw):
 		"""
-		Finds files across folders:
+		Finds files across folders and returns Node objects:
 
 		* ``**/*`` find all files recursively
 		* ``**/*.class`` find all files ending by .class
@@ -643,14 +638,51 @@ class Node(object):
 		For example::
 
 			def configure(cfg):
-				cfg.path.ant_glob('**/*.cpp') # finds all .cpp files
-				cfg.root.ant_glob('etc/*.txt') # matching from the filesystem root can be slow
-				cfg.path.ant_glob('*.cpp', excl=['*.c'], src=True, dir=False)
+				# find all .cpp files
+				cfg.path.ant_glob('**/*.cpp')
+				# find particular files from the root filesystem (can be slow)
+				cfg.root.ant_glob('etc/*.txt')
+				# simple exclusion rule example
+				cfg.path.ant_glob('*.c*', excl=['*.c'], src=True, dir=False)
 
-		For more information see http://ant.apache.org/manual/dirtasks.html
+		For more information about the patterns, consult http://ant.apache.org/manual/dirtasks.html
+		Please remember that the '..' sequence does not represent the parent directory::
 
-		The nodes that correspond to files and folders that do not exist are garbage-collected.
-		To prevent this behaviour in particular when running over the build directory, pass ``remove=False``
+			def configure(cfg):
+				cfg.path.ant_glob('../*.h') # incorrect
+				cfg.path.parent.ant_glob('*.h') # correct
+
+		The Node structure is itself a filesystem cache, so certain precautions must
+		be taken while matching files in the build or installation phases.
+		Nodes objects that do have a corresponding file or folder are garbage-collected by default.
+		This garbage collection is usually required to prevent returning files that do not
+		exist anymore. Yet, this may also remove Node objects of files that are yet-to-be built.
+
+		This typically happens when trying to match files in the build directory,
+		but there are also cases when files are created in the source directory.
+		Run ``waf -v`` to display any warnings, and try consider passing ``remove=False``
+		when matching files in the build directory.
+
+		Since ant_glob can traverse both source and build folders, it is a best practice
+		to call this method only from the most specific build node::
+
+			def build(bld):
+				# traverses the build directory, may need ``remove=False``:
+				bld.path.ant_glob('project/dir/**/*.h')
+				# better, no accidental build directory traversal:
+				bld.path.find_node('project/dir').ant_glob('**/*.h') # best
+
+		In addition, files and folders are listed immediately. When matching files in the
+		build folders, consider passing ``generator=True`` so that the generator object
+		returned can defer computation to a later stage. For example::
+
+			def build(bld):
+				bld(rule='tar xvf ${SRC}', source='arch.tar')
+				bld.add_group()
+				gen = bld.bldnode.ant_glob("*.h", generator=True, remove=True)
+				# files will be listed only after the arch.tar is unpacked
+				bld(rule='ls ${SRC}', source=gen, name='XYZ')
+
 
 		:param incl: ant patterns or list of patterns to include
 		:type incl: string or list of strings
@@ -664,13 +696,13 @@ class Node(object):
 		:type maxdepth: int
 		:param ignorecase: ignore case while matching (False by default)
 		:type ignorecase: bool
-		:returns: The corresponding Nodes
+		:param generator: Whether to evaluate the Nodes lazily
 		:type generator: bool
 		:param remove: remove files/folders that do not exist (True by default)
 		:type remove: bool
 		:param quiet: disable build directory traversal warnings (verbose mode)
 		:type quiet: bool
-		:returns: Whether to evaluate the Nodes lazily, alters the type of the returned value
+		:returns: The corresponding Node objects as a list or as a generator object (generator=True)
 		:rtype: by default, list of :py:class:`waflib.Node.Node` instances
 		"""
 		src = kw.get('src', True)

@@ -1,9 +1,5 @@
 #! /usr/bin/env python
 # encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
-# encoding: utf-8
 # DC 2008
 # Thomas Nagy 2016-2018 (ita)
 

@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2006-2018 (ita)
@@ -399,12 +395,38 @@ class rcc(Task.Task):
 				names.append(x)
 		return (nodes, names)
 
+	def quote_flag(self, x):
+		"""
+		Override Task.quote_flag. QT parses the argument files
+		differently than cl.exe and link.exe
+
+		:param x: flag
+		:type x: string
+		:return: quoted flag
+		:rtype: string
+		"""
+		return x
+
+
 class moc(Task.Task):
 	"""
 	Creates ``.moc`` files
 	"""
 	color   = 'BLUE'
 	run_str = '${QT_MOC} ${MOC_FLAGS} ${MOCCPPPATH_ST:INCPATHS} ${MOCDEFINES_ST:DEFINES} ${SRC} ${MOC_ST} ${TGT}'
+
+	def quote_flag(self, x):
+		"""
+		Override Task.quote_flag. QT parses the argument files
+		differently than cl.exe and link.exe
+
+		:param x: flag
+		:type x: string
+		:return: quoted flag
+		:rtype: string
+		"""
+		return x
+
 
 class ui5(Task.Task):
 	"""
@@ -629,7 +651,6 @@ def find_single_qt5_lib(self, name, uselib, qtlibs, qtincludes, force_static):
 			for k in ('', '5') if Utils.is_win32 else ['']:
 				for p in ('lib', ''):
 					yield (p, name, k, x)
-		raise StopIteration
 
 	for tup in lib_names():
 		k = ''.join(tup)

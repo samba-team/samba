@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2005-2018 (ita)
@@ -315,11 +311,7 @@ def conf(f):
 	:type f: function
 	"""
 	def fun(*k, **kw):
-		mandatory = True
-		if 'mandatory' in kw:
-			mandatory = kw['mandatory']
-			del kw['mandatory']
-
+		mandatory = kw.pop('mandatory', True)
 		try:
 			return f(*k, **kw)
 		except Errors.ConfigurationError:
@@ -426,8 +418,8 @@ def find_program(self, filename, **kw):
 	:type var: string
 	:param value: obtain the program from the value passed exclusively
 	:type value: list or string (list is preferred)
-	:param ext: list of extensions for the binary (do not add an extension for portability)
-	:type ext: list of string
+	:param exts: list of extensions for the binary (do not add an extension for portability)
+	:type exts: list of string
 	:param msg: name to display in the log, by default filename is used
 	:type msg: string
 	:param interpreter: interpreter for the program

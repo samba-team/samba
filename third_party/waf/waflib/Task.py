@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2005-2018 (ita)
@@ -726,6 +722,32 @@ class Task(evil):
 							v = v() # dependency is a function, call it
 					upd(v)
 
+	def sig_deep_inputs(self):
+		"""
+		Enable rebuilds on input files task signatures. Not used by default.
+
+		Example: hashes of output programs can be unchanged after being re-linked,
+		despite the libraries being different. This method can thus prevent stale unit test
+		results (waf_unit_test.py).
+
+		Hashing input file timestamps is another possibility for the implementation.
+		This may cause unnecessary rebuilds when input tasks are frequently executed.
+		Here is an implementation example::
+
+			lst = []
+			for node in self.inputs + self.dep_nodes:
+				st = os.stat(node.abspath())
+				lst.append(st.st_mtime)
+				lst.append(st.st_size)
+			self.m.update(Utils.h_list(lst))
+
+		The downside of the implementation is that it absolutely requires all build directory
+		files to be declared within the current build.
+		"""
+		bld = self.generator.bld
+		lst = [bld.task_sigs[bld.node_sigs[node]] for node in (self.inputs + self.dep_nodes) if node.is_bld()]
+		self.m.update(Utils.h_list(lst))
+
 	def sig_vars(self):
 		"""
 		Used by :py:meth:`waflib.Task.Task.signature`; it hashes :py:attr:`waflib.Task.Task.env` variables/values
@@ -1242,6 +1264,16 @@ def task_factory(name, func=None, vars=None, color='GREEN', ext_in=[], ext_out=[
 	if after:
 		cls.after = Utils.to_list(after)
 
+	return cls
+
+def deep_inputs(cls):
+	"""
+	Task class decorator to enable rebuilds on input files task signatures
+	"""
+	def sig_explicit_deps(self):
+		Task.sig_explicit_deps(self)
+		Task.sig_deep_inputs(self)
+	cls.sig_explicit_deps = sig_explicit_deps
 	return cls
 
 TaskBase = Task

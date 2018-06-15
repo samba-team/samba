@@ -1,9 +1,5 @@
 #! /usr/bin/env python
 # encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
-# encoding: utf-8
 # Alexander Afanasyev (UCLA), 2014
 
 """
@@ -94,8 +90,8 @@ def apply_pch(self):
 
 	if getattr(self, 'name', None):
 		try:
-			task = self.bld.pch_tasks[self.name]
-			self.bld.fatal("Duplicated 'pch' task with name %r" % self.name)
+			task = self.bld.pch_tasks["%s.%s" % (self.name, self.idx)]
+			self.bld.fatal("Duplicated 'pch' task with name %r" % "%s.%s" % (self.name, self.idx))
 		except KeyError:
 			pass
 
@@ -108,7 +104,7 @@ def apply_pch(self):
 
 	self.pch_task = task
 	if getattr(self, 'name', None):
-		self.bld.pch_tasks[self.name] = task
+		self.bld.pch_tasks["%s.%s" % (self.name, self.idx)] = task
 
 @TaskGen.feature('cxx')
 @TaskGen.after_method('process_source', 'propagate_uselib_vars')

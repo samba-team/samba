@@ -1,8 +1,4 @@
 #! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
 # encoding: UTF-8
 # Thomas Nagy 2008-2010 (ita)
 
@@ -194,13 +190,13 @@ class tar(Task.Task):
 @feature('doxygen')
 def process_doxy(self):
 	if not getattr(self, 'doxyfile', None):
-		self.generator.bld.fatal('no doxyfile??')
+		self.bld.fatal('no doxyfile variable specified??')
 
 	node = self.doxyfile
 	if not isinstance(node, Node.Node):
 		node = self.path.find_resource(node)
 	if not node:
-		raise ValueError('doxygen file not found')
+		self.bld.fatal('doxygen file %s not found' % self.doxyfile)
 
 	# the task instance
 	dsk = self.create_task('doxygen', node)

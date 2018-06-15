@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Carlos Rafael Giani, 2006 (dv)
@@ -11,6 +7,12 @@
 
 """
 Microsoft Visual C++/Intel C++ compiler support
+
+If you get detection problems, first try any of the following::
+
+	chcp 65001
+	set PYTHONIOENCODING=...
+	set PYTHONLEGACYWINDOWSSTDIO=1
 
 Usage::
 
@@ -461,10 +463,8 @@ def gather_vswhere_versions(conf, versions):
 		return
 
 	if sys.version_info[0] < 3:
-		try:
-			txt = txt.decode(sys.stdout.encoding or 'cp1252')
-		except UnicodeError:
-			txt = txt.decode('utf-8', 'replace')
+		txt = txt.decode(Utils.console_encoding())
+
 	arr = json.loads(txt)
 	arr.sort(key=lambda x: x['installationVersion'])
 	for entry in arr:
@@ -939,6 +939,8 @@ def msvc_common_flags(conf):
 	v.cstlib_PATTERN    = v.cxxstlib_PATTERN = '%s.lib'
 
 	v.cprogram_PATTERN  = v.cxxprogram_PATTERN = '%s.exe'
+
+	v.def_PATTERN       = '/def:%s'
 
 
 #######################################################################################################

@@ -1,9 +1,5 @@
 #! /usr/bin/env python
 # encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
-# encoding: utf-8
 # XCode 3/XCode 4/XCode 6/Xcode 7 generator for Waf
 # Based on work by Nicolas Mercier 2011
 # Extended by Simon Warg 2015, https://github.com/mimon
@@ -129,7 +125,7 @@ def configure(self):
 	# Some build settings are required to be present by XCode. We will supply default values
 	# if user hasn't defined any.
 	defaults_required = [('PRODUCT_NAME', '$(TARGET_NAME)')]
-	for cfgname,settings in self.env.PROJ_CONFIGURATION.iteritems():
+	for cfgname,settings in self.env.PROJ_CONFIGURATION.items():
 		for default_var, default_val in defaults_required:
 			if default_var not in settings:
 				settings[default_var] = default_val

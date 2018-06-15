@@ -1,9 +1,5 @@
 #! /usr/bin/env python
 # encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
-# encoding: utf-8
 # Eclipse CDT 5.0 generator for Waf
 # Richard Quirk 2009-1011 (New BSD License)
 # Thomas Nagy 2011 (ported to Waf 1.6)
@@ -27,6 +23,8 @@ oe_cdt = 'org.eclipse.cdt'
 cdt_mk = oe_cdt + '.make.core'
 cdt_core = oe_cdt + '.core'
 cdt_bld = oe_cdt + '.build.core'
+extbuilder_dir = '.externalToolBuilders'
+extbuilder_name = 'Waf_Builder.launch'
 
 class eclipse(Build.BuildContext):
 	cmd = 'eclipse'
@@ -44,6 +42,10 @@ class eclipse(Build.BuildContext):
 		appname = getattr(Context.g_module, Context.APPNAME, os.path.basename(self.srcnode.abspath()))
 		self.create_cproject(appname, pythonpath=self.env['ECLIPSE_PYTHON_PATH'])
 
+	# Helper to dump the XML document content to XML with UTF-8 encoding
+	def write_conf_to_xml(self, filename, document):
+		self.srcnode.make_node(filename).write(document.toprettyxml(encoding='UTF-8'), flags='wb')
+
 	def create_cproject(self, appname, workspace_includes=[], pythonpath=[]):
 		"""
 		Create the Eclipse CDT .project and .cproject files
@@ -57,6 +59,7 @@ class eclipse(Build.BuildContext):
 		source_dirs = []
 		cpppath = self.env['CPPPATH']
 		javasrcpath = []
+		javalibpath = []
 		includes = STANDARD_INCLUDES
 		if sys.platform != 'win32':
 			cc = self.env.CC or self.env.CXX
@@ -79,36 +82,43 @@ class eclipse(Build.BuildContext):
 				if not isinstance(tg, TaskGen.task_gen):
 					continue
 
+				tg.post()
+
 				# Add local Python modules paths to configuration so object resolving will work in IDE
+				# This may also contain generated files (ie. pyqt5 or protoc) that get picked from build
 				if 'py' in tg.features:
 					pypath = tg.path.relpath()
 					py_installfrom = getattr(tg, 'install_from', None)
-					if py_installfrom:
-						pypath += os.sep + py_installfrom
-					pythonpath.append(pypath)
+					if isinstance(py_installfrom, Node.Node):
+						pypath = py_installfrom.path_from(self.root.make_node(self.top_dir))
+					if pypath not in pythonpath:
+						pythonpath.append(pypath)
 					haspython = True
 
-
 				# Add Java source directories so object resolving works in IDE
-				if 'java' in tg.features:
+				# This may also contain generated files (ie. protoc) that get picked from build
+				if 'javac' in tg.features:
 					java_src = tg.path.relpath()
-					java_srcdir = getattr(tg, 'srcdir', None)
+					java_srcdir = getattr(tg.javac_task, 'srcdir', None)
 					if java_srcdir:
 						if isinstance(java_srcdir, Node.Node):
 							java_srcdir = [java_srcdir]
 						for x in Utils.to_list(java_srcdir):
-							if isinstance(x, Node.Node):
-								x = x.name
-							if java_src == '.':
-								this_src = x
-							else:
-								this_src = java_src + os.sep + x
-							javasrcpath.append(this_src)
+							x = x.path_from(self.root.make_node(self.top_dir))
+							if x not in javasrcpath:
+								javasrcpath.append(x)
 					else:
-						javasrcpath.append(java_src)
+						if java_src not in javasrcpath:
+							javasrcpath.append(java_src)
 					hasjava = True
 
-				tg.post()
+					# Check if there are external dependencies and add them as external jar so they will be resolved by Eclipse
+					usedlibs=getattr(tg, 'use', [])
+					for x in Utils.to_list(usedlibs):
+						for cl in Utils.to_list(tg.env['CLASSPATH_'+x]):
+							if cl not in javalibpath:
+								javalibpath.append(cl)
+
 				if not getattr(tg, 'link_task', None):
 					continue
 
@@ -130,23 +140,23 @@ class eclipse(Build.BuildContext):
 
 					hasc = True
 
-		project = self.impl_create_project(sys.executable, appname, hasc, hasjava, haspython)
-		self.srcnode.make_node('.project').write(project.toprettyxml())
+		waf_executable = os.path.abspath(sys.argv[0])
+		project = self.impl_create_project(sys.executable, appname, hasc, hasjava, haspython, waf_executable)
+		self.write_conf_to_xml('.project', project)
 
 		if hasc:
-			waf = os.path.abspath(sys.argv[0])
-			project = self.impl_create_cproject(sys.executable, waf, appname, workspace_includes, cpppath, source_dirs)
-			self.srcnode.make_node('.cproject').write(project.toprettyxml())
+			project = self.impl_create_cproject(sys.executable, waf_executable, appname, workspace_includes, cpppath, source_dirs)
+			self.write_conf_to_xml('.cproject', project)
 
 		if haspython:
 			project = self.impl_create_pydevproject(sys.path, pythonpath)
-			self.srcnode.make_node('.pydevproject').write(project.toprettyxml())
+			self.write_conf_to_xml('.pydevproject', project)
 
 		if hasjava:
-			project = self.impl_create_javaproject(javasrcpath)
-			self.srcnode.make_node('.classpath').write(project.toprettyxml())
+			project = self.impl_create_javaproject(javasrcpath, javalibpath)
+			self.write_conf_to_xml('.classpath', project)
 
-	def impl_create_project(self, executable, appname, hasc, hasjava, haspython):
+	def impl_create_project(self, executable, appname, hasc, hasjava, haspython, waf_executable):
 		doc = Document()
 		projectDescription = doc.createElement('projectDescription')
 		self.add(doc, projectDescription, 'name', appname)
@@ -154,16 +164,47 @@ class eclipse(Build.BuildContext):
 		self.add(doc, projectDescription, 'projects')
 		buildSpec = self.add(doc, projectDescription, 'buildSpec')
 		buildCommand = self.add(doc, buildSpec, 'buildCommand')
-		self.add(doc, buildCommand, 'name', oe_cdt + '.managedbuilder.core.genmakebuilder')
 		self.add(doc, buildCommand, 'triggers', 'clean,full,incremental,')
 		arguments = self.add(doc, buildCommand, 'arguments')
-		# the default make-style targets are overwritten by the .cproject values
-		dictionaries = {
-				cdt_mk + '.contents': cdt_mk + '.activeConfigSettings',
-				cdt_mk + '.enableAutoBuild': 'false',
-				cdt_mk + '.enableCleanBuild': 'true',
-				cdt_mk + '.enableFullBuild': 'true',
-				}
+		dictionaries = {}
+
+		# If CDT is present, instruct this one to call waf as it is more flexible (separate build/clean ...)
+		if hasc:
+			self.add(doc, buildCommand, 'name', oe_cdt + '.managedbuilder.core.genmakebuilder')
+			# the default make-style targets are overwritten by the .cproject values
+			dictionaries = {
+					cdt_mk + '.contents': cdt_mk + '.activeConfigSettings',
+					cdt_mk + '.enableAutoBuild': 'false',
+					cdt_mk + '.enableCleanBuild': 'true',
+					cdt_mk + '.enableFullBuild': 'true',
+					}
+		else:
+			# Otherwise for Java/Python an external builder tool is created that will call waf build
+			self.add(doc, buildCommand, 'name', 'org.eclipse.ui.externaltools.ExternalToolBuilder')
+			dictionaries = {
+					'LaunchConfigHandle': '<project>/%s/%s'%(extbuilder_dir, extbuilder_name),
+					}
+			# The definition is in a separate directory XML file
+			try:
+				os.mkdir(extbuilder_dir)
+			except OSError:
+				pass	# Ignore error if already exists
+
+			# Populate here the external builder XML calling waf
+			builder = Document()
+			launchConfiguration = doc.createElement('launchConfiguration')
+			launchConfiguration.setAttribute('type', 'org.eclipse.ui.externaltools.ProgramBuilderLaunchConfigurationType')
+			self.add(doc, launchConfiguration, 'booleanAttribute', {'key': 'org.eclipse.debug.ui.ATTR_LAUNCH_IN_BACKGROUND', 'value': 'false'})
+			self.add(doc, launchConfiguration, 'booleanAttribute', {'key': 'org.eclipse.ui.externaltools.ATTR_TRIGGERS_CONFIGURED', 'value': 'true'})
+			self.add(doc, launchConfiguration, 'stringAttribute', {'key': 'org.eclipse.ui.externaltools.ATTR_LOCATION', 'value': waf_executable})
+			self.add(doc, launchConfiguration, 'stringAttribute', {'key': 'org.eclipse.ui.externaltools.ATTR_RUN_BUILD_KINDS', 'value': 'full,incremental,'})
+			self.add(doc, launchConfiguration, 'stringAttribute', {'key': 'org.eclipse.ui.externaltools.ATTR_TOOL_ARGUMENTS', 'value': 'build'})
+			self.add(doc, launchConfiguration, 'stringAttribute', {'key': 'org.eclipse.ui.externaltools.ATTR_WORKING_DIRECTORY', 'value': '${project_loc}'})
+			builder.appendChild(launchConfiguration)
+			# And write the XML to the file references before
+			self.write_conf_to_xml('%s%s%s'%(extbuilder_dir, os.path.sep, extbuilder_name), builder)
+
+
 		for k, v in dictionaries.items():
 			self.addDictionary(doc, arguments, k, v)
 
@@ -187,7 +228,7 @@ class eclipse(Build.BuildContext):
 		doc.appendChild(projectDescription)
 		return doc
 
-	def impl_create_cproject(self, executable, waf, appname, workspace_includes, cpppath, source_dirs=[]):
+	def impl_create_cproject(self, executable, waf_executable, appname, workspace_includes, cpppath, source_dirs=[]):
 		doc = Document()
 		doc.appendChild(doc.createProcessingInstruction('fileVersion', '4.0.0'))
 		cconf_id = cdt_core + '.default.config.1'
@@ -234,8 +275,8 @@ class eclipse(Build.BuildContext):
 
 		self.add(doc, toolChain, 'targetPlatform', {'binaryParser': 'org.eclipse.cdt.core.ELF', 'id': cdt_bld + '.prefbase.toolchain.1', 'name': ''})
 
-		waf_build = '"%s" %s'%(waf, eclipse.fun)
-		waf_clean = '"%s" clean'%(waf)
+		waf_build = '"%s" %s'%(waf_executable, eclipse.fun)
+		waf_clean = '"%s" clean'%(waf_executable)
 		self.add(doc, toolChain, 'builder',
 					{'autoBuildTarget': waf_build,
 					 'command': executable,
@@ -295,7 +336,7 @@ class eclipse(Build.BuildContext):
 		buildTargets = self.add(doc, storageModule, 'buildTargets')
 		def addTargetWrap(name, runAll):
 			return self.addTarget(doc, buildTargets, executable, name,
-								'"%s" %s'%(waf, name), runAll)
+								'"%s" %s'%(waf_executable, name), runAll)
 		addTargetWrap('configure', True)
 		addTargetWrap('dist', False)
 		addTargetWrap('install', False)
@@ -337,7 +378,7 @@ class eclipse(Build.BuildContext):
 		doc.appendChild(pydevproject)
 		return doc
 
-	def impl_create_javaproject(self, javasrcpath):
+	def impl_create_javaproject(self, javasrcpath, javalibpath):
 		# create a .classpath file for java usage
 		doc = Document()
 		javaproject = doc.createElement('classpath')
@@ -345,6 +386,11 @@ class eclipse(Build.BuildContext):
 			for i in javasrcpath:
 				self.add(doc, javaproject, 'classpathentry',
 					{'kind': 'src', 'path': i})
+
+		if javalibpath:
+			for i in javalibpath:
+				self.add(doc, javaproject, 'classpathentry',
+					{'kind': 'lib', 'path': i})
 
 		self.add(doc, javaproject, 'classpathentry', {'kind': 'con', 'path': 'org.eclipse.jdt.launching.JRE_CONTAINER'})
 		self.add(doc, javaproject, 'classpathentry', {'kind': 'output', 'path': self.bldnode.name })

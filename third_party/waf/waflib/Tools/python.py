@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2007-2015 (ita)
@@ -450,9 +446,9 @@ def check_python_version(conf, minver=None):
 	Check if the python interpreter is found matching a given minimum version.
 	minver should be a tuple, eg. to check for python >= 2.4.2 pass (2,4,2) as minver.
 
-	If successful, PYTHON_VERSION is defined as 'MAJOR.MINOR'
-	(eg. '2.4') of the actual python version found, and PYTHONDIR is
-	defined, pointing to the site-packages directory appropriate for
+	If successful, PYTHON_VERSION is defined as 'MAJOR.MINOR' (eg. '2.4')
+	of the actual python version found, and PYTHONDIR and PYTHONARCHDIR
+	are defined, pointing to the site-packages directories appropriate for
 	this python version, where modules/packages/extensions should be
 	installed.
 

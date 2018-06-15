@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2005-2018 (ita)
@@ -12,9 +8,21 @@ Runner.py: Task scheduling and execution
 
 import heapq, traceback
 try:
-	from queue import Queue
+	from queue import Queue, PriorityQueue
 except ImportError:
 	from Queue import Queue
+	try:
+		from Queue import PriorityQueue
+	except ImportError:
+		class PriorityQueue(Queue):
+			def _init(self, maxsize):
+				self.maxsize = maxsize
+				self.queue = []
+			def _put(self, item):
+				heapq.heappush(self.queue, item)
+			def _get(self):
+				return heapq.heappop(self.queue)
+
 from waflib import Utils, Task, Errors, Logs
 
 GAP = 5
@@ -34,6 +42,7 @@ class PriorityTasks(object):
 	def append(self, task):
 		heapq.heappush(self.lst, task)
 	def appendleft(self, task):
+		"Deprecated, do not use"
 		heapq.heappush(self.lst, task)
 	def pop(self):
 		return heapq.heappop(self.lst)
@@ -141,7 +150,7 @@ class Parallel(object):
 		self.incomplete = set()
 		"""List of :py:class:`waflib.Task.Task` waiting for dependent tasks to complete (DAG)"""
 
-		self.ready = Queue(0)
+		self.ready = PriorityQueue(0)
 		"""List of :py:class:`waflib.Task.Task` ready to be executed by consumers"""
 
 		self.out = Queue(0)
@@ -261,7 +270,26 @@ class Parallel(object):
 		:type tsk: :py:attr:`waflib.Task.Task`
 		"""
 		if getattr(tsk, 'more_tasks', None):
-			# TODO recompute priorities globally?
+			more = set(tsk.more_tasks)
+			groups_done = set()
+			def iteri(a, b):
+				for x in a:
+					yield x
+				for x in b:
+					yield x
+
+			# Update the dependency tree
+			# this assumes that task.run_after values were updated
+			for x in iteri(self.outstanding, self.incomplete):
+				for k in x.run_after:
+					if isinstance(k, Task.TaskGroup):
+						if k not in groups_done:
+							groups_done.add(k)
+							for j in k.prev & more:
+								self.revdeps[j].add(k)
+					elif k in more:
+						self.revdeps[k].add(x)
+
 			ready, waiting = self.prio_and_split(tsk.more_tasks)
 			self.outstanding.extend(ready)
 			self.incomplete.update(waiting)
@@ -480,13 +508,12 @@ class Parallel(object):
 
 		reverse = self.revdeps
 
+		groups_done = set()
 		for x in tasks:
 			for k in x.run_after:
 				if isinstance(k, Task.TaskGroup):
-					if k.done:
-						pass
-					else:
-						k.done = True
+					if k not in groups_done:
+						groups_done.add(k)
 						for j in k.prev:
 							reverse[j].add(k)
 				else:

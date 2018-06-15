@@ -1,8 +1,4 @@
 #! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
-#! /usr/bin/env python
 # Thomas Nagy, 2011 (ita)
 
 """
@@ -26,7 +22,7 @@ import waflib.Tools.cxx
 
 @extension(*waflib.Tools.qt4.EXT_QT4)
 def cxx_hook(self, node):
-	self.create_compiled_task('cxx_qt', node)
+	return self.create_compiled_task('cxx_qt', node)
 
 class cxx_qt(Task.classes['cxx']):
 	def runnable_status(self):

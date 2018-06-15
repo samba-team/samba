@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# encoding: utf-8
-# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
-
 #!/usr/bin/env python
 # encoding: utf-8
 # Carlos Rafael Giani, 2006
@@ -156,6 +152,7 @@ def add_test_results(self, tup):
 	except AttributeError:
 		self.bld.utest_results = [tup]
 
+@Task.deep_inputs
 class utest(Task.Task):
 	"""
 	Execute a unit test
@@ -234,11 +231,6 @@ class utest(Task.Task):
 
 	def get_cwd(self):
 		return getattr(self.generator, 'ut_cwd', self.inputs[0].parent)
-
-	def sig_explicit_deps(self):
-		lst = [os.stat(node.abspath()).st_mtime for node in self.inputs]
-		self.m.update(str(lst))
-		return super(utest, self).sig_explicit_deps()
 
 def summary(bld):
 	"""
