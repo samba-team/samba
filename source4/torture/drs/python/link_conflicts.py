@@ -210,7 +210,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # attribute and it matches on both DCs
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
-        self.assertTrue(res1[0]["managedBy"][0] == target2_ou,
+        self.assertTrue(str(res1[0]["managedBy"][0]) == target2_ou,
                         "Expected most recent update to win conflict")
 
         # we can't query the deleted links over LDAP, but we can check DRS
@@ -301,8 +301,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # we expect exactly 2 members in our test group (both DCs should agree)
         self.assert_attrs_match(res1, res2, "member", 2)
 
-        for val in res1[0]["member"]:
+        for val in [str(val) for val in res1[0]["member"]]:
             # check the expected conflicting object was renamed
+            #val = str(val)
             self.assertFalse("CNF:%s" % target2_guid in val)
             if "CNF:%s" % target1_guid in val:
                 target1_conflict = True
@@ -387,8 +388,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # DCs agree)
         self.assert_attrs_match(res1, res2, "memberOf", 2)
 
-        for val in res1[0]["memberOf"]:
+        for val in [str(val) for val in res1[0]["memberOf"]]:
             # check the conflicting object was renamed
+            #val = str(val)
             self.assertFalse("CNF:%s" % src2_guid in val)
             if "CNF:%s" % src1_guid in val:
                 src1_backlink = True
@@ -606,7 +608,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # trump DC1's active link
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
-        self.assertTrue(res1[0]["managedBy"][0] == target2_ou,
+        self.assertTrue(str(res1[0]["managedBy"][0]) == target2_ou,
                         "Expected active link win conflict")
 
         # we can't query the deleted links over LDAP, but we can check that
@@ -661,7 +663,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # attribute and it matches on both DCs
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
-        self.assertTrue(res1[0]["managedBy"][0] == target1_ou,
+        self.assertTrue(str(res1[0]["managedBy"][0]) == target1_ou,
                         "Expected most recent update to win conflict")
 
         # we can't query the deleted links over LDAP, but we can check DRS
@@ -718,7 +720,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
         # here we expect DC2 to win because it has the more recent link
-        self.assertTrue(res1[0]["managedBy"][0] == target2_ou,
+        self.assertTrue(str(res1[0]["managedBy"][0]) == target2_ou,
                         "Expected most recent update to win conflict")
 
         # we can't query the deleted links over LDAP, but we can check DRS
