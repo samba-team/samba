@@ -450,6 +450,10 @@ normal_index:
 
 		list->count = el->values[0].length / LTDB_GUID_SIZE;
 		list->dn = talloc_array(list, struct ldb_val, list->count);
+		if (list->dn == NULL) {
+			talloc_free(msg);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
 		/*
 		 * The actual data is on msg, due to
@@ -715,6 +719,9 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	}
 
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
+	if (key.dptr == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	key.dsize = strlen((char *)key.dptr);
 
 	rec = tdb_fetch(ltdb->idxptr->itdb, key);

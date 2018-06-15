@@ -102,8 +102,11 @@ static int msg_add_distinguished_name(struct ldb_message *msg)
 	el.values = &val;
 	el.flags = 0;
 	val.data = (uint8_t *)ldb_dn_alloc_linearized(msg, msg->dn);
+	if (val.data == NULL) {
+		return -1;
+	}
 	val.length = strlen((char *)val.data);
-	
+
 	ret = msg_add_element(msg, &el, 1);
 	return ret;
 }
