@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import Options, Logs
-
 def build(bld):
     bld.SAMBA3_LIBRARY('smbclient',
                        source='''
