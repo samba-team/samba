@@ -1005,7 +1005,8 @@ for env in ['vampire_dc', 'promoted_dc']:
                            name="samba4.drs.fsmo.python(%s)" % env,
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
+                           py3_compatible=True)
     planoldpythontestsuite(env, "repl_move",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_move.python(%s)" % env,
