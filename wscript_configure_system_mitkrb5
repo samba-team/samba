@@ -80,6 +80,7 @@ conf.CHECK_HEADERS('com_err.h', lib='com_err')
 conf.CHECK_HEADERS('kdb.h', lib='kdb5')
 
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
+conf.CHECK_HEADERS('krb5.h krb5/localauth_plugin.h', lib='krb5')
 possible_gssapi_headers="gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h gssapi/gssapi_oid.h"
 conf.CHECK_HEADERS(possible_gssapi_headers, lib='gssapi')
 

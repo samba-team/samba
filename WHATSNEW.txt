@@ -488,6 +488,19 @@ This new module integrates with Sophos, F-Secure and ClamAV anti-virus
 software to provide scanning and filtering of files on a Samba share.
 
 
+Local authorization plugin for MIT Kerberos
+-------------------------------------------
+
+This plugin controls the relationship between Kerberos principals and AD
+accounts through winbind. The module receives the Kerberos principal and the
+local account name as inputs and can then check if they match. This can resolve
+issues with canonicalized names returned by Kerberos within AD. If the user
+tries to log in as 'alice', but the samAccountName is set to ALICE (uppercase),
+Kerberos would return ALICE as the username. Kerberos would not be able to map
+'alice' to 'ALICE' in this case and auth would fail.  With this plugin account
+names can be correctly mapped. This only applies to GSSAPI authentication,
+not for the geting the initial ticket granting ticket.
+
 REMOVED FEATURES
 ================
 

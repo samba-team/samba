@@ -110,6 +110,12 @@ if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
 		deps='wbclient krb5 com_err',
 		realname='winbind_krb5_locator.so')
 
+if bld.CONFIG_SET('HAVE_KRB5_LOCALAUTH_PLUGIN_H'):
+    bld.SAMBA_LIBRARY('winbind_krb5_localauth',
+                      source='krb5_plugin/winbind_krb5_localauth.c',
+                      deps='wbclient krb5 com_err',
+                      realname='winbind-krb5-localauth.so')
+
 bld.SAMBA_SUBSYSTEM('WB_REQTRANS',
 	source='wb_reqtrans.c',
 	deps='talloc tevent LIBASYNC_REQ'
