@@ -475,7 +475,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # find the received link in the list and assert that the target and
         # source GUIDs match what's in the DB
-        for val in res[0][link_attr]:
+        for val in [str(val) for val in res[0][link_attr]]:
             # Work out the expected source and target GUIDs for the DB link
             target_dn = ldb.Dn(self.test_ldb_dc, val)
             targetGUID_blob = target_dn.get_extended_component("GUID")
