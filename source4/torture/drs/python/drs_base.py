@@ -39,7 +39,7 @@ from ldb import (
     Message,
     FLAG_MOD_REPLACE,
     )
-
+from samba.compat import cmp_fn
 
 class DrsBaseTestCase(SambaToolCmdTest):
     """Base class implementation for all DRS python tests.
@@ -515,7 +515,7 @@ class AbstractLink:
                 print("AbstractLink.__internal_cmp__(%r, %r) => wrong type" % (self, other))
             return NotImplemented
 
-        c = cmp(self.selfGUID_blob, other.selfGUID_blob)
+        c = cmp_fn(self.selfGUID_blob, other.selfGUID_blob)
         if c != 0:
             if verbose:
                 print("AbstractLink.__internal_cmp__(%r, %r) => %d different identifier" % (self, other, c))
@@ -536,7 +536,7 @@ class AbstractLink:
                 print("AbstractLink.__internal_cmp__(%r, %r) => %d different FLAG_ACTIVE" % (self, other, c))
             return c
 
-        c = cmp(self.targetGUID_blob, other.targetGUID_blob)
+        c = cmp_fn(self.targetGUID_blob, other.targetGUID_blob)
         if c != 0:
             if verbose:
                 print("AbstractLink.__internal_cmp__(%r, %r) => %d different target" % (self, other, c))
