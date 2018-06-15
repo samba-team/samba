@@ -3,10 +3,10 @@
 
 import os
 from waflib import Options, Build
-from samba_utils import os_path_relpath, TO_LIST, samba_add_onoff_option
+from samba_utils import os_path_relpath, TO_LIST
 from samba_autoconf import library_flags
 
-Options.OptionsContext.SAMBA3_ADD_OPTION = samba_add_onoff_option
+Options.OptionsContext.SAMBA3_ADD_OPTION = Options.OptionsContext.samba_add_onoff_option
 
 def SAMBA3_IS_STATIC_MODULE(bld, module):
     '''Check whether module is in static list'''
