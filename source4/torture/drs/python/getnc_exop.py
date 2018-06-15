@@ -924,17 +924,20 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
 
         schi = drsuapi.DsReplicaOIDMapping()
         schi.id_prefix = 0
-
         if 'schemaInfo' in res[0]:
-            schi.oid.length = len(map(ord, str(res[0]['schemaInfo'])))
-            schi.oid.binary_oid = map(ord, str(res[0]['schemaInfo']))
+            binary_oid = [x if isinstance(x, int) else ord(x) for x in res[0]['schemaInfo'][0]]
+            schi.oid.length = len(binary_oid)
+            schi.oid.binary_oid = binary_oid
         else:
             schema_info = drsblobs.schemaInfoBlob()
             schema_info.revision = 0
             schema_info.marker = 0xFF
             schema_info.invocation_id = misc.GUID(samdb.get_invocation_id())
-            schi.oid.length = len(map(ord, ndr_pack(schema_info)))
-            schi.oid.binary_oid = map(ord, ndr_pack(schema_info))
+
+            binary_oid = [x if isinstance(x, int) else ord(x) for x in ndr_pack(schema_info)]
+            # you have to set the length before setting binary_oid
+            schi.oid.length = len(binary_oid)
+            schi.oid.binary_oid = binary_oid
 
         pfm.ctr.mappings = pfm.ctr.mappings + [schi]
         pfm.ctr.num_mappings += 1
