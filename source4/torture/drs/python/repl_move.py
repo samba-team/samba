@@ -107,7 +107,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         return "DrsMoveU_" + time.strftime("%s", time.gmtime())
 
     def _check_metadata(self, user_dn, sam_ldb, drs, metadata, expected):
-        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(metadata[0]))
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, metadata[0])
 
         self.assertEqual(len(repl.ctr.array), len(expected))
 
