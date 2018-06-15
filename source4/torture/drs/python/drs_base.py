@@ -317,7 +317,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         if uptodateness_vector is not None:
             uptodateness_vector_v1 = drsuapi.DsReplicaCursorCtrEx()
             cursors = []
-            for i in xrange(0, uptodateness_vector.count):
+            for i in range(0, uptodateness_vector.count):
                 c = uptodateness_vector.cursors[i]
                 c1 = drsuapi.DsReplicaCursor()
                 c1.source_dsa_invocation_id = c.source_dsa_invocation_id
