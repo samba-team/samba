@@ -22,9 +22,20 @@ import sys
 PY3 = sys.version_info[0] == 3
 
 if PY3:
+    def cmp_fn(x, y):
+        """
+        Replacement for built-in function cmp that was removed in Python 3
+
+        Compare the two objects x and y and return an integer according to
+        the outcome. The return value is negative if x < y, zero if x == y
+        and strictly positive if x > y.
+        """
+
+        return (x > y) - (x < y)
     # compat functions
     from  urllib.parse import quote as urllib_quote
     from urllib.request import urlopen as urllib_urlopen
+    from functools import cmp_to_key as cmp_to_key_fn
 
     # compat types
     integer_types = int,
@@ -36,6 +47,40 @@ if PY3:
     import io
     StringIO = io.StringIO
 else:
+
+    if sys.version_info < (2, 7):
+        def cmp_to_key_fn(mycmp):
+
+            """Convert a cmp= function into a key= function"""
+            class K(object):
+                __slots__ = ['obj']
+
+                def __init__(self, obj, *args):
+                    self.obj = obj
+
+                def __lt__(self, other):
+                    return mycmp(self.obj, other.obj) < 0
+
+                def __gt__(self, other):
+                    return mycmp(self.obj, other.obj) > 0
+
+                def __eq__(self, other):
+                    return mycmp(self.obj, other.obj) == 0
+
+                def __le__(self, other):
+                    return mycmp(self.obj, other.obj) <= 0
+
+                def __ge__(self, other):
+                    return mycmp(self.obj, other.obj) >= 0
+
+                def __ne__(self, other):
+                    return mycmp(self.obj, other.obj) != 0
+
+                def __hash__(self):
+                    raise TypeError('hash not implemented')
+            return K
+    else:
+        from functools import cmp_to_key as cmp_to_key_fn
     # compat functions
     from urllib import quote as urllib_quote
     from urllib import urlopen as urllib_urlopen
@@ -49,3 +94,4 @@ else:
     # alias
     import StringIO
     StringIO = StringIO.StringIO
+    cmp_fn = cmp
