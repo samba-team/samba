@@ -50,6 +50,7 @@ import re
 import os
 import tempfile
 from samba.compat import text_type
+from samba.compat import get_string
 
 
 class DCJoinException(Exception):
@@ -398,7 +399,7 @@ class DCJoinContext(object):
            so only used for RODC join'''
         res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
         binsid = res[0]["tokenGroups"][0]
-        return ctx.samdb.schema_format_value("objectSID", binsid)
+        return get_string(ctx.samdb.schema_format_value("objectSID", binsid))
 
     def dn_exists(ctx, dn):
         '''check if a DN exists'''

@@ -61,14 +61,14 @@ def drs_get_rodc_partial_attribute_set(samdb, samdb1, exceptions=[]):
                               "searchFlags"])
 
     for r in res:
-        ldap_display_name = r["lDAPDisplayName"][0]
+        ldap_display_name = str(r["lDAPDisplayName"][0])
         if "systemFlags" in r:
-            system_flags      = r["systemFlags"][0]
+            system_flags      = str(r["systemFlags"][0])
             if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
                                      samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
                 continue
         if "searchFlags" in r:
-            search_flags = r["searchFlags"][0]
+            search_flags = str(r["searchFlags"][0])
             if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
                 continue
         try:
@@ -624,7 +624,8 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         packed_attrs = []
         unpacked_attrs = []
         for attribute in revealed_users:
-            dsdb_dn = dsdb_Dn(self.ldb_dc1, attribute.decode('utf8'))
+            attribute = attribute.decode('utf8')
+            dsdb_dn = dsdb_Dn(self.ldb_dc1, attribute)
             metadata = ndr_unpack(drsblobs.replPropertyMetaData1, dsdb_dn.get_bytes())
             if user_dn in attribute:
                 unpacked_attrs.append(metadata)
