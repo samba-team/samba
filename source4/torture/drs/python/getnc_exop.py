@@ -43,6 +43,8 @@ from ldb import SCOPE_BASE
 from samba.dcerpc import drsuapi, misc, drsblobs
 from samba.drs_utils import drs_DsBind
 from samba.ndr import ndr_unpack, ndr_pack
+from samba.compat import cmp_to_key_fn
+from samba.compat import cmp_fn
 
 def _linked_attribute_compare(la1, la2):
     """See CompareLinks() in MS-DRSR section 4.1.10.5.17"""
@@ -50,7 +52,7 @@ def _linked_attribute_compare(la1, la2):
     la2, la2_target = la2
 
     # Ascending host object GUID
-    c = cmp(ndr_pack(la1.identifier.guid), ndr_pack(la2.identifier.guid))
+    c = cmp_fn(ndr_pack(la1.identifier.guid), ndr_pack(la2.identifier.guid))
     if c != 0:
         return c
 
@@ -66,7 +68,7 @@ def _linked_attribute_compare(la1, la2):
         return 1 if la1_active else -1
 
     # Ascending target object GUID
-    return cmp(ndr_pack(la1_target), ndr_pack(la2_target))
+    return cmp_fn(ndr_pack(la1_target), ndr_pack(la2_target))
 
 
 class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
@@ -1056,7 +1058,7 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
                                          link.identifier.guid,
                                          target_guid) in expected_links)
 
-        no_inactive.sort(cmp=_linked_attribute_compare)
+        no_inactive.sort(key=cmp_to_key_fn(_linked_attribute_compare))
 
         # assert the two arrays are the same
         self.assertEqual(len(expected_links), ctr.linked_attributes_count)
@@ -1080,7 +1082,7 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
                                          link.identifier.guid,
                                          target_guid) in expected_links)
 
-        has_inactive.sort(cmp=_linked_attribute_compare)
+        has_inactive.sort(key=cmp_to_key_fn(_linked_attribute_compare))
 
         # assert the two arrays are the same
         self.assertEqual(len(expected_links), ctr.linked_attributes_count)
@@ -1128,7 +1130,7 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
                                          link.value.blob).guid
             no_inactive.append((link, target_guid))
 
-        no_inactive.sort(cmp=_linked_attribute_compare)
+        no_inactive.sort(key=cmp_to_key_fn(_linked_attribute_compare))
 
         # assert the two arrays are the same
         self.assertEqual([x[0] for x in no_inactive], ctr.linked_attributes)
