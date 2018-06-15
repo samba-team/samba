@@ -943,27 +943,47 @@ SMBC_closedir_ctx(SMBCCTX *context,
 
 }
 
-static void
+static int
 smbc_readdir_internal(SMBCCTX * context,
                       struct smbc_dirent *dest,
                       struct smbc_dirent *src,
                       int max_namebuf_len)
 {
         if (smbc_getOptionUrlEncodeReaddirEntries(context)) {
+		int remaining_len;
 
                 /* url-encode the name.  get back remaining buffer space */
-                max_namebuf_len =
+                remaining_len =
                         smbc_urlencode(dest->name, src->name, max_namebuf_len);
+
+		/* -1 means no null termination. */
+		if (remaining_len < 0) {
+			return -1;
+		}
 
                 /* We now know the name length */
                 dest->namelen = strlen(dest->name);
 
+		if (dest->namelen + 1 < 1) {
+			/* Integer wrap. */
+			return -1;
+		}
+
+		if (dest->namelen + 1 >= max_namebuf_len) {
+			/* Out of space for comment. */
+			return -1;
+		}
+
                 /* Save the pointer to the beginning of the comment */
                 dest->comment = dest->name + dest->namelen + 1;
 
+		if (remaining_len < 1) {
+			/* No room for comment null termination. */
+			return -1;
+		}
+
                 /* Copy the comment */
-                strncpy(dest->comment, src->comment, max_namebuf_len - 1);
-                dest->comment[max_namebuf_len - 1] = '\0';
+                strlcpy(dest->comment, src->comment, remaining_len);
 
                 /* Save other fields */
                 dest->smbc_type = src->smbc_type;
@@ -973,10 +993,21 @@ smbc_readdir_internal(SMBCCTX * context,
         } else {
 
                 /* No encoding.  Just copy the entry as is. */
+		if (src->dirlen > max_namebuf_len) {
+			return -1;
+		}
                 memcpy(dest, src, src->dirlen);
+		if (src->namelen + 1 < 1) {
+			/* Integer wrap */
+			return -1;
+		}
+		if (src->namelen + 1 >= max_namebuf_len) {
+			/* Comment off the end. */
+			return -1;
+		}
                 dest->comment = (char *)(&dest->name + src->namelen + 1);
         }
-
+	return 0;
 }
 
 /*
@@ -988,6 +1019,7 @@ SMBC_readdir_ctx(SMBCCTX *context,
                  SMBCFILE *dir)
 {
         int maxlen;
+	int ret;
 	struct smbc_dirent *dirp, *dirent;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1037,7 +1069,12 @@ SMBC_readdir_ctx(SMBCCTX *context,
         dirp = &context->internal->dirent;
         maxlen = sizeof(context->internal->_dirent_name);
 
-        smbc_readdir_internal(context, dirp, dirent, maxlen);
+        ret = smbc_readdir_internal(context, dirp, dirent, maxlen);
+	if (ret == -1) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+                return NULL;
+	}
 
         dir->dir_next = dir->dir_next->next;
 
@@ -1095,6 +1132,7 @@ SMBC_getdents_ctx(SMBCCTX *context,
 	 */
 
 	while ((dirlist = dir->dir_next)) {
+		int ret;
 		struct smbc_dirent *dirent;
 		struct smbc_dirent *currentEntry = (struct smbc_dirent *)ndir;
 
@@ -1109,8 +1147,13 @@ SMBC_getdents_ctx(SMBCCTX *context,
                 /* Do urlencoding of next entry, if so selected */
                 dirent = &context->internal->dirent;
                 maxlen = sizeof(context->internal->_dirent_name);
-                smbc_readdir_internal(context, dirent,
+		ret = smbc_readdir_internal(context, dirent,
                                       dirlist->dirent, maxlen);
+		if (ret == -1) {
+			errno = EINVAL;
+			TALLOC_FREE(frame);
+			return -1;
+		}
 
                 reqd = dirent->dirlen;
 
