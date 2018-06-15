@@ -184,7 +184,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
     def _get_highest_hwm_utdv(self, ldb_conn):
         res = ldb_conn.search("", scope=ldb.SCOPE_BASE, attrs=["highestCommittedUSN"])
         hwm = drsuapi.DsReplicaHighWaterMark()
-        hwm.tmp_highest_usn = long(res[0]["highestCommittedUSN"][0])
+        hwm.tmp_highest_usn = int(res[0]["highestCommittedUSN"][0])
         hwm.reserved_usn = 0
         hwm.highest_usn = hwm.tmp_highest_usn
 
