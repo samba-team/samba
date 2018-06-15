@@ -921,7 +921,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
                            attrs=["prefixMap", "schemaInfo"])
 
         pfm = ndr_unpack(drsblobs.prefixMapBlob,
-                         str(res[0]['prefixMap']))
+                         res[0]['prefixMap'][0])
 
         schi = drsuapi.DsReplicaOIDMapping()
         schi.id_prefix = 0
