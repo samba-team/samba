@@ -303,7 +303,6 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
 
         for val in [str(val) for val in res1[0]["member"]]:
             # check the expected conflicting object was renamed
-            #val = str(val)
             self.assertFalse("CNF:%s" % target2_guid in val)
             if "CNF:%s" % target1_guid in val:
                 target1_conflict = True
@@ -390,7 +389,6 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
 
         for val in [str(val) for val in res1[0]["memberOf"]]:
             # check the conflicting object was renamed
-            #val = str(val)
             self.assertFalse("CNF:%s" % src2_guid in val)
             if "CNF:%s" % src1_guid in val:
                 src1_backlink = True
