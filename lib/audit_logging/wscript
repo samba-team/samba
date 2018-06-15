@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import Logs, Options, Utils
+from waflib import Logs, Options, Utils
 import samba3
 
 def options(opt):
