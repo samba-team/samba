@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import Options, Logs
+from waflib import Options, Logs
 
 # Remember to also update wbclient.h
 VERSION="0.14"
