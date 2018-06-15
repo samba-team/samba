@@ -147,7 +147,8 @@ struct ctdb_mutex_rados_state {
 	const char *object;
 	int ppid;
 	struct tevent_context *ev;
-	struct tevent_signal *sig_ev;
+	struct tevent_signal *sigterm_ev;
+	struct tevent_signal *sigint_ev;
 	struct tevent_timer *timer_ev;
 	rados_t ceph_cluster;
 	rados_ioctx_t ioctx;
@@ -269,11 +270,21 @@ int main(int argc, char *argv[])
 	}
 
 	/* wait for sigterm */
-	cmr_state->sig_ev = tevent_add_signal(cmr_state->ev, cmr_state, SIGTERM, 0,
+	cmr_state->sigterm_ev = tevent_add_signal(cmr_state->ev, cmr_state, SIGTERM, 0,
 					      ctdb_mutex_rados_sigterm_cb,
 					      cmr_state);
-	if (cmr_state->sig_ev == NULL) {
-		fprintf(stderr, "Failed to create signal event\n");
+	if (cmr_state->sigterm_ev == NULL) {
+		fprintf(stderr, "Failed to create term signal event\n");
+		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
+		ret = -ENOMEM;
+		goto err_state_free;
+	}
+
+	cmr_state->sigint_ev = tevent_add_signal(cmr_state->ev, cmr_state, SIGINT, 0,
+					      ctdb_mutex_rados_sigterm_cb,
+					      cmr_state);
+	if (cmr_state->sigint_ev == NULL) {
+		fprintf(stderr, "Failed to create int signal event\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
 		goto err_state_free;
