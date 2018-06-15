@@ -173,7 +173,7 @@ smbc_urlencode(char *dest,
                 }
         }
 
-	if (max_dest_len == 0) {
+	if (max_dest_len <= 0) {
 		/* Ensure we return -1 if no null termination. */
 		return -1;
 	}
