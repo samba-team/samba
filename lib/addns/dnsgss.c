@@ -131,7 +131,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 
 			/* Windows 2000 DNS is broken and requires the
 			   TKEY payload in the Answer section instead
-			   of the Additional seciton like Windows 2003 */
+			   of the Additional section like Windows 2003 */
 
 			if ( srv_type == DNS_SRV_WIN2000 ) {
 				err = dns_add_rrec(req, rec, &req->num_answers,
