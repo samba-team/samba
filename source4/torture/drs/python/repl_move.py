@@ -217,10 +217,10 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                     "replPropertyMetaData"])
         self.assertEquals(len(res), 1)
         user_cur = res[0]
-        rdn_orig = obj_orig[user_cur.dn.get_rdn_name()][0]
-        rdn_cur  = user_cur[user_cur.dn.get_rdn_name()][0]
-        name_orig = obj_orig["name"][0]
-        name_cur  = user_cur["name"][0]
+        rdn_orig = str(obj_orig[user_cur.dn.get_rdn_name()][0])
+        rdn_cur  = str(user_cur[user_cur.dn.get_rdn_name()][0])
+        name_orig = str(obj_orig["name"][0])
+        name_cur  = str(user_cur["name"][0])
         dn_orig = obj_orig["dn"]
         dn_cur  = user_cur["dn"]
         # now check properties of the user
@@ -1913,10 +1913,10 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                              attrs=["*", "parentGUID"])
         self.assertEquals(len(res), 1)
         user_cur = res[0]
-        cn_orig = obj_orig["cn"][0]
-        cn_cur  = user_cur["cn"][0]
-        name_orig = obj_orig["name"][0]
-        name_cur  = user_cur["name"][0]
+        cn_orig = str(obj_orig["cn"][0])
+        cn_cur  = str(user_cur["cn"][0])
+        name_orig = str(obj_orig["name"][0])
+        name_cur  = str(user_cur["name"][0])
         dn_orig = obj_orig["dn"]
         dn_cur  = user_cur["dn"]
         # now check properties of the user
