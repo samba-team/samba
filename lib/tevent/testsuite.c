@@ -1048,6 +1048,159 @@ pop_use:
 	goto done;
 }
 
+static void test_free_wrapper_signal_handler(struct tevent_context *ev,
+					struct tevent_signal *se,
+					int signum,
+					int count,
+					void *siginfo,
+					void *private_data)
+{
+	struct torture_context *tctx =
+		talloc_get_type_abort(private_data,
+		struct torture_context);
+
+	torture_comment(tctx, "signal handler\n");
+
+	talloc_free(se);
+
+	/*
+	 * signal handlers have highest priority in tevent, so this signal
+	 * handler will always be started before the other handlers
+	 * below. Freeing the (wrapper) event context here tests that the
+	 * wrapper implementation correclty handles the wrapper ev going away
+	 * with pending events.
+	 */
+	talloc_free(ev);
+	return;
+}
+
+static void test_free_wrapper_fd_handler(struct tevent_context *ev,
+					 struct tevent_fd *fde,
+					 unsigned short fd_flags,
+					 void *private_data)
+{
+	/*
+	 * This should never be called as
+	 * test_free_wrapper_signal_handler()
+	 * already destroyed the wrapper tevent_context.
+	 */
+	abort();
+}
+
+static void test_free_wrapper_immediate_handler(struct tevent_context *ev,
+					   struct tevent_immediate *im,
+					   void *private_data)
+{
+	/*
+	 * This should never be called as
+	 * test_free_wrapper_signal_handler()
+	 * already destroyed the wrapper tevent_context.
+	 */
+	abort();
+}
+
+static void test_free_wrapper_timer_handler(struct tevent_context *ev,
+				       struct tevent_timer *te,
+				       struct timeval tv,
+				       void *private_data)
+{
+	/*
+	 * This should never be called as
+	 * test_free_wrapper_signal_handler()
+	 * already destroyed the wrapper tevent_context.
+	 */
+	abort();
+}
+
+static bool test_free_wrapper(struct torture_context *tctx,
+			      const void *test_data)
+{
+	struct test_wrapper_state *state = NULL;
+	int sock[2] = { -1, -1};
+	uint8_t c = 0;
+	const char *backend = (const char *)test_data;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_context *wrap_ev = NULL;
+	struct tevent_fd *fde = NULL;
+	struct tevent_timer *te = NULL;
+	struct tevent_signal *se = NULL;
+	struct tevent_immediate *im = NULL;
+	int ret;
+	bool ok = false;
+
+	ev = tevent_context_init_byname(frame, backend);
+	if (ev == NULL) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "event backend '%s' not supported\n",
+			     backend));
+		return true;
+	}
+
+	tevent_set_debug_stderr(ev);
+	torture_comment(tctx, "tevent backend '%s'\n", backend);
+
+	wrap_ev = tevent_context_wrapper_create(
+		ev, ev,	&test_wrapper_ops, &state, struct test_wrapper_state);
+	torture_assert_not_null_goto(tctx, wrap_ev, ok, done,
+				     "tevent_context_wrapper_create failed\n");
+	*state = (struct test_wrapper_state) {
+		.tctx = tctx,
+	};
+
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, sock);
+	torture_assert_goto(tctx, ret == 0, ok, done, "socketpair failed\n");
+
+	fde = tevent_add_fd(wrap_ev, frame,
+			    sock[1],
+			    TEVENT_FD_READ,
+			    test_free_wrapper_fd_handler,
+			    NULL);
+	torture_assert_not_null_goto(tctx, fde, ok, done,
+				     "tevent_add_fd failed\n");
+
+	te = tevent_add_timer(wrap_ev, frame,
+			      timeval_current_ofs(0, 0),
+			      test_free_wrapper_timer_handler, NULL);
+	torture_assert_not_null_goto(tctx, te, ok, done,
+				     "tevent_add_timer failed\n");
+
+	im = tevent_create_immediate(frame);
+	torture_assert_not_null_goto(tctx, im, ok, done,
+				     "tevent_create_immediate failed\n");
+
+	se = tevent_add_signal(wrap_ev, frame,
+			       SIGUSR1,
+			       0,
+			       test_free_wrapper_signal_handler,
+			       tctx);
+	torture_assert_not_null_goto(tctx, se, ok, done,
+				     "tevent_add_signal failed\n");
+
+	do_write(sock[0], &c, 1);
+	kill(getpid(), SIGUSR1);
+	tevent_schedule_immediate(im,
+				  wrap_ev,
+				  test_free_wrapper_immediate_handler,
+				  NULL);
+
+	ret = tevent_loop_wait(ev);
+	torture_assert_goto(tctx, ret == 0, ok, done, "tevent_loop_wait failed\n");
+
+	ok = true;
+
+done:
+	TALLOC_FREE(frame);
+
+	if (sock[0] != -1) {
+		close(sock[0]);
+	}
+	if (sock[1] != -1) {
+		close(sock[1]);
+	}
+	return ok;
+}
+
 #ifdef HAVE_PTHREAD
 
 static pthread_mutex_t threaded_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1635,6 +1788,10 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "wrapper",
 					       test_wrapper,
+					       (const void *)list[i]);
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "free_wrapper",
+					       test_free_wrapper,
 					       (const void *)list[i]);
 
 		torture_suite_add_suite(suite, backend_suite);
