@@ -451,7 +451,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
     def test_pso_min_age(self):
         """Tests that a PSO's min-age is enforced"""
         pso = PasswordSettings("min-age-PSO", self.ldb, password_len=10,
-                               password_age_min=1, complexity=False)
+                               password_age_min=2, complexity=False)
         self.add_obj_cleanup([pso.dn])
 
         # create a user and apply the PSO
@@ -462,8 +462,8 @@ class PasswordSettingsTestCase(PasswordTestCase):
         # changing the password immediately should fail, even if password is valid
         valid_password = "min-age-passwd"
         self.assert_password_invalid(user, valid_password)
-        # then trying the same password later (min-age=1sec) should succeed
-        time.sleep(1.5)
+        # then trying the same password later should succeed
+        time.sleep(pso.password_age_min + 0.5)
         self.assert_password_valid(user, valid_password)
 
     def test_pso_max_age(self):
