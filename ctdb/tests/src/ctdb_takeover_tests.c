@@ -206,7 +206,7 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 	if (t != NULL) {
 		noiphostonalldisabled = (uint32_t) strtol(t, NULL, 0);
 	} else {
-		noiphostonalldisabled = 0;
+		noiphostonalldisabled = 1;
 	}
 
 	*ipalloc_state = ipalloc_state_init(mem_ctx, nodemap->num,

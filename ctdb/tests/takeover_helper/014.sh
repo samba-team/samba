@@ -21,13 +21,17 @@ PUBLICIPS
 10.0.0.33  1
 EOF
 
-ok_null
+ok <<EOF
+Failed to find node to cover ip 10.0.0.33
+Failed to find node to cover ip 10.0.0.32
+Failed to find node to cover ip 10.0.0.31
+EOF
 test_takeover_helper
 
 required_result 0 <<EOF
 Public IPs on ALL nodes
-10.0.0.31 0
-10.0.0.32 2
-10.0.0.33 1
+10.0.0.31 -1
+10.0.0.32 -1
+10.0.0.33 -1
 EOF
 test_ctdb_ip_all
