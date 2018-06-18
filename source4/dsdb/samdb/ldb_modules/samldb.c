@@ -345,7 +345,7 @@ static int samldb_generate_next_linkid(struct samldb_ctx *ac,
 static int samldb_schema_add_handle_linkid(struct samldb_ctx *ac)
 {
 	int ret;
-	bool ok, found;
+	bool ok, found = false;
 	struct ldb_message_element *el;
 	const char *enc_str;
 	const struct dsdb_attribute *attr;
