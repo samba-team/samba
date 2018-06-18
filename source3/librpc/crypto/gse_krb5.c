@@ -502,9 +502,7 @@ static krb5_error_code fill_mem_keytab_from_dedicated_keytab(krb5_context krbctx
 	}
 
 	/*
-	 * Iterate through the keytab.  For each key, if the principal
-	 * name case-insensitively matches one of the allowed formats,
-	 * copy it to the memory keytab.
+	 * Copy the dedicated keyab to our in-memory keytab.
 	 */
 
 	ret = krb5_kt_start_seq_get(krbctx, keytab, &kt_cursor);
