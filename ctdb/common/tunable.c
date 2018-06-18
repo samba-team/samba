@@ -141,7 +141,7 @@ static struct {
 		offsetof(struct ctdb_tunable_list, db_size_warn) },
 	{ "PullDBPreallocation", 10*1024*1024, false,
 		offsetof(struct ctdb_tunable_list, pulldb_preallocation_size) },
-	{ "NoIPHostOnAllDisabled", 1, false,
+	{ "NoIPHostOnAllDisabled", 1, true,
 		offsetof(struct ctdb_tunable_list, no_ip_host_on_all_disabled) },
 	{ "Samba3AvoidDeadlocks", 0, true,
 		offsetof(struct ctdb_tunable_list, samba3_hack) },

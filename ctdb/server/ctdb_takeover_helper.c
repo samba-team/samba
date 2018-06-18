@@ -672,7 +672,7 @@ static bool ipreallocated_recv(struct tevent_req *req, int *perr)
  * - Get nodemap
  * - Initialise IP allocation state.  Pass:
  *   + algorithm to be used;
- *   + various tunables (NoIPTakeover, NoIPFailback, NoIPHostOnAllDisabled)
+ *   + various tunables (NoIPTakeover, NoIPFailback)
  *   + list of nodes to force rebalance (internal structure, currently
  *     no way to fetch, only used by LCP2 for nodes that have had new
  *     IP addresses added).

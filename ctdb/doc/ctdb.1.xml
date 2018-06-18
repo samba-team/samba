@@ -827,7 +827,6 @@ DBRecordCountWarn       = 100000
 DBRecordSizeWarn        = 10000000
 DBSizeWarn              = 100000000
 PullDBPreallocation     = 10485760
-NoIPHostOnAllDisabled   = 0
 TDBMutexEnabled         = 1
 LockProcessesPerDB      = 200
 RecBufferSizeLimit      = 1000000

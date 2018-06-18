@@ -443,28 +443,14 @@ MonitorInterval=20
     </refsect2>
 
     <refsect2>
-      <title>NoIPHostOnAllDisabled</title>
-      <para>Default: 0</para>
-      <para>
-	If no nodes are HEALTHY then by default ctdb will happily host
-	public IPs on disabled (unhealthy or administratively disabled)
-	nodes.	This can cause problems, for example if the underlying
-	cluster filesystem is not mounted.  When set to 1 and a node
-	is disabled, any IPs hosted by this node will be released and
-	the node will not takeover any IPs until it is no longer disabled.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>NoIPTakeover</title>
       <para>Default: 0</para>
       <para>
 	When set to 1, ctdb will not allow IP addresses to be failed
 	over to other nodes.  Any IP addresses already hosted on
-	healthy nodes will remain.  Usually IP addresses hosted on
-	unhealthy nodes will also remain, if NoIPHostOnAllDisabled is
-	0.  However, if NoIPHostOnAllDisabled is 1 then IP addresses
-	will be released by unhealthy nodes and will become un-hosted.
+	healthy nodes will remain.  Any IP addresses hosted on
+	unhealthy nodes will be released by unhealthy nodes and will
+	become un-hosted.
       </para>
     </refsect2>
 
