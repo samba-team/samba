@@ -55,9 +55,9 @@ struct poll_event_context {
 	unsigned num_fds;
 
 	/*
-	 * Signal fd to wake the poll() thread
+	 * use tevent_common_wakeup(ev) to wake the poll() thread
 	 */
-	int signal_fd;
+	bool use_mt_mode;
 };
 
 static int poll_event_context_destructor(struct poll_event_context *poll_ev)
@@ -74,24 +74,6 @@ static int poll_event_context_destructor(struct poll_event_context *poll_ev)
 		fn = fd->next;
 		fd->event_ctx = NULL;
 		DLIST_REMOVE(poll_ev->disabled, fd);
-	}
-
-	if (poll_ev->signal_fd == -1) {
-		/*
-		 * Non-threaded, no signal pipe
-		 */
-		return 0;
-	}
-
-	close(poll_ev->signal_fd);
-	poll_ev->signal_fd = -1;
-
-	if (poll_ev->num_fds == 0) {
-		return 0;
-	}
-	if (poll_ev->fds[0].fd != -1) {
-		close(poll_ev->fds[0].fd);
-		poll_ev->fds[0].fd = -1;
 	}
 	return 0;
 }
@@ -116,30 +98,14 @@ static int poll_event_context_init(struct tevent_context *ev)
 		return -1;
 	}
 	poll_ev->ev = ev;
-	poll_ev->signal_fd = -1;
 	ev->additional_data = poll_ev;
 	talloc_set_destructor(poll_ev, poll_event_context_destructor);
 	return 0;
 }
 
-static bool set_nonblock(int fd)
-{
-	int val;
-
-	val = fcntl(fd, F_GETFL, 0);
-	if (val == -1) {
-		return false;
-	}
-	val |= O_NONBLOCK;
-
-	return (fcntl(fd, F_SETFL, val) != -1);
-}
-
 static int poll_event_context_init_mt(struct tevent_context *ev)
 {
 	struct poll_event_context *poll_ev;
-	struct pollfd *pfd;
-	int fds[2];
 	int ret;
 
 	ret = poll_event_context_init(ev);
@@ -150,67 +116,22 @@ static int poll_event_context_init_mt(struct tevent_context *ev)
 	poll_ev = talloc_get_type_abort(
 		ev->additional_data, struct poll_event_context);
 
-	poll_ev->fds = talloc_zero(poll_ev, struct pollfd);
-	if (poll_ev->fds == NULL) {
-		return -1;
+	ret = tevent_common_wakeup_init(ev);
+	if (ret != 0) {
+		return ret;
 	}
 
-	ret = pipe(fds);
-	if (ret == -1) {
-		return -1;
-	}
-
-	if (!set_nonblock(fds[0]) || !set_nonblock(fds[1])) {
-		close(fds[0]);
-		close(fds[1]);
-		return -1;
-	}
-
-	poll_ev->signal_fd = fds[1];
-
-	pfd = &poll_ev->fds[0];
-	pfd->fd = fds[0];
-	pfd->events = (POLLIN|POLLHUP);
-
-	poll_ev->num_fds = 1;
-
-	talloc_set_destructor(poll_ev, poll_event_context_destructor);
+	poll_ev->use_mt_mode = true;
 
 	return 0;
 }
 
 static void poll_event_wake_pollthread(struct poll_event_context *poll_ev)
 {
-	char c;
-	ssize_t ret;
-
-	if (poll_ev->signal_fd == -1) {
+	if (!poll_ev->use_mt_mode) {
 		return;
 	}
-	c = 0;
-	do {
-		ret = write(poll_ev->signal_fd, &c, sizeof(c));
-	} while ((ret == -1) && (errno == EINTR));
-}
-
-static void poll_event_drain_signal_fd(struct poll_event_context *poll_ev)
-{
-	char buf[16];
-	ssize_t ret;
-	int fd;
-
-	if (poll_ev->signal_fd == -1) {
-		return;
-	}
-
-	if (poll_ev->num_fds < 1) {
-		return;
-	}
-	fd = poll_ev->fds[0].fd;
-
-	do {
-		ret = read(fd, buf, sizeof(buf));
-	} while (ret == sizeof(buf));
+	tevent_common_wakeup(poll_ev->ev);
 }
 
 /*
@@ -392,10 +313,9 @@ static bool poll_event_setup_fresh(struct tevent_context *ev,
 	unsigned num_fresh, num_fds;
 
 	if (poll_ev->deleted) {
-		unsigned first_fd = (poll_ev->signal_fd != -1) ? 1 : 0;
 		unsigned i;
 
-		for (i=first_fd; i < poll_ev->num_fds;) {
+		for (i=0; i < poll_ev->num_fds;) {
 			fde = poll_ev->fdes[i];
 			if (fde != NULL) {
 				i++;
@@ -509,8 +429,6 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		timeout = tvalp->tv_sec * 1000;
 		timeout += (tvalp->tv_usec + 999) / 1000;
 	}
-
-	poll_event_drain_signal_fd(poll_ev);
 
 	if (!poll_event_setup_fresh(ev, poll_ev)) {
 		return -1;
