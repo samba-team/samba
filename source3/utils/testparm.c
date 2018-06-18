@@ -713,16 +713,6 @@ static void do_per_share_checks(int s)
 	}
 
 	for (s=0;s<1000;s++) {
-		if (VALID_SNUM(s))
-			if (strlen(lp_servicename(talloc_tos(), s)) > 12) {
-				fprintf(stderr, "WARNING: You have some share names that are longer than 12 characters.\n" );
-				fprintf(stderr, "These may not be accessible to some older clients.\n" );
-				fprintf(stderr, "(Eg. Windows9x, WindowsMe, and smbclient prior to Samba 3.0.)\n" );
-				break;
-			}
-	}
-
-	for (s=0;s<1000;s++) {
 		if (VALID_SNUM(s) && (skip_logic_checks == 0)) {
 			do_per_share_checks(s);
 		}
