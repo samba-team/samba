@@ -166,13 +166,12 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 					       uint32_t buffer_size)
 {
 	TDB_DATA kbuf, dbuf;
-	char temp[256];
+	char temp[PERFCOUNT_MAX_LEN] = {0};
 	char *buf1 = *retbuf;
 	uint32_t working_size = 0;
 	DATA_BLOB name_index, name;
 	bool ok;
 
-	memset(temp, 0, sizeof(temp));
 	snprintf(temp, sizeof(temp), "%d", keyval);
 	kbuf = string_tdb_data(temp);
 	dbuf = tdb_fetch(tdb, kbuf);
@@ -709,13 +708,13 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 					     TDB_CONTEXT *names)
 {
 	TDB_DATA key, data;
-	char buf[PERFCOUNT_MAX_LEN], temp[PERFCOUNT_MAX_LEN];
+	char buf[PERFCOUNT_MAX_LEN] = {0};
+	char temp[32] = {0};
 	smb_ucs2_t *name = NULL;
 	int pad;
 
 	/* First grab the instance data from the data file */
-	memset(temp, 0, PERFCOUNT_MAX_LEN);
-	snprintf(temp, PERFCOUNT_MAX_LEN, "i%d", instId);
+	snprintf(temp, sizeof(temp), "i%d", instId);
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, obj->ObjectNameTitleIndex, temp);
 	if (!_reg_perfcount_get_counter_data(key, &data)) {
 		DEBUG(3, ("_reg_perfcount_get_counter_data failed\n"));
@@ -739,8 +738,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 	SAFE_FREE(data.dptr);
 
 	/* Fetch instance name */
-	memset(temp, 0, PERFCOUNT_MAX_LEN);
-	snprintf(temp, PERFCOUNT_MAX_LEN, "i%dname", instId);
+	snprintf(temp, sizeof(temp), "i%dname", instId);
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, obj->ObjectNameTitleIndex, temp);
 	data = tdb_fetch(names, key);
 	if(data.dptr == NULL)
