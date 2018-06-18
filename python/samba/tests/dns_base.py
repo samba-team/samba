@@ -27,6 +27,7 @@ import random
 import socket
 import uuid
 import time
+from samba.compat import binary_type
 
 
 class DNSTest(TestCaseInTempDir):
@@ -164,7 +165,6 @@ class DNSTest(TestCaseInTempDir):
         # unpacking and packing again should produce same bytestream
         my_packet = ndr.ndr_pack(response)
         self.assertEquals(my_packet, recv_packet[2:])
-
         return (response, recv_packet[2:])
 
     def make_txt_update(self, prefix, txt_array, domain=None):
@@ -264,7 +264,7 @@ class DNSTKeyTest(DNSTest):
         (finished, server_to_client) = self.g.update(client_to_server)
         self.assertFalse(finished)
 
-        data = [ord(x) for x in list(server_to_client)]
+        data = [x if isinstance(x, int) else ord(x) for x in list(server_to_client)]
         rdata.key_data = data
         rdata.key_size = len(data)
         r.rdata = rdata
@@ -278,28 +278,34 @@ class DNSTKeyTest(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
 
         tkey_record = response.answers[0].rdata
-        data = [chr(x) for x in tkey_record.key_data]
-        server_to_client = ''.join(data)
+        server_to_client = binary_type(bytearray(tkey_record.key_data))
         (finished, client_to_server) = self.g.update(server_to_client)
         self.assertTrue(finished)
 
         self.verify_packet(response, response_packet)
 
-    def verify_packet(self, response, response_packet, request_mac=""):
+    def verify_packet(self, response, response_packet, request_mac=b""):
         self.assertEqual(response.additional[0].rr_type, dns.DNS_QTYPE_TSIG)
 
         tsig_record = response.additional[0].rdata
-        mac = ''.join([chr(x) for x in tsig_record.mac])
+        mac = binary_type(bytearray(tsig_record.mac))
 
         # Cut off tsig record from dns response packet for MAC verification
         # and reset additional record count.
         key_name_len = len(self.key_name) + 2
         tsig_record_len = len(ndr.ndr_pack(tsig_record)) + key_name_len + 10
 
-        response_packet_list = list(response_packet)
+        # convert str/bytes to a list (of string char or int)
+        # so it can be modified
+        response_packet_list = [x if isinstance(x, int) else ord(x) for x in response_packet]
         del response_packet_list[-tsig_record_len:]
-        response_packet_list[11] = chr(0)
-        response_packet_wo_tsig = ''.join(response_packet_list)
+        if isinstance(response_packet_list[11], int):
+            response_packet_list[11] = 0
+        else:
+            response_packet_list[11] = chr(0)
+
+        # convert modified list (of string char or int) to str/bytes
+        response_packet_wo_tsig = binary_type(bytearray(response_packet_list))
 
         fake_tsig = dns.fake_tsig_rec()
         fake_tsig.name = self.key_name
@@ -334,7 +340,7 @@ class DNSTKeyTest(DNSTest):
 
         data = packet_data + fake_tsig_packet
         mac = self.g.sign_packet(data, data)
-        mac_list = [ord(x) for x in list(mac)]
+        mac_list = [x if isinstance(x, int) else ord(x) for x in list(mac)]
 
         rdata = dns.tsig_record()
         rdata.algorithm_name = "gss-tsig"
@@ -365,7 +371,7 @@ class DNSTKeyTest(DNSTest):
         '''Add bad signature for a packet by bitflipping
         the final byte in the MAC'''
 
-        mac_list = [ord(x) for x in list("badmac")]
+        mac_list = [x if isinstance(x, int) else ord(x) for x in list("badmac")]
 
         rdata = dns.tsig_record()
         rdata.algorithm_name = "gss-tsig"
