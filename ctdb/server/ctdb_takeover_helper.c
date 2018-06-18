@@ -864,8 +864,6 @@ static void takeover_nodemap_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ipalloc_set_node_flags(state->ipalloc_state, nodemap);
-
 	subreq = get_public_ips_send(state, state->ev, state->client,
 				     state->pnns_connected, state->num_connected,
 				     state->num_nodes, state->ban_credits,

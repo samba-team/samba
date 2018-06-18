@@ -51,22 +51,12 @@ ipalloc_state_init(TALLOC_CTX *mem_ctx,
 
 	ipalloc_state->num = num_nodes;
 
-	ipalloc_state->noiphost = bitmap_talloc(ipalloc_state,
-						ipalloc_state->num);
-	if (ipalloc_state->noiphost == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		goto fail;
-	}
-
 	ipalloc_state->algorithm = algorithm;
 	ipalloc_state->no_ip_takeover = no_ip_takeover;
 	ipalloc_state->no_ip_failback = no_ip_failback;
 	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
 
 	return ipalloc_state;
-fail:
-	talloc_free(ipalloc_state);
-	return NULL;
 }
 
 static void *add_ip_callback(void *parm, void *data)
@@ -204,29 +194,6 @@ static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
 	}
 
 	return true;
-}
-
-/* Set internal flags for IP allocation:
- *   Clear ip flags
- *   Set NOIPHOST ip flag for each INACTIVE node
- *   Set NOIPHOST ip flag for each DISABLED node
- */
-void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
-			    struct ctdb_node_map *nodemap)
-{
-	int i;
-
-	for (i=0;i<nodemap->num;i++) {
-		/* Can not host IPs on INACTIVE node */
-		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
-			bitmap_set(ipalloc_state->noiphost, i);
-		}
-
-		/* Can not host IPs on DISABLED node */
-		if (nodemap->node[i].flags & NODE_FLAGS_DISABLED) {
-			bitmap_set(ipalloc_state->noiphost, i);
-		}
-	}
 }
 
 void ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,

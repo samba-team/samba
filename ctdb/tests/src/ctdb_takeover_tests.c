@@ -222,8 +222,6 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 	}
 
 	ipalloc_set_public_ips(*ipalloc_state, known, avail);
-
-	ipalloc_set_node_flags(*ipalloc_state, nodemap);
 }
 
 /* IP layout is read from stdin.  See comment for ctdb_test_init() for
