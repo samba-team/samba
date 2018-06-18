@@ -158,7 +158,6 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 	const char *t;
 	struct ctdb_node_map *nodemap;
 	uint32_t noiptakeover;
-	uint32_t noiphostonalldisabled;
 	ctdb_sock_addr sa_zero = { .ip = { 0 } };
 	enum ipalloc_algorithm algorithm;
 
@@ -202,18 +201,10 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 		noiptakeover = 0;
 	}
 
-	t = getenv("CTDB_SET_NoIPHostOnAllDisabled");
-	if (t != NULL) {
-		noiphostonalldisabled = (uint32_t) strtol(t, NULL, 0);
-	} else {
-		noiphostonalldisabled = 1;
-	}
-
 	*ipalloc_state = ipalloc_state_init(mem_ctx, nodemap->num,
 					    algorithm,
 					    (noiptakeover != 0),
 					    false,
-					    (noiphostonalldisabled != 0),
 					    NULL);
 	assert(*ipalloc_state != NULL);
 

@@ -859,7 +859,6 @@ static void takeover_nodemap_done(struct tevent_req *subreq)
 			determine_algorithm(state->tun_list),
 			(state->tun_list->no_ip_takeover != 0),
 			(state->tun_list->no_ip_failback != 0),
-			(state->tun_list->no_ip_host_on_all_disabled != 0),
 			state->force_rebalance_nodes);
 	if (tevent_req_nomem(state->ipalloc_state, req)) {
 		return;
