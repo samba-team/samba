@@ -259,7 +259,7 @@ class DNSTKeyTest(DNSTest):
         self.g.start_mech_by_name("spnego")
 
         finished = False
-        client_to_server = ""
+        client_to_server = b""
 
         (finished, server_to_client) = self.g.update(client_to_server)
         self.assertFalse(finished)
