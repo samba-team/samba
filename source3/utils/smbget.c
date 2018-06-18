@@ -288,7 +288,7 @@ static void print_progress(const char *name, time_t start, time_t now,
 	double avg = 0.0;
 	long eta = -1;
 	double prcnt = 0.0;
-	char hpos[20], htotal[20], havg[20];
+	char hpos[22], htotal[22], havg[22];
 	char *status, *filename;
 	int len;
 	if (now - start) {
