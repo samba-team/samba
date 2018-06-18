@@ -63,7 +63,6 @@ static bool std_fallback_to_poll(struct tevent_context *ev, bool replay)
 		struct std_event_glue);
 	int ret;
 	struct tevent_fd *fde;
-	struct tevent_fd *fde_next;
 
 	glue->fallback_replay = replay;
 
@@ -86,17 +85,14 @@ static bool std_fallback_to_poll(struct tevent_context *ev, bool replay)
 	 * Now we have to change all the existing file descriptor
 	 * events from the epoll backend to the poll backend.
 	 */
-	for (fde = ev->fd_events; fde; fde = fde_next) {
-		/*
-		 * We must remove this fde off the ev->fd_events list.
-		 */
-		fde_next = fde->next;
-
-		/* Remove from the ev->fd_events list. */
-		DLIST_REMOVE(ev->fd_events, fde);
+	for (fde = ev->fd_events; fde; fde = fde->next) {
+		bool ok;
 
 		/* Re-add this event as a poll backend event. */
-		tevent_poll_event_add_fd_internal(ev, fde);
+		ok = tevent_poll_event_add_fd_internal(ev, fde);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return true;
