@@ -299,10 +299,16 @@ static void ctdb_vnn_unassign_iface(struct ctdb_context *ctdb,
 static bool ctdb_vnn_available(struct ctdb_context *ctdb,
 			       struct ctdb_vnn *vnn)
 {
+	uint32_t flags;
 	struct vnn_interface *i;
 
 	/* Nodes that are not RUNNING can not host IPs */
 	if (ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
+		return false;
+	}
+
+	flags = ctdb->nodes[ctdb->pnn]->flags;
+	if ((flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED)) != 0) {
 		return false;
 	}
 

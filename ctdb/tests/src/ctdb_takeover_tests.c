@@ -160,6 +160,7 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 	uint32_t noiptakeover;
 	ctdb_sock_addr sa_zero = { .ip = { 0 } };
 	enum ipalloc_algorithm algorithm;
+	uint32_t n;
 
 	/* Avoid that const */
 	ns = talloc_strdup(mem_ctx, nodestates);
@@ -169,7 +170,7 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 	nodemap->num = 0;
 	tok = strtok(ns, ",");
 	while (tok != NULL) {
-		uint32_t n = nodemap->num;
+		n = nodemap->num;
 		nodemap->node = talloc_realloc(nodemap, nodemap->node,
 					       struct ctdb_node_and_flags, n+1);
 		nodemap->node[n].pnn = n;
@@ -211,6 +212,14 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 	read_ctdb_public_ip_info(mem_ctx, nodemap->num,
 				 read_ips_for_multiple_nodes,
 				 &known, &avail);
+
+	/* Drop available IPs for INACTIVE/DISABLED nodes */
+	for (n = 0; n < nodemap->num; n++) {
+		uint32_t flags = nodemap->node[n].flags;
+		if ((flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED)) != 0) {
+			avail[n].num = 0;
+		}
+	}
 
 	ipalloc_set_public_ips(*ipalloc_state, known, avail);
 

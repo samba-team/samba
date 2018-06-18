@@ -2630,7 +2630,9 @@ static void control_get_public_ips(TALLOC_CTX *mem_ctx,
 		 * no available IPs.  Don't worry about interface
 		 * states here - we're not faking down to that level.
 		 */
-		if (ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
+		uint32_t flags = ctdb->node_map->node[header->destnode].flags;
+		if (ctdb->runstate != CTDB_RUNSTATE_RUNNING ||
+		    ((flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED)) != 0)) {
 			/* No available IPs: return dummy empty struct */
 			ips = talloc_zero(mem_ctx, struct ctdb_public_ip_list);;
 			if (ips == NULL) {
