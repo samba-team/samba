@@ -45,6 +45,7 @@
 #include "libsmb/samlogon_cache.h"
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "passdb.h"
+#include "lib/util/tevent_req_profile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -686,6 +687,11 @@ static struct tevent_req *process_request_send(
 	state->cli_state = cli_state;
 	state->ev = ev;
 
+	ok = tevent_req_set_profile(req);
+	if (!ok) {
+		return tevent_req_post(req, ev);
+	}
+
 	SMB_ASSERT(cli_state->mem_ctx == NULL);
 	cli_state->mem_ctx = talloc_named(cli_state, 0, "winbind request");
 	if (tevent_req_nomem(cli_state->mem_ctx, req)) {
@@ -847,7 +853,10 @@ static void process_request_written(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS process_request_recv(struct tevent_req *req)
+static NTSTATUS process_request_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_req_profile **profile)
 {
 	NTSTATUS status;
 
@@ -856,6 +865,7 @@ static NTSTATUS process_request_recv(struct tevent_req *req)
 		return status;
 	}
 
+	*profile = tevent_req_move_profile(req, mem_ctx);
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
@@ -1015,15 +1025,47 @@ static void winbind_client_processed(struct tevent_req *req)
 {
 	struct winbindd_cli_state *cli_state = tevent_req_callback_data(
 		req, struct winbindd_cli_state);
+	struct tevent_req_profile *profile = NULL;
+	struct timeval start, stop, diff;
+	int threshold;
 	NTSTATUS status;
 
-	status = process_request_recv(req);
+	status = process_request_recv(req, cli_state, &profile);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("process_request failed: %s\n", nt_errstr(status));
 		remove_client(cli_state);
 		return;
 	}
+
+	tevent_req_profile_get_start(profile, NULL, &start);
+	tevent_req_profile_get_stop(profile, NULL, &stop);
+	diff = tevent_timeval_until(&start, &stop);
+
+	threshold = lp_parm_int(-1, "winbind", "request profile threshold", 60);
+
+	if (diff.tv_sec >= threshold) {
+		int depth;
+		char *str;
+
+		depth = lp_parm_int(
+			-1,
+			"winbind",
+			"request profile depth",
+			INT_MAX);
+
+		DBG_ERR("request took %u.%.6u seconds\n",
+			(unsigned)diff.tv_sec, (unsigned)diff.tv_usec);
+
+		str = tevent_req_profile_string(profile, talloc_tos(), 0, depth);
+		if (str != NULL) {
+			/* No "\n", already contained in "str" */
+			DEBUGADD(0, ("%s", str));
+		}
+		TALLOC_FREE(str);
+	}
+
+	TALLOC_FREE(profile);
 
 	req = wb_req_read_send(
 		cli_state,
