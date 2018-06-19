@@ -1145,7 +1145,8 @@ for env in ["simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
             "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc"]:
     planoldpythontestsuite(env, "netlogonsvc",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
-                           name="samba.tests.netlogonsvc.python(%s)" % env)
+                           name="samba.tests.netlogonsvc.python(%s)" % env,
+                           py3_compatible=True)
 
 for env in ["ktest", "ad_member", "ad_dc_no_ntlm"]:
     planoldpythontestsuite(env, "ntlmdisabled",
