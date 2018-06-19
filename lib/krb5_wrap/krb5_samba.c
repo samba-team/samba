@@ -1549,7 +1549,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 		}
 
 		if (!flush &&
-		    (kt_entry.vno == kvno) &&
+		    ((kt_entry.vno & 0xff) == (kvno & 0xff)) &&
 		    (kt_entry_enctype != enctype))
 		{
 			DEBUG(5, (__location__ ": Saving entry with kvno [%d] "
