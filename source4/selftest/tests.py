@@ -1135,8 +1135,8 @@ for env in [
                                     'TEST_PASSWORD': '$PASSWORD',
                                     'TEST_ENV': env
                                     },
-                           extra_path=[os.path.join(srcdir(), "samba/python"), ]
-                           )
+                           extra_path=[os.path.join(srcdir(), "samba/python"), ],
+                           py3_compatible=True)
     planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs", py3_compatible=True)
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.kcc.kcc_utils")
