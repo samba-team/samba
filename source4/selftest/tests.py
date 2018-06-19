@@ -1139,7 +1139,7 @@ for env in [
                            py3_compatible=True)
     planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs", py3_compatible=True)
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.kcc.kcc_utils")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.kcc.kcc_utils", py3_compatible=True)
 
 for env in ["simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
             "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc"]:
