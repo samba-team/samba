@@ -44,6 +44,7 @@ from samba.kcc.graph import Vertex
 
 from samba.kcc.debug import DEBUG, DEBUG_FN, logger
 from samba.kcc import debug
+from samba.compat import text_type
 
 
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
@@ -2586,7 +2587,8 @@ class KCC(object):
                 dot_colours = []
                 for link in self.sitelink_table.values():
                     from hashlib import md5
-                    colour = '#' + md5(link.dnstr).hexdigest()[:6]
+                    tmp_str = link.dnstr.encode('utf8')
+                    colour = '#' + md5(tmp_str).hexdigest()[:6]
                     for a, b in itertools.combinations(link.site_list, 2):
                         dot_edges.append((a[1], b[1]))
                         dot_colours.append(colour)
