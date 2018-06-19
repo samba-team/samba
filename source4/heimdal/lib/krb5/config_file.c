@@ -41,7 +41,6 @@
 
 /* Gaah! I want a portable funopen */
 struct fileptr {
-    krb5_context context;
     const char *s;
     FILE *f;
 };
@@ -364,7 +363,7 @@ krb5_config_parse_debug (struct fileptr *f,
 	    ++p;
 	if (*p == '#' || *p == ';')
 	    continue;
-        if (*p == '[') {
+	if (*p == '[') {
 	    ret = parse_section(p, &s, res, err_message);
 	    if (ret)
 		return ret;
@@ -372,22 +371,6 @@ krb5_config_parse_debug (struct fileptr *f,
 	} else if (*p == '}') {
 	    *err_message = "unmatched }";
 	    return KRB5_CONFIG_BADFORMAT;
-        } else if (strncmp(p, "include", sizeof("include") - 1) == 0 &&
-            isspace(p[sizeof("include") - 1])) {
-            p += sizeof("include");
-            while (isspace(*p))
-                p++;
-            ret = krb5_config_parse_file_multi(f->context, p, res);
-	    if (ret)
-		return ret;
-        } else if (strncmp(p, "includedir", sizeof("includedir") - 1) == 0 &&
-            isspace(p[sizeof("includedir") - 1])) {
-            p += sizeof("includedir");
-            while (isspace(*p))
-                p++;
-            ret = krb5_config_parse_dir_multi(f->context, p, res);
-	    if (ret)
-		return ret;
 	} else if(*p != '\0') {
 	    if (s == NULL) {
 		*err_message = "binding before section";
@@ -414,64 +397,6 @@ is_plist_file(const char *fname)
 }
 
 /**
- * Parse configuration files in the given directory and add the result
- * into res.  Only files whose names consist only of alphanumeric
- * characters, hyphen, and underscore, will be parsed, though files
- * ending in ".conf" will also be parsed.
- *
- * This interface can be used to parse several configuration directories
- * into one resulting krb5_config_section by calling it repeatably.
- *
- * @param context a Kerberos 5 context.
- * @param dname a directory name to a Kerberos configuration file
- * @param res the returned result, must be free with krb5_free_config_files().
- * @return Return an error code or 0, see krb5_get_error_message().
- *
- * @ingroup krb5_support
- */
-
-KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_config_parse_dir_multi(krb5_context context,
-                            const char *dname,
-                            krb5_config_section **res)
-{
-    struct dirent *entry;
-    krb5_error_code ret;
-    DIR *d;
-
-    if ((d = opendir(dname)) == NULL)
-        return errno;
-
-    while ((entry = readdir(d)) != NULL) {
-        char *p = entry->d_name;
-        char *path;
-        int is_valid = 1;
-
-        while (*p) {
-            if (!isalpha(*p) && *p != '_' && *p != '-' &&
-                strcmp(p, ".conf") != 0) {
-                is_valid = 0;
-                break;
-            }
-            p++;
-        }
-        if (!is_valid)
-            continue;
-
-        if (asprintf(&path, "%s/%s", dname, entry->d_name) == -1 ||
-            path == NULL)
-            return krb5_enomem(context);
-        ret = krb5_config_parse_file_multi(context, path, res);
-        free(path);
-        if (ret == ENOMEM)
-            return krb5_enomem(context);;
-        /* Ignore malformed config files */
-    }
-    (void) closedir(d);
-    return 0;
-}
-
-/**
  * Parse a configuration file and add the result into res. This
  * interface can be used to parse several configuration files into one
  * resulting krb5_config_section by calling it repeatably.
@@ -495,13 +420,6 @@ krb5_config_parse_file_multi (krb5_context context,
     krb5_error_code ret;
     struct fileptr f;
 
-    if (context->config_include_depth > 5) {
-        krb5_warnx(context, "Maximum config file include depth reached; "
-                   "not including %s", fname);
-        return 0;
-    }
-    context->config_include_depth++;
-
     /**
      * If the fname starts with "~/" parse configuration file in the
      * current users home directory. The behavior can be disabled and
@@ -512,7 +430,6 @@ krb5_config_parse_file_multi (krb5_context context,
 	const char *home = NULL;
 
 	if (!_krb5_homedir_access(context)) {
-            context->config_include_depth--;
 	    krb5_set_error_message(context, EPERM,
 				   "Access to home directory not allowed");
 	    return EPERM;
@@ -530,18 +447,14 @@ krb5_config_parse_file_multi (krb5_context context,
 	    int aret;
 
 	    aret = asprintf(&newfname, "%s%s", home, &fname[1]);
-	    if (aret == -1 || newfname == NULL) {
-                context->config_include_depth--;
+	    if (aret == -1 || newfname == NULL)
 		return krb5_enomem(context);
-            }
 	    fname = newfname;
 	}
 #else  /* KRB5_USE_PATH_TOKENS */
 	if (asprintf(&newfname, "%%{USERCONFIG}%s", &fname[1]) < 0 ||
-	    newfname == NULL) {
-            context->config_include_depth--;
+	    newfname == NULL)
 	    return krb5_enomem(context);
-        }
 	fname = newfname;
 #endif
     }
@@ -549,7 +462,6 @@ krb5_config_parse_file_multi (krb5_context context,
     if (is_plist_file(fname)) {
 #ifdef __APPLE__
 	ret = parse_plist_config(context, fname, res);
-        context->config_include_depth--;
 	if (ret) {
 	    krb5_set_error_message(context, ret,
 				   "Failed to parse plist %s", fname);
@@ -568,7 +480,6 @@ krb5_config_parse_file_multi (krb5_context context,
 
 	ret = _krb5_expand_path_tokens(context, fname, &exp_fname);
 	if (ret) {
-            context->config_include_depth--;
 	    if (newfname)
 		free(newfname);
 	    return ret;
@@ -579,11 +490,9 @@ krb5_config_parse_file_multi (krb5_context context,
 	fname = newfname = exp_fname;
 #endif
 
-        f.context = context;
 	f.f = fopen(fname, "r");
 	f.s = NULL;
 	if(f.f == NULL) {
-            context->config_include_depth--;
 	    ret = errno;
 	    krb5_set_error_message (context, ret, "open %s: %s",
 				    fname, strerror(ret));
@@ -593,7 +502,6 @@ krb5_config_parse_file_multi (krb5_context context,
 	}
 
 	ret = krb5_config_parse_debug (&f, res, &lineno, &str);
-        context->config_include_depth--;
 	fclose(f.f);
 	if (ret) {
 	    krb5_set_error_message (context, ret, "%s:%u: %s",
@@ -1397,8 +1305,6 @@ krb5_config_parse_string_multi(krb5_context context,
     unsigned lineno = 0;
     krb5_error_code ret;
     struct fileptr f;
-
-    f.context = context;
     f.f = NULL;
     f.s = string;
 

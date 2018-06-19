@@ -262,7 +262,6 @@ typedef struct krb5_context_data {
     int32_t kdc_sec_offset;
     int32_t kdc_usec_offset;
     krb5_config_section *cf;
-    size_t config_include_depth;
     struct et_list *et_list;
     struct krb5_log_facility *warn_dest;
     struct krb5_log_facility *debug_dest;
