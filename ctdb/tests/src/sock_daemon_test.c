@@ -759,7 +759,7 @@ static int test5_client(const char *sockpath, int id, pid_t pid_server,
 			tevent_loop_once(ev);
 		}
 
-		close(fd[0]);
+		close(fd[1]);
 		state.fd = -1;
 
 		while (kill(pid_server, 0) == 0 || errno != ESRCH) {
