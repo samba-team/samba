@@ -390,13 +390,17 @@ static bool change_to_user_internal(connection_struct *conn,
 	}
 
 	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
-		char cwdbuf[PATH_MAX+1] = { 0, };
+		struct smb_filename *cwdfname = vfs_GetWd(talloc_tos(), conn);
+		if (cwdfname == NULL) {
+			return false;
+		}
 		DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
 			 (int)getuid(),
 			 (int)geteuid(),
 			 (int)getgid(),
 			 (int)getegid(),
-			 getcwd(cwdbuf, sizeof(cwdbuf)));
+			 cwdfname->base_name);
+		TALLOC_FREE(cwdfname);
 	}
 
 	return true;
