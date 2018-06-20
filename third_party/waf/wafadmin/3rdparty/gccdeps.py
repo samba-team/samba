@@ -15,11 +15,13 @@ lock = threading.Lock()
 
 preprocessor_flag = '-MD'
 
-@feature('cc', 'c')
+@feature('hostcc', 'cc', 'c')
 @before('apply_core')
 def add_mmd_cc(self):
 	if self.env.get_flat('CCFLAGS').find(preprocessor_flag) < 0:
 		self.env.append_value('CCFLAGS', preprocessor_flag)
+	if self.env.get_flat('HOST_CCFLAGS').find(preprocessor_flag) < 0:
+		self.env.append_value('HOST_CCFLAGS', preprocessor_flag)
 
 @feature('cxx')
 @before('apply_core')
@@ -116,7 +118,7 @@ def sig_implicit_deps(self):
 	except Utils.WafError:
 		return Constants.SIG_NIL
 
-for name in 'cc cxx'.split():
+for name in 'hostcc cc cxx'.split():
 	try:
 		cls = Task.TaskBase.classes[name]
 	except KeyError:

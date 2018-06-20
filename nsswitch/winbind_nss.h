@@ -73,4 +73,12 @@ typedef enum
 
 #endif
 
+#ifndef NETDB_INTERNAL
+#define NETDB_INTERNAL -1 /* See errno. */
+#endif  /* NETDB_INTERNAL */
+
+#ifndef NETDB_SUCCESS
+#define NETDB_SUCCESS 0 /* No problem. */
+#endif  /* NETDB_SUCCESS */
+
 #endif /* _NSSWITCH_NSS_H */

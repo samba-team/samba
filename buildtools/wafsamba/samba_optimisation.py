@@ -11,7 +11,7 @@ import Build, Utils, Node
 from TaskGen import feature, after, before
 import preproc
 
-@feature('c', 'cc', 'cxx')
+@feature('c', 'cc', 'hostcc', 'cxx')
 @after('apply_type_vars', 'apply_lib_vars', 'apply_core')
 def apply_incpaths(self):
     lst = []
@@ -59,7 +59,7 @@ def apply_incpaths(self):
         if node:
             self.env.append_value('INC_PATHS', node)
 
-@feature('c', 'cc')
+@feature('c', 'cc', 'hostcc')
 @after('apply_incpaths')
 def apply_obj_vars_cc(self):
     """after apply_incpaths for INC_PATHS"""
@@ -187,7 +187,7 @@ def shared_ancestors(self):
         return ret
 TaskGen.task_gen.shared_ancestors = shared_ancestors
 
-@feature('c', 'cc', 'cxx')
+@feature('c', 'cc', 'hostcc', 'cxx')
 @after('apply_link', 'init_cc', 'init_cxx', 'apply_core')
 def apply_lib_vars(self):
     """after apply_link because of 'link_task'

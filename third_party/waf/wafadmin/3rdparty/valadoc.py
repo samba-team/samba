@@ -14,7 +14,7 @@ class valadoc_task(Task.Task):
 
   vars = ['VALADOC', 'VALADOCFLAGS']
   color = 'BLUE'
-  after = 'cxx_link cc_link'
+  after = 'cxx_link hostcc_link cc_link'
   quiet = True
 
   output_dir = ''

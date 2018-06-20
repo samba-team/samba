@@ -91,7 +91,7 @@ def apply_intltool_po(self):
 Task.simple_task_type('po', '${POCOM} -o ${TGT} ${SRC}', color='BLUE', shell=False)
 Task.simple_task_type('intltool',
 	'${INTLTOOL} ${INTLFLAGS} ${INTLCACHE} ${INTLPODIR} ${SRC} ${TGT}',
-	color='BLUE', after="cc_link cxx_link", shell=False)
+	color='BLUE', after="cc_link hostcc_link cxx_link", shell=False)
 
 def detect(conf):
 	pocom = conf.find_program('msgfmt')

@@ -836,13 +836,18 @@ def CURRENT_CFLAGS(bld, target, cflags, allow_warnings=False, hide_symbols=False
 
 @conf
 def CHECK_CC_ENV(conf):
-    """trim whitespaces from 'CC'.
+    """trim whitespaces from 'CC' and 'HOSTCC'.
     The build farm sometimes puts a space at the start"""
     if os.environ.get('CC'):
         conf.env.CC = TO_LIST(os.environ.get('CC'))
         if len(conf.env.CC) == 1:
             # make for nicer logs if just a single command
             conf.env.CC = conf.env.CC[0]
+    if os.environ.get('HOSTCC'):
+        conf.env.HOSTCC = TO_LIST(os.environ.get('HOSTCC'))
+        if len(conf.env.HOSTCC) == 1:
+            # make for nicer logs if just a single command
+            conf.env.HOSTCC = conf.env.HOSTCC[0]
 
 
 @conf

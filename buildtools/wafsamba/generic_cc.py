@@ -25,6 +25,18 @@ def find_generic_cc(conf):
     v['CC_NAME'] = 'generic'
 
 @conftest
+def find_host_cc(conf):
+    v = conf.env
+    hcc = None
+    if v['HOSTCC']: hcc = v['HOSTCC']
+    elif 'HOSTCC' in conf.environ: hcc = conf.environ['HOSTCC']
+    if not hcc: hcc = conf.find_program('cc', var='HOSTCC')
+    if not hcc: conf.fatal('host_cc was not found, maybe --hostcc is not specified')
+    hcc = conf.cmd_to_list(hcc)
+    v['HOSTCC']  = hcc
+    v['HOSTCC_NAME'] = 'host'
+
+@conftest
 def generic_cc_common_flags(conf):
     v = conf.env
 
@@ -34,6 +46,7 @@ def generic_cc_common_flags(conf):
 
     # linker
     if not v['LINK_CC']: v['LINK_CC'] = v['CC']
+    if not v['LINK_HOSTCC']: v['LINK_HOSTCC'] = v['HOSTCC']
     v['CCLNK_SRC_F']         = ''
     v['CCLNK_TGT_F']         = ['-o', '']
 
@@ -61,6 +74,7 @@ def generic_cc_common_flags(conf):
 
 detect = '''
 find_generic_cc
+find_host_cc
 find_cpp
 find_ar
 generic_cc_common_flags

@@ -346,6 +346,7 @@ static bool test_enum_r_passwd(struct torture_context *tctx,
 	torture_comment(tctx, "Testing setpwent\n");
 	setpwent();
 
+#if defined(HAVE_GETPWENT_R)
 	while (1) {
 		torture_comment(tctx, "Testing getpwent_r\n");
 
@@ -368,6 +369,9 @@ static bool test_enum_r_passwd(struct torture_context *tctx,
 			num_pwd++;
 		}
 	}
+#else /* defined(HAVE_GETPWENT_R) */
+	torture_comment(tctx, "getpwent_r not defined\n");
+#endif /* defined(HAVE_GETPWENT_R) */
 
 	torture_comment(tctx, "Testing endpwent\n");
 	endpwent();
@@ -544,6 +548,7 @@ static bool test_enum_r_group(struct torture_context *tctx,
 	torture_comment(tctx, "Testing setgrent\n");
 	setgrent();
 
+#if defined(HAVE_GETGRENT_R)
 	while (1) {
 		torture_comment(tctx, "Testing getgrent_r\n");
 
@@ -566,6 +571,9 @@ static bool test_enum_r_group(struct torture_context *tctx,
 			num_grp++;
 		}
 	}
+#else /* defined(HAVE_GETGRENT_R) */
+	torture_comment(tctx, "getgrent_r not defined\n");
+#endif /* defined(HAVE_GETGRENT_R) */
 
 	torture_comment(tctx, "Testing endgrent\n");
 	endgrent();
