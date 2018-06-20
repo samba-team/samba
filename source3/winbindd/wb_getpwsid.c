@@ -101,25 +101,17 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 				    info->domain_name,
 				    acct_name,
 				    &mapped_name);
-	if (NT_STATUS_IS_OK(status)) {
-		output_username = fill_domain_username_talloc(state,
-				     info->domain_name,
-				     mapped_name, true);
-		if (output_username == NULL) {
-			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
+	if (NT_STATUS_IS_OK(status) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
 		fstrcpy(acct_name, mapped_name);
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
-		fstrcpy(acct_name, mapped_name);
-	} else {
-		output_username = fill_domain_username_talloc(state,
-				     info->domain_name,
-				     acct_name, true);
-		if (output_username == NULL) {
-			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
+	}
+	output_username = fill_domain_username_talloc(state,
+						      info->domain_name,
+						      acct_name,
+						      true);
+	if (output_username == NULL) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	strlcpy(pw->pw_name, output_username, sizeof(pw->pw_name));
