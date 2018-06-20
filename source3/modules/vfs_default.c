@@ -886,7 +886,7 @@ struct vfswrap_fsync_state {
 	int fd;
 
 	struct vfs_aio_state vfs_aio_state;
-	SMBPROFILE_BASIC_ASYNC_STATE(profile_basic);
+	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
 };
 
 static void vfs_fsync_do(void *private_data);
@@ -909,8 +909,9 @@ static struct tevent_req *vfswrap_fsync_send(struct vfs_handle_struct *handle,
 	state->ret = -1;
 	state->fd = fsp->fh->fd;
 
-	SMBPROFILE_BASIC_ASYNC_START(syscall_asys_fsync, profile_p,
-				     state->profile_basic);
+	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_fsync, profile_p,
+				     state->profile_bytes, 0);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 
 	subreq = pthreadpool_tevent_job_send(
 		state, ev, handle->conn->sconn->pool, vfs_fsync_do, state);
@@ -931,6 +932,8 @@ static void vfs_fsync_do(void *private_data)
 	struct timespec start_time;
 	struct timespec end_time;
 
+	SMBPROFILE_BYTES_ASYNC_SET_BUSY(state->profile_bytes);
+
 	PROFILE_TIMESTAMP(&start_time);
 
 	do {
@@ -944,6 +947,8 @@ static void vfs_fsync_do(void *private_data)
 	PROFILE_TIMESTAMP(&end_time);
 
 	state->vfs_aio_state.duration = nsec_time_diff(&end_time, &start_time);
+
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 }
 
 static int vfs_fsync_state_destructor(struct vfswrap_fsync_state *state)
@@ -961,7 +966,7 @@ static void vfs_fsync_done(struct tevent_req *subreq)
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
-	SMBPROFILE_BASIC_ASYNC_END(state->profile_basic);
+	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 	talloc_set_destructor(state, NULL);
 	if (tevent_req_error(req, ret)) {
 		return;
