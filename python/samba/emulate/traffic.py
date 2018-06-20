@@ -340,7 +340,7 @@ class ReplayContext(object):
         self.last_netlogon_bad        = False
         self.last_samlogon_bad        = False
         self.generate_ldap_search_tables()
-        self.next_conversation_id = next(itertools.count())
+        self.next_conversation_id = itertools.count()
 
     def generate_ldap_search_tables(self):
         session = system_session()
@@ -882,7 +882,7 @@ class Conversation(object):
             gap = t - now
             print("gap is now %f" % gap, file=sys.stderr)
 
-        self.conversation_id = context.next_conversation_id()
+        self.conversation_id = next(context.next_conversation_id)
         pid = os.fork()
         if pid != 0:
             return pid
