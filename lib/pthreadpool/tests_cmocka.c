@@ -41,7 +41,7 @@ static int setup_pthreadpool_tevent(void **state)
 	struct pthreadpool_tevent_test *t;
 	int ret;
 
-	t = talloc(NULL, struct pthreadpool_tevent_test);
+	t = talloc_zero(NULL, struct pthreadpool_tevent_test);
 	assert_non_null(t);
 
 	t->ev = tevent_context_init(t);
