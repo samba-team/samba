@@ -259,10 +259,18 @@ def configure(conf):
         conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
 
     if Options.options.with_pthreadpool:
-        if conf.CONFIG_SET('HAVE_PTHREAD'):
+        if conf.CONFIG_SET('HAVE_PTHREAD') and \
+           conf.CONFIG_SET('HAVE___THREAD') and \
+           conf.CONFIG_SET('HAVE_ATOMIC_THREAD_FENCE_SUPPORT'):
             conf.DEFINE('WITH_PTHREADPOOL', '1')
         else:
-            Logs.warn("pthreadpool support cannot be enabled when pthread support was not found")
+            if not conf.CONFIG_SET('HAVE_PTHREAD'):
+                Logs.warn("pthreadpool support cannot be enabled when pthread support was not found")
+            if not conf.CONFIG_SET('HAVE_ATOMIC_THREAD_FENCE_SUPPORT'):
+                Logs.warn("""pthreadpool support cannot be enabled when there is
+                          no support for atomic_thead_fence()""")
+            if not conf.CONFIG_SET('HAVE___THREAD'):
+                Logs.warn("pthreadpool support cannot be enabled when __thread support was not found")
             conf.undefine('WITH_PTHREADPOOL')
 
     conf.RECURSE('source3')
