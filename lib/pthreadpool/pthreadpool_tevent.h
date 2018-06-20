@@ -22,6 +22,8 @@
 
 #include <tevent.h>
 
+void pthreadpool_tevent_cleanup_orphaned_jobs(void);
+
 struct pthreadpool_tevent;
 
 int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
