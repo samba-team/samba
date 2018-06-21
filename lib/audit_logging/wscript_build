@@ -9,7 +9,7 @@ bld.SAMBA_SUBSYSTEM(
     source='audit_logging.c'
 )
 
-if bld.CONFIG_SET('ENABLE_SELFTEST'):
+if bld.AD_DC_BUILD_IS_ENABLED() and bld.CONFIG_GET('ENABLE_SELFTEST'):
     bld.SAMBA_BINARY(
         'audit_logging_test',
         source='tests/audit_logging_test.c',
