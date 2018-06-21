@@ -18,6 +18,7 @@
 
 import sys
 import os
+import time
 
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
@@ -4930,6 +4931,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ack = self.do_generic_bind(ctx=ctx)
 
         self._disconnect("test_assoc_group_fail2")
+        self.assertNotConnected()
+        time.sleep(0.5)
         self.connect()
 
         ack2 = self.do_generic_bind(ctx=ctx,assoc_group_id=ack.u.assoc_group_id,
