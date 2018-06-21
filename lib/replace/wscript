@@ -113,7 +113,7 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/extattr.h sys/ea.h sys/proplist.h sys/cdefs.h')
     conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h')
     conf.CHECK_HEADERS('syscall.h sys/syscall.h inttypes.h')
-    conf.CHECK_HEADERS('sys/atomic.h')
+    conf.CHECK_HEADERS('sys/atomic.h stdatomic.h')
     conf.CHECK_HEADERS('libgen.h')
 
     if conf.CHECK_CFLAGS('-Wno-format-truncation'):
@@ -259,6 +259,23 @@ def configure(conf):
                     'HAVE_ATOMIC_ADD_32',
                     headers='stdint.h sys/atomic.h',
                     msg='Checking for atomic_add_32 compiler builtin')
+
+    # Check for thread fence. */
+    tf = conf.CHECK_CODE('atomic_thread_fence(memory_order_seq_cst);',
+                         'HAVE_ATOMIC_THREAD_FENCE',
+                         headers='stdatomic.h',
+                         msg='Checking for atomic_thread_fence(memory_order_seq_cst) in stdatomic.h')
+    if not tf:
+        tf = conf.CHECK_CODE('__atomic_thread_fence(__ATOMIC_SEQ_CST);',
+                             'HAVE___ATOMIC_THREAD_FENCE',
+                             msg='Checking for __atomic_thread_fence(__ATOMIC_SEQ_CST)')
+    if not tf:
+        # __sync_synchronize() is available since 2005 in gcc.
+        tf = conf.CHECK_CODE('__sync_synchronize();',
+                             'HAVE___SYNC_SYNCHRONIZE',
+                             msg='Checking for __sync_synchronize')
+    if tf:
+        conf.DEFINE('HAVE_ATOMIC_THREAD_FENCE_SUPPORT', 1)
 
     conf.CHECK_CODE('''
                     #define FALL_THROUGH __attribute__((fallthrough))

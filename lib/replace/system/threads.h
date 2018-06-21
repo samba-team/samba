@@ -42,4 +42,31 @@
 #define pthread_mutex_consistent pthread_mutex_consistent_np
 #endif
 
+#ifdef HAVE_STDATOMIC_H
+#include <stdatomic.h>
+#endif
+
+#ifndef HAVE_ATOMIC_THREAD_FENCE
+#ifdef HAVE___ATOMIC_THREAD_FENCE
+#define atomic_thread_fence(__ignore_order) __atomic_thread_fence(__ATOMIC_SEQ_CST)
+#define HAVE_ATOMIC_THREAD_FENCE 1
+#endif /* HAVE___ATOMIC_THREAD_FENCE */
+#endif /* not HAVE_ATOMIC_THREAD_FENCE */
+
+#ifndef HAVE_ATOMIC_THREAD_FENCE
+#ifdef HAVE___SYNC_SYNCHRONIZE
+#define atomic_thread_fence(__ignore_order) __sync_synchronize()
+#define HAVE_ATOMIC_THREAD_FENCE 1
+#endif /* HAVE___SYNC_SYNCHRONIZE */
+#endif /* not HAVE_ATOMIC_THREAD_FENCE */
+
+#ifndef HAVE_ATOMIC_THREAD_FENCE
+#ifdef HAVE_ATOMIC_THREAD_FENCE_SUPPORT
+#error mismatch_error_between_configure_test_and_header
+#endif
+/* make sure the build fails if someone uses it without checking the define */
+#define atomic_thread_fence(__order) \
+        __function__atomic_thread_fence_not_available_on_this_platform__()
+#endif /* not HAVE_ATOMIC_THREAD_FENCE */
+
 #endif
