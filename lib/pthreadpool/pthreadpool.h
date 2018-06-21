@@ -51,6 +51,27 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		     void *signal_fn_private_data);
 
 /**
+ * @brief Get the max threads value of pthreadpool
+ *
+ * @note This can be 0 for strict sync processing.
+ *
+ * @param[in]	pool		The pool
+ * @return			number of possible threads
+ */
+size_t pthreadpool_max_threads(struct pthreadpool *pool);
+
+/**
+ * @brief The number of queued jobs of pthreadpool
+ *
+ * This is the number of jobs added by pthreadpool_add_job(),
+ * which are not yet processed by a thread.
+ *
+ * @param[in]	pool		The pool
+ * @return			The number of jobs
+ */
+size_t pthreadpool_queued_jobs(struct pthreadpool *pool);
+
+/**
  * @brief Destroy a pthreadpool
  *
  * Destroy a pthreadpool. If jobs are submitted, but not yet active in

@@ -52,6 +52,16 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 	return 0;
 }
 
+size_t pthreadpool_max_threads(struct pthreadpool *pool)
+{
+	return 0;
+}
+
+size_t pthreadpool_queued_jobs(struct pthreadpool *pool)
+{
+	return 0;
+}
+
 int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 			void (*fn)(void *private_data), void *private_data)
 {

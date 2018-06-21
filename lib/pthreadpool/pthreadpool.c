@@ -196,6 +196,29 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 	return 0;
 }
 
+size_t pthreadpool_max_threads(struct pthreadpool *pool)
+{
+	return pool->max_threads;
+}
+
+size_t pthreadpool_queued_jobs(struct pthreadpool *pool)
+{
+	int res;
+	int unlock_res;
+	size_t ret;
+
+	res = pthread_mutex_lock(&pool->mutex);
+	if (res != 0) {
+		return 0;
+	}
+
+	ret = pool->num_jobs;
+
+	unlock_res = pthread_mutex_unlock(&pool->mutex);
+	assert(unlock_res == 0);
+	return ret;
+}
+
 static void pthreadpool_prepare_pool(struct pthreadpool *pool)
 {
 	int ret;
