@@ -426,7 +426,6 @@ def build(bld):
                                              protocol_tunnel.c
                                              protocol_client.c
                                              protocol_debug.c
-                                             protocol_event.c
                                              protocol_sock.c'''),
                         includes='include',
                         deps='ctdb-protocol-basic replace talloc tdb')
@@ -872,7 +871,6 @@ def build(bld):
                         source=bld.SUBDIR('tests/src',
                                           '''protocol_common.c
                                              protocol_common_ctdb.c
-                                             protocol_common_event.c
                                           '''),
                         includes='include',
                         deps='ctdb-protocol-tests-basic replace talloc tdb')
@@ -885,7 +883,6 @@ def build(bld):
     ctdb_protocol_tests = [
             'protocol_types_test',
             'protocol_ctdb_test',
-            'protocol_event_test',
             'protocol_util_test',
             'protocol_types_compat_test',
             'protocol_ctdb_compat_test',
