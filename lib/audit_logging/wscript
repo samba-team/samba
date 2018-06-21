@@ -21,14 +21,16 @@ def configure(conf):
 
     if not conf.CONFIG_GET('HAVE_JSON_OBJECT'):
         if Options.options.with_json_audit != False:
-            conf.fatal("JSON support not found. "
+            conf.fatal("Jansson JSON support not found. "
                        "Try installing libjansson-dev or jansson-devel. "
                        "Otherwise, use --without-json-audit to build without "
                        "JSON support. "
                        "JSON support is required for the JSON "
-                       "formatted audit log feature")
-        if conf.CONFIG_GET('ENABLE_SELFTEST') and \
-          (not Options.options.without_ad_dc):
-            raise Utils.WafError('jansson JSON library required for '
-                                 '--enable-selftest when building the AD DC')
-        Logs.info("Building without jansson json log support")
+                       "formatted audit log feature and the AD DC")
+        if not Options.options.without_ad_dc:
+            raise Utils.WafError('--without-json-audit requires '
+                                 '--without-ad-dc. '
+                                 'Jansson JSON library is required for '
+                                 'building the AD DC')
+        Logs.info("Building without Jansson JSON log support")
+
