@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/network.h"
 
+#include "lib/util/debug.h"
 #include "lib/util/time.h"
 #include "lib/util/tevent_unix.h"
 
@@ -330,6 +331,8 @@ int main(int argc, const char *argv[])
 	struct tevent_req *req;
 	int ret;
 	bool status;
+
+	setup_logging("fetch_ring", DEBUG_STDERR);
 
 	status = process_options_basic(argc, argv, &opts);
 	if (! status) {

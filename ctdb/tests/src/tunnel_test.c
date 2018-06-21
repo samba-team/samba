@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/network.h"
 
+#include "lib/util/debug.h"
 #include "lib/util/tevent_unix.h"
 
 #include "protocol/protocol_private.h"
@@ -428,6 +429,8 @@ int main(int argc, const char *argv[])
 	struct tevent_req *req;
 	int ret;
 	bool status;
+
+	setup_logging("tunnel_test", DEBUG_STDERR);
 
 	status = process_options_basic(argc, argv, &opts);
 	if (! status) {
