@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/network.h"
 
+#include "lib/util/debug.h"
 #include "lib/util/tevent_unix.h"
 
 #include "client/client.h"
@@ -154,6 +155,8 @@ int main(int argc, const char *argv[])
 	struct ctdb_db_context *ctdb_db;
 	int ret;
 	bool status;
+
+	setup_logging("fetch_loop_key", DEBUG_STDERR);
 
 	status = process_options_database(argc, argv, &opts);
 	if (! status) {
