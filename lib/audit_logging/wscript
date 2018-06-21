@@ -32,4 +32,3 @@ def configure(conf):
             raise Utils.WafError('jansson JSON library required for '
                                  '--enable-selftest when building the AD DC')
         Logs.info("Building without jansson json log support")
-
