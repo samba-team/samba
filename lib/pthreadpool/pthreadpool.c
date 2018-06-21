@@ -78,17 +78,17 @@ struct pthreadpool {
 	/*
 	 * maximum number of threads
 	 */
-	int max_threads;
+	unsigned max_threads;
 
 	/*
 	 * Number of threads
 	 */
-	int num_threads;
+	unsigned num_threads;
 
 	/*
 	 * Number of idle threads
 	 */
-	int num_idle;
+	unsigned num_idle;
 
 	/*
 	 * Condition variable indicating that helper threads should
@@ -206,7 +206,7 @@ static void pthreadpool_prepare_pool(struct pthreadpool *pool)
 	assert(ret == 0);
 
 	while (pool->num_idle != 0) {
-		int num_idle = pool->num_idle;
+		unsigned num_idle = pool->num_idle;
 		pthread_cond_t prefork_cond;
 
 		ret = pthread_cond_init(&prefork_cond, NULL);
