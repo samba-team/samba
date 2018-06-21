@@ -1,5 +1,56 @@
 #!/usr/bin/env python
 
+bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS_AUDIT',
+	            source='audit_util.c',
+	            autoproto='audit_util_proto.h',
+	            deps='DSDB_MODULE_HELPERS audit_logging')
+
+#
+# These tests require JANSSON, so we only build them if we are doing a
+# build on the AD DC (where Jansson is required).
+#
+
+bld.SAMBA_BINARY('test_audit_util',
+                 source='tests/test_audit_util.c',
+                 deps='''
+                 talloc
+                 samba-util
+                 samdb-common
+                 samdb
+                 cmocka
+                 audit_logging
+                 DSDB_MODULE_HELPERS
+                 ''',
+                 install=False)
+
+bld.SAMBA_BINARY('test_audit_log',
+                 source='tests/test_audit_log.c',
+                 deps='''
+                 talloc
+                 samba-util
+                 samdb-common
+                 samdb
+                 cmocka
+                 audit_logging
+                 DSDB_MODULE_HELPERS
+                 DSDB_MODULE_HELPERS_AUDIT
+                 ''',
+                 install=False)
+
+bld.SAMBA_BINARY('test_group_audit',
+                 source='tests/test_group_audit.c',
+                 deps='''
+                 talloc
+                 samba-util
+                 samdb-common
+                 samdb
+                 cmocka
+                 audit_logging
+                 DSDB_MODULE_HELPERS
+                 DSDB_MODULE_HELPERS_AUDIT
+                 ''',
+                 install=False)
+
 bld.SAMBA_MODULE('ldb_samba_dsdb',
 	source='samba_dsdb.c',
 	subsystem='ldb',
@@ -437,7 +488,7 @@ bld.SAMBA_MODULE('ldb_audit_log',
             talloc
             samba-util
             samdb-common
-            DSDB_MODULE_HELPERS
+            DSDB_MODULE_HELPERS_AUDIT
             samdb
         '''
 	)
@@ -453,7 +504,7 @@ bld.SAMBA_MODULE('ldb_group_audit_log',
             talloc
             samba-util
             samdb-common
-            DSDB_MODULE_HELPERS
+            DSDB_MODULE_HELPERS_AUDIT
             samdb
         '''
 	)

@@ -28,6 +28,7 @@
 
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "dsdb/samdb/ldb_modules/audit_util_proto.h"
 #include "libcli/security/dom_sid.h"
 #include "auth/common_auth.h"
 #include "param/param.h"
