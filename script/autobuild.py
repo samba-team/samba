@@ -131,7 +131,7 @@ tasks = {
 
     # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
     "samba-fileserver" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
-                      ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                      ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json-audit --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=fileserver'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
