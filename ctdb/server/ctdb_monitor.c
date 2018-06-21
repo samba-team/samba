@@ -129,12 +129,12 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	rddata.dptr = (uint8_t *)&rd;
 	rddata.dsize = sizeof(rd);
 
-	if (status == -ECANCELED) {
+	if (status == ECANCELED) {
 		DEBUG(DEBUG_ERR,("Monitoring event was cancelled\n"));
 		goto after_change_status;
 	}
 
-	if (status == -ETIME) {
+	if (status == ETIME) {
 		ctdb->monitor->event_script_timeouts++;
 
 		if (ctdb->monitor->event_script_timeouts >=

@@ -558,6 +558,7 @@ def build(bld):
                              ctdb-database-conf
                              ctdb-event-conf
                              ctdb-legacy-conf
+                             ctdb-event-protocol
                              talloc tevent tdb-wrap tdb talloc_report''' +
                           ib_deps,
                      install_path='${SBINDIR}',
