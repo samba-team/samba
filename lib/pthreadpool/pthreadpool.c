@@ -329,6 +329,11 @@ static int pthreadpool_free(struct pthreadpool *pool)
 	ret = pthread_mutex_unlock(&pthreadpools_mutex);
 	assert(ret == 0);
 
+	ret = pthread_mutex_lock(&pool->mutex);
+	assert(ret == 0);
+	ret = pthread_mutex_unlock(&pool->mutex);
+	assert(ret == 0);
+
 	ret = pthread_mutex_destroy(&pool->mutex);
 	ret1 = pthread_cond_destroy(&pool->condvar);
 	ret2 = pthread_mutex_destroy(&pool->fork_mutex);
