@@ -4558,15 +4558,12 @@ static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			 int argc, const char **argv)
 {
 	char *t, *event_helper = NULL;
-	char *eventd_socket = NULL;
-	const char **new_argv;
-	int i;
 
 	t = getenv("CTDB_EVENT_HELPER");
 	if (t != NULL) {
 		event_helper = talloc_strdup(mem_ctx, t);
 	} else {
-		event_helper = talloc_asprintf(mem_ctx, "%s/ctdb_event",
+		event_helper = talloc_asprintf(mem_ctx, "%s/ctdb-event",
 					       CTDB_HELPER_BINDIR);
 	}
 
@@ -4575,49 +4572,25 @@ static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	t = getenv("CTDB_SOCKET");
-	if (t != NULL) {
-		eventd_socket = talloc_asprintf(mem_ctx, "%s/eventd.sock",
-						dirname(t));
-	} else {
-		eventd_socket = talloc_asprintf(mem_ctx, "%s/eventd.sock",
-						CTDB_RUNDIR);
-	}
-
-	if (eventd_socket == NULL) {
-		fprintf(stderr, "Unable to set event daemon socket\n");
-		return 1;
-	}
-
-	new_argv = talloc_array(mem_ctx, const char *, argc + 1);
-	if (new_argv == NULL) {
-		fprintf(stderr, "Memory allocation error\n");
-		return 1;
-	}
-
-	new_argv[0] = eventd_socket;
-	for (i=0; i<argc; i++) {
-		new_argv[i+1] = argv[i];
-	}
-
 	return run_helper(mem_ctx, "event daemon helper", event_helper,
-			  argc+1, new_argv);
+			  argc, argv);
 }
 
 static int control_scriptstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 				int argc, const char **argv)
 {
-	const char *new_argv[3];
+	const char *new_argv[4];
 
 	if (argc > 1) {
 		usage("scriptstatus");
 	}
 
 	new_argv[0] = "status";
-	new_argv[1] = (argc == 0) ? "monitor" : argv[0];
-	new_argv[2] = NULL;
+	new_argv[1] = "legacy";
+	new_argv[2] = (argc == 0) ? "monitor" : argv[0];
+	new_argv[3] = NULL;
 
-	(void) control_event(mem_ctx, ctdb, 2, new_argv);
+	(void) control_event(mem_ctx, ctdb, 3, new_argv);
 	return 0;
 }
 

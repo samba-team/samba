@@ -39,7 +39,7 @@ try_command_on_node -v all $CTDB ip
 my_exit_hook ()
 {
     if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
-	onnode -q all $CTDB event script enable "10.interface"
+	onnode -q all $CTDB event script enable legacy "10.interface"
     fi
 }
 
@@ -55,7 +55,7 @@ wait_for_monitor_event $test_node
 
 if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
     # Stop monitor events from bringing up the link status of an interface
-    try_command_on_node $test_node $CTDB event script disable 10.interface
+    try_command_on_node $test_node $CTDB event script disable legacy 10.interface
 fi
 
 echo "Marking interface $iface down on node $test_node"
