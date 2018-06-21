@@ -102,6 +102,24 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 	return 0;
 }
 
+size_t pthreadpool_tevent_max_threads(struct pthreadpool_tevent *pool)
+{
+	if (pool->pool == NULL) {
+		return 0;
+	}
+
+	return pthreadpool_max_threads(pool->pool);
+}
+
+size_t pthreadpool_tevent_queued_jobs(struct pthreadpool_tevent *pool)
+{
+	if (pool->pool == NULL) {
+		return 0;
+	}
+
+	return pthreadpool_queued_jobs(pool->pool);
+}
+
 static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 {
 	struct pthreadpool_tevent_job_state *state, *next;

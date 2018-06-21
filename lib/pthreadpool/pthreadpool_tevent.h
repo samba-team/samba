@@ -27,6 +27,9 @@ struct pthreadpool_tevent;
 int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 			    struct pthreadpool_tevent **presult);
 
+size_t pthreadpool_tevent_max_threads(struct pthreadpool_tevent *pool);
+size_t pthreadpool_tevent_queued_jobs(struct pthreadpool_tevent *pool);
+
 struct tevent_req *pthreadpool_tevent_job_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct pthreadpool_tevent *pool,
