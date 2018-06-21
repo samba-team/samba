@@ -1327,6 +1327,11 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 	}
 
 	if (site_opts & NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED) {
+		if (bridgeheads.data == NULL || bridgeheads.count == 0) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		qsort(bridgeheads.data, bridgeheads.count,
 		      sizeof(struct ldb_message), kcctpl_sort_bridgeheads);
 	} else {
