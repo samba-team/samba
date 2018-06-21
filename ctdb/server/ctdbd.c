@@ -314,20 +314,6 @@ int main(int argc, const char *argv[])
 	}
 
 	/*
-	 * Event setup/options
-	 */
-	if (ctdb_config.event_debug_script != NULL) {
-		ret = setenv("CTDB_DEBUG_HUNG_SCRIPT",
-			     ctdb_config.event_debug_script,
-			     1);
-		if (ret != 0) {
-			D_ERR("Failed to set up event script debugging (%s)\n",
-			      strerror(errno));
-			goto fail;
-		}
-	}
-
-	/*
 	 * Legacy setup/options
 	 */
 
