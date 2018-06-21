@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/network.h"
 
+#include "lib/util/debug.h"
 #include "lib/util/tevent_unix.h"
 
 #include "protocol/protocol_api.h"
@@ -152,6 +153,8 @@ int main(int argc, const char *argv[])
 	struct tevent_req *req;
 	int ret;
 	bool status;
+
+	setup_logging("update_record_persistene", DEBUG_STDERR);
 
 	status = process_options_database(argc, argv, &opts);
 	if (! status) {

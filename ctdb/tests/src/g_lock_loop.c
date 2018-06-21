@@ -213,6 +213,8 @@ int main(int argc, const char *argv[])
 	int ret;
 	bool status;
 
+	setup_logging("glock_loop", DEBUG_STDERR);
+
 	status = process_options_basic(argc, argv, &opts);
 	if (! status) {
 		exit(1);
@@ -229,8 +231,6 @@ int main(int argc, const char *argv[])
 		fprintf(stderr, "Memory allocation error\n");
 		exit(1);
 	}
-
-	setup_logging("glock_loop", DEBUG_STDERR);
 
 	ret = ctdb_client_init(mem_ctx, ev, opts->socket, &client);
 	if (ret != 0) {

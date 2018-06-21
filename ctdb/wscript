@@ -772,7 +772,7 @@ def build(bld):
                         source=bld.SUBDIR('tests/src',
                                           'cluster_wait.c test_options.c'),
                         includes='include',
-                        deps='replace popt talloc tevent tdb')
+                        deps='samba-util replace popt talloc tevent tdb')
 
     bld.SAMBA_BINARY('protocol_util_test',
                      source='tests/src/protocol_util_test.c',

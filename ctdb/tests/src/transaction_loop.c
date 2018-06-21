@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/network.h"
 
+#include "lib/util/debug.h"
 #include "lib/util/tevent_unix.h"
 
 #include "client/client.h"
@@ -341,6 +342,8 @@ int main(int argc, const char *argv[])
 	uint8_t db_flags;
 	int ret;
 	bool status;
+
+	setup_logging("transaction_loop", DEBUG_STDERR);
 
 	status = process_options_database(argc, argv, &opts);
 	if (! status) {
