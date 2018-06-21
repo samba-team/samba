@@ -576,13 +576,14 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 
 	if (state->async_ask_sharemode) {
 		struct tevent_req *subreq = NULL;
+		char *buf = state->base_data + state->last_entry_off;
 
 		subreq = fetch_write_time_send(state,
 					       state->ev,
 					       state->fsp->conn,
 					       file_id,
 					       state->info_level,
-					       state->base_data + state->last_entry_off,
+					       buf,
 					       &stop);
 		if (tevent_req_nomem(subreq, req)) {
 			return true;
