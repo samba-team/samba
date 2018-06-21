@@ -77,6 +77,7 @@ struct pthreadpool {
 
 	/*
 	 * maximum number of threads
+	 * 0 means no real thread, only strict sync processing.
 	 */
 	unsigned max_threads;
 
@@ -649,6 +650,19 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 		return EINVAL;
 	}
 
+	if (pool->max_threads == 0) {
+		unlock_res = pthread_mutex_unlock(&pool->mutex);
+		assert(unlock_res == 0);
+
+		/*
+		 * If no thread are allowed we do strict sync processing.
+		 */
+		fn(private_data);
+		res = pool->signal_fn(job_id, fn, private_data,
+				      pool->signal_fn_private_data);
+		return res;
+	}
+
 	/*
 	 * Add job to the end of the queue
 	 */
@@ -671,8 +685,7 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 		return res;
 	}
 
-	if ((pool->max_threads != 0) &&
-	    (pool->num_threads >= pool->max_threads)) {
+	if (pool->num_threads >= pool->max_threads) {
 		/*
 		 * No more new threads, we just queue the request
 		 */
@@ -707,8 +720,5 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 	unlock_res = pthread_mutex_unlock(&pool->mutex);
 	assert(unlock_res == 0);
 
-	fn(private_data);
-	res = pool->signal_fn(job_id, fn, private_data,
-			      pool->signal_fn_private_data);
 	return res;
 }
