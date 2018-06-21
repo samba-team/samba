@@ -22,6 +22,7 @@
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <talloc.h>
 #include <tevent.h>
@@ -46,7 +47,7 @@ static int setup_pthreadpool_tevent(void **state)
 	t->ev = tevent_context_init(t);
 	assert_non_null(t->ev);
 
-	ret = pthreadpool_tevent_init(t->ev, 0, &t->pool);
+	ret = pthreadpool_tevent_init(t->ev, UINT_MAX, &t->pool);
 	assert_return_code(ret, 0);
 
 	*state = t;

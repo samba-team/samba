@@ -3,6 +3,7 @@
 #include <poll.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -407,7 +408,7 @@ static int test_tevent_1(void)
 			strerror(ret));
 		return ret;
 	}
-	ret = pthreadpool_tevent_init(ev, 0, &pool);
+	ret = pthreadpool_tevent_init(ev, UINT_MAX, &pool);
 	if (ret != 0) {
 		fprintf(stderr, "pthreadpool_tevent_init failed: %s\n",
 			strerror(ret));
