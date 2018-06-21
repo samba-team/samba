@@ -1072,7 +1072,7 @@ int messaging_dgm_init(struct tevent_context *ev,
 
 	ctx->have_dgm_context = &have_dgm_context;
 
-	ret = pthreadpool_tevent_init(ctx, 0, &ctx->pool);
+	ret = pthreadpool_tevent_init(ctx, UINT_MAX, &ctx->pool);
 	if (ret != 0) {
 		DBG_WARNING("pthreadpool_tevent_init failed: %s\n",
 			    strerror(ret));
