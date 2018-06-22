@@ -94,6 +94,7 @@ static int talloc_pop(TALLOC_CTX *frame)
 {
 	struct talloc_stackframe *ts =
 		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
+	size_t blocks;
 	int i;
 
 	/* Catch lazy frame-freeing. */
@@ -105,6 +106,34 @@ static int talloc_pop(TALLOC_CTX *frame)
 #ifdef DEVELOPER
 		smb_panic("Frame not freed in order.");
 #endif
+	}
+
+	for (i=0; i<10; i++) {
+
+		/*
+		 * We have to free our children first, calling all
+		 * destructors. If a destructor hanging deeply off
+		 * "frame" uses talloc_tos() itself while freeing the
+		 * toplevel frame, we panic because that nested
+		 * talloc_tos() in the destructor does not find a
+		 * stackframe anymore.
+		 *
+		 * Do it in a loop up to 10 times as the destructors
+		 * might use more of talloc_tos().
+		 */
+
+		talloc_free_children(frame);
+
+		blocks = talloc_total_blocks(frame);
+		if (blocks == 1) {
+			break;
+		}
+	}
+
+	if (blocks != 1) {
+		DBG_WARNING("Left %zu blocks after %i "
+			    "talloc_free_children(frame) calls\n",
+			    blocks, i);
 	}
 
 	for (i=ts->talloc_stacksize-1; i>0; i--) {
