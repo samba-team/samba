@@ -162,7 +162,7 @@
 		<para>LIST is a list of VFS operations that should be
 		recorded if they succeed. Operations are specified using
 		the names listed above. Operations can be unset by prefixing
-		the names with "!". The default is all operations.
+		the names with "!". The default is none operations.
 		</para>
 
 		</listitem>
@@ -174,7 +174,7 @@
 		<para>LIST is a list of VFS operations that should be
 		recorded if they failed. Operations are specified using
 		the names listed above. Operations can be unset by prefixing
-		the names with "!". The default is all operations.
+		the names with "!". The default is none operations.
 		</para>
 
 		</listitem>
