@@ -278,7 +278,7 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	glue->ev_link = ev_link;
 
 #ifdef HAVE_PTHREAD
-	glue->tctx = tevent_threaded_context_create(pool, ev);
+	glue->tctx = tevent_threaded_context_create(glue, ev);
 	if (glue->tctx == NULL) {
 		TALLOC_FREE(ev_link);
 		TALLOC_FREE(glue);
