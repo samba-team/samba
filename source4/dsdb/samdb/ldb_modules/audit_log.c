@@ -69,7 +69,7 @@
 /*
  * Private data for the module, stored in the ldb_module private data
  */
-struct audit_context {
+struct audit_private {
 	/*
 	 * Should details of database operations be sent over the
 	 * messaging bus.
@@ -192,9 +192,9 @@ static struct json_object operation_json(
 	const char* operation = NULL;
 	const struct GUID *unique_session_token = NULL;
 	const struct ldb_message *message = NULL;
-	struct audit_context *ac = talloc_get_type(
-		ldb_module_get_private(module),
-		struct audit_context);
+	struct audit_private *audit_private
+		= talloc_get_type_abort(ldb_module_get_private(module),
+					struct audit_private);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -221,7 +221,9 @@ static struct json_object operation_json(
 	json_add_bool(&audit, "performedAsSystem", as_system);
 	json_add_sid(&audit, "userSid", sid);
 	json_add_string(&audit, "dn", dn);
-	json_add_guid(&audit, "transactionId", &ac->transaction_guid);
+	json_add_guid(&audit,
+		      "transactionId",
+		      &audit_private->transaction_guid);
 	json_add_guid(&audit, "sessionId", unique_session_token);
 
 	message = dsdb_audit_get_message(request);
@@ -259,9 +261,9 @@ static struct json_object replicated_update_json(
 {
 	struct json_object wrapper;
 	struct json_object audit;
-	struct audit_context *ac = talloc_get_type(
-		ldb_module_get_private(module),
-		struct audit_context);
+	struct audit_private *audit_private
+		= talloc_get_type_abort(ldb_module_get_private(module),
+					struct audit_private);
 	struct dsdb_extended_replicated_objects *ro = talloc_get_type(
 		request->op.extended.data,
 		struct dsdb_extended_replicated_objects);
@@ -275,7 +277,9 @@ static struct json_object replicated_update_json(
 	json_add_version(&audit, REPLICATION_MAJOR, REPLICATION_MINOR);
 	json_add_int(&audit, "statusCode", reply->error);
 	json_add_string(&audit, "status", ldb_strerror(reply->error));
-	json_add_guid(&audit, "transactionId", &ac->transaction_guid);
+	json_add_guid(&audit,
+		      "transactionId",
+		      &audit_private->transaction_guid);
 	json_add_int(&audit, "objectCount", ro->num_objects);
 	json_add_int(&audit, "linkCount", ro->linked_attributes_count);
 	json_add_string(&audit, "partitionDN", partition_dn);
@@ -323,9 +327,9 @@ static struct json_object password_change_json(
 	const struct tsocket_address *remote = NULL;
 	const char* action = NULL;
 	const struct GUID *unique_session_token = NULL;
-	struct audit_context *ac = talloc_get_type(
-		ldb_module_get_private(module),
-		struct audit_context);
+	struct audit_private *audit_private
+		= talloc_get_type_abort(ldb_module_get_private(module),
+					struct audit_private);
 
 
 	ldb = ldb_module_get_ctx(module);
@@ -344,7 +348,9 @@ static struct json_object password_change_json(
 	json_add_sid(&audit, "userSid", sid);
 	json_add_string(&audit, "dn", dn);
 	json_add_string(&audit, "action", action);
-	json_add_guid(&audit, "transactionId", &ac->transaction_guid);
+	json_add_guid(&audit,
+		      "transactionId",
+		      &audit_private->transaction_guid);
 	json_add_guid(&audit, "sessionId", unique_session_token);
 
 	wrapper = json_new_object();
@@ -816,9 +822,9 @@ static void log_standard_operation(
 
 	const struct ldb_message *message = dsdb_audit_get_message(request);
 	bool password_changed = has_password_changed(message);
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct audit_private);
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -854,7 +860,8 @@ static void log_standard_operation(
 	}
 #ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_AUDIT_JSON, OPERATION_LOG_LVL) ||
-		(ac->msg_ctx && ac->send_samdb_events)) {
+		(audit_private->msg_ctx
+		 && audit_private->send_samdb_events)) {
 		struct json_object json;
 		json = operation_json(module, request, reply);
 		audit_log_json(
@@ -862,9 +869,10 @@ static void log_standard_operation(
 			&json,
 			DBGC_DSDB_AUDIT_JSON,
 			OPERATION_LOG_LVL);
-		if (ac->msg_ctx && ac->send_password_events) {
+		if (audit_private->msg_ctx
+		    && audit_private->send_samdb_events) {
 			audit_message_send(
-				ac->msg_ctx,
+				audit_private->msg_ctx,
 				DSDB_EVENT_NAME,
 				MSG_DSDB_LOG,
 				&json);
@@ -872,7 +880,8 @@ static void log_standard_operation(
 		json_free(&json);
 	}
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_PWD_AUDIT_JSON, PASSWORD_LOG_LVL) ||
-		(ac->msg_ctx && ac->send_password_events)) {
+		(audit_private->msg_ctx
+		 && audit_private->send_password_events)) {
 		if (password_changed) {
 			struct json_object json;
 			json = password_change_json(module, request, reply);
@@ -881,9 +890,9 @@ static void log_standard_operation(
 				&json,
 				DBGC_DSDB_PWD_AUDIT_JSON,
 				PASSWORD_LOG_LVL);
-			if (ac->send_password_events) {
+			if (audit_private->send_password_events) {
 				audit_message_send(
-					ac->msg_ctx,
+					audit_private->msg_ctx,
 					DSDB_PWD_EVENT_NAME,
 					MSG_DSDB_PWD_LOG,
 					&json);
@@ -912,9 +921,9 @@ static void log_replicated_operation(
 	const struct ldb_reply *reply)
 {
 
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				struct audit_private);
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -934,7 +943,7 @@ static void log_replicated_operation(
 	}
 #ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_AUDIT_JSON, REPLICATION_LOG_LVL) ||
-		(ac->msg_ctx && ac->send_samdb_events)) {
+		(audit_private->msg_ctx && audit_private->send_samdb_events)) {
 		struct json_object json;
 		json = replicated_update_json(module, request, reply);
 		audit_log_json(
@@ -942,9 +951,9 @@ static void log_replicated_operation(
 			&json,
 			DBGC_DSDB_AUDIT_JSON,
 			REPLICATION_LOG_LVL);
-		if (ac->send_samdb_events) {
+		if (audit_private->send_samdb_events) {
 			audit_message_send(
-				ac->msg_ctx,
+				audit_private->msg_ctx,
 				DSDB_EVENT_NAME,
 				MSG_DSDB_LOG,
 				&json);
@@ -1001,11 +1010,11 @@ static void log_transaction(
 	int log_level)
 {
 
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct audit_private);
 	const struct timeval now = timeval_current();
-	const int64_t duration = usec_time_diff(&now, &ac->transaction_start);
+	const int64_t duration = usec_time_diff(&now, &audit_private->transaction_start);
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -1021,20 +1030,20 @@ static void log_transaction(
 	}
 #ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, log_level) ||
-		(ac->msg_ctx && ac->send_samdb_events)) {
+		(audit_private->msg_ctx && audit_private->send_samdb_events)) {
 		struct json_object json;
 		json = transaction_json(
 			action,
-			&ac->transaction_guid,
+			&audit_private->transaction_guid,
 			duration);
 		audit_log_json(
 			TRANSACTION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_TXN_AUDIT_JSON,
 			log_level);
-		if (ac->send_samdb_events) {
+		if (audit_private->send_samdb_events) {
 			audit_message_send(
-				ac->msg_ctx,
+				audit_private->msg_ctx,
 				DSDB_EVENT_NAME,
 				MSG_DSDB_LOG,
 				&json);
@@ -1062,13 +1071,14 @@ static void log_commit_failure(
 	int status)
 {
 
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct audit_private);
 	const char* reason = dsdb_audit_get_ldb_error_string(module, status);
 	const int log_level = TRANSACTION_LOG_FAILURE_LVL;
 	const struct timeval now = timeval_current();
-	const int64_t duration = usec_time_diff(&now, &ac->transaction_start);
+	const int64_t duration = usec_time_diff(&now,
+						&audit_private->transaction_start);
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -1090,21 +1100,22 @@ static void log_commit_failure(
 	}
 #ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, log_level) ||
-		(ac->msg_ctx && ac->send_samdb_events)) {
+		(audit_private->msg_ctx
+		 && audit_private->send_samdb_events)) {
 		struct json_object json;
 		json = commit_failure_json(
 			action,
 			duration,
 			status,
 			reason,
-			&ac->transaction_guid);
+			&audit_private->transaction_guid);
 		audit_log_json(
 			TRANSACTION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_TXN_AUDIT_JSON,
 			log_level);
-		if (ac->send_samdb_events) {
-			audit_message_send(ac->msg_ctx,
+		if (audit_private->send_samdb_events) {
+			audit_message_send(audit_private->msg_ctx,
 					   DSDB_EVENT_NAME,
 					   MSG_DSDB_LOG,
 					   &json);
@@ -1196,9 +1207,9 @@ static int add_transaction_id(
 	struct ldb_module *module,
 	struct ldb_request *req)
 {
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct audit_private);
 	struct dsdb_control_transaction_identifier *transaction_id;
 	int ret;
 
@@ -1209,7 +1220,7 @@ static int add_transaction_id(
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		return ldb_oom(ldb);
 	}
-	transaction_id->transaction_guid = ac->transaction_guid;
+	transaction_id->transaction_guid = audit_private->transaction_guid;
 	ret = ldb_request_add_control(req,
 				      DSDB_CONTROL_TRANSACTION_IDENTIFIER_OID,
 				      false,
@@ -1383,9 +1394,9 @@ static int log_modify(
  */
 static int log_start_transaction(struct ldb_module *module)
 {
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct audit_private);
 
 	/*
 	 * We do not log transaction begins
@@ -1393,8 +1404,8 @@ static int log_start_transaction(struct ldb_module *module)
 	 * time so that we can log the transaction duration.
 	 *
 	 */
-	ac->transaction_guid = GUID_random();
-	ac->transaction_start = timeval_current();
+	audit_private->transaction_guid = GUID_random();
+	audit_private->transaction_start = timeval_current();
 	return ldb_next_start_trans(module);
 }
 
@@ -1435,9 +1446,9 @@ static int log_prepare_commit(struct ldb_module *module)
  */
 static int log_end_transaction(struct ldb_module *module)
 {
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct audit_private);
 	int ret = 0;
 
 
@@ -1453,7 +1464,7 @@ static int log_end_transaction(struct ldb_module *module)
 	/*
 	 * Clear the transaction id inserted by log_start_transaction
 	 */
-	memset(&ac->transaction_guid, 0, sizeof(struct GUID));
+	memset(&audit_private->transaction_guid, 0, sizeof(struct GUID));
 	return ret;
 }
 
@@ -1469,12 +1480,12 @@ static int log_end_transaction(struct ldb_module *module)
  */
 static int log_del_transaction(struct ldb_module *module)
 {
-	struct audit_context *ac =
-		talloc_get_type(ldb_module_get_private(module),
-				struct audit_context);
+	struct audit_private *audit_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct audit_private);
 
 	log_transaction(module, "rollback", TRANSACTION_LOG_FAILURE_LVL);
-	memset(&ac->transaction_guid, 0, sizeof(struct GUID));
+	memset(&audit_private->transaction_guid, 0, sizeof(struct GUID));
 	return ldb_next_del_trans(module);
 }
 
@@ -1546,7 +1557,7 @@ static int log_init(struct ldb_module *module)
 {
 
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct audit_context *context = NULL;
+	struct audit_private *audit_private = NULL;
 	struct loadparm_context *lp_ctx
 		= talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"),
 					struct loadparm_context);
@@ -1554,8 +1565,8 @@ static int log_init(struct ldb_module *module)
 	bool sdb_events = false;
 	bool pwd_events = false;
 
-	context = talloc_zero(module, struct audit_context);
-	if (context == NULL) {
+	audit_private = talloc_zero(module, struct audit_private);
+	if (audit_private == NULL) {
 		return ldb_module_oom(module);
 	}
 
@@ -1564,14 +1575,15 @@ static int log_init(struct ldb_module *module)
 		pwd_events = lpcfg_dsdb_password_event_notification(lp_ctx);
 	}
 	if (sdb_events || pwd_events) {
-		context->send_samdb_events = sdb_events;
-		context->send_password_events = pwd_events;
-		context->msg_ctx = imessaging_client_init(context,
-							  lp_ctx,
-							  ev);
+		audit_private->send_samdb_events = sdb_events;
+		audit_private->send_password_events = pwd_events;
+		audit_private->msg_ctx
+			= imessaging_client_init(audit_private,
+						 lp_ctx,
+						 ev);
 	}
 
-	ldb_module_set_private(module, context);
+	ldb_module_set_private(module, audit_private);
 	return ldb_next_init(module);
 }
 
