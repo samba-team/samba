@@ -173,7 +173,7 @@ static NTSTATUS get_event_server(
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE(
 			"Failed to find '%s' registered on the message bus to "
-			"send audit events to: %s\n",
+			"send JSON audit events to: %s\n",
 			server_name,
 			nt_errstr(status));
 		TALLOC_FREE(frame);
@@ -199,7 +199,7 @@ static NTSTATUS get_event_server(
 	}
 	DBG_NOTICE(
 		"Failed to find '%s' registered on the message bus to "
-		"send audit events to: %s\n",
+		"send JSON audit events to: %s\n",
 		server_name,
 		nt_errstr(status));
 	TALLOC_FREE(frame);
