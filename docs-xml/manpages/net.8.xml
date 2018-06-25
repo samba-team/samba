@@ -551,6 +551,12 @@ account in server manager first.</para>
 <para>Create specified group.</para>
 
 </refsect3>
+<refsect3>
+<title>[ADS] LOOKUP</title>
+
+<para>Lookup the closest Domain Controller in our domain and retrieve server information about it.</para>
+
+</refsect3>
 </refsect2>
 
 <refsect2>
