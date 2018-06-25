@@ -28,6 +28,7 @@ int ldb_audit_log_module_init(const char *version);
 
 #include "lib/ldb/include/ldb_private.h"
 #include <regex.h>
+#include <float.h>
 
 /*
  * Test helper to check ISO 8601 timestamps for validity
@@ -40,6 +41,7 @@ static void check_timestamp(time_t before, const char* timestamp)
 	struct tm tm;
 	time_t after;
 	time_t actual;
+	const double lower = -1;
 
 
 	after = time(NULL);
@@ -69,9 +71,12 @@ static void check_timestamp(time_t before, const char* timestamp)
 
 	/*
 	 * The timestamp should be before <= actual <= after
+	 * Note: as the microsecond portion of the time is truncated we use
+	 *       a -1 as the lower bound for the time difference instead of
+	 *       zero
 	 */
-	assert_true(difftime(actual, before) >= 0);
-	assert_true(difftime(after, actual) >= 0);
+	assert_true(difftime(actual, before) >= lower);
+	assert_true(difftime(after, actual) >= lower);
 }
 
 static void test_has_password_changed(void **state)
