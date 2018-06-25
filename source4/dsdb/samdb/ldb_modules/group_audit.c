@@ -1341,7 +1341,9 @@ static int group_init(struct ldb_module *module)
 
 	if (lp_ctx && lpcfg_dsdb_group_change_notification(lp_ctx)) {
 		context->send_events = true;
-		context->msg_ctx = imessaging_client_init(ec, lp_ctx, ec);
+		context->msg_ctx = imessaging_client_init(context,
+							  lp_ctx,
+							  ec);
 	}
 
 	ldb_module_set_private(module, context);

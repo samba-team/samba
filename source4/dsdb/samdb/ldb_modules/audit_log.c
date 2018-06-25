@@ -1566,7 +1566,9 @@ static int log_init(struct ldb_module *module)
 	if (sdb_events || pwd_events) {
 		context->send_samdb_events = sdb_events;
 		context->send_password_events = pwd_events;
-		context->msg_ctx = imessaging_client_init(ec, lp_ctx, ec);
+		context->msg_ctx = imessaging_client_init(context,
+							  lp_ctx,
+							  ec);
 	}
 
 	ldb_module_set_private(module, context);
