@@ -248,8 +248,7 @@ void audit_message_send(
 	 * messages may get lost
 	 */
 	status = get_event_server(msg_ctx, server_name, &event_server);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("get_event_server for %s returned (%s)\n",
 			server_name,
 			nt_errstr(status));
@@ -270,8 +269,7 @@ void audit_message_send(
 	 */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		status = get_event_server(msg_ctx, server_name, &event_server);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("get_event_server for %s returned (%s)\n",
 				server_name,
 				nt_errstr(status));
