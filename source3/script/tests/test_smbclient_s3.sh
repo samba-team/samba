@@ -1606,6 +1606,36 @@ EOF
     return 0
 }
 
+test_server_quiet_message()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+ls
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS --quiet < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed to connect error $ret"
+       return 1
+    fi
+
+    echo "$out" | grep 'Try "help" to get a list of possible commands.'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo 'failed - quiet should skip this message.'
+       return 1
+    fi
+
+    return 0
+}
+
 # Test xattr_stream correctly reports mode.
 # BUG: https://bugzilla.samba.org/show_bug.cgi?id=13380
 
@@ -1795,6 +1825,10 @@ testit "smbclient deltree command" \
 
 testit "server os message" \
     test_server_os_message || \
+    failed=`expr $failed + 1`
+
+testit "test server quiet message" \
+    test_server_quiet_message || \
     failed=`expr $failed + 1`
 
 testit "setmode test" \
