@@ -372,7 +372,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 {
 	NTSTATUS status;
 
-	if (*lp_force_user(talloc_tos(), snum)) {
+	if (*lp_force_user(snum)) {
 
 		/*
 		 * Replace conn->session_info with a completely faked up one
@@ -384,7 +384,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		struct auth_session_info *forced_serverinfo;
 		bool guest;
 
-		fuser = talloc_string_sub(conn, lp_force_user(talloc_tos(), snum), "%S",
+		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
 					  lp_const_servicename(snum));
 		if (fuser == NULL) {
 			return NT_STATUS_NO_MEMORY;
