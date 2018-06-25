@@ -226,6 +226,9 @@ def check_for_DNS(refprivate, private, refbinddns_dir, binddns_dir, dns_backend)
     if not os.path.exists(dnsfile):
         shutil.copy("%s/dns_update_list" % refprivate, "%s" % dnsfile)
 
+    if not os.path.exists(binddns_dir):
+        os.mkdir(binddns_dir)
+
     if dns_backend not in ['BIND9_DLZ', 'BIND9_FLATFILE']:
        return
 

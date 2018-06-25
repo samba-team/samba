@@ -73,6 +73,7 @@ class JoinTestCase(DNSTKeyTest):
             shutil.rmtree(os.path.join(self.tempdir, "etc"))
             shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
             os.unlink(os.path.join(self.tempdir, "names.tdb"))
+            shutil.rmtree(os.path.join(self.tempdir, "bind-dns"))
 
         self.join_ctx.cleanup_old_join(force=True)
 

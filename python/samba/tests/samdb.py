@@ -59,7 +59,7 @@ class SamDBTestCase(TestCaseInTempDir):
         for f in ['names.tdb']:
             os.remove(os.path.join(self.tempdir, f))
 
-        for d in ['etc', 'msg.lock', 'private', 'state']:
+        for d in ['etc', 'msg.lock', 'private', 'state', 'bind-dns']:
             shutil.rmtree(os.path.join(self.tempdir, d))
 
         super(SamDBTestCase, self).tearDown()

@@ -47,6 +47,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
             shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
             os.remove(os.path.join(self.tempdir, "names.tdb"))
             shutil.rmtree(os.path.join(self.tempdir, "state"))
+            shutil.rmtree(os.path.join(self.tempdir, "bind-dns"))
         except Exception:
             pass
 
