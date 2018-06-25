@@ -1464,7 +1464,7 @@ static int log_end_transaction(struct ldb_module *module)
 	/*
 	 * Clear the transaction id inserted by log_start_transaction
 	 */
-	memset(&audit_private->transaction_guid, 0, sizeof(struct GUID));
+	audit_private->transaction_guid = GUID_zero();
 	return ret;
 }
 
@@ -1485,7 +1485,7 @@ static int log_del_transaction(struct ldb_module *module)
 				      struct audit_private);
 
 	log_transaction(module, "rollback", TRANSACTION_LOG_FAILURE_LVL);
-	memset(&audit_private->transaction_guid, 0, sizeof(struct GUID));
+	audit_private->transaction_guid = GUID_zero();
 	return ldb_next_del_trans(module);
 }
 
