@@ -1332,7 +1332,7 @@ static int group_init(struct ldb_module *module)
 		= talloc_get_type_abort(
 			ldb_get_opaque(ldb, "loadparm"),
 			struct loadparm_context);
-	struct tevent_context *ec = ldb_get_event_context(ldb);
+	struct tevent_context *ev = ldb_get_event_context(ldb);
 
 	context = talloc_zero(module, struct audit_context);
 	if (context == NULL) {
@@ -1343,7 +1343,7 @@ static int group_init(struct ldb_module *module)
 		context->send_events = true;
 		context->msg_ctx = imessaging_client_init(context,
 							  lp_ctx,
-							  ec);
+							  ev);
 	}
 
 	ldb_module_set_private(module, context);

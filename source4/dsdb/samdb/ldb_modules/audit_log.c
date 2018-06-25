@@ -1550,7 +1550,7 @@ static int log_init(struct ldb_module *module)
 	struct loadparm_context *lp_ctx
 		= talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"),
 					struct loadparm_context);
-	struct tevent_context *ec = ldb_get_event_context(ldb);
+	struct tevent_context *ev = ldb_get_event_context(ldb);
 	bool sdb_events = false;
 	bool pwd_events = false;
 
@@ -1568,7 +1568,7 @@ static int log_init(struct ldb_module *module)
 		context->send_password_events = pwd_events;
 		context->msg_ctx = imessaging_client_init(context,
 							  lp_ctx,
-							  ec);
+							  ev);
 	}
 
 	ldb_module_set_private(module, context);
