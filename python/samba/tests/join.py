@@ -21,7 +21,7 @@ import sys
 import shutil
 import os
 from samba.tests.dns_base import DNSTKeyTest
-from samba.join import dc_join
+from samba.join import DCJoinContext
 from samba.dcerpc import drsuapi, misc, dns
 from samba.credentials import Credentials
 
@@ -42,11 +42,12 @@ class JoinTestCase(DNSTKeyTest):
         self.netbios_name = "jointest1"
         logger = get_logger()
 
-        self.join_ctx = dc_join(server=self.server, creds=self.creds, lp=self.get_loadparm(),
-                                netbios_name=self.netbios_name,
-                                targetdir=self.tempdir,
-                                domain=None, logger=logger,
-                                dns_backend="SAMBA_INTERNAL")
+        self.join_ctx = DCJoinContext(server=self.server, creds=self.creds,
+                                      lp=self.get_loadparm(),
+                                      netbios_name=self.netbios_name,
+                                      targetdir=self.tempdir,
+                                      domain=None, logger=logger,
+                                      dns_backend="SAMBA_INTERNAL")
         self.join_ctx.userAccountControl = (samba.dsdb.UF_SERVER_TRUST_ACCOUNT |
                                             samba.dsdb.UF_TRUSTED_FOR_DELEGATION)
 

@@ -50,7 +50,7 @@ class DCJoinException(Exception):
         super(DCJoinException, self).__init__("Can't join, error: %s" % msg)
 
 
-class dc_join(object):
+class DCJoinContext(object):
     """Perform a DC join."""
 
     def __init__(ctx, logger=None, server=None, creds=None, lp=None, site=None,
@@ -1418,9 +1418,10 @@ def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_
               backend_store=None):
     """Join as a RODC."""
 
-    ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs, dns_backend, promote_existing,
-                  plaintext_secrets, backend_store=backend_store)
+    ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
+                        targetdir, domain, machinepass, use_ntvfs, dns_backend,
+                        promote_existing, plaintext_secrets,
+                        backend_store=backend_store)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1470,9 +1471,10 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
             promote_existing=False, plaintext_secrets=False,
             backend_store=None):
     """Join as a DC."""
-    ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs, dns_backend, promote_existing,
-                  plaintext_secrets, backend_store=backend_store)
+    ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
+                        targetdir, domain, machinepass, use_ntvfs, dns_backend,
+                        promote_existing, plaintext_secrets,
+                        backend_store=backend_store)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1498,8 +1500,10 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
                targetdir=None, domain=None, include_secrets=False,
                dns_backend="NONE"):
     """Join as a DC."""
-    ctx = dc_join(logger, server, creds, lp, site=None, netbios_name=None, targetdir=targetdir, domain=domain,
-                  machinepass=None, use_ntvfs=False, dns_backend=dns_backend, promote_existing=False, clone_only=True)
+    ctx = DCJoinContext(logger, server, creds, lp, site=None, netbios_name=None,
+                        targetdir=targetdir, domain=domain, machinepass=None,
+                        use_ntvfs=False, dns_backend=dns_backend,
+                        promote_existing=False, clone_only=True)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1522,9 +1526,10 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
         dns_backend=None, plaintext_secrets=False,
         backend_store=None):
     """Join as a DC."""
-    ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, parent_domain,
-                  machinepass, use_ntvfs, dns_backend, plaintext_secrets,
-                  backend_store=backend_store)
+    ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
+                        targetdir, parent_domain, machinepass, use_ntvfs,
+                        dns_backend, plaintext_secrets,
+                        backend_store=backend_store)
     ctx.subdomain = True
     if adminpass is None:
         ctx.adminpass = samba.generate_random_password(12, 32)

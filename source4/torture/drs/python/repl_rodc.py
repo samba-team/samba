@@ -33,7 +33,7 @@ import ldb
 from ldb import SCOPE_BASE
 
 from samba import WERRORError
-from samba.join import dc_join
+from samba.join import DCJoinContext
 from samba.dcerpc import drsuapi, misc, drsblobs, security
 from samba.drs_utils import drs_DsBind, drs_Replicate
 from samba.ndr import ndr_unpack, ndr_pack
@@ -101,9 +101,12 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         self.computer_dn = "CN=%s,OU=Domain Controllers,%s" % (self.rodc_name, self.base_dn)
 
 
-        self.rodc_ctx = dc_join(server=self.ldb_dc1.host_dns_name(), creds=self.get_credentials(), lp=self.get_loadparm(),
-                                site=self.site, netbios_name=self.rodc_name,
-                                targetdir=None, domain=None, machinepass=self.rodc_pass)
+        self.rodc_ctx = DCJoinContext(server=self.ldb_dc1.host_dns_name(),
+                                      creds=self.get_credentials(),
+                                      lp=self.get_loadparm(), site=self.site,
+                                      netbios_name=self.rodc_name,
+                                      targetdir=None, domain=None,
+                                      machinepass=self.rodc_pass)
         self._create_rodc(self.rodc_ctx)
         self.rodc_ctx.create_tmp_samdb()
         self.tmp_samdb = self.rodc_ctx.tmp_samdb
@@ -459,9 +462,12 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         """
         # Create a new identical RODC with just the first letter missing
         other_rodc_name = self.rodc_name[1:]
-        other_rodc_ctx = dc_join(server=self.ldb_dc1.host_dns_name(), creds=self.get_credentials(), lp=self.get_loadparm(),
-                                 site=self.site, netbios_name=other_rodc_name,
-                                 targetdir=None, domain=None, machinepass=self.rodc_pass)
+        other_rodc_ctx = DCJoinContext(server=self.ldb_dc1.host_dns_name(),
+                                       creds=self.get_credentials(),
+                                       lp=self.get_loadparm(), site=self.site,
+                                       netbios_name=other_rodc_name,
+                                       targetdir=None, domain=None,
+                                       machinepass=self.rodc_pass)
         self._create_rodc(other_rodc_ctx)
 
         other_rodc_creds = Credentials()

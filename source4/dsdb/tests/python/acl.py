@@ -13,7 +13,7 @@ import samba
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
-from samba.join import dc_join
+from samba.join import DCJoinContext
 
 from ldb import (
     SCOPE_BASE, SCOPE_SUBTREE, LdbError, ERR_NO_SUCH_OBJECT,
@@ -1841,11 +1841,12 @@ class AclSPNTests(AclTests):
         self.computerdn = "CN=%s,CN=computers,%s" % (self.computername, self.base_dn)
         self.dc_dn = "CN=%s,OU=Domain Controllers,%s" % (self.dcname, self.base_dn)
         self.site = "Default-First-Site-Name"
-        self.rodcctx = dc_join(server=host, creds=creds, lp=lp,
-            site=self.site, netbios_name=self.rodcname, targetdir=None,
-            domain=None)
-        self.dcctx = dc_join(server=host, creds=creds, lp=lp, site=self.site,
-                netbios_name=self.dcname, targetdir=None, domain=None)
+        self.rodcctx = DCJoinContext(server=host, creds=creds, lp=lp,
+                                     site=self.site, netbios_name=self.rodcname,
+                                     targetdir=None, domain=None)
+        self.dcctx = DCJoinContext(server=host, creds=creds, lp=lp,
+                                   site=self.site, netbios_name=self.dcname,
+                                   targetdir=None, domain=None)
         self.ldb_admin.newuser(self.test_user, self.user_pass)
         self.ldb_user1 = self.get_ldb_connection(self.test_user, self.user_pass)
         self.user_sid1 = self.sd_utils.get_object_sid(self.get_user_dn(self.test_user))
