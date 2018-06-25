@@ -92,7 +92,7 @@ static uint32_t create_share_access_mask(int snum,
 	uint32_t share_access = 0;
 
 	share_access_check(token,
-			lp_servicename(talloc_tos(), snum),
+			lp_const_servicename(snum),
 			MAXIMUM_ALLOWED_ACCESS,
 			&share_access);
 
@@ -150,10 +150,10 @@ NTSTATUS check_user_share_access(connection_struct *conn,
 
 	if ((share_access & (FILE_READ_DATA|FILE_WRITE_DATA)) == 0) {
 		/* No access, read or write. */
-		DEBUG(3,("user %s connection to %s denied due to share "
+		DBG_NOTICE("user %s connection to %s denied due to share "
 			 "security descriptor.\n",
 			 session_info->unix_info->unix_name,
-			 lp_servicename(talloc_tos(), snum)));
+			 lp_const_servicename(snum));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -161,9 +161,9 @@ NTSTATUS check_user_share_access(connection_struct *conn,
 	    !(share_access & FILE_WRITE_DATA)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
-		readonly_share = True;
-		DEBUG(5,("falling back to read-only access-evaluation due to "
-			 "security descriptor\n"));
+		readonly_share = true;
+		DBG_INFO("falling back to read-only access-evaluation due to "
+			 "security descriptor\n");
 	}
 
 	*p_share_access = share_access;
@@ -318,11 +318,11 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	ok = check_user_ok(conn, vuid, session_info, snum);
 	if (!ok) {
-		DEBUG(2,("SMB user %s (unix user %s) "
+		DBG_WARNING("SMB user %s (unix user %s) "
 			 "not permitted access to share %s.\n",
 			 session_info->unix_info->sanitized_username,
 			 session_info->unix_info->unix_name,
-			 lp_servicename(talloc_tos(), snum)));
+			 lp_const_servicename(snum));
 		return false;
 	}
 
@@ -419,9 +419,9 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 	vuser = get_valid_user_struct(conn->sconn, vuid);
 	if (vuser == NULL) {
 		/* Invalid vuid sent */
-		DEBUG(2,("Invalid vuid %llu used on share %s.\n",
-			 (unsigned long long)vuid, lp_servicename(talloc_tos(),
-								  snum)));
+		DBG_WARNING("Invalid vuid %llu used on share %s.\n",
+			    (unsigned long long)vuid,
+			    lp_const_servicename(snum));
 		return false;
 	}
 
