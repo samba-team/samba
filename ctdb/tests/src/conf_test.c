@@ -248,6 +248,8 @@ static void test6(void)
 	assert(b2_val == false);
 	assert(is_default == false);
 
+	conf_dump(conf, stdout);
+
 	conf_set_defaults(conf);
 
 	assert(strcmp(s_val, "default") == 0);
@@ -310,11 +312,20 @@ static void test7(void)
 	status = conf_valid(conf);
 	assert(status == true);
 
+	ret = conf_set_string(conf, "section1", "key1", "default");
+	assert(ret == 0);
+
 	ret = conf_set_string(conf, "section1", "key1", "foobar");
 	assert(ret == EINVAL);
 
+	ret = conf_set_integer(conf, "section1", "key2", 10);
+	assert(ret == 0);
+
 	ret = conf_set_integer(conf, "section1", "key2", 20);
 	assert(ret == EINVAL);
+
+	ret = conf_set_boolean(conf, "section1", "key3", true);
+	assert(ret == 0);
 
 	ret = conf_set_boolean(conf, "section1", "key3", false);
 	assert(ret == EINVAL);
@@ -398,6 +409,45 @@ static void test9(const char *filename, bool ignore_unknown)
 	exit(ret);
 }
 
+static void test11(const char *filename)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	char reload[PATH_MAX];
+	struct conf_context *conf;
+	int ret;
+	bool status;
+
+	ret = snprintf(reload, sizeof(reload), "%s.reload", filename);
+	assert(ret < sizeof(reload));
+
+	ret = conf_init(mem_ctx, &conf);
+	assert(ret == 0);
+	assert(conf != NULL);
+
+	conf_define_section(conf, "section1", NULL);
+
+	conf_define_string(conf, "section1", "key1", "value1", NULL);
+	conf_define_integer(conf, "section1", "key2", 10, NULL);
+	conf_define_boolean(conf, "section1", "key3", true, NULL);
+
+	status = conf_valid(conf);
+	assert(status == true);
+
+	ret = conf_load(conf, filename, false);
+	assert(ret == 0);
+
+	ret = rename(reload, filename);
+	assert(ret == 0);
+
+	ret = conf_reload(conf);
+	assert(ret == 0);
+
+	conf_dump(conf, stdout);
+
+	talloc_free(mem_ctx);
+	exit(ret);
+}
+
 int main(int argc, const char **argv)
 {
 	int num;
@@ -454,6 +504,9 @@ int main(int argc, const char **argv)
 		test9(argv[2], false);
 		break;
 
+	case 11:
+		test11(argv[2]);
+		break;
 	}
 
 	return 0;

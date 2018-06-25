@@ -32,7 +32,12 @@ unit_test conf_test 4
 ok_null
 unit_test conf_test 5
 
-ok_null
+ok <<EOF
+[section1]
+	key1 = foobar # temporary
+	key2 = 20 # temporary
+	key3 = false # temporary
+EOF
 unit_test conf_test 6
 
 ok <<EOF
@@ -77,7 +82,7 @@ ok <<EOF
 [section1]
 	key1 = value2
 	key2 = 20
-	key3 = false
+	# key3 = true
 EOF
 unit_test conf_test 9 "$conffile"
 
@@ -90,7 +95,7 @@ ok <<EOF
 [section1]
 	key1 = value2
 	# key2 = 10
-	key3 = false # temporary
+	# key3 = true
 EOF
 unit_test conf_test 9 "$conffile"
 
@@ -122,3 +127,40 @@ required_result 2 <<EOF
 	key3 = false # temporary
 EOF
 unit_test conf_test 10 "$conffile"
+
+cat > "$conffile" <<EOF
+[section1]
+    key1 = value2
+    key2 = 20
+    key3 = false
+EOF
+
+touch "${conffile}.reload"
+
+ok <<EOF
+[section1]
+	# key1 = value1
+	# key2 = 10
+	# key3 = true
+EOF
+unit_test conf_test 11 "$conffile"
+
+cat > "$conffile" <<EOF
+[section1]
+    key1 = value2
+    key2 = 20
+    key3 = false
+EOF
+
+cat > "${conffile}.reload" <<EOF
+[section1]
+    key1 = value3
+EOF
+
+ok <<EOF
+[section1]
+	key1 = value3
+	# key2 = 10
+	# key3 = true
+EOF
+unit_test conf_test 11 "$conffile"
