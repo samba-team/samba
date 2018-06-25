@@ -249,9 +249,6 @@ void audit_message_send(
 	 */
 	status = get_event_server(msg_ctx, server_name, &event_server);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("get_event_server for %s returned (%s)\n",
-			server_name,
-			nt_errstr(status));
 		TALLOC_FREE(ctx);
 		return;
 	}
@@ -270,9 +267,6 @@ void audit_message_send(
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		status = get_event_server(msg_ctx, server_name, &event_server);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("get_event_server for %s returned (%s)\n",
-				server_name,
-				nt_errstr(status));
 			TALLOC_FREE(ctx);
 			return;
 		}
