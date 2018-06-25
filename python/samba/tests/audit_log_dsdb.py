@@ -150,8 +150,10 @@ class AuditLogDsdbTests(AuditLogTestBase):
                                  self.remoteAddress)
         session_id = self.get_session()
         self.assertEquals(session_id, audit["sessionId"])
-        service_description = self.get_service_description()
-        self.assertEquals(service_description, "DCE/RPC")
+        # We skip the check for self.get_service_description() as this
+        # is subject to a race between smbd and the s4 rpc_server code
+        # as to which will set the description as it is DCE/RPC over SMB
+
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
         attributes = audit["attributes"]
@@ -189,8 +191,10 @@ class AuditLogDsdbTests(AuditLogTestBase):
                                  self.remoteAddress)
         session_id = self.get_session()
         self.assertEquals(session_id, audit["sessionId"])
-        service_description = self.get_service_description()
-        self.assertEquals(service_description, "DCE/RPC")
+        # We skip the check for self.get_service_description() as this
+        # is subject to a race between smbd and the s4 rpc_server code
+        # as to which will set the description as it is DCE/RPC over SMB
+
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
         attributes = audit["attributes"]
@@ -434,8 +438,11 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEquals(session_id, audit["sessionId"])
-        service_description = self.get_service_description()
-        self.assertEquals(service_description, "DCE/RPC")
+
+        # We skip the check for self.get_service_description() as this
+        # is subject to a race between smbd and the s4 rpc_server code
+        # as to which will set the description as it is DCE/RPC over SMB
+
         attributes = audit["attributes"]
         self.assertEquals(2, len(attributes))
 
@@ -480,8 +487,11 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEquals(session_id, audit["sessionId"])
-        service_description = self.get_service_description()
-        self.assertEquals(service_description, "DCE/RPC")
+
+        # We skip the check for self.get_service_description() as this
+        # is subject to a race between smbd and the s4 rpc_server code
+        # as to which will set the description as it is DCE/RPC over SMB
+
 
     def test_modify(self):
 
