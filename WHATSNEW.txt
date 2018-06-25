@@ -11,6 +11,57 @@ Changes since 4.8.2:
 --------------------
 
 o  Jeremy Allison <jra@samba.org>
+   * BUG 13428: s3: smbd: Fix SMB2-FLUSH against directories.
+   * BUG 13457: s3: smbd: printing: Re-implement delete-on-close semantics for
+     print files missing since 3.5.x.
+   * BUG 13474: python: Fix talloc frame use in make_simple_acl().
+
+o  Jeffrey Altman <jaltman@secure-endpoints.com>
+   * BUG 11573: heimdal: lib/krb5: Do not fail set_config_files due to parse
+     error.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * ldb: version 1.3.4
+   * BUG 13448: ldb: One-level search was incorrectly falling back to full DB
+     scan.
+   * BUG 13452: ldb: Save a copy of the index result before calling the
+     callbacks.
+   * BUG 13454: No Backtrace given by Samba's AD DC by default.
+   * BUG 13471: ldb_tdb: Use mem_ctx and so avoid leak onto long-term memory
+     on duplicated add.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13432: s3:smbd: Fix interaction between chown and SD flags.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13437: Fix building Samba with gcc 8.1.
+
+o  Andrej Gessel <Andrej.Gessel@janztec.com>
+   * BUG 13475: Fix several mem leaks in ldb_index ldb_search ldb_tdb.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13331: libgpo: Fix the build --without-ads.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13369: Looking up the user using the UPN results in user name with the
+     REALM instead of the DOMAIN.
+   * BUG 13427: Fix broken server side GENSEC_FEATURE_LDAP_STYLE handling
+     (NTLMSSP NTLM2 packet check failed due to invalid signature!).
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13446: smbd: Flush dfree memcache on service reload.
+   * BUG 13478: krb5_wrap: Fix keep_old_entries logic for older Kerberos
+     libraries.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13369: Looking up the user using the UPN results in user name with the
+     REALM instead of the DOMAIN.
+   * BUG 13437: Fix building Samba with gcc 8.1.
+   * BUG 13440: s3:utils: Do not segfault on error in DoDNSUpdate().
+   * BUG 13480: krb5_plugin: Add winbind localauth plugin for MIT Kerberos.
+
+o  Lukas Slebodnik <lslebodn@fedoraproject.org>
+   * BUG 13459: ldb: Fix memory leak on module context.
 
 
 #######################################
