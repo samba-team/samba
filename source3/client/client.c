@@ -52,6 +52,7 @@ static int port = 0;
 static char *service;
 static char *desthost;
 static bool grepable = false;
+static bool quiet = false;
 static char *cmdstr = NULL;
 const char *cmd_ptr = NULL;
 
@@ -6059,7 +6060,9 @@ static int process_stdin(void)
 {
 	int rc = 0;
 
-	d_printf("Try \"help\" to get a list of possible commands.\n");
+	if (!quiet) {
+		d_printf("Try \"help\" to get a list of possible commands.\n");
+	}
 
 	while (!finished) {
 		TALLOC_CTX *frame = talloc_stackframe();
@@ -6329,6 +6332,7 @@ int main(int argc,char *argv[])
 		{ "timeout", 't', POPT_ARG_INT, &io_timeout, 'b', "Changes the per-operation timeout", "SECONDS" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
+		{ "quiet", 'q', POPT_ARG_NONE, NULL, 'q', "Suppress help message" },
                 { "browse", 'B', POPT_ARG_NONE, NULL, 'B', "Browse SMB servers using DNS" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
@@ -6450,6 +6454,9 @@ int main(int argc,char *argv[])
 			break;
 		case 'g':
 			grepable=true;
+			break;
+		case 'q':
+			quiet=true;
 			break;
 		case 'e':
 			smb_encrypt=true;
