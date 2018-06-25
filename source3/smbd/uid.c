@@ -335,7 +335,8 @@ static bool change_to_user_internal(connection_struct *conn,
 	 * See if we should force group for this service. If so this overrides
 	 * any group set in the force user code.
 	 */
-	if((group_c = *lp_force_group(talloc_tos(), snum))) {
+	group_c = *lp_force_group(snum);
+	if (group_c != '\0') {
 
 		SMB_ASSERT(conn->force_group_gid != (gid_t)-1);
 
