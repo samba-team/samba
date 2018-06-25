@@ -1530,6 +1530,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 		 const char *user, const char *pszHomedir)
 {
 	int i;
+	char *global_path;
 
 	if (pszHomename == NULL || user == NULL || pszHomedir == NULL ||
 			pszHomedir[0] == '\0') {
@@ -1541,12 +1542,13 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	if (i < 0)
 		return false;
 
+	global_path = lp_path(talloc_tos(), GLOBAL_SECTION_SNUM);
 	if (!(*(ServicePtrs[iDefaultService]->path))
-	    || strequal(ServicePtrs[iDefaultService]->path,
-			lp_path(talloc_tos(), GLOBAL_SECTION_SNUM))) {
+	    || strequal(ServicePtrs[iDefaultService]->path, global_path)) {
 		lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->path,
 				 pszHomedir);
 	}
+	TALLOC_FREE(global_path);
 
 	if (!(*(ServicePtrs[i]->comment))) {
 		char *comment = talloc_asprintf(talloc_tos(), "Home directory of %s", user);
@@ -4156,6 +4158,7 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 		fprintf(f,"\n");
 		lp_dump_one(f, show_defaults, iService);
 	}
+	TALLOC_FREE(lp_ctx);
 }
 
 /***************************************************************************
@@ -4209,7 +4212,7 @@ int lp_servicenumber(const char *pszServiceName)
 
 		if (!usershare_exists(iService, &last_mod)) {
 			/* Remove the share security tdb entry for it. */
-			delete_share_security(lp_servicename(talloc_tos(), iService));
+			delete_share_security(lp_const_servicename(iService));
 			/* Remove it from the array. */
 			free_service_byindex(iService);
 			/* Doesn't exist anymore. */
@@ -4526,10 +4529,10 @@ void widelinks_warning(int snum)
 	}
 
 	if (lp_unix_extensions() && lp_wide_links(snum)) {
-		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
+		DBG_ERR("Share '%s' has wide links and unix extensions enabled. "
 			"These parameters are incompatible. "
 			"Wide links will be disabled for this share.\n",
-			 lp_servicename(talloc_tos(), snum) ));
+			 lp_const_servicename(snum));
 	}
 }
 
