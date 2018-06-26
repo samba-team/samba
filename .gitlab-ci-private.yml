@@ -1,12 +1,15 @@
 # see https://docs.gitlab.com/ce/ci/yaml/README.html for all available options
 
+image: registry.gitlab.com/samba-team/samba:latest
+
 before_script:
   - echo "Build starting ..."
 
 build_samba:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - private
   script:
     # this one takes about 4 hours to finish
     - python script/autobuild.py samba            --verbose --tail --testbase /tmp/samba-testbase
@@ -14,7 +17,8 @@ build_samba:
 build_samba_others:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - private
   script:
     - python script/autobuild.py samba-nopython   --verbose --tail --testbase /tmp/samba-testbase
     - python script/autobuild.py samba-systemkrb5 --verbose --tail --testbase /tmp/samba-testbase
@@ -26,7 +30,8 @@ build_samba_others:
 build_ctdb:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - private
   script:
     - python script/autobuild.py samba-ctdb       --verbose --tail --testbase /tmp/samba-testbase
     - python script/autobuild.py ctdb             --verbose --tail --testbase /tmp/samba-testbase
@@ -34,7 +39,8 @@ build_ctdb:
 build_others:
   stage: build
   tags:
-    - autobuild
+    - docker
+    - private
   script:
     - python script/autobuild.py ldb              --verbose --tail --testbase /tmp/samba-testbase
     - python script/autobuild.py pidl             --verbose --tail --testbase /tmp/samba-testbase
