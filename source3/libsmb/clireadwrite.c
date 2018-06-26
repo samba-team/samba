@@ -1459,6 +1459,7 @@ static NTSTATUS cli_splice_fallback(TALLOC_CTX *frame,
 	uint8_t *buf = talloc_size(frame, SPLICE_BLOCK_SIZE);
 	size_t nread;
 	off_t remaining = initial_size;
+	*written = 0;
 
 	while (remaining) {
 		status = cli_read(srccli, src_fnum,
@@ -1480,6 +1481,7 @@ static NTSTATUS cli_splice_fallback(TALLOC_CTX *frame,
 		}
 		src_offset += nread;
 		dst_offset += nread;
+		*written += nread;
 		if (remaining < nread) {
 			return NT_STATUS_INTERNAL_ERROR;
 		}
