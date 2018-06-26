@@ -39,23 +39,51 @@ static TDB_DATA strace_parser(char *buf, TALLOC_CTX *mem_ctx)
 
 	while (i < strlen(buf)) {
 		if (buf[i] == '\\') {
-			char tmp[4] = { '\0', '\0', '\0', '\0' };
+			/* first char after '\' is a digit or other escape */
+			if (isdigit(buf[i+1])) {
+				char tmp[4] = { '\0', '\0', '\0', '\0' };
 
-			/* first char after '\' has to be digit */
-			tmp[0] = buf[i+1];
-			if (isdigit(buf[i+2])) {
-				tmp[1] = buf[i+2];
-				if (isdigit(buf[i+3])) {
-					tmp[2] = buf[i+3];
-					i += 4;
+				tmp[0] = buf[i+1];
+				if (isdigit(buf[i+2])) {
+					tmp[1] = buf[i+2];
+					if (isdigit(buf[i+3])) {
+						tmp[2] = buf[i+3];
+						i += 4;
+					} else {
+						i += 3;
+					}
 				} else {
-					i += 3;
+					i += 2;
 				}
-			} else {
+				data.dptr[j] = strtol(tmp, NULL, 8);
+			} else if (buf[i+1] == 'a') {
+				data.dptr[j] = 7;
 				i += 2;
+			} else if (buf[i+1] == 'b') {
+				data.dptr[j] = 8;
+				i += 2;
+			} else if (buf[i+1] == 't') {
+				data.dptr[j] = 9;
+				i += 2;
+			} else if (buf[i+1] == 'n') {
+				data.dptr[j] = 10;
+				i += 2;
+			} else if (buf[i+1] == 'v') {
+				data.dptr[j] = 11;
+				i += 2;
+			} else if (buf[i+1] == 'f') {
+				data.dptr[j] = 12;
+				i += 2;
+			} else if (buf[i+1] == 'r') {
+				data.dptr[j] = 13;
+				i += 2;
+			} else {
+				fprintf(stderr,
+					"Unknown escape \\%c\n",
+					buf[i+1]);
+				data.dptr[j] = 0;
 			}
 
-			data.dptr[j] = strtol(tmp, NULL, 8);
 			j += 1;
 		} else if (buf[i] == '\n') {
 			i += 1;
