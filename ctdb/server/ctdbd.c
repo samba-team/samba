@@ -234,6 +234,7 @@ int main(int argc, const char *argv[])
 	/* Log to stderr (ignoring configuration) when running as interactive */
 	if (interactive) {
 		logging_location = "file:";
+		setenv("CTDB_INTERACTIVE", "true", 1);
 	} else {
 		logging_location = logging_conf_location(conf);
 	}
