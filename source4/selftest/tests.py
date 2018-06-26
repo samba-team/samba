@@ -771,6 +771,8 @@ planoldpythontestsuite("ad_dc_ntvfs",
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.blackbox.traffic_summary",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("none", "samba.tests.loadparm")
+
 #
 # Want a selection of environments across the process models
 #
