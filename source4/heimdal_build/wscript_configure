@@ -176,7 +176,10 @@ if krb5_config:
             if l.startswith("libdir="):
                 heimdal_libdirs.append(l.strip()[len("libdir="):])
             elif l.startswith("includedir="):
-                heimdal_includedirs.append(l.strip()[len("includedir="):])
+                include_path = l.strip()[len("includedir="):]
+                heimdal_includedirs.append(include_path)
+                conf.define('HEIMDAL_KRB5_TYPES_PATH',
+                            include_path + "/krb5-types.h")
     finally:
         f.close()
 
