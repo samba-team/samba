@@ -22,7 +22,7 @@ import samba
 import subprocess
 import os
 
-def tdb_copy(file1, file2):
+def tdb_copy(file1, file2, readonly=False):
     """Copy tdb file using tdbbackup utility and rename it
     """
     # Find the location of tdbbackup tool
@@ -33,9 +33,9 @@ def tdb_copy(file1, file2):
             break
 
     tdbbackup_cmd = [toolpath, "-s", ".copy.tdb", file1]
-    status = subprocess.call(tdbbackup_cmd, close_fds=True, shell=False)
+    if readonly:
+        tdbbackup_cmd.append("-r")
 
-    if status == 0:
-        os.rename("%s.copy.tdb" % file1, file2)
-    else:
-        raise Exception("Error copying %s" % file1)
+    status = subprocess.check_call(tdbbackup_cmd, close_fds=True, shell=False)
+
+    os.rename("%s.copy.tdb" % file1, file2)

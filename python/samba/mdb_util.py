@@ -32,9 +32,6 @@ def mdb_copy(file1, file2):
             break
 
     mdb_copy_cmd = [toolpath, "-n", file1, "%s.copy.mdb" % file1]
-    status = subprocess.call(mdb_copy_cmd, close_fds=True, shell=False)
+    status = subprocess.check_call(mdb_copy_cmd, close_fds=True, shell=False)
 
-    if status == 0:
-        os.rename("%s.copy.mdb" % file1, file2)
-    else:
-        raise Exception("Error copying %d  %s" % (status, file1))
+    os.rename("%s.copy.mdb" % file1, file2)

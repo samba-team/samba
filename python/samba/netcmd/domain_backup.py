@@ -23,11 +23,12 @@ import logging
 import shutil
 import tempfile
 import samba
+import tdb
 import samba.getopt as options
 from samba.samdb import SamDB
 import ldb
 from samba import smb
-from samba.ntacls import backup_online, backup_restore
+from samba.ntacls import backup_online, backup_restore, backup_offline
 from samba.auth import system_session
 from samba.join import DCJoinContext, join_clone, DCCloneAndRenameContext
 from samba.dcerpc.security import dom_sid
@@ -45,6 +46,11 @@ from samba.provision import guess_names, determine_host_ip, determine_host_ip6
 from samba.provision.sambadns import (fill_dns_data_partitions,
                                       get_dnsadmins_sid,
                                       get_domainguid)
+from samba.tdb_util import tdb_copy
+from samba.mdb_util import mdb_copy
+import errno
+import tdb
+from subprocess import CalledProcessError
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.
@@ -772,8 +778,234 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         shutil.rmtree(tmpdir)
 
 
+class cmd_domain_backup_offline(samba.netcmd.Command):
+    '''Backup the local domain directories safely into a tar file.
+
+    Takes a backup copy of the current domain from the local files on disk,
+    with proper locking of the DB to ensure consistency. If the domain were to
+    undergo a catastrophic failure, then the backup file can be used to recover
+    the domain.
+
+    An offline backup differs to an online backup in the following ways:
+    - a backup can be created even if the DC isn't currently running.
+    - includes non-replicated attributes that an online backup wouldn't store.
+    - takes a copy of the raw database files, which has the risk that any
+      hidden problems in the DB are preserved in the backup.'''
+
+    synopsis = "%prog [options]"
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+    }
+
+    takes_options = [
+        Option("--targetdir",
+               help="Output directory (required)",
+               type=str),
+    ]
+
+    backup_ext = '.bak-offline'
+
+    def offline_tdb_copy(self, path):
+        backup_path = path + self.backup_ext
+        try:
+            tdb_copy(path, backup_path, readonly=True)
+        except CalledProcessError as copy_err:
+            # If the copy didn't work, check if it was caused by an EINVAL
+            # error on opening the DB.  If so, it's a mutex locked database,
+            # which we can safely ignore.
+            try:
+                tdb.open(path)
+            except Exception as e:
+                if hasattr(e, 'errno') and e.errno == errno.EINVAL:
+                    return
+                raise e
+            raise copy_err
+        if not os.path.exists(backup_path):
+            s = "tdbbackup said backup succeeded but {} not found"
+            raise CommandError(s.format(backup_path))
+
+    def offline_mdb_copy(self, path):
+        mdb_copy(path, path + self.backup_ext)
+
+    # Secrets databases are a special case: a transaction must be started
+    # on the secrets.ldb file before backing up that file and secrets.tdb
+    def backup_secrets(self, private_dir, lp, logger):
+        secrets_path = os.path.join(private_dir, 'secrets')
+        secrets_obj = Ldb(secrets_path + '.ldb', lp=lp)
+        logger.info('Starting transaction on ' + secrets_path)
+        secrets_obj.transaction_start()
+        self.offline_tdb_copy(secrets_path + '.ldb')
+        self.offline_tdb_copy(secrets_path + '.tdb')
+        secrets_obj.transaction_cancel()
+
+    # sam.ldb must have a transaction started on it before backing up
+    # everything in sam.ldb.d with the appropriate backup function.
+    def backup_smb_dbs(self, private_dir, samdb, lp, logger):
+        # First, determine if DB backend is MDB.  Assume not unless there is a
+        # 'backendStore' attribute on @PARTITION containing the text 'mdb'
+        store_label = "backendStore"
+        res = samdb.search(base="@PARTITION", scope=ldb.SCOPE_BASE,
+                           attrs=[store_label])
+        mdb_backend = store_label in res[0] and res[0][store_label][0] == 'mdb'
+
+        sam_ldb_path = os.path.join(private_dir, 'sam.ldb')
+        copy_function = None
+        if mdb_backend:
+            logger.info('MDB backend detected.  Using mdb backup function.')
+            copy_function = self.offline_mdb_copy
+        else:
+            logger.info('Starting transaction on ' + sam_ldb_path)
+            copy_function = self.offline_tdb_copy
+            sam_obj = Ldb(sam_ldb_path, lp=lp)
+            sam_obj.transaction_start()
+
+        logger.info('   backing up ' + sam_ldb_path)
+        self.offline_tdb_copy(sam_ldb_path)
+        sam_ldb_d = sam_ldb_path + '.d'
+        for sam_file in os.listdir(sam_ldb_d):
+            sam_file = os.path.join(sam_ldb_d, sam_file)
+            if sam_file.endswith('.ldb'):
+                logger.info('   backing up locked/related file ' + sam_file)
+                copy_function(sam_file)
+            else:
+                logger.info('   copying locked/related file ' + sam_file)
+                shutil.copyfile(sam_file, sam_file + self.backup_ext)
+
+        if not mdb_backend:
+            sam_obj.transaction_cancel()
+
+    # Find where a path should go in the fixed backup archive structure.
+    def get_arc_path(self, path, conf_paths):
+        backup_dirs = {"private": conf_paths.private_dir,
+                       "statedir": conf_paths.state_dir,
+                       "etc": os.path.dirname(conf_paths.smbconf)}
+        matching_dirs = [(_, p) for (_, p) in backup_dirs.items() if
+                         path.startswith(p)]
+        arc_path, fs_path = matching_dirs[0]
+
+        # If more than one directory is a parent of this path, then at least
+        # one configured path is a subdir of another. Use closest match.
+        if len(matching_dirs) > 1:
+            arc_path, fs_path = max(matching_dirs, key=lambda (_, p): len(p))
+        arc_path += path[len(fs_path):]
+
+        return arc_path
+
+    def run(self, sambaopts=None, targetdir=None):
+
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+
+        # Get the absolute paths of all the directories we're going to backup
+        lp = sambaopts.get_loadparm()
+
+        paths = samba.provision.provision_paths_from_lp(lp, lp.get('realm'))
+        if not (paths.samdb and os.path.exists(paths.samdb)):
+            raise CommandError('No sam.db found.  This backup ' +
+                               'tool is only for AD DCs')
+
+        check_targetdir(logger, targetdir)
+
+        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
+        sid = get_sid_for_restore(samdb)
+
+        backup_dirs = [paths.private_dir, paths.state_dir,
+                       os.path.dirname(paths.smbconf)]  # etc dir
+        logger.info('running backup on dirs: {}'.format(backup_dirs))
+
+        # Recursively get all file paths in the backup directories
+        all_files = []
+        for backup_dir in backup_dirs:
+            for (working_dir, _, filenames) in os.walk(backup_dir):
+                if working_dir.startswith(paths.sysvol):
+                    continue
+
+                for filename in filenames:
+                    if filename in all_files:
+                        continue
+
+                    # Assume existing backup files are from a previous backup.
+                    # Delete and ignore.
+                    if filename.endswith(self.backup_ext):
+                        os.remove(os.path.join(working_dir, filename))
+                        continue
+                    all_files.append(os.path.join(working_dir, filename))
+
+        # Backup secrets, sam.ldb and their downstream files
+        self.backup_secrets(paths.private_dir, lp, logger)
+        self.backup_smb_dbs(paths.private_dir, samdb, lp, logger)
+
+        # Open the new backed up samdb, flag it as backed up, and write
+        # the next SID so the restore tool can add objects.
+        # WARNING: Don't change this code unless you know what you're doing.
+        #          Writing to a .bak file only works because the DN being
+        #          written to happens to be top level.
+        samdb = SamDB(url=paths.samdb + self.backup_ext,
+                      session_info=system_session(), lp=lp)
+        time_str = get_timestamp()
+        add_backup_marker(samdb, "backupDate", time_str)
+        add_backup_marker(samdb, "sidForRestore", sid)
+
+        # Now handle all the LDB and TDB files that are not linked to
+        # anything else.  Use transactions for LDBs.
+        for path in all_files:
+            if not os.path.exists(path + self.backup_ext):
+                if path.endswith('.ldb'):
+                    logger.info('Starting transaction on solo db: ' + path)
+                    ldb_obj = Ldb(path, lp=lp)
+                    ldb_obj.transaction_start()
+                    logger.info('   running tdbbackup on the same file')
+                    self.offline_tdb_copy(path)
+                    ldb_obj.transaction_cancel()
+                elif path.endswith('.tdb'):
+                    logger.info('running tdbbackup on lone tdb file ' + path)
+                    self.offline_tdb_copy(path)
+
+        # Now make the backup tar file and add all
+        # backed up files and any other files to it.
+        temp_tar_dir = tempfile.mkdtemp(dir=targetdir,
+                                        prefix='INCOMPLETEsambabackupfile')
+        temp_tar_name = os.path.join(temp_tar_dir, "samba-backup.tar.bz2")
+        tar = tarfile.open(temp_tar_name, 'w:bz2')
+
+        logger.info('running offline ntacl backup of sysvol')
+        sysvol_tar_fn = 'sysvol.tar.gz'
+        sysvol_tar = os.path.join(temp_tar_dir, sysvol_tar_fn)
+        backup_offline(paths.sysvol, sysvol_tar, samdb, paths.smbconf)
+        tar.add(sysvol_tar, sysvol_tar_fn)
+        os.remove(sysvol_tar)
+
+        create_log_file(temp_tar_dir, lp, "offline", "localhost", True)
+        backup_fn = os.path.join(temp_tar_dir, "backup.txt")
+        tar.add(backup_fn, os.path.basename(backup_fn))
+        os.remove(backup_fn)
+
+        logger.info('building backup tar')
+        for path in all_files:
+            arc_path = self.get_arc_path(path, paths)
+
+            if os.path.exists(path + self.backup_ext):
+                logger.info('   adding backup ' + arc_path + self.backup_ext +
+                            ' to tar and deleting file')
+                tar.add(path + self.backup_ext, arcname=arc_path)
+                os.remove(path + self.backup_ext)
+            elif path.endswith('.ldb') or path.endswith('.tdb'):
+                logger.info('   skipping ' + arc_path)
+            else:
+                logger.info('   adding misc file ' + arc_path)
+                tar.add(path, arcname=arc_path)
+
+        tar.close()
+        os.rename(temp_tar_name, os.path.join(targetdir,
+                  'samba-backup-{}.tar.bz2'.format(time_str)))
+        os.rmdir(temp_tar_dir)
+        logger.info('Backup succeeded.')
+
+
 class cmd_domain_backup(samba.netcmd.SuperCommand):
     '''Create or restore a backup of the domain.'''
-    subcommands = {'online': cmd_domain_backup_online(),
+    subcommands = {'offline': cmd_domain_backup_offline(),
+                   'online': cmd_domain_backup_online(),
                    'rename': cmd_domain_backup_rename(),
                    'restore': cmd_domain_backup_restore()}

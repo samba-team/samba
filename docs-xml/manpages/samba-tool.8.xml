@@ -297,6 +297,11 @@
 </refsect3>
 
 <refsect3>
+	<title>domain backup offline</title>
+	<para>Backup (with proper locking) local domain directories into a tar file.</para>
+</refsect3>
+
+<refsect3>
 	<title>domain backup online</title>
 	<para>Copy a running DC's current DB into a backup tar file.</para>
 </refsect3>
