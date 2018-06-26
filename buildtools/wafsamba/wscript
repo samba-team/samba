@@ -332,7 +332,7 @@ def configure(conf):
         conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
                                      not Options.options.disable_rpath_install)
         if not conf.env.PRIVATELIBDIR:
-            conf.env.PRIVATELIBDIR = '%s/%s' % (conf.env.LIBDIR, Utils.g_module.APPNAME)
+            conf.env.PRIVATELIBDIR = '%s/%s' % (conf.env.LIBDIR, Context.g_module.APPNAME)
         conf.env.RPATH_ON_INSTALL_PRIVATE = (
             not Options.options.disable_rpath_private_install)
     else:
