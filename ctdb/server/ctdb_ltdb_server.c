@@ -1105,9 +1105,12 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
 /*
   a client has asked to attach a new database
  */
-int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
+int32_t ctdb_control_db_attach(struct ctdb_context *ctdb,
+			       TDB_DATA indata,
 			       TDB_DATA *outdata,
-			       uint8_t db_flags, uint32_t client_id,
+			       uint8_t db_flags,
+			       uint32_t srcnode,
+			       uint32_t client_id,
 			       struct ctdb_req_control_old *c,
 			       bool *async_reply)
 {
@@ -1128,7 +1131,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	 * allow all attach from the network since these are always from remote
 	 * recovery daemons.
 	 */
-	if (client_id != 0) {
+	if (srcnode == ctdb->pnn && client_id != 0) {
 		client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	}
 	if (client != NULL) {
