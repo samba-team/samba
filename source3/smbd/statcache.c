@@ -73,7 +73,7 @@ void stat_cache_add( const char *full_orig_name,
 	 * would be a waste.
 	 */
 
-	if (case_sensitive && (strcmp(full_orig_name, translated_path) == 0)) {
+	if (!case_sensitive && (strcmp(full_orig_name, translated_path) == 0)) {
 		return;
 	}
 
