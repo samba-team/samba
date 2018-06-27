@@ -118,8 +118,8 @@ class cross_Popen(Utils.subprocess.Popen):
             newargs.extend(args[0:i])
             if use_answers:
                 p = real_Popen(newargs,
-                               stdout=Utils.pproc.PIPE,
-                               stderr=Utils.pproc.PIPE)
+                               stdout=Utils.subprocess.PIPE,
+                               stderr=Utils.subprocess.PIPE)
                 ce_out, ce_err = p.communicate()
                 ans = (p.returncode, ce_out)
                 add_answer(ca_file, msg, ans)
@@ -144,8 +144,8 @@ def SAMBA_CROSS_ARGS(conf, msg=None):
 
     global real_Popen
     if real_Popen is None:
-        real_Popen  = Utils.pproc.Popen
-        Utils.pproc.Popen = cross_Popen
+        real_Popen  = Utils.subprocess.Popen
+        Utils.subprocess.Popen = cross_Popen
 
     ret = []
 
