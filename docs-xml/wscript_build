@@ -103,7 +103,7 @@ pam_winbind_manpages = '''
                        manpages/pam_winbind.conf.5
                        '''
 
-krb5_locator_manpages = 'manpages/winbind_krb5_locator.7'
+krb5_locator_manpages = 'manpages/winbind_krb5_locator.8'
 
 def smbdotconf_generate_parameter_list(task):
     parameter_all = task.outputs[0].bldpath(task.env)
