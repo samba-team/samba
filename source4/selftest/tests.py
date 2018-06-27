@@ -641,6 +641,10 @@ planoldpythontestsuite(
     "ad_dc_ntvfs:local", "samba.tests.dcerpc.registry",
     extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 
+planoldpythontestsuite(
+    "ad_dc:local", "samba.tests.ntacls_backup",
+    extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+
 planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("chgdcpass", "samba.tests.dcerpc.raw_protocol", extra_args=['-U"$USERNAME%$PASSWORD"'])
