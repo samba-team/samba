@@ -32,7 +32,7 @@ matrix:
 
 before_install:
  - sudo apt-get update -qq
- - sudo apt-get install --assume-yes acl attr autoconf bind9utils bison build-essential debhelper dnsutils docbook-xml docbook-xsl flex gdb libjansson-dev krb5-user libacl1-dev libaio-dev libarchive-dev libattr1-dev libblkid-dev libbsd-dev libcap-dev libcups2-dev libgnutls-dev libgpgme11-dev libjson-perl libldap2-dev libncurses5-dev libpam0g-dev libparse-yapp-perl libpopt-dev libreadline-dev nettle-dev perl perl-modules pkg-config python-all-dev python-crypto python-dbg python-dev python-dnspython python3-dnspython python-gpgme python3-gpgme python-markdown python3-markdown python3-dev xsltproc zlib1g-dev
+ - sudo apt-get install --assume-yes acl attr autoconf bind9utils bison build-essential ccache curl debhelper dnsutils docbook-xml docbook-xsl emacs24-nox flex gdb git htop jed krb5-user libacl1-dev libaio-dev libarchive-dev libattr1-dev libblkid-dev libbsd-dev libcap-dev libcups2-dev libgnutls-dev libgpgme11-dev libjansson-dev libjson-perl libldap2-dev liblmdb-dev/trusty-backports libncurses5-dev libpam0g-dev libparse-yapp-perl libpopt-dev libreadline-dev linux-tools-generic lmdb-utils/trusty-backports nettle-dev perl perl-modules pkg-config psmisc python3-dev python3-dnspython python3-gpgme python3-markdown python3-matplotlib python-all-dev python-crypto python-crypto python-dbg python-dev python-dnspython python-gpgme python-markdown python-novaclient python-pexpect rng-tools screen tshark xsltproc zlib1g-dev
  - sudo apt-get install --assume-yes binutils-gold
  - sudo update-alternatives --install "/usr/bin/ld" "ld" "/usr/bin/ld.gold" 20
  - sudo update-alternatives --install "/usr/bin/ld" "ld" "/usr/bin/ld.bfd" 10
