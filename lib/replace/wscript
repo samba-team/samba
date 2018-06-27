@@ -632,6 +632,10 @@ removeea setea
                                 headers='sys/socket.h netinet/in.h',
                                 define='HAVE_SOCK_SIN_LEN')
 
+    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_in6', 'sin6_len',
+                                headers='sys/socket.h netinet/in.h',
+                                define='HAVE_SOCK_SIN6_LEN')
+
     conf.CHECK_CODE('struct sockaddr_un sunaddr; sunaddr.sun_family = AF_UNIX;',
                     define='HAVE_UNIXSOCKET', headers='sys/socket.h sys/un.h')
 
