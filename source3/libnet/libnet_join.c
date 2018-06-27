@@ -2868,6 +2868,8 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 			return ntstatus_to_werror(status);
 		}
 
+		r->out.dns_domain_name = talloc_strdup(mem_ctx,
+				                      r->in.domain_name);
 		r->out.disabled_machine_account = true;
 	}
 

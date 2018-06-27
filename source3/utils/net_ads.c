@@ -964,7 +964,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
-			   "net ads leave\n"
+			   "net ads leave [--keep-account]\n"
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Leave an AD domain"));
@@ -1009,7 +1009,12 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	   WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE really means "disable */
 	r->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
-	r->in.delete_machine_account = true;
+	if (c->opt_keep_account) {
+		r->in.delete_machine_account = false;
+	} else {
+		r->in.delete_machine_account = true;
+	}
+
 	r->in.msg_ctx		= c->msg_ctx;
 
 	werr = libnet_Unjoin(ctx, r);

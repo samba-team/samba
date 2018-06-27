@@ -377,6 +377,13 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>--keep-account</term>
+		<listitem><para>Prevent the machine account removal as
+		part of "net ads leave".
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
@@ -1276,7 +1283,7 @@ against an NT4 Domain Controller.
 </refsect2>
 
 <refsect2>
-<title>ADS LEAVE</title>
+<title>ADS LEAVE [--keep-account]</title>
 
 <para>Make the remote host leave the domain it is part of. </para>
 
