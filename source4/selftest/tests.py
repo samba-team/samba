@@ -861,6 +861,11 @@ plantestsuite("samba4.blackbox.supported_features", "none",
                os.path.join(samba4srcdir,
                             "setup/tests/blackbox_supported_features.sh"),
                '$PREFIX/provision'])
+plantestsuite("samba4.blackbox.start_backup", "none",
+              ["PYTHON=%s" % python,
+               os.path.join(samba4srcdir,
+                            "setup/tests/blackbox_start_backup.sh"),
+               '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.upgradeprovision.current", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_upgradeprovision.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.setpassword.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_setpassword.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.newuser.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_newuser.sh"), '$PREFIX/provision'])
