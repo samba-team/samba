@@ -2,17 +2,17 @@
 
 APPNAME = 'ctdb'
 
-blddir = 'bin'
-
 import sys, os
 
 # find the buildtools directory
-srcdir = '.'
-while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
-    srcdir = srcdir + '/..'
-sys.path.insert(0, srcdir + '/buildtools/wafsamba')
+top = '.'
+while not os.path.exists(top+'/buildtools') and len(top.split('/')) < 5:
+    top = top + '/..'
+sys.path.insert(0, top + '/buildtools/wafsamba')
 
-from waflib import Options, Logs, Errors
+out = 'bin'
+
+from waflib import Options, Logs, Errors, Context
 import wafsamba, samba_dist
 import samba_utils, samba_version
 
@@ -297,7 +297,7 @@ def configure(conf):
     if not conf.env.standalone_ctdb:
         conf.ADD_EXTRA_INCLUDES('#include/public #ctdb/include #ctdb')
     else:
-        if srcdir == '.':
+        if Context.g_module.top == '.':
             # Building from tarball
             conf.ADD_EXTRA_INCLUDES('#include')
         else:
@@ -1206,8 +1206,7 @@ def rpm(ctx):
 
 def ctags(ctx):
     "build 'tags' file using ctags"
-    from waflib import Utils
-    source_root = os.path.dirname(Utils.g_module.root_path)
+    source_root = os.path.dirname(Context.g_module.root_path)
     cmd = 'ctags $(find %s -name "*.[ch]")' % source_root
     print("Running: %s" % cmd)
     ret = samba_utils.RUN_COMMAND(cmd)
