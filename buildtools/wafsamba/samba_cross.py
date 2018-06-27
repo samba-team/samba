@@ -1,7 +1,7 @@
 # functions for handling cross-compilation
 
 import os, sys, re, shlex
-from waflib import Utils, Logs, Options, Errors
+from waflib import Utils, Logs, Options, Errors, Context
 from waflib.Configure import conf
 
 real_Popen = None
@@ -155,7 +155,7 @@ def SAMBA_CROSS_ARGS(conf, msg=None):
     if conf.env.CROSS_ANSWERS:
         if msg is None:
             raise Errors.WafError("Cannot have NULL msg in cross-answers")
-        ret.extend(['--cross-answers', os.path.join(Options.launch_dir, conf.env.CROSS_ANSWERS), msg])
+        ret.extend(['--cross-answers', os.path.join(Context.launch_dir, conf.env.CROSS_ANSWERS), msg])
 
     if ret == []:
         raise Errors.WafError("Cannot cross-compile without either --cross-execute or --cross-answers")
