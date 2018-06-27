@@ -169,7 +169,9 @@ def dist(appname='', version=''):
     if not version:
         version = Context.g_module.VERSION
 
-    srcdir = os.path.normpath(os.path.join(os.path.dirname(Context.g_module.root_path), Context.g_module.srcdir))
+    srcdir = os.path.normpath(
+                os.path.join(os.path.dirname(Context.g_module.root_path),
+                    Context.g_module.top))
 
     if not dist_dirs:
         Logs.error('You must use samba_dist.DIST_DIRS() to set which directories to package')
