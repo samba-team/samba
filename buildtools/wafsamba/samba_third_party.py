@@ -6,7 +6,7 @@ from waflib.Configure import conf
 
 @conf
 def CHECK_FOR_THIRD_PARTY(conf):
-    return os.path.exists(os.path.join(Context.g_module.srcdir, 'third_party'))
+    return os.path.exists(os.path.join(Context.g_module.top, 'third_party'))
 
 Build.BuildContext.CHECK_FOR_THIRD_PARTY = CHECK_FOR_THIRD_PARTY
 
