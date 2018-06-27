@@ -208,7 +208,11 @@ def cmd_testonly(opt):
     os.environ['CONFIG_H'] = 'bin/default/include/config.h'
 
     # tell the test system where perl is
-    os.environ['PERL'] = env.PERL
+    if isinstance(env.PERL, list):
+        perl = ' '.join(env.PERL)
+    else:
+        perl = env.PERL
+    os.environ['PERL'] = perl
 
     st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')
     if os.path.exists(st_done):
