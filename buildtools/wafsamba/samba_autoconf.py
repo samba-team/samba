@@ -491,7 +491,7 @@ def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n'):
                       execute=0,
                       mandatory=False,
                       type='nolink',
-                      ccflags=check_cflags,
+                      cflags=check_cflags,
                       msg="Checking compiler accepts %s" % cflags)
 
 @conf
@@ -690,7 +690,7 @@ def SAMBA_CONFIG_H(conf, path=None):
                                     }
                                     ''',
                                     execute=0,
-                                    ccflags=[ '-Werror', '-Wp,-D_FORTIFY_SOURCE=2', stack_protect_flag],
+                                    cflags=[ '-Werror', '-Wp,-D_FORTIFY_SOURCE=2', stack_protect_flag],
                                     mandatory=False,
                                     msg='Checking if compiler accepts %s' % (stack_protect_flag))
         if flag_supported:
@@ -708,7 +708,7 @@ def SAMBA_CONFIG_H(conf, path=None):
                                 }
                                 ''',
                                 execute=0,
-                                ccflags=[ '-Werror', '-fstack-clash-protection'],
+                                cflags=[ '-Werror', '-fstack-clash-protection'],
                                 mandatory=False,
                                 msg='Checking if compiler accepts -fstack-clash-protection')
     if flag_supported:
