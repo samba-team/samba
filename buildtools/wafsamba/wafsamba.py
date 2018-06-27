@@ -57,7 +57,7 @@ call the right version of waf.''')
 @conf
 def SAMBA_BUILD_ENV(conf):
     '''create the samba build environment'''
-    conf.env.BUILD_DIRECTORY = getattr(Context.g_module, Context.OUT)
+    conf.env.BUILD_DIRECTORY = conf.bldnode.abspath()
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, LIB_PATH))
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, LIB_PATH, "private"))
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, "modules"))
