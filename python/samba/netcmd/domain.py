@@ -821,7 +821,10 @@ class cmd_domain_demote(Command):
                             controls=["search_options:1:2"])
 
         if len(res) != 0:
-            raise CommandError("Current DC is still the owner of %d role(s), use the role command to transfer roles to another DC" % len(res))
+            raise CommandError("Current DC is still the owner of %d role(s), "
+                               "use the role command to transfer roles to "
+                               "another DC" %
+                               len(res))
 
         self.errf.write("Using %s as partner server for the demotion\n" %
                         server)
@@ -1012,9 +1015,13 @@ class cmd_domain_demote(Command):
             remote_samdb.modify(msg)
             remote_samdb.rename(newdn, dc_dn)
             if werr == werror.WERR_DS_DRA_NO_REPLICA:
-                raise CommandError("The DC %s is not present on (already removed from) the remote server: " % server_dsa_dn, e)
+                raise CommandError("The DC %s is not present on (already "
+                                   "removed from) the remote server: %s" %
+                                   (server_dsa_dn, e3))
             else:
-                raise CommandError("Error while sending a removeDsServer of %s: " % server_dsa_dn, e)
+                raise CommandError("Error while sending a removeDsServer "
+                                   "of %s: %s" %
+                                   (server_dsa_dn, e3))
 
         remove_dc.remove_sysvol_references(remote_samdb, logger, dc_name)
 
