@@ -154,7 +154,7 @@ static bool parse_ipv6(const char *s, const char *ifaces, unsigned port, ctdb_so
 		saddr->ip6.sin6_scope_id = if_nametoindex(ifaces);
 	}
 
-#ifdef HAVE_SOCK_SIN_LEN
+#ifdef HAVE_SOCK_SIN6_LEN
 	saddr->ip6.sin6_len = sizeof(*saddr);
 #endif
 	return true;

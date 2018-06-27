@@ -206,7 +206,7 @@ static int ipv6_from_string(const char *str, struct sockaddr_in6 *ip6)
 		return EINVAL;
 	}
 
-#ifdef HAVE_SOCK_SIN_LEN
+#ifdef HAVE_SOCK_SIN6_LEN
 	ip6->sin6_len = sizeof(*ip6);
 #endif
 	return 0;
