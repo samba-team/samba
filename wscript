@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-srcdir = '.'
-blddir = 'bin'
+top = '.'
+out = 'bin'
 
 APPNAME='samba'
 VERSION=None
 
 import sys, os, tempfile
-sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+sys.path.insert(0, top+"/buildtools/wafsamba")
 import shutil
 import wafsamba, samba_dist, samba_git, samba_version, samba_utils
-from waflib import Options, Scripting, Utils, Logs, Context
+from waflib import Options, Scripting, Logs, Context, Errors
 
 samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
@@ -33,13 +33,6 @@ def system_mitkrb5_callback(option, opt, value, parser):
         setattr(parser.values, option.dest, value)
 
 def options(opt):
-    # A bit of 'magic' as waf 2.x changed Options.options to be
-    # a different structure than just a dict and it cannot be
-    # filled before all options parsed
-    # ConfigurationContext looks for multiple places for these
-    # settings, including Context.OUT and Context.TOP
-    setattr(Context.g_module, Context.OUT, blddir)
-    setattr(Context.g_module, Context.TOP, srcdir)
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('lib/audit_logging')
@@ -123,10 +116,10 @@ def configure(conf):
         conf.env.DEVELOPER = True
         # if we are in a git tree without a pre-commit hook, install a
         # simple default.
-        pre_commit_hook = os.path.join(srcdir, '.git/hooks/pre-commit')
+        pre_commit_hook = os.path.join(Context.g_module.top, '.git/hooks/pre-commit')
         if (os.path.isdir(os.path.dirname(pre_commit_hook)) and
             not os.path.exists(pre_commit_hook)):
-            shutil.copy(os.path.join(srcdir, 'script/git-hooks/pre-commit-hook'),
+            shutil.copy(os.path.join(Context.g_module.top, 'script/git-hooks/pre-commit-hook'),
                         pre_commit_hook)
 
     conf.ADD_EXTRA_INCLUDES('#include/public #source4 #lib #source4/lib #source4/include #include #lib/replace')
@@ -142,7 +135,7 @@ def configure(conf):
 
     if conf.env.disable_python:
         if not (Options.options.without_ad_dc):
-            raise Utils.WafError('--disable-python requires --without-ad-dc')
+            raise Errors.WafError('--disable-python requires --without-ad-dc')
 
     conf.SAMBA_CHECK_PYTHON(mandatory=True, version=(2, 6, 0))
     conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=(not conf.env.disable_python))
@@ -159,7 +152,7 @@ def configure(conf):
         conf.ADD_LDFLAGS('-framework CoreFoundation')
 
     if int(conf.env['PYTHON_VERSION'][0]) >= 3:
-        raise Utils.WafError('Python version 3.x is not supported by Samba yet')
+        raise Errors.WafError('Python version 3.x is not supported by Samba yet')
 
     conf.RECURSE('dynconfig')
     conf.RECURSE('selftest')
@@ -168,43 +161,43 @@ def configure(conf):
         conf.RECURSE('third_party')
     else:
         if not conf.CHECK_ZLIB():
-            raise Utils.WafError('zlib development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
+            raise Errors.WafError('zlib development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:
             conf.define('USING_SYSTEM_ZLIB',1)
 
         if not conf.CHECK_POPT():
-            raise Utils.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
+            raise Errors.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:
             conf.define('USING_SYSTEM_POPT', 1)
 
         if not conf.CHECK_CMOCKA():
-            raise Utils.WafError('cmocka development packages has not been found.\nIf third_party is installed, check that it is in the proper place.')
+            raise Errors.WafError('cmocka development packages has not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:
             conf.define('USING_SYSTEM_CMOCKA', 1)
 
         if conf.CONFIG_GET('ENABLE_SELFTEST'):
             if not conf.CHECK_SOCKET_WRAPPER():
-                raise Utils.WafError('socket_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+                raise Errors.WafError('socket_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
             else:
                 conf.define('USING_SYSTEM_SOCKET_WRAPPER', 1)
 
             if not conf.CHECK_NSS_WRAPPER():
-                raise Utils.WafError('nss_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+                raise Errors.WafError('nss_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
             else:
                 conf.define('USING_SYSTEM_NSS_WRAPPER', 1)
 
             if not conf.CHECK_RESOLV_WRAPPER():
-                raise Utils.WafError('resolv_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+                raise Errors.WafError('resolv_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
             else:
                 conf.define('USING_SYSTEM_RESOLV_WRAPPER', 1)
 
             if not conf.CHECK_UID_WRAPPER():
-                raise Utils.WafError('uid_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+                raise Errors.WafError('uid_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
             else:
                 conf.define('USING_SYSTEM_UID_WRAPPER', 1)
 
             if not conf.CHECK_PAM_WRAPPER():
-                raise Utils.WafError('pam_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+                raise Errors.WafError('pam_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
             else:
                 conf.define('USING_SYSTEM_PAM_WRAPPER', 1)
 
@@ -258,12 +251,12 @@ def configure(conf):
                 conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
         if Options.options.with_ntvfs_fileserver == False:
             if not (Options.options.without_ad_dc):
-                raise Utils.WafError('--without-ntvfs-fileserver conflicts with --enable-selftest while building the AD DC')
+                raise Errors.WafError('--without-ntvfs-fileserver conflicts with --enable-selftest while building the AD DC')
         conf.RECURSE('testsuite/unittests')
 
     if Options.options.with_ntvfs_fileserver == True:
         if Options.options.without_ad_dc:
-            raise Utils.WafError('--with-ntvfs-fileserver conflicts with --without-ad-dc')
+            raise Errors.WafError('--with-ntvfs-fileserver conflicts with --without-ad-dc')
         conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
 
     if Options.options.with_pthreadpool:
@@ -306,7 +299,7 @@ def configure(conf):
                            define='SUMMARY_PASSES',
                            addmain=False,
                            msg='Checking configure summary'):
-        raise Utils.WafError('configure summary failed')
+        raise Errors.WafError('configure summary failed')
 
     if Options.options.enable_pie != False:
         if Options.options.enable_pie == True:
@@ -333,22 +326,22 @@ def configure(conf):
 def etags(ctx):
     '''build TAGS file using etags'''
     from waflib import Utils
-    source_root = os.path.dirname(Utils.g_module.root_path)
+    source_root = os.path.dirname(Context.g_module.root_path)
     cmd = 'rm -f %s/TAGS && (find %s -name "*.[ch]" | egrep -v \.inst\. | xargs -n 100 etags -a)' % (source_root, source_root)
     print("Running: %s" % cmd)
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
-        raise Utils.WafError('etags failed')
+        raise Errors.WafError('etags failed')
 
 def ctags(ctx):
     "build 'tags' file using ctags"
     from waflib import Utils
-    source_root = os.path.dirname(Utils.g_module.root_path)
+    source_root = os.path.dirname(Context.g_module.root_path)
     cmd = 'ctags --python-kinds=-i $(find %s -name "*.[ch]" | grep -v "*_proto\.h" | egrep -v \.inst\.) $(find %s -name "*.py")' % (source_root, source_root)
     print("Running: %s" % cmd)
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
-        raise Utils.WafError('ctags failed')
+        raise Errors.WafError('ctags failed')
 
 
 # putting this here enabled build in the list
@@ -377,7 +370,7 @@ def pydoctor(ctx):
     print("Running: %s" % cmd)
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
-        raise Utils.WafError('pydoctor failed')
+        raise Errors.WafError('pydoctor failed')
 
 
 def pep8(ctx):
@@ -386,7 +379,7 @@ def pep8(ctx):
     print("Running: %s" % cmd)
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
-        raise Utils.WafError('pep8 failed')
+        raise Errors.WafError('pep8 failed')
 
 
 def wafdocs(ctx):
@@ -402,7 +395,7 @@ def wafdocs(ctx):
     print("Running: %s" % cmd)
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
-        raise Utils.WafError('wafdocs failed')
+        raise Errors.WafError('wafdocs failed')
 
 
 def dist():
@@ -412,14 +405,14 @@ def dist():
     os.system("make -C ctdb manpages")
     samba_dist.DIST_FILES('ctdb/doc:ctdb/doc', extend=True)
 
-    os.system("DOC_VERSION='" + sambaversion.STRING + "' " + srcdir + "/release-scripts/build-manpages-nogit")
+    os.system("DOC_VERSION='" + sambaversion.STRING + "' " + Context.g_module.top + "/release-scripts/build-manpages-nogit")
     samba_dist.DIST_FILES('bin/docs:docs', extend=True)
 
     if sambaversion.IS_SNAPSHOT:
         # write .distversion file and add to tar
-        if not os.path.isdir(blddir):
-            os.makedirs(blddir)
-        distversionf = tempfile.NamedTemporaryFile(mode='w', prefix='.distversion',dir=blddir)
+        if not os.path.isdir(Context.g_module.out):
+            os.makedirs(Context.g_module.out)
+        distversionf = tempfile.NamedTemporaryFile(mode='w', prefix='.distversion',dir=Context.g_module.out)
         for field in sambaversion.vcs_fields:
             distveroption = field + '=' + str(sambaversion.vcs_fields[field])
             distversionf.write(distveroption + '\n')
@@ -453,8 +446,8 @@ def reconfigure(ctx):
     samba_utils.reconfigure(ctx)
 
 
-if os.path.isdir(os.path.join(srcdir, ".git")):
+if os.path.isdir(os.path.join(top, ".git")):
     # Check if there are submodules that are checked out but out of date.
-    for submodule, status in samba_git.read_submodule_status(srcdir):
+    for submodule, status in samba_git.read_submodule_status(top):
         if status == "out-of-date":
-            raise Utils.WafError("some submodules are out of date. Please run 'git submodule update'")
+            raise Errors.WafError("some submodules are out of date. Please run 'git submodule update'")
