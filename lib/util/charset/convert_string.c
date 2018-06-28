@@ -375,6 +375,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 		}
 		ob = talloc_zero_array(ctx, char, destlen);
 		if (ob == NULL) {
+			DBG_ERR("Could not talloc destination buffer.\n");
 			errno = ENOMEM;
 			return false;
 		}
