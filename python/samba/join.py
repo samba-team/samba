@@ -56,8 +56,8 @@ class DCJoinContext(object):
     def __init__(ctx, logger=None, server=None, creds=None, lp=None, site=None,
                  netbios_name=None, targetdir=None, domain=None,
                  machinepass=None, use_ntvfs=False, dns_backend=None,
-                 promote_existing=False, clone_only=False,
-                 plaintext_secrets=False, backend_store=None):
+                 promote_existing=False, plaintext_secrets=False,
+                 backend_store=None):
         if site is None:
             site = "Default-First-Site-Name"
 
@@ -117,7 +117,10 @@ class DCJoinContext(object):
             ctx.acct_pass = samba.generate_random_machine_password(128, 255)
 
         ctx.dnsdomain = ctx.samdb.domain_dns_name()
-        if not clone_only:
+
+        # the following are all dependent on the new DC's netbios_name (which
+        # we expect to always be specified, except when cloning a DC)
+        if netbios_name:
             # work out the DNs of all the objects we will be adding
             ctx.myname = netbios_name
             ctx.samname = "%s$" % ctx.myname
@@ -1557,8 +1560,7 @@ class DCCloneContext(DCJoinContext):
                  include_secrets=False):
         super(DCCloneContext, ctx).__init__(logger, server, creds, lp,
                                             targetdir=targetdir, domain=domain,
-                                            dns_backend=dns_backend,
-                                            clone_only=True)
+                                            dns_backend=dns_backend)
 
         # As we don't want to create or delete these DNs, we set them to None
         ctx.server_dn = None
