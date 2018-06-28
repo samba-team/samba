@@ -222,8 +222,8 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
                 src, dest = dc, remote
             self._net_drs_replicate(dest, src, forced=True)
 
-    def test_samba_tool_showrepl_summary_all_good(self):
-        """Tests 'samba-tool drs showrepl --summary' command."""
+    def test_samba_tool_showrepl_pull_summary_all_good(self):
+        """Tests 'samba-tool drs showrepl --pull-summary' command."""
         # To be sure that all is good we need to force replication
         # with everyone (because others might have it turned off), and
         # turn replication on for them in case they suddenly decide to
@@ -236,20 +236,20 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         self._force_all_reps(samdb1, self.dc1, 'inbound')
         self._force_all_reps(samdb1, self.dc1, 'outbound')
 
-        out = self.check_output("samba-tool drs showrepl --summary %s %s" %
+        out = self.check_output("samba-tool drs showrepl --pull-summary %s %s" %
                                 (self.dc1, self.cmdline_creds))
         self.assertStringsEqual(out, "[ALL GOOD]\n")
 
-        out = self.check_output("samba-tool drs showrepl --summary "
+        out = self.check_output("samba-tool drs showrepl --pull-summary "
                                 "--color=yes %s %s" %
                                 (self.dc1, self.cmdline_creds))
         self.assertStringsEqual(out, "\033[1;32m[ALL GOOD]\033[0m\n")
 
         # --verbose output is still quiet when all is good.
-        out = self.check_output("samba-tool drs showrepl --summary -v %s %s" %
+        out = self.check_output("samba-tool drs showrepl --pull-summary -v %s %s" %
                                 (self.dc1, self.cmdline_creds))
         self.assertStringsEqual(out, "[ALL GOOD]\n")
-        out = self.check_output("samba-tool drs showrepl --summary -v "
+        out = self.check_output("samba-tool drs showrepl --pull-summary -v "
                                 "--color=yes %s %s" %
                                 (self.dc1, self.cmdline_creds))
         self.assertStringsEqual(out, "\033[1;32m[ALL GOOD]\033[0m\n")
