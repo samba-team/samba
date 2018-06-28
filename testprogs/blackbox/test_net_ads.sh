@@ -26,6 +26,11 @@ failed=0
 
 net_tool="$BINDIR/net -s $BASEDIR/$WORKDIR/client.conf --option=security=ads"
 
+ldbsearch="ldbsearch"
+if [ -x "$BINDIR/ldbsearch" ]; then
+	ldbsearch="$BINDIR/ldbsearch"
+fi
+
 # Load test functions
 . `dirname $0`/subunit.sh
 
@@ -180,6 +185,15 @@ testit "join+server" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD ||
 testit_expect_failure "leave+invalid_server" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD -SINVALID && failed=`expr $failed + 1`
 
 testit "testjoin user+password" $VALGRIND $net_tool ads testjoin -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+testit "leave+keep_account" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD --keep-account || failed=`expr $failed + 1`
+
+computers_ldb_ou="CN=Computers,DC=addom,DC=samba,DC=example,DC=com"
+testit "ldb check for existence of machine account" $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM -s base -b "cn=$HOSTNAME,$computers_ldb_ou" || failed=`expr $failed + 1`
+
+testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+testit "testjoin" $VALGRIND $net_tool ads testjoin || failed=`expr $failed + 1`
 
 ##Goodbye...
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
