@@ -55,6 +55,7 @@
 #endif
 
 #include "lib/util/debug.h"
+#include "lib/util/blocking.h"
 
 #include "protocol/protocol.h"
 
@@ -677,3 +678,297 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 
 	return 0;
 }
+
+/*
+ * Packet capture
+ *
+ * If AF_PACKET is available then use a raw socket otherwise use pcap.
+ * wscript has checked to make sure that pcap is available if needed.
+ */
+
+#ifdef HAVE_AF_PACKET
+
+/*
+ * This function is used to open a raw socket to capture from
+ */
+int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
+{
+	int s, ret;
+
+	/* Open a socket to capture all traffic */
+	s = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	if (s == -1) {
+		DBG_ERR("Failed to open raw socket\n");
+		return -1;
+	}
+
+	DBG_DEBUG("Created RAW SOCKET FD:%d for tcp tickle\n", s);
+
+	ret = set_blocking(s, false);
+	if (ret != 0) {
+		DBG_ERR("Failed to set socket non-blocking (%s)\n",
+			strerror(errno));
+		close(s);
+		return -1;
+	}
+
+	set_close_on_exec(s);
+
+	return s;
+}
+
+/*
+ * This function is used to do any additional cleanup required when closing
+ * a capture socket.
+ * Note that the socket itself is closed automatically in the caller.
+ */
+int ctdb_sys_close_capture_socket(void *private_data)
+{
+	return 0;
+}
+
+
+/*
+ * called when the raw socket becomes readable
+ */
+int ctdb_sys_read_tcp_packet(int s, void *private_data,
+			     ctdb_sock_addr *src,
+			     ctdb_sock_addr *dst,
+			     uint32_t *ack_seq,
+			     uint32_t *seq,
+			     int *rst,
+			     uint16_t *window)
+{
+	int ret;
+#define RCVPKTSIZE 100
+	char pkt[RCVPKTSIZE];
+	struct ether_header *eth;
+	struct iphdr *ip;
+	struct ip6_hdr *ip6;
+	struct tcphdr *tcp;
+
+	ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
+	if (ret < sizeof(*eth)+sizeof(*ip)) {
+		return -1;
+	}
+
+	ZERO_STRUCTP(src);
+	ZERO_STRUCTP(dst);
+
+	/* Ethernet */
+	eth = (struct ether_header *)pkt;
+
+	/* we want either IPv4 or IPv6 */
+	if (ntohs(eth->ether_type) == ETHERTYPE_IP) {
+		/* IP */
+		ip = (struct iphdr *)(eth+1);
+
+		/* We only want IPv4 packets */
+		if (ip->version != 4) {
+			return -1;
+		}
+		/* Dont look at fragments */
+		if ((ntohs(ip->frag_off)&0x1fff) != 0) {
+			return -1;
+		}
+		/* we only want TCP */
+		if (ip->protocol != IPPROTO_TCP) {
+			return -1;
+		}
+
+		/* make sure its not a short packet */
+		if (offsetof(struct tcphdr, th_ack) + 4 +
+		    (ip->ihl*4) + sizeof(*eth) > ret) {
+			return -1;
+		}
+		/* TCP */
+		tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
+
+		/* tell the caller which one we've found */
+		src->ip.sin_family      = AF_INET;
+		src->ip.sin_addr.s_addr = ip->saddr;
+		src->ip.sin_port        = tcp->th_sport;
+		dst->ip.sin_family      = AF_INET;
+		dst->ip.sin_addr.s_addr = ip->daddr;
+		dst->ip.sin_port        = tcp->th_dport;
+		*ack_seq                = tcp->th_ack;
+		*seq                    = tcp->th_seq;
+		if (window != NULL) {
+			*window = tcp->th_win;
+		}
+		if (rst != NULL) {
+			*rst = tcp->th_flags & TH_RST;
+		}
+
+		return 0;
+	} else if (ntohs(eth->ether_type) == ETHERTYPE_IP6) {
+		/* IP6 */
+		ip6 = (struct ip6_hdr *)(eth+1);
+
+		/* we only want TCP */
+		if (ip6->ip6_nxt != IPPROTO_TCP) {
+			return -1;
+		}
+
+		/* TCP */
+		tcp = (struct tcphdr *)(ip6+1);
+
+		/* tell the caller which one we've found */
+		src->ip6.sin6_family = AF_INET6;
+		src->ip6.sin6_port   = tcp->th_sport;
+		src->ip6.sin6_addr   = ip6->ip6_src;
+
+		dst->ip6.sin6_family = AF_INET6;
+		dst->ip6.sin6_port   = tcp->th_dport;
+		dst->ip6.sin6_addr   = ip6->ip6_dst;
+
+		*ack_seq             = tcp->th_ack;
+		*seq                 = tcp->th_seq;
+		if (window != NULL) {
+			*window = tcp->th_win;
+		}
+		if (rst != NULL) {
+			*rst = tcp->th_flags & TH_RST;
+		}
+
+		return 0;
+	}
+
+	return -1;
+}
+
+#else /* HAVE_AF_PACKET */
+
+#include <pcap.h>
+
+int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
+{
+	pcap_t *pt;
+
+	pt=pcap_open_live(iface, 100, 0, 0, NULL);
+	if (pt == NULL) {
+		DBG_ERR("Failed to open capture device %s\n", iface);
+		return -1;
+	}
+	*((pcap_t **)private_data) = pt;
+
+	return pcap_fileno(pt);
+}
+
+int ctdb_sys_close_capture_socket(void *private_data)
+{
+	pcap_t *pt = (pcap_t *)private_data;
+	pcap_close(pt);
+	return 0;
+}
+
+int ctdb_sys_read_tcp_packet(int s,
+			     void *private_data,
+			     ctdb_sock_addr *src,
+			     ctdb_sock_addr *dst,
+			     uint32_t *ack_seq,
+			     uint32_t *seq,
+			     int *rst,
+			     uint16_t *window)
+{
+	int ret;
+	struct ether_header *eth;
+	struct ip *ip;
+	struct ip6_hdr *ip6;
+	struct tcphdr *tcp;
+	struct ctdb_killtcp_connection *conn;
+	struct pcap_pkthdr pkthdr;
+	const u_char *buffer;
+	pcap_t *pt = (pcap_t *)private_data;
+
+	buffer=pcap_next(pt, &pkthdr);
+	if (buffer==NULL) {
+		return -1;
+	}
+
+	ZERO_STRUCTP(src);
+	ZERO_STRUCTP(dst);
+
+	/* Ethernet */
+	eth = (struct ether_header *)buffer;
+
+	/* we want either IPv4 or IPv6 */
+	if (eth->ether_type == htons(ETHERTYPE_IP)) {
+		/* IP */
+		ip = (struct ip *)(eth+1);
+
+		/* We only want IPv4 packets */
+		if (ip->ip_v != 4) {
+			return -1;
+		}
+		/* Dont look at fragments */
+		if ((ntohs(ip->ip_off)&0x1fff) != 0) {
+			return -1;
+		}
+		/* we only want TCP */
+		if (ip->ip_p != IPPROTO_TCP) {
+			return -1;
+		}
+
+		/* make sure its not a short packet */
+		if (offsetof(struct tcphdr, th_ack) + 4 +
+		    (ip->ip_hl*4) > ret) {
+			return -1;
+		}
+		/* TCP */
+		tcp = (struct tcphdr *)((ip->ip_hl*4) + (char *)ip);
+
+		/* tell the caller which one we've found */
+		src->ip.sin_family      = AF_INET;
+		src->ip.sin_addr.s_addr = ip->ip_src.s_addr;
+		src->ip.sin_port        = tcp->th_sport;
+		dst->ip.sin_family      = AF_INET;
+		dst->ip.sin_addr.s_addr = ip->ip_dst.s_addr;
+		dst->ip.sin_port        = tcp->th_dport;
+		*ack_seq                = tcp->th_ack;
+		*seq                    = tcp->th_seq;
+		if (window != NULL) {
+			*window = tcp->th_win;
+		}
+		if (rst != NULL) {
+			*rst = tcp->th_flags & TH_RST;
+		}
+
+		return 0;
+	} else if (eth->ether_type == htons(ETHERTYPE_IP6)) {
+			/* IP6 */
+		ip6 = (struct ip6_hdr *)(eth+1);
+
+		/* we only want TCP */
+		if (ip6->ip6_nxt != IPPROTO_TCP) {
+			return -1;
+		}
+
+		/* TCP */
+		tcp = (struct tcphdr *)(ip6+1);
+
+		/* tell the caller which one we've found */
+		src->ip6.sin6_family = AF_INET6;
+		src->ip6.sin6_port   = tcp->th_sport;
+		src->ip6.sin6_addr   = ip6->ip6_src;
+
+		dst->ip6.sin6_family = AF_INET6;
+		dst->ip6.sin6_port   = tcp->th_dport;
+		dst->ip6.sin6_addr   = ip6->ip6_dst;
+
+		*ack_seq             = tcp->th_ack;
+		*seq                 = tcp->th_seq;
+		if (window != NULL) {
+			*window = tcp->th_win;
+		}
+		if (rst != NULL) {
+			*rst = tcp->th_flags & TH_RST;
+		}
+
+		return 0;
+	}
+
+	return -1;
+}
+
+#endif /* HAVE_AF_PACKET */

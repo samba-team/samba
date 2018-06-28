@@ -37,4 +37,15 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      uint32_t ack,
 		      int rst);
 
+int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
+int ctdb_sys_close_capture_socket(void *private_data);
+int ctdb_sys_read_tcp_packet(int s,
+			     void *private_data,
+			     ctdb_sock_addr *src,
+			     ctdb_sock_addr *dst,
+			     uint32_t *ack_seq,
+			     uint32_t *seq,
+			     int *rst,
+			     uint16_t *window);
+
 #endif /* __CTDB_SYSTEM_SOCKET_H__ */

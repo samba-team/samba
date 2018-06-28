@@ -380,23 +380,9 @@ def build(bld):
                             deps='replace talloc tevent tdb')
         ib_deps = ' ctdb-ib rdmacm ibverbs'
 
-    if sys.platform.startswith('linux'):
-        CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_linux.c')
-    elif sys.platform.startswith('aix'):
-        CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_aix.c')
-    elif sys.platform.startswith('freebsd'):
-        CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_freebsd.c')
-    elif sys.platform.startswith('gnukfreebsd'):
-        CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_kfreebsd.c')
-    elif sys.platform == 'gnu':
-        CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_gnu.c')
-    else:
-        Logs.error("Platform %s not supported" % sys.platform)
-
     bld.SAMBA_SUBSYSTEM('ctdb-system',
                         source=bld.SUBDIR('common',
-                                          'system_socket.c system.c') +
-                               CTDB_SYSTEM_SRC,
+                                          'system_socket.c system.c'),
                         includes='include',
                         deps='replace talloc tevent tdb pcap samba-util')
 
