@@ -38,7 +38,7 @@
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
-#include "common/system.h"
+#include "common/system_socket.h"
 #include "common/common.h"
 #include "common/logging.h"
 

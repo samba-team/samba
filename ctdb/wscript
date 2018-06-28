@@ -395,7 +395,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-system',
                         source=bld.SUBDIR('common',
-                                          'system_common.c system_util.c') +
+                                          'system_socket.c system.c') +
                                CTDB_SYSTEM_SRC,
                         includes='include',
                         deps='replace talloc tevent tdb pcap samba-util')

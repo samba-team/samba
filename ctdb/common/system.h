@@ -22,11 +22,6 @@
 
 #include <talloc.h>
 
-/* From system_common.c */
-
-uint32_t uint16_checksum(uint16_t *data, size_t n);
-bool ctdb_sys_have_ip(ctdb_sock_addr *_addr);
-
 /* From system_<os>.c */
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
