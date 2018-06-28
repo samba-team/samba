@@ -601,7 +601,7 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 	PyObject *py_creds = Py_None;
 	PyObject *py_lp = Py_None;
 	const char *kwnames[] = { "hostname", "service", "creds", "lp",
-				  "ntlmv2_auth", "use_spnego", NULL };
+				  "ntlmv2_auth", "use_spnego", "sign", NULL };
 	const char *hostname = NULL;
 	const char *service = NULL;
 	PyObject *smb;
@@ -612,11 +612,12 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 	struct smbcli_session_options session_options;
 	uint8_t ntlmv2_auth = 0xFF;
 	uint8_t use_spnego = 0xFF;
+	PyObject *sign = Py_False;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zz|OObb",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zz|OObbO",
 					 discard_const_p(char *, kwnames),
 					 &hostname, &service, &py_creds, &py_lp,
-					 &ntlmv2_auth, &use_spnego)) {
+					 &ntlmv2_auth, &use_spnego, &sign)) {
 		return NULL;
 	}
 
@@ -657,6 +658,9 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 	}
 	if (use_spnego != 0xFF) {
 		options.use_spnego = use_spnego;
+	}
+	if (PyObject_IsTrue(sign)) {
+		options.signing = SMB_SIGNING_REQUIRED;
 	}
 
 	status = do_smb_connect(spdata, spdata, hostname, service,
