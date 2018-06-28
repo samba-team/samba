@@ -18,59 +18,18 @@
 
 """Tests for samba.ntacls."""
 
+import os
+
 from samba.ntacls import setntacl, getntacl, XattrBackendError
 from samba.param import LoadParm
 from samba.dcerpc import security
 from samba.tests import TestCaseInTempDir, SkipTest
-import os
+
+NTACL_SDDL = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+DOMAIN_SID = "S-1-5-21-2212615479-2695158682-2101375467"
+
 
 class NtaclsTests(TestCaseInTempDir):
-
-    def test_setntacl(self):
-        lp = LoadParm()
-        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        open(self.tempf, 'w').write("empty")
-        lp.set("posix:eadb",os.path.join(self.tempdir,"eadbtest.tdb"))
-        setntacl(lp, self.tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467")
-        os.unlink(os.path.join(self.tempdir,"eadbtest.tdb"))
-
-    def test_setntacl_getntacl(self):
-        lp = LoadParm()
-        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        open(self.tempf, 'w').write("empty")
-        lp.set("posix:eadb",os.path.join(self.tempdir,"eadbtest.tdb"))
-        setntacl(lp,self.tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467")
-        facl = getntacl(lp,self.tempf)
-        anysid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(anysid),acl)
-        os.unlink(os.path.join(self.tempdir,"eadbtest.tdb"))
-
-    def test_setntacl_getntacl_param(self):
-        lp = LoadParm()
-        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        open(self.tempf, 'w').write("empty")
-        setntacl(lp,self.tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467","tdb",os.path.join(self.tempdir,"eadbtest.tdb"))
-        facl=getntacl(lp,self.tempf,"tdb",os.path.join(self.tempdir,"eadbtest.tdb"))
-        domsid=security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(domsid),acl)
-        os.unlink(os.path.join(self.tempdir,"eadbtest.tdb"))
-
-    def test_setntacl_invalidbackend(self):
-        lp = LoadParm()
-        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        open(self.tempf, 'w').write("empty")
-        self.assertRaises(XattrBackendError, setntacl, lp, self.tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467","ttdb", os.path.join(self.tempdir,"eadbtest.tdb"))
-
-    def test_setntacl_forcenative(self):
-        if os.getuid() == 0:
-            raise SkipTest("Running test as root, test skipped")
-        lp = LoadParm()
-        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        open(self.tempf, 'w').write("empty")
-        lp.set("posix:eadb", os.path.join(self.tempdir,"eadbtest.tdb"))
-        self.assertRaises(Exception, setntacl, lp, self.tempf ,acl,
-            "S-1-5-21-2212615479-2695158682-2101375467","native")
-
 
     def setUp(self):
         super(NtaclsTests, self).setUp()
@@ -80,3 +39,47 @@ class NtaclsTests(TestCaseInTempDir):
     def tearDown(self):
         os.unlink(self.tempf)
         super(NtaclsTests, self).tearDown()
+
+    def test_setntacl(self):
+        lp = LoadParm()
+        open(self.tempf, 'w').write("empty")
+        lp.set("posix:eadb", os.path.join(self.tempdir, "eadbtest.tdb"))
+        setntacl(lp, self.tempf, NTACL_SDDL, DOMAIN_SID)
+        os.unlink(os.path.join(self.tempdir, "eadbtest.tdb"))
+
+    def test_setntacl_getntacl(self):
+        lp = LoadParm()
+        open(self.tempf, 'w').write("empty")
+        lp.set("posix:eadb", os.path.join(self.tempdir, "eadbtest.tdb"))
+        setntacl(lp, self.tempf, NTACL_SDDL, DOMAIN_SID)
+        facl = getntacl(lp, self.tempf)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(facl.as_sddl(anysid), NTACL_SDDL)
+        os.unlink(os.path.join(self.tempdir, "eadbtest.tdb"))
+
+    def test_setntacl_getntacl_param(self):
+        lp = LoadParm()
+        open(self.tempf, 'w').write("empty")
+        setntacl(lp, self.tempf, NTACL_SDDL, DOMAIN_SID, "tdb",
+                 os.path.join(self.tempdir, "eadbtest.tdb"))
+        facl = getntacl(lp, self.tempf, "tdb", os.path.join(
+            self.tempdir, "eadbtest.tdb"))
+        domsid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(facl.as_sddl(domsid), NTACL_SDDL)
+        os.unlink(os.path.join(self.tempdir, "eadbtest.tdb"))
+
+    def test_setntacl_invalidbackend(self):
+        lp = LoadParm()
+        open(self.tempf, 'w').write("empty")
+        self.assertRaises(XattrBackendError, setntacl, lp, self.tempf,
+                          NTACL_SDDL, DOMAIN_SID, "ttdb",
+                          os.path.join(self.tempdir, "eadbtest.tdb"))
+
+    def test_setntacl_forcenative(self):
+        if os.getuid() == 0:
+            raise SkipTest("Running test as root, test skipped")
+        lp = LoadParm()
+        open(self.tempf, 'w').write("empty")
+        lp.set("posix:eadb", os.path.join(self.tempdir, "eadbtest.tdb"))
+        self.assertRaises(Exception, setntacl, lp, self.tempf, NTACL_SDDL,
+                          DOMAIN_SID, "native")
