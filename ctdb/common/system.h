@@ -24,7 +24,6 @@
 
 /* From system_<os>.c */
 
-int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);

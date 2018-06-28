@@ -76,19 +76,6 @@ static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 }
 
 /*
-  send gratuitous arp reply after we have taken over an ip address
-
-  saddr is the address we are trying to claim
-  iface is the interface name we will be using to claim the address
- */
-int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
-{
-	/* FIXME FreeBSD: We don't do gratuitous arp yet */
-	return -1;
-}
-
-
-/*
   simple TCP checksum - assumes data is multiple of 2 bytes long
  */
 static uint16_t tcp_checksum(uint16_t *data, size_t n, struct ip *ip)

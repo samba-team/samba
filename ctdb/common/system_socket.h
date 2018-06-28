@@ -30,4 +30,6 @@ bool parse_ip_mask(const char *str,
 		   ctdb_sock_addr *addr,
 		   unsigned *mask);
 
+int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
+
 #endif /* __CTDB_SYSTEM_SOCKET_H__ */
