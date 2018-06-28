@@ -115,6 +115,9 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 			      make_tdb_data(id_buf, sizeof(id_buf)),
 			      &data);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			return status;
+		}
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -316,12 +319,19 @@ ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 
 	status = xattr_tdb_load_attrs(frame, db_ctx, id, &attribs);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
+	{
+		DEBUG(0, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		TALLOC_FREE(frame);
+		return 0;
 	}
 
 	DEBUG(10, ("xattr_tdb_listattr: Found %d xattrs\n",
