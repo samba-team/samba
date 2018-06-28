@@ -384,12 +384,6 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 	return -1;
 }
 
-bool ctdb_sys_check_iface_exists(const char *iface)
-{
-	/* FIXME FreeBSD: Interface always considered present */
-	return true;
-}
-
 int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 {
 	/* FIXME FreeBSD: get_peer_pid not implemented */

@@ -163,3 +163,38 @@ void ctdb_wait_for_process_to_exit(pid_t pid)
 		sleep(5);
 	}
 }
+
+#ifdef HAVE_AF_PACKET
+
+bool ctdb_sys_check_iface_exists(const char *iface)
+{
+	int s;
+	struct ifreq ifr;
+
+	s = socket(AF_PACKET, SOCK_RAW, 0);
+	if (s == -1){
+		/* We don't know if the interface exists, so assume yes */
+		DBG_ERR("Failed to open raw socket\n");
+		return true;
+	}
+
+	strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
+	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0 && errno == ENODEV) {
+		DBG_ERR("Interface '%s' not found\n", iface);
+		close(s);
+		return false;
+	}
+	close(s);
+
+	return true;
+}
+
+#else /* HAVE_AF_PACKET */
+
+bool ctdb_sys_check_iface_exists(const char *iface)
+{
+	/* Not implemented: Interface always considered present */
+	return true;
+}
+
+#endif /* HAVE_AF_PACKET */

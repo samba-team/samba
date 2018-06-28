@@ -34,7 +34,6 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 			     ctdb_sock_addr *src, ctdb_sock_addr *dst,
 			     uint32_t *ack_seq, uint32_t *seq,
 			     int *rst, uint16_t *window);
-bool ctdb_sys_check_iface_exists(const char *iface);
 int ctdb_get_peer_pid(const int fd, pid_t *peer_pid);
 
 /* From system_util.c */
@@ -47,5 +46,7 @@ void lockdown_memory(bool valgrinding);
 void mkdir_p_or_die(const char *dir, int mode);
 
 void ctdb_wait_for_process_to_exit(pid_t pid);
+
+bool ctdb_sys_check_iface_exists(const char *iface);
 
 #endif /* __CTDB_SYSTEM_H__ */
