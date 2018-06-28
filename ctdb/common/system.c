@@ -198,3 +198,52 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 }
 
 #endif /* HAVE_AF_PACKET */
+
+#ifdef HAVE_PEERCRED
+
+int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
+{
+	struct ucred cr;
+	socklen_t crl = sizeof(struct ucred);
+	int ret;
+
+	ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl);
+	if (ret == 0) {
+		*peer_pid = cr.pid;
+	} else {
+		*peer_pid = -1;
+	}
+	return ret;
+}
+
+#else /* HAVE_PEERCRED */
+
+#ifdef _AIX_
+
+int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
+{
+	struct peercred_struct cr;
+	socklen_t crl = sizeof(struct peercred_struct);
+	int ret;
+
+	ret = getsockopt(fd, SOL_SOCKET, SO_PEERID, &cr, &crl);
+	if (ret == 0) {
+		*peer_pid = cr.pid;
+	} else {
+		*peer_pid = -1;
+	}
+	return ret;
+}
+
+#else /* _AIX_ */
+
+int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
+{
+	/* Not implemented */
+	*peer_pid = -1;
+	return ENOSYS;
+}
+
+#endif /* _AIX_ */
+
+#endif /* HAVE_PEERCRED */
