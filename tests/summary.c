@@ -12,7 +12,7 @@ int main()
 #warning "WARNING: No automated network interface determination"
 #endif
 
-#if !(defined(USE_SETEUID) || defined(USE_SETREUID) || defined(USE_SETRESUID) || defined(USE_SETUIDX) || defined(USE_LINUX_THREAD_CREDENTIALS))
+#if !(defined(USE_SETEUID) || defined(USE_SETREUID) || defined(USE_SETRESUID) || defined(USE_SETUIDX) || defined(HAVE_LINUX_THREAD_CREDENTIALS))
 #error "ERROR: no seteuid method available"
 #endif
 

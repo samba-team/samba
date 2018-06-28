@@ -964,23 +964,23 @@ syscall(SYS_setgroups32, 0, NULL);
         if (conf.CONFIG_SET('USE_LINUX_32BIT_SYSCALLS')):
             seteuid = conf.CHECK_CODE('''
                                 #define AUTOCONF_TEST 1
-                                #define USE_LINUX_THREAD_CREDENTIALS 1
+                                #define HAVE_LINUX_THREAD_CREDENTIALS 1
                                 #define USE_LINUX_32BIT_SYSCALLS 1
                                 #include "../lib/util/setid.c"
                                 #include "./lib/util_sec.c"
                                 ''',
-                                'USE_LINUX_THREAD_CREDENTIALS',
+                                'HAVE_LINUX_THREAD_CREDENTIALS',
                                 addmain=False,
                                 execute=True,
                                 msg="Checking whether we can use Linux thread-specific credentials with 32-bit system calls")
         else:
             seteuid = conf.CHECK_CODE('''
                                 #define AUTOCONF_TEST 1
-                                #define USE_LINUX_THREAD_CREDENTIALS 1
+                                #define HAVE_LINUX_THREAD_CREDENTIALS 1
                                 #include "../lib/util/setid.c"
                                 #include "./lib/util_sec.c"
                                 ''',
-                                'USE_LINUX_THREAD_CREDENTIALS',
+                                'HAVE_LINUX_THREAD_CREDENTIALS',
                                 addmain=False,
                                 execute=True,
                                 msg="Checking whether we can use Linux thread-specific credentials")

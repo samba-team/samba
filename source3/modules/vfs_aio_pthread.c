@@ -31,7 +31,7 @@
 #include <linux/falloc.h>
 #endif
 
-#if defined(HAVE_OPENAT) && defined(USE_LINUX_THREAD_CREDENTIALS)
+#if defined(HAVE_OPENAT) && defined(HAVE_LINUX_THREAD_CREDENTIALS)
 
 /*
  * We must have openat() to do any thread-based
@@ -395,7 +395,7 @@ static int aio_pthread_open_fn(vfs_handle_struct *handle,
 #endif
 
 static struct vfs_fn_pointers vfs_aio_pthread_fns = {
-#if defined(HAVE_OPENAT) && defined(USE_LINUX_THREAD_CREDENTIALS)
+#if defined(HAVE_OPENAT) && defined(HAVE_LINUX_THREAD_CREDENTIALS)
 	.open_fn = aio_pthread_open_fn,
 #endif
 };
