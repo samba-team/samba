@@ -25,4 +25,9 @@
 uint32_t uint16_checksum(uint16_t *data, size_t n);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 
+bool parse_ip_mask(const char *str,
+		   const char *ifaces,
+		   ctdb_sock_addr *addr,
+		   unsigned *mask);
+
 #endif /* __CTDB_SYSTEM_SOCKET_H__ */

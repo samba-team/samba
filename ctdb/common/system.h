@@ -42,9 +42,6 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid);
 bool set_scheduler(void);
 void reset_scheduler(void);
 
-bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr,
-		   unsigned *mask);
-
 void lockdown_memory(bool valgrinding);
 
 void mkdir_p_or_die(const char *dir, int mode);
