@@ -533,7 +533,8 @@ static struct cli_state *connect_one(const char *share)
 					    share, "?????",
 					    get_cmdline_auth_info_username(
 						popt_get_cmdline_auth_info()),
-					    lp_workgroup(),
+					    get_cmdline_auth_info_domain(
+						popt_get_cmdline_auth_info()),
 					    get_cmdline_auth_info_password(
 						popt_get_cmdline_auth_info()),
 					    flags,
