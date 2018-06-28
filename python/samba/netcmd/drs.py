@@ -100,8 +100,17 @@ class cmd_drs_showrepl(Command):
     takes_options = [
         Option("--json", help="replication details in JSON format",
                dest='format', action='store_const', const='json'),
-        Option("--summary", help="summarize local DRS health",
+        Option("--summary", help=("summarize overall DRS health as seen "
+                                  "from this server"),
                dest='format', action='store_const', const='summary'),
+        Option("--pull-summary", help=("Have we successfully replicated "
+                                       "from all relevent servers?"),
+               dest='format', action='store_const', const='pull_summary'),
+        Option("--notify-summary", action='store_const',
+               const='notify_summary', dest='format',
+               help=("Have we successfully notified all relevent servers of "
+                     "local changes, and did they say they successfully "
+                     "replicated?")),
         Option("--classic", help="print local replication details",
                dest='format', action='store_const', const='classic',
                default=DEFAULT_SHOWREPL_FORMAT),
@@ -184,6 +193,8 @@ class cmd_drs_showrepl(Command):
 
         output_function = {
             'summary': self.summary_output,
+            'notify_summary': self.notify_summary_output,
+            'pull_summary': self.pull_summary_output,
             'json': self.json_output,
             'classic': self.classic_output,
         }.get(format)
@@ -198,24 +209,27 @@ class cmd_drs_showrepl(Command):
         del data['server']
         json.dump(data, self.outf, indent=2)
 
-    def summary_output(self):
+    def summary_output_handler(self, typeof_output):
         """Print a short message if every seems fine, but print details of any
         links that seem broken."""
         failing_repsto = []
         failing_repsfrom = []
 
         local_data = self.get_local_repl_data()
-        for rep in local_data['repsTo']:
-            if rep['is deleted']:
-                continue
-            if rep["consecutive failures"] != 0 or rep["last success"] == 0:
-                failing_repsto.append(rep)
 
-        for rep in local_data['repsFrom']:
-            if rep['is deleted']:
-                continue
-            if rep["consecutive failures"] != 0 or rep["last success"] == 0:
-                failing_repsto.append(rep)
+        if typeof_output != "pull_summary":
+            for rep in local_data['repsTo']:
+                if rep['is deleted']:
+                    continue
+                if rep["consecutive failures"] != 0 or rep["last success"] == 0:
+                    failing_repsto.append(rep)
+
+        if typeof_output != "notify_summary":
+            for rep in local_data['repsFrom']:
+                if rep['is deleted']:
+                    continue
+                if rep["consecutive failures"] != 0 or rep["last success"] == 0:
+                    failing_repsto.append(rep)
 
         if failing_repsto or failing_repsfrom:
             self.message(colour.c_RED("There are failing connections"))
@@ -232,6 +246,15 @@ class cmd_drs_showrepl(Command):
 
         self.message(colour.c_GREEN("[ALL GOOD]"))
 
+
+    def summary_output(self):
+        return self.summary_output_handler("summary")
+
+    def notify_summary_output(self):
+        return self.summary_output_handler("notify_summary")
+
+    def pull_summary_output(self):
+        return self.summary_output_handler("pull_summary")
 
     def get_local_repl_data(self):
         drsuapi_connect(self)
