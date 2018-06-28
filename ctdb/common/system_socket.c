@@ -19,6 +19,22 @@
 */
 
 #include "replace.h"
+
+/*
+ * Use BSD struct tcphdr field names for portability.  Modern glibc
+ * makes them available by default via <netinet/tcp.h> but older glibc
+ * requires __FAVOR_BSD to be defined.
+ *
+ * __FAVOR_BSD is normally defined in <features.h> if _DEFAULT_SOURCE
+ * (new) or _BSD_SOURCE (now deprecated) is set and _GNU_SOURCE is not
+ * set.  Including "replace.h" above causes <features.h> to be
+ * indirectly included and this will not set __FAVOR_BSD because
+ * _GNU_SOURCE is set in Samba's "config.h" (which is included by
+ * "replace.h").
+ *
+ * Therefore, set __FAVOR_BSD by hand below.
+ */
+#define __FAVOR_BSD 1
 #include "system/network.h"
 
 #ifdef HAVE_NETINET_IF_ETHER_H
@@ -48,7 +64,7 @@
 /*
   uint16 checksum for n bytes
  */
-uint32_t uint16_checksum(uint16_t *data, size_t n)
+static uint32_t uint16_checksum(uint16_t *data, size_t n)
 {
 	uint32_t sum=0;
 	while (n>=2) {
@@ -230,6 +246,27 @@ bool parse_ip_mask(const char *str,
 	ret = parse_ip(s, ifaces, 0, addr);
 
 	return ret;
+}
+
+/*
+ * simple TCP checksum - assumes data is multiple of 2 bytes long
+ */
+static uint16_t ip_checksum(uint16_t *data, size_t n, struct ip *ip)
+{
+	uint32_t sum = uint16_checksum(data, n);
+	uint16_t sum2;
+
+	sum += uint16_checksum((uint16_t *)&ip->ip_src, sizeof(ip->ip_src));
+	sum += uint16_checksum((uint16_t *)&ip->ip_dst, sizeof(ip->ip_dst));
+	sum += ip->ip_p + n;
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum2 = htons(sum);
+	sum2 = ~sum2;
+	if (sum2 == 0) {
+		return 0xFFFF;
+	}
+	return sum2;
 }
 
 static uint16_t ip6_checksum(uint16_t *data, size_t n, struct ip6_hdr *ip6)
@@ -495,3 +532,148 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 }
 
 #endif /* HAVE_PACKETSOCKET */
+
+/*
+ * Send tcp segment from the specified IP/port to the specified
+ * destination IP/port.
+ *
+ * This is used to trigger the receiving host into sending its own ACK,
+ * which should trigger early detection of TCP reset by the client
+ * after IP takeover
+ *
+ * This can also be used to send RST segments (if rst is true) and also
+ * if correct seq and ack numbers are provided.
+ */
+int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
+		      const ctdb_sock_addr *src,
+		      uint32_t seq,
+		      uint32_t ack,
+		      int rst)
+{
+	int s;
+	int ret;
+	uint32_t one = 1;
+	uint16_t tmpport;
+	ctdb_sock_addr *tmpdest;
+	struct {
+		struct ip ip;
+		struct tcphdr tcp;
+	} ip4pkt;
+	struct {
+		struct ip6_hdr ip6;
+		struct tcphdr tcp;
+	} ip6pkt;
+	int saved_errno;
+
+	switch (src->ip.sin_family) {
+	case AF_INET:
+		ZERO_STRUCT(ip4pkt);
+		ip4pkt.ip.ip_v     = 4;
+		ip4pkt.ip.ip_hl    = sizeof(ip4pkt.ip)/4;
+		ip4pkt.ip.ip_len   = htons(sizeof(ip4pkt));
+		ip4pkt.ip.ip_ttl   = 255;
+		ip4pkt.ip.ip_p     = IPPROTO_TCP;
+		ip4pkt.ip.ip_src.s_addr    = src->ip.sin_addr.s_addr;
+		ip4pkt.ip.ip_dst.s_addr    = dest->ip.sin_addr.s_addr;
+		ip4pkt.ip.ip_sum   = 0;
+
+		ip4pkt.tcp.th_sport = src->ip.sin_port;
+		ip4pkt.tcp.th_dport = dest->ip.sin_port;
+		ip4pkt.tcp.th_seq   = seq;
+		ip4pkt.tcp.th_ack   = ack;
+		ip4pkt.tcp.th_flags = 0;
+		ip4pkt.tcp.th_flags |= TH_ACK;
+		if (rst) {
+			ip4pkt.tcp.th_flags |= TH_RST;
+		}
+		ip4pkt.tcp.th_off   = sizeof(ip4pkt.tcp)/4;
+		/* this makes it easier to spot in a sniffer */
+		ip4pkt.tcp.th_win   = htons(1234);
+		ip4pkt.tcp.th_sum   = ip_checksum((uint16_t *)&ip4pkt.tcp,
+						  sizeof(ip4pkt.tcp),
+						  &ip4pkt.ip);
+
+		/* open a raw socket to send this segment from */
+		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+		if (s == -1) {
+			DBG_ERR("Failed to open raw socket (%s)\n",
+				strerror(errno));
+			return -1;
+		}
+
+		ret = setsockopt(s, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one));
+		if (ret != 0) {
+			DBG_ERR("Failed to setup IP headers (%s)\n",
+				strerror(errno));
+			close(s);
+			return -1;
+		}
+
+		ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0,
+			     (const struct sockaddr *)&dest->ip,
+			     sizeof(dest->ip));
+		saved_errno = errno;
+		close(s);
+		if (ret != sizeof(ip4pkt)) {
+			D_ERR("Failed sendto (%s)\n", strerror(saved_errno));
+			return -1;
+		}
+		break;
+	case AF_INET6:
+		ZERO_STRUCT(ip6pkt);
+		ip6pkt.ip6.ip6_vfc  = 0x60;
+		ip6pkt.ip6.ip6_plen = htons(20);
+		ip6pkt.ip6.ip6_nxt  = IPPROTO_TCP;
+		ip6pkt.ip6.ip6_hlim = 64;
+		ip6pkt.ip6.ip6_src  = src->ip6.sin6_addr;
+		ip6pkt.ip6.ip6_dst  = dest->ip6.sin6_addr;
+
+		ip6pkt.tcp.th_sport = src->ip6.sin6_port;
+		ip6pkt.tcp.th_dport = dest->ip6.sin6_port;
+		ip6pkt.tcp.th_seq   = seq;
+		ip6pkt.tcp.th_ack   = ack;
+		ip6pkt.tcp.th_flags = 0;
+		ip6pkt.tcp.th_flags |= TH_RST;
+		if (rst) {
+			ip6pkt.tcp.th_flags |= TH_RST;
+		}
+		ip6pkt.tcp.th_off    = sizeof(ip6pkt.tcp)/4;
+		/* this makes it easier to spot in a sniffer */
+		ip6pkt.tcp.th_win   = htons(1234);
+		ip6pkt.tcp.th_sum   = ip6_checksum((uint16_t *)&ip6pkt.tcp,
+						   sizeof(ip6pkt.tcp),
+						   &ip6pkt.ip6);
+
+		s = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
+		if (s == -1) {
+			DBG_ERR("Failed to open sending socket\n");
+			return -1;
+
+		}
+		/* sendto() don't like if the port is set and the socket is
+		   in raw mode.
+		*/
+		tmpdest = discard_const(dest);
+		tmpport = tmpdest->ip6.sin6_port;
+
+		tmpdest->ip6.sin6_port = 0;
+		ret = sendto(s, &ip6pkt, sizeof(ip6pkt), 0,
+			     (const struct sockaddr *)&dest->ip6,
+			     sizeof(dest->ip6));
+		saved_errno = errno;
+		tmpdest->ip6.sin6_port = tmpport;
+		close(s);
+
+		if (ret != sizeof(ip6pkt)) {
+			D_ERR("Failed sendto (%s)\n", strerror(saved_errno));
+			return -1;
+		}
+		break;
+
+	default:
+		DBG_ERR("Not an ipv4/v6 address\n");
+		return -1;
+	}
+
+	return 0;
+}

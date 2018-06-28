@@ -22,7 +22,6 @@
 
 #include "protocol/protocol.h"
 
-uint32_t uint16_checksum(uint16_t *data, size_t n);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 
 bool parse_ip_mask(const char *str,
@@ -31,5 +30,11 @@ bool parse_ip_mask(const char *str,
 		   unsigned *mask);
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
+
+int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
+		      const ctdb_sock_addr *src,
+		      uint32_t seq,
+		      uint32_t ack,
+		      int rst);
 
 #endif /* __CTDB_SYSTEM_SOCKET_H__ */

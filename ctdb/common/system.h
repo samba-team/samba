@@ -24,9 +24,6 @@
 
 /* From system_<os>.c */
 
-int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
-		      const ctdb_sock_addr *src,
-		      uint32_t seq, uint32_t ack, int rst);
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
 int ctdb_sys_close_capture_socket(void *private_data);
 int ctdb_sys_read_tcp_packet(int s, void *private_data,
