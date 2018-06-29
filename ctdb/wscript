@@ -106,6 +106,14 @@ def configure(conf):
 
     conf.RECURSE('lib/replace')
 
+    conf.CHECK_HEADERS(headers='''sys/socket.h
+                                  netinet/in.h
+                                  netinet/if_ether.h
+                                  netinet/ip.h
+                                  netinet/ip6.h
+                                  netinet/icmp6.h''',
+                       together=True)
+
     conf.CHECK_CODE('int s = socket(AF_PACKET, SOCK_RAW, 0);',
                     define='HAVE_AF_PACKET',
                     headers='sys/socket.h linux/if_packet.h')
