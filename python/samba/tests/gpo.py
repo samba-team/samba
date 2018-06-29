@@ -17,6 +17,7 @@
 import os
 from samba import gpo, tests
 from samba.param import LoadParm
+from samba.gpclass import check_refresh_gpo_list, check_safe_path
 
 poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
 dspath = 'CN=Policies,CN=System,DC=addom,DC=samba,DC=example,DC=com'
@@ -74,4 +75,44 @@ class GPOTests(tests.TestCase):
             gpt.write(gpt_data % old_vers)
         assert gpo.gpo_get_sysvol_gpt_version(gpo_path)[1] == old_vers, \
           'gpo_get_sysvol_gpt_version() did not return the expected version'
+
+    def test_check_refresh_gpo_list(self):
+        cache = self.lp.cache_path('gpo_cache')
+        ads = gpo.ADS_STRUCT(self.server, self.lp, self.creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(self.creds.get_username())
+        check_refresh_gpo_list(self.server, self.lp, self.creds, gpos)
+
+        assert os.path.exists(cache), 'GPO cache %s was not created' % cache
+
+        guid = '{31b2f340-016d-11d2-945f-00c04fb984f9}'
+        gpt_ini = os.path.join(cache, 'addom.samba.example.com/policies',
+                               guid, 'gpt.ini')
+        assert os.path.exists(gpt_ini), 'GPT.INI was not cached for %s' % guid
+
+    def test_check_refresh_gpo_list_malicious_paths(self):
+        # the path cannot contain ..
+        try:
+            path = '/usr/local/samba/var/locks/sysvol/../../../../../../root/'
+            check_safe_path(path)
+            assert False, 'check_safe_path() succeeded on %s' % path
+        except:
+            pass
+
+        # the path must contain 'sysvol'
+        try:
+            path = '/var/log/messages'
+            check_safe_path(path)
+            assert False, 'check_safe_path() succeeded on %s' % path
+        except:
+            pass
+
+        # there should be no backslashes used to delineate paths
+        before = 'sysvol/addom.samba.example.com\\Policies/' \
+            '{31B2F340-016D-11D2-945F-00C04FB984F9}\\GPT.INI'
+        after = 'addom.samba.example.com/Policies/' \
+            '{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI'
+        result = check_safe_path(before)
+        assert result == after, 'check_safe_path() didn\'t' \
+            ' correctly convert \\ to /'
 

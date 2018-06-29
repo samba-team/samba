@@ -305,32 +305,16 @@ class gp_ext(object):
     def read(self, policy):
         pass
 
-    def parse(self, afile, ldb, conn, gp_db, lp):
+    def parse(self, afile, ldb, gp_db, lp):
         self.ldb = ldb
         self.gp_db = gp_db
         self.lp = lp
 
-        # Fixing the bug where only some Linux Boxes capitalize MACHINE
-        try:
-            blist = afile.split('/')
-            idx = afile.lower().split('/').index('machine')
-            for case in [
-                            blist[idx].upper(),
-                            blist[idx].capitalize(),
-                            blist[idx].lower()
-                        ]:
-                bfile = '/'.join(blist[:idx]) + '/' + case + '/' + \
-                    '/'.join(blist[idx+1:])
-                try:
-                    return self.read(conn.loadfile(bfile.replace('/', '\\')))
-                except NTSTATUSError:
-                    continue
-        except ValueError:
-            try:
-                return self.read(conn.loadfile(afile.replace('/', '\\')))
-            except Exception as e:
-                self.logger.error(str(e))
-                return None
+        local_path = self.lp.cache_path('gpo_cache')
+        data_file = os.path.join(local_path, afile).replace('\\', '/')
+        if os.path.exists(data_file):
+            return self.read(open(data_file, 'r').read())
+        return None
 
     @abstractmethod
     def __str__(self):
@@ -423,23 +407,63 @@ def get_gpo_list(dc_hostname, creds, lp):
         gpos = ads.get_gpo_list(creds.get_username())
     return gpos
 
+FILE_ATTRIBUTE_DIRECTORY = 0x10
+def cache_gpo_dir(conn, cache, sub_dir):
+    loc_sub_dir = sub_dir.lower()
+    try:
+        os.makedirs(os.path.join(cache, loc_sub_dir), mode=0o755)
+    except OSError:
+        pass # File Exists
+    for fdata in conn.list(sub_dir):
+        if fdata['attrib'] & FILE_ATTRIBUTE_DIRECTORY:
+            cache_gpo_dir(conn, cache, os.path.join(sub_dir, fdata['name']))
+        else:
+            local_name = fdata['name'].lower()
+            with open(os.path.join(cache, loc_sub_dir, local_name), 'w') as f:
+                fname = os.path.join(sub_dir, fdata['name']).replace('/', '\\')
+                f.write(conn.loadfile(fname))
+
+def check_safe_path(path):
+    if 'sysvol' in path:
+        dirs = re.split('/|\\\\', path)
+        print(dirs)
+        dirs = dirs[dirs.index('sysvol')+1:]
+        if not '..' in dirs:
+            return os.path.join(*dirs)
+    raise OSError(path)
+
+def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
+    conn = smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds, sign=True)
+    cache_path = lp.cache_path('gpo_cache')
+    for gpo in gpos:
+        if not gpo.file_sys_path:
+            continue
+        cache_gpo_dir(conn, cache_path, check_safe_path(gpo.file_sys_path))
+
+def gpo_version(lp, path, sysvol):
+    # gpo.gpo_get_sysvol_gpt_version() reads the GPT.INI from a local file,
+    # read from the gpo client cache.
+    gpt_path = lp.cache_path(os.path.join('gpo_cache', path))
+    local_path = os.path.join(gpt_path, 'gpt.ini')
+    return int(gpo.gpo_get_sysvol_gpt_version(os.path.dirname(local_path))[1])
+
 def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
     dc_hostname = get_dc_hostname(creds, lp)
-    try:
-        conn =  smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
-    except:
-        logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
-        raise
     gpos = get_gpo_list(dc_hostname, creds, lp)
+    try:
+        check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
+    except:
+        logger.error('Failed downloading gpt cache from \'%s\' using SMB' \
+            % dc_hostname)
+        return
 
     for gpo_obj in gpos:
         guid = gpo_obj.name
         if guid == 'Local Policy':
             continue
-        path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
-        local_path = os.path.join(lp.get("path", "sysvol"), path)
-        version = int(gpo.gpo_get_sysvol_gpt_version(local_path)[1])
+        path = os.path.join(lp.get('realm').lower(), 'policies', guid)
+        version = gpo_version(lp, path, sysvol)
         if version != store.get_int(guid):
             logger.info('GPO %s has changed' % guid)
             gp_db.state(GPOSTATE.APPLY)
@@ -449,7 +473,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         store.start()
         for ext in gp_extensions:
             try:
-                ext.parse(ext.list(path), test_ldb, conn, gp_db, lp)
+                ext.parse(ext.list(path), test_ldb, gp_db, lp)
             except Exception as e:
                 logger.error('Failed to parse gpo %s for extension %s' % \
                     (guid, str(ext)))
