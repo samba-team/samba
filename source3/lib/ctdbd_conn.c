@@ -32,7 +32,7 @@
 #include "lib/util/genrand.h"
 #include "lib/util/fault.h"
 #include "lib/util/dlinklist.h"
-#include "lib/util/tevent_unix.c"
+#include "lib/util/tevent_unix.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/blocking.h"
 #include "ctdb/include/ctdb_protocol.h"
