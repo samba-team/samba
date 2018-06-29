@@ -759,7 +759,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         m = ldb.Message()
         m.dn = obj.dn
         m['value'] = ldb.MessageElement(forward_vals, ldb.FLAG_MOD_REPLACE, forward_attr)
-        if self.do_modify(m, ["local_oid:1.3.6.1.4.1.7165.4.3.19.2:1"],
+        if self.do_modify(m, ["local_oid:%s:1" % dsdb.DSDB_CONTROL_DBCHECK_FIX_DUPLICATE_LINKS],
                 "Failed to fix duplicate links in attribute '%s'" % forward_attr):
             self.report("Fixed duplicate links in attribute '%s'" % (forward_attr))
             duplicate_cache_key = "%s:%s" % (str(obj.dn), forward_attr)
