@@ -62,7 +62,7 @@ static void gpupdate_callback(struct tevent_context *ev,
 				gpupdate_cmd,
 				"-s",
 				smbconf,
-				"--machine",
+				"--target=Computer",
 				"--machine-pass",
 				NULL);
 	if (req == NULL) {
