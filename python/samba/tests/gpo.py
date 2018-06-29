@@ -16,6 +16,8 @@
 
 import os
 from samba import gpo, tests
+from samba.gpclass import register_gp_extension, list_gp_extensions, \
+    unregister_gp_extension
 from samba.param import LoadParm
 
 poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
@@ -74,4 +76,21 @@ class GPOTests(tests.TestCase):
             gpt.write(gpt_data % old_vers)
         assert gpo.gpo_get_sysvol_gpt_version(gpo_path)[1] == old_vers, \
           'gpo_get_sysvol_gpt_version() did not return the expected version'
+
+    def test_gpt_ext_register(self):
+        ext_path = '/home/dmulder/code/samba/bin/python/samba/gp_sec_ext.py'
+        ext_guid = '{827D319E-6EAC-11D2-A4EA-00C04F79F83A}'
+        register_gp_extension(ext_guid, 'gp_sec_ext', ext_path,
+                              smb_conf=self.lp.configfile,
+                              machine=True, user=False)
+        gp_exts = list_gp_extensions(self.lp.configfile)
+        assert ext_guid in gp_exts.keys(), \
+            'Failed to list gp exts from registry'
+        assert gp_exts[ext_guid]['DllName'] == ext_path, \
+            'Failed to list gp exts from registry'
+
+        unregister_gp_extension(ext_guid)
+        gp_exts = list_gp_extensions(self.lp.configfile)
+        assert ext_guid not in gp_exts.keys(), \
+            'Failed to unregister gp exts from registry'
 

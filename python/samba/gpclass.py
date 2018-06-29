@@ -29,6 +29,8 @@ from samba.net import Net
 from samba.dcerpc import nbt
 from samba import smb
 import samba.gpo as gpo
+from samba.param import LoadParm
+from uuid import UUID
 
 try:
     from enum import Enum
@@ -313,7 +315,12 @@ class gp_ext(object):
         # Fixing the bug where only some Linux Boxes capitalize MACHINE
         try:
             blist = afile.split('/')
-            idx = afile.lower().split('/').index('machine')
+            index = None
+            if 'machine' in afile.lower():
+                index = 'machine'
+            elif 'user' in afile.lower():
+                index = 'user'
+            idx = afile.lower().split('/').index(index)
             for case in [
                             blist[idx].upper(),
                             blist[idx].capitalize(),
@@ -479,3 +486,86 @@ def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
             gp_db.delete(str(attr_obj), attr[0])
         gp_db.commit()
 
+def register_gp_extension(guid, name, path,
+                          smb_conf=None, machine=True, user=True):
+    # Check that the module exists
+    if not os.path.exists(path):
+        return False
+    # Check for valid guid
+    if not guid[0] == '{' or not guid[-1] == '}':
+        return False
+    try:
+        uuid = guid[1:-1]
+        UUID(uuid, version=4)
+    except:
+        return False
+
+    lp = LoadParm()
+    if smb_conf is not None:
+        lp.load(smb_conf)
+    else:
+        lp.load_default()
+    ext_conf = lp.cache_path('gpext.conf')
+    parser = ConfigParser()
+    parser.read(ext_conf)
+    if not guid in parser.sections():
+        parser.add_section(guid)
+    parser.set(guid, 'DllName', path)
+    parser.set(guid, 'ProcessGroupPolicy', name)
+    parser.set(guid, 'NoMachinePolicy', 0 if machine else 1)
+    parser.set(guid, 'NoUserPolicy', 0 if user else 1)
+
+    f = open(ext_conf, 'w')
+    parser.write(f)
+    f.close()
+
+    return True
+
+def list_gp_extensions(smb_conf=None):
+    lp = LoadParm()
+    if smb_conf is not None:
+        lp.load(smb_conf)
+    else:
+        lp.load_default()
+    ext_conf = lp.cache_path('gpext.conf')
+    parser = ConfigParser()
+    parser.read(ext_conf)
+
+    results = {}
+    for guid in parser.sections():
+        results[guid] = {}
+        results[guid]['DllName'] = parser.get(guid, 'DllName')
+        results[guid]['ProcessGroupPolicy'] = \
+            parser.get(guid, 'ProcessGroupPolicy')
+        results[guid]['MachinePolicy'] = \
+            not int(parser.get(guid, 'NoMachinePolicy'))
+        results[guid]['UserPolicy'] = not int(parser.get(guid, 'NoUserPolicy'))
+    return results
+
+def unregister_gp_extension(guid, smb_conf=None):
+    # Check for valid guid
+    if not guid[0] == '{' or not guid[-1] == '}':
+        return False
+    try:
+        uuid = guid[1:-1]
+        UUID(uuid, version=4)
+    except:
+        return False
+
+    lp = LoadParm()
+    if smb_conf is not None:
+        lp.load(smb_conf)
+    else:
+        lp.load_default()
+    ext_conf = lp.cache_path('gpext.conf')
+    parser = ConfigParser()
+    parser.read(ext_conf)
+
+    if guid in parser.sections():
+        parser.remove_section(guid)
+
+    f = open(ext_conf, 'w')
+    parser.write(f)
+    f.close()
+
+    return True
