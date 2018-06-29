@@ -106,6 +106,14 @@ def configure(conf):
 
     conf.RECURSE('lib/replace')
 
+    conf.CHECK_CODE('int s = socket(AF_PACKET, SOCK_RAW, 0);',
+                    define='HAVE_AF_PACKET',
+                    headers='sys/socket.h linux/if_packet.h')
+
+    conf.CHECK_CODE('struct sockaddr_ll sall; sall.sll_family = AF_PACKET;',
+                    define='HAVE_PACKETSOCKET',
+                    headers='sys/socket.h linux/if_packet.h')
+
     if conf.env.standalone_ctdb:
         conf.SAMBA_CHECK_PERL(mandatory=True)
 
