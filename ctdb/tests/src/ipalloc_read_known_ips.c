@@ -17,10 +17,10 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <talloc.h>
-
 #include "replace.h"
 #include "system/network.h"
+
+#include <talloc.h>
 
 #include "lib/util/debug.h"
 
