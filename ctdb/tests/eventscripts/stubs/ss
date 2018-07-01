@@ -152,23 +152,19 @@ listen=false
 header=true
 
 orig="$*"
-temp=$(getopt -n "$prog" -o "txnalHh" -l tcp -l unix -l help -- "$@")
-[ $? -eq 0 ] || usage
 
-eval set -- "$temp"
-
-while true ; do
-	case "$1" in
-	--tcp|-t) tcp=true ; shift ;;
-	--unix|-x) unix=true ; shift ;;
-	-l) listen=true ; shift ;;
-	-a) all=true ; shift ;;
-	-H) header=false ; shift ;;
-	-n) shift ;;
-	--) shift ; break ;;
-	-h|--help|*) usage ;;
+while getopts "txnalHh?" opt ; do
+	case "$opt" in
+	t) tcp=true ;;
+	x) unix=true ;;
+	l) listen=true ;;
+	a) all=true ;;
+	H) header=false ;;
+	n) : ;;
+	\?|h) usage ;;
 	esac
 done
+shift $((OPTIND - 1))
 
 $tcp || $unix || not_supported "$*"
 

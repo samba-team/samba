@@ -27,29 +27,35 @@ not_implemented ()
     exit $not_implemented_exit_code
 }
 
-# Don't set $POSIXLY_CORRECT here.
-_temp=$(getopt -n "$prog" -o "Xvhn:" -l help -- "$@") || \
-    usage
-
-eval set -- "$_temp"
-
 verbose=false
 machine_readable=false
 nodespec=""
 
-args="$*"
+args=""
 
-while true ; do
-    case "$1" in
-	-X) machine_readable=true ; shift ;;
-	-v) verbose=true ; shift ;;
-	-n) nodespec="$2" ; shift 2 ;;
-	--) shift ; break ;;
-	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
-    esac
+# Options and command argument can appear in any order, so when
+# getopts thinks it is done, process any non-option arguments and go
+# around again.
+while [ $# -gt 0 ] ; do
+	while getopts "Xvhn:?" opt ; do
+		case "$opt" in
+		X) machine_readable=true ;;
+		v) verbose=true ;;
+		n) nodespec="$OPTARG" ;;
+		\?|*) usage ;;
+		esac
+	done
+	shift $((OPTIND - 1))
+
+	# Anything left over must be a non-option arg
+	if [ $# -gt 0 ] ; then
+		args="${args}${args:+ }${1}"
+		shift
+	fi
 done
 
-[ $# -ge 1 ] || usage
+[ -n "$args" ] || usage
+set -- $args
 
 setup_tickles ()
 {
