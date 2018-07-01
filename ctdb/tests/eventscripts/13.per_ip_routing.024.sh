@@ -9,7 +9,7 @@ setup
 create_policy_routing_config 1 default
 
 _rt_tables="$CTDB_SYS_ETCDIR/iproute2/rt_tables"
-_rt_orig=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+_rt_orig=$(TMPDIR="$EVENTSCRIPTS_TESTS_VAR_DIR" mktemp)
 cp "$_rt_tables" "$_rt_orig"
 
 ctdb_get_1_public_address | {
