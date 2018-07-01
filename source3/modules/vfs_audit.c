@@ -33,16 +33,32 @@
 static int audit_syslog_facility(vfs_handle_struct *handle)
 {
 	static const struct enum_list enum_log_facilities[] = {
-		{ LOG_USER, "USER" },
-		{ LOG_LOCAL0, "LOCAL0" },
-		{ LOG_LOCAL1, "LOCAL1" },
-		{ LOG_LOCAL2, "LOCAL2" },
-		{ LOG_LOCAL3, "LOCAL3" },
-		{ LOG_LOCAL4, "LOCAL4" },
-		{ LOG_LOCAL5, "LOCAL5" },
-		{ LOG_LOCAL6, "LOCAL6" },
-		{ LOG_LOCAL7, "LOCAL7" },
-		{ -1, NULL}
+		{ LOG_AUTH,	"AUTH" },
+		{ LOG_CRON,	"CRON" },
+		{ LOG_DAEMON,	"DAEMON" },
+		{ LOG_FTP,	"FTP" },
+		{ LOG_KERN,	"KERN" },
+		{ LOG_LPR,	"LPR" },
+		{ LOG_MAIL,	"MAIL" },
+		{ LOG_NEWS,	"NEWS" },
+#ifdef LOG_NTP
+		{ LOG_NTP,	"NTP" },
+#endif
+#ifdef LOG_SECURITY
+		{ LOG_SECURITY,	"SECURITY" },
+#endif
+		{ LOG_SYSLOG,	"SYSLOG" },
+		{ LOG_USER,	"USER" },
+		{ LOG_UUCP,	"UUCP" },
+		{ LOG_LOCAL0,	"LOCAL0" },
+		{ LOG_LOCAL1,	"LOCAL1" },
+		{ LOG_LOCAL2,	"LOCAL2" },
+		{ LOG_LOCAL3,	"LOCAL3" },
+		{ LOG_LOCAL4,	"LOCAL4" },
+		{ LOG_LOCAL5,	"LOCAL5" },
+		{ LOG_LOCAL6,	"LOCAL6" },
+		{ LOG_LOCAL7,	"LOCAL7" },
+		{ -1,		NULL }
 	};
 
 	int facility;
@@ -64,7 +80,7 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 		{ LOG_NOTICE, "NOTICE" },
 		{ LOG_INFO, "INFO" },
 		{ LOG_DEBUG, "DEBUG" },
-		{ -1, NULL}
+		{ -1, NULL }
 	};
 
 	int priority;
