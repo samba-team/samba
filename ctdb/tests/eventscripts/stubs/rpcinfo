@@ -16,29 +16,23 @@ EOF
 
 parse_options ()
 {
-    _temp=$(getopt -n "$prog" -o "T:h" -- "$@")
+	while getopts "T:h?" opt ; do
+		case "$opt" in
+		T) netid="$OPTARG" ;;
+		\?|h) usage ;;
+		esac
+	done
+	shift $((OPTIND - 1))
 
-    [ $? != 0 ] && usage
+	[ "$netid" = "tcp" ] || usage
 
-    eval set -- "$_temp"
+	host="$1" ; shift
+	[ "$host" = "localhost" -o "$host" = "127.0.0.1" ] || usage
 
-    while true ; do
-	case "$1" in
-	    -T) netid="$2"; shift 2 ;;
-	    --) shift ; break ;;
-	    -h|*) usage ;; # * shouldn't happen, so this is reasonable.
-	esac
-    done
+	[ 1 -le $# -a $# -le 2 ] || usage
 
-    [ "$netid" = "tcp" ] || usage
-
-    host="$1" ; shift
-    [ "$host" = "localhost" -o "$host" = "127.0.0.1" ] || usage
-
-    [ 1 -le $# -a $# -le 2 ] || usage
-
-    p="$1"
-    v="$2"
+	p="$1"
+	v="$2"
 }
 
 parse_options "$@"
