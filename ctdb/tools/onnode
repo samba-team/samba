@@ -72,39 +72,30 @@ fi
 
 parse_options ()
 {
-    # $POSIXLY_CORRECT means that the command passed to onnode can
-    # take options and getopt won't reorder things to make them
-    # options ot onnode.
-    local temp
-    # Not on the previous line - local returns 0!
-    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqvPi" -l help -- "$@")
+	local opt
 
-    # No! Checking the exit code afterwards is actually clearer...
-    # shellcheck disable=SC2181
-    [ $? -eq 0 ] || usage
+	while getopts "cf:hno:pqvPi?" opt ; do
+		case "$opt" in
+		c) current=true ;;
+		f) ctdb_nodes_file="$OPTARG" ;;
+		n) names_ok=true ;;
+		o) prefix="$OPTARG" ;;
+		p) parallel=true ;;
+		q) quiet=true ;;
+		v) verbose=true ;;
+		P) push=true ;;
+		i) stdin=true ;;
+		\?|h) usage ;;
+		esac
+	done
+	shift $((OPTIND - 1))
 
-    eval set -- "$temp"
+	if [ $# -lt 2 ] ; then
+		usage
+	fi
 
-    while true ; do
-	case "$1" in
-	    -c) current=true ; shift ;;
-	    -f) ctdb_nodes_file="$2" ; shift 2 ;;
-	    -n) names_ok=true ; shift ;;
-	    -o) prefix="$2" ; shift 2 ;;
-	    -p) parallel=true ; shift ;;
-	    -q) quiet=true ; shift ;;
-	    -v) verbose=true ; shift ;;
-	    -P) push=true ; shift ;;
-	    -i) stdin=true ; shift ;;
-	    --) shift ; break ;;
-	    -h|--help|*) usage ;; # Shouldn't happen, so this is reasonable.
-	esac
-    done
-
-    [ $# -lt 2 ] && usage
-
-    nodespec="$1" ; shift
-    command="$*"
+	nodespec="$1" ; shift
+	command="$*"
 }
 
 echo_nth ()
