@@ -9,7 +9,7 @@ EOF
 unit_test run_proc_test 0 -1 /a/b/c
 
 # Non-executable path
-prog=$(mktemp --tmpdir="$TEST_VAR_DIR")
+prog=$(TMPDIR="$TEST_VAR_DIR" mktemp)
 cat > "$prog" <<EOF
 echo hello
 EOF
@@ -49,7 +49,7 @@ EOF
 unit_test run_proc_test 5 -1 "$prog"
 
 # Redirected output
-output=$(mktemp --tmpdir="$TEST_VAR_DIR")
+output=$(TMPDIR="$TEST_VAR_DIR" mktemp)
 cat > "$prog" <<EOF
 #!/bin/sh
 exec >"$output" 2>&1
@@ -110,7 +110,7 @@ EOF
 unit_test run_proc_test 1 -1 "$prog"
 
 # No zombie processes
-pidfile=$(mktemp --tmpdir="$TEST_VAR_DIR")
+pidfile=$(TMPDIR="$TEST_VAR_DIR" mktemp)
 
 cat > "$prog" <<EOF
 #!/bin/sh

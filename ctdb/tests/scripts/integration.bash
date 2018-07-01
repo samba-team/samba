@@ -633,7 +633,7 @@ nfs_test_setup ()
     nfs_first_export=$(showmount -e $test_ip | sed -n -e '2s/ .*//p')
 
     echo "Creating test subdirectory..."
-    try_command_on_node $test_node "mktemp -d --tmpdir=$nfs_first_export"
+    try_command_on_node $test_node "TMPDIR=$nfs_first_export mktemp -d"
     nfs_test_dir="$out"
     try_command_on_node $test_node "chmod 777 $nfs_test_dir"
 

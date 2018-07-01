@@ -8,7 +8,7 @@ run_event_init() failed, ret=2
 EOF
 unit_test run_event_test /a/b/c list
 
-scriptdir=$(mktemp -d --tmpdir="$TEST_VAR_DIR")
+scriptdir=$(TMPDIR="$TEST_VAR_DIR" mktemp -d)
 
 # Empty directory
 ok <<EOF

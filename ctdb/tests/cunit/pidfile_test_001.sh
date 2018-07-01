@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-pidfile=$(mktemp --tmpdir="$TEST_VAR_DIR")
+pidfile=$(TMPDIR="$TEST_VAR_DIR" mktemp)
 
 ok_null
 unit_test pidfile_test $pidfile
