@@ -114,7 +114,7 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True, servi
         elif ntacl.version == 4:
             return ntacl.info.sd
     else:
-        return smbd.get_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, service=service)
+        return smbd.get_nt_acl(file, SECURITY_SECINFO_FLAGS, service=service)
 
 
 def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True, skip_invalid_chown=False, passdb=None, service=None):
@@ -150,7 +150,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
                     sd2 = sd
                     sd2.owner_sid = administrator
 
-                    smbd.set_nt_acl(file, security.SECINFO_OWNER |security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd2, service=service)
+                    smbd.set_nt_acl(file, SECURITY_SECINFO_FLAGS, sd2, service=service)
 
                     # and then set an NTVFS ACL (which does not set the posix ACL) to pretend the owner really was set
                     use_ntvfs = True
@@ -184,7 +184,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
             samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
                                              ndr_pack(ntacl))
     else:
-        smbd.set_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd, service=service)
+        smbd.set_nt_acl(file, SECURITY_SECINFO_FLAGS, sd, service=service)
 
 
 def ldapmask2filemask(ldm):
