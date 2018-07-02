@@ -263,6 +263,8 @@ bld.SAMBA3_BINARY('net',
                  printing_migrate
                  trusts_util
                  IDMAP_AUTORID_TDB
+                 jansson
+                 common_auth
                  ''')
 
 bld.SAMBA3_BINARY('mvxattr',

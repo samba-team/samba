@@ -973,6 +973,7 @@ static struct functable net_func[] = {
 		/* Options for 'net ads join or leave' */
 		{"no-dns-updates", 0, POPT_ARG_NONE, &c->opt_no_dns_updates},
 		{"keep-account", 0, POPT_ARG_NONE, &c->opt_keep_account},
+		{"json", 0, POPT_ARG_NONE, &c->opt_json},
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};

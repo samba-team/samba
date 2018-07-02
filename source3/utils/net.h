@@ -86,6 +86,7 @@ struct net_context {
 	const char *opt_precheck;
 	int opt_no_dns_updates;
 	int opt_keep_account;
+	int opt_json;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;

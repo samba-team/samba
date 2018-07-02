@@ -173,6 +173,123 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 }
 
 
+#ifdef HAVE_JANSSON
+#include <jansson.h>
+#include "audit_logging.h" /* various JSON helpers */
+#include "auth/common_auth.h"
+
+/*
+ * note: JSON output deliberately bypasses gettext so as to provide the same
+ * output irrespective of the locale.
+ */
+
+static int net_ads_info_json(ADS_STRUCT *ads)
+{
+	int ret = 0;
+	char addr[INET6_ADDRSTRLEN];
+	time_t pass_time;
+	struct json_object jsobj = json_new_object();
+	TALLOC_CTX *ctx = NULL;
+	char *json = NULL;
+
+	if (json_is_invalid(&jsobj)) {
+		d_fprintf(stderr, _("error setting up JSON value\n"));
+
+		goto failure;
+	}
+
+	pass_time = secrets_fetch_pass_last_set_time(ads->server.workgroup);
+
+	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
+
+	ret = json_add_string (&jsobj, "LDAP server", addr);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_string (&jsobj, "LDAP server name",
+			       ads->config.ldap_server_name);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_string (&jsobj, "Realm", ads->config.realm);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_string (&jsobj, "Bind Path", ads->config.bind_path);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_int (&jsobj, "LDAP port", ads->ldap.port);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_int (&jsobj, "Server time", ads->config.current_time);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_string (&jsobj, "KDC server", ads->auth.kdc_server);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_int (&jsobj, "Server time offset",
+			    ads->auth.time_offset);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	ret = json_add_int (&jsobj, "Last machine account password change",
+			    pass_time);
+	if (ret != 0) {
+		goto failure;
+	}
+
+	if (json_is_invalid(&jsobj)) {
+		ret = -1;
+		goto failure;
+	}
+
+	ctx = talloc_new(NULL);
+	if (ctx == NULL) {
+		ret = -1;
+		d_fprintf(stderr, _("Out of memory\n"));
+
+		goto failure;
+	}
+
+	json = json_to_string(ctx, &jsobj);
+	if (json) {
+		d_printf("%s\n", json);
+	} else {
+		ret = -1;
+		d_fprintf(stderr, _("error encoding to JSON\n"));
+	}
+
+	TALLOC_FREE(ctx);
+failure:
+	ads_destroy(&ads);
+
+	return ret;
+}
+
+#else /* [HAVE_JANSSON] */
+
+static int net_ads_info_json(ADS_STRUCT *)
+{
+	d_fprintf(stderr, _("JSON support not available\n"));
+
+	return -1;
+}
+
+#endif /* [HAVE_JANSSON] */
+
+
 
 static int net_ads_info(struct net_context *c, int argc, const char **argv)
 {
@@ -206,6 +323,10 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 
 	if ( !ADS_ERR_OK(ads_current_time( ads )) ) {
 		d_fprintf( stderr, _("Failed to get server's current time!\n"));
+	}
+
+	if (c->opt_json) {
+		return net_ads_info_json(ads);
 	}
 
 	pass_time = secrets_fetch_pass_last_set_time(ads->server.workgroup);
