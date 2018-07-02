@@ -178,9 +178,12 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	serverinfo->dwDsPollingInterval = 0xB4; /* 3 minutes (default) */
 	serverinfo->dwLocalNetPriorityNetMask = 0x000000FF;
 
-	serverinfo->dwScavengingInterval = 0;
-	serverinfo->dwDefaultRefreshInterval = 0xA8;   /* 7 days in hours */
-	serverinfo->dwDefaultNoRefreshInterval = 0xA8; /* 7 days in hours */
+	serverinfo->dwScavengingInterval = lpcfg_parm_int(
+	    lp_ctx, NULL, "dnsserver", "ScavengingInterval", 24 * 7);
+	serverinfo->dwDefaultRefreshInterval = lpcfg_parm_int(
+	    lp_ctx, NULL, "dnsserver", "DefaultRefreshInterval", 24 * 3);
+	serverinfo->dwDefaultNoRefreshInterval = lpcfg_parm_int(
+	    lp_ctx, NULL, "dnsserver", "DefaultNoRefreshInterval", 24 * 3);
 
 	serverinfo->dwLastScavengeTime = 0;
 

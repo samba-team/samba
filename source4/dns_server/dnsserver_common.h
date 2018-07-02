@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "rpc_server/dnsserver/dnsserver.h"
+
 #ifndef __DNSSERVER_COMMON_H__
 #define __DNSSERVER_COMMON_H__
 
@@ -55,6 +57,10 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 WERROR dns_name_check(TALLOC_CTX *mem_ctx,
 		      size_t len,
 		      const char *name);
+WERROR dns_get_zone_properties(struct ldb_context *samdb,
+			       TALLOC_CTX *mem_ctx,
+			       struct ldb_dn *zone_dn,
+			       struct dnsserver_zoneinfo *zoneinfo);
 WERROR dns_common_replace(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,

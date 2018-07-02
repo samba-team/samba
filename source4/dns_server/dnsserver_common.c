@@ -31,6 +31,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "dns_server/dnsserver_common.h"
+#include "rpc_server/dnsserver/dnsserver.h"
 #include "lib/util/dlinklist.h"
 
 #undef DBGC_CLASS
@@ -723,6 +724,93 @@ static WERROR check_name_list(TALLOC_CTX *mem_ctx, uint16_t rec_count,
 	return WERR_OK;
 }
 
+WERROR dns_get_zone_properties(struct ldb_context *samdb,
+			       TALLOC_CTX *mem_ctx,
+			       struct ldb_dn *zone_dn,
+			       struct dnsserver_zoneinfo *zoneinfo)
+{
+
+	int ret, i;
+	struct dnsp_DnsProperty *prop = NULL;
+	struct ldb_message_element *element = NULL;
+	const char *const attrs[] = {"dNSProperty", NULL};
+	struct ldb_result *res = NULL;
+	enum ndr_err_code err;
+
+	ret = ldb_search(samdb,
+			 mem_ctx,
+			 &res,
+			 zone_dn,
+			 LDB_SCOPE_BASE,
+			 attrs,
+			 "(objectClass=dnsZone)");
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("dnsserver: Failed to find DNS zone: %s\n",
+			ldb_dn_get_linearized(zone_dn));
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	element = ldb_msg_find_element(res->msgs[0], "dNSProperty");
+	if (element == NULL) {
+		return DNS_ERR(NOTZONE);
+	}
+
+	for (i = 0; i < element->num_values; i++) {
+		prop = talloc_zero(mem_ctx, struct dnsp_DnsProperty);
+		if (prop == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		err = ndr_pull_struct_blob(
+		    &(element->values[i]),
+		    mem_ctx,
+		    prop,
+		    (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		switch (prop->id) {
+		case DSPROPERTY_ZONE_AGING_STATE:
+			zoneinfo->fAging = prop->data.aging_enabled;
+			break;
+		case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
+			zoneinfo->dwNoRefreshInterval =
+			    prop->data.norefresh_hours;
+			break;
+		case DSPROPERTY_ZONE_REFRESH_INTERVAL:
+			zoneinfo->dwRefreshInterval = prop->data.refresh_hours;
+			break;
+		case DSPROPERTY_ZONE_ALLOW_UPDATE:
+			zoneinfo->fAllowUpdate = prop->data.allow_update_flag;
+			break;
+		case DSPROPERTY_ZONE_AGING_ENABLED_TIME:
+			zoneinfo->dwAvailForScavengeTime =
+			    prop->data.next_scavenging_cycle_hours;
+			break;
+		case DSPROPERTY_ZONE_SCAVENGING_SERVERS:
+			zoneinfo->aipScavengeServers->AddrCount =
+			    prop->data.servers.addrCount;
+			zoneinfo->aipScavengeServers->AddrArray =
+			    prop->data.servers.addr;
+			break;
+		case DSPROPERTY_ZONE_EMPTY:
+		case DSPROPERTY_ZONE_TYPE:
+		case DSPROPERTY_ZONE_SECURE_TIME:
+		case DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME:
+		case DSPROPERTY_ZONE_MASTER_SERVERS:
+		case DSPROPERTY_ZONE_AUTO_NS_SERVERS:
+		case DSPROPERTY_ZONE_DCPROMO_CONVERT:
+		case DSPROPERTY_ZONE_SCAVENGING_SERVERS_DA:
+		case DSPROPERTY_ZONE_MASTER_SERVERS_DA:
+		case DSPROPERTY_ZONE_NS_SERVERS_DA:
+		case DSPROPERTY_ZONE_NODE_DBFLAGS:
+			break;
+		}
+	}
+
+	return WERR_OK;
+}
+
 WERROR dns_common_replace(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,
@@ -738,11 +826,36 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	struct ldb_message *msg = NULL;
 	bool was_tombstoned = false;
 	bool become_tombstoned = false;
+	struct ldb_dn *zone_dn = NULL;
+	struct dnsserver_zoneinfo *zoneinfo = NULL;
+	NTTIME t;
 
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn;
+
+	zone_dn = ldb_dn_copy(mem_ctx, dn);
+	if (zone_dn == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	if (!ldb_dn_remove_child_components(zone_dn, 1)) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+	zoneinfo = talloc(mem_ctx, struct dnsserver_zoneinfo);
+	if (zoneinfo == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	werr = dns_get_zone_properties(samdb, mem_ctx, zone_dn, zoneinfo);
+	if (W_ERROR_EQUAL(DNS_ERR(NOTZONE), werr)) {
+		/*
+		 * We only got zoneinfo for aging so if we didn't find any
+		 * properties then just disable aging and keep going.
+		 */
+		zoneinfo->fAging = 0;
+	} else if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	werr = check_name_list(mem_ctx, rec_count, records);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -779,6 +892,16 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 				was_tombstoned = true;
 			}
 			continue;
+		}
+
+		if (zoneinfo->fAging == 1 && records[i].dwTimeStamp != 0) {
+			unix_to_nt_time(&t, time(NULL));
+			t /= 10 * 1000 * 1000;
+			t /= 3600;
+			if (t - records[i].dwTimeStamp >
+			    zoneinfo->dwNoRefreshInterval) {
+				records[i].dwTimeStamp = t;
+			}
 		}
 
 		records[i].dwSerial = serial;

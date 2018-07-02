@@ -300,6 +300,7 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     struct dnsp_DnssrvRpcRecord *r)
 {
 	enum ndr_err_code ndr_err;
+	NTTIME t;
 
 	if (rrec->rr_type == DNS_QTYPE_ALL) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -310,6 +311,10 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 	r->wType = (enum dns_record_type) rrec->rr_type;
 	r->dwTtlSeconds = rrec->ttl;
 	r->rank = DNS_RANK_ZONE;
+	unix_to_nt_time(&t, time(NULL));
+	t /= 10 * 1000 * 1000;
+	t /= 3600;
+	r->dwTimeStamp = t;
 
 	/* If we get QCLASS_ANY, we're done here */
 	if (rrec->rr_class == DNS_QCLASS_ANY) {
@@ -535,7 +540,10 @@ static WERROR handle_one_update(struct dns_server *dns,
 				continue;
 			}
 
-			recs[i] = recs[rcount];
+			recs[i].data = recs[rcount].data;
+			recs[i].wType = recs[rcount].wType;
+			recs[i].dwTtlSeconds = recs[rcount].dwTtlSeconds;
+			recs[i].rank = recs[rcount].rank;
 
 			werror = dns_replace_records(dns, mem_ctx, dn,
 						     needs_add, recs, rcount);

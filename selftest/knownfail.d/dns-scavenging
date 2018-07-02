@@ -3,9 +3,4 @@
 #
 # Will be removed once the tests are implemented.
 #
-samba.tests.dns.__main__.TestZones.test_aging_refresh\(fl2003dc:local\)
-samba.tests.dns.__main__.TestZones.test_aging_update\(fl2003dc:local\)
-samba.tests.dns.__main__.TestZones.test_aging_update_disabled\(fl2003dc:local\)
 samba.tests.dns.__main__.TestZones.test_basic_scavenging\(fl2003dc:local\)
-samba.tests.dns.__main__.TestZones.test_set_aging\(fl2003dc:local\)
-samba.tests.dns.__main__.TestZones.test_set_aging_disabled\(fl2003dc:local\)

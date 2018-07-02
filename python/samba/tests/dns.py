@@ -1104,6 +1104,7 @@ class TestZones(DNSTest):
             self.assertTrue(rec.dwTimeStamp > 0)
             rec.dwTimeStamp -= interval*5
         self.ldap_modify_dnsrecs(name, mod_ts)
+        self.assertTrue(callable(getattr(dsdb, '_scavenge_dns_records', None)))
         dsdb._scavenge_dns_records(self.samdb)
 
         recs = self.ldap_get_dns_records(name)
