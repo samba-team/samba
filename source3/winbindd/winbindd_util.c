@@ -1605,6 +1605,8 @@ bool parse_domain_user(const char *domuser,
 		} else if (assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
 			fstrcpy(namespace, domain);
+		} else {
+			fstrcpy(namespace, lp_netbios_name());
 		}
 	}
 
