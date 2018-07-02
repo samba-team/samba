@@ -6,6 +6,7 @@
 "Python support"
 
 import os, sys
+import re
 import TaskGen, Utils, Options
 from Logs import debug, warn, info
 from TaskGen import extension, before, after, feature
@@ -179,6 +180,8 @@ def check_python_headers(conf, mandatory=True):
 	except RuntimeError:
 		conf.fatal("Python development headers not found (-v for details).")
 
+	if re.match('\.cpython-3.*\.so$', python_SO):
+		python_SO = ".python%s.so" % python_LDVERSION
 	conf.log.write("""Configuration returned from %r:
 python_prefix = %r
 python_SO = %r
