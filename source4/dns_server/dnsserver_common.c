@@ -1056,7 +1056,11 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 	struct ldb_dn *dn;
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;
+	struct ldb_val host_part;
 	WERROR werr;
+	bool ok;
+	int ret;
+	const char *casefold = NULL;
 
 	if (name == NULL) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -1065,7 +1069,13 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 	if (strcmp(name, "") == 0) {
 		base = ldb_get_default_basedn(samdb);
 		dn = ldb_dn_copy(mem_ctx, base);
-		ldb_dn_add_child_fmt(dn, "DC=@,DC=RootDNSServers,CN=MicrosoftDNS,CN=System");
+		ok = ldb_dn_add_child_fmt(dn,
+					  "DC=@,DC=RootDNSServers,CN=MicrosoftDNS,CN=System");
+		if (ok == false) {
+			TALLOC_FREE(dn);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
 		*_dn = dn;
 		return WERR_OK;
 	}
@@ -1091,13 +1101,56 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 
 	if (host_part_len == 0) {
 		dn = ldb_dn_copy(mem_ctx, z->dn);
-		ldb_dn_add_child_fmt(dn, "DC=@");
+		ok = ldb_dn_add_child_fmt(dn, "DC=@");
+		if (! ok) {
+			TALLOC_FREE(dn);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
 		*_dn = dn;
 		return WERR_OK;
 	}
 
 	dn = ldb_dn_copy(mem_ctx, z->dn);
-	ldb_dn_add_child_fmt(dn, "DC=%*.*s", (int)host_part_len, (int)host_part_len, name);
+	if (dn == NULL) {
+		TALLOC_FREE(dn);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	ok = ldb_dn_add_child_fmt(dn, "DC=X");
+
+	if (ok == false) {
+		TALLOC_FREE(dn);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	host_part = data_blob_const(name, host_part_len);
+
+	ret = ldb_dn_set_component(dn, 0, "DC", host_part);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(dn);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	/*
+	 * Check the new DN here for validity, so as to catch errors
+	 * early
+	 */
+	ok = ldb_dn_validate(dn);
+	if (ok == false) {
+		TALLOC_FREE(dn);
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	/*
+	 * The value from this check is saved in the DN, and doing
+	 * this here allows an easy return here.
+	 */
+	casefold = ldb_dn_get_casefold(dn);
+	if (casefold == NULL) {
+		TALLOC_FREE(dn);
+		return DNS_ERR(NAME_ERROR);
+	}
+
 	*_dn = dn;
 	return WERR_OK;
 }
