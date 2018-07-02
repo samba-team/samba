@@ -26,6 +26,7 @@
 #include "ldb_matching_rules.h"
 #include "libcli/security/security.h"
 #include "dsdb/common/util.h"
+#include "librpc/gen_ndr/ndr_dnsp.h"
 
 static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 					     struct ldb_context *ldb,
@@ -328,6 +329,125 @@ static int ldb_comparator_trans(struct ldb_context *ldb,
 
 
 /*
+ * This rule provides match of a dns object with expired records.
+ *
+ * This allows a search filter such as:
+ *
+ * dnsRecord:1.3.6.1.4.1.7165.4.5.3:=131139216000000000
+ *
+ * This allows the caller to find records that should become a DNS
+ * tomestone, despite that information being deep within an NDR packed
+ * object
+ */
+static int dsdb_match_for_dns_to_tombstone_time(struct ldb_context *ldb,
+						const char *oid,
+						const struct ldb_message *msg,
+						const char *attribute_to_match,
+						const struct ldb_val *value_to_match,
+						bool *matched)
+{
+	TALLOC_CTX *tmp_ctx;
+	unsigned int i;
+	struct ldb_message_element *el = NULL;
+	struct auth_session_info *session_info = NULL;
+	uint64_t tombstone_time;
+	struct dnsp_DnssrvRpcRecord *rec = NULL;
+	enum ndr_err_code err;
+	*matched = false;
+
+	/* Needs to be dnsRecord, no match otherwise */
+	if (ldb_attr_cmp(attribute_to_match, "dnsRecord") != 0) {
+		return LDB_SUCCESS;
+	}
+
+	el = ldb_msg_find_element(msg, attribute_to_match);
+	if (el == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	session_info = talloc_get_type(ldb_get_opaque(ldb, "sessionInfo"),
+				       struct auth_session_info);
+	if (session_info == NULL) {
+		return ldb_oom(ldb);
+	}
+	if (security_session_user_level(session_info, NULL)
+		!= SECURITY_SYSTEM) {
+
+		DBG_ERR("unauthorised access\n");
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+
+	/* Just check we don't allow the caller to fill our stack */
+	if (value_to_match->length >= 64) {
+		DBG_ERR("Invalid timestamp passed\n");
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	} else {
+		char *p = NULL;
+		char s[value_to_match->length+1];
+		memcpy(s, value_to_match->data, value_to_match->length);
+		s[value_to_match->length] = 0;
+		if (s[0] == '\0' || s[0] == '-') {
+			DBG_ERR("Empty timestamp passed\n");
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+		tombstone_time = strtoull(s, &p, 10);
+		if (p == NULL || p == s || *p != '\0' ||
+		    tombstone_time == ULLONG_MAX) {
+			DBG_ERR("Invalid timestamp string passed\n");
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		rec = talloc_zero(tmp_ctx, struct dnsp_DnssrvRpcRecord);
+		if (rec == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return ldb_oom(ldb);
+		}
+		err = ndr_pull_struct_blob(
+			&(el->values[i]),
+			tmp_ctx,
+			rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)){
+			DBG_ERR("Failed to pull dns rec blob.\n");
+			TALLOC_FREE(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (rec->wType == DNS_TYPE_SOA || rec->wType == DNS_TYPE_NS) {
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+
+		if (rec->wType == DNS_TYPE_TOMBSTONE) {
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+		if (rec->dwTimeStamp == 0) {
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+		if (rec->dwTimeStamp > tombstone_time) {
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+
+		*matched = true;
+		break;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
+/*
  * This rule provides match of a link attribute against a 'should be expunged' criteria
  *
  * This allows a search filter such as:
@@ -448,7 +568,8 @@ static int dsdb_match_for_expunge(struct ldb_context *ldb,
 int ldb_register_samba_matching_rules(struct ldb_context *ldb)
 {
 	struct ldb_extended_match_rule *transitive_eval = NULL,
-				       *match_for_expunge = NULL;
+		*match_for_expunge = NULL,
+		*match_for_dns_to_tombstone_time = NULL;
 	int ret;
 
 	transitive_eval = talloc_zero(ldb, struct ldb_extended_match_rule);
@@ -466,6 +587,19 @@ int ldb_register_samba_matching_rules(struct ldb_context *ldb)
 	ret = ldb_register_extended_match_rule(ldb, match_for_expunge);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(match_for_expunge);
+		return ret;
+	}
+
+	match_for_dns_to_tombstone_time = talloc_zero(
+		ldb,
+		struct ldb_extended_match_rule);
+	match_for_dns_to_tombstone_time->oid = DSDB_MATCH_FOR_DNS_TO_TOMBSTONE_TIME;
+	match_for_dns_to_tombstone_time->callback
+		= dsdb_match_for_dns_to_tombstone_time;
+	ret = ldb_register_extended_match_rule(ldb,
+					       match_for_dns_to_tombstone_time);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(match_for_dns_to_tombstone_time);
 		return ret;
 	}
 

@@ -1091,6 +1091,52 @@ class TestZones(DNSTest):
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].dwTimeStamp, 0)
 
+    def test_dns_tombstone_custom_match_rule(self):
+        name,txt = 'agingtest', ['test txt']
+        name2,txt2 = 'agingtest2', ['test txt2']
+        name3,txt3 = 'agingtest3', ['test txt3']
+        self.create_zone(self.zone, aging_enabled=True)
+        interval = 10
+        self.set_params(NoRefreshInterval=interval, RefreshInterval=interval,
+                        Aging=1, zone=self.zone,
+                        AllowUpdate = dnsp.DNS_ZONE_UPDATE_UNSECURE)
+
+        self.dns_update_record(name, txt),
+
+        self.dns_update_record(name2, txt),
+        self.dns_update_record(name2, txt2),
+
+        self.dns_update_record(name3, txt),
+        self.dns_update_record(name3, txt2),
+        last_update = self.dns_update_record(name3, txt3)
+
+        # Modify txt1 of the first 2 names
+        def mod_ts(rec):
+            if rec.data.str == txt:
+                rec.dwTimeStamp -= 2
+        self.ldap_modify_dnsrecs(name, mod_ts)
+        self.ldap_modify_dnsrecs(name2, mod_ts)
+
+        recs = self.ldap_get_dns_records(name3)
+        expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={})"
+        expr = expr.format(int(last_update.dwTimeStamp)-1)
+        try:
+            res = self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_SUBTREE,
+                                    expression=expr, attrs=["*"])
+        except ldb.LdbError as e:
+            self.fail(str(e))
+        updated_names = {str(r.get('name')) for r in res}
+        self.assertEqual(updated_names, set([name, name2]))
+
+    def test_dns_tombstone_custom_match_rule_fail(self):
+        self.create_zone(self.zone, aging_enabled=True)
+
+        # The check here is that this does not blow up on silly input
+        expr = "(dnsProperty:1.3.6.1.4.1.7165.4.5.3:=1)"
+        res = self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_SUBTREE,
+                                expression=expr, attrs=["*"])
+        self.assertEquals(len(res), 0)
+
     def test_basic_scavenging(self):
         self.create_zone(self.zone, aging_enabled=True)
         interval = 1
