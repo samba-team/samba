@@ -2,19 +2,20 @@
 # Blackbox test for wbinfo lookup for account name and upn
 # Copyright (c) 2018 Andreas Schneider <asn@samba.org>
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 6 ]; then
 cat <<EOF
-Usage: $(basename $0) DOMAIN REALM USERNAME1 UPN_NAME1 USERNAME2 UPN_NAME2
+Usage: $(basename $0) DOMAIN REALM OWN_DOMAIN USERNAME1 UPN_NAME1 USERNAME2 UPN_NAME2
 EOF
 exit 1;
 fi
 
 DOMAIN=$1
 REALM=$2
-USERNAME1=$3
-UPN_NAME1=$4
-USERNAME2=$5
-UPN_NAME2=$6
+OWN_DOMAIN=$3
+USERNAME1=$4
+UPN_NAME1=$5
+USERNAME2=$6
+UPN_NAME2=$7
 shift 6
 
 failed=0
@@ -31,9 +32,9 @@ test_user_info()
 {
 	local cmd out ret user domain upn userinfo
 
-	domain="$1"
-	user="$2"
-	upn="$3"
+	local domain="$1"
+	local user="$2"
+	local upn="$3"
 
 	if [ $# -lt 3 ]; then
 		userinfo="$domain/$user"
@@ -62,6 +63,39 @@ test_user_info()
 	return 0
 }
 
+test_getpwnam()
+{
+	local cmd out ret
+
+	local lookup_username=$1
+	local expected_return=$2
+	local expected_output=$3
+
+	cmd='getent passwd $lookup_username'
+	eval echo "$cmd"
+	out=$(eval $cmd)
+	ret=$?
+
+	if [ $ret -ne $expected_return ]; then
+		echo "return code: $ret, expected return code is: $expected_return"
+		echo "$out"
+		return 1
+	fi
+
+	if [ -n "$expected_output" ]; then
+		echo "$out" | grep "$expected_output"
+		ret=$?
+
+		if [ $ret -ne 0 ]; then
+			echo "Unable to find $expected_output in:"
+			echo "$out"
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
 testit "name_to_sid.domain.$USERNAME1" $wbinfo_tool --name-to-sid $DOMAIN/$USERNAME1 || failed=$(expr $failed + 1)
 testit "name_to_sid.upn.$UPN_NAME1" $wbinfo_tool --name-to-sid $UPN1 || failed=$(expr $failed + 1)
 
@@ -79,5 +113,24 @@ UPN_NAME3="testdenied_upn"
 UPN3="$UPN_NAME3@${REALM}.upn"
 testit "name_to_sid.upn.$UPN_NAME3" $wbinfo_tool --name-to-sid $UPN3 || failed=$(expr $failed + 1)
 testit "user_info.upn.$UPN_NAME3" test_user_info $DOMAIN $USERNAME3 $UPN3 || failed=$(expr $failed + 1)
+
+testit "getpwnam.domain.$DOMAIN.$USERNAME1" test_getpwnam "$DOMAIN/$USERNAME1" 0 "$DOMAIN/$USERNAME1" || failed=$(expr $failed + 1)
+
+testit "getpwnam.upn.$UPN_NAME1" test_getpwnam "$UPN1" 0 "$DOMAIN/$USERNAME1" || failed=$(expr $failed + 1)
+
+# We should not be able to lookup the user just by the name
+test_ret=0
+test_output="$DOMAIN/$USERNAME1"
+
+if [ "$ENVNAME" = "ad_member" ]; then
+	test_ret=2
+	test_output=""
+fi
+if [ "$ENVNAME" = "fl2008r2dc" ]; then
+	test_ret=0
+	test_output="$OWN_DOMAIN/$USERNAME1"
+fi
+
+testit "getpwnam.local.$USERNAME1" test_getpwnam "$USERNAME1" $test_ret $test_output || failed=$(expr $failed + 1)
 
 exit $failed

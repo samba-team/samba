@@ -219,13 +219,13 @@ env = "ad_member:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [ os.path.join(srcdir(),
                             "nsswitch/tests/test_wbinfo_user_info.sh"),
-                '$DOMAIN', '$REALM', 'alice', 'alice', 'jane', 'jane.doe' ])
+                '$DOMAIN', '$REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
 
 env = "fl2008r2dc:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [ os.path.join(srcdir(),
                             "nsswitch/tests/test_wbinfo_user_info.sh"),
-                '$TRUST_DOMAIN', '$TRUST_REALM', 'alice', 'alice', 'jane', 'jane.doe' ])
+                '$TRUST_DOMAIN', '$TRUST_REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
 
 env = "ad_member"
 t = "WBCLIENT-MULTI-PING"
