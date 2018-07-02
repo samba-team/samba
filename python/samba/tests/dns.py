@@ -1435,27 +1435,36 @@ class TestRPCRoundtrip(DNSTest):
                              dnsp.DNS_TYPE_TXT, '"NULL" "NULL"'))
 
     def test_update_add_null_char_rpc_to_dns(self):
-        prefix, txt = 'nulltextrec', ['NULL\x00BYTE']
-        prefix = 'rpc' + prefix
+        prefix = 'rpcnulltextrec'
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"NULL"')
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"NULL\x00BYTE"')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:
-            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                     0, self.server_ip, self.get_dns_domain(),
-                                     name, add_rec_buf, None)
+            self.rpc_conn.DnssrvUpdateRecord2(
+                dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                0,
+                self.server_ip,
+                self.get_dns_domain(),
+                name,
+                add_rec_buf,
+                None)
 
         except WERRORError as e:
             self.fail(str(e))
 
         try:
-           self.check_query_txt(prefix, ['NULL'])
+            self.check_query_txt(prefix, ['NULL'])
         finally:
-            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                              0, self.server_ip, self.get_dns_domain(),
-                                              name, None, add_rec_buf)
+            self.rpc_conn.DnssrvUpdateRecord2(
+                dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                0,
+                self.server_ip,
+                self.get_dns_domain(),
+                name,
+                None,
+                add_rec_buf)
 
     def test_update_add_hex_char_txt_record(self):
         "test adding records works"
