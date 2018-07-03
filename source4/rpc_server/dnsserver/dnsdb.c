@@ -86,11 +86,11 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 						struct dnsserver_partition *p)
 {
 	TALLOC_CTX *tmp_ctx;
-	const char *const attrs[] = {"name", NULL};
+	const char * const attrs[] = {"name", "dNSProperty", NULL};
 	struct ldb_dn *dn;
 	struct ldb_result *res;
 	struct dnsserver_zone *zones, *z;
-	int i, ret;
+	int i, j, ret;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -116,14 +116,18 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 	zones = NULL;
 	for(i=0; i<res->count; i++) {
 		char *name;
+		struct ldb_message_element *element = NULL;
+		struct dnsp_DnsProperty *props = NULL;
+		enum ndr_err_code err;
 		z = talloc_zero(mem_ctx, struct dnsserver_zone);
 		if (z == NULL) {
 			goto failed;
 		}
 
 		z->partition = p;
-		name = talloc_strdup(
-		    z, ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL));
+		name = talloc_strdup(z,
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "name", NULL));
 		if (strcmp(name, "..TrustAnchors") == 0) {
 			talloc_free(z);
 			continue;
@@ -138,8 +142,27 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 
 		DLIST_ADD_END(zones, z);
 		DEBUG(2, ("dnsserver: Found DNS zone %s\n", z->name));
-	}
 
+		element = ldb_msg_find_element(res->msgs[i], "dNSProperty");
+		if(element != NULL){
+			props = talloc_zero_array(mem_ctx,
+						  struct dnsp_DnsProperty,
+						  element->num_values);
+			for (j = 0; j < element->num_values; j++ ) {
+				err = ndr_pull_struct_blob(
+					&(element->values[j]),
+					mem_ctx,
+					&props[j],
+					(ndr_pull_flags_fn_t)
+						ndr_pull_dnsp_DnsProperty);
+				if (!NDR_ERR_CODE_IS_SUCCESS(err)){
+					goto failed;
+				}
+			}
+			z->tmp_props = props;
+			z->num_props = element->num_values;
+		}
+	}
 	return zones;
 
 failed:

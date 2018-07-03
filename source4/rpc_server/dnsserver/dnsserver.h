@@ -164,6 +164,8 @@ struct dnsserver_zone {
 	const char *name;
 	struct ldb_dn *zone_dn;
 	struct dnsserver_zoneinfo *zoneinfo;
+	struct dnsp_DnsProperty *tmp_props;
+	int32_t num_props;
 };
 
 
