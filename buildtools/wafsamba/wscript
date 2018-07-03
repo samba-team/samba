@@ -374,6 +374,7 @@ def configure(conf):
         conf.CHECK_CODE('''int main(void) { return 0; }
                            __attribute__((visibility("default"))) void vis_foo2(void) {}''',
                         cflags=conf.env.VISIBILITY_CFLAGS,
+                        strict=True,
                         define='HAVE_VISIBILITY_ATTR', addmain=False)
 
     # check HAVE_CONSTRUCTOR_ATTRIBUTE
@@ -391,6 +392,7 @@ def configure(conf):
             ''',
             'HAVE_CONSTRUCTOR_ATTRIBUTE',
             addmain=False,
+            strict=True,
             msg='Checking for library constructor support')
 
         # check HAVE_DESTRUCTOR_ATTRIBUTE
@@ -408,6 +410,7 @@ def configure(conf):
             ''',
             'HAVE_DESTRUCTOR_ATTRIBUTE',
             addmain=False,
+            strict=True,
             msg='Checking for library destructor support')
 
     conf.CHECK_CODE('''
@@ -424,6 +427,7 @@ def configure(conf):
             ''',
             'HAVE___ATTRIBUTE__',
             addmain=False,
+            strict=True,
             msg='Checking for __attribute__')
 
     if sys.platform.startswith('aix'):
