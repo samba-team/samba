@@ -512,6 +512,11 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
+        bld.SAMBA_BINARY('test_ldb_dn',
+                         source='tests/test_ldb_dn.c',
+                         deps='cmocka ldb',
+                         install=False)
+
         if bld.CONFIG_SET('HAVE_LMDB'):
             bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
                              source='tests/ldb_mod_op_test.c',
@@ -568,6 +573,7 @@ def test(ctx):
 
     cmocka_ret = 0
     test_exes = ['test_ldb_qsort',
+                 'test_ldb_dn',
                  'ldb_msg_test',
                  'ldb_tdb_mod_op_test',
                  'ldb_tdb_guid_mod_op_test',

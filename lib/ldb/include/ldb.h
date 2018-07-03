@@ -1882,6 +1882,9 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child);
 bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...) PRINTF_ATTRIBUTE(2,3);
 bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num);
 bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num);
+bool ldb_dn_add_child_val(struct ldb_dn *dn,
+			  const char *rdn,
+			  struct ldb_val value);
 
 struct ldb_dn *ldb_dn_copy(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 struct ldb_dn *ldb_dn_get_parent(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
