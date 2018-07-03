@@ -44,6 +44,7 @@ def configure(conf):
             ''',
             'HAVE_DESTRUCTOR_ATTRIBUTE',
             addmain=False,
+            strict=True,
             msg='Checking for library destructor support')
 
         # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
@@ -56,6 +57,7 @@ def configure(conf):
             ''',
             'HAVE_FUNCTION_ATTRIBUTE_FORMAT',
             addmain=False,
+            strict=True,
             msg='Checking for printf format validation support')
 
         conf.CHECK_HEADERS('security/pam_appl.h')
