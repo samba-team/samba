@@ -30,6 +30,7 @@ from samba.samba3 import param as s3param
 from samba.dcerpc import security, xattr, idmap
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.samba3 import smbd
+from samba.auth import admin_session
 from samba import smb
 
 # don't include volumes
@@ -117,7 +118,28 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True, servi
         return smbd.get_nt_acl(file, SECURITY_SECINFO_FLAGS, service=service)
 
 
-def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True, skip_invalid_chown=False, passdb=None, service=None):
+def setntacl(lp, file, sddl, domsid,
+             backend=None, eadbfile=None,
+             use_ntvfs=True, skip_invalid_chown=False,
+             passdb=None, service=None, session_info=None):
+    """
+    A wrapper for smbd set_nt_acl api.
+
+    Args:
+        lp (LoadParam): load param from conf
+        file (str): a path to file or dir
+        sddl (str): ntacl sddl string
+        service (str): name of share service, e.g.: sysvol
+        session_info (auth_session_info): session info for authentication
+
+    Note:
+        Get `session_info` with `samba.auth.user_session`, do not use the
+        `admin_session` api.
+
+    Returns:
+        None
+    """
+
     assert(isinstance(domsid, str) or isinstance(domsid, security.dom_sid))
     if isinstance(domsid, str):
         sid = security.dom_sid(domsid)
@@ -150,7 +172,9 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
                     sd2 = sd
                     sd2.owner_sid = administrator
 
-                    smbd.set_nt_acl(file, SECURITY_SECINFO_FLAGS, sd2, service=service)
+                    smbd.set_nt_acl(
+                        file, SECURITY_SECINFO_FLAGS, sd2,
+                        service=service, session_info=session_info)
 
                     # and then set an NTVFS ACL (which does not set the posix ACL) to pretend the owner really was set
                     use_ntvfs = True
@@ -163,7 +187,12 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
                 # This won't work in test environments, as it tries a real (rather than xattr-based fake) chown
 
                 os.chown(file, 0, 0)
-                smbd.set_nt_acl(file, security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd, service=service)
+                smbd.set_nt_acl(
+                    file,
+                    security.SECINFO_GROUP |
+                    security.SECINFO_DACL |
+                    security.SECINFO_SACL,
+                    sd, service=service, session_info=session_info)
 
     if use_ntvfs:
         (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
@@ -184,7 +213,9 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
             samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
                                              ndr_pack(ntacl))
     else:
-        smbd.set_nt_acl(file, SECURITY_SECINFO_FLAGS, sd, service=service)
+        smbd.set_nt_acl(
+            file, SECURITY_SECINFO_FLAGS, sd,
+            service=service, session_info=session_info)
 
 
 def ldapmask2filemask(ldm):
