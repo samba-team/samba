@@ -325,8 +325,9 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.base_dn = self.ldb.domain_dn()
         self.account_lockout_duration = 2
         self.lockout_observation_window = 2
-        self.update_lockout_settings(threshold=3, duration=2,
-                                     observation_window=2)
+        self.update_lockout_settings(threshold=3,
+                                     duration=self.account_lockout_duration,
+                                     observation_window=self.lockout_observation_window)
 
         # update DC to allow password changes for the duration of this test
         self.allow_password_changes()
