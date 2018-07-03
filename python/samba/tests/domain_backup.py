@@ -36,10 +36,10 @@ def get_prim_dom(secrets_path, lp):
                               expression="(objectClass=kerberosSecret)")
 
 
-class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
+class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
 
     def setUp(self):
-        super(DomainBackup, self).setUp()
+        super(DomainBackupBase, self).setUp()
 
         server = os.environ["DC_SERVER"]
         self.user_auth = "-U%s%%%s" % (os.environ["DC_USERNAME"],
@@ -50,6 +50,10 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
                                  self.user_auth)
         self.new_server = "BACKUPSERV"
         self.server = server.upper()
+        self.base_cmd = None
+        self.backup_markers = ['sidForRestore', 'backupDate']
+        self.restore_domain = os.environ["DOMAIN"]
+        self.restore_realm = os.environ["REALM"]
 
     def assert_partitions_present(self, samdb):
         """Asserts all expected partitions are present in the backup samdb"""
@@ -97,7 +101,7 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         with tarfile.open(backup_file) as tf:
             tf.extractall(extract_dir)
 
-    def test_backup_untar(self):
+    def _test_backup_untar(self):
         """Creates a backup, untars the raw files, and sanity-checks the DB"""
         backup_file = self.create_backup()
         self.untar_backup(backup_file)
@@ -110,10 +114,11 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         # check that backup markers were added to the DB
         res = samdb.search(base=ldb.Dn(samdb, "@SAMBA_DSDB"),
                            scope=ldb.SCOPE_BASE,
-                           attrs=['sidForRestore', 'backupDate'])
+                           attrs=self.backup_markers)
         self.assertEqual(len(res), 1)
-        self.assertIsNotNone(res[0].get('sidForRestore'))
-        self.assertIsNotNone(res[0].get('backupDate'))
+        for marker in self.backup_markers:
+            self.assertIsNotNone(res[0].get(marker),
+                                 "%s backup marker missing" % marker)
 
         # We have no secrets.ldb entry as we never got that during the backup.
         secrets_path = os.path.join(private_dir, "secrets.ldb")
@@ -123,7 +128,7 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         # sanity-check that all the partitions got backed up
         self.assert_partitions_present(samdb)
 
-    def test_backup_restore(self):
+    def _test_backup_restore(self):
         """Does a backup/restore, with specific checks of the resulting DB"""
         backup_file = self.create_backup()
         self.restore_backup(backup_file)
@@ -151,7 +156,7 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         self.addCleanup(os.remove, new_smbconf)
         return new_smbconf
 
-    def test_backup_restore_with_conf(self):
+    def _test_backup_restore_with_conf(self):
         """Checks smb.conf values passed to the restore are retained"""
         backup_file = self.create_backup()
 
@@ -159,7 +164,9 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         # dir should get overridden by the restore, the other settings should
         # trickle through into the restored dir's smb.conf
         settings = {'state directory': '/var/run',
-                    'netbios name': 'FOOBAR'}
+                    'netbios name': 'FOOBAR',
+                    'workgroup': 'NOTMYDOMAIN',
+                    'realm': 'NOT.MY.REALM'}
         assert_settings = {'drs: max link sync': '275',
                            'prefork children': '7'}
         settings.update(assert_settings)
@@ -181,6 +188,8 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         smbconf = os.path.join(self.restore_dir(), "etc", "smb.conf")
         bkp_lp = param.LoadParm(filename_for_non_global_lp=smbconf)
         self.assertEqual(bkp_lp.get('netbios name'), self.new_server)
+        self.assertEqual(bkp_lp.get('workgroup'), self.restore_domain)
+        self.assertEqual(bkp_lp.get('realm'), self.restore_realm.upper())
 
         # we restore with a fixed directory structure, so we can sanity-check
         # that the core filepaths settings are what we expect them to be
@@ -206,10 +215,11 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         # check that the backup markers have been removed from the restored DB
         res = samdb.search(base=ldb.Dn(samdb, "@SAMBA_DSDB"),
                            scope=ldb.SCOPE_BASE,
-                           attrs=['sidForRestore', 'backupDate'])
+                           attrs=self.backup_markers)
         self.assertEqual(len(res), 1)
-        self.assertIsNone(res[0].get('sidForRestore'))
-        self.assertIsNone(res[0].get('backupDate'))
+        for marker in self.backup_markers:
+            self.assertIsNone(res[0].get(marker),
+                              "%s backup-marker left behind" % marker)
 
         # check that the repsFrom and repsTo values have been removed
         # from the restored DB
@@ -231,6 +241,7 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         self.assert_partitions_present(samdb)
         self.assert_dcs_present(samdb, self.new_server, expected_count=1)
         self.assert_fsmo_roles(samdb, self.new_server, self.server)
+        return samdb
 
     def assert_fsmo_roles(self, samdb, server, exclude_server):
         """Asserts the expected server is the FSMO role owner"""
@@ -268,9 +279,8 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
     def create_backup(self):
         """Runs the backup cmd to produce a backup file for the testenv DC"""
         # Run the backup command and check we got one backup tar file
-        args = ["domain", "backup", "online",
-                "--server=" + self.server]
-        args += [self.user_auth, "--targetdir=" + self.tempdir]
+        args = self.base_cmd + ["--server=" + self.server, self.user_auth,
+                                "--targetdir=" + self.tempdir]
 
         self.run_cmd(args)
 
@@ -305,3 +315,20 @@ class DomainBackup(SambaToolCmdTest, TestCaseInTempDir):
         self.assert_partitions_present(self.ldb)
         self.assert_dcs_present(self.ldb, self.server)
         self.assert_fsmo_roles(self.ldb, self.server, self.new_server)
+
+
+class DomainBackupOnline(DomainBackupBase):
+
+    def setUp(self):
+        super(DomainBackupOnline, self).setUp()
+        self.base_cmd = ["domain", "backup", "online"]
+
+    # run the common test cases above using online backups
+    def test_backup_untar(self):
+        self._test_backup_untar()
+
+    def test_backup_restore(self):
+        self._test_backup_restore()
+
+    def test_backup_restore_with_conf(self):
+        self._test_backup_restore_with_conf()
