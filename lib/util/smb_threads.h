@@ -119,6 +119,9 @@ static int smb_set_tls_pthread(void *pkey, const void *pval, const char *locatio
  \
 static void *smb_get_tls_pthread(void *pkey, const char *location) \
 { \
+	if (pkey == NULL) { \
+		return NULL; \
+	} \
         return pthread_getspecific(*(pthread_key_t *)pkey); \
 } \
  \
