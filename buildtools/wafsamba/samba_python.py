@@ -153,7 +153,7 @@ def SAMBA_PYTHON(bld, name,
     source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     if realname is not None:
-        link_name = 'python_modules/%s' % realname
+        link_name = 'python/%s' % realname
     else:
         link_name = None
 

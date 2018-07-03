@@ -65,7 +65,7 @@ def SAMBA_BUILD_ENV(conf):
     # this allows all of the bin/shared and bin/python targets
     # to be expressed in terms of build directory paths
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, 'default'))
-    for (source, target) in [('shared', 'shared'), ('modules', 'modules'), ('python', 'python_modules')]:
+    for (source, target) in [('shared', 'shared'), ('modules', 'modules'), ('python', 'python')]:
         link_target = os.path.join(conf.env.BUILD_DIRECTORY, 'default/' + target)
         if not os.path.lexists(link_target):
             os.symlink('../' + source, link_target)
