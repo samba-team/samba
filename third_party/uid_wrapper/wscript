@@ -51,7 +51,8 @@ def configure(conf):
                 ''',
                 'HAVE_ADDRESS_SANITIZER_ATTRIBUTE',
                 addmain=False,
-                cflags='-Wall -Wextra -Werror',
+                cflags='-Wall -Wextra',
+                strict=True,
                 msg='Checking for address sanitizer attribute')
 
         # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
@@ -64,6 +65,7 @@ def configure(conf):
             ''',
             'HAVE_FUNCTION_ATTRIBUTE_FORMAT',
             addmain=False,
+            strict=True,
             msg='Checking for printf format validation support')
 	# Prototype checks
 	conf.CHECK_C_PROTOTYPE('setgroups',
