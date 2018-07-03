@@ -1,5 +1,6 @@
 setup ()
 {
+	setup_public_addresses
 	setup_shares
 
 	service_name="nfs"
