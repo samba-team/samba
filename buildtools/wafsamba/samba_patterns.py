@@ -1,5 +1,6 @@
 # a waf tool to add extension based build patterns for Samba
 
+import sys
 from waflib import Build
 from wafsamba import samba_version_file
 
@@ -146,13 +147,19 @@ def write_build_options_section(fp, keys, section):
     fp.write("\n")
 
 def write_build_options(task):
-    tbl = task.env['defines']
+    tbl = task.env
     keys_option_with = []
     keys_option_utmp = []
     keys_option_have = []
     keys_header_sys = []
     keys_header_other = []
     keys_misc = []
+    if sys.hexversion>0x300000f:
+        trans_table = bytes.maketrans('.-()', '____')
+    else:
+        import string
+        trans_table = string.maketrans('.-()', '____')
+
     for key in tbl:
         if key.startswith("HAVE_UT_UT_") or key.find("UTMP") >= 0:
             keys_option_utmp.append(key)
@@ -169,7 +176,7 @@ def write_build_options(task):
             l = key.split("(")
             keys_misc.append(l[0])
         else:
-            keys_misc.append(key)
+            keys_misc.append(key.translate(trans_table))
 
     tgt = task.outputs[0].bldpath(task.env)
     f = open(tgt, 'w')
