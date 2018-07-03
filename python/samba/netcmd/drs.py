@@ -229,7 +229,7 @@ class cmd_drs_showrepl(Command):
                 if rep['is deleted']:
                     continue
                 if rep["consecutive failures"] != 0 or rep["last success"] == 0:
-                    failing_repsto.append(rep)
+                    failing_repsfrom.append(rep)
 
         if failing_repsto or failing_repsfrom:
             self.message(colour.c_RED("There are failing connections"))
