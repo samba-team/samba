@@ -28,6 +28,7 @@ import socket
 import uuid
 import time
 
+
 class DNSTest(TestCaseInTempDir):
 
     def setUp(self):
@@ -199,7 +200,8 @@ class DNSTest(TestCaseInTempDir):
         questions.append(q)
 
         self.finish_name_packet(p, questions)
-        (response, response_packet) = self.dns_transaction_udp(p, host=self.server_ip)
+        (response, response_packet) =\
+            self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assertEquals(response.ancount, 1)
         self.assertEquals(response.answers[0].rdata.txt.str, txt_array)
@@ -244,7 +246,7 @@ class DNSTKeyTest(DNSTest):
         rdata = dns.tkey_record()
         rdata.algorithm = "gss-tsig"
         rdata.inception = int(time.time())
-        rdata.expiration = int(time.time()) + 60*60
+        rdata.expiration = int(time.time()) + 60 * 60
         rdata.mode = dns.DNS_TKEY_MODE_GSSAPI
         rdata.error = 0
         rdata.other_size = 0
@@ -271,7 +273,8 @@ class DNSTKeyTest(DNSTest):
         p.arcount = 1
         p.additional = additional
 
-        (response, response_packet) = self.dns_transaction_tcp(p, self.server_ip)
+        (response, response_packet) =\
+            self.dns_transaction_tcp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
 
         tkey_record = response.answers[0].rdata
@@ -395,7 +398,8 @@ class DNSTKeyTest(DNSTest):
         questions.append(q)
 
         self.finish_name_packet(p, questions)
-        (response, response_packet) = self.dns_transaction_udp(p, self.server_ip)
+        (response, response_packet) =\
+            self.dns_transaction_udp(p, self.server_ip)
         return response.operation & 0x000F
 
     def make_update_request(self, delete=False):
