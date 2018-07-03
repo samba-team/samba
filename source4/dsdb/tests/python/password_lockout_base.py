@@ -323,8 +323,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 """)
 
         self.base_dn = self.ldb.domain_dn()
-        self.account_lockout_duration = 2
-        self.lockout_observation_window = 2
+        self.account_lockout_duration = 3
+        self.lockout_observation_window = 3
         self.update_lockout_settings(threshold=3,
                                      duration=self.account_lockout_duration,
                                      observation_window=self.lockout_observation_window)
