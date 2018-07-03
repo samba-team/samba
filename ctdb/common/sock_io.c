@@ -278,7 +278,7 @@ int sock_queue_write(struct sock_queue *queue, uint8_t *buf, size_t buflen)
 {
 	struct tevent_req *req;
 	struct sock_queue_write_state *state;
-	bool status;
+	struct tevent_queue_entry *qentry;
 
 	if (buflen >= INT32_MAX) {
 		return -1;
@@ -292,9 +292,9 @@ int sock_queue_write(struct sock_queue *queue, uint8_t *buf, size_t buflen)
 	state->pkt = buf;
 	state->pkt_size = (uint32_t)buflen;
 
-	status = tevent_queue_add_entry(queue->queue, queue->ev, req,
+	qentry = tevent_queue_add_entry(queue->queue, queue->ev, req,
 					sock_queue_trigger, queue);
-	if (! status) {
+	if (qentry == NULL) {
 		talloc_free(req);
 		return -1;
 	}
