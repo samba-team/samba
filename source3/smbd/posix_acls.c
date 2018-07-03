@@ -1251,10 +1251,36 @@ static void ensure_minimal_owner_ace_perms(const bool is_directory,
 
 static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, canon_ace *group_ace )
 {
+	bool is_sid = false;
+	bool has_sid = false;
+	struct security_token *security_token = NULL;
+
 	/* "Everyone" always matches every uid. */
 
 	if (dom_sid_equal(&group_ace->trustee, &global_sid_World))
 		return True;
+
+	/*
+	 * if we have session info in conn, we already have the (SID
+	 * based) NT token and don't need to do the complex
+	 * user_in_group_sid() call
+	 */
+	if (conn->session_info) {
+		security_token = conn->session_info->security_token;
+		/* security_token should not be NULL */
+		SMB_ASSERT(security_token);
+		is_sid = security_token_is_sid(security_token,
+					       &uid_ace->trustee);
+		if (is_sid) {
+			has_sid = security_token_has_sid(security_token,
+							 &group_ace->trustee);
+
+			if (has_sid) {
+				return true;
+			}
+		}
+
+	}
 
 	/*
 	 * if it's the current user, we already have the unix token
