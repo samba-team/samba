@@ -44,7 +44,10 @@ extern const struct generic_mapping file_generic_mapping;
 #define DIRECTORY_FLAGS O_RDONLY
 #endif
 
-static connection_struct *get_conn_tos(const char *service)
+
+static connection_struct *get_conn_tos(
+	const char *service,
+	const struct auth_session_info *session_info)
 {
 	struct conn_struct_tos *c = NULL;
 	int snum = -1;
@@ -66,7 +69,7 @@ static connection_struct *get_conn_tos(const char *service)
 	status = create_conn_struct_tos(NULL,
 					snum,
 					"/",
-					NULL,
+					session_info,
 					&c);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
@@ -410,7 +413,7 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -451,7 +454,7 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 
 	frame = talloc_stackframe();
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -510,7 +513,7 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -576,7 +579,7 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -611,7 +614,7 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -653,7 +656,7 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -694,7 +697,7 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -739,7 +742,7 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -792,7 +795,7 @@ static PyObject *py_smbd_create_file(PyObject *self, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	conn = get_conn_tos(service);
+	conn = get_conn_tos(service, NULL);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
