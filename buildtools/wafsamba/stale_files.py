@@ -14,7 +14,9 @@ nodes/tasks, in which case the method will have to be modified
 to exclude some folders for example.
 """
 
-import Logs, Build, os, samba_utils, Options, Utils, Errors
+from waflib import Logs, Build, Options, Utils, Errors
+import os
+from wafsamba import samba_utils
 from Runner import Parallel
 
 old_refill_task_list = Parallel.refill_task_list
