@@ -1040,6 +1040,7 @@ class TestZones(DNSTest):
             self.set_params(zone=self.zone, Aging=0)
         dec = 2
         def mod_ts(rec):
+            self.assertTrue(rec.dwTimeStamp > 0)
             rec.dwTimeStamp -= dec
         self.ldap_modify_dnsrecs(name, mod_ts)
         after_mod = self.ldap_get_dns_records(name)
@@ -1064,10 +1065,12 @@ class TestZones(DNSTest):
                         AllowUpdate = dnsp.DNS_ZONE_UPDATE_UNSECURE)
         before_mod = self.dns_update_record(name, txt)
         def mod_ts(rec):
+            self.assertTrue(rec.dwTimeStamp > 0)
             rec.dwTimeStamp -= interval/2
         self.ldap_modify_dnsrecs(name, mod_ts)
         update_during_norefresh = self.dns_update_record(name, txt)
         def mod_ts(rec):
+            self.assertTrue(rec.dwTimeStamp > 0)
             rec.dwTimeStamp -= interval + interval/2
         self.ldap_modify_dnsrecs(name, mod_ts)
         update_during_refresh = self.dns_update_record(name, txt)
@@ -1098,6 +1101,7 @@ class TestZones(DNSTest):
         rec = self.dns_update_record(name,txt)
         rec = self.dns_update_record(name+'2',txt)
         def mod_ts(rec):
+            self.assertTrue(rec.dwTimeStamp > 0)
             rec.dwTimeStamp -= interval*5
         self.ldap_modify_dnsrecs(name, mod_ts)
         dsdb._scavenge_dns_records(self.samdb)

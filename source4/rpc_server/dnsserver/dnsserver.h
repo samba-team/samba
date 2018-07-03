@@ -249,6 +249,9 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 					const char *node_name,
 					struct DNS_RPC_RECORD *add_record,
 					struct DNS_RPC_RECORD *del_record);
+WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
+					struct dnsserver_zone *z,
+					struct DNS_RPC_NAME_AND_PARAM *n_p);
 WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 				  struct ldb_context *samdb,
 				  struct dnsserver_zone *z,

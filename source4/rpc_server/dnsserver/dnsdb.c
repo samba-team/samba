@@ -733,6 +733,129 @@ static bool dnsserver_db_msg_add_dnsproperty(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
+				   struct dnsserver_zone *z,
+				   struct DNS_RPC_NAME_AND_PARAM *n_p)
+{
+	struct ldb_message_element *element = NULL;
+	struct dnsp_DnsProperty *prop = NULL;
+	enum ndr_err_code err;
+	TALLOC_CTX *tmp_ctx = NULL;
+	const char * const attrs[] = {"dNSProperty", NULL};
+	struct ldb_result *res = NULL;
+	int i, ret, prop_id;
+
+	if (strcasecmp(n_p->pszNodeName, "Aging") == 0) {
+		z->zoneinfo->fAging = n_p->dwParam;
+		prop_id = DSPROPERTY_ZONE_AGING_STATE;
+	} else if (strcasecmp(n_p->pszNodeName, "RefreshInterval") == 0) {
+		z->zoneinfo->dwRefreshInterval = n_p->dwParam;
+		prop_id = DSPROPERTY_ZONE_REFRESH_INTERVAL;
+	} else if (strcasecmp(n_p->pszNodeName, "NoRefreshInterval") == 0) {
+		z->zoneinfo->dwNoRefreshInterval = n_p->dwParam;
+		prop_id = DSPROPERTY_ZONE_NOREFRESH_INTERVAL;
+	} else if (strcasecmp(n_p->pszNodeName, "AllowUpdate") == 0) {
+		z->zoneinfo->fAllowUpdate = n_p->dwParam;
+		prop_id = DSPROPERTY_ZONE_ALLOW_UPDATE;
+	} else {
+		return WERR_UNKNOWN_PROPERTY;
+	}
+
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	ret = ldb_search(samdb, tmp_ctx, &res, z->zone_dn, LDB_SCOPE_BASE,
+			 attrs, "(objectClass=dnsZone)");
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("dnsserver: no zone: %s\n",
+			ldb_dn_get_linearized(z->zone_dn));
+		TALLOC_FREE(tmp_ctx);
+		return WERR_INTERNAL_DB_ERROR;
+	}
+
+	if (res->count != 1) {
+		DBG_ERR("dnsserver: duplicate zone: %s\n",
+			ldb_dn_get_linearized(z->zone_dn));
+		TALLOC_FREE(tmp_ctx);
+		return WERR_GEN_FAILURE;
+	}
+
+	element = ldb_msg_find_element(res->msgs[0], "dNSProperty");
+	if (element == NULL) {
+		DBG_ERR("dnsserver: zone %s has no properties.\n",
+			ldb_dn_get_linearized(z->zone_dn));
+		TALLOC_FREE(tmp_ctx);
+		return WERR_INTERNAL_DB_ERROR;
+	}
+
+	for (i = 0; i < element->num_values; i++) {
+		prop = talloc_zero(element, struct dnsp_DnsProperty);
+		if (prop == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		err = ndr_pull_struct_blob(
+			&(element->values[i]),
+			tmp_ctx,
+			prop,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)){
+			DBG_ERR("dnsserver: couldn't PULL dns property id "
+				"%d in zone %s\n",
+				prop->id,
+				ldb_dn_get_linearized(z->zone_dn));
+			TALLOC_FREE(tmp_ctx);
+			return WERR_INTERNAL_DB_ERROR;
+		}
+
+		if (prop->id == prop_id) {
+			switch (prop_id) {
+			case DSPROPERTY_ZONE_AGING_STATE:
+				prop->data.aging_enabled = n_p->dwParam;
+				break;
+			case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
+				prop->data.norefresh_hours = n_p->dwParam;
+				break;
+			case DSPROPERTY_ZONE_REFRESH_INTERVAL:
+				prop->data.refresh_hours = n_p->dwParam;
+				break;
+			case DSPROPERTY_ZONE_ALLOW_UPDATE:
+				prop->data.allow_update_flag = n_p->dwParam;
+				break;
+			}
+
+			err = ndr_push_struct_blob(
+				&(element->values[i]),
+				tmp_ctx,
+				prop,
+				(ndr_push_flags_fn_t)ndr_push_dnsp_DnsProperty);
+			if (!NDR_ERR_CODE_IS_SUCCESS(err)){
+				DBG_ERR("dnsserver: couldn't PUSH dns prop id "
+					"%d in zone %s\n",
+					prop->id,
+					ldb_dn_get_linearized(z->zone_dn));
+				TALLOC_FREE(tmp_ctx);
+				return WERR_INTERNAL_DB_ERROR;
+			}
+		}
+	}
+
+	element->flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(samdb, res->msgs[0]);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(tmp_ctx);
+		DBG_ERR("dnsserver: Failed to modify zone %s prop %s: %s\n",
+			z->name,
+			n_p->pszNodeName,
+			ldb_errstring(samdb));
+		return WERR_INTERNAL_DB_ERROR;
+	}
+	TALLOC_FREE(tmp_ctx);
+
+	return WERR_OK;
+}
 
 /* Create dnsZone record to database and set security descriptor */
 static WERROR dnsserver_db_do_create_zone(TALLOC_CTX *tmp_ctx,

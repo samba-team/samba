@@ -34,7 +34,8 @@ samba.tests.dns.__main__.TestRPCRoundtrip.test_update_add_slash_rpc_to_dns\(rodc
 samba.tests.dns.__main__.TestRPCRoundtrip.test_update_add_two_rpc_to_dns\(rodc:local\)
 samba.tests.dns.__main__.TestRPCRoundtrip.test_update_add_txt_rpc_to_dns\(rodc:local\)
 
-samba.tests.dns.__main__.TestZones.test_set_aging_disabled
+samba.tests.dns.__main__.TestZones.test_set_aging_disabled\(rodc:local\)
+samba.tests.dns.__main__.TestZones.test_set_aging_disabled\(vampire_dc:local\)
 
 samba.tests.dns.__main__.TestZones.test_soa_query\(rodc:local\)
 samba.tests.dns.__main__.TestZones.test_set_aging\(rodc:local\)

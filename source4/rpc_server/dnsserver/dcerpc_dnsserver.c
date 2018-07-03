@@ -1512,16 +1512,14 @@ static WERROR dnsserver_operate_zone(struct dnsserver_state *dsstate,
 	bool valid_operation = false;
 
 	if (strcasecmp(operation, "ResetDwordProperty") == 0) {
+
 		if (typeid != DNSSRV_TYPEID_NAME_AND_PARAM) {
 			return WERR_DNS_ERROR_INVALID_PROPERTY;
 		}
 
-		/* Ignore property resets */
-		if (strcasecmp(r->NameAndParam->pszNodeName, "AllowUpdate") ==
-		    0) {
-			return WERR_OK;
-		}
-		valid_operation = true;
+		return dnsserver_db_do_reset_dword(dsstate->samdb, z,
+					           r->NameAndParam);
+
 	} else if (strcasecmp(operation, "ZoneTypeReset") == 0) {
 		valid_operation = true;
 	} else if (strcasecmp(operation, "PauseZone") == 0) {
