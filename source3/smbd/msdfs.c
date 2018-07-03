@@ -307,7 +307,12 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 			TALLOC_FREE(conn);
 			return NT_STATUS_NO_MEMORY;
 		}
-		vfs_user = conn->session_info->unix_info->unix_name;
+		/* unix_info could be NULL in session_info */
+		if (conn->session_info->unix_info != NULL) {
+			vfs_user = conn->session_info->unix_info->unix_name;
+		} else {
+			vfs_user = get_current_username();
+		}
 	} else {
 		/* use current authenticated user in absence of session_info */
 		vfs_user = get_current_username();
