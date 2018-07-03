@@ -38,6 +38,7 @@ def configure(conf):
             ''',
             'HAVE_DESTRUCTOR_ATTRIBUTE',
             addmain=False,
+            strict=True,
             msg='Checking for library destructor support')
 
         # check HAVE_ATTRIBUTE_PRINTF_FORMAT
@@ -50,6 +51,7 @@ def configure(conf):
             ''',
             'HAVE_ATTRIBUTE_PRINTF_FORMAT',
             addmain=False,
+            strict=True,
             msg='Checking for printf format validation support')
 
         conf.CHECK_FUNCS('gethostbyaddr_r gethostbyname_r')
