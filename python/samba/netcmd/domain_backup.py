@@ -282,6 +282,31 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                                  host_ip, host_ip6, domainguid, ntdsguid,
                                  dnsadmins_sid, add_root=False)
 
+    def fix_old_dc_references(self, samdb):
+        '''Fixes attributes that reference the old/removed DCs'''
+
+        # we just want to fix up DB problems here that were introduced by us
+        # removing the old DCs. We restrict what we fix up so that the restored
+        # DB matches the backed-up DB as close as possible. (There may be other
+        # DB issues inherited from the backed-up DC, but it's not our place to
+        # silently try to fix them here).
+        samdb.transaction_start()
+        chk = dbcheck(samdb, quiet=True, fix=True, yes=False,
+                      in_transaction=True)
+
+        # fix up stale references to the old DC
+        setattr(chk, 'fix_all_old_dn_string_component_mismatch', 'ALL')
+        attrs = ['lastKnownParent', 'interSiteTopologyGenerator']
+
+        # fix-up stale one-way links that point to the old DC
+        setattr(chk, 'remove_plausible_deleted_DN_links', 'ALL')
+        attrs += ['msDS-NC-Replica-Locations']
+
+        cross_ncs_ctrl = 'search_options:1:2'
+        controls = ['show_deleted:1', cross_ncs_ctrl]
+        chk.check_database(controls=controls, attrs=attrs)
+        samdb.transaction_commit()
+
     def run(self, sambaopts=None, credopts=None, backup_file=None,
             targetdir=None, newservername=None, host_ip=None, host_ip6=None):
         if not (backup_file and os.path.exists(backup_file)):
@@ -441,6 +466,10 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
             os.makedirs(dest_sysvol_dir)
         backup_restore(sysvol_tar, dest_sysvol_dir, samdb, smbconf)
         os.remove(sysvol_tar)
+
+        # fix up any stale links to the old DCs we just removed
+        logger.info("Fixing up any remaining references to the old DCs...")
+        self.fix_old_dc_references(samdb)
 
         # Remove DB markers added by the backup process
         m = ldb.Message()
