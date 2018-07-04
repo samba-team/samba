@@ -13,19 +13,15 @@ sys.path.insert(0, top + '/buildtools/wafsamba')
 out = 'bin'
 
 from waflib import Options, Logs, Errors, Context
-import wafsamba, samba_dist
-import samba_utils, samba_version
+import wafsamba
+from wafsamba import samba_dist, samba_utils
 
-env = samba_utils.LOAD_ENVIRONMENT()
 if os.path.isfile('./VERSION'):
     vdir = '.'
 elif os.path.isfile('../VERSION'):
     vdir = '..'
 else:
     Logs.error("VERSION file not found")
-
-version = samba_version.samba_version_file('%s/VERSION' % vdir, vdir, env)
-VERSION = version.STRING.replace('-', '.')
 
 default_prefix = Options.default_prefix = '/usr/local'
 
@@ -65,6 +61,17 @@ manpages_ceph = [
     'ctdb_mutex_ceph_rados_helper.7',
 ]
 
+VERSION = ''
+
+def get_version():
+    if Context.g_module.VERSION:
+        return Context.g_module.VERSION
+    import samba_version
+    env = samba_utils.LOAD_ENVIRONMENT()
+
+    version = samba_version.samba_version_file('%s/VERSION' % vdir, vdir, env)
+    Context.g_module.VERSION = version.STRING.replace('-', '.')
+    return Context.g_module.VERSION
 
 def options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('ctdb')
@@ -334,7 +341,7 @@ def gen_ctdb_version(task):
     fp.write('/* This file is auto-generated from waf */\n')
     fp.write('#include "version.h"\n')
     fp.write('\n')
-    fp.write('#define CTDB_VERSION_STRING "%s"\n' % VERSION)
+    fp.write('#define CTDB_VERSION_STRING "%s"\n' % get_version())
     fp.close()
 
 
@@ -350,7 +357,7 @@ def build(bld):
                             target='include/ctdb_version.h',
                             rule=gen_ctdb_version,
                             dep_vars=['VERSION'])
-    t.env.VERSION = VERSION
+    t.env.VERSION = get_version()
 
     bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
@@ -1115,9 +1122,8 @@ def testonly(ctx):
 
 
 def test(ctx):
-    from waflib import Scripting
-    Scripting.commands.append('build')
-    Scripting.commands.append('testonly')
+    Options.commands.append('build')
+    Options.commands.append('testonly')
 
 
 def autotest(ctx):
@@ -1130,7 +1136,7 @@ def autotest(ctx):
 
 
 def show_version(ctx):
-    print VERSION
+    print get_version()
 
 
 def manpages(ctx):
@@ -1163,7 +1169,7 @@ def distonly(ctx):
     samba_dist.DIST_FILES('ctdb/.distversion:.distversion', extend=True)
 
     t = 'ctdb.spec'
-    sed_expr1 = 's/@VERSION@/%s/g' % VERSION
+    sed_expr1 = 's/@VERSION@/%s/g' % get_version()
     sed_expr2 = 's/@RELEASE@/%s/g' % '1'
     cmd = 'sed -e "%s" -e "%s" packaging/RPM/ctdb.spec.in > %s' % (
         sed_expr1, sed_expr2, t)
@@ -1183,14 +1189,13 @@ def distonly(ctx):
 
 
 def dist():
-    from waflib import Scripting
-    Scripting.commands.append('manpages')
-    Scripting.commands.append('distonly')
+    Options.commands.append('manpages')
+    Options.commands.append('distonly')
 
 
 def rpmonly(ctx):
     opts = os.getenv('RPM_OPTIONS') or ''
-    cmd = 'rpmbuild -ta --clean --rmsource %s ctdb-%s.tar.gz' % (opts, VERSION)
+    cmd = 'rpmbuild -ta --clean --rmsource %s ctdb-%s.tar.gz' % (opts, get_version())
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
         print('rpmbuild exited with exit status %d' % ret)
@@ -1198,10 +1203,9 @@ def rpmonly(ctx):
 
 
 def rpm(ctx):
-    from waflib import Scripting
-    Scripting.commands.append('manpages')
-    Scripting.commands.append('distonly')
-    Scripting.commands.append('rpmonly')
+    Options.commands.append('manpages')
+    Options.commands.append('distonly')
+    Options.commands.append('rpmonly')
 
 
 def ctags(ctx):
