@@ -239,51 +239,6 @@ def SUBST_ENV_VAR(ctx, varname):
 Build.BuildContext.SUBST_ENV_VAR = SUBST_ENV_VAR
 
 
-def ENFORCE_GROUP_ORDERING(bld):
-    '''enforce group ordering for the project. This
-       makes the group ordering apply only when you specify
-       a target with --target'''
-    if Options.options.compile_targets:
-        @feature('*')
-        @before('exec_rule', 'apply_core', 'collect')
-        def force_previous_groups(self):
-            if getattr(self.bld, 'enforced_group_ordering', False):
-                return
-            self.bld.enforced_group_ordering = True
-
-            def group_name(g):
-                tm = self.bld.task_manager
-                return [x for x in tm.groups_names if id(tm.groups_names[x]) == id(g)][0]
-
-            my_id = id(self)
-            bld = self.bld
-            stop = None
-            for g in bld.task_manager.groups:
-                for t in g.tasks_gen:
-                    if id(t) == my_id:
-                        stop = id(g)
-                        debug('group: Forcing up to group %s for target %s',
-                              group_name(g), self.name or self.target)
-                        break
-                if stop is not None:
-                    break
-            if stop is None:
-                return
-
-            for i in xrange(len(bld.task_manager.groups)):
-                g = bld.task_manager.groups[i]
-                bld.task_manager.current_group = i
-                if id(g) == stop:
-                    break
-                debug('group: Forcing group %s', group_name(g))
-                for t in g.tasks_gen:
-                    if not getattr(t, 'forced_groups', False):
-                        debug('group: Posting %s', t.name or t.target)
-                        t.forced_groups = True
-                        t.post()
-Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
-
-
 def recursive_dirlist(dir, relbase, pattern=None):
     '''recursive directory list'''
     ret = []
