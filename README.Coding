@@ -100,6 +100,7 @@ AllowShortIfStatementsOnASingleLine: false
 IndentCaseLabels: false
 BinPackParameters: false
 BinPackArguments: false
+SortIncludes: false
 
 
 =========================
