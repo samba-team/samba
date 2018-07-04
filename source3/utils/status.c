@@ -131,7 +131,7 @@ static int print_share_mode(const struct share_mode_entry *e,
 
 	if (count==0) {
 		d_printf("Locked files:\n");
-		d_printf("Pid          Uid        DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
+		d_printf("Pid          Username        DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
 		d_printf("--------------------------------------------------------------------------------------------------\n");
 	}
 	count++;
@@ -144,7 +144,7 @@ static int print_share_mode(const struct share_mode_entry *e,
 	if (Ucrit_checkPid(e->pid)) {
 		struct server_id_buf tmp;
 		d_printf("%-11s  ", server_id_str_buf(e->pid, &tmp));
-		d_printf("%-9u  ", (unsigned int)e->uid);
+		d_printf("%-14s  ", uidtoname(e->uid));
 		switch (map_share_mode_to_deny_mode(e->share_access,
 						    e->private_options)) {
 			case DENY_NONE: d_printf("DENY_NONE  "); break;
