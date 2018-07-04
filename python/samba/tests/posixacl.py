@@ -62,11 +62,8 @@ class PosixAclMappingTests(TestCaseInTempDir):
         smbd.set_simple_acl(self.tempf, 0o640)
 
         # However, this only asks the xattr
-        try:
-            facl = getntacl(self.lp, self.tempf, direct_db_access=True)
-            self.assertTrue(False)
-        except TypeError:
-            pass
+        self.assertRaises(
+            TypeError, getntacl, self.lp, self.tempf, direct_db_access=True)
 
     def test_setntacl_invalidate_getntacl(self):
         acl = ACL
@@ -184,14 +181,9 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[3].a_perm, 6)
 
     def test_setposixacl_getntacl(self):
-        acl = ""
         smbd.set_simple_acl(self.tempf, 0o750)
-        try:
-            facl = getntacl(self.lp, self.tempf)
-            self.assertTrue(False)
-        except TypeError:
-            # We don't expect the xattr to be filled in in this case
-            pass
+        # We don't expect the xattr to be filled in in this case
+        self.assertRaises(TypeError, getntacl, self.lp, self.tempf)
 
     def test_setposixacl_getntacl_smbd(self):
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
