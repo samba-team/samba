@@ -28,14 +28,6 @@ import os
 from samba.samba3 import smbd, passdb
 from samba.samba3 import param as s3param
 
-# To print a posix ACL use:
-#        for entry in posix_acl.acl:
-#            print "a_type: %d" % entry.a_type
-#            print "a_perm: %o" % entry.a_perm
-#            if entry.a_type == smb_acl.SMB_ACL_USER:
-#                print "uid: %d" % entry.uid
-#            if entry.a_type == smb_acl.SMB_ACL_GROUP:
-#                print "gid: %d" % entry.gid
 
 class PosixAclMappingTests(TestCaseInTempDir):
 
