@@ -1699,25 +1699,24 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
     session_info = auth.user_session(samdb, lp_ctx=lp, dn=userdn,
                                      session_info_flags=flags)
 
+    def _setntacl(path):
+        """A helper to reuse args"""
+        return setntacl(
+            lp, path, SYSVOL_ACL, str(domainsid),
+            use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb,
+            service=SYSVOL_SERVICE, session_info=session_info)
+
     # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
-    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs,
-             skip_invalid_chown=True, passdb=s4_passdb,
-             service=SYSVOL_SERVICE, session_info=session_info)
+    _setntacl(sysvol)
     for root, dirs, files in os.walk(sysvol, topdown=False):
         for name in files:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid),
-                     use_ntvfs=use_ntvfs, skip_invalid_chown=True,
-                     passdb=s4_passdb, service=SYSVOL_SERVICE,
-                     session_info=session_info)
+            _setntacl(os.path.join(root, name))
         for name in dirs:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid),
-                     use_ntvfs=use_ntvfs, skip_invalid_chown=True,
-                     passdb=s4_passdb, service=SYSVOL_SERVICE,
-                     session_info=session_info)
+            _setntacl(os.path.join(root, name))
 
     # Set acls on Policy folder and policies folders
     set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb=s4_passdb)
