@@ -163,23 +163,6 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(facl.as_sddl(anysid),acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
-    def test_setposixacl_getposixacl(self):
-        smbd.set_simple_acl(self.tempf, 0o640)
-        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
-        self.assertEquals(posix_acl.count, 4, self.print_posix_acl(posix_acl))
-
-        self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
-        self.assertEquals(posix_acl.acl[0].a_perm, 6)
-
-        self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
-        self.assertEquals(posix_acl.acl[1].a_perm, 4)
-
-        self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
-        self.assertEquals(posix_acl.acl[2].a_perm, 0)
-
-        self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_MASK)
-        self.assertEquals(posix_acl.acl[3].a_perm, 6)
-
     def test_setposixacl_getntacl(self):
         smbd.set_simple_acl(self.tempf, 0o750)
         # We don't expect the xattr to be filled in in this case
