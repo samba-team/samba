@@ -1309,6 +1309,41 @@ class SearchTests(LdbBaseTest):
                               expression="(distinguishedName=OU=OU1,DC=SAMBA,DCXXXX)")
         self.assertEqual(len(res11), 0)
 
+    def test_bad_dn_search_base(self):
+        """Testing with a bad base DN (SCOPE_BASE)"""
+
+        try:
+            res11 = self.l.search(base="OU=OU1,DC=SAMBA,DCXXX",
+                                  scope=ldb.SCOPE_BASE)
+            self.fail("Should have failed with ERR_INVALID_DN_SYNTAX")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_INVALID_DN_SYNTAX)
+
+
+    def test_bad_dn_search_one(self):
+        """Testing with a bad base DN (SCOPE_ONELEVEL)"""
+
+        try:
+            res11 = self.l.search(base="DC=SAMBA,DCXXXX",
+                              scope=ldb.SCOPE_ONELEVEL)
+            self.fail("Should have failed with ERR_INVALID_DN_SYNTAX")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_INVALID_DN_SYNTAX)
+
+    def test_bad_dn_search_subtree(self):
+        """Testing with a bad base DN (SCOPE_SUBTREE)"""
+
+        try:
+            res11 = self.l.search(base="DC=SAMBA,DCXXXX",
+                                  scope=ldb.SCOPE_SUBTREE)
+            self.fail("Should have failed with ERR_INVALID_DN_SYNTAX")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_INVALID_DN_SYNTAX)
+
+
 
 # Run the search tests against an lmdb backend
 class SearchTestsLmdb(SearchTests):
@@ -1375,8 +1410,10 @@ class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
     def setUp(self):
         super(IndexedAndOneLevelDNFilterSearchTests, self).setUp()
         self.l.add({"dn": "@OPTIONS",
-                    "disallowDNFilter": "TRUE"})
+                    "disallowDNFilter": "TRUE",
+                    "checkBaseOnSearch": "TRUE"})
         self.disallowDNFilter = True
+        self.checkBaseOnSearch = True
 
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"],
@@ -1408,8 +1445,10 @@ class GUIDIndexedDNFilterSearchTests(SearchTests):
                       "@IDX_DN_GUID": [b"GUID"]}
         super(GUIDIndexedDNFilterSearchTests, self).setUp()
         self.l.add({"dn": "@OPTIONS",
-                    "disallowDNFilter": "TRUE"})
+                    "disallowDNFilter": "TRUE",
+                    "checkBaseOnSearch": "TRUE"})
         self.disallowDNFilter = True
+        self.checkBaseOnSearch = True
         self.IDX = True
         self.IDXGUID = True
 
@@ -1423,8 +1462,10 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
                       "@IDX_DN_GUID": [b"GUID"]}
         super(GUIDAndOneLevelIndexedSearchTests, self).setUp()
         self.l.add({"dn": "@OPTIONS",
-                    "disallowDNFilter": "TRUE"})
+                    "disallowDNFilter": "TRUE",
+                    "checkBaseOnSearch": "TRUE"})
         self.disallowDNFilter = True
+        self.checkBaseOnSearch = True
         self.IDX = True
         self.IDXGUID = True
         self.IDXONE = True
