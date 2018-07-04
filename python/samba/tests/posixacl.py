@@ -19,11 +19,9 @@
 """Tests for the Samba3 NT -> posix ACL layer"""
 
 from samba.ntacls import setntacl, getntacl, checkset_backend
-from samba.dcerpc import xattr, security, smb_acl, idmap
-from samba.param import LoadParm
+from samba.dcerpc import security, smb_acl, idmap
 from samba.tests import TestCaseInTempDir
 from samba import provision
-import random
 import os
 from samba.samba3 import smbd, passdb
 from samba.samba3 import param as s3param
