@@ -1014,11 +1014,6 @@ static int conf_load_internal(struct conf_context *conf)
 	int ret;
 	bool ok;
 
-	fp = fopen(conf->filename, "r");
-	if (fp == NULL) {
-		return errno;
-	}
-
 	state = (struct conf_load_state) {
 		.conf = conf,
 		.mode = (conf->reload ? CONF_MODE_RELOAD : CONF_MODE_LOAD),
@@ -1027,6 +1022,11 @@ static int conf_load_internal(struct conf_context *conf)
 	ret = conf_all_temporary_default(conf, state.mode);
 	if (ret != 0) {
 		return ret;
+	}
+
+	fp = fopen(conf->filename, "r");
+	if (fp == NULL) {
+		return errno;
 	}
 
 	ok = tini_parse(fp,
