@@ -46,6 +46,7 @@ import ldb
 
 from samba.auth import system_session, admin_session
 import samba
+from samba import auth
 from samba.samba3 import smbd, passdb
 from samba.samba3 import param as s3param
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
@@ -1687,23 +1688,36 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
     else:
         canchown = True
 
+    # use admin sid dn as user dn, since admin should own most of the files,
+    # the operation will be much faster
+    userdn = '<SID={}-{}>'.format(domainsid, security.DOMAIN_RID_ADMINISTRATOR)
+
+    flags = (auth.AUTH_SESSION_INFO_DEFAULT_GROUPS |
+             auth.AUTH_SESSION_INFO_AUTHENTICATED |
+             auth.AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
+
+    session_info = auth.user_session(samdb, lp_ctx=lp, dn=userdn,
+                                     session_info_flags=flags)
+
     # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
     setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs,
              skip_invalid_chown=True, passdb=s4_passdb,
-             service=SYSVOL_SERVICE)
+             service=SYSVOL_SERVICE, session_info=session_info)
     for root, dirs, files in os.walk(sysvol, topdown=False):
         for name in files:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
             setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid),
                      use_ntvfs=use_ntvfs, skip_invalid_chown=True,
-                     passdb=s4_passdb, service=SYSVOL_SERVICE)
+                     passdb=s4_passdb, service=SYSVOL_SERVICE,
+                     session_info=session_info)
         for name in dirs:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
             setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid),
                      use_ntvfs=use_ntvfs, skip_invalid_chown=True,
-                     passdb=s4_passdb, service=SYSVOL_SERVICE)
+                     passdb=s4_passdb, service=SYSVOL_SERVICE,
+                     session_info=session_info)
 
     # Set acls on Policy folder and policies folders
     set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb=s4_passdb)
