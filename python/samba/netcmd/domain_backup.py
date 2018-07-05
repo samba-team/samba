@@ -135,6 +135,21 @@ def check_online_backup_args(logger, credopts, server, targetdir):
         os.makedirs(targetdir)
 
 
+# For '--no-secrets' backups, this sets the Administrator user's password to a
+# randomly-generated value. This is similar to the provision behaviour
+def set_admin_password(logger, samdb, username):
+    """Sets a randomly generated password for the backup DB's admin user"""
+
+    adminpass = samba.generate_random_password(12, 32)
+    logger.info("Setting %s password in backup to: %s" % (username, adminpass))
+    logger.info("Run 'samba-tool user setpassword %s' after restoring DB" %
+                username)
+    samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))"
+                      % ldb.binary_encode(username), adminpass,
+                      force_change_at_next_login=False,
+                      username=username)
+
+
 class cmd_domain_backup_online(samba.netcmd.Command):
     '''Copy a running DC's current DB into a backup tar file.
 
@@ -161,9 +176,12 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         Option("--server", help="The DC to backup", type=str),
         Option("--targetdir", type=str,
                help="Directory to write the backup file to"),
+        Option("--no-secrets", action="store_true", default=False,
+               help="Exclude secret values from the backup created")
        ]
 
-    def run(self, sambaopts=None, credopts=None, server=None, targetdir=None):
+    def run(self, sambaopts=None, credopts=None, server=None, targetdir=None,
+            no_secrets=False):
         logger = self.get_logger()
         logger.setLevel(logging.DEBUG)
 
@@ -180,9 +198,10 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         tmpdir = tempfile.mkdtemp(dir=targetdir)
 
         # Run a clone join on the remote
+        include_secrets = not no_secrets
         ctx = join_clone(logger=logger, creds=creds, lp=lp,
-                         include_secrets=True, dns_backend='SAMBA_INTERNAL',
-                         server=server, targetdir=tmpdir)
+                         include_secrets=include_secrets, server=server,
+                         dns_backend='SAMBA_INTERNAL', targetdir=tmpdir)
 
         # get the paths used for the clone, then drop the old samdb connection
         paths = ctx.paths
@@ -208,6 +227,10 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         time_str = get_timestamp()
         add_backup_marker(samdb, "backupDate", time_str)
         add_backup_marker(samdb, "sidForRestore", new_sid)
+
+        # ensure the admin user always has a password set (same as provision)
+        if no_secrets:
+            set_admin_password(logger, samdb, creds.get_username())
 
         # Add everything in the tmpdir to the backup tar file
         backup_file = backup_filepath(targetdir, realm, time_str)
@@ -530,6 +553,8 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
                type=str),
         Option("--keep-dns-realm", action="store_true", default=False,
                help="Retain the DNS entries for the old realm in the backup"),
+        Option("--no-secrets", action="store_true", default=False,
+               help="Exclude secret values from the backup created")
        ]
 
     takes_args = ["new_domain_name", "new_dns_realm"]
@@ -626,7 +651,8 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         samdb.transaction_commit()
 
     def run(self, new_domain_name, new_dns_realm, sambaopts=None,
-            credopts=None, server=None, targetdir=None, keep_dns_realm=False):
+            credopts=None, server=None, targetdir=None, keep_dns_realm=False,
+            no_secrets=False):
         logger = self.get_logger()
         logger.setLevel(logging.INFO)
 
@@ -647,9 +673,11 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         # Clone and rename the remote server
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
+        include_secrets = not no_secrets
         ctx = DCCloneAndRenameContext(new_base_dn, new_domain_name,
                                       new_dns_realm, logger=logger,
-                                      creds=creds, lp=lp, include_secrets=True,
+                                      creds=creds, lp=lp,
+                                      include_secrets=include_secrets,
                                       dns_backend='SAMBA_INTERNAL',
                                       server=server, targetdir=tmpdir)
         ctx.do_join()
@@ -693,6 +721,10 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
 
         logger.info("Fixing DN attributes after rename...")
         self.fix_old_dn_attributes(samdb)
+
+        # ensure the admin user always has a password set (same as provision)
+        if no_secrets:
+            set_admin_password(logger, samdb, creds.get_username())
 
         # Add everything in the tmpdir to the backup tar file
         backup_file = backup_filepath(targetdir, new_dns_realm, time_str)

@@ -136,6 +136,17 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         lp = self.check_restored_smbconf()
         self.check_restored_database(lp)
 
+    def _test_backup_restore_no_secrets(self):
+        """Does a backup/restore with secrets excluded from the resulting DB"""
+
+        # exclude secrets when we create the backup
+        backup_file = self.create_backup(extra_args=["--no-secrets"])
+        self.restore_backup(backup_file)
+        lp = self.check_restored_smbconf()
+
+        # assert that we don't find user secrets in the DB
+        self.check_restored_database(lp, expect_secrets=False)
+
     def create_smbconf(self, settings):
         """Creates a very basic smb.conf to pass to the restore tool"""
 
@@ -200,7 +211,7 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         self.assertEqual(bkp_lp.get('state directory'), state_dir)
         return bkp_lp
 
-    def check_restored_database(self, bkp_lp):
+    def check_restored_database(self, bkp_lp, expect_secrets=True):
         paths = provision.provision_paths_from_lp(bkp_lp, bkp_lp.get("realm"))
 
         bkp_pd = get_prim_dom(paths.secrets, bkp_lp)
@@ -242,7 +253,28 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         self.assert_partitions_present(samdb)
         self.assert_dcs_present(samdb, self.new_server, expected_count=1)
         self.assert_fsmo_roles(samdb, self.new_server, self.server)
+        self.assert_secrets(samdb, expect_secrets=expect_secrets)
         return samdb
+
+    def assert_user_secrets(self, samdb, username, expect_secrets):
+        """Asserts that a user has/doesn't have secrets as expected"""
+        basedn = str(samdb.get_default_basedn())
+        user_dn = "CN=%s,CN=users,%s" % (username, basedn)
+
+        if expect_secrets:
+            self.assertIsNotNone(samdb.searchone("unicodePwd", user_dn))
+        else:
+            # the search should throw an exception because the secrets
+            # attribute isn't actually there
+            self.assertRaises(KeyError, samdb.searchone, "unicodePwd", user_dn)
+
+    def assert_secrets(self, samdb, expect_secrets):
+        """Check the user secrets in the restored DB match what's expected"""
+
+        # check secrets for the built-in testenv users match what's expected
+        test_users = ["alice", "bob", "jane"]
+        for user in test_users:
+            self.assert_user_secrets(samdb, user, expect_secrets)
 
     def assert_fsmo_roles(self, samdb, server, exclude_server):
         """Asserts the expected server is the FSMO role owner"""
@@ -277,11 +309,13 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         out = self.check_output("samba-tool " + cmd)
         print(out)
 
-    def create_backup(self):
+    def create_backup(self, extra_args=None):
         """Runs the backup cmd to produce a backup file for the testenv DC"""
         # Run the backup command and check we got one backup tar file
         args = self.base_cmd + ["--server=" + self.server, self.user_auth,
                                 "--targetdir=" + self.tempdir]
+        if extra_args:
+            args += extra_args
 
         self.run_cmd(args)
 
@@ -334,6 +368,9 @@ class DomainBackupOnline(DomainBackupBase):
     def test_backup_restore_with_conf(self):
         self._test_backup_restore_with_conf()
 
+    def test_backup_restore_no_secrets(self):
+        self._test_backup_restore_no_secrets()
+
 
 class DomainBackupRename(DomainBackupBase):
 
@@ -357,6 +394,9 @@ class DomainBackupRename(DomainBackupBase):
 
     def test_backup_restore_with_conf(self):
         self._test_backup_restore_with_conf()
+
+    def test_backup_restore_no_secrets(self):
+        self._test_backup_restore_no_secrets()
 
     def add_link(self, attr, source, target):
         m = ldb.Message()
@@ -411,9 +451,10 @@ class DomainBackupRename(DomainBackupBase):
         self.assertTrue(new_server_dn in res[0][link_attr])
 
     # extra checks we run on the restored DB in the rename case
-    def check_restored_database(self, lp):
+    def check_restored_database(self, lp, expect_secrets=True):
         # run the common checks over the restored DB
-        samdb = super(DomainBackupRename, self).check_restored_database(lp)
+        common_test = super(DomainBackupRename, self)
+        samdb = common_test.check_restored_database(lp, expect_secrets)
 
         # check we have actually renamed the DNs
         basedn = str(samdb.get_default_basedn())
