@@ -128,8 +128,11 @@ Test and debugging variable options
 
 	   Set this environment variable to enable test mode.
 
+	   This enables daemons and tools to locate their socket and
+	   PID file relative to CTDB_BASE.
+
 	   When testing with multiple local daemons on a single
-	   machine this does 3 things:
+	   machine this does 3 extra things:
 
 	   * Disables checks related to public IP addresses
 
@@ -155,7 +158,7 @@ Test and debugging variable options
 
        CTDB_RUN_TIMEOUT_MONITOR=yes|no
 	   Whether CTDB should simulate timing out monitor
-	   events. This uses the 99.timeout eventscript.
+	   events in local daemon tests.
 
 	   Default is no.
 
