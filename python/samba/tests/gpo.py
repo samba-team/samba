@@ -43,12 +43,12 @@ class GPOTests(tests.TestCase):
         file_sys_paths = [None, '%s\\%s' % (poldir, guid)]
         ds_paths = [None, 'CN=%s,%s' % (guid, dspath)]
         for i in range(0, len(gpos)):
-            assert gpos[i].name == names[i], \
-              'The gpo name did not match expected name %s' % gpos[i].name
-            assert gpos[i].file_sys_path == file_sys_paths[i], \
-              'file_sys_path did not match expected %s' % gpos[i].file_sys_path
-            assert gpos[i].ds_path == ds_paths[i], \
-              'ds_path did not match expected %s' % gpos[i].ds_path
+            self.assertEquals(gpos[i].name, names[i],
+              'The gpo name did not match expected name %s' % gpos[i].name)
+            self.assertEquals(gpos[i].file_sys_path, file_sys_paths[i],
+              'file_sys_path did not match expected %s' % gpos[i].file_sys_path)
+            self.assertEquals(gpos[i].ds_path, ds_paths[i],
+              'ds_path did not match expected %s' % gpos[i].ds_path)
 
 
     def test_gpo_ads_does_not_segfault(self):
@@ -67,11 +67,11 @@ class GPOTests(tests.TestCase):
 
         with open(os.path.join(gpo_path, 'GPT.INI'), 'w') as gpt:
             gpt.write(gpt_data % 42)
-        assert gpo.gpo_get_sysvol_gpt_version(gpo_path)[1] == 42, \
-          'gpo_get_sysvol_gpt_version() did not return the expected version'
+        self.assertEquals(gpo.gpo_get_sysvol_gpt_version(gpo_path)[1], 42,
+          'gpo_get_sysvol_gpt_version() did not return the expected version')
 
         with open(os.path.join(gpo_path, 'GPT.INI'), 'w') as gpt:
             gpt.write(gpt_data % old_vers)
-        assert gpo.gpo_get_sysvol_gpt_version(gpo_path)[1] == old_vers, \
-          'gpo_get_sysvol_gpt_version() did not return the expected version'
+        self.assertEquals(gpo.gpo_get_sysvol_gpt_version(gpo_path)[1], old_vers,
+          'gpo_get_sysvol_gpt_version() did not return the expected version')
 
