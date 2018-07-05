@@ -110,6 +110,26 @@ def create_backup_tar(logger, tmpdir, backup_filepath):
     tf.close()
 
 
+def create_log_file(targetdir, lp, backup_type, server, include_secrets,
+                    extra_info=None):
+    # create a summary file about the backup, which will get included in the
+    # tar file. This makes it easy for users to see what the backup involved,
+    # without having to untar the DB and interrogate it
+    f = open(os.path.join(targetdir, "backup.txt"), 'w')
+    try:
+        time_str = datetime.datetime.now().strftime('%Y-%b-%d %H:%M:%S')
+        f.write("Backup created %s\n" % time_str)
+        f.write("Using samba-tool version: %s\n" % lp.get('server string'))
+        f.write("Domain %s backup, using DC '%s'\n" % (backup_type, server))
+        f.write("Backup for domain %s (NetBIOS), %s (DNS realm)\n" %
+                (lp.get('workgroup'), lp.get('realm').lower()))
+        f.write("Backup contains domain secrets: %s\n" % str(include_secrets))
+        if extra_info:
+            f.write("%s\n" % extra_info)
+    finally:
+        f.close()
+
+
 # Add a backup-specific marker to the DB with info that we'll use during
 # the restore process
 def add_backup_marker(samdb, marker, value):
@@ -234,6 +254,7 @@ class cmd_domain_backup_online(samba.netcmd.Command):
 
         # Add everything in the tmpdir to the backup tar file
         backup_file = backup_filepath(targetdir, realm, time_str)
+        create_log_file(tmpdir, lp, "online", server, include_secrets)
         create_backup_tar(logger, tmpdir, backup_file)
 
         shutil.rmtree(tmpdir)
@@ -672,6 +693,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
 
         # Clone and rename the remote server
         lp = sambaopts.get_loadparm()
+        old_domain = lp.get('workgroup')
         creds = credopts.get_credentials(lp)
         include_secrets = not no_secrets
         ctx = DCCloneAndRenameContext(new_base_dn, new_domain_name,
@@ -728,6 +750,9 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
 
         # Add everything in the tmpdir to the backup tar file
         backup_file = backup_filepath(targetdir, new_dns_realm, time_str)
+        create_log_file(tmpdir, lp, "rename", server, include_secrets,
+                        "Original domain %s (NetBIOS), %s (DNS realm)" %
+                        (old_domain, old_realm))
         create_backup_tar(logger, tmpdir, backup_file)
 
         shutil.rmtree(tmpdir)
