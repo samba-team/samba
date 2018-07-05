@@ -62,7 +62,15 @@
 	<programlisting>
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">ceph</smbconfoption>
+		<smbconfoption name="path">/non-mounted/cephfs/path</smbconfoption>
+		<smbconfoption name="kernel share modes">no</smbconfoption>
 	</programlisting>
+
+	<para>
+		Note that currently <command>kernel share modes</command> have
+		to be disabled in a share running with the CephFS vfs module for
+		file serving to work properly.
+	</para>
 </refsect1>
 
 <refsect1>
