@@ -1261,12 +1261,11 @@ static bool cephwrap_lock(struct vfs_handle_struct *handle, files_struct *fsp, i
 static int cephwrap_kernel_flock(struct vfs_handle_struct *handle, files_struct *fsp,
 				uint32_t share_mode, uint32_t access_mask)
 {
-	DBG_DEBUG("[CEPH] kernel_flock\n");
-	/*
-	 * We must return zero here and pretend all is good.
-	 * One day we might have this in CEPH.
-	 */
-	return 0;
+	DBG_ERR("[CEPH] flock unsupported! Consider setting "
+		"\"kernel share modes = no\"\n");
+
+	errno = ENOSYS;
+	return -1;
 }
 
 static bool cephwrap_getlock(struct vfs_handle_struct *handle, files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
