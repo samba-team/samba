@@ -404,7 +404,7 @@ typedef struct files_struct {
 
 struct vuid_cache_entry {
 	struct auth_session_info *session_info;
-	struct tevent_context *user_ev_ctx;
+	struct smb_vfs_ev_glue *user_vfs_evg;
 	uint64_t vuid; /* SMB2 compat */
 	bool read_only;
 	uint32_t share_access;
@@ -453,6 +453,7 @@ typedef struct connection_struct {
 	 */
 	struct auth_session_info *session_info;
 	struct tevent_context *user_ev_ctx;
+	struct smb_vfs_ev_glue *user_vfs_evg;
 
 	/*
 	 * If the "force group" parameter is set, this is the primary gid that

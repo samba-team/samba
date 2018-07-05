@@ -252,6 +252,10 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	const char *vfs_user;
 	struct smbd_server_connection *sconn;
 	const char *servicename = lp_const_servicename(snum);
+	const struct security_unix_token *unix_token = NULL;
+	struct tevent_context *user_ev_ctx = NULL;
+	struct pthreadpool_tevent *user_tp_chdir_safe = NULL;
+	struct pthreadpool_tevent *root_tp_chdir_safe = NULL;
 	int ret;
 
 	sconn = talloc_zero(ctx, struct smbd_server_connection);
@@ -328,6 +332,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 			TALLOC_FREE(conn);
 			return NT_STATUS_NO_MEMORY;
 		}
+		unix_token = conn->session_info->unix_token;
 		/* unix_info could be NULL in session_info */
 		if (conn->session_info->unix_info != NULL) {
 			vfs_user = conn->session_info->unix_info->unix_name;
@@ -337,6 +342,10 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	} else {
 		/* use current authenticated user in absence of session_info */
 		vfs_user = get_current_username();
+	}
+
+	if (unix_token == NULL) {
+		unix_token = get_current_utok(conn);
 	}
 
 	/*
@@ -352,12 +361,63 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	 * to avoid crashes because TALLOC_FREE(conn->user_ev_ctx)
 	 * would also remove sconn->raw_ev_ctx.
 	 */
-	conn->user_ev_ctx = smbd_impersonate_debug_create(sconn->raw_ev_ctx,
-							  "FAKE impersonation",
-							  DBGLVL_DEBUG);
-	if (conn->user_ev_ctx == NULL) {
+	user_ev_ctx = smbd_impersonate_debug_create(sconn->raw_ev_ctx,
+						    "FAKE impersonation",
+						    DBGLVL_DEBUG);
+	if (user_ev_ctx == NULL) {
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
+	}
+	SMB_ASSERT(talloc_reparent(sconn->raw_ev_ctx, conn, user_ev_ctx));
+
+	user_tp_chdir_safe = smbd_impersonate_tp_current_create(conn,
+						sconn->sync_thread_pool,
+						conn,
+						conn->vuid,
+						true, /* chdir_safe */
+						unix_token);
+	if (user_tp_chdir_safe == NULL) {
+		TALLOC_FREE(conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	root_tp_chdir_safe = smbd_impersonate_tp_become_create(conn,
+						sconn->sync_thread_pool,
+						true, /* chdir_safe */
+						become_root,
+						unbecome_root);
+	if (root_tp_chdir_safe == NULL) {
+		TALLOC_FREE(conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * We only use the chdir_safe wrappers
+	 * for everything in order to keep
+	 * it simple.
+	 */
+	conn->user_vfs_evg = smb_vfs_ev_glue_create(conn,
+						    user_ev_ctx,
+						    user_tp_chdir_safe,
+						    user_tp_chdir_safe,
+						    user_tp_chdir_safe,
+						    sconn->root_ev_ctx,
+						    root_tp_chdir_safe,
+						    root_tp_chdir_safe,
+						    root_tp_chdir_safe);
+	if (conn->user_vfs_evg == NULL) {
+		TALLOC_FREE(conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	SMB_ASSERT(talloc_reparent(conn, conn->user_vfs_evg, user_ev_ctx));
+	SMB_ASSERT(talloc_reparent(conn, conn->user_vfs_evg, user_tp_chdir_safe));
+	SMB_ASSERT(talloc_reparent(conn, conn->user_vfs_evg, root_tp_chdir_safe));
+
+	conn->user_ev_ctx = smb_vfs_ev_glue_ev_ctx(conn->user_vfs_evg);
+	if (conn->user_ev_ctx == NULL) {
+		TALLOC_FREE(conn);
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	set_conn_connectpath(conn, connpath);
