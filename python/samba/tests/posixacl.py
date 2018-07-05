@@ -32,6 +32,20 @@ ACL = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695
 
 class PosixAclMappingTests(TestCaseInTempDir):
 
+    def setUp(self):
+        super(PosixAclMappingTests, self).setUp()
+        s3conf = s3param.get_context()
+        s3conf.load(self.get_loadparm().configfile)
+        s3conf.set("xattr_tdb:file", os.path.join(self.tempdir, "xattr.tdb"))
+        self.lp = s3conf
+        self.tempf = os.path.join(self.tempdir, "test")
+        open(self.tempf, 'w').write("empty")
+
+    def tearDown(self):
+        smbd.unlink(self.tempf)
+        os.unlink(os.path.join(self.tempdir, "xattr.tdb"))
+        super(PosixAclMappingTests, self).tearDown()
+
     def print_posix_acl(self, posix_acl):
         aclstr = ""
         for entry in posix_acl.acl:
@@ -774,19 +788,3 @@ class PosixAclMappingTests(TestCaseInTempDir):
 # a_perm: 7
 # uid: -1
 # gid: -1
-
-#
-
-    def setUp(self):
-        super(PosixAclMappingTests, self).setUp()
-        s3conf = s3param.get_context()
-        s3conf.load(self.get_loadparm().configfile)
-        s3conf.set("xattr_tdb:file", os.path.join(self.tempdir,"xattr.tdb"))
-        self.lp = s3conf
-        self.tempf = os.path.join(self.tempdir, "test")
-        open(self.tempf, 'w').write("empty")
-
-    def tearDown(self):
-        smbd.unlink(self.tempf)
-        os.unlink(os.path.join(self.tempdir,"xattr.tdb"))
-        super(PosixAclMappingTests, self).tearDown()
