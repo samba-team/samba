@@ -84,8 +84,8 @@ static krb5_error_code winbind_userok(krb5_context context,
 	krb5_error_code code = 0;
 	char *princ_str = NULL;
 	struct passwd *pwd = NULL;
-	uid_t princ_uid;
-	uid_t lname_uid;
+	uid_t princ_uid = (uid_t)-1;
+	uid_t lname_uid = (uid_t)-1;
 	wbcErr wbc_status;
 	int cmp;
 
