@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from waflib import Logs, Options, Utils
+from waflib import Logs, Options, Errors
 import samba3
 
 def options(opt):
@@ -28,7 +28,7 @@ def configure(conf):
                        "JSON support is required for the JSON "
                        "formatted audit log feature and the AD DC")
         if not Options.options.without_ad_dc:
-            raise Utils.WafError('--without-json-audit requires '
+            raise Errors.WafError('--without-json-audit requires '
                                  '--without-ad-dc. '
                                  'Jansson JSON library is required for '
                                  'building the AD DC')
