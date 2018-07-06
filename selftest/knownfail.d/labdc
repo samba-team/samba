@@ -1,0 +1,5 @@
+# Because the lab-DC testenv scrubs all user info (apart from the Admin),
+# we expect tests relying on other users' credentials to fail.
+# These tests fail because they use testallowed and testdenied users.
+^samba4.rpc.echo.testallowed.*labdc.*
+^samba4.rpc.echo.testdenied.*labdc.*
