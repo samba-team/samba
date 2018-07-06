@@ -118,18 +118,21 @@ testit "getpwnam.domain.$DOMAIN.$USERNAME1" test_getpwnam "$DOMAIN/$USERNAME1" 0
 
 testit "getpwnam.upn.$UPN_NAME1" test_getpwnam "$UPN1" 0 "$DOMAIN/$USERNAME1" || failed=$(expr $failed + 1)
 
-# We should not be able to lookup the user just by the name
-test_ret=0
-test_output="$DOMAIN/$USERNAME1"
-
-if [ "$ENVNAME" = "ad_member" ]; then
+case ${ENVNAME} in
+	ad_member*)
+	# We should not be able to lookup the user just by the name
 	test_ret=2
 	test_output=""
-fi
-if [ "$ENVNAME" = "fl2008r2dc" ]; then
+	;;
+	fl2008r2dc*)
 	test_ret=0
 	test_output="$OWN_DOMAIN/$USERNAME1"
-fi
+	;;
+	*)
+	test_ret=0
+	test_output="$DOMAIN/$USERNAME1"
+	;;
+esac
 
 testit "getpwnam.local.$USERNAME1" test_getpwnam "$USERNAME1" $test_ret $test_output || failed=$(expr $failed + 1)
 
