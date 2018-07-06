@@ -81,7 +81,7 @@ struct notifyd_state {
 	 * broadcasts its messaging_reclog to every other notifyd in
 	 * the cluster. This is done by making ctdb send a message to
 	 * srvid CTDB_SRVID_SAMBA_NOTIFY_PROXY with destination node
-	 * number CTDB_BROADCAST_VNNMAP. Everybody in the cluster who
+	 * number CTDB_BROADCAST_ACTIVE. Everybody in the cluster who
 	 * had called register_with_ctdbd this srvid will receive the
 	 * broadcasts.
 	 *
@@ -998,7 +998,7 @@ static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				  .iov_len = blob.length };
 
 	ret = ctdbd_messaging_send_iov(
-		ctdbd_conn, CTDB_BROADCAST_VNNMAP,
+		ctdbd_conn, CTDB_BROADCAST_ACTIVE,
 		CTDB_SRVID_SAMBA_NOTIFY_PROXY, iov, ARRAY_SIZE(iov));
 	TALLOC_FREE(blob.data);
 	if (ret != 0) {
