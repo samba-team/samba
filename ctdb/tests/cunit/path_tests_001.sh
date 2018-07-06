@@ -22,6 +22,11 @@ EOF
 unit_test ctdb-path socket foobar
 
 ok <<EOF
+$CTDB_BASE/share
+EOF
+unit_test ctdb-path datadir
+
+ok <<EOF
 $CTDB_BASE
 EOF
 unit_test ctdb-path etcdir
@@ -35,6 +40,11 @@ ok <<EOF
 $CTDB_BASE/var
 EOF
 unit_test ctdb-path vardir
+
+ok <<EOF
+$CTDB_BASE/share/foobar
+EOF
+unit_test ctdb-path datadir append foobar
 
 ok <<EOF
 $CTDB_BASE/foobar

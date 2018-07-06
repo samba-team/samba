@@ -100,6 +100,49 @@ static int path_tool_socket(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+static int path_tool_datadir(TALLOC_CTX *mem_ctx,
+			     int argc,
+			     const char **argv,
+			     void *private_data)
+{
+	struct path_tool_context *ctx = talloc_get_type_abort(
+		private_data, struct path_tool_context);
+
+	if (argc != 0) {
+		cmdline_usage(ctx->cmdline, "datadir");
+		return EINVAL;
+	}
+
+	printf("%s\n", path_datadir());
+
+	return 0;
+}
+
+static int path_tool_datadir_append(TALLOC_CTX *mem_ctx,
+				    int argc,
+				    const char **argv,
+				    void *private_data)
+{
+	struct path_tool_context *ctx = talloc_get_type_abort(
+		private_data, struct path_tool_context);
+	char *p;
+
+	if (argc != 1) {
+		cmdline_usage(ctx->cmdline, "datadir append");
+		return EINVAL;
+	}
+
+	p = path_datadir_append(mem_ctx, argv[0]);
+	if (p == NULL) {
+		D_ERR("Memory allocation error\n");
+		return 1;
+	}
+
+	printf("%s\n", p);
+
+	return 0;
+}
+
 static int path_tool_etcdir(TALLOC_CTX *mem_ctx,
 			    int argc,
 			    const char **argv,
@@ -236,6 +279,10 @@ struct cmdline_command path_commands[] = {
 	  "Get path of CTDB daemon pidfile", "<daemon>" },
 	{ "socket", path_tool_socket,
 	  "Get path of CTDB daemon socket", "<daemon>" },
+	{ "datadir append", path_tool_datadir_append,
+	  "Get path relative to CTDB DATADIR", "<path>" },
+	{ "datadir", path_tool_datadir,
+	  "Get path of CTDB DATADIR", NULL },
 	{ "etcdir append", path_tool_etcdir_append,
 	  "Get path relative to CTDB ETCDIR", "<path>" },
 	{ "etcdir", path_tool_etcdir,

@@ -28,15 +28,18 @@
 
 struct {
 	char *basedir;
+	char datadir[PATH_MAX];
 	char etcdir[PATH_MAX];
 	char rundir[PATH_MAX];
 	char vardir[PATH_MAX];
 	bool test_mode;
 	bool basedir_set;
+	bool datadir_set;
 	bool etcdir_set;
 	bool rundir_set;
 	bool vardir_set;
 } ctdb_paths = {
+	.datadir = CTDB_DATADIR,
 	.etcdir = CTDB_ETCDIR,
 	.rundir = CTDB_RUNDIR,
 	.vardir = CTDB_VARDIR,
@@ -94,6 +97,22 @@ static bool path_construct(char *path, const char *subdir)
 	return true;
 }
 
+const char *path_datadir(void)
+{
+	bool ok;
+
+	if (! ctdb_paths.datadir_set) {
+		ok = path_construct(ctdb_paths.datadir, "share");
+		if (!ok) {
+			D_ERR("Failed to construct DATADIR\n");
+		} else {
+			ctdb_paths.datadir_set = true;
+		}
+	}
+
+	return ctdb_paths.datadir;
+}
+
 const char *path_etcdir(void)
 {
 	bool ok;
@@ -140,6 +159,11 @@ const char *path_vardir(void)
 	}
 
 	return ctdb_paths.vardir;
+}
+
+char *path_datadir_append(TALLOC_CTX *mem_ctx, const char *path)
+{
+	return talloc_asprintf(mem_ctx, "%s/%s", path_datadir(), path);
 }
 
 char *path_etcdir_append(TALLOC_CTX *mem_ctx, const char *path)
