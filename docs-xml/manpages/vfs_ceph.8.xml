@@ -67,6 +67,17 @@
 	</programlisting>
 
 	<para>
+		Since <command>vfs_ceph</command> does not require a filesystem
+		mount, the share <command>path</command> is treated differently:
+		it is interpreted as an absolute path within the Ceph filesystem
+		on the attached Ceph cluster.
+		In a ctdb cluster environment where ctdb manages Samba,
+		<command>CTDB_SAMBA_SKIP_SHARE_CHECK=yes</command> must be
+		configured to disable local share path checks, otherwise ctdb
+		will not reach a healthy state.
+	</para>
+
+	<para>
 		Note that currently <command>kernel share modes</command> have
 		to be disabled in a share running with the CephFS vfs module for
 		file serving to work properly.
