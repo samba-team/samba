@@ -298,7 +298,7 @@ SMBC_splice_ctx(SMBCCTX *context,
                 int (*splice_cb)(off_t n, void *priv),
                 void *priv)
 {
-	off_t written;
+	off_t written = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
