@@ -19,12 +19,14 @@
 
 #include "replace.h"
 
+#include <assert.h>
 #include <popt.h>
 #include <talloc.h>
 
 #include "lib/util/debug.h"
 
 #include "common/logging.h"
+#include "common/path.h"
 
 #include "tests/src/test_options.h"
 
@@ -66,19 +68,14 @@ static struct poptOption options_database[] = {
 
 static void set_defaults_basic(struct test_options *opts)
 {
-	const char *ctdb_socket;
-
 	/* Set default options */
-	opts->socket = CTDB_SOCKET;
+	opts->socket = path_socket(NULL, "ctdbd"); /* leaked */
+	assert(opts->socket != NULL);
+
 	opts->timelimit = 10;
 	opts->num_nodes = 1;
 	opts->debugstr = "ERR";
 	opts->interactive = 0;
-
-	ctdb_socket = getenv("CTDB_SOCKET");
-	if (ctdb_socket != NULL) {
-		opts->socket = ctdb_socket;
-	}
 }
 
 static void set_defaults_database(struct test_options *opts)
