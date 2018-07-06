@@ -4,7 +4,9 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option controls the maximum packet size 
-    that will be negotiated by Samba. The default is 16644, which 
+    that will be negotiated by Samba's 
+    <citerefentry><refentrytitle>smbd</refentrytitle><manvolnum>8</manvolnum></citerefentry> 
+    for the SMB1 protocol. The default is 16644, which 
     matches the behavior of Windows 2000.  A value below 2048 is likely to cause problems.
     You should never need to change this parameter from its default value.
 </para>
