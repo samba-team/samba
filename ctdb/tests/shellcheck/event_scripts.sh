@@ -4,4 +4,4 @@
 
 define_test "event scripts"
 
-shellcheck_test "${CTDB_SCRIPTS_BASE}/events/"*/[0-9][0-9].*
+shellcheck_test "${CTDB_SCRIPTS_DATA_DIR}/events/"*/[0-9][0-9].*

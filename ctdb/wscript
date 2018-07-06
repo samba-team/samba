@@ -760,8 +760,11 @@ def build(bld):
         os.path.walk(path, SUBDIR_MODE_callback, pd)
         return pd['file_list']
 
-    etc_subdirs = [
+    event_script_subdirs = [
         'events/legacy',
+    ]
+
+    etc_subdirs = [
         'nfs-checks.d'
     ]
 
@@ -769,6 +772,13 @@ def build(bld):
         configdir = 'config'
     else:
         configdir = 'ctdb/config'
+
+    for t in event_script_subdirs:
+        bld.INSTALL_DIR(os.path.join(bld.env.CTDB_ETCDIR, t))
+        files = SUBDIR_MODE('%s/%s' % (configdir, t), trim_path=configdir)
+        for fmode in files:
+            bld.INSTALL_FILES(bld.env.CTDB_DATADIR, 'config/%s' % fmode[0],
+                              destname=fmode[0], chmod=fmode[1])
 
     for t in etc_subdirs:
         files = SUBDIR_MODE('%s/%s' % (configdir, t), trim_path=configdir)

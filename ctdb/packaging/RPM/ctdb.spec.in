@@ -128,10 +128,7 @@ mkdir -p $RPM_BUILD_ROOT%{initdir}
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 %endif
 
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events/notification
-
 # This is a hack. All documents should be installed in /usr/share/doc.
-rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events/README
 cp config/events/README README.eventscripts
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/nfs-checks.d/README
 cp config/nfs-checks.d/README README.nfs-checks.d
@@ -155,7 +152,6 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb.tunables
 %config(noreplace) %{_sysconfdir}/ctdb/script.options
 %{_sysconfdir}/ctdb/notify.sh
-%dir %{_sysconfdir}/ctdb/events/notification
 %config(noreplace) %{_sysconfdir}/ctdb/debug-hung-script.sh
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
 %config(noreplace) %{_sysconfdir}/ctdb/debug_locks.sh
@@ -199,6 +195,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/ctdb/*
 %dir %{_libdir}
 %{_libdir}/ctdb/lib*
+%dir %{_datadir}/ctdb/events
+%{_datadir}/ctdb/events/*
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdb_diagnostics.1.gz
 %{_mandir}/man1/ctdbd.1.gz

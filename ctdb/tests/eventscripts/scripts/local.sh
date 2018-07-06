@@ -40,7 +40,6 @@ else
 fi
 
 setup_ctdb_base "$EVENTSCRIPTS_TESTS_VAR_DIR" "etc-ctdb" \
-		events \
 		functions \
 		nfs-checks.d \
 		nfs-linux-kernel-callout \
@@ -467,8 +466,16 @@ define_test ()
 			unset event
 			;;
 		esac
+		# "Enable" the script
 		_subdir="events/legacy"
 		script_dir="${CTDB_BASE}/${_subdir}"
+		# Symlink target needs to be absolute
+		case "$CTDB_SCRIPTS_DATA_DIR" in
+		/*) _data_dir="${CTDB_SCRIPTS_DATA_DIR}/${_subdir}" ;;
+		*)  _data_dir="${PWD}/${CTDB_SCRIPTS_DATA_DIR}/${_subdir}"
+		esac
+		mkdir -p "$script_dir"
+		ln -s "${_data_dir}/${script}" "$script_dir"
 		;;
 	*)
 		script="${_f%.*}"
