@@ -18,6 +18,7 @@
 */
 
 #include "replace.h"
+#include "system/filesys.h"
 #include "system/time.h"
 
 #include <popt.h>
@@ -335,17 +336,67 @@ static int event_command_script_enable(TALLOC_CTX *mem_ctx,
 {
 	struct event_tool_context *ctx = talloc_get_type_abort(
 		private_data, struct event_tool_context);
+	struct stat statbuf;
+	char *script, *etc_script, *data_script;
+	int ret;
 
 	if (argc != 2) {
 		cmdline_usage(ctx->cmdline, "script enable");
 		return 1;
 	}
 
-	return event_command_script(mem_ctx,
-				    ctx,
-				    argv[0],
-				    argv[1],
-				    CTDB_EVENT_SCRIPT_ENABLE);
+	script = talloc_asprintf(mem_ctx, "events/%s/%s.script", argv[0], argv[1]);
+	if (script == NULL) {
+		return ENOMEM;
+	}
+
+	etc_script = path_etcdir_append(mem_ctx, script);
+	if (etc_script == NULL) {
+		return ENOMEM;
+	}
+
+	data_script = path_datadir_append(mem_ctx, script);
+	if (data_script == NULL) {
+		return ENOMEM;
+	}
+
+	ret = lstat(etc_script, &statbuf);
+	if (ret == 0) {
+		if (S_ISLNK(statbuf.st_mode)) {
+			/* Link already exists */
+			return 0;
+		} else if (S_ISREG(statbuf.st_mode)) {
+			return event_command_script(mem_ctx,
+						    ctx,
+						    argv[0],
+						    argv[1],
+						    CTDB_EVENT_SCRIPT_ENABLE);
+		}
+
+		printf("Script %s is not a file or a link\n", etc_script);
+		return EINVAL;
+	} else {
+		if (errno == ENOENT) {
+			ret = stat(data_script, &statbuf);
+			if (ret != 0) {
+				printf("Script %s does not exist in %s\n",
+				       argv[1], argv[0]);
+				return ENOENT;
+			}
+
+			ret = symlink(data_script, etc_script);
+			if (ret != 0) {
+				printf("Failed to create symlink %s\n",
+				      etc_script);
+				return EIO;
+			}
+
+			return 0;
+		}
+
+		printf("Script %s does not exist\n", etc_script);
+		return EINVAL;
+	}
 }
 
 static int event_command_script_disable(TALLOC_CTX *mem_ctx,
@@ -355,17 +406,51 @@ static int event_command_script_disable(TALLOC_CTX *mem_ctx,
 {
 	struct event_tool_context *ctx = talloc_get_type_abort(
 		private_data, struct event_tool_context);
+	struct stat statbuf;
+	char *script, *etc_script;
+	int ret;
+
 
 	if (argc != 2) {
 		cmdline_usage(ctx->cmdline, "script disable");
 		return 1;
 	}
 
-	return event_command_script(mem_ctx,
-				    ctx,
-				    argv[0],
-				    argv[1],
-				    CTDB_EVENT_SCRIPT_DISABLE);
+	script = talloc_asprintf(mem_ctx, "events/%s/%s.script", argv[0], argv[1]);
+	if (script == NULL) {
+		return ENOMEM;
+	}
+
+	etc_script = path_etcdir_append(mem_ctx, script);
+	if (etc_script == NULL) {
+		return ENOMEM;
+	}
+
+	ret = lstat(etc_script, &statbuf);
+	if (ret == 0) {
+		if (S_ISLNK(statbuf.st_mode)) {
+			/* Link exists */
+			ret = unlink(etc_script);
+			if (ret != 0) {
+				printf("Failed to remove symlink %s\n",
+				       etc_script);
+				return EIO;
+			}
+
+			return 0;
+		} else if (S_ISREG(statbuf.st_mode)) {
+			return event_command_script(mem_ctx,
+						    ctx,
+						    argv[0],
+						    argv[1],
+						    CTDB_EVENT_SCRIPT_DISABLE);
+		}
+
+		printf("Script %s is not a file or a link\n", etc_script);
+		return EINVAL;
+	}
+
+	return 0;
 }
 
 struct cmdline_command event_commands[] = {
