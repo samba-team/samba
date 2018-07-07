@@ -735,6 +735,26 @@ db_ctdb_tstore_dbseqnum ()
 
 #######################################
 
+# Enables all of the event scripts used in cluster tests, except for
+# the mandatory scripts
+ctdb_enable_cluster_test_event_scripts ()
+{
+	local scripts="
+		       06.nfs
+		       10.interface
+		       49.winbind
+		       50.samba
+		       60.nfs
+		      "
+
+	local s
+	for s in $scripts ; do
+		try_command_on_node all ctdb event script enable legacy "$s"
+	done
+}
+
+########################################
+
 # Make sure that $CTDB is set.
 : ${CTDB:=ctdb}
 

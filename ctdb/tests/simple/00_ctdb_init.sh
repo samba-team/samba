@@ -30,6 +30,10 @@ set -e
 
 ctdb_stop_all >/dev/null 2>&1 || true
 
+if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+	ctdb_enable_cluster_test_event_scripts
+fi
+
 setup_ctdb
 
 ctdb_start_all
