@@ -90,6 +90,12 @@ static int event_command_run(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
+	ret = ctdb_event_init(ctx, ctx->ev, &ctx->eclient);
+	if (ret != 0) {
+		D_ERR("Failed to initialize event client, ret=%d\n", ret);
+		return ret;
+	}
+
 	timeout = atoi(argv[0]);
 	if (timeout < 0) {
 		timeout = 0;
@@ -242,6 +248,12 @@ static int event_command_status(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
+	ret = ctdb_event_init(ctx, ctx->ev, &ctx->eclient);
+	if (ret != 0) {
+		D_ERR("Failed to initialize event client, ret=%d\n", ret);
+		return ret;
+	}
+
 	request_status.component = argv[0];
 	request_status.event = argv[1];
 
@@ -292,6 +304,12 @@ static int event_command_script(TALLOC_CTX *mem_ctx,
 	struct ctdb_event_request_script request_script;
 	int ret = 0, result = 0;
 	bool ok;
+
+	ret = ctdb_event_init(ctx, ctx->ev, &ctx->eclient);
+	if (ret != 0) {
+		D_ERR("Failed to initialize event client, ret=%d\n", ret);
+		return ret;
+	}
 
 	request_script.component = component;
 	request_script.script = script;
@@ -512,12 +530,6 @@ int event_tool_run(struct event_tool_context *ctx, int *result)
 	if (ctx->ev == NULL) {
 		D_ERR("Failed to initialize tevent\n");
 		return ENOMEM;
-	}
-
-	ret = ctdb_event_init(ctx, ctx->ev, &ctx->eclient);
-	if (ret != 0) {
-		D_ERR("Failed to initialize event client, ret=%d\n", ret);
-		return ret;
 	}
 
 	ret = cmdline_run(ctx->cmdline, ctx, result);
