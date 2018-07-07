@@ -786,6 +786,25 @@ def build(bld):
             bld.INSTALL_FILES(bld.env.CTDB_ETCDIR, 'config/%s' % fmode[0],
                               destname=fmode[0], chmod=fmode[1])
 
+    # If this is a direct install and there are no event scripts
+    # linked/enabled then enable some standard ones
+    if os.environ.get('DESTDIR') is None:
+        fmt = 'events/legacy/%s.script'
+        required_script = '00.ctdb'
+        required_path = os.path.join(bld.env.CTDB_ETCDIR,
+                                     fmt % (required_script))
+        if not os.path.islink(required_path) and \
+           not os.path.exists(required_path):
+            default_scripts = [ required_script,
+                                '01.reclock',
+                                '05.system',
+                                '10.interface',
+                              ]
+            for t in default_scripts:
+                tgt = os.path.join(bld.env.CTDB_DATADIR, fmt % (t))
+                name = os.path.join(bld.env.CTDB_ETCDIR, fmt % (t))
+                bld.symlink_as(name, tgt)
+
     bld.SAMBA_GENERATOR('ctdb-functions',
                         source='config/functions',
                         target='functions',
