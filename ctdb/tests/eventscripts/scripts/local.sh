@@ -446,44 +446,51 @@ setup ()
 # Set some globals and print the summary.
 define_test ()
 {
-    desc="$1"
+	desc="$1"
 
-    _f=$(basename "$0" ".sh")
+	_f=$(basename "$0" ".sh")
 
-    # Remaining format should be NN.service.event.NNN or NN.service.NNN:
-    _num="${_f##*.}"
-    _f="${_f%.*}"
+	# Remaining format should be NN.script.event.NUM or
+	# NN.script.NUM or script.NUM:
+	_num="${_f##*.}"
+	_f="${_f%.*}"
 
-    case "$_f" in
-	[0-9][0-9].*.*)
-	    script="${_f%.*}.script"
-	    event="${_f##*.}"
-	    script_dir="${CTDB_BASE}/events/legacy"
-	    ;;
+	case "$_f" in
 	[0-9][0-9].*)
-	    script="${_f}.script"
-	    unset event
-	    script_dir="${CTDB_BASE}/events/legacy"
-	    ;;
+		case "$_f" in
+		[0-9][0-9].*.*)
+			script="${_f%.*}.script"
+			event="${_f##*.}"
+			;;
+		[0-9][0-9].*)
+			script="${_f}.script"
+			unset event
+			;;
+		esac
+		_subdir="events/legacy"
+		script_dir="${CTDB_BASE}/${_subdir}"
+		;;
 	*)
-	    script="${_f%.*}"
-	    unset event
-	    script_dir="${CTDB_BASE}"
-    esac
+		script="${_f%.*}"
+		unset event
+		script_dir="${CTDB_BASE}"
+	esac
 
-    [ -r "${script_dir}/${script}" ] || \
-	die "Internal error - unable to find script \"${script_dir}/${script}\""
+	_s="${script_dir}/${script}"
+	[ -r "$_s" ] || \
+		die "Internal error - unable to find script \"${_s}\""
 
-    script_short="${script%.script}"
+	script_short="${script%.script}"
 
-    printf "%-17s %-10s %-4s - %s\n\n" "$script_short" "$event" "$_num" "$desc"
+	printf "%-17s %-10s %-4s - %s\n\n" \
+	       "$script_short" "$event" "$_num" "$desc"
 
-    _f="${TEST_SUBDIR}/scripts/${script_short}.sh"
-    if [ -r "$_f" ] ; then
-	    . "$_f"
-    fi
+	_f="${TEST_SUBDIR}/scripts/${script_short}.sh"
+	if [ -r "$_f" ] ; then
+		. "$_f"
+	fi
 
-    ctdb_set_pnn 0
+	ctdb_set_pnn 0
 }
 
 # Run an eventscript once.  The test passes if the return code and
