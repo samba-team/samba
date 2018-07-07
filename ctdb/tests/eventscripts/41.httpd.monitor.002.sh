@@ -6,10 +6,6 @@ define_test "managed, down - 5 times"
 
 setup "down"
 
-setup_script_options <<EOF
-CTDB_MANAGES_HTTPD="yes"
-EOF
-
 ok_null
 simple_test
 

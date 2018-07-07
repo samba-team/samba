@@ -11,8 +11,4 @@ setup ()
 			service "$_service_name" force-stopped
 		done
 	fi
-
-	setup_script_options <<EOF
-CTDB_MANAGES_HTTPD=""
-EOF
 }

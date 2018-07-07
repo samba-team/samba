@@ -11,10 +11,6 @@ setup ()
 			service "$i" force-started
 		done
 
-		setup_script_options <<EOF
-CTDB_MANAGES_SAMBA="yes"
-EOF
-
 		setup_tcp_listen 445 139
 
 		# Some things in 50.samba are backgrounded and waited
@@ -28,10 +24,6 @@ EOF
 		for i in "smb" "nmb" "samba" "smbd" "nmbd" ; do
 			service "$i" force-stopped
 		done
-
-		setup_script_options <<EOF
-CTDB_MANAGES_SAMBA=""
-EOF
 
 		setup_tcp_listen
 	fi

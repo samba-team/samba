@@ -9,8 +9,4 @@ setup ()
 	else
 		service "$_service_name" force-stopped
 	fi
-
-	setup_script_options <<EOF
-CTDB_MANAGES_VSFTPD=""
-EOF
 }
