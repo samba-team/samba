@@ -9,6 +9,7 @@ if [  -n "$ctdb_dir" ] ; then
 	CTDB_SCRIPTS_TOOLS_BIN_DIR="${ctdb_dir}/tools"
 	CTDB_SCRIPTS_TOOLS_HELPER_DIR="${ctdb_dir}/tools"
 	CTDB_SCRIPTS_HELPER_BINDIR="${ctdb_dir}/bin"
+	CTDB_SCRIPTS_DATA_DIR="${ctdb_dir}/config"
 else
 	# Installed
 	CTDB_SCRIPTS_BASE="/usr/local/etc/ctdb"
@@ -17,6 +18,7 @@ else
 	CTDB_SCRIPTS_TOOLS_BIN_DIR="/usr/local/bin"
 	CTDB_SCRIPTS_TOOLS_HELPER_DIR="/usr/local/libexec/ctdb"
 	CTDB_SCRIPTS_HELPER_BINDIR="/usr/local/libexec/ctdb"
+	CTDB_SCRIPTS_DATA_DIR="/usr/local/share/ctdb"
 fi
 
 export CTDB_SCRIPTS_BASE \
@@ -24,4 +26,5 @@ export CTDB_SCRIPTS_BASE \
        CTDB_SCRIPTS_INIT_SCRIPT \
        CTDB_SCRIPTS_SBIN_DIR \
        CTDB_SCRIPTS_TOOLS_HELPER_DIR \
-       CTDB_SCRIPTS_HELPER_BINDIR
+       CTDB_SCRIPTS_HELPER_BINDIR \
+       CTDB_SCRIPTS_DATA_DIR
