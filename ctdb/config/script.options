@@ -1,22 +1,16 @@
-# For now, use script.options to demonstrate these options.  The
-# CTDB_MANAGES_* variables will go away soon.  See other *.options
-# examples for more specific examples.
+# For now, use script.options to demonstrate these options.  See
+# *.options examples for more specific examples.
 
 #
 # Samba configuration
 #
 
 # 50.samba.options
-CTDB_MANAGES_SAMBA=yes
 # CTDB_SAMBA_SKIP_SHARE_CHECK=yes
-
-# 49.winbind.options
-CTDB_MANAGES_WINBIND=yes
 
 #
 # NFS configuration
 #
 
 # 60.nfs.options
-CTDB_MANAGES_NFS=yes
 CTDB_RPCINFO_LOCALHOST="127.0.0.1"

@@ -28,8 +28,6 @@ nfs_callout_pre ()
 # shellcheck disable=SC2154
 nfs_callout_init "$script_state_dir"
 
-[ "$CTDB_MANAGES_NFS" = "yes" ] || exit 0
-
 case "$1" in
 takeip)
 	nfs_callout_pre "$@"

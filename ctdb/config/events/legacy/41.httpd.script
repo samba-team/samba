@@ -43,8 +43,6 @@ service_stop ()
     killall -q -9 $service_name || true
 }
 
-[ "$CTDB_MANAGES_HTTPD" = "yes" ] || exit 0
-
 case "$1" in
 startup)
 	service_start

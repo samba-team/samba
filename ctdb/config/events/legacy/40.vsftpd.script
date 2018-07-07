@@ -17,8 +17,6 @@ load_script_options
 
 ctdb_setup_state_dir "service" "$service_name"
 
-[ "$CTDB_MANAGES_VSFTPD" = "yes" ] || exit 0
-
 case "$1" in
 startup)
 	service "$service_name" stop > /dev/null 2>&1

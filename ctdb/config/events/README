@@ -68,8 +68,7 @@ startup
 	If the "startup" event fails then CTDB will retry it until it
 	succeeds.  There is no limit on the number of retries.
 
-	Example: 50.samba uses this event to start the Samba daemon if
-	CTDB_MANAGES_SAMBA=yes.
+	Example: 50.samba uses this event to start the Samba daemon.
 
 shutdown
 
@@ -80,7 +79,7 @@ shutdown
 	event and use it to stop the service.
 
 	Example: 50.samba uses this event to shut down the Samba
-	daemon if CTDB_MANAGES_SAMBA=yes.
+	daemon.
 
 monitor
 

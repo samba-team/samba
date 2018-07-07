@@ -253,8 +253,6 @@ nfs_update_lock_info ()
 # shellcheck disable=SC2154
 nfs_callout_init "$script_state_dir"
 
-[ "$CTDB_MANAGES_NFS" = "yes" ] || exit 0
-
 case "$1" in
 startup)
 	nfs_callout "$@" || exit $?

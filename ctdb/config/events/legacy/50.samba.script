@@ -147,10 +147,6 @@ list_samba_ports ()
 
 ###########################
 
-[ "$CTDB_MANAGES_SAMBA" = "yes" ] || exit 0
-
-###########################
-
 case "$1" in
 startup)
 	service_start

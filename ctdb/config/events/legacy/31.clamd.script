@@ -19,8 +19,6 @@ esac
 
 load_script_options
 
-[ "$CTDB_MANAGES_CLAMD" = "yes" ] || exit 0
-
 case "$1" in
 startup)
 	service "$service_name" stop > /dev/null 2>&1

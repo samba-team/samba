@@ -565,20 +565,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
 	<varlistentry>
 	  <term>
-	    CTDB_MANAGES_CLAMD=yes|no
-	  </term>
-	  <listitem>
-	    <para>
-	      Should CTDB manage ClamAV?
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>
 	    CTDB_CLAMD_SOCKET=<parameter>FILENAME</parameter>
 	  </term>
 	  <listitem>
@@ -596,52 +582,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
     </refsect2>
 
     <refsect2>
-      <title>40.vsftpd</title>
-
-      <para>
-	Provides CTDB's vsftpd FTP service management.
-      </para>
-
-      <variablelist>
-	<varlistentry>
-	  <term>CTDB_MANAGES_VSFTPD=yes|no</term>
-	  <listitem>
-	    <para>
-	      Should CTDB manage the vsftpd FTP server?
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
-      </variablelist>
-    </refsect2>
-
-    <refsect2>
-      <title>41.httpd</title>
-
-      <para>
-	Provides CTDB's Apache web service management.
-      </para>
-
-      <variablelist>
-	<varlistentry>
-	  <term>
-	    CTDB_MANAGES_HTTPD=yes|no
-	  </term>
-	  <listitem>
-	    <para>
-	      Should CTDB manage the Apache web server?
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
-      </variablelist>
-    </refsect2>
-
-    <refsect2>
       <title>49.winbind</title>
 
       <para>
@@ -649,20 +589,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </para>
 
       <variablelist>
-
-	<varlistentry>
-	  <term>
-	    CTDB_MANAGES_WINBIND=yes|no
-	  </term>
-	  <listitem>
-	    <para>
-	      Should CTDB manage Winbind?
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
 
 	<varlistentry>
 	  <term>
@@ -690,20 +616,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </para>
 
       <variablelist>
-
-	<varlistentry>
-	  <term>
-	    CTDB_MANAGES_SAMBA=yes|no
-	  </term>
-	  <listitem>
-	    <para>
-	      Should CTDB manage Samba?
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
 
 	<varlistentry>
 	  <term>
@@ -784,20 +696,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </para>
 
       <variablelist>
-
-	<varlistentry>
-	  <term>
-	    CTDB_MANAGES_NFS=yes|no
-	  </term>
-	  <listitem>
-	    <para>
-	      Should CTDB manage NFS?
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
 
 	<varlistentry>
 	  <term>
@@ -935,20 +833,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </para>
 
       <variablelist>
-
-	<varlistentry>
-	  <term>
-	    CTDB_MANAGES_ISCSI=yes|no
-	  </term>
-	  <listitem>
-	    <para>
-	      Should CTDB manage iSCSI tgtd?
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
 
 	<varlistentry>
 	  <term>
