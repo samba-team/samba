@@ -465,11 +465,6 @@ define_test ()
 	    unset event
 	    script_dir="${CTDB_BASE}/events/legacy"
 	    ;;
-	*.*)
-	    script="${_f%.*}"
-	    event="${_f##*.}"
-	    script_dir="${CTDB_BASE}"
-	    ;;
 	*)
 	    script="${_f%.*}"
 	    unset event
