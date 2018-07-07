@@ -140,10 +140,38 @@ find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%post
 
-#######################################################################
-## Files section                                                     ##
-#######################################################################
+# If mandatory 00.ctdb event script is not enabled then enable it and
+# some other scripts.  The assumption here is that this is a
+# first-time install or an upgrade to a version that requires event
+# scripts to be enabled via symlinks.
+required_script="00.ctdb"
+required_path="%{_sysconfdir}/ctdb/events/legacy/${required_script}.script"
+if [ ! -L "$required_path" ] && [ ! -e "$required_path" ] ; then
+	default_scripts="${required_script}
+			 01.reclock
+			 05.system
+			 10.interface
+			 "
+	for t in $default_scripts ; do
+		tgt="%{_datadir}/ctdb/events/legacy/${t}.script"
+		name="%{_sysconfdir}/ctdb/events/legacy/${t}.script"
+		# Directory is created via install and files
+		ln -s "$tgt" "$name"
+	done
+fi
+
+%preun
+
+# Uninstall, not upgrade.  Clean up by removing any remaining links.
+if [ "$1" = "0" ] ; then
+	for i in "%{_sysconfdir}/ctdb/events/legacy/"*.script ; do
+		if [ -L "$i" ] ; then
+			rm -f "$i"
+		fi
+	done
+fi
 
 %files
 %defattr(-,root,root)
