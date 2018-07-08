@@ -48,33 +48,27 @@ export TEST_CLEANUP=false
 export TEST_TIMEOUT=3600
 export TEST_SOCKET_WRAPPER_SO_PATH=""
 
-temp=$(getopt -n "$prog" -o "AcCdDehHNqS:T:vV:xX" -l help -- "$@")
-
-[ $? != 0 ] && usage
-
-eval set -- "$temp"
-
-while true ; do
-    case "$1" in
-	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
-	-c) TEST_LOCAL_DAEMONS="" ; shift ;;
-	-C) TEST_CLEANUP=true ; shift ;;
-	-d) with_desc=true ; shift ;;  # 4th line of output is description
-	-D) TEST_DIFF_RESULTS=true ; shift ;;
-	-e) exit_on_fail=true ; shift ;;
-	-H) no_header=true ; shift ;;
-	-N) with_summary=false ; shift ;;
-	-q) quiet=true ; shift ;;
-	-S) TEST_SOCKET_WRAPPER_SO_PATH="$2" ; shift 2 ;;
-	-T) TEST_TIMEOUT="$2" ; shift 2 ;;
-	-v) TEST_VERBOSE=true ; shift ;;
-	-V) TEST_VAR_DIR="$2" ; shift 2 ;;
-	-x) set -x; shift ;;
-	-X) TEST_COMMAND_TRACE=true ; shift ;;
-	--) shift ; break ;;
-	*) usage ;;
-    esac
+while getopts "AcCdDehHNqS:T:vV:xX?" opt ; do
+	case "$opt" in
+	A) TEST_CAT_RESULTS_OPTS="-A" ;;
+	c) TEST_LOCAL_DAEMONS="" ;;
+	C) TEST_CLEANUP=true ;;
+	d) with_desc=true ;;  # 4th line of output is description
+	D) TEST_DIFF_RESULTS=true ;;
+	e) exit_on_fail=true ;;
+	H) no_header=true ;;
+	N) with_summary=false ;;
+	q) quiet=true ;;
+	S) TEST_SOCKET_WRAPPER_SO_PATH="$OPTARG" ;;
+	T) TEST_TIMEOUT="$OPTARG" ;;
+	v) TEST_VERBOSE=true ;;
+	V) TEST_VAR_DIR="$OPTARG" ;;
+	x) set -x ;;
+	X) TEST_COMMAND_TRACE=true ;;
+	\?|h) usage ;;
+	esac
 done
+shift $((OPTIND - 1))
 
 case $(basename "$0") in
     *run_cluster_tests*)
