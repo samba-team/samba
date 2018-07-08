@@ -19,7 +19,8 @@ import tarfile
 import os
 import shutil
 from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba.tests import TestCaseInTempDir, env_loadparm, create_test_ou
+from samba.tests import (TestCaseInTempDir, env_loadparm, create_test_ou,
+                         BlackboxProcessError)
 import ldb
 from samba.samdb import SamDB
 from samba.auth import system_session
@@ -397,6 +398,19 @@ class DomainBackupRename(DomainBackupBase):
 
     def test_backup_restore_no_secrets(self):
         self._test_backup_restore_no_secrets()
+
+    def test_backup_invalid_args(self):
+        """Checks that rename commands with invalid args are rejected"""
+
+        # try a "rename" using the same realm as the DC currently has
+        self.base_cmd = ["domain", "backup", "rename", self.restore_domain,
+                         os.environ["REALM"]]
+        self.assertRaises(BlackboxProcessError, self.create_backup)
+
+        # try a "rename" using the same domain as the DC currently has
+        self.base_cmd = ["domain", "backup", "rename", os.environ["DOMAIN"],
+                         self.restore_realm]
+        self.assertRaises(BlackboxProcessError, self.create_backup)
 
     def add_link(self, attr, source, target):
         m = ldb.Message()

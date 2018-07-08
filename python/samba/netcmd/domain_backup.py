@@ -691,9 +691,8 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
 
         tmpdir = tempfile.mkdtemp(dir=targetdir)
 
-        # Clone and rename the remote server
+        # setup a join-context for cloning the remote server
         lp = sambaopts.get_loadparm()
-        old_domain = lp.get('workgroup')
         creds = credopts.get_credentials(lp)
         include_secrets = not no_secrets
         ctx = DCCloneAndRenameContext(new_base_dn, new_domain_name,
@@ -702,6 +701,19 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
                                       include_secrets=include_secrets,
                                       dns_backend='SAMBA_INTERNAL',
                                       server=server, targetdir=tmpdir)
+
+        # sanity-check we're not "renaming" the domain to the same values
+        old_domain = ctx.domain_name
+        if old_domain == new_domain_name:
+            shutil.rmtree(tmpdir)
+            raise CommandError("Cannot use the current domain NetBIOS name.")
+
+        old_realm = ctx.realm
+        if old_realm == new_dns_realm:
+            shutil.rmtree(tmpdir)
+            raise CommandError("Cannot use the current domain DNS realm.")
+
+        # do the clone/rename
         ctx.do_join()
 
         # get the paths used for the clone, then drop the old samdb connection
@@ -712,7 +724,6 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         remote_sam = SamDB(url='ldap://' + server, credentials=creds,
                            session_info=system_session(), lp=lp)
         new_sid = get_sid_for_restore(remote_sam)
-        old_realm = remote_sam.domain_dns_name()
 
         # Grab the remote DC's sysvol files and bundle them into a tar file.
         # Note we end up with 2 sysvol dirs - the original domain's files (that
