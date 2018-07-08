@@ -66,6 +66,16 @@ Kerberos would return ALICE as the username. Kerberos would not be able to map
 names can be correctly mapped. This only applies to GSSAPI authentication,
 not for the geting the initial ticket granting ticket.
 
+VFS audit modules
+-----------------
+
+The vfs_full_audit module has changed it's default set of monitored successful
+and failed operations from "all" to "none". That helps to prevent potential
+denial of service caused by simple addition of the module to the VFS objects.
+
+Also, modules vfs_audit, vfs_ext_audit and vfs_full_audit now accept any valid
+syslog(3) facility, in accordance with the manual page.
+
 Database audit support
 ----------------------
 
@@ -236,6 +246,7 @@ feature, currently it should be enabled from the DNS Manager tool from
 Windows. Also the feature needs to have been enabled by setting the smb.conf
 parameter "dns zone scavenging = yes".
 
+
 REMOVED FEATURES
 ================
 
@@ -254,6 +265,8 @@ to allow better Windows fileserver compatibility in a default install.
   map readonly                       Default changed              no
   store dos attributes               Default changed             yes
   ea support                         Default changed             yes
+  full_audit:success                 Default changed            none
+  full_audit:failure                 Default changed            none
 
 VFS interface changes
 =====================
