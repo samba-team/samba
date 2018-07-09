@@ -793,6 +793,9 @@ for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
         # therefore skip it in that configuration
         plantestsuite_loadlist("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", '$LOADLIST', '$LISTOPT'])
 
+env = "ad_dc_ntvfs"
+plantestsuite_loadlist("samba4.ldap.confidential_attr.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/confidential_attr.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
 for env in ["ad_dc_ntvfs"]:
     # This test takes a lot of time, so we run it against a minimum of
     # environments, please only add new ones if there's really a
