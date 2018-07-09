@@ -85,6 +85,10 @@ def set_options(opt):
     opt.add_option('--enable-etcd-reclock',
                    help=("Enable etcd recovery lock helper (default=no)"),
                    action="store_true", dest='ctdb_etcd_reclock', default=False)
+
+    opt.add_option('--with-libcephfs',
+                   help=("Directory under which libcephfs is installed"),
+                   action="store", dest='libcephfs_dir', default=None)
     opt.add_option('--enable-ceph-reclock',
                    help=("Enable Ceph CTDB recovery lock helper (default=no)"),
                    action="store_true", dest='ctdb_ceph_reclock', default=False)
@@ -237,8 +241,16 @@ def configure(conf):
     conf.env.etcd_reclock = have_etcd_reclock
 
     if Options.options.ctdb_ceph_reclock:
+        # Use custom libcephfs library path if provided. XXX The top level build
+        # explicitly sets LIBPATH_CEPH-COMMON when libcephfs_dir isn't provided.
+        if Options.options.libcephfs_dir:
+            conf.env['CPPPATH_RADOS'] = Options.options.libcephfs_dir + '/include'
+            conf.env['LIBPATH_RADOS'] = Options.options.libcephfs_dir + '/lib'
+            conf.env['LIBPATH_CEPH-COMMON'] = conf.env['LIBPATH_RADOS'] + '/ceph'
+
         if (conf.CHECK_HEADERS('rados/librados.h', False, False, 'rados') and
 					conf.CHECK_LIB('rados', shlib=True)):
+            conf.CHECK_LIB('ceph-common', shlib=True)
             Logs.info('Building with Ceph librados recovery lock support')
             conf.define('HAVE_LIBRADOS', 1)
         else:
@@ -665,7 +677,7 @@ def build(bld):
     if bld.env.HAVE_LIBRADOS:
         bld.SAMBA_BINARY('ctdb_mutex_ceph_rados_helper',
                          source='utils/ceph/ctdb_mutex_ceph_rados_helper.c',
-			 deps='talloc tevent rados',
+			 deps='talloc tevent rados ceph-common',
 			 includes='include',
 			 install_path='${CTDB_HELPER_BINDIR}')
 
