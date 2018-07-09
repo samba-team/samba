@@ -387,6 +387,7 @@ int cmdline_parse(struct cmdline_context *cmdline,
 	int ret;
 
 	if (argc < 2) {
+		cmdline_usage(cmdline, NULL);
 		return EINVAL;
 	}
 
@@ -395,6 +396,7 @@ int cmdline_parse(struct cmdline_context *cmdline,
 	if (parse_options) {
 		ret = cmdline_parse_options(cmdline, argc, argv);
 		if (ret != 0) {
+			cmdline_usage(cmdline, NULL);
 			return ret;
 		}
 	} else {
@@ -403,11 +405,22 @@ int cmdline_parse(struct cmdline_context *cmdline,
 	}
 
 	ret = cmdline_match(cmdline);
-	if (!cmdline_show_help && ret != 0) {
-		return ret;
+
+	if (ret != 0 || cmdline_show_help) {
+		const char *name = NULL;
+
+		if (cmdline->match_cmd != NULL) {
+			name = cmdline->match_cmd->name;
+		}
+
+		cmdline_usage(cmdline, name);
+
+		if (cmdline_show_help) {
+			ret = EAGAIN;
+		}
 	}
 
-	return 0;
+	return ret;
 }
 
 static void cmdline_usage_command(struct cmdline_context *cmdline,
@@ -479,21 +492,6 @@ int cmdline_run(struct cmdline_context *cmdline,
 	struct cmdline_command *cmd = cmdline->match_cmd;
 	TALLOC_CTX *tmp_ctx;
 	int ret;
-
-	if (cmdline_show_help) {
-		const char *name = NULL;
-
-		if (cmd != NULL) {
-			name = cmdline->match_cmd->name;
-		}
-
-		cmdline_usage(cmdline, name);
-
-		if (result != NULL) {
-			*result = 0;
-		}
-		return EAGAIN;
-	}
 
 	if (cmd == NULL) {
 		return ENOENT;

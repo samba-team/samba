@@ -244,7 +244,7 @@ static void test5(void)
 	const char *argv2[] = { "test5", "action" };
 	const char *argv3[] = { "test5", "action", "--help" };
 	const char *argv4[] = { "test5", "action", "one" };
-	int ret, result;
+	int ret;
 
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
@@ -253,17 +253,13 @@ static void test5(void)
 	assert(ret == 0);
 
 	ret = cmdline_parse(cmdline, 2, argv1, true);
-	assert(ret == 0);
-
-	ret = cmdline_run(cmdline, NULL, &result);
 	assert(ret == EAGAIN);
-	assert(result == 0);
 
 	ret = cmdline_parse(cmdline, 2, argv2, true);
 	assert(ret == ENOENT);
 
 	ret = cmdline_parse(cmdline, 3, argv3, true);
-	assert(ret == 0);
+	assert(ret == EAGAIN);
 
 	ret = cmdline_parse(cmdline, 3, argv4, true);
 	assert(ret == 0);
