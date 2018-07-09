@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "messages.h"
 
-struct tevent_context *server_event_ctx = NULL;
+static struct tevent_context *server_event_ctx = NULL;
 
 struct tevent_context *server_event_context(void)
 {
@@ -44,7 +44,7 @@ void server_event_context_free(void)
 	TALLOC_FREE(server_event_ctx);
 }
 
-struct messaging_context *server_msg_ctx = NULL;
+static struct messaging_context *server_msg_ctx = NULL;
 
 struct messaging_context *server_messaging_context(void)
 {
