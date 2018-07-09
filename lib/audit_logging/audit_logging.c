@@ -355,7 +355,7 @@ void json_free(struct json_object *object)
  * @return is the object valid?
  *
  */
-bool json_is_invalid(struct json_object *object)
+bool json_is_invalid(const struct json_object *object)
 {
 	return !object->valid;
 }
@@ -907,7 +907,7 @@ int json_add_guid(struct json_object *object,
  * @return A string representation of the object or NULL if the object
  *         is invalid.
  */
-char *json_to_string(TALLOC_CTX *mem_ctx, struct json_object *object)
+char *json_to_string(TALLOC_CTX *mem_ctx, const struct json_object *object)
 {
 	char *json = NULL;
 	char *json_string = NULL;

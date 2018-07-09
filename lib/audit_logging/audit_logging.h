@@ -55,7 +55,7 @@ _WARN_UNUSED_RESULT_ struct json_object json_new_object(void);
 _WARN_UNUSED_RESULT_ struct json_object json_new_array(void);
 void json_free(struct json_object *object);
 void json_assert_is_array(struct json_object *array);
-_WARN_UNUSED_RESULT_ bool json_is_invalid(struct json_object *object);
+_WARN_UNUSED_RESULT_ bool json_is_invalid(const struct json_object *object);
 
 _WARN_UNUSED_RESULT_ int json_add_int(struct json_object *object,
 				      const char *name,
@@ -93,6 +93,6 @@ _WARN_UNUSED_RESULT_ struct json_object json_get_array(
 _WARN_UNUSED_RESULT_ struct json_object json_get_object(
     struct json_object *object, const char *name);
 _WARN_UNUSED_RESULT_ char *json_to_string(TALLOC_CTX *mem_ctx,
-					  struct json_object *object);
+					  const struct json_object *object);
 #endif
 #endif
