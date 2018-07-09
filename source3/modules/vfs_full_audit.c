@@ -350,32 +350,87 @@ static struct {
 static int audit_syslog_facility(vfs_handle_struct *handle)
 {
 	static const struct enum_list enum_log_facilities[] = {
-		{ LOG_AUTH,	"AUTH" },
-		{ LOG_CRON,	"CRON" },
-		{ LOG_DAEMON,	"DAEMON" },
-		{ LOG_FTP,	"FTP" },
-		{ LOG_KERN,	"KERN" },
-		{ LOG_LPR,	"LPR" },
-		{ LOG_MAIL,	"MAIL" },
-		{ LOG_NEWS,	"NEWS" },
+#ifdef LOG_AUTH
+		{ LOG_AUTH,		"AUTH" },
+#endif
+#ifdef LOG_AUTHPRIV
+		{ LOG_AUTHPRIV,		"AUTHPRIV" },
+#endif
+#ifdef LOG_AUDIT
+		{ LOG_AUDIT,		"AUDIT" },
+#endif
+#ifdef LOG_CONSOLE
+		{ LOG_CONSOLE,		"CONSOLE" },
+#endif
+#ifdef LOG_CRON
+		{ LOG_CRON,		"CRON" },
+#endif
+#ifdef LOG_DAEMON
+		{ LOG_DAEMON,		"DAEMON" },
+#endif
+#ifdef LOG_FTP
+		{ LOG_FTP,		"FTP" },
+#endif
+#ifdef LOG_INSTALL
+		{ LOG_INSTALL,		"INSTALL" },
+#endif
+#ifdef LOG_KERN
+		{ LOG_KERN,		"KERN" },
+#endif
+#ifdef LOG_LAUNCHD
+		{ LOG_LAUNCHD,		"LAUNCHD" },
+#endif
+#ifdef LOG_LFMT
+		{ LOG_LFMT,		"LFMT" },
+#endif
+#ifdef LOG_LPR
+		{ LOG_LPR,		"LPR" },
+#endif
+#ifdef LOG_MAIL
+		{ LOG_MAIL,		"MAIL" },
+#endif
+#ifdef LOG_MEGASAFE
+		{ LOG_MEGASAFE,		"MEGASAFE" },
+#endif
+#ifdef LOG_NETINFO
+		{ LOG_NETINFO,		"NETINFO" },
+#endif
+#ifdef LOG_NEWS
+		{ LOG_NEWS,		"NEWS" },
+#endif
+#ifdef LOG_NFACILITIES
+		{ LOG_NFACILITIES,	"NFACILITIES" },
+#endif
 #ifdef LOG_NTP
-		{ LOG_NTP,	"NTP" },
+		{ LOG_NTP,		"NTP" },
+#endif
+#ifdef LOG_RAS
+		{ LOG_RAS,		"RAS" },
+#endif
+#ifdef LOG_REMOTEAUTH
+		{ LOG_REMOTEAUTH,	"REMOTEAUTH" },
 #endif
 #ifdef LOG_SECURITY
-		{ LOG_SECURITY,	"SECURITY" },
+		{ LOG_SECURITY,		"SECURITY" },
 #endif
-		{ LOG_SYSLOG,	"SYSLOG" },
-		{ LOG_USER,	"USER" },
-		{ LOG_UUCP,	"UUCP" },
-		{ LOG_LOCAL0,	"LOCAL0" },
-		{ LOG_LOCAL1,	"LOCAL1" },
-		{ LOG_LOCAL2,	"LOCAL2" },
-		{ LOG_LOCAL3,	"LOCAL3" },
-		{ LOG_LOCAL4,	"LOCAL4" },
-		{ LOG_LOCAL5,	"LOCAL5" },
-		{ LOG_LOCAL6,	"LOCAL6" },
-		{ LOG_LOCAL7,	"LOCAL7" },
-		{ -1,		NULL }
+#ifdef LOG_SYSLOG
+		{ LOG_SYSLOG,		"SYSLOG" },
+#endif
+#ifdef LOG_USER
+		{ LOG_USER,		"USER" },
+#endif
+#ifdef LOG_UUCP
+		{ LOG_UUCP,		"UUCP" },
+#endif
+		{ LOG_LOCAL0,		"LOCAL0" },
+		{ LOG_LOCAL1,		"LOCAL1" },
+		{ LOG_LOCAL2,		"LOCAL2" },
+		{ LOG_LOCAL3,		"LOCAL3" },
+		{ LOG_LOCAL4,		"LOCAL4" },
+		{ LOG_LOCAL5,		"LOCAL5" },
+		{ LOG_LOCAL6,		"LOCAL6" },
+		{ LOG_LOCAL7,		"LOCAL7" },
+		{ -1,			NULL }
 	};
 
 	int facility;
