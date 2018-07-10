@@ -969,9 +969,11 @@ class TestZones(DNSTest):
         return recs[0]
 
     def ldap_get_records(self, name):
-        dn = 'DC={},{}'.format(name, self.zone_dn)
+        # The use of SCOPE_SUBTREE here avoids raising an exception in the
+        # 0 results case for a test below.
+
         expr = "(&(objectClass=dnsNode)(name={}))".format(name)
-        return self.samdb.search(base=dn, scope=ldb.SCOPE_SUBTREE,
+        return self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_SUBTREE,
                                  expression=expr, attrs=["*"])
 
     def ldap_get_dns_records(self, name):
