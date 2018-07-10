@@ -844,11 +844,11 @@ static void run_event_next_script(struct tevent_req *subreq)
 		if (! state->continue_on_failure) {
 			state->script_list->num_scripts = state->index + 1;
 
-			if (script->summary == -ETIME && pid != -1) {
+			if (script->summary == -ETIMEDOUT && pid != -1) {
 				run_event_debug(req, pid);
 			}
 			D_NOTICE("%s event %s\n", state->event_str,
-				 (script->summary == -ETIME) ?
+				 (script->summary == -ETIMEDOUT) ?
 				  "timed out" :
 				  "failed");
 			run_event_stop_running(state->run_ctx);

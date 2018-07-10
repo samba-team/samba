@@ -106,7 +106,7 @@ ok <<EOF
 11.foo: hello
 Event monitor completed with result=0
 11.foo result=0
-22.bar result=-8
+22.bar result=-$(errcode ENOEXEC)
 EOF
 unit_test run_event_test "$scriptdir" run 10 monitor
 
@@ -124,9 +124,9 @@ unit_test run_event_test "$scriptdir" enable 22.bar
 
 ok <<EOF
 11.foo: hello
-Event monitor completed with result=-62
+Event monitor completed with result=-$(errcode ETIMEDOUT)
 11.foo result=0
-22.bar result=-62
+22.bar result=-$(errcode ETIMEDOUT)
 EOF
 unit_test run_event_test "$scriptdir" run 5 monitor
 
