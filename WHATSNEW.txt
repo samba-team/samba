@@ -66,6 +66,52 @@ Kerberos would return ALICE as the username. Kerberos would not be able to map
 names can be correctly mapped. This only applies to GSSAPI authentication,
 not for the geting the initial ticket granting ticket.
 
+Database audit support
+----------------------
+
+Changes to the Samba AD's sam.ldb database are now logged to Samba's debug log
+under the "dsdb_audit" debug class and "dsdb_json_audit" for JSON formatted log
+entries.
+
+Transaction commits and roll backs are now logged to Samba's debug logs under
+the "dsdb_transaction_audit" debug class and "dsdb_transaction_json_audit" for
+JSON formatted log entries.
+
+Password change audit support
+-----------------------------
+
+Password changes in the AD DC are now logged to Samba's debug logs under the
+"dsdb_password_audit" debug class and "dsdb_password_json_audit" for JSON
+formatted log entries.
+
+Group membership change audit support
+-------------------------------------
+
+Group membership changes on the AD DC are now logged to
+Samba's debug log under the "dsdb_group_audit" debug class and
+"dsdb_group_json_audit" for JSON formatted log entries.
+
+Log Authentication duration
+---------------------------
+
+For NTLM and Kerberos KDC authentication, the authentication duration is now
+logged. Note that the duration is only included in the JSON formatted log
+entries.
+
+New Experimental LMDB LDB backend
+---------------------------------
+
+A new experimental LDB backend using LMBD is now available. This allows
+databases larger than 4Gb (Currently the limit is set to 6Gb, but this will be
+increased in a future release). To enable lmdb, provision or join a domain using
+the --backend-store=mdb option.
+
+This requires that a version of lmdb greater than 0.9.16 is installed and that
+samba has not been built with the --without-ldb-lmdb option.
+
+Please note this is an experimental feature and is not recommended for
+production deployments.
+
 REMOVED FEATURES
 ================
 
