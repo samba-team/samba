@@ -4120,7 +4120,7 @@ bool lp_load_with_registry_shares(const char *pszFname)
 			  false, /* global_only */
 			  true,  /* save_defaults */
 			  false, /* add_ipc */
-			  false, /* reinit_globals */
+			  true, /* reinit_globals */
 			  true,  /* allow_include_registry */
 			  true); /* load_all_shares*/
 }
