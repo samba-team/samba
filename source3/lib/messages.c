@@ -635,15 +635,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	return ctx;
 }
 
-NTSTATUS messaging_init_client(TALLOC_CTX *mem_ctx,
-			       struct tevent_context *ev,
-			       struct messaging_context **pmsg_ctx)
-{
-	return messaging_init_internal(mem_ctx,
-					ev,
-					pmsg_ctx);
-}
-
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx)
 {
 	return msg_ctx->id;
