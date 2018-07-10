@@ -30,6 +30,13 @@ required_result ()
     fi
 }
 
+required_error ()
+{
+	rc=$(errcode $1)
+	shift
+	required_result $rc "$@"
+}
+
 ok ()
 {
     required_result 0 "$@"
