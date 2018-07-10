@@ -363,7 +363,7 @@ int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
 	talloc_free(mem_ctx);
 
 	if (timed_out) {
-		return ETIME;
+		return ETIMEDOUT;
 	}
 
 	return 0;
