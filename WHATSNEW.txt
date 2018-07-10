@@ -218,6 +218,23 @@ Samba developers now have pre-commit testing available in GitLab,
 giving reviewers confidence that the submitted patches pass a full CI
 before being submitted to the Samba Team's own autobuild system.
 
+Dynamic DNS record scavenging support
+-------------------------------------
+
+It is now possible to enable scavenging of DNS Zones to remove DNS
+records that were dynamically created and have not been touched in
+some time.
+
+This support should however only be enabled on new zones or new
+installations.  Sadly old Samba versions suffer from BUG 12451 and
+mark dynamic DNS records as static and static records as dynamic.
+While a dbcheck rule may be able to find these in the future,
+currently a reliable test has not been devised.
+
+Finally, there is not currently a command-line tool to enable this
+feature, currently it should be enabled from the DNS Manager tool from
+Windows. Also the feature needs to have been enabled by setting the smb.conf
+parameter "dns zone scavenging = yes".
 
 REMOVED FEATURES
 ================
