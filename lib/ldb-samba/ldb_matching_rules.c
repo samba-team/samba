@@ -448,7 +448,7 @@ static int dsdb_match_for_expunge(struct ldb_context *ldb,
 int ldb_register_samba_matching_rules(struct ldb_context *ldb)
 {
 	struct ldb_extended_match_rule *transitive_eval = NULL,
-		*match_for_expunge = NULL;
+				       *match_for_expunge = NULL;
 	int ret;
 
 	transitive_eval = talloc_zero(ldb, struct ldb_extended_match_rule);

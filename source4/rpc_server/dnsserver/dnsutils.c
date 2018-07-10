@@ -172,15 +172,16 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	serverinfo->dwRpcProtocol = 5;
 	serverinfo->dwNameCheckFlag = DNS_ALLOW_MULTIBYTE_NAMES;
 	serverinfo->cAddressAnswerLimit = 0;
-	serverinfo->dwRecursionRetry = 3 /* seconds (default) */;
-	serverinfo->dwRecursionTimeout = 8 /* seconds (default) */;
-	serverinfo->dwMaxCacheTtl = 0x00015180; /* 1 day (default) */;
-	serverinfo->dwDsPollingInterval = 0xB4; /* 3 minutes (default) */;
-	serverinfo->dwLocalNetPriorityNetMask = 0x000000FF;;
+	serverinfo->dwRecursionRetry = 3;       /* seconds (default) */
+	serverinfo->dwRecursionTimeout = 8;     /* seconds (default) */
+	serverinfo->dwMaxCacheTtl = 0x00015180; /* 1 day (default) */
+	serverinfo->dwDsPollingInterval = 0xB4; /* 3 minutes (default) */
+	serverinfo->dwLocalNetPriorityNetMask = 0x000000FF;
 
 	serverinfo->dwScavengingInterval = 0;
-	serverinfo->dwDefaultRefreshInterval = 0xA8; /* 7 days in hours */;
-	serverinfo->dwDefaultNoRefreshInterval = 0xA8; /* 7 days in hours */;;
+	serverinfo->dwDefaultRefreshInterval = 0xA8;   /* 7 days in hours */
+	serverinfo->dwDefaultNoRefreshInterval = 0xA8; /* 7 days in hours */
+
 	serverinfo->dwLastScavengeTime = 0;
 
 	serverinfo->fAutoReverseZones = 0;

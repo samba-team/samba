@@ -610,7 +610,6 @@ static WERROR handle_one_update(struct dns_server *dns,
 						struct dnsp_DnssrvRpcRecord);
 			W_ERROR_HAVE_NO_MEMORY(ns_rec);
 
-
 			werror = dns_rr_to_dnsp(ns_rec, update, ns_rec);
 			W_ERROR_NOT_OK_RETURN(werror);
 

@@ -601,8 +601,8 @@ WERROR kccsrv_periodic_schedule(struct kccsrv_service *service, uint32_t next_in
 static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 {
 	time_t current_time = time(NULL);
-	time_t interval = lpcfg_parm_int(s->task->lp_ctx, NULL, "kccsrv",
-					 "check_deleted_interval", 86400);
+	time_t interval = lpcfg_parm_int(
+	    s->task->lp_ctx, NULL, "kccsrv", "check_deleted_interval", 86400);
 	uint32_t tombstoneLifetime;
 	int ret;
 	unsigned int num_objects_removed = 0;

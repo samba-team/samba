@@ -1488,14 +1488,17 @@ static bool dns_name_equal(const char *name1, const char *name2)
 {
 	size_t len1 = strlen(name1);
 	size_t len2 = strlen(name2);
-	if (name1[len1-1] == '.') len1--;
-	if (name2[len2-1] == '.') len2--;
+	if (name1[len1 - 1] == '.') {
+		len1--;
+	}
+	if (name2[len2 - 1] == '.') {
+		len2--;
+	}
 	if (len1 != len2) {
 		return false;
 	}
 	return strncasecmp_m(name1, name2, len1) == 0;
 }
-
 
 /*
   see if two dns records match
@@ -1648,8 +1651,14 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	unix_to_nt_time(&t, time(NULL));
-	t /= 10*1000*1000; /* convert to seconds (NT time is in 100ns units) */
-	t /= 3600;         /* convert to hours */
+	/*
+	 * convert to seconds (NT time is in 100ns units)
+	 */
+	t /= 10 * 1000 * 1000;
+	/*
+	 * convert to hours
+	 */
+	t /= 3600;
 
 	rec->rank        = DNS_RANK_ZONE;
 	rec->dwTimeStamp = (uint32_t)t;

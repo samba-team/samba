@@ -86,7 +86,7 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 						struct dnsserver_partition *p)
 {
 	TALLOC_CTX *tmp_ctx;
-	const char * const attrs[] = {"name", NULL};
+	const char *const attrs[] = {"name", NULL};
 	struct ldb_dn *dn;
 	struct ldb_result *res;
 	struct dnsserver_zone *zones, *z;
@@ -122,8 +122,8 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 		}
 
 		z->partition = p;
-		name = talloc_strdup(z,
-				ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL));
+		name = talloc_strdup(
+		    z, ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL));
 		if (strcmp(name, "..TrustAnchors") == 0) {
 			talloc_free(z);
 			continue;

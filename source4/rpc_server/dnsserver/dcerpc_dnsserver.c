@@ -1517,7 +1517,8 @@ static WERROR dnsserver_operate_zone(struct dnsserver_state *dsstate,
 		}
 
 		/* Ignore property resets */
-		if (strcasecmp(r->NameAndParam->pszNodeName, "AllowUpdate") == 0) {
+		if (strcasecmp(r->NameAndParam->pszNodeName, "AllowUpdate") ==
+		    0) {
 			return WERR_OK;
 		}
 		valid_operation = true;
