@@ -62,6 +62,14 @@ def set_options(opt):
                    dest='with_system_mitkdc',
                    default=None)
 
+    opt.add_option('--with-system-heimdalkrb5',
+                   help=('build Samba with system Heimdal Kerberos. ' +
+                         'Requires --without-ad-dc' and
+                         'conflicts with --with-system-mitkrb5'),
+                   action='store_true',
+                   dest='with_system_heimdalkrb5',
+                   default=False)
+
     opt.add_option('--without-ad-dc',
                    help='disable AD DC functionality (enables only Samba FS (File Server, Winbind, NMBD) and client utilities.',
                    action='store_true', dest='without_ad_dc', default=False)
@@ -205,6 +213,18 @@ def configure(conf):
         conf.PROCESS_SEPARATE_RULE('system_mitkrb5')
     if not (Options.options.without_ad_dc or Options.options.with_system_mitkrb5):
         conf.DEFINE('AD_DC_BUILD_IS_ENABLED', 1)
+
+    if Options.options.with_system_heimdalkrb5:
+        if Options.options.with_system_mitkrb5:
+            raise Utils.WafError('--with-system-heimdalkrb5 conflicts with ' +
+                                 '--with-system-mitkrb5')
+        if not Options.options.without_ad_dc:
+            raise Utils.WafError('--with-system-heimdalkrb5 requires ' +
+                                 '--without-ad-dc')
+        conf.env.SYSTEM_LIBS += ('heimdal', 'asn1', 'com_err', 'roken',
+                                 'hx509', 'wind', 'gssapi', 'hcrypto',
+                                 'krb5', 'heimbase', 'asn1_compile',
+                                 'compile_et', 'kdc', 'hdb', 'heimntlm')
 
     # Only process heimdal_build for non-MIT KRB5 builds
     # When MIT KRB5 checks are done as above, conf.env.KRB5_VENDOR will be set
