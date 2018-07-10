@@ -847,6 +847,11 @@ def build(bld):
                      deps='replace',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_BINARY('sigcode',
+                     source='tests/src/sigcode.c',
+                     deps='replace',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
     # Unit tests
     ctdb_unit_tests = [
         'db_hash_test',
