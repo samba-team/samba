@@ -1,9 +1,6 @@
 # If we're not running on a real cluster then we need a local copy of
 # ctdb (and other stuff) in $PATH and we will use local daemons.
 
-# For ctdbd_wrapper
-PATH="${CTDB_SCRIPTS_BASE}:${PATH}"
-
 hdir="$CTDB_SCRIPTS_HELPER_BINDIR"
 export CTDB_EVENTD="${hdir}/ctdb-eventd"
 export CTDB_EVENT_HELPER="${hdir}/ctdb-event"
@@ -166,8 +163,7 @@ start_ctdb_1 ()
 {
 	local pnn="$1"
 
-	CTDBD="${VALGRIND} ctdbd" \
-	     onnode "$pnn" ctdbd_wrapper start
+	onnode "$pnn" $VALGRIND ctdbd
 }
 
 ctdb_start_all ()
@@ -184,7 +180,7 @@ stop_ctdb_1 ()
 {
 	local pnn="$1"
 
-	onnode "$pnn" ctdbd_wrapper stop
+	onnode "$pnn" $CTDB shutdown
 }
 
 ctdb_stop_all ()
