@@ -112,6 +112,57 @@ samba has not been built with the --without-ldb-lmdb option.
 Please note this is an experimental feature and is not recommended for
 production deployments.
 
+Password Settings Objects
+-------------------------
+Support has been added for Password Settings Objects (PSOs). This AD feature is
+also known as Fine-Grained Password Policies (FGPP).
+
+PSOs allow AD administrators to override the domain password policy settings
+for specific users, or groups of users. For example, PSOs can force certain
+users to have longer password lengths, or relax the complexity constraints for
+other users, and so on. PSOs can be applied to groups or to individual users.
+When multiple PSOs apply to the same user, essentially the PSO with the best
+precedence takes effect.
+
+PSOs can be configured and applied to users/groups using the 'samba-tool domain
+passwordsettings pso' set of commands.
+
+Domain backup and restore
+-------------------------
+A new samba-tool command has been added that allows administrators to create a
+backup-file of their domain DB. In the event of a catastrophic failure of the
+domain, this backup-file can be used to restore Samba services.
+
+The new 'samba-tool domain backup online' command takes a snapshot of the
+domain DB from a given DC. In the event of a catastrophic DB failure, all DCs
+in the domain should be taken offline, and the backup-file can then be used to
+recreate a fresh new DC, using the 'samba-tool domain backup restore' command.
+Once the backed-up domain DB has been restored on the new DC, other DCs can
+then subsequently be joined to the new DC, in order to repopulate the Samba
+network.
+
+Domain rename tool
+------------------
+Basic support has been added for renaming a Samba domain. The rename feature is
+designed for the following cases:
+1). Running a temporary alternate domain, in the event of a catastrophic
+failure of the regular domain. Using a completely different domain name and
+realm means that the original domain and the renamed domain can both run at the
+same time, without interfering with each other. This is an advantage over
+creating a regular 'online' backup - it means the renamed/alternate domain can
+provide core Samba network services, while trouble-shooting the fault on the
+original domain can be done in parallel.
+2). Creating a realistic lab domain or pre-production domain for testing.
+
+Note that the renamed tool is currently not intended to support a long-term
+rename of the production domain. Currently renaming the GPOs is not supported
+and would need to be done manually.
+
+The domain rename is done in two steps: first, the 'samba-tool domain backup
+rename' command will clone the domain DB, renaming it in the process, and
+producing a backup-file. Then, the 'samba-tool domain backup restore' command
+takes the backup-file and restores the renamed DB to disk on a fresh DC.
+
 REMOVED FEATURES
 ================
 
