@@ -155,7 +155,7 @@ int main(int argc, const char *argv[])
 
 	ret = ctdb_client_wait_timeout(ev, &done,
 			tevent_timeval_current_ofs(options.timelimit, 0));
-	if (ret != 0 && ret == ETIME) {
+	if (ret != 0 && ret == ETIMEDOUT) {
 		D_ERR("client_wait_timeout() failed, ret=%d\n", ret);
 		talloc_free(client);
 		exit(1);

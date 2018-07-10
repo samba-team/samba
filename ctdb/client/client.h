@@ -184,7 +184,7 @@ void ctdb_client_wait(struct tevent_context *ev, bool *done);
  * @param[in] ev Tevent context
  * @param[in] done Boolean flag to indicate when to stop waiting
  * @param[in] timeout How long to wait
- * @return 0 on succes, ETIME on timeout, and errno on failure
+ * @return 0 on succes, ETIMEDOUT on timeout, and errno on failure
  */
 int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
 			     struct timeval timeout);
