@@ -127,7 +127,8 @@ unit_test run_proc_test 1 -1 "$prog"
 result_filter ()
 {
 	_header="  *PID  *TTY  *TIME  *CMD"
-	sed -e "s|^${_header}|HEADER|"
+	_header2=" *PID  *TT  *STAT  *TIME  *COMMAND"
+	sed -e "s|^${_header}|HEADER|" -e "s|^${_header2}|HEADER|"
 }
 
 pid=$(cat "$pidfile")
