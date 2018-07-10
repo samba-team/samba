@@ -145,7 +145,7 @@ static int event_command_run(TALLOC_CTX *mem_ctx,
 
 	if (result == ENOENT) {
 		printf("Event dir for %s does not exist\n", argv[1]);
-	} else if (result == ETIME) {
+	} else if (result == ETIMEDOUT) {
 		printf("Event %s in %s timed out\n", argv[2], argv[1]);
 	} else if (result == ECANCELED) {
 		printf("Event %s in %s got cancelled\n", argv[2], argv[1]);
@@ -170,7 +170,7 @@ static double timeval_delta(struct timeval *tv2, struct timeval *tv)
 
 static void print_status_one(struct ctdb_event_script *script)
 {
-	if (script->result == -ETIME) {
+	if (script->result == -ETIMEDOUT) {
 		printf("%-20s %-10s %s",
 		       script->name,
 		       "TIMEDOUT",

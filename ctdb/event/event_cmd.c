@@ -130,8 +130,8 @@ static void event_cmd_run_done(struct tevent_req *subreq)
 		goto done;
 	}
 
-	if (script_list->summary == -ETIME) {
-		state->reply->result = ETIME;
+	if (script_list->summary == -ETIMEDOUT) {
+		state->reply->result = ETIMEDOUT;
 	} else if (script_list->summary != 0) {
 		state->reply->result = ENOEXEC;
 	}

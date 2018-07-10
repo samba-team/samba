@@ -18,7 +18,7 @@ simple_test script enable random 01.disabled
 ok_null
 simple_test script disable random 01.disabled
 
-required_result 22 <<EOF
+required_error EINVAL <<EOF
 Event monitor has never run in random
 EOF
 simple_test status random monitor

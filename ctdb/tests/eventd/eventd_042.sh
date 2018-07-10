@@ -9,7 +9,7 @@ setup_eventd
 ok_null
 simple_test_background run 10 multi monitor
 
-required_result 8 <<EOF
+required_error ENOEXEC <<EOF
 Event failure in random failed
 EOF
 simple_test run 10 random failure

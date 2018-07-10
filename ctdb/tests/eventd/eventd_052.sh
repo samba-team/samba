@@ -8,7 +8,7 @@ setup_eventd
 
 export CTDB_EVENT_RUN_ALL=1
 
-required_result 8 <<EOF
+required_error ENOEXEC <<EOF
 Event event1 in multi failed
 EOF
 simple_test run 10 multi event1
@@ -21,7 +21,7 @@ required_result 1 <<EOF
 EOF
 simple_test status multi event1
 
-required_result 8 <<EOF
+required_error ENOEXEC <<EOF
 Event event2 in multi failed
 EOF
 simple_test run 10 multi event2

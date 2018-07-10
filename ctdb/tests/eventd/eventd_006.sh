@@ -6,7 +6,7 @@ define_test "failing event script"
 
 setup_eventd
 
-required_result 8 <<EOF
+required_error ENOEXEC <<EOF
 Event failure in random failed
 EOF
 simple_test run 10 random failure

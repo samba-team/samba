@@ -12,7 +12,7 @@ result_filter ()
 	sed -e "s| ${_pid}| PID|"
 }
 
-required_result 62 <<EOF
+required_error ETIMEDOUT <<EOF
 Event timeout in random timed out
 EOF
 simple_test run 5 random timeout

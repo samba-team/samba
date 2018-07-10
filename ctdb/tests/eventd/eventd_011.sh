@@ -15,7 +15,7 @@ ok <<EOF
 EOF
 simple_test status random monitor
 
-required_result 8 <<EOF
+required_error ENOEXEC <<EOF
 Event failure in random failed
 EOF
 simple_test run 10 random failure
@@ -27,7 +27,7 @@ required_result 1 <<EOF
 EOF
 simple_test status random failure
 
-required_result 8 <<EOF
+required_error ENOEXEC <<EOF
 Event verbosefailure in random failed
 EOF
 simple_test run 10 random verbosefailure

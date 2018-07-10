@@ -6,7 +6,7 @@ define_test "status output in debug script"
 
 setup_eventd
 
-required_result 62 <<EOF
+required_error ETIMEDOUT <<EOF
 Event verbosetimeout in random timed out
 EOF
 simple_test run 5 random verbosetimeout
