@@ -562,7 +562,7 @@ static void ctdb_event_script_run_done(int result, void *private_data)
 	struct ctdb_event_script_run_state *state = talloc_get_type_abort(
 		private_data, struct ctdb_event_script_run_state);
 
-	if (result == ETIME) {
+	if (result == ETIMEDOUT) {
 		switch (state->event) {
 		case CTDB_EVENT_START_RECOVERY:
 		case CTDB_EVENT_RECOVERED:
@@ -716,7 +716,7 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_event call,
 		tevent_loop_once(ctdb->ev);
 	}
 
-	if (state.status == ETIME) {
+	if (state.status == ETIMEDOUT) {
 		/* Don't ban self if CTDB is starting up or shutting down */
 		if (call != CTDB_EVENT_INIT && call != CTDB_EVENT_SHUTDOWN) {
 			DEBUG(DEBUG_ERR,

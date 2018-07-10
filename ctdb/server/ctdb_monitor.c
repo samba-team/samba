@@ -134,7 +134,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		goto after_change_status;
 	}
 
-	if (status == ETIME) {
+	if (status == ETIMEDOUT) {
 		ctdb->monitor->event_script_timeouts++;
 
 		if (ctdb->monitor->event_script_timeouts >=
