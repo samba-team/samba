@@ -44,12 +44,12 @@ expect retype new password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "create user with pdbedit" $texpect ./tmpsmbpasswdscript $VALGRIND $pdbedit -a $USER --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
+testit "create user with pdbedit" $texpect ./tmpsmbpasswdscript $VALGRIND $pdbedit -s $SMB_CONF -a $USER --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' "$unc" -k no -U$USER%$NEWUSERPASS $@ || failed=`expr $failed + 1`
 
-testit "modify user"  $VALGRIND $pdbedit --modify $USER --drive="D:" $@ || failed=`expr $failed + 1`
+testit "modify user"  $VALGRIND $pdbedit -s $SMB_CONF --modify $USER --drive="D:" $@ || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user (ntlm)" 'ls' "$unc" -k no -U$USER%$NEWUSERPASS $@|| failed=`expr $failed + 1`
 
@@ -87,11 +87,11 @@ test_smbclient "Test login with no expiry (ntlm)" 'ls' "$unc" -k no -U$USER%$NEW
 NEWUSERPASS=testPaSS@03%
 NEWUSERHASH=062519096c45739c1938800f80906731
 
-testit "Set user password with password hash" $VALGRIND $pdbedit -u $USER --set-nt-hash $NEWUSERHASH $@ || failed=`expr $failed + 1`
+testit "Set user password with password hash" $VALGRIND $pdbedit -s $SMB_CONF -u $USER --set-nt-hash $NEWUSERHASH $@ || failed=`expr $failed + 1`
 
 test_smbclient "Test login with new password (from hash)" 'ls' "$unc" -k no -U$USER%$NEWUSERPASS || failed=`expr $failed + 1`
 
-testit "del user"  $VALGRIND $pdbedit -x $USER $@ || failed=`expr $failed + 1`
+testit "del user"  $VALGRIND $pdbedit -s $SMB_CONF -x $USER $@ || failed=`expr $failed + 1`
 
 rm ./tmpsmbpasswdscript
 
