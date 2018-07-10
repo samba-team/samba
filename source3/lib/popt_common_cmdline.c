@@ -35,6 +35,7 @@
 #include "popt_common_cmdline.h"
 #include "includes.h"
 #include "auth_info.h"
+#include "cmdline_contexts.h"
 
 static struct user_auth_info *cmdline_auth_info;
 
@@ -101,7 +102,14 @@ static void popt_common_credentials_callback(poptContext con,
 	}
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
+		struct messaging_context *msg_ctx = NULL;
 		bool ok;
+
+		msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
+		if (msg_ctx == NULL) {
+			fprintf(stderr, "Unable to initialize "
+				"messaging context\n");
+		}
 
 		ok = lp_load_client(get_dyn_CONFIGFILE());
 		if (!ok) {
