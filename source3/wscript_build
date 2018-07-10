@@ -273,7 +273,7 @@ bld.SAMBA3_LIBRARY('popt_samba3',
 
 bld.SAMBA3_LIBRARY('popt_samba3_cmdline',
                    source='lib/popt_common_cmdline.c',
-                   deps='popt_samba3 util_cmdline',
+                   deps='popt_samba3 util_cmdline cmdline_contexts',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('util_cmdline',
