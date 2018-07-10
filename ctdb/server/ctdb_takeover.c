@@ -464,7 +464,7 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 	TDB_DATA data;
 
 	if (status != 0) {
-		if (status == -ETIME) {
+		if (status == -ETIMEDOUT) {
 			ctdb_ban_self(ctdb);
 		}
 		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
@@ -585,7 +585,7 @@ static void ctdb_do_updateip_callback(struct ctdb_context *ctdb, int status,
 		talloc_get_type(private_data, struct ctdb_do_updateip_state);
 
 	if (status != 0) {
-		if (status == -ETIME) {
+		if (status == -ETIMEDOUT) {
 			ctdb_ban_self(ctdb);
 		}
 		DEBUG(DEBUG_ERR,
@@ -884,7 +884,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	struct release_ip_callback_state *state =
 		talloc_get_type(private_data, struct release_ip_callback_state);
 
-	if (status == -ETIME) {
+	if (status == -ETIMEDOUT) {
 		ctdb_ban_self(ctdb);
 	}
 
@@ -2257,7 +2257,7 @@ static void ctdb_ipreallocated_callback(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_ERR,
 		      (" \"ipreallocated\" event script failed (status %d)\n",
 		       status));
-		if (status == -ETIME) {
+		if (status == -ETIMEDOUT) {
 			ctdb_ban_self(ctdb);
 		}
 	}

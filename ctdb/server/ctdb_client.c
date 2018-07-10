@@ -1638,7 +1638,7 @@ static void async_callback(struct ctdb_client_control_state *state)
 		}
 		data->fail_count++;
 		if (state->state == CTDB_CONTROL_TIMEOUT) {
-			res = -ETIME;
+			res = -ETIMEDOUT;
 		} else {
 			res = -1;
 		}

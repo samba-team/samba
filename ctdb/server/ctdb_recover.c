@@ -1048,7 +1048,7 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " recovered event script failed (status %d)\n", status));
-		if (status == -ETIME) {
+		if (status == -ETIMEDOUT) {
 			ctdb_ban_self(ctdb);
 		}
 	}
