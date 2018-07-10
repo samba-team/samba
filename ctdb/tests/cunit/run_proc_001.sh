@@ -4,7 +4,7 @@
 
 # Invalid path
 ok <<EOF
-Process exited with error 2
+Process exited with error $(errcode ENOENT)
 EOF
 unit_test run_proc_test 0 -1 /a/b/c
 
@@ -15,7 +15,7 @@ echo hello
 EOF
 
 ok <<EOF
-Process exited with error 13
+Process exited with error $(errcode EACCES)
 EOF
 unit_test run_proc_test 0 -1 "$prog"
 
@@ -23,7 +23,7 @@ unit_test run_proc_test 0 -1 "$prog"
 chmod +x "$prog"
 
 ok <<EOF
-Process exited with error 8
+Process exited with error $(errcode ENOEXEC)
 EOF
 unit_test run_proc_test 0 -1 "$prog"
 
@@ -102,7 +102,7 @@ result_filter ()
 }
 
 ok <<EOF
-Process exited with error 62
+Process exited with error $(errcode ETIMEDOUT)
 Child = PID
 Output = (Sleeping for 5 seconds
 )
@@ -119,7 +119,7 @@ sleep 10
 EOF
 
 ok <<EOF
-Process exited with error 62
+Process exited with error $(errcode ETIMEDOUT)
 Child = PID
 EOF
 unit_test run_proc_test 1 -1 "$prog"

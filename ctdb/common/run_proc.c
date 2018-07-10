@@ -452,7 +452,7 @@ static void run_proc_timedout(struct tevent_req *subreq)
 		return;
 	}
 
-	state->result.err = ETIME;
+	state->result.err = ETIMEDOUT;
 	if (state->proc->output != NULL) {
 		state->output = talloc_steal(state, state->proc->output);
 	}
