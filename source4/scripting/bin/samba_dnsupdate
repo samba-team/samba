@@ -847,15 +847,7 @@ for d in dns_list:
         rebuild_cache = True
         if opts.verbose:
             print "need cache add: %s" % d
-    if opts.all_names:
-        update_list.append(d)
-        if opts.verbose:
-            print "force update: %s" % d
-    elif not check_dns_name(d):
-        update_list.append(d)
-        if opts.verbose:
-            print "need update: %s" % d
-
+    update_list.append(d)
 
 for c in cache_list:
     found = False

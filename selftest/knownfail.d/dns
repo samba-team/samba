@@ -65,3 +65,5 @@ samba.tests.dns.__main__.TestSimpleQueries.test_qtype_all_query\(rodc:local\)
 
 # The SOA override should not pass against the RODC, it must not overstamp
 samba.tests.dns.__main__.TestSimpleQueries.test_one_SOA_query\(rodc:local\)
+.*samba.tests.blackbox.samba_dnsupdate.SambaDnsUpdateTests.test_samba_dnsupate_set_ip
+.*samba.tests.blackbox.samba_dnsupdate.SambaDnsUpdateTests.test_samba_dnsupate_no_change
