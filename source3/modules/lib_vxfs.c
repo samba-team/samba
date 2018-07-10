@@ -224,11 +224,15 @@ int vxfs_setwxattr_fd(int fd)
 	return ret;
 }
 
-int vxfs_setwxattr_path(const char *path)
+int vxfs_setwxattr_path(const char *path, bool is_dir)
 {
 	int ret, fd = -1;
 
-	fd = open(path, O_WRONLY);
+	if (is_dir) {
+		fd = open(path, O_RDONLY|O_DIRECTORY);
+	} else {
+		fd = open(path, O_WRONLY);
+	}
 	if (fd == -1) {
 		DBG_DEBUG("file %s not opened, errno:%s\n",
 			   path, strerror(errno));
@@ -259,11 +263,16 @@ int vxfs_clearwxattr_fd(int fd)
 	return ret;
 }
 
-int vxfs_clearwxattr_path(const char *path)
+int vxfs_clearwxattr_path(const char *path, bool is_dir)
 {
 	int ret, fd = -1;
 
-	fd = open(path, O_WRONLY);
+	if (is_dir) {
+		fd = open(path, O_RDONLY|O_DIRECTORY);
+	} else {
+		fd = open(path, O_WRONLY);
+	}
+
 	if (fd == -1) {
 		DBG_DEBUG("file %s not opened, errno:%s\n",
 			   path, strerror(errno));
@@ -297,7 +306,8 @@ int vxfs_checkwxattr_path(const char *path)
 {
 	int ret, fd = -1;
 
-	fd = open(path, O_WRONLY);
+	fd = open(path, O_RDONLY);
+
 	if (fd == -1) {
 		DBG_DEBUG("file %s not opened, errno:%s\n",
 			   path, strerror(errno));

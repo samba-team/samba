@@ -31,10 +31,10 @@ int vxfs_removexattr_fd(int, const char *);
 int vxfs_listxattr_path(const char *, char *, size_t);
 int vxfs_listxattr_fd(int, char *, size_t);
 
-int vxfs_setwxattr_path(const char *);
+int vxfs_setwxattr_path(const char *, bool);
 int vxfs_setwxattr_fd(int);
 
-int vxfs_clearwxattr_path(const char *);
+int vxfs_clearwxattr_path(const char *, bool);
 int vxfs_clearwxattr_fd(int);
 
 int vxfs_checkwxattr_path(const char *);

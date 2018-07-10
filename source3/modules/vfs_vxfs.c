@@ -833,11 +833,13 @@ static NTSTATUS vxfs_set_ea_dos_attributes(struct vfs_handle_struct *handle,
 					   uint32_t dosmode)
 {
 	NTSTATUS	err;
-	int		ret = 0;
+	int			ret = 0;
 	bool		attrset = false;
+	bool		is_dir = false;
 
 	DBG_DEBUG("Entered function\n");
 
+	is_dir = S_ISDIR(smb_fname->st.st_ex_mode);
 	if (!(dosmode & FILE_ATTRIBUTE_READONLY)) {
 		ret = vxfs_checkwxattr_path(smb_fname->base_name);
 		if (ret == -1) {
@@ -848,7 +850,7 @@ static NTSTATUS vxfs_set_ea_dos_attributes(struct vfs_handle_struct *handle,
 		}
 	}
 	if (dosmode & FILE_ATTRIBUTE_READONLY) {
-		ret = vxfs_setwxattr_path(smb_fname->base_name);
+		ret = vxfs_setwxattr_path(smb_fname->base_name, is_dir);
 		DBG_DEBUG("ret:%d\n", ret);
 		if (ret == -1) {
 			if ((errno != EOPNOTSUPP) && (errno != EINVAL)) {
@@ -861,7 +863,7 @@ static NTSTATUS vxfs_set_ea_dos_attributes(struct vfs_handle_struct *handle,
 	err = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle, smb_fname, dosmode);
 	if (!NT_STATUS_IS_OK(err)) {
 		if (attrset) {
-			ret = vxfs_clearwxattr_path(smb_fname->base_name);
+			ret = vxfs_clearwxattr_path(smb_fname->base_name, is_dir);
 			DBG_DEBUG("ret:%d\n", ret);
 			if ((ret == -1) && (errno != ENOENT)) {
 				return map_nt_error_from_unix(errno);
