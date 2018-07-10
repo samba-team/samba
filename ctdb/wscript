@@ -842,6 +842,11 @@ def build(bld):
     for d in ['volatile', 'persistent', 'state']:
         bld.install_dir(os.path.join(bld.env.CTDB_VARDIR, d))
 
+    bld.SAMBA_BINARY('errcode',
+                     source='tests/src/errcode.c',
+                     deps='replace',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
     # Unit tests
     ctdb_unit_tests = [
         'db_hash_test',
