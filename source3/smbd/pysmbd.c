@@ -396,6 +396,7 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject
 
 	conn = get_conn(frame, service);
 	if (!conn) {
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
