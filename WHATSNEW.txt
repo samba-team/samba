@@ -175,6 +175,50 @@ The 'samba-tool visualize uptodateness' visualizes replication lag as
 a heat-map matrix based on the DRS uptodateness vectors. This will
 show you if (but not why) changes are failing to replicate to some DCs.
 
+Automatic site coverage and GetDCName improvements
+--------------------------------------------------
+
+Samba's AD DC now automatically claims otherwise empty sites based on
+which DC is the nearest in the replication topology.
+
+This, combined with efforts to correctly identify the client side in
+the GetDCName Netlogon call will improve service to sites without a
+local DC.
+
+Improved samba-tool computer command
+------------------------------------
+
+The 'samba-tool computer' command allow manipulation of computer
+accounts including creating a new computer and resetting the password.
+This allows an 'offline join' of a member server or workstation to the
+Samba AD domain.
+
+Samba performance tool now operates against Microsoft Windows AD
+----------------------------------------------------------------
+
+The Samba AD performance testing tool traffic_reply can now operate
+against a Windows based AD domain.  Previously it only operated
+correctly against Samba.
+
+DNS entries are now cleaned up during DC demote
+-----------------------------------------------
+
+DNS records are now cleaned up as part of the 'samba-tool domain
+demote' including both the default and --remove-other-dead-server
+modes.
+
+Additionally DNS records can be automatically cleaned up for a given
+name with the 'samba-tool dns cleanup' command, which aids in cleaning
+up partially removed DCs.
+
+Samba now tested with CI GitLab
+-------------------------------
+
+Samba developers now have pre-commit testing available in GitLab,
+giving reviewers confidence that the submitted patches pass a full CI
+before being submitted to the Samba Team's own autobuild system.
+
+
 REMOVED FEATURES
 ================
 
