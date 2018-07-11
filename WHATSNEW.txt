@@ -221,6 +221,13 @@ Additionally DNS records can be automatically cleaned up for a given
 name with the 'samba-tool dns cleanup' command, which aids in cleaning
 up partially removed DCs.
 
+samba-tool ntacl sysvolreset is now much faster
+-----------------------------------------------
+
+The 'samba-tool ntacl sysvolreset' command, used on the Samba AD DC,
+is now much faster than in previous versions, after an internal
+rework.
+
 Samba now tested with CI GitLab
 -------------------------------
 
