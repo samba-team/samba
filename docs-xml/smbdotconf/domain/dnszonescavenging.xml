@@ -1,0 +1,23 @@
+<samba:parameter name="dns zone scavenging"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	When enabled (the default is disabled) unused dynamic dns records are
+	periodically removed.
+	</para>
+	<warning><para>
+	This option should not be enabled for installations created with
+	versions of samba before 4.9. Doing this will result in the loss of
+	static DNS entries. This is due to a bug in previous versions
+	of samba (BUG 12451) which marked dynamic DNS records as static and
+	static records as dynamic.
+	</para></warning>
+	<note><para>
+	If one record for a DNS name is static (non-aging) then no other record
+	for that DNS name will be scavenged.
+	</para></note>
+</description>
+<value type="default">no</value>
+</samba:parameter>

@@ -895,6 +895,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals._preferred_master = Auto;
 
 	Globals.allow_dns_updates = DNS_UPDATE_SIGNED;
+	Globals.dns_zone_scavenging = false;
 
 	lpcfg_string_set(Globals.ctx, &Globals.ntp_signd_socket_directory,
 			 get_dyn_NTP_SIGND_SOCKET_DIR());
