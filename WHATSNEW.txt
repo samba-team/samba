@@ -163,6 +163,18 @@ rename' command will clone the domain DB, renaming it in the process, and
 producing a backup-file. Then, the 'samba-tool domain backup restore' command
 takes the backup-file and restores the renamed DB to disk on a fresh DC.
 
+New samba-tool options for diagnosing DRS replication issues
+------------------------------------------------------------
+
+The 'samba-tool drs showrepl' command has two new options controlling
+the output. With --summary, the command says very little when DRS
+replication is working well. With --json, JSON is produced. These
+options are intended for human and machine audiences, respectively.
+
+The 'samba-tool visualize uptodateness' visualizes replication lag as
+a heat-map matrix based on the DRS uptodateness vectors. This will
+show you if (but not why) changes are failing to replicate to some DCs.
+
 REMOVED FEATURES
 ================
 
