@@ -21,7 +21,7 @@ net ads setspn
 ---------------
 
 There is a new 'net ads setspn' sub command for managing Windows SPN(s)
-on the AD. This command aims to give the basic functionaility that is
+on the AD. This command aims to give the basic functionality that is
 provided on windows by 'setspn.exe' e.g. ability to add, delete and list
 Windows SPN(s) stored in a Windows AD Computer object.
 
@@ -64,7 +64,7 @@ tries to log in as 'alice', but the samAccountName is set to ALICE (uppercase),
 Kerberos would return ALICE as the username. Kerberos would not be able to map
 'alice' to 'ALICE' in this case and auth would fail.  With this plugin account
 names can be correctly mapped. This only applies to GSSAPI authentication,
-not for the geting the initial ticket granting ticket.
+not for the getting the initial ticket granting ticket.
 
 VFS audit modules
 -----------------
@@ -111,7 +111,7 @@ entries.
 New Experimental LMDB LDB backend
 ---------------------------------
 
-A new experimental LDB backend using LMBD is now available. This allows
+A new experimental LDB backend using LMDB is now available. This allows
 databases larger than 4Gb (Currently the limit is set to 6Gb, but this will be
 increased in a future release). To enable lmdb, provision or join a domain using
 the --backend-store=mdb option.
