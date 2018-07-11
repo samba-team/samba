@@ -16,8 +16,11 @@
 
 import os
 from samba import gpo, tests
+from samba.gpclass import register_gp_extension, list_gp_extensions, \
+    unregister_gp_extension
 from samba.param import LoadParm
-from samba.gpclass import check_refresh_gpo_list, check_safe_path
+from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
+    check_guid, parse_gpext_conf, atomic_write_conf
 
 poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
 dspath = 'CN=Policies,CN=System,DC=addom,DC=samba,DC=example,DC=com'
@@ -108,4 +111,41 @@ class GPOTests(tests.TestCase):
         result = check_safe_path(before)
         self.assertEquals(result, after, 'check_safe_path() didn\'t' \
             ' correctly convert \\ to /')
+
+    def test_gpt_ext_register(self):
+        this_path = os.path.dirname(os.path.realpath(__file__))
+        samba_path = os.path.realpath(os.path.join(this_path, '../../../'))
+        ext_path = os.path.join(samba_path, 'python/samba/gp_sec_ext.py')
+        ext_guid = '{827D319E-6EAC-11D2-A4EA-00C04F79F83A}'
+        ret = register_gp_extension(ext_guid, 'gp_sec_ext', ext_path,
+                                    smb_conf=self.lp.configfile,
+                                    machine=True, user=False)
+        self.assertTrue(ret, 'Failed to register a gp ext')
+        gp_exts = list_gp_extensions(self.lp.configfile)
+        self.assertTrue(ext_guid in gp_exts.keys(),
+            'Failed to list gp exts')
+        self.assertEquals(gp_exts[ext_guid]['DllName'], ext_path,
+            'Failed to list gp exts')
+
+        unregister_gp_extension(ext_guid)
+        gp_exts = list_gp_extensions(self.lp.configfile)
+        self.assertTrue(ext_guid not in gp_exts.keys(),
+            'Failed to unregister gp exts')
+
+        self.assertTrue(check_guid(ext_guid), 'Failed to parse valid guid')
+        self.assertFalse(check_guid('AAAAAABBBBBBBCCC'), 'Parsed invalid guid')
+
+        lp, parser = parse_gpext_conf(self.lp.configfile)
+        self.assertTrue(lp and parser, 'parse_gpext_conf() invalid return')
+        parser.add_section('test_section')
+        parser.set('test_section', 'test_var', ext_guid)
+        atomic_write_conf(lp, parser)
+
+        lp, parser = parse_gpext_conf(self.lp.configfile)
+        self.assertTrue('test_section' in parser.sections(),
+            'test_section not found in gpext.conf')
+        self.assertEquals(parser.get('test_section', 'test_var'), ext_guid,
+            'Failed to find test variable in gpext.conf')
+        parser.remove_section('test_section')
+        atomic_write_conf(lp, parser)
 
