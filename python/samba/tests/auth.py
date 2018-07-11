@@ -87,3 +87,14 @@ class AuthAdminSessionTests(samba.tests.TestCase):
         self.assertFalse(self.admin_session.security_token.is_system())
         self.assertFalse(self.admin_session.security_token.is_anonymous())
         self.assertTrue(self.admin_session.security_token.has_builtin_administrators())
+
+    def test_session_info_unix_details(self):
+        samba.auth.session_info_fill_unix(session_info = self.admin_session,
+                                          lp_ctx=self.lp,
+                                          user_name="Administrator")
+        self.assertEqual(self.admin_session.unix_info.sanitized_username,
+                         'Administrator')
+        self.assertEqual(self.admin_session.unix_info.unix_name,
+                         self.lp.get('workgroup').upper() +
+                         self.lp.get('winbind separator') + 'Administrator')
+        self.assertIsNotNone(self.admin_session.unix_token)

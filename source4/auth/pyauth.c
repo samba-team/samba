@@ -164,6 +164,63 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 	return PyAuthSession_FromSession(session);
 }
 
+static PyObject *py_session_info_fill_unix(PyObject *module,
+					   PyObject *args,
+					   PyObject *kwargs)
+{
+	NTSTATUS nt_status;
+	char *user_name = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	struct auth_session_info *session_info;
+	PyObject *py_lp_ctx = Py_None;
+	PyObject *py_session = Py_None;
+	TALLOC_CTX *frame;
+
+	const char * const kwnames[] = { "session_info",
+					 "user_name",
+					 "lp_ctx",
+					 NULL };
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oz|O",
+					 discard_const_p(char *, kwnames),
+					 &py_session,
+					 &user_name,
+					 &py_lp_ctx)) {
+		return NULL;
+	}
+
+	if (!py_check_dcerpc_type(py_session,
+				  "samba.dcerpc.auth",
+				  "session_info")) {
+		return NULL;
+	}
+	session_info = pytalloc_get_type(py_session,
+					 struct auth_session_info);
+	if (!session_info) {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected auth_session_info for session_info argument got %s",
+			     talloc_get_name(pytalloc_get_ptr(py_session)));
+		return NULL;
+	}
+
+	frame = talloc_stackframe();
+	
+	lp_ctx = lpcfg_from_py_object(frame, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	nt_status = auth_session_info_fill_unix(lp_ctx,
+					       user_name,
+					       session_info);
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		PyErr_NTSTATUS_IS_ERR_RAISE(nt_status);
+	}
+
+	Py_RETURN_NONE;
+}
+
 
 static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
 					const char *paramname)
@@ -304,6 +361,10 @@ static PyMethodDef py_auth_methods[] = {
 	{ "system_session", (PyCFunction)py_system_session, METH_VARARGS, NULL },
 	{ "admin_session", (PyCFunction)py_admin_session, METH_VARARGS, NULL },
 	{ "user_session", (PyCFunction)py_user_session, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "session_info_fill_unix",
+	  (PyCFunction)py_session_info_fill_unix,
+	  METH_VARARGS|METH_KEYWORDS,
+	  NULL },
 	{ NULL },
 };
 
