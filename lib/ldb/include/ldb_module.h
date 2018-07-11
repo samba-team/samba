@@ -54,18 +54,18 @@
 #endif
 
 /*
- * Only Samba versions which expect ldb >= 1.2.0
- * are compatible with read_[un]lock() behaviour.
+ * Only Samba versions which expect ldb >= 1.4.0
+ * reopen the ldb after each fork().
  *
- * See https://bugzilla.samba.org/show_bug.cgi?id=12859
+ * See https://bugzilla.samba.org/show_bug.cgi?id=13519
  */
 #if EXPECTED_SYSTEM_LDB_VERSION_MAJOR > 1
-#define __LDB_READ_LOCK_COMPATIBLE__ 1
-#elif EXPECTED_SYSTEM_LDB_VERSION_MINOR > 1
-#define __LDB_READ_LOCK_COMPATIBLE__ 1
+#define __LDB_FORK_COMPATIBLE__ 1
+#elif EXPECTED_SYSTEM_LDB_VERSION_MINOR > 3
+#define __LDB_FORK_COMPATIBLE__ 1
 #endif
-#ifndef __LDB_READ_LOCK_COMPATIBLE__
-#error "Samba < 4.7 is not compatible with this version of ldb due to assumptions around read locks"
+#ifndef __LDB_FORK_COMPATIBLE__
+#error "Samba < 4.9 is not compatible with this version of ldb due to assumptions around fork() behaviour"
 #endif
 
 #endif /* defined(_SAMBA_BUILD_) && defined(USING_SYSTEM_LDB) */
