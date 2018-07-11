@@ -466,7 +466,11 @@
 
 <refsect3>
 	<title>drs showrepl</title>
-	<para>Show replication status.</para>
+	<para>Show replication status. The <arg
+	choice="opt">--json</arg> option results in JSON output, and
+	with the <arg choice="opt">--summary</arg> option produces
+	very little output when the replication status seems healthy.
+	</para>
 </refsect3>
 
 <refsect2>
