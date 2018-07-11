@@ -192,11 +192,15 @@ static int test_ctdb_get_peer_pid(void)
 	fd = socket_server_wait_peer();
 
 	ret = ctdb_get_peer_pid(fd, &peer_pid);
-	assert(ret == 0);
+	assert(ret == 0 || ret == ENOSYS);
 
-	assert(peer_pid == globals.helper_pid);
+	if (ret == 0) {
+		assert(peer_pid == globals.helper_pid);
 
-	kill(peer_pid, SIGTERM);
+		kill(peer_pid, SIGTERM);
+	} else {
+		kill(globals.helper_pid, SIGTERM);
+	}
 
 	close(fd);
 	return 0;
