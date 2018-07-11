@@ -11,11 +11,16 @@ remove_socket ()
 
 test_cleanup remove_socket
 
-uid=$(id -u)
-if [ "$uid" -eq 0 ] ; then
-    ok "ctdb_sys_check_iface_exists: Interface 'fake' not found"
+os=$(uname)
+if [ "$os" = "Linux" ] ; then
+	uid=$(id -u)
+	if [ "$uid" -eq 0 ] ; then
+		ok "ctdb_sys_check_iface_exists: Interface 'fake' not found"
+	else
+		ok "ctdb_sys_check_iface_exists: Failed to open raw socket"
+	fi
 else
-    ok "ctdb_sys_check_iface_exists: Failed to open raw socket"
+	ok_null
 fi
 
 unit_test porting_tests --socket=${socket}
