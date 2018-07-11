@@ -840,3 +840,28 @@ class SessionedPosixAclMappingTests(PosixAclMappingTests):
                  auth.AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
         return auth.user_session(self.samdb, lp_ctx=self.lp, dn=dn,
                                  session_info_flags=flags)
+
+class UnixSessionedPosixAclMappingTests(PosixAclMappingTests):
+    """
+    Run same test suite with session enabled.
+    """
+
+    def get_session_info(self, domsid=DOM_SID):
+        """
+        Get session_info for setntacl.
+        """
+        if str(domsid) != str(self.samdb.get_domain_sid()):
+            # fake it with admin session as domsid is not in local db
+            return auth.admin_session(self.lp, str(domsid))
+
+        dn = '<SID={}-{}>'.format(domsid, security.DOMAIN_RID_ADMINISTRATOR)
+        flags = (auth.AUTH_SESSION_INFO_DEFAULT_GROUPS |
+                 auth.AUTH_SESSION_INFO_AUTHENTICATED |
+                 auth.AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
+
+        session = auth.user_session(self.samdb, lp_ctx=self.lp, dn=dn,
+                                    session_info_flags=flags)
+        auth.session_info_fill_unix(session,
+                                    lp_ctx=self.lp,
+                                    user_name="Administrator")
+        return session
