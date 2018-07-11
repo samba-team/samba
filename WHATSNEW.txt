@@ -108,6 +108,14 @@ For NTLM and Kerberos KDC authentication, the authentication duration is now
 logged. Note that the duration is only included in the JSON formatted log
 entries.
 
+JSON library Jansson required for the AD DC
+-------------------------------------------
+
+By default the Jansson JSON library is required for Samba to build.
+It is strictly required for the Samba AD DC, and is optional for
+builds --without-ad-dc by specifying --without-json-audit at configure
+time.
+
 New Experimental LMDB LDB backend
 ---------------------------------
 
