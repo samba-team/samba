@@ -945,6 +945,13 @@
 		<listitem><para>Looks at repsTo and repsFrom objects.
 		</para></listitem>
 		</varlistentry>
+
+	<varlistentry>
+		<term>samba-tool visualize uptodateness</term>
+		<listitem><para>Looks at replication lag as shown by the
+                uptodateness vectors.
+		</para></listitem>
+		</varlistentry>
 	</refsect3>
 
 	<refsect3><title>GRAPHICAL MODES</title>
@@ -957,24 +964,34 @@
 
 	<varlistentry>
                 <term>--dot</term>
-                <listitem><para>Generate Graphviz dot output. When viewed using
-		dot or xdot, this shows the network as a graph with DCs as
-		vertices and connections edges. Certain types of degenerate
-		edges are shown in different colours or line-styles.
+                <listitem><para>Generate Graphviz dot output (for
+                ntdsconn and reps modes). When viewed using dot or
+                xdot, this shows the network as a graph with DCs as
+                vertices and connections edges. Certain types of
+                degenerate edges are shown in different colours or
+                line-styles. </para></listitem>
+                </varlistentry>
+	<varlistentry>
+                <term>--xdot</term>
+                <listitem><para>Generate Graphviz dot output as with
+                <arg choice="opt">--dot</arg> and attempt to view it
+                immediately using <command>/usr/bin/xdot</command>.
                 </para></listitem>
                 </varlistentry>
 	</refsect3>
 
 	<varlistentry>
 		<term>-r</term>
-		<listitem><para>Normally, <command>samba-tool</command> talks
-		to one database; with the <arg choice="opt">-r</arg> option
-		attempts are made to contact all the DCs known to the first
-		database. This is necessary to get sensible results from
-		<command>samba-tool visualize reps</command> because the
-		repsFrom/To objects are not replicated, and it can reveal
-		replication issues in other modes.
-                </para></listitem>
+		<listitem><para>Normally,
+		<command>samba-tool</command> talks to one database;
+		with the <arg choice="opt">-r</arg> option attempts
+		are made to contact all the DCs known to the first
+		database. This is necessary for <command>samba-tool
+		visualize uptodateness</command> and for
+		<command>samba-tool visualize reps</command> because
+		the repsFrom/To objects are not replicated, and it can
+		reveal replication issues in other modes.
+		</para></listitem>
                 </varlistentry>
 </refsect2>
 
