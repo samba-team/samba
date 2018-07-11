@@ -433,7 +433,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-util',
                         source='protocol/protocol_util.c',
-                        deps='replace talloc tdb')
+                        deps='ctdb-util replace talloc tdb')
 
     bld.SAMBA_SUBSYSTEM('ctdb-client',
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
@@ -824,7 +824,7 @@ def build(bld):
         bld.SAMBA_BINARY(target,
                          source=src,
                          deps='''protocol-tests-common
-                                 samba-util talloc tdb''',
+                                 samba-util ctdb-util talloc tdb''',
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
