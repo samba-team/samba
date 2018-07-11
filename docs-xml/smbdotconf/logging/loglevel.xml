@@ -74,18 +74,15 @@
     </itemizedlist>
 
     <para>Changes to the sam.ldb database are logged
-    under the dsdb_audit, and if Samba was not compiled with
-    --without-json-audit, a JSON representation is logged under
+    under the dsdb_audit and a JSON representation is logged under
     dsdb_json_audit.</para>
 
     <para>Password changes and Password resets are logged under
-    dsdb_password_audit, and if Samba was not compiled with
-    --without-json-audit, a JSON representation is logged under the
+    dsdb_password_audit and a JSON representation is logged under the
     dsdb_password_json_audit.</para>
 
     <para>Transaction rollbacks and prepare commit failures are logged under
-    the dsdb_transaction_audit, and if Samba was not compiled with
-    --without-json-audit, a JSON representation is logged under the
+    the dsdb_transaction_audit and a JSON representation is logged under the
     password_json_audit. Logging the transaction details allows the
     identification of password and sam.ldb operations that have been rolled
     back.</para>

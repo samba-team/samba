@@ -13,9 +13,7 @@
 	<para>This should be considered a developer option (it assists
 	in the Samba testsuite) rather than a facility for external
 	auditing, as message delivery is not guaranteed (a feature
-	that the testsuite works around).  Additionally Samba must be
-	not compiled with the --without-json-audit parameter for this
-	option to be effective.</para>
+	that the testsuite works around).</para>
 
 	<para>The group events are also logged via the normal
 	logging methods when the <smbconfoption name="log level"/> is
