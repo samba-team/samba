@@ -20,31 +20,6 @@
 /*
  * Error handling:
  *
- * The json_object structure contains a boolean 'error'.  This is set whenever
- * an error is detected. All the library functions check this flag and return
- * immediately if it is set.
- *
- *	if (object->error) {
- *		return;
- *	}
- *
- * This allows the operations to be sequenced naturally with out the clutter
- * of error status checks.
- *
- *	audit = json_new_object();
- *	json_add_version(&audit, OPERATION_MAJOR, OPERATION_MINOR);
- *	json_add_int(&audit, "statusCode", ret);
- *	json_add_string(&audit, "status", ldb_strerror(ret));
- *	json_add_string(&audit, "operation", operation);
- *	json_add_address(&audit, "remoteAddress", remote);
- *	json_add_sid(&audit, "userSid", sid);
- *	json_add_string(&audit, "dn", dn);
- *	json_add_guid(&audit, "transactionId", &ac->transaction_guid);
- *	json_add_guid(&audit, "sessionId", unique_session_token);
- *
- * The assumptions are that errors will be rare, and that the audit logging
- * code should not cause failures. So errors are logged but processing
- * continues on a best effort basis.
  */
 
 #include "includes.h"
@@ -67,7 +42,7 @@
  *
  * @param mem_ctx talloc memory context that owns the returned string.
  *
- * @return a human readable time stamp.
+ * @return a human readable time stamp, or NULL in the event of an error.
  *
  */
 char* audit_get_timestamp(TALLOC_CTX *frame)
@@ -76,11 +51,11 @@ char* audit_get_timestamp(TALLOC_CTX *frame)
 	char tz[10];		/* formatted time zone			 */
 	struct tm* tm_info;	/* current local time			 */
 	struct timeval tv;	/* current system time			 */
-	int r;			/* response code from gettimeofday	 */
+	int ret;		/* response code			 */
 	char * ts;		/* formatted time stamp			 */
 
-	r = gettimeofday(&tv, NULL);
-	if (r) {
+	ret = gettimeofday(&tv, NULL);
+	if (ret != 0) {
 		DBG_ERR("Unable to get time of day: (%d) %s\n",
 			errno,
 			strerror(errno));
@@ -122,6 +97,10 @@ void audit_log_human_text(const char* prefix,
 
 #ifdef HAVE_JANSSON
 /*
+ * Constant for empty json object initialisation
+ */
+const struct json_object json_empty_object = {.valid = false, .root = NULL};
+/*
  * @brief write a json object to the samba audit logs.
  *
  * Write the json object to the audit logs as a formatted string
@@ -136,8 +115,23 @@ void audit_log_json(const char* prefix,
 		    int debug_class,
 		    int debug_level)
 {
-	TALLOC_CTX *ctx = talloc_new(NULL);
-	char *s = json_to_string(ctx, message);
+	TALLOC_CTX *ctx = NULL;
+	char *s = NULL;
+
+	if (json_is_invalid(message)) {
+		DBG_ERR("Invalid JSON object, unable to log\n");
+		return;
+	}
+
+	ctx = talloc_new(NULL);
+	s = json_to_string(ctx, message);
+	if (s == NULL) {
+		DBG_ERR("json_to_string for (%s) returned NULL, "
+			"JSON audit message could not written\n",
+			prefix);
+		TALLOC_FREE(ctx);
+		return;
+	}
 	DEBUGC(debug_class, debug_level, ("JSON %s: %s\n", prefix, s));
 	TALLOC_FREE(ctx);
 }
@@ -235,11 +229,14 @@ void audit_message_send(
 
 	const char *message_string = NULL;
 	DATA_BLOB message_blob = data_blob_null;
-	TALLOC_CTX *ctx = talloc_new(NULL);
+	TALLOC_CTX *ctx = NULL;
 
+	if (json_is_invalid(message)) {
+		DBG_ERR("Invalid JSON object, unable to send\n");
+		return;
+	}
 	if (msg_ctx == NULL) {
 		DBG_DEBUG("No messaging context\n");
-		TALLOC_FREE(ctx);
 		return;
 	}
 
@@ -288,20 +285,21 @@ void audit_message_send(
  * Free with a call to json_free_object, note that the jansson inplementation
  * allocates memory with malloc and not talloc.
  *
- * @return a struct json_object, error will be set to true if the object
+ * @return a struct json_object, valid will be set to false if the object
  *         could not be created.
  *
  */
 struct json_object json_new_object(void) {
 
-	struct json_object object;
-	object.error = false;
+	struct json_object object = json_empty_object;
 
 	object.root = json_object();
 	if (object.root == NULL) {
-		object.error = true;
-		DBG_ERR("Unable to create json_object\n");
+		object.valid = false;
+		DBG_ERR("Unable to create JSON object\n");
+		return object;
 	}
+	object.valid = true;
 	return object;
 }
 
@@ -320,14 +318,15 @@ struct json_object json_new_object(void) {
  */
 struct json_object json_new_array(void) {
 
-	struct json_object array;
-	array.error = false;
+	struct json_object array = json_empty_object;
 
 	array.root = json_array();
 	if (array.root == NULL) {
-		array.error = true;
-		DBG_ERR("Unable to create json_array\n");
+		array.valid = false;
+		DBG_ERR("Unable to create JSON array\n");
+		return array;
 	}
+	array.valid = true;
 	return array;
 }
 
@@ -345,7 +344,7 @@ void json_free(struct json_object *object)
 		json_decref(object->root);
 	}
 	object->root = NULL;
-	object->error = true;
+	object->valid = false;
 }
 
 /*
@@ -358,99 +357,131 @@ void json_free(struct json_object *object)
  */
 bool json_is_invalid(struct json_object *object)
 {
-	return object->error;
+	return !object->valid;
 }
 
 /*
  * @brief Add an integer value to a JSON object.
  *
  * Add an integer value named 'name' to the json object.
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name of the value.
  * @param value the value.
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  */
-void json_add_int(struct json_object *object,
-		  const char* name,
-		  const int value)
+int json_add_int(struct json_object *object, const char *name, const int value)
 {
-	int rc = 0;
+	int ret = 0;
+	json_t *integer = NULL;
 
-	if (object->error) {
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add int [%s] value [%d], "
+			"target object is invalid\n",
+			name,
+			value);
+		return JSON_ERROR;
 	}
 
-	rc = json_object_set_new(object->root, name, json_integer(value));
-	if (rc) {
-		DBG_ERR("Unable to set name [%s] value [%d]\n", name, value);
-		object->error = true;
+	integer = json_integer(value);
+	if (integer == NULL) {
+		DBG_ERR("Unable to create integer value [%s] value [%d]\n",
+			name,
+			value);
+		return JSON_ERROR;
 	}
+
+	ret = json_object_set_new(object->root, name, integer);
+	if (ret != 0) {
+		json_decref(integer);
+		DBG_ERR("Unable to add int [%s] value [%d]\n", name, value);
+	}
+	return ret;
 }
 
 /*
  * @brief Add a boolean value to a JSON object.
  *
  * Add a boolean value named 'name' to the json object.
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name.
  * @param value the value.
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  */
-void json_add_bool(struct json_object *object,
-		   const char* name,
-		   const bool value)
+int json_add_bool(struct json_object *object,
+		  const char *name,
+		  const bool value)
 {
-	int rc = 0;
+	int ret = 0;
 
-	if (object->error) {
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add boolean [%s] value [%d], "
+			"target object is invalid\n",
+			name,
+			value);
+		return JSON_ERROR;
 	}
 
-	rc = json_object_set_new(object->root, name, json_boolean(value));
-	if (rc) {
-		DBG_ERR("Unable to set name [%s] value [%d]\n", name, value);
-		object->error = true;
+	ret = json_object_set_new(object->root, name, json_boolean(value));
+	if (ret != 0) {
+		DBG_ERR("Unable to add boolean [%s] value [%d]\n", name, value);
 	}
-
+	return ret;
 }
 
 /*
  * @brief Add a string value to a JSON object.
  *
  * Add a string value named 'name' to the json object.
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name.
  * @param value the value.
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  */
-void json_add_string(struct json_object *object,
-		     const char* name,
-		     const char* value)
+int json_add_string(struct json_object *object,
+		    const char *name,
+		    const char *value)
 {
-	int rc = 0;
+	int ret = 0;
 
-	if (object->error) {
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add string [%s], target object is invalid\n",
+			name);
+		return JSON_ERROR;
 	}
-
 	if (value) {
-		rc = json_object_set_new(
-			object->root,
-			name,
-			json_string(value));
+		json_t *string = json_string(value);
+		if (string == NULL) {
+			DBG_ERR("Unable to add string [%s], "
+				"could not create string object\n",
+				name);
+			return JSON_ERROR;
+		}
+		ret = json_object_set_new(object->root, name, string);
+		if (ret != 0) {
+			json_decref(string);
+			DBG_ERR("Unable to add string [%s]\n", name);
+			return ret;
+		}
 	} else {
-		rc = json_object_set_new(object->root, name, json_null());
+		ret = json_object_set_new(object->root, name, json_null());
+		if (ret != 0) {
+			DBG_ERR("Unable to add null string [%s]\n", name);
+			return ret;
+		}
 	}
-	if (rc) {
-		DBG_ERR("Unable to set name [%s] value [%s]\n", name, value);
-		object->error = true;
-	}
+	return ret;
 }
 
 /*
@@ -464,13 +495,13 @@ void json_add_string(struct json_object *object,
  */
 void json_assert_is_array(struct json_object *array) {
 
-	if (array->error) {
+	if (json_is_invalid(array)) {
 		return;
 	}
 
 	if (json_is_array(array->root) == false) {
 		DBG_ERR("JSON object is not an array\n");
-		array->error = true;
+		array->valid = false;
 		return;
 	}
 }
@@ -479,43 +510,46 @@ void json_assert_is_array(struct json_object *array) {
  * @brief Add a JSON object to a JSON object.
  *
  * Add a JSON object named 'name' to the json object.
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name.
  * @param value the value.
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  */
-void json_add_object(struct json_object *object,
-		     const char* name,
-		     struct json_object *value)
+int json_add_object(struct json_object *object,
+		    const char *name,
+		    struct json_object *value)
 {
-	int rc = 0;
+	int ret = 0;
 	json_t *jv = NULL;
 
-	if (object->error) {
-		return;
+	if (value != NULL && json_is_invalid(value)) {
+		DBG_ERR("Invalid JSON object [%s] supplied\n", name);
+		return JSON_ERROR;
 	}
-
-	if (value != NULL && value->error) {
-		object->error = true;
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add object [%s], target object is invalid\n",
+			name);
+		return JSON_ERROR;
 	}
 
 	jv = value == NULL ? json_null() : value->root;
 
 	if (json_is_array(object->root)) {
-		rc = json_array_append_new(object->root, jv);
+		ret = json_array_append_new(object->root, jv);
 	} else if (json_is_object(object->root)) {
-		rc = json_object_set_new(object->root, name,  jv);
+		ret = json_object_set_new(object->root, name, jv);
 	} else {
 		DBG_ERR("Invalid JSON object type\n");
-		object->error = true;
+		ret = JSON_ERROR;
 	}
-	if (rc) {
+	if (ret != 0) {
 		DBG_ERR("Unable to add object [%s]\n", name);
-		object->error = true;
 	}
+	return ret;
 }
 
 /*
@@ -526,39 +560,57 @@ void json_add_object(struct json_object *object,
  * truncated if it is more than len characters long. If len is 0 the value
  * is encoded as a JSON null.
  *
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name.
  * @param value the value.
  * @param len the maximum number of characters to be copied.
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  */
-void json_add_stringn(struct json_object *object,
-		      const char *name,
-		      const char *value,
-		      const size_t len)
+int json_add_stringn(struct json_object *object,
+		     const char *name,
+		     const char *value,
+		     const size_t len)
 {
 
-	int rc = 0;
-	if (object->error) {
-		return;
+	int ret = 0;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add string [%s], target object is invalid\n",
+			name);
+		return JSON_ERROR;
 	}
 
 	if (value != NULL && len > 0) {
+		json_t *string = NULL;
 		char buffer[len+1];
+
 		strncpy(buffer, value, len);
 		buffer[len] = '\0';
-		rc = json_object_set_new(object->root,
-					 name,
-					 json_string(buffer));
+
+		string = json_string(buffer);
+		if (string == NULL) {
+			DBG_ERR("Unable to add string [%s], "
+				"could not create string object\n",
+				name);
+			return JSON_ERROR;
+		}
+		ret = json_object_set_new(object->root, name, string);
+		if (ret != 0) {
+			json_decref(string);
+			DBG_ERR("Unable to add string [%s]\n", name);
+			return ret;
+		}
 	} else {
-		rc = json_object_set_new(object->root, name, json_null());
+		ret = json_object_set_new(object->root, name, json_null());
+		if (ret != 0) {
+			DBG_ERR("Unable to add null string [%s]\n", name);
+			return ret;
+		}
 	}
-	if (rc) {
-		DBG_ERR("Unable to set name [%s] value [%s]\n", name, value);
-		object->error = true;
-	}
+	return ret;
 }
 
 /*
@@ -576,18 +628,45 @@ void json_add_stringn(struct json_object *object,
  * The minor version should change whenever a new attribute is added and for
  * minor bug fixes to an attributes content.
  *
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param major the major version number
  * @param minor the minor version number
+ *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
  */
-void json_add_version(struct json_object *object, int major, int minor)
+int json_add_version(struct json_object *object, int major, int minor)
 {
-	struct json_object version = json_new_object();
-	json_add_int(&version, "major", major);
-	json_add_int(&version, "minor", minor);
-	json_add_object(object, "version", &version);
+	int ret = 0;
+	struct json_object version;
+
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add version, target object is invalid\n");
+		return JSON_ERROR;
+	}
+
+	version = json_new_object();
+	if (json_is_invalid(&version)) {
+		DBG_ERR("Unable to add version, failed to create object\n");
+		return JSON_ERROR;
+	}
+	ret = json_add_int(&version, "major", major);
+	if (ret != 0) {
+		json_free(&version);
+		return ret;
+	}
+	ret = json_add_int(&version, "minor", minor);
+	if (ret != 0) {
+		json_free(&version);
+		return ret;
+	}
+	ret = json_add_object(object, "version", &version);
+	if (ret != 0) {
+		json_free(&version);
+		return ret;
+	}
+	return ret;
 }
 
 /*
@@ -598,11 +677,13 @@ void json_add_version(struct json_object *object, int major, int minor)
  *
  * "timestamp":"2017-03-06T17:18:04.455081+1300"
  *
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
+ *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
  */
-void json_add_timestamp(struct json_object *object)
+int json_add_timestamp(struct json_object *object)
 {
 	char buffer[40];	/* formatted time less usec and timezone */
 	char timestamp[65];	/* the formatted ISO 8601 time stamp	 */
@@ -610,9 +691,11 @@ void json_add_timestamp(struct json_object *object)
 	struct tm* tm_info;	/* current local time			 */
 	struct timeval tv;	/* current system time			 */
 	int r;			/* response code from gettimeofday	 */
+	int ret;		/* return code from json operations	*/
 
-	if (object->error) {
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add time stamp, target object is invalid\n");
+		return JSON_ERROR;
 	}
 
 	r = gettimeofday(&tv, NULL);
@@ -620,15 +703,13 @@ void json_add_timestamp(struct json_object *object)
 		DBG_ERR("Unable to get time of day: (%d) %s\n",
 			errno,
 			strerror(errno));
-		object->error = true;
-		return;
+		return JSON_ERROR;
 	}
 
 	tm_info = localtime(&tv.tv_sec);
 	if (tm_info == NULL) {
 		DBG_ERR("Unable to determine local time\n");
-		object->error = true;
-		return;
+		return JSON_ERROR;
 	}
 
 	strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%T", tm_info);
@@ -640,9 +721,12 @@ void json_add_timestamp(struct json_object *object)
 		buffer,
 		tv.tv_usec,
 		tz);
-	json_add_string(object, "timestamp", timestamp);
+	ret = json_add_string(object, "timestamp", timestamp);
+	if (ret != 0) {
+		DBG_ERR("Unable to add time stamp to JSON object\n");
+	}
+	return ret;
 }
-
 
 /*
  *@brief Add a tsocket_address to a JSON object
@@ -651,35 +735,59 @@ void json_add_timestamp(struct json_object *object)
  *
  * "localAddress":"ipv6::::0"
  *
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name.
  * @param address the tsocket_address.
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  */
-void json_add_address(struct json_object *object,
-		      const char *name,
-		      const struct tsocket_address *address)
+int json_add_address(struct json_object *object,
+		     const char *name,
+		     const struct tsocket_address *address)
 {
+	int ret = 0;
 
-	if (object->error) {
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add address [%s], "
+			"target object is invalid\n",
+			name);
+		return JSON_ERROR;
 	}
+
 	if (address == NULL) {
-		int rc = json_object_set_new(object->root, name, json_null());
-		if (rc) {
-			DBG_ERR("Unable to set address [%s] to null\n", name);
-			object->error = true;
+		ret = json_object_set_new(object->root, name, json_null());
+		if (ret != 0) {
+			DBG_ERR("Unable to add null address [%s]\n", name);
+			return JSON_ERROR;
 		}
 	} else {
 		TALLOC_CTX *ctx = talloc_new(NULL);
 		char *s = NULL;
 
+		if (ctx == NULL) {
+			DBG_ERR("Out of memory adding address [%s]\n", name);
+			return JSON_ERROR;
+		}
+
 		s = tsocket_address_string(address, ctx);
-		json_add_string(object, name, s);
+		if (s == NULL) {
+			DBG_ERR("Out of memory adding address [%s]\n", name);
+			TALLOC_FREE(ctx);
+			return JSON_ERROR;
+		}
+		ret = json_add_string(object, name, s);
+		if (ret != 0) {
+			DBG_ERR(
+			    "Unable to add address [%s] value [%s]\n", name, s);
+			TALLOC_FREE(ctx);
+			return JSON_ERROR;
+		}
 		TALLOC_FREE(ctx);
 	}
+	return ret;
 }
 
 /*
@@ -689,33 +797,47 @@ void json_add_address(struct json_object *object,
  *
  * "sid":"S-1-5-18"
  *
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name.
  * @param sid the sid
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  */
-void json_add_sid(struct json_object *object,
-		  const char *name,
-		  const struct dom_sid *sid)
+int json_add_sid(struct json_object *object,
+		 const char *name,
+		 const struct dom_sid *sid)
 {
+	int ret = 0;
 
-	if (object->error) {
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add SID [%s], "
+			"target object is invalid\n",
+			name);
+		return JSON_ERROR;
 	}
+
 	if (sid == NULL) {
-		int rc = json_object_set_new(object->root, name, json_null());
-		if (rc) {
-			DBG_ERR("Unable to set SID [%s] to null\n", name);
-			object->error = true;
+		ret = json_object_set_new(object->root, name, json_null());
+		if (ret != 0) {
+			DBG_ERR("Unable to add null SID [%s]\n", name);
+			return ret;
 		}
 	} else {
 		char sid_buf[DOM_SID_STR_BUFLEN];
 
 		dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-		json_add_string(object, name, sid_buf);
+		ret = json_add_string(object, name, sid_buf);
+		if (ret != 0) {
+			DBG_ERR("Unable to add SID [%s] value [%s]\n",
+				name,
+				sid_buf);
+			return ret;
+		}
 	}
+	return ret;
 }
 
 /*
@@ -725,38 +847,51 @@ void json_add_sid(struct json_object *object,
  *
  * "guid":"1fb9f2ee-2a4d-4bf8-af8b-cb9d4529a9ab"
  *
- * In the event of an error object will be invalidated.
  *
  * @param object the JSON object to be updated.
  * @param name the name.
  * @param guid the guid.
  *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
  *
  */
-void json_add_guid(struct json_object *object,
-		   const char *name,
-		   const struct GUID *guid)
+int json_add_guid(struct json_object *object,
+		  const char *name,
+		  const struct GUID *guid)
 {
 
+	int ret = 0;
 
-	if (object->error) {
-		return;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add GUID [%s], "
+			"target object is invalid\n",
+			name);
+		return JSON_ERROR;
 	}
+
 	if (guid == NULL) {
-		int rc = json_object_set_new(object->root, name, json_null());
-		if (rc) {
-			DBG_ERR("Unable to set GUID [%s] to null\n", name);
-			object->error = true;
+		ret = json_object_set_new(object->root, name, json_null());
+		if (ret != 0) {
+			DBG_ERR("Unable to add null GUID [%s]\n", name);
+			return ret;
 		}
 	} else {
 		char *guid_str;
 		struct GUID_txt_buf guid_buff;
 
 		guid_str = GUID_buf_string(guid, &guid_buff);
-		json_add_string(object, name, guid_str);
+		ret = json_add_string(object, name, guid_str);
+		if (ret != 0) {
+			DBG_ERR("Unable to guid GUID [%s] value [%s]\n",
+				name,
+				guid_str);
+			return ret;
+		}
 	}
+	return ret;
 }
-
 
 /*
  * @brief Convert a JSON object into a string
@@ -764,7 +899,7 @@ void json_add_guid(struct json_object *object,
  * Convert the jsom object into a string suitable for printing on a log line,
  * i.e. with no embedded line breaks.
  *
- * If the object is invalid it returns NULL.
+ * If the object is invalid it logs an error and returns NULL.
  *
  * @param mem_ctx the talloc memory context owning the returned string
  * @param object the json object.
@@ -772,13 +907,17 @@ void json_add_guid(struct json_object *object,
  * @return A string representation of the object or NULL if the object
  *         is invalid.
  */
-char *json_to_string(TALLOC_CTX *mem_ctx,
-		     struct json_object *object)
+char *json_to_string(TALLOC_CTX *mem_ctx, struct json_object *object)
 {
 	char *json = NULL;
 	char *json_string = NULL;
 
-	if (object->error) {
+	if (json_is_invalid(object)) {
+		DBG_ERR("Invalid JSON object, unable to convert to string\n");
+		return NULL;
+	}
+
+	if (object->root == NULL) {
 		return NULL;
 	}
 
@@ -813,15 +952,23 @@ char *json_to_string(TALLOC_CTX *mem_ctx,
  *
  * @return The array object, will be created if it did not exist.
  */
-struct json_object json_get_array(struct json_object *object,
-				  const char* name)
+struct json_object json_get_array(struct json_object *object, const char *name)
 {
 
-	struct json_object array = json_new_array();
+	struct json_object array = json_empty_object;
 	json_t *a = NULL;
+	int ret = 0;
 
-	if (object->error) {
-		array.error = true;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Invalid JSON object, unable to get array [%s]\n",
+			name);
+		json_free(&array);
+		return array;
+	}
+
+	array = json_new_array();
+	if (json_is_invalid(&array)) {
+		DBG_ERR("Unable to create new array for [%s]\n", name);
 		return array;
 	}
 
@@ -829,7 +976,13 @@ struct json_object json_get_array(struct json_object *object,
 	if (a == NULL) {
 		return array;
 	}
-	json_array_extend(array.root, a);
+
+	ret = json_array_extend(array.root, a);
+	if (ret != 0) {
+		DBG_ERR("Unable to get array [%s]\n", name);
+		json_free(&array);
+		return array;
+	}
 
 	return array;
 }
@@ -844,15 +997,17 @@ struct json_object json_get_array(struct json_object *object,
  *
  * @return The object, will be created if it did not exist.
  */
-struct json_object json_get_object(struct json_object *object,
-				   const char* name)
+struct json_object json_get_object(struct json_object *object, const char *name)
 {
 
 	struct json_object o = json_new_object();
 	json_t *v = NULL;
+	int ret = 0;
 
-	if (object->error) {
-		o.error = true;
+	if (json_is_invalid(object)) {
+		DBG_ERR("Invalid JSON object, unable to get object [%s]\n",
+			name);
+		json_free(&o);
 		return o;
 	}
 
@@ -860,8 +1015,12 @@ struct json_object json_get_object(struct json_object *object,
 	if (v == NULL) {
 		return o;
 	}
-	json_object_update(o.root, v);
-
+	ret = json_object_update(o.root, v);
+	if (ret != 0) {
+		DBG_ERR("Unable to get object [%s]\n", name);
+		json_free(&o);
+		return o;
+	}
 	return o;
 }
 #endif

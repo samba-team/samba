@@ -123,63 +123,134 @@ static void log_authentication_event_json(
 	struct dom_sid *sid,
 	int debug_level)
 {
-	struct json_object wrapper = json_new_object();
-	struct json_object authentication;
+	struct json_object wrapper = json_empty_object;
+	struct json_object authentication = json_empty_object;
 	char negotiate_flags[11];
-
-	json_add_timestamp(&wrapper);
-	json_add_string(&wrapper, "type", AUTH_JSON_TYPE);
+	int rc = 0;
 
 	authentication = json_new_object();
-	json_add_version(&authentication, AUTH_MAJOR, AUTH_MINOR);
-	json_add_string(&authentication, "status", nt_errstr(status));
-	json_add_address(&authentication, "localAddress", ui->local_host);
-	json_add_address(&authentication, "remoteAddress", ui->remote_host);
-	json_add_string(&authentication,
-			"serviceDescription",
-			ui->service_description);
-	json_add_string(&authentication,
-			"authDescription",
-			ui->auth_description);
-	json_add_string(&authentication,
-			"clientDomain",
-			ui->client.domain_name);
-	json_add_string(&authentication,
-			"clientAccount",
-			ui->client.account_name);
-	json_add_string(&authentication,
-			"workstation",
-			ui->workstation_name);
-	json_add_string(&authentication, "becameAccount", account_name);
-	json_add_string(&authentication, "becameDomain", domain_name);
-	json_add_sid(&authentication, "becameSid", sid);
-	json_add_string(&authentication,
-			"mappedAccount",
-			ui->mapped.account_name);
-	json_add_string(&authentication,
-			"mappedDomain",
-			ui->mapped.domain_name);
-	json_add_string(&authentication,
-			"netlogonComputer",
-			ui->netlogon_trust_account.computer_name);
-	json_add_string(&authentication,
-			"netlogonTrustAccount",
-			ui->netlogon_trust_account.account_name);
+	if (json_is_invalid(&authentication)) {
+		goto failure;
+	}
+	rc = json_add_version(&authentication, AUTH_MAJOR, AUTH_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authentication, "status", nt_errstr(status));
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_address(&authentication, "localAddress", ui->local_host);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc =
+	    json_add_address(&authentication, "remoteAddress", ui->remote_host);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "serviceDescription", ui->service_description);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "authDescription", ui->auth_description);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "clientDomain", ui->client.domain_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "clientAccount", ui->client.account_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "workstation", ui->workstation_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authentication, "becameAccount", account_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authentication, "becameDomain", domain_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_sid(&authentication, "becameSid", sid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "mappedAccount", ui->mapped.account_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "mappedDomain", ui->mapped.domain_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authentication,
+			     "netlogonComputer",
+			     ui->netlogon_trust_account.computer_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authentication,
+			     "netlogonTrustAccount",
+			     ui->netlogon_trust_account.account_name);
+	if (rc != 0) {
+		goto failure;
+	}
 	snprintf(negotiate_flags,
 		 sizeof( negotiate_flags),
 		 "0x%08X",
 		 ui->netlogon_trust_account.negotiate_flags);
-	json_add_string(&authentication,
-			"netlogonNegotiateFlags",
-			negotiate_flags);
-	json_add_int(&authentication,
-		     "netlogonSecureChannelType",
-		     ui->netlogon_trust_account.secure_channel_type);
-	json_add_sid(&authentication,
-		     "netlogonTrustAccountSid",
-		     ui->netlogon_trust_account.sid);
-	json_add_string(&authentication, "passwordType", get_password_type(ui));
-	json_add_object(&wrapper, AUTH_JSON_TYPE, &authentication);
+	rc = json_add_string(
+	    &authentication, "netlogonNegotiateFlags", negotiate_flags);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&authentication,
+			  "netlogonSecureChannelType",
+			  ui->netlogon_trust_account.secure_channel_type);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_sid(&authentication,
+			  "netlogonTrustAccountSid",
+			  ui->netlogon_trust_account.sid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authentication, "passwordType", get_password_type(ui));
+	if (rc != 0) {
+		goto failure;
+	}
+
+	wrapper = json_new_object();
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", AUTH_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, AUTH_JSON_TYPE, &authentication);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	/*
 	 * While not a general-purpose profiling solution this will
@@ -192,9 +263,10 @@ static void log_authentication_event_json(
 		struct timeval current_time = timeval_current();
 		uint64_t duration =  usec_time_diff(&current_time,
 						    start_time);
-		json_add_int(&authentication,
-			     "duration",
-			     duration);
+		rc = json_add_int(&authentication, "duration", duration);
+		if (rc != 0) {
+			goto failure;
+		}
 	}
 
 	log_json(msg_ctx,
@@ -204,6 +276,16 @@ static void log_authentication_event_json(
 		 DBGC_AUTH_AUDIT_JSON,
 		 debug_level);
 	json_free(&wrapper);
+	return;
+failure:
+	/*
+	 * On a failure authentication will not have been added to wrapper so it
+	 * needs to be freed to avoid a leak.
+	 *
+	 */
+	json_free(&authentication);
+	json_free(&wrapper);
+	DBG_ERR("Failed to write authentication event JSON log message\n");
 }
 
 /*
@@ -237,45 +319,92 @@ static void log_successful_authz_event_json(
 	struct auth_session_info *session_info,
 	int debug_level)
 {
-	struct json_object wrapper = json_new_object();
-	struct json_object authorization;
+	struct json_object wrapper = json_empty_object;
+	struct json_object authorization = json_empty_object;
 	char account_flags[11];
+	int rc = 0;
 
-	json_add_timestamp(&wrapper);
-	json_add_string(&wrapper, "type", AUTHZ_JSON_TYPE);
 	authorization = json_new_object();
-	json_add_version(&authorization, AUTHZ_MAJOR, AUTHZ_MINOR);
-	json_add_address(&authorization, "localAddress", local);
-	json_add_address(&authorization, "remoteAddress", remote);
-	json_add_string(&authorization,
-			"serviceDescription",
-			service_description);
-	json_add_string(&authorization, "authType", auth_type);
-	json_add_string(&authorization,
-			"domain",
-			session_info->info->domain_name);
-	json_add_string(&authorization,
-			"account",
-			session_info->info->account_name);
-	json_add_sid(&authorization,
-		     "sid",
-		     &session_info->security_token->sids[0]);
-	json_add_guid(&authorization,
-		      "sessionId",
-		      &session_info->unique_session_token);
-	json_add_string(&authorization,
-			"logonServer",
-			session_info->info->logon_server);
-	json_add_string(&authorization,
-			"transportProtection",
-			transport_protection);
+	if (json_is_invalid(&authorization)) {
+		goto failure;
+	}
+	rc = json_add_version(&authorization, AUTHZ_MAJOR, AUTHZ_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_address(&authorization, "localAddress", local);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_address(&authorization, "remoteAddress", remote);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authorization, "serviceDescription", service_description);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authorization, "authType", auth_type);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authorization, "domain", session_info->info->domain_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authorization, "account", session_info->info->account_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_sid(
+	    &authorization, "sid", &session_info->security_token->sids[0]);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(
+	    &authorization, "sessionId", &session_info->unique_session_token);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authorization, "logonServer", session_info->info->logon_server);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authorization, "transportProtection", transport_protection);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	snprintf(account_flags,
 		 sizeof(account_flags),
 		 "0x%08X",
 		 session_info->info->acct_flags);
-	json_add_string(&authorization, "accountFlags", account_flags);
-	json_add_object(&wrapper, AUTHZ_JSON_TYPE, &authorization);
+	rc = json_add_string(&authorization, "accountFlags", account_flags);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	wrapper = json_new_object();
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", AUTHZ_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, AUTHZ_JSON_TYPE, &authorization);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	log_json(msg_ctx,
 		 lp_ctx,
@@ -284,6 +413,16 @@ static void log_successful_authz_event_json(
 		 DBGC_AUTH_AUDIT_JSON,
 		 debug_level);
 	json_free(&wrapper);
+	return;
+failure:
+	/*
+	 * On a failure authorization will not have been added to wrapper so it
+	 * needs to be freed to avoid a leak.
+	 *
+	 */
+	json_free(&authorization);
+	json_free(&wrapper);
+	DBG_ERR("Unable to log Authentication event JSON audit message\n");
 }
 
 #else

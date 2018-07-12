@@ -176,6 +176,7 @@ static const char *get_password_action(
  *
  * @return the generated JSON object, should be freed with json_free.
  *
+ *
  */
 static struct json_object operation_json(
 	struct ldb_module *module,
@@ -185,8 +186,8 @@ static struct json_object operation_json(
 	struct ldb_context *ldb = NULL;
 	const struct dom_sid *sid = NULL;
 	bool as_system = false;
-	struct json_object wrapper;
-	struct json_object audit;
+	struct json_object wrapper = json_empty_object;
+	struct json_object audit = json_empty_object;
 	const struct tsocket_address *remote = NULL;
 	const char *dn = NULL;
 	const char* operation = NULL;
@@ -195,6 +196,7 @@ static struct json_object operation_json(
 	struct audit_private *audit_private
 		= talloc_get_type_abort(ldb_module_get_private(module),
 					struct audit_private);
+	int rc = 0;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -213,18 +215,50 @@ static struct json_object operation_json(
 	operation = dsdb_audit_get_operation_name(request);
 
 	audit = json_new_object();
-	json_add_version(&audit, OPERATION_MAJOR, OPERATION_MINOR);
-	json_add_int(&audit, "statusCode", reply->error);
-	json_add_string(&audit, "status", ldb_strerror(reply->error));
-	json_add_string(&audit, "operation", operation);
-	json_add_address(&audit, "remoteAddress", remote);
-	json_add_bool(&audit, "performedAsSystem", as_system);
-	json_add_sid(&audit, "userSid", sid);
-	json_add_string(&audit, "dn", dn);
-	json_add_guid(&audit,
-		      "transactionId",
-		      &audit_private->transaction_guid);
-	json_add_guid(&audit, "sessionId", unique_session_token);
+	if (json_is_invalid(&audit)) {
+		goto failure;
+	}
+	rc = json_add_version(&audit, OPERATION_MAJOR, OPERATION_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "statusCode", reply->error);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "status", ldb_strerror(reply->error));
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "operation", operation);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_address(&audit, "remoteAddress", remote);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_bool(&audit, "performedAsSystem", as_system);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_sid(&audit, "userSid", sid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "dn", dn);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(
+	    &audit, "transactionId", &audit_private->transaction_guid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(&audit, "sessionId", unique_session_token);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	message = dsdb_audit_get_message(request);
 	if (message != NULL) {
@@ -232,13 +266,46 @@ static struct json_object operation_json(
 			dsdb_audit_attributes_json(
 				request->operation,
 				message);
-		json_add_object(&audit, "attributes", &attributes);
+		if (json_is_invalid(&attributes)) {
+			goto failure;
+		}
+		rc = json_add_object(&audit, "attributes", &attributes);
+		if (rc != 0) {
+			goto failure;
+		}
 	}
 
 	wrapper = json_new_object();
-	json_add_timestamp(&wrapper);
-	json_add_string(&wrapper, "type", OPERATION_JSON_TYPE);
-	json_add_object(&wrapper, OPERATION_JSON_TYPE, &audit);
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", OPERATION_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, OPERATION_JSON_TYPE, &audit);
+	if (rc != 0) {
+		goto failure;
+	}
+	return wrapper;
+
+failure:
+	/*
+	 * On a failure audit will not have been added to wrapper so it
+	 * needs to free it to avoid a leak.
+	 *
+	 * wrapper is freed to invalidate it as it will have only been
+	 * partially constructed and may be inconsistent.
+	 *
+	 * All the json manipulation routines handle a freed object correctly
+	 */
+	json_free(&audit);
+	json_free(&wrapper);
+	DBG_ERR("Unable to create ldb operation JSON audit message\n");
 	return wrapper;
 }
 
@@ -252,6 +319,7 @@ static struct json_object operation_json(
  * @paran reply the result of the operation
  *
  * @return the generated JSON object, should be freed with json_free.
+ *         NULL if there was an error generating the message.
  *
  */
 static struct json_object replicated_update_json(
@@ -259,8 +327,8 @@ static struct json_object replicated_update_json(
 	const struct ldb_request *request,
 	const struct ldb_reply *reply)
 {
-	struct json_object wrapper;
-	struct json_object audit;
+	struct json_object wrapper = json_empty_object;
+	struct json_object audit = json_empty_object;
 	struct audit_private *audit_private
 		= talloc_get_type_abort(ldb_module_get_private(module),
 					struct audit_private);
@@ -269,35 +337,93 @@ static struct json_object replicated_update_json(
 		struct dsdb_extended_replicated_objects);
 	const char *partition_dn = NULL;
 	const char *error = NULL;
+	int rc = 0;
 
 	partition_dn = ldb_dn_get_linearized(ro->partition_dn);
 	error = get_friendly_werror_msg(ro->error);
 
 	audit = json_new_object();
-	json_add_version(&audit, REPLICATION_MAJOR, REPLICATION_MINOR);
-	json_add_int(&audit, "statusCode", reply->error);
-	json_add_string(&audit, "status", ldb_strerror(reply->error));
-	json_add_guid(&audit,
-		      "transactionId",
-		      &audit_private->transaction_guid);
-	json_add_int(&audit, "objectCount", ro->num_objects);
-	json_add_int(&audit, "linkCount", ro->linked_attributes_count);
-	json_add_string(&audit, "partitionDN", partition_dn);
-	json_add_string(&audit, "error", error);
-	json_add_int(&audit, "errorCode", W_ERROR_V(ro->error));
-	json_add_guid(
-		&audit,
-		"sourceDsa",
-		&ro->source_dsa->source_dsa_obj_guid);
-	json_add_guid(
-		&audit,
-		"invocationId",
-		&ro->source_dsa->source_dsa_invocation_id);
+	if (json_is_invalid(&audit)) {
+		goto failure;
+	}
+	rc = json_add_version(&audit, REPLICATION_MAJOR, REPLICATION_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "statusCode", reply->error);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "status", ldb_strerror(reply->error));
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(
+	    &audit, "transactionId", &audit_private->transaction_guid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "objectCount", ro->num_objects);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "linkCount", ro->linked_attributes_count);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "partitionDN", partition_dn);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "error", error);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "errorCode", W_ERROR_V(ro->error));
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(
+	    &audit, "sourceDsa", &ro->source_dsa->source_dsa_obj_guid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(
+	    &audit, "invocationId", &ro->source_dsa->source_dsa_invocation_id);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	wrapper = json_new_object();
-	json_add_timestamp(&wrapper);
-	json_add_string(&wrapper, "type", REPLICATION_JSON_TYPE);
-	json_add_object(&wrapper, REPLICATION_JSON_TYPE, &audit);
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", REPLICATION_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, REPLICATION_JSON_TYPE, &audit);
+	if (rc != 0) {
+		goto failure;
+	}
+	return wrapper;
+failure:
+	/*
+	 * On a failure audit will not have been added to wrapper so it
+	 * needs to be freed it to avoid a leak.
+	 *
+	 * wrapper is freed to invalidate it as it will have only been
+	 * partially constructed and may be inconsistent.
+	 *
+	 * All the json manipulation routines handle a freed object correctly
+	 */
+	json_free(&audit);
+	json_free(&wrapper);
+	DBG_ERR("Unable to create replicated update JSON audit message\n");
 	return wrapper;
 }
 
@@ -321,16 +447,16 @@ static struct json_object password_change_json(
 {
 	struct ldb_context *ldb = NULL;
 	const struct dom_sid *sid = NULL;
-	const char* dn = NULL;
-	struct json_object wrapper;
-	struct json_object audit;
+	const char *dn = NULL;
+	struct json_object wrapper = json_empty_object;
+	struct json_object audit = json_empty_object;
 	const struct tsocket_address *remote = NULL;
 	const char* action = NULL;
 	const struct GUID *unique_session_token = NULL;
 	struct audit_private *audit_private
 		= talloc_get_type_abort(ldb_module_get_private(module),
 					struct audit_private);
-
+	int rc = 0;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -341,23 +467,78 @@ static struct json_object password_change_json(
 	unique_session_token = dsdb_audit_get_unique_session_token(module);
 
 	audit = json_new_object();
-	json_add_version(&audit, PASSWORD_MAJOR, PASSWORD_MINOR);
-	json_add_int(&audit, "statusCode", reply->error);
-	json_add_string(&audit, "status", ldb_strerror(reply->error));
-	json_add_address(&audit, "remoteAddress", remote);
-	json_add_sid(&audit, "userSid", sid);
-	json_add_string(&audit, "dn", dn);
-	json_add_string(&audit, "action", action);
-	json_add_guid(&audit,
-		      "transactionId",
-		      &audit_private->transaction_guid);
-	json_add_guid(&audit, "sessionId", unique_session_token);
+	if (json_is_invalid(&audit)) {
+		goto failure;
+	}
+	rc = json_add_version(&audit, PASSWORD_MAJOR, PASSWORD_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "statusCode", reply->error);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "status", ldb_strerror(reply->error));
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_address(&audit, "remoteAddress", remote);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_sid(&audit, "userSid", sid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "dn", dn);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "action", action);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(
+	    &audit, "transactionId", &audit_private->transaction_guid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(&audit, "sessionId", unique_session_token);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	wrapper = json_new_object();
-	json_add_timestamp(&wrapper);
-	json_add_string(&wrapper, "type", PASSWORD_JSON_TYPE);
-	json_add_object(&wrapper, PASSWORD_JSON_TYPE, &audit);
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", PASSWORD_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, PASSWORD_JSON_TYPE, &audit);
+	if (rc != 0) {
+		goto failure;
+	}
 
+	return wrapper;
+failure:
+	/*
+	 * On a failure audit will not have been added to wrapper so it
+	 * needs to free it to avoid a leak.
+	 *
+	 * wrapper is freed to invalidate it as it will have only been
+	 * partially constructed and may be inconsistent.
+	 *
+	 * All the json manipulation routines handle a freed object correctly
+	 */
+	json_free(&wrapper);
+	json_free(&audit);
+	DBG_ERR("Unable to create password change JSON audit message\n");
 	return wrapper;
 }
 
@@ -380,21 +561,63 @@ static struct json_object transaction_json(
 	struct GUID *transaction_id,
 	const int64_t duration)
 {
-	struct json_object wrapper;
-	struct json_object audit;
+	struct json_object wrapper = json_empty_object;
+	struct json_object audit = json_empty_object;
+	int rc = 0;
 
 	audit = json_new_object();
-	json_add_version(&audit, TRANSACTION_MAJOR, TRANSACTION_MINOR);
-	json_add_string(&audit, "action", action);
-	json_add_guid(&audit, "transactionId", transaction_id);
-	json_add_int(&audit, "duration", duration);
+	if (json_is_invalid(&audit)) {
+		goto failure;
+	}
 
+	rc = json_add_version(&audit, TRANSACTION_MAJOR, TRANSACTION_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "action", action);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(&audit, "transactionId", transaction_id);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "duration", duration);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	wrapper = json_new_object();
-	json_add_timestamp(&wrapper);
-	json_add_string(&wrapper, "type", TRANSACTION_JSON_TYPE);
-	json_add_object(&wrapper, TRANSACTION_JSON_TYPE, &audit);
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", TRANSACTION_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, TRANSACTION_JSON_TYPE, &audit);
+	if (rc != 0) {
+		goto failure;
+	}
 
+	return wrapper;
+failure:
+	/*
+	 * On a failure audit will not have been added to wrapper so it
+	 * needs to free it to avoid a leak.
+	 *
+	 * wrapper is freed to invalidate it as it will have only been
+	 * partially constructed and may be inconsistent.
+	 *
+	 * All the json manipulation routines handle a freed object correctly
+	 */
+	json_free(&wrapper);
+	json_free(&audit);
+	DBG_ERR("Unable to create transaction JSON audit message\n");
 	return wrapper;
 }
 
@@ -416,23 +639,74 @@ static struct json_object commit_failure_json(
 	const char *reason,
 	struct GUID *transaction_id)
 {
-	struct json_object wrapper;
-	struct json_object audit;
+	struct json_object wrapper = json_empty_object;
+	struct json_object audit = json_empty_object;
+	int rc = 0;
 
 	audit = json_new_object();
-	json_add_version(&audit, TRANSACTION_MAJOR, TRANSACTION_MINOR);
-	json_add_string(&audit, "action", action);
-	json_add_guid(&audit, "transactionId", transaction_id);
-	json_add_int(&audit, "duration", duration);
-	json_add_int(&audit, "statusCode", status);
-	json_add_string(&audit, "status", ldb_strerror(status));
-	json_add_string(&audit, "reason", reason);
+	if (json_is_invalid(&audit)) {
+		goto failure;
+	}
+	rc = json_add_version(&audit, TRANSACTION_MAJOR, TRANSACTION_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "action", action);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_guid(&audit, "transactionId", transaction_id);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "duration", duration);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&audit, "statusCode", status);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "status", ldb_strerror(status));
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&audit, "reason", reason);
+	if (rc != 0) {
+		goto failure;
+	}
 
 	wrapper = json_new_object();
-	json_add_timestamp(&wrapper);
-	json_add_string(&wrapper, "type", TRANSACTION_JSON_TYPE);
-	json_add_object(&wrapper, TRANSACTION_JSON_TYPE, &audit);
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", TRANSACTION_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, TRANSACTION_JSON_TYPE, &audit);
+	if (rc != 0) {
+		goto failure;
+	}
 
+	return wrapper;
+failure:
+	/*
+	 * On a failure audit will not have been added to wrapper so it
+	 * needs to free it to avoid a leak.
+	 *
+	 * wrapper is freed to invalidate it as it will have only been
+	 * partially constructed and may be inconsistent.
+	 *
+	 * All the json manipulation routines handle a freed object correctly
+	 */
+	json_free(&audit);
+	json_free(&wrapper);
+	DBG_ERR("Unable to create commit failure JSON audit message\n");
 	return wrapper;
 }
 

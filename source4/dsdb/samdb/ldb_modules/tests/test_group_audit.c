@@ -94,7 +94,7 @@ void audit_message_send(
 	struct json_object *message)
 {
 	messages[messages_sent].root = json_deep_copy(message->root);
-	messages[messages_sent].error = message->error;
+	messages[messages_sent].valid = message->valid;
 	messages_sent++;
 }
 
