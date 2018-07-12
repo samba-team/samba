@@ -62,23 +62,33 @@ def configure(conf):
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_ldb:
+        max_ldb_version = [int(x) for x in VERSION.split(".")]
+        max_ldb_version[2] = 999
+        max_ldb_version_dots = "%d.%d.%d" % tuple(max_ldb_version)
+
         if conf.env.disable_python:
-            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
-                                         onlyif='talloc tdb tevent',
-                                         implied_deps='replace talloc tdb tevent'):
+            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb',
+                                             minversion=VERSION,
+                                             maxversion=max_ldb_version_dots,
+                                             onlyif='talloc tdb tevent',
+                                             implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)
         else:
             using_system_pyldb_util = True
-            if not conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
-                                             onlyif='talloc tdb tevent',
-                                             implied_deps='replace talloc tdb tevent ldb'):
+            if not conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util',
+                                                 minversion=VERSION,
+                                                 maxversion=max_ldb_version_dots,
+                                                 onlyif='talloc tdb tevent',
+                                                 implied_deps='replace talloc tdb tevent ldb'):
                 using_system_pyldb_util = False
 
             # We need to get a pyldb-util for all the python versions
             # we are building for
             if conf.env['EXTRA_PYTHON']:
                 name = 'pyldb-util' + conf.all_envs['extrapython']['PYTHON_SO_ABI_FLAG']
-                if not conf.CHECK_BUNDLED_SYSTEM_PKG(name, minversion=VERSION,
+                if not conf.CHECK_BUNDLED_SYSTEM_PKG(name,
+                                                     minversion=VERSION,
+                                                     maxversion=max_ldb_version_dots,
                                                      onlyif='talloc tdb tevent',
                                                      implied_deps='replace talloc tdb tevent ldb'):
                     using_system_pyldb_util = False
@@ -86,9 +96,11 @@ def configure(conf):
             if using_system_pyldb_util:
                 conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
 
-            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
-                                         onlyif='talloc tdb tevent pyldb-util',
-                                         implied_deps='replace talloc tdb tevent'):
+            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb',
+                                             minversion=VERSION,
+                                             maxversion=max_ldb_version_dots,
+                                             onlyif='talloc tdb tevent pyldb-util',
+                                             implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)
 
     if conf.CONFIG_SET('USING_SYSTEM_LDB'):
