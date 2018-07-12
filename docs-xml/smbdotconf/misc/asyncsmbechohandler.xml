@@ -7,7 +7,8 @@
 	  async smb echo handler. It can be beneficial if your file
 	  system can block syscalls for a very long time. In some
 	  circumstances, it prolongs the timeout that Windows uses to
-	  determine whether a connection is dead.
+	  determine whether a connection is dead. This parameter is only for
+	  SMB1. For SMB2 and above TCP keepalives can be used instead.
 	</para>
 </description>
 <value type="default">no</value>
