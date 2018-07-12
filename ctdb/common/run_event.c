@@ -31,177 +31,70 @@
 
 #include "common/logging.h"
 #include "common/run_proc.h"
+#include "common/event_script.h"
+
 #include "common/run_event.h"
 
 /*
  * Utility functions
  */
 
-static int script_filter(const struct dirent *de)
-{
-	int ret;
-
-	/* Match a script pattern */
-	ret = fnmatch("[0-9][0-9].*.script", de->d_name, 0);
-	if (ret == 0) {
-		return 1;
-	}
-
-	return 0;
-}
-
 static int get_script_list(TALLOC_CTX *mem_ctx,
 			   const char *script_dir,
 			   struct run_event_script_list **out)
 {
-	struct dirent **namelist = NULL;
+	struct event_script_list *s_list;
 	struct run_event_script_list *script_list;
-	size_t ls;
-	int count, ret;
-	int i;
+	unsigned int i;
+	int ret;
 
-	count = scandir(script_dir, &namelist, script_filter, alphasort);
-	if (count == -1) {
-		ret = errno;
+	ret = event_script_get_list(mem_ctx, script_dir, &s_list);
+	if (ret != 0) {
 		if (ret == ENOENT) {
 			D_WARNING("event script dir %s removed\n", script_dir);
 		} else {
-			D_WARNING("scandir() failed on %s, ret=%d\n",
+			D_WARNING("failed to get script list for %s, ret=%d\n",
 				  script_dir, ret);
 		}
-		*out = NULL;
-		goto done;
+		return ret;
 	}
 
-	if (count == 0) {
+	if (s_list->num_scripts == 0) {
 		*out = NULL;
-		ret = 0;
-		goto done;
+		talloc_free(s_list);
+		return 0;
 	}
 
 	script_list = talloc_zero(mem_ctx, struct run_event_script_list);
 	if (script_list == NULL) {
+		talloc_free(s_list);
 		return ENOMEM;
 	}
 
-	script_list->num_scripts = count;
+	script_list->num_scripts = s_list->num_scripts;
 	script_list->script = talloc_zero_array(script_list,
 						struct run_event_script,
-						count);
+						script_list->num_scripts);
 	if (script_list->script == NULL) {
-		ret = ENOMEM;
+		talloc_free(s_list);
 		talloc_free(script_list);
-		goto done;
-	}
-
-	ls = strlen(".script");
-	for (i=0; i<count; i++) {
-		struct run_event_script *s = &script_list->script[i];
-
-		s->name = talloc_strndup(script_list,
-					 namelist[i]->d_name,
-					 strlen(namelist[i]->d_name) - ls);
-		if (s->name == NULL) {
-			ret = ENOMEM;
-			talloc_free(script_list);
-			goto done;
-		}
-	}
-
-	*out = script_list;
-	ret = 0;
-
-done:
-	if (namelist != NULL && count != -1) {
-		for (i=0; i<count; i++) {
-			free(namelist[i]);
-		}
-		free(namelist);
-	}
-	return ret;
-}
-
-static int script_chmod(TALLOC_CTX *mem_ctx, const char *script_dir,
-			const char *script_name, bool enable)
-{
-	DIR *dirp;
-	struct dirent *de;
-	char script_file[PATH_MAX];
-	int ret, new_mode;
-	char *filename;
-	struct stat st;
-	bool found;
-	int fd = -1;
-
-	ret = snprintf(script_file,
-		       sizeof(script_file),
-		       "%s.script",
-		       script_name);
-	if (ret >= sizeof(script_file)) {
-		return ENAMETOOLONG;
-	}
-
-	dirp = opendir(script_dir);
-	if (dirp == NULL) {
-		return errno;
-	}
-
-	found = false;
-	while ((de = readdir(dirp)) != NULL) {
-		if (strcmp(de->d_name, script_file) == 0) {
-
-			/* check for valid script names */
-			ret = script_filter(de);
-			if (ret == 0) {
-				closedir(dirp);
-				return EINVAL;
-			}
-
-			found = true;
-			break;
-		}
-	}
-	closedir(dirp);
-
-	if (! found) {
-		return ENOENT;
-	}
-
-	filename = talloc_asprintf(mem_ctx, "%s/%s", script_dir, script_file);
-	if (filename == NULL) {
 		return ENOMEM;
 	}
 
-	fd = open(filename, O_RDWR);
-	if (fd == -1) {
-		ret = errno;
-		goto done;
+	for (i = 0; i < s_list->num_scripts; i++) {
+		struct event_script *s = s_list->script[i];
+		struct run_event_script *script = &script_list->script[i];
+
+		script->name = talloc_steal(script_list->script, s->name);
+
+		if (! s->enabled) {
+			script->summary = -ENOEXEC;
+		}
 	}
 
-	ret = fstat(fd, &st);
-	if (ret != 0) {
-		ret = errno;
-		goto done;
-	}
-
-	if (enable) {
-		new_mode = st.st_mode | (S_IXUSR | S_IXGRP | S_IXOTH);
-	} else {
-		new_mode = st.st_mode & ~(S_IXUSR | S_IXGRP | S_IXOTH);
-	}
-
-	ret = fchmod(fd, new_mode);
-	if (ret != 0) {
-		ret = errno;
-		goto done;
-	}
-
-done:
-	if (fd != -1) {
-		close(fd);
-	}
-	talloc_free(filename);
-	return ret;
+	talloc_free(s_list);
+	*out = script_list;
+	return 0;
 }
 
 static int script_args(TALLOC_CTX *mem_ctx, const char *event_str,
@@ -392,45 +285,51 @@ int run_event_list(struct run_event_context *run_ctx,
 		   TALLOC_CTX *mem_ctx,
 		   struct run_event_script_list **output)
 {
+	struct event_script_list *s_list;
 	struct run_event_script_list *script_list;
 	int ret, i;
 
-	ret = get_script_list(mem_ctx, run_event_script_dir(run_ctx),
-			      &script_list);
+	ret = event_script_get_list(mem_ctx,
+				    run_event_script_dir(run_ctx),
+				    &s_list);
 	if (ret != 0) {
 		return ret;
 	}
 
-	if (script_list == NULL) {
+	if (s_list->num_scripts == 0) {
 		*output = NULL;
+		talloc_free(s_list);
 		return 0;
 	}
 
-	for (i=0; i<script_list->num_scripts; i++) {
-		struct run_event_script *script = &script_list->script[i];
-		struct stat st;
-		char *path = NULL;
-
-		path = talloc_asprintf(mem_ctx, "%s/%s.script",
-				       run_event_script_dir(run_ctx),
-				       script->name);
-		if (path == NULL) {
-			continue;
-		}
-
-		ret = stat(path, &st);
-		if (ret != 0) {
-			TALLOC_FREE(path);
-			continue;
-		}
-
-		if (! (st.st_mode & S_IXUSR)) {
-			script->summary = -ENOEXEC;
-		}
-
-		TALLOC_FREE(path);
+	script_list = talloc_zero(mem_ctx, struct run_event_script_list);
+	if (script_list == NULL) {
+		return ENOMEM;
 	}
 
+	script_list->num_scripts = s_list->num_scripts;
+	script_list->script = talloc_zero_array(script_list,
+						struct run_event_script,
+						script_list->num_scripts);
+	if (script_list->script == NULL) {
+		talloc_free(s_list);
+		talloc_free(script_list);
+		return ENOMEM;
+	}
+
+	for (i=0; i < s_list->num_scripts; i++) {
+		struct event_script *s = s_list->script[i];
+		struct run_event_script *script = &script_list->script[i];
+
+		script->name = talloc_steal(script_list->script, s->name);
+
+		if (! s->enabled) {
+			script->summary = -ENOEXEC;
+		}
+	}
+
+
+	talloc_free(s_list);
 	*output = script_list;
 	return 0;
 }
@@ -438,15 +337,17 @@ int run_event_list(struct run_event_context *run_ctx,
 int run_event_script_enable(struct run_event_context *run_ctx,
 			    const char *script_name)
 {
-	return script_chmod(run_ctx, run_event_script_dir(run_ctx),
-			    script_name, true);
+	return event_script_chmod(run_event_script_dir(run_ctx),
+				  script_name,
+				  true);
 }
 
 int run_event_script_disable(struct run_event_context *run_ctx,
 			     const char *script_name)
 {
-	return script_chmod(run_ctx, run_event_script_dir(run_ctx),
-			    script_name, false);
+	return event_script_chmod(run_event_script_dir(run_ctx),
+				  script_name,
+				  false);
 }
 
 /*
