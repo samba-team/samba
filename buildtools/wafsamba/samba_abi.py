@@ -192,10 +192,12 @@ def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
             f.write("\t\t%s;\n" % x)
     else:
         f.write("\t\t*;\n")
-    if abi_match != ["*"]:
-        f.write("\tlocal:\n")
-        for x in local_abi:
-            f.write("\t\t%s;\n" % x[1:])
+    # Always hide symbols that must be local if exist
+    local_abi.extend(["!_end", "!__bss_start", "!_edata"])
+    f.write("\tlocal:\n")
+    for x in local_abi:
+        f.write("\t\t%s;\n" % x[1:])
+    if global_abi != ["*"]:
         if len(global_abi) > 0:
             f.write("\t\t*;\n")
     f.write("};\n")

@@ -66,6 +66,10 @@ class WriteVscriptTests(TestCase):
 1.0 {
 \tglobal:
 \t\t*;
+\tlocal:
+\t\t_end;
+\t\t__bss_start;
+\t\t_edata;
 };
 """)
 
@@ -84,6 +88,10 @@ MYLIB_0.1 {
 1.0 {
 \tglobal:
 \t\t*;
+\tlocal:
+\t\t_end;
+\t\t__bss_start;
+\t\t_edata;
 };
 """)
 
@@ -99,6 +107,9 @@ MYLIB_0.1 {
 \t\t*;
 \tlocal:
 \t\texc_*;
+\t\t_end;
+\t\t__bss_start;
+\t\t_edata;
 };
 """)
 
@@ -115,6 +126,9 @@ MYLIB_0.1 {
 \t\tpub_*;
 \tlocal:
 \t\texc_*;
+\t\t_end;
+\t\t__bss_start;
+\t\t_edata;
 \t\t*;
 };
 """)
