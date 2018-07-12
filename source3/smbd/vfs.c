@@ -1877,9 +1877,11 @@ int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *vfs_aio_sta
 		req, struct smb_vfs_call_fsync_state);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
 		return -1;
 	}
 	*vfs_aio_state = state->vfs_aio_state;
+	tevent_req_received(req);
 	return state->retval;
 }
 
