@@ -24,6 +24,7 @@
 
 #include "common/db_hash.c"
 #include "common/run_proc.c"
+#include "common/event_script.c"
 #include "common/run_event.c"
 
 static void usage(const char *prog)
