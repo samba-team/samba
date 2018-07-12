@@ -1,0 +1,12 @@
+#!/bin/sh
+
+case "$1" in
+"monitor") exit 0 ;;
+"failure") exit 1 ;;
+"timeout") sleep 99 ;;
+"verbose") echo "Running event $1" ; exit 0 ;;
+"verbosefailure") echo "args: $*"; exit 1 ;;
+"verbosetimeout") echo "Sleeping for 99 seconds"; sleep 99 ;;
+"verbosetimeout2") echo "Sleeping for 99 seconds"; sleep 99 ;;
+*) exit 0 ;;
+esac

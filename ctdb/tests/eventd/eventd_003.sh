@@ -34,3 +34,12 @@ ok <<EOF
 02.enabled           OK         DURATION DATETIME
 EOF
 simple_test status random monitor
+
+ok <<EOF
+  01.disabled
+  02.enabled
+
+  01.disabled
+* 02.enabled
+EOF
+simple_test script list random
