@@ -43,6 +43,7 @@
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/base64.h"
 #include "lib/util/time.h"
+#include "lib/crypto/md5.h"
 
 extern char *optarg;
 extern int optind;
@@ -9239,6 +9240,157 @@ static bool run_cli_echo(int dummy)
 	return NT_STATUS_IS_OK(status);
 }
 
+static int splice_status(off_t written, void *priv)
+{
+        return true;
+}
+
+static bool run_cli_splice(int dummy)
+{
+	uint8_t *buf = NULL;
+	struct cli_state *cli1 = NULL;
+	bool correct = false;
+	const char *fname_src = "\\splice_src.dat";
+	const char *fname_dst = "\\splice_dst.dat";
+	NTSTATUS status;
+	uint16_t fnum1 = UINT16_MAX;
+	uint16_t fnum2 = UINT16_MAX;
+	size_t file_size = 2*1024*1024;
+	size_t splice_size = 1*1024*1024 + 713;
+	MD5_CTX md5_ctx;
+	uint8_t digest1[16], digest2[16];
+	off_t written = 0;
+	size_t nread = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	printf("starting cli_splice test\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		goto out;
+	}
+
+	cli_unlink(cli1, fname_src,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_unlink(cli1, fname_dst,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Create a file */
+	status = cli_ntcreate(cli1, fname_src, 0, GENERIC_ALL_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF,
+			0, 0, &fnum1, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("open %s failed: %s\n", fname_src, nt_errstr(status));
+		goto out;
+	}
+
+	/* Write file_size bytes - must be bigger than splice_size. */
+	buf = talloc_zero_array(frame, uint8_t, file_size);
+	if (buf == NULL) {
+		d_printf("talloc_fail\n");
+		goto out;
+	}
+
+	/* Fill it with random numbers. */
+	generate_random_buffer(buf, file_size);
+
+	/* MD5 the first 1MB + 713 bytes. */
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, buf, splice_size);
+	MD5Final(digest1, &md5_ctx);
+
+	status = cli_writeall(cli1,
+			      fnum1,
+			      0,
+			      buf,
+			      0,
+			      file_size,
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_writeall failed: %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_ntcreate(cli1, fname_dst, 0, GENERIC_ALL_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF,
+			0, 0, &fnum2, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("open %s failed: %s\n", fname_dst, nt_errstr(status));
+		goto out;
+	}
+
+	/* Now splice 1MB + 713 bytes. */
+	status = cli_splice(cli1,
+				cli1,
+				fnum1,
+				fnum2,
+				splice_size,
+				0,
+				0,
+				&written,
+				splice_status,
+				NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_splice failed: %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	/* Clear the old buffer. */
+	memset(buf, '\0', file_size);
+
+	/* Read the new file. */
+	status = cli_read(cli1, fnum2, (char *)buf, 0, splice_size, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_read failed: %s\n", nt_errstr(status));
+		goto out;
+	}
+	if (nread != splice_size) {
+		d_printf("bad read of 0x%x, should be 0x%x\n",
+			(unsigned int)nread,
+			(unsigned int)splice_size);
+		goto out;
+	}
+
+	/* MD5 the first 1MB + 713 bytes. */
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, buf, splice_size);
+	MD5Final(digest2, &md5_ctx);
+
+	/* Must be the same. */
+	if (memcmp(digest1, digest2, 16) != 0) {
+		d_printf("bad MD5 compare\n");
+		goto out;
+	}
+
+	correct = true;
+	printf("Success on cli_splice test\n");
+
+  out:
+
+	if (cli1) {
+		if (fnum1 != UINT16_MAX) {
+			cli_close(cli1, fnum1);
+		}
+		if (fnum2 != UINT16_MAX) {
+			cli_close(cli1, fnum2);
+		}
+
+		cli_unlink(cli1, fname_src,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		cli_unlink(cli1, fname_dst,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+		if (!torture_close_connection(cli1)) {
+			correct = false;
+		}
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
 static bool run_uid_regression_test(int dummy)
 {
 	static struct cli_state *cli;
@@ -11650,6 +11802,7 @@ static struct {
 	{ "NTTRANS-CREATE", run_nttrans_create, 0},
 	{ "NTTRANS-FSCTL", run_nttrans_fsctl, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
+	{ "CLI_SPLICE", run_cli_splice, 0},
 	{ "TLDAP", run_tldap },
 	{ "STREAMERROR", run_streamerror },
 	{ "NOTIFY-BENCH", run_notify_bench },
