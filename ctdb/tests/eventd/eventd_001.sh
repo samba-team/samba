@@ -20,3 +20,8 @@ required_error ENOENT <<EOF
 Script 01.test does not exist in foobar
 EOF
 simple_test script enable foobar 01.test
+
+required_error ENOENT <<EOF
+Command script list finished with result=$(errcode ENOENT)
+EOF
+simple_test script list foobar

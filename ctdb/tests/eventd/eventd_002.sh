@@ -17,3 +17,5 @@ simple_test run 10 empty monitor
 ok_null
 simple_test status empty monitor
 
+ok_null
+simple_test script list empty

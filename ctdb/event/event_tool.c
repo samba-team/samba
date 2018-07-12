@@ -295,6 +295,179 @@ static int event_command_status(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+#define EVENT_SCRIPT_DISABLED      ' '
+#define EVENT_SCRIPT_ENABLED       '*'
+
+static int event_command_script_list(TALLOC_CTX *mem_ctx,
+				     int argc,
+				     const char **argv,
+				     void *private_data)
+{
+	struct event_tool_context *ctx = talloc_get_type_abort(
+		private_data, struct event_tool_context);
+	char *subdir = NULL;
+	char *data_dir = NULL;
+	char *etc_dir = NULL;
+	struct event_script_list *data_list = NULL;
+	struct event_script_list *etc_list = NULL;
+	unsigned int i, j, matched;
+	int ret = 0;
+
+	if (argc != 1) {
+		cmdline_usage(ctx->cmdline, "script list");
+		return 1;
+	}
+
+	subdir = talloc_asprintf(mem_ctx, "events/%s", argv[0]);
+	if (subdir == NULL) {
+		ret = ENOMEM;
+	}
+
+	data_dir = path_datadir_append(mem_ctx, subdir);
+	if (data_dir == NULL) {
+		return ENOMEM;
+	}
+
+	etc_dir = path_etcdir_append(mem_ctx, subdir);
+	if (etc_dir == NULL) {
+		return ENOMEM;
+	}
+
+	/*
+	 * Ignore error on ENOENT for cut down (e.g. fixed/embedded)
+	 * installs that don't use symlinks but just populate etc_dir
+	 * directly
+	 */
+	ret = event_script_get_list(mem_ctx, data_dir, &data_list);
+	if (ret != 0 && ret != ENOENT) {
+		D_ERR("Command script list finished with result=%d\n", ret);
+		goto done;
+	}
+
+	ret = event_script_get_list(mem_ctx, etc_dir, &etc_list);
+	if (ret != 0) {
+		D_ERR("Command script list finished with result=%d\n", ret);
+		goto done;
+	}
+
+	D_NOTICE("Command script list finished with result=%d\n", ret);
+
+	if (data_list == NULL) {
+		goto list_enabled_only;
+	}
+
+	/*
+	 * First list scripts provided by CTDB.  Flag those that are
+	 * enabled via a symlink and arrange for them to be excluded
+	 * from the subsequent list of local scripts.
+	 *
+	 * Both lists are sorted, so walk the list of enabled scripts
+	 * only once in this pass.
+	 */
+	j = 0;
+	matched = 0;
+	for (i = 0; i < data_list->num_scripts; i++) {
+		struct event_script *d = data_list->script[i];
+		char flag = EVENT_SCRIPT_DISABLED;
+		char buf[PATH_MAX];
+		ssize_t len;
+
+		/* Check to see if this script is enabled */
+		while (j < etc_list->num_scripts) {
+			struct event_script *e = etc_list->script[j];
+
+			ret = strcmp(e->name, d->name);
+
+			if (ret > 0) {
+				/*
+				 * Enabled name is greater, so needs
+				 * to be considered later: done
+				 */
+				break;
+			}
+
+			if (ret < 0) {
+				/* Enabled name is less: next */
+				j++;
+				continue;
+			}
+
+			len = readlink(e->path, buf, sizeof(buf));
+			if (len == -1 || len >= sizeof(buf)) {
+				/*
+				 * Not a link?  Disappeared?  Invalid
+				 * link target?  Something else?
+				 *
+				 * Doesn't match provided script: next, done
+				 */
+				j++;
+				break;
+			}
+
+			/* readlink() does not NUL-terminate */
+			buf[len] = '\0';
+
+			ret = strcmp(buf, d->path);
+			if (ret != 0) {
+				/* Enabled link doesn't match: next, done */
+				j++;
+				break;
+			}
+
+			/*
+			 * Enabled script's symlink matches our
+			 * script: flag our script as enabled
+			 *
+			 * Also clear the enabled script so it can be
+			 * trivially skipped in the next pass
+			 */
+			flag = EVENT_SCRIPT_ENABLED;
+			TALLOC_FREE(etc_list->script[j]);
+			j++;
+			matched++;
+			break;
+		}
+
+		printf("%c %s\n", flag, d->name);
+	}
+
+	/* Print blank line if both provided and local lists are being printed */
+	if (data_list->num_scripts > 0 && matched != etc_list->num_scripts) {
+		printf("\n");
+	}
+
+list_enabled_only:
+
+	/* Now print details of local scripts, after a blank line */
+	for (j = 0; j < etc_list->num_scripts; j++) {
+		struct event_script *e = etc_list->script[j];
+		char flag = EVENT_SCRIPT_DISABLED;
+
+		if (e == NULL) {
+			/* Matched in previous pass: next */
+			continue;
+		}
+
+		/* Script is local: if executable then flag as enabled */
+		if (e->enabled) {
+			flag = EVENT_SCRIPT_ENABLED;
+		}
+
+		printf("%c %s\n", flag, e->name);
+	}
+
+	ret = 0;
+
+done:
+	talloc_free(subdir);
+	talloc_free(data_dir);
+	talloc_free(etc_dir);
+	talloc_free(data_list);
+	talloc_free(etc_list);
+
+	return ret;
+}
+
 static int event_command_script(TALLOC_CTX *mem_ctx,
 				struct event_tool_context *ctx,
 				const char *component,
@@ -463,6 +636,8 @@ struct cmdline_command event_commands[] = {
 		"Run an event", "<timeout> <component> <event> <args>" },
 	{ "status", event_command_status,
 		"Get status of an event", "<component> <event>" },
+	{ "script list", event_command_script_list,
+		"List event scripts", "<component>" },
 	{ "script enable", event_command_script_enable,
 		"Enable an event script", "<component> <script>" },
 	{ "script disable", event_command_script_disable,
