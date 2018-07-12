@@ -467,30 +467,39 @@ const char *dsdb_audit_get_modification_action(unsigned int flags)
  * @param lv the ldb_val to convert and append to the array.
  *
  */
-static void dsdb_audit_add_ldb_value(
-	struct json_object *array,
-	const struct ldb_val lv)
+static int dsdb_audit_add_ldb_value(struct json_object *array,
+				    const struct ldb_val lv)
 {
 	bool base64;
 	int len;
-	struct json_object value;
+	struct json_object value = json_empty_object;
+	int rc = 0;
 
 	json_assert_is_array(array);
 	if (json_is_invalid(array)) {
-		return;
+		return -1;
 	}
 
 	if (lv.length == 0 || lv.data == NULL) {
-		json_add_object(array, NULL, NULL);
-		return;
+		rc = json_add_object(array, NULL, NULL);
+		if (rc != 0) {
+			goto failure;
+		}
+		return 0;
 	}
 
 	base64 = ldb_should_b64_encode(NULL, &lv);
 	len = min(lv.length, MAX_LENGTH);
 	value = json_new_object();
+	if (json_is_invalid(&value)) {
+		goto failure;
+	}
 
 	if (lv.length > MAX_LENGTH) {
-		json_add_bool(&value, "truncated", true);
+		rc = json_add_bool(&value, "truncated", true);
+		if (rc != 0) {
+			goto failure;
+		}
 	}
 	if (base64) {
 		TALLOC_CTX *ctx = talloc_new(NULL);
@@ -499,16 +508,43 @@ static void dsdb_audit_add_ldb_value(
 			(char*) lv.data,
 			len);
 
-		json_add_bool(&value, "base64", true);
-		json_add_string(&value, "value", encoded);
+		if (ctx == NULL) {
+			goto failure;
+		}
+
+		rc = json_add_bool(&value, "base64", true);
+		if (rc != 0) {
+			TALLOC_FREE(ctx);
+			goto failure;
+		}
+		rc = json_add_string(&value, "value", encoded);
+		if (rc != 0) {
+			TALLOC_FREE(ctx);
+			goto failure;
+		}
 		TALLOC_FREE(ctx);
 	} else {
-		json_add_stringn(&value, "value", (char *)lv.data, len);
+		rc = json_add_stringn(&value, "value", (char *)lv.data, len);
+		if (rc != 0) {
+			goto failure;
+		}
 	}
 	/*
 	 * As array is a JSON array the element name is NULL
 	 */
-	json_add_object(array, NULL, &value);
+	rc = json_add_object(array, NULL, &value);
+	if (rc != 0) {
+		goto failure;
+	}
+	return 0;
+failure:
+	/*
+	 * In the event of a failure value will not have been added to array
+	 * so it needs to be freed to prevent a leak.
+	 */
+	json_free(&value);
+	DBG_ERR("unable to add ldb value to JSON audit message");
+	return -1;
 }
 
 /*
@@ -550,13 +586,23 @@ struct json_object dsdb_audit_attributes_json(
 	const struct ldb_message* message)
 {
 
-	struct json_object attributes = json_new_object();
 	int i, j;
+	struct json_object attributes = json_new_object();
+
+	if (json_is_invalid(&attributes)) {
+		goto failure;
+	}
 	for (i=0;i<message->num_elements;i++) {
-		struct json_object actions;
-		struct json_object attribute;
-		struct json_object action = json_new_object();
+		struct json_object actions = json_empty_object;
+		struct json_object attribute = json_empty_object;
+		struct json_object action = json_empty_object;
 		const char *name = message->elements[i].name;
+		int rc = 0;
+
+		action = json_new_object();
+		if (json_is_invalid(&action)) {
+			goto failure;
+		}
 
 		/*
 		 * If this is a modify operation tag the attribute with
@@ -566,10 +612,18 @@ struct json_object dsdb_audit_attributes_json(
 			const char *act = NULL;
 			const int flags =  message->elements[i].flags;
 			act = dsdb_audit_get_modification_action(flags);
-			json_add_string(&action, "action" , act);
+			rc = json_add_string(&action, "action", act);
+			if (rc != 0) {
+				json_free(&action);
+				goto failure;
+			}
 		}
 		if (operation == LDB_ADD) {
-			json_add_string(&action, "action" , "add");
+			rc = json_add_string(&action, "action", "add");
+			if (rc != 0) {
+				json_free(&action);
+				goto failure;
+			}
 		}
 
 		/*
@@ -577,25 +631,67 @@ struct json_object dsdb_audit_attributes_json(
 		 * and don't include the values
 		 */
 		if (dsdb_audit_redact_attribute(name)) {
-			json_add_bool(&action, "redacted", true);
+			rc = json_add_bool(&action, "redacted", true);
+			if (rc != 0) {
+				json_free(&action);
+				goto failure;
+			}
 		} else {
 			struct json_object values;
 			/*
 			 * Add the values for the action
 			 */
 			values = json_new_array();
-			for (j=0;j<message->elements[i].num_values;j++) {
-				dsdb_audit_add_ldb_value(
-					&values,
-					message->elements[i].values[j]);
+			if (json_is_invalid(&values)) {
+				json_free(&action);
+				goto failure;
 			}
-			json_add_object(&action, "values", &values);
+
+			for (j=0;j<message->elements[i].num_values;j++) {
+				rc = dsdb_audit_add_ldb_value(
+				    &values, message->elements[i].values[j]);
+				if (rc != 0) {
+					json_free(&values);
+					json_free(&action);
+					goto failure;
+				}
+			}
+			rc = json_add_object(&action, "values", &values);
+			if (rc != 0) {
+				json_free(&values);
+				json_free(&action);
+				goto failure;
+			}
 		}
 		attribute = json_get_object(&attributes, name);
+		if (json_is_invalid(&attribute)) {
+			json_free(&action);
+			goto failure;
+		}
 		actions = json_get_array(&attribute, "actions");
-		json_add_object(&actions, NULL, &action);
-		json_add_object(&attribute, "actions", &actions);
-		json_add_object(&attributes, name, &attribute);
+		if (json_is_invalid(&actions)) {
+			json_free(&action);
+			goto failure;
+		}
+		rc = json_add_object(&actions, NULL, &action);
+		if (rc != 0) {
+			json_free(&action);
+			goto failure;
+		}
+		rc = json_add_object(&attribute, "actions", &actions);
+		if (rc != 0) {
+			json_free(&actions);
+			goto failure;
+		}
+		rc = json_add_object(&attributes, name, &attribute);
+		if (rc != 0) {
+			json_free(&attribute);
+			goto failure;
+		}
 	}
+	return attributes;
+failure:
+	json_free(&attributes);
+	DBG_ERR("Unable to create ldb attributes JSON audit message\n");
 	return attributes;
 }

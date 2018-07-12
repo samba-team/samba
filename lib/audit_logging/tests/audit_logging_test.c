@@ -64,12 +64,15 @@ static void test_json_add_int(void **state)
 	struct json_object object;
 	struct json_t *value = NULL;
 	double n;
+	int rc = 0;
 
 	object = json_new_object();
-	json_add_int(&object, "positive_one", 1);
-	json_add_int(&object, "zero", 0);
-	json_add_int(&object, "negative_one", -1);
-
+	rc = json_add_int(&object, "positive_one", 1);
+	assert_int_equal(0, rc);
+	rc = json_add_int(&object, "zero", 0);
+	assert_int_equal(0, rc);
+	rc = json_add_int(&object, "negative_one", -1);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(3, json_object_size(object.root));
 
@@ -88,18 +91,27 @@ static void test_json_add_int(void **state)
 	n = json_number_value(value);
 	assert_true(n == -1.0);
 
+	object.valid = false;
+	rc = json_add_int(&object, "should fail 1", 0xf1);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_int(&object, "should fail 2", 0xf2);
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_add_bool(void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
+	int rc = 0;
 
 	object = json_new_object();
-	json_add_bool(&object, "true", true);
-	json_add_bool(&object, "false", false);
-
+	rc = json_add_bool(&object, "true", true);
+	assert_int_equal(0, rc);
+	rc = json_add_bool(&object, "false", false);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(2, json_object_size(object.root));
 
@@ -111,7 +123,14 @@ static void test_json_add_bool(void **state)
 	assert_true(json_is_boolean(value));
 	assert_true(value == json_false());
 
+	object.valid = false;
+	rc = json_add_bool(&object, "should fail 1", true);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_bool(&object, "should fail 2", false);
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_add_string(void **state)
@@ -119,13 +138,15 @@ static void test_json_add_string(void **state)
 	struct json_object object;
 	struct json_t *value = NULL;
 	const char *s = NULL;
+	int rc = 0;
 
 	object = json_new_object();
-	json_add_string(&object, "null", NULL);
-	json_add_string(&object, "empty", "");
-	json_add_string(&object, "name", "value");
-
-
+	rc = json_add_string(&object, "null", NULL);
+	assert_int_equal(0, rc);
+	rc = json_add_string(&object, "empty", "");
+	assert_int_equal(0, rc);
+	rc = json_add_string(&object, "name", "value");
+	assert_int_equal(0, rc);
 
 	assert_int_equal(3, json_object_size(object.root));
 
@@ -141,21 +162,32 @@ static void test_json_add_string(void **state)
 	assert_true(json_is_string(value));
 	s = json_string_value(value);
 	assert_string_equal("value", s);
+
+	object.valid = false;
+	rc = json_add_string(&object, "should fail 1", "A value");
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_string(&object, "should fail 2", "Another value");
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_add_object(void **state)
 {
 	struct json_object object;
 	struct json_object other;
+	struct json_object after;
+	struct json_object invalid = json_empty_object;
 	struct json_t *value = NULL;
+	int rc = 0;
 
 	object = json_new_object();
 	other  = json_new_object();
-	json_add_object(&object, "null", NULL);
-	json_add_object(&object, "other", &other);
-
-
+	rc = json_add_object(&object, "null", NULL);
+	assert_int_equal(0, rc);
+	rc = json_add_object(&object, "other", &other);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(2, json_object_size(object.root));
 
@@ -166,7 +198,20 @@ static void test_json_add_object(void **state)
 	assert_true(json_is_object(value));
 	assert_ptr_equal(other.root, value);
 
+	rc = json_add_object(&object, "invalid", &invalid);
+	assert_int_equal(JSON_ERROR, rc);
+
+	object.valid = false;
+	after = json_new_object();
+	rc = json_add_object(&object, "after", &after);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_object(&object, "after", &after);
+	assert_int_equal(JSON_ERROR, rc);
+
+	json_free(&after);
 }
 
 static void test_json_add_to_array(void **state)
@@ -175,7 +220,10 @@ static void test_json_add_to_array(void **state)
 	struct json_object o1;
 	struct json_object o2;
 	struct json_object o3;
+	struct json_object after;
+	struct json_object invalid = json_empty_object;
 	struct json_t *value = NULL;
+	int rc = 0;
 
 	array = json_new_array();
 	assert_true(json_is_array(array.root));
@@ -184,10 +232,14 @@ static void test_json_add_to_array(void **state)
 	o2 = json_new_object();
 	o3 = json_new_object();
 
-	json_add_object(&array, NULL, &o3);
-	json_add_object(&array, "", &o2);
-	json_add_object(&array, "will-be-ignored", &o1);
-	json_add_object(&array, NULL, NULL);
+	rc = json_add_object(&array, NULL, &o3);
+	assert_int_equal(0, rc);
+	rc = json_add_object(&array, "", &o2);
+	assert_int_equal(0, rc);
+	rc = json_add_object(&array, "will-be-ignored", &o1);
+	assert_int_equal(0, rc);
+	rc = json_add_object(&array, NULL, NULL);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(4, json_array_size(array.root));
 
@@ -203,8 +255,20 @@ static void test_json_add_to_array(void **state)
 	value = json_array_get(array.root, 3);
 	assert_true(json_is_null(value));
 
+	rc = json_add_object(&array, "invalid", &invalid);
+	assert_int_equal(JSON_ERROR, rc);
+
+	array.valid = false;
+	after = json_new_object();
+	rc = json_add_object(&array, "after", &after);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&array);
 
+	rc = json_add_object(&array, "after", &after);
+	assert_int_equal(JSON_ERROR, rc);
+
+	json_free(&after);
 }
 
 static void test_json_add_timestamp(void **state)
@@ -224,7 +288,8 @@ static void test_json_add_timestamp(void **state)
 
 	object = json_new_object();
 	before = time(NULL);
-	json_add_timestamp(&object);
+	rc = json_add_timestamp(&object);
+	assert_int_equal(0, rc);
 	after = time(NULL);
 
 	ts = json_object_get(object.root, "timestamp");
@@ -263,7 +328,14 @@ static void test_json_add_timestamp(void **state)
 	assert_true(difftime(actual, before) >= 0);
 	assert_true(difftime(after, actual) >= 0);
 
+	object.valid = false;
+	rc = json_add_timestamp(&object);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_timestamp(&object);
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_add_stringn(void **state)
@@ -271,17 +343,26 @@ static void test_json_add_stringn(void **state)
 	struct json_object object;
 	struct json_t *value = NULL;
 	const char *s = NULL;
+	int rc = 0;
 
 	object = json_new_object();
-	json_add_stringn(&object, "null", NULL, 10);
-	json_add_stringn(&object, "null-zero-len", NULL, 0);
-	json_add_stringn(&object, "empty", "", 1);
-	json_add_stringn(&object, "empty-zero-len", "", 0);
-	json_add_stringn(&object, "value-less-than-len", "123456", 7);
-	json_add_stringn(&object, "value-greater-than-len", "abcd", 3);
-	json_add_stringn(&object, "value-equal-len", "ZYX", 3);
-	json_add_stringn(&object, "value-len-is-zero", "this will be null", 0);
-
+	rc = json_add_stringn(&object, "null", NULL, 10);
+	assert_int_equal(0, rc);
+	rc = json_add_stringn(&object, "null-zero-len", NULL, 0);
+	assert_int_equal(0, rc);
+	rc = json_add_stringn(&object, "empty", "", 1);
+	assert_int_equal(0, rc);
+	rc = json_add_stringn(&object, "empty-zero-len", "", 0);
+	assert_int_equal(0, rc);
+	rc = json_add_stringn(&object, "value-less-than-len", "123456", 7);
+	assert_int_equal(0, rc);
+	rc = json_add_stringn(&object, "value-greater-than-len", "abcd", 3);
+	assert_int_equal(0, rc);
+	rc = json_add_stringn(&object, "value-equal-len", "ZYX", 3);
+	assert_int_equal(0, rc);
+	rc = json_add_stringn(
+	    &object, "value-len-is-zero", "this will be null", 0);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(8, json_object_size(object.root));
 
@@ -314,7 +395,14 @@ static void test_json_add_stringn(void **state)
 	value = json_object_get(object.root, "value-len-is-zero");
 	assert_true(json_is_null(value));
 
+	object.valid = false;
+	rc = json_add_stringn(&object, "fail-01", "xxxxxxx", 1);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_stringn(&object, "fail-02", "xxxxxxx", 1);
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_add_version(void **state)
@@ -323,9 +411,11 @@ static void test_json_add_version(void **state)
 	struct json_t *version = NULL;
 	struct json_t *v = NULL;
 	double n;
+	int rc;
 
 	object = json_new_object();
-	json_add_version(&object, 3, 1);
+	rc = json_add_version(&object, 3, 1);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(1, json_object_size(object.root));
 
@@ -343,7 +433,14 @@ static void test_json_add_version(void **state)
 	n = json_number_value(v);
 	assert_true(n == 1.0);
 
+	object.valid = false;
+	rc = json_add_version(&object, 3, 1);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_version(&object, 3, 1);
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_add_address(void **state)
@@ -353,6 +450,8 @@ static void test_json_add_address(void **state)
 	struct tsocket_address *ip4  = NULL;
 	struct tsocket_address *ip6  = NULL;
 	struct tsocket_address *pipe = NULL;
+
+	struct tsocket_address *after = NULL;
 	const char *s = NULL;
 	int rc;
 
@@ -360,7 +459,8 @@ static void test_json_add_address(void **state)
 
 	object = json_new_object();
 
-	json_add_address(&object, "null", NULL);
+	rc = json_add_address(&object, "null", NULL);
+	assert_int_equal(0, rc);
 
 	rc = tsocket_address_inet_from_strings(
 		ctx,
@@ -369,7 +469,8 @@ static void test_json_add_address(void **state)
 		21,
 		&ip4);
 	assert_int_equal(0, rc);
-	json_add_address(&object, "ip4", ip4);
+	rc = json_add_address(&object, "ip4", ip4);
+	assert_int_equal(0, rc);
 
 	rc = tsocket_address_inet_from_strings(
 		ctx,
@@ -378,11 +479,13 @@ static void test_json_add_address(void **state)
 		42,
 		&ip6);
 	assert_int_equal(0, rc);
-	json_add_address(&object, "ip6", ip6);
+	rc = json_add_address(&object, "ip6", ip6);
+	assert_int_equal(0, rc);
 
 	rc = tsocket_address_unix_from_path(ctx, "/samba/pipe", &pipe);
 	assert_int_equal(0, rc);
-	json_add_address(&object, "pipe", pipe);
+	rc = json_add_address(&object, "pipe", pipe);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(4, json_object_size(object.root));
 
@@ -404,7 +507,18 @@ static void test_json_add_address(void **state)
 	s = json_string_value(value);
 	assert_string_equal("unix:/samba/pipe", s);
 
+	object.valid = false;
+	rc = tsocket_address_inet_from_strings(
+	    ctx, "ip", "127.0.0.11", 23, &after);
+	assert_int_equal(0, rc);
+	rc = json_add_address(&object, "invalid_object", after);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_address(&object, "freed object", after);
+	assert_int_equal(JSON_ERROR, rc);
+
 	TALLOC_FREE(ctx);
 }
 
@@ -415,14 +529,16 @@ static void test_json_add_sid(void **state)
 	const char *SID = "S-1-5-21-2470180966-3899876309-2637894779";
 	struct dom_sid sid;
 	const char *s = NULL;
-
+	int rc;
 
 	object = json_new_object();
 
-	json_add_sid(&object, "null", NULL);
+	rc = json_add_sid(&object, "null", NULL);
+	assert_int_equal(0, rc);
 
 	assert_true(string_to_sid(&sid, SID));
-	json_add_sid(&object, "sid", &sid);
+	rc = json_add_sid(&object, "sid", &sid);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(2, json_object_size(object.root));
 
@@ -433,7 +549,15 @@ static void test_json_add_sid(void **state)
 	assert_true(json_is_string(value));
 	s = json_string_value(value);
 	assert_string_equal(SID, s);
+
+	object.valid = false;
+	rc = json_add_sid(&object, "invalid_object", &sid);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_sid(&object, "freed_object", &sid);
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_add_guid(void **state)
@@ -444,15 +568,17 @@ static void test_json_add_guid(void **state)
 	struct GUID guid;
 	const char *s = NULL;
 	NTSTATUS status;
-
+	int rc;
 
 	object = json_new_object();
 
-	json_add_guid(&object, "null", NULL);
+	rc = json_add_guid(&object, "null", NULL);
+	assert_int_equal(0, rc);
 
 	status = GUID_from_string(GUID, &guid);
 	assert_true(NT_STATUS_IS_OK(status));
-	json_add_guid(&object, "guid", &guid);
+	rc = json_add_guid(&object, "guid", &guid);
+	assert_int_equal(0, rc);
 
 	assert_int_equal(2, json_object_size(object.root));
 
@@ -464,7 +590,14 @@ static void test_json_add_guid(void **state)
 	s = json_string_value(value);
 	assert_string_equal(GUID, s);
 
+	object.valid = false;
+	rc = json_add_guid(&object, "invalid_object", &guid);
+	assert_int_equal(JSON_ERROR, rc);
+
 	json_free(&object);
+
+	rc = json_add_guid(&object, "freed_object", &guid);
+	assert_int_equal(JSON_ERROR, rc);
 }
 
 static void test_json_to_string(void **state)
@@ -475,12 +608,7 @@ static void test_json_to_string(void **state)
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
 	object = json_new_object();
-	object.error = true;
 
-	s = json_to_string(ctx, &object);
-	assert_null(s);
-
-	object.error = false;
 	s = json_to_string(ctx, &object);
 	assert_string_equal("{}", s);
 	TALLOC_FREE(s);
@@ -490,7 +618,17 @@ static void test_json_to_string(void **state)
 	assert_string_equal("{\"name\": \"value\"}", s);
 	TALLOC_FREE(s);
 
+	object.valid = false;
+	s = json_to_string(ctx, &object);
+	assert_null(s);
+
 	json_free(&object);
+
+	object.valid = true;
+	object.root = NULL;
+
+	s = json_to_string(ctx, &object);
+	assert_null(s);
 	TALLOC_FREE(ctx);
 }
 
@@ -507,7 +645,7 @@ static void test_json_get_array(void **state)
 	object = json_new_object();
 
 	array = json_get_array(&object, "not-there");
-	assert_false(array.error);
+	assert_true(array.valid);
 	assert_non_null(array.root);
 	assert_true(json_is_array(array.root));
 	json_free(&array);
@@ -518,7 +656,7 @@ static void test_json_get_array(void **state)
 	json_add_object(&object, "stored_array", &stored_array);
 
 	array = json_get_array(&object, "stored_array");
-	assert_false(array.error);
+	assert_true(array.valid);
 	assert_non_null(array.root);
 	assert_true(json_is_array(array.root));
 
@@ -542,7 +680,7 @@ static void test_json_get_array(void **state)
 	assert_true(json_is_array(array.root));
 	o2 = json_new_object();
 	json_add_string(&o2, "value", "value-two");
-	assert_false(o2.error);
+	assert_true(o2.valid);
 	json_add_object(&array, NULL, &o2);
 	assert_true(json_is_array(array.root));
 	json_add_object(&object, "stored_array", &array);
@@ -551,7 +689,7 @@ static void test_json_get_array(void **state)
 	array = json_get_array(&object, "stored_array");
 	assert_non_null(array.root);
 	assert_true(json_is_array(array.root));
-	assert_false(array.error);
+	assert_true(array.valid);
 	assert_true(json_is_array(array.root));
 
 	assert_int_equal(2, json_array_size(array.root));
@@ -577,6 +715,10 @@ static void test_json_get_array(void **state)
 
 	json_free(&array);
 	json_free(&object);
+
+	array = json_get_array(&object, "stored_array");
+	assert_false(array.valid);
+	json_free(&array);
 }
 
 static void test_json_get_object(void **state)
@@ -590,7 +732,7 @@ static void test_json_get_object(void **state)
 	object = json_new_object();
 
 	o1 = json_get_object(&object, "not-there");
-	assert_false(o1.error);
+	assert_true(o1.valid);
 	assert_non_null(o1.root);
 	assert_true(json_is_object(o1.root));
 	json_free(&o1);
@@ -600,7 +742,7 @@ static void test_json_get_object(void **state)
 	json_add_object(&object, "stored_object", &o1);
 
 	o2 = json_get_object(&object, "stored_object");
-	assert_false(o2.error);
+	assert_true(o2.valid);
 	assert_non_null(o2.root);
 	assert_true(json_is_object(o2.root));
 
@@ -615,7 +757,7 @@ static void test_json_get_object(void **state)
 
 
 	o3 = json_get_object(&object, "stored_object");
-	assert_false(o3.error);
+	assert_true(o3.valid);
 	assert_non_null(o3.root);
 	assert_true(json_is_object(o3.root));
 
@@ -627,6 +769,10 @@ static void test_json_get_object(void **state)
 
 	json_free(&o3);
 	json_free(&object);
+
+	o3 = json_get_object(&object, "stored_object");
+	assert_false(o3.valid);
+	json_free(&o3);
 }
 
 static void test_audit_get_timestamp(void **state)
