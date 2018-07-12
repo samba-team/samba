@@ -392,6 +392,13 @@ There are many changes to CTDB in this release.
 
 * Configuration file /etc/ctdb/sysconfig/ctdb is no longer supported
 
+GPO Improvements
+----------------
+
+The samba_gpoupdate command (used in applying Group Policies to the
+samba machine itself) has been renamed to samba_gpupdate and had the
+syntax changed to better match the same tool on Windows.
+
 
 REMOVED FEATURES
 ================
