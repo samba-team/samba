@@ -244,7 +244,7 @@ static int event_command_status(TALLOC_CTX *mem_ctx,
 	bool ok;
 
 	if (argc != 2) {
-		cmdline_usage(ctx->cmdline, "run");
+		cmdline_usage(ctx->cmdline, "status");
 		return 1;
 	}
 
