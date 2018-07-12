@@ -1114,7 +1114,7 @@ for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
             'renamedc', 'labdc']:
     plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
 
-# cmocka tests not requiring a specific encironment
+# cmocka tests not requiring a specific environment
 #
 plantestsuite("samba4.dsdb.samdb.ldb_modules.unique_object_sids" , "none",
               [os.path.join(bindir(), "test_unique_object_sids")])
@@ -1122,7 +1122,15 @@ plantestsuite("samba4.dsdb.samdb.ldb_modules.encrypted_secrets", "none",
                   [os.path.join(bindir(), "test_encrypted_secrets")])
 plantestsuite("lib.audit_logging.audit_logging", "none",
                   [os.path.join(bindir(), "audit_logging_test")])
+plantestsuite("lib.audit_logging.audit_logging.errors", "none",
+                  [os.path.join(bindir(), "audit_logging_error_test")])
 plantestsuite("samba4.dsdb.samdb.ldb_modules.audit_util", "none",
                   [os.path.join(bindir(), "test_audit_util")])
 plantestsuite("samba4.dsdb.samdb.ldb_modules.audit_log", "none",
                   [os.path.join(bindir(), "test_audit_log")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.audit_log.errors", "none",
+                  [os.path.join(bindir(), "test_audit_log_errors")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.group_audit", "none",
+                  [os.path.join(bindir(), "test_group_audit")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.group_audit.errors", "none",
+                  [os.path.join(bindir(), "test_group_audit_errors")])

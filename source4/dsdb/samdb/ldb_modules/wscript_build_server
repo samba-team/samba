@@ -37,6 +37,25 @@ bld.SAMBA_BINARY('test_audit_log',
                  ''',
                  install=False)
 
+bld.SAMBA_BINARY('test_audit_log_errors',
+                 source='tests/test_audit_log_errors.c',
+                 deps='''
+                 talloc
+                 samba-util
+                 samdb-common
+                 samdb
+                 cmocka
+                 audit_logging
+                 DSDB_MODULE_HELPERS
+                 DSDB_MODULE_HELPERS_AUDIT
+                 ''',
+                 ldflags='''
+                     -Wl,--wrap,json_new_object
+                     -Wl,--wrap,json_add_version
+                     -Wl,--wrap,json_add_timestamp
+                 ''',
+                 install=False)
+
 bld.SAMBA_BINARY('test_group_audit',
                  source='tests/test_group_audit.c',
                  deps='''
@@ -48,6 +67,25 @@ bld.SAMBA_BINARY('test_group_audit',
                  audit_logging
                  DSDB_MODULE_HELPERS
                  DSDB_MODULE_HELPERS_AUDIT
+                 ''',
+                 install=False)
+
+bld.SAMBA_BINARY('test_group_audit_errors',
+                 source='tests/test_group_audit_errors.c',
+                 deps='''
+                 talloc
+                 samba-util
+                 samdb-common
+                 samdb
+                 cmocka
+                 audit_logging
+                 DSDB_MODULE_HELPERS
+                 DSDB_MODULE_HELPERS_AUDIT
+                 ''',
+                 ldflags='''
+                     -Wl,--wrap,json_new_object
+                     -Wl,--wrap,json_add_version
+                     -Wl,--wrap,json_add_timestamp
                  ''',
                  install=False)
 
