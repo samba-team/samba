@@ -114,7 +114,8 @@ bld.SAMBA3_BINARY('test_tldap',
                        samba3util
                        smbconf
                        cmocka
-                       ''')
+                       ''',
+                  install=False)
 
 # libpdb.so should not expose internal symbols that are only usable
 # to the statically linked modules that are merged into libpdb.
