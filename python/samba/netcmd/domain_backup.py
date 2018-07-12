@@ -139,6 +139,17 @@ def add_backup_marker(samdb, marker, value):
     samdb.modify(m)
 
 
+def check_targetdir(logger, targetdir):
+    if targetdir is None:
+        raise CommandError('Target directory required')
+
+    if not os.path.exists(targetdir):
+        logger.info('Creating targetdir %s...' % targetdir)
+        os.makedirs(targetdir)
+    elif not os.path.isdir(targetdir):
+        raise CommandError("%s is not a directory" % targetdir)
+
+
 def check_online_backup_args(logger, credopts, server, targetdir):
     # Make sure we have all the required args.
     u_p = {'user': credopts.creds.get_username(),
@@ -147,12 +158,8 @@ def check_online_backup_args(logger, credopts, server, targetdir):
         raise CommandError("Creds required.")
     if server is None:
         raise CommandError('Server required')
-    if targetdir is None:
-        raise CommandError('Target directory required')
 
-    if not os.path.exists(targetdir):
-        logger.info('Creating targetdir %s...' % targetdir)
-        os.makedirs(targetdir)
+    check_targetdir(logger, targetdir)
 
 
 # For '--no-secrets' backups, this sets the Administrator user's password to a
@@ -210,10 +217,6 @@ class cmd_domain_backup_online(samba.netcmd.Command):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-
-        if not os.path.exists(targetdir):
-            logger.info('Creating targetdir %s...' % targetdir)
-            os.makedirs(targetdir)
 
         tmpdir = tempfile.mkdtemp(dir=targetdir)
 
