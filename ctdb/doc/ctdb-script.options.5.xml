@@ -1010,8 +1010,9 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	      and those processes are matched in pstree output.
 	      REGEXP is an extended regexp so choices are separated by
 	      pipes ('|').  However, REGEXP should not contain
-	      parentheses.  See also
-	      <citetitle>CTDB_DEBUG_HUNG_SCRIPT</citetitle>.
+	      parentheses.  See also the <citerefentry><refentrytitle>ctdb.conf</refentrytitle>
+	      <manvolnum>5</manvolnum></citerefentry>
+	      [event] "debug&nbsp;script" option.
 	    </para>
 	    <para>
 	      Default is "exportfs|rpcinfo".
