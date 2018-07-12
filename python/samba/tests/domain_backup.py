@@ -103,7 +103,7 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         with tarfile.open(backup_file) as tf:
             tf.extractall(extract_dir)
 
-    def _test_backup_untar(self):
+    def _test_backup_untar(self, primary_domain_secrets=0):
         """Creates a backup, untars the raw files, and sanity-checks the DB"""
         backup_file = self.create_backup()
         self.untar_backup(backup_file)
@@ -122,10 +122,11 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
             self.assertIsNotNone(res[0].get(marker),
                                  "%s backup marker missing" % marker)
 
-        # We have no secrets.ldb entry as we never got that during the backup.
+        # check the secrets.ldb entry for the primary domain. (Online/clone
+        # backups shouldn't have this, as they never got it during the backup)
         secrets_path = os.path.join(private_dir, "secrets.ldb")
         res = get_prim_dom(secrets_path, lp)
-        self.assertEqual(len(res), 0)
+        self.assertEqual(len(res), primary_domain_secrets)
 
         # sanity-check that all the partitions got backed up
         self.assert_partitions_present(samdb)
@@ -313,8 +314,7 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
     def create_backup(self, extra_args=None):
         """Runs the backup cmd to produce a backup file for the testenv DC"""
         # Run the backup command and check we got one backup tar file
-        args = self.base_cmd + ["--server=" + self.server, self.user_auth,
-                                "--targetdir=" + self.tempdir]
+        args = self.base_cmd + ["--targetdir=" + self.tempdir]
         if extra_args:
             args += extra_args
 
@@ -322,13 +322,12 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
 
         # find the filename of the backup-file generated
         tar_files = []
-        for filename in os.listdir(self.tempdir):
-            if (filename.startswith("samba-backup-") and
-                filename.endswith(".tar.bz2")):
-                tar_files.append(filename)
+        for fn in os.listdir(self.tempdir):
+            if (fn.startswith("samba-backup-") and fn.endswith(".tar.bz2")):
+                tar_files.append(fn)
 
         self.assertTrue(len(tar_files) == 1,
-                       "Domain backup created %u tar files" % len(tar_files))
+                        "Domain backup created %u tar files" % len(tar_files))
 
         # clean up the backup file once the test finishes
         backup_file = os.path.join(self.tempdir, tar_files[0])
@@ -357,7 +356,8 @@ class DomainBackupOnline(DomainBackupBase):
 
     def setUp(self):
         super(DomainBackupOnline, self).setUp()
-        self.base_cmd = ["domain", "backup", "online"]
+        self.base_cmd = ["domain", "backup", "online",
+                         "--server=" + self.server, self.user_auth]
 
     # run the common test cases above using online backups
     def test_backup_untar(self):
@@ -383,7 +383,8 @@ class DomainBackupRename(DomainBackupBase):
         self.restore_realm = "rename.test.net"
         self.new_basedn = "DC=rename,DC=test,DC=net"
         self.base_cmd = ["domain", "backup", "rename", self.restore_domain,
-                         self.restore_realm]
+                         self.restore_realm, "--server=" + self.server,
+                         self.user_auth]
         self.backup_markers += ['backupRename']
 
     # run the common test case code for backup-renames
@@ -507,3 +508,19 @@ class DomainBackupRename(DomainBackupBase):
         res = samdb.search(base=dn, scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res), 1, "Lookup of new domain's DNS zone failed")
         return samdb
+
+
+class DomainBackupOffline(DomainBackupBase):
+
+    def setUp(self):
+        super(DomainBackupOffline, self).setUp()
+        self.base_cmd = ["domain", "backup", "offline"]
+
+    def test_backup_untar(self):
+        self._test_backup_untar(primary_domain_secrets=1)
+
+    def test_backup_restore_with_conf(self):
+        self._test_backup_restore_with_conf()
+
+    def test_backup_restore(self):
+        self._test_backup_restore()
