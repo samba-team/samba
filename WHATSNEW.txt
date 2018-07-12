@@ -16,6 +16,17 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+GPO Improvements
+----------------
+
+A new 'samba-tool gpo export' command has been added that can export a
+set of Group Policy Objects from a domain in a generalised XML format.
+
+A corresponding 'samba-tool gpo restore' command has been added to
+rebuild the Group Policy Objects from the XML after generalization.
+(The administrator needs to correct the values of XML entities between
+the backup and restore to account for the change in domain).
+
 
 REMOVED FEATURES
 ================
