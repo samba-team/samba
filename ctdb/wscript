@@ -402,7 +402,8 @@ def build(bld):
                                              pkt_read.c pkt_write.c comm.c
                                              logging.c rb_tree.c tunable.c
                                              pidfile.c run_proc.c
-                                             hash_count.c run_event.c
+                                             hash_count.c
+                                             run_event.c event_script.c
                                              sock_client.c version.c
                                              cmdline.c path.c conf.c line.c
                                           '''),
@@ -869,6 +870,7 @@ def build(bld):
         'cmdline_test',
         'conf_test',
         'line_test',
+        'event_script_test',
     ]
 
     for target in ctdb_unit_tests:
