@@ -917,6 +917,7 @@ schemaUpdateNow: 1
         return dn
 
     def set_minPwdAge(self, value):
+        value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["minPwdAge"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "minPwdAge")
@@ -929,9 +930,10 @@ schemaUpdateNow: 1
         elif not "minPwdAge" in res[0]:
             return None
         else:
-            return res[0]["minPwdAge"][0]
+            return int(res[0]["minPwdAge"][0])
 
     def set_maxPwdAge(self, value):
+        value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["maxPwdAge"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "maxPwdAge")
@@ -945,11 +947,12 @@ schemaUpdateNow: 1
         elif not "maxPwdAge" in res[0]:
             return None
         else:
-            return res[0]["maxPwdAge"][0]
+            return int(res[0]["maxPwdAge"][0])
 
 
 
     def set_minPwdLength(self, value):
+        value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["minPwdLength"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "minPwdLength")
@@ -962,9 +965,10 @@ schemaUpdateNow: 1
         elif not "minPwdLength" in res[0]:
             return None
         else:
-            return res[0]["minPwdLength"][0]
+            return int(res[0]["minPwdLength"][0])
 
     def set_pwdProperties(self, value):
+        value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["pwdProperties"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "pwdProperties")
@@ -977,7 +981,7 @@ schemaUpdateNow: 1
         elif not "pwdProperties" in res[0]:
             return None
         else:
-            return res[0]["pwdProperties"][0]
+            return int(res[0]["pwdProperties"][0])
 
     def set_dsheuristics(self, dsheuristics):
         m = ldb.Message()

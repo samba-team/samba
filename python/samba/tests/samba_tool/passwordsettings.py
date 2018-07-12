@@ -427,7 +427,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
         self.assertIn("successful", out)
-        self.assertEquals(str(new_len), self.ldb.get_minPwdLength())
+        self.assertEquals(new_len, self.ldb.get_minPwdLength())
 
         # check the updated value is now displayed
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
