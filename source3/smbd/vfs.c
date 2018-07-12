@@ -1782,9 +1782,11 @@ ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req,
 		req, struct smb_vfs_call_pwrite_state);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
 		return -1;
 	}
 	*vfs_aio_state = state->vfs_aio_state;
+	tevent_req_received(req);
 	return state->retval;
 }
 
