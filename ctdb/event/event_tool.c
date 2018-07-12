@@ -30,6 +30,7 @@
 #include "common/cmdline.h"
 #include "common/logging.h"
 #include "common/path.h"
+#include "common/event_script.h"
 
 #include "event/event_protocol_api.h"
 #include "event/event.h"
@@ -298,43 +299,29 @@ static int event_command_script(TALLOC_CTX *mem_ctx,
 				struct event_tool_context *ctx,
 				const char *component,
 				const char *script,
-				enum ctdb_event_script_action action)
+				bool enable)
 {
-	struct tevent_req *req;
-	struct ctdb_event_request_script request_script;
-	int ret = 0, result = 0;
-	bool ok;
+	char *subdir, *etc_dir;
+	int result = 0;
 
-	ret = ctdb_event_init(ctx, ctx->ev, &ctx->eclient);
-	if (ret != 0) {
-		D_ERR("Failed to initialize event client, ret=%d\n", ret);
-		return ret;
+	subdir = talloc_asprintf(mem_ctx, "events/%s", component);
+	if (subdir == NULL) {
+		return ENOMEM;
 	}
 
-	request_script.component = component;
-	request_script.script = script;
-	request_script.action = action;
-
-	req = ctdb_event_script_send(mem_ctx,
-				     ctx->ev,
-				     ctx->eclient,
-				     &request_script);
-	if (req == NULL) {
-		D_ERR("Memory allocation error\n");
-		return 1;
+	etc_dir = path_etcdir_append(mem_ctx, subdir);
+	if (etc_dir == NULL) {
+		return ENOMEM;
 	}
 
-	tevent_req_poll(req, ctx->ev);
-
-	ok = ctdb_event_script_recv(req, &ret, &result);
-	if (!ok) {
-		D_ERR("Failed to %s script, ret=%d\n",
-		      (action == CTDB_EVENT_SCRIPT_DISABLE ?
-		       "disable" :
-		       "enable"),
-		      ret);
-		return 1;
+	if (enable) {
+		result = event_script_chmod(etc_dir, script, true);
+	} else {
+		result = event_script_chmod(etc_dir, script, false);
 	}
+
+	talloc_free(subdir);
+	talloc_free(etc_dir);
 
 	D_NOTICE("Command script finished with result=%d\n", result);
 
@@ -388,7 +375,7 @@ static int event_command_script_enable(TALLOC_CTX *mem_ctx,
 						    ctx,
 						    argv[0],
 						    argv[1],
-						    CTDB_EVENT_SCRIPT_ENABLE);
+						    true);
 		}
 
 		printf("Script %s is not a file or a link\n", etc_script);
@@ -461,7 +448,7 @@ static int event_command_script_disable(TALLOC_CTX *mem_ctx,
 						    ctx,
 						    argv[0],
 						    argv[1],
-						    CTDB_EVENT_SCRIPT_DISABLE);
+						    false);
 		}
 
 		printf("Script %s is not a file or a link\n", etc_script);
