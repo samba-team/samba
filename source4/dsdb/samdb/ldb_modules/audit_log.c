@@ -754,7 +754,7 @@ static char *transaction_human_readable(
 
 	log_entry = talloc_asprintf(
 		mem_ctx,
-		"[%s] at [%s] duration [%ld]",
+		"[%s] at [%s] duration [%"PRIi64"]",
 		action,
 		timestamp,
 		duration);
@@ -791,7 +791,7 @@ static char *commit_failure_human_readable(
 
 	log_entry = talloc_asprintf(
 		mem_ctx,
-		"[%s] at [%s] duration [%ld] status [%d] reason [%s]",
+		"[%s] at [%s] duration [%"PRIi64"] status [%d] reason [%s]",
 		action,
 		timestamp,
 		duration,
