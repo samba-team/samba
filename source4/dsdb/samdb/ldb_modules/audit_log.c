@@ -163,8 +163,6 @@ static const char *get_password_action(
 	}
 }
 
-
-#ifdef HAVE_JANSSON
 /*
  * @brief generate a JSON object detailing an ldb operation.
  *
@@ -710,7 +708,6 @@ failure:
 	return wrapper;
 }
 
-#endif
 /*
  * @brief Print a human readable log line for a password change event.
  *
@@ -1132,7 +1129,6 @@ static void log_standard_operation(
 			TALLOC_FREE(entry);
 		}
 	}
-#ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_AUDIT_JSON, OPERATION_LOG_LVL) ||
 		(audit_private->msg_ctx
 		 && audit_private->send_samdb_events)) {
@@ -1174,7 +1170,6 @@ static void log_standard_operation(
 			json_free(&json);
 		}
 	}
-#endif
 	TALLOC_FREE(ctx);
 }
 
@@ -1215,7 +1210,6 @@ static void log_replicated_operation(
 			REPLICATION_LOG_LVL);
 		TALLOC_FREE(entry);
 	}
-#ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_AUDIT_JSON, REPLICATION_LOG_LVL) ||
 		(audit_private->msg_ctx && audit_private->send_samdb_events)) {
 		struct json_object json;
@@ -1234,7 +1228,6 @@ static void log_replicated_operation(
 		}
 		json_free(&json);
 	}
-#endif
 	TALLOC_FREE(ctx);
 }
 
@@ -1302,7 +1295,6 @@ static void log_transaction(
 			log_level);
 		TALLOC_FREE(entry);
 	}
-#ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, log_level) ||
 		(audit_private->msg_ctx && audit_private->send_samdb_events)) {
 		struct json_object json;
@@ -1324,7 +1316,6 @@ static void log_transaction(
 		}
 		json_free(&json);
 	}
-#endif
 	TALLOC_FREE(ctx);
 }
 
@@ -1372,7 +1363,6 @@ static void log_commit_failure(
 			TRANSACTION_LOG_FAILURE_LVL);
 		TALLOC_FREE(entry);
 	}
-#ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_TXN_AUDIT_JSON, log_level) ||
 		(audit_private->msg_ctx
 		 && audit_private->send_samdb_events)) {
@@ -1396,7 +1386,6 @@ static void log_commit_failure(
 		}
 		json_free(&json);
 	}
-#endif
 	TALLOC_FREE(ctx);
 }
 
