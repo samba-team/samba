@@ -51,7 +51,6 @@ struct aio_open_private_data {
 	const char *fname;
 	char *dname;
 	struct smbd_server_connection *sconn;
-	const struct security_unix_token *ux_tok;
 	uint64_t initial_allocation_size;
 	/* Returns. */
 	int ret_fd;
@@ -140,16 +139,6 @@ static void aio_open_worker(void *private_data)
 	struct aio_open_private_data *opd =
 		(struct aio_open_private_data *)private_data;
 
-	/* Become the correct credential on this thread. */
-	if (set_thread_credentials(opd->ux_tok->uid,
-				opd->ux_tok->gid,
-				(size_t)opd->ux_tok->ngroups,
-				opd->ux_tok->groups) != 0) {
-		opd->ret_fd = -1;
-		opd->ret_errno = errno;
-		return;
-	}
-
 	opd->ret_fd = openat(opd->dir_fd,
 			opd->fname,
 			opd->flags,
@@ -219,13 +208,6 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 	opd->sconn = fsp->conn->sconn;
 	opd->initial_allocation_size = fsp->initial_allocation_size;
 
-	/* Copy our current credentials. */
-	opd->ux_tok = copy_unix_token(opd, get_current_utok(fsp->conn));
-	if (opd->ux_tok == NULL) {
-		TALLOC_FREE(opd);
-		return NULL;
-	}
-
 	/*
 	 * Copy the parent directory name and the
 	 * relative path within it.
@@ -268,6 +250,10 @@ static int open_async(const files_struct *fsp,
 {
 	struct aio_open_private_data *opd = NULL;
 	struct tevent_req *subreq = NULL;
+	const struct smb_vfs_ev_glue *evg = NULL;
+	struct tevent_context *ev = NULL;
+	struct pthreadpool_tevent *tp = NULL;
+	uid_t uid = -1;
 
 	opd = create_private_open_data(fsp, flags, mode);
 	if (opd == NULL) {
@@ -275,10 +261,20 @@ static int open_async(const files_struct *fsp,
 		return -1;
 	}
 
-	subreq = pthreadpool_tevent_job_send(opd,
-					     fsp->conn->user_ev_ctx,
-					     fsp->conn->sconn->raw_thread_pool,
-					     aio_open_worker, opd);
+	evg = fsp->conn->user_vfs_evg;
+
+	uid = get_current_uid(fsp->conn);
+	if (uid == 0) {
+		/*
+		 * If we're already running as root,
+		 * so the root glue.
+		 */
+		evg = smb_vfs_ev_glue_get_root_glue(evg);
+	}
+	ev = smb_vfs_ev_glue_ev_ctx(fsp->conn->user_vfs_evg);
+	tp = smb_vfs_ev_glue_tp_path_safe(fsp->conn->user_vfs_evg);
+
+	subreq = pthreadpool_tevent_job_send(opd, ev, tp, aio_open_worker, opd);
 	if (subreq == NULL) {
 		return -1;
 	}
