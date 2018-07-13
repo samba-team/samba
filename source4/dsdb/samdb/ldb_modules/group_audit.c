@@ -90,7 +90,6 @@ static struct GUID *get_transaction_id(
 	return &transaction_id->transaction_guid;
 }
 
-#ifdef HAVE_JANSSON
 /*
  * @brief generate a JSON log entry for a group change.
  *
@@ -208,7 +207,6 @@ failure:
 	DBG_ERR("Failed to create group change JSON log message\n");
 	return wrapper;
 }
-#endif
 
 /*
  * @brief generate a human readable log entry for a group change.
@@ -493,7 +491,6 @@ static void log_primary_group_change(
 		TALLOC_FREE(message);
 	}
 
-#ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_GROUP_AUDIT_JSON, GROUP_LOG_LVL) ||
 		(ac->msg_ctx && ac->send_events)) {
 
@@ -519,7 +516,6 @@ static void log_primary_group_change(
 		}
 		json_free(&json);
 	}
-#endif
 	TALLOC_FREE(ctx);
 }
 
@@ -569,7 +565,6 @@ static void log_membership_change(
 		TALLOC_FREE(message);
 	}
 
-#ifdef HAVE_JANSSON
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_GROUP_AUDIT_JSON, GROUP_LOG_LVL) ||
 		(ac->msg_ctx && ac->send_events)) {
 		struct json_object json;
@@ -594,7 +589,6 @@ static void log_membership_change(
 		}
 		json_free(&json);
 	}
-#endif
 	TALLOC_FREE(ctx);
 }
 
