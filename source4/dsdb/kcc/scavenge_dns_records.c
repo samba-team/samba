@@ -164,7 +164,7 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			 "(&(objectClass=dnsNode)"
 			 "(&(!(dnsTombstoned=TRUE))"
 			 "(dnsRecord:" DSDB_MATCH_FOR_DNS_TO_TOMBSTONE_TIME
-			 ":=%lu)))",
+			 ":=%"PRIu64")))",
 			 t);
 	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx,
