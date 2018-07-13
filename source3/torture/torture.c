@@ -9256,8 +9256,8 @@ static bool run_cli_splice(int dummy)
 	NTSTATUS status;
 	uint16_t fnum1 = UINT16_MAX;
 	uint16_t fnum2 = UINT16_MAX;
-	size_t file_size = 20*1024*1024;
-	size_t splice_size = 13*1024*0124 + 713;
+	size_t file_size = 2*1024*1024;
+	size_t splice_size = 1*1024*1024 + 713;
 	MD5_CTX md5_ctx;
 	uint8_t digest1[16], digest2[16];
 	off_t written = 0;
@@ -9295,7 +9295,7 @@ static bool run_cli_splice(int dummy)
 	/* Fill it with random numbers. */
 	generate_random_buffer(buf, file_size);
 
-	/* MD5 the first 13MB + 713 bytes. */
+	/* MD5 the first 1MB + 713 bytes. */
 	MD5Init(&md5_ctx);
 	MD5Update(&md5_ctx, buf, splice_size);
 	MD5Final(digest1, &md5_ctx);
@@ -9321,7 +9321,7 @@ static bool run_cli_splice(int dummy)
 		goto out;
 	}
 
-	/* Now splice 13MB + 713 bytes. */
+	/* Now splice 1MB + 713 bytes. */
 	status = cli_splice(cli1,
 				cli1,
 				fnum1,
@@ -9354,7 +9354,7 @@ static bool run_cli_splice(int dummy)
 		goto out;
 	}
 
-	/* MD5 the first 13MB + 713 bytes. */
+	/* MD5 the first 1MB + 713 bytes. */
 	MD5Init(&md5_ctx);
 	MD5Update(&md5_ctx, buf, splice_size);
 	MD5Final(digest2, &md5_ctx);
