@@ -371,7 +371,7 @@ struct tevent_context *_tevent_context_wrapper_create(struct tevent_context *mai
 	ev->wrapper.glue->wrap_ev = ev;
 	ev->wrapper.glue->main_ev = main_ev;
 	ev->wrapper.glue->ops = ops;
-	ev->wrapper.glue->private_state = talloc_size(ev->wrapper.glue, psize);
+	ev->wrapper.glue->private_state = talloc_zero_size(ev->wrapper.glue, psize);
 	if (ev->wrapper.glue->private_state == NULL) {
 		talloc_free(ev);
 		return NULL;
