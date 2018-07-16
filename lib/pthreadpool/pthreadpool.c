@@ -341,6 +341,7 @@ static void pthreadpool_child(void)
 		pool->num_idle = 0;
 		pool->head = 0;
 		pool->num_jobs = 0;
+		pool->stopped = true;
 
 		ret = pthread_cond_init(&pool->condvar, NULL);
 		assert(ret == 0);
