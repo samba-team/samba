@@ -64,34 +64,6 @@ int dsdb_search_one(struct ldb_context *ldb,
 }
 
 /*
- * Mocking for audit_log_hr to capture the called parameters
- */
-const char *audit_log_hr_prefix = NULL;
-const char *audit_log_hr_message = NULL;
-int audit_log_hr_debug_class = 0;
-int audit_log_hr_debug_level = 0;
-
-static void audit_log_hr_init(void)
-{
-	audit_log_hr_prefix = NULL;
-	audit_log_hr_message = NULL;
-	audit_log_hr_debug_class = 0;
-	audit_log_hr_debug_level = 0;
-}
-
-void audit_log_human_text(
-	const char *prefix,
-	const char *message,
-	int debug_class,
-	int debug_level)
-{
-	audit_log_hr_prefix = prefix;
-	audit_log_hr_message = message;
-	audit_log_hr_debug_class = debug_class;
-	audit_log_hr_debug_level = debug_level;
-}
-
-/*
  * Test helper to check ISO 8601 timestamps for validity
  */
 static void check_timestamp(time_t before, const char *timestamp)
@@ -551,60 +523,6 @@ static void test_get_primary_group_dn(void **state)
 	TALLOC_FREE(ctx);
 }
 
-/*
- * Mocking for audit_log_json to capture the called parameters
- */
-const char *audit_log_json_prefix = NULL;
-struct json_object *audit_log_json_message = NULL;
-int audit_log_json_debug_class = 0;
-int audit_log_json_debug_level = 0;
-
-static void audit_log_json_init(void)
-{
-	audit_log_json_prefix = NULL;
-	audit_log_json_message = NULL;
-	audit_log_json_debug_class = 0;
-	audit_log_json_debug_level = 0;
-}
-
-void audit_log_json(
-	const char* prefix,
-	struct json_object* message,
-	int debug_class,
-	int debug_level)
-{
-	audit_log_json_prefix = prefix;
-	audit_log_json_message = message;
-	audit_log_json_debug_class = debug_class;
-	audit_log_json_debug_level = debug_level;
-}
-
-/*
- * Mocking for audit_message_send to capture the called parameters
- */
-struct imessaging_context *audit_message_send_msg_ctx = NULL;
-const char *audit_message_send_server_name = NULL;
-uint32_t audit_message_send_message_type = 0;
-struct json_object *audit_message_send_message = NULL;
-
-static void audit_message_send_init(void) {
-	audit_message_send_msg_ctx = NULL;
-	audit_message_send_server_name = NULL;
-	audit_message_send_message_type = 0;
-	audit_message_send_message = NULL;
-}
-void audit_message_send(
-	struct imessaging_context *msg_ctx,
-	const char *server_name,
-	uint32_t message_type,
-	struct json_object *message)
-{
-	audit_message_send_msg_ctx = msg_ctx;
-	audit_message_send_server_name = server_name;
-	audit_message_send_message_type = message_type;
-	audit_message_send_message = message;
-}
-
 static void test_audit_group_json(void **state)
 {
 	struct ldb_context *ldb = NULL;
@@ -703,13 +621,6 @@ static void test_audit_group_json(void **state)
 
 }
 
-static void test_place_holder(void **state)
-{
-	audit_log_json_init();
-	audit_log_hr_init();
-	audit_message_send_init();
-}
-
 /*
  * Note: to run under valgrind us:
  *       valgrind --suppressions=test_group_audit.valgrind bin/test_group_audit
@@ -720,7 +631,6 @@ static void test_place_holder(void **state)
 int main(void) {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_audit_group_json),
-		cmocka_unit_test(test_place_holder),
 		cmocka_unit_test(test_get_transaction_id),
 		cmocka_unit_test(test_audit_group_hr),
 		cmocka_unit_test(test_get_parsed_dns),
