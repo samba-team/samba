@@ -1684,6 +1684,7 @@ static int ldb_kv_index_dn_base_dn(struct ldb_module *module,
 		dn_list->dn[0].data = discard_const_p(unsigned char,
 						      ldb_dn_get_linearized(base_dn));
 		if (dn_list->dn[0].data == NULL) {
+			talloc_free(dn_list->dn);
 			return ldb_module_oom(module);
 		}
 		dn_list->dn[0].length = strlen((char *)dn_list->dn[0].data);
@@ -2039,6 +2040,7 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 			struct dn_list *idx_one_tree_list
 				= talloc_zero(ac, struct dn_list);
 			if (idx_one_tree_list == NULL) {
+				talloc_free(dn_list);
 				return ldb_module_oom(ac->module);
 			}
 
