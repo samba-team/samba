@@ -248,12 +248,16 @@ again:
 
 	ret = ldb_request(ldb, req);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(sctx);
+		talloc_free(req);
 		printf("search failed - %s\n", ldb_errstring(ldb));
 		return ret;
 	}
 
 	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(sctx);
+		talloc_free(req);
 		printf("search error - %s\n", ldb_errstring(ldb));
 		return ret;
 	}
@@ -318,6 +322,7 @@ int main(int argc, const char **argv)
 	if (options->basedn != NULL) {
 		basedn = ldb_dn_new(ldb, ldb, options->basedn);
 		if (basedn == NULL) {
+			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
