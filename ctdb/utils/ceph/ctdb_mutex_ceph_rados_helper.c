@@ -142,7 +142,7 @@ struct ctdb_mutex_rados_state {
 	struct tevent_context *ev;
 	struct tevent_signal *sigterm_ev;
 	struct tevent_signal *sigint_ev;
-	struct tevent_timer *timer_ev;
+	struct tevent_timer *ppid_timer_ev;
 	rados_t ceph_cluster;
 	rados_ioctx_t ioctx;
 };
@@ -166,10 +166,10 @@ static void ctdb_mutex_rados_sigterm_cb(struct tevent_context *ev,
 	exit(ret ? 1 : 0);
 }
 
-static void ctdb_mutex_rados_timer_cb(struct tevent_context *ev,
-				      struct tevent_timer *te,
-				      struct timeval current_time,
-				      void *private_data)
+static void ctdb_mutex_rados_ppid_timer_cb(struct tevent_context *ev,
+					   struct tevent_timer *te,
+					   struct timeval current_time,
+					   void *private_data)
 {
 	struct ctdb_mutex_rados_state *cmr_state = private_data;
 	int ret = 0;
@@ -182,11 +182,12 @@ static void ctdb_mutex_rados_timer_cb(struct tevent_context *ev,
 
 	if ((kill(cmr_state->ppid, 0) == 0) || (errno != ESRCH)) {
 		/* parent still around, keep waiting */
-		cmr_state->timer_ev = tevent_add_timer(cmr_state->ev, cmr_state,
+		cmr_state->ppid_timer_ev = tevent_add_timer(cmr_state->ev,
+							    cmr_state,
 					       tevent_timeval_current_ofs(5, 0),
-						      ctdb_mutex_rados_timer_cb,
-						       cmr_state);
-		if (cmr_state->timer_ev == NULL) {
+						ctdb_mutex_rados_ppid_timer_cb,
+							    cmr_state);
+		if (cmr_state->ppid_timer_ev == NULL) {
 			fprintf(stderr, "Failed to create timer event\n");
 			/* rely on signal cb */
 		}
@@ -291,11 +292,11 @@ int main(int argc, char *argv[])
 	}
 
 	/* periodically check parent */
-	cmr_state->timer_ev = tevent_add_timer(cmr_state->ev, cmr_state,
+	cmr_state->ppid_timer_ev = tevent_add_timer(cmr_state->ev, cmr_state,
 					       tevent_timeval_current_ofs(5, 0),
-					       ctdb_mutex_rados_timer_cb,
+					       ctdb_mutex_rados_ppid_timer_cb,
 					       cmr_state);
-	if (cmr_state->timer_ev == NULL) {
+	if (cmr_state->ppid_timer_ev == NULL) {
 		fprintf(stderr, "Failed to create timer event\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
