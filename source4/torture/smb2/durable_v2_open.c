@@ -1518,9 +1518,15 @@ bool test_durable_v2_open_reopen2_lease_v2(struct torture_context *tctx,
 
 	options = tree->session->transport->options;
 
+	smb2_deltree(tree, __func__);
+	status = torture_smb2_testdir(tree, __func__, &_h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree, _h);
+
 	/* Choose a random name in case the state is left a little funky. */
-	snprintf(fname, 256, "durable_v2_open_reopen2_%s.dat",
-		 generate_random_str(tctx, 8));
+	snprintf(fname, 256, "%s\\durable_v2_open_reopen2_%s.dat",
+		 __func__, generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
 
@@ -1726,6 +1732,7 @@ done:
 	}
 
 	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, __func__);
 
 	talloc_free(tree);
 
