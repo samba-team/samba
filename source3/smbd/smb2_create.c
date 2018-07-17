@@ -381,6 +381,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	const char *requested_filename, const struct files_struct *fsp,
 	const struct smb2_lease *lease_ptr)
 {
+	char *filename = NULL;
 	struct smb_filename *smb_fname = NULL;
 	uint32_t ucf_flags;
 	NTSTATUS status;
@@ -407,10 +408,23 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	filename = talloc_strdup(talloc_tos(), requested_filename);
+	if (filename == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* This also converts '\' to '/' */
+	status = check_path_syntax(filename);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(filename);
+		return status;
+	}
+
 	ucf_flags = filename_create_ucf_flags(smb1req, FILE_OPEN);
 	status = filename_convert(talloc_tos(), fsp->conn,
-				  requested_filename, ucf_flags,
+				  filename, ucf_flags,
 				  NULL, &smb_fname);
+	TALLOC_FREE(filename);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("filename_convert returned %s\n",
 			   nt_errstr(status)));
