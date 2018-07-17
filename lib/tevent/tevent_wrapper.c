@@ -347,7 +347,7 @@ struct tevent_context *_tevent_context_wrapper_create(struct tevent_context *mai
 		/*
 		 * wrappers conflict with nesting
 		 */
-		tevent_debug(main_ev->wrapper.glue->main_ev, TEVENT_DEBUG_FATAL,
+		tevent_debug(main_ev, TEVENT_DEBUG_FATAL,
 			     "%s: %s() conflicts with nesting\n",
 			     __func__, location);
 		errno = EINVAL;
