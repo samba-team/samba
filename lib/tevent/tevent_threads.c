@@ -473,7 +473,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 #ifdef HAVE_PTHREAD
 	const char *create_location = im->create_location;
 	struct tevent_context *main_ev = NULL;
-	struct tevent_wrapper_glue *glue = tctx->event_ctx->wrapper.glue;
+	struct tevent_wrapper_glue *glue = NULL;
 	int ret, wakeup_fd;
 
 	ret = pthread_mutex_lock(&tctx->event_ctx_mutex);
@@ -491,6 +491,8 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 		}
 		return;
 	}
+
+	glue = tctx->event_ctx->wrapper.glue;
 
 	if ((im->event_ctx != NULL) || (handler == NULL)) {
 		abort();
