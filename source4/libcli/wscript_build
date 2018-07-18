@@ -25,11 +25,21 @@ bld.SAMBA_SUBSYSTEM('cli_composite',
 
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB_COMPOSITE',
-	source='smb_composite/loadfile.c smb_composite/savefile.c smb_composite/connect.c smb_composite/sesssetup.c smb_composite/fetchfile.c smb_composite/appendacl.c smb_composite/fsinfo.c smb_composite/smb2.c',
-	deps='LIBCLI_SMB2 tevent-util',
-	public_deps='cli_composite samba-credentials gensec LIBCLI_RESOLVE tevent',
-	private_headers='smb_composite/smb_composite.h',
-	)
+    source='''
+       smb_composite/loadfile.c
+       smb_composite/savefile.c
+       smb_composite/connect_nego.c
+       smb_composite/connect.c
+       smb_composite/sesssetup.c
+       smb_composite/fetchfile.c
+       smb_composite/appendacl.c
+       smb_composite/fsinfo.c
+       smb_composite/smb2.c
+    ''',
+    deps='LIBCLI_SMB2 tevent-util',
+    public_deps='cli_composite samba-credentials gensec LIBCLI_RESOLVE tevent',
+    private_headers='smb_composite/smb_composite.h',
+    )
 
 bld.SAMBA_PYTHON('pysmb',
     source='pysmb.c',
