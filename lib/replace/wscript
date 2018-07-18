@@ -551,6 +551,18 @@ def configure(conf):
              conf.CONFIG_SET('HAVE_PTHREAD_MUTEX_CONSISTENT_NP'))):
             conf.DEFINE('HAVE_ROBUST_MUTEXES', 1)
 
+    # __thread is available since 2002 in gcc.
+    conf.CHECK_CODE('''
+        __thread int tls;
+
+        int main(void) {
+            return 0;
+        }
+        ''',
+        'HAVE___THREAD',
+        addmain=False,
+        msg='Checking for __thread local storage')
+
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
     conf.CHECK_FUNCS_IN('crypt_r', 'crypt', checklibc=True)
 
