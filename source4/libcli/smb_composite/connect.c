@@ -228,18 +228,10 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 	return NT_STATUS_OK;
 }
 
-/*
-  a negprot request has completed
-*/
-static NTSTATUS connect_negprot(struct composite_context *c, 
-				struct smb_composite_connect *io)
+static NTSTATUS connect_send_session(struct composite_context *c,
+				     struct smb_composite_connect *io)
 {
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
-	NTSTATUS status;
-
-	status = smb_raw_negotiate_recv(state->subreq);
-	TALLOC_FREE(state->subreq);
-	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a session setup */
 	state->session = smbcli_session_init(state->transport, state, true, io->in.session_options);
@@ -279,6 +271,22 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	state->stage = CONNECT_SESSION_SETUP;
 	
 	return NT_STATUS_OK;
+}
+
+/*
+  a negprot request has completed
+*/
+static NTSTATUS connect_negprot(struct composite_context *c,
+				struct smb_composite_connect *io)
+{
+	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
+	NTSTATUS status;
+
+	status = smb_raw_negotiate_recv(state->subreq);
+	TALLOC_FREE(state->subreq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return connect_send_session(c, io);
 }
 
 /*
@@ -431,6 +439,26 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 
 	nbt_choose_called_name(state, &state->called,
 			       io->in.called_name, NBT_NAME_SERVER);
+
+	if (io->in.existing_conn != NULL) {
+		NTSTATUS status;
+
+		status = smbcli_transport_raw_init(state,
+						   c->event_ctx,
+						   &io->in.existing_conn,
+						   &io->in.options,
+						   &state->transport);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto failed;
+		}
+
+		status = connect_send_session(c, io);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto failed;
+		}
+
+		return c;
+	}
 
 	state->creq = smbcli_sock_connect_send(state, 
 					       NULL,
