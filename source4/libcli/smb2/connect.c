@@ -35,6 +35,7 @@
 struct smb2_connect_state {
 	struct tevent_context *ev;
 	struct cli_credentials *credentials;
+	bool fallback_to_anonymous;
 	uint64_t previous_session_id;
 	struct resolve_context *resolve_ctx;
 	const char *host;
@@ -64,6 +65,7 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 				     const char *share,
 				     struct resolve_context *resolve_ctx,
 				     struct cli_credentials *credentials,
+				     bool fallback_to_anonymous,
 				     struct smbXcli_conn **existing_conn,
 				     uint64_t previous_session_id,
 				     const struct smbcli_options *options,
@@ -83,6 +85,7 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->credentials = credentials;
+	state->fallback_to_anonymous = fallback_to_anonymous;
 	state->previous_session_id = previous_session_id;
 	state->options = *options;
 	state->host = host;
@@ -240,6 +243,34 @@ static void smb2_connect_session_done(struct tevent_req *subreq)
 
 	status = smb2_session_setup_spnego_recv(subreq);
 	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !cli_credentials_is_anonymous(state->credentials) &&
+	    state->fallback_to_anonymous) {
+		struct cli_credentials *anon_creds = NULL;
+
+		/*
+		 * The transport was moved to session,
+		 * we need to revert that before removing
+		 * the old broken session.
+		 */
+		state->transport = talloc_move(state, &state->session->transport);
+		TALLOC_FREE(state->session);
+
+		anon_creds = cli_credentials_init_anon(state);
+		if (tevent_req_nomem(anon_creds, req)) {
+			return;
+		}
+		cli_credentials_set_workstation(anon_creds,
+		   cli_credentials_get_workstation(state->credentials),
+		   CRED_SPECIFIED);
+
+		/*
+		 * retry with anonymous credentials
+		 */
+		state->credentials = anon_creds;
+		smb2_connect_session_start(req);
+		return;
+	}
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -331,6 +362,7 @@ NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 				   share,
 				   resolve_ctx,
 				   credentials,
+				   false, /* fallback_to_anonymous */
 				   NULL, /* existing_conn */
 				   previous_session_id,
 				   options,
