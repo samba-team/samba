@@ -42,6 +42,7 @@ static int setup_pthreadpool_tevent(void **state)
 {
 	struct pthreadpool_tevent_test *t;
 	int ret;
+	size_t max_threads;
 
 	t = talloc_zero(NULL, struct pthreadpool_tevent_test);
 	assert_non_null(t);
@@ -52,11 +53,20 @@ static int setup_pthreadpool_tevent(void **state)
 	ret = pthreadpool_tevent_init(t->ev, UINT_MAX, &t->upool);
 	assert_return_code(ret, 0);
 
+	max_threads = pthreadpool_tevent_max_threads(t->upool);
+	assert_int_equal(max_threads, UINT_MAX);
+
 	ret = pthreadpool_tevent_init(t->ev, 1, &t->opool);
 	assert_return_code(ret, 0);
 
+	max_threads = pthreadpool_tevent_max_threads(t->opool);
+	assert_int_equal(max_threads, 1);
+
 	ret = pthreadpool_tevent_init(t->ev, 0, &t->spool);
 	assert_return_code(ret, 0);
+
+	max_threads = pthreadpool_tevent_max_threads(t->spool);
+	assert_int_equal(max_threads, 0);
 
 	*state = t;
 
