@@ -294,6 +294,9 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 	size_t total=0;
 	struct iovec hdtrl[2];
 	size_t hdr_len = 0;
+	int old_flags = 0;
+	ssize_t ret = -1;
+	bool socket_flags_changed = false;
 
 	if (header) {
 		/* Set up the header/trailer iovec. */
@@ -319,11 +322,31 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 
 		do {
 			nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
-		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-		if (nwritten == -1)
-			return -1;
-		if (nwritten == 0)
-			return -1; /* I think we're at EOF here... */
+		} while (nwritten == -1 && errno == EINTR);
+		if (nwritten == -1) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				/*
+				 * Sendfile must complete before we can
+				 * send any other outgoing data on the socket.
+				 * Ensure socket is in blocking mode.
+				 * For SMB2 by default the socket is in
+				 * non-blocking mode.
+				 */
+				old_flags = fcntl(tofd, F_GETFL, 0);
+				ret = set_blocking(tofd, true);
+				if (ret == -1) {
+					goto out;
+				}
+				socket_flags_changed = true;
+				continue;
+			}
+			ret = -1;
+			goto out;
+		}
+		if (nwritten == 0) {
+			ret = -1; /* I think we're at EOF here... */
+			goto out;
+		}
 
 		/*
 		 * If this was a short (signal interrupted) write we may need
@@ -347,7 +370,28 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 		total -= nwritten;
 		offset += nwritten;
 	}
-	return count + hdr_len;
+	ret = count + hdr_len;
+
+  out:
+
+	if (socket_flags_changed) {
+		int saved_errno;
+		int err;
+
+		if (ret == -1) {
+			saved_errno = errno;
+		}
+		/* Restore the old state of the socket. */
+		err = fcntl(tofd, F_SETFL, old_flags);
+		if (err == -1) {
+			return -1;
+		}
+		if (ret == -1) {
+			errno = saved_errno;
+		}
+	}
+
+	return ret;
 }
 
 #elif defined(FREEBSD_SENDFILE_API) || defined(DARWIN_SENDFILE_API)
