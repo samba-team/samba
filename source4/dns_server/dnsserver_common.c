@@ -379,6 +379,7 @@ static struct ldb_parse_tree *build_wildcard_query(
 			wildcard_query->u.list.elements[l] = el;
 
 			/* skip to the start of the next label */
+			x++;
 			for (;x < name->length && name->data[x] != '.'; x++);
 		}
 
