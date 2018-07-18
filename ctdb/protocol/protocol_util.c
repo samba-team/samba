@@ -640,7 +640,9 @@ static int ctdb_connection_list_read_line(char *line, void *private_data)
 	return 0;
 }
 
-int ctdb_connection_list_read(TALLOC_CTX *mem_ctx, bool client_first,
+int ctdb_connection_list_read(TALLOC_CTX *mem_ctx,
+			      int fd,
+			      bool client_first,
 			      struct ctdb_connection_list **conn_list)
 {
 	struct ctdb_connection_list_read_state state;
@@ -657,7 +659,7 @@ int ctdb_connection_list_read(TALLOC_CTX *mem_ctx, bool client_first,
 
 	state.client_first = client_first;
 
-	ret = line_read(0,
+	ret = line_read(fd,
 			128,
 			mem_ctx,
 			ctdb_connection_list_read_line,

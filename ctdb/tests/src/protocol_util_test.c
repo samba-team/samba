@@ -153,7 +153,7 @@ static void test_connection_list_read(const char *s1, const char *s2)
 	TALLOC_CTX *tmp_ctx;
 	int pipefd[2];
 	pid_t pid;
-	struct ctdb_connection_list *conn_list;
+	struct ctdb_connection_list *conn_list = NULL;
 	const char *t;
 	int ret;
 
@@ -182,13 +182,10 @@ static void test_connection_list_read(const char *s1, const char *s2)
 
 	close(pipefd[1]);
 
-	ret = dup2(pipefd[0], STDIN_FILENO);
-	assert(ret != -1);
+	ret = ctdb_connection_list_read(tmp_ctx, pipefd[0], false, &conn_list);
+	assert(ret == 0);
 
 	close(pipefd[0]);
-
-	ret = ctdb_connection_list_read(tmp_ctx, false, &conn_list);
-	assert(ret == 0);
 
 	ret = ctdb_connection_list_sort(conn_list);
 	assert(ret == 0);
@@ -206,7 +203,7 @@ static void test_connection_list_read_bad(const char *s1)
 	TALLOC_CTX *tmp_ctx;
 	int pipefd[2];
 	pid_t pid;
-	struct ctdb_connection_list *conn_list;
+	struct ctdb_connection_list *conn_list = NULL;
 	int ret;
 
 	tmp_ctx = talloc_new(NULL);
@@ -234,13 +231,10 @@ static void test_connection_list_read_bad(const char *s1)
 
 	close(pipefd[1]);
 
-	ret = dup2(pipefd[0], STDIN_FILENO);
-	assert(ret != -1);
+	ret = ctdb_connection_list_read(tmp_ctx, pipefd[0], false, &conn_list);
+	assert(ret == EINVAL);
 
 	close(pipefd[0]);
-
-	ret = ctdb_connection_list_read(tmp_ctx, false, &conn_list);
-	assert(ret == EINVAL);
 
 	talloc_free(tmp_ctx);
 }

@@ -3023,7 +3023,7 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		int i, num_failed;
 
 		/* Client first but the src/dst logic is confused */
-		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
+		ret = ctdb_connection_list_read(mem_ctx, 0, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
@@ -3241,7 +3241,7 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		struct tevent_req *req;
 
 		/* Client first but the src/dst logic is confused */
-		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
+		ret = ctdb_connection_list_read(mem_ctx, 0, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
@@ -3306,7 +3306,7 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		struct tevent_req *req;
 
 		/* Client first but the src/dst logic is confused */
-		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
+		ret = ctdb_connection_list_read(mem_ctx, 0, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}

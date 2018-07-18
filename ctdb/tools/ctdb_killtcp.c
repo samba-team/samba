@@ -372,7 +372,7 @@ int main(int argc, char **argv)
 			goto fail;
 		}
 	} else {
-		ret = ctdb_connection_list_read(mem_ctx, true, &conn_list);
+		ret = ctdb_connection_list_read(mem_ctx, 0, true, &conn_list);
 		if (ret != 0) {
 			D_ERR("Unable to parse connections (%s)\n",
 			      strerror(ret));
