@@ -301,6 +301,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 			"IPC$",
 			s->io.resolve_ctx,
 			s->io.creds,
+			NULL, /* existing_conn */
 			0, /* previous_session_id */
 			&options,
 			lpcfg_socket_options(lp_ctx),
