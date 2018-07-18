@@ -1,5 +1,0 @@
-# https://bugzilla.samba.org/show_bug.cgi?id=13536
-#
-
-^samba.*.TestWildCardQueries.test_one_a_query_match_wildcard_l2_2_labels
-^samba.*.TestWildCardQueries.test_one_a_query_match_wildcard_2_labels
