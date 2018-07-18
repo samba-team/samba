@@ -28,6 +28,47 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "../lib/util/tevent_ntstatus.h"
 
+NTSTATUS smb_raw_negotiate_fill_transport(struct smbcli_transport *transport)
+{
+	struct smbcli_negotiate *n = &transport->negotiate;
+	struct smbXcli_conn *c = transport->conn;
+	NTTIME ntt;
+
+	n->protocol = smbXcli_conn_protocol(c);
+	if (n->protocol > PROTOCOL_NT1) {
+		return NT_STATUS_REVISION_MISMATCH;
+	}
+
+	n->sec_mode = smb1cli_conn_server_security_mode(c);
+	n->max_mux  = smbXcli_conn_max_requests(c);
+	n->max_xmit = smb1cli_conn_max_xmit(c);
+	n->sesskey  = smb1cli_conn_server_session_key(c);
+	n->capabilities = smb1cli_conn_capabilities(c);;
+
+	/* this time arrives in real GMT */
+	ntt = smbXcli_conn_server_system_time(c);
+	n->server_time = nt_time_to_unix(ntt);
+	n->server_zone = smb1cli_conn_server_time_zone(c);
+
+	if (n->capabilities & CAP_EXTENDED_SECURITY) {
+		const DATA_BLOB *b = smbXcli_conn_server_gss_blob(c);
+		if (b) {
+			n->secblob = *b;
+		}
+	} else {
+		const uint8_t *p = smb1cli_conn_server_challenge(c);
+		if (p) {
+			n->secblob = data_blob_const(p, 8);
+		}
+	}
+
+	n->readbraw_supported = smb1cli_conn_server_readbraw(c);
+	n->readbraw_supported = smb1cli_conn_server_writebraw(c);
+	n->lockread_supported = smb1cli_conn_server_lockread(c);
+
+	return NT_STATUS_OK;
+}
+
 struct smb_raw_negotiate_state {
 	struct smbcli_transport *transport;
 };
@@ -82,10 +123,7 @@ static void smb_raw_negotiate_done(struct tevent_req *subreq)
 	struct smb_raw_negotiate_state *state =
 		tevent_req_data(req,
 		struct smb_raw_negotiate_state);
-	struct smbcli_negotiate *n = &state->transport->negotiate;
-	struct smbXcli_conn *c = state->transport->conn;
 	NTSTATUS status;
-	NTTIME ntt;
 
 	status = smbXcli_negprot_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -93,34 +131,10 @@ static void smb_raw_negotiate_done(struct tevent_req *subreq)
 		return;
 	}
 
-	n->protocol = smbXcli_conn_protocol(c);
-
-	n->sec_mode = smb1cli_conn_server_security_mode(c);
-	n->max_mux  = smbXcli_conn_max_requests(c);
-	n->max_xmit = smb1cli_conn_max_xmit(c);
-	n->sesskey  = smb1cli_conn_server_session_key(c);
-	n->capabilities = smb1cli_conn_capabilities(c);;
-
-	/* this time arrives in real GMT */
-	ntt = smbXcli_conn_server_system_time(c);
-	n->server_time = nt_time_to_unix(ntt);
-	n->server_zone = smb1cli_conn_server_time_zone(c);
-
-	if (n->capabilities & CAP_EXTENDED_SECURITY) {
-		const DATA_BLOB *b = smbXcli_conn_server_gss_blob(c);
-		if (b) {
-			n->secblob = *b;
-		}
-	} else {
-		const uint8_t *p = smb1cli_conn_server_challenge(c);
-		if (p) {
-			n->secblob = data_blob_const(p, 8);
-		}
+	status = smb_raw_negotiate_fill_transport(state->transport);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
-
-	n->readbraw_supported = smb1cli_conn_server_readbraw(c);
-	n->readbraw_supported = smb1cli_conn_server_writebraw(c);
-	n->lockread_supported = smb1cli_conn_server_lockread(c);
 
 	tevent_req_done(req);
 }
