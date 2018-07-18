@@ -405,9 +405,11 @@ ssize_t sys_sendfile(int tofd, int fromfd,
 {
 	struct sf_hdtr	sf_header = {0};
 	struct iovec	io_header = {0};
+	int old_flags = 0;
 
 	off_t	nwritten;
-	int	ret;
+	ssize_t	ret = -1;
+	bool socket_flags_changed = false;
 
 	if (header) {
 		sf_header.headers = &io_header;
@@ -428,9 +430,26 @@ ssize_t sys_sendfile(int tofd, int fromfd,
 #else
 		ret = sendfile(fromfd, tofd, offset, count, &sf_header, &nwritten, 0);
 #endif
-		if (ret == -1 && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+		if (ret == -1 && errno != EINTR) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				/*
+				 * Sendfile must complete before we can
+				 * send any other outgoing data on the socket.
+				 * Ensure socket is in blocking mode.
+				 * For SMB2 by default the socket is in
+				 * non-blocking mode.
+				 */
+				old_flags = fcntl(tofd, F_GETFL, 0);
+				ret = set_blocking(tofd, true);
+				if (ret == -1) {
+					goto out;
+				}
+				socket_flags_changed = true;
+				continue;
+			}
 			/* Send failed, we are toast. */
-			return -1;
+			ret = -1;
+			goto out;
 		}
 
 		if (nwritten == 0) {
@@ -457,7 +476,28 @@ ssize_t sys_sendfile(int tofd, int fromfd,
 		count -= nwritten;
 	}
 
-	return nwritten;
+	ret = nwritten;
+
+  out:
+
+	if (socket_flags_changed) {
+		int saved_errno;
+		int err;
+
+		if (ret == -1) {
+			saved_errno = errno;
+		}
+		/* Restore the old state of the socket. */
+		err = fcntl(tofd, F_SETFL, old_flags);
+		if (err == -1) {
+			return -1;
+		}
+		if (ret == -1) {
+			errno = saved_errno;
+		}
+	}
+
+	return ret;
 }
 
 #elif defined(AIX_SENDFILE_API)
