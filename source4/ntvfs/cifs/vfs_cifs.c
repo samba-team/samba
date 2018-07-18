@@ -296,6 +296,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.dest_ports = lpcfg_smb_ports(ntvfs->ctx->lp_ctx);
 	io.in.socket_options = lpcfg_socket_options(ntvfs->ctx->lp_ctx);
 	io.in.called_name = host;
+	io.in.existing_conn = NULL;
 	io.in.credentials = credentials;
 	io.in.fallback_to_anonymous = false;
 	io.in.workgroup = lpcfg_workgroup(ntvfs->ctx->lp_ctx);
