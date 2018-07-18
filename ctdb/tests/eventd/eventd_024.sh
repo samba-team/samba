@@ -28,4 +28,4 @@ unit_test cat "${CTDB_BASE}/debug_script.log"
 pid=$(cat "${CTDB_BASE}/debug_script.log" | awk '{print $2}')
 
 ok_null
-unit_test pstree -p -a "$pid"
+unit_test pstree "$pid"
