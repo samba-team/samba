@@ -86,6 +86,41 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 }
 
 /*
+  create a transport structure based on an established socket
+*/
+NTSTATUS smb2_transport_raw_init(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 struct smbXcli_conn **_conn,
+				 const struct smbcli_options *options,
+				 struct smb2_transport **_transport)
+{
+	struct smb2_transport *transport = NULL;
+	enum protocol_types protocol;
+
+	if (*_conn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	protocol = smbXcli_conn_protocol(*_conn);
+	if (protocol < PROTOCOL_SMB2_02) {
+		return NT_STATUS_REVISION_MISMATCH;
+	}
+
+	transport = talloc_zero(mem_ctx, struct smb2_transport);
+	if (transport == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	transport->ev = ev;
+	transport->options = *options;
+	transport->conn = talloc_move(transport, _conn);
+
+	talloc_set_destructor(transport, transport_destructor);
+	*_transport = transport;
+	return NT_STATUS_OK;
+}
+
+/*
   mark the transport as dead
 */
 void smb2_transport_dead(struct smb2_transport *transport, NTSTATUS status)
