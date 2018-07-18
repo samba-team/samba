@@ -102,6 +102,28 @@ NTSTATUS smb_composite_savefile(struct smbcli_tree *tree,
 				struct smb_composite_savefile *io);
 
 /*
+  a composite request for a low level connection to a remote server. Includes
+
+    - socket establishment
+    - session request
+    - negprot
+*/
+struct tevent_req *smb_connect_nego_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct resolve_context *resolve_ctx,
+					 const struct smbcli_options *options,
+					 const char *socket_options,
+					 const char *dest_hostname,
+					 const char *dest_address, /* optional */
+					 const char **dest_ports,
+					 const char *target_hostname,
+					 const char *called_name,
+					 const char *calling_name);
+NTSTATUS smb_connect_nego_recv(struct tevent_req *req,
+			       TALLOC_CTX *mem_ctx,
+			       struct smbXcli_conn **_conn);
+
+/*
   a composite request for a full connection to a remote server. Includes
 
     - socket establishment
