@@ -131,7 +131,7 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state = talloc(c, struct fetchfile_state);
 	if (state == NULL) goto failed;
 
-	state->connect = talloc(state, struct smb_composite_connect);
+	state->connect = talloc_zero(state, struct smb_composite_connect);
 	if (state->connect == NULL) goto failed;
 
 	state->io = io;
