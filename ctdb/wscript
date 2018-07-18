@@ -409,7 +409,9 @@ def build(bld):
                                              logging.c rb_tree.c tunable.c
                                              pidfile.c run_proc.c
                                              hash_count.c run_event.c
-                                             sock_client.c version.c'''),
+                                             sock_client.c version.c
+                                             line.c
+                                          '''),
                         deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb''')
 
@@ -765,6 +767,7 @@ def build(bld):
         'sock_io_test',
         'hash_count_test',
         'run_event_test',
+        'line_test',
     ]
 
     for target in ctdb_unit_tests:
