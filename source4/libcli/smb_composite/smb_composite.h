@@ -118,6 +118,7 @@ struct smb_composite_connect {
 		const char *called_name;
 		const char *service;
 		const char *service_type;
+		struct smbXcli_conn *existing_conn; /* optional */
 		struct cli_credentials *credentials;
 		bool fallback_to_anonymous;
 		const char *workgroup;
