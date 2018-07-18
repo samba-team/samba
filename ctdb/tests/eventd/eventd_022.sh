@@ -15,8 +15,7 @@ simple_test run 5 random verbosetimeout
 sleep 5
 
 ok <<EOF
-02.enabled.scri,PID $eventd_scriptdir/random/02.enabled.script verbosetimeout
-  \`-sleep,PID 99
+02.enabled.scri---sleep
 01.disabled          DISABLED  
 02.enabled           TIMEDOUT   DATETIME
   OUTPUT: Sleeping for 99 seconds
