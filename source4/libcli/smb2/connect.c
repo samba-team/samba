@@ -64,6 +64,7 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 				     const char *share,
 				     struct resolve_context *resolve_ctx,
 				     struct cli_credentials *credentials,
+				     struct smbXcli_conn **existing_conn,
 				     uint64_t previous_session_id,
 				     const struct smbcli_options *options,
 				     const char *socket_options,
@@ -105,6 +106,25 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 				    state->host, state->share);
 	if (tevent_req_nomem(state->unc, req)) {
 		return tevent_req_post(req, ev);
+	}
+
+	if (existing_conn != NULL) {
+		NTSTATUS status;
+
+		status = smb2_transport_raw_init(state, ev,
+						 existing_conn,
+						 options,
+						 &state->transport);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		smb2_connect_session_start(req);
+		if (!tevent_req_is_in_progress(req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		return req;
 	}
 
 	creq = smbcli_sock_connect_send(state, NULL, state->ports,
@@ -311,6 +331,7 @@ NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 				   share,
 				   resolve_ctx,
 				   credentials,
+				   NULL, /* existing_conn */
 				   previous_session_id,
 				   options,
 				   socket_options,
