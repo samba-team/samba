@@ -50,6 +50,7 @@ struct smb2_connect_state {
 	struct smb2_tree *tree;
 };
 
+static void smb2_connect_session_start(struct tevent_req *req);
 static void smb2_connect_socket_done(struct composite_context *creq);
 
 /*
@@ -170,10 +171,6 @@ static void smb2_connect_negprot_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	struct smb2_transport *transport = state->transport;
 	NTSTATUS status;
 
 	status = smbXcli_negprot_recv(subreq);
@@ -181,6 +178,17 @@ static void smb2_connect_negprot_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	smb2_connect_session_start(req);
+}
+
+static void smb2_connect_session_start(struct tevent_req *req)
+{
+	struct smb2_connect_state *state =
+		tevent_req_data(req,
+		struct smb2_connect_state);
+	struct smb2_transport *transport = state->transport;
+	struct tevent_req *subreq = NULL;
 
 	state->session = smb2_session_init(transport, state->gensec_settings, state);
 	if (tevent_req_nomem(state->session, req)) {
