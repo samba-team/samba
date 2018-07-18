@@ -510,6 +510,9 @@ ssize_t sys_sendfile(int tofd, int fromfd,
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	struct sf_parms hdtrl;
+	int old_flags = 0;
+	ssize_t ret = -1;
+	bool socket_flags_changed = false;
 
 	/* Set up the header/trailer struct params. */
 	if (header) {
@@ -527,8 +530,6 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 	hdtrl.file_bytes = count;
 
 	while ( hdtrl.file_bytes + hdtrl.header_length ) {
-		ssize_t ret;
-
 		/*
 		 Return Value
 
@@ -546,12 +547,50 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 		*/
 		do {
 			ret = send_file(&tofd, &hdtrl, 0);
-		} while ((ret == 1) || (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)));
-		if ( ret == -1 )
-			return -1;
+		} while ((ret == 1) || (ret == -1 && errno == EINTR));
+		if ( ret == -1 ) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				/*
+				 * Sendfile must complete before we can
+				 * send any other outgoing data on the socket.
+				 * Ensure socket is in blocking mode.
+				 * For SMB2 by default the socket is in
+				 * non-blocking mode.
+				 */
+				old_flags = fcntl(tofd, F_GETFL, 0);
+				ret = set_blocking(tofd, true);
+				if (ret == -1) {
+					goto out;
+				}
+				socket_flags_changed = true;
+				continue;
+			}
+			goto out;
+		}
 	}
 
-	return count + header->length;
+	ret = count + header->length;
+
+  out:
+
+	if (socket_flags_changed) {
+		int saved_errno;
+		int err;
+
+		if (ret == -1) {
+			saved_errno = errno;
+		}
+		/* Restore the old state of the socket. */
+		err = fcntl(tofd, F_SETFL, old_flags);
+		if (err == -1) {
+			return -1;
+		}
+		if (ret == -1) {
+			errno = saved_errno;
+		}
+	}
+
+	return ret;
 }
 /* END AIX SEND_FILE */
 
