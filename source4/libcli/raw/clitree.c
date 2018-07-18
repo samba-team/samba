@@ -207,6 +207,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.called_name = strupper_talloc(tmp_ctx, dest_host);
 	io.in.service = service;
 	io.in.service_type = service_type;
+	io.in.existing_conn = NULL;
 	io.in.credentials = credentials;
 	io.in.gensec_settings = gensec_settings;
 	io.in.fallback_to_anonymous = false;
