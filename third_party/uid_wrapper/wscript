@@ -23,17 +23,9 @@ def configure(conf):
             addmain=False,
             msg='Checking for atomic builtins')
 
-        # check HAVE_GCC_THREAD_LOCAL_STORAGE
-        conf.CHECK_CODE('''
-            __thread int tls;
 
-            int main(void) {
-                return 0;
-            }
-            ''',
-            'HAVE_GCC_THREAD_LOCAL_STORAGE',
-            addmain=False,
-            msg='Checking for thread local storage')
+        if conf.CONFIG_SET("HAVE___THREAD"):
+            conf.DEFINE("HAVE_GCC_THREAD_LOCAL_STORAGE", 1)
 
         if Options.options.address_sanitizer:
             # check HAVE_ADDRESS_SANITIZER_ATTRIBUTE

@@ -9,35 +9,9 @@ def configure(conf):
         conf.DEFINE('USING_SYSTEM_SOCKET_WRAPPER', 1)
         libsocket_wrapper_so_path = 'libsocket_wrapper.so'
     else:
-        # check HAVE_GCC_THREAD_LOCAL_STORAGE
-        conf.CHECK_CODE('''
-            __thread int tls;
 
-            int main(void) {
-                return 0;
-            }
-            ''',
-            'HAVE_GCC_THREAD_LOCAL_STORAGE',
-            addmain=False,
-            msg='Checking for thread local storage')
-
-        # check HAVE_DESTRUCTOR_ATTRIBUTE
-        conf.CHECK_CODE('''
-            void test_destructor_attribute(void) __attribute__ ((destructor));
-
-            void test_destructor_attribute(void)
-            {
-                return;
-            }
-
-            int main(void) {
-                return 0;
-            }
-            ''',
-            'HAVE_DESTRUCTOR_ATTRIBUTE',
-            addmain=False,
-            strict=True,
-            msg='Checking for library destructor support')
+        if conf.CONFIG_SET("HAVE___THREAD"):
+            conf.DEFINE("HAVE_GCC_THREAD_LOCAL_STORAGE", 1)
 
         # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
         conf.CHECK_CODE('''
