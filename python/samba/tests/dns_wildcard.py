@@ -172,6 +172,30 @@ class TestWildCardQueries(DNSTest):
         self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
         self.assertEquals(response.answers[0].rdata, WILDCARD_IP)
 
+    def test_one_a_query_match_wildcard_2_labels(self):
+        """ Query an A record, should match the wild card entry
+            have two labels to the left of the wild card target.
+        """
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        # Check the record
+        name = "label2.label1.wildcardtest.%s" % self.get_dns_domain()
+        q = self.make_name_question(name,
+                                    dns.DNS_QTYPE_A,
+                                    dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        (response, response_packet) =\
+            self.dns_transaction_udp(p, host=self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEquals(response.answers[0].rdata, WILDCARD_IP)
+
     def test_one_a_query_wildcard_entry(self):
         "Query the wildcard entry"
 
@@ -225,6 +249,30 @@ class TestWildCardQueries(DNSTest):
 
         # Check the record
         name = "miss.level2.wildcardtest.%s" % self.get_dns_domain()
+        q = self.make_name_question(name,
+                                    dns.DNS_QTYPE_A,
+                                    dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        (response, response_packet) =\
+            self.dns_transaction_udp(p, host=self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEquals(response.answers[0].rdata, LEVEL2_WILDCARD_IP)
+
+    def test_one_a_query_match_wildcard_l2_2_labels(self):
+        """Query an A record, should match the level 2 wild card entry
+           have two labels to the left of the wild card target
+        """
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        # Check the record
+        name = "label1.label2.level2.wildcardtest.%s" % self.get_dns_domain()
         q = self.make_name_question(name,
                                     dns.DNS_QTYPE_A,
                                     dns.DNS_QCLASS_IN)
