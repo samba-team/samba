@@ -35,6 +35,7 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/util/util_net.h"
 
 struct dcerpc_pipe_connect {
 	struct dcecli_connection *conn;
@@ -75,6 +76,8 @@ static void continue_pipe_open_smb(struct composite_context *ctx)
 }
 
 static void continue_smb_open(struct composite_context *c);
+static void continue_smb2_connect(struct tevent_req *subreq);
+static void continue_smbXcli_connect(struct tevent_req *subreq);
 
 /*
   Stage 2 of ncacn_np_smb: Open a named pipe after successful smb connection
@@ -131,9 +134,12 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 {
 	struct composite_context *c;
 	struct pipe_np_smb_state *s;
-	struct composite_context *conn_req;
+	struct tevent_req *subreq = NULL;
 	struct smb_composite_connect *conn;
 	uint32_t flags;
+	const char *target_hostname = NULL;
+	const char *dest_address = NULL;
+	const char *calling_name = NULL;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, io->conn->event_ctx);
@@ -151,12 +157,17 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 		return c;
 	}
 
+	if (s->io.creds == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return c;
+	}
+
 	/* prepare smb connection parameters: we're connecting to IPC$ share on
 	   remote rpc server */
+	target_hostname = dcerpc_binding_get_string_option(s->io.binding, "target_hostname");
 	conn->in.dest_host = dcerpc_binding_get_string_option(s->io.binding, "host");
 	conn->in.dest_ports = lpcfg_smb_ports(lp_ctx);
-	conn->in.called_name =
-		dcerpc_binding_get_string_option(s->io.binding, "target_hostname");
+	conn->in.called_name = target_hostname;
 	if (conn->in.called_name == NULL) {
 		conn->in.called_name = "*SMBSERVER";
 	}
@@ -183,19 +194,111 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 		conn->in.fallback_to_anonymous  = false;
 	}
 
-	conn->in.options.min_protocol = PROTOCOL_NT1;
-	conn->in.options.max_protocol = PROTOCOL_NT1;
+	conn->in.options.min_protocol = lpcfg_client_ipc_min_protocol(lp_ctx);
+	conn->in.options.max_protocol = lpcfg_client_ipc_max_protocol(lp_ctx);
+	if ((flags & DCERPC_SMB1) && (flags & DCERPC_SMB2)) {
+		/* auto */
+	} else if (flags & DCERPC_SMB2) {
+		if (conn->in.options.min_protocol < PROTOCOL_SMB2_02) {
+			conn->in.options.min_protocol = PROTOCOL_SMB2_02;
+		}
+		if (conn->in.options.max_protocol < PROTOCOL_SMB2_02) {
+			conn->in.options.max_protocol = PROTOCOL_LATEST;
+		}
+	} else if (flags & DCERPC_SMB1) {
+		conn->in.options.min_protocol = PROTOCOL_NT1;
+		conn->in.options.max_protocol = PROTOCOL_NT1;
+	} else {
+		/* auto */
+	}
 
 	conn->in.options.signing = lpcfg_client_ipc_signing(lp_ctx);
 
-	/* send smb connect request */
-	conn_req = smb_composite_connect_send(conn, s->io.conn,
-					      s->io.resolve_ctx,
-					      c->event_ctx);
-	if (composite_nomem(conn_req, c)) return c;
+	if (s->conn.in.credentials != NULL) {
+		calling_name = cli_credentials_get_workstation(s->conn.in.credentials);
+	}
+	if (calling_name == NULL) {
+		calling_name = "SMBCLIENT";
+	}
 
-	composite_continue(c, conn_req, continue_smb_connect, c);
+	if (target_hostname == NULL) {
+		target_hostname = conn->in.dest_host;
+	}
+
+	if (is_ipaddress(conn->in.dest_host)) {
+		dest_address = conn->in.dest_host;
+	}
+
+	subreq = smb_connect_nego_send(s,
+				       c->event_ctx,
+				       s->io.resolve_ctx,
+				       &conn->in.options,
+				       conn->in.socket_options,
+				       conn->in.dest_host,
+				       dest_address,
+				       conn->in.dest_ports,
+				       target_hostname,
+				       conn->in.called_name,
+				       calling_name);
+	if (composite_nomem(subreq, c)) return c;
+	tevent_req_set_callback(subreq,
+				continue_smbXcli_connect,
+				c);
+
 	return c;
+}
+
+static void continue_smbXcli_connect(struct tevent_req *subreq)
+{
+	struct composite_context *c =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
+	struct pipe_np_smb_state *s =
+		talloc_get_type_abort(c->private_data,
+		struct pipe_np_smb_state);
+	struct smb_composite_connect *conn = &s->conn;
+	struct composite_context *creq = NULL;
+	enum protocol_types protocol;
+
+	c->status = smb_connect_nego_recv(subreq, s,
+					  &conn->in.existing_conn);
+	TALLOC_FREE(subreq);
+	if (!composite_is_ok(c)) return;
+
+	protocol = smbXcli_conn_protocol(conn->in.existing_conn);
+	if (protocol >= PROTOCOL_SMB2_02) {
+		/*
+		 * continue with smb2 session setup/tree connect
+		 * on the established connection.
+		 */
+		subreq = smb2_connect_send(s, c->event_ctx,
+				conn->in.dest_host,
+				conn->in.dest_ports,
+				conn->in.service,
+				s->io.resolve_ctx,
+				conn->in.credentials,
+				conn->in.fallback_to_anonymous,
+				&conn->in.existing_conn,
+				0, /* previous_session_id */
+				&conn->in.options,
+				conn->in.socket_options,
+				conn->in.gensec_settings);
+		if (composite_nomem(subreq, c)) return;
+		tevent_req_set_callback(subreq, continue_smb2_connect, c);
+		return;
+	}
+
+	/*
+	 * continue with smb1 session setup/tree connect
+	 * on the established connection.
+	 */
+	creq = smb_composite_connect_send(conn, s->io.conn,
+					  s->io.resolve_ctx,
+					  c->event_ctx);
+	if (composite_nomem(creq, c)) return;
+
+	composite_continue(c, creq, continue_smb_connect, c);
+	return;
 }
 
 
@@ -234,93 +337,6 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 							       "endpoint");
 
 	continue_smb_open(c);
-}
-
-
-/* 
-   Initiate async open of a rpc connection request on SMB2 using
-   the binding structure to determine the endpoint and options
-*/
-static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
-					TALLOC_CTX *mem_ctx,
-					struct dcerpc_pipe_connect *io,
-					struct loadparm_context *lp_ctx)
-{
-	struct composite_context *c;
-	struct pipe_np_smb_state *s;
-	struct tevent_req *subreq;
-	struct smbcli_options options;
-	const char *host;
-	uint32_t flags;
-
-	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, io->conn->event_ctx);
-	if (c == NULL) return NULL;
-
-	s = talloc_zero(c, struct pipe_np_smb_state);
-	if (composite_nomem(s, c)) return c;
-	c->private_data = s;
-
-	s->io = *io;
-
-	if (smbXcli_conn_is_connected(s->io.smb.conn)) {
-		continue_smb_open(c);
-		return c;
-	}
-
-	host = dcerpc_binding_get_string_option(s->io.binding, "host");
-	flags = dcerpc_binding_get_flags(s->io.binding);
-
-	/*
-	 * provide proper credentials - user supplied or anonymous in case this is
-	 * schannel connection
-	 */
-	if (flags & DCERPC_SCHANNEL) {
-		s->io.creds = cli_credentials_init_anon(mem_ctx);
-		if (composite_nomem(s->io.creds, c)) return c;
-	}
-
-	lpcfg_smbcli_options(lp_ctx, &options);
-
-	options.min_protocol = lpcfg_client_ipc_min_protocol(lp_ctx);
-	if (options.min_protocol < PROTOCOL_SMB2_02) {
-		options.min_protocol = PROTOCOL_SMB2_02;
-	}
-	options.max_protocol = lpcfg_client_ipc_max_protocol(lp_ctx);
-	if (options.max_protocol < PROTOCOL_SMB2_02) {
-		options.max_protocol = PROTOCOL_SMB2_02;
-	}
-
-	options.signing = lpcfg_client_ipc_signing(lp_ctx);
-
-	/* send smb2 connect request */
-	subreq = smb2_connect_send(s, c->event_ctx,
-			host,
-			lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "smb2", "ports", NULL),
-			"IPC$",
-			s->io.resolve_ctx,
-			s->io.creds,
-			false, /* fallback_to_anonymous */
-			NULL, /* existing_conn */
-			0, /* previous_session_id */
-			&options,
-			lpcfg_socket_options(lp_ctx),
-			lpcfg_gensec_settings(mem_ctx, lp_ctx));
-	if (composite_nomem(subreq, c)) return c;
-	tevent_req_set_callback(subreq, continue_smb2_connect, c);
-	return c;
-}
-
-
-/*
-  Receive result of a rpc connection to a rpc pipe on SMB2
-*/
-static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2_recv(struct composite_context *c)
-{
-	NTSTATUS status = composite_wait(c);
-	
-	talloc_free(c);
-	return status;
 }
 
 
@@ -745,7 +761,6 @@ struct pipe_connect_state {
 
 static void continue_map_binding(struct composite_context *ctx);
 static void continue_connect(struct composite_context *c, struct pipe_connect_state *s);
-static void continue_pipe_connect_ncacn_np_smb2(struct composite_context *ctx);
 static void continue_pipe_connect_ncacn_np_smb(struct composite_context *ctx);
 static void continue_pipe_connect_ncacn_ip_tcp(struct composite_context *ctx);
 static void continue_pipe_connect_ncacn_http(struct composite_context *ctx);
@@ -784,15 +799,12 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	struct dcerpc_pipe_connect pc;
 
 	/* potential exits to another stage by sending an async request */
-	struct composite_context *ncacn_np_smb2_req;
 	struct composite_context *ncacn_np_smb_req;
 	struct composite_context *ncacn_ip_tcp_req;
 	struct composite_context *ncacn_http_req;
 	struct composite_context *ncacn_unix_req;
 	struct composite_context *ncalrpc_req;
 	enum dcerpc_transport_t transport;
-	enum protocol_types min_ipc_protocol;
-	uint32_t flags;
 
 	/* dcerpc pipe connect input parameters */
 	ZERO_STRUCT(pc);
@@ -803,29 +815,16 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	pc.resolve_ctx  = lpcfg_resolve_context(s->lp_ctx);
 
 	transport = dcerpc_binding_get_transport(s->binding);
-	flags = dcerpc_binding_get_flags(s->binding);
-
-	min_ipc_protocol = lpcfg_client_ipc_min_protocol(s->lp_ctx);
-	if (min_ipc_protocol >= PROTOCOL_SMB2_02) {
-		flags |= DCERPC_SMB2;
-	}
 
 	/* connect dcerpc pipe depending on required transport */
 	switch (transport) {
 	case NCACN_NP:
-		if (flags & DCERPC_SMB2) {
-			/* new varient of SMB a.k.a. SMB2 */
-			ncacn_np_smb2_req = dcerpc_pipe_connect_ncacn_np_smb2_send(c, &pc, s->lp_ctx);
-			composite_continue(c, ncacn_np_smb2_req, continue_pipe_connect_ncacn_np_smb2, c);
-			return;
-
-		} else {
-			/* good old ordinary SMB */
-			ncacn_np_smb_req = dcerpc_pipe_connect_ncacn_np_smb_send(c, &pc, s->lp_ctx);
-			composite_continue(c, ncacn_np_smb_req, continue_pipe_connect_ncacn_np_smb, c);
-			return;
-		}
-		break;
+		/*
+		 * SMB1/2/3...
+		 */
+		ncacn_np_smb_req = dcerpc_pipe_connect_ncacn_np_smb_send(c, &pc, s->lp_ctx);
+		composite_continue(c, ncacn_np_smb_req, continue_pipe_connect_ncacn_np_smb, c);
+		return;
 
 	case NCACN_IP_TCP:
 		ncacn_ip_tcp_req = dcerpc_pipe_connect_ncacn_ip_tcp_send(c, &pc);
@@ -855,24 +854,6 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 		/* looks like a transport we don't support now */
 		composite_error(c, NT_STATUS_NOT_SUPPORTED);
 	}
-}
-
-
-/*
-  Stage 3 of pipe_connect_b: Receive result of pipe connect request on
-  named pipe on smb2
-*/
-static void continue_pipe_connect_ncacn_np_smb2(struct composite_context *ctx)
-{
-	struct composite_context *c = talloc_get_type(ctx->async.private_data,
-						      struct composite_context);
-	struct pipe_connect_state *s = talloc_get_type(c->private_data,
-						       struct pipe_connect_state);
-
-	c->status = dcerpc_pipe_connect_ncacn_np_smb2_recv(ctx);
-	if (!composite_is_ok(c)) return;
-
-	continue_pipe_connect(c, s);
 }
 
 
