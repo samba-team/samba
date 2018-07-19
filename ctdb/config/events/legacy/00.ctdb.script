@@ -83,7 +83,7 @@ check_non_persistent_databases ()
     for _db in "${_dir}/"*.tdb.*[0-9] ; do
 	[ -r "$_db" ] || continue
 	check_tdb "$_db" || {
-	    _backup="${_db}.$(date +'%Y%m%d.%H%M%S.%N').corrupt"
+	    _backup="${_db}.$(date +'%Y%m%d.%H%M%S').corrupt"
 	    cat <<EOF
 WARNING: database ${_db} is corrupted.
  Moving to backup ${_backup} for later analysis.
