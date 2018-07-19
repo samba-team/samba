@@ -8,7 +8,7 @@ case "$2" in
 	;;
 
 "verbosetimeout")
-	(pstree $1 ; ctdb-event status random $2) > "$log"
+	(ctdb-event status random $2) > "$log"
 	;;
 
 "verbosetimeout2")

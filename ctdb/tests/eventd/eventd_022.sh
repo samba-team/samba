@@ -15,7 +15,6 @@ simple_test run 5 random verbosetimeout
 sleep 5
 
 ok <<EOF
-02.enabled.scri---sleep
 01.disabled          DISABLED  
 02.enabled           TIMEDOUT   DATETIME
   OUTPUT: Sleeping for 99 seconds
