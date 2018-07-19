@@ -24,10 +24,10 @@ CONTROLFAILS
 90	2	TIMEOUT	CTDB_CONTROL_GET_PUBLIC_IPS fake timeout
 EOF
 
-required_result 110 <<EOF
-control GET_PUBLIC_IPS failed on node 2, ret=110
+required_error ETIMEDOUT <<EOF
+control GET_PUBLIC_IPS failed on node 2, ret=$(errcode ETIMEDOUT)
 Failed to fetch known public IPs
 Assigning banning credits to node 2
-takeover run failed, ret=110
+takeover run failed, ret=$(errcode ETIMEDOUT)
 EOF
 test_takeover_helper

@@ -24,8 +24,8 @@ CONTROLFAILS
 91	0	TIMEOUT	CTDB_CONTROL_GET_NODEMAP fake timeout
 EOF
 
-required_result 110 <<EOF
-control GET_NODEMAP failed to node 0, ret=110
-takeover run failed, ret=110
+required_error ETIMEDOUT <<EOF
+control GET_NODEMAP failed to node 0, ret=$(errcode ETIMEDOUT)
+takeover run failed, ret=$(errcode ETIMEDOUT)
 EOF
 test_takeover_helper

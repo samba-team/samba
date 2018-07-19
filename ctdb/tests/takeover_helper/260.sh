@@ -24,8 +24,8 @@ CONTROLFAILS
 53	0	TIMEOUT	CTDB_CONTROL_GET_ALL_TUNABLES fake timeout
 EOF
 
-required_result 110 <<EOF
-control GET_ALL_TUNABLES failed, ret=110
-takeover run failed, ret=110
+required_error ETIMEDOUT <<EOF
+control GET_ALL_TUNABLES failed, ret=$(errcode ETIMEDOUT)
+takeover run failed, ret=$(errcode ETIMEDOUT)
 EOF
 test_takeover_helper

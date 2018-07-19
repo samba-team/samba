@@ -24,11 +24,11 @@ CONTROLFAILS
 88	2	TIMEOUT	CTDB_CONTROL_RELEASE_IP fake timeout
 EOF
 
-required_result 110 <<EOF
-RELEASE_IP 10.0.0.33 failed on node 2, ret=110
-RELEASE_IP 10.0.0.32 failed on node 2, ret=110
+required_error ETIMEDOUT <<EOF
+RELEASE_IP 10.0.0.33 failed on node 2, ret=$(errcode ETIMEDOUT)
+RELEASE_IP 10.0.0.32 failed on node 2, ret=$(errcode ETIMEDOUT)
 Assigning banning credits to node 2
-takeover run failed, ret=110
+takeover run failed, ret=$(errcode ETIMEDOUT)
 EOF
 test_takeover_helper
 

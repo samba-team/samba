@@ -24,10 +24,10 @@ CONTROLFAILS
 89	1	TIMEOUT	CTDB_CONTROL_TAKEOVER_IP fake timeout
 EOF
 
-required_result 110 <<EOF
-TAKEOVER_IP 10.0.0.32 failed to node 1, ret=110
+required_error ETIMEDOUT <<EOF
+TAKEOVER_IP 10.0.0.32 failed to node 1, ret=$(errcode ETIMEDOUT)
 Assigning banning credits to node 1
-takeover run failed, ret=110
+takeover run failed, ret=$(errcode ETIMEDOUT)
 EOF
 test_takeover_helper
 

@@ -15,11 +15,11 @@ CONTROLFAILS
 
 EOF
 
-required_result 110 <<EOF
+required_error ETIMEDOUT <<EOF
 No nodes available to host public IPs yet
-IPREALLOCATED failed on node 1, ret=110
+IPREALLOCATED failed on node 1, ret=$(errcode ETIMEDOUT)
 Assigning banning credits to node 1
-takeover run failed, ret=110
+takeover run failed, ret=$(errcode ETIMEDOUT)
 EOF
 test_takeover_helper
 
