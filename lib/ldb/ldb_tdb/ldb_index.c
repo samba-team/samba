@@ -1734,7 +1734,7 @@ static int ldb_kv_index_dn(struct ldb_module *module,
 */
 static int ldb_kv_index_filter(struct ltdb_private *ltdb,
 			       const struct dn_list *dn_list,
-			       struct ltdb_context *ac,
+			       struct ldb_kv_context *ac,
 			       uint32_t *match_count,
 			       enum key_truncation scope_one_truncation)
 {
@@ -1936,7 +1936,7 @@ static void ldb_kv_dn_list_sort(struct ltdb_private *ltdb, struct dn_list *list)
   returns -1 if an indexed search is not possible, in which
   case the caller should call ltdb_search_full()
 */
-int ldb_kv_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
+int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(ac->module), struct ltdb_private);

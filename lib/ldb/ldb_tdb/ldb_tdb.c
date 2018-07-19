@@ -57,7 +57,7 @@
   prevent memory errors on callbacks
 */
 struct ltdb_req_spy {
-	struct ltdb_context *ctx;
+	struct ldb_kv_context *ctx;
 };
 
 /*
@@ -671,7 +671,7 @@ static int ldb_kv_add_internal(struct ldb_module *module,
 /*
   add a record to the database
 */
-static int ldb_kv_add(struct ltdb_context *ctx)
+static int ldb_kv_add(struct ldb_kv_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
@@ -803,7 +803,7 @@ done:
 /*
   delete a record from the database
 */
-static int ldb_kv_delete(struct ltdb_context *ctx)
+static int ldb_kv_delete(struct ldb_kv_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
@@ -1335,7 +1335,7 @@ done:
 /*
   modify a record
 */
-static int ldb_kv_modify(struct ltdb_context *ctx)
+static int ldb_kv_modify(struct ldb_kv_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
@@ -1360,7 +1360,7 @@ static int ldb_kv_modify(struct ltdb_context *ctx)
 /*
   rename a record
 */
-static int ldb_kv_rename(struct ltdb_context *ctx)
+static int ldb_kv_rename(struct ldb_kv_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	void *data = ldb_module_get_private(module);
@@ -1686,7 +1686,7 @@ static int ldb_kv_del_trans(struct ldb_module *module)
 /*
   return sequenceNumber from @BASEINFO
 */
-static int ldb_kv_sequence_number(struct ltdb_context *ctx,
+static int ldb_kv_sequence_number(struct ldb_kv_context *ctx,
 				  struct ldb_extended **ext)
 {
 	struct ldb_context *ldb;
@@ -1779,7 +1779,7 @@ done:
 	return ret;
 }
 
-static void ldb_kv_request_done(struct ltdb_context *ctx, int error)
+static void ldb_kv_request_done(struct ldb_kv_context *ctx, int error)
 {
 	struct ldb_context *ldb;
 	struct ldb_request *req;
@@ -1810,8 +1810,8 @@ static void ldb_kv_timeout(struct tevent_context *ev,
 			   struct timeval t,
 			   void *private_data)
 {
-	struct ltdb_context *ctx;
-	ctx = talloc_get_type(private_data, struct ltdb_context);
+	struct ldb_kv_context *ctx;
+	ctx = talloc_get_type(private_data, struct ldb_kv_context);
 
 	if (!ctx->request_terminated) {
 		/* request is done now */
@@ -1826,7 +1826,7 @@ static void ldb_kv_timeout(struct tevent_context *ev,
 	talloc_free(ctx);
 }
 
-static void ldb_kv_request_extended_done(struct ltdb_context *ctx,
+static void ldb_kv_request_extended_done(struct ldb_kv_context *ctx,
 					 struct ldb_extended *ext,
 					 int error)
 {
@@ -1855,7 +1855,7 @@ static void ldb_kv_request_extended_done(struct ltdb_context *ctx,
 	req->callback(req, ares);
 }
 
-static void ldb_kv_handle_extended(struct ltdb_context *ctx)
+static void ldb_kv_handle_extended(struct ldb_kv_context *ctx)
 {
 	struct ldb_extended *ext = NULL;
 	int ret;
@@ -2062,10 +2062,10 @@ static void ldb_kv_callback(struct tevent_context *ev,
 			    struct timeval t,
 			    void *private_data)
 {
-	struct ltdb_context *ctx;
+	struct ldb_kv_context *ctx;
 	int ret;
 
-	ctx = talloc_get_type(private_data, struct ltdb_context);
+	ctx = talloc_get_type(private_data, struct ldb_kv_context);
 
 	if (ctx->request_terminated) {
 		goto done;
@@ -2128,7 +2128,7 @@ static int ldb_kv_handle_request(struct ldb_module *module,
 	struct ldb_control *control_permissive;
 	struct ldb_context *ldb;
 	struct tevent_context *ev;
-	struct ltdb_context *ac;
+	struct ldb_kv_context *ac;
 	struct tevent_timer *te;
 	struct timeval tv;
 	unsigned int i;
@@ -2154,7 +2154,7 @@ static int ldb_kv_handle_request(struct ldb_module *module,
 
 	ev = ldb_handle_get_event_context(req->handle);
 
-	ac = talloc_zero(ldb, struct ltdb_context);
+	ac = talloc_zero(ldb, struct ldb_kv_context);
 	if (ac == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;

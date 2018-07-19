@@ -496,7 +496,7 @@ failed:
 static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb_val val, void *state)
 {
 	struct ldb_context *ldb;
-	struct ltdb_context *ac;
+	struct ldb_kv_context *ac;
 	struct ldb_message *msg, *filtered_msg;
 	int ret;
 	bool matched;
@@ -506,7 +506,7 @@ static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb
 		.dsize = key.length
 	};
 
-	ac = talloc_get_type(state, struct ltdb_context);
+	ac = talloc_get_type(state, struct ldb_kv_context);
 	ldb = ldb_module_get_ctx(ac->module);
 
 	if (ldb_kv_key_is_record(tdb_key) == false) {
@@ -580,7 +580,7 @@ static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb
   search the database with a LDAP-like expression.
   this is the "full search" non-indexed variant
 */
-static int ldb_kv_search_full(struct ltdb_context *ctx)
+static int ldb_kv_search_full(struct ldb_kv_context *ctx)
 {
 	void *data = ldb_module_get_private(ctx->module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -597,7 +597,7 @@ static int ldb_kv_search_full(struct ltdb_context *ctx)
 }
 
 static int ldb_kv_search_and_return_base(struct ltdb_private *ltdb,
-					 struct ltdb_context *ctx)
+					 struct ldb_kv_context *ctx)
 {
 	struct ldb_message *msg, *filtered_msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
@@ -702,7 +702,7 @@ static int ldb_kv_search_and_return_base(struct ltdb_private *ltdb,
   search the database with a LDAP-like expression.
   choses a search method
 */
-int ldb_kv_search(struct ltdb_context *ctx)
+int ldb_kv_search(struct ldb_kv_context *ctx)
 {
 	struct ldb_context *ldb;
 	struct ldb_module *module = ctx->module;

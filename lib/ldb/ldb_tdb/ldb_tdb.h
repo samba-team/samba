@@ -91,7 +91,7 @@ struct ltdb_private {
 	pid_t pid;
 };
 
-struct ltdb_context {
+struct ldb_kv_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
 
@@ -162,7 +162,7 @@ int ldb_kv_check_at_attributes_values(const struct ldb_val *value);
 
 struct ldb_parse_tree;
 
-int ldb_kv_search_indexed(struct ltdb_context *ctx, uint32_t *);
+int ldb_kv_search_indexed(struct ldb_kv_context *ctx, uint32_t *);
 int ldb_kv_index_add_new(struct ldb_module *module,
 			 struct ltdb_private *ltdb,
 			 const struct ldb_message *msg);
@@ -213,7 +213,7 @@ int ldb_kv_filter_attrs(TALLOC_CTX *mem_ctx,
 			const struct ldb_message *msg,
 			const char *const *attrs,
 			struct ldb_message **filtered_msg);
-int ldb_kv_search(struct ltdb_context *ctx);
+int ldb_kv_search(struct ldb_kv_context *ctx);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 /* 
