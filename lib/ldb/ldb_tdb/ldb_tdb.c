@@ -56,7 +56,7 @@
 /*
   prevent memory errors on callbacks
 */
-struct ltdb_req_spy {
+struct ldb_kv_req_spy {
 	struct ldb_kv_context *ctx;
 };
 
@@ -2111,7 +2111,7 @@ done:
 
 static int ldb_kv_request_destructor(void *ptr)
 {
-	struct ltdb_req_spy *spy = talloc_get_type(ptr, struct ltdb_req_spy);
+	struct ldb_kv_req_spy *spy = talloc_get_type(ptr, struct ldb_kv_req_spy);
 
 	if (spy->ctx != NULL) {
 		spy->ctx->spy = NULL;
@@ -2184,7 +2184,7 @@ static int ldb_kv_handle_request(struct ldb_module *module,
 
 	/* set a spy so that we do not try to use the request context
 	 * if it is freed before ltdb_callback fires */
-	ac->spy = talloc(req, struct ltdb_req_spy);
+	ac->spy = talloc(req, struct ldb_kv_req_spy);
 	if (NULL == ac->spy) {
 		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;

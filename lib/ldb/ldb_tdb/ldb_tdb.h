@@ -96,7 +96,7 @@ struct ldb_kv_context {
 	struct ldb_request *req;
 
 	bool request_terminated;
-	struct ltdb_req_spy *spy;
+	struct ldb_kv_req_spy *spy;
 
 	/* search stuff */
 	const struct ldb_parse_tree *tree;
