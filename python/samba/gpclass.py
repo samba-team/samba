@@ -357,14 +357,6 @@ class gp_ext_setter():
 
 
 class gp_inf_ext(gp_ext):
-    @abstractmethod
-    def list(self, rootpath):
-        pass
-
-    @abstractmethod
-    def apply_map(self):
-        pass
-
     def read(self, policy):
         ret = False
         inftable = self.apply_map()
@@ -397,10 +389,6 @@ class gp_inf_ext(gp_ext):
                            value).update_samba()
                     self.gp_db.commit()
         return ret
-
-    @abstractmethod
-    def __str__(self):
-        pass
 
 
 ''' Fetch the hostname of a writable DC '''
