@@ -109,9 +109,9 @@ simple_test ()
 result_filter ()
 {
 	_duration="\<[0-9][0-9]*\.[0-9][0-9][0-9]\>"
-	_day="\(Mon\|Tue\|Wed\|Thu\|Fri\|Sat\|Sun\)"
-	_month="\(Jan\|Feb\|Mar\|Apr\|May\|Jun\|Jul\|Aug\|Sep\|Oct\|Nov\|Dec\)"
-	_date="\( [0-9]\|[0-9][0-9]\)"
+	_day="[FMSTW][aehoru][deintu]"
+	_month="[ADFJMNOS][aceopu][bcglnprtvy]"
+	_date="[ 0-9][0-9]"
 	_time="[0-9][0-9]:[0-9][0-9]:[0-9][0-9]"
 	_year="[0-9][0-9][0-9][0-9]"
 	_datetime="${_day} ${_month} ${_date} ${_time} ${_year}"
