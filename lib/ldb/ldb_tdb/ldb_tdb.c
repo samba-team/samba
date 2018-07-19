@@ -1924,7 +1924,8 @@ static int ltdb_update_in_iterate(struct ltdb_private *ltdb,
 {
 	int tdb_ret;
 	struct ldb_context *ldb;
-	struct ldb_kv_reindex_context *ctx = (struct ldb_kv_reindex_context *)state;
+	struct ldb_kv_reindex_context *ctx =
+	    (struct ldb_kv_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	TDB_DATA key = {
 		.dptr = ldb_key.data,

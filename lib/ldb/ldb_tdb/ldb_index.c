@@ -2832,7 +2832,8 @@ static int delete_index(struct ltdb_private *ltdb, struct ldb_val key, struct ld
 static int re_key(struct ltdb_private *ltdb, struct ldb_val ldb_key, struct ldb_val val, void *state)
 {
 	struct ldb_context *ldb;
-	struct ldb_kv_reindex_context *ctx = (struct ldb_kv_reindex_context *)state;
+	struct ldb_kv_reindex_context *ctx =
+	    (struct ldb_kv_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
@@ -2923,7 +2924,8 @@ static int re_key(struct ltdb_private *ltdb, struct ldb_val ldb_key, struct ldb_
 static int re_index(struct ltdb_private *ltdb, struct ldb_val ldb_key, struct ldb_val val, void *state)
 {
 	struct ldb_context *ldb;
-	struct ldb_kv_reindex_context *ctx = (struct ldb_kv_reindex_context *)state;
+	struct ldb_kv_reindex_context *ctx =
+	    (struct ldb_kv_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
