@@ -92,7 +92,6 @@ static int lmdb_error_at(struct ldb_context *ldb,
 	return ldb_err;
 }
 
-
 static bool lmdb_transaction_active(struct ldb_kv_private *ldb_kv)
 {
 	return ldb_kv->lmdb_private->txlist != NULL;
@@ -150,7 +149,8 @@ static MDB_txn *get_current_txn(struct lmdb_private *lmdb)
 
 static int lmdb_store(struct ldb_kv_private *ldb_kv,
 		      struct ldb_val key,
-		      struct ldb_val data, int flags)
+		      struct ldb_val data,
+		      int flags)
 {
 	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	MDB_val mdb_key;
@@ -368,8 +368,10 @@ done:
 }
 
 /* Handles only a single record */
-static int lmdb_parse_record(struct ldb_kv_private *ldb_kv, struct ldb_val key,
-			     int (*parser)(struct ldb_val key, struct ldb_val data,
+static int lmdb_parse_record(struct ldb_kv_private *ldb_kv,
+			     struct ldb_val key,
+			     int (*parser)(struct ldb_val key,
+					   struct ldb_val data,
 					   void *private_data),
 			     void *ctx)
 {
@@ -417,7 +419,8 @@ static int lmdb_parse_record(struct ldb_kv_private *ldb_kv, struct ldb_val key,
 static int lmdb_lock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	pid_t pid = getpid();
 
@@ -451,9 +454,11 @@ static int lmdb_lock_read(struct ldb_module *module)
 static int lmdb_unlock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 
-	if (lmdb_transaction_active(ldb_kv) == false && ldb_kv->read_lock_count == 1) {
+	if (lmdb_transaction_active(ldb_kv) == false &&
+	    ldb_kv->read_lock_count == 1) {
 		struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 		mdb_txn_commit(lmdb->read_txn);
 		lmdb->read_txn = NULL;
@@ -554,7 +559,7 @@ static const char *lmdb_errorstr(struct ldb_kv_private *ldb_kv)
 	return mdb_strerror(ldb_kv->lmdb_private->error);
 }
 
-static const char * lmdb_name(struct ldb_kv_private *ldb_kv)
+static const char *lmdb_name(struct ldb_kv_private *ldb_kv)
 {
 	return "lmdb";
 }

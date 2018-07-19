@@ -390,7 +390,7 @@ static void test_delete(void **state)
 	/*
 	 * Now delete it.
 	 */
-	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
+	ret = ldb_kv->kv_ops->delete (ldb_kv, key);
 	assert_int_equal(ret, 0);
 
 	/*
@@ -551,7 +551,7 @@ static void test_transaction_abort_delete(void **state)
 	/*
 	 * Now delete it.
 	 */
-	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
+	ret = ldb_kv->kv_ops->delete (ldb_kv, key);
 	assert_int_equal(ret, 0);
 
 	/*
@@ -680,7 +680,7 @@ static void test_delete_outside_transaction(void **state)
 	/*
 	 * Now attempt to delete a record
 	 */
-	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
+	ret = ldb_kv->kv_ops->delete (ldb_kv, key);
 	assert_int_equal(ret, LDB_ERR_PROTOCOL_ERROR);
 
 	/*
@@ -701,7 +701,8 @@ static void test_delete_outside_transaction(void **state)
 static int traverse_fn(struct ldb_kv_private *ldb_kv,
 		       struct ldb_val key,
 		       struct ldb_val data,
-		       void *ctx) {
+		       void *ctx)
+{
 
 	int *visits = ctx;
 	int i;
@@ -792,7 +793,8 @@ struct update_context {
 static int update_fn(struct ldb_kv_private *ldb_kv,
 		     struct ldb_val key,
 		     struct ldb_val data,
-		     void *ctx) {
+		     void *ctx)
+{
 
 	struct ldb_val new_key;
 	struct ldb_module *module = NULL;
@@ -815,11 +817,8 @@ static int update_fn(struct ldb_kv_private *ldb_kv,
 		new_key.length  = key.length;
 		new_key.data[0] = 'K';
 
-		ret = ldb_kv->kv_ops->update_in_iterate(ldb_kv,
-						      key,
-						      new_key,
-						      data,
-						      &module);
+		ret = ldb_kv->kv_ops->update_in_iterate(
+		    ldb_kv, key, new_key, data, &module);
 	}
 	TALLOC_FREE(tmp_ctx);
 	return ret;
@@ -1484,7 +1483,7 @@ static void test_delete_transaction_isolation(void **state)
 	key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
 	key.length = strlen(KEY2) + 1;
 
-	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
+	ret = ldb_kv->kv_ops->delete (ldb_kv, key);
 	assert_int_equal(ret, 0);
 	/*
 	 * Signal the child process

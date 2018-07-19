@@ -6,19 +6,30 @@
 
 struct ldb_kv_private;
 typedef int (*ldb_kv_traverse_fn)(struct ldb_kv_private *ldb_kv,
-				  struct ldb_val key, struct ldb_val data,
+				  struct ldb_val key,
+				  struct ldb_val data,
 				  void *ctx);
 
 struct kv_db_ops {
-	int (*store)(struct ldb_kv_private *ldb_kv, struct ldb_val key, struct ldb_val data, int flags);
+	int (*store)(struct ldb_kv_private *ldb_kv,
+		     struct ldb_val key,
+		     struct ldb_val data,
+		     int flags);
 	int (*delete)(struct ldb_kv_private *ldb_kv, struct ldb_val key);
-	int (*iterate)(struct ldb_kv_private *ldb_kv, ldb_kv_traverse_fn fn, void *ctx);
-	int (*update_in_iterate)(struct ldb_kv_private *ldb_kv, struct ldb_val key,
-				 struct ldb_val key2, struct ldb_val data, void *ctx);
-	int (*fetch_and_parse)(struct ldb_kv_private *ldb_kv, struct ldb_val key,
-                               int (*parser)(struct ldb_val key, struct ldb_val data,
-                                             void *private_data),
-                               void *ctx);
+	int (*iterate)(struct ldb_kv_private *ldb_kv,
+		       ldb_kv_traverse_fn fn,
+		       void *ctx);
+	int (*update_in_iterate)(struct ldb_kv_private *ldb_kv,
+				 struct ldb_val key,
+				 struct ldb_val key2,
+				 struct ldb_val data,
+				 void *ctx);
+	int (*fetch_and_parse)(struct ldb_kv_private *ldb_kv,
+			       struct ldb_val key,
+			       int (*parser)(struct ldb_val key,
+					     struct ldb_val data,
+					     void *private_data),
+			       void *ctx);
 	int (*lock_read)(struct ldb_module *);
 	int (*unlock_read)(struct ldb_module *);
 	int (*begin_write)(struct ldb_kv_private *);
@@ -26,8 +37,8 @@ struct kv_db_ops {
 	int (*abort_write)(struct ldb_kv_private *);
 	int (*finish_write)(struct ldb_kv_private *);
 	int (*error)(struct ldb_kv_private *ldb_kv);
-	const char * (*errorstr)(struct ldb_kv_private *ldb_kv);
-	const char * (*name)(struct ldb_kv_private *ldb_kv);
+	const char *(*errorstr)(struct ldb_kv_private *ldb_kv);
+	const char *(*name)(struct ldb_kv_private *ldb_kv);
 	bool (*has_changed)(struct ldb_kv_private *ldb_kv);
 	bool (*transaction_active)(struct ldb_kv_private *ldb_kv);
 };

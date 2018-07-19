@@ -248,11 +248,12 @@ static int ldb_kv_index_load(struct ldb_module *module,
 		 * supplying its own attribute handling
 		 */
 		ldb_kv->cache->attribute_indexes = true;
-		ldb_kv->cache->one_level_indexes = ldb->schema.one_level_indexes;
-		ldb_kv->cache->GUID_index_attribute
-			= ldb->schema.GUID_index_attribute;
-		ldb_kv->cache->GUID_index_dn_component
-			= ldb->schema.GUID_index_dn_component;
+		ldb_kv->cache->one_level_indexes =
+		    ldb->schema.one_level_indexes;
+		ldb_kv->cache->GUID_index_attribute =
+		    ldb->schema.GUID_index_attribute;
+		ldb_kv->cache->GUID_index_dn_component =
+		    ldb->schema.GUID_index_dn_component;
 		return 0;
 	}
 
@@ -282,22 +283,21 @@ static int ldb_kv_index_load(struct ldb_module *module,
 		return -1;
 	}
 
-	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LTDB_IDXONE) != NULL) {
+	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LTDB_IDXONE) !=
+	    NULL) {
 		ldb_kv->cache->one_level_indexes = true;
 	}
-	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LTDB_IDXATTR) != NULL) {
+	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LTDB_IDXATTR) !=
+	    NULL) {
 		ldb_kv->cache->attribute_indexes = true;
 	}
-	ldb_kv->cache->GUID_index_attribute
-		= ldb_msg_find_attr_as_string(ldb_kv->cache->indexlist,
-					      LTDB_IDXGUID, NULL);
-	ldb_kv->cache->GUID_index_dn_component
-		= ldb_msg_find_attr_as_string(ldb_kv->cache->indexlist,
-					      LTDB_IDX_DN_GUID, NULL);
+	ldb_kv->cache->GUID_index_attribute = ldb_msg_find_attr_as_string(
+	    ldb_kv->cache->indexlist, LTDB_IDXGUID, NULL);
+	ldb_kv->cache->GUID_index_dn_component = ldb_msg_find_attr_as_string(
+	    ldb_kv->cache->indexlist, LTDB_IDX_DN_GUID, NULL);
 
-	lmdb_subdb_version
-		= ldb_msg_find_attr_as_int(ldb_kv->cache->indexlist,
-					   LTDB_IDX_LMDB_SUBDB, 0);
+	lmdb_subdb_version = ldb_msg_find_attr_as_int(
+	    ldb_kv->cache->indexlist, LTDB_IDX_LMDB_SUBDB, 0);
 
 	if (lmdb_subdb_version != 0) {
 		ldb_set_errstring(ldb,
@@ -319,7 +319,8 @@ static int ldb_kv_baseinfo_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 	struct ldb_message *msg;
 	struct ldb_message_element el;
 	struct ldb_val val;
@@ -375,7 +376,8 @@ failed:
 static void ldb_kv_cache_free(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 
 	ldb_kv->sequence_number = 0;
 	talloc_free(ldb_kv->cache);
@@ -399,7 +401,8 @@ int ldb_kv_cache_load(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 	struct ldb_dn *baseinfo_dn = NULL, *options_dn = NULL;
 	uint64_t seq;
 	struct ldb_message *baseinfo = NULL, *options = NULL;
@@ -416,7 +419,8 @@ int ldb_kv_cache_load(struct ldb_module *module)
 
 	if (ldb_kv->cache == NULL) {
 		ldb_kv->cache = talloc_zero(ldb_kv, struct ltdb_cache);
-		if (ldb_kv->cache == NULL) goto failed;
+		if (ldb_kv->cache == NULL)
+			goto failed;
 	}
 
 	baseinfo = ldb_msg_new(ldb_kv->cache);
@@ -487,12 +491,10 @@ int ldb_kv_cache_load(struct ldb_module *module)
 	
 	/* set flags if they do exist */
 	if (r == LDB_SUCCESS) {
-		ldb_kv->check_base = ldb_msg_find_attr_as_bool(options,
-							     LTDB_CHECK_BASE,
-							     false);
-		ldb_kv->disallow_dn_filter = ldb_msg_find_attr_as_bool(options,
-								     LTDB_DISALLOW_DN_FILTER,
-								     false);
+		ldb_kv->check_base =
+		    ldb_msg_find_attr_as_bool(options, LTDB_CHECK_BASE, false);
+		ldb_kv->disallow_dn_filter = ldb_msg_find_attr_as_bool(
+		    options, LTDB_DISALLOW_DN_FILTER, false);
 	} else {
 		ldb_kv->check_base = false;
 		ldb_kv->disallow_dn_filter = false;
@@ -527,8 +529,8 @@ int ldb_kv_cache_load(struct ldb_module *module)
 		 * Now the attributes are loaded, set the guid_index_syntax.
 		 * This can't fail, it will return a default at worst
 		 */
-		a = ldb_schema_attribute_by_name(ldb,
-						 ldb_kv->cache->GUID_index_attribute);
+		a = ldb_schema_attribute_by_name(
+		    ldb, ldb_kv->cache->GUID_index_attribute);
 		ldb_kv->GUID_index_syntax = a->syntax;
 	}
 
@@ -566,7 +568,8 @@ int ldb_kv_increase_sequence_number(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 	struct ldb_message *msg;
 	struct ldb_message_element el[2];
 	struct ldb_val val;
@@ -583,7 +586,7 @@ int ldb_kv_increase_sequence_number(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	s = talloc_asprintf(msg, "%llu", ldb_kv->sequence_number+1);
+	s = talloc_asprintf(msg, "%llu", ldb_kv->sequence_number + 1);
 	if (!s) {
 		talloc_free(msg);
 		errno = ENOMEM;

@@ -289,7 +289,8 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 		      unsigned int unpack_flags)
 {
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 	uint8_t guid_key[LTDB_GUID_KEY_SIZE];
 	TDB_DATA tdb_key = {
@@ -299,7 +300,7 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 	TALLOC_CTX *tdb_key_ctx = NULL;
 
 	if (ldb_kv->cache->GUID_index_attribute == NULL ||
-		ldb_dn_is_special(dn)) {
+	    ldb_dn_is_special(dn)) {
 
 		tdb_key_ctx = talloc_new(msg);
 		if (!tdb_key_ctx) {
@@ -493,7 +494,10 @@ failed:
 /*
   search function for a non-indexed search
  */
-static int search_func(struct ldb_kv_private *ldb_kv, struct ldb_val key, struct ldb_val val, void *state)
+static int search_func(struct ldb_kv_private *ldb_kv,
+		       struct ldb_val key,
+		       struct ldb_val val,
+		       void *state)
 {
 	struct ldb_context *ldb;
 	struct ldb_kv_context *ac;
@@ -583,7 +587,8 @@ static int search_func(struct ldb_kv_private *ldb_kv, struct ldb_val key, struct
 static int ldb_kv_search_full(struct ldb_kv_context *ctx)
 {
 	void *data = ldb_module_get_private(ctx->module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 
 	ctx->error = LDB_SUCCESS;
@@ -708,7 +713,8 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
 	void *data = ldb_module_get_private(module);
-	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -811,7 +817,8 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 		 * callback error */
 		if ( ! ctx->request_terminated && ret != LDB_SUCCESS) {
 			/* Not indexed, so we need to do a full scan */
-			if (ldb_kv->warn_unindexed || ldb_kv->disable_full_db_scan) {
+			if (ldb_kv->warn_unindexed ||
+			    ldb_kv->disable_full_db_scan) {
 				/* useful for debugging when slow performance
 				 * is caused by unindexed searches */
 				char *expression = ldb_filter_from_tree(ctx, ctx->tree);
