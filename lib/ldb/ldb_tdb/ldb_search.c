@@ -235,7 +235,7 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
   and LDB_SUCCESS on success
 */
 int ldb_kv_search_key(struct ldb_module *module,
-		      struct ltdb_private *ltdb,
+		      struct ldb_kv_private *ldb_kv,
 		      const struct TDB_DATA tdb_key,
 		      struct ldb_message *msg,
 		      unsigned int unpack_flags)
@@ -256,11 +256,11 @@ int ldb_kv_search_key(struct ldb_module *module,
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = ltdb->kv_ops->fetch_and_parse(
-	    ltdb, ldb_key, ldb_kv_parse_data_unpack, &ctx);
+	ret = ldb_kv->kv_ops->fetch_and_parse(
+	    ldb_kv, ldb_key, ldb_kv_parse_data_unpack, &ctx);
 
 	if (ret == -1) {
-		ret = ltdb->kv_ops->error(ltdb);
+		ret = ldb_kv->kv_ops->error(ldb_kv);
 		if (ret == LDB_SUCCESS) {
 			/*
 			 * Just to be sure we don't turn errors
@@ -289,7 +289,7 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 		      unsigned int unpack_flags)
 {
 	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 	uint8_t guid_key[LTDB_GUID_KEY_SIZE];
 	TDB_DATA tdb_key = {
@@ -298,7 +298,7 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 	};
 	TALLOC_CTX *tdb_key_ctx = NULL;
 
-	if (ltdb->cache->GUID_index_attribute == NULL ||
+	if (ldb_kv->cache->GUID_index_attribute == NULL ||
 		ldb_dn_is_special(dn)) {
 
 		tdb_key_ctx = talloc_new(msg);
@@ -320,13 +320,13 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 		 * used for internal memory.
 		 *
 		 */
-		ret = ldb_kv_key_dn_from_idx(module, ltdb, msg, dn, &tdb_key);
+		ret = ldb_kv_key_dn_from_idx(module, ldb_kv, msg, dn, &tdb_key);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 
-	ret = ldb_kv_search_key(module, ltdb, tdb_key, msg, unpack_flags);
+	ret = ldb_kv_search_key(module, ldb_kv, tdb_key, msg, unpack_flags);
 
 	TALLOC_FREE(tdb_key_ctx);
 
@@ -493,7 +493,7 @@ failed:
 /*
   search function for a non-indexed search
  */
-static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb_val val, void *state)
+static int search_func(struct ldb_kv_private *ldb_kv, struct ldb_val key, struct ldb_val val, void *state)
 {
 	struct ldb_context *ldb;
 	struct ldb_kv_context *ac;
@@ -583,11 +583,11 @@ static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb
 static int ldb_kv_search_full(struct ldb_kv_context *ctx)
 {
 	void *data = ldb_module_get_private(ctx->module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 
 	ctx->error = LDB_SUCCESS;
-	ret = ltdb->kv_ops->iterate(ltdb, search_func, ctx);
+	ret = ldb_kv->kv_ops->iterate(ldb_kv, search_func, ctx);
 
 	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -596,7 +596,7 @@ static int ldb_kv_search_full(struct ldb_kv_context *ctx)
 	return ctx->error;
 }
 
-static int ldb_kv_search_and_return_base(struct ltdb_private *ltdb,
+static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 					 struct ldb_kv_context *ctx)
 {
 	struct ldb_message *msg, *filtered_msg;
@@ -617,7 +617,7 @@ static int ldb_kv_search_and_return_base(struct ltdb_private *ltdb,
 				    LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		if (ltdb->check_base == false) {
+		if (ldb_kv->check_base == false) {
 			/*
 			 * In this case, we are done, as no base
 			 * checking is allowed in this DB
@@ -708,24 +708,24 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
 	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb->kv_ops->lock_read(module) != 0) {
+	if (ldb_kv->kv_ops->lock_read(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (ldb_kv_cache_load(module) != 0) {
-		ltdb->kv_ops->unlock_read(module);
+		ldb_kv->kv_ops->unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (req->op.search.tree == NULL) {
-		ltdb->kv_ops->unlock_read(module);
+		ldb_kv->kv_ops->unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -770,13 +770,13 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 		 * will try to look up an index record for a special
 		 * record (which doesn't exist).
 		 */
-		ret = ldb_kv_search_and_return_base(ltdb, ctx);
+		ret = ldb_kv_search_and_return_base(ldb_kv, ctx);
 
-		ltdb->kv_ops->unlock_read(module);
+		ldb_kv->kv_ops->unlock_read(module);
 
 		return ret;
 
-	} else if (ltdb->check_base) {
+	} else if (ldb_kv->check_base) {
 		/*
 		 * This database has been marked as
 		 * 'checkBaseOnSearch', so do a spot check of the base
@@ -811,7 +811,7 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 		 * callback error */
 		if ( ! ctx->request_terminated && ret != LDB_SUCCESS) {
 			/* Not indexed, so we need to do a full scan */
-			if (ltdb->warn_unindexed || ltdb->disable_full_db_scan) {
+			if (ldb_kv->warn_unindexed || ldb_kv->disable_full_db_scan) {
 				/* useful for debugging when slow performance
 				 * is caused by unindexed searches */
 				char *expression = ldb_filter_from_tree(ctx, ctx->tree);
@@ -834,14 +834,14 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 				 * full search or we may return
 				 * duplicate entries
 				 */
-				ltdb->kv_ops->unlock_read(module);
+				ldb_kv->kv_ops->unlock_read(module);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 
-			if (ltdb->disable_full_db_scan) {
+			if (ldb_kv->disable_full_db_scan) {
 				ldb_set_errstring(ldb,
 						  "ldb FULL SEARCH disabled");
-				ltdb->kv_ops->unlock_read(module);
+				ldb_kv->kv_ops->unlock_read(module);
 				return LDB_ERR_INAPPROPRIATE_MATCHING;
 			}
 
@@ -852,7 +852,7 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 		}
 	}
 
-	ltdb->kv_ops->unlock_read(module);
+	ldb_kv->kv_ops->unlock_read(module);
 
 	return ret;
 }

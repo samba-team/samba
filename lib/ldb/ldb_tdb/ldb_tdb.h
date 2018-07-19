@@ -4,37 +4,37 @@
 #include "tdb.h"
 #include "ldb_module.h"
 
-struct ltdb_private;
-typedef int (*ldb_kv_traverse_fn)(struct ltdb_private *ltdb,
+struct ldb_kv_private;
+typedef int (*ldb_kv_traverse_fn)(struct ldb_kv_private *ldb_kv,
 				  struct ldb_val key, struct ldb_val data,
 				  void *ctx);
 
 struct kv_db_ops {
-	int (*store)(struct ltdb_private *ltdb, struct ldb_val key, struct ldb_val data, int flags);
-	int (*delete)(struct ltdb_private *ltdb, struct ldb_val key);
-	int (*iterate)(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx);
-	int (*update_in_iterate)(struct ltdb_private *ltdb, struct ldb_val key,
+	int (*store)(struct ldb_kv_private *ldb_kv, struct ldb_val key, struct ldb_val data, int flags);
+	int (*delete)(struct ldb_kv_private *ldb_kv, struct ldb_val key);
+	int (*iterate)(struct ldb_kv_private *ldb_kv, ldb_kv_traverse_fn fn, void *ctx);
+	int (*update_in_iterate)(struct ldb_kv_private *ldb_kv, struct ldb_val key,
 				 struct ldb_val key2, struct ldb_val data, void *ctx);
-	int (*fetch_and_parse)(struct ltdb_private *ltdb, struct ldb_val key,
+	int (*fetch_and_parse)(struct ldb_kv_private *ldb_kv, struct ldb_val key,
                                int (*parser)(struct ldb_val key, struct ldb_val data,
                                              void *private_data),
                                void *ctx);
 	int (*lock_read)(struct ldb_module *);
 	int (*unlock_read)(struct ldb_module *);
-	int (*begin_write)(struct ltdb_private *);
-	int (*prepare_write)(struct ltdb_private *);
-	int (*abort_write)(struct ltdb_private *);
-	int (*finish_write)(struct ltdb_private *);
-	int (*error)(struct ltdb_private *ltdb);
-	const char * (*errorstr)(struct ltdb_private *ltdb);
-	const char * (*name)(struct ltdb_private *ltdb);
-	bool (*has_changed)(struct ltdb_private *ltdb);
-	bool (*transaction_active)(struct ltdb_private *ltdb);
+	int (*begin_write)(struct ldb_kv_private *);
+	int (*prepare_write)(struct ldb_kv_private *);
+	int (*abort_write)(struct ldb_kv_private *);
+	int (*finish_write)(struct ldb_kv_private *);
+	int (*error)(struct ldb_kv_private *ldb_kv);
+	const char * (*errorstr)(struct ldb_kv_private *ldb_kv);
+	const char * (*name)(struct ldb_kv_private *ldb_kv);
+	bool (*has_changed)(struct ldb_kv_private *ldb_kv);
+	bool (*transaction_active)(struct ldb_kv_private *ldb_kv);
 };
 
-/* this private structure is used by the ltdb backend in the
+/* this private structure is used by the key value backends in the
    ldb_context */
-struct ltdb_private {
+struct ldb_kv_private {
 	const struct kv_db_ops *kv_ops;
 	struct ldb_module *module;
 	TDB_CONTEXT *tdb;
@@ -164,20 +164,20 @@ struct ldb_parse_tree;
 
 int ldb_kv_search_indexed(struct ldb_kv_context *ctx, uint32_t *);
 int ldb_kv_index_add_new(struct ldb_module *module,
-			 struct ltdb_private *ltdb,
+			 struct ldb_kv_private *ldb_kv,
 			 const struct ldb_message *msg);
 int ldb_kv_index_delete(struct ldb_module *module,
 			const struct ldb_message *msg);
 int ldb_kv_index_del_element(struct ldb_module *module,
-			     struct ltdb_private *ltdb,
+			     struct ldb_kv_private *ldb_kv,
 			     const struct ldb_message *msg,
 			     struct ldb_message_element *el);
 int ldb_kv_index_add_element(struct ldb_module *module,
-			     struct ltdb_private *ltdb,
+			     struct ldb_kv_private *ldb_kv,
 			     const struct ldb_message *msg,
 			     struct ldb_message_element *el);
 int ldb_kv_index_del_value(struct ldb_module *module,
-			   struct ltdb_private *ltdb,
+			   struct ldb_kv_private *ldb_kv,
 			   const struct ldb_message *msg,
 			   struct ldb_message_element *el,
 			   unsigned int v_idx);
@@ -186,7 +186,7 @@ int ldb_kv_index_transaction_start(struct ldb_module *module);
 int ldb_kv_index_transaction_commit(struct ldb_module *module);
 int ldb_kv_index_transaction_cancel(struct ldb_module *module);
 int ldb_kv_key_dn_from_idx(struct ldb_module *module,
-			   struct ltdb_private *ltdb,
+			   struct ldb_kv_private *ldb_kv,
 			   TALLOC_CTX *mem_ctx,
 			   struct ldb_dn *dn,
 			   TDB_DATA *tdb_key);
@@ -205,7 +205,7 @@ int ldb_kv_search_base(struct ldb_module *module,
 		       struct ldb_dn *dn,
 		       struct ldb_dn **ret_dn);
 int ldb_kv_search_key(struct ldb_module *module,
-		      struct ltdb_private *ltdb,
+		      struct ldb_kv_private *ldb_kv,
 		      struct TDB_DATA tdb_key,
 		      struct ldb_message *msg,
 		      unsigned int unpack_flags);
@@ -228,11 +228,11 @@ TDB_DATA ldb_kv_key_msg(struct ldb_module *module,
 			TALLOC_CTX *mem_ctx,
 			const struct ldb_message *msg);
 int ldb_kv_guid_to_key(struct ldb_module *module,
-		       struct ltdb_private *ltdb,
+		       struct ldb_kv_private *ldb_kv,
 		       const struct ldb_val *GUID_val,
 		       TDB_DATA *key);
 int ldb_kv_idx_to_key(struct ldb_module *module,
-		      struct ltdb_private *ltdb,
+		      struct ldb_kv_private *ldb_kv,
 		      TALLOC_CTX *mem_ctx,
 		      const struct ldb_val *idx_val,
 		      TDB_DATA *key);
@@ -251,7 +251,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 				   const char *path, int hash_size, int tdb_flags,
 				   int open_flags, mode_t mode,
 				   struct ldb_context *ldb);
-int ldb_kv_init_store(struct ltdb_private *ltdb,
+int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 		      const char *name,
 		      struct ldb_context *ldb,
 		      const char *options[],

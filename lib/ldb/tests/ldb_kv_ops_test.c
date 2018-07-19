@@ -171,18 +171,18 @@ static int teardown(void **state)
 	return 0;
 }
 
-static struct ltdb_private *get_ltdb(struct ldb_context *ldb)
+static struct ldb_kv_private *get_ldb_kv(struct ldb_context *ldb)
 {
 	void *data = NULL;
-	struct ltdb_private *ltdb = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
 
 	data = ldb_module_get_private(ldb->modules);
 	assert_non_null(data);
 
-	ltdb = talloc_get_type(data, struct ltdb_private);
-	assert_non_null(ltdb);
+	ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	assert_non_null(ldb_kv);
 
-	return ltdb;
+	return ldb_kv;
 }
 
 static int parse(struct ldb_val key,
@@ -209,7 +209,7 @@ static void test_add_get(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	uint8_t key_val[] = "TheKey";
 	struct ldb_val key = {
 		.data   = key_val,
@@ -233,34 +233,34 @@ static void test_add_get(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Write the record
 	 */
-	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, 0);
 
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
 
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 	talloc_free(tmp_ctx);
 }
@@ -273,7 +273,7 @@ static void test_read_outside_transaction(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	uint8_t key_val[] = "TheKey";
 	struct ldb_val key = {
 		.data   = key_val,
@@ -297,26 +297,26 @@ static void test_read_outside_transaction(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Write the record
 	 */
-	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back
 	 * Note there is no read transaction active
 	 */
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_PROTOCOL_ERROR);
 
 	talloc_free(tmp_ctx);
@@ -330,7 +330,7 @@ static void test_delete(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	uint8_t key_val[] = "TheKey";
 	struct ldb_val key = {
 		.data   = key_val,
@@ -354,59 +354,59 @@ static void test_delete(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Write the record
 	 */
-	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Now delete it.
 	 */
-	ret = ltdb->kv_ops->delete(ltdb, key);
+	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now try to read it back
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	talloc_free(tmp_ctx);
@@ -421,7 +421,7 @@ static void test_transaction_abort_write(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	uint8_t key_val[] = "TheKey";
 	struct ldb_val key = {
 		.data   = key_val,
@@ -445,19 +445,19 @@ static void test_transaction_abort_write(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Write the record
 	 */
-	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back
 	 */
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
@@ -466,17 +466,17 @@ static void test_transaction_abort_write(void **state)
 	/*
 	 * Now abort the transaction
 	 */
-	ret = ltdb->kv_ops->abort_write(ltdb);
+	ret = ldb_kv->kv_ops->abort_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back, should not be there
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	talloc_free(tmp_ctx);
@@ -491,7 +491,7 @@ static void test_transaction_abort_delete(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	uint8_t key_val[] = "TheKey";
 	struct ldb_val key = {
 		.data   = key_val,
@@ -515,67 +515,67 @@ static void test_transaction_abort_delete(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Write the record
 	 */
-	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Now delete it.
 	 */
-	ret = ltdb->kv_ops->delete(ltdb, key);
+	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back
 	 */
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
 
 	/*
 	 * Abort the transaction
 	 */
-	ret = ltdb->kv_ops->abort_write(ltdb);
+	ret = ldb_kv->kv_ops->abort_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now try to read it back
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	talloc_free(tmp_ctx);
@@ -589,7 +589,7 @@ static void test_write_outside_transaction(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	uint8_t key_val[] = "TheKey";
 	struct ldb_val key = {
 		.data   = key_val,
@@ -612,7 +612,7 @@ static void test_write_outside_transaction(void **state)
 	/*
 	 * Attempt to write the record
 	 */
-	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
 	assert_int_equal(ret, LDB_ERR_PROTOCOL_ERROR);
 
 	talloc_free(tmp_ctx);
@@ -626,7 +626,7 @@ static void test_delete_outside_transaction(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	uint8_t key_val[] = "TheKey";
 	struct ldb_val key = {
 		.data   = key_val,
@@ -650,55 +650,55 @@ static void test_delete_outside_transaction(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Write the record
 	 */
-	ret = ltdb->kv_ops->store(ltdb, key, data, flags);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * And now read it back
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Now attempt to delete a record
 	 */
-	ret = ltdb->kv_ops->delete(ltdb, key);
+	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
 	assert_int_equal(ret, LDB_ERR_PROTOCOL_ERROR);
 
 	/*
 	 * And now read it back
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &read);
+	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	talloc_free(tmp_ctx);
 }
 
-static int traverse_fn(struct ltdb_private *ltdb,
+static int traverse_fn(struct ldb_kv_private *ldb_kv,
 		       struct ldb_val key,
 		       struct ldb_val data,
 		       void *ctx) {
@@ -722,7 +722,7 @@ static void test_iterate(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	int i;
 	int num_recs = 1024;
 	int visits[num_recs];
@@ -735,7 +735,7 @@ static void test_iterate(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
@@ -755,7 +755,7 @@ static void test_iterate(void **state)
 						       i);
 		rec.length = strlen((char *)rec.data) + 1;
 
-		ret = ltdb->kv_ops->store(ltdb, key, rec, flags);
+		ret = ldb_kv->kv_ops->store(ldb_kv, key, rec, flags);
 		assert_int_equal(ret, 0);
 
 		TALLOC_FREE(key.data);
@@ -765,20 +765,20 @@ static void test_iterate(void **state)
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
 	 * Now iterate over the kv store and ensure that all the
 	 * records are visited.
 	 */
-	ret = ltdb->kv_ops->lock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
-	ret = ltdb->kv_ops->iterate(ltdb, traverse_fn, visits);
+	ret = ldb_kv->kv_ops->iterate(ldb_kv, traverse_fn, visits);
 	for (i = 0; i <num_recs; i++) {
 		assert_int_equal(1, visits[i]);
 	}
-	ret = ltdb->kv_ops->unlock_read(test_ctx->ldb->modules);
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
 	TALLOC_FREE(tmp_ctx);
@@ -789,7 +789,7 @@ struct update_context {
 	int visits[NUM_RECS];
 };
 
-static int update_fn(struct ltdb_private *ltdb,
+static int update_fn(struct ldb_kv_private *ldb_kv,
 		     struct ldb_val key,
 		     struct ldb_val data,
 		     void *ctx) {
@@ -800,7 +800,7 @@ static int update_fn(struct ltdb_private *ltdb,
 	int ret = LDB_SUCCESS;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(ltdb);
+	tmp_ctx = talloc_new(ldb_kv);
 	assert_non_null(tmp_ctx);
 
 	context = talloc_get_type_abort(ctx, struct update_context);
@@ -815,7 +815,7 @@ static int update_fn(struct ltdb_private *ltdb,
 		new_key.length  = key.length;
 		new_key.data[0] = 'K';
 
-		ret = ltdb->kv_ops->update_in_iterate(ltdb,
+		ret = ldb_kv->kv_ops->update_in_iterate(ldb_kv,
 						      key,
 						      new_key,
 						      data,
@@ -833,7 +833,7 @@ static void test_update_in_iterate(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	int i;
 	struct update_context *context = NULL;
 
@@ -849,7 +849,7 @@ static void test_update_in_iterate(void **state)
 	/*
 	 * Begin a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
@@ -868,7 +868,7 @@ static void test_update_in_iterate(void **state)
 							 i);
 		rec.length = strlen((char *)rec.data) + 1;
 
-		ret = ltdb->kv_ops->store(ltdb, key, rec, flags);
+		ret = ldb_kv->kv_ops->store(ldb_kv, key, rec, flags);
 		assert_int_equal(ret, 0);
 
 		TALLOC_FREE(key.data);
@@ -878,7 +878,7 @@ static void test_update_in_iterate(void **state)
 	/*
 	 * Commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	/*
@@ -889,15 +889,15 @@ static void test_update_in_iterate(void **state)
 	/*
 	 * Needs to be done inside a transaction
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
-	ret = ltdb->kv_ops->iterate(ltdb, update_fn, context);
+	ret = ldb_kv->kv_ops->iterate(ldb_kv, update_fn, context);
 	for (i = 0; i < NUM_RECS; i++) {
 		assert_int_equal(1, context->visits[i]);
 	}
 
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	TALLOC_FREE(tmp_ctx);
@@ -912,7 +912,7 @@ static void test_write_transaction_isolation(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	struct ldb_val key;
 	struct ldb_val val;
 
@@ -939,7 +939,7 @@ static void test_write_transaction_isolation(void **state)
 	/*
 	 * Add a record to the database
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY1);
@@ -948,10 +948,10 @@ static void test_write_transaction_isolation(void **state)
 	val.data = (uint8_t *)talloc_strdup(tmp_ctx, VAL1);
 	val.length = strlen(VAL1) + 1;
 
-	ret = ltdb->kv_ops->store(ltdb, key, val, 0);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, val, 0);
 	assert_int_equal(ret, 0);
 
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 
@@ -987,9 +987,9 @@ static void test_write_transaction_isolation(void **state)
 			exit(ret);
 		}
 
-		ltdb = get_ltdb(ldb);
+		ldb_kv = get_ldb_kv(ldb);
 
-		ret = ltdb->kv_ops->lock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->lock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": lock_read returned (%d)\n",
 				    ret);
@@ -1002,7 +1002,7 @@ static void test_write_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY1);
 		key.length = strlen(KEY1) + 1;
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1024,7 +1024,7 @@ static void test_write_transaction_isolation(void **state)
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ret = ltdb->kv_ops->unlock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1037,14 +1037,14 @@ static void test_write_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
 		key.length = strlen(KEY2 + 1);
 
-		ret = ltdb->kv_ops->lock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->lock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": lock_read returned (%d)\n",
 				    ret);
 			exit(ret);
 		}
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1052,7 +1052,7 @@ static void test_write_transaction_isolation(void **state)
 			exit(ret);
 		}
 
-		ret = ltdb->kv_ops->unlock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1082,7 +1082,7 @@ static void test_write_transaction_isolation(void **state)
 		/*
 		 * Check that KEY1 is there
 		 */
-		ret = ltdb->kv_ops->lock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->lock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1091,7 +1091,7 @@ static void test_write_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY1);
 		key.length = strlen(KEY1) + 1;
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1113,7 +1113,7 @@ static void test_write_transaction_isolation(void **state)
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ret = ltdb->kv_ops->unlock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1124,7 +1124,7 @@ static void test_write_transaction_isolation(void **state)
 		/*
 		 * Check that KEY2 is there
 		 */
-		ret = ltdb->kv_ops->lock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->lock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1134,7 +1134,7 @@ static void test_write_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
 		key.length = strlen(KEY2) + 1;
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1156,7 +1156,7 @@ static void test_write_transaction_isolation(void **state)
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ret = ltdb->kv_ops->unlock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1172,7 +1172,7 @@ static void test_write_transaction_isolation(void **state)
 	 * Begin a transaction and add a record to the database
 	 * but leave the transaction open
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
@@ -1181,7 +1181,7 @@ static void test_write_transaction_isolation(void **state)
 	val.data = (uint8_t *)talloc_strdup(tmp_ctx, VAL2);
 	val.length = strlen(VAL2) + 1;
 
-	ret = ltdb->kv_ops->store(ltdb, key, val, 0);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, val, 0);
 	assert_int_equal(ret, 0);
 
 	/*
@@ -1200,7 +1200,7 @@ static void test_write_transaction_isolation(void **state)
 	/*
 	 * commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(0, ret);
 
 	/*
@@ -1229,7 +1229,7 @@ static void test_delete_transaction_isolation(void **state)
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ltdb_private *ltdb = get_ltdb(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
 	struct ldb_val key;
 	struct ldb_val val;
 
@@ -1256,7 +1256,7 @@ static void test_delete_transaction_isolation(void **state)
 	/*
 	 * Add records to the database
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY1);
@@ -1265,7 +1265,7 @@ static void test_delete_transaction_isolation(void **state)
 	val.data = (uint8_t *)talloc_strdup(tmp_ctx, VAL1);
 	val.length = strlen(VAL1) + 1;
 
-	ret = ltdb->kv_ops->store(ltdb, key, val, 0);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, val, 0);
 	assert_int_equal(ret, 0);
 
 	key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
@@ -1274,10 +1274,10 @@ static void test_delete_transaction_isolation(void **state)
 	val.data = (uint8_t *)talloc_strdup(tmp_ctx, VAL2);
 	val.length = strlen(VAL2) + 1;
 
-	ret = ltdb->kv_ops->store(ltdb, key, val, 0);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, val, 0);
 	assert_int_equal(ret, 0);
 
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 
@@ -1314,9 +1314,9 @@ static void test_delete_transaction_isolation(void **state)
 			exit(ret);
 		}
 
-		ltdb = get_ltdb(ldb);
+		ldb_kv = get_ldb_kv(ldb);
 
-		ret = ltdb->kv_ops->lock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->lock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": lock_read returned (%d)\n",
 				    ret);
@@ -1329,7 +1329,7 @@ static void test_delete_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY1);
 		key.length = strlen(KEY1) + 1;
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1358,7 +1358,7 @@ static void test_delete_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
 		key.length = strlen(KEY2) + 1;
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1380,7 +1380,7 @@ static void test_delete_transaction_isolation(void **state)
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ret = ltdb->kv_ops->unlock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1410,7 +1410,7 @@ static void test_delete_transaction_isolation(void **state)
 		/*
 		 * Check that KEY1 is there
 		 */
-		ret = ltdb->kv_ops->lock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->lock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1419,7 +1419,7 @@ static void test_delete_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY1);
 		key.length = strlen(KEY1) + 1;
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1447,14 +1447,14 @@ static void test_delete_transaction_isolation(void **state)
 		key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
 		key.length = strlen(KEY2 + 1);
 
-		ret = ltdb->kv_ops->lock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->lock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": lock_read returned (%d)\n",
 				    ret);
 			exit(ret);
 		}
 
-		ret = ltdb->kv_ops->fetch_and_parse(ltdb, key, parse, &val);
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1462,7 +1462,7 @@ static void test_delete_transaction_isolation(void **state)
 			exit(ret);
 		}
 
-		ret = ltdb->kv_ops->unlock_read(ldb->modules);
+		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			print_error(__location__": unlock_read returned (%d)\n",
 				    ret);
@@ -1478,13 +1478,13 @@ static void test_delete_transaction_isolation(void **state)
 	 * Begin a transaction and delete a record from the database
 	 * but leave the transaction open
 	 */
-	ret = ltdb->kv_ops->begin_write(ltdb);
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
 	assert_int_equal(ret, 0);
 
 	key.data = (uint8_t *)talloc_strdup(tmp_ctx, KEY2);
 	key.length = strlen(KEY2) + 1;
 
-	ret = ltdb->kv_ops->delete(ltdb, key);
+	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
 	assert_int_equal(ret, 0);
 	/*
 	 * Signal the child process
@@ -1502,7 +1502,7 @@ static void test_delete_transaction_isolation(void **state)
 	/*
 	 * commit the transaction
 	 */
-	ret = ltdb->kv_ops->finish_write(ltdb);
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 	assert_int_equal(0, ret);
 
 	/*

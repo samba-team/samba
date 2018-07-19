@@ -93,9 +93,9 @@ static int lmdb_error_at(struct ldb_context *ldb,
 }
 
 
-static bool lmdb_transaction_active(struct ltdb_private *ltdb)
+static bool lmdb_transaction_active(struct ldb_kv_private *ldb_kv)
 {
-	return ltdb->lmdb_private->txlist != NULL;
+	return ldb_kv->lmdb_private->txlist != NULL;
 }
 
 static MDB_txn *lmdb_trans_get_tx(struct lmdb_trans *ltx)
@@ -148,18 +148,18 @@ static MDB_txn *get_current_txn(struct lmdb_private *lmdb)
 	return NULL;
 }
 
-static int lmdb_store(struct ltdb_private *ltdb,
+static int lmdb_store(struct ldb_kv_private *ldb_kv,
 		      struct ldb_val key,
 		      struct ldb_val data, int flags)
 {
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	MDB_val mdb_key;
 	MDB_val mdb_data;
 	int mdb_flags;
 	MDB_txn *txn = NULL;
 	MDB_dbi dbi = 0;
 
-	if (ltdb->read_only) {
+	if (ldb_kv->read_only) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -206,14 +206,14 @@ static int lmdb_store(struct ltdb_private *ltdb,
 	return ldb_mdb_err_map(lmdb->error);
 }
 
-static int lmdb_delete(struct ltdb_private *ltdb, struct ldb_val key)
+static int lmdb_delete(struct ldb_kv_private *ldb_kv, struct ldb_val key)
 {
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	MDB_val mdb_key;
 	MDB_txn *txn = NULL;
 	MDB_dbi dbi = 0;
 
-	if (ltdb->read_only) {
+	if (ldb_kv->read_only) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -239,11 +239,11 @@ static int lmdb_delete(struct ltdb_private *ltdb, struct ldb_val key)
 	return ldb_mdb_err_map(lmdb->error);
 }
 
-static int lmdb_traverse_fn(struct ltdb_private *ltdb,
+static int lmdb_traverse_fn(struct ldb_kv_private *ldb_kv,
 			    ldb_kv_traverse_fn fn,
 			    void *ctx)
 {
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	MDB_val mdb_key;
 	MDB_val mdb_data;
 	MDB_txn *txn = NULL;
@@ -281,7 +281,7 @@ static int lmdb_traverse_fn(struct ltdb_private *ltdb,
 			.data = mdb_data.mv_data,
 		};
 
-		ret = fn(ltdb, key, data, ctx);
+		ret = fn(ldb_kv, key, data, ctx);
 		if (ret != 0) {
 			goto done;
 		}
@@ -300,13 +300,13 @@ done:
 	return ldb_mdb_err_map(lmdb->error);
 }
 
-static int lmdb_update_in_iterate(struct ltdb_private *ltdb,
+static int lmdb_update_in_iterate(struct ldb_kv_private *ldb_kv,
 				  struct ldb_val key,
 				  struct ldb_val key2,
 				  struct ldb_val data,
 				  void *state)
 {
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	struct ldb_val copy;
 	int ret = LDB_SUCCESS;
 
@@ -315,13 +315,13 @@ static int lmdb_update_in_iterate(struct ltdb_private *ltdb,
 	 * data, as it is in private lmdb memory.
 	 */
 	copy.length = data.length;
-	copy.data = talloc_memdup(ltdb, data.data, data.length);
+	copy.data = talloc_memdup(ldb_kv, data.data, data.length);
 	if (copy.data == NULL) {
 		lmdb->error = MDB_PANIC;
 		return ldb_oom(lmdb->ldb);
 	}
 
-	lmdb->error = lmdb_delete(ltdb, key);
+	lmdb->error = lmdb_delete(ldb_kv, key);
 	if (lmdb->error != MDB_SUCCESS) {
 		ldb_debug(
 			lmdb->ldb,
@@ -337,7 +337,7 @@ static int lmdb_update_in_iterate(struct ltdb_private *ltdb,
 		goto done;
 	}
 
-	lmdb->error = lmdb_store(ltdb, key2, copy, 0);
+	lmdb->error = lmdb_store(ldb_kv, key2, copy, 0);
 	if (lmdb->error != MDB_SUCCESS) {
 		ldb_debug(
 			lmdb->ldb,
@@ -368,12 +368,12 @@ done:
 }
 
 /* Handles only a single record */
-static int lmdb_parse_record(struct ltdb_private *ltdb, struct ldb_val key,
+static int lmdb_parse_record(struct ldb_kv_private *ldb_kv, struct ldb_val key,
 			     int (*parser)(struct ldb_val key, struct ldb_val data,
 					   void *private_data),
 			     void *ctx)
 {
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	MDB_val mdb_key;
 	MDB_val mdb_data;
 	MDB_txn *txn = NULL;
@@ -417,8 +417,8 @@ static int lmdb_parse_record(struct ltdb_private *ltdb, struct ldb_val key,
 static int lmdb_lock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	pid_t pid = getpid();
 
 	if (pid != lmdb->pid) {
@@ -433,8 +433,8 @@ static int lmdb_lock_read(struct ldb_module *module)
 	}
 
 	lmdb->error = MDB_SUCCESS;
-	if (lmdb_transaction_active(ltdb) == false &&
-	    ltdb->read_lock_count == 0) {
+	if (lmdb_transaction_active(ldb_kv) == false &&
+	    ldb_kv->read_lock_count == 0) {
 		lmdb->error = mdb_txn_begin(lmdb->env,
 					    NULL,
 					    MDB_RDONLY,
@@ -444,36 +444,36 @@ static int lmdb_lock_read(struct ldb_module *module)
 		return ldb_mdb_error(lmdb->ldb, lmdb->error);
 	}
 
-	ltdb->read_lock_count++;
+	ldb_kv->read_lock_count++;
 	return ldb_mdb_err_map(lmdb->error);
 }
 
 static int lmdb_unlock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct ldb_kv_private *ldb_kv = talloc_get_type(data, struct ldb_kv_private);
 
-	if (lmdb_transaction_active(ltdb) == false && ltdb->read_lock_count == 1) {
-		struct lmdb_private *lmdb = ltdb->lmdb_private;
+	if (lmdb_transaction_active(ldb_kv) == false && ldb_kv->read_lock_count == 1) {
+		struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 		mdb_txn_commit(lmdb->read_txn);
 		lmdb->read_txn = NULL;
-		ltdb->read_lock_count--;
+		ldb_kv->read_lock_count--;
 		return LDB_SUCCESS;
 	}
-	ltdb->read_lock_count--;
+	ldb_kv->read_lock_count--;
 	return LDB_SUCCESS;
 }
 
-static int lmdb_transaction_start(struct ltdb_private *ltdb)
+static int lmdb_transaction_start(struct ldb_kv_private *ldb_kv)
 {
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 	struct lmdb_trans *ltx;
 	struct lmdb_trans *ltx_head;
 	MDB_txn *tx_parent;
 	pid_t pid = getpid();
 
 	/* Do not take out the transaction lock on a read-only DB */
-	if (ltdb->read_only) {
+	if (ldb_kv->read_only) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -507,10 +507,10 @@ static int lmdb_transaction_start(struct ltdb_private *ltdb)
 	return ldb_mdb_err_map(lmdb->error);
 }
 
-static int lmdb_transaction_cancel(struct ltdb_private *ltdb)
+static int lmdb_transaction_cancel(struct ldb_kv_private *ldb_kv)
 {
 	struct lmdb_trans *ltx;
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 
 	ltx = lmdb_private_trans_head(lmdb);
 	if (ltx == NULL) {
@@ -522,16 +522,16 @@ static int lmdb_transaction_cancel(struct ltdb_private *ltdb)
 	return LDB_SUCCESS;
 }
 
-static int lmdb_transaction_prepare_commit(struct ltdb_private *ltdb)
+static int lmdb_transaction_prepare_commit(struct ldb_kv_private *ldb_kv)
 {
 	/* No need to prepare a commit */
 	return LDB_SUCCESS;
 }
 
-static int lmdb_transaction_commit(struct ltdb_private *ltdb)
+static int lmdb_transaction_commit(struct ldb_kv_private *ldb_kv)
 {
 	struct lmdb_trans *ltx;
-	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
 
 	ltx = lmdb_private_trans_head(lmdb);
 	if (ltx == NULL) {
@@ -544,22 +544,22 @@ static int lmdb_transaction_commit(struct ltdb_private *ltdb)
 	return lmdb->error;
 }
 
-static int lmdb_error(struct ltdb_private *ltdb)
+static int lmdb_error(struct ldb_kv_private *ldb_kv)
 {
-	return ldb_mdb_err_map(ltdb->lmdb_private->error);
+	return ldb_mdb_err_map(ldb_kv->lmdb_private->error);
 }
 
-static const char *lmdb_errorstr(struct ltdb_private *ltdb)
+static const char *lmdb_errorstr(struct ldb_kv_private *ldb_kv)
 {
-	return mdb_strerror(ltdb->lmdb_private->error);
+	return mdb_strerror(ldb_kv->lmdb_private->error);
 }
 
-static const char * lmdb_name(struct ltdb_private *ltdb)
+static const char * lmdb_name(struct ldb_kv_private *ldb_kv)
 {
 	return "lmdb";
 }
 
-static bool lmdb_changed(struct ltdb_private *ltdb)
+static bool lmdb_changed(struct ldb_kv_private *ldb_kv)
 {
 	/*
 	 * lmdb does no provide a quick way to determine if the database
@@ -837,7 +837,7 @@ int lmdb_connect(struct ldb_context *ldb,
 {
 	const char *path = NULL;
 	struct lmdb_private *lmdb = NULL;
-	struct ltdb_private *ltdb = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
 	int ret;
 
 	/*
@@ -852,29 +852,29 @@ int lmdb_connect(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ltdb = talloc_zero(ldb, struct ltdb_private);
-	if (!ltdb) {
+	ldb_kv = talloc_zero(ldb, struct ldb_kv_private);
+	if (!ldb_kv) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lmdb = talloc_zero(ltdb, struct lmdb_private);
+	lmdb = talloc_zero(ldb_kv, struct lmdb_private);
 	if (lmdb == NULL) {
-		TALLOC_FREE(ltdb);
+		TALLOC_FREE(ldb_kv);
 		return ldb_oom(ldb);
 	}
 	lmdb->ldb = ldb;
-	ltdb->kv_ops = &lmdb_key_value_ops;
+	ldb_kv->kv_ops = &lmdb_key_value_ops;
 
 	ret = lmdb_pvt_open(lmdb, ldb, path, flags);
 	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(ltdb);
+		TALLOC_FREE(ldb_kv);
 		return ret;
 	}
 
-	ltdb->lmdb_private = lmdb;
+	ldb_kv->lmdb_private = lmdb;
 	if (flags & LDB_FLG_RDONLY) {
-		ltdb->read_only = true;
+		ldb_kv->read_only = true;
 	}
 
 	/*
@@ -883,8 +883,8 @@ int lmdb_connect(struct ldb_context *ldb,
 	 * The override option is max_key_len_for_self_test, and is
 	 * used for testing only.
 	 */
-	ltdb->max_key_length = LDB_MDB_MAX_KEY_LENGTH;
+	ldb_kv->max_key_length = LDB_MDB_MAX_KEY_LENGTH;
 
 	return ldb_kv_init_store(
-	    ltdb, "ldb_mdb backend", ldb, options, _module);
+	    ldb_kv, "ldb_mdb backend", ldb, options, _module);
 }

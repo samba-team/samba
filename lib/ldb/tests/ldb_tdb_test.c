@@ -150,16 +150,16 @@ static int ldbtest_teardown(void **state)
 static TDB_CONTEXT *get_tdb_context(struct ldb_context *ldb)
 {
 	void *data = NULL;
-	struct ltdb_private *ltdb = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
 	TDB_CONTEXT *tdb = NULL;
 
 	data = ldb_module_get_private(ldb->modules);
 	assert_non_null(data);
 
-	ltdb = talloc_get_type(data, struct ltdb_private);
-	assert_non_null(ltdb);
+	ldb_kv = talloc_get_type(data, struct ldb_kv_private);
+	assert_non_null(ldb_kv);
 
-	tdb = ltdb->tdb;
+	tdb = ldb_kv->tdb;
 	assert_non_null(tdb);
 
 	return tdb;
