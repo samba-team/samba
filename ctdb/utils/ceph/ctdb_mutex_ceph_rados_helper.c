@@ -88,13 +88,6 @@ static int ctdb_mutex_rados_ctx_create(const char *ceph_cluster_name,
 	return 0;
 }
 
-static void ctdb_mutex_rados_ctx_destroy(rados_t ceph_cluster,
-					 rados_ioctx_t ioctx)
-{
-	rados_ioctx_destroy(ioctx);
-	rados_shutdown(ceph_cluster);
-}
-
 static int ctdb_mutex_rados_lock(rados_ioctx_t *ioctx,
 				 const char *oid)
 {
@@ -162,18 +155,13 @@ static void ctdb_mutex_rados_sigterm_cb(struct tevent_context *ev,
 					void *private_data)
 {
 	struct ctdb_mutex_rados_state *cmr_state = private_data;
-	int ret;
+	int ret = 0;
 
 	if (!cmr_state->holding_mutex) {
 		fprintf(stderr, "Sigterm callback invoked without mutex!\n");
 		ret = -EINVAL;
-		goto err_ctx_cleanup;
 	}
 
-	ret = ctdb_mutex_rados_unlock(cmr_state->ioctx, cmr_state->object);
-err_ctx_cleanup:
-	ctdb_mutex_rados_ctx_destroy(cmr_state->ceph_cluster,
-				     cmr_state->ioctx);
 	talloc_free(cmr_state);
 	exit(ret ? 1 : 0);
 }
@@ -184,7 +172,7 @@ static void ctdb_mutex_rados_timer_cb(struct tevent_context *ev,
 				      void *private_data)
 {
 	struct ctdb_mutex_rados_state *cmr_state = private_data;
-	int ret;
+	int ret = 0;
 
 	if (!cmr_state->holding_mutex) {
 		fprintf(stderr, "Timer callback invoked without mutex!\n");
@@ -205,13 +193,24 @@ static void ctdb_mutex_rados_timer_cb(struct tevent_context *ev,
 		return;
 	}
 
-	/* parent ended, drop lock and exit */
-	ret = ctdb_mutex_rados_unlock(cmr_state->ioctx, cmr_state->object);
+	/* parent ended, drop lock (via destructor) and exit */
 err_ctx_cleanup:
-	ctdb_mutex_rados_ctx_destroy(cmr_state->ceph_cluster,
-				     cmr_state->ioctx);
 	talloc_free(cmr_state);
 	exit(ret ? 1 : 0);
+}
+
+static int ctdb_mutex_rados_state_destroy(struct ctdb_mutex_rados_state *cmr_state)
+{
+	if (cmr_state->holding_mutex) {
+		ctdb_mutex_rados_unlock(cmr_state->ioctx, cmr_state->object);
+	}
+	if (cmr_state->ioctx != NULL) {
+		rados_ioctx_destroy(cmr_state->ioctx);
+	}
+	if (cmr_state->ceph_cluster != NULL) {
+		rados_shutdown(cmr_state->ceph_cluster);
+	}
+	return 0;
 }
 
 int main(int argc, char *argv[])
@@ -241,6 +240,7 @@ int main(int argc, char *argv[])
 		goto err_out;
 	}
 
+	talloc_set_destructor(cmr_state, ctdb_mutex_rados_state_destroy);
 	cmr_state->ceph_cluster_name = argv[1];
 	cmr_state->ceph_auth_name = argv[2];
 	cmr_state->pool_name = argv[3];
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 		 */
 		fprintf(stderr, "%s: PPID == 1\n", progname);
 		ret = -EPIPE;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	cmr_state->ev = tevent_context_init(cmr_state);
@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "tevent_context_init failed\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	/* wait for sigterm */
@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Failed to create term signal event\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	cmr_state->sigint_ev = tevent_add_signal(cmr_state->ev, cmr_state, SIGINT, 0,
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Failed to create int signal event\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	/* periodically check parent */
@@ -299,7 +299,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Failed to create timer event\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	ret = ctdb_mutex_rados_ctx_create(cmr_state->ceph_cluster_name,
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
 					  &cmr_state->ioctx);
 	if (ret < 0) {
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	ret = ctdb_mutex_rados_lock(cmr_state->ioctx, cmr_state->object);
@@ -330,9 +330,6 @@ int main(int argc, char *argv[])
 		goto err_ctx_cleanup;
 	}
 err_ctx_cleanup:
-	ctdb_mutex_rados_ctx_destroy(cmr_state->ceph_cluster,
-				     cmr_state->ioctx);
-err_state_free:
 	talloc_free(cmr_state);
 err_out:
 	return ret ? 1 : 0;
