@@ -867,8 +867,8 @@ if ! type mktemp >/dev/null 2>&1 ; then
 	fi
 	_d="${TMPDIR:-/tmp}"
 	_hex10=$(dd if=/dev/urandom count=20 2>/dev/null | \
-	    md5sum | \
-	    sed -e 's@\(..........\).*@\1@')
+	    cksum | \
+	    awk '{print $1}')
 	_t="${_d}/tmp.${_hex10}"
 	(
 	    umask 077

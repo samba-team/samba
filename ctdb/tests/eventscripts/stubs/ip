@@ -124,7 +124,7 @@ ip_link_show ()
 	    _opts="<LOOPBACK${_flags}> mtu 65536 qdisc noqueue state UNKNOWN"
 	    ;;
     *)
-	    _mac=$(echo $dev | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
+	    _mac=$(echo $dev | cksum | sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
 	    _brd="ff:ff:ff:ff:ff:ff"
 	    _type="ether"
 	    _opts="<BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
