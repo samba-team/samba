@@ -309,10 +309,6 @@ class gp_ext(object):
         pass
 
     @abstractmethod
-    def apply_map(self):
-        pass
-
-    @abstractmethod
     def read(self, policy):
         pass
 
