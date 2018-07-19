@@ -109,7 +109,7 @@ struct ltdb_context {
 	int error;
 };
 
-struct ltdb_reindex_context {
+struct ldb_kv_reindex_context {
 	struct ldb_module *module;
 	int error;
 	uint32_t count;
