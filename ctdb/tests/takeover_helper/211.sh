@@ -24,10 +24,10 @@ CONTROLFAILS
 137	1	TIMEOUT	CTDB_CONTROL_IPREALLOCATED fake timeout
 EOF
 
-required_result 110 <<EOF
-IPREALLOCATED failed on node 1, ret=110
+required_error ETIMEDOUT <<EOF
+IPREALLOCATED failed on node 1, ret=$(errcode ETIMEDOUT)
 Assigning banning credits to node 1
-takeover run failed, ret=110
+takeover run failed, ret=$(errcode ETIMEDOUT)
 EOF
 test_takeover_helper
 
