@@ -195,13 +195,38 @@ struct tevent_req *smb2_session_setup_spnego_send(
 
 	if (state->out_secblob.length > 0) {
 		chosen_oid = GENSEC_OID_SPNEGO;
+		status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to start set GENSEC client mechanism %s: %s\n",
+				  gensec_get_name_by_oid(session->gensec,
+							 chosen_oid),
+				  nt_errstr(status)));
+			state->out_secblob = data_blob_null;
+			chosen_oid = GENSEC_OID_NTLMSSP;
+			status = gensec_start_mech_by_oid(session->gensec,
+							  chosen_oid);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("Failed to start set (fallback) GENSEC client mechanism %s: %s\n",
+					  gensec_get_name_by_oid(session->gensec,
+								 chosen_oid),
+					  nt_errstr(status)));
+			}
+		}
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 	} else {
 		chosen_oid = GENSEC_OID_NTLMSSP;
-	}
-
-	status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
+		status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to start set GENSEC client mechanism %s: %s\n",
+				  gensec_get_name_by_oid(session->gensec,
+							 chosen_oid),
+				  nt_errstr(status)));
+		}
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	smb2_session_setup_spnego_gensec_next(req);
