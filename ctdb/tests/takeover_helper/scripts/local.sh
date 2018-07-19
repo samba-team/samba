@@ -88,7 +88,7 @@ takeover_helper_out="${TEST_VAR_DIR}/takover_helper.out"
 
 takeover_helper_format_outfd ()
 {
-	od -A n -t d4 "$takeover_helper_out" | sed -e 's|^[[:space:]]*||'
+	od -A n -t d4 "$takeover_helper_out" | sed -e 's|[[:space:]]*||g'
 }
 
 test_takeover_helper ()
