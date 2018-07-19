@@ -103,6 +103,7 @@ static const struct ncacn_option {
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
 	{"bigendian", DCERPC_PUSH_BIGENDIAN},
+	{"smb1", DCERPC_SMB1},
 	{"smb2", DCERPC_SMB2},
 	{"ndr64", DCERPC_NDR64},
 	{"packet", DCERPC_PACKET},
