@@ -108,6 +108,8 @@ struct dcerpc_binding;
 
 #define DCERPC_PACKET			(1<<26)
 
+#define DCERPC_SMB1                    (1<<27)
+
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
