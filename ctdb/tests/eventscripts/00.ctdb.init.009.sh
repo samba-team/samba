@@ -42,6 +42,7 @@ required_result_num_corrupt ()
 }
 
 for i in $(seq 1 15) ; do
+	FAKE_SLEEP_REALLY=yes sleep 1
 	touch "$db"
 	required_result_tdbcheck
 	simple_test
