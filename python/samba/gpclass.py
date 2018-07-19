@@ -305,10 +305,6 @@ class gp_ext(object):
         self.gp_db = store.get_gplog(creds.get_username())
 
     @abstractmethod
-    def list(self, rootpath):
-        pass
-
-    @abstractmethod
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         pass
 
