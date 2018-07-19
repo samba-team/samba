@@ -885,5 +885,6 @@ int lmdb_connect(struct ldb_context *ldb,
 	 */
 	ltdb->max_key_length = LDB_MDB_MAX_KEY_LENGTH;
 
-	return init_store(ltdb, "ldb_mdb backend", ldb, options, _module);
+	return ldb_kv_init_store(
+	    ltdb, "ldb_mdb backend", ldb, options, _module);
 }

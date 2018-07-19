@@ -153,37 +153,37 @@ struct ltdb_reindex_context {
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_cache.c  */
 
-int ltdb_cache_reload(struct ldb_module *module);
-int ltdb_cache_load(struct ldb_module *module);
-int ltdb_increase_sequence_number(struct ldb_module *module);
-int ltdb_check_at_attributes_values(const struct ldb_val *value);
+int ldb_kv_cache_reload(struct ldb_module *module);
+int ldb_kv_cache_load(struct ldb_module *module);
+int ldb_kv_increase_sequence_number(struct ldb_module *module);
+int ldb_kv_check_at_attributes_values(const struct ldb_val *value);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_index.c  */
 
 struct ldb_parse_tree;
 
-int ltdb_search_indexed(struct ltdb_context *ctx, uint32_t *);
-int ltdb_index_add_new(struct ldb_module *module,
+int ldb_kv_search_indexed(struct ltdb_context *ctx, uint32_t *);
+int ldb_kv_index_add_new(struct ldb_module *module,
 		       struct ltdb_private *ltdb,
 		       const struct ldb_message *msg);
-int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg);
-int ltdb_index_del_element(struct ldb_module *module,
+int ldb_kv_index_delete(struct ldb_module *module, const struct ldb_message *msg);
+int ldb_kv_index_del_element(struct ldb_module *module,
 			   struct ltdb_private *ltdb,
 			   const struct ldb_message *msg,
 			   struct ldb_message_element *el);
-int ltdb_index_add_element(struct ldb_module *module,
+int ldb_kv_index_add_element(struct ldb_module *module,
 			   struct ltdb_private *ltdb,
 			   const struct ldb_message *msg,
 			   struct ldb_message_element *el);
-int ltdb_index_del_value(struct ldb_module *module,
+int ldb_kv_index_del_value(struct ldb_module *module,
 			 struct ltdb_private *ltdb,
 			 const struct ldb_message *msg,
 			 struct ldb_message_element *el, unsigned int v_idx);
-int ltdb_reindex(struct ldb_module *module);
-int ltdb_index_transaction_start(struct ldb_module *module);
-int ltdb_index_transaction_commit(struct ldb_module *module);
-int ltdb_index_transaction_cancel(struct ldb_module *module);
-int ltdb_key_dn_from_idx(struct ldb_module *module,
+int ldb_kv_reindex(struct ldb_module *module);
+int ldb_kv_index_transaction_start(struct ldb_module *module);
+int ldb_kv_index_transaction_commit(struct ldb_module *module);
+int ldb_kv_index_transaction_cancel(struct ldb_module *module);
+int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 			 struct ltdb_private *ltdb,
 			 TALLOC_CTX *mem_ctx,
 			 struct ldb_dn *dn,
@@ -194,44 +194,44 @@ int ltdb_key_dn_from_idx(struct ldb_module *module,
 int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
 		      const struct ldb_val *val);
 void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
-int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
+int ldb_kv_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
 		    unsigned int unpack_flags);
-int ltdb_search_base(struct ldb_module *module,
+int ldb_kv_search_base(struct ldb_module *module,
 		     TALLOC_CTX *mem_ctx,
 		     struct ldb_dn *dn,
 		     struct ldb_dn **ret_dn);
-int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
+int ldb_kv_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 		    struct TDB_DATA tdb_key,
 		    struct ldb_message *msg,
 		    unsigned int unpack_flags);
-int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
+int ldb_kv_filter_attrs(TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg, const char * const *attrs,
 		      struct ldb_message **filtered_msg);
-int ltdb_search(struct ltdb_context *ctx);
+int ldb_kv_search(struct ltdb_context *ctx);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 /* 
  * Determine if this key could hold a record.  We allow the new GUID
  * index, the old DN index and a possible future ID=
  */
-bool ltdb_key_is_record(TDB_DATA key);
-TDB_DATA ltdb_key_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+bool ldb_kv_key_is_record(TDB_DATA key);
+TDB_DATA ldb_kv_key_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		     struct ldb_dn *dn);
-TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+TDB_DATA ldb_kv_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg);
-int ltdb_guid_to_key(struct ldb_module *module,
+int ldb_kv_guid_to_key(struct ldb_module *module,
 		     struct ltdb_private *ltdb,
 		     const struct ldb_val *GUID_val,
 		     TDB_DATA *key);
-int ltdb_idx_to_key(struct ldb_module *module,
+int ldb_kv_idx_to_key(struct ldb_module *module,
 		    struct ltdb_private *ltdb,
 		    TALLOC_CTX *mem_ctx,
 		    const struct ldb_val *idx_val,
 		    TDB_DATA *key);
 TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
-int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
-int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
-int ltdb_delete_noindex(struct ldb_module *module,
+int ldb_kv_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
+int ldb_kv_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
+int ldb_kv_delete_noindex(struct ldb_module *module,
 			const struct ldb_message *msg);
 int ltdb_err_map(enum TDB_ERROR tdb_code);
 
@@ -239,9 +239,9 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 				   const char *path, int hash_size, int tdb_flags,
 				   int open_flags, mode_t mode,
 				   struct ldb_context *ldb);
-int init_store(struct ltdb_private *ltdb, const char *name,
-	       struct ldb_context *ldb, const char *options[],
-	       struct ldb_module **_module);
+int ldb_kv_init_store(struct ltdb_private *ltdb, const char *name,
+		      struct ldb_context *ldb, const char *options[],
+		      struct ldb_module **_module);
 
 int ltdb_connect(struct ldb_context *ldb, const char *url,
 		 unsigned int flags, const char *options[],

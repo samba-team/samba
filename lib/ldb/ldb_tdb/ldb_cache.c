@@ -42,7 +42,7 @@
 static const struct {
 	const char *name;
 	int value;
-} ltdb_valid_attr_flags[] = {
+} ldb_kv_valid_attr_flags[] = {
 	{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
 	{ "INTEGER", LTDB_FLAG_INTEGER },
 	{ "HIDDEN", 0 },
@@ -51,11 +51,10 @@ static const struct {
 	{ NULL, 0 }
 };
 
-
 /*
   de-register any special handlers for @ATTRIBUTES
 */
-static void ltdb_attributes_unload(struct ldb_module *module)
+static void ldb_kv_attributes_unload(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
@@ -66,20 +65,20 @@ static void ltdb_attributes_unload(struct ldb_module *module)
 /*
   add up the attrib flags for a @ATTRIBUTES element
 */
-static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
+static int ldb_kv_attributes_flags(struct ldb_message_element *el, unsigned *v)
 {
 	unsigned int i;
 	unsigned value = 0;
 	for (i=0;i<el->num_values;i++) {
 		unsigned int j;
-		for (j=0;ltdb_valid_attr_flags[j].name;j++) {
-			if (strcmp(ltdb_valid_attr_flags[j].name, 
+		for (j = 0; ldb_kv_valid_attr_flags[j].name; j++) {
+			if (strcmp(ldb_kv_valid_attr_flags[j].name,
 				   (char *)el->values[i].data) == 0) {
-				value |= ltdb_valid_attr_flags[j].value;
+				value |= ldb_kv_valid_attr_flags[j].value;
 				break;
 			}
 		}
-		if (ltdb_valid_attr_flags[j].name == NULL) {
+		if (ldb_kv_valid_attr_flags[j].name == NULL) {
 			return -1;
 		}
 	}
@@ -97,7 +96,7 @@ static int ldb_schema_attribute_compare(const void *p1, const void *p2)
 /*
   register any special handlers from @ATTRIBUTES
 */
-static int ltdb_attributes_load(struct ldb_module *module)
+static int ldb_kv_attributes_load(struct ldb_module *module)
 {
 	struct ldb_schema_attribute *attrs;
 	struct ldb_context *ldb;
@@ -123,10 +122,12 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
-	r = ltdb_search_dn1(module, dn, attrs_msg,
-			    LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
-			    |LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC
-			    |LDB_UNPACK_DATA_FLAG_NO_DN);
+	r = ldb_kv_search_dn1(module,
+			      dn,
+			      attrs_msg,
+			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
+				  LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
+				  LDB_UNPACK_DATA_FLAG_NO_DN);
 	talloc_free(dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
@@ -162,7 +163,8 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			continue;
 		}
 
-		if (ltdb_attributes_flags(&attrs_msg->elements[i], &flags) != 0) {
+		if (ldb_kv_attributes_flags(&attrs_msg->elements[i], &flags) !=
+		    0) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
 				  "Invalid @ATTRIBUTES element for '%s'",
 				  attrs_msg->elements[i].name);
@@ -233,8 +235,8 @@ failed:
 /*
   register any index records we find for the DB
 */
-static int ltdb_index_load(struct ldb_module *module,
-			   struct ltdb_private *ltdb)
+static int ldb_kv_index_load(struct ldb_module *module,
+			     struct ltdb_private *ltdb)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *indexlist_dn;
@@ -268,10 +270,12 @@ static int ltdb_index_load(struct ldb_module *module,
 		return -1;
 	}
 
-	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist,
-			    LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
-			    |LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC
-			    |LDB_UNPACK_DATA_FLAG_NO_DN);
+	r = ldb_kv_search_dn1(module,
+			      indexlist_dn,
+			      ltdb->cache->indexlist,
+			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
+				  LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
+				  LDB_UNPACK_DATA_FLAG_NO_DN);
 	TALLOC_FREE(indexlist_dn);
 
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
@@ -311,7 +315,7 @@ static int ltdb_index_load(struct ldb_module *module,
 /*
   initialise the baseinfo record
 */
-static int ltdb_baseinfo_init(struct ldb_module *module)
+static int ldb_kv_baseinfo_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	void *data = ldb_module_get_private(module);
@@ -352,8 +356,8 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 		goto failed;
 	}
 	val.length = 1;
-	
-	ret = ltdb_store(module, msg, TDB_INSERT);
+
+	ret = ldb_kv_store(module, msg, TDB_INSERT);
 
 	talloc_free(msg);
 
@@ -368,7 +372,7 @@ failed:
 /*
   free any cache records
  */
-static void ltdb_cache_free(struct ldb_module *module)
+static void ldb_kv_cache_free(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -381,17 +385,17 @@ static void ltdb_cache_free(struct ldb_module *module)
 /*
   force a cache reload
 */
-int ltdb_cache_reload(struct ldb_module *module)
+int ldb_kv_cache_reload(struct ldb_module *module)
 {
-	ltdb_attributes_unload(module);
-	ltdb_cache_free(module);
-	return ltdb_cache_load(module);
+	ldb_kv_attributes_unload(module);
+	ldb_kv_cache_free(module);
+	return ldb_kv_cache_load(module);
 }
 
 /*
   load the cache records
 */
-int ltdb_cache_load(struct ldb_module *module)
+int ldb_kv_cache_load(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	void *data = ldb_module_get_private(module);
@@ -425,7 +429,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	if (r != LDB_SUCCESS) {
 		goto failed;
 	}
-	r= ltdb_search_dn1(module, baseinfo_dn, baseinfo, 0);
+	r = ldb_kv_search_dn1(module, baseinfo_dn, baseinfo, 0);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed_and_unlock;
 	}
@@ -447,9 +451,10 @@ int ltdb_cache_load(struct ldb_module *module)
 
 		/* error handling for ltdb_baseinfo_init() is by
 		   looking for the record again. */
-		ltdb_baseinfo_init(module);
+		ldb_kv_baseinfo_init(module);
 
-		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo, 0) != LDB_SUCCESS) {
+		if (ldb_kv_search_dn1(module, baseinfo_dn, baseinfo, 0) !=
+		    LDB_SUCCESS) {
 			goto failed_and_unlock;
 		}
 
@@ -474,7 +479,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	options_dn = ldb_dn_new(options, ldb, LTDB_OPTIONS);
 	if (options_dn == NULL) goto failed_and_unlock;
 
-	r= ltdb_search_dn1(module, options_dn, options, 0);
+	r = ldb_kv_search_dn1(module, options_dn, options, 0);
 	talloc_free(options_dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed_and_unlock;
@@ -501,9 +506,9 @@ int ltdb_cache_load(struct ldb_module *module)
 	 * the handlers across all databases when used under Samba's
 	 * partition module.
 	 */
-	ltdb_attributes_unload(module);
+	ldb_kv_attributes_unload(module);
 
-	if (ltdb_index_load(module, ltdb) == -1) {
+	if (ldb_kv_index_load(module, ltdb) == -1) {
 		goto failed_and_unlock;
 	}
 
@@ -512,7 +517,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	 * the handlers across all databases when used under Samba's
 	 * partition module.
 	 */
-	if (ltdb_attributes_load(module) == -1) {
+	if (ldb_kv_attributes_load(module) == -1) {
 		goto failed_and_unlock;
 	}
 
@@ -557,7 +562,7 @@ failed:
 /*
   increase the sequence number to indicate a database change
 */
-int ltdb_increase_sequence_number(struct ldb_module *module)
+int ldb_kv_increase_sequence_number(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	void *data = ldb_module_get_private(module);
@@ -624,7 +629,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	val_time.data = (uint8_t *)s;
 	val_time.length = strlen(s);
 
-	ret = ltdb_modify_internal(module, msg, NULL);
+	ret = ldb_kv_modify_internal(module, msg, NULL);
 
 	talloc_free(msg);
 
@@ -639,12 +644,13 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	return ret;
 }
 
-int ltdb_check_at_attributes_values(const struct ldb_val *value)
+int ldb_kv_check_at_attributes_values(const struct ldb_val *value)
 {
 	unsigned int i;
 
-	for (i = 0; ltdb_valid_attr_flags[i].name != NULL; i++) {
-		if ((strcmp(ltdb_valid_attr_flags[i].name, (char *)value->data) == 0)) {
+	for (i = 0; ldb_kv_valid_attr_flags[i].name != NULL; i++) {
+		if ((strcmp(ldb_kv_valid_attr_flags[i].name,
+			    (char *)value->data) == 0)) {
 			return 0;
 		}
 	}

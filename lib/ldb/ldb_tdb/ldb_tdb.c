@@ -164,7 +164,7 @@ static int ltdb_unlock_read(struct ldb_module *module)
  * Determine if this key could hold a record.  We allow the new GUID
  * index, the old DN index and a possible future ID=
  */
-bool ltdb_key_is_record(TDB_DATA key)
+bool ldb_kv_key_is_record(TDB_DATA key)
 {
 	if (key.dsize < 4) {
 		return false;
@@ -197,7 +197,7 @@ bool ltdb_key_is_record(TDB_DATA key)
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-TDB_DATA ltdb_key_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+TDB_DATA ldb_kv_key_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		     struct ldb_dn *dn)
 {
 	TDB_DATA key;
@@ -244,7 +244,7 @@ failed:
 }
 
 /* The caller is to provide a correctly sized key */
-int ltdb_guid_to_key(struct ldb_module *module,
+int ldb_kv_guid_to_key(struct ldb_module *module,
 		     struct ltdb_private *ltdb,
 		     const struct ldb_val *GUID_val,
 		     TDB_DATA *key)
@@ -266,7 +266,7 @@ int ltdb_guid_to_key(struct ldb_module *module,
  * The caller is to provide a correctly sized key, used only in
  * the GUID index mode
  */
-int ltdb_idx_to_key(struct ldb_module *module,
+int ldb_kv_idx_to_key(struct ldb_module *module,
 		    struct ltdb_private *ltdb,
 		    TALLOC_CTX *mem_ctx,
 		    const struct ldb_val *idx_val,
@@ -276,7 +276,7 @@ int ltdb_idx_to_key(struct ldb_module *module,
 	struct ldb_dn *dn;
 
 	if (ltdb->cache->GUID_index_attribute != NULL) {
-		return ltdb_guid_to_key(module, ltdb,
+		return ldb_kv_guid_to_key(module, ltdb,
 					idx_val, key);
 	}
 
@@ -289,7 +289,7 @@ int ltdb_idx_to_key(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	/* form the key */
-	*key = ltdb_key_dn(module, mem_ctx, dn);
+	*key = ldb_kv_key_dn(module, mem_ctx, dn);
 	TALLOC_FREE(dn);
 	if (!key->dptr) {
 		return ldb_module_oom(module);
@@ -305,7 +305,7 @@ int ltdb_idx_to_key(struct ldb_module *module,
   note that the key for a record can depend on whether a
   GUID index is in use, or the DN is used as the key
 */
-TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+TDB_DATA ldb_kv_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg)
 {
 	void *data = ldb_module_get_private(module);
@@ -315,11 +315,11 @@ TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	int ret;
 
 	if (ltdb->cache->GUID_index_attribute == NULL) {
-		return ltdb_key_dn(module, mem_ctx, msg->dn);
+		return ldb_kv_key_dn(module, mem_ctx, msg->dn);
 	}
 
 	if (ldb_dn_is_special(msg->dn)) {
-		return ltdb_key_dn(module, mem_ctx, msg->dn);
+		return ldb_kv_key_dn(module, mem_ctx, msg->dn);
 	}
 
 	guid_val = ldb_msg_find_ldb_val(msg,
@@ -347,7 +347,7 @@ TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	}
 	key.dsize = talloc_get_size(key.dptr);
 
-	ret = ltdb_guid_to_key(module, ltdb, guid_val, &key);
+	ret = ldb_kv_guid_to_key(module, ltdb, guid_val, &key);
 
 	if (ret != LDB_SUCCESS) {
 		errno = EINVAL;
@@ -362,7 +362,7 @@ TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
   check special dn's have valid attributes
   currently only @ATTRIBUTES is checked
 */
-static int ltdb_check_special_dn(struct ldb_module *module,
+static int ldb_kv_check_special_dn(struct ldb_module *module,
 				 const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -379,7 +379,7 @@ static int ltdb_check_special_dn(struct ldb_module *module,
 		if (ldb_attr_cmp(msg->elements[i].name, "distinguishedName") == 0) continue;
 
 		for (j = 0; j < msg->elements[i].num_values; j++) {
-			if (ltdb_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
+			if (ldb_kv_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
 				ldb_set_errstring(ldb, "Invalid attribute value in an @ATTRIBUTES entry");
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
@@ -394,7 +394,7 @@ static int ltdb_check_special_dn(struct ldb_module *module,
   we've made a modification to a dn - possibly reindex and
   update sequence number
 */
-static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
+static int ldb_kv_modified(struct ldb_module *module, struct ldb_dn *dn)
 {
 	int ret = LDB_SUCCESS;
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
@@ -415,21 +415,21 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 				LDB_DEBUG_ERROR, "Reindexing %s due to modification on %s",
 				ltdb->kv_ops->name(ltdb), ldb_dn_get_linearized(dn));
 		}
-		ret = ltdb_reindex(module);
+		ret = ldb_kv_reindex(module);
 	}
 
 	/* If the modify was to a normal record, or any special except @BASEINFO, update the seq number */
 	if (ret == LDB_SUCCESS &&
 	    !(ldb_dn_is_special(dn) &&
 	      ldb_dn_check_special(dn, LTDB_BASEINFO)) ) {
-		ret = ltdb_increase_sequence_number(module);
+		ret = ldb_kv_increase_sequence_number(module);
 	}
 
 	/* If the modify was to @OPTIONS, reload the cache */
 	if (ret == LDB_SUCCESS &&
 	    ldb_dn_is_special(dn) &&
 	    (ldb_dn_check_special(dn, LTDB_OPTIONS)) ) {
-		ret = ltdb_cache_reload(module);
+		ret = ldb_kv_cache_reload(module);
 	}
 
 	if (ret != LDB_SUCCESS) {
@@ -439,7 +439,7 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 	return ret;
 }
 
-static int ltdb_tdb_store(struct ltdb_private *ltdb, struct ldb_val ldb_key,
+static int ltdb_store(struct ltdb_private *ltdb, struct ldb_val ldb_key,
 			  struct ldb_val ldb_data, int flags)
 {
 	TDB_DATA key = {
@@ -470,7 +470,10 @@ static const char *ltdb_errorstr(struct ltdb_private *ltdb)
 /*
   store a record into the db
 */
-int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs)
+int ldb_kv_store(
+	struct ldb_module *module,
+	const struct ldb_message *msg,
+	int flgs)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -489,7 +492,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key_msg(module, tdb_key_ctx, msg);
+	tdb_key = ldb_kv_key_msg(module, tdb_key_ctx, msg);
 	if (tdb_key.dptr == NULL) {
 		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OTHER;
@@ -533,7 +536,7 @@ done:
 /*
   check if a attribute is a single valued, for a given element
  */
-static bool ldb_tdb_single_valued(const struct ldb_schema_attribute *a,
+static bool ldb_kv_single_valued(const struct ldb_schema_attribute *a,
 				  struct ldb_message_element *el)
 {
 	if (!a) return false;
@@ -558,7 +561,7 @@ static bool ldb_tdb_single_valued(const struct ldb_schema_attribute *a,
 	return false;
 }
 
-static int ltdb_add_internal(struct ldb_module *module,
+static int ldb_kv_add_internal(struct ldb_module *module,
 			     struct ltdb_private *ltdb,
 			     const struct ldb_message *msg,
 			     bool check_single_value)
@@ -578,7 +581,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		}
 		if (check_single_value &&
 				el->num_values > 1 &&
-				ldb_tdb_single_valued(a, el)) {
+				ldb_kv_single_valued(a, el)) {
 			ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -614,7 +617,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		}
 	}
 
-	ret = ltdb_store(module, msg, TDB_INSERT);
+	ret = ldb_kv_store(module, msg, TDB_INSERT);
 	if (ret != LDB_SUCCESS) {
 		/*
 		 * Try really hard to get the right error code for
@@ -627,7 +630,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 			if (mem_ctx == NULL) {
 				return ldb_module_operr(module);
 			}
-			ret2 = ltdb_search_base(module, mem_ctx,
+			ret2 = ldb_kv_search_base(module, mem_ctx,
 						msg->dn, &dn2);
 			TALLOC_FREE(mem_ctx);
 			if (ret2 == LDB_SUCCESS) {
@@ -642,7 +645,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = ltdb_index_add_new(module, ltdb, msg);
+	ret = ldb_kv_index_add_new(module, ltdb, msg);
 	if (ret != LDB_SUCCESS) {
 		/*
 		 * If we failed to index, delete the message again.
@@ -654,11 +657,11 @@ static int ltdb_add_internal(struct ldb_module *module,
 		 * Note that the caller may not cancel the transation
 		 * and this means the above add might really show up!
 		 */
-		ltdb_delete_noindex(module, msg);
+		ldb_kv_delete_noindex(module, msg);
 		return ret;
 	}
 
-	ret = ltdb_modified(module, msg->dn);
+	ret = ldb_kv_modified(module, msg->dn);
 
 	return ret;
 }
@@ -666,7 +669,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 /*
   add a record to the database
 */
-static int ltdb_add(struct ltdb_context *ctx)
+static int ldb_kv_add(struct ltdb_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
@@ -684,24 +687,24 @@ static int ltdb_add(struct ltdb_context *ctx)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	ret = ltdb_check_special_dn(module, req->op.add.message);
+	ret = ldb_kv_check_special_dn(module, req->op.add.message);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb_cache_load(module) != 0) {
+	if (ldb_kv_cache_load(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_add_internal(module, ltdb,
+	ret = ldb_kv_add_internal(module, ltdb,
 				req->op.add.message, true);
 
 	return ret;
 }
 
-static int ltdb_tdb_delete(struct ltdb_private *ltdb, struct ldb_val ldb_key)
+static int ltdb_delete(struct ltdb_private *ltdb, struct ldb_val ldb_key)
 {
 	TDB_DATA tdb_key = {
 		.dptr = ldb_key.data,
@@ -718,7 +721,7 @@ static int ltdb_tdb_delete(struct ltdb_private *ltdb, struct ldb_val ldb_key)
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-int ltdb_delete_noindex(struct ldb_module *module,
+int ldb_kv_delete_noindex(struct ldb_module *module,
 			const struct ldb_message *msg)
 {
 	void *data = ldb_module_get_private(module);
@@ -737,7 +740,7 @@ int ltdb_delete_noindex(struct ldb_module *module,
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key_msg(module, tdb_key_ctx, msg);
+	tdb_key = ldb_kv_key_msg(module, tdb_key_ctx, msg);
 	if (!tdb_key.dptr) {
 		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OTHER;
@@ -756,7 +759,7 @@ int ltdb_delete_noindex(struct ldb_module *module,
 	return ret;
 }
 
-static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
+static int ldb_kv_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ldb_message *msg;
 	int ret = LDB_SUCCESS;
@@ -768,24 +771,24 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 
 	/* in case any attribute of the message was indexed, we need
 	   to fetch the old record */
-	ret = ltdb_search_dn1(module, dn, msg, LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
+	ret = ldb_kv_search_dn1(module, dn, msg, LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
 	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
 		goto done;
 	}
 
-	ret = ltdb_delete_noindex(module, msg);
+	ret = ldb_kv_delete_noindex(module, msg);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
 
 	/* remove any indexed attributes */
-	ret = ltdb_index_delete(module, msg);
+	ret = ldb_kv_index_delete(module, msg);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
 
-	ret = ltdb_modified(module, dn);
+	ret = ldb_kv_modified(module, dn);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -798,7 +801,7 @@ done:
 /*
   delete a record from the database
 */
-static int ltdb_delete(struct ltdb_context *ctx)
+static int ldb_kv_delete(struct ltdb_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
@@ -806,11 +809,11 @@ static int ltdb_delete(struct ltdb_context *ctx)
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb_cache_load(module) != 0) {
+	if (ldb_kv_cache_load(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_delete_internal(module, req->op.del.dn);
+	ret = ldb_kv_delete_internal(module, req->op.del.dn);
 
 	return ret;
 }
@@ -822,7 +825,7 @@ static int ltdb_delete(struct ltdb_context *ctx)
 
   return the index of the first matching element if found, otherwise -1
 */
-static int find_element(const struct ldb_message *msg, const char *name)
+static int ldb_kv_find_element(const struct ldb_message *msg, const char *name)
 {
 	unsigned int i;
 	for (i=0;i<msg->num_elements;i++) {
@@ -841,7 +844,7 @@ static int find_element(const struct ldb_message *msg, const char *name)
 
   returns 0 on success, -1 on failure (and sets errno)
 */
-static int ltdb_msg_add_element(struct ldb_message *msg,
+static int ldb_kv_msg_add_element(struct ldb_message *msg,
 				struct ldb_message_element *el)
 {
 	struct ldb_message_element *e2;
@@ -884,7 +887,7 @@ static int ltdb_msg_add_element(struct ldb_message *msg,
 /*
   delete all elements having a specified attribute name
 */
-static int msg_delete_attribute(struct ldb_module *module,
+static int ldb_kv_msg_delete_attribute(struct ldb_module *module,
 				struct ltdb_private *ltdb,
 				struct ldb_message *msg, const char *name)
 {
@@ -909,7 +912,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 	}
 	i = el - msg->elements;
 
-	ret = ltdb_index_del_element(module, ltdb, msg, el);
+	ret = ldb_kv_index_del_element(module, ltdb, msg, el);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -930,7 +933,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 
   return LDB Error on failure
 */
-static int msg_delete_element(struct ldb_module *module,
+static int ldb_kv_msg_delete_element(struct ldb_module *module,
 			      struct ltdb_private *ltdb,
 			      struct ldb_message *msg,
 			      const char *name,
@@ -942,7 +945,7 @@ static int msg_delete_element(struct ldb_module *module,
 	struct ldb_message_element *el;
 	const struct ldb_schema_attribute *a;
 
-	found = find_element(msg, name);
+	found = ldb_kv_find_element(msg, name);
 	if (found == -1) {
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
@@ -964,11 +967,11 @@ static int msg_delete_element(struct ldb_module *module,
 		}
 		if (matched) {
 			if (el->num_values == 1) {
-				return msg_delete_attribute(module,
+				return ldb_kv_msg_delete_attribute(module,
 							    ltdb, msg, name);
 			}
 
-			ret = ltdb_index_del_value(module, ltdb, msg, el, i);
+			ret = ldb_kv_index_del_value(module, ltdb, msg, el, i);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -999,7 +1002,7 @@ static int msg_delete_element(struct ldb_module *module,
 
   'req' is optional, and is used to specify controls if supplied
 */
-int ltdb_modify_internal(struct ldb_module *module,
+int ldb_kv_modify_internal(struct ldb_module *module,
 			 const struct ldb_message *msg,
 			 struct ldb_request *req)
 {
@@ -1027,7 +1030,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		goto done;
 	}
 
-	ret = ltdb_search_dn1(module, msg->dn,
+	ret = ldb_kv_search_dn1(module, msg->dn,
 			      msg2,
 			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
 	if (ret != LDB_SUCCESS) {
@@ -1077,7 +1080,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			}
 
-			if (el->num_values > 1 && ldb_tdb_single_valued(a, el)) {
+			if (el->num_values > 1 && ldb_kv_single_valued(a, el)) {
 				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						       el->name, ldb_dn_get_linearized(msg2->dn));
 				ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
@@ -1085,13 +1088,13 @@ int ltdb_modify_internal(struct ldb_module *module,
 			}
 
 			/* Checks if element already exists */
-			idx = find_element(msg2, el->name);
+			idx = ldb_kv_find_element(msg2, el->name);
 			if (idx == -1) {
-				if (ltdb_msg_add_element(msg2, el) != 0) {
+				if (ldb_kv_msg_add_element(msg2, el) != 0) {
 					ret = LDB_ERR_OTHER;
 					goto done;
 				}
-				ret = ltdb_index_add_element(module, ltdb,
+				ret = ldb_kv_index_add_element(module, ltdb,
 							     msg2,
 							     el);
 				if (ret != LDB_SUCCESS) {
@@ -1103,7 +1106,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 				/* We cannot add another value on a existing one
 				   if the attribute is single-valued */
-				if (ldb_tdb_single_valued(a, el)) {
+				if (ldb_kv_single_valued(a, el)) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
@@ -1173,7 +1176,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				el2->values = vals;
 				el2->num_values += el->num_values;
 
-				ret = ltdb_index_add_element(module, ltdb,
+				ret = ldb_kv_index_add_element(module, ltdb,
 							     msg2, el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
@@ -1184,7 +1187,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 		case LDB_FLAG_MOD_REPLACE:
 
-			if (el->num_values > 1 && ldb_tdb_single_valued(a, el)) {
+			if (el->num_values > 1 && ldb_kv_single_valued(a, el)) {
 				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						       el->name, ldb_dn_get_linearized(msg2->dn));
 				ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
@@ -1221,7 +1224,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			}
 
 			/* Checks if element already exists */
-			idx = find_element(msg2, el->name);
+			idx = ldb_kv_find_element(msg2, el->name);
 			if (idx != -1) {
 				j = (unsigned int) idx;
 				el2 = &(msg2->elements[j]);
@@ -1238,7 +1241,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 
 				/* Delete the attribute if it exists in the DB */
-				if (msg_delete_attribute(module, ltdb,
+				if (ldb_kv_msg_delete_attribute(module, ltdb,
 							 msg2,
 							 el->name) != 0) {
 					ret = LDB_ERR_OTHER;
@@ -1247,12 +1250,12 @@ int ltdb_modify_internal(struct ldb_module *module,
 			}
 
 			/* Recreate it with the new values */
-			if (ltdb_msg_add_element(msg2, el) != 0) {
+			if (ldb_kv_msg_add_element(msg2, el) != 0) {
 				ret = LDB_ERR_OTHER;
 				goto done;
 			}
 
-			ret = ltdb_index_add_element(module, ltdb,
+			ret = ldb_kv_index_add_element(module, ltdb,
 						     msg2, el);
 			if (ret != LDB_SUCCESS) {
 				goto done;
@@ -1269,7 +1272,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 			if (msg->elements[i].num_values == 0) {
 				/* Delete the whole attribute */
-				ret = msg_delete_attribute(module,
+				ret = ldb_kv_msg_delete_attribute(module,
 							   ltdb,
 							   msg2,
 							   msg->elements[i].name);
@@ -1287,7 +1290,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			} else {
 				/* Delete specified values from an attribute */
 				for (j=0; j < msg->elements[i].num_values; j++) {
-					ret = msg_delete_element(module,
+					ret = ldb_kv_msg_delete_element(module,
 								 ltdb,
 							         msg2,
 							         msg->elements[i].name,
@@ -1316,12 +1319,12 @@ int ltdb_modify_internal(struct ldb_module *module,
 		}
 	}
 
-	ret = ltdb_store(module, msg2, TDB_MODIFY);
+	ret = ldb_kv_store(module, msg2, TDB_MODIFY);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
 
-	ret = ltdb_modified(module, msg2->dn);
+	ret = ldb_kv_modified(module, msg2->dn);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -1334,24 +1337,24 @@ done:
 /*
   modify a record
 */
-static int ltdb_modify(struct ltdb_context *ctx)
+static int ldb_kv_modify(struct ltdb_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
 	int ret = LDB_SUCCESS;
 
-	ret = ltdb_check_special_dn(module, req->op.mod.message);
+	ret = ldb_kv_check_special_dn(module, req->op.mod.message);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb_cache_load(module) != 0) {
+	if (ldb_kv_cache_load(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_modify_internal(module, req->op.mod.message, req);
+	ret = ldb_kv_modify_internal(module, req->op.mod.message, req);
 
 	return ret;
 }
@@ -1359,7 +1362,7 @@ static int ltdb_modify(struct ltdb_context *ctx)
 /*
   rename a record
 */
-static int ltdb_rename(struct ltdb_context *ctx)
+static int ldb_kv_rename(struct ltdb_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	void *data = ldb_module_get_private(module);
@@ -1372,7 +1375,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb_cache_load(ctx->module) != 0) {
+	if (ldb_kv_cache_load(ctx->module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1382,7 +1385,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	}
 
 	/* we need to fetch the old record to re-add under the new name */
-	ret = ltdb_search_dn1(module, req->op.rename.olddn, msg,
+	ret = ldb_kv_search_dn1(module, req->op.rename.olddn, msg,
 			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
 	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
@@ -1396,13 +1399,13 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 * Even in GUID index mode we use ltdb_key_dn() as we are
 	 * trying to figure out if this is just a case rename
 	 */
-	tdb_key = ltdb_key_dn(module, msg, req->op.rename.newdn);
+	tdb_key = ldb_kv_key_dn(module, msg, req->op.rename.newdn);
 	if (!tdb_key.dptr) {
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_key_old = ltdb_key_dn(module, msg, req->op.rename.olddn);
+	tdb_key_old = ldb_kv_key_dn(module, msg, req->op.rename.olddn);
 	if (!tdb_key_old.dptr) {
 		talloc_free(msg);
 		talloc_free(tdb_key.dptr);
@@ -1415,7 +1418,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 */
 	if (tdb_key_old.dsize != tdb_key.dsize
 	    || memcmp(tdb_key.dptr, tdb_key_old.dptr, tdb_key.dsize) != 0) {
-		ret = ltdb_search_base(module, msg,
+		ret = ldb_kv_search_base(module, msg,
 				       req->op.rename.newdn,
 				       &db_dn);
 		if (ret == LDB_SUCCESS) {
@@ -1446,7 +1449,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 * unique indexes. We rely on the transaction to make this
 	 * atomic
 	 */
-	ret = ltdb_delete_internal(module, msg->dn);
+	ret = ldb_kv_delete_internal(module, msg->dn);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return ret;
@@ -1462,14 +1465,14 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 * deleted attributes. We could go through all elements but that's
 	 * maybe not the most efficient way
 	 */
-	ret = ltdb_add_internal(module, ltdb, msg, false);
+	ret = ldb_kv_add_internal(module, ltdb, msg, false);
 
 	talloc_free(msg);
 
 	return ret;
 }
 
-static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
+static int ltdb_transaction_start(struct ltdb_private *ltdb)
 {
 	pid_t pid = getpid();
 
@@ -1486,7 +1489,7 @@ static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
 	return tdb_transaction_start(ltdb->tdb);
 }
 
-static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
+static int ltdb_transaction_cancel(struct ltdb_private *ltdb)
 {
 	pid_t pid = getpid();
 
@@ -1503,7 +1506,7 @@ static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
 	return tdb_transaction_cancel(ltdb->tdb);
 }
 
-static int ltdb_tdb_transaction_prepare_commit(struct ltdb_private *ltdb)
+static int ltdb_transaction_prepare_commit(struct ltdb_private *ltdb)
 {
 	pid_t pid = getpid();
 
@@ -1520,7 +1523,7 @@ static int ltdb_tdb_transaction_prepare_commit(struct ltdb_private *ltdb)
 	return tdb_transaction_prepare_commit(ltdb->tdb);
 }
 
-static int ltdb_tdb_transaction_commit(struct ltdb_private *ltdb)
+static int ltdb_transaction_commit(struct ltdb_private *ltdb)
 {
 	pid_t pid = getpid();
 
@@ -1537,7 +1540,7 @@ static int ltdb_tdb_transaction_commit(struct ltdb_private *ltdb)
 	return tdb_transaction_commit(ltdb->tdb);
 }
 
-static int ltdb_start_trans(struct ldb_module *module)
+static int ldb_kv_start_trans(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -1564,7 +1567,7 @@ static int ltdb_start_trans(struct ldb_module *module)
 	}
 
 
-	ltdb_index_transaction_start(module);
+	ldb_kv_index_transaction_start(module);
 
 	ltdb->reindex_failed = false;
 
@@ -1575,9 +1578,9 @@ static int ltdb_start_trans(struct ldb_module *module)
  * Forward declaration to allow prepare_commit to in fact abort the
  * transaction
  */
-static int ltdb_del_trans(struct ldb_module *module);
+static int ldb_kv_del_trans(struct ldb_module *module);
 
-static int ltdb_prepare_commit(struct ldb_module *module)
+static int ldb_kv_prepare_commit(struct ldb_module *module)
 {
 	int ret;
 	void *data = ldb_module_get_private(module);
@@ -1612,14 +1615,14 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 		 * We must instead abort the transaction so we get the
 		 * old values and old index back
 		 */
-		ltdb_del_trans(module);
+		ldb_kv_del_trans(module);
 		ldb_set_errstring(ldb_module_get_ctx(module),
 				  "Failure during re-index, so "
 				  "transaction must be aborted.");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_index_transaction_commit(module);
+	ret = ldb_kv_index_transaction_commit(module);
 	if (ret != LDB_SUCCESS) {
 		ltdb->kv_ops->abort_write(ltdb);
 		return ret;
@@ -1641,14 +1644,14 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_end_trans(struct ldb_module *module)
+static int ldb_kv_end_trans(struct ldb_module *module)
 {
 	int ret;
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
 	if (!ltdb->prepared_commit) {
-		ret = ltdb_prepare_commit(module);
+		ret = ldb_kv_prepare_commit(module);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1668,13 +1671,13 @@ static int ltdb_end_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_del_trans(struct ldb_module *module)
+static int ldb_kv_del_trans(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
 
-	if (ltdb_index_transaction_cancel(module) != 0) {
+	if (ldb_kv_index_transaction_cancel(module) != 0) {
 		ltdb->kv_ops->abort_write(ltdb);
 		return ltdb->kv_ops->error(ltdb);
 	}
@@ -1686,7 +1689,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 /*
   return sequenceNumber from @BASEINFO
 */
-static int ltdb_sequence_number(struct ltdb_context *ctx,
+static int ldb_kv_sequence_number(struct ltdb_context *ctx,
 				struct ldb_extended **ext)
 {
 	struct ldb_context *ldb;
@@ -1740,7 +1743,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 		goto done;
 	}
 
-	ret = ltdb_search_dn1(module, dn, msg, 0);
+	ret = ldb_kv_search_dn1(module, dn, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -1779,7 +1782,7 @@ done:
 	return ret;
 }
 
-static void ltdb_request_done(struct ltdb_context *ctx, int error)
+static void ldb_kv_request_done(struct ltdb_context *ctx, int error)
 {
 	struct ldb_context *ldb;
 	struct ldb_request *req;
@@ -1805,7 +1808,7 @@ static void ltdb_request_done(struct ltdb_context *ctx, int error)
 	req->callback(req, ares);
 }
 
-static void ltdb_timeout(struct tevent_context *ev,
+static void ldb_kv_timeout(struct tevent_context *ev,
 			  struct tevent_timer *te,
 			  struct timeval t,
 			  void *private_data)
@@ -1815,7 +1818,7 @@ static void ltdb_timeout(struct tevent_context *ev,
 
 	if (!ctx->request_terminated) {
 		/* request is done now */
-		ltdb_request_done(ctx, LDB_ERR_TIME_LIMIT_EXCEEDED);
+		ldb_kv_request_done(ctx, LDB_ERR_TIME_LIMIT_EXCEEDED);
 	}
 
 	if (ctx->spy) {
@@ -1826,7 +1829,7 @@ static void ltdb_timeout(struct tevent_context *ev,
 	talloc_free(ctx);
 }
 
-static void ltdb_request_extended_done(struct ltdb_context *ctx,
+static void ldb_kv_request_extended_done(struct ltdb_context *ctx,
 					struct ldb_extended *ext,
 					int error)
 {
@@ -1855,7 +1858,7 @@ static void ltdb_request_extended_done(struct ltdb_context *ctx,
 	req->callback(req, ares);
 }
 
-static void ltdb_handle_extended(struct ltdb_context *ctx)
+static void ldb_kv_handle_extended(struct ltdb_context *ctx)
 {
 	struct ldb_extended *ext = NULL;
 	int ret;
@@ -1863,13 +1866,13 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	if (strcmp(ctx->req->op.extended.oid,
 		   LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
 		/* get sequence number */
-		ret = ltdb_sequence_number(ctx, &ext);
+		ret = ldb_kv_sequence_number(ctx, &ext);
 	} else {
 		/* not recognized */
 		ret = LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 
-	ltdb_request_extended_done(ctx, ext, ret);
+	ldb_kv_request_extended_done(ctx, ext, ret);
 }
 
 struct kv_ctx {
@@ -1881,7 +1884,7 @@ struct kv_ctx {
 		      void *private_data);
 };
 
-static int ldb_tdb_traverse_fn_wrapper(struct tdb_context *tdb, TDB_DATA tdb_key, TDB_DATA tdb_data, void *ctx)
+static int ltdb_traverse_fn_wrapper(struct tdb_context *tdb, TDB_DATA tdb_key, TDB_DATA tdb_data, void *ctx)
 {
 	struct kv_ctx *kv_ctx = ctx;
 	struct ldb_val key = {
@@ -1895,7 +1898,7 @@ static int ldb_tdb_traverse_fn_wrapper(struct tdb_context *tdb, TDB_DATA tdb_key
 	return kv_ctx->kv_traverse_fn(kv_ctx->ltdb, key, data, kv_ctx->ctx);
 }
 
-static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx)
+static int ltdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx)
 {
 	struct kv_ctx kv_ctx = {
 		.kv_traverse_fn = fn,
@@ -1903,13 +1906,13 @@ static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn
 		.ltdb = ltdb
 	};
 	if (tdb_transaction_active(ltdb->tdb)) {
-		return tdb_traverse(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
+		return tdb_traverse(ltdb->tdb, ltdb_traverse_fn_wrapper, &kv_ctx);
 	} else {
-		return tdb_traverse_read(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
+		return tdb_traverse_read(ltdb->tdb, ltdb_traverse_fn_wrapper, &kv_ctx);
 	}
 }
 
-static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb,
+static int ltdb_update_in_iterate(struct ltdb_private *ltdb,
 				      struct ldb_val ldb_key,
 				      struct ldb_val ldb_key2,
 				      struct ldb_val ldb_data, void *state)
@@ -1961,7 +1964,7 @@ static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb,
 	return tdb_ret;
 }
 
-static int ltdb_tdb_parse_record_wrapper(TDB_DATA tdb_key, TDB_DATA tdb_data,
+static int ltdb_parse_record_wrapper(TDB_DATA tdb_key, TDB_DATA tdb_data,
 					 void *ctx)
 {
 	struct kv_ctx *kv_ctx = ctx;
@@ -1977,7 +1980,7 @@ static int ltdb_tdb_parse_record_wrapper(TDB_DATA tdb_key, TDB_DATA tdb_data,
 	return kv_ctx->parser(key, data, kv_ctx->ctx);
 }
 
-static int ltdb_tdb_parse_record(struct ltdb_private *ltdb,
+static int ltdb_parse_record(struct ltdb_private *ltdb,
 				 struct ldb_val ldb_key,
 				 int (*parser)(struct ldb_val key,
 					       struct ldb_val data,
@@ -2000,7 +2003,7 @@ static int ltdb_tdb_parse_record(struct ltdb_private *ltdb,
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	ret = tdb_parse_record(ltdb->tdb, key, ltdb_tdb_parse_record_wrapper,
+	ret = tdb_parse_record(ltdb->tdb, key, ltdb_parse_record_wrapper,
 			       &kv_ctx);
 	if (ret == 0) {
 		return LDB_SUCCESS;
@@ -2008,12 +2011,12 @@ static int ltdb_tdb_parse_record(struct ltdb_private *ltdb,
 	return ltdb_err_map(tdb_error(ltdb->tdb));
 }
 
-static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
+static const char * ltdb_name(struct ltdb_private *ltdb)
 {
 	return tdb_name(ltdb->tdb);
 }
 
-static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
+static bool ltdb_changed(struct ltdb_private *ltdb)
 {
 	int seq = tdb_get_seqnum(ltdb->tdb);
 	bool has_changed = (seq != ltdb->tdb_seqnum);
@@ -2029,25 +2032,25 @@ static bool ltdb_transaction_active(struct ltdb_private *ltdb)
 }
 
 static const struct kv_db_ops key_value_ops = {
-	.store = ltdb_tdb_store,
-	.delete = ltdb_tdb_delete,
-	.iterate = ltdb_tdb_traverse_fn,
-	.update_in_iterate = ltdb_tdb_update_in_iterate,
-	.fetch_and_parse = ltdb_tdb_parse_record,
+	.store = ltdb_store,
+	.delete = ltdb_delete,
+	.iterate = ltdb_traverse_fn,
+	.update_in_iterate = ltdb_update_in_iterate,
+	.fetch_and_parse = ltdb_parse_record,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
-	.begin_write = ltdb_tdb_transaction_start,
-	.prepare_write = ltdb_tdb_transaction_prepare_commit,
-	.finish_write = ltdb_tdb_transaction_commit,
-	.abort_write = ltdb_tdb_transaction_cancel,
+	.begin_write = ltdb_transaction_start,
+	.prepare_write = ltdb_transaction_prepare_commit,
+	.finish_write = ltdb_transaction_commit,
+	.abort_write = ltdb_transaction_cancel,
 	.error = ltdb_error,
 	.errorstr = ltdb_errorstr,
-	.name = ltdb_tdb_name,
-	.has_changed = ltdb_tdb_changed,
+	.name = ltdb_name,
+	.has_changed = ltdb_changed,
 	.transaction_active = ltdb_transaction_active,
 };
 
-static void ltdb_callback(struct tevent_context *ev,
+static void ldb_kv_callback(struct tevent_context *ev,
 			  struct tevent_timer *te,
 			  struct timeval t,
 			  void *private_data)
@@ -2063,22 +2066,22 @@ static void ltdb_callback(struct tevent_context *ev,
 
 	switch (ctx->req->operation) {
 	case LDB_SEARCH:
-		ret = ltdb_search(ctx);
+		ret = ldb_kv_search(ctx);
 		break;
 	case LDB_ADD:
-		ret = ltdb_add(ctx);
+		ret = ldb_kv_add(ctx);
 		break;
 	case LDB_MODIFY:
-		ret = ltdb_modify(ctx);
+		ret = ldb_kv_modify(ctx);
 		break;
 	case LDB_DELETE:
-		ret = ltdb_delete(ctx);
+		ret = ldb_kv_delete(ctx);
 		break;
 	case LDB_RENAME:
-		ret = ltdb_rename(ctx);
+		ret = ldb_kv_rename(ctx);
 		break;
 	case LDB_EXTENDED:
-		ltdb_handle_extended(ctx);
+		ldb_kv_handle_extended(ctx);
 		goto done;
 	default:
 		/* no other op supported */
@@ -2087,7 +2090,7 @@ static void ltdb_callback(struct tevent_context *ev,
 
 	if (!ctx->request_terminated) {
 		/* request is done now */
-		ltdb_request_done(ctx, ret);
+		ldb_kv_request_done(ctx, ret);
 	}
 
 done:
@@ -2099,7 +2102,7 @@ done:
 	talloc_free(ctx);
 }
 
-static int ltdb_request_destructor(void *ptr)
+static int ldb_kv_request_destructor(void *ptr)
 {
 	struct ltdb_req_spy *spy = talloc_get_type(ptr, struct ltdb_req_spy);
 
@@ -2112,7 +2115,7 @@ static int ltdb_request_destructor(void *ptr)
 	return 0;
 }
 
-static int ltdb_handle_request(struct ldb_module *module,
+static int ldb_kv_handle_request(struct ldb_module *module,
 			       struct ldb_request *req)
 {
 	struct ldb_control *control_permissive;
@@ -2155,7 +2158,7 @@ static int ltdb_handle_request(struct ldb_module *module,
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
-	te = tevent_add_timer(ev, ac, tv, ltdb_callback, ac);
+	te = tevent_add_timer(ev, ac, tv, ldb_kv_callback, ac);
 	if (NULL == te) {
 		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -2165,7 +2168,7 @@ static int ltdb_handle_request(struct ldb_module *module,
 		tv.tv_sec = req->starttime + req->timeout;
 		tv.tv_usec = 0;
 		ac->timeout_event = tevent_add_timer(ev, ac, tv,
-						     ltdb_timeout, ac);
+						     ldb_kv_timeout, ac);
 		if (NULL == ac->timeout_event) {
 			talloc_free(ac);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -2181,12 +2184,12 @@ static int ltdb_handle_request(struct ldb_module *module,
 	}
 	ac->spy->ctx = ac;
 
-	talloc_set_destructor((TALLOC_CTX *)ac->spy, ltdb_request_destructor);
+	talloc_set_destructor((TALLOC_CTX *)ac->spy, ldb_kv_request_destructor);
 
 	return LDB_SUCCESS;
 }
 
-static int ltdb_init_rootdse(struct ldb_module *module)
+static int ldb_kv_init_rootdse(struct ldb_module *module)
 {
 	/* ignore errors on this - we expect it for non-sam databases */
 	ldb_mod_register_control(module, LDB_CONTROL_PERMISSIVE_MODIFY_OID);
@@ -2196,38 +2199,38 @@ static int ltdb_init_rootdse(struct ldb_module *module)
 }
 
 
-static int generic_lock_read(struct ldb_module *module)
+static int ldb_kv_lock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	return ltdb->kv_ops->lock_read(module);
 }
 
-static int generic_unlock_read(struct ldb_module *module)
+static int ldb_kv_unlock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	return ltdb->kv_ops->unlock_read(module);
 }
 
-static const struct ldb_module_ops ltdb_ops = {
+static const struct ldb_module_ops ldb_kv_ops = {
 	.name              = "tdb",
-	.init_context      = ltdb_init_rootdse,
-	.search            = ltdb_handle_request,
-	.add               = ltdb_handle_request,
-	.modify            = ltdb_handle_request,
-	.del               = ltdb_handle_request,
-	.rename            = ltdb_handle_request,
-	.extended          = ltdb_handle_request,
-	.start_transaction = ltdb_start_trans,
-	.end_transaction   = ltdb_end_trans,
-	.prepare_commit    = ltdb_prepare_commit,
-	.del_transaction   = ltdb_del_trans,
-	.read_lock         = generic_lock_read,
-	.read_unlock       = generic_unlock_read,
+	.init_context      = ldb_kv_init_rootdse,
+	.search            = ldb_kv_handle_request,
+	.add               = ldb_kv_handle_request,
+	.modify            = ldb_kv_handle_request,
+	.del               = ldb_kv_handle_request,
+	.rename            = ldb_kv_handle_request,
+	.extended          = ldb_kv_handle_request,
+	.start_transaction = ldb_kv_start_trans,
+	.end_transaction   = ldb_kv_end_trans,
+	.prepare_commit    = ldb_kv_prepare_commit,
+	.del_transaction   = ldb_kv_del_trans,
+	.read_lock         = ldb_kv_lock_read,
+	.read_unlock       = ldb_kv_unlock_read,
 };
 
-int init_store(struct ltdb_private *ltdb,
+int ldb_kv_init_store(struct ltdb_private *ltdb,
 		      const char *name,
 		      struct ldb_context *ldb,
 		      const char *options[],
@@ -2245,7 +2248,7 @@ int init_store(struct ltdb_private *ltdb,
 
 	ltdb->pid = getpid();
 
-	ltdb->module = ldb_module_new(ldb, ldb, name, &ltdb_ops);
+	ltdb->module = ldb_module_new(ldb, ldb, name, &ldb_kv_ops);
 	if (!ltdb->module) {
 		ldb_oom(ldb);
 		talloc_free(ltdb);
@@ -2254,7 +2257,7 @@ int init_store(struct ltdb_private *ltdb,
 	ldb_module_set_private(ltdb->module, ltdb);
 	talloc_steal(ltdb->module, ltdb);
 
-	if (ltdb_cache_load(ltdb->module) != 0) {
+	if (ldb_kv_cache_load(ltdb->module) != 0) {
 		ldb_asprintf_errstring(ldb, "Unable to load ltdb cache "
 				       "records for backend '%s'", name);
 		talloc_free(ltdb->module);
@@ -2390,5 +2393,6 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return init_store(ltdb, "ldb_tdb backend", ldb, options, _module);
+	return ldb_kv_init_store(
+	    ltdb, "ldb_tdb backend", ldb, options, _module);
 }

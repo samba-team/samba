@@ -116,7 +116,7 @@ static int msg_add_distinguished_name(struct ldb_message *msg)
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_base(struct ldb_module *module,
+int ldb_kv_search_base(struct ldb_module *module,
 		     TALLOC_CTX *mem_ctx,
 		     struct ldb_dn *dn,
 		     struct ldb_dn **ret_dn)
@@ -141,7 +141,7 @@ int ltdb_search_base(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_search_dn1(module, dn,
+	ret = ldb_kv_search_dn1(module, dn,
 			      msg,
 			      LDB_UNPACK_DATA_FLAG_NO_ATTRS);
 	if (ret == LDB_SUCCESS) {
@@ -183,7 +183,7 @@ struct ltdb_parse_data_unpack_ctx {
 	unsigned int unpack_flags;
 };
 
-static int ltdb_parse_data_unpack(struct ldb_val key,
+static int ldb_kv_parse_data_unpack(struct ldb_val key,
 				  struct ldb_val data,
 				  void *private_data)
 {
@@ -236,7 +236,7 @@ static int ltdb_parse_data_unpack(struct ldb_val key,
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
+int ldb_kv_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 		    const struct TDB_DATA tdb_key,
 		    struct ldb_message *msg,
 		    unsigned int unpack_flags)
@@ -258,7 +258,7 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 	msg->elements = NULL;
 
 	ret = ltdb->kv_ops->fetch_and_parse(ltdb, ldb_key,
-					    ltdb_parse_data_unpack, &ctx);
+					    ldb_kv_parse_data_unpack, &ctx);
 
 	if (ret == -1) {
 		ret = ltdb->kv_ops->error(ltdb);
@@ -284,7 +284,7 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
+int ldb_kv_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
 		    unsigned int unpack_flags)
 {
 	void *data = ldb_module_get_private(module);
@@ -306,7 +306,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 		}
 
 		/* form the key */
-		tdb_key = ltdb_key_dn(module, tdb_key_ctx, dn);
+		tdb_key = ldb_kv_key_dn(module, tdb_key_ctx, dn);
 		if (!tdb_key.dptr) {
 			TALLOC_FREE(tdb_key_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -319,7 +319,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 		 * used for internal memory.
 		 *
 		 */
-		ret = ltdb_key_dn_from_idx(module, ltdb,
+		ret = ldb_kv_key_dn_from_idx(module, ltdb,
 					   msg,
 					   dn, &tdb_key);
 		if (ret != LDB_SUCCESS) {
@@ -327,7 +327,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 		}
 	}
 
-	ret = ltdb_search_key(module, ltdb, tdb_key, msg, unpack_flags);
+	ret = ldb_kv_search_key(module, ltdb, tdb_key, msg, unpack_flags);
 
 	TALLOC_FREE(tdb_key_ctx);
 
@@ -355,7 +355,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
   individually allocated, which is what our callers expect.
 
  */
-int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
+int ldb_kv_filter_attrs(TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg, const char * const *attrs,
 		      struct ldb_message **filtered_msg)
 {
@@ -509,7 +509,7 @@ static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb
 	ac = talloc_get_type(state, struct ltdb_context);
 	ldb = ldb_module_get_ctx(ac->module);
 
-	if (ltdb_key_is_record(tdb_key) == false) {
+	if (ldb_kv_key_is_record(tdb_key) == false) {
 		return 0;
 	}
 
@@ -556,7 +556,7 @@ static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb
 	}
 
 	/* filter the attributes that the user wants */
-	ret = ltdb_filter_attrs(ac, msg, ac->attrs, &filtered_msg);
+	ret = ldb_kv_filter_attrs(ac, msg, ac->attrs, &filtered_msg);
 	talloc_free(msg);
 
 	if (ret == -1) {
@@ -580,7 +580,7 @@ static int search_func(struct ltdb_private *ltdb, struct ldb_val key, struct ldb
   search the database with a LDAP-like expression.
   this is the "full search" non-indexed variant
 */
-static int ltdb_search_full(struct ltdb_context *ctx)
+static int ldb_kv_search_full(struct ltdb_context *ctx)
 {
 	void *data = ldb_module_get_private(ctx->module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -596,7 +596,7 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 	return ctx->error;
 }
 
-static int ltdb_search_and_return_base(struct ltdb_private *ltdb,
+static int ldb_kv_search_and_return_base(struct ltdb_private *ltdb,
 				       struct ltdb_context *ctx)
 {
 	struct ldb_message *msg, *filtered_msg;
@@ -610,7 +610,7 @@ static int ltdb_search_and_return_base(struct ltdb_private *ltdb,
 	if (!msg) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ret = ltdb_search_dn1(ctx->module, ctx->base, msg,
+	ret = ldb_kv_search_dn1(ctx->module, ctx->base, msg,
 			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
 			      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
 
@@ -671,7 +671,7 @@ static int ltdb_search_and_return_base(struct ltdb_private *ltdb,
 	 * This copies msg->dn including the casefolding, so the above
 	 * assignment is safe
 	 */
-	ret = ltdb_filter_attrs(ctx, msg, ctx->attrs, &filtered_msg);
+	ret = ldb_kv_filter_attrs(ctx, msg, ctx->attrs, &filtered_msg);
 
 	/*
 	 * Remove any extended components possibly copied in from
@@ -700,7 +700,7 @@ static int ltdb_search_and_return_base(struct ltdb_private *ltdb,
   search the database with a LDAP-like expression.
   choses a search method
 */
-int ltdb_search(struct ltdb_context *ctx)
+int ldb_kv_search(struct ltdb_context *ctx)
 {
 	struct ldb_context *ldb;
 	struct ldb_module *module = ctx->module;
@@ -717,7 +717,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ltdb_cache_load(module) != 0) {
+	if (ldb_kv_cache_load(module) != 0) {
 		ltdb->kv_ops->unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -768,7 +768,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		 * will try to look up an index record for a special
 		 * record (which doesn't exist).
 		 */
-		ret = ltdb_search_and_return_base(ltdb, ctx);
+		ret = ldb_kv_search_and_return_base(ltdb, ctx);
 
 		ltdb->kv_ops->unlock_read(module);
 
@@ -781,7 +781,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		 * dn.  Also optimise the subsequent filter by filling
 		 * in the ctx->base to be exactly case correct
 		 */
-		ret = ltdb_search_base(module, ctx,
+		ret = ldb_kv_search_base(module, ctx,
 				       req->op.search.base,
 				       &ctx->base);
 		
@@ -799,7 +799,7 @@ int ltdb_search(struct ltdb_context *ctx)
 	if (ret == LDB_SUCCESS) {
 		uint32_t match_count = 0;
 
-		ret = ltdb_search_indexed(ctx, &match_count);
+		ret = ldb_kv_search_indexed(ctx, &match_count);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* Not in the index, therefore OK! */
 			ret = LDB_SUCCESS;
@@ -844,7 +844,7 @@ int ltdb_search(struct ltdb_context *ctx)
 				return LDB_ERR_INAPPROPRIATE_MATCHING;
 			}
 
-			ret = ltdb_search_full(ctx);
+			ret = ldb_kv_search_full(ctx);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ldb, "Indexed and full searches both failed!\n");
 			}
