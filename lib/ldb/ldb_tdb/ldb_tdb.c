@@ -2111,7 +2111,8 @@ done:
 
 static int ldb_kv_request_destructor(void *ptr)
 {
-	struct ldb_kv_req_spy *spy = talloc_get_type(ptr, struct ldb_kv_req_spy);
+	struct ldb_kv_req_spy *spy =
+	    talloc_get_type(ptr, struct ldb_kv_req_spy);
 
 	if (spy->ctx != NULL) {
 		spy->ctx->spy = NULL;
