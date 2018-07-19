@@ -385,6 +385,10 @@ class gp_ext_setter(object):
     def mapper(self):
         pass
 
+    def delete(self):
+        upd_sam, _ = self.mapper().get(self.attribute)
+        upd_sam(self.val)
+
     @abstractmethod
     def __str__(self):
         pass
