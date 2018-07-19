@@ -109,5 +109,5 @@ test_takeover_helper ()
 	unit_test_notrace takeover_helper_format_outfd
 	_ret=$?
 	rm "$takeover_helper_out"
-	[ $? -eq 0 ] || exit $?
+	[ $_ret -eq 0 ] || exit $_ret
 }
