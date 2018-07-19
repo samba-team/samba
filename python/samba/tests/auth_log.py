@@ -33,6 +33,7 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from samba import NTSTATUSError
 from subprocess import call
 from ldb import LdbError
+import re
 
 class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
 
@@ -71,6 +72,20 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage, x)
         checkFunction(messages, authTypes, service, binding, protection)
 
+    def _assert_ncacn_np_serviceDescription(self, binding, serviceDescription):
+        # Turn "[foo,bar]" into a list ("foo", "bar") to test
+        # lambda x: x removes anything that evaluates to False,
+        # including empty strings, so we handle "" as well
+        binding_list = filter(lambda x: x, re.compile('[\[,\]]').split(binding))
+
+        # Handle explicit smb2, smb1 or auto negotiation
+        if "smb2" in binding_list:
+            self.assertEquals(serviceDescription, "SMB2")
+        elif "smb1" in binding_list:
+            self.assertEquals(serviceDescription, "SMB")
+        else:
+            self.assertIn(serviceDescription, ["SMB", "SMB2"])
+
     def rpc_ncacn_np_ntlm_check(self, messages, authTypes, service,
                                 binding, protection):
 
@@ -83,14 +98,14 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         msg = messages[0]
         self.assertEquals("Authentication", msg["type"])
         self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("SMB",
-                           msg["Authentication"]["serviceDescription"])
+        self._assert_ncacn_np_serviceDescription(binding,
+                          msg["Authentication"]["serviceDescription"])
         self.assertEquals(authTypes[1], msg["Authentication"]["authDescription"])
 
         # Check the second message it should be an Authorization
         msg = messages[1]
         self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("SMB",
+        self._assert_ncacn_np_serviceDescription(binding,
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[2], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
@@ -139,12 +154,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         # Check the third message it should be an Authorization
         msg = messages[2]
         self.assertEquals("Authorization", msg["type"])
-        serviceDescription = "SMB"
-        print "binding %s" % binding
-        if binding == "[smb2]":
-            serviceDescription = "SMB2"
-
-        self.assertEquals(serviceDescription,
+        self._assert_ncacn_np_serviceDescription(binding,
                           msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[3], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
