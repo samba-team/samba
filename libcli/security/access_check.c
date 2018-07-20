@@ -429,6 +429,16 @@ static NTSTATUS check_object_specific_access(struct security_ace *ace,
 			*grant_access = true;
 			return NT_STATUS_OK;
 		}
+
+		/*
+		 * As per 5.1.3.3.4 Checking Control Access Right-Based Access,
+		 * if the CONTROL_ACCESS right is present, then we can grant
+		 * access and stop any further access checks
+		 */
+		if (ace->access_mask & SEC_ADS_CONTROL_ACCESS) {
+			*grant_access = true;
+			return NT_STATUS_OK;
+		}
 	} else {
 
 		/* this ACE denies access to the requested object/attribute */
