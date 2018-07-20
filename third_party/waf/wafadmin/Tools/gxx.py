@@ -92,8 +92,8 @@ def gxx_modifier_cygwin(conf):
 @conftest
 def gxx_modifier_darwin(conf):
 	v = conf.env
-	v['shlib_CXXFLAGS']      = ['-fPIC', '-compatibility_version', '1', '-current_version', '1']
-	v['shlib_LINKFLAGS']     = ['-dynamiclib']
+	v['shlib_CXXFLAGS']      = ['-fPIC']
+	v['shlib_LINKFLAGS']     = ['-dynamiclib', '-compatibility_version', '1', '-current_version', '1']
 	v['shlib_PATTERN']       = 'lib%s.dylib'
 
 	v['staticlib_LINKFLAGS'] = []

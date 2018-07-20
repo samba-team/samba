@@ -1018,6 +1018,24 @@ def apply_bundle_remove_dynamiclib_patch(self):
         if not getattr(self,'vnum',None):
             try:
                 self.env['LINKFLAGS'].remove('-dynamiclib')
+
+                # Only try to remove these if -dynamiclib was preset, i.e. no exception above
+                try:
+                    arg_idx = self.env['LINKFLAGS'].index('-compatibility_version')
+                    self.env['LINKFLAGS'].pop(arg_idx) # the argument
+                    self.env['LINKFLAGS'].pop(arg_idx) # the subargument
+                except ValueError:
+                    pass
+                try:
+                    arg_idx = self.env['LINKFLAGS'].index('-current_version')
+                    self.env['LINKFLAGS'].pop(arg_idx) # the argument
+                    self.env['LINKFLAGS'].pop(arg_idx) # the subargument
+                except ValueError:
+                    pass
+            except ValueError:
+                pass
+
+	    try:
                 self.env['LINKFLAGS'].remove('-single_module')
             except ValueError:
                 pass
