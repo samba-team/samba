@@ -40,12 +40,14 @@ bld.SAMBA_MODULE('service_drepl',
 bld.SAMBA_LIBRARY('dsdb_garbage_collect_tombstones',
                   source='kcc/garbage_collect_tombstones.c',
                   deps='samdb RPC_NDR_DRSUAPI',
-                  private_library=True)
+                  private_library=True,
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED())
 
 bld.SAMBA_LIBRARY('scavenge_dns_records',
                   source='kcc/scavenge_dns_records.c',
                   deps='samdb RPC_NDR_DRSUAPI dnsserver_common',
-                  private_library=True)
+                  private_library=True,
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED())
 
 bld.SAMBA_MODULE('service_kcc',
 	source='kcc/kcc_service.c kcc/kcc_connection.c kcc/kcc_periodic.c kcc/kcc_drs_replica_info.c',
@@ -78,5 +80,6 @@ for env in bld.gen_python_environments():
 		# removes it so we end up with unresolved symbols.
 		deps='samdb %s dcerpc com_err %s %s dsdb_garbage_collect_tombstones scavenge_dns_records' %\
 			 (pyldb_util, pyrpc_util, pyparam_util),
-		realname='samba/dsdb.so'
-		)
+		realname='samba/dsdb.so',
+                enabled=bld.AD_DC_BUILD_IS_ENABLED()
+                )
