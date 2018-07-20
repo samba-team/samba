@@ -69,7 +69,7 @@ struct ldb_kv_private {
 
 	bool check_base;
 	bool disallow_dn_filter;
-	struct ltdb_idxptr *idxptr;
+	struct ldb_kv_idxptr *idxptr;
 	bool prepared_commit;
 	int read_lock_count;
 
