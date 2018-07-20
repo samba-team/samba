@@ -203,10 +203,6 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 			   TDB_DATA *tdb_key);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_search.c  */
-
-int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
-		      const struct ldb_val *val);
-void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
 int ldb_kv_search_dn1(struct ldb_module *module,
 		      struct ldb_dn *dn,
 		      struct ldb_message *msg,
