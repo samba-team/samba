@@ -392,32 +392,46 @@ static NTSTATUS check_object_specific_access(struct security_ace *ace,
 
 	*grant_access = false;
 
-	/*
-	 * check only in case we have provided a tree,
-	 * the ACE has an object type and that type
-	 * is in the tree
-	 */
-	type = get_ace_object_type(ace);
-
+	/* if no tree was supplied, we can't do object-specific access checks */
 	if (!tree) {
 		return NT_STATUS_OK;
 	}
 
+	/* Get the ObjectType GUID this ACE applies to */
+	type = get_ace_object_type(ace);
+
+	/*
+	 * If the ACE doesn't have a type, then apply it to the whole tree, i.e.
+	 * treat 'OA' ACEs as 'A' and 'OD' as 'D'
+	 */
 	if (!type) {
 		node = tree;
 	} else {
-		if (!(node = get_object_tree_by_GUID(tree, type))) {
+
+		/* skip it if the ACE's ObjectType GUID is not in the tree */
+		node = get_object_tree_by_GUID(tree, type);
+		if (!node) {
 			return NT_STATUS_OK;
 		}
 	}
 
 	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
+
+		/* apply the access rights to this node, and any children */
 		object_tree_modify_access(node, ace->access_mask);
+
+		/*
+		 * Currently all nodes in the tree request the same access mask,
+		 * so we can use any node to check if processing this ACE now
+		 * means the requested access has been granted
+		 */
 		if (node->remaining_access == 0) {
 			*grant_access = true;
 			return NT_STATUS_OK;
 		}
 	} else {
+
+		/* this ACE denies access to the requested object/attribute */
 		if (node->remaining_access & ace->access_mask){
 			return NT_STATUS_ACCESS_DENIED;
 		}
