@@ -492,27 +492,27 @@ int ldb_kv_store(struct ldb_module *module,
 	struct ldb_val ldb_key;
 	struct ldb_val ldb_data;
 	int ret = LDB_SUCCESS;
-	TALLOC_CTX *tdb_key_ctx = talloc_new(module);
+	TALLOC_CTX *key_ctx = talloc_new(module);
 
-	if (tdb_key_ctx == NULL) {
+	if (key_ctx == NULL) {
 		return ldb_module_oom(module);
 	}
 
 	if (ldb_kv->read_only) {
-		talloc_free(tdb_key_ctx);
+		talloc_free(key_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ldb_kv_key_msg(module, tdb_key_ctx, msg);
+	tdb_key = ldb_kv_key_msg(module, key_ctx, msg);
 	if (tdb_key.dptr == NULL) {
-		TALLOC_FREE(tdb_key_ctx);
+		TALLOC_FREE(key_ctx);
 		return LDB_ERR_OTHER;
 	}
 
 	ret = ldb_pack_data(ldb_module_get_ctx(module),
 			    msg, &ldb_data);
 	if (ret == -1) {
-		TALLOC_FREE(tdb_key_ctx);
+		TALLOC_FREE(key_ctx);
 		return LDB_ERR_OTHER;
 	}
 
@@ -536,7 +536,7 @@ int ldb_kv_store(struct ldb_module *module,
 	}
 
 done:
-	TALLOC_FREE(tdb_key_ctx);
+	TALLOC_FREE(key_ctx);
 	talloc_free(ldb_data.data);
 
 	return ret;
