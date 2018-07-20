@@ -175,7 +175,7 @@ int ldb_kv_search_base(struct ldb_module *module,
 	return LDB_ERR_NO_SUCH_OBJECT;
 }
 
-struct ltdb_parse_data_unpack_ctx {
+struct ldb_kv_parse_data_unpack_ctx {
 	struct ldb_message *msg;
 	struct ldb_module *module;
 	unsigned int unpack_flags;
@@ -185,7 +185,7 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 				    struct ldb_val data,
 				    void *private_data)
 {
-	struct ltdb_parse_data_unpack_ctx *ctx = private_data;
+	struct ldb_kv_parse_data_unpack_ctx *ctx = private_data;
 	unsigned int nb_elements_in_db;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
@@ -241,7 +241,7 @@ int ldb_kv_search_key(struct ldb_module *module,
 		      unsigned int unpack_flags)
 {
 	int ret;
-	struct ltdb_parse_data_unpack_ctx ctx = {
+	struct ldb_kv_parse_data_unpack_ctx ctx = {
 		.msg = msg,
 		.module = module,
 		.unpack_flags = unpack_flags
