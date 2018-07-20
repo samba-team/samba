@@ -58,7 +58,7 @@ struct ldb_kv_private {
 	   possible */
 	int tdb_seqnum;
 
-	struct ltdb_cache {
+	struct ldb_kv_cache {
 		struct ldb_message *indexlist;
 		bool one_level_indexes;
 		bool attribute_indexes;

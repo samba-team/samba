@@ -418,7 +418,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 	}
 
 	if (ldb_kv->cache == NULL) {
-		ldb_kv->cache = talloc_zero(ldb_kv, struct ltdb_cache);
+		ldb_kv->cache = talloc_zero(ldb_kv, struct ldb_kv_cache);
 		if (ldb_kv->cache == NULL)
 			goto failed;
 	}
