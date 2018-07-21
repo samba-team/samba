@@ -1795,7 +1795,6 @@ server_lookup:
     }
 
     ret = _kdc_db_fetch(context, config, krbtgt_principal, HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
-    krb5_free_principal(context, krbtgt_principal);
     if (ret) {
 	krb5_error_code ret2;
 	char *ktpn, *ktpn2;
@@ -2303,6 +2302,8 @@ out:
 	krb5_free_principal(context, dp);
     if (sp)
 	krb5_free_principal(context, sp);
+    if (krbtgt_principal)
+        krb5_free_principal(context, krbtgt_principal);
     if (ref_realm)
 	free(ref_realm);
     free_METHOD_DATA(&enc_pa_data);
