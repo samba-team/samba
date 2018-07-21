@@ -38,7 +38,12 @@ import samba.dcerpc.base
 from samba.compat import PY3, text_type
 from samba.compat import string_types
 from random import randint
-from samba.samdb import SamDB
+try:
+    from samba.samdb import SamDB
+except ImportError:
+    # We are built without samdb support,
+    # imitate it so that connect_samdb() can recover
+    SamDB = lambda *x: None
 import samba.ndr
 import samba.dcerpc.dcerpc
 import samba.dcerpc.epmapper
