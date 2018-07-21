@@ -39,7 +39,10 @@ from samba.compat import PY3, text_type
 from random import randint
 if not PY3:
     # Py2 only
-    from samba.samdb import SamDB
+    try:
+        from samba.samdb import SamDB
+    except ImportError:
+        SamDB = lambda *x: None
     import samba.ndr
     import samba.dcerpc.dcerpc
     import samba.dcerpc.epmapper
