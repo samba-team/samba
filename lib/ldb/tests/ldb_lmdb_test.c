@@ -57,6 +57,7 @@
 
 #include "../ldb_tdb/ldb_tdb.h"
 #include "../ldb_mdb/ldb_mdb.h"
+#include "../ldb_key_value/ldb_kv.h"
 
 #define TEST_BE  "mdb"
 

@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -24,14 +24,14 @@
 /*
  *  Name: ldb
  *
- *  Component: ldb tdb cache functions
+ *  Component: ldb key value cache functions
  *
  *  Description: cache special records in a ldb/tdb
  *
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_tdb.h"
+#include "ldb_kv.h"
 #include "ldb_private.h"
 
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
@@ -184,7 +184,7 @@ static int ldb_kv_attributes_load(struct ldb_module *module)
 		} else if (flags == 0) {
 			syntax = LDB_SYNTAX_OCTET_STRING;
 		} else {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, 
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
 				  "Invalid flag combination 0x%x for '%s' "
 				  "in @ATTRIBUTES",
 				  flags, attrs_msg->elements[i].name);
@@ -193,7 +193,7 @@ static int ldb_kv_attributes_load(struct ldb_module *module)
 
 		s = ldb_standard_syntax_by_name(ldb, syntax);
 		if (s == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, 
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
 				  "Invalid attribute syntax '%s' for '%s' "
 				  "in @ATTRIBUTES",
 				  syntax, attrs_msg->elements[i].name);
@@ -488,7 +488,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed_and_unlock;
 	}
-	
+
 	/* set flags if they do exist */
 	if (r == LDB_SUCCESS) {
 		ldb_kv->check_base =
@@ -660,4 +660,3 @@ int ldb_kv_check_at_attributes_values(const struct ldb_val *value)
 
 	return -1;
 }
-

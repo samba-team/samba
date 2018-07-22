@@ -24,16 +24,16 @@
 /*
  *  Name: ldb
  *
- *  Component: ldb tdb backend - indexing
+ *  Component: ldb key value backend - indexing
  *
- *  Description: indexing routines for ldb tdb backend
+ *  Description: indexing routines for ldb key value backend
  *
  *  Author: Andrew Tridgell
  */
 
 /*
 
-LDB Index design and choice of TDB key:
+LDB Index design and choice of key:
 =======================================
 
 LDB has index records held as LDB objects with a special record like:
@@ -144,7 +144,8 @@ ldb_schema_set_override_GUID_index() must be called.
 
 */
 
-#include "ldb_tdb.h"
+#include "ldb_kv.h"
+#include "../ldb_tdb/ldb_tdb.h"
 #include "ldb_private.h"
 #include "lib/util/binsearch.h"
 
@@ -970,7 +971,7 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 			return NULL;
 		}
 		vstr_len = strlen(vstr);
-		/* 
+		/*
 		 * Overflow here is not critical as we only use this
 		 * to choose the printf truncation
 		 */
@@ -2865,7 +2866,7 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 		.dptr = ldb_key.data,
 		.dsize = ldb_key.length
 	};
-	
+
 	ldb = ldb_module_get_ctx(module);
 
 	if (key.dsize > 4 &&
@@ -2877,7 +2878,7 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 	if (is_record == false) {
 		return 0;
 	}
-	
+
 	msg = ldb_msg_new(module);
 	if (msg == NULL) {
 		return -1;
@@ -2905,7 +2906,7 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 		talloc_free(msg);
 		return -1;
 	}
-	
+
 	/* check if the DN key has changed, perhaps due to the case
 	   insensitivity of an element changing, or a change from DN
 	   to GUID keys */
@@ -2960,7 +2961,7 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 	};
 	int ret;
 	bool is_record;
-	
+
 	ldb = ldb_module_get_ctx(module);
 
 	if (key.dsize > 4 &&
@@ -2972,7 +2973,7 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 	if (is_record == false) {
 		return 0;
 	}
-	
+
 	msg = ldb_msg_new(module);
 	if (msg == NULL) {
 		return -1;

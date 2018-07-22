@@ -56,6 +56,7 @@
 #include <sys/wait.h>
 
 #include "../ldb_tdb/ldb_tdb.h"
+#include "../ldb_key_value/ldb_kv.h"
 
 #define TEST_BE  "tdb"
 

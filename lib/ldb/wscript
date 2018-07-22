@@ -396,15 +396,27 @@ def build(bld):
                          init_function='ldb_tdb_init',
                          module_init_name='ldb_init_module',
                          internal_module=False,
-                         deps='tdb ldb ldb_key_value',
+                         deps='ldb ldb_tdb_int ldb_key_value',
                          subsystem='ldb')
 
-        bld.SAMBA_LIBRARY('ldb_key_value',
+        bld.SAMBA_LIBRARY('ldb_tdb_int',
                           bld.SUBDIR('ldb_tdb',
-                                    '''ldb_tdb.c ldb_search.c ldb_index.c
-                                    ldb_cache.c ldb_tdb_wrap.c'''),
+                                     '''ldb_tdb_wrap.c ldb_tdb.c'''),
                           private_library=True,
-                          deps='tdb ldb')
+                          deps='ldb tdb ldb_key_value ldb_tdb_err_map')
+
+        bld.SAMBA_LIBRARY('ldb_tdb_err_map',
+                          bld.SUBDIR('ldb_tdb',
+                                     '''ldb_tdb_err_map.c '''),
+                          private_library=True,
+                          deps='ldb tdb')
+
+        bld.SAMBA_LIBRARY('ldb_key_value',
+                          bld.SUBDIR('ldb_key_value',
+                                    '''ldb_kv.c ldb_kv_search.c ldb_kv_index.c
+                                    ldb_kv_cache.c'''),
+                          private_library=True,
+                          deps='tdb ldb ldb_tdb_err_map')
 
         if bld.CONFIG_SET('HAVE_LMDB'):
             bld.SAMBA_MODULE('ldb_mdb',
@@ -432,7 +444,7 @@ def build(bld):
                          init_function='ldb_ldb_init',
                          module_init_name='ldb_init_module',
                          internal_module=False,
-                         deps='ldb ldb_key_value' + lmdb_deps,
+                         deps='ldb ldb_tdb ldb_key_value' + lmdb_deps,
                          subsystem='ldb')
 
         # have a separate subsystem for common/ldb.c, so it can rebuild

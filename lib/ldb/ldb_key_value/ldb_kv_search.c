@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -31,14 +31,13 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_tdb.h"
+#include "ldb_kv.h"
 #include "ldb_private.h"
-#include <tdb.h>
 
 /*
   add one element to a message
 */
-static int msg_add_element(struct ldb_message *ret, 
+static int msg_add_element(struct ldb_message *ret,
 			   const struct ldb_message_element *el,
 			   int check_duplicates)
 {
@@ -55,7 +54,7 @@ static int msg_add_element(struct ldb_message *ret,
 		return -1;
 	}
 	ret->elements = e2;
-	
+
 	elnew = &e2[ret->num_elements];
 
 	elnew->name = talloc_strdup(ret->elements, el->name);
@@ -745,14 +744,14 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 		/* Check what we should do with a NULL dn */
 		switch (req->op.search.scope) {
 		case LDB_SCOPE_BASE:
-			ldb_asprintf_errstring(ldb, 
+			ldb_asprintf_errstring(ldb,
 					       "NULL Base DN invalid for a base search");
 			ret = LDB_ERR_INVALID_DN_SYNTAX;
 			break;
 		case LDB_SCOPE_ONELEVEL:
-			ldb_asprintf_errstring(ldb, 
+			ldb_asprintf_errstring(ldb,
 					       "NULL Base DN invalid for a one-level search");
-			ret = LDB_ERR_INVALID_DN_SYNTAX;	
+			ret = LDB_ERR_INVALID_DN_SYNTAX;
 			break;
 		case LDB_SCOPE_SUBTREE:
 		default:
@@ -762,8 +761,8 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 	} else if (ldb_dn_is_valid(req->op.search.base) == false) {
 
 		/* We don't want invalid base DNs here */
-		ldb_asprintf_errstring(ldb, 
-				       "Invalid Base DN: %s", 
+		ldb_asprintf_errstring(ldb,
+				       "Invalid Base DN: %s",
 				       ldb_dn_get_linearized(req->op.search.base));
 		ret = LDB_ERR_INVALID_DN_SYNTAX;
 
@@ -793,11 +792,11 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 		    module, ctx, req->op.search.base, &ctx->base);
 
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			ldb_asprintf_errstring(ldb, 
-					       "No such Base DN: %s", 
+			ldb_asprintf_errstring(ldb,
+					       "No such Base DN: %s",
 					       ldb_dn_get_linearized(req->op.search.base));
 		}
-			
+
 	} else {
 		/* If we are not checking the base DN life is easy */
 		ret = LDB_SUCCESS;
@@ -810,12 +809,12 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* Not in the index, therefore OK! */
 			ret = LDB_SUCCESS;
-			
+
 		}
 		/* Check if we got just a normal error.
 		 * In that case proceed to a full search unless we got a
 		 * callback error */
-		if ( ! ctx->request_terminated && ret != LDB_SUCCESS) {
+		if (!ctx->request_terminated && ret != LDB_SUCCESS) {
 			/* Not indexed, so we need to do a full scan */
 			if (ldb_kv->warn_unindexed ||
 			    ldb_kv->disable_full_db_scan) {
@@ -863,4 +862,3 @@ int ldb_kv_search(struct ldb_kv_context *ctx)
 
 	return ret;
 }
-
