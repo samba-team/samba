@@ -42,6 +42,7 @@ class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
         super(NetJoinNoSpnegoTests, self).tearDown()
 
     def test_net_join_no_spnego(self):
+        self.lp.set("client ipc max protocol", "NT1")
         self.lp.set("client use spnego", "no")
         netbios_name = "NetJoinNoSpnego"
         machinepass  = "abcdefghij"
@@ -65,6 +66,7 @@ class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
         self.fail("Shoud have rejected NTLMv2 without SPNEGO")
 
     def test_net_join_no_spnego_ntlmv1(self):
+        self.lp.set("client ipc max protocol", "NT1")
         self.lp.set("client use spnego", "no")
         self.lp.set("client ntlmv2 auth", "no")
         netbios_name = "NetJoinNoSpnego"
