@@ -34,19 +34,19 @@
 #include "ldb_kv.h"
 #include "ldb_private.h"
 
-#define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
-#define LTDB_FLAG_INTEGER          (1<<1)
-#define LTDB_FLAG_UNIQUE_INDEX     (1<<2)
+#define LDB_KV_FLAG_CASE_INSENSITIVE (1<<0)
+#define LDB_KV_FLAG_INTEGER          (1<<1)
+#define LDB_KV_FLAG_UNIQUE_INDEX     (1<<2)
 
 /* valid attribute flags */
 static const struct {
 	const char *name;
 	int value;
 } ldb_kv_valid_attr_flags[] = {
-	{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
-	{ "INTEGER", LTDB_FLAG_INTEGER },
+	{ "CASE_INSENSITIVE", LDB_KV_FLAG_CASE_INSENSITIVE },
+	{ "INTEGER", LDB_KV_FLAG_INTEGER },
 	{ "HIDDEN", 0 },
-	{ "UNIQUE_INDEX",  LTDB_FLAG_UNIQUE_INDEX},
+	{ "UNIQUE_INDEX",  LDB_KV_FLAG_UNIQUE_INDEX},
 	{ "NONE", 0 },
 	{ NULL, 0 }
 };
@@ -119,7 +119,7 @@ static int ldb_kv_attributes_load(struct ldb_module *module)
 		goto failed;
 	}
 
-	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
+	dn = ldb_dn_new(module, ldb, LDB_KV_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
 	r = ldb_kv_search_dn1(module,
@@ -171,15 +171,15 @@ static int ldb_kv_attributes_load(struct ldb_module *module)
 			goto failed;
 		}
 
-		if (flags & LTDB_FLAG_UNIQUE_INDEX) {
+		if (flags & LDB_KV_FLAG_UNIQUE_INDEX) {
 			attr_flags = LDB_ATTR_FLAG_UNIQUE_INDEX;
 		}
-		flags &= ~LTDB_FLAG_UNIQUE_INDEX;
+		flags &= ~LDB_KV_FLAG_UNIQUE_INDEX;
 
 		/* These are not currently flags, each is exclusive */
-		if (flags == LTDB_FLAG_CASE_INSENSITIVE) {
+		if (flags == LDB_KV_FLAG_CASE_INSENSITIVE) {
 			syntax = LDB_SYNTAX_DIRECTORY_STRING;
-		} else if (flags == LTDB_FLAG_INTEGER) {
+		} else if (flags == LDB_KV_FLAG_INTEGER) {
 			syntax = LDB_SYNTAX_INTEGER;
 		} else if (flags == 0) {
 			syntax = LDB_SYNTAX_OCTET_STRING;
@@ -266,7 +266,7 @@ static int ldb_kv_index_load(struct ldb_module *module,
 	ldb_kv->cache->one_level_indexes = false;
 	ldb_kv->cache->attribute_indexes = false;
 
-	indexlist_dn = ldb_dn_new(ldb_kv, ldb, LTDB_INDEXLIST);
+	indexlist_dn = ldb_dn_new(ldb_kv, ldb, LDB_KV_INDEXLIST);
 	if (indexlist_dn == NULL) {
 		return -1;
 	}
@@ -283,21 +283,21 @@ static int ldb_kv_index_load(struct ldb_module *module,
 		return -1;
 	}
 
-	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LTDB_IDXONE) !=
+	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LDB_KV_IDXONE) !=
 	    NULL) {
 		ldb_kv->cache->one_level_indexes = true;
 	}
-	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LTDB_IDXATTR) !=
+	if (ldb_msg_find_element(ldb_kv->cache->indexlist, LDB_KV_IDXATTR) !=
 	    NULL) {
 		ldb_kv->cache->attribute_indexes = true;
 	}
 	ldb_kv->cache->GUID_index_attribute = ldb_msg_find_attr_as_string(
-	    ldb_kv->cache->indexlist, LTDB_IDXGUID, NULL);
+	    ldb_kv->cache->indexlist, LDB_KV_IDXGUID, NULL);
 	ldb_kv->cache->GUID_index_dn_component = ldb_msg_find_attr_as_string(
-	    ldb_kv->cache->indexlist, LTDB_IDX_DN_GUID, NULL);
+	    ldb_kv->cache->indexlist, LDB_KV_IDX_DN_GUID, NULL);
 
 	lmdb_subdb_version = ldb_msg_find_attr_as_int(
-	    ldb_kv->cache->indexlist, LTDB_IDX_LMDB_SUBDB, 0);
+	    ldb_kv->cache->indexlist, LDB_KV_IDX_LMDB_SUBDB, 0);
 
 	if (lmdb_subdb_version != 0) {
 		ldb_set_errstring(ldb,
@@ -341,11 +341,11 @@ static int ldb_kv_baseinfo_init(struct ldb_module *module)
 
 	msg->num_elements = 1;
 	msg->elements = &el;
-	msg->dn = ldb_dn_new(msg, ldb, LTDB_BASEINFO);
+	msg->dn = ldb_dn_new(msg, ldb, LDB_KV_BASEINFO);
 	if (!msg->dn) {
 		goto failed;
 	}
-	el.name = talloc_strdup(msg, LTDB_SEQUENCE_NUMBER);
+	el.name = talloc_strdup(msg, LDB_KV_SEQUENCE_NUMBER);
 	if (!el.name) {
 		goto failed;
 	}
@@ -426,7 +426,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 	baseinfo = ldb_msg_new(ldb_kv->cache);
 	if (baseinfo == NULL) goto failed;
 
-	baseinfo_dn = ldb_dn_new(baseinfo, ldb, LTDB_BASEINFO);
+	baseinfo_dn = ldb_dn_new(baseinfo, ldb, LDB_KV_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
 	r = ldb_kv->kv_ops->lock_read(module);
@@ -469,7 +469,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 
 	/* if the current internal sequence number is the same as the one
 	   in the database then assume the rest of the cache is OK */
-	seq = ldb_msg_find_attr_as_uint64(baseinfo, LTDB_SEQUENCE_NUMBER, 0);
+	seq = ldb_msg_find_attr_as_uint64(baseinfo, LDB_KV_SEQUENCE_NUMBER, 0);
 	if (seq == ldb_kv->sequence_number) {
 		goto done;
 	}
@@ -480,7 +480,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 	options = ldb_msg_new(ldb_kv->cache);
 	if (options == NULL) goto failed_and_unlock;
 
-	options_dn = ldb_dn_new(options, ldb, LTDB_OPTIONS);
+	options_dn = ldb_dn_new(options, ldb, LDB_KV_OPTIONS);
 	if (options_dn == NULL) goto failed_and_unlock;
 
 	r = ldb_kv_search_dn1(module, options_dn, options, 0);
@@ -492,9 +492,9 @@ int ldb_kv_cache_load(struct ldb_module *module)
 	/* set flags if they do exist */
 	if (r == LDB_SUCCESS) {
 		ldb_kv->check_base =
-		    ldb_msg_find_attr_as_bool(options, LTDB_CHECK_BASE, false);
+		    ldb_msg_find_attr_as_bool(options, LDB_KV_CHECK_BASE, false);
 		ldb_kv->disallow_dn_filter = ldb_msg_find_attr_as_bool(
-		    options, LTDB_DISALLOW_DN_FILTER, false);
+		    options, LDB_KV_DISALLOW_DN_FILTER, false);
 	} else {
 		ldb_kv->check_base = false;
 		ldb_kv->disallow_dn_filter = false;
@@ -595,13 +595,13 @@ int ldb_kv_increase_sequence_number(struct ldb_module *module)
 
 	msg->num_elements = ARRAY_SIZE(el);
 	msg->elements = el;
-	msg->dn = ldb_dn_new(msg, ldb, LTDB_BASEINFO);
+	msg->dn = ldb_dn_new(msg, ldb, LDB_KV_BASEINFO);
 	if (msg->dn == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	el[0].name = talloc_strdup(msg, LTDB_SEQUENCE_NUMBER);
+	el[0].name = talloc_strdup(msg, LDB_KV_SEQUENCE_NUMBER);
 	if (el[0].name == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;
@@ -613,7 +613,7 @@ int ldb_kv_increase_sequence_number(struct ldb_module *module)
 	val.data = (uint8_t *)s;
 	val.length = strlen(s);
 
-	el[1].name = talloc_strdup(msg, LTDB_MOD_TIMESTAMP);
+	el[1].name = talloc_strdup(msg, LDB_KV_MOD_TIMESTAMP);
 	if (el[1].name == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;

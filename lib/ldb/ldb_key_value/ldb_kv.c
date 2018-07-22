@@ -77,12 +77,12 @@ bool ldb_kv_key_is_record(TDB_DATA key)
 		return true;
 	}
 
-	if (key.dsize < sizeof(LTDB_GUID_KEY_PREFIX)) {
+	if (key.dsize < sizeof(LDB_KV_GUID_KEY_PREFIX)) {
 		return false;
 	}
 
-	if (memcmp(key.dptr, LTDB_GUID_KEY_PREFIX,
-		   sizeof(LTDB_GUID_KEY_PREFIX) - 1) == 0) {
+	if (memcmp(key.dptr, LDB_KV_GUID_KEY_PREFIX,
+		   sizeof(LDB_KV_GUID_KEY_PREFIX) - 1) == 0) {
 		return true;
 	}
 
@@ -149,8 +149,8 @@ int ldb_kv_guid_to_key(struct ldb_module *module,
 		       const struct ldb_val *GUID_val,
 		       TDB_DATA *key)
 {
-	const char *GUID_prefix = LTDB_GUID_KEY_PREFIX;
-	const int GUID_prefix_len = sizeof(LTDB_GUID_KEY_PREFIX) - 1;
+	const char *GUID_prefix = LDB_KV_GUID_KEY_PREFIX;
+	const int GUID_prefix_len = sizeof(LDB_KV_GUID_KEY_PREFIX) - 1;
 
 	if (key->dsize != (GUID_val->length+GUID_prefix_len)) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -229,7 +229,7 @@ TDB_DATA ldb_kv_key_msg(struct ldb_module *module,
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "Did not find GUID attribute %s "
 				       "in %s, required for TDB record "
-				       "key in " LTDB_IDXGUID " mode.",
+				       "key in " LDB_KV_IDXGUID " mode.",
 				       ldb_kv->cache->GUID_index_attribute,
 				       ldb_dn_get_linearized(msg->dn));
 		errno = EINVAL;
@@ -239,7 +239,7 @@ TDB_DATA ldb_kv_key_msg(struct ldb_module *module,
 	}
 
 	/* In this case, allocate with talloc */
-	key.dptr = talloc_size(mem_ctx, LTDB_GUID_KEY_SIZE);
+	key.dptr = talloc_size(mem_ctx, LDB_KV_GUID_KEY_SIZE);
 	if (key.dptr == NULL) {
 		errno = ENOMEM;
 		key.dptr = NULL;
@@ -270,7 +270,7 @@ static int ldb_kv_check_special_dn(struct ldb_module *module,
 	unsigned int i, j;
 
 	if (! ldb_dn_is_special(msg->dn) ||
-	    ! ldb_dn_check_special(msg->dn, LTDB_ATTRIBUTES)) {
+	    ! ldb_dn_check_special(msg->dn, LDB_KV_ATTRIBUTES)) {
 		return LDB_SUCCESS;
 	}
 
@@ -310,8 +310,8 @@ static int ldb_kv_modified(struct ldb_module *module, struct ldb_dn *dn)
 	}
 
 	if (ldb_dn_is_special(dn) &&
-	    (ldb_dn_check_special(dn, LTDB_INDEXLIST) ||
-	     ldb_dn_check_special(dn, LTDB_ATTRIBUTES)) )
+	    (ldb_dn_check_special(dn, LDB_KV_INDEXLIST) ||
+	     ldb_dn_check_special(dn, LDB_KV_ATTRIBUTES)) )
 	{
 		if (ldb_kv->warn_reindex) {
 			ldb_debug(ldb_module_get_ctx(module),
@@ -326,14 +326,14 @@ static int ldb_kv_modified(struct ldb_module *module, struct ldb_dn *dn)
 	/* If the modify was to a normal record, or any special except @BASEINFO, update the seq number */
 	if (ret == LDB_SUCCESS &&
 	    !(ldb_dn_is_special(dn) &&
-	      ldb_dn_check_special(dn, LTDB_BASEINFO)) ) {
+	      ldb_dn_check_special(dn, LDB_KV_BASEINFO)) ) {
 		ret = ldb_kv_increase_sequence_number(module);
 	}
 
 	/* If the modify was to @OPTIONS, reload the cache */
 	if (ret == LDB_SUCCESS &&
 	    ldb_dn_is_special(dn) &&
-	    (ldb_dn_check_special(dn, LTDB_OPTIONS)) ) {
+	    (ldb_dn_check_special(dn, LDB_KV_OPTIONS)) ) {
 		ret = ldb_kv_cache_reload(module);
 	}
 
@@ -463,7 +463,7 @@ static int ldb_kv_add_internal(struct ldb_module *module,
 
 		/* Do not check "@ATTRIBUTES" for duplicated values */
 		if (ldb_dn_is_special(msg->dn) &&
-		    ldb_dn_check_special(msg->dn, LTDB_ATTRIBUTES)) {
+		    ldb_dn_check_special(msg->dn, LDB_KV_ATTRIBUTES)) {
 			continue;
 		}
 
@@ -557,7 +557,7 @@ static int ldb_kv_add(struct ldb_kv_context *ctx)
 	    !ldb_dn_is_special(req->op.add.message->dn)) {
 		ldb_set_errstring(ldb_module_get_ctx(module),
 				  "Must operate ldb_mdb in GUID "
-				  "index mode, but " LTDB_IDXGUID " not set.");
+				  "index mode, but " LDB_KV_IDXGUID " not set.");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -1533,7 +1533,7 @@ static int ldb_kv_sequence_number(struct ldb_kv_context *ctx,
 		goto done;
 	}
 
-	dn = ldb_dn_new(tmp_ctx, ldb, LTDB_BASEINFO);
+	dn = ldb_dn_new(tmp_ctx, ldb, LDB_KV_BASEINFO);
 	if (dn == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
@@ -1552,14 +1552,14 @@ static int ldb_kv_sequence_number(struct ldb_kv_context *ctx,
 
 	switch (seq->type) {
 	case LDB_SEQ_HIGHEST_SEQ:
-		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LDB_KV_SEQUENCE_NUMBER, 0);
 		break;
 	case LDB_SEQ_NEXT:
-		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LDB_KV_SEQUENCE_NUMBER, 0);
 		res->seq_num++;
 		break;
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
-		date = ldb_msg_find_attr_as_string(msg, LTDB_MOD_TIMESTAMP, NULL);
+		date = ldb_msg_find_attr_as_string(msg, LDB_KV_MOD_TIMESTAMP, NULL);
 		if (date) {
 			res->seq_num = ldb_string_to_time(date);
 		} else {

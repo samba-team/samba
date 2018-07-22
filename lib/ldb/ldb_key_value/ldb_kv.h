@@ -128,15 +128,15 @@ struct ldb_kv_reindex_context {
 
 
 /* special record types */
-#define LTDB_INDEX      "@INDEX"
-#define LTDB_INDEXLIST  "@INDEXLIST"
-#define LTDB_IDX        "@IDX"
-#define LTDB_IDXVERSION "@IDXVERSION"
-#define LTDB_IDXATTR    "@IDXATTR"
-#define LTDB_IDXONE     "@IDXONE"
-#define LTDB_IDXDN     "@IDXDN"
-#define LTDB_IDXGUID    "@IDXGUID"
-#define LTDB_IDX_DN_GUID "@IDX_DN_GUID"
+#define LDB_KV_INDEX      "@INDEX"
+#define LDB_KV_INDEXLIST  "@INDEXLIST"
+#define LDB_KV_IDX        "@IDX"
+#define LDB_KV_IDXVERSION "@IDXVERSION"
+#define LDB_KV_IDXATTR    "@IDXATTR"
+#define LDB_KV_IDXONE     "@IDXONE"
+#define LDB_KV_IDXDN     "@IDXDN"
+#define LDB_KV_IDXGUID    "@IDXGUID"
+#define LDB_KV_IDX_DN_GUID "@IDX_DN_GUID"
 
 /*
  * This will be used to indicate when a new, yet to be developed
@@ -144,23 +144,23 @@ struct ldb_kv_reindex_context {
  * not load future databases unintentionally.
  */
 
-#define LTDB_IDX_LMDB_SUBDB "@IDX_LMDB_SUBDB"
+#define LDB_KV_IDX_LMDB_SUBDB "@IDX_LMDB_SUBDB"
 
-#define LTDB_BASEINFO   "@BASEINFO"
-#define LTDB_OPTIONS    "@OPTIONS"
-#define LTDB_ATTRIBUTES "@ATTRIBUTES"
+#define LDB_KV_BASEINFO   "@BASEINFO"
+#define LDB_KV_OPTIONS    "@OPTIONS"
+#define LDB_KV_ATTRIBUTES "@ATTRIBUTES"
 
 /* special attribute types */
-#define LTDB_SEQUENCE_NUMBER "sequenceNumber"
-#define LTDB_CHECK_BASE "checkBaseOnSearch"
-#define LTDB_DISALLOW_DN_FILTER "disallowDNFilter"
-#define LTDB_MOD_TIMESTAMP "whenChanged"
-#define LTDB_OBJECTCLASS "objectClass"
+#define LDB_KV_SEQUENCE_NUMBER "sequenceNumber"
+#define LDB_KV_CHECK_BASE "checkBaseOnSearch"
+#define LDB_KV_DISALLOW_DN_FILTER "disallowDNFilter"
+#define LDB_KV_MOD_TIMESTAMP "whenChanged"
+#define LDB_KV_OBJECTCLASS "objectClass"
 
 /* DB keys */
-#define LTDB_GUID_KEY_PREFIX "GUID="
-#define LTDB_GUID_SIZE 16
-#define LTDB_GUID_KEY_SIZE (LTDB_GUID_SIZE + sizeof(LTDB_GUID_KEY_PREFIX) - 1)
+#define LDB_KV_GUID_KEY_PREFIX "GUID="
+#define LDB_KV_GUID_SIZE 16
+#define LDB_KV_GUID_KEY_SIZE (LDB_KV_GUID_SIZE + sizeof(LDB_KV_GUID_KEY_PREFIX) - 1)
 
 /*
  * The following definitions come from lib/ldb/ldb_key_value/ldb_kv_cache.c

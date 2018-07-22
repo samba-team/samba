@@ -291,7 +291,7 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 	struct ldb_kv_private *ldb_kv =
 	    talloc_get_type(data, struct ldb_kv_private);
 	int ret;
-	uint8_t guid_key[LTDB_GUID_KEY_SIZE];
+	uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
 	TDB_DATA tdb_key = {
 		.dptr = guid_key,
 		.dsize = sizeof(guid_key)

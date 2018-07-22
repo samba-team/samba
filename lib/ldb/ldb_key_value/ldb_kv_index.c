@@ -186,9 +186,9 @@ static void ldb_kv_dn_list_sort(struct ldb_kv_private *ldb_kv,
 /* we put a @IDXVERSION attribute on index entries. This
    allows us to tell if it was written by an older version
 */
-#define LTDB_INDEXING_VERSION 2
+#define LDB_KV_INDEXING_VERSION 2
 
-#define LTDB_GUID_INDEXING_VERSION 3
+#define LDB_KV_GUID_INDEXING_VERSION 3
 
 static unsigned ldb_kv_max_key_length(struct ldb_kv_private *ldb_kv)
 {
@@ -400,13 +400,13 @@ normal_index:
 		return ret;
 	}
 
-	el = ldb_msg_find_element(msg, LTDB_IDX);
+	el = ldb_msg_find_element(msg, LDB_KV_IDX);
 	if (!el) {
 		talloc_free(msg);
 		return LDB_SUCCESS;
 	}
 
-	version = ldb_msg_find_attr_as_int(msg, LTDB_IDXVERSION, 0);
+	version = ldb_msg_find_attr_as_int(msg, LDB_KV_IDXVERSION, 0);
 
 	/*
 	 * we avoid copying the strings by stealing the list.  We have
@@ -416,12 +416,12 @@ normal_index:
 	 */
 	if (ldb_kv->cache->GUID_index_attribute == NULL) {
 		/* check indexing version number */
-		if (version != LTDB_INDEXING_VERSION) {
+		if (version != LDB_KV_INDEXING_VERSION) {
 			ldb_debug_set(ldb_module_get_ctx(module),
 				      LDB_DEBUG_ERROR,
 				      "Wrong DN index version %d "
 				      "expected %d for %s",
-				      version, LTDB_INDEXING_VERSION,
+				      version, LDB_KV_INDEXING_VERSION,
 				      ldb_dn_get_linearized(dn));
 			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -432,14 +432,14 @@ normal_index:
 		list->count = el->num_values;
 	} else {
 		unsigned int i;
-		if (version != LTDB_GUID_INDEXING_VERSION) {
+		if (version != LDB_KV_GUID_INDEXING_VERSION) {
 			/* This is quite likely during the DB startup
 			   on first upgrade to using a GUID index */
 			ldb_debug_set(ldb_module_get_ctx(module),
 				      LDB_DEBUG_ERROR,
 				      "Wrong GUID index version %d "
 				      "expected %d for %s",
-				      version, LTDB_GUID_INDEXING_VERSION,
+				      version, LDB_KV_GUID_INDEXING_VERSION,
 				      ldb_dn_get_linearized(dn));
 			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -450,12 +450,12 @@ normal_index:
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		if ((el->values[0].length % LTDB_GUID_SIZE) != 0) {
+		if ((el->values[0].length % LDB_KV_GUID_SIZE) != 0) {
 			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		list->count = el->values[0].length / LTDB_GUID_SIZE;
+		list->count = el->values[0].length / LDB_KV_GUID_SIZE;
 		list->dn = talloc_array(list, struct ldb_val, list->count);
 		if (list->dn == NULL) {
 			talloc_free(msg);
@@ -469,8 +469,8 @@ normal_index:
 		talloc_steal(list->dn, msg);
 		for (i = 0; i < list->count; i++) {
 			list->dn[i].data
-				= &el->values[0].data[i * LTDB_GUID_SIZE];
-			list->dn[i].length = LTDB_GUID_SIZE;
+				= &el->values[0].data[i * LDB_KV_GUID_SIZE];
+			list->dn[i].length = LDB_KV_GUID_SIZE;
 		}
 	}
 
@@ -528,7 +528,7 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 		int i;
 		index = -1;
 		for (i=0; i < list->count; i++) {
-			uint8_t guid_key[LTDB_GUID_KEY_SIZE];
+			uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
 			TDB_DATA key = {
 				.dptr = guid_key,
 				.dsize = sizeof(guid_key)
@@ -633,15 +633,15 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 	}
 
 	if (ldb_kv->cache->GUID_index_attribute == NULL) {
-		ret = ldb_msg_add_fmt(msg, LTDB_IDXVERSION, "%u",
-				      LTDB_INDEXING_VERSION);
+		ret = ldb_msg_add_fmt(msg, LDB_KV_IDXVERSION, "%u",
+				      LDB_KV_INDEXING_VERSION);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(msg);
 			return ldb_module_oom(module);
 		}
 	} else {
-		ret = ldb_msg_add_fmt(msg, LTDB_IDXVERSION, "%u",
-				      LTDB_GUID_INDEXING_VERSION);
+		ret = ldb_msg_add_fmt(msg, LDB_KV_IDXVERSION, "%u",
+				      LDB_KV_GUID_INDEXING_VERSION);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(msg);
 			return ldb_module_oom(module);
@@ -651,7 +651,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 	if (list->count > 0) {
 		struct ldb_message_element *el;
 
-		ret = ldb_msg_add_empty(msg, LTDB_IDX, LDB_FLAG_MOD_ADD, &el);
+		ret = ldb_msg_add_empty(msg, LDB_KV_IDX, LDB_FLAG_MOD_ADD, &el);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(msg);
 			return ldb_module_oom(module);
@@ -672,7 +672,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 
 			v.data = talloc_array_size(el->values,
 						   list->count,
-						   LTDB_GUID_SIZE);
+						   LDB_KV_GUID_SIZE);
 			if (v.data == NULL) {
 				talloc_free(msg);
 				return ldb_module_oom(module);
@@ -682,13 +682,13 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 
 			for (i = 0; i < list->count; i++) {
 				if (list->dn[i].length !=
-				    LTDB_GUID_SIZE) {
+				    LDB_KV_GUID_SIZE) {
 					talloc_free(msg);
 					return ldb_module_operr(module);
 				}
-				memcpy(&v.data[LTDB_GUID_SIZE*i],
+				memcpy(&v.data[LDB_KV_GUID_SIZE*i],
 				       list->dn[i].data,
-				       LTDB_GUID_SIZE);
+				       LDB_KV_GUID_SIZE);
 			}
 			el->values[0] = v;
 			el->num_values = 1;
@@ -873,7 +873,7 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 	unsigned int max_key_length = ldb_kv_max_key_length(ldb_kv);
 	size_t key_len = 0;
 	size_t attr_len = 0;
-	const size_t indx_len = sizeof(LTDB_INDEX) - 1;
+	const size_t indx_len = sizeof(LDB_KV_INDEX) - 1;
 	unsigned frmt_len = 0;
 	const size_t additional_key_length = 4;
 	unsigned int num_separators = 3; /* Estimate for overflow check */
@@ -947,9 +947,9 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 	 * avoids embedded NUL etc.
 	 */
 	if (ldb_kv->cache->GUID_index_attribute != NULL) {
-		if (strcmp(attr, LTDB_IDXDN) == 0) {
+		if (strcmp(attr, LDB_KV_IDXDN) == 0) {
 			should_b64_encode = false;
-		} else if (strcmp(attr, LTDB_IDXONE) == 0) {
+		} else if (strcmp(attr, LDB_KV_IDXONE) == 0) {
 			/*
 			 * We can only change the behaviour for IDXONE
 			 * when the GUID index is enabled
@@ -987,7 +987,7 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 			* indicates that the following value is base64 encoded
 			*/
 			ret = ldb_dn_new_fmt(ldb, ldb, "%s#%s##%.*s",
-					     LTDB_INDEX, attr_for_dn,
+					     LDB_KV_INDEX, attr_for_dn,
 					     frmt_len, vstr);
 		} else {
 			frmt_len = vstr_len;
@@ -997,7 +997,7 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 			 * indicates that the following value is base64 encoded
 			 */
 			ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s::%.*s",
-					     LTDB_INDEX, attr_for_dn,
+					     LDB_KV_INDEX, attr_for_dn,
 					     frmt_len, vstr);
 		}
 		talloc_free(vstr);
@@ -1019,13 +1019,13 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 			 * from the non truncated keys
 			 */
 			ret = ldb_dn_new_fmt(ldb, ldb, "%s#%s#%.*s",
-					     LTDB_INDEX, attr_for_dn,
+					     LDB_KV_INDEX, attr_for_dn,
 					     frmt_len, (char *)v.data);
 		} else {
 			frmt_len = v.length;
 			*truncation = KEY_NOT_TRUNCATED;
 			ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s:%.*s",
-					     LTDB_INDEX, attr_for_dn,
+					     LDB_KV_INDEX, attr_for_dn,
 					     frmt_len, (char *)v.data);
 		}
 	}
@@ -1073,7 +1073,7 @@ static bool ldb_kv_is_indexed(struct ldb_module *module,
 		return false;
 	}
 
-	el = ldb_msg_find_element(ldb_kv->cache->indexlist, LTDB_IDXATTR);
+	el = ldb_msg_find_element(ldb_kv->cache->indexlist, LDB_KV_IDXATTR);
 	if (el == NULL) {
 		return false;
 	}
@@ -1645,7 +1645,7 @@ static int ldb_kv_index_dn_one(struct ldb_module *module,
 	/* Ensure we do not shortcut on intersection for this list */
 	list->strict = true;
 	return ldb_kv_index_dn_attr(
-	    module, ldb_kv, LTDB_IDXONE, parent_dn, list, truncation);
+	    module, ldb_kv, LDB_KV_IDXONE, parent_dn, list, truncation);
 }
 
 /*
@@ -1692,7 +1692,7 @@ static int ldb_kv_index_dn_base_dn(struct ldb_module *module,
 	}
 
 	return ldb_kv_index_dn_attr(
-	    module, ldb_kv, LTDB_IDXDN, base_dn, dn_list, truncation);
+	    module, ldb_kv, LDB_KV_IDXDN, base_dn, dn_list, truncation);
 }
 
 /*
@@ -1752,7 +1752,7 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 	struct ldb_message *filtered_msg;
 	unsigned int i;
 	unsigned int num_keys = 0;
-	uint8_t previous_guid_key[LTDB_GUID_KEY_SIZE] = {};
+	uint8_t previous_guid_key[LDB_KV_GUID_KEY_SIZE] = {};
 	TDB_DATA *keys = NULL;
 
 	/*
@@ -1773,7 +1773,7 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 		 * small allocations)
 		 */
 		struct guid_tdb_key {
-			uint8_t guid_key[LTDB_GUID_KEY_SIZE];
+			uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
 		} *key_values = NULL;
 
 		key_values = talloc_array(keys,
@@ -2169,14 +2169,14 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 	 * messages.
 	 */
 	if (list->count > 0 &&
-	    ldb_attr_cmp(el->name, LTDB_IDXDN) == 0 &&
+	    ldb_attr_cmp(el->name, LDB_KV_IDXDN) == 0 &&
 	    truncation == KEY_NOT_TRUNCATED) {
 
 		talloc_free(list);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 
 	} else if (list->count > 0
-		   && ldb_attr_cmp(el->name, LTDB_IDXDN) == 0) {
+		   && ldb_attr_cmp(el->name, LDB_KV_IDXDN) == 0) {
 
 		/*
 		 * At least one existing entry in the DN->GUID index, which
@@ -2186,7 +2186,7 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 		 */
 		int i;
 		for (i=0; i < list->count; i++) {
-			uint8_t guid_key[LTDB_GUID_KEY_SIZE];
+			uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
 			TDB_DATA key = {
 				.dptr = guid_key,
 				.dsize = sizeof(guid_key)
@@ -2324,7 +2324,7 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 			return ldb_module_operr(module);
 		}
 
-		if (key_val->length != LTDB_GUID_SIZE) {
+		if (key_val->length != LDB_KV_GUID_SIZE) {
 			talloc_free(list);
 			return ldb_module_operr(module);
 		}
@@ -2529,7 +2529,7 @@ static int ldb_kv_index_onelevel(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ret =
-	    ldb_kv_modify_index_dn(module, ldb_kv, msg, pdn, LTDB_IDXONE, add);
+	    ldb_kv_modify_index_dn(module, ldb_kv, msg, pdn, LDB_KV_IDXONE, add);
 
 	talloc_free(pdn);
 
@@ -2553,7 +2553,7 @@ static int ldb_kv_write_index_dn_guid(struct ldb_module *module,
 	}
 
 	ret = ldb_kv_modify_index_dn(
-	    module, ldb_kv, msg, msg->dn, LTDB_IDXDN, add);
+	    module, ldb_kv, msg, msg->dn, LDB_KV_IDXDN, add);
 
 	if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
@@ -2809,7 +2809,7 @@ static int delete_index(struct ldb_kv_private *ldb_kv,
 			void *state)
 {
 	struct ldb_module *module = state;
-	const char *dnstr = "DN=" LTDB_INDEX ":";
+	const char *dnstr = "DN=" LDB_KV_INDEX ":";
 	struct dn_list list;
 	struct ldb_dn *dn;
 	struct ldb_val v;
