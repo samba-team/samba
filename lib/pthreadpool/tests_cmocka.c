@@ -51,19 +51,19 @@ static int setup_pthreadpool_tevent(void **state)
 	assert_non_null(t->ev);
 
 	ret = pthreadpool_tevent_init(t->ev, UINT_MAX, &t->upool);
-	assert_return_code(ret, 0);
+	assert_int_equal(ret, 0);
 
 	max_threads = pthreadpool_tevent_max_threads(t->upool);
 	assert_int_equal(max_threads, UINT_MAX);
 
 	ret = pthreadpool_tevent_init(t->ev, 1, &t->opool);
-	assert_return_code(ret, 0);
+	assert_int_equal(ret, 0);
 
 	max_threads = pthreadpool_tevent_max_threads(t->opool);
 	assert_int_equal(max_threads, 1);
 
 	ret = pthreadpool_tevent_init(t->ev, 0, &t->spool);
-	assert_return_code(ret, 0);
+	assert_int_equal(ret, 0);
 
 	max_threads = pthreadpool_tevent_max_threads(t->spool);
 	assert_int_equal(max_threads, 0);
