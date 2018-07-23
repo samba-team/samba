@@ -3000,6 +3000,12 @@ static struct vfs_fn_pointers vfs_default_fns = {
 static_decl_vfs;
 NTSTATUS vfs_default_init(TALLOC_CTX *ctx)
 {
+	/*
+	 * Here we need to implement every call!
+	 *
+	 * As this is the end of the vfs module chain.
+	 */
+	smb_vfs_assert_all_fns(&vfs_default_fns, DEFAULT_VFS_MODULE_NAME);
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				DEFAULT_VFS_MODULE_NAME, &vfs_default_fns);
 }
