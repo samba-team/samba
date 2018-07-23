@@ -609,43 +609,36 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
 	status of various events.
       </para>
 
+      <para>
+	The commands below require a component to be specified.  In
+	the current version the only valid component is
+	<literal>legacy</literal>.
+      </para>
+
       <variablelist>
 	<varlistentry>
-	  <term>run <parameter>EVENT</parameter> <parameter>TIMEOUT</parameter> <optional><parameter>ARGUMENTS</parameter></optional> </term>
+	  <term>run <parameter>TIMEOUT</parameter> <parameter>COMPONENT</parameter> <parameter>EVENT</parameter> <optional><parameter>ARGUMENTS</parameter></optional> </term>
 	  <listitem>
 	    <para>
 	     This command can be used to manually run specified EVENT
-	     with optional ARGUMENTS.  The event will be allowed to run
-	     a maximum of TIMEOUT seconds.  If TIMEOUT is 0, then there
-	     is no time limit for running the event.
+	     in COMPONENT with optional ARGUMENTS.  The event will be
+	     allowed to run a maximum of TIMEOUT seconds.  If TIMEOUT
+	     is 0, then there is no time limit for running the event.
 	    </para>
 	  </listitem>
 	</varlistentry>
 
 	<varlistentry>
-	  <term>status <optional><parameter>EVENT</parameter></optional> <optional>lastrun|lastpass|lastfail</optional></term>
+	  <term>status <parameter>COMPONENT</parameter> <parameter>EVENT</parameter></term>
 	  <listitem>
 	    <para>
 	      This command displays the last execution status of the
-	      specified EVENT.  If no event is specified, then the status
-	      of last executed monitor event will be displayed.
-	    </para>
-	    <para>
-	      To see the last successful execution of the event, lastpass
-	      can be specified. Similarly lastfail can be specified
-	      to see the last unsuccessful execution of the event.
-	      The optional lastrun can be specified to query the last
-	      execution of the event.
+	      specified EVENT in COMPONENT.
 	    </para>
 	    <para>
 	      The command will terminate with the exit status
 	      corresponding to the overall status of event that is
-	      displayed.  If lastpass is specified, then the command will
-	      always terminate with 0.	If lastfail is specified then the
-	      command will always terminate with non-zero exit status.
-	      If lastrun is specified, then the command will terminate
-	      with 0 or not depending on if the last execution of the
-	      event was successful or not.
+	      displayed.
 	    </para>
 	    <para>
 	      The output is the list of event scripts executed.
@@ -673,59 +666,67 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
 60.nfs               OK         0.376 Sat Dec 17 19:39:12 2016
 70.iscsi             OK         0.009 Sat Dec 17 19:39:12 2016
 91.lvs               OK         0.007 Sat Dec 17 19:39:12 2016
-99.timeout           OK         0.007 Sat Dec 17 19:39:12 2016
 	    </screen>
 	  </listitem>
 	</varlistentry>
 
 	<varlistentry>
-	  <term>script list</term>
+	  <term>script list <parameter>COMPONENT</parameter></term>
 	  <listitem>
 	    <para>
-	      List the available event scripts.
+	      List the available event scripts in COMPONENT.  Enabled
+	      scripts are flagged with a '*'.
+	    </para>
+	    <para>
+	      Generally, event scripts are provided by CTDB.  However,
+	      local or 3rd party event scripts may also be available.
+	      These are shown in a separate section after those
+	      provided by CTDB.
 	    </para>
 	    <para>
 	      Example output:
 	    </para>
 	    <screen>
-00.ctdb             
-01.reclock          
-05.system           
-06.nfs              
-10.interface        
-11.natgw            
-11.routing          
-13.per_ip_routing   
-20.multipathd       
-31.clamd            
-40.vsftpd           
-41.httpd            
-49.winbind          
-50.samba            
-60.nfs              
-70.iscsi            
-91.lvs              
-99.timeout          
+* 00.ctdb             
+* 01.reclock          
+* 05.system           
+* 06.nfs              
+* 10.interface        
+  11.natgw            
+  11.routing          
+  13.per_ip_routing   
+  20.multipathd       
+  31.clamd            
+  40.vsftpd           
+  41.httpd            
+* 49.winbind          
+* 50.samba            
+* 60.nfs              
+  70.iscsi            
+  91.lvs              
+
+* 02.local            
 	    </screen>
 	  </listitem>
 	</varlistentry>
 
 	<varlistentry>
-	  <term>script enable <parameter>SCRIPT</parameter></term>
+	  <term>script enable <parameter>COMPONENT</parameter> <parameter>SCRIPT</parameter></term>
 	  <listitem>
 	    <para>
-	      Enable the specified event SCRIPT.  Only enabled scripts will be
-	      executed when running any event.
+	      Enable the specified event SCRIPT in COMPONENT.  Only
+	      enabled scripts will be executed when running any event.
 	    </para>
 	  </listitem>
 	</varlistentry>
 
 	<varlistentry>
-	  <term>script disable <parameter>SCRIPT</parameter></term>
+	  <term>script disable <parameter>COMPONENT</parameter> <parameter>SCRIPT</parameter></term>
 	  <listitem>
 	    <para>
-	      Disable the specified event SCRIPT.  This will prevent the script
-	      from executing when running any event.
+	      Disable the specified event SCRIPT in COMPONENT.  This
+	      will prevent the script from executing when running any
+	      event.
 	    </para>
 	  </listitem>
 	</varlistentry>
