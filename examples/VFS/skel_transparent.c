@@ -1253,6 +1253,14 @@ struct vfs_fn_pointers skel_transparent_fns = {
 static_decl_vfs;
 NTSTATUS vfs_skel_transparent_init(TALLOC_CTX *ctx)
 {
+	/*
+	 * smb_vfs_assert_all_fns() is only needed in
+	 * order to have a complete example.
+	 *
+	 * A transparent vfs module typically don't
+	 * need to implement every calls.
+	 */
+	smb_vfs_assert_all_fns(&skel_transparent_fns, "skel_transparent");
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_transparent",
 				&skel_transparent_fns);
 }
