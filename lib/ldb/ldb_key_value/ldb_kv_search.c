@@ -235,7 +235,7 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 */
 int ldb_kv_search_key(struct ldb_module *module,
 		      struct ldb_kv_private *ldb_kv,
-		      const struct TDB_DATA tdb_key,
+		      const struct ldb_val ldb_key,
 		      struct ldb_message *msg,
 		      unsigned int unpack_flags)
 {
@@ -244,10 +244,6 @@ int ldb_kv_search_key(struct ldb_module *module,
 		.msg = msg,
 		.module = module,
 		.unpack_flags = unpack_flags
-	};
-	struct ldb_val ldb_key = {
-		.data = tdb_key.dptr,
-		.length = tdb_key.dsize
 	};
 
 	memset(msg, 0, sizeof(*msg));
@@ -292,9 +288,9 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 	    talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 	uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
-	TDB_DATA tdb_key = {
-		.dptr = guid_key,
-		.dsize = sizeof(guid_key)
+	struct ldb_val key = {
+		.data = guid_key,
+		.length = sizeof(guid_key)
 	};
 	TALLOC_CTX *tdb_key_ctx = NULL;
 
@@ -307,8 +303,8 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 		}
 
 		/* form the key */
-		tdb_key = ldb_kv_key_dn(module, tdb_key_ctx, dn);
-		if (!tdb_key.dptr) {
+		key = ldb_kv_key_dn(module, tdb_key_ctx, dn);
+		if (!key.data) {
 			TALLOC_FREE(tdb_key_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -320,13 +316,13 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 		 * used for internal memory.
 		 *
 		 */
-		ret = ldb_kv_key_dn_from_idx(module, ldb_kv, msg, dn, &tdb_key);
+		ret = ldb_kv_key_dn_from_idx(module, ldb_kv, msg, dn, &key);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 
-	ret = ldb_kv_search_key(module, ldb_kv, tdb_key, msg, unpack_flags);
+	ret = ldb_kv_search_key(module, ldb_kv, key, msg, unpack_flags);
 
 	TALLOC_FREE(tdb_key_ctx);
 
@@ -504,15 +500,11 @@ static int search_func(struct ldb_kv_private *ldb_kv,
 	int ret;
 	bool matched;
 	unsigned int nb_elements_in_db;
-	TDB_DATA tdb_key = {
-		.dptr = key.data,
-		.dsize = key.length
-	};
 
 	ac = talloc_get_type(state, struct ldb_kv_context);
 	ldb = ldb_module_get_ctx(ac->module);
 
-	if (ldb_kv_key_is_record(tdb_key) == false) {
+	if (ldb_kv_key_is_record(key) == false) {
 		return 0;
 	}
 

@@ -204,7 +204,7 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 			   struct ldb_kv_private *ldb_kv,
 			   TALLOC_CTX *mem_ctx,
 			   struct ldb_dn *dn,
-			   TDB_DATA *tdb_key);
+			  struct ldb_val *key);
 
 /*
  * The following definitions come from lib/ldb/ldb_key_value/ldb_kv_search.c
@@ -219,7 +219,7 @@ int ldb_kv_search_base(struct ldb_module *module,
 		       struct ldb_dn **ret_dn);
 int ldb_kv_search_key(struct ldb_module *module,
 		      struct ldb_kv_private *ldb_kv,
-		      struct TDB_DATA tdb_key,
+		      const struct ldb_val ldb_key,
 		      struct ldb_message *msg,
 		      unsigned int unpack_flags);
 int ldb_kv_filter_attrs(TALLOC_CTX *mem_ctx,
@@ -234,22 +234,22 @@ int ldb_kv_search(struct ldb_kv_context *ctx);
  * Determine if this key could hold a record.  We allow the new GUID
  * index, the old DN index and a possible future ID=
  */
-bool ldb_kv_key_is_record(TDB_DATA key);
-TDB_DATA ldb_kv_key_dn(struct ldb_module *module,
-		       TALLOC_CTX *mem_ctx,
-		       struct ldb_dn *dn);
-TDB_DATA ldb_kv_key_msg(struct ldb_module *module,
-			TALLOC_CTX *mem_ctx,
-			const struct ldb_message *msg);
+bool ldb_kv_key_is_record(struct ldb_val key);
+struct ldb_val ldb_kv_key_dn(struct ldb_module *module,
+			     TALLOC_CTX *mem_ctx,
+			     struct ldb_dn *dn);
+struct ldb_val ldb_kv_key_msg(struct ldb_module *module,
+			     TALLOC_CTX *mem_ctx,
+			      const struct ldb_message *msg);
 int ldb_kv_guid_to_key(struct ldb_module *module,
 		       struct ldb_kv_private *ldb_kv,
 		       const struct ldb_val *GUID_val,
-		       TDB_DATA *key);
+		       struct ldb_val *key);
 int ldb_kv_idx_to_key(struct ldb_module *module,
 		      struct ldb_kv_private *ldb_kv,
 		      TALLOC_CTX *mem_ctx,
 		      const struct ldb_val *idx_val,
-		      TDB_DATA *key);
+		      struct ldb_val *key);
 int ldb_kv_store(struct ldb_module *module,
 		 const struct ldb_message *msg,
 		 int flgs);

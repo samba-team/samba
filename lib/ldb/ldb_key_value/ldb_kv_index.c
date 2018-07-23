@@ -483,7 +483,7 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 			   struct ldb_kv_private *ldb_kv,
 			   TALLOC_CTX *mem_ctx,
 			   struct ldb_dn *dn,
-			   TDB_DATA *tdb_key)
+			   struct ldb_val *ldb_key)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
@@ -529,9 +529,9 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 		index = -1;
 		for (i=0; i < list->count; i++) {
 			uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
-			TDB_DATA key = {
-				.dptr = guid_key,
-				.dsize = sizeof(guid_key)
+			struct ldb_val key = {
+				.data = guid_key,
+				.length = sizeof(guid_key)
 			};
 			const int flags = LDB_UNPACK_DATA_FLAG_NO_ATTRS;
 			struct ldb_message *rec = ldb_msg_new(ldb);
@@ -550,8 +550,8 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 
 			ret =
 			    ldb_kv_search_key(module, ldb_kv, key, rec, flags);
-			if (key.dptr != guid_key) {
-				TALLOC_FREE(key.dptr);
+			if (key.data != guid_key) {
+				TALLOC_FREE(key.data);
 			}
 			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 				/*
@@ -592,8 +592,8 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 		}
 	}
 
-	/* The tdb_key memory is allocated by the caller */
-	ret = ldb_kv_guid_to_key(module, ldb_kv, &list->dn[index], tdb_key);
+	/* The ldb_key memory is allocated by the caller */
+	ret = ldb_kv_guid_to_key(module, ldb_kv, &list->dn[index], ldb_key);
 	TALLOC_FREE(list);
 
 	if (ret != LDB_SUCCESS) {
@@ -1753,7 +1753,7 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 	unsigned int i;
 	unsigned int num_keys = 0;
 	uint8_t previous_guid_key[LDB_KV_GUID_KEY_SIZE] = {};
-	TDB_DATA *keys = NULL;
+	struct ldb_val *keys = NULL;
 
 	/*
 	 * We have to allocate the key list (rather than just walk the
@@ -1761,7 +1761,7 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 	 * (by modifying an indexed attribute hosted in the in-memory
 	 * index cache!)
 	 */
-	keys = talloc_array(ac, TDB_DATA, dn_list->count);
+	keys = talloc_array(ac, struct ldb_val, dn_list->count);
 	if (keys == NULL) {
 		return ldb_module_oom(ac->module);
 	}
@@ -1785,13 +1785,13 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 			return ldb_module_oom(ac->module);
 		}
 		for (i = 0; i < dn_list->count; i++) {
-			keys[i].dptr = key_values[i].guid_key;
-			keys[i].dsize = sizeof(key_values[i].guid_key);
+			keys[i].data = key_values[i].guid_key;
+			keys[i].length = sizeof(key_values[i].guid_key);
 		}
 	} else {
 		for (i = 0; i < dn_list->count; i++) {
-			keys[i].dptr = NULL;
-			keys[i].dsize = 0;
+			keys[i].data = NULL;
+			keys[i].length = 0;
 		}
 	}
 
@@ -1818,13 +1818,13 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 			 */
 
 			if (memcmp(previous_guid_key,
-				   keys[num_keys].dptr,
+				   keys[num_keys].data,
 				   sizeof(previous_guid_key)) == 0) {
 				continue;
 			}
 
 			memcpy(previous_guid_key,
-			       keys[num_keys].dptr,
+			       keys[num_keys].data,
 			       sizeof(previous_guid_key));
 		}
 		num_keys++;
@@ -2187,9 +2187,9 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 		int i;
 		for (i=0; i < list->count; i++) {
 			uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
-			TDB_DATA key = {
-				.dptr = guid_key,
-				.dsize = sizeof(guid_key)
+			struct ldb_val key = {
+				.data = guid_key,
+				.length = sizeof(guid_key)
 			};
 			const int flags = LDB_UNPACK_DATA_FLAG_NO_ATTRS;
 			struct ldb_message *rec = ldb_msg_new(ldb);
@@ -2207,8 +2207,8 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 
 			ret =
 			    ldb_kv_search_key(module, ldb_kv, key, rec, flags);
-			if (key.dptr != guid_key) {
-				TALLOC_FREE(key.dptr);
+			if (key.data != guid_key) {
+				TALLOC_FREE(key.data);
 			}
 			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 				/*
@@ -2849,7 +2849,7 @@ static int delete_index(struct ldb_kv_private *ldb_kv,
   traversal function that adds @INDEX records during a re index TODO wrong comment
 */
 static int re_key(struct ldb_kv_private *ldb_kv,
-		  struct ldb_val ldb_key,
+		  struct ldb_val key,
 		  struct ldb_val val,
 		  void *state)
 {
@@ -2860,17 +2860,13 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
 	int ret;
-	TDB_DATA key2;
+	struct ldb_val key2;
 	bool is_record;
-	TDB_DATA key = {
-		.dptr = ldb_key.data,
-		.dsize = ldb_key.length
-	};
 
 	ldb = ldb_module_get_ctx(module);
 
-	if (key.dsize > 4 &&
-	    memcmp(key.dptr, "DN=@", 4) == 0) {
+	if (key.length > 4 &&
+	    memcmp(key.data, "DN=@", 4) == 0) {
 		return 0;
 	}
 
@@ -2901,8 +2897,8 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Refusing to re-index as GUID "
 			  "key %*.*s with no DN\n",
-			  (int)key.dsize, (int)key.dsize,
-			  (char *)key.dptr);
+			  (int)key.length, (int)key.length,
+			  (char *)key.data);
 		talloc_free(msg);
 		return -1;
 	}
@@ -2911,23 +2907,19 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 	   insensitivity of an element changing, or a change from DN
 	   to GUID keys */
 	key2 = ldb_kv_key_msg(module, msg, msg);
-	if (key2.dptr == NULL) {
+	if (key2.data == NULL) {
 		/* probably a corrupt record ... darn */
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid DN in re_index: %s",
 						ldb_dn_get_linearized(msg->dn));
 		talloc_free(msg);
 		return 0;
 	}
-	if (key.dsize != key2.dsize ||
-	    (memcmp(key.dptr, key2.dptr, key.dsize) != 0)) {
-		struct ldb_val ldb_key2 = {
-			.data = key2.dptr,
-			.length = key2.dsize
-		};
+	if (key.length != key2.length ||
+	    (memcmp(key.data, key2.data, key.length) != 0)) {
 		ldb_kv->kv_ops->update_in_iterate(
-		    ldb_kv, ldb_key, ldb_key2, val, ctx);
+		    ldb_kv, key, key2, val, ctx);
 	}
-	talloc_free(key2.dptr);
+	talloc_free(key2.data);
 
 	talloc_free(msg);
 
@@ -2945,7 +2937,7 @@ static int re_key(struct ldb_kv_private *ldb_kv,
   traversal function that adds @INDEX records during a re index
 */
 static int re_index(struct ldb_kv_private *ldb_kv,
-		    struct ldb_val ldb_key,
+		    struct ldb_val key,
 		    struct ldb_val val,
 		    void *state)
 {
@@ -2955,17 +2947,13 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
-	TDB_DATA key = {
-		.dptr = ldb_key.data,
-		.dsize = ldb_key.length
-	};
 	int ret;
 	bool is_record;
 
 	ldb = ldb_module_get_ctx(module);
 
-	if (key.dsize > 4 &&
-	    memcmp(key.dptr, "DN=@", 4) == 0) {
+	if (key.length > 4 &&
+	    memcmp(key.data, "DN=@", 4) == 0) {
 		return 0;
 	}
 
@@ -2996,8 +2984,8 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Refusing to re-index as GUID "
 			  "key %*.*s with no DN\n",
-			  (int)key.dsize, (int)key.dsize,
-			  (char *)key.dptr);
+			  (int)key.length, (int)key.length,
+			  (char *)key.data);
 		talloc_free(msg);
 		return -1;
 	}

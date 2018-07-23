@@ -63,25 +63,25 @@ struct ldb_kv_req_spy {
  * Determine if this key could hold a record.  We allow the new GUID
  * index, the old DN index and a possible future ID=
  */
-bool ldb_kv_key_is_record(TDB_DATA key)
+bool ldb_kv_key_is_record(struct ldb_val key)
 {
-	if (key.dsize < 4) {
+	if (key.length < 4) {
 		return false;
 	}
 
-	if (memcmp(key.dptr, "DN=", 3) == 0) {
+	if (memcmp(key.data, "DN=", 3) == 0) {
 		return true;
 	}
 
-	if (memcmp(key.dptr, "ID=", 3) == 0) {
+	if (memcmp(key.data, "ID=", 3) == 0) {
 		return true;
 	}
 
-	if (key.dsize < sizeof(LDB_KV_GUID_KEY_PREFIX)) {
+	if (key.length < sizeof(LDB_KV_GUID_KEY_PREFIX)) {
 		return false;
 	}
 
-	if (memcmp(key.dptr, LDB_KV_GUID_KEY_PREFIX,
+	if (memcmp(key.data, LDB_KV_GUID_KEY_PREFIX,
 		   sizeof(LDB_KV_GUID_KEY_PREFIX) - 1) == 0) {
 		return true;
 	}
@@ -90,17 +90,17 @@ bool ldb_kv_key_is_record(TDB_DATA key)
 }
 
 /*
-  form a TDB_DATA for a record key
+  form a ldb_val for a record key
   caller frees
 
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-TDB_DATA ldb_kv_key_dn(struct ldb_module *module,
-		       TALLOC_CTX *mem_ctx,
-		       struct ldb_dn *dn)
+struct ldb_val ldb_kv_key_dn(struct ldb_module *module,
+			     TALLOC_CTX *mem_ctx,
+			     struct ldb_dn *dn)
 {
-	TDB_DATA key;
+	struct ldb_val key;
 	char *key_str = NULL;
 	const char *dn_folded = NULL;
 
@@ -131,15 +131,15 @@ TDB_DATA ldb_kv_key_dn(struct ldb_module *module,
 		goto failed;
 	}
 
-	key.dptr = (uint8_t *)key_str;
-	key.dsize = strlen(key_str) + 1;
+	key.data = (uint8_t *)key_str;
+	key.length = strlen(key_str) + 1;
 
 	return key;
 
 failed:
 	errno = ENOMEM;
-	key.dptr = NULL;
-	key.dsize = 0;
+	key.data = NULL;
+	key.length = 0;
 	return key;
 }
 
@@ -147,17 +147,17 @@ failed:
 int ldb_kv_guid_to_key(struct ldb_module *module,
 		       struct ldb_kv_private *ldb_kv,
 		       const struct ldb_val *GUID_val,
-		       TDB_DATA *key)
+		       struct ldb_val *key)
 {
 	const char *GUID_prefix = LDB_KV_GUID_KEY_PREFIX;
 	const int GUID_prefix_len = sizeof(LDB_KV_GUID_KEY_PREFIX) - 1;
 
-	if (key->dsize != (GUID_val->length+GUID_prefix_len)) {
+	if (key->length != (GUID_val->length+GUID_prefix_len)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	memcpy(key->dptr, GUID_prefix, GUID_prefix_len);
-	memcpy(&key->dptr[GUID_prefix_len],
+	memcpy(key->data, GUID_prefix, GUID_prefix_len);
+	memcpy(&key->data[GUID_prefix_len],
 	       GUID_val->data, GUID_val->length);
 	return LDB_SUCCESS;
 }
@@ -170,7 +170,7 @@ int ldb_kv_idx_to_key(struct ldb_module *module,
 		      struct ldb_kv_private *ldb_kv,
 		      TALLOC_CTX *mem_ctx,
 		      const struct ldb_val *idx_val,
-		      TDB_DATA *key)
+		      struct ldb_val *key)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *dn;
@@ -190,7 +190,7 @@ int ldb_kv_idx_to_key(struct ldb_module *module,
 	/* form the key */
 	*key = ldb_kv_key_dn(module, mem_ctx, dn);
 	TALLOC_FREE(dn);
-	if (!key->dptr) {
+	if (!key->data) {
 		return ldb_module_oom(module);
 	}
 	return LDB_SUCCESS;
@@ -204,14 +204,14 @@ int ldb_kv_idx_to_key(struct ldb_module *module,
   note that the key for a record can depend on whether a
   GUID index is in use, or the DN is used as the key
 */
-TDB_DATA ldb_kv_key_msg(struct ldb_module *module,
+struct ldb_val ldb_kv_key_msg(struct ldb_module *module,
 			TALLOC_CTX *mem_ctx,
 			const struct ldb_message *msg)
 {
 	void *data = ldb_module_get_private(module);
 	struct ldb_kv_private *ldb_kv =
 	    talloc_get_type(data, struct ldb_kv_private);
-	TDB_DATA key;
+	struct ldb_val key;
 	const struct ldb_val *guid_val;
 	int ret;
 
@@ -233,27 +233,27 @@ TDB_DATA ldb_kv_key_msg(struct ldb_module *module,
 				       ldb_kv->cache->GUID_index_attribute,
 				       ldb_dn_get_linearized(msg->dn));
 		errno = EINVAL;
-		key.dptr = NULL;
-		key.dsize = 0;
+		key.data = NULL;
+		key.length = 0;
 		return key;
 	}
 
 	/* In this case, allocate with talloc */
-	key.dptr = talloc_size(mem_ctx, LDB_KV_GUID_KEY_SIZE);
-	if (key.dptr == NULL) {
+	key.data = talloc_size(mem_ctx, LDB_KV_GUID_KEY_SIZE);
+	if (key.data == NULL) {
 		errno = ENOMEM;
-		key.dptr = NULL;
-		key.dsize = 0;
+		key.data = NULL;
+		key.length = 0;
 		return key;
 	}
-	key.dsize = talloc_get_size(key.dptr);
+	key.length = talloc_get_size(key.data);
 
 	ret = ldb_kv_guid_to_key(module, ldb_kv, guid_val, &key);
 
 	if (ret != LDB_SUCCESS) {
 		errno = EINVAL;
-		key.dptr = NULL;
-		key.dsize = 0;
+		key.data = NULL;
+		key.length = 0;
 		return key;
 	}
 	return key;
@@ -353,8 +353,7 @@ int ldb_kv_store(struct ldb_module *module,
 	void *data = ldb_module_get_private(module);
 	struct ldb_kv_private *ldb_kv =
 	    talloc_get_type(data, struct ldb_kv_private);
-	TDB_DATA tdb_key;
-	struct ldb_val ldb_key;
+	struct ldb_val key;
 	struct ldb_val ldb_data;
 	int ret = LDB_SUCCESS;
 	TALLOC_CTX *key_ctx = talloc_new(module);
@@ -368,8 +367,8 @@ int ldb_kv_store(struct ldb_module *module,
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ldb_kv_key_msg(module, key_ctx, msg);
-	if (tdb_key.dptr == NULL) {
+	key = ldb_kv_key_msg(module, key_ctx, msg);
+	if (key.data == NULL) {
 		TALLOC_FREE(key_ctx);
 		return LDB_ERR_OTHER;
 	}
@@ -381,10 +380,7 @@ int ldb_kv_store(struct ldb_module *module,
 		return LDB_ERR_OTHER;
 	}
 
-	ldb_key.data = tdb_key.dptr;
-	ldb_key.length = tdb_key.dsize;
-
-	ret = ldb_kv->kv_ops->store(ldb_kv, ldb_key, ldb_data, flgs);
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, ldb_data, flgs);
 	if (ret != 0) {
 		bool is_special = ldb_dn_is_special(msg->dn);
 		ret = ldb_kv->kv_ops->error(ldb_kv);
@@ -587,8 +583,7 @@ int ldb_kv_delete_noindex(struct ldb_module *module,
 	void *data = ldb_module_get_private(module);
 	struct ldb_kv_private *ldb_kv =
 	    talloc_get_type(data, struct ldb_kv_private);
-	struct ldb_val ldb_key;
-	TDB_DATA tdb_key;
+	struct ldb_val key;
 	int ret;
 	TALLOC_CTX *tdb_key_ctx = talloc_new(module);
 
@@ -601,16 +596,13 @@ int ldb_kv_delete_noindex(struct ldb_module *module,
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ldb_kv_key_msg(module, tdb_key_ctx, msg);
-	if (!tdb_key.dptr) {
+	key = ldb_kv_key_msg(module, tdb_key_ctx, msg);
+	if (!key.data) {
 		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OTHER;
 	}
 
-	ldb_key.data = tdb_key.dptr;
-	ldb_key.length = tdb_key.dsize;
-
-	ret = ldb_kv->kv_ops->delete (ldb_kv, ldb_key);
+	ret = ldb_kv->kv_ops->delete (ldb_kv, key);
 	TALLOC_FREE(tdb_key_ctx);
 
 	if (ret != 0) {
@@ -1235,7 +1227,7 @@ static int ldb_kv_rename(struct ldb_kv_context *ctx)
 	struct ldb_request *req = ctx->req;
 	struct ldb_message *msg;
 	int ret = LDB_SUCCESS;
-	TDB_DATA tdb_key, tdb_key_old;
+	struct ldb_val  key, key_old;
 	struct ldb_dn *db_dn;
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
@@ -1266,16 +1258,16 @@ static int ldb_kv_rename(struct ldb_kv_context *ctx)
 	 * Even in GUID index mode we use ltdb_key_dn() as we are
 	 * trying to figure out if this is just a case rename
 	 */
-	tdb_key = ldb_kv_key_dn(module, msg, req->op.rename.newdn);
-	if (!tdb_key.dptr) {
+	key = ldb_kv_key_dn(module, msg, req->op.rename.newdn);
+	if (!key.data) {
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_key_old = ldb_kv_key_dn(module, msg, req->op.rename.olddn);
-	if (!tdb_key_old.dptr) {
+	key_old = ldb_kv_key_dn(module, msg, req->op.rename.olddn);
+	if (!key_old.data) {
 		talloc_free(msg);
-		talloc_free(tdb_key.dptr);
+		talloc_free(key.data);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1283,8 +1275,8 @@ static int ldb_kv_rename(struct ldb_kv_context *ctx)
 	 * Only declare a conflict if the new DN already exists,
 	 * and it isn't a case change on the old DN
 	 */
-	if (tdb_key_old.dsize != tdb_key.dsize
-	    || memcmp(tdb_key.dptr, tdb_key_old.dptr, tdb_key.dsize) != 0) {
+	if (key_old.length != key.length
+	    || memcmp(key.data, key_old.data, key.length) != 0) {
 		ret = ldb_kv_search_base(
 		    module, msg, req->op.rename.newdn, &db_dn);
 		if (ret == LDB_SUCCESS) {
@@ -1302,14 +1294,14 @@ static int ldb_kv_rename(struct ldb_kv_context *ctx)
 				       ldb_dn_get_linearized(req->op.rename.newdn));
 	}
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tdb_key_old.dptr);
-		talloc_free(tdb_key.dptr);
+		talloc_free(key_old.data);
+		talloc_free(key.data);
 		talloc_free(msg);
 		return ret;
 	}
 
-	talloc_free(tdb_key_old.dptr);
-	talloc_free(tdb_key.dptr);
+	talloc_free(key_old.data);
+	talloc_free(key.data);
 
 	/* Always delete first then add, to avoid conflicts with
 	 * unique indexes. We rely on the transaction to make this
