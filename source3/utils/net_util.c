@@ -279,6 +279,7 @@ int net_use_krb_machine_account(struct net_context *c)
 		return -1;
 	}
 	c->opt_user_name = user_name;
+	c->opt_user_specified = true;
 	return 0;
 }
 
