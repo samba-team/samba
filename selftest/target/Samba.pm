@@ -411,6 +411,7 @@ sub get_interface($)
     $interfaces{"restoredc"} = 41;
     $interfaces{"renamedc"} = 42;
     $interfaces{"labdc"} = 43;
+    $interfaces{"offlinebackupdc"} = 44;
 
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 64

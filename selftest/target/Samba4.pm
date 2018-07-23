@@ -2162,6 +2162,7 @@ sub check_env($$)
 
 	restoredc            => ["backupfromdc"],
 	renamedc             => ["backupfromdc"],
+	offlinebackupdc      => ["backupfromdc"],
 	labdc                => ["backupfromdc"],
 
 	none                 => [],
@@ -2615,6 +2616,18 @@ sub setup_backupfromdc
 	return $env;
 }
 
+# returns the server/user-auth params needed to run an online backup cmd
+sub get_backup_server_args
+{
+	# dcvars contains the env info for the backup DC testenv
+	my ($self, $dcvars) = @_;
+	my $server = $dcvars->{DC_SERVER_IP};
+	my $server_args = "--server=$server ";
+	$server_args .= "-U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+
+	return $server_args;
+}
+
 # Creates a backup of a running testenv DC
 sub create_backup
 {
@@ -2636,10 +2649,9 @@ sub create_backup
 	# use samba-tool to create a backup from the 'backupfromdc' DC
 	my $cmd = "";
 	my $samba_tool = Samba::bindir_path($self, "samba-tool");
-	my $server = $dcvars->{DC_SERVER_IP};
 
-	$cmd .= "$cmd_env $samba_tool domain backup $backup_cmd --server=$server";
-	$cmd .= " --targetdir=$backupdir -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+	$cmd .= "$cmd_env $samba_tool domain backup $backup_cmd";
+	$cmd .= " --targetdir=$backupdir";
 
 	print "Executing: $cmd\n";
 	unless(system($cmd) == 0) {
@@ -2746,7 +2758,7 @@ sub prepare_dc_testenv
 	$env->{DC_USERNAME} = $env->{USERNAME};
 	$env->{DC_PASSWORD} = $env->{PASSWORD};
 
-    return $env;
+    return ($env, $ctx);
 }
 
 
@@ -2759,13 +2771,17 @@ sub setup_restoredc
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing RESTORE DC...\n";
 
-	my $env = $self->prepare_dc_testenv($prefix, "restoredc",
-					    $dcvars->{DOMAIN}, $dcvars->{REALM},
-					    $dcvars->{PASSWORD});
+	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "restoredc",
+						    $dcvars->{DOMAIN},
+						    $dcvars->{REALM},
+						    $dcvars->{PASSWORD});
 
 	# create a backup of the 'backupfromdc'
 	my $backupdir = File::Temp->newdir();
-	my $backup_file = $self->create_backup($env, $dcvars, $backupdir, "online");
+	my $server_args = $self->get_backup_server_args($dcvars);
+	my $backup_args = "online $server_args";
+	my $backup_file = $self->create_backup($env, $dcvars, $backupdir,
+					       $backup_args);
 	unless($backup_file) {
 		return undef;
 	}
@@ -2801,13 +2817,15 @@ sub setup_renamedc
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing RENAME DC...\n";
 
-	my $env = $self->prepare_dc_testenv($prefix, "renamedc",
-					    "RENAMEDOMAIN", "renamedom.samba.example.com",
-					    $dcvars->{PASSWORD});
+	my $realm = "renamedom.samba.example.com";
+	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "renamedc",
+						    "RENAMEDOMAIN", $realm,
+						    $dcvars->{PASSWORD});
 
 	# create a backup of the 'backupfromdc' which renames the domain
 	my $backupdir = File::Temp->newdir();
-	my $backup_args = "rename $env->{DOMAIN} $env->{REALM}";
+	my $server_args = $self->get_backup_server_args($dcvars);
+	my $backup_args = "rename $env->{DOMAIN} $env->{REALM} $server_args";
 	my $backup_file = $self->create_backup($env, $dcvars, $backupdir,
 					       $backup_args);
 	unless($backup_file) {
@@ -2836,6 +2854,55 @@ sub setup_renamedc
 	return $env;
 }
 
+# Set up a DC testenv solely by using the 'samba-tool domain backup offline' and
+# restore commands. This proves that we do an offline backup of a local DC
+# ('backupfromdc') and use the backup file to create a valid, working samba DC.
+sub setup_offlinebackupdc
+{
+	# note: dcvars contains the env info for the dependent testenv ('backupfromdc')
+	my ($self, $prefix, $dcvars) = @_;
+	print "Preparing OFFLINE BACKUP DC...\n";
+
+	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "offlinebackupdc",
+						    $dcvars->{DOMAIN},
+						    $dcvars->{REALM},
+						    $dcvars->{PASSWORD});
+
+	# create an offline backup of the 'backupfromdc' target
+	my $backupdir = File::Temp->newdir();
+	my $cmd = "offline -s $dcvars->{SERVERCONFFILE}";
+	my $backup_file = $self->create_backup($env, $dcvars,
+					       $backupdir, $cmd);
+
+	unless($backup_file) {
+		return undef;
+	}
+
+	# restore the backup file to populate the rename-DC testenv
+	my $restore_dir = abs_path($prefix);
+	my $restore_opts =  "--newservername=$env->{SERVER} --host-ip=$env->{SERVER_IP}";
+	my $ret = $self->restore_backup_file($backup_file, $restore_opts,
+					     $restore_dir, $env->{SERVERCONFFILE});
+	unless ($ret == 0) {
+		return undef;
+	}
+
+	# re-create the testenv's krb5.conf (the restore may have overwritten it)
+	Samba::mk_krb5_conf($ctx);
+
+	# start samba for the restored DC
+	if (not defined($self->check_or_start($env, "standard"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
 # Set up a DC testenv solely by using the samba-tool 'domain backup rename' and
 # restore commands, using the --no-secrets option. This proves that we can
 # create a realistic lab environment from an online DC ('backupfromdc').
@@ -2845,13 +2912,17 @@ sub setup_labdc
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing LAB-DOMAIN DC...\n";
 
-	my $env = $self->prepare_dc_testenv($prefix, "labdc", "LABDOMAIN",
-					    "labdom.samba.example.com", $dcvars->{PASSWORD});
+	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "labdc",
+						    "LABDOMAIN",
+						    "labdom.samba.example.com",
+						    $dcvars->{PASSWORD});
 
 	# create a backup of the 'backupfromdc' which renames the domain and uses
 	# the --no-secrets option to scrub any sensitive info
 	my $backupdir = File::Temp->newdir();
-	my $backup_args = "rename $env->{DOMAIN} $env->{REALM} --no-secrets";
+	my $server_args = $self->get_backup_server_args($dcvars);
+	my $backup_args = "rename $env->{DOMAIN} $env->{REALM} $server_args";
+	$backup_args .= " --no-secrets";
 	my $backup_file = $self->create_backup($env, $dcvars, $backupdir,
 					       $backup_args);
 	unless($backup_file) {
