@@ -1058,6 +1058,13 @@ struct vfs_fn_pointers skel_opaque_fns = {
 static_decl_vfs;
 NTSTATUS vfs_skel_opaque_init(TALLOC_CTX *ctx)
 {
+	/*
+	 * smb_vfs_assert_all_fns() makes sure every
+	 * call is implemented.
+	 *
+	 * An opaque module requires this!
+	 */
+	smb_vfs_assert_all_fns(&skel_opaque_fns, "skel_opaque");
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_opaque",
 				&skel_opaque_fns);
 }
