@@ -1063,6 +1063,19 @@ static bool skel_aio_force(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_AIO_FORCE(handle, fsp);
 }
 
+static NTSTATUS skel_audit_file(struct vfs_handle_struct *handle,
+				struct smb_filename *file,
+				struct security_acl *sacl,
+				uint32_t access_requested,
+				uint32_t access_denied)
+{
+	return SMB_VFS_NEXT_AUDIT_FILE(handle,
+				       file,
+				       sacl,
+				       access_requested,
+				       access_denied);
+}
+
 /* VFS operations structure */
 
 struct vfs_fn_pointers skel_transparent_fns = {
@@ -1153,6 +1166,7 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.translate_name_fn = skel_translate_name,
 	.fsctl_fn = skel_fsctl,
 	.readdir_attr_fn = skel_readdir_attr,
+	.audit_file_fn = skel_audit_file,
 
 	/* DOS attributes. */
 	.get_dos_attributes_fn = skel_get_dos_attributes,
