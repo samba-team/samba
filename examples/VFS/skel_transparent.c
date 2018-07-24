@@ -1076,6 +1076,47 @@ static NTSTATUS skel_audit_file(struct vfs_handle_struct *handle,
 				       access_denied);
 }
 
+static NTSTATUS skel_durable_cookie(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *cookie)
+{
+	return SMB_VFS_NEXT_DURABLE_COOKIE(handle,
+					   fsp,
+					   mem_ctx,
+					   cookie);
+}
+
+static NTSTATUS skel_durable_disconnect(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					const DATA_BLOB old_cookie,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *new_cookie)
+{
+	return SMB_VFS_NEXT_DURABLE_DISCONNECT(handle,
+					       fsp,
+					       old_cookie,
+					       mem_ctx,
+					       new_cookie);
+}
+
+static NTSTATUS skel_durable_reconnect(struct vfs_handle_struct *handle,
+				       struct smb_request *smb1req,
+				       struct smbXsrv_open *op,
+				       const DATA_BLOB old_cookie,
+				       TALLOC_CTX *mem_ctx,
+				       struct files_struct **fsp,
+				       DATA_BLOB *new_cookie)
+{
+	return SMB_VFS_NEXT_DURABLE_RECONNECT(handle,
+					      smb1req,
+					      op,
+					      old_cookie,
+					      mem_ctx,
+					      fsp,
+					      new_cookie);
+}
+
 /* VFS operations structure */
 
 struct vfs_fn_pointers skel_transparent_fns = {
@@ -1202,6 +1243,11 @@ struct vfs_fn_pointers skel_transparent_fns = {
 
 	/* aio operations */
 	.aio_force_fn = skel_aio_force,
+
+	/* durable handle operations */
+	.durable_cookie_fn = skel_durable_cookie,
+	.durable_disconnect_fn = skel_durable_disconnect,
+	.durable_reconnect_fn = skel_durable_reconnect,
 };
 
 static_decl_vfs;
