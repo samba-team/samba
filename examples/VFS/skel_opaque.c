@@ -885,6 +885,15 @@ static bool skel_aio_force(struct vfs_handle_struct *handle,
 	return false;
 }
 
+static NTSTATUS skel_audit_file(struct vfs_handle_struct *handle,
+				struct smb_filename *file,
+				struct security_acl *sacl,
+				uint32_t access_requested,
+				uint32_t access_denied)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 /* VFS operations structure */
 
 struct vfs_fn_pointers skel_opaque_fns = {
@@ -975,6 +984,7 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.translate_name_fn = skel_translate_name,
 	.fsctl_fn = skel_fsctl,
 	.readdir_attr_fn = skel_readdir_attr,
+	.audit_file_fn = skel_audit_file,
 
 	/* DOS attributes. */
 	.get_dos_attributes_fn = skel_get_dos_attributes,
