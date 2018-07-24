@@ -90,15 +90,12 @@ static void exit_server_common(enum server_exit_reason how,
 {
 	struct smbXsrv_client *client = global_smbXsrv_client;
 	struct smbXsrv_connection *xconn = NULL;
+	struct smbXsrv_connection *xconn_next = NULL;
 	struct smbd_server_connection *sconn = NULL;
 	struct messaging_context *msg_ctx = server_messaging_context();
 
 	if (client != NULL) {
 		sconn = client->sconn;
-		/*
-		 * Here we typically have just one connection
-		 */
-		xconn = client->connections;
 	}
 
 	if (!exit_firsttime)
@@ -107,7 +104,14 @@ static void exit_server_common(enum server_exit_reason how,
 
 	change_to_root_user();
 
-	if (xconn != NULL) {
+
+	/*
+	 * Here we typically have just one connection
+	 */
+	for (xconn = client->connections; xconn != NULL; xconn = xconn_next) {
+		xconn_next = xconn->next;
+		DLIST_REMOVE(client->connections, xconn);
+
 		/*
 		 * This is typically the disconnect for the only
 		 * (or with multi-channel last) connection of the client
@@ -123,7 +127,8 @@ static void exit_server_common(enum server_exit_reason how,
 			}
 		}
 
-		TALLOC_FREE(xconn->smb1.negprot.auth_context);
+		TALLOC_FREE(xconn);
+		DO_PROFILE_INC(disconnect);
 	}
 
 	change_to_root_user();
@@ -203,14 +208,6 @@ static void exit_server_common(enum server_exit_reason how,
 	 * because smbd_msg_ctx is not a talloc child of smbd_server_conn.
 	 */
 	if (client != NULL) {
-		struct smbXsrv_connection *next;
-
-		for (; xconn != NULL; xconn = next) {
-			next = xconn->next;
-			DLIST_REMOVE(client->connections, xconn);
-			talloc_free(xconn);
-			DO_PROFILE_INC(disconnect);
-		}
 		TALLOC_FREE(client->sconn);
 	}
 	sconn = NULL;
