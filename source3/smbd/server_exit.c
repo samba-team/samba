@@ -137,7 +137,7 @@ static void exit_server_common(enum server_exit_reason how,
 
 	change_to_root_user();
 
-	if (xconn != NULL) {
+	if (client != NULL) {
 		NTSTATUS status;
 
 		/*
@@ -153,7 +153,7 @@ static void exit_server_common(enum server_exit_reason how,
 				  "triggering cleanup\n", nt_errstr(status)));
 		}
 
-		status = smbXsrv_session_logoff_all(xconn);
+		status = smbXsrv_session_logoff_all(client);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Server exit (%s)\n",
 				(reason ? reason : "normal exit")));

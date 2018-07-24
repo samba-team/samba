@@ -586,7 +586,7 @@ struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
 					struct smbd_smb2_request *current_req);
 NTSTATUS smb2srv_session_shutdown_recv(struct tevent_req *req);
 NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session);
-NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn);
+NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_client *client);
 NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
 				uint16_t vuid, NTTIME now,

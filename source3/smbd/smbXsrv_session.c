@@ -1756,9 +1756,9 @@ struct smbXsrv_session_logoff_all_state {
 static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 					       void *private_data);
 
-NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn)
+NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_client *client)
 {
-	struct smbXsrv_session_table *table = conn->client->session_table;
+	struct smbXsrv_session_table *table = client->session_table;
 	struct smbXsrv_session_logoff_all_state state;
 	NTSTATUS status;
 	int count = 0;
