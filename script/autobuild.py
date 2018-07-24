@@ -242,6 +242,10 @@ tasks = {
                       # build with all modules static
                       ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL", "text/plain"),
                       ("allstatic-make", "make -j", "text/plain"),
+                      ("allstatic-test", "make test "
+                       "FAIL_IMMEDIATELY=1 "
+                       "TESTS='samba3.smb2.create.*nt4_dc'",
+                       "text/plain"),
 
                       # retry without any required modules
                       ("none-distclean", "make distclean", "text/plain"),
