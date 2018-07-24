@@ -1112,9 +1112,8 @@ NTSTATUS smb1srv_tcon_lookup(struct smbXsrv_connection *conn,
 					 local_id, now, tcon);
 }
 
-NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_connection *conn)
+NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_client *client)
 {
-	struct smbXsrv_client *client = conn->client;
 
 	/*
 	 * We do not pass a vuid here,

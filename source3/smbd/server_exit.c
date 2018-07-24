@@ -144,7 +144,7 @@ static void exit_server_common(enum server_exit_reason how,
 		 * Note: this is a no-op for smb2 as
 		 * conn->tcon_table is empty
 		 */
-		status = smb1srv_tcon_disconnect_all(xconn);
+		status = smb1srv_tcon_disconnect_all(client);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Server exit (%s)\n",
 				(reason ? reason : "normal exit")));

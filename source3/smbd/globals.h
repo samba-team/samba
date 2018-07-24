@@ -620,7 +620,7 @@ NTSTATUS smb1srv_tcon_create(struct smbXsrv_connection *conn,
 NTSTATUS smb1srv_tcon_lookup(struct smbXsrv_connection *conn,
 			     uint16_t tree_id, NTTIME now,
 			     struct smbXsrv_tcon **tcon);
-NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_connection *conn);
+NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_client *client);
 NTSTATUS smb2srv_tcon_table_init(struct smbXsrv_session *session);
 NTSTATUS smb2srv_tcon_create(struct smbXsrv_session *session,
 			     NTTIME now,
