@@ -1401,9 +1401,7 @@ void init_kernel_oplocks(struct smbd_server_connection *sconn)
 
 	/* only initialize once */
 	if (koplocks == NULL) {
-#if HAVE_KERNEL_OPLOCKS_IRIX
-		koplocks = irix_init_kernel_oplocks(sconn);
-#elif HAVE_KERNEL_OPLOCKS_LINUX
+#if HAVE_KERNEL_OPLOCKS_LINUX
 		koplocks = linux_init_kernel_oplocks(sconn);
 #endif
 		sconn->oplocks.kernel_ops = koplocks;

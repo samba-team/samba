@@ -167,11 +167,6 @@ main() {
 }''', 'HAVE_KERNEL_OPLOCKS_LINUX', addmain=False, execute=True,
         msg="Checking for Linux kernel oplocks")
 
-    # Check for IRIX kernel oplock types
-    conf.CHECK_CODE('oplock_stat_t t; t.os_state = OP_REVOKE; t.os_dev = 1; t.os_ino = 1;',
-                    'HAVE_KERNEL_OPLOCKS_IRIX', headers='fcntl.h',
-                    msg="Checking for IRIX kernel oplock types")
-
     # Check for kernel share modes
     conf.CHECK_CODE('''
 #include <sys/types.h>

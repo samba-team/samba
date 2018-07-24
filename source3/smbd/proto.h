@@ -731,10 +731,6 @@ void message_to_share_mode_entry(struct file_id *id,
 bool init_oplocks(struct smbd_server_connection *sconn);
 void init_kernel_oplocks(struct smbd_server_connection *sconn);
 
-/* The following definitions come from smbd/oplock_irix.c  */
-
-struct kernel_oplocks *irix_init_kernel_oplocks(struct smbd_server_connection *sconn);
-
 /* The following definitions come from smbd/oplock_linux.c  */
 
 void linux_set_lease_capability(void);
