@@ -604,6 +604,7 @@ static void test_json_to_string(void **state)
 {
 	struct json_object object;
 	char *s = NULL;
+	int rc;
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -613,7 +614,8 @@ static void test_json_to_string(void **state)
 	assert_string_equal("{}", s);
 	TALLOC_FREE(s);
 
-	json_add_string(&object, "name", "value");
+	rc = json_add_string(&object, "name", "value");
+	assert_int_equal(0, rc);
 	s = json_to_string(ctx, &object);
 	assert_string_equal("{\"name\": \"value\"}", s);
 	TALLOC_FREE(s);
@@ -641,6 +643,7 @@ static void test_json_get_array(void **state)
 	json_t *o = NULL;
 	struct json_object o1;
 	struct json_object o2;
+	int rc;
 
 	object = json_new_object();
 
@@ -651,9 +654,12 @@ static void test_json_get_array(void **state)
 	json_free(&array);
 
 	o1 = json_new_object();
-	json_add_string(&o1, "value", "value-one");
-	json_add_object(&stored_array, NULL, &o1);
-	json_add_object(&object, "stored_array", &stored_array);
+	rc = json_add_string(&o1, "value", "value-one");
+	assert_int_equal(0, rc);
+	rc = json_add_object(&stored_array, NULL, &o1);
+	assert_int_equal(0, rc);
+	rc = json_add_object(&object, "stored_array", &stored_array);
+	assert_int_equal(0, rc);
 
 	array = json_get_array(&object, "stored_array");
 	assert_true(array.valid);
@@ -679,11 +685,14 @@ static void test_json_get_array(void **state)
 	array = json_get_array(&object, "stored_array");
 	assert_true(json_is_array(array.root));
 	o2 = json_new_object();
-	json_add_string(&o2, "value", "value-two");
+	rc = json_add_string(&o2, "value", "value-two");
+	assert_int_equal(0, rc);
 	assert_true(o2.valid);
-	json_add_object(&array, NULL, &o2);
+	rc = json_add_object(&array, NULL, &o2);
+	assert_int_equal(0, rc);
 	assert_true(json_is_array(array.root));
-	json_add_object(&object, "stored_array", &array);
+	rc = json_add_object(&object, "stored_array", &array);
+	assert_int_equal(0, rc);
 	assert_true(json_is_array(array.root));
 
 	array = json_get_array(&object, "stored_array");
@@ -728,6 +737,7 @@ static void test_json_get_object(void **state)
 	struct json_object o2;
 	struct json_object o3;
 	json_t *value = NULL;
+	int rc;
 
 	object = json_new_object();
 
@@ -738,8 +748,10 @@ static void test_json_get_object(void **state)
 	json_free(&o1);
 
 	o1 = json_new_object();
-	json_add_string(&o1, "value", "value-one");
-	json_add_object(&object, "stored_object", &o1);
+	rc = json_add_string(&o1, "value", "value-one");
+	assert_int_equal(0, rc);
+	rc = json_add_object(&object, "stored_object", &o1);
+	assert_int_equal(0, rc);
 
 	o2 = json_get_object(&object, "stored_object");
 	assert_true(o2.valid);
@@ -752,9 +764,10 @@ static void test_json_get_object(void **state)
 
 	assert_string_equal("value-one", json_string_value(value));
 
-	json_add_string(&o2, "value", "value-two");
-	json_add_object(&object, "stored_object", &o2);
-
+	rc = json_add_string(&o2, "value", "value-two");
+	assert_int_equal(0, rc);
+	rc = json_add_object(&object, "stored_object", &o2);
+	assert_int_equal(0, rc);
 
 	o3 = json_get_object(&object, "stored_object");
 	assert_true(o3.valid);

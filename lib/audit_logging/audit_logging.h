@@ -21,8 +21,9 @@
 #include <talloc.h>
 #include "lib/messaging/irpc.h"
 #include "lib/tsocket/tsocket.h"
+#include "lib/util/attr.h"
 
-char* audit_get_timestamp(TALLOC_CTX *frame);
+_WARN_UNUSED_RESULT_ char *audit_get_timestamp(TALLOC_CTX *frame);
 void audit_log_human_text(const char *prefix,
 			  const char *message,
 			  int debug_class,
@@ -50,43 +51,48 @@ void audit_message_send(struct imessaging_context *msg_ctx,
 			const char *server_name,
 			uint32_t message_type,
 			struct json_object *message);
-struct json_object json_new_object(void);
-struct json_object json_new_array(void);
+_WARN_UNUSED_RESULT_ struct json_object json_new_object(void);
+_WARN_UNUSED_RESULT_ struct json_object json_new_array(void);
 void json_free(struct json_object *object);
 void json_assert_is_array(struct json_object *array);
-bool json_is_invalid(struct json_object *object);
+_WARN_UNUSED_RESULT_ bool json_is_invalid(struct json_object *object);
 
-int json_add_int(struct json_object *object, const char *name, const int value);
-int json_add_bool(struct json_object *object,
-		  const char *name,
-		  const bool value);
-int json_add_string(struct json_object *object,
-		    const char *name,
-		    const char *value);
-int json_add_object(struct json_object *object,
-		    const char *name,
-		    struct json_object *value);
-int json_add_stringn(struct json_object *object,
-		     const char *name,
-		     const char *value,
-		     const size_t len);
-int json_add_version(struct json_object *object, int major, int minor);
-int json_add_timestamp(struct json_object *object);
-int json_add_address(struct json_object *object,
-		     const char *name,
-		     const struct tsocket_address *address);
-int json_add_sid(struct json_object *object,
-		 const char *name,
-		 const struct dom_sid *sid);
-int json_add_guid(struct json_object *object,
-		  const char *name,
-		  const struct GUID *guid);
+_WARN_UNUSED_RESULT_ int json_add_int(struct json_object *object,
+				      const char *name,
+				      const int value);
+_WARN_UNUSED_RESULT_ int json_add_bool(struct json_object *object,
+				       const char *name,
+				       const bool value);
+_WARN_UNUSED_RESULT_ int json_add_string(struct json_object *object,
+					 const char *name,
+					 const char *value);
+_WARN_UNUSED_RESULT_ int json_add_object(struct json_object *object,
+					 const char *name,
+					 struct json_object *value);
+_WARN_UNUSED_RESULT_ int json_add_stringn(struct json_object *object,
+					  const char *name,
+					  const char *value,
+					  const size_t len);
+_WARN_UNUSED_RESULT_ int json_add_version(struct json_object *object,
+					  int major,
+					  int minor);
+_WARN_UNUSED_RESULT_ int json_add_timestamp(struct json_object *object);
+_WARN_UNUSED_RESULT_ int json_add_address(
+    struct json_object *object,
+    const char *name,
+    const struct tsocket_address *address);
+_WARN_UNUSED_RESULT_ int json_add_sid(struct json_object *object,
+				      const char *name,
+				      const struct dom_sid *sid);
+_WARN_UNUSED_RESULT_ int json_add_guid(struct json_object *object,
+				       const char *name,
+				       const struct GUID *guid);
 
-struct json_object json_get_array(struct json_object *object,
-				  const char* name);
-struct json_object json_get_object(struct json_object *object,
-				   const char* name);
-char *json_to_string(TALLOC_CTX *mem_ctx,
-		     struct json_object *object);
+_WARN_UNUSED_RESULT_ struct json_object json_get_array(
+    struct json_object *object, const char *name);
+_WARN_UNUSED_RESULT_ struct json_object json_get_object(
+    struct json_object *object, const char *name);
+_WARN_UNUSED_RESULT_ char *json_to_string(TALLOC_CTX *mem_ctx,
+					  struct json_object *object);
 #endif
 #endif
