@@ -17,5 +17,6 @@ def build(bld):
     bld.SAMBA_LIBRARY('popt',
                       source='popt.c poptconfig.c popthelp.c poptint.c poptparse.c',
                       cflags=cflags,
+                      deps='iconv',
                       allow_warnings=True,
                       private_library=True)
