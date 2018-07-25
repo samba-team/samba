@@ -878,11 +878,9 @@ int share_mode_forall(int (*fn)(struct file_id fid,
 }
 
 struct share_entry_forall_state {
-	int (*fn)(const struct share_mode_entry *e,
-		  const struct file_id *id,
-		  const char *service_path,
-		  const char *base_name,
-		  const char *stream_name,
+	int (*fn)(struct file_id fid,
+		  const struct share_mode_data *data,
+		  const struct share_mode_entry *entry,
 		  void *private_data);
 	void *private_data;
 };
@@ -897,11 +895,9 @@ static int share_entry_traverse_fn(struct file_id fid,
 	for (i=0; i<data->num_share_modes; i++) {
 		int ret;
 
-		ret = state->fn(&data->share_modes[i],
-				&data->id,
-				data->servicepath,
-				data->base_name,
-				data->stream_name,
+		ret = state->fn(fid,
+				data,
+				&data->share_modes[i],
 				state->private_data);
 		if (ret != 0) {
 			return ret;
@@ -916,11 +912,11 @@ static int share_entry_traverse_fn(struct file_id fid,
  share mode system.
 ********************************************************************/
 
-int share_entry_forall(int (*fn)(const struct share_mode_entry *,
-				 const struct file_id *id,
-				 const char *, const char *,
-				 const char *, void *),
-		       void *private_data)
+int share_entry_forall(int (*fn)(struct file_id fid,
+				 const struct share_mode_data *data,
+				 const struct share_mode_entry *entry,
+				 void *private_data),
+		      void *private_data)
 {
 	struct share_entry_forall_state state = {
 		.fn = fn, .private_data = private_data };

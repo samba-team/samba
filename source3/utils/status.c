@@ -116,12 +116,10 @@ static bool Ucrit_addPid( struct server_id pid )
 	return True;
 }
 
-static int print_share_mode(const struct share_mode_entry *e,
-			    const struct file_id *id,
-			    const char *sharepath,
-			    const char *fname,
-			    const char *sname,
-			    void *dummy)
+static int print_share_mode(struct file_id fid,
+			    const struct share_mode_data *d,
+			    const struct share_mode_entry *e,
+			    void *private_data)
 {
 	static int count;
 
@@ -195,8 +193,8 @@ static int print_share_mode(const struct share_mode_entry *e,
 		}
 
 		d_printf(" %s   %s%s   %s",
-			 sharepath, fname,
-			 sname ? sname : "",
+			 d->servicepath, d->base_name,
+			 (d->stream_name != NULL) ? d->stream_name : "",
 			 time_to_asc((time_t)e->time.tv_sec));
 	}
 
