@@ -856,7 +856,6 @@ static int skel_fremovexattr(vfs_handle_struct *handle,
 {
 	errno = ENOSYS;
 	return -1;
-	return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
 }
 
 static int skel_setxattr(vfs_handle_struct *handle,
