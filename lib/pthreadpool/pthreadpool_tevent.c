@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/select.h"
 #include "system/threads.h"
+#include "system/filesys.h"
 #include "pthreadpool_tevent.h"
 #include "pthreadpool.h"
 #include "lib/util/tevent_unix.h"

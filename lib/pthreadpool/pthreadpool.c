@@ -21,6 +21,7 @@
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/threads.h"
+#include "system/filesys.h"
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/blocking.h"
