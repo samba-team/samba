@@ -25,6 +25,7 @@
 #include "trans2.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "system/filesys.h"
+#include "lib/pthreadpool/pthreadpool_tevent.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -205,7 +206,18 @@ static struct tevent_req *fetch_write_time_send(TALLOC_CTX *mem_ctx,
 						bool *stop);
 static NTSTATUS fetch_write_time_recv(struct tevent_req *req);
 
+static struct tevent_req *fetch_dos_mode_send(
+	TALLOC_CTX *mem_ctx,
+	struct smb_vfs_ev_glue *evg,
+	struct files_struct *dir_fsp,
+	struct smb_filename **smb_fname,
+	uint32_t info_level,
+	uint8_t *entry_marshall_buf);
+
+static NTSTATUS fetch_dos_mode_recv(struct tevent_req *req);
+
 struct smbd_smb2_query_directory_state {
+	struct smb_vfs_ev_glue *evg;
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	uint64_t async_sharemode_count;
@@ -225,13 +237,18 @@ struct smbd_smb2_query_directory_state {
 	uint32_t dirtype;
 	bool dont_descend;
 	bool ask_sharemode;
+	bool async_dosmode;
 	bool async_ask_sharemode;
 	int last_entry_off;
+	struct pthreadpool_tevent *tp_chdir_safe;
+	size_t max_async_dosmode_active;
+	uint32_t async_dosmode_active;
 	bool done;
 };
 
 static bool smb2_query_directory_next_entry(struct tevent_req *req);
 static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq);
+static void smb2_query_directory_dos_mode_done(struct tevent_req *subreq);
 static void smb2_query_directory_waited(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
@@ -260,7 +277,9 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->evg = conn->user_vfs_evg;
 	state->ev = ev;
+	state->tp_chdir_safe = smb_vfs_ev_glue_tp_chdir_safe(state->evg);
 	state->fsp = fsp;
 	state->smb2req = smb2req;
 	state->in_output_buffer_length = in_output_buffer_length;
@@ -488,12 +507,31 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (state->info_level != SMB_FIND_FILE_NAMES_INFO) {
 		state->ask_sharemode = lp_parm_bool(
 			SNUM(conn), "smbd", "search ask sharemode", true);
+
+		state->async_dosmode = lp_parm_bool(
+                        SNUM(conn), "smbd", "async dosmode", false);
 	}
 
 	if (state->ask_sharemode && lp_clustering()) {
 		state->ask_sharemode = false;
 		state->async_ask_sharemode = true;
+	}
 
+	if (state->async_dosmode) {
+		size_t max_threads;
+
+		max_threads = pthreadpool_tevent_max_threads(state->tp_chdir_safe);
+
+		state->max_async_dosmode_active = lp_parm_ulong(
+			SNUM(conn), "smbd", "max async dosmode",
+			max_threads * 2);
+
+		if (state->max_async_dosmode_active == 0) {
+			state->max_async_dosmode_active = 1;
+		}
+	}
+
+	if (state->async_dosmode || state->async_ask_sharemode) {
 		/*
 		 * Should we only set async_internal
 		 * if we're not the last request in
@@ -537,6 +575,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 	int space_remaining = state->in_output_buffer_length - off;
 	struct file_id file_id;
 	NTSTATUS status;
+	bool get_dosmode = !state->async_dosmode;
 	bool stop = false;
 
 	SMB_ASSERT(space_remaining >= 0);
@@ -551,7 +590,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 					   false, /* requires_resume_key */
 					   state->dont_descend,
 					   state->ask_sharemode,
-					   true,
+					   get_dosmode,
 					   8, /* align to 8 bytes */
 					   false, /* no padding */
 					   &state->pdata,
@@ -605,6 +644,36 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 		state->async_sharemode_count++;
 	}
 
+	if (state->async_dosmode) {
+		struct tevent_req *subreq = NULL;
+		uint8_t *buf = NULL;
+		size_t outstanding_aio;
+
+		buf = (uint8_t *)state->base_data + state->last_entry_off;
+
+		subreq = fetch_dos_mode_send(state,
+					     state->evg,
+					     state->fsp,
+					     &smb_fname,
+					     state->info_level,
+					     buf);
+		if (tevent_req_nomem(subreq, req)) {
+			return true;
+		}
+		tevent_req_set_callback(subreq,
+					smb2_query_directory_dos_mode_done,
+					req);
+
+		state->async_dosmode_active++;
+
+		outstanding_aio = pthreadpool_tevent_queued_jobs(
+					state->tp_chdir_safe);
+
+		if (outstanding_aio > state->max_async_dosmode_active) {
+			stop = true;
+		}
+	}
+
 	TALLOC_FREE(smb_fname);
 
 	state->num++;
@@ -622,6 +691,10 @@ last_entry_done:
 	if (state->async_sharemode_count > 0) {
 		DBG_DEBUG("Stopping after %"PRIu64" async mtime "
 			  "updates\n", state->async_sharemode_count);
+		return true;
+	}
+
+	if (state->async_dosmode_active > 0) {
 		return true;
 	}
 
@@ -674,6 +747,28 @@ static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq
 	return;
 }
 
+static void smb2_query_directory_dos_mode_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smbd_smb2_query_directory_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_query_directory_state);
+	NTSTATUS status;
+
+	status = fetch_dos_mode_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->async_dosmode_active--;
+
+	smb2_query_directory_check_next_entry(req);
+	return;
+}
+
 static void smb2_query_directory_check_next_entry(struct tevent_req *req)
 {
 	struct smbd_smb2_query_directory_state *state = tevent_req_data(
@@ -687,7 +782,9 @@ static void smb2_query_directory_check_next_entry(struct tevent_req *req)
 		return;
 	}
 
-	if (state->async_sharemode_count > 0) {
+	if (state->async_sharemode_count > 0 ||
+	    state->async_dosmode_active > 0)
+	{
 		return;
 	}
 
@@ -849,6 +946,130 @@ static void fetch_write_time_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS fetch_write_time_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+struct fetch_dos_mode_state {
+	struct files_struct *dir_fsp;
+	struct smb_filename *smb_fname;
+	uint32_t info_level;
+	uint8_t *entry_marshall_buf;
+};
+
+static void fetch_dos_mode_done(struct tevent_req *subreq);
+
+static struct tevent_req *fetch_dos_mode_send(
+			TALLOC_CTX *mem_ctx,
+			struct smb_vfs_ev_glue *evg,
+			struct files_struct *dir_fsp,
+			struct smb_filename **smb_fname,
+			uint32_t info_level,
+			uint8_t *entry_marshall_buf)
+{
+	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_req *req = NULL;
+	struct fetch_dos_mode_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct fetch_dos_mode_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct fetch_dos_mode_state) {
+		.dir_fsp = dir_fsp,
+		.info_level = info_level,
+		.entry_marshall_buf = entry_marshall_buf,
+	};
+
+	state->smb_fname = talloc_move(state, smb_fname);
+
+	subreq = dos_mode_at_send(state, evg, dir_fsp, state->smb_fname);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fetch_dos_mode_done, req);
+
+	return req;
+}
+
+static void fetch_dos_mode_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct fetch_dos_mode_state *state =
+		tevent_req_data(req,
+		struct fetch_dos_mode_state);
+	uint32_t dfs_dosmode;
+	uint32_t dosmode;
+	struct timespec btime_ts = {0};
+	off_t dosmode_off;
+	off_t btime_off;
+	NTSTATUS status;
+
+	status = dos_mode_at_recv(subreq, &dosmode);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		tevent_req_done(req);
+		return;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	switch (state->info_level) {
+	case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
+	case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+	case SMB_FIND_FILE_DIRECTORY_INFO:
+	case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
+	case SMB_FIND_ID_FULL_DIRECTORY_INFO:
+		btime_off = 8;
+		dosmode_off = 56;
+		break;
+
+	default:
+		DBG_ERR("Unsupported info_level [%u]\n", state->info_level);
+		tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
+		return;
+	}
+
+
+	dfs_dosmode = IVAL(state->entry_marshall_buf, dosmode_off);
+	if (dfs_dosmode == 0) {
+		/*
+		 * DOS mode for a DFS link, only overwrite if still set to 0 and
+		 * not already populated by the lower layer for a DFS link in
+		 * smbd_dirptr_lanman2_mode_fn().
+		 */
+		SIVAL(state->entry_marshall_buf, dosmode_off, dosmode);
+	}
+
+	btime_ts = get_create_timespec(state->dir_fsp->conn,
+				       NULL,
+				       state->smb_fname);
+	if (lp_dos_filetime_resolution(SNUM(state->dir_fsp->conn))) {
+		dos_filetime_timespec(&btime_ts);
+	}
+
+	put_long_date_timespec(state->dir_fsp->conn->ts_res,
+			       (char *)state->entry_marshall_buf + btime_off,
+			       btime_ts);
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS fetch_dos_mode_recv(struct tevent_req *req)
 {
 	NTSTATUS status;
 

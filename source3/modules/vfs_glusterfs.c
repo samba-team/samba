@@ -362,6 +362,11 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 	 */
 	lp_do_parameter(SNUM(handle->conn), "shadow:mountpoint", "/");
 
+	/*
+	 * Unless we have an async implementation of getxattrat turn this off.
+	 */
+	lp_do_parameter(SNUM(handle->conn), "smbd:async dosmode", "false");
+
 done:
 	if (ret < 0) {
 		if (fs)

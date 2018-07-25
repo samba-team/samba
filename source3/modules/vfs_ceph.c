@@ -132,6 +132,11 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 	handle->data = cmount;
 	cmount_cnt++;
 
+	/*
+	 * Unless we have an async implementation of getxattrat turn this off.
+	 */
+	lp_do_parameter(SNUM(handle->conn), "smbd:async dosmode", "false");
+
 	return 0;
 
 err_cm_release:

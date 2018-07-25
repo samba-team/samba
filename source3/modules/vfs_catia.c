@@ -158,6 +158,19 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 	return status;
 }
 
+static int catia_connect(struct vfs_handle_struct *handle,
+			 const char *service,
+			 const char *user)
+{
+	/*
+	 * Unless we have an async implementation of get_dos_attributes turn
+	 * this off.
+	 */
+	lp_do_parameter(SNUM(handle->conn), "smbd:async dosmode", "false");
+
+	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+}
+
 static DIR *catia_opendir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const char *mask,
@@ -2405,6 +2418,8 @@ static NTSTATUS catia_set_dos_attributes(struct vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_catia_fns = {
+	.connect_fn = catia_connect,
+
 	/* Directory operations */
 	.mkdir_fn = catia_mkdir,
 	.rmdir_fn = catia_rmdir,
