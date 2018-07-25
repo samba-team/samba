@@ -94,7 +94,9 @@ def configure(conf):
         conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
     # We crash without vfs_default
-    required_static_modules.extend(TO_LIST('vfs_default'))
+    # and vfs_not_implemented provides helper function
+    # for other modules
+    required_static_modules.extend(TO_LIST('vfs_default vfs_not_implemented'))
 
     conf.CHECK_HEADERS('netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h linux/ioctl.h')

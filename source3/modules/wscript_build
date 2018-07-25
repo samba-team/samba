@@ -37,6 +37,10 @@ bld.SAMBA3_SUBSYSTEM('OFFLOAD_TOKEN',
 bld.SAMBA3_SUBSYSTEM('STRING_REPLACE',
                     source='string_replace.c')
 
+#
+# This is always be static, see
+# source3/wscript: required_static_modules
+#
 bld.SAMBA3_MODULE('vfs_default',
                  subsystem='vfs',
                  source='vfs_default.c',
@@ -44,6 +48,18 @@ bld.SAMBA3_MODULE('vfs_default',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_default'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_default'))
+
+#
+# This is always be static, see
+# source3/wscript: required_static_modules
+#
+bld.SAMBA3_MODULE('vfs_not_implemented',
+                 subsystem='vfs',
+                 source='vfs_not_implemented.c',
+                 deps='samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_not_implemented'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_not_implemented'))
 
 bld.SAMBA3_MODULE('vfs_audit',
                  subsystem='vfs',
