@@ -1627,7 +1627,7 @@ server_lookup:
 			NULL, NULL, &server);
 
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
-	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", sp);
+	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", spn);
 	goto out;
     } else if (ret == HDB_ERR_WRONG_REALM) {
 	if (ref_realm)
