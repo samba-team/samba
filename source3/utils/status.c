@@ -180,7 +180,8 @@ static int print_share_mode(struct file_id fid,
 		} else if (e->op_type & LEVEL_II_OPLOCK) {
 			d_printf("LEVEL_II        ");
 		} else if (e->op_type == LEASE_OPLOCK) {
-			uint32_t lstate = e->lease->current_state;
+			struct share_mode_lease *l = &d->leases[e->lease_idx];
+			uint32_t lstate = l->current_state;
 			d_printf("LEASE(%s%s%s)%s%s%s      ",
 				 (lstate & SMB2_LEASE_READ)?"R":"",
 				 (lstate & SMB2_LEASE_WRITE)?"W":"",
