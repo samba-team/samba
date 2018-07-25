@@ -96,6 +96,7 @@ static void exit_server_common(enum server_exit_reason how,
 
 	if (client != NULL) {
 		sconn = client->sconn;
+		xconn = client->connections;
 	}
 
 	if (!exit_firsttime)
@@ -108,7 +109,7 @@ static void exit_server_common(enum server_exit_reason how,
 	/*
 	 * Here we typically have just one connection
 	 */
-	for (xconn = client->connections; xconn != NULL; xconn = xconn_next) {
+	for (; xconn != NULL; xconn = xconn_next) {
 		xconn_next = xconn->next;
 		DLIST_REMOVE(client->connections, xconn);
 
