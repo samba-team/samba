@@ -1119,7 +1119,7 @@ static NTSTATUS skel_durable_reconnect(struct vfs_handle_struct *handle,
 
 /* VFS operations structure */
 
-struct vfs_fn_pointers skel_transparent_fns = {
+static struct vfs_fn_pointers skel_transparent_fns = {
 	/* Disk operations */
 
 	.connect_fn = skel_connect,
