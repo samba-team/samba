@@ -329,17 +329,7 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	 */
 
 	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-
-		e->stale = false;
-		e->lease = NULL;
-		if (e->op_type != LEASE_OPLOCK) {
-			continue;
-		}
-		if (e->lease_idx >= d->num_leases) {
-			continue;
-		}
-		e->lease = &d->leases[e->lease_idx];
+		d->share_modes[i].stale = false;
 	}
 	d->modified = false;
 	d->fresh = false;
@@ -836,9 +826,7 @@ static int share_mode_traverse_fn(struct db_record *rec, void *_state)
 	}
 
 	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *entry = &d->share_modes[i];
-		entry->stale = false; /* [skip] in idl */
-		entry->lease = &d->leases[entry->lease_idx];
+		d->share_modes[i].stale = false;
 	}
 
 	if (DEBUGLEVEL > 10) {

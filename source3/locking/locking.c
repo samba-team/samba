@@ -713,7 +713,6 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 	for (i=0; i<d->num_share_modes; i++) {
 		if (d->share_modes[i].lease_idx == d->num_leases) {
 			d->share_modes[i].lease_idx = lease_idx;
-			d->share_modes[i].lease = &d->leases[lease_idx];
 		}
 	}
 
@@ -816,14 +815,10 @@ bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
 {
 	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *tmp, *e;
-	struct share_mode_lease *lease = NULL;
 
-	if (lease_idx == UINT32_MAX) {
-		lease = NULL;
-	} else if (lease_idx >= d->num_leases) {
+	if ((lease_idx != UINT32_MAX) &&
+	    (lease_idx >= d->num_leases)) {
 		return false;
-	} else {
-		lease = &d->leases[lease_idx];
 	}
 
 	tmp = talloc_realloc(d, d->share_modes, struct share_mode_entry,
@@ -844,7 +839,6 @@ bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
 	e->op_mid = mid;
 	e->op_type = op_type;
 	e->lease_idx = lease_idx;
-	e->lease = lease;
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
 	e->share_file_id = fsp->fh->gen_id;

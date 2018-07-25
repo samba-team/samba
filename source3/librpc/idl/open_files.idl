@@ -61,7 +61,6 @@ interface open_files
 		 * to store this share_mode_entry on disk.
 		 */
 		[skip] boolean8	stale;
-		[ignore] share_mode_lease *lease;
 	} share_mode_entry;
 
 	typedef [public] struct {
