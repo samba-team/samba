@@ -221,13 +221,12 @@ NTSTATUS idmap_tdb_common_set_mapping(struct idmap_domain * dom,
 	struct idmap_tdb_common_context *ctx;
 	struct idmap_tdb_common_set_mapping_context state;
 	NTSTATUS ret;
-	char *ksidstr, *kidstr;
+	char *ksidstr = NULL;
+	char *kidstr = NULL;
 
 	if (!map || !map->sid) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	ksidstr = kidstr = NULL;
 
 	/* TODO: should we filter a set_mapping using low/high filters ? */
 
