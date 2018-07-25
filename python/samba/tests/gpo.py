@@ -28,12 +28,14 @@ from samba.gp_sec_ext import gp_krb_ext, gp_access_ext
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
 from samba.gpclass import gp_inf_ext
+from samba.gp_smb_conf_ext import gp_smb_conf_ext
 import logging
 from samba.credentials import Credentials
 from samba.compat import get_bytes
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack
 import codecs
+from shutil import copyfile
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -621,3 +623,84 @@ class GPOTests(tests.TestCase):
 
         unstage_file(gpofile % guid)
         unstage_file(reg_pol % guid)
+
+    def test_smb_conf_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        entries = []
+        e = preg.entry()
+        e.keyname = 'Software\\Policies\\Samba\\smb_conf\\template homedir'
+        e.type = 1
+        e.data = '/home/samba/%D/%U'
+        e.valuename = 'template homedir'
+        entries.append(e)
+        e = preg.entry()
+        e.keyname = 'Software\\Policies\\Samba\\smb_conf\\apply group policies'
+        e.type = 4
+        e.data = 1
+        e.valuename = 'apply group policies'
+        entries.append(e)
+        e = preg.entry()
+        e.keyname = 'Software\\Policies\\Samba\\smb_conf\\ldap timeout'
+        e.type = 4
+        e.data = 9999
+        e.valuename = 'ldap timeout'
+        entries.append(e)
+        stage = preg.file()
+        stage.num_entries = len(entries)
+        stage.entries = entries
+
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Failed to create the Registry.pol file')
+
+        with NamedTemporaryFile(suffix='_smb.conf') as f:
+            copyfile(self.lp.configfile, f.name)
+            lp = LoadParm(f.name)
+
+            # Initialize the group policy extension
+            ext = gp_smb_conf_ext(logger, lp, machine_creds, store)
+            ext.process_group_policy([], gpos)
+            lp = LoadParm(f.name)
+
+            template_homedir = lp.get('template homedir')
+            self.assertEquals(template_homedir, '/home/samba/%D/%U',
+                              'template homedir was not applied')
+            apply_group_policies = lp.get('apply group policies')
+            self.assertTrue(apply_group_policies,
+                            'apply group policies was not applied')
+            ldap_timeout = lp.get('ldap timeout')
+            self.assertEquals(ldap_timeout, 9999, 'ldap timeout was not applied')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+
+            lp = LoadParm(f.name)
+
+            template_homedir = lp.get('template homedir')
+            self.assertEquals(template_homedir, self.lp.get('template homedir'),
+                              'template homedir was not unapplied')
+            apply_group_policies = lp.get('apply group policies')
+            self.assertEquals(apply_group_policies, self.lp.get('apply group policies'),
+                              'apply group policies was not unapplied')
+            ldap_timeout = lp.get('ldap timeout')
+            self.assertEquals(ldap_timeout, self.lp.get('ldap timeout'),
+                              'ldap timeout was not unapplied')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
