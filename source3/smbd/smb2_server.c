@@ -1097,6 +1097,7 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 		/* TODO: cancel pending requests */
 		DLIST_REMOVE(client->connections, xconn);
 		TALLOC_FREE(xconn);
+		DO_PROFILE_INC(disconnect);
 		return;
 	}
 
