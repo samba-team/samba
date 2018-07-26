@@ -398,18 +398,12 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			 * in anycase.
 			 */
 			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-				if (!ac->indirsync) {
-					/*
-					 * do not return this entry if attribute is
-					 * part of the search filter
-					 */
-					if (dsdb_attr_in_parse_tree(ac->req->op.search.tree,
-								msg->elements[i].name)) {
-						talloc_free(tmp_ctx);
-						return LDB_SUCCESS;
-					}
-					aclread_mark_inaccesslible(&msg->elements[i]);
-				} else {
+				bool in_search_filter;
+
+				in_search_filter = dsdb_attr_in_parse_tree(ac->req->op.search.tree,
+								msg->elements[i].name);
+
+				if (ac->indirsync) {
 					/*
 					 * We are doing dirysnc answers
 					 * and the object shouldn't be returned (normally)
@@ -418,13 +412,22 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 					 * (remove the object if it is not deleted, or return
 					 * just the objectGUID if it's deleted).
 					 */
-					if (dsdb_attr_in_parse_tree(ac->req->op.search.tree,
-								msg->elements[i].name)) {
+					if (in_search_filter) {
 						ldb_msg_remove_attr(msg, "replPropertyMetaData");
 						break;
 					} else {
 						aclread_mark_inaccesslible(&msg->elements[i]);
 					}
+				} else {
+					/*
+					 * do not return this entry if attribute is
+					 * part of the search filter
+					 */
+					if (in_search_filter) {
+						talloc_free(tmp_ctx);
+						return LDB_SUCCESS;
+					}
+					aclread_mark_inaccesslible(&msg->elements[i]);
 				}
 			} else if (ret != LDB_SUCCESS) {
 				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
