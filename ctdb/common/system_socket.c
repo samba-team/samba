@@ -220,13 +220,11 @@ bool parse_ip_mask(const char *str,
 
 	ZERO_STRUCT(*addr);
 
-	len = strlen(str);
+	len = strlcpy(s, str, sizeof(s));
 	if (len >= sizeof(s)) {
 		DBG_ERR("Address %s is unreasonably long\n", str);
 		return false;
 	}
-
-	strncpy(s, str, len+1);
 
 	p = rindex(s, '/');
 	if (p == NULL) {
