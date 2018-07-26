@@ -400,11 +400,7 @@ bool fsp_lease_update(struct share_mode_lock *lck,
 	struct share_mode_lease *l = NULL;
 
 	idx = find_share_mode_lease(d, client_guid, &lease->lease.lease_key);
-	if (idx != -1) {
-		l = &d->leases[idx];
-	}
-
-	if (l == NULL) {
+	if (idx == -1) {
 		DEBUG(1, ("%s: Could not find lease entry\n", __func__));
 		TALLOC_FREE(lease->timeout);
 		lease->lease.lease_state = SMB2_LEASE_NONE;
@@ -412,6 +408,8 @@ bool fsp_lease_update(struct share_mode_lock *lck,
 		lease->lease.lease_flags = 0;
 		return false;
 	}
+
+	l = &d->leases[idx];
 
 	DEBUG(10,("%s: refresh lease state\n", __func__));
 
