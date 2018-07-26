@@ -5005,7 +5005,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 			 * Send the breaks and then return
 			 * SMB2_LEASE_NONE in the lease handle
 			 * to cause them to acknowledge the
-			 * lease break. Consulatation with
+			 * lease break. Consultation with
 			 * Microsoft engineering confirmed
 			 * this approach is safe.
 			 */
