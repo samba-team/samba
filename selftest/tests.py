@@ -161,3 +161,5 @@ plantestsuite("samba.unittests.lib_util_modules", "none",
 
 plantestsuite("samba.unittests.smb1cli_session", "none",
               [os.path.join(bindir(), "default/libcli/smb/test_smb1cli_session")])
+plantestsuite("samba.unittests.ntlm_check", "none",
+              [os.path.join(bindir(), "default/libcli/auth/test_ntlm_check")])
