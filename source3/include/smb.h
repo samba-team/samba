@@ -700,10 +700,6 @@ struct kernel_oplocks_ops {
 			   files_struct *fsp, int oplock_type);
 	void (*release_oplock)(struct kernel_oplocks *ctx,
 			       files_struct *fsp, int oplock_type);
-	void (*contend_level2_oplocks_begin)(files_struct *fsp,
-					     enum level2_contention_type type);
-	void (*contend_level2_oplocks_end)(files_struct *fsp,
-					   enum level2_contention_type type);
 };
 
 #include "smb_macros.h"

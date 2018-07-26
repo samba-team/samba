@@ -1298,31 +1298,13 @@ done:
 void smbd_contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type)
 {
-	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
-			(koplocks != NULL);
-
-	if (use_kernel && koplocks->ops->contend_level2_oplocks_begin) {
-		koplocks->ops->contend_level2_oplocks_begin(fsp, type);
-		return;
-	}
-
 	contend_level2_oplocks_begin_default(fsp, type);
 }
 
 void smbd_contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type)
 {
-	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
-			(koplocks != NULL);
-
-	/* Only kernel oplocks implement this so far */
-	if (use_kernel && koplocks->ops->contend_level2_oplocks_end) {
-		koplocks->ops->contend_level2_oplocks_end(fsp, type);
-	}
+	return;
 }
 
 /****************************************************************************
