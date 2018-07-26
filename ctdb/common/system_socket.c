@@ -775,7 +775,7 @@ int ctdb_sys_read_tcp_packet(int s,
 
 		/* make sure its not a short packet */
 		if (offsetof(struct tcphdr, th_ack) + 4 +
-		    (ip->ip_hl*4) > ret) {
+		    (ip->ip_hl*4) > pkthdr.len) {
 			return -1;
 		}
 		/* TCP */
