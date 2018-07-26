@@ -274,12 +274,10 @@ int ctdb_sock_addr_from_string(const char *str,
 
 	/* Parse out port number and then IP address */
 
-	len = strlen(str);
+	len = strlcpy(s, str, sizeof(s));
 	if (len >= sizeof(s)) {
 		return EINVAL;
 	}
-
-	strncpy(s, str, len+1);
 
 	p = rindex(s, ':');
 	if (p == NULL) {
