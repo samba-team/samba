@@ -1052,6 +1052,23 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	add_oplock_timeout_handler(fsp);
 }
 
+static bool file_has_read_oplocks(struct files_struct *fsp)
+{
+	struct byte_range_lock *brl;
+	uint32_t num_read_oplocks = 0;
+
+	brl = brl_get_locks_readonly(fsp);
+	if (brl == NULL) {
+		return false;
+	}
+
+	num_read_oplocks = brl_num_read_oplocks(brl);
+
+	DBG_DEBUG("num_read_oplocks = %"PRIu32"\n", num_read_oplocks);
+
+	return (num_read_oplocks != 0);
+}
+
 struct break_to_none_state {
 	struct smbd_server_connection *sconn;
 	struct file_id id;
@@ -1074,8 +1091,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct tevent_immediate *im;
 	struct break_to_none_state *state;
-	struct byte_range_lock *brl;
-	uint32_t num_read_oplocks = 0;
+	bool has_read_oplocks;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -1092,14 +1108,8 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		return;
 	}
 
-	brl = brl_get_locks_readonly(fsp);
-	if (brl != NULL) {
-		num_read_oplocks = brl_num_read_oplocks(brl);
-	}
-
-	DEBUG(10, ("num_read_oplocks = %"PRIu32"\n", num_read_oplocks));
-
-	if (num_read_oplocks == 0) {
+	has_read_oplocks = file_has_read_oplocks(fsp);
+	if (!has_read_oplocks) {
 		DEBUG(10, ("No read oplocks around\n"));
 		return;
 	}
