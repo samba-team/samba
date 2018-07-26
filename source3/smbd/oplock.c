@@ -1153,7 +1153,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 
 	/*
 	 * do_break_to_none() only operates on the
-	 * locking.tdb and send network packets to
+	 * locking.tdb and sends network packets to
 	 * the client. That doesn't require any
 	 * impersonation, so we just use the
 	 * raw tevent context here.
