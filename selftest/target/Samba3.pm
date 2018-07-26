@@ -775,6 +775,7 @@ sub setup_simpleserver
 	read only = no
 	vfs objects = aio_pthread
 	aio_pthread:aio open = yes
+	smbd:async dosmode = no
 
 [vfs_aio_fork]
 	path = $prefix_abs/share
