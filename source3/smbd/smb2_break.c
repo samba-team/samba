@@ -386,14 +386,16 @@ static struct tevent_req *smbd_smb2_lease_break_send(
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			DEBUG(10, ("No record for lease key found\n"));
 		}
-	} else if (!NT_STATUS_IS_OK(lls.status)) {
-		status = lls.status;
-	} else if (lls.num_file_ids == 0) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, lls.status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (lls.num_file_ids == 0) {
+		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return tevent_req_post(req, ev);
 	}
 
