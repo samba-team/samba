@@ -572,7 +572,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self._test_full_sync_link_conflict(sync_order=DC1_TO_DC2)
         self._test_full_sync_link_conflict(sync_order=DC2_TO_DC1)
 
-    def _test_conflict_single_valued_link_deleted_winner(self, sync_order):
+    def _singleval_link_conflict_deleted_winner(self, sync_order):
         """
         Tests a single-value link conflict where the more-up-to-date link value
         is deleted.
@@ -619,11 +619,12 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self._check_replicated_links(src_ou, [link1, link2])
 
     def test_conflict_single_valued_link_deleted_winner(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
-        self._test_conflict_single_valued_link_deleted_winner(sync_order=DC1_TO_DC2)
-        self._test_conflict_single_valued_link_deleted_winner(sync_order=DC2_TO_DC1)
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
+        self._singleval_link_conflict_deleted_winner(sync_order=DC1_TO_DC2)
+        self._singleval_link_conflict_deleted_winner(sync_order=DC2_TO_DC1)
 
-    def _test_conflict_single_valued_link_deleted_loser(self, sync_order):
+    def _singleval_link_conflict_deleted_loser(self, sync_order):
         """
         Tests a single-valued link conflict, where the losing link value is
         deleted.
@@ -673,9 +674,10 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self._check_replicated_links(src_ou, [link1, link2])
 
     def test_conflict_single_valued_link_deleted_loser(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
-        self._test_conflict_single_valued_link_deleted_loser(sync_order=DC1_TO_DC2)
-        self._test_conflict_single_valued_link_deleted_loser(sync_order=DC2_TO_DC1)
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
+        self._singleval_link_conflict_deleted_loser(sync_order=DC1_TO_DC2)
+        self._singleval_link_conflict_deleted_loser(sync_order=DC2_TO_DC1)
 
     def _test_conflict_existing_single_valued_link(self, sync_order):
         """
