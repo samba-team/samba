@@ -41,6 +41,7 @@ from samba.credentials import Credentials
 from samba import gensec
 import base64
 
+
 class PasswordSettingsTestCase(PasswordTestCase):
     def setUp(self):
         super(PasswordSettingsTestCase, self).setUp()

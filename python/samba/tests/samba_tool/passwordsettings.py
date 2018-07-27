@@ -21,6 +21,7 @@ import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.tests.pso import PasswordSettings, TestUser
 
+
 class PwdSettingsCmdTestCase(SambaToolCmdTest):
     """Tests for 'samba-tool domain passwordsettings' subcommands"""
 

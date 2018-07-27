@@ -42,6 +42,7 @@ from samba.dcerpc import drsuapi, misc
 DC1_TO_DC2 = 1
 DC2_TO_DC1 = 2
 
+
 class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaLinkConflictTestCase, self).setUp()

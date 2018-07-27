@@ -24,8 +24,10 @@ from samba.auth import system_session
 
 NEVER_TIMESTAMP = int(-0x8000000000000000)
 
+
 def pso_container(samdb):
     return "CN=Password Settings Container,CN=System,%s" % samdb.domain_dn()
+
 
 def timestamp_to_mins(timestamp_str):
     """Converts a timestamp in -100 nanosecond units to minutes"""
@@ -37,19 +39,23 @@ def timestamp_to_mins(timestamp_str):
     else:
         return abs(int(timestamp_str)) / (1e7 * 60)
 
+
 def timestamp_to_days(timestamp_str):
     """Converts a timestamp in -100 nanosecond units to days"""
     return timestamp_to_mins(timestamp_str) / (60 * 24)
+
 
 def mins_to_timestamp(mins):
     """Converts a value in minutes to -100 nanosecond units"""
     timestamp = -int((1e7) * 60 * mins)
     return str(timestamp)
 
+
 def days_to_timestamp(days):
     """Converts a value in days to -100 nanosecond units"""
     timestamp = mins_to_timestamp(days * 60 * 24)
     return str(timestamp)
+
 
 def show_pso_by_dn(outf, samdb, dn, show_applies_to=True):
     """Displays the password settings for a PSO specified by DN"""
@@ -100,6 +106,7 @@ def show_pso_by_dn(outf, samdb, dn, show_applies_to=True):
         else:
             outf.write("\nNote: PSO does not apply to any users or groups.\n")
 
+
 def check_pso_valid(samdb, pso_dn, name):
     """Gracefully bail out if we can't view/modify the PSO specified"""
     # the base scope search for the PSO throws an error if it doesn't exist
@@ -115,6 +122,7 @@ def check_pso_valid(samdb, pso_dn, name):
     # search succeeds, but it doesn't return any attributes
     if 'msDS-PasswordSettingsPrecedence' not in res[0]:
         raise CommandError("You may not have permission to view/modify PSOs")
+
 
 def show_pso_for_user(outf, samdb, username):
     """Displays the password settings for a specific user"""
@@ -145,6 +153,7 @@ def show_pso_for_user(outf, samdb, username):
             outf.write("\nNote: PSO applies directly to user (any group PSOs are overridden)\n")
         else:
             outf.write("\nPSO applies to user via group membership.\n")
+
 
 def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
                      complexity=None, precedence=None, store_plaintext=None,
@@ -217,6 +226,7 @@ def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
 
     return m
 
+
 def check_pso_constraints(min_pwd_length=None, history_length=None,
                           min_pwd_age=None, max_pwd_age=None):
     """Checks PSO settings fall within valid ranges"""
@@ -255,6 +265,7 @@ pwd_settings_options = [
     Option("--reset-account-lockout-after",
       help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer in mins>). Default is domain setting.", type=int)]
 
+
 def num_options_in_args(options, args):
     """
     Returns the number of options specified that are present in the args.
@@ -268,6 +279,7 @@ def num_options_in_args(options, args):
             if str(opt) in arg:
                 num_opts += 1
     return num_opts
+
 
 class cmd_domain_pwdsettings_pso_create(Command):
     """Creates a new Password Settings Object (PSO).
@@ -412,6 +424,7 @@ class cmd_domain_pwdsettings_pso_create(Command):
                 raise CommandError("Failed to create PSO '%s': %s" % (pso_dn,
                                                                       msg))
 
+
 class cmd_domain_pwdsettings_pso_set(Command):
     """Modifies a Password Settings Object (PSO)."""
 
@@ -529,6 +542,7 @@ def pso_cmp(a, b):
     b_precedence = int(b['msDS-PasswordSettingsPrecedence'][0])
     return a_precedence - b_precedence
 
+
 class cmd_domain_pwdsettings_pso_list(Command):
     """Lists all Password Settings Objects (PSOs)."""
 
@@ -571,6 +585,7 @@ class cmd_domain_pwdsettings_pso_list(Command):
         for pso in pso_list:
             precedence = pso['msDS-PasswordSettingsPrecedence']
             self.outf.write("%-10s | %s\n" % (precedence, pso['name']))
+
 
 class cmd_domain_pwdsettings_pso_show(Command):
     """Display a Password Settings Object's details."""
@@ -754,6 +769,7 @@ class cmd_domain_pwdsettings_pso_unapply(Command):
                                                                       msg))
         self.message("PSO '%s' no longer applies to '%s'" % (psoname,
                                                              user_or_group))
+
 
 class cmd_domain_passwordsettings_pso(SuperCommand):
     """Manage fine-grained Password Settings Objects (PSOs)."""

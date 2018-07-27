@@ -36,6 +36,7 @@ import random
 
 from samba.dcerpc import drsuapi
 
+
 class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaSyncIntegrityTestCase, self).setUp()

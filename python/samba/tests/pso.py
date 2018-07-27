@@ -25,6 +25,7 @@ from ldb import FLAG_MOD_DELETE, FLAG_MOD_ADD, FLAG_MOD_REPLACE
 from samba.dcerpc.samr import (DOMAIN_PASSWORD_COMPLEX,
                                DOMAIN_PASSWORD_STORE_CLEARTEXT)
 
+
 class TestUser:
     def __init__(self, username, samdb, userou=None):
         initial_password = "Initial12#"
@@ -144,6 +145,7 @@ userPassword: %s
         m["primaryGroupID"] = ldb.MessageElement(group_id, FLAG_MOD_REPLACE,
                                                  "primaryGroupID")
         self.ldb.modify(m)
+
 
 class PasswordSettings:
     def default_settings(self, samdb):
