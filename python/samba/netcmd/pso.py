@@ -150,9 +150,14 @@ def show_pso_for_user(outf, samdb, username):
         # PSOs that apply directly to a user don't necessarily have the best
         # precedence, which could be a little confusing for PSO management
         if 'msDS-PSOApplied' in res[0]:
-            outf.write("\nNote: PSO applies directly to user (any group PSOs are overridden)\n")
+            outf.write("\nNote: PSO applies directly to user "
+                       "(any group PSOs are overridden)\n")
         else:
             outf.write("\nPSO applies to user via group membership.\n")
+
+
+def msg_add_attr(msg, attr_name, value, ldb_oper):
+    msg[attr_name] = ldb.MessageElement(value, ldb_oper, attr_name)
 
 
 def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
@@ -173,32 +178,30 @@ def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
         ldb_oper = ldb.FLAG_MOD_REPLACE
 
     if precedence is not None:
-        m["msDS-PasswordSettingsPrecedence"] = ldb.MessageElement(str(precedence),
-              ldb_oper, "msDS-PasswordSettingsPrecedence")
+        msg_add_attr(m, "msDS-PasswordSettingsPrecedence", str(precedence),
+                     ldb_oper)
 
     if complexity is not None:
         bool_str = "TRUE" if complexity == "on" else "FALSE"
-        m["msDS-PasswordComplexityEnabled"] = ldb.MessageElement(bool_str,
-              ldb_oper, "msDS-PasswordComplexityEnabled")
+        msg_add_attr(m, "msDS-PasswordComplexityEnabled", bool_str, ldb_oper)
 
     if store_plaintext is not None:
         bool_str = "TRUE" if store_plaintext == "on" else "FALSE"
-        m["msDS-msDS-PasswordReversibleEncryptionEnabled"] = \
-            ldb.MessageElement(bool_str, ldb_oper,
-                               "msDS-PasswordReversibleEncryptionEnabled")
+        msg_add_attr(m, "msDS-PasswordReversibleEncryptionEnabled",
+                     bool_str, ldb_oper)
 
     if history_length is not None:
-        m["msDS-PasswordHistoryLength"] = ldb.MessageElement(str(history_length),
-            ldb_oper, "msDS-PasswordHistoryLength")
+        msg_add_attr(m, "msDS-PasswordHistoryLength", str(history_length),
+                     ldb_oper)
 
     if min_pwd_length is not None:
-        m["msDS-MinimumPasswordLength"] = ldb.MessageElement(str(min_pwd_length),
-            ldb_oper, "msDS-MinimumPasswordLength")
+        msg_add_attr(m, "msDS-MinimumPasswordLength", str(min_pwd_length),
+                     ldb_oper)
 
     if min_pwd_age is not None:
         min_pwd_age_ticks = days_to_timestamp(min_pwd_age)
-        m["msDS-MinimumPasswordAge"] = ldb.MessageElement(min_pwd_age_ticks,
-            ldb_oper, "msDS-MinimumPasswordAge")
+        msg_add_attr(m, "msDS-MinimumPasswordAge", min_pwd_age_ticks,
+                     ldb_oper)
 
     if max_pwd_age is not None:
         # Windows won't let you set max-pwd-age to zero. Here we take zero to
@@ -207,22 +210,20 @@ def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
             max_pwd_age_ticks = str(NEVER_TIMESTAMP)
         else:
             max_pwd_age_ticks = days_to_timestamp(max_pwd_age)
-        m["msDS-MaximumPasswordAge"] = ldb.MessageElement(max_pwd_age_ticks,
-            ldb_oper, "msDS-MaximumPasswordAge")
+        msg_add_attr(m, "msDS-MaximumPasswordAge", max_pwd_age_ticks, ldb_oper)
 
     if lockout_duration is not None:
         lockout_duration_ticks = mins_to_timestamp(lockout_duration)
-        m["msDS-LockoutDuration"] = ldb.MessageElement(lockout_duration_ticks,
-            ldb_oper, "msDS-LockoutDuration")
+        msg_add_attr(m, "msDS-LockoutDuration", lockout_duration_ticks,
+                     ldb_oper)
 
     if lockout_threshold is not None:
-        m["msDS-LockoutThreshold"] = ldb.MessageElement(str(lockout_threshold),
-            ldb_oper, "msDS-LockoutThreshold")
+        msg_add_attr(m, "msDS-LockoutThreshold", str(lockout_threshold),
+                     ldb_oper)
 
     if reset_account_lockout_after is not None:
-        observation_window_ticks = mins_to_timestamp(reset_account_lockout_after)
-        m["msDS-LockoutObservationWindow"] = ldb.MessageElement(observation_window_ticks,
-            ldb_oper, "msDS-LockoutObservationWindow")
+        msg_add_attr(m, "msDS-LockoutObservationWindow",
+                     mins_to_timestamp(reset_account_lockout_after), ldb_oper)
 
     return m
 
