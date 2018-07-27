@@ -508,7 +508,7 @@ def CHECK_STANDARD_LIBPATH(conf):
     # at least gcc and clang support this:
     try:
         cmd = conf.env.CC + ['-print-search-dirs']
-        out = Utils.cmd_output(cmd).split('\n')
+        out = Utils.cmd_output(cmd).decode('utf8').split('\n')
     except ValueError:
         # option not supported by compiler - use a standard list of directories
         dirlist = [ '/usr/lib', '/usr/lib64' ]
