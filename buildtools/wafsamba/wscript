@@ -560,7 +560,7 @@ struct foo bar = { .y = 'X', .x = 1 };
     # Extra sanity check.
     if conf.CONFIG_SET("HAVE_BIG_ENDIAN") == conf.CONFIG_SET("HAVE_LITTLE_ENDIAN"):
         Logs.error("Failed endian determination.  The PDP-11 is back?")
-	sys.exit(1)
+        sys.exit(1)
     else:
         if conf.CONFIG_SET("HAVE_BIG_ENDIAN"):
             conf.DEFINE('WORDS_BIGENDIAN', 1)

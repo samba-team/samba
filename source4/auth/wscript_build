@@ -54,8 +54,8 @@ for env in bld.gen_python_environments():
 	pyparam_util = bld.pyembed_libname('pyparam_util')
 	pyldb_util = bld.pyembed_libname('pyldb-util')
 	pycredentials = 'pycredentials'
-        if bld.env['IS_EXTRA_PYTHON']:
-            pycredentials = 'extra-' + pycredentials
+	if bld.env['IS_EXTRA_PYTHON']:
+		pycredentials = 'extra-' + pycredentials
 	bld.SAMBA_PYTHON('pyauth',
 		source='pyauth.c',
 		public_deps='auth_system_session',

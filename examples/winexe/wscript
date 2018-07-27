@@ -9,23 +9,23 @@ def configure(conf):
 
     for a in AR32:
         for t in TC:
-	    if conf.find_program(a + '-' + t + '-gcc', var='WINEXE_CC_WIN32'):
-	        found = True
-		break
-	if found:
+            if conf.find_program(a + '-' + t + '-gcc', var='WINEXE_CC_WIN32'):
+                found = True
+                break
+        if found:
             conf.DEFINE('HAVE_WINEXE_CC_WIN32', 1);
-	    break
+            break
 
     found = False
 
     for a in AR64:
         for t in TC:
-	    if conf.find_program(a + '-' + t + '-gcc', var='WINEXE_CC_WIN64'):
-	        found = True
-		break
-	if found:
+            if conf.find_program(a + '-' + t + '-gcc', var='WINEXE_CC_WIN64'):
+                found = True
+                break
+        if found:
             conf.DEFINE('HAVE_WINEXE_CC_WIN64', 1);
-	    break
+            break
 
     conf.DEFINE("WINEXE_LDFLAGS",
                 "-s -Wall -Wl,-Bstatic -Wl,-Bdynamic -luserenv")
