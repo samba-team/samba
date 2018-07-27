@@ -81,8 +81,8 @@ samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
 samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"
-samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,NONE ${EXTRA_PYTHON}"
-samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent"
+samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,popt,NONE ${EXTRA_PYTHON}"
+samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent,!popt"
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs + " ${EXTRA_PYTHON}"
 
 if os.environ.get("AUTOBUILD_NO_EXTRA_PYTHON", "0") == "1":
