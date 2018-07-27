@@ -21,12 +21,9 @@
 #
 
 import ldb
-from ldb import SCOPE_BASE, FLAG_MOD_DELETE, FLAG_MOD_ADD, FLAG_MOD_REPLACE
+from ldb import FLAG_MOD_DELETE, FLAG_MOD_ADD, FLAG_MOD_REPLACE
 from samba.dcerpc.samr import (DOMAIN_PASSWORD_COMPLEX,
                                DOMAIN_PASSWORD_STORE_CLEARTEXT)
-from samba.credentials import Credentials
-from samba.samdb import SamDB
-from samba import gensec
 
 class TestUser:
     def __init__(self, username, samdb, userou=None):

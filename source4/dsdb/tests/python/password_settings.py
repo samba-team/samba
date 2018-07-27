@@ -31,17 +31,14 @@
 
 import samba.tests
 import ldb
-from ldb import SCOPE_BASE, FLAG_MOD_DELETE, FLAG_MOD_ADD, FLAG_MOD_REPLACE
+from ldb import FLAG_MOD_DELETE, FLAG_MOD_ADD, FLAG_MOD_REPLACE
 from samba import dsdb
 import time
 from samba.tests.password_test import PasswordTestCase
 from samba.tests.pso import TestUser
 from samba.tests.pso import PasswordSettings
 from samba.credentials import Credentials
-from samba.samdb import SamDB
 from samba import gensec
-from samba.dcerpc.samr import DOMAIN_PASSWORD_STORE_CLEARTEXT
-from samba.auth import system_session
 import base64
 
 class PasswordSettingsTestCase(PasswordTestCase):

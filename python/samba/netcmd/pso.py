@@ -15,15 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import samba
 import samba.getopt as options
 import ldb
 from samba.samdb import SamDB
 from samba.netcmd import (Command, CommandError, Option, SuperCommand)
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.auth import system_session
-
-import pdb
 
 NEVER_TIMESTAMP = int(-0x8000000000000000)
 
