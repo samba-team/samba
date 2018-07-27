@@ -710,6 +710,11 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.set_attribute(priv_pso.dn, "msDS-PSOAppliesTo", user.dn,
                                samdb=self.ldb, operation=oper)
 
+    def format_password_for_ldif(self, password):
+        """Encodes/decodes the password so that it's accepted in an LDIF"""
+        pwd = '"{}"'.format(password)
+        return base64.b64encode(pwd.encode('utf-16-le')).decode('utf8')
+
     # The 'user add' case is a bit more complicated as you can't really query
     # the msDS-ResultantPSO attribute on a user that doesn't exist yet (it
     # won't have any group membership or PSOs applied directly against it yet).
@@ -735,7 +740,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
         # defaults, to prove that the DC will reject bad passwords during a
         # user add
         userdn = "CN=testuser,%s" % self.ou
-        password = base64.b64encode('"abcdef"'.encode('utf-16-le')).decode('utf8')
+        password = self.format_password_for_ldif('abcdef')
 
         # Note we use an LDIF operation to ensure that the password gets set
         # as part of the 'add' operation (whereas self.add_user() adds the user
@@ -759,7 +764,7 @@ unicodePwd:: %s
         # now use a password that meets the domain defaults, but doesn't meet
         # the PSO requirements. Note that Windows allows this, i.e. it doesn't
         # honour the PSO during the add operation
-        password = base64.b64encode('"abcde12#"'.encode('utf-16-le')).decode('utf8')
+        password = self.format_password_for_ldif('abcde12#')
         ldif = """
 dn: %s
 objectClass: user
@@ -795,7 +800,7 @@ unicodePwd:: %s
                 self.assertTrue('0000052D' in msg, msg)
 
         # check setting a password that meets the PSO settings works
-        password = base64.b64encode('"abcdefghijkl"'.encode('utf-16-le')).decode('utf8')
+        password = self.format_password_for_ldif('abcdefghijkl')
         ldif = """
 dn: %s
 changetype: modify
