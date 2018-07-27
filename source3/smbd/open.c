@@ -4924,8 +4924,6 @@ static NTSTATUS lease_match(connection_struct *conn,
 	state.file_existed = VALID_STAT(fname->st);
 	if (state.file_existed) {
 		state.id = vfs_file_id_from_sbuf(conn, &fname->st);
-	} else {
-		memset(&state.id, '\0', sizeof(state.id));
 	}
 
 	status = leases_db_parse(&sconn->client->connections->smb2.client.guid,
