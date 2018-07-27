@@ -3,11 +3,12 @@
 import Options
 
 def configure(conf):
-    conf.CHECK_HEADERS('float.h')
-    conf.CHECK_FUNCS('stpcpy')
-
     if conf.CHECK_POPT():
         conf.define('USING_SYSTEM_POPT', 1)
+        return
+
+    conf.CHECK_HEADERS('float.h')
+    conf.CHECK_FUNCS('stpcpy')
 
 def build(bld):
     if bld.CONFIG_SET('USING_SYSTEM_POPT'):
