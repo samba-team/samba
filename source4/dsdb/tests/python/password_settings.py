@@ -842,7 +842,6 @@ unicodePwd:: %s
         self.set_domain_pwdHistoryLength("0")
         user = self.add_user("testuser")
 
-        initial_pwd = user.get_password()
         self.assert_password_valid(user, "NewPwd12#")
         # we can set the exact same password again because there's no history
         self.assert_password_valid(user, "NewPwd12#")

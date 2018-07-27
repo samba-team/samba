@@ -224,7 +224,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         """Tests we can delete a PSO using the samba-tool"""
 
         pso_name = "test-delete-PSO"
-        pso_settings = self._create_pso(pso_name)
+        self._create_pso(pso_name)
 
         # check we can successfully delete the PSO
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
@@ -239,7 +239,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
 
         # check the object no longer exists in the DB
         try:
-            res = self.ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=['name'])
+            self.ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=['name'])
             self.fail("PSO shouldn't exist")
         except ldb.LdbError as e:
             (enum, estr) = e.args
@@ -346,7 +346,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
 
         # create a dummy PSO and a non-admin user
         pso_name = "test-unpriv-PSO"
-        test_pso = self._create_pso(pso_name)
+        self._create_pso(pso_name)
         user = TestUser("test-unpriv-user", self.ldb)
         self.obj_cleanup.append(user.dn)
         unpriv_auth = "-U%s%%%s" %(user.name, user.get_password())

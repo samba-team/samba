@@ -225,7 +225,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         """
         # create unique objects for the link
         target_ou = self.unique_dn("OU=target")
-        target_guid = self.add_object(self.ldb_dc1, target_ou)
+        self.add_object(self.ldb_dc1, target_ou)
         src_ou = self.unique_dn("OU=src")
         src_guid = self.add_object(self.ldb_dc1, src_ou)
         self.sync_DCs()
@@ -312,7 +312,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         src_dn = self.unique_dn("CN=src")
         src_guid = self.add_object(self.ldb_dc1, src_dn, objectclass="group")
         target_dn = self.unique_dn("CN=target")
-        target_guid = self.add_object(self.ldb_dc1, target_dn, objectclass="user")
+        self.add_object(self.ldb_dc1, target_dn, objectclass="user")
         self.sync_DCs()
 
         # link the src group to the same target user separately on each DC
@@ -392,7 +392,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
 
         # Add the link objects
         target_dn = self.unique_dn("CN=target")
-        target_guid = self.add_object(self.ldb_dc1, target_dn, objectclass="user")
+        self.add_object(self.ldb_dc1, target_dn, objectclass="user")
         src_dn = self.unique_dn("CN=src")
         src_guid = self.add_object(self.ldb_dc1, src_dn, objectclass="group")
         self.sync_DCs()
@@ -490,7 +490,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         src_dn = self.unique_dn("CN=src")
         src_guid = self.add_object(self.ldb_dc1, src_dn, objectclass="group")
         target_dn = self.unique_dn("CN=target")
-        target1_guid = self.add_object(self.ldb_dc1, target_dn, objectclass="user")
+        self.add_object(self.ldb_dc1, target_dn, objectclass="user")
         self.sync_DCs()
 
         # add the same link on both DCs
@@ -699,9 +699,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         """
         # create some objects and add a link
         src_ou = self.unique_dn("OU=src")
-        src_guid = self.add_object(self.ldb_dc1, src_ou)
+        self.add_object(self.ldb_dc1, src_ou)
         target1_ou = self.unique_dn("OU=target1")
-        target1_guid = self.add_object(self.ldb_dc1, target1_ou)
+        self.add_object(self.ldb_dc1, target1_ou)
         self.add_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
 
         # get the link info via replication
