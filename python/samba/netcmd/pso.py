@@ -412,7 +412,8 @@ class cmd_domain_pwdsettings_pso_create(Command):
             if num == ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS:
                 raise CommandError("Administrator permissions are needed to create a PSO.")
             else:
-                raise CommandError("Failed to create PSO '%s': %s" %(pso_dn, msg))
+                raise CommandError("Failed to create PSO '%s': %s" % (pso_dn,
+                                                                      msg))
 
 class cmd_domain_pwdsettings_pso_set(Command):
     """Modifies a Password Settings Object (PSO)."""
@@ -489,7 +490,7 @@ class cmd_domain_pwdsettings_pso_set(Command):
             show_pso_by_dn(self.outf, samdb, pso_dn, show_applies_to=False)
         except ldb.LdbError as e:
             (num, msg) = e.args
-            raise CommandError("Failed to update PSO '%s': %s" %(pso_dn, msg))
+            raise CommandError("Failed to update PSO '%s': %s" % (pso_dn, msg))
 
 
 class cmd_domain_pwdsettings_pso_delete(Command):
@@ -572,7 +573,7 @@ class cmd_domain_pwdsettings_pso_list(Command):
 
         for pso in pso_list:
             precedence = pso['msDS-PasswordSettingsPrecedence']
-            self.outf.write("%-10s | %s\n" %(precedence, pso['name']))
+            self.outf.write("%-10s | %s\n" % (precedence, pso['name']))
 
 class cmd_domain_pwdsettings_pso_show(Command):
     """Display a Password Settings Object's details."""
@@ -693,10 +694,10 @@ class cmd_domain_pwdsettings_pso_apply(Command):
                 raise CommandError("PSO '%s' already applies to '%s'"
                                    % (psoname, user_or_group))
             else:
-                raise CommandError("Failed to update PSO '%s': %s" %(psoname,
-                                                                     msg))
+                raise CommandError("Failed to update PSO '%s': %s" % (psoname,
+                                                                      msg))
 
-        self.message("PSO '%s' applied to '%s'" %(psoname, user_or_group))
+        self.message("PSO '%s' applied to '%s'" % (psoname, user_or_group))
 
 
 class cmd_domain_pwdsettings_pso_unapply(Command):
@@ -752,9 +753,10 @@ class cmd_domain_pwdsettings_pso_unapply(Command):
                 raise CommandError("PSO '%s' doesn't apply to '%s'"
                                    % (psoname, user_or_group))
             else:
-                raise CommandError("Failed to update PSO '%s': %s" %(psoname,
-                                                                     msg))
-        self.message("PSO '%s' no longer applies to '%s'" %(psoname, user_or_group))
+                raise CommandError("Failed to update PSO '%s': %s" % (psoname,
+                                                                      msg))
+        self.message("PSO '%s' no longer applies to '%s'" % (psoname,
+                                                             user_or_group))
 
 class cmd_domain_passwordsettings_pso(SuperCommand):
     """Manage fine-grained Password Settings Objects (PSOs)."""

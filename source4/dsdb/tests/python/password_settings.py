@@ -77,7 +77,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
 
     def add_group(self, group_name):
         """Creates a new group"""
-        dn = "CN=%s,%s" %(group_name, self.ou)
+        dn = "CN=%s,%s" % (group_name, self.ou)
         self.ldb.add({"dn": dn, "objectclass": "group"})
         return dn
 
@@ -116,7 +116,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
         except ldb.LdbError as e:
             (num, msg) = e.args
             # fail the test (rather than throw an error)
-            self.fail("Password '%s' unexpectedly rejected: %s" %(password, msg))
+            self.fail("Password '%s' unexpectedly rejected: %s" % (password, msg))
 
     def assert_PSO_applied(self, user, pso):
         """
@@ -126,8 +126,8 @@ class PasswordSettingsTestCase(PasswordTestCase):
         """
         resultant_pso = user.get_resultant_PSO()
         self.assertTrue(resultant_pso == pso.dn,
-                        "Expected PSO %s, not %s" %(pso.name,
-                                                    str(resultant_pso)))
+                        "Expected PSO %s, not %s" % (pso.name,
+                                                     str(resultant_pso)))
 
         # we're mirroring the pwd_history for the user, so make sure this is
         # up-to-date, before we start making password changes
@@ -485,7 +485,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
 
         # we can't wait around long enough for the max-age to expire, so instead
         # just check the msDS-UserPasswordExpiryTimeComputed for the user
-        attrs=['msDS-UserPasswordExpiryTimeComputed']
+        attrs = ['msDS-UserPasswordExpiryTimeComputed']
         res = self.ldb.search(user.dn, attrs=attrs)
         domain_expiry = int(res[0]['msDS-UserPasswordExpiryTimeComputed'][0])
 

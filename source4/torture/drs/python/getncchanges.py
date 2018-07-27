@@ -159,8 +159,8 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # object multiple times, so this might be noteworthy but doesn't
         # warrant failing the test
         if (len(received_list) != len(expected_list)):
-            print("Note: received %d objects but expected %d" %(len(received_list),
-                                                                len(expected_list)))
+            print("Note: received %d objects but expected %d" % (len(received_list),
+                                                                 len(expected_list)))
 
         # Check that we received every object that we were expecting
         for dn in expected_list:
@@ -438,7 +438,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         self.assertTrue(len(received_links) == num_expected,
                         "Received %d links but expected %d"
-                        %(len(received_links), num_expected))
+                        % (len(received_links), num_expected))
 
         for dn in objects_with_links:
             self.assert_object_has_link(dn, link_attr, received_links)
@@ -458,7 +458,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # We didn't find the expected link attribute in the DB for the object.
         # Something has gone wrong somewhere...
         self.assertTrue(link_attr in res[0], "%s in DB doesn't have attribute %s"
-                        %(dn, link_attr))
+                        % (dn, link_attr))
 
         # find the received link in the list and assert that the target and
         # source GUIDs match what's in the DB
@@ -477,7 +477,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
                     found = True
 
                     if self._debug:
-                        print("Link %s --> %s" %(dn[:25], link.targetDN[:25]))
+                        print("Link %s --> %s" % (dn[:25], link.targetDN[:25]))
                     break
 
             self.assertTrue(found, "Did not receive expected link for DN %s" % dn)
@@ -986,7 +986,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # create the link target (a server object) in the config NC
         rand = random.randint(1, 10000000)
         la_target = "CN=getncchanges-%d,CN=Servers,CN=Default-First-Site-Name," \
-                    "CN=Sites,%s" %(rand, self.config_dn)
+                    "CN=Sites,%s" % (rand, self.config_dn)
         self.add_object(la_target, objectclass="server")
 
         # add a cross-partition link between the two

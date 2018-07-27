@@ -33,8 +33,8 @@ class TestUser:
         initial_password = "Initial12#"
         self.name = username
         self.ldb = samdb
-        self.dn = "CN=%s,%s,%s" %(username, (userou or "CN=Users"),
-                                  self.ldb.domain_dn())
+        self.dn = "CN=%s,%s,%s" % (username, (userou or "CN=Users"),
+                                   self.ldb.domain_dn())
 
         # store all passwords that have ever been used for this user, as well
         # as a pwd_history that more closely resembles the history on the DC
@@ -154,9 +154,9 @@ class PasswordSettings:
         Returns a object representing the default password settings that will
         take effect (i.e. when no other Fine-Grained Password Policy applies)
         """
-        pw_attrs=["minPwdAge", "lockoutDuration", "lockOutObservationWindow",
-                  "lockoutThreshold", "maxPwdAge", "minPwdAge", "minPwdLength",
-                  "pwdHistoryLength", "pwdProperties"]
+        pw_attrs = ["minPwdAge", "lockoutDuration", "lockOutObservationWindow",
+                    "lockoutThreshold", "maxPwdAge", "minPwdAge",
+                    "minPwdLength", "pwdHistoryLength", "pwdProperties"]
         res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_BASE,
                            attrs=pw_attrs)
 
@@ -195,7 +195,7 @@ class PasswordSettings:
             container = "CN=Password Settings Container,CN=System,%s" % base_dn
 
         self.name = name
-        self.dn = "CN=%s,%s" %(name, container)
+        self.dn = "CN=%s,%s" % (name, container)
         self.ldb = samdb
         self.precedence = precedence
         self.complexity = complexity

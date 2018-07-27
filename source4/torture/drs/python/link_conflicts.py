@@ -113,7 +113,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # that the 2nd run doesn't hit objects that already exist. Add some
         # randomness to the object DN to make it unique
         rand = random.randint(1, 10000000)
-        return "%s-%d,%s" %(obj_name, rand, self.ou)
+        return "%s-%d,%s" % (obj_name, rand, self.ou)
 
     def assert_attrs_match(self, res1, res2, attr, expected_count):
         """
@@ -122,17 +122,17 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         """
         actual_len = len(res1[0][attr])
         self.assertTrue(actual_len == expected_count,
-                        "Expected %u %s attributes, but got %u" %(expected_count,
-                                                                  attr, actual_len))
+                        "Expected %u %s attributes, but got %u" % (expected_count,
+                                                                   attr, actual_len))
         actual_len = len(res2[0][attr])
         self.assertTrue(actual_len == expected_count,
-                        "Expected %u %s attributes, but got %u" %(expected_count,
-                                                                  attr, actual_len))
+                        "Expected %u %s attributes, but got %u" % (expected_count,
+                                                                   attr, actual_len))
 
         # check DCs both agree on the same linked attributes
         for val in res1[0][attr]:
             self.assertTrue(val in res2[0][attr],
-                            "%s '%s' not found on DC2" %(attr, val))
+                            "%s '%s' not found on DC2" % (attr, val))
 
     def zero_highwatermark(self):
         """Returns a zeroed highwatermark so that all DRS data gets returned"""
