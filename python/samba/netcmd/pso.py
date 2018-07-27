@@ -164,7 +164,7 @@ def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
                      complexity=None, precedence=None, store_plaintext=None,
                      history_length=None, min_pwd_length=None,
                      min_pwd_age=None, max_pwd_age=None, lockout_duration=None,
-                     reset_account_lockout_after=None):
+                     reset_lockout_after=None):
     """Packs the given PSO settings into an LDB message"""
 
     m = ldb.Message()
@@ -221,9 +221,9 @@ def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
         msg_add_attr(m, "msDS-LockoutThreshold", str(lockout_threshold),
                      ldb_oper)
 
-    if reset_account_lockout_after is not None:
+    if reset_lockout_after is not None:
         msg_add_attr(m, "msDS-LockoutObservationWindow",
-                     mins_to_timestamp(reset_account_lockout_after), ldb_oper)
+                     mins_to_timestamp(reset_lockout_after), ldb_oper)
 
     return m
 
@@ -409,7 +409,7 @@ class cmd_domain_pwdsettings_pso_create(Command):
                              min_pwd_age=min_pwd_age, max_pwd_age=max_pwd_age,
                              lockout_duration=account_lockout_duration,
                              lockout_threshold=account_lockout_threshold,
-                             reset_account_lockout_after=reset_account_lockout_after)
+                             reset_lockout_after=reset_account_lockout_after)
 
         # create the new PSO
         try:
@@ -491,7 +491,7 @@ class cmd_domain_pwdsettings_pso_set(Command):
                              min_pwd_age=min_pwd_age, max_pwd_age=max_pwd_age,
                              lockout_duration=account_lockout_duration,
                              lockout_threshold=account_lockout_threshold,
-                             reset_account_lockout_after=reset_account_lockout_after)
+                             reset_lockout_after=reset_account_lockout_after)
 
         # update the PSO
         try:
