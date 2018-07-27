@@ -615,8 +615,8 @@ class PasswordSettingsTestCase(PasswordTestCase):
         creds_tmp.set_domain(creds.get_domain())
         creds_tmp.set_realm(creds.get_realm())
         creds_tmp.set_workstation(creds.get_workstation())
-        creds_tmp.set_gensec_features(creds_tmp.get_gensec_features()
-                                      | gensec.FEATURE_SEAL)
+        features = creds_tmp.get_gensec_features() | gensec.FEATURE_SEAL
+        creds_tmp.set_gensec_features(features)
         return samba.tests.connect_samdb(ldaphost, credentials=creds_tmp)
 
     def test_pso_permissions(self):
