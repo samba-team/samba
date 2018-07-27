@@ -58,7 +58,7 @@ def show_pso_by_dn(outf, samdb, dn, show_applies_to=True):
     """Displays the password settings for a PSO specified by DN"""
 
     # map from the boolean LDB value to the CLI string the user sees
-    on_off_str = { "TRUE" : "on", "FALSE" : "off" }
+    on_off_str = {"TRUE": "on", "FALSE": "off"}
 
     pso_attrs = ['name', 'msDS-PasswordSettingsPrecedence',
                  'msDS-PasswordReversibleEncryptionEnabled',

@@ -686,7 +686,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.assertTrue(attr in res[0])
 
         # check replace/delete operations can't be performed by regular users
-        operations = [ FLAG_MOD_REPLACE, FLAG_MOD_DELETE ]
+        operations = [FLAG_MOD_REPLACE, FLAG_MOD_DELETE]
 
         for oper in operations:
             try:
