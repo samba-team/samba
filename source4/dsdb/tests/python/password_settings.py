@@ -593,7 +593,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
         self.set_attribute(user.dn, "userAccountControl",
                            str(dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
                            operation=FLAG_MOD_REPLACE)
-        self.assertTrue(user.get_resultant_PSO() == None)
+        self.assertIsNone(user.get_resultant_PSO())
 
         # reset it back to a normal user account
         self.set_attribute(user.dn, "userAccountControl",
