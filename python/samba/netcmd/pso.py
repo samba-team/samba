@@ -236,9 +236,9 @@ def check_pso_constraints(min_pwd_length=None, history_length=None,
 
 # the same args are used for both create and set commands
 pwd_settings_options = [
-    Option("--complexity", type="choice", choices=["on","off"],
+    Option("--complexity", type="choice", choices=["on", "off"],
       help="The password complexity (on | off)."),
-    Option("--store-plaintext", type="choice", choices=["on","off"],
+    Option("--store-plaintext", type="choice", choices=["on", "off"],
       help="Store plaintext passwords where account have 'store passwords with reversible encryption' set (on | off)."),
     Option("--history-length",
       help="The password history length (<integer>).", type=int),

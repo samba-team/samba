@@ -116,7 +116,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         self.obj_cleanup.append("CN=%s,%s" % (pso_name, self.pso_container))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("successfully created", out)
         self.check_pso(pso_name, expected_pso)
 
@@ -158,7 +158,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  self.user_auth)
         self.obj_cleanup.append("CN=%s,%s" % (pso_name, self.pso_container))
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("successfully created", out)
         self.check_pso(pso_name, expected_pso)
 
@@ -190,7 +190,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
 
         # sanity-check the cmd was successful
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("successfully created", out)
         self.check_pso(pso_name, pso_settings)
 
@@ -214,7 +214,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("Successfully updated", out)
 
         # check the PSO's settings now reflect the new values
@@ -232,7 +232,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("Deleted PSO", out)
         dn = "CN=%s,%s" % (pso_name, self.pso_container)
         self.obj_cleanup.remove(dn)
@@ -262,7 +262,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         if pso is None:
             self.assertIn("No PSO applies to user", out)
         else:
@@ -302,7 +302,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  group_name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.check_pso_applied(user, pso=test_pso)
 
         # we should fail if we try to apply the same PSO/group twice though
@@ -319,7 +319,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  user.name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.check_pso_applied(user, pso=test_pso)
 
         # check samba-tool can successfully unlink a group from a PSO
@@ -328,7 +328,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  group_name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         # PSO still applies directly to the user, even though group was removed
         self.check_pso_applied(user, pso=test_pso)
 
@@ -338,7 +338,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  user.name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.check_pso_applied(user, pso=None)
 
     def test_pso_unpriv(self):
@@ -410,7 +410,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "show"), "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
 
         # check an arbitrary setting is displayed correctly
         min_pwd_len = self.ldb.get_minPwdLength()
@@ -425,7 +425,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("successful", out)
         self.assertEquals(new_len, self.ldb.get_minPwdLength())
 
@@ -434,6 +434,6 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "show"), "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("Minimum password length: %u" % new_len, out)
 
