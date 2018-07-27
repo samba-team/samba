@@ -454,7 +454,7 @@ static void decrement_lock_ref_count(const files_struct *fsp)
 		&lock_ref_count, -1);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
-	SMB_ASSERT(lock_ref_count >= 0);
+	SMB_ASSERT(lock_ref_count > 0);
 
 	DEBUG(10,("lock_ref_count for file %s = %d\n",
 		  fsp_str_dbg(fsp), (int)lock_ref_count));
