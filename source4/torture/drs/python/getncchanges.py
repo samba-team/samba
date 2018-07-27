@@ -861,7 +861,6 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         res = self.test_ldb_dc.search(base=dn, attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
         return res[0]['objectGUID'][0]
 
-
     def set_dc_connection(self, conn):
         """
         Switches over the connection state info that the underlying drs_base

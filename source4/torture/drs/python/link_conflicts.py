@@ -213,7 +213,6 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
                              misc.GUID(src_guid), misc.GUID(target2_guid))
         self._check_replicated_links(src_ou, [link1, link2])
 
-
     def test_conflict_single_valued_link(self):
         # repeat the test twice, to give each DC a chance to resolve the conflict
         self._test_conflict_single_valued_link(sync_order=DC1_TO_DC2)
