@@ -31,7 +31,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                        os.environ["DC_PASSWORD"])
         self.ldb = self.getSamDB("-H", self.server, self.user_auth)
         self.pso_container = \
-             "CN=Password Settings Container,CN=System,%s" % self.ldb.domain_dn()
+            "CN=Password Settings Container,CN=System,%s" % self.ldb.domain_dn()
         self.obj_cleanup = []
 
     def tearDown(self):

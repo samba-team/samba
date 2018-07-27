@@ -254,8 +254,7 @@ pwd_settings_options = [
     Option("--account-lockout-threshold",
       help="The number of bad password attempts allowed before locking out the account (<integer>). Default is domain setting.", type=int),
     Option("--reset-account-lockout-after",
-      help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer in mins>). Default is domain setting.", type=int),
-      ]
+      help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer in mins>). Default is domain setting.", type=int)]
 
 def num_options_in_args(options, args):
     """
@@ -298,8 +297,8 @@ class cmd_domain_pwdsettings_pso_create(Command):
         }
 
     takes_options = pwd_settings_options + [
-    Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-           metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
     takes_args = ["psoname", "precedence"]
 
@@ -500,8 +499,8 @@ class cmd_domain_pwdsettings_pso_delete(Command):
         }
 
     takes_options = [
-    Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-           metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
     takes_args = ["psoname"]
 
@@ -539,8 +538,8 @@ class cmd_domain_pwdsettings_pso_list(Command):
         }
 
     takes_options = [
-    Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-           metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
 
     def run(self, H=None, credopts=None, sambaopts=None, versionopts=None):
@@ -582,8 +581,8 @@ class cmd_domain_pwdsettings_pso_show(Command):
         }
 
     takes_options = [
-    Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-           metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
     takes_args = ["psoname"]
 
@@ -612,8 +611,8 @@ class cmd_domain_pwdsettings_pso_show_user(Command):
         }
 
     takes_options = [
-    Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-           metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
     takes_args = ["username"]
 
@@ -648,8 +647,8 @@ class cmd_domain_pwdsettings_pso_apply(Command):
         }
 
     takes_options = [
-    Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-           metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
     takes_args = ["psoname", "user_or_group"]
 
@@ -707,8 +706,8 @@ class cmd_domain_pwdsettings_pso_unapply(Command):
         }
 
     takes_options = [
-    Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-           metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
         ]
     takes_args = ["psoname", "user_or_group"]
 
