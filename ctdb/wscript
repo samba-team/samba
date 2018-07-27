@@ -1139,7 +1139,7 @@ def autotest(ctx):
 
 
 def show_version(ctx):
-    print get_version_string()
+    print(get_version_string())
 
 
 def manpages(ctx):

@@ -42,7 +42,7 @@ import generate
 import rfc3454
 
 if len(sys.argv) != 3:
-    print "usage: %s rfc3454.txt outdir" % sys.argv[0]
+    print("usage: %s rfc3454.txt outdir" % sys.argv[0])
     sys.exit(1)
 
 tables = rfc3454.read(sys.argv[1])
