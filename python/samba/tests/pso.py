@@ -56,8 +56,9 @@ class TestUser:
         if hist_len == 0:
             return self.all_old_passwords[:]
 
-        # just exclude our pwd_history if there's not much in it. This can happen
-        # if we've been using a lower PasswordHistoryLength setting previously
+        # just exclude our pwd_history if there's not much in it. This can
+        # happen if we've been using a lower PasswordHistoryLength setting
+        # previously
         hist_len = min(len(self.pwd_history), hist_len)
 
         # return any passwords up to the nth-from-last item
@@ -67,8 +68,9 @@ class TestUser:
         """Updates the user's password history to reflect a password change"""
         # we maintain 2 lists: all passwords the user has ever had, and an
         # effective password-history that should roughly mirror the DC.
-        # pwd_history_change() handles the corner-case where we need to truncate
-        # password-history due to PasswordHistoryLength settings changes
+        # pwd_history_change() handles the corner-case where we need to
+        # truncate password-history due to PasswordHistoryLength settings
+        # changes
         if new_password in self.all_old_passwords:
             self.all_old_passwords.remove(new_password)
         self.all_old_passwords.append(new_password)
@@ -102,15 +104,16 @@ add: userPassword
 userPassword: %s
 """ % (self.dn, self.get_password(), new_password)
         # this modify will throw an exception if new_password doesn't meet the
-        # PSO constraints (which the test code catches if it's expected to fail)
+        # PSO constraints (which the test code catches if it's expected to
+        # fail)
         self.ldb.modify_ldif(ldif)
         self.update_pwd_history(new_password)
 
     def pwd_history_change(self, old_hist_len, new_hist_len):
         """
-        Updates what in the password history will take effect, to reflect changes
-        on the DC. When the PasswordHistoryLength applied to a user changes from
-        a low setting (e.g. 2) to a higher setting (e.g. 4), passwords #3 and #4
+        Updates the effective password history, to reflect changes on the DC.
+        When the PasswordHistoryLength applied to a user changes from a low
+        setting (e.g. 2) to a higher setting (e.g. 4), passwords #3 and #4
         won't actually have been stored on the DC, so we need to make sure they
         are removed them from our mirror pwd_history list.
         """
@@ -267,4 +270,3 @@ msDS-PasswordSettingsPrecedence: %u
 """ % (self.dn, new_precedence)
         samdb.modify_ldif(ldif)
         self.precedence = new_precedence
-

@@ -31,8 +31,8 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         self.user_auth = "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                        os.environ["DC_PASSWORD"])
         self.ldb = self.getSamDB("-H", self.server, self.user_auth)
-        self.pso_container = \
-            "CN=Password Settings Container,CN=System,%s" % self.ldb.domain_dn()
+        system_dn = "CN=System,%s" % self.ldb.domain_dn()
+        self.pso_container = "CN=Password Settings Container,%s" % system_dn
         self.obj_cleanup = []
 
     def tearDown(self):
@@ -48,9 +48,12 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         dn = "CN=%s,%s" % (pso_name, self.pso_container)
         pso_attrs = ['name', 'msDS-PasswordSettingsPrecedence',
                      'msDS-PasswordReversibleEncryptionEnabled',
-                     'msDS-PasswordHistoryLength', 'msDS-MinimumPasswordLength',
-                     'msDS-PasswordComplexityEnabled', 'msDS-MinimumPasswordAge',
-                     'msDS-MaximumPasswordAge', 'msDS-LockoutObservationWindow',
+                     'msDS-PasswordHistoryLength',
+                     'msDS-MinimumPasswordLength',
+                     'msDS-PasswordComplexityEnabled',
+                     'msDS-MinimumPasswordAge',
+                     'msDS-MaximumPasswordAge',
+                     'msDS-LockoutObservationWindow',
                      'msDS-LockoutThreshold', 'msDS-LockoutDuration']
         res = self.ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=pso_attrs)
         self.assertEquals(len(res), 1, "PSO lookup failed")
@@ -67,8 +70,8 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         # check the PSO's settings match the search results
         self.assertEquals(str(res[0]['msDS-PasswordComplexityEnabled'][0]),
                           complexity_str)
-        self.assertEquals(str(res[0]['msDS-PasswordReversibleEncryptionEnabled'][0]),
-                          plaintext_str)
+        plaintext_res = res[0]['msDS-PasswordReversibleEncryptionEnabled'][0]
+        self.assertEquals(str(plaintext_res), plaintext_str)
         self.assertEquals(int(res[0]['msDS-PasswordHistoryLength'][0]),
                           pso.history_len)
         self.assertEquals(int(res[0]['msDS-MinimumPasswordLength'][0]),
@@ -89,13 +92,14 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "pso", "show"), pso_name,
                                                  "-H", self.server,
                                                  self.user_auth)
-        self.assertTrue(len(out.split(":")) >= 10, "Expect 10 fields displayed")
+        self.assertTrue(len(out.split(":")) >= 10,
+                        "Expect 10 fields displayed")
 
         # for a few settings, sanity-check the display is what we expect
         self.assertIn("Minimum password length: %u" % pso.password_len, out)
         self.assertIn("Password history length: %u" % pso.history_len, out)
-        self.assertIn("lockout threshold (attempts): %u" % pso.lockout_attempts,
-                      out)
+        lockout_str = "lockout threshold (attempts): %u" % pso.lockout_attempts
+        self.assertIn(lockout_str, out)
 
     def test_pso_create(self):
         """Tests basic PSO creation using the samba-tool"""
@@ -207,14 +211,14 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         pso_settings.precedence = 99
         pso_settings.lockout_attempts = 10
         pso_settings.lockout_duration = 60 * 17
-        (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
-                                                 "pso", "set"), pso_name,
-                                                 "--precedence=99",
-                                                 "--account-lockout-threshold=10",
-                                                 "--account-lockout-duration=17",
-                                                 "-H", self.server,
-                                                 self.user_auth)
-        self.assertCmdSuccess(result, out, err)
+        (res, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
+                                              "pso", "set"), pso_name,
+                                              "--precedence=99",
+                                              "--account-lockout-threshold=10",
+                                              "--account-lockout-duration=17",
+                                              "-H", self.server,
+                                              self.user_auth)
+        self.assertCmdSuccess(res, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("Successfully updated", out)
 
@@ -259,8 +263,8 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
 
         # first check the samba-tool output tells us the correct PSO is applied
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
-                                                 "pso", "show-user"), user.name,
-                                                 "-H", self.server,
+                                                 "pso", "show-user"),
+                                                 user.name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
@@ -363,19 +367,22 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
                                                  "pso", "create"), "bad-perm",
                                                  "250", "--complexity=off",
-                                                 "-H", self.server, unpriv_auth)
+                                                 "-H", self.server,
+                                                 unpriv_auth)
         self.assertCmdFail(result, "Need admin privileges to modify PSO")
         self.assertIn("Administrator permissions are needed", err)
 
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
                                                  "pso", "delete"), pso_name,
-                                                 "-H", self.server, unpriv_auth)
+                                                 "-H", self.server,
+                                                 unpriv_auth)
         self.assertCmdFail(result, "Need admin privileges to delete PSO")
         self.assertIn("You may not have permission", err)
 
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
                                                  "pso", "show"), pso_name,
-                                                 "-H", self.server, unpriv_auth)
+                                                 "-H", self.server,
+                                                 unpriv_auth)
         self.assertCmdFail(result, "Need admin privileges to view PSO")
         self.assertIn("You may not have permission", err)
 
@@ -420,9 +427,9 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         # check we can change the domain setting
         self.addCleanup(self.ldb.set_minPwdLength, min_pwd_len)
         new_len = int(min_pwd_len) + 3
+        min_pwd_args = "--min-pwd-length=%u" % new_len
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
-                                                 "set"),
-                                                 "--min-pwd-length=%u" % new_len,
+                                                 "set"), min_pwd_args,
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
@@ -437,4 +444,3 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("Minimum password length: %u" % new_len, out)
-

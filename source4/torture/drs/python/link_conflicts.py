@@ -25,7 +25,8 @@
 #  export DC1=dc1_dns_name
 #  export DC2=dc2_dns_name
 #  export SUBUNITRUN=$samba4srcdir/scripting/bin/subunitrun
-#  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN link_conflicts -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
+#  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN \
+#       link_conflicts -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
 import drs_base
@@ -37,6 +38,7 @@ import time
 
 from drs_base import AbstractLink
 from samba.dcerpc import drsuapi, misc
+from samba.dcerpc.drsuapi import DRSUAPI_EXOP_ERR_SUCCESS
 
 # specifies the order to sync DCs in
 DC1_TO_DC2 = 1
@@ -47,7 +49,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaLinkConflictTestCase, self).setUp()
 
-        self.ou = samba.tests.create_test_ou(self.ldb_dc1, "test_link_conflict")
+        self.ou = samba.tests.create_test_ou(self.ldb_dc1,
+                                             "test_link_conflict")
         self.base_dn = self.ldb_dc1.get_default_basedn()
 
         (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
@@ -97,12 +100,16 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         """Manually syncs the 2 DCs to ensure they're in sync"""
         if sync_order == DC1_TO_DC2:
             # sync DC1-->DC2, then DC2-->DC1
-            self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
-            self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
+            self._net_drs_replicate(DC=self.dnsname_dc2,
+                                    fromDC=self.dnsname_dc1)
+            self._net_drs_replicate(DC=self.dnsname_dc1,
+                                    fromDC=self.dnsname_dc2)
         else:
             # sync DC2-->DC1, then DC1-->DC2
-            self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
-            self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
+            self._net_drs_replicate(DC=self.dnsname_dc1,
+                                    fromDC=self.dnsname_dc2)
+            self._net_drs_replicate(DC=self.dnsname_dc2,
+                                    fromDC=self.dnsname_dc1)
 
     def ensure_unique_timestamp(self):
         """Waits a second to ensure a unique timestamp between 2 objects"""
@@ -123,12 +130,14 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         """
         actual_len = len(res1[0][attr])
         self.assertTrue(actual_len == expected_count,
-                        "Expected %u %s attributes, but got %u" % (expected_count,
-                                                                   attr, actual_len))
+                        "Expected %u %s attributes, got %u" % (expected_count,
+                                                               attr,
+                                                               actual_len))
         actual_len = len(res2[0][attr])
         self.assertTrue(actual_len == expected_count,
-                        "Expected %u %s attributes, but got %u" % (expected_count,
-                                                                   attr, actual_len))
+                        "Expected %u %s attributes, got %u" % (expected_count,
+                                                               attr,
+                                                               actual_len))
 
         # check DCs both agree on the same linked attributes
         for val in res1[0][attr]:
@@ -214,7 +223,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self._check_replicated_links(src_ou, [link1, link2])
 
     def test_conflict_single_valued_link(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_conflict_single_valued_link(sync_order=DC1_TO_DC2)
         self._test_conflict_single_valued_link(sync_order=DC2_TO_DC1)
 
@@ -248,7 +258,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
     def test_duplicate_single_valued_link(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_duplicate_single_valued_link(sync_order=DC1_TO_DC2)
         self._test_duplicate_single_valued_link(sync_order=DC2_TO_DC1)
 
@@ -267,9 +278,11 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # create the same user (link target) on each DC.
         # Note that the GUIDs will differ between the DCs
         target_dn = self.unique_dn("CN=target")
-        target1_guid = self.add_object(self.ldb_dc1, target_dn, objectclass="user")
+        target1_guid = self.add_object(self.ldb_dc1, target_dn,
+                                       objectclass="user")
         self.ensure_unique_timestamp()
-        target2_guid = self.add_object(self.ldb_dc2, target_dn, objectclass="user")
+        target2_guid = self.add_object(self.ldb_dc2, target_dn,
+                                       objectclass="user")
 
         # link the src group to the respective target created
         self.add_link_attr(self.ldb_dc1, src_dn, "member", target_dn)
@@ -298,7 +311,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
                         "Expected link to conflicting target object not found")
 
     def test_conflict_multi_valued_link(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_conflict_multi_valued_link(sync_order=DC1_TO_DC2)
         self._test_conflict_multi_valued_link(sync_order=DC2_TO_DC1)
 
@@ -331,7 +345,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.assert_attrs_match(res1, res2, "member", 1)
 
     def test_duplicate_multi_valued_link(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_duplicate_multi_valued_link(sync_order=DC1_TO_DC2)
         self._test_duplicate_multi_valued_link(sync_order=DC2_TO_DC1)
 
@@ -343,7 +358,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
 
         # create a common link target
         target_dn = self.unique_dn("CN=target")
-        target_guid = self.add_object(self.ldb_dc1, target_dn, objectclass="user")
+        target_guid = self.add_object(self.ldb_dc1, target_dn,
+                                      objectclass="user")
         self.sync_DCs()
 
         # create the same group (link source) on each DC.
@@ -367,7 +383,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
                                    scope=SCOPE_BASE, attrs=["memberOf"])
         src1_backlink = False
 
-        # our test user should still be a member of 2 groups (check both DCs agree)
+        # our test user should still be a member of 2 groups (check both
+        # DCs agree)
         self.assert_attrs_match(res1, res2, "memberOf", 2)
 
         for val in res1[0]["memberOf"]:
@@ -377,10 +394,11 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
                 src1_backlink = True
 
         self.assertTrue(src1_backlink,
-                        "Expected backlink to conflicting source object not found")
+                        "Backlink to conflicting source object not found")
 
     def test_conflict_backlinks(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_conflict_backlinks(sync_order=DC1_TO_DC2)
         self._test_conflict_backlinks(sync_order=DC2_TO_DC1)
 
@@ -424,12 +442,15 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
                                    scope=SCOPE_BASE, attrs=["member"])
 
-        # our test user should still be a member of the group (check both DCs agree)
-        self.assertTrue("member" in res1[0], "Expected member attribute missing")
+        # our test user should still be a member of the group (check both
+        # DCs agree)
+        self.assertTrue("member" in res1[0],
+                        "Expected member attribute missing")
         self.assert_attrs_match(res1, res2, "member", 1)
 
     def test_link_deletion_conflict(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_link_deletion_conflict(sync_order=DC1_TO_DC2)
         self._test_link_deletion_conflict(sync_order=DC2_TO_DC1)
 
@@ -440,7 +461,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         """
 
         target_dn = self.unique_dn("CN=target")
-        target_guid = self.add_object(self.ldb_dc1, target_dn, objectclass="user")
+        target_guid = self.add_object(self.ldb_dc1, target_dn,
+                                      objectclass="user")
         src_dn = self.unique_dn("CN=src")
         src_guid = self.add_object(self.ldb_dc1, src_dn, objectclass="group")
 
@@ -463,9 +485,11 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # the object deletion should trump the link addition.
         # Check the link no longer exists on the remaining object
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % search_guid,
-                                   scope=SCOPE_BASE, attrs=["member", "memberOf"])
+                                   scope=SCOPE_BASE,
+                                   attrs=["member", "memberOf"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % search_guid,
-                                   scope=SCOPE_BASE, attrs=["member", "memberOf"])
+                                   scope=SCOPE_BASE,
+                                   attrs=["member", "memberOf"])
 
         self.assertFalse("member" in res1[0], "member attr shouldn't exist")
         self.assertFalse("member" in res2[0], "member attr shouldn't exist")
@@ -473,13 +497,18 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.assertFalse("memberOf" in res2[0], "member attr shouldn't exist")
 
     def test_obj_deletion_conflict(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
-        self._test_obj_deletion_conflict(sync_order=DC1_TO_DC2, del_target=True)
-        self._test_obj_deletion_conflict(sync_order=DC2_TO_DC1, del_target=True)
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
+        self._test_obj_deletion_conflict(sync_order=DC1_TO_DC2,
+                                         del_target=True)
+        self._test_obj_deletion_conflict(sync_order=DC2_TO_DC1,
+                                         del_target=True)
 
         # and also try deleting the source object instead of the link target
-        self._test_obj_deletion_conflict(sync_order=DC1_TO_DC2, del_target=False)
-        self._test_obj_deletion_conflict(sync_order=DC2_TO_DC1, del_target=False)
+        self._test_obj_deletion_conflict(sync_order=DC1_TO_DC2,
+                                         del_target=False)
+        self._test_obj_deletion_conflict(sync_order=DC2_TO_DC1,
+                                         del_target=False)
 
     def _test_full_sync_link_conflict(self, sync_order):
         """
@@ -501,11 +530,19 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # Do a couple of full syncs which should resolve the conflict
         # (but only for one DC)
         if sync_order == DC1_TO_DC2:
-            self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, full_sync=True)
-            self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, full_sync=True)
+            self._net_drs_replicate(DC=self.dnsname_dc2,
+                                    fromDC=self.dnsname_dc1,
+                                    full_sync=True)
+            self._net_drs_replicate(DC=self.dnsname_dc2,
+                                    fromDC=self.dnsname_dc1,
+                                    full_sync=True)
         else:
-            self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, full_sync=True)
-            self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, full_sync=True)
+            self._net_drs_replicate(DC=self.dnsname_dc1,
+                                    fromDC=self.dnsname_dc2,
+                                    full_sync=True)
+            self._net_drs_replicate(DC=self.dnsname_dc1,
+                                    fromDC=self.dnsname_dc2,
+                                    full_sync=True)
 
         # delete and re-add the link on one DC
         self.del_link_attr(self.ldb_dc1, src_dn, "member", target_dn)
@@ -525,11 +562,13 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
                                    scope=SCOPE_BASE, attrs=["member"])
 
         # check the membership still exits (and both DCs agree)
-        self.assertTrue("member" in res1[0], "Expected member attribute missing")
+        self.assertTrue("member" in res1[0],
+                        "Expected member attribute missing")
         self.assert_attrs_match(res1, res2, "member", 1)
 
     def test_full_sync_link_conflict(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_full_sync_link_conflict(sync_order=DC1_TO_DC2)
         self._test_full_sync_link_conflict(sync_order=DC2_TO_DC1)
 
@@ -586,7 +625,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
 
     def _test_conflict_single_valued_link_deleted_loser(self, sync_order):
         """
-        Tests a single-valued link conflict, where the losing link value is deleted.
+        Tests a single-valued link conflict, where the losing link value is
+        deleted.
         """
         src_ou = self.unique_dn("OU=src")
         src_guid = self.add_object(self.ldb_dc1, src_ou)
@@ -599,9 +639,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         target1_guid = self.add_object(self.ldb_dc1, target1_ou)
         target2_guid = self.add_object(self.ldb_dc2, target2_ou)
 
-        # add the links - we want the link to end up deleted on DC2, but active on
-        # DC1. DC1 has the better version and DC2 has the better timestamp - the
-        # better version should win
+        # add the links - we want the link to end up deleted on DC2, but active
+        # on DC1. DC1 has the better version and DC2 has the better timestamp -
+        # the better version should win
         self.add_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
         self.del_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
         self.add_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
@@ -689,7 +729,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self._check_replicated_links(src_ou, [link1, link2])
 
     def test_conflict_existing_single_valued_link(self):
-        # repeat the test twice, to give each DC a chance to resolve the conflict
+        # repeat the test twice, to give each DC a chance to resolve
+        # the conflict
         self._test_conflict_existing_single_valued_link(sync_order=DC1_TO_DC2)
         self._test_conflict_existing_single_valued_link(sync_order=DC2_TO_DC1)
 
@@ -707,7 +748,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # get the link info via replication
         ctr6 = self._get_replication(drsuapi.DRSUAPI_DRS_WRIT_REP,
                                      dest_dsa=None,
-                                     drs_error=drsuapi.DRSUAPI_EXOP_ERR_SUCCESS,
+                                     drs_error=DRSUAPI_EXOP_ERR_SUCCESS,
                                      exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
                                      highwatermark=self.zero_highwatermark(),
                                      nc_dn_str=src_ou)
@@ -715,6 +756,6 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.assertTrue(ctr6.linked_attributes_count == 1,
                         "DRS didn't return a link")
         link = ctr6.linked_attributes[0]
-        self.assertTrue(link.meta_data.version == 1,
-                        "Link version started from %u, not 1" % link.meta_data.version)
-
+        rcvd_version = link.meta_data.version
+        self.assertTrue(rcvd_version == 1,
+                        "Link version started from %u, not 1" % rcvd_version)

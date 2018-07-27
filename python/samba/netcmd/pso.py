@@ -19,7 +19,8 @@ import samba.getopt as options
 import ldb
 from samba.samdb import SamDB
 from samba.netcmd import (Command, CommandError, Option, SuperCommand)
-from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
+from samba.dcerpc.samr import (DOMAIN_PASSWORD_COMPLEX,
+                               DOMAIN_PASSWORD_STORE_CLEARTEXT)
 from samba.auth import system_session
 
 NEVER_TIMESTAMP = int(-0x8000000000000000)
@@ -136,8 +137,8 @@ def show_pso_for_user(outf, samdb, username):
     if len(res) == 0:
         outf.write("User '%s' not found.\n" % username)
     elif 'msDS-ResultantPSO' not in res[0]:
-        outf.write("No PSO applies to user '%s'. The default domain settings apply.\n"
-                   % username)
+        outf.write("No PSO applies to user '%s'. "
+                   "The default domain settings apply.\n" % username)
         outf.write("Refer to 'samba-tool domain passwordsettings show'.\n")
     else:
         # sanity-check user has permissions to view PSO details (non-admin
@@ -234,15 +235,18 @@ def check_pso_constraints(min_pwd_length=None, history_length=None,
 
     # check values as per section 3.1.1.5.2.2 Constraints in MS-ADTS spec
     if history_length is not None and history_length > 1024:
-        raise CommandError("Bad password history length: valid range is 0 to 1024")
+        raise CommandError("Bad password history length: "
+                           "valid range is 0 to 1024")
 
     if min_pwd_length is not None and min_pwd_length > 255:
-        raise CommandError("Bad minimum password length: valid range is 0 to 255")
+        raise CommandError("Bad minimum password length: "
+                           "valid range is 0 to 255")
 
     if min_pwd_age is not None and max_pwd_age is not None:
         # note max-age=zero is a special case meaning 'never expire'
         if min_pwd_age >= max_pwd_age and max_pwd_age != 0:
-            raise CommandError("Minimum password age must be less than the maximum age")
+            raise CommandError("Minimum password age must be less than "
+                               "maximum age")
 
 
 # the same args are used for both create and set commands
@@ -250,21 +254,29 @@ pwd_settings_options = [
     Option("--complexity", type="choice", choices=["on", "off"],
       help="The password complexity (on | off)."),
     Option("--store-plaintext", type="choice", choices=["on", "off"],
-      help="Store plaintext passwords where account have 'store passwords with reversible encryption' set (on | off)."),
+      help="Store plaintext passwords where account have "
+           "'store passwords with reversible encryption' set (on | off)."),
     Option("--history-length",
       help="The password history length (<integer>).", type=int),
     Option("--min-pwd-length",
       help="The minimum password length (<integer>).", type=int),
     Option("--min-pwd-age",
-      help="The minimum password age (<integer in days>). Default is domain setting.", type=int),
+           help=("The minimum password age (<integer in days>). "
+                 "Default is domain setting."), type=int),
     Option("--max-pwd-age",
-      help="The maximum password age (<integer in days>). Default is domain setting.", type=int),
-    Option("--account-lockout-duration",
-      help="The the length of time an account is locked out after exeeding the limit on bad password attempts (<integer in mins>). Default is domain setting", type=int),
-    Option("--account-lockout-threshold",
-      help="The number of bad password attempts allowed before locking out the account (<integer>). Default is domain setting.", type=int),
+           help=("The maximum password age (<integer in days>). "
+                 "Default is domain setting."), type=int),
+    Option("--account-lockout-duration", type=int,
+           help=("The length of time an account is locked out after exceeding "
+                 "the limit on bad password attempts (<integer in mins>). "
+                 "Default is domain setting")),
+    Option("--account-lockout-threshold", type=int,
+           help=("The number of bad password attempts allowed before locking "
+                 "out the account (<integer>). Default is domain setting.")),
     Option("--reset-account-lockout-after",
-      help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer in mins>). Default is domain setting.", type=int)]
+           help=("After this time is elapsed, the recorded number of attempts "
+                 "restarts from zero (<integer in mins>). "
+                 "Default is domain setting."), type=int)]
 
 
 def num_options_in_args(options, args):
@@ -309,8 +321,8 @@ class cmd_domain_pwdsettings_pso_create(Command):
         }
 
     takes_options = pwd_settings_options + [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H")
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               metavar="URL", dest="H", type=str)
         ]
     takes_args = ["psoname", "precedence"]
 
@@ -329,7 +341,8 @@ class cmd_domain_pwdsettings_pso_create(Command):
         try:
             precedence = int(precedence)
         except ValueError:
-            raise CommandError("The PSO's precedence should be a numerical value. Try --help")
+            raise CommandError("The PSO's precedence should be "
+                               "a numerical value. Try --help")
 
         # sanity-check that the PSO doesn't already exist
         pso_dn = "CN=%s,%s" % (psoname, pso_container(samdb))
@@ -347,14 +360,17 @@ class cmd_domain_pwdsettings_pso_create(Command):
         # otherwise there's no point in creating a PSO
         num_pwd_args = num_options_in_args(pwd_settings_options, self.raw_argv)
         if num_pwd_args == 0:
-            raise CommandError("Please specify at least one password policy setting. Try --help")
+            raise CommandError("Please specify at least one password policy "
+                               "setting. Try --help")
 
         # it's unlikely that the user will specify all 9 password policy
         # settings on the CLI - current domain password-settings as the default
         # values for unspecified arguments
         if num_pwd_args < len(pwd_settings_options):
-            self.message("Not all password policy options have been specified.")
-            self.message("For unspecified options, the current domain password settings will be used as the default values.")
+            self.message("Not all password policy options "
+                         "have been specified.")
+            self.message("For unspecified options, the current domain password"
+                         " settings will be used as the default values.")
 
         # lookup the current domain password-settings
         res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_BASE,
@@ -420,7 +436,8 @@ class cmd_domain_pwdsettings_pso_create(Command):
         except ldb.LdbError as e:
             (num, msg) = e.args
             if num == ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS:
-                raise CommandError("Administrator permissions are needed to create a PSO.")
+                raise CommandError("Administrator permissions are needed "
+                                   "to create a PSO.")
             else:
                 raise CommandError("Failed to create PSO '%s': %s" % (pso_dn,
                                                                       msg))
@@ -439,7 +456,8 @@ class cmd_domain_pwdsettings_pso_set(Command):
 
     takes_options = pwd_settings_options + [
         Option("--precedence", type=int,
-               help="This PSO's precedence relative to other PSOs. Lower precedence is better (<integer>)."),
+               help=("This PSO's precedence relative to other PSOs. "
+                     "Lower precedence is better (<integer>).")),
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
         ]
@@ -464,19 +482,23 @@ class cmd_domain_pwdsettings_pso_set(Command):
         # we expect the user to specify at least one password-policy setting
         num_pwd_args = num_options_in_args(pwd_settings_options, self.raw_argv)
         if num_pwd_args == 0 and precedence is None:
-            raise CommandError("Please specify at least one password policy setting. Try --help")
+            raise CommandError("Please specify at least one password policy "
+                               "setting. Try --help")
 
         if min_pwd_age is not None or max_pwd_age is not None:
-            # if we're modifying either the max or min pwd-age, check the max is
-            # always larger. We may have to fetch the PSO's setting to verify this
+            # if we're modifying either the max or min pwd-age, check the max
+            # is always larger. We may have to fetch the PSO's setting to
+            # verify this
             res = samdb.search(pso_dn, scope=ldb.SCOPE_BASE,
                                attrs=['msDS-MinimumPasswordAge',
                                       'msDS-MaximumPasswordAge'])
             if min_pwd_age is None:
-                min_pwd_age = timestamp_to_days(res[0]['msDS-MinimumPasswordAge'][0])
+                min_pwd_ticks = res[0]['msDS-MinimumPasswordAge'][0]
+                min_pwd_age = timestamp_to_days(min_pwd_ticks)
 
             if max_pwd_age is None:
-                max_pwd_age = timestamp_to_days(res[0]['msDS-MaximumPasswordAge'][0])
+                max_pwd_ticks = res[0]['msDS-MaximumPasswordAge'][0]
+                max_pwd_age = timestamp_to_days(max_pwd_ticks)
 
         check_pso_constraints(max_pwd_age=max_pwd_age, min_pwd_age=min_pwd_age,
                               history_length=history_length,
@@ -516,8 +538,8 @@ class cmd_domain_pwdsettings_pso_delete(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H")
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               metavar="URL", dest="H", type=str)
         ]
     takes_args = ["psoname"]
 
@@ -556,8 +578,8 @@ class cmd_domain_pwdsettings_pso_list(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H")
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               metavar="URL", dest="H", type=str)
         ]
 
     def run(self, H=None, credopts=None, sambaopts=None, versionopts=None):
@@ -574,7 +596,8 @@ class cmd_domain_pwdsettings_pso_list(Command):
         # an unprivileged search against Windows returns nothing here. On Samba
         # we get the PSO names, but not their attributes
         if len(res) == 0 or 'msDS-PasswordSettingsPrecedence' not in res[0]:
-            self.outf.write("No PSOs are present, or you don't have permission to view them.\n")
+            self.outf.write("No PSOs are present, or you don't have permission"
+                            " to view them.\n")
             return
 
         # sort the PSOs so they're displayed in order of precedence
@@ -600,8 +623,8 @@ class cmd_domain_pwdsettings_pso_show(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H")
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               metavar="URL", dest="H", type=str)
         ]
     takes_args = ["psoname"]
 
@@ -630,8 +653,8 @@ class cmd_domain_pwdsettings_pso_show_user(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H")
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               metavar="URL", dest="H", type=str)
         ]
     takes_args = ["username"]
 
@@ -666,8 +689,8 @@ class cmd_domain_pwdsettings_pso_apply(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H")
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               metavar="URL", dest="H", type=str)
         ]
     takes_args = ["psoname", "user_or_group"]
 
@@ -696,7 +719,8 @@ class cmd_domain_pwdsettings_pso_apply(Command):
         target_dn = str(res[0].dn)
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, pso_dn)
-        m["msDS-PSOAppliesTo"] = ldb.MessageElement(target_dn, ldb.FLAG_MOD_ADD,
+        m["msDS-PSOAppliesTo"] = ldb.MessageElement(target_dn,
+                                                    ldb.FLAG_MOD_ADD,
                                                     "msDS-PSOAppliesTo")
         try:
             samdb.modify(m)
@@ -725,8 +749,8 @@ class cmd_domain_pwdsettings_pso_unapply(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               metavar="URL", dest="H", type=str),
         ]
     takes_args = ["psoname", "user_or_group"]
 
@@ -755,7 +779,8 @@ class cmd_domain_pwdsettings_pso_unapply(Command):
         target_dn = str(res[0].dn)
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, pso_dn)
-        m["msDS-PSOAppliesTo"] = ldb.MessageElement(target_dn, ldb.FLAG_MOD_DELETE,
+        m["msDS-PSOAppliesTo"] = ldb.MessageElement(target_dn,
+                                                    ldb.FLAG_MOD_DELETE,
                                                     "msDS-PSOAppliesTo")
         try:
             samdb.modify(m)
