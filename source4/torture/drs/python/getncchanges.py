@@ -1042,7 +1042,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # Delete the target and make sure the deletion is sync'd between DCs
         target_guid = self.get_object_guid(la_target)
         self.test_ldb_dc.delete(la_target)
-        self.sync_DCs(nc_dn=self.config_dn)        
+        self.sync_DCs(nc_dn=self.config_dn)
         self._disable_all_repl(self.dnsname_dc2)
 
         # re-animate the target
