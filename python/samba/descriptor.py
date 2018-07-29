@@ -374,8 +374,8 @@ def get_dns_domain_microsoft_dns_descriptor(domain_sid, name_map={}):
 
 def get_paritions_crossref_subdomain_descriptor(domain_sid, name_map={}):
     sddl = "O:SubdomainAdminsG:SubdomainAdminsD:AI" \
-    "(A;;RPWPCRCCLCLORCWOWDSW;;;SubdomainAdmins)"
-    "(A;;RPLCLORC;;;AU)"
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;SubdomainAdmins)" \
+    "(A;;RPLCLORC;;;AU)" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
     return sddl2binary(sddl, domain_sid, name_map)
 
