@@ -117,7 +117,7 @@ class LATests(drs_base.DrsBaseTestCase):
         self.assertEqual(len(results), len(expected))
 
         for k, v in results:
-            self.assertTrue(k in expected) 
+            self.assertTrue(k in expected)
             self.assertEqual(expected[k], v, "%s active flag should be %d, not %d" %
                              (k, expected[k], v))
 

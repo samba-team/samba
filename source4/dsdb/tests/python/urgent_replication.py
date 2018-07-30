@@ -210,7 +210,7 @@ defaultHidingValue: TRUE""")
         except LdbError:
             print("Not testing urgent replication when creating classSchema object ...\n")
 
-        # urgent replication should be enabled when modifying 
+        # urgent replication should be enabled when modifying
         m = Message()
         m.dn = Dn(self.ldb, "CN=test classSchema,CN=Schema,CN=Configuration," + self.base_dn)
         m["lDAPDisplayName"] = MessageElement("updatedTestClassSchema", FLAG_MOD_REPLACE,
@@ -273,7 +273,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         res = self.ldb.load_partition_usn(self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
 
-        # urgent replication should NOT be enabled when deleting 
+        # urgent replication should NOT be enabled when deleting
         self.delete_force(self.ldb, "CN=RID Manager test,CN=System," + self.base_dn)
         res = self.ldb.load_partition_usn(self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])

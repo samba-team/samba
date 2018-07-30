@@ -833,7 +833,7 @@ class AclSearchTests(AclTests):
         self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
-        mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid)) 
+        mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)

@@ -894,7 +894,7 @@ RebootOnCompletion=No
             child.sendline("ipconfig /flushdns")
             child.expect("C:")
             child.sendline("netdom join ${WIN_HOSTNAME} /Domain:%s /UserD:%s /PasswordD:%s" % (domain, username, password))
-            i = child.expect(["The command completed successfully", 
+            i = child.expect(["The command completed successfully",
                               "The specified domain either does not exist or could not be contacted."], timeout=120)
             if i == 0:
                 break

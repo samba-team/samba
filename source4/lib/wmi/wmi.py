@@ -78,7 +78,7 @@ class IUnknown(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
-    def __init__(self, *args, **kwargs): 
+    def __init__(self, *args, **kwargs):
         _wmi.IUnknown_swiginit(self, _wmi.new_IUnknown(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IUnknown
 
@@ -92,7 +92,7 @@ class IWbemServices(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
-    def __init__(self, *args, **kwargs): 
+    def __init__(self, *args, **kwargs):
         _wmi.IWbemServices_swiginit(self, _wmi.new_IWbemServices(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IWbemServices
 
@@ -108,7 +108,7 @@ class IEnumWbemClassObject(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
-    def __init__(self, *args, **kwargs): 
+    def __init__(self, *args, **kwargs):
         _wmi.IEnumWbemClassObject_swiginit(self, _wmi.new_IEnumWbemClassObject(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IEnumWbemClassObject
 

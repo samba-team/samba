@@ -49,7 +49,7 @@ if options.output is None:
 
 
 def iterate_all(path):
-    """Iterate and yield all the parameters. 
+    """Iterate and yield all the parameters.
 
     :param path: path to parameters xml file
     """
@@ -134,12 +134,12 @@ def generate_functions(path_in, path_out):
 
             output_string = "FN"
             temp = context_dict.get(parameter['context'])
-            if temp is None: 
+            if temp is None:
                 raise Exception(parameter['name'] + " has an invalid context " + parameter['context'])
             output_string += temp
             if parameter['constant']:
                 output_string += "_CONST"
-            if parameter['parm']: 
+            if parameter['parm']:
                 output_string += "_PARM"
             temp = param_type_dict.get(parameter['type'])
             if temp is None:
@@ -274,7 +274,7 @@ def make_param_defs(path_in, path_out, scope):
         header = get_header(path_out)
         file_out.write("#ifndef %s\n" % header)
         file_out.write("#define %s\n\n" % header)
-        if scope == "GLOBAL": 
+        if scope == "GLOBAL":
             file_out.write("/**\n")
             file_out.write(" * This structure describes global (ie., server-wide) parameters.\n")
             file_out.write(" */\n")
