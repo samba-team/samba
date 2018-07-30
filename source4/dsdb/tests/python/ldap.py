@@ -903,7 +903,7 @@ class BasicTests(samba.tests.TestCase):
         # Too short (min. 1)
         try:
             ldb.add({
-               "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                "objectClass": "person",
                "sn": "" })
             self.fail()
@@ -922,7 +922,7 @@ class BasicTests(samba.tests.TestCase):
 #            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         ldb.add({
-           "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
            "objectClass": "person" })
 
         # Too short (min. 1)
@@ -1138,7 +1138,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["dn"] = MessageElement(
-          "cn=ldaptestgroup,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
+            "cn=ldaptestgroup,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
           "dn")
         try:
             ldb.modify(m)
@@ -1150,7 +1150,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["distinguishedName"] = MessageElement(
-          "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_ADD,
+            "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_ADD,
           "distinguishedName")
 
         try:
@@ -1163,7 +1163,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["distinguishedName"] = MessageElement(
-          "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
+            "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
           "distinguishedName")
 
         try:
@@ -1176,7 +1176,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["distinguishedName"] = MessageElement(
-          "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_DELETE,
+            "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_DELETE,
           "distinguishedName")
 
         try:

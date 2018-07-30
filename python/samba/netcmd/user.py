@@ -1751,7 +1751,7 @@ samba-tool user syncpasswords --terminate \\
             dirsync_filter = "(&" + \
                                "(objectClass=user)" + \
                                "(userAccountControl:%s:=%u)" % (
-                                ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT) + \
+                                   ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT) + \
                                "(!(sAMAccountName=krbtgt*))" + \
                              ")"
 

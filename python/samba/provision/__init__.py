@@ -225,7 +225,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
         raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
                                  "is not the same ..." % (paths.samdb,
                                     str(current[0]["defaultNamingContext"][0].decode('utf8')),
-                                    paths.smbconf, basedn)))
+                                     paths.smbconf, basedn)))
 
     names.domaindn=current[0]["defaultNamingContext"][0]
     names.rootdn=current[0]["rootDomainNamingContext"][0]
@@ -2042,7 +2042,7 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
         "DOMAINDN": domaindn,
         "NETBIOSNAME": netbiosname,
         "NISDOMAIN": nisdomain,
-         })
+            })
     except:
         samdb.transaction_cancel()
         raise

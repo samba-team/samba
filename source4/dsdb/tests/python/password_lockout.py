@@ -403,7 +403,7 @@ userPassword: thatsAcomplPASS2x
         m = Message()
         m.dn = Dn(self.ldb, userdn)
         m["userAccountControl"] = MessageElement(
-          str(dsdb.UF_LOCKOUT),
+            str(dsdb.UF_LOCKOUT),
           FLAG_MOD_REPLACE, "userAccountControl")
 
         self.ldb.modify(m)

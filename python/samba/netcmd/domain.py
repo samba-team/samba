@@ -659,7 +659,7 @@ class cmd_domain_join(Command):
         Option("--parent-domain", help="parent domain to create subdomain under", type=str),
         Option("--adminpass", type="string", metavar="PASSWORD",
                help="choose adminstrator password when joining as a subdomain (otherwise random)"),
-       ]
+        ]
 
     ntvfs_options = [
         Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
@@ -1227,7 +1227,7 @@ class cmd_domain_level(Command):
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, domain_dn)
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
-                  str(new_level_domain), ldb.FLAG_MOD_REPLACE,
+                    str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                             "msDS-Behavior-Version")
                 samdb.modify(m)
                 # Under partitions
@@ -1235,7 +1235,7 @@ class cmd_domain_level(Command):
                 m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup")
                   + ",CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
-                  str(new_level_domain), ldb.FLAG_MOD_REPLACE,
+                    str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                           "msDS-Behavior-Version")
                 try:
                     samdb.modify(m)
@@ -1267,7 +1267,7 @@ class cmd_domain_level(Command):
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
-                  str(new_level_forest), ldb.FLAG_MOD_REPLACE,
+                    str(new_level_forest), ldb.FLAG_MOD_REPLACE,
                           "msDS-Behavior-Version")
                 samdb.modify(m)
                 msgs.append("Forest function level changed!")
@@ -2098,7 +2098,7 @@ class cmd_domain_trust_list(DomainTrustCommand):
     }
 
     takes_options = [
-       ]
+        ]
 
     def run(self, sambaopts=None, versionopts=None, localdcopts=None):
 
@@ -2143,7 +2143,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
     }
 
     takes_options = [
-       ]
+        ]
 
     takes_args = ["domain"]
 
@@ -2286,7 +2286,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                help="Skip validation of the trust.",
                dest='validate',
                default=True),
-       ]
+        ]
 
     takes_args = ["domain"]
 
@@ -2782,7 +2782,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                help="Where to delete the trusted domain object: 'local' or 'both'.",
                dest='delete_location',
                default="both"),
-       ]
+        ]
 
     takes_args = ["domain"]
 
@@ -2939,7 +2939,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                help="Where to validate the trusted domain object: 'local' or 'both'.",
                dest='validate_location',
                default="both"),
-       ]
+        ]
 
     takes_args = ["domain"]
 
@@ -3162,7 +3162,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                help="Delete an existing msDS-SPNSuffixes attribute of the local forest. Can be specified multiple times.",
                dest='delete_spn',
                default=[]),
-       ]
+        ]
 
     takes_args = ["domain?"]
 

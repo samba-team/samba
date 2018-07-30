@@ -208,7 +208,7 @@ class cmd_domain_backup_online(samba.netcmd.Command):
                help="Directory to write the backup file to"),
         Option("--no-secrets", action="store_true", default=False,
                help="Exclude secret values from the backup created")
-       ]
+        ]
 
     def run(self, sambaopts=None, credopts=None, server=None, targetdir=None,
             no_secrets=False):
@@ -585,7 +585,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
                help="Retain the DNS entries for the old realm in the backup"),
         Option("--no-secrets", action="store_true", default=False,
                help="Exclude secret values from the backup created")
-       ]
+        ]
 
     takes_args = ["new_domain_name", "new_dns_realm"]
 

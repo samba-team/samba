@@ -113,7 +113,7 @@ class BasePasswordTestCase(PasswordTestCase):
         if msg is not None:
             print("\033[01;32m %s \033[00m\n" % msg)
         attrs = [
-           "objectSid",
+            "objectSid",
            "badPwdCount",
            "badPasswordTime",
            "lastLogon",

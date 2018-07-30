@@ -609,7 +609,7 @@ unicodePwd:: %s
 
             if force_change_at_next_login:
                 self.force_password_change_at_next_login(
-                  "(distinguishedName=" + str(user_dn) + ")")
+                    "(distinguishedName=" + str(user_dn) + ")")
 
             #  modify the userAccountControl to remove the disabled bit
             self.enable_account(search_filter)

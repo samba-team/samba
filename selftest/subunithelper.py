@@ -667,7 +667,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
 
         if not self.immediate:
             sys.stdout.write({
-               'error': 'E',
+                'error': 'E',
                'failure': 'F',
                'uxsuccess': 'U',
                'success': 'S'}.get(result, "?"))

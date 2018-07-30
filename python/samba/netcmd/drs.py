@@ -753,7 +753,7 @@ class cmd_drs_clone_dc_database(Command):
         Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("--include-secrets", help="Also replicate secret values", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true")
-       ]
+        ]
 
     takes_args = ["domain"]
 

@@ -485,7 +485,7 @@ class buildlist(object):
                               diff old_remote_branch.desc remote_branch.desc
                             done
                            ''' % (
-                               rebase_branch, rebase_remote, rebase_url,
+                                rebase_branch, rebase_remote, rebase_url,
                                rebase_remote,
                                rebase_remote, rebase_branch,
                                rebase_remote,
