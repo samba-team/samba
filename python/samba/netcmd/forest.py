@@ -53,7 +53,7 @@ class cmd_forest_show(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
         object_dn = "%s,%s" % (self.objectdn, domain_dn)
@@ -103,7 +103,7 @@ class cmd_forest_set(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
         object_dn = "%s,%s" % (self.objectdn, domain_dn)

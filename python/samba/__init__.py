@@ -140,7 +140,7 @@ class Ldb(_Ldb):
 
         try:
             res = self.search(base=dn, scope=ldb.SCOPE_SUBTREE, attrs=[],
-                      expression="(|(objectclass=user)(objectclass=computer))")
+                              expression="(|(objectclass=user)(objectclass=computer))")
         except ldb.LdbError as error:
             (errno, estr) = error.args
             if errno == ldb.ERR_NO_SUCH_OBJECT:
@@ -173,8 +173,8 @@ class Ldb(_Ldb):
         # Delete the 'visible' records, and the invisble 'deleted' records (if
         # this DB supports it)
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE,
-                       "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
-                       [], controls=["show_deleted:0", "show_recycled:0"]):
+                               "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
+                               [], controls=["show_deleted:0", "show_recycled:0"]):
             try:
                 self.delete(msg.dn, ["relax:0"])
             except ldb.LdbError as error:
@@ -184,8 +184,8 @@ class Ldb(_Ldb):
                     raise
 
         res = self.search(basedn, ldb.SCOPE_SUBTREE,
-            "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
-            [], controls=["show_deleted:0", "show_recycled:0"])
+                          "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
+                          [], controls=["show_deleted:0", "show_recycled:0"])
         assert len(res) == 0
 
         # delete the specials
@@ -271,7 +271,7 @@ def check_all_substituted(text):
     var_end = text.find("}", var_start)
 
     raise Exception("Not all variables substituted: %s" %
-        text[var_start:var_end+1])
+                    text[var_start:var_end+1])
 
 
 def read_and_sub_file(file_name, subst_vars):
@@ -336,7 +336,7 @@ def import_bundled_package(modulename, location, source_tree_container,
     """
     if in_source_tree():
         extra_path = os.path.join(source_tree_topdir(), source_tree_container,
-            location)
+                                  location)
         if not extra_path in sys.path:
             sys.path.insert(0, extra_path)
         sys.modules[modulename] = __import__(modulename)
@@ -356,8 +356,8 @@ def ensure_third_party_module(modulename, location):
         __import__(modulename)
     except ImportError:
         import_bundled_package(modulename, location,
-            source_tree_container="third_party",
-            namespace="samba.third_party")
+                               source_tree_container="third_party",
+                               namespace="samba.third_party")
 
 
 def dn_from_dns_name(dnsdomain):

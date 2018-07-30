@@ -158,7 +158,7 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         print("BindTest (no domain) with: " + self.username)
         try:
             ldb_user4 = samba.tests.connect_samdb(host, credentials=creds_user4,
-                                              lp=lp, ldap_only=True)
+                                                  lp=lp, ldap_only=True)
         except:
             self.fail("Failed to connect without the domain set")
 

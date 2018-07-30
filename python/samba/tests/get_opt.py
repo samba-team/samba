@@ -52,4 +52,4 @@ class KerberosOptionTests(samba.tests.TestCase):
 
     def test_parse_invalid(self):
         self.assertRaises(optparse.OptionValueError,
-            parse_kerberos_arg, "blah?", "--kerberos")
+                          parse_kerberos_arg, "blah?", "--kerberos")

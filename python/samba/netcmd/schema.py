@@ -111,7 +111,7 @@ class cmd_schema_attribute_modify(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         schema_dn = samdb.schema_dn()
         # For now we make assumptions about the CN
@@ -154,7 +154,7 @@ class cmd_schema_attribute_show(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         schema_dn = samdb.schema_dn()
 
@@ -229,7 +229,7 @@ class cmd_schema_attribute_show_oc(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         schema_dn = samdb.schema_dn()
 
@@ -239,9 +239,9 @@ class cmd_schema_attribute_show_oc(Command):
         '(|(mustContain={0})(systemMustContain={0})))'.format(attribute)
 
         may_res = samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
-                           expression=may_filt, attrs=['cn'])
+                               expression=may_filt, attrs=['cn'])
         must_res = samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
-                           expression=must_filt, attrs=['cn'])
+                                expression=must_filt, attrs=['cn'])
 
         self.outf.write('--- MAY contain ---\n')
         for msg in may_res:
@@ -279,7 +279,7 @@ class cmd_schema_objectclass_show(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         schema_dn = samdb.schema_dn()
 

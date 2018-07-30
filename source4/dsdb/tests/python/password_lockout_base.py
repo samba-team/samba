@@ -44,8 +44,8 @@ class BasePasswordTestCase(PasswordTestCase):
 
         if mode == "absent":
             self.assertFalse(name in res[0],
-                            msg="attr[%s] not missing on dn[%s]" %
-                            (name, res[0].dn))
+                             msg="attr[%s] not missing on dn[%s]" %
+                             (name, res[0].dn))
             return
 
         self.assertTrue(name in res[0],
@@ -294,7 +294,7 @@ userPassword: """ + userpass + """
         configuration_dn = self.ldb.get_config_basedn().get_linearized()
 
         res = self.ldb.search(base_dn,
-                         scope=SCOPE_BASE, attrs=["lockoutDuration", "lockOutObservationWindow", "lockoutThreshold"])
+                              scope=SCOPE_BASE, attrs=["lockoutDuration", "lockOutObservationWindow", "lockoutThreshold"])
 
         if "lockoutDuration" in res[0]:
             lockoutDuration = res[0]["lockoutDuration"][0]

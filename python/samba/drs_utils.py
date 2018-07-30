@@ -62,7 +62,7 @@ def drsuapi_connect(server, lp, creds):
 
 
 def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid,
-        naming_context, req_option):
+                      naming_context, req_option):
     """Send DS replica sync request.
 
     :param drsuapiBind: a drsuapi Bind object

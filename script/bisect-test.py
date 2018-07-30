@@ -17,7 +17,7 @@ parser.add_option("", "--autogen", help="run autogen before each build",action="
 parser.add_option("", "--autogen-command", help="command to use for autogen (default ./autogen.sh)",
                   type='str', default="./autogen.sh")
 parser.add_option("", "--configure", help="run configure.developer before each build",
-    action="store_true", default=False)
+                  action="store_true", default=False)
 parser.add_option("", "--configure-command", help="the command for configure (default ./configure.developer)",
                   type='str', default="./configure.developer")
 parser.add_option("", "--build-command", help="the command to build the tree (default 'make -j')",

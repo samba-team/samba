@@ -46,10 +46,10 @@ class SubunitOptions(optparse.OptionGroup):
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Subunit Options")
         self.add_option('-l', '--list', dest='listtests', default=False,
-                  help='List tests rather than running them.',
-                  action="store_true")
+                        help='List tests rather than running them.',
+                        action="store_true")
         self.add_option('--load-list', dest='load_list', default=None,
-                  help='Specify a filename containing the test ids to use.')
+                        help='Specify a filename containing the test ids to use.')
 
 
 class TestProgram(BaseTestProgram):

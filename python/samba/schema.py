@@ -65,8 +65,8 @@ class Schema(object):
     # the schema files (and corresponding object version) that we know about
     base_schemas = {
         "2008_R2_old" : ("MS-AD_Schema_2K8_R2_Attributes.txt",
-                        "MS-AD_Schema_2K8_R2_Classes.txt",
-                        47),
+                         "MS-AD_Schema_2K8_R2_Classes.txt",
+                         47),
        "2008_R2" : ("Attributes_for_AD_DS__Windows_Server_2008_R2.ldf",
                     "Classes_for_AD_DS__Windows_Server_2008_R2.ldf",
                     47),
@@ -114,7 +114,7 @@ class Schema(object):
                 self.schema_data += open(file, 'r').read()
 
         self.schema_data = substitute_var(self.schema_data,
-            {"SCHEMADN": schemadn})
+                                          {"SCHEMADN": schemadn})
         check_all_substituted(self.schema_data)
 
         schema_version = str(Schema.get_version(base_schema))
@@ -248,4 +248,4 @@ def ldb_with_schema(schemadn="cn=schema,cn=configuration,dc=example,dc=com",
     else:
         domainsid = security.dom_sid(domainsid)
     return Schema(domainsid, schemadn=schemadn,
-        override_prefixmap=override_prefixmap)
+                  override_prefixmap=override_prefixmap)

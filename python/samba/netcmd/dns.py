@@ -123,7 +123,7 @@ def zone_notify_level_string(notify_level):
 
 def dp_flags_string(dp_flags):
     bitmap_defs = [ 'DNS_DP_AUTOCREATED', 'DNS_DP_LEGACY', 'DNS_DP_DOMAIN_DEFAULT',
-                'DNS_DP_FOREST_DEFAULT', 'DNS_DP_ENLISTED', 'DNS_DP_DELETED' ]
+                    'DNS_DP_FOREST_DEFAULT', 'DNS_DP_ENLISTED', 'DNS_DP_DELETED' ]
     return bitmap_string(dnsserver, bitmap_defs, dp_flags)
 
 
@@ -986,7 +986,7 @@ class cmd_update_record(Command):
         dns_conn = dns_connect(server, self.lp, self.creds)
 
         rec_match = dns_record_match(dns_conn, server, zone, name, record_type,
-                olddata)
+                                     olddata)
         if not rec_match:
             raise CommandError('Record or zone does not exist.')
 

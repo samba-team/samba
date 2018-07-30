@@ -43,11 +43,11 @@ from ldb import timestring
 from samba import Ldb
 from samba.samdb import SamDB
 from samba.dsdb import (UF_NORMAL_ACCOUNT,
-    UF_WORKSTATION_TRUST_ACCOUNT,
-    UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
-    ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE,
-    SYSTEM_FLAG_CONFIG_ALLOW_RENAME, SYSTEM_FLAG_CONFIG_ALLOW_MOVE,
-    SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)
+                        UF_WORKSTATION_TRUST_ACCOUNT,
+                        UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
+                        ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE,
+                        SYSTEM_FLAG_CONFIG_ALLOW_RENAME, SYSTEM_FLAG_CONFIG_ALLOW_MOVE,
+                        SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)
 
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security, lsa
@@ -216,7 +216,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("top", FLAG_MOD_DELETE,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -229,7 +229,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("person", FLAG_MOD_DELETE,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -241,7 +241,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("computer", FLAG_MOD_DELETE,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -253,7 +253,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("X", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -267,7 +267,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("user", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -279,7 +279,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("person", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -291,7 +291,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         # This does not work since object class "leaf" is not auxiliary nor it
@@ -299,7 +299,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("leaf", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -311,13 +311,13 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement(["top", "person", "bootableDevice"],
-          FLAG_MOD_REPLACE, "objectClass")
+                                          FLAG_MOD_REPLACE, "objectClass")
         ldb.modify(m)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement(["person", "bootableDevice"],
-          FLAG_MOD_REPLACE, "objectClass")
+                                          FLAG_MOD_REPLACE, "objectClass")
         ldb.modify(m)
 
         # This does not work since object class "leaf" is not auxiliary nor it
@@ -325,7 +325,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement(["top", "person", "bootableDevice",
-          "leaf"], FLAG_MOD_REPLACE, "objectClass")
+                                           "leaf"], FLAG_MOD_REPLACE, "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -354,7 +354,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement(["top", "computer"], FLAG_MOD_REPLACE,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -366,7 +366,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -377,14 +377,14 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         # Add an attribute specific to the "bootableDevice" class
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["bootParameter"] = MessageElement("test", FLAG_MOD_ADD,
-          "bootParameter")
+                                            "bootParameter")
         ldb.modify(m)
 
         # Classes can be removed unless attributes of them are used. Now there
@@ -392,7 +392,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -404,14 +404,14 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["bootParameter"] = MessageElement("test", FLAG_MOD_DELETE,
-          "bootParameter")
+                                            "bootParameter")
         ldb.modify(m)
 
         # Classes can be removed unless attributes of them are used.
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -425,7 +425,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("container", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -438,13 +438,13 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_DELETE,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         # Replace top-most structural class to "inetOrgPerson" and reset it
@@ -452,20 +452,20 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_REPLACE,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("user", FLAG_MOD_REPLACE,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         # Add a new auxiliary object class "posixAccount" to "ldaptestuser"
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("posixAccount", FLAG_MOD_ADD,
-          "objectClass")
+                                          "objectClass")
         ldb.modify(m)
 
         # Be sure that "top" is the first and the (most) structural object class
@@ -517,7 +517,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=Test Secret,cn=system," + self.base_dn)
         m["description"] = MessageElement("desc", FLAG_MOD_REPLACE,
-          "description")
+                                          "description")
         try:
             ldb.modify(m)
             self.fail()
@@ -544,7 +544,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcontainer," + self.base_dn)
         m["isCriticalSystemObject"] = MessageElement("TRUE", FLAG_MOD_REPLACE,
-          "isCriticalSystemObject")
+                                                     "isCriticalSystemObject")
         try:
             ldb.modify(m)
             self.fail()
@@ -581,7 +581,7 @@ class BasicTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=thisdoesnotexist123,"
-          + self.base_dn)
+                     + self.base_dn)
 
         try:
             self.ldb.add({
@@ -619,7 +619,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["thisdoesnotexist"] = MessageElement("x", FLAG_MOD_REPLACE,
-          "thisdoesnotexist")
+                                               "thisdoesnotexist")
         try:
             ldb.modify(m)
             self.fail()
@@ -688,7 +688,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestobject," + self.base_dn)
         m["ipProtocolNumber"] = MessageElement([], FLAG_MOD_DELETE,
-          "ipProtocolNumber")
+                                               "ipProtocolNumber")
         try:
             ldb.modify(m)
             self.fail()
@@ -700,7 +700,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestobject," + self.base_dn)
         m["ipProtocolNumber"] = MessageElement([], FLAG_MOD_REPLACE,
-          "ipProtocolNumber")
+                                               "ipProtocolNumber")
         try:
             ldb.modify(m)
             self.fail()
@@ -729,7 +729,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["sAMAccountName"] = MessageElement(["nam1","nam2"], FLAG_MOD_REPLACE,
-          "sAMAccountName")
+                                             "sAMAccountName")
         try:
             ldb.modify(m)
             self.fail()
@@ -740,13 +740,13 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["sAMAccountName"] = MessageElement("testgroupXX", FLAG_MOD_REPLACE,
-          "sAMAccountName")
+                                             "sAMAccountName")
         ldb.modify(m)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["sAMAccountName"] = MessageElement("testgroupXX2", FLAG_MOD_ADD,
-          "sAMAccountName")
+                                             "sAMAccountName")
         try:
             ldb.modify(m)
             self.fail()
@@ -1062,7 +1062,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["instanceType"] = MessageElement("0", FLAG_MOD_REPLACE,
-          "instanceType")
+                                           "instanceType")
         try:
             ldb.modify(m)
             self.fail()
@@ -1073,7 +1073,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["instanceType"] = MessageElement([], FLAG_MOD_REPLACE,
-          "instanceType")
+                                           "instanceType")
         try:
             ldb.modify(m)
             self.fail()
@@ -1112,7 +1112,7 @@ class BasicTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("group", 0, "objectClass")
         m["dn"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn, 0,
-          "dn")
+                                 "dn")
         try:
             ldb.add(m)
             self.fail()
@@ -1132,7 +1132,7 @@ class BasicTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("distinguishedName" in res[0])
         self.assertTrue(Dn(ldb, res[0]["distinguishedName"][0])
-           == Dn(ldb, "cn=ldaptestgroup, cn=users," + self.base_dn))
+                        == Dn(ldb, "cn=ldaptestgroup, cn=users," + self.base_dn))
 
         # The "dn" shortcut isn't supported
         m = Message()
@@ -1349,7 +1349,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["name"] = MessageElement("cn=ldaptestuser", FLAG_MOD_REPLACE,
-          "name")
+                                   "name")
         try:
             ldb.modify(m)
             self.fail()
@@ -1360,7 +1360,7 @@ class BasicTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["cn"] = MessageElement("ldaptestuser",
-          FLAG_MOD_REPLACE, "cn")
+                                 FLAG_MOD_REPLACE, "cn")
         try:
             ldb.modify(m)
             self.fail()
@@ -1692,8 +1692,8 @@ replace: description
 """)
 
         res2 = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                         scope=SCOPE_BASE,
-                         attrs=["uSNCreated", "uSNChanged", "description"])
+                          scope=SCOPE_BASE,
+                          attrs=["uSNCreated", "uSNChanged", "description"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("description" in res2[0])
         self.assertEqual(res[0]["usnCreated"], res2[0]["usnCreated"])
@@ -1708,8 +1708,8 @@ description: test
 """)
 
         res3 = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                         scope=SCOPE_BASE,
-                         attrs=["uSNCreated", "uSNChanged", "description"])
+                          scope=SCOPE_BASE,
+                          attrs=["uSNCreated", "uSNChanged", "description"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res3[0])
         self.assertEqual("test", str(res3[0]["description"][0]))
@@ -1725,8 +1725,8 @@ description: test
 """)
 
         res4 = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                         scope=SCOPE_BASE,
-                         attrs=["uSNCreated", "uSNChanged", "description"])
+                          scope=SCOPE_BASE,
+                          attrs=["uSNCreated", "uSNChanged", "description"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res4[0])
         self.assertEqual("test", str(res4[0]["description"][0]))
@@ -1742,8 +1742,8 @@ description: test2
 """)
 
         res5 = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                         scope=SCOPE_BASE,
-                         attrs=["uSNCreated", "uSNChanged", "description"])
+                          scope=SCOPE_BASE,
+                          attrs=["uSNCreated", "uSNChanged", "description"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res5[0])
         self.assertEqual("test2", str(res5[0]["description"][0]))
@@ -1758,8 +1758,8 @@ description: test2
 """)
 
         res6 = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                         scope=SCOPE_BASE,
-                         attrs=["uSNCreated", "uSNChanged", "description"])
+                          scope=SCOPE_BASE,
+                          attrs=["uSNCreated", "uSNChanged", "description"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("description" in res6[0])
         self.assertEqual(res[0]["usnCreated"], res6[0]["usnCreated"])
@@ -1773,8 +1773,8 @@ description: test3
 """)
 
         res7 = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                         scope=SCOPE_BASE,
-                         attrs=["uSNCreated", "uSNChanged", "description"])
+                          scope=SCOPE_BASE,
+                          attrs=["uSNCreated", "uSNChanged", "description"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res7[0])
         self.assertEqual("test3", str(res7[0]["description"][0]))
@@ -1788,8 +1788,8 @@ delete: description
 """)
 
         res8 = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                         scope=SCOPE_BASE,
-                         attrs=["uSNCreated", "uSNChanged", "description"])
+                          scope=SCOPE_BASE,
+                          attrs=["uSNCreated", "uSNChanged", "description"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("description" in res8[0])
         self.assertEqual(res[0]["usnCreated"], res8[0]["usnCreated"])
@@ -1836,7 +1836,7 @@ delete: description
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["memberOf"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn,
-          FLAG_MOD_ADD, "memberOf")
+                                       FLAG_MOD_ADD, "memberOf")
         try:
             ldb.modify(m)
             self.fail()
@@ -1847,13 +1847,13 @@ delete: description
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
-          FLAG_MOD_ADD, "member")
+                                     FLAG_MOD_ADD, "member")
         ldb.modify(m)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["memberOf"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn,
-          FLAG_MOD_REPLACE, "memberOf")
+                                       FLAG_MOD_REPLACE, "memberOf")
         try:
             ldb.modify(m)
             self.fail()
@@ -1864,7 +1864,7 @@ delete: description
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["memberOf"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn,
-          FLAG_MOD_DELETE, "memberOf")
+                                       FLAG_MOD_DELETE, "memberOf")
         try:
             ldb.modify(m)
             self.fail()
@@ -1875,7 +1875,7 @@ delete: description
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
-          FLAG_MOD_DELETE, "member")
+                                     FLAG_MOD_DELETE, "member")
         ldb.modify(m)
 
         # This should yield no results since the member attribute for
@@ -1954,10 +1954,10 @@ delete: description
             "cN": "LDAPtestCOMPUTER"})
 
         ldb.add({"dn": "cn=ldaptest2computer,cn=computers," + self.base_dn,
-            "objectClass": "computer",
-            "cn": "LDAPtest2COMPUTER",
-            "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT),
-            "displayname": "ldap testy"})
+                 "objectClass": "computer",
+                 "cn": "LDAPtest2COMPUTER",
+                 "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT),
+                 "displayname": "ldap testy"})
 
         try:
             ldb.add({"dn": "cn=ldaptestcomputer3,cn=computers," + self.base_dn,
@@ -2351,8 +2351,8 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         # Testing subtree ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in (just renamed from) cn=ldaptestcontainer," + self.base_dn
         try:
             res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                    expression="(&(cn=ldaptestuser4)(objectClass=user))",
-                    scope=SCOPE_SUBTREE)
+                             expression="(&(cn=ldaptestuser4)(objectClass=user))",
+                             scope=SCOPE_SUBTREE)
             self.fail(res)
         except LdbError as e102:
             (num, _) = e102.args
@@ -2361,7 +2361,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         # Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in (just renamed from) cn=ldaptestcontainer," + self.base_dn
         try:
             res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                    expression="(&(cn=ldaptestuser4)(objectClass=user))", scope=SCOPE_ONELEVEL)
+                             expression="(&(cn=ldaptestuser4)(objectClass=user))", scope=SCOPE_ONELEVEL)
             self.fail()
         except LdbError as e103:
             (num, _) = e103.args
@@ -3184,13 +3184,13 @@ class BaseDnTests(samba.tests.TestCase):
     def test_netlogon_highestcommitted_usn(self):
         """Testing for netlogon and highestCommittedUSN via LDAP"""
         res = self.ldb.search("", scope=SCOPE_BASE,
-                attrs=["netlogon", "highestCommittedUSN"])
+                              attrs=["netlogon", "highestCommittedUSN"])
         self.assertEquals(len(res), 0)
 
     def test_namingContexts(self):
         """Testing for namingContexts in rootDSE"""
         res = self.ldb.search("", scope=SCOPE_BASE,
-                attrs=["namingContexts", "defaultNamingContext", "schemaNamingContext", "configurationNamingContext"])
+                              attrs=["namingContexts", "defaultNamingContext", "schemaNamingContext", "configurationNamingContext"])
         self.assertEquals(len(res), 1)
 
         ncs = set([])
@@ -3228,7 +3228,7 @@ class BaseDnTests(samba.tests.TestCase):
         self.assertTrue(int(res[0]["domainControllerFunctionality"][0]) >= int(res[0]["domainFunctionality"][0]))
 
         res2 = self.ldb.search("", scope=SCOPE_BASE,
-                              attrs=["dsServiceName", "serverName"])
+                               attrs=["dsServiceName", "serverName"])
         self.assertEquals(len(res2), 1)
         self.assertEquals(len(res2[0]["dsServiceName"]), 1)
 

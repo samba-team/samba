@@ -32,7 +32,7 @@ class IdmapDbTestCase(TestCase):
     def setUp(self):
         super(IdmapDbTestCase, self).setUp()
         self.idmapdb = IdmapDatabase(os.path.join(DATADIR,
-            "winbindd_idmap"))
+                                                  "winbindd_idmap"))
 
     def test_user_hwm(self):
         self.assertEquals(10000, self.idmapdb.get_user_hwm())

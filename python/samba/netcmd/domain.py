@@ -514,28 +514,28 @@ class cmd_domain_provision(Command):
             backend_store = get_default_backend_store()
         try:
             result = provision(self.logger,
-                  session, smbconf=smbconf, targetdir=targetdir,
-                  samdb_fill=samdb_fill, realm=realm, domain=domain,
-                  domainguid=domain_guid, domainsid=domain_sid,
-                  hostname=host_name,
-                  hostip=host_ip, hostip6=host_ip6,
-                  sitename=site, ntdsguid=ntds_guid,
-                  invocationid=invocationid, adminpass=adminpass,
-                  krbtgtpass=krbtgtpass, machinepass=machinepass,
-                  dns_backend=dns_backend, dns_forwarder=dns_forwarder,
-                  dnspass=dnspass, root=root, nobody=nobody,
-                  users=users,
-                  serverrole=server_role, dom_for_fun_level=dom_for_fun_level,
-                  backend_type=ldap_backend_type,
-                  ldapadminpass=ldapadminpass, ol_mmr_urls=ol_mmr_urls, slapd_path=slapd_path,
-                  useeadb=eadb, next_rid=next_rid, lp=lp, use_ntvfs=use_ntvfs,
-                  use_rfc2307=use_rfc2307, skip_sysvolacl=False,
-                  ldap_backend_extra_port=ldap_backend_extra_port,
-                  ldap_backend_forced_uri=ldap_backend_forced_uri,
-                  nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode,
-                  base_schema=base_schema,
-                  plaintext_secrets=plaintext_secrets,
-                  backend_store=backend_store)
+                               session, smbconf=smbconf, targetdir=targetdir,
+                               samdb_fill=samdb_fill, realm=realm, domain=domain,
+                               domainguid=domain_guid, domainsid=domain_sid,
+                               hostname=host_name,
+                               hostip=host_ip, hostip6=host_ip6,
+                               sitename=site, ntdsguid=ntds_guid,
+                               invocationid=invocationid, adminpass=adminpass,
+                               krbtgtpass=krbtgtpass, machinepass=machinepass,
+                               dns_backend=dns_backend, dns_forwarder=dns_forwarder,
+                               dnspass=dnspass, root=root, nobody=nobody,
+                               users=users,
+                               serverrole=server_role, dom_for_fun_level=dom_for_fun_level,
+                               backend_type=ldap_backend_type,
+                               ldapadminpass=ldapadminpass, ol_mmr_urls=ol_mmr_urls, slapd_path=slapd_path,
+                               useeadb=eadb, next_rid=next_rid, lp=lp, use_ntvfs=use_ntvfs,
+                               use_rfc2307=use_rfc2307, skip_sysvolacl=False,
+                               ldap_backend_extra_port=ldap_backend_extra_port,
+                               ldap_backend_forced_uri=ldap_backend_forced_uri,
+                               nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode,
+                               base_schema=base_schema,
+                               plaintext_secrets=plaintext_secrets,
+                               backend_store=backend_store)
 
         except ProvisioningError as e:
             raise CommandError("Provision failed", e)
@@ -809,8 +809,8 @@ class cmd_domain_demote(Command):
 
         ntds_guid = samdb.get_ntds_GUID()
         msg = samdb.search(base=str(samdb.get_config_basedn()),
-            scope=ldb.SCOPE_SUBTREE, expression="(objectGUID=%s)" % ntds_guid,
-            attrs=['options'])
+                           scope=ldb.SCOPE_SUBTREE, expression="(objectGUID=%s)" % ntds_guid,
+                           attrs=['options'])
         if len(msg) == 0 or "options" not in msg[0]:
             raise CommandError("Failed to find options on %s" % ntds_guid)
 
@@ -870,14 +870,14 @@ class cmd_domain_demote(Command):
                         raise CommandError("Error while sending a DsReplicaSync for partition '%s'" % str(part), string)
         try:
             remote_samdb = SamDB(url="ldap://%s" % server,
-                                session_info=system_session(),
-                                credentials=creds, lp=lp)
+                                 session_info=system_session(),
+                                 credentials=creds, lp=lp)
 
             self.errf.write("Changing userControl and container\n")
             res = remote_samdb.search(base=str(remote_samdb.domain_dn()),
-                                expression="(&(objectClass=user)(sAMAccountName=%s$))" %
+                                      expression="(&(objectClass=user)(sAMAccountName=%s$))" %
                                       netbios_name.upper(),
-                                attrs=["userAccountControl"])
+                                      attrs=["userAccountControl"])
             dc_dn = res[0].dn
             uac = int(str(res[0]["userAccountControl"]))
 
@@ -954,8 +954,8 @@ class cmd_domain_demote(Command):
                 msg.dn = dc_dn
 
                 msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
-                                                        ldb.FLAG_MOD_REPLACE,
-                                                        "userAccountControl")
+                                                               ldb.FLAG_MOD_REPLACE,
+                                                               "userAccountControl")
 
                 remote_samdb.modify(msg)
 
@@ -980,8 +980,8 @@ class cmd_domain_demote(Command):
             msg.dn = dc_dn
 
             msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
-                                                    ldb.FLAG_MOD_REPLACE,
-                                                    "userAccountControl")
+                                                           ldb.FLAG_MOD_REPLACE,
+                                                           "userAccountControl")
 
             remote_samdb.modify(msg)
             raise CommandError("Error while renaming %s to %s" % (str(dc_dn), str(newdn)), e)
@@ -1032,7 +1032,7 @@ class cmd_domain_demote(Command):
                   "CN=NTFRS Subscriptions"):
             try:
                 remote_samdb.delete(ldb.Dn(remote_samdb,
-                                    "%s,%s" % (s, str(newdn))))
+                                           "%s,%s" % (s, str(newdn))))
             except ldb.LdbError as l:
                 pass
 
@@ -1059,10 +1059,10 @@ class cmd_domain_level(Command):
                metavar="URL", dest="H"),
         Option("-q", "--quiet", help="Be quiet", action="store_true"), # unused
         Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
-            help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)"),
+               help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)"),
         Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
-            help="The domain function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)")
-            ]
+               help="The domain function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)")
+        ]
 
     takes_args = ["subcommand"]
 
@@ -1072,21 +1072,21 @@ class cmd_domain_level(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
 
         res_forest = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
-          scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
+                                  scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
         assert len(res_forest) == 1
 
         res_domain = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
-          attrs=["msDS-Behavior-Version", "nTMixedDomain"])
+                                  attrs=["msDS-Behavior-Version", "nTMixedDomain"])
         assert len(res_domain) == 1
 
         res_dc_s = samdb.search("CN=Sites,%s" % samdb.get_config_basedn(),
-          scope=ldb.SCOPE_SUBTREE, expression="(objectClass=nTDSDSA)",
-          attrs=["msDS-Behavior-Version"])
+                                scope=ldb.SCOPE_SUBTREE, expression="(objectClass=nTDSDSA)",
+                                attrs=["msDS-Behavior-Version"])
         assert len(res_dc_s) >= 1
 
         # default values, since "msDS-Behavior-Version" does not exist on Windows 2000 AD
@@ -1209,13 +1209,13 @@ class cmd_domain_level(Command):
                     m = ldb.Message()
                     m.dn = ldb.Dn(samdb, domain_dn)
                     m["nTMixedDomain"] = ldb.MessageElement("0",
-                      ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
+                                                            ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
                     samdb.modify(m)
                     # Under partitions
                     m = ldb.Message()
                     m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup") + ",CN=Partitions,%s" % samdb.get_config_basedn())
                     m["nTMixedDomain"] = ldb.MessageElement("0",
-                      ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
+                                                            ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
                     try:
                         samdb.modify(m)
                     except ldb.LdbError as e:
@@ -1233,7 +1233,7 @@ class cmd_domain_level(Command):
                 # Under partitions
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup")
-                  + ",CN=Partitions,%s" % samdb.get_config_basedn())
+                              + ",CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
                     str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                           "msDS-Behavior-Version")
@@ -1297,13 +1297,13 @@ class cmd_domain_passwordsettings_show(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
         res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
-          attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength",
-                 "minPwdAge", "maxPwdAge", "lockoutDuration", "lockoutThreshold",
-                 "lockOutObservationWindow"])
+                           attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength",
+                                  "minPwdAge", "maxPwdAge", "lockoutDuration", "lockoutThreshold",
+                                  "lockOutObservationWindow"])
         assert(len(res) == 1)
         try:
             pwd_props = int(res[0]["pwdProperties"][0])
@@ -1366,24 +1366,24 @@ class cmd_domain_passwordsettings_set(Command):
                metavar="URL", dest="H"),
         Option("-q", "--quiet", help="Be quiet", action="store_true"), # unused
         Option("--complexity", type="choice", choices=["on","off","default"],
-          help="The password complexity (on | off | default). Default is 'on'"),
+               help="The password complexity (on | off | default). Default is 'on'"),
         Option("--store-plaintext", type="choice", choices=["on","off","default"],
-          help="Store plaintext passwords where account have 'store passwords with reversible encryption' set (on | off | default). Default is 'off'"),
+               help="Store plaintext passwords where account have 'store passwords with reversible encryption' set (on | off | default). Default is 'off'"),
         Option("--history-length",
-          help="The password history length (<integer> | default).  Default is 24.", type=str),
+               help="The password history length (<integer> | default).  Default is 24.", type=str),
         Option("--min-pwd-length",
-          help="The minimum password length (<integer> | default).  Default is 7.", type=str),
+               help="The minimum password length (<integer> | default).  Default is 7.", type=str),
         Option("--min-pwd-age",
-          help="The minimum password age (<integer in days> | default).  Default is 1.", type=str),
+               help="The minimum password age (<integer in days> | default).  Default is 1.", type=str),
         Option("--max-pwd-age",
-          help="The maximum password age (<integer in days> | default).  Default is 43.", type=str),
+               help="The maximum password age (<integer in days> | default).  Default is 43.", type=str),
         Option("--account-lockout-duration",
-          help="The the length of time an account is locked out after exeeding the limit on bad password attempts (<integer in mins> | default).  Default is 30 mins.", type=str),
+               help="The the length of time an account is locked out after exeeding the limit on bad password attempts (<integer in mins> | default).  Default is 30 mins.", type=str),
         Option("--account-lockout-threshold",
-          help="The number of bad password attempts allowed before locking out the account (<integer> | default).  Default is 0 (never lock out).", type=str),
+               help="The number of bad password attempts allowed before locking out the account (<integer> | default).  Default is 0 (never lock out).", type=str),
         Option("--reset-account-lockout-after",
-          help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer> | default).  Default is 30.", type=str),
-          ]
+               help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer> | default).  Default is 30.", type=str),
+        ]
 
     def run(self, H=None, min_pwd_age=None, max_pwd_age=None,
             quiet=False, complexity=None, store_plaintext=None, history_length=None,
@@ -1394,7 +1394,7 @@ class cmd_domain_passwordsettings_set(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
         msgs = []
@@ -1420,7 +1420,7 @@ class cmd_domain_passwordsettings_set(Command):
 
         if complexity is not None or store_plaintext is not None:
             m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
-              ldb.FLAG_MOD_REPLACE, "pwdProperties")
+                                                    ldb.FLAG_MOD_REPLACE, "pwdProperties")
 
         if history_length is not None:
             if history_length == "default":
@@ -1432,7 +1432,7 @@ class cmd_domain_passwordsettings_set(Command):
                 raise CommandError("Password history length must be in the range of 0 to 24!")
 
             m["pwdHistoryLength"] = ldb.MessageElement(str(pwd_hist_len),
-              ldb.FLAG_MOD_REPLACE, "pwdHistoryLength")
+                                                       ldb.FLAG_MOD_REPLACE, "pwdHistoryLength")
             msgs.append("Password history length changed!")
 
         if min_pwd_length is not None:
@@ -1445,7 +1445,7 @@ class cmd_domain_passwordsettings_set(Command):
                 raise CommandError("Minimum password length must be in the range of 0 to 14!")
 
             m["minPwdLength"] = ldb.MessageElement(str(min_pwd_len),
-              ldb.FLAG_MOD_REPLACE, "minPwdLength")
+                                                   ldb.FLAG_MOD_REPLACE, "minPwdLength")
             msgs.append("Minimum password length changed!")
 
         if min_pwd_age is not None:
@@ -1461,7 +1461,7 @@ class cmd_domain_passwordsettings_set(Command):
             min_pwd_age_ticks = -int(min_pwd_age * (24 * 60 * 60 * 1e7))
 
             m["minPwdAge"] = ldb.MessageElement(str(min_pwd_age_ticks),
-              ldb.FLAG_MOD_REPLACE, "minPwdAge")
+                                                ldb.FLAG_MOD_REPLACE, "minPwdAge")
             msgs.append("Minimum password age changed!")
 
         if max_pwd_age is not None:
@@ -1480,7 +1480,7 @@ class cmd_domain_passwordsettings_set(Command):
                 max_pwd_age_ticks = -int(max_pwd_age * (24 * 60 * 60 * 1e7))
 
             m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age_ticks),
-              ldb.FLAG_MOD_REPLACE, "maxPwdAge")
+                                                ldb.FLAG_MOD_REPLACE, "maxPwdAge")
             msgs.append("Maximum password age changed!")
 
         if account_lockout_duration is not None:
@@ -1499,7 +1499,7 @@ class cmd_domain_passwordsettings_set(Command):
                 account_lockout_duration_ticks = -int(account_lockout_duration * (60 * 1e7))
 
             m["lockoutDuration"] = ldb.MessageElement(str(account_lockout_duration_ticks),
-              ldb.FLAG_MOD_REPLACE, "lockoutDuration")
+                                                      ldb.FLAG_MOD_REPLACE, "lockoutDuration")
             msgs.append("Account lockout duration changed!")
 
         if account_lockout_threshold is not None:
@@ -1509,7 +1509,7 @@ class cmd_domain_passwordsettings_set(Command):
                 account_lockout_threshold = int(account_lockout_threshold)
 
             m["lockoutThreshold"] = ldb.MessageElement(str(account_lockout_threshold),
-              ldb.FLAG_MOD_REPLACE, "lockoutThreshold")
+                                                       ldb.FLAG_MOD_REPLACE, "lockoutThreshold")
             msgs.append("Account lockout threshold changed!")
 
         if reset_account_lockout_after is not None:
@@ -1528,7 +1528,7 @@ class cmd_domain_passwordsettings_set(Command):
                 reset_account_lockout_after_ticks = -int(reset_account_lockout_after * (60 * 1e7))
 
             m["lockOutObservationWindow"] = ldb.MessageElement(str(reset_account_lockout_after_ticks),
-              ldb.FLAG_MOD_REPLACE, "lockOutObservationWindow")
+                                                               ldb.FLAG_MOD_REPLACE, "lockOutObservationWindow")
             msgs.append("Duration to reset account lockout after changed!")
 
         if max_pwd_age and max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
@@ -1649,7 +1649,7 @@ class cmd_domain_classicupgrade(Command):
             try:
                 try:
                     samba.ntacls.setntacl(lp, tmpfile.name,
-                                "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+                                          "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
                     eadb = False
                 except Exception:
                     # FIXME: Don't catch all exceptions here
@@ -1848,7 +1848,7 @@ class DomainTrustCommand(Command):
             nbt.NBT_SERVER_FOREST_ROOT: "FOREST_ROOT",
         }
         server_type_string = self.generic_bitmap_to_string(flag_map,
-                                remote_info.server_type, names_only=True)
+                                                           remote_info.server_type, names_only=True)
         self.outf.write("RemoteDC Netbios[%s] DNS[%s] ServerType[%s]\n" % (
                         remote_info.pdc_name,
                         remote_info.pdc_dns_name,
@@ -2109,10 +2109,11 @@ class cmd_domain_trust_list(DomainTrustCommand):
             raise self.LocalRuntimeError(self, error, "failed to connect netlogon server")
 
         try:
-            local_netlogon_trusts = local_netlogon.netr_DsrEnumerateDomainTrusts(local_server,
-                                    netlogon.NETR_TRUST_FLAG_IN_FOREST |
-                                    netlogon.NETR_TRUST_FLAG_OUTBOUND |
-                                    netlogon.NETR_TRUST_FLAG_INBOUND)
+            local_netlogon_trusts = \
+                local_netlogon.netr_DsrEnumerateDomainTrusts(local_server,
+                                                             netlogon.NETR_TRUST_FLAG_IN_FOREST |
+                                                             netlogon.NETR_TRUST_FLAG_OUTBOUND |
+                                                             netlogon.NETR_TRUST_FLAG_INBOUND)
         except RuntimeError as error:
             if self.check_runtime_error(error, werror.WERR_RPC_S_PROCNUM_OUT_OF_RANGE):
                 # TODO: we could implement a fallback to lsa.EnumTrustDom()
@@ -2169,8 +2170,10 @@ class cmd_domain_trust_show(DomainTrustCommand):
         lsaString = lsa.String()
         lsaString.string = domain
         try:
-            local_tdo_full = local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                        lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            local_tdo_full = \
+                local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                       lsaString,
+                                                       lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             local_tdo_info = local_tdo_full.info_ex
             local_tdo_posix = local_tdo_full.posix_offset
         except NTSTATUSError as error:
@@ -2180,8 +2183,10 @@ class cmd_domain_trust_show(DomainTrustCommand):
             raise self.LocalRuntimeError(self, error, "QueryTrustedDomainInfoByName(FULL_INFO) failed")
 
         try:
-            local_tdo_enctypes = local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                        lsaString, lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)
+            local_tdo_enctypes = \
+                local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                       lsaString,
+                                                       lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)
         except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_INVALID_PARAMETER):
                 error = None
@@ -2190,7 +2195,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
 
             if error is not None:
                 raise self.LocalRuntimeError(self, error,
-                           "QueryTrustedDomainInfoByName(SUPPORTED_ENCRYPTION_TYPES) failed")
+                                             "QueryTrustedDomainInfoByName(SUPPORTED_ENCRYPTION_TYPES) failed")
 
             local_tdo_enctypes = lsa.TrustDomainInfoSupportedEncTypes()
             local_tdo_enctypes.enc_types = 0
@@ -2198,8 +2203,10 @@ class cmd_domain_trust_show(DomainTrustCommand):
         try:
             local_tdo_forest = None
             if local_tdo_info.trust_attributes & lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE:
-                local_tdo_forest = local_lsa.lsaRQueryForestTrustInformation(local_policy,
-                                        lsaString, lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
+                local_tdo_forest = \
+                    local_lsa.lsaRQueryForestTrustInformation(local_policy,
+                                                              lsaString,
+                                                              lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
         except RuntimeError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE):
                 error = None
@@ -2458,47 +2465,55 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
         try:
             lsaString.string = local_trust_info.domain_name.string
-            local_old_netbios = local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                        lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            local_old_netbios = \
+                local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                       lsaString,
+                                                       lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
         except NTSTATUSError as error:
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise self.LocalRuntimeError(self, error,
-                                "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
+                                             "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
                                     lsaString.string))
 
         try:
             lsaString.string = local_trust_info.netbios_name.string
-            local_old_dns = local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                        lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            local_old_dns = \
+                local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                       lsaString,
+                                                       lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
         except NTSTATUSError as error:
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise self.LocalRuntimeError(self, error,
-                                "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
+                                             "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
                                     lsaString.string))
 
         if remote_trust_info:
             try:
                 lsaString.string = remote_trust_info.domain_name.string
-                remote_old_netbios = remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
-                                            lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+                remote_old_netbios = \
+                    remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
+                                                            lsaString,
+                                                            lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
                 raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
             except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error,
-                                    "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
+                                                  "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
                                         lsaString.string))
 
             try:
                 lsaString.string = remote_trust_info.netbios_name.string
-                remote_old_dns = remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
-                                            lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+                remote_old_dns = \
+                    remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
+                                                            lsaString,
+                                                            lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
                 raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
             except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error,
-                                    "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
+                                                  "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
                                         lsaString.string))
 
         try:
@@ -2592,10 +2607,11 @@ class cmd_domain_trust_create(DomainTrustCommand):
             if remote_trust_info:
                 self.outf.write("Creating remote TDO.\n")
                 current_request = { "location": "remote", "name": "CreateTrustedDomainEx2"}
-                remote_tdo_handle = remote_lsa.CreateTrustedDomainEx2(remote_policy,
-                                                                      remote_trust_info,
-                                                                      remote_auth_info,
-                                                                      lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS)
+                remote_tdo_handle = \
+                    remote_lsa.CreateTrustedDomainEx2(remote_policy,
+                                                      remote_trust_info,
+                                                      remote_auth_info,
+                                                      lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS)
                 self.outf.write("Remote TDO created.\n")
                 if enc_types:
                     self.outf.write("Setting supported encryption types on remote TDO.\n")
@@ -2642,19 +2658,21 @@ class cmd_domain_trust_create(DomainTrustCommand):
                     # this triggers netr_GetForestTrustInformation to the remote domain
                     # and lsaRSetForestTrustInformation() locally, but new top level
                     # names are disabled by default.
-                    local_forest_info = local_netlogon.netr_DsRGetForestTrustInformation(local_netlogon_info.dc_unc,
-                                                                  remote_lsa_info.dns_domain.string,
-                                                                  netlogon.DS_GFTI_UPDATE_TDO)
+                    local_forest_info = \
+                        local_netlogon.netr_DsRGetForestTrustInformation(local_netlogon_info.dc_unc,
+                                                                         remote_lsa_info.dns_domain.string,
+                                                                         netlogon.DS_GFTI_UPDATE_TDO)
                 except RuntimeError as error:
                     raise self.LocalRuntimeError(self, error, "netr_DsRGetForestTrustInformation() failed")
 
                 try:
                     # here we try to enable all top level names
-                    local_forest_collision = local_lsa.lsaRSetForestTrustInformation(local_policy,
-                                                                  remote_lsa_info.dns_domain,
-                                                                  lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
-                                                                  local_forest_info,
-                                                                  0)
+                    local_forest_collision = \
+                        local_lsa.lsaRSetForestTrustInformation(local_policy,
+                                                                remote_lsa_info.dns_domain,
+                                                                lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
+                                                                local_forest_info,
+                                                                0)
                 except RuntimeError as error:
                     raise self.LocalRuntimeError(self, error, "lsaRSetForestTrustInformation() failed")
 
@@ -2669,19 +2687,21 @@ class cmd_domain_trust_create(DomainTrustCommand):
                         # this triggers netr_GetForestTrustInformation to our domain.
                         # and lsaRSetForestTrustInformation() remotely, but new top level
                         # names are disabled by default.
-                        remote_forest_info = remote_netlogon.netr_DsRGetForestTrustInformation(remote_netlogon_dc_unc,
-                                                                                               local_lsa_info.dns_domain.string,
-                                                                                               netlogon.DS_GFTI_UPDATE_TDO)
+                        remote_forest_info = \
+                            remote_netlogon.netr_DsRGetForestTrustInformation(remote_netlogon_dc_unc,
+                                                                              local_lsa_info.dns_domain.string,
+                                                                              netlogon.DS_GFTI_UPDATE_TDO)
                     except RuntimeError as error:
                         raise self.RemoteRuntimeError(self, error, "netr_DsRGetForestTrustInformation() failed")
 
                     try:
                         # here we try to enable all top level names
-                        remote_forest_collision = remote_lsa.lsaRSetForestTrustInformation(remote_policy,
-                                                                      local_lsa_info.dns_domain,
-                                                                      lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
-                                                                      remote_forest_info,
-                                                                      0)
+                        remote_forest_collision = \
+                            remote_lsa.lsaRSetForestTrustInformation(remote_policy,
+                                                                     local_lsa_info.dns_domain,
+                                                                     lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
+                                                                     remote_forest_info,
+                                                                     0)
                     except RuntimeError as error:
                         raise self.RemoteRuntimeError(self, error, "lsaRSetForestTrustInformation() failed")
 
@@ -2693,9 +2713,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 self.outf.write("Validating outgoing trust...\n")
                 try:
                     local_trust_verify = local_netlogon.netr_LogonControl2Ex(local_netlogon_info.dc_unc,
-                                                                      netlogon.NETLOGON_CONTROL_TC_VERIFY,
-                                                                      2,
-                                                                      remote_lsa_info.dns_domain.string)
+                                                                             netlogon.NETLOGON_CONTROL_TC_VERIFY,
+                                                                             2,
+                                                                             remote_lsa_info.dns_domain.string)
                 except RuntimeError as error:
                     raise self.LocalRuntimeError(self, error, "NETLOGON_CONTROL_TC_VERIFY failed")
 
@@ -2722,10 +2742,11 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 if remote_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_OUTBOUND:
                     self.outf.write("Validating incoming trust...\n")
                     try:
-                        remote_trust_verify = remote_netlogon.netr_LogonControl2Ex(remote_netlogon_dc_unc,
-                                                                                   netlogon.NETLOGON_CONTROL_TC_VERIFY,
-                                                                                   2,
-                                                                                   local_lsa_info.dns_domain.string)
+                        remote_trust_verify = \
+                            remote_netlogon.netr_LogonControl2Ex(remote_netlogon_dc_unc,
+                                                                 netlogon.NETLOGON_CONTROL_TC_VERIFY,
+                                                                 2,
+                                                                 local_lsa_info.dns_domain.string)
                     except RuntimeError as error:
                         raise self.RemoteRuntimeError(self, error, "NETLOGON_CONTROL_TC_VERIFY failed")
 
@@ -2825,7 +2846,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
         try:
             lsaString.string = domain
             local_tdo_info = local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                        lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
+                                                                    lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
         except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise CommandError("Failed to find trust for domain '%s'" % domain)
@@ -2863,8 +2884,10 @@ class cmd_domain_trust_delete(DomainTrustCommand):
 
             try:
                 lsaString.string = local_lsa_info.dns_domain.string
-                remote_tdo_info = remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
-                                            lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
+                remote_tdo_info = \
+                    remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
+                                                            lsaString,
+                                                            lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
             except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error, "QueryTrustedDomainInfoByName(%s)" % (
@@ -2883,9 +2906,10 @@ class cmd_domain_trust_delete(DomainTrustCommand):
         if local_tdo_info is not None:
             try:
                 lsaString.string = local_tdo_info.domain_name.string
-                local_tdo_handle = local_lsa.OpenTrustedDomainByName(local_policy,
-                                                                     lsaString,
-                                                                     security.SEC_STD_DELETE)
+                local_tdo_handle = \
+                    local_lsa.OpenTrustedDomainByName(local_policy,
+                                                      lsaString,
+                                                      security.SEC_STD_DELETE)
             except RuntimeError as error:
                 raise self.LocalRuntimeError(self, error, "OpenTrustedDomainByName(%s)" % (
                                              lsaString.string))
@@ -2896,9 +2920,10 @@ class cmd_domain_trust_delete(DomainTrustCommand):
         if remote_tdo_info is not None:
             try:
                 lsaString.string = remote_tdo_info.domain_name.string
-                remote_tdo_handle = remote_lsa.OpenTrustedDomainByName(remote_policy,
-                                                                       lsaString,
-                                                                       security.SEC_STD_DELETE)
+                remote_tdo_handle = \
+                    remote_lsa.OpenTrustedDomainByName(remote_policy,
+                                                       lsaString,
+                                                       security.SEC_STD_DELETE)
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "OpenTrustedDomainByName(%s)" % (
                                               lsaString.string))
@@ -2967,8 +2992,10 @@ class cmd_domain_trust_validate(DomainTrustCommand):
         try:
             lsaString = lsa.String()
             lsaString.string = domain
-            local_tdo_info = local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                        lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
+            local_tdo_info = \
+                local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                       lsaString,
+                                                       lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
         except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise CommandError("trusted domain object does not exist for domain [%s]" % domain)
@@ -2986,10 +3013,11 @@ class cmd_domain_trust_validate(DomainTrustCommand):
             raise self.LocalRuntimeError(self, error, "failed to connect netlogon server")
 
         try:
-            local_trust_verify = local_netlogon.netr_LogonControl2Ex(local_server,
-                                                                 netlogon.NETLOGON_CONTROL_TC_VERIFY,
-                                                                 2,
-                                                                 local_tdo_info.domain_name.string)
+            local_trust_verify = \
+                local_netlogon.netr_LogonControl2Ex(local_server,
+                                                    netlogon.NETLOGON_CONTROL_TC_VERIFY,
+                                                    2,
+                                                    local_tdo_info.domain_name.string)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "NETLOGON_CONTROL_TC_VERIFY failed")
 
@@ -3015,10 +3043,11 @@ class cmd_domain_trust_validate(DomainTrustCommand):
         try:
             server = local_trust_verify.trusted_dc_name.replace('\\', '')
             domain_and_server = "%s\\%s" % (local_tdo_info.domain_name.string, server)
-            local_trust_rediscover = local_netlogon.netr_LogonControl2Ex(local_server,
-                                                                 netlogon.NETLOGON_CONTROL_REDISCOVER,
-                                                                 2,
-                                                                 domain_and_server)
+            local_trust_rediscover = \
+                local_netlogon.netr_LogonControl2Ex(local_server,
+                                                    netlogon.NETLOGON_CONTROL_REDISCOVER,
+                                                    2,
+                                                    domain_and_server)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "NETLOGON_CONTROL_REDISCOVER failed")
 
@@ -3044,10 +3073,11 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                 raise self.RemoteRuntimeError(self, error, "failed to connect netlogon server")
 
             try:
-                remote_trust_verify = remote_netlogon.netr_LogonControl2Ex(remote_server,
-                                                                  netlogon.NETLOGON_CONTROL_TC_VERIFY,
-                                                                  2,
-                                                                  local_lsa_info.dns_domain.string)
+                remote_trust_verify = \
+                    remote_netlogon.netr_LogonControl2Ex(remote_server,
+                                                         netlogon.NETLOGON_CONTROL_TC_VERIFY,
+                                                         2,
+                                                         local_lsa_info.dns_domain.string)
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "NETLOGON_CONTROL_TC_VERIFY failed")
 
@@ -3073,10 +3103,11 @@ class cmd_domain_trust_validate(DomainTrustCommand):
             try:
                 server = remote_trust_verify.trusted_dc_name.replace('\\', '')
                 domain_and_server = "%s\\%s" % (local_lsa_info.dns_domain.string, server)
-                remote_trust_rediscover = remote_netlogon.netr_LogonControl2Ex(remote_server,
-                                                                     netlogon.NETLOGON_CONTROL_REDISCOVER,
-                                                                     2,
-                                                                     domain_and_server)
+                remote_trust_rediscover = \
+                    remote_netlogon.netr_LogonControl2Ex(remote_server,
+                                                         netlogon.NETLOGON_CONTROL_REDISCOVER,
+                                                         2,
+                                                         domain_and_server)
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "NETLOGON_CONTROL_REDISCOVER failed")
 
@@ -3529,8 +3560,10 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
         try:
             lsaString = lsa.String()
             lsaString.string = domain
-            local_tdo_info = local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                        lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
+            local_tdo_info = \
+                local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                       lsaString,
+                                                       lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
         except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise CommandError("trusted domain object does not exist for domain [%s]" % domain)
@@ -3569,18 +3602,20 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                 # this triggers netr_GetForestTrustInformation to the remote domain
                 # and lsaRSetForestTrustInformation() locally, but new top level
                 # names are disabled by default.
-                fresh_forest_info = local_netlogon.netr_DsRGetForestTrustInformation(local_netlogon_info.dc_unc,
-                                                              local_tdo_info.domain_name.string,
-                                                              netlogon_update_tdo)
+                fresh_forest_info = \
+                    local_netlogon.netr_DsRGetForestTrustInformation(local_netlogon_info.dc_unc,
+                                                                     local_tdo_info.domain_name.string,
+                                                                     netlogon_update_tdo)
             except RuntimeError as error:
                 raise self.LocalRuntimeError(self, error, "netr_DsRGetForestTrustInformation() failed")
 
             try:
-                fresh_forest_collision = local_lsa.lsaRSetForestTrustInformation(local_policy,
-                                                              local_tdo_info.domain_name,
-                                                              lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
-                                                              fresh_forest_info,
-                                                              lsa_update_check)
+                fresh_forest_collision = \
+                    local_lsa.lsaRSetForestTrustInformation(local_policy,
+                                                            local_tdo_info.domain_name,
+                                                            lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
+                                                            fresh_forest_info,
+                                                            lsa_update_check)
             except RuntimeError as error:
                 raise self.LocalRuntimeError(self, error, "lsaRSetForestTrustInformation() failed")
 
@@ -3593,7 +3628,8 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                 try:
                     lsaString = lsa.String()
                     lsaString.string = local_tdo_info.domain_name.string
-                    stored_forest_info = local_lsa.lsaRQueryForestTrustInformation(local_policy,
+                    stored_forest_info = \
+                        local_lsa.lsaRQueryForestTrustInformation(local_policy,
                                                                   lsaString,
                                                                   lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
                 except RuntimeError as error:
@@ -3612,9 +3648,10 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
         try:
             lsaString = lsa.String()
             lsaString.string = local_tdo_info.domain_name.string
-            local_forest_info = local_lsa.lsaRQueryForestTrustInformation(local_policy,
-                                                      lsaString,
-                                                      lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
+            local_forest_info = \
+                local_lsa.lsaRQueryForestTrustInformation(local_policy,
+                                                          lsaString,
+                                                          lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "lsaRQueryForestTrustInformation() failed")
 
@@ -3807,9 +3844,9 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         try:
             update_forest_collision = local_lsa.lsaRSetForestTrustInformation(local_policy,
-                                                          local_tdo_info.domain_name,
-                                                          lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
-                                                          update_forest_info, 0)
+                                                                              local_tdo_info.domain_name,
+                                                                              lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
+                                                                              update_forest_info, 0)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "lsaRSetForestTrustInformation() failed")
 
@@ -3822,8 +3859,8 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             lsaString = lsa.String()
             lsaString.string = local_tdo_info.domain_name.string
             stored_forest_info = local_lsa.lsaRQueryForestTrustInformation(local_policy,
-                                                          lsaString,
-                                                          lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
+                                                                           lsaString,
+                                                                           lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "lsaRQueryForestTrustInformation() failed")
 
@@ -3876,7 +3913,7 @@ This command expunges tombstones from the database."""
 
         if len(ncs) == 0:
             res = samdb.search(expression="", base="", scope=ldb.SCOPE_BASE,
-                         attrs=["namingContexts"])
+                               attrs=["namingContexts"])
 
             ncs = []
             for nc in res[0]["namingContexts"]:
@@ -4288,7 +4325,7 @@ class cmd_domain_functional_prep(Command):
             domain_dn = samdb.domain_dn()
             infrastructure_dn = "CN=Infrastructure," + domain_dn
             master = get_fsmo_roleowner(samdb, infrastructure_dn,
-                                       'infrastructure')
+                                        'infrastructure')
             if own_dn != master:
                 raise CommandError("This server is not the infrastructure master.")
 

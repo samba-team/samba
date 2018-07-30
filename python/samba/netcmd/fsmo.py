@@ -72,8 +72,8 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
     if 'fSMORoleOwner' in res[0]:
         try:
             master_guid = str(misc.GUID(ldb.Dn(samdb,
-                              res[0]['fSMORoleOwner'][0].decode('utf8'))
-                              .get_extended_component('GUID')))
+                                               res[0]['fSMORoleOwner'][0].decode('utf8'))
+                                        .get_extended_component('GUID')))
             master_owner = str(ldb.Dn(samdb, res[0]['fSMORoleOwner'][0].decode('utf8')))
         except LdbError as e3:
             (num, msg) = e3.args
@@ -231,7 +231,7 @@ class cmd_fsmo_seize(Command):
                help="Force seizing of role without attempting to transfer.",
                action="store_true"),
         Option("--role", type="choice", choices=["rid", "pdc", "infrastructure",
-               "schema", "naming", "domaindns", "forestdns", "all"],
+                                                 "schema", "naming", "domaindns", "forestdns", "all"],
                help="""The FSMO role to seize or transfer.\n
 rid=RidAllocationMasterRole\n
 schema=SchemaMasterRole\n
@@ -443,7 +443,7 @@ class cmd_fsmo_show(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
         forest_dn = samba.dn_from_dns_name(samdb.forest_dns_name())
@@ -489,7 +489,7 @@ class cmd_fsmo_transfer(Command):
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
         Option("--role", type="choice", choices=["rid", "pdc", "infrastructure",
-               "schema", "naming", "domaindns", "forestdns", "all"],
+                                                 "schema", "naming", "domaindns", "forestdns", "all"],
                help="""The FSMO role to seize or transfer.\n
 rid=RidAllocationMasterRole\n
 schema=SchemaMasterRole\n

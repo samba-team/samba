@@ -123,7 +123,7 @@ class cmd_spn_add(Command):
             tab.append(name)
             msg.dn = res[0].dn
             msg["servicePrincipalName"] = ldb.MessageElement(tab, flag,
-                                                "servicePrincipalName")
+                                                             "servicePrincipalName")
             if not found:
                 sam.modify(msg)
             else:
@@ -173,8 +173,8 @@ class cmd_spn_delete(Command):
                     for r in res:
                         listUser = "%s\n%s" % (listUser, str(r.dn))
                     raise CommandError("More than one user has the spn %s "
-                           "and no specific user was specified, list of users"
-                           " with this spn:%s" % (name, listUser))
+                                       "and no specific user was specified, list of users"
+                                       " with this spn:%s" % (name, listUser))
                 else:
                     result=res[0]
 
@@ -189,7 +189,7 @@ class cmd_spn_delete(Command):
                 flag = ldb.FLAG_MOD_REPLACE
             msg.dn = result.dn
             msg["servicePrincipalName"] = ldb.MessageElement(tab, flag,
-                                            "servicePrincipalName")
+                                                             "servicePrincipalName")
             sam.modify(msg)
         else:
             raise CommandError("Service principal %s not affected" % name)

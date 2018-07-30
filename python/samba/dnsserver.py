@@ -141,7 +141,7 @@ class SOARecord(dnsserver.DNS_RPC_RECORD):
 class SRVRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, target, port, priority=0, weight=100, serial=1, ttl=900,
-                rank=dnsp.DNS_RANK_ZONE, node_flag=0):
+                 rank=dnsp.DNS_RANK_ZONE, node_flag=0):
         super(SRVRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_SRV
         self.dwFlags = rank | node_flag
@@ -160,7 +160,7 @@ class SRVRecord(dnsserver.DNS_RPC_RECORD):
 class TXTRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, slist, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
-                node_flag=0):
+                 node_flag=0):
         super(TXTRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_TXT
         self.dwFlags = rank | node_flag

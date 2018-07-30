@@ -31,7 +31,7 @@ class OUCmdTestCase(SambaToolCmdTest):
     def setUp(self):
         super(OUCmdTestCase, self).setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
-            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                   "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.ous = []
         self.ous.append(self._randomOU({"name": "testou1"}))
         self.ous.append(self._randomOU({"name": "testou2"}))
@@ -159,7 +159,7 @@ class OUCmdTestCase(SambaToolCmdTest):
                               "Renamed ou '%s' still exists" % ou["name"])
             found = self._find_ou(newouname)
             self.assertIsNotNone(found,
-                              "Renamed ou '%s' does not exist" % newouname)
+                                 "Renamed ou '%s' does not exist" % newouname)
 
             (result, out, err) = self.runsubcmd("ou", "rename",
                                                 "OU=%s" % newouname,
@@ -262,8 +262,8 @@ class OUCmdTestCase(SambaToolCmdTest):
     def _find_ou(self, name):
         search_filter = ("(&(name=%s)(objectCategory=%s,%s))" %
                          (ldb.binary_encode(name),
-                         "CN=Organizational-Unit,CN=Schema,CN=Configuration",
-                         self.samdb.domain_dn()))
+                          "CN=Organizational-Unit,CN=Schema,CN=Configuration",
+                          self.samdb.domain_dn()))
         oulist = self.samdb.search(base=self.samdb.domain_dn(),
                                    scope=ldb.SCOPE_SUBTREE,
                                    expression=search_filter,

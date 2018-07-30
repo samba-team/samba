@@ -202,9 +202,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.sync_DCs(sync_order=sync_order)
 
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
 
         # check the object has only have one occurence of the single-valued
         # attribute and it matches on both DCs
@@ -249,9 +249,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.sync_DCs(sync_order=sync_order)
 
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
 
         # check the object has only have one occurence of the single-valued
         # attribute and it matches on both DCs
@@ -598,9 +598,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.sync_DCs(sync_order=sync_order)
 
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
 
         # Although the more up-to-date link value is deleted, this shouldn't
         # trump DC1's active link
@@ -653,9 +653,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.sync_DCs(sync_order=sync_order)
 
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
 
         # check the object has only have one occurence of the single-valued
         # attribute and it matches on both DCs
@@ -709,9 +709,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.sync_DCs(sync_order=sync_order)
 
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
-                                  scope=SCOPE_BASE, attrs=["managedBy"])
+                                   scope=SCOPE_BASE, attrs=["managedBy"])
 
         # check the object has only have one occurence of the single-valued
         # attribute and it matches on both DCs

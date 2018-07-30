@@ -146,7 +146,7 @@ showInAdvancedViewOnly: TRUE
     def setUp(self):
         super(DescriptorTests, self).setUp()
         self.ldb_admin = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp,
-            options=ldb_options)
+                               options=ldb_options)
         self.base_dn = self.ldb_admin.domain_dn()
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.schema_dn = self.ldb_admin.get_schema_basedn().get_linearized()
@@ -184,7 +184,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # SCHEMA
         # CONFIGURATION
         delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers," \
-                + self.configuration_dn)
+                     + self.configuration_dn)
         delete_force(self.ldb_admin, "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn)
 
     def setUp(self):
@@ -1238,7 +1238,7 @@ class DaclDescriptorTests(DescriptorTests):
     def create_clean_ou(self, object_dn):
         """ Base repeating setup for unittests to follow """
         res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE, \
-                expression="distinguishedName=%s" % object_dn)
+                                    expression="distinguishedName=%s" % object_dn)
         # Make sure top testing OU has been deleted before starting the test
         self.assertEqual(len(res), 0)
         self.ldb_admin.create_ou(object_dn)
@@ -1832,19 +1832,19 @@ class SdFlagsDescriptorTests(DescriptorTests):
                     SECINFO_SACL)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                [], controls=None)
+                                    [], controls=None)
         self.assertFalse("nTSecurityDescriptor" in res[0])
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["name"], controls=None)
+                                    ["name"], controls=None)
         self.assertFalse("nTSecurityDescriptor" in res[0])
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["name"], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    ["name"], controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertFalse("nTSecurityDescriptor" in res[0])
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                [], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    [], controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1855,7 +1855,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["*"], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    ["*"], controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1866,7 +1866,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["nTSecurityDescriptor", "*"], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    ["nTSecurityDescriptor", "*"], controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1877,7 +1877,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["*", "nTSecurityDescriptor"], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    ["*", "nTSecurityDescriptor"], controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1888,7 +1888,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["nTSecurityDescriptor", "name"], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    ["nTSecurityDescriptor", "name"], controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1899,7 +1899,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["name", "nTSecurityDescriptor"], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    ["name", "nTSecurityDescriptor"], controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1910,7 +1910,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["nTSecurityDescriptor"], controls=None)
+                                    ["nTSecurityDescriptor"], controls=None)
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1921,7 +1921,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["name", "nTSecurityDescriptor"], controls=None)
+                                    ["name", "nTSecurityDescriptor"], controls=None)
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1932,7 +1932,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("S:" in sddl)
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                ["nTSecurityDescriptor", "name"], controls=None)
+                                    ["nTSecurityDescriptor", "name"], controls=None)
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1946,7 +1946,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """This search is done by the windows dc join..."""
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None, ["1.1"],
-                controls=["extended_dn:1:0", "sd_flags:1:0", "search_options:1:1"])
+                                    controls=["extended_dn:1:0", "sd_flags:1:0", "search_options:1:1"])
         self.assertFalse("nTSecurityDescriptor" in res[0])
 
 class RightsAttributesTests(DescriptorTests):
@@ -1979,7 +1979,7 @@ class RightsAttributesTests(DescriptorTests):
         self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["sDRightsEffective"])
+                          attrs=["sDRightsEffective"])
         #user whould have no rights at all
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], "0")
@@ -1987,7 +1987,7 @@ class RightsAttributesTests(DescriptorTests):
         mod = "(A;CI;WD;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["sDRightsEffective"])
+                          attrs=["sDRightsEffective"])
         #user whould have DACL_SECURITY_INFORMATION
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], ("%d") % SECINFO_DACL)
@@ -1995,14 +1995,14 @@ class RightsAttributesTests(DescriptorTests):
         mod = "(A;CI;WO;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["sDRightsEffective"])
+                          attrs=["sDRightsEffective"])
         #user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER))
         #no way to grant security privilege bu adding ACE's so we use a memeber of Domain Admins
         _ldb = self.get_ldb_connection("testuser_attr2", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["sDRightsEffective"])
+                          attrs=["sDRightsEffective"])
         #user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], \
@@ -2018,7 +2018,7 @@ class RightsAttributesTests(DescriptorTests):
         self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["allowedChildClassesEffective"])
+                          attrs=["allowedChildClassesEffective"])
         #there should be no allowed child classes
         self.assertEquals(len(res), 1)
         self.assertFalse("allowedChildClassesEffective" in res[0].keys())
@@ -2026,7 +2026,7 @@ class RightsAttributesTests(DescriptorTests):
         mod = "(OA;CI;CC;bf967aba-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["allowedChildClassesEffective"])
+                          attrs=["allowedChildClassesEffective"])
         # allowedChildClassesEffective should only have one value, user
         self.assertEquals(len(res), 1)
         self.assertEquals(len(res[0]["allowedChildClassesEffective"]), 1)
@@ -2042,7 +2042,7 @@ class RightsAttributesTests(DescriptorTests):
         self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["allowedAttributesEffective"])
+                          attrs=["allowedAttributesEffective"])
         #there should be no allowed attributes
         self.assertEquals(len(res), 1)
         self.assertFalse("allowedAttributesEffective" in res[0].keys())
@@ -2053,7 +2053,7 @@ class RightsAttributesTests(DescriptorTests):
         mod3 = "(OA;CI;WP;9a7ad949-ca53-11d1-bbd0-0080c76670c0;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod + mod2 + mod3)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-                         attrs=["allowedAttributesEffective"])
+                          attrs=["allowedAttributesEffective"])
         # value should only contain user and managedBy
         self.assertEquals(len(res), 1)
         self.assertEquals(len(res[0]["allowedAttributesEffective"]), 2)

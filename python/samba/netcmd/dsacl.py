@@ -76,16 +76,16 @@ class cmd_dsacl_set(Command):
         Option("--action", type="choice", choices=["allow", "deny"],
                help="""Deny or allow access"""),
         Option("--objectdn", help="DN of the object whose SD to modify",
-            type="string"),
+               type="string"),
         Option("--trusteedn", help="DN of the entity that gets access",
-            type="string"),
+               type="string"),
         Option("--sddl", help="An ACE or group of ACEs to be added on the object",
-            type="string"),
+               type="string"),
     ]
 
     def find_trustee_sid(self, samdb, trusteedn):
         res = samdb.search(base=trusteedn, expression="(objectClass=*)",
-            scope=SCOPE_BASE)
+                           scope=SCOPE_BASE)
         assert(len(res) == 1)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 
@@ -100,7 +100,7 @@ class cmd_dsacl_set(Command):
 
     def read_descriptor(self, samdb, object_dn):
         res = samdb.search(base=object_dn, scope=SCOPE_BASE,
-                attrs=["nTSecurityDescriptor"])
+                           attrs=["nTSecurityDescriptor"])
         # we should theoretically always have an SD
         assert(len(res) == 1)
         desc = res[0]["nTSecurityDescriptor"][0]
@@ -108,7 +108,7 @@ class cmd_dsacl_set(Command):
 
     def get_domain_sid(self, samdb):
         res = samdb.search(base=samdb.domain_dn(),
-                expression="(objectClass=*)", scope=SCOPE_BASE)
+                           expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 
     def add_ace(self, samdb, object_dn, new_ace):
@@ -145,7 +145,7 @@ class cmd_dsacl_set(Command):
             return self.usage()
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
         cars = {'change-rid' : GUID_DRS_CHANGE_RID_MASTER,
                 'change-pdc' : GUID_DRS_CHANGE_PDC,
                 'change-infrastructure' : GUID_DRS_CHANGE_INFR_MASTER,

@@ -1044,8 +1044,8 @@ class TestZones(DNSTest):
 
     def ldap_get_zone_settings(self):
         records = self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_BASE,
-                   expression="(&(objectClass=dnsZone)" +
-                                "(name={}))".format(self.zone),
+                                    expression="(&(objectClass=dnsZone)" +
+                                    "(name={}))".format(self.zone),
                                     attrs=["dNSProperty"])
         self.assertEqual(len(records), 1)
         props = [ndr_unpack(dnsp.DnsProperty, r)
@@ -1525,11 +1525,11 @@ class TestRPCRoundtrip(DNSTest):
         self.check_query_txt(prefix, txt)
         self.assertIsNotNone(
             dns_record_match(self.rpc_conn,
-                self.server_ip,
-                self.get_dns_domain(),
-                "%s.%s" % (prefix, self.get_dns_domain()),
-                dnsp.DNS_TYPE_TXT,
-                '"\\"This is a test\\"" "" ""'))
+                             self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT,
+                             '"\\"This is a test\\"" "" ""'))
 
         prefix, txt = 'pad2textrec', ['"This is a test"', '', '', 'more text']
         p = self.make_txt_update(prefix, txt)
@@ -1670,9 +1670,9 @@ class TestRPCRoundtrip(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.check_query_txt(prefix, ['NULL'])
         self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
-                             self.get_dns_domain(),
-                             "%s.%s" % (prefix, self.get_dns_domain()),
-                             dnsp.DNS_TYPE_TXT, '"NULL"'))
+                                              self.get_dns_domain(),
+                                              "%s.%s" % (prefix, self.get_dns_domain()),
+                                              dnsp.DNS_TYPE_TXT, '"NULL"'))
 
         prefix, txt = 'nulltextrec2', ['NULL\x00BYTE', 'NULL\x00BYTE']
         p = self.make_txt_update(prefix, txt)
@@ -1681,9 +1681,9 @@ class TestRPCRoundtrip(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.check_query_txt(prefix, ['NULL', 'NULL'])
         self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
-                             self.get_dns_domain(),
-                             "%s.%s" % (prefix, self.get_dns_domain()),
-                             dnsp.DNS_TYPE_TXT, '"NULL" "NULL"'))
+                                              self.get_dns_domain(),
+                                              "%s.%s" % (prefix, self.get_dns_domain()),
+                                              dnsp.DNS_TYPE_TXT, '"NULL" "NULL"'))
 
     def test_update_add_null_char_rpc_to_dns(self):
         prefix = 'rpcnulltextrec'
@@ -1726,9 +1726,9 @@ class TestRPCRoundtrip(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.check_query_txt(prefix, txt)
         self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
-                             self.get_dns_domain(),
-                             "%s.%s" % (prefix, self.get_dns_domain()),
-                             dnsp.DNS_TYPE_TXT, '"HIGH\xFFBYTE"'))
+                                              self.get_dns_domain(),
+                                              "%s.%s" % (prefix, self.get_dns_domain()),
+                                              dnsp.DNS_TYPE_TXT, '"HIGH\xFFBYTE"'))
 
     def test_update_add_hex_rpc_to_dns(self):
         prefix, txt = 'hextextrec', ['HIGH\xFFBYTE']
@@ -1772,9 +1772,9 @@ class TestRPCRoundtrip(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.check_query_txt(prefix, txt)
         self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
-                             self.get_dns_domain(),
-                             "%s.%s" % (prefix, self.get_dns_domain()),
-                             dnsp.DNS_TYPE_TXT, '"Th\\\\=is=is a test"'))
+                                              self.get_dns_domain(),
+                                              "%s.%s" % (prefix, self.get_dns_domain()),
+                                              dnsp.DNS_TYPE_TXT, '"Th\\\\=is=is a test"'))
 
     # This test fails against Windows as it eliminates slashes in RPC
     # One typical use for a slash is in records like 'var=value' to
@@ -1823,10 +1823,10 @@ class TestRPCRoundtrip(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.check_query_txt(prefix, txt)
         self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
-                             self.get_dns_domain(),
-                             "%s.%s" % (prefix, self.get_dns_domain()),
-                             dnsp.DNS_TYPE_TXT, '"\\"This is a test\\""' +
-                             ' "\\"and this is a test, too\\""'))
+                                              self.get_dns_domain(),
+                                              "%s.%s" % (prefix, self.get_dns_domain()),
+                                              dnsp.DNS_TYPE_TXT, '"\\"This is a test\\""' +
+                                              ' "\\"and this is a test, too\\""'))
 
     def test_update_add_two_rpc_to_dns(self):
         prefix, txt = 'textrec2', ['"This is a test"',
@@ -1835,8 +1835,8 @@ class TestRPCRoundtrip(DNSTest):
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
         rec = data_to_dns_record(dnsp.DNS_TYPE_TXT,
-                                '"\\"This is a test\\""' +
-                                ' "\\"and this is a test, too\\""')
+                                 '"\\"This is a test\\""' +
+                                 ' "\\"and this is a test, too\\""')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:
@@ -1873,9 +1873,9 @@ class TestRPCRoundtrip(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.check_query_txt(prefix, txt)
         self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
-                             self.get_dns_domain(),
-                             "%s.%s" % (prefix, self.get_dns_domain()),
-                             dnsp.DNS_TYPE_TXT, ''))
+                                              self.get_dns_domain(),
+                                              "%s.%s" % (prefix, self.get_dns_domain()),
+                                              dnsp.DNS_TYPE_TXT, ''))
 
     def test_update_add_empty_rpc_to_dns(self):
         prefix, txt = 'rpcemptytextrec', []

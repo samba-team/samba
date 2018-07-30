@@ -35,7 +35,7 @@ class RodcCmdTestCase(SambaToolCmdTest):
         self.creds.guess(self.lp)
         self.session = system_session()
         self.ldb = SamDB("ldap://" + os.environ["DC_SERVER"],
-            session_info=self.session, credentials=self.creds,lp=self.lp)
+                         session_info=self.session, credentials=self.creds,lp=self.lp)
 
         self.base_dn = self.ldb.domain_dn()
 

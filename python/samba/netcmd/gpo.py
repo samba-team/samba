@@ -418,7 +418,7 @@ class cmd_list(Command):
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
-            type=str, metavar="URL", dest="H")
+               type=str, metavar="URL", dest="H")
     ]
 
     def run(self, username, H=None, sambaopts=None, credopts=None, versionopts=None):
@@ -480,7 +480,7 @@ class cmd_list(Command):
                         secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
                     except Exception:
                         self.outf.write("Failed to fetch gpo object with nTSecurityDescriptor %s\n" %
-                            g['dn'])
+                                        g['dn'])
                         continue
 
                     try:
@@ -630,9 +630,9 @@ class cmd_setlink(Command):
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
         Option("--disable", dest="disabled", default=False, action='store_true',
-            help="Disable policy"),
+               help="Disable policy"),
         Option("--enforce", dest="enforced", default=False, action='store_true',
-            help="Enforce policy")
+               help="Enforce policy")
     ]
 
     def run(self, container_dn, gpo, H=None, disabled=False, enforced=False,

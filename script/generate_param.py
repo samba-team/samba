@@ -36,7 +36,7 @@ parser.add_option("-f", "--file", dest="filename",
 parser.add_option("-o", "--output", dest="output",
                   help='output file', metavar="FILE")
 parser.add_option("--mode", type="choice", metavar="<FUNCTIONS|S3PROTO|LIBPROTO|PARAMDEFS|PARAMTABLE>",
-                 choices=["FUNCTIONS", "S3PROTO", "LIBPROTO", "PARAMDEFS", "PARAMTABLE"], default="FUNCTIONS")
+                  choices=["FUNCTIONS", "S3PROTO", "LIBPROTO", "PARAMDEFS", "PARAMTABLE"], default="FUNCTIONS")
 parser.add_option("--scope", metavar="<GLOBAL|LOCAL>",
                   choices = ["GLOBAL", "LOCAL"], default="GLOBAL")
 

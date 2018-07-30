@@ -66,7 +66,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         ldb = setup_secretsdb(paths, None, None, lp=env_loadparm())
         try:
             self.assertEquals("LSA Secrets",
-                 ldb.searchone(basedn="CN=LSA Secrets", attribute="CN").decode('utf8'))
+                              ldb.searchone(basedn="CN=LSA Secrets", attribute="CN").decode('utf8'))
         finally:
             del ldb
             os.unlink(path)
@@ -123,9 +123,9 @@ class SanitizeServerRoleTests(TestCase):
 
     def test_same(self):
         self.assertEquals("standalone server",
-            sanitize_server_role("standalone server"))
+                          sanitize_server_role("standalone server"))
         self.assertEquals("member server",
-            sanitize_server_role("member server"))
+                          sanitize_server_role("member server"))
 
     def test_invalid(self):
         self.assertRaises(ValueError, sanitize_server_role, "foo")
@@ -187,7 +187,7 @@ class ProvisionResultTests(TestCase):
         result.adminpass = "geheim"
         entries = self.report_logger(result)
         self.assertEquals(entries[1],
-                ("INFO", 'Admin password:        geheim'))
+                          ("INFO", 'Admin password:        geheim'))
 
 
 class DetermineNetbiosNameTests(TestCase):

@@ -159,12 +159,12 @@ class SimpleLdb(LdbBaseTest):
     def test_search_scope_base_empty_db(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertEqual(len(l.search(ldb.Dn(l, "dc=foo1"),
-                          ldb.SCOPE_BASE)), 0)
+                                      ldb.SCOPE_BASE)), 0)
 
     def test_search_scope_onelevel_empty_db(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertEqual(len(l.search(ldb.Dn(l, "dc=foo1"),
-                          ldb.SCOPE_ONELEVEL)), 0)
+                                      ldb.SCOPE_ONELEVEL)), 0)
 
     def test_delete(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
@@ -1873,7 +1873,7 @@ class BadIndexTests(LdbBaseTest):
         # Now set this to unique index, but forget to check the result
         try:
             self.ldb.add({"dn": "@ATTRIBUTES",
-                        "y": "UNIQUE_INDEX"})
+                          "y": "UNIQUE_INDEX"})
             self.fail()
         except ldb.LdbError:
             pass
@@ -1903,7 +1903,7 @@ class BadIndexTests(LdbBaseTest):
         # Now set this to unique index, but forget to check the result
         try:
             self.ldb.add({"dn": "@ATTRIBUTES",
-                        "y": "UNIQUE_INDEX"})
+                          "y": "UNIQUE_INDEX"})
         except ldb.LdbError:
             pass
 
@@ -2767,7 +2767,7 @@ class LdbResultTests(LdbBaseTest):
 
         # This should not turn up until the transaction is concluded
         res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
-                            scope=ldb.SCOPE_BASE)
+                              scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res11), 0)
 
         os.write(w2, b"search")
@@ -2779,7 +2779,7 @@ class LdbResultTests(LdbBaseTest):
 
         # This should now turn up, as the transaction is over
         res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
-                            scope=ldb.SCOPE_BASE)
+                              scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res11), 1)
 
         self.assertFalse(found11)
@@ -2839,7 +2839,7 @@ class LdbResultTests(LdbBaseTest):
 
         # This should not turn up until the transaction is concluded
         res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
-                            scope=ldb.SCOPE_BASE)
+                              scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res11), 0)
 
         os.write(w2, b"search")
@@ -2851,7 +2851,7 @@ class LdbResultTests(LdbBaseTest):
         # removed the read lock, but for ldb_tdb that happened as soon
         # as we called the first res.next()
         res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
-                            scope=ldb.SCOPE_BASE)
+                              scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res11), 0)
 
         # These results are all collected at the first next(res) call
@@ -2867,7 +2867,7 @@ class LdbResultTests(LdbBaseTest):
         # This should now turn up, as the transaction is over and all
         # read locks are gone
         res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
-                            scope=ldb.SCOPE_BASE)
+                              scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res11), 1)
 
         self.assertTrue(found)

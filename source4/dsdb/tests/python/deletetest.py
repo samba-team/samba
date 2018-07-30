@@ -91,12 +91,12 @@ class BasicDeleteTests(BaseDeleteTests):
         print("Checking for preserved attributes list")
 
         preserved_list = ["nTSecurityDescriptor", "attributeID", "attributeSyntax", "dNReferenceUpdate", "dNSHostName",
-        "flatName", "governsID", "groupType", "instanceType", "lDAPDisplayName", "legacyExchangeDN",
-        "isDeleted", "isRecycled", "lastKnownParent", "msDS-LastKnownRDN", "mS-DS-CreatorSID",
-        "mSMQOwnerID", "nCName", "objectClass", "distinguishedName", "objectGUID", "objectSid",
-        "oMSyntax", "proxiedObjectName", "name", "replPropertyMetaData", "sAMAccountName",
-        "securityIdentifier", "sIDHistory", "subClassOf", "systemFlags", "trustPartner", "trustDirection",
-        "trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated"]
+                          "flatName", "governsID", "groupType", "instanceType", "lDAPDisplayName", "legacyExchangeDN",
+                          "isDeleted", "isRecycled", "lastKnownParent", "msDS-LastKnownRDN", "mS-DS-CreatorSID",
+                          "mSMQOwnerID", "nCName", "objectClass", "distinguishedName", "objectGUID", "objectSid",
+                          "oMSyntax", "proxiedObjectName", "name", "replPropertyMetaData", "sAMAccountName",
+                          "securityIdentifier", "sIDHistory", "subClassOf", "systemFlags", "trustPartner", "trustDirection",
+                          "trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated"]
 
         for a in liveObj:
             if a in preserved_list:
@@ -153,21 +153,21 @@ class BasicDeleteTests(BaseDeleteTests):
 
         try:
             res = self.ldb.search("cn=ldaptestcontainer," + self.base_dn,
-                             scope=SCOPE_BASE, attrs=[])
+                                  scope=SCOPE_BASE, attrs=[])
             self.fail()
         except LdbError as e2:
             (num, _) = e2.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
         try:
             res = self.ldb.search("cn=entry1,cn=ldaptestcontainer," + self.base_dn,
-                             scope=SCOPE_BASE, attrs=[])
+                                  scope=SCOPE_BASE, attrs=[])
             self.fail()
         except LdbError as e3:
             (num, _) = e3.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
         try:
             res = self.ldb.search("cn=entry2,cn=ldaptestcontainer," + self.base_dn,
-                             scope=SCOPE_BASE, attrs=[])
+                                  scope=SCOPE_BASE, attrs=[])
             self.fail()
         except LdbError as e4:
             (num, _) = e4.args
@@ -180,7 +180,7 @@ class BasicDeleteTests(BaseDeleteTests):
         # Performs some protected object delete testing
 
         res = self.ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["dsServiceName", "dNSHostName"])
+                              attrs=["dsServiceName", "dNSHostName"])
         self.assertEquals(len(res), 1)
 
         # Delete failing since DC's nTDSDSA object is protected
@@ -192,7 +192,7 @@ class BasicDeleteTests(BaseDeleteTests):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         res = self.ldb.search(self.base_dn, attrs=["rIDSetReferences"],
-                         expression="(&(objectClass=computer)(dNSHostName=" + res[0]["dNSHostName"][0] + "))")
+                              expression="(&(objectClass=computer)(dNSHostName=" + res[0]["dNSHostName"][0] + "))")
         self.assertEquals(len(res), 1)
 
         # Deletes failing since DC's rIDSet object is protected
@@ -238,7 +238,7 @@ class BasicDeleteTests(BaseDeleteTests):
             self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
 
         res = self.ldb.search("cn=Partitions," + self.configuration_dn, attrs=[],
-                         expression="(nCName=%s)" % self.base_dn)
+                              expression="(nCName=%s)" % self.base_dn)
         self.assertEquals(len(res), 1)
 
         try:

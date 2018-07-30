@@ -74,14 +74,14 @@ class SchemaTests(samba.tests.TestCase):
     def setUp(self):
         super(SchemaTests, self).setUp()
         self.ldb = SamDB(host, credentials=creds,
-            session_info=system_session(lp), lp=lp, options=ldb_options)
+                         session_info=system_session(lp), lp=lp, options=ldb_options)
         self.base_dn = self.ldb.domain_dn()
         self.schema_dn = self.ldb.get_schema_basedn().get_linearized()
 
     def test_generated_schema(self):
         """Testing we can read the generated schema via LDAP"""
         res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE,
-                attrs=["objectClasses", "attributeTypes", "dITContentRules"])
+                              attrs=["objectClasses", "attributeTypes", "dITContentRules"])
         self.assertEquals(len(res), 1)
         self.assertTrue("dITContentRules" in res[0])
         self.assertTrue("objectClasses" in res[0])
@@ -843,7 +843,7 @@ attributeId: """ + attributeID + """
 
         # linkID generation isn't available before 2003
         res = self.ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["domainControllerFunctionality"])
+                              attrs=["domainControllerFunctionality"])
         self.assertEquals(len(res), 1)
         dc_level = int(res[0]["domainControllerFunctionality"][0])
         if dc_level < DS_DOMAIN_FUNCTION_2003:
@@ -1343,10 +1343,10 @@ class SchemaTests_msDS_IntId(samba.tests.TestCase):
     def setUp(self):
         super(SchemaTests_msDS_IntId, self).setUp()
         self.ldb = SamDB(host, credentials=creds,
-            session_info=system_session(lp), lp=lp, options=ldb_options)
+                         session_info=system_session(lp), lp=lp, options=ldb_options)
         res = self.ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["schemaNamingContext", "defaultNamingContext",
-                                "forestFunctionality"])
+                              attrs=["schemaNamingContext", "defaultNamingContext",
+                                     "forestFunctionality"])
         self.assertEquals(len(res), 1)
         self.schema_dn = res[0]["schemaNamingContext"][0]
         self.base_dn = res[0]["defaultNamingContext"][0]
@@ -1626,7 +1626,7 @@ class SchemaTests_msDS_isRODC(samba.tests.TestCase):
     def setUp(self):
         super(SchemaTests_msDS_isRODC, self).setUp()
         self.ldb =  SamDB(host, credentials=creds,
-            session_info=system_session(lp), lp=lp, options=ldb_options)
+                          session_info=system_session(lp), lp=lp, options=ldb_options)
         res = self.ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["defaultNamingContext"])
         self.assertEquals(len(res), 1)
         self.base_dn = res[0]["defaultNamingContext"][0]

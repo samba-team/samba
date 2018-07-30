@@ -57,7 +57,7 @@ class cmd_dbcheck(Command):
 
     takes_options = [
         Option("--scope", dest="scope", default="SUB",
-            help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
+               help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
         Option("--fix", dest="fix", default=False, action='store_true',
                help='Fix any errors found'),
         Option("--yes", action='callback', callback=process_yes,
@@ -65,9 +65,9 @@ class cmd_dbcheck(Command):
         Option("--cross-ncs", dest="cross_ncs", default=False, action='store_true',
                help="cross naming context boundaries"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
-            help="Print more details of checking"),
+               help="Print more details of checking"),
         Option("-q", "--quiet", action="store_true", default=False,
-            help="don't print details of checking"),
+               help="don't print details of checking"),
         Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
         Option("--reindex", dest="reindex", default=False, action="store_true", help="force database re-index"),
         Option("--force-modules", dest="force_modules", default=False, action="store_true", help="force loading of Samba modules and ignore the @MODULES record (for very old databases)"),
@@ -154,7 +154,7 @@ class cmd_dbcheck(Command):
 
             else:
                 error_count = chk.check_database(DN=DN, scope=search_scope,
-                        controls=controls, attrs=attrs)
+                                                 controls=controls, attrs=attrs)
         except:
             if started_transaction:
                 samdb.transaction_cancel()

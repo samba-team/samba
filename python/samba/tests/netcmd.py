@@ -42,14 +42,14 @@ class NetCmdTestCase(samba.tests.TestCase):
             yield path, cmd
             subcmds = getattr(cmd, "subcommands", {})
             todo.extend([(path + " " + k, v) for (k, v) in
-                subcmds.items()])
+                         subcmds.items()])
 
 
 class TestParmTests(NetCmdTestCase):
 
     def test_no_client_ip(self):
         out, err = self.run_netcmd(cmd_testparm, ["--client-name=foo"],
-            retcode=-1)
+                                   retcode=-1)
         self.assertEquals("", out)
         self.assertEquals(
             "ERROR: Both a DNS name and an IP address are "
@@ -75,7 +75,7 @@ class CommandTests(NetCmdTestCase):
                 missing.append(path)
         if missing:
             self.fail("The following commands do not have a synopsis set: %r" %
-                    missing)
+                      missing)
 
     def test_short_description_everywhere(self):
         missing = []

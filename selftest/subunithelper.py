@@ -174,7 +174,7 @@ def parse_results(msg_ops, statistics, fh):
                 exitcode = 1
             else:
                 raise AssertionError("Recognized but unhandled result %r" %
-                    result)
+                                     result)
         elif command == "testsuite":
             msg_ops.start_testsuite(arg.strip())
         elif command == "progress":
@@ -515,7 +515,7 @@ class PerfFilterOps(unittest.TestResult):
 class PlainFormatter(TestsuiteEnabledTestResult):
 
     def __init__(self, verbose, immediate, statistics,
-            totaltests=None):
+                 totaltests=None):
         super(PlainFormatter, self).__init__()
         self.verbose = verbose
         self.immediate = immediate

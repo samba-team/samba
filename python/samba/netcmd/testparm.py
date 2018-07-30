@@ -201,9 +201,9 @@ class cmd_testparm(Command):
         # this is totally ugly, a real `quick' hack
         for s in lp.services():
             if (self.allow_access(lp.get("hosts deny"), lp.get("hosts allow"), cname,
-                             caddr) and
+                                  caddr) and
                 self.allow_access(lp.get("hosts deny", s), lp.get("hosts allow", s),
-                             cname, caddr)):
+                                  cname, caddr)):
                 logger.info("Allow connection from %s (%s) to %s", cname, caddr, s)
             else:
                 logger.info("Deny connection from %s (%s) to %s", cname, caddr, s)

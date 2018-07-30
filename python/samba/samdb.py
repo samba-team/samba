@@ -60,8 +60,8 @@ class SamDB(samba.Ldb):
         self.url = url
 
         super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
-            session_info=session_info, credentials=credentials, flags=flags,
-            options=options)
+                                    session_info=session_info, credentials=credentials, flags=flags,
+                                    options=options)
 
         if global_schema:
             dsdb._dsdb_set_global_schema(self)
@@ -76,7 +76,7 @@ class SamDB(samba.Ldb):
         self.url = url
 
         super(SamDB, self).connect(url=url, flags=flags,
-                options=options)
+                                   options=options)
 
     def am_rodc(self):
         '''return True if we are an RODC'''
@@ -200,8 +200,8 @@ pwdLastSet: 0
         # The new user record. Note the reliance on the SAMLDB module which
         # fills in the default informations
         ldbmessage = {"dn": group_dn,
-            "sAMAccountName": groupname,
-            "objectClass": "group"}
+                      "sAMAccountName": groupname,
+                      "objectClass": "group"}
 
         if grouptype is not None:
             ldbmessage["groupType"] = normalise_int32(grouptype)
@@ -237,7 +237,7 @@ pwdLastSet: 0
         self.transaction_start()
         try:
             targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                               expression=groupfilter, attrs=[])
+                                      expression=groupfilter, attrs=[])
             if len(targetgroup) == 0:
                 raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
@@ -264,7 +264,7 @@ pwdLastSet: 0
         self.transaction_start()
         try:
             targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                               expression=groupfilter, attrs=['member'])
+                                      expression=groupfilter, attrs=['member'])
             if len(targetgroup) == 0:
                 raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
@@ -324,15 +324,15 @@ member: %s
             self.transaction_commit()
 
     def newuser(self, username, password,
-            force_password_change_at_next_login_req=False,
-            useusernameascn=False, userou=None, surname=None, givenname=None,
-            initials=None, profilepath=None, scriptpath=None, homedrive=None,
-            homedirectory=None, jobtitle=None, department=None, company=None,
-            description=None, mailaddress=None, internetaddress=None,
-            telephonenumber=None, physicaldeliveryoffice=None, sd=None,
-            setpassword=True, uidnumber=None, gidnumber=None, gecos=None,
-            loginshell=None, uid=None, nisdomain=None, unixhome=None,
-            smartcard_required=False):
+                force_password_change_at_next_login_req=False,
+                useusernameascn=False, userou=None, surname=None, givenname=None,
+                initials=None, profilepath=None, scriptpath=None, homedrive=None,
+                homedirectory=None, jobtitle=None, department=None, company=None,
+                description=None, mailaddress=None, internetaddress=None,
+                telephonenumber=None, physicaldeliveryoffice=None, sd=None,
+                setpassword=True, uidnumber=None, gidnumber=None, gecos=None,
+                loginshell=None, uid=None, nisdomain=None, unixhome=None,
+                smartcard_required=False):
         """Adds a new user with additional parameters
 
         :param username: Name of the new user
@@ -451,7 +451,7 @@ member: %s
 
         ldbmessage2 = None
         if any(map(lambda b: b is not None, (uid, uidnumber, gidnumber, gecos,
-                loginshell, nisdomain, unixhome))):
+                                             loginshell, nisdomain, unixhome))):
             ldbmessage2 = ldb.Message()
             ldbmessage2.dn = ldb.Dn(self, user_dn)
             if uid is not None:
@@ -576,7 +576,7 @@ member: %s
             self.transaction_commit()
 
     def setpassword(self, search_filter, password,
-            force_change_at_next_login=False, username=None):
+                    force_change_at_next_login=False, username=None):
         """Sets the password for a user
 
         :param search_filter: LDAP filter to find the user (eg
@@ -630,8 +630,8 @@ unicodePwd:: %s
         self.transaction_start()
         try:
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                          expression=search_filter,
-                          attrs=["userAccountControl", "accountExpires"])
+                              expression=search_filter,
+                              attrs=["userAccountControl", "accountExpires"])
             if len(res) == 0:
                 raise Exception('Unable to find user "%s"' % search_filter)
             assert(len(res) == 1)
@@ -674,7 +674,7 @@ accountExpires: %u
         return dsdb._samdb_get_domain_sid(self)
 
     domain_sid = property(get_domain_sid, set_domain_sid,
-        "SID for the domain")
+                          "SID for the domain")
 
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.
@@ -688,16 +688,16 @@ accountExpires: %u
         return dsdb._samdb_ntds_invocation_id(self)
 
     invocation_id = property(get_invocation_id, set_invocation_id,
-        "Invocation ID GUID")
+                             "Invocation ID GUID")
 
     def get_oid_from_attid(self, attid):
         return dsdb._dsdb_get_oid_from_attid(self, attid)
 
     def get_attid_from_lDAPDisplayName(self, ldap_display_name,
-            is_schema_nc=False):
+                                       is_schema_nc=False):
         '''return the attribute ID for a LDAP attribute as an integer as found in DRSUAPI'''
         return dsdb._dsdb_get_attid_from_lDAPDisplayName(self,
-            ldap_display_name, is_schema_nc)
+                                                         ldap_display_name, is_schema_nc)
 
     def get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name):
         '''return the syntax OID for a LDAP attribute as a string'''
@@ -802,7 +802,7 @@ schemaUpdateNow: 1
         res = self.search(expression="objectClass=attributeSchema",
                           controls=["search_options:1:2"],
                           attrs=["attributeID",
-                           "lDAPDisplayName"])
+                                 "lDAPDisplayName"])
         if len(res) > 0:
             for e in res:
                 strDisplay = str(e.get("lDAPDisplayName"))
@@ -839,7 +839,7 @@ schemaUpdateNow: 1
         return None
 
     def set_attribute_replmetadata_version(self, dn, att, value,
-            addifnotexist=False):
+                                           addifnotexist=False):
         res = self.search(expression="distinguishedName=%s" % dn,
                           scope=ldb.SCOPE_SUBTREE,
                           controls=["search_options:1:2"],
@@ -887,9 +887,10 @@ schemaUpdateNow: 1
             replBlob = ndr_pack(repl)
             msg = ldb.Message()
             msg.dn = res[0].dn
-            msg["replPropertyMetaData"] = ldb.MessageElement(replBlob,
-                                                ldb.FLAG_MOD_REPLACE,
-                                                "replPropertyMetaData")
+            msg["replPropertyMetaData"] = \
+                ldb.MessageElement(replBlob,
+                                   ldb.FLAG_MOD_REPLACE,
+                                   "replPropertyMetaData")
             self.modify(msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
     def write_prefixes_from_schema(self):
@@ -988,11 +989,14 @@ schemaUpdateNow: 1
         m.dn = ldb.Dn(self, "CN=Directory Service,CN=Windows NT,CN=Services,%s"
                       % self.get_config_basedn().get_linearized())
         if dsheuristics is not None:
-            m["dSHeuristics"] = ldb.MessageElement(dsheuristics,
-                ldb.FLAG_MOD_REPLACE, "dSHeuristics")
+            m["dSHeuristics"] = \
+                ldb.MessageElement(dsheuristics,
+                                   ldb.FLAG_MOD_REPLACE,
+                                   "dSHeuristics")
         else:
-            m["dSHeuristics"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
-                "dSHeuristics")
+            m["dSHeuristics"] = \
+                ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
+                                   "dSHeuristics")
         self.modify(m)
 
     def get_dsheuristics(self):

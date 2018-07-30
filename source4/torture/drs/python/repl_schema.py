@@ -283,10 +283,10 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         drs, drs_handle = self._ds_bind(self.dnsname_dc1)
 
         req8 = self._exop_req8(dest_dsa=None,
-                invocation_id=dc_guid_1,
-                nc_dn_str=c_dn,
-                exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
-                replica_flags=drsuapi.DRSUAPI_DRS_SYNC_FORCED)
+                               invocation_id=dc_guid_1,
+                               nc_dn_str=c_dn,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                               replica_flags=drsuapi.DRSUAPI_DRS_SYNC_FORCED)
 
         (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
 

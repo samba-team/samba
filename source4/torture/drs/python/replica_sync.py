@@ -162,9 +162,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and OU1 was make into conflict
         res1 = self.ldb_dc2.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertFalse('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
@@ -202,9 +202,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
@@ -241,9 +241,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and OU2 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]), "Got %s for %s" % (str(res2[0]["name"][0]), self.ou2))
@@ -283,9 +283,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and SELF.OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
@@ -332,9 +332,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and SELF.OU1 was made into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
@@ -371,9 +371,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and OU2 was made into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
@@ -414,9 +414,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and SELF.OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
@@ -462,9 +462,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and SELF.OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
@@ -513,9 +513,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and OU2 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
@@ -565,9 +565,9 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and one or other object was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % ou1_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % ou2_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % ou1_child in str(res1[0]["name"][0]) or 'CNF:%s' % ou2_child in str(res2[0]["name"][0]))
@@ -630,11 +630,11 @@ objectClass: organizationalUnit
 
         # Check that DC2 got the DC1 object, and the renames are all correct
         res1 = self.ldb_dc2.search(base="<GUID=%s>" % ou1_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % ou2_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res3 = self.ldb_dc2.search(base="<GUID=%s>" % ou3_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0].dn)
         print(res2[0].dn)
         print(res3[0].dn)
@@ -650,11 +650,11 @@ objectClass: organizationalUnit
 
         # Check that DC1 got the DC2 object, and the renames are all correct
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % ou1_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % ou2_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res3 = self.ldb_dc1.search(base="<GUID=%s>" % ou3_child,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0].dn)
         print(res2[0].dn)
         print(res3[0].dn)
@@ -730,9 +730,9 @@ objectClass: organizationalUnit
 
         # Check the latest change won and SELF.OU1 was made into a conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
-                                  scope=SCOPE_BASE, attrs=["name"])
+                                   scope=SCOPE_BASE, attrs=["name"])
         print(res1[0]["name"][0])
         print(res2[0]["name"][0])
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))

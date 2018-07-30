@@ -68,9 +68,9 @@ class cmd_delegation_show(Command):
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
         res = sam.search(expression="sAMAccountName=%s" %
-                    ldb.binary_encode(cleanedaccount),
-                    scope=ldb.SCOPE_SUBTREE,
-                    attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
+                         ldb.binary_encode(cleanedaccount),
+                         scope=ldb.SCOPE_SUBTREE,
+                         attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
         if len(res) == 0:
             raise CommandError("Unable to find account name '%s'" % accountname)
         assert(len(res) == 1)
@@ -80,9 +80,9 @@ class cmd_delegation_show(Command):
 
         self.outf.write("Account-DN: %s\n" %  str(res[0].dn))
         self.outf.write("UF_TRUSTED_FOR_DELEGATION: %s\n"
-            % bool(uac & dsdb.UF_TRUSTED_FOR_DELEGATION))
+                        % bool(uac & dsdb.UF_TRUSTED_FOR_DELEGATION))
         self.outf.write("UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION: %s\n" %
-              bool(uac & dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION))
+                        bool(uac & dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION))
 
         if allowed is not None:
             for a in allowed:
@@ -190,8 +190,8 @@ class cmd_delegation_for_any_protocol(Command):
         flag = dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
         try:
             sam.toggle_userAccountFlags(search_filter, flag,
-                        flags_str="Trusted-to-Authenticate-for-Delegation",
-                        on=on, strict=True)
+                                        flags_str="Trusted-to-Authenticate-for-Delegation",
+                                        on=on, strict=True)
         except Exception as err:
             raise CommandError(err)
 
@@ -242,8 +242,8 @@ class cmd_delegation_add_service(Command):
         msg = ldb.Message()
         msg.dn = res[0].dn
         msg["msDS-AllowedToDelegateTo"] = ldb.MessageElement([principal],
-                                          ldb.FLAG_MOD_ADD,
-                                          "msDS-AllowedToDelegateTo")
+                                                             ldb.FLAG_MOD_ADD,
+                                                             "msDS-AllowedToDelegateTo")
         try:
             sam.modify(msg)
         except Exception as err:
@@ -296,8 +296,8 @@ class cmd_delegation_del_service(Command):
         msg = ldb.Message()
         msg.dn = res[0].dn
         msg["msDS-AllowedToDelegateTo"] = ldb.MessageElement([principal],
-                                          ldb.FLAG_MOD_DELETE,
-                                          "msDS-AllowedToDelegateTo")
+                                                             ldb.FLAG_MOD_DELETE,
+                                                             "msDS-AllowedToDelegateTo")
         try:
             sam.modify(msg)
         except Exception as err:

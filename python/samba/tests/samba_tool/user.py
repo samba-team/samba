@@ -36,7 +36,7 @@ class UserCmdTestCase(SambaToolCmdTest):
     def setUp(self):
         super(UserCmdTestCase, self).setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
-            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                   "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.users = []
         self.users.append(self._randomUser({"name": "sambatool1", "company": "comp1"}))
         self.users.append(self._randomUser({"name": "sambatool2", "company": "comp1"}))
@@ -217,16 +217,16 @@ class UserCmdTestCase(SambaToolCmdTest):
         for a in cache_attrs.keys():
             v = cache_attrs[a].get("value", "")
             self.assertMatch(out, "%s: %s" % (a, v),
-                "syncpasswords --cache-ldb-initialize: %s: %s out[%s]" % (a, v, out))
+                             "syncpasswords --cache-ldb-initialize: %s: %s out[%s]" % (a, v, out))
 
         (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
         self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --no-wait runs")
         self.assertEqual(err,"","syncpasswords --no-wait")
         self.assertMatch(out, "dirsync_loop(): results 0",
-            "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
+                         "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
         for user in self.users:
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
-                "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
+                             "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
 
         for user in self.users:
             newpasswd = self.randomPass()
@@ -249,24 +249,24 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --no-wait runs")
             self.assertEqual(err,"","syncpasswords --no-wait")
             self.assertMatch(out, "dirsync_loop(): results 0",
-                "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
+                             "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
-                "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
+                             "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
             self.assertMatch(out, "# unicodePwd::: REDACTED SECRET ATTRIBUTE",
-                    "getpassword '# unicodePwd::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
+                             "getpassword '# unicodePwd::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
             self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
-                    "getpassword unicodePwd: out[%s]" % out)
+                             "getpassword unicodePwd: out[%s]" % out)
             self.assertMatch(out, "# supplementalCredentials::: REDACTED SECRET ATTRIBUTE",
-                    "getpassword '# supplementalCredentials::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
+                             "getpassword '# supplementalCredentials::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
             self.assertMatch(out, "supplementalCredentials:: ",
-                    "getpassword supplementalCredentials: out[%s]" % out)
+                             "getpassword supplementalCredentials: out[%s]" % out)
             if "virtualSambaGPG:: " in out:
                 self.assertMatch(out, "virtualClearTextUTF8:: %s" % virtualClearTextUTF8,
-                    "getpassword virtualClearTextUTF8: out[%s]" % out)
+                                 "getpassword virtualClearTextUTF8: out[%s]" % out)
                 self.assertMatch(out, "virtualClearTextUTF16:: %s" % virtualClearTextUTF16,
-                    "getpassword virtualClearTextUTF16: out[%s]" % out)
+                                 "getpassword virtualClearTextUTF16: out[%s]" % out)
                 self.assertMatch(out, "virtualSSHA: ",
-                    "getpassword virtualSSHA: out[%s]" % out)
+                                 "getpassword virtualSSHA: out[%s]" % out)
 
             (result, out, err) = self.runsubcmd("user", "getpassword",
                                                 user["name"],
@@ -276,19 +276,19 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertEqual(err,"","getpassword without url")
             self.assertMatch(out, "Got password OK", "getpassword without url")
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
-                    "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
+                             "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
             self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
-                    "getpassword unicodePwd: out[%s]" % out)
+                             "getpassword unicodePwd: out[%s]" % out)
             self.assertMatch(out, "supplementalCredentials:: ",
-                    "getpassword supplementalCredentials: out[%s]" % out)
+                             "getpassword supplementalCredentials: out[%s]" % out)
             self._verify_supplementalCredentials(out.replace("\nGot password OK\n", ""))
             if "virtualSambaGPG:: " in out:
                 self.assertMatch(out, "virtualClearTextUTF8:: %s" % virtualClearTextUTF8,
-                    "getpassword virtualClearTextUTF8: out[%s]" % out)
+                                 "getpassword virtualClearTextUTF8: out[%s]" % out)
                 self.assertMatch(out, "virtualClearTextUTF16:: %s" % virtualClearTextUTF16,
-                    "getpassword virtualClearTextUTF16: out[%s]" % out)
+                                 "getpassword virtualClearTextUTF16: out[%s]" % out)
                 self.assertMatch(out, "virtualSSHA: ",
-                    "getpassword virtualSSHA: out[%s]" % out)
+                                 "getpassword virtualSSHA: out[%s]" % out)
 
         for user in self.users:
             newpasswd = self.randomPass()
@@ -373,7 +373,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                 "--attributes=sAMAccountName,company",
                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                 "-U%s%%%s" % (os.environ["DC_USERNAME"],
-                os.environ["DC_PASSWORD"]))
+                              os.environ["DC_PASSWORD"]))
             self.assertCmdSuccess(result, out, err, "Error running show")
 
             expected_out = """dn: CN=%s %s,CN=Users,%s
@@ -585,8 +585,8 @@ sAMAccountName: %s
     def _find_user(self, name):
         search_filter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (ldb.binary_encode(name), "CN=Person,CN=Schema,CN=Configuration", self.samdb.domain_dn())
         userlist = self.samdb.search(base=self.samdb.domain_dn(),
-                                  scope=ldb.SCOPE_SUBTREE,
-                                  expression=search_filter, attrs=[])
+                                     scope=ldb.SCOPE_SUBTREE,
+                                     expression=search_filter, attrs=[])
         if userlist:
             return userlist[0]
         else:

@@ -174,7 +174,7 @@ def make_pso_ldb_msg(outf, samdb, pso_dn, create, lockout_threshold=None,
     if create:
         ldb_oper = ldb.FLAG_MOD_ADD
         m["msDS-objectClass"] = ldb.MessageElement("msDS-PasswordSettings",
-              ldb_oper, "objectClass")
+                                                   ldb_oper, "objectClass")
     else:
         ldb_oper = ldb.FLAG_MOD_REPLACE
 
@@ -252,14 +252,14 @@ def check_pso_constraints(min_pwd_length=None, history_length=None,
 # the same args are used for both create and set commands
 pwd_settings_options = [
     Option("--complexity", type="choice", choices=["on", "off"],
-      help="The password complexity (on | off)."),
+           help="The password complexity (on | off)."),
     Option("--store-plaintext", type="choice", choices=["on", "off"],
-      help="Store plaintext passwords where account have "
+           help="Store plaintext passwords where account have "
            "'store passwords with reversible encryption' set (on | off)."),
     Option("--history-length",
-      help="The password history length (<integer>).", type=int),
+           help="The password history length (<integer>).", type=int),
     Option("--min-pwd-length",
-      help="The minimum password length (<integer>).", type=int),
+           help="The minimum password length (<integer>).", type=int),
     Option("--min-pwd-age",
            help=("The minimum password age (<integer in days>). "
                  "Default is domain setting."), type=int),
@@ -336,7 +336,7 @@ class cmd_domain_pwdsettings_pso_create(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         try:
             precedence = int(precedence)
@@ -374,9 +374,9 @@ class cmd_domain_pwdsettings_pso_create(Command):
 
         # lookup the current domain password-settings
         res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_BASE,
-            attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength",
-                "minPwdAge", "maxPwdAge", "lockoutDuration",
-                "lockoutThreshold", "lockOutObservationWindow"])
+                           attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength",
+                                  "minPwdAge", "maxPwdAge", "lockoutDuration",
+                                  "lockoutThreshold", "lockOutObservationWindow"])
         assert(len(res) == 1)
 
         # use the domain settings for any missing arguments
@@ -473,7 +473,7 @@ class cmd_domain_pwdsettings_pso_set(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         # sanity-check the PSO exists
         pso_dn = "CN=%s,%s" % (psoname, pso_container(samdb))
@@ -549,7 +549,7 @@ class cmd_domain_pwdsettings_pso_delete(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         pso_dn = "CN=%s,%s" % (psoname, pso_container(samdb))
         # sanity-check the PSO exists
@@ -587,7 +587,7 @@ class cmd_domain_pwdsettings_pso_list(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         res = samdb.search(pso_container(samdb), scope=ldb.SCOPE_SUBTREE,
                            attrs=['name', 'msDS-PasswordSettingsPrecedence'],
@@ -634,7 +634,7 @@ class cmd_domain_pwdsettings_pso_show(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         pso_dn = "CN=%s,%s" % (psoname, pso_container(samdb))
         check_pso_valid(samdb, pso_dn, psoname)
@@ -664,7 +664,7 @@ class cmd_domain_pwdsettings_pso_show_user(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         show_pso_for_user(self.outf, samdb, username)
 
@@ -700,7 +700,7 @@ class cmd_domain_pwdsettings_pso_apply(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         pso_dn = "CN=%s,%s" % (psoname, pso_container(samdb))
         # sanity-check the PSO exists
@@ -760,7 +760,7 @@ class cmd_domain_pwdsettings_pso_unapply(Command):
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         pso_dn = "CN=%s,%s" % (psoname, pso_container(samdb))
         # sanity-check the PSO exists

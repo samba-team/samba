@@ -1311,11 +1311,11 @@ class RejectSubDBIndex(LdbBaseTest):
     def test_try_subdb_index(self):
         try:
             self.l.add({"dn": "@INDEXLIST",
-                    "@IDX_LMDB_SUBDB": [b"1"],
-                    "@IDXONE": [b"1"],
-                    "@IDXONE": [b"1"],
-                    "@IDXGUID": [b"objectUUID"],
-                    "@IDX_DN_GUID": [b"GUID"],
+                        "@IDX_LMDB_SUBDB": [b"1"],
+                        "@IDXONE": [b"1"],
+                        "@IDXONE": [b"1"],
+                        "@IDXGUID": [b"objectUUID"],
+                        "@IDX_DN_GUID": [b"GUID"],
                         })
         except ldb.LdbError as e:
             code = e.args[0]

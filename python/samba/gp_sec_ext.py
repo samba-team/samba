@@ -118,7 +118,7 @@ class gp_sec_ext(gp_inf_ext):
 
     def list(self, rootpath):
         return os.path.join(rootpath,
-            "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
+                            "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
 
     def listmachpol(self, rootpath):
         return os.path.join(rootpath, "Machine/Registry.pol")

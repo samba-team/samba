@@ -224,9 +224,9 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         try:
             # 2. Perform a RID alloc
             req8 = self._exop_req8(dest_dsa=fsmo_owner["ntds_guid"],
-                    invocation_id=fsmo_not_owner["invocation_id"],
-                    nc_dn_str=fsmo_dn,
-                    exop=drsuapi.DRSUAPI_EXOP_FSMO_RID_ALLOC)
+                                   invocation_id=fsmo_not_owner["invocation_id"],
+                                   nc_dn_str=fsmo_dn,
+                                   exop=drsuapi.DRSUAPI_EXOP_FSMO_RID_ALLOC)
 
             (drs, drs_handle) = self._ds_bind(fsmo_not_owner["dns_name"])
             # 3. Make sure the allocation succeeds
@@ -348,8 +348,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             m = ldb.Message()
             m.dn = fsmo_dn
             m["fSMORoleOwner"] = ldb.MessageElement(serviceName,
-                                                   ldb.FLAG_MOD_REPLACE,
-                                                   "fSMORoleOwner")
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    "fSMORoleOwner")
             new_ldb.modify(m)
 
             # 1. Get server name
@@ -399,8 +399,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             m = ldb.Message()
             m.dn = fsmo_dn
             m["fSMORoleOwner"] = ldb.MessageElement(serviceName,
-                                                   ldb.FLAG_MOD_REPLACE,
-                                                   "fSMORoleOwner")
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    "fSMORoleOwner")
             new_ldb.modify(m)
 
             # 1. Get server name
@@ -449,8 +449,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             m = ldb.Message()
             m.dn = fsmo_dn
             m["fSMORoleOwner"] = ldb.MessageElement(serviceName,
-                                                   ldb.FLAG_MOD_REPLACE,
-                                                   "fSMORoleOwner")
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    "fSMORoleOwner")
             new_ldb.modify(m)
 
             # 1. Get server name

@@ -55,7 +55,7 @@ def create_site(samdb, configDn, siteName):
     """
 
     ret = samdb.search(base=configDn, scope=ldb.SCOPE_SUBTREE,
-                    expression='(&(objectclass=Site)(cn=%s))' % siteName)
+                       expression='(&(objectclass=Site)(cn=%s))' % siteName)
     if len(ret) != 0:
         raise SiteAlreadyExistsException('A site with the name %s already exists' % siteName)
 

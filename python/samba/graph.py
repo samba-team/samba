@@ -121,7 +121,7 @@ def shorten_vertex_names(vertices, suffix=',...', aggressive=False):
                 break
         else:
             vmap = dict((k, v.replace(',CN=Servers,', ',**,', 1))
-                       for k, v in vmap.items())
+                        for k, v in vmap.items())
             replacements.append(('**', 'CN=Servers'))
 
         for v in vmap.values():
@@ -129,7 +129,7 @@ def shorten_vertex_names(vertices, suffix=',...', aggressive=False):
                 break
         else:
             vmap = dict((k, v.replace('CN=NTDS Settings,', '*,', 1))
-                       for k, v in vmap.items())
+                        for k, v in vmap.items())
             replacements.append(('*', 'CN=NTDS Settings'))
 
     return vmap, replacements

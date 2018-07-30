@@ -137,7 +137,7 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
         # Test that updating an already up-to-date secretsdb works fine
         self.secretsdb = self._getCurrentFormatDb()
         self.assertEquals(None,
-            update_secrets(self.referencedb, self.secretsdb, dummymessage))
+                          update_secrets(self.referencedb, self.secretsdb, dummymessage))
 
     def test_update_modules(self):
         empty_db = self._getEmptyDb()

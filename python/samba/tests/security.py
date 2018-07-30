@@ -74,7 +74,7 @@ class SecurityDescriptorTests(samba.tests.TestCase):
     def test_from_sddl_invalidtype2(self):
         sddl = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
         self.assertRaises(TypeError, security.descriptor.from_sddl, sddl,
-                "S-2-0-0")
+                          "S-2-0-0")
 
     def test_as_sddl(self):
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
@@ -139,11 +139,11 @@ class PrivilegeTests(samba.tests.TestCase):
 
     def test_privilege_name(self):
         self.assertEquals("SeShutdownPrivilege",
-                security.privilege_name(security.SEC_PRIV_SHUTDOWN))
+                          security.privilege_name(security.SEC_PRIV_SHUTDOWN))
 
     def test_privilege_id(self):
         self.assertEquals(security.SEC_PRIV_SHUTDOWN,
-                security.privilege_id("SeShutdownPrivilege"))
+                          security.privilege_id("SeShutdownPrivilege"))
 
 
 class CheckAccessTests(samba.tests.TestCase):

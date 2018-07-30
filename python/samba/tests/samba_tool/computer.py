@@ -179,9 +179,9 @@ class ComputerCmdTestCase(SambaToolCmdTest):
                          dsdb.ATYPE_WORKSTATION_TRUST)
 
         computerlist = self.samdb.search(base=self.samdb.domain_dn(),
-                                      scope=ldb.SCOPE_SUBTREE,
-                                      expression=search_filter,
-                                      attrs=["samaccountname"])
+                                         scope=ldb.SCOPE_SUBTREE,
+                                         expression=search_filter,
+                                         attrs=["samaccountname"])
 
         self.assertTrue(len(computerlist) > 0, "no computers found in samdb")
 
@@ -278,11 +278,11 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             samaccountname = "%s$" % name
         search_filter = ("(&(sAMAccountName=%s)(objectCategory=%s,%s))" %
                          (ldb.binary_encode(samaccountname),
-                         "CN=Computer,CN=Schema,CN=Configuration",
-                         self.samdb.domain_dn()))
+                          "CN=Computer,CN=Schema,CN=Configuration",
+                          self.samdb.domain_dn()))
         computerlist = self.samdb.search(base=self.samdb.domain_dn(),
-                                  scope=ldb.SCOPE_SUBTREE,
-                                  expression=search_filter, attrs=[])
+                                         scope=ldb.SCOPE_SUBTREE,
+                                         expression=search_filter, attrs=[])
         if computerlist:
             return computerlist[0]
         else:

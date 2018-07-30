@@ -575,8 +575,8 @@ class DsdbTests(TestCase):
         msg = ldb.Message()
         msg.dn = kept_dn
         msg["manager"] = ldb.MessageElement("<SID=%s>" % removed_sid,
-                                           ldb.FLAG_MOD_ADD,
-                                           "manager")
+                                            ldb.FLAG_MOD_ADD,
+                                            "manager")
         try:
             self.samdb.modify(msg)
             self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")
@@ -589,8 +589,8 @@ class DsdbTests(TestCase):
         msg = ldb.Message()
         msg.dn = kept_dn
         msg["manager"] = ldb.MessageElement("<GUID=%s>" % removed_guid,
-                                           ldb.FLAG_MOD_ADD,
-                                           "manager")
+                                            ldb.FLAG_MOD_ADD,
+                                            "manager")
         try:
             self.samdb.modify(msg)
             self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")

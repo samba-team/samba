@@ -89,12 +89,12 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--groupou",
-           help="Alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created",
-           type=str),
+               help="Alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created",
+               type=str),
         Option("--group-scope", type="choice", choices=["Domain", "Global", "Universal"],
-            help="Group scope (Domain | Global | Universal)"),
+               help="Group scope (Domain | Global | Universal)"),
         Option("--group-type", type="choice", choices=["Security", "Distribution"],
-            help="Group type (Security | Distribution)"),
+               help="Group type (Security | Distribution)"),
         Option("--description", help="Group's description", type=str),
         Option("--mail-address", help="Group's email address", type=str),
         Option("--notes", help="Groups's notes", type=str),
@@ -123,8 +123,8 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
             samdb.newgroup(groupname, groupou=groupou, grouptype = gtype,
-                          description=description, mailaddress=mail_address, notes=notes,
-                          gidnumber=gid_number, nisdomain=nis_domain)
+                           description=description, mailaddress=mail_address, notes=notes,
+                           gidnumber=gid_number, nisdomain=nis_domain)
         except Exception as e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to create group "%s"' % groupname, e)
@@ -239,7 +239,7 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
                           credentials=creds, lp=lp)
             groupmembers = listofmembers.split(',')
             samdb.add_remove_group_members(groupname, groupmembers,
-                    add_members_operation=True)
+                                           add_members_operation=True)
         except Exception as e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to add members "%s" to group "%s"' % (
@@ -290,7 +290,7 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
             samdb.add_remove_group_members(groupname, listofmembers.split(","),
-                    add_members_operation=False)
+                                           add_members_operation=False)
         except Exception as e:
             # FIXME: Catch more specific exception
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
@@ -323,12 +323,12 @@ class cmd_group_list(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
         res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
-                    expression=("(objectClass=group)"),
-                    attrs=["samaccountname", "grouptype"])
+                           expression=("(objectClass=group)"),
+                           attrs=["samaccountname", "grouptype"])
         if (len(res) == 0):
             return
 

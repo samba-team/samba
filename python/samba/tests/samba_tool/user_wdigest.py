@@ -68,7 +68,7 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
         self.samdb = self.getSamDB(
             "-H", "ldap://%s" % os.environ["DC_SERVER"],
             "-U%s%%%s" % (os.environ["DC_USERNAME"],
-            os.environ["DC_PASSWORD"]))
+                          os.environ["DC_PASSWORD"]))
         self.dns_domain = self.samdb.domain_dns_name()
         res = self.samdb.search(
             base=self.samdb.get_config_basedn(),

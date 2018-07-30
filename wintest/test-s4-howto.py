@@ -57,7 +57,7 @@ def start_s4(t):
     t.chdir("${PREFIX}")
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
     t.run_cmd(['sbin/samba',
-             '--option', 'panic action=gnome-terminal -e "gdb --pid %d"', '--option', 'max protocol=nt1'])
+               '--option', 'panic action=gnome-terminal -e "gdb --pid %d"', '--option', 'max protocol=nt1'])
     t.port_wait("${INTERFACE_IP}", 139)
 
 def test_smbclient(t):
@@ -100,11 +100,11 @@ def test_dns(t):
     '''test that DNS is OK'''
     t.info("Testing DNS")
     t.cmd_contains("host -t SRV _ldap._tcp.${LCREALM}.",
-                 ['_ldap._tcp.${LCREALM} has SRV record 0 100 389 ${HOSTNAME}.${LCREALM}'])
+                   ['_ldap._tcp.${LCREALM} has SRV record 0 100 389 ${HOSTNAME}.${LCREALM}'])
     t.cmd_contains("host -t SRV  _kerberos._udp.${LCREALM}.",
-                 ['_kerberos._udp.${LCREALM} has SRV record 0 100 88 ${HOSTNAME}.${LCREALM}'])
+                   ['_kerberos._udp.${LCREALM} has SRV record 0 100 88 ${HOSTNAME}.${LCREALM}'])
     t.cmd_contains("host -t A ${HOSTNAME}.${LCREALM}",
-                 ['${HOSTNAME}.${LCREALM} has address'])
+                   ['${HOSTNAME}.${LCREALM} has address'])
 
 def test_kerberos(t):
     '''test that kerberos is OK'''
@@ -211,38 +211,38 @@ def test_dcpromo(t, vm):
         t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
 
     t.cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME}.${LCREALM} -k yes",
-                 [ "INBOUND NEIGHBORS",
-                   "${BASEDN}",
-                   "Last attempt .* was successful",
-                   "CN=Configuration,${BASEDN}",
-                   "Last attempt .* was successful",
-                   "CN=Configuration,${BASEDN}", # cope with either order
-                   "Last attempt .* was successful",
-                   "OUTBOUND NEIGHBORS",
-                   "${BASEDN}",
-                   "Last success",
-                   "CN=Configuration,${BASEDN}",
-                   "Last success",
-                   "CN=Configuration,${BASEDN}",
-                   "Last success"],
+                   [ "INBOUND NEIGHBORS",
+                     "${BASEDN}",
+                     "Last attempt .* was successful",
+                     "CN=Configuration,${BASEDN}",
+                     "Last attempt .* was successful",
+                     "CN=Configuration,${BASEDN}", # cope with either order
+                     "Last attempt .* was successful",
+                     "OUTBOUND NEIGHBORS",
+                     "${BASEDN}",
+                     "Last success",
+                     "CN=Configuration,${BASEDN}",
+                     "Last success",
+                     "CN=Configuration,${BASEDN}",
+                     "Last success"],
                    ordered=True,
                    regex=True)
 
     t.cmd_contains("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${LCREALM} -k yes",
-                 [ "INBOUND NEIGHBORS",
-                   "${BASEDN}",
-                   "Last attempt .* was successful",
-                   "CN=Configuration,${BASEDN}",
-                   "Last attempt .* was successful",
-                   "CN=Configuration,${BASEDN}",
-                   "Last attempt .* was successful",
-                   "OUTBOUND NEIGHBORS",
-                   "${BASEDN}",
-                   "Last success",
-                   "CN=Configuration,${BASEDN}",
-                   "Last success",
-                   "CN=Configuration,${BASEDN}",
-                   "Last success" ],
+                   [ "INBOUND NEIGHBORS",
+                     "${BASEDN}",
+                     "Last attempt .* was successful",
+                     "CN=Configuration,${BASEDN}",
+                     "Last attempt .* was successful",
+                     "CN=Configuration,${BASEDN}",
+                     "Last attempt .* was successful",
+                     "OUTBOUND NEIGHBORS",
+                     "${BASEDN}",
+                     "Last success",
+                     "CN=Configuration,${BASEDN}",
+                     "Last success",
+                     "CN=Configuration,${BASEDN}",
+                     "Last success" ],
                    ordered=True,
                    regex=True)
 
@@ -373,14 +373,14 @@ def test_dcpromo_rodc(t, vm):
         t.cmd_contains("bin/samba-tool drs replicate --add-ref ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} %s" % nc, ["was successful"])
 
     t.cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME}.${LCREALM}",
-                 [ "INBOUND NEIGHBORS",
-                   "OUTBOUND NEIGHBORS",
-                   "${BASEDN}",
-                   "Last attempt.*was successful",
-                   "CN=Configuration,${BASEDN}",
-                   "Last attempt.*was successful",
-                   "CN=Configuration,${BASEDN}",
-                   "Last attempt.*was successful" ],
+                   [ "INBOUND NEIGHBORS",
+                     "OUTBOUND NEIGHBORS",
+                     "${BASEDN}",
+                     "Last attempt.*was successful",
+                     "CN=Configuration,${BASEDN}",
+                     "Last attempt.*was successful",
+                     "CN=Configuration,${BASEDN}",
+                     "Last attempt.*was successful" ],
                    ordered=True,
                    regex=True)
 
@@ -527,14 +527,14 @@ def test_join_as_rodc(t, vm):
     child.expect("DSA invocationID")
 
     t.cmd_contains("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -k yes",
-                 [ "INBOUND NEIGHBORS",
-                   "OUTBOUND NEIGHBORS",
-                   "${WIN_BASEDN}",
-                   "Last attempt .* was successful",
-                   "CN=Configuration,${WIN_BASEDN}",
-                   "Last attempt .* was successful",
-                   "CN=Configuration,${WIN_BASEDN}",
-                   "Last attempt .* was successful" ],
+                   [ "INBOUND NEIGHBORS",
+                     "OUTBOUND NEIGHBORS",
+                     "${WIN_BASEDN}",
+                     "Last attempt .* was successful",
+                     "CN=Configuration,${WIN_BASEDN}",
+                     "Last attempt .* was successful",
+                     "CN=Configuration,${WIN_BASEDN}",
+                     "Last attempt .* was successful" ],
                    ordered=True,
                    regex=True)
 

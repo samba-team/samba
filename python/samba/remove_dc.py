@@ -160,7 +160,7 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
 
         if len(a_recs) != orig_num_recs:
             logger.info("updating %s keeping %d values, removing %s values" % \
-                (a_name, len(a_recs), orig_num_recs - len(a_recs)))
+                        (a_name, len(a_recs), orig_num_recs - len(a_recs)))
             samdb.dns_replace(a_name, a_recs)
 
     remove_hanging_dns_references(samdb, logger, dnsHostNameUpper, zones)
@@ -305,7 +305,7 @@ def offline_remove_ntds_dc(samdb,
 
     try:
         msgs = samdb.search(base=ntds_dn, expression="objectClass=ntdsDSA",
-                        attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
+                            attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
     except LdbError as e5:
         (enum, estr) = e5.args
         if enum == ldb.ERR_NO_SUCH_OBJECT:
@@ -388,7 +388,7 @@ def remove_dc(samdb, logger, dc_name):
                                        attrs=[],
                                        expression="(&(objectClass=server)"
                                        "(cn=%s))"
-                                    % ldb.binary_encode(dc_name))
+                                       % ldb.binary_encode(dc_name))
         except LdbError as e3:
             (enum, estr) = e3.args
             raise DemoteException("Failure checking if %s is an server "

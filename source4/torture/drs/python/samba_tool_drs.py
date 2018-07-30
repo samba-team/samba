@@ -107,9 +107,9 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was started.'
         nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
         out = self.check_output("samba-tool drs replicate --async-op %s %s %s %s" % (self.dc1,
-                                                                          self.dc2,
-                                                                          nc_name,
-                                                                          self.cmdline_creds))
+                                                                                     self.dc2,
+                                                                                     nc_name,
+                                                                                     self.cmdline_creds))
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was started" in out)
 
@@ -130,8 +130,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was started.'
         nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
         out = self.check_output("samba-tool drs replicate --local-online --async-op %s %s %s" % (self.dc1,
-                                                                                      self.dc2,
-                                                                                      nc_name))
+                                                                                                 self.dc2,
+                                                                                                 nc_name))
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was started" in out)
 
@@ -377,8 +377,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         def demote_self():
             # While we have this cloned, try demoting the other server on the clone
             out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
-                                % (self.dc1,
-                                   self.tempdir))
+                                    % (self.dc1,
+                                       self.tempdir))
         self.assertRaises(samba.tests.BlackboxProcessError, demote_self)
 
         # While we have this cloned, try demoting the other server on the clone

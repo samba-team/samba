@@ -60,17 +60,17 @@ def import_sam_policy(samdb, policy, logger):
 
     if 'min password length' in policy:
         m['a01'] = ldb.MessageElement(str(policy['min password length']),
-            ldb.FLAG_MOD_REPLACE, 'minPwdLength')
+                                      ldb.FLAG_MOD_REPLACE, 'minPwdLength')
 
     if 'password history' in policy:
         m['a02'] = ldb.MessageElement(str(policy['password history']),
-            ldb.FLAG_MOD_REPLACE, 'pwdHistoryLength')
+                                      ldb.FLAG_MOD_REPLACE, 'pwdHistoryLength')
 
     if 'minimum password age' in policy:
         min_pw_age_unix = policy['minimum password age']
         min_pw_age_nt = int(-min_pw_age_unix * (1e7))
         m['a03'] = ldb.MessageElement(str(min_pw_age_nt), ldb.FLAG_MOD_REPLACE,
-            'minPwdAge')
+                                      'minPwdAge')
 
     if 'maximum password age' in policy:
         max_pw_age_unix = policy['maximum password age']
@@ -87,7 +87,7 @@ def import_sam_policy(samdb, policy, logger):
         lockout_duration_nt = unix2nttime(lockout_duration_mins * 60)
 
         m['a05'] = ldb.MessageElement(str(lockout_duration_nt),
-            ldb.FLAG_MOD_REPLACE, 'lockoutDuration')
+                                      ldb.FLAG_MOD_REPLACE, 'lockoutDuration')
 
     try:
         samdb.modify(m)
@@ -96,7 +96,7 @@ def import_sam_policy(samdb, policy, logger):
 
 
 def add_posix_attrs(logger, samdb, sid, name, nisdomain, xid_type, home=None,
-        shell=None, pgid=None):
+                    shell=None, pgid=None):
     """Add posix attributes for the user/group
 
     :param samdb: Samba4 sam.ldb database
@@ -192,11 +192,11 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
     else:
         try:
             idmapdb.add({"dn": "CN=%s" % str(sid),
-                        "cn": str(sid),
-                        "objectClass": "sidMap",
-                        "objectSid": ndr_pack(sid),
-                        "type": xid_type,
-                        "xidNumber": str(xid)})
+                         "cn": str(sid),
+                         "objectClass": "sidMap",
+                         "objectSid": ndr_pack(sid),
+                         "type": xid_type,
+                         "xidNumber": str(xid)})
         except ldb.LdbError as e:
             logger.warn(
                 'Could not add idmap entry for sid=%s, id=%s, type=%s (%s)',
@@ -279,18 +279,18 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
         m.dn.add_base(samdb.get_default_basedn())
         m['objectClass'] = ldb.MessageElement('group', ldb.FLAG_MOD_ADD, 'objectClass')
         m['objectSid'] = ldb.MessageElement(ndr_pack(groupmap.sid), ldb.FLAG_MOD_ADD,
-            'objectSid')
+                                            'objectSid')
         m['sAMAccountName'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD,
-            'sAMAccountName')
+                                                 'sAMAccountName')
 
         if groupmap.comment:
             m['description'] = ldb.MessageElement(groupmap.comment, ldb.FLAG_MOD_ADD,
-                'description')
+                                                  'description')
 
         # Fix up incorrect 'well known' groups that are actually builtin (per test above) to be aliases
         if groupmap.sid_name_use == lsa.SID_NAME_ALIAS or groupmap.sid_name_use == lsa.SID_NAME_WKN_GRP:
             m['groupType'] = ldb.MessageElement(str(dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP),
-                ldb.FLAG_MOD_ADD, 'groupType')
+                                                ldb.FLAG_MOD_ADD, 'groupType')
 
         try:
             samdb.add(m, controls=["relax:0"])
@@ -408,8 +408,8 @@ def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
     """
     try:
         msg = ldb_object.search(base_dn, scope=ldb.SCOPE_SUBTREE,
-                        expression=("(&(objectClass=posixAccount)(uid=%s))"
-                        % (user)), attrs=[attr])
+                                expression=("(&(objectClass=posixAccount)(uid=%s))"
+                                            % (user)), attrs=[attr])
     except ldb.LdbError as e:
         raise ProvisioningError("Failed to retrieve attribute %s for user %s, the error is: %s" % (attr, user, e))
     else:
@@ -422,7 +422,7 @@ def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
 
 
 def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
-        useeadb=False, dns_backend=None, use_ntvfs=False):
+                        useeadb=False, dns_backend=None, use_ntvfs=False):
     """Upgrade from samba3 database to samba4 AD database
 
     :param samba3: samba3 object
@@ -448,7 +448,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
     if not domainname:
         domainname = secrets_db.domains()[0]
         logger.warning("No workgroup specified in smb.conf file, assuming '%s'",
-                domainname)
+                       domainname)
 
     if not realm:
         if serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC":
@@ -456,7 +456,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
         else:
             realm = domainname.upper()
             logger.warning("No realm specified in smb.conf file, assuming '%s'",
-                    realm)
+                           realm)
 
     # Find machine account and password
     next_rid = 1000
@@ -840,9 +840,9 @@ Please fix this account before attempting to upgrade again
 
     if result.server_role == "active directory domain controller":
         setsysvolacl(result.samdb, result.paths.netlogon, result.paths.sysvol,
-                result.paths.root_uid, result.paths.root_gid,
-                security.dom_sid(result.domainsid), result.names.dnsdomain,
-                result.names.domaindn, result.lp, use_ntvfs)
+                     result.paths.root_uid, result.paths.root_gid,
+                     security.dom_sid(result.domainsid), result.names.dnsdomain,
+                     result.names.domaindn, result.lp, use_ntvfs)
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
     # FIXME: shares

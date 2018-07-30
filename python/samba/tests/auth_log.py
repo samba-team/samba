@@ -93,7 +93,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("Authentication", msg["type"])
         self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
         self._assert_ncacn_np_serviceDescription(binding,
-                          msg["Authentication"]["serviceDescription"])
+                                                 msg["Authentication"]["serviceDescription"])
         self.assertEquals(authTypes[1],
                           msg["Authentication"]["authDescription"])
 
@@ -101,7 +101,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         msg = messages[1]
         self.assertEquals("Authorization", msg["type"])
         self._assert_ncacn_np_serviceDescription(binding,
-                          msg["Authorization"]["serviceDescription"])
+                                                 msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[2], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
@@ -161,7 +161,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         msg = messages[2]
         self.assertEquals("Authorization", msg["type"])
         self._assert_ncacn_np_serviceDescription(binding,
-                          msg["Authorization"]["serviceDescription"])
+                                                 msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[3], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
@@ -486,7 +486,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         creds = self.insta_creds(template=self.get_credentials())
         creds.set_bind_dn("%s\\%s" % (creds.get_domain(),
-                          creds.get_username()))
+                                      creds.get_username()))
 
         self.samdb = SamDB(url="ldaps://%s" % os.environ["SERVER"],
                            lp=self.get_loadparm(),
@@ -517,7 +517,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         creds = self.insta_creds(template=self.get_credentials())
         creds.set_password("badPassword")
         creds.set_bind_dn("%s\\%s" % (creds.get_domain(),
-                          creds.get_username()))
+                                      creds.get_username()))
 
         thrown = False
         try:

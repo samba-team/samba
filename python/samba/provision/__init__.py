@@ -181,7 +181,7 @@ class ProvisionNames(object):
 
 
 def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
-        lp):
+                                  lp):
     """Get key provision parameters (realm, domain, ...) from a given provision
 
     :param samdb: An LDB object connected to the sam.ldb file
@@ -213,19 +213,19 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     # That's a bit simplistic but it's ok as long as we have only 3
     # partitions
     current = samdb.search(expression="(objectClass=*)",
-        base="", scope=ldb.SCOPE_BASE,
-        attrs=["defaultNamingContext", "schemaNamingContext",
-               "configurationNamingContext","rootDomainNamingContext",
-               "namingContexts"])
+                           base="", scope=ldb.SCOPE_BASE,
+                           attrs=["defaultNamingContext", "schemaNamingContext",
+                                  "configurationNamingContext","rootDomainNamingContext",
+                                  "namingContexts"])
 
     names.configdn = current[0]["configurationNamingContext"][0]
     names.schemadn = current[0]["schemaNamingContext"][0]
     if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
-                                       current[0]["defaultNamingContext"][0].decode('utf8')))):
+                                             current[0]["defaultNamingContext"][0].decode('utf8')))):
         raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
                                  "is not the same ..." % (paths.samdb,
-                                    str(current[0]["defaultNamingContext"][0].decode('utf8')),
-                                     paths.smbconf, basedn)))
+                                                          str(current[0]["defaultNamingContext"][0].decode('utf8')),
+                                                          paths.smbconf, basedn)))
 
     names.domaindn=current[0]["defaultNamingContext"][0]
     names.rootdn=current[0]["rootDomainNamingContext"][0]
@@ -248,7 +248,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
 
     # default site name
     res3 = samdb.search(expression="(objectClass=site)",
-        base="CN=Sites," + names.configdn, scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
+                        base="CN=Sites," + names.configdn, scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
     names.sitename = str(res3[0]["cn"])
 
     # dns hostname and server dn
@@ -266,16 +266,16 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
 
     # invocation id/objectguid
     res5 = samdb.search(expression="(objectClass=*)",
-            base="CN=NTDS Settings,%s" % str(names.serverdn),
-            scope=ldb.SCOPE_BASE,
-            attrs=["invocationID", "objectGUID"])
+                        base="CN=NTDS Settings,%s" % str(names.serverdn),
+                        scope=ldb.SCOPE_BASE,
+                        attrs=["invocationID", "objectGUID"])
     names.invocation = str(ndr_unpack(misc.GUID, res5[0]["invocationId"][0]))
     names.ntdsguid = str(ndr_unpack(misc.GUID, res5[0]["objectGUID"][0]))
 
     # domain guid/sid
     res6 = samdb.search(expression="(objectClass=*)", base=basedn,
-            scope=ldb.SCOPE_BASE, attrs=["objectGUID",
-                "objectSid","msDS-Behavior-Version" ])
+                        scope=ldb.SCOPE_BASE, attrs=["objectGUID",
+                                                     "objectSid","msDS-Behavior-Version" ])
     names.domainguid = str(ndr_unpack(misc.GUID, res6[0]["objectGUID"][0]))
     names.domainsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
     names.forestsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
@@ -371,8 +371,10 @@ def update_provision_usn(samdb, low, high, id, replace=False):
     tab.append("%s-%s;%s" % (low, high, id))
     delta = ldb.Message()
     delta.dn = ldb.Dn(samdb, "@PROVISION")
-    delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
-        ldb.FLAG_MOD_REPLACE, LAST_PROVISION_USN_ATTRIBUTE)
+    delta[LAST_PROVISION_USN_ATTRIBUTE] = \
+        ldb.MessageElement(tab,
+                           ldb.FLAG_MOD_REPLACE,
+                           LAST_PROVISION_USN_ATTRIBUTE)
     entry = samdb.search(expression='provisionnerID=*',
                          base="@PROVISION", scope=ldb.SCOPE_BASE,
                          attrs=["provisionnerID"])
@@ -398,8 +400,10 @@ def set_provision_usn(samdb, low, high, id):
 
     delta = ldb.Message()
     delta.dn = ldb.Dn(samdb, "@PROVISION")
-    delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
-        ldb.FLAG_MOD_ADD, LAST_PROVISION_USN_ATTRIBUTE)
+    delta[LAST_PROVISION_USN_ATTRIBUTE] = \
+        ldb.MessageElement(tab,
+                           ldb.FLAG_MOD_ADD,
+                           LAST_PROVISION_USN_ATTRIBUTE)
     samdb.add(delta)
 
 
@@ -428,8 +432,8 @@ def get_last_provision_usn(sam):
     """
     try:
         entry = sam.search(expression="%s=*" % LAST_PROVISION_USN_ATTRIBUTE,
-                       base="@PROVISION", scope=ldb.SCOPE_BASE,
-                       attrs=[LAST_PROVISION_USN_ATTRIBUTE, "provisionnerID"])
+                           base="@PROVISION", scope=ldb.SCOPE_BASE,
+                           attrs=[LAST_PROVISION_USN_ATTRIBUTE, "provisionnerID"])
     except ldb.LdbError as e1:
         (ecode, emsg) = e1.args
         if ecode == ldb.ERR_NO_SUCH_OBJECT:
@@ -508,7 +512,7 @@ def check_install(lp, session_info, credentials):
     if lp.get("realm") == "":
         raise Exception("Realm empty")
     samdb = Ldb(lp.samdb_url(), session_info=session_info,
-            credentials=credentials, lp=lp)
+                credentials=credentials, lp=lp)
     if len(samdb.search("(cn=Administrator)")) != 1:
         raise ProvisioningError("No administrator account found")
 
@@ -774,7 +778,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     if serverrole == "active directory domain controller":
         shares["sysvol"] = os.path.join(lp.get("state directory"), "sysvol")
         shares["netlogon"] = os.path.join(shares["sysvol"], realm.lower(),
-            "scripts")
+                                          "scripts")
     else:
         global_settings["passdb backend"] = "samba_dsdb"
 
@@ -906,11 +910,11 @@ def secretsdb_self_join(secretsdb, domain,
     :param machinepass: Machine password
     """
     attrs = ["whenChanged",
-           "secret",
-           "priorSecret",
-           "priorChanged",
-           "krb5Keytab",
-           "privateKeytab"]
+             "secret",
+             "priorSecret",
+             "priorChanged",
+             "krb5Keytab",
+             "privateKeytab"]
 
     if realm is not None:
         if dnsdomain is None:
@@ -943,8 +947,8 @@ def secretsdb_self_join(secretsdb, domain,
     # but we don't delete the old record that we are about to modify,
     # because that would delete the keytab and previous password.
     res = secretsdb.search(base="cn=Primary Domains", attrs=attrs,
-        expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain)(!(distinguishedName=%s)))" % (domain, realm, str(domainsid), str(msg.dn))),
-        scope=ldb.SCOPE_ONELEVEL)
+                           expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain)(!(distinguishedName=%s)))" % (domain, realm, str(domainsid), str(msg.dn))),
+                           scope=ldb.SCOPE_ONELEVEL)
 
     for del_msg in res:
         secretsdb.delete(del_msg.dn)
@@ -1025,13 +1029,13 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
             backend_credentials.authentication_requested()):
             if backend_credentials.get_bind_dn() is not None:
                 setup_add_ldif(secrets_ldb,
-                    setup_path("secrets_simple_ldap.ldif"), {
+                               setup_path("secrets_simple_ldap.ldif"), {
                         "LDAPMANAGERDN": backend_credentials.get_bind_dn(),
                         "LDAPMANAGERPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
                     })
             else:
                 setup_add_ldif(secrets_ldb,
-                    setup_path("secrets_sasl_ldap.ldif"), {
+                               setup_path("secrets_sasl_ldap.ldif"), {
                         "LDAPADMINUSER": backend_credentials.get_username(),
                         "LDAPADMINREALM": backend_credentials.get_realm(),
                         "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
@@ -1130,9 +1134,9 @@ def setup_samdb_rootdse(samdb, names):
 
 
 def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
-        dns_backend, dnspass, domainsid, next_rid, invocationid,
-        policyguid, policyguid_dc,
-        domainControllerFunctionality, ntdsguid=None, dc_rid=None):
+                    dns_backend, dnspass, domainsid, next_rid, invocationid,
+                    policyguid, policyguid_dc,
+                    domainControllerFunctionality, ntdsguid=None, dc_rid=None):
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
@@ -1188,7 +1192,7 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
 
     # Setup fSMORoleOwner entries to point at the newly created DC entry
         setup_modify_ldif(samdb,
-            setup_path("provision_self_join_modify_config.ldif"), {
+                          setup_path("provision_self_join_modify_config.ldif"), {
                 "CONFIGDN": names.configdn,
                 "SCHEMADN": names.schemadn,
                 "DEFAULTSITE": names.sitename,
@@ -1268,8 +1272,8 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
 
 
 def setup_samdb(path, session_info, provision_backend, lp, names,
-        logger, fill, serverrole, schema, am_rodc=False,
-        plaintext_secrets=False, backend_store=None):
+                logger, fill, serverrole, schema, am_rodc=False,
+                plaintext_secrets=False, backend_store=None):
     """Setup a complete SAM Database.
 
     :note: This will wipe the main SAM database file!
@@ -1277,9 +1281,9 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 
     # Also wipes the database
     setup_samdb_partitions(path, logger=logger, lp=lp,
-        provision_backend=provision_backend, session_info=session_info,
-        names=names, serverrole=serverrole, plaintext_secrets=plaintext_secrets,
-        backend_store=backend_store)
+                           provision_backend=provision_backend, session_info=session_info,
+                           names=names, serverrole=serverrole, plaintext_secrets=plaintext_secrets,
+                           backend_store=backend_store)
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
@@ -1316,10 +1320,10 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 
 
 def fill_samdb(samdb, lp, names, logger, policyguid,
-        policyguid_dc, fill, adminpass, krbtgtpass, machinepass, dns_backend,
-        dnspass, invocationid, ntdsguid, serverrole, am_rodc=False,
-        dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None,
-        backend_store=None):
+               policyguid_dc, fill, adminpass, krbtgtpass, machinepass, dns_backend,
+               dnspass, invocationid, ntdsguid, serverrole, am_rodc=False,
+               dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None,
+               backend_store=None):
 
     if next_rid is None:
         next_rid = 1000
@@ -1359,7 +1363,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
     samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
     samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
     samdb.set_opaque_integer("domainControllerFunctionality",
-        domainControllerFunctionality)
+                             domainControllerFunctionality)
 
     samdb.set_domain_sid(str(names.domainsid))
     samdb.set_invocation_id(invocationid)
@@ -1419,7 +1423,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
     # Now register this container in the root of the forest
     msg = ldb.Message(ldb.Dn(samdb, names.domaindn))
     msg["subRefs"] = ldb.MessageElement(names.configdn , ldb.FLAG_MOD_ADD,
-                "subRefs")
+                                        "subRefs")
 
     samdb.invocation_id = invocationid
 
@@ -1476,7 +1480,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
         logger.info("Modifying display specifiers and extended rights")
         setup_modify_ldif(samdb,
-            setup_path("provision_configuration_modify.ldif"), {
+                          setup_path("provision_configuration_modify.ldif"), {
                 "CONFIGDN": names.configdn,
                 "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
             })
@@ -1498,7 +1502,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
             })
     logger.info("Modifying computers container")
     setup_modify_ldif(samdb,
-        setup_path("provision_computers_modify.ldif"), {
+                      setup_path("provision_computers_modify.ldif"), {
             "DOMAINDN": names.domaindn})
     logger.info("Setting up sam.ldb data")
     infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(names.domainsid)).decode('utf8')
@@ -1554,21 +1558,21 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
         logger.info("Setting up self join")
         setup_self_join(samdb, admin_session_info, names=names, fill=fill,
-            invocationid=invocationid,
-            dns_backend=dns_backend,
-            dnspass=dnspass,
-            machinepass=machinepass,
-            domainsid=names.domainsid,
-            next_rid=next_rid,
-            dc_rid=dc_rid,
-            policyguid=policyguid,
-            policyguid_dc=policyguid_dc,
-            domainControllerFunctionality=domainControllerFunctionality,
-            ntdsguid=ntdsguid)
+                        invocationid=invocationid,
+                        dns_backend=dns_backend,
+                        dnspass=dnspass,
+                        machinepass=machinepass,
+                        domainsid=names.domainsid,
+                        next_rid=next_rid,
+                        dc_rid=dc_rid,
+                        policyguid=policyguid,
+                        policyguid_dc=policyguid_dc,
+                        domainControllerFunctionality=domainControllerFunctionality,
+                        ntdsguid=ntdsguid)
 
         ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
         names.ntdsguid = samdb.searchone(basedn=ntds_dn,
-            attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
+                                         attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
         assert isinstance(names.ntdsguid, str)
 
     return samdb
@@ -1583,10 +1587,10 @@ def set_dir_acl(path, acl, lp, domsid, use_ntvfs, passdb, service=SYSVOL_SERVICE
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
             setntacl(lp, os.path.join(root, name), acl, domsid,
-                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
+                     use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
         for name in dirs:
             setntacl(lp, os.path.join(root, name), acl, domsid,
-                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
+                     use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
 
 
 def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb):
@@ -1604,7 +1608,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
     setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid),
-            use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=SYSVOL_SERVICE)
+             use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=SYSVOL_SERVICE)
 
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
                        attrs=["cn", "nTSecurityDescriptor"],
@@ -1620,7 +1624,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
 
 
 def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
-        domaindn, lp, use_ntvfs):
+                 domaindn, lp, use_ntvfs):
     """Set the ACL for the sysvol share and the subfolders
 
     :param samdb: An LDB object on the SAM db
@@ -1758,7 +1762,7 @@ def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
 
 
 def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
-        direct_db_access):
+                   direct_db_access):
     """Set ACL on the sysvol/<dnsname>/Policies folder and the policy
     folders beneath.
 
@@ -1792,7 +1796,7 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
 
 
 def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
-        lp):
+                   lp):
     """Set the ACL for the sysvol share and the subfolders
 
     :param samdb: An LDB object on the SAM db
@@ -1837,7 +1841,7 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
 
         # Check acls on Policy folder and policies folders
         check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
-                direct_db_access)
+                       direct_db_access)
 
 
 def interface_ips_v4(lp):
@@ -1895,15 +1899,15 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
     samdb.transaction_start()
     try:
         samdb = fill_samdb(samdb, lp, names, logger=logger,
-                       schema=schema,
-                       policyguid=policyguid, policyguid_dc=policyguid_dc,
-                       fill=samdb_fill, adminpass=adminpass, krbtgtpass=krbtgtpass,
-                       invocationid=invocationid, machinepass=machinepass,
-                       dns_backend=dns_backend, dnspass=dnspass,
-                       ntdsguid=ntdsguid, serverrole=serverrole,
-                       dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
-                       next_rid=next_rid, dc_rid=dc_rid,
-                       backend_store=backend_store)
+                           schema=schema,
+                           policyguid=policyguid, policyguid_dc=policyguid_dc,
+                           fill=samdb_fill, adminpass=adminpass, krbtgtpass=krbtgtpass,
+                           invocationid=invocationid, machinepass=machinepass,
+                           dns_backend=dns_backend, dnspass=dnspass,
+                           ntdsguid=ntdsguid, serverrole=serverrole,
+                           dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
+                           next_rid=next_rid, dc_rid=dc_rid,
+                           backend_store=backend_store)
 
         # Set up group policies (domain policy and domain controller
         # policy)
@@ -1927,9 +1931,9 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
             logger.info("Setting acl on sysvol skipped")
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
-                realm=names.realm, dnsdomain=names.dnsdomain,
-                netbiosname=names.netbiosname, domainsid=names.domainsid,
-                machinepass=machinepass, secure_channel_type=SEC_CHAN_BDC)
+                            realm=names.realm, dnsdomain=names.dnsdomain,
+                            netbiosname=names.netbiosname, domainsid=names.domainsid,
+                            machinepass=machinepass, secure_channel_type=SEC_CHAN_BDC)
 
         # Now set up the right msDS-SupportedEncryptionTypes into the DB
         # In future, this might be determined from some configuration
@@ -1974,7 +1978,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
     # fix any dangling GUIDs from the provision
     logger.info("Fixing provision GUIDs")
     chk = dbcheck(samdb, samdb_schema=samdb, verbose=False, fix=True, yes=True,
-            quiet=True)
+                  quiet=True)
     samdb.transaction_start()
     try:
         # a small number of GUIDs are missing because of ordering issues in the
@@ -1991,7 +1995,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                                   'ipsecNegotiationPolicyReference',
                                   'ipsecNFAReference'])
         if chk.check_database(DN=names.schemadn, scope=ldb.SCOPE_SUBTREE,
-                attrs=['attributeId', 'governsId']) != 0:
+                              attrs=['attributeId', 'governsId']) != 0:
             raise ProvisioningError("Duplicate attributeId or governsId in schema. Must be fixed manually!!")
     except:
         samdb.transaction_cancel()
@@ -2030,7 +2034,7 @@ def sanitize_server_role(role):
 
 
 def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
-        maxuid, maxgid):
+                            maxuid, maxgid):
     """Create AD entries for the fake ypserver.
 
     This is needed for being able to manipulate posix attrs via ADUC.
@@ -2067,7 +2071,7 @@ def determine_host_ip(logger, lp, hostip=None):
             hostip = hostips[0]
             if len(hostips) > 1:
                 logger.warning("More than one IPv4 address found. Using %s",
-                    hostip)
+                               hostip)
     if hostip == "127.0.0.1":
         hostip = None
     if hostip is None:
@@ -2089,21 +2093,21 @@ def determine_host_ip6(logger, lp, hostip6=None):
     return hostip6
 
 def provision(logger, session_info, smbconf=None,
-        targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
-        domaindn=None, schemadn=None, configdn=None, serverdn=None,
-        domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
-        next_rid=1000, dc_rid=None, adminpass=None, ldapadminpass=None,
-        krbtgtpass=None, domainguid=None, policyguid=None, policyguid_dc=None,
-        dns_backend=None, dns_forwarder=None, dnspass=None,
-        invocationid=None, machinepass=None, ntdsguid=None,
-        root=None, nobody=None, users=None, backup=None, aci=None,
-        serverrole=None, dom_for_fun_level=None, backend_type=None,
-        sitename=None, ol_mmr_urls=None, ol_olc=None, slapd_path=None,
-        useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
-        use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
-        ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
-        ldap_backend_extra_port=None, base_schema=None,
-        plaintext_secrets=False, backend_store=None):
+              targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
+              domaindn=None, schemadn=None, configdn=None, serverdn=None,
+              domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
+              next_rid=1000, dc_rid=None, adminpass=None, ldapadminpass=None,
+              krbtgtpass=None, domainguid=None, policyguid=None, policyguid_dc=None,
+              dns_backend=None, dns_forwarder=None, dnspass=None,
+              invocationid=None, machinepass=None, ntdsguid=None,
+              root=None, nobody=None, users=None, backup=None, aci=None,
+              serverrole=None, dom_for_fun_level=None, backend_type=None,
+              sitename=None, ol_mmr_urls=None, ol_olc=None, slapd_path=None,
+              useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
+              use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
+              ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
+              ldap_backend_extra_port=None, base_schema=None,
+              plaintext_secrets=False, backend_store=None):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -2186,9 +2190,9 @@ def provision(logger, session_info, smbconf=None,
         lp = samba.param.LoadParm()
     lp.load(smbconf)
     names = guess_names(lp=lp, hostname=hostname, domain=domain,
-        dnsdomain=realm, serverrole=serverrole, domaindn=domaindn,
-        configdn=configdn, schemadn=schemadn, serverdn=serverdn,
-        sitename=sitename, rootdn=rootdn, domain_names_forced=(samdb_fill == FILL_DRS))
+                        dnsdomain=realm, serverrole=serverrole, domaindn=domaindn,
+                        configdn=configdn, schemadn=schemadn, serverdn=serverdn,
+                        sitename=sitename, rootdn=rootdn, domain_names_forced=(samdb_fill == FILL_DRS))
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     paths.bind_gid = bind_gid
@@ -2219,35 +2223,35 @@ def provision(logger, session_info, smbconf=None,
     ldapi_url = "ldapi://%s" % urllib_quote(paths.s4_ldapi_path, safe="")
 
     schema = Schema(domainsid, invocationid=invocationid,
-        schemadn=names.schemadn, base_schema=base_schema)
+                    schemadn=names.schemadn, base_schema=base_schema)
 
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type, paths=paths,
-            lp=lp,
-            names=names, logger=logger)
+                                       lp=lp,
+                                       names=names, logger=logger)
     elif backend_type == "existing":
         # If support for this is ever added back, then the URI will need to be
         # specified again
         provision_backend = ExistingBackend(backend_type, paths=paths,
-            lp=lp,
-            names=names, logger=logger,
-            ldap_backend_forced_uri=ldap_backend_forced_uri)
+                                            lp=lp,
+                                            names=names, logger=logger,
+                                            ldap_backend_forced_uri=ldap_backend_forced_uri)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type, paths=paths,
-            lp=lp,
-            names=names, logger=logger, domainsid=domainsid,
-            schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
-            slapd_path=slapd_path,
-            root=root)
+                                       lp=lp,
+                                       names=names, logger=logger, domainsid=domainsid,
+                                       schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
+                                       slapd_path=slapd_path,
+                                       root=root)
     elif backend_type == "openldap":
         provision_backend = OpenLDAPBackend(backend_type, paths=paths,
-            lp=lp,
-            names=names, logger=logger, domainsid=domainsid,
-            schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
-            slapd_path=slapd_path, ol_mmr_urls=ol_mmr_urls,
-            ldap_backend_extra_port=ldap_backend_extra_port,
-            ldap_dryrun_mode=ldap_dryrun_mode, nosync=nosync,
-            ldap_backend_forced_uri=ldap_backend_forced_uri)
+                                            lp=lp,
+                                            names=names, logger=logger, domainsid=domainsid,
+                                            schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
+                                            slapd_path=slapd_path, ol_mmr_urls=ol_mmr_urls,
+                                            ldap_backend_extra_port=ldap_backend_extra_port,
+                                            ldap_dryrun_mode=ldap_dryrun_mode, nosync=nosync,
+                                            ldap_backend_forced_uri=ldap_backend_forced_uri)
     else:
         raise ValueError("Unknown LDAP backend type selected")
 
@@ -2262,8 +2266,8 @@ def provision(logger, session_info, smbconf=None,
 
     logger.info("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths,
-        session_info=session_info,
-        backend_credentials=provision_backend.credentials, lp=lp)
+                                  session_info=session_info,
+                                  backend_credentials=provision_backend.credentials, lp=lp)
 
     try:
         logger.info("Setting up the registry")
@@ -2306,18 +2310,18 @@ def provision(logger, session_info, smbconf=None,
 
         if samdb_fill == FILL_FULL:
             provision_fill(samdb, secrets_ldb, logger, names, paths,
-                    schema=schema, targetdir=targetdir, samdb_fill=samdb_fill,
-                    hostip=hostip, hostip6=hostip6,
-                    next_rid=next_rid, dc_rid=dc_rid, adminpass=adminpass,
-                    krbtgtpass=krbtgtpass,
-                    policyguid=policyguid, policyguid_dc=policyguid_dc,
-                    invocationid=invocationid, machinepass=machinepass,
-                    ntdsguid=ntdsguid, dns_backend=dns_backend,
-                    dnspass=dnspass, serverrole=serverrole,
-                    dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
-                    lp=lp, use_ntvfs=use_ntvfs,
-                    skip_sysvolacl=skip_sysvolacl,
-                    backend_store=backend_store)
+                           schema=schema, targetdir=targetdir, samdb_fill=samdb_fill,
+                           hostip=hostip, hostip6=hostip6,
+                           next_rid=next_rid, dc_rid=dc_rid, adminpass=adminpass,
+                           krbtgtpass=krbtgtpass,
+                           policyguid=policyguid, policyguid_dc=policyguid_dc,
+                           invocationid=invocationid, machinepass=machinepass,
+                           ntdsguid=ntdsguid, dns_backend=dns_backend,
+                           dnspass=dnspass, serverrole=serverrole,
+                           dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
+                           lp=lp, use_ntvfs=use_ntvfs,
+                           skip_sysvolacl=skip_sysvolacl,
+                           backend_store=backend_store)
 
         if not is_heimdal_built():
             create_kdc_conf(paths.kdcconf, realm, domain, os.path.dirname(lp.get("log file")))
@@ -2404,33 +2408,33 @@ def provision(logger, session_info, smbconf=None,
 
     if use_rfc2307:
         provision_fake_ypserver(logger=logger, samdb=samdb,
-                domaindn=names.domaindn, netbiosname=names.netbiosname,
-                nisdomain=names.domain.lower(), maxuid=maxuid, maxgid=maxgid)
+                                domaindn=names.domaindn, netbiosname=names.netbiosname,
+                                nisdomain=names.domain.lower(), maxuid=maxuid, maxgid=maxgid)
 
     return result
 
 
 def provision_become_dc(smbconf=None, targetdir=None,
-        realm=None, rootdn=None, domaindn=None, schemadn=None, configdn=None,
-        serverdn=None, domain=None, hostname=None, domainsid=None,
-        adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
-        policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
-        dns_backend=None, root=None, nobody=None, users=None,
-        backup=None, serverrole=None, ldap_backend=None,
-        ldap_backend_type=None, sitename=None, debuglevel=1, use_ntvfs=False):
+                        realm=None, rootdn=None, domaindn=None, schemadn=None, configdn=None,
+                        serverdn=None, domain=None, hostname=None, domainsid=None,
+                        adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
+                        policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
+                        dns_backend=None, root=None, nobody=None, users=None,
+                        backup=None, serverrole=None, ldap_backend=None,
+                        ldap_backend_type=None, sitename=None, debuglevel=1, use_ntvfs=False):
 
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
 
     res = provision(logger, system_session(),
-        smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
-        realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
-        configdn=configdn, serverdn=serverdn, domain=domain,
-        hostname=hostname, hostip=None, domainsid=domainsid,
-        machinepass=machinepass,
-        serverrole="active directory domain controller",
-        sitename=sitename, dns_backend=dns_backend, dnspass=dnspass,
-        use_ntvfs=use_ntvfs)
+                    smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
+                    realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
+                    configdn=configdn, serverdn=serverdn, domain=domain,
+                    hostname=hostname, hostip=None, domainsid=domainsid,
+                    machinepass=machinepass,
+                    serverrole="active directory domain controller",
+                    sitename=sitename, dns_backend=dns_backend, dnspass=dnspass,
+                    use_ntvfs=use_ntvfs)
     res.lp.set("debuglevel", str(debuglevel))
     return res
 

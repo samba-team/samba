@@ -87,13 +87,13 @@ class LDAPBase(object):
         if self.two_domains and not self.quiet:
             self.outf.write("\n* Place-holders for %s:\n" % self.host)
             self.outf.write(4*" " + "${DOMAIN_DN}      => %s\n" %
-                self.base_dn)
+                            self.base_dn)
             self.outf.write(4*" " + "${DOMAIN_NETBIOS} => %s\n" %
-                self.domain_netbios)
+                            self.domain_netbios)
             self.outf.write(4*" " + "${SERVER_NAME}     => %s\n" %
-                self.server_names)
+                            self.server_names)
             self.outf.write(4*" " + "${DOMAIN_NAME}    => %s\n" %
-                self.domain_name)
+                            self.domain_name)
 
     def find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
@@ -103,7 +103,7 @@ class LDAPBase(object):
         """
         """
         res = self.ldb.search(base="OU=Domain Controllers,%s" % self.base_dn,
-                scope=SCOPE_SUBTREE, expression="(objectClass=computer)", attrs=["cn"])
+                              scope=SCOPE_SUBTREE, expression="(objectClass=computer)", attrs=["cn"])
         assert len(res) > 0
         srv = []
         for x in res:
@@ -112,7 +112,7 @@ class LDAPBase(object):
 
     def find_netbios(self):
         res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn,
-                scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
+                              scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
         assert len(res) > 0
         for x in res:
             if "nETBIOSName" in x.keys():
@@ -497,8 +497,8 @@ class LDAPObject(object):
             #
             # May contain DOMAIN_NETBIOS and SERVER_NAME
             self.servername_attributes = [ "distinguishedName", "name", "CN", "sAMAccountName", "dNSHostName",
-                "servicePrincipalName", "rIDSetReferences", "serverReference", "serverReferenceBL",
-                "msDS-IsDomainFor", "interSiteTopologyGenerator",]
+                                           "servicePrincipalName", "rIDSetReferences", "serverReference", "serverReferenceBL",
+                                           "msDS-IsDomainFor", "interSiteTopologyGenerator",]
             self.servername_attributes = [x.upper() for x in self.servername_attributes]
             #
             self.netbios_attributes = [ "servicePrincipalName", "CN", "distinguishedName", "nETBIOSName", "name",]
@@ -793,10 +793,10 @@ class LDAPBundel(object):
                 raise
             try:
                 object2 = LDAPObject(connection=other.con,
-                        dn=other.dn_list[index],
-                        summary=other.summary,
-                        filter_list=self.filter_list,
-                        outf=self.outf, errf=self.errf)
+                                     dn=other.dn_list[index],
+                                     summary=other.summary,
+                                     filter_list=self.filter_list,
+                                     outf=self.outf, errf=self.errf)
             except LdbError as e1:
                 (enum, estr) = e1.args
                 if enum == ERR_NO_SUCH_OBJECT:
@@ -893,27 +893,27 @@ class cmd_ldapcmp(Command):
 
     takes_options = [
         Option("-w", "--two", dest="two", action="store_true", default=False,
-            help="Hosts are in two different domains"),
+               help="Hosts are in two different domains"),
         Option("-q", "--quiet", dest="quiet", action="store_true", default=False,
-            help="Do not print anything but relay on just exit code"),
+               help="Do not print anything but relay on just exit code"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
-            help="Print all DN pairs that have been compared"),
+               help="Print all DN pairs that have been compared"),
         Option("--sd", dest="descriptor", action="store_true", default=False,
-            help="Compare nTSecurityDescriptor attibutes only"),
+               help="Compare nTSecurityDescriptor attibutes only"),
         Option("--sort-aces", dest="sort_aces", action="store_true", default=False,
-            help="Sort ACEs before comparison of nTSecurityDescriptor attribute"),
+               help="Sort ACEs before comparison of nTSecurityDescriptor attribute"),
         Option("--view", dest="view", default="section",
-            help="Display mode for nTSecurityDescriptor results. Possible values: section or collision."),
+               help="Display mode for nTSecurityDescriptor results. Possible values: section or collision."),
         Option("--base", dest="base", default="",
-            help="Pass search base that will build DN list for the first DC."),
+               help="Pass search base that will build DN list for the first DC."),
         Option("--base2", dest="base2", default="",
-            help="Pass search base that will build DN list for the second DC. Used when --two or when compare two different DNs."),
+               help="Pass search base that will build DN list for the second DC. Used when --two or when compare two different DNs."),
         Option("--scope", dest="scope", default="SUB",
-            help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
+               help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
         Option("--filter", dest="filter", default="",
-            help="List of comma separated attributes to ignore in the comparision"),
+               help="List of comma separated attributes to ignore in the comparision"),
         Option("--skip-missing-dn", dest="skip_missing_dn", action="store_true", default=False,
-            help="Skip report and failure due to missing DNs in one server or another"),
+               help="Skip report and failure due to missing DNs in one server or another"),
     ]
 
     def run(self, URL1, URL2,
@@ -993,7 +993,7 @@ class cmd_ldapcmp(Command):
             if b1 == b2:
                 if not quiet:
                     self.outf.write("\n* Result for [%s]: SUCCESS\n" %
-                        context)
+                                    context)
             else:
                 if not quiet:
                     self.outf.write("\n* Result for [%s]: FAILURE\n" % context)

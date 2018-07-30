@@ -106,7 +106,7 @@ class dbcheck(object):
         self.name_map = {}
         try:
             res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % samdb.domain_dn(), scope=ldb.SCOPE_BASE,
-                           attrs=["objectSid"])
+                               attrs=["objectSid"])
             dnsadmins_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
             self.name_map['DnsAdmins'] = str(dnsadmins_sid)
         except ldb.LdbError as e5:
@@ -195,7 +195,7 @@ class dbcheck(object):
             res = self.samdb.search(scope=ldb.SCOPE_BASE,
                                     base="@SAMBA_DSDB",
                                     attrs=["compatibleFeatures",
-                                    "requiredFeatures"])
+                                           "requiredFeatures"])
             if "compatibleFeatures" in res[0]:
                 self.compatibleFeatures = res[0]["compatibleFeatures"]
             if "requiredFeatures" in res[0]:
@@ -463,7 +463,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             m['value_%u' % i] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
             if nval != '':
                 m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD,
-                    attrname)
+                                                       attrname)
 
         if self.do_modify(m, ["relax:0", "show_recycled:1"],
                           "Failed to normalise attribute %s" % attrname,
@@ -767,7 +767,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         m.dn = obj.dn
         m['value'] = ldb.MessageElement(forward_vals, ldb.FLAG_MOD_REPLACE, forward_attr)
         if self.do_modify(m, ["local_oid:%s:1" % dsdb.DSDB_CONTROL_DBCHECK_FIX_DUPLICATE_LINKS],
-                "Failed to fix duplicate links in attribute '%s'" % forward_attr):
+                          "Failed to fix duplicate links in attribute '%s'" % forward_attr):
             self.report("Fixed duplicate links in attribute '%s'" % (forward_attr))
             duplicate_cache_key = "%s:%s" % (str(obj.dn), forward_attr)
             assert duplicate_cache_key in self.duplicate_link_cache
@@ -1142,9 +1142,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             missing_forward_links, missing_error_count = \
                 self.find_missing_forward_links_from_backlinks(obj,
-                                                         attrname, syntax_oid,
-                                                         reverse_link_name,
-                                                         unique_dict)
+                                                               attrname, syntax_oid,
+                                                               reverse_link_name,
+                                                               unique_dict)
             error_count += missing_error_count
 
             forward_links = [dn for dn in unique_dict.values()]
@@ -1186,7 +1186,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if guid is None:
                 error_count += 1
                 self.err_missing_dn_GUID_component(obj.dn, attrname, val, dsdb_dn,
-                    "missing GUID")
+                                                   "missing GUID")
                 continue
 
             guidstr = str(misc.GUID(guid))
@@ -1839,9 +1839,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         nmsg.dn = dn
         nmsg[attr] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, attr)
         if self.do_modify(nmsg, ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA,
-                             "local_oid:1.3.6.1.4.1.7165.4.3.14:0",
-                             "local_oid:1.3.6.1.4.1.7165.4.3.25:0"],
-                      "Failed to fix attribute %s" % attr):
+                                 "local_oid:1.3.6.1.4.1.7165.4.3.14:0",
+                                 "local_oid:1.3.6.1.4.1.7165.4.3.25:0"],
+                          "Failed to fix attribute %s" % attr):
             self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
 
 

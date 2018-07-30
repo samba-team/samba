@@ -45,7 +45,7 @@ MULTISITE_LDIF = os.path.join(os.environ['SRCDIR_ABS'],
 # UNCONNECTED_LDIF is a single site, unconnected 5DC database that was
 # created using samba-tool domain join in testenv.
 UNCONNECTED_LDIF = os.path.join(os.environ['SRCDIR_ABS'],
-        "testdata/unconnected-intrasite.ldif")
+                                "testdata/unconnected-intrasite.ldif")
 
 MULTISITE_LDIF_DSAS = (
     ("CN=WIN08,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com",

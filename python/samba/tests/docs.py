@@ -158,21 +158,21 @@ class SmbDotConfTests(TestCase):
 
         # registry shares appears to need sudo
         self._set_arbitrary(['bin/testparm'],
-            exceptions = ['client lanman auth',
-                          'client plaintext auth',
-                          'registry shares',
-                          'smb ports',
-                          'rpc server dynamic port range',
-                          'name resolve order'])
+                            exceptions = ['client lanman auth',
+                                          'client plaintext auth',
+                                          'registry shares',
+                                          'smb ports',
+                                          'rpc server dynamic port range',
+                                          'name resolve order'])
         self._test_empty(['bin/testparm'])
 
     def test_default_s4(self):
         self._test_default(['bin/samba-tool', 'testparm'])
         self._set_defaults(['bin/samba-tool', 'testparm'])
         self._set_arbitrary(['bin/samba-tool', 'testparm'],
-            exceptions = ['smb ports',
-                          'rpc server dynamic port range',
-                          'name resolve order'])
+                            exceptions = ['smb ports',
+                                          'rpc server dynamic port range',
+                                          'name resolve order'])
         self._test_empty(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
@@ -194,9 +194,15 @@ class SmbDotConfTests(TestCase):
                 section = "test"
             else:
                 self.fail("%s has no valid context" % param)
-            p = subprocess.Popen(program + ["-s", self.smbconf,
-                    "--section-name", section, "--parameter-name", param],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
+            p = subprocess.Popen(program + ["-s",
+                                            self.smbconf,
+                                            "--section-name",
+                                            section,
+                                            "--parameter-name",
+                                            param],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 cwd=self.topdir).communicate()
             result = p[0].decode().upper().strip()
             if result != default.upper():
                 if not (result == "" and default == '""'):
@@ -205,7 +211,7 @@ class SmbDotConfTests(TestCase):
 
         if len(failset) > 0:
             self.fail(self._format_message(failset,
-                "Parameters that do not have matching defaults:"))
+                                           "Parameters that do not have matching defaults:"))
 
     def _set_defaults(self, program):
         failset = set()
@@ -224,10 +230,17 @@ class SmbDotConfTests(TestCase):
                 section = "test"
             else:
                 self.fail("%s has no valid context" % param)
-            p = subprocess.Popen(program + ["-s", self.smbconf,
-                    "--section-name", section, "--parameter-name", param,
-                    "--option", "%s = %s" % (param, default)],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
+            p = subprocess.Popen(program + ["-s",
+                                            self.smbconf,
+                                            "--section-name",
+                                            section,
+                                            "--parameter-name",
+                                            param,
+                                            "--option",
+                                            "%s = %s" % (param, default)],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 cwd=self.topdir).communicate()
             result = p[0].decode().upper().strip()
             if result != default.upper():
                 if not (result == "" and default == '""'):
@@ -236,7 +249,7 @@ class SmbDotConfTests(TestCase):
 
         if len(failset) > 0:
             self.fail(self._format_message(failset,
-                "Parameters that do not have matching defaults:"))
+                                           "Parameters that do not have matching defaults:"))
 
     def _set_arbitrary(self, program, exceptions=None):
         arbitrary = {'string': 'string', 'boolean': 'yes', 'integer': '5',
@@ -283,10 +296,17 @@ class SmbDotConfTests(TestCase):
             if value_to_use is None:
                 self.fail("%s has an invalid type" % param)
 
-            p = subprocess.Popen(program + ["-s", self.smbconf,
-                    "--section-name", section, "--parameter-name", param,
-                    "--option", "%s = %s" % (param, value_to_use)],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
+            p = subprocess.Popen(program + ["-s",
+                                            self.smbconf,
+                                            "--section-name",
+                                            section,
+                                            "--parameter-name",
+                                            param,
+                                            "--option",
+                                            "%s = %s" % (param, value_to_use)],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 cwd=self.topdir).communicate()
             result = p[0].decode().upper().strip()
             if result != value_to_use.upper():
                 # currently no way to distinguish command lists
@@ -315,9 +335,14 @@ class SmbDotConfTests(TestCase):
             finally:
                 g.close()
 
-            p = subprocess.Popen(program + ["-s", tempconf, "--suppress-prompt",
-                    "--option", "%s = %s" % (param, value_to_use)],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
+            p = subprocess.Popen(program + ["-s",
+                                            tempconf,
+                                            "--suppress-prompt",
+                                            "--option",
+                                            "%s = %s" % (param, value_to_use)],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 cwd=self.topdir).communicate()
 
             os.unlink(tempconf)
 
@@ -348,11 +373,15 @@ class SmbDotConfTests(TestCase):
 
         if len(failset) > 0:
             self.fail(self._format_message(failset,
-                "Parameters that were unexpectedly not set:"))
+                                           "Parameters that were unexpectedly not set:"))
 
     def _test_empty(self, program):
-        p = subprocess.Popen(program + ["-s", self.blankconf, "--suppress-prompt"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
+        p = subprocess.Popen(program + ["-s",
+                                        self.blankconf,
+                                        "--suppress-prompt"],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             cwd=self.topdir).communicate()
         output = ""
 
         for line in p[0].decode().splitlines():

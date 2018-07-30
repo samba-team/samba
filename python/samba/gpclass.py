@@ -402,7 +402,7 @@ class gp_inf_ext(gp_ext):
 def get_dc_hostname(creds, lp):
     net = Net(creds=creds, lp=lp)
     cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
-        nbt.NBT_SERVER_DS))
+                                                          nbt.NBT_SERVER_DS))
     return cldap_ret.pdc_dns_name
 
 ''' Fetch a list of GUIDs for applicable GPOs '''
@@ -464,7 +464,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
     except:
         logger.error('Failed downloading gpt cache from \'%s\' using SMB' \
-            % dc_hostname)
+                     % dc_hostname)
         return
 
     for gpo_obj in gpos:
@@ -485,7 +485,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
                 ext.parse(ext.list(path), test_ldb, gp_db, lp)
             except Exception as e:
                 logger.error('Failed to parse gpo %s for extension %s' % \
-                    (guid, str(ext)))
+                             (guid, str(ext)))
                 logger.error('Message was: ' + str(e))
                 store.cancel()
                 continue

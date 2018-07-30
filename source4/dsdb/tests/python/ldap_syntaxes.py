@@ -48,7 +48,7 @@ class SyntaxTests(samba.tests.TestCase):
     def setUp(self):
         super(SyntaxTests, self).setUp()
         self.ldb = samba.tests.connect_samdb(host, credentials=creds,
-            session_info=system_session(lp), lp=lp)
+                                             session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb.domain_dn()
         self.schema_dn = self.ldb.get_schema_basedn().get_linearized()
         self._setup_dn_string_test()
@@ -195,31 +195,31 @@ name: """ + object_name + """
         # add object with correct value
         object_name1 = "obj-DN-String1" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:ABCDE:" + self.base_dn)
+                                     self.dn_string_attribute, ": S:5:ABCDE:" + self.base_dn)
         self.ldb.add_ldif(ldif)
 
         # search by specifying the DN part only
         res = self.ldb.search(base=self.base_dn,
-                         scope=SCOPE_SUBTREE,
-                         expression="(%s=%s)" % (self.dn_string_attribute, self.base_dn))
+                              scope=SCOPE_SUBTREE,
+                              expression="(%s=%s)" % (self.dn_string_attribute, self.base_dn))
         self.assertEquals(len(res), 0)
 
         # search by specifying the string part only
         res = self.ldb.search(base=self.base_dn,
-                         scope=SCOPE_SUBTREE,
-                         expression="(%s=S:5:ABCDE)" % self.dn_string_attribute)
+                              scope=SCOPE_SUBTREE,
+                              expression="(%s=S:5:ABCDE)" % self.dn_string_attribute)
         self.assertEquals(len(res), 0)
 
         # search by DN+Stirng
         res = self.ldb.search(base=self.base_dn,
-                         scope=SCOPE_SUBTREE,
-                         expression="(%s=S:5:ABCDE:%s)" % (self.dn_string_attribute, self.base_dn))
+                              scope=SCOPE_SUBTREE,
+                              expression="(%s=S:5:ABCDE:%s)" % (self.dn_string_attribute, self.base_dn))
         self.assertEquals(len(res), 1)
 
         # add object with wrong format
         object_name2 = "obj-DN-String2" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name2, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:ABCD:" + self.base_dn)
+                                     self.dn_string_attribute, ": S:5:ABCD:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e:
@@ -228,7 +228,7 @@ name: """ + object_name + """
 
         # add object with the same dn but with different string value in case
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:abcde:" + self.base_dn)
+                                     self.dn_string_attribute, ": S:5:abcde:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e1:
@@ -237,7 +237,7 @@ name: """ + object_name + """
 
         # add object with the same dn but with different string value
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:FGHIJ:" + self.base_dn)
+                                     self.dn_string_attribute, ": S:5:FGHIJ:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e2:
@@ -246,7 +246,7 @@ name: """ + object_name + """
 
         # add object with the same dn but with different dn and string value
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:FGHIJ:" + self.schema_dn)
+                                     self.dn_string_attribute, ": S:5:FGHIJ:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e3:
@@ -255,7 +255,7 @@ name: """ + object_name + """
 
         # add object with the same dn but with different dn value
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:ABCDE:" + self.schema_dn)
+                                     self.dn_string_attribute, ": S:5:ABCDE:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e4:
@@ -265,7 +265,7 @@ name: """ + object_name + """
         # add object with GUID instead of DN
         object_name3 = "obj-DN-String3" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name3, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:ABCDE:<GUID=%s>" % str(uuid.uuid4()))
+                                     self.dn_string_attribute, ": S:5:ABCDE:<GUID=%s>" % str(uuid.uuid4()))
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e5:
@@ -275,7 +275,7 @@ name: """ + object_name + """
         # add object with SID instead of DN
         object_name4 = "obj-DN-String4" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name4, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:ABCDE:<SID=%s>" % self.ldb.get_domain_sid())
+                                     self.dn_string_attribute, ": S:5:ABCDE:<SID=%s>" % self.ldb.get_domain_sid())
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e6:
@@ -285,7 +285,7 @@ name: """ + object_name + """
         # add object with random string instead of DN
         object_name5 = "obj-DN-String5" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name5, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:ABCDE:randomSTRING")
+                                     self.dn_string_attribute, ": S:5:ABCDE:randomSTRING")
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e7:
@@ -296,31 +296,31 @@ name: """ + object_name + """
         # add obeject with correct value
         object_name1 = "obj-DN-Binary1" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:1234:" + self.base_dn)
+                                     self.dn_binary_attribute, ": B:4:1234:" + self.base_dn)
         self.ldb.add_ldif(ldif)
 
         # search by specifyingthe DN part
         res = self.ldb.search(base=self.base_dn,
-                         scope=SCOPE_SUBTREE,
-                         expression="(%s=%s)" % (self.dn_binary_attribute, self.base_dn))
+                              scope=SCOPE_SUBTREE,
+                              expression="(%s=%s)" % (self.dn_binary_attribute, self.base_dn))
         self.assertEquals(len(res), 0)
 
         # search by specifying the binary part
         res = self.ldb.search(base=self.base_dn,
-                         scope=SCOPE_SUBTREE,
-                         expression="(%s=B:4:1234)" % self.dn_binary_attribute)
+                              scope=SCOPE_SUBTREE,
+                              expression="(%s=B:4:1234)" % self.dn_binary_attribute)
         self.assertEquals(len(res), 0)
 
         # search by DN+Binary
         res = self.ldb.search(base=self.base_dn,
-                         scope=SCOPE_SUBTREE,
-                         expression="(%s=B:4:1234:%s)" % (self.dn_binary_attribute, self.base_dn))
+                              scope=SCOPE_SUBTREE,
+                              expression="(%s=B:4:1234:%s)" % (self.dn_binary_attribute, self.base_dn))
         self.assertEquals(len(res), 1)
 
         # add object with wrong format - 5 bytes instead of 4, 8, 16, 32...
         object_name2 = "obj-DN-Binary2" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name2, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:5:67890:" + self.base_dn)
+                                     self.dn_binary_attribute, ": B:5:67890:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e8:
@@ -329,7 +329,7 @@ name: """ + object_name + """
 
         # add object with the same dn but with different binary value
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:5678:" + self.base_dn)
+                                     self.dn_binary_attribute, ": B:4:5678:" + self.base_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e9:
@@ -338,7 +338,7 @@ name: """ + object_name + """
 
         # add object with the same dn but with different binary and dn value
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:5678:" + self.schema_dn)
+                                     self.dn_binary_attribute, ": B:4:5678:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e10:
@@ -347,7 +347,7 @@ name: """ + object_name + """
 
         # add object with the same dn but with different dn value
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:1234:" + self.schema_dn)
+                                     self.dn_binary_attribute, ": B:4:1234:" + self.schema_dn)
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e11:
@@ -357,7 +357,7 @@ name: """ + object_name + """
         # add object with GUID instead of DN
         object_name3 = "obj-DN-Binary3" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name3, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:1234:<GUID=%s>" % str(uuid.uuid4()))
+                                     self.dn_binary_attribute, ": B:4:1234:<GUID=%s>" % str(uuid.uuid4()))
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e12:
@@ -367,7 +367,7 @@ name: """ + object_name + """
         # add object with SID instead of DN
         object_name4 = "obj-DN-Binary4" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name4, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:1234:<SID=%s>" % self.ldb.get_domain_sid())
+                                     self.dn_binary_attribute, ": B:4:1234:<SID=%s>" % self.ldb.get_domain_sid())
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e13:
@@ -377,7 +377,7 @@ name: """ + object_name + """
         # add object with random string instead of DN
         object_name5 = "obj-DN-Binary5" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name5, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:1234:randomSTRING")
+                                     self.dn_binary_attribute, ": B:4:1234:randomSTRING")
         try:
             self.ldb.add_ldif(ldif)
         except LdbError as e14:

@@ -322,7 +322,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         nwrap_module_fn_prefix = os.getenv('NSS_WRAPPER_MODULE_FN_PREFIX')
 
         nwrap_winbind_active = (nwrap_module_so_path != "" and
-                nwrap_module_fn_prefix == "winbind")
+                                nwrap_module_fn_prefix == "winbind")
 
         LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
@@ -665,7 +665,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         domsid = passdb.get_global_sam_sid()
         session_info = self.get_session_info(domsid)
         setntacl(self.lp, self.tempf, acl, str(domsid), use_ntvfs=False,
-            session_info=session_info)
+                 session_info=session_info)
         facl = getntacl(self.lp, self.tempf)
         self.assertEquals(facl.as_sddl(domsid),acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
@@ -674,7 +674,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         nwrap_module_fn_prefix = os.getenv('NSS_WRAPPER_MODULE_FN_PREFIX')
 
         nwrap_winbind_active = (nwrap_module_so_path != "" and
-                nwrap_module_fn_prefix == "winbind")
+                                nwrap_module_fn_prefix == "winbind")
 
         LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)

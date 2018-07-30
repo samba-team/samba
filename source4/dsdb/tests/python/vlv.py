@@ -505,7 +505,7 @@ class VLVTests(samba.tests.TestCase):
         deal with the objects originally found.
         """
         attrs = ['cn'] + [x for x in self.users[0].keys() if x not in
-                 ('dn', 'objectclass')]
+                          ('dn', 'objectclass')]
         user_number = 0
         iteration = 0
         for attr in attrs:
@@ -855,9 +855,9 @@ class VLVTests(samba.tests.TestCase):
         for attr in attrs:
             show_deleted_control = "show_deleted:1"
             expected_order = self.get_expected_order_showing_deleted(attr,
-                                                    expression=expression,
-                                                    base=base,
-                                                    scope=ldb.SCOPE_ONELEVEL)
+                                                                     expression=expression,
+                                                                     base=base,
+                                                                     scope=ldb.SCOPE_ONELEVEL)
             print ("searching for attr %s amongst %d deleted objects" %
                    (attr, len(expected_order)))
             sort_control = "server_sort:1:0:%s" % attr

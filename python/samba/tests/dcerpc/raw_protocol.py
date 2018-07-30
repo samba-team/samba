@@ -68,9 +68,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -113,9 +113,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -135,9 +135,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -366,7 +366,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
         self.assertEquals(rep.u.reject_reason,
-                dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -381,7 +381,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
         self.assertEquals(rep.u.reject_reason,
-                dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -412,9 +412,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -432,7 +432,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
         self.assertEquals(rep.u.reject_reason,
-                dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -452,7 +452,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
         self.assertEquals(rep.u.reject_reason,
-                dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -488,9 +488,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -541,9 +541,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -561,9 +561,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -611,9 +611,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -631,9 +631,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -669,9 +669,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -693,7 +693,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
         self.assertEquals(rep.u.reject_reason,
-                dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -731,9 +731,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -792,9 +792,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -854,9 +854,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -883,9 +883,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -932,9 +932,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -958,9 +958,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -997,9 +997,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1036,9 +1036,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1082,14 +1082,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.ctx_list[1].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[1].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[1].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1119,14 +1119,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.ctx_list[1].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[1].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[1].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1169,14 +1169,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.ctx_list[1].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[1].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[1].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1233,14 +1233,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.ctx_list[1].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[1].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[1].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1270,14 +1270,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.ctx_list[1].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[1].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[1].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1321,7 +1321,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
         self.assertEquals(rep.u.ctx_list[0].reason, features)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
@@ -1358,7 +1358,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
         self.assertEquals(rep.u.ctx_list[0].reason, features1)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
@@ -1393,9 +1393,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1428,7 +1428,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
         self.assertEquals(rep.u.reject_reason,
-                dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -1467,7 +1467,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
         self.assertEquals(rep.u.ctx_list[0].reason, features)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
@@ -1503,13 +1503,13 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
         self.assertEquals(rep.u.ctx_list[0].reason, features1)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
     def _test_auth_type_level_bind_nak(self, auth_type, auth_level, creds=None,
-                                   reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE):
+                                       reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE):
         ndr32 = base.transfer_syntax_ndr()
 
         tsf1_list = [ndr32]
@@ -1525,10 +1525,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         if creds is not None:
             # We always start with DCERPC_AUTH_LEVEL_INTEGRITY
             auth_context = self.get_auth_context_creds(creds,
-                                auth_type=auth_type,
-                                auth_level=auth_level,
-                                auth_context_id=auth_context_id,
-                                g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
+                                                       auth_type=auth_type,
+                                                       auth_level=auth_level,
+                                                       auth_context_id=auth_context_id,
+                                                       g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
             from_server = ""
             (finished, to_server) = auth_context["gensec"].update(from_server)
             self.assertFalse(finished)
@@ -1566,11 +1566,11 @@ class TestDCERPC_BIND(RawDCERPCTest):
     def _test_auth_none_level_bind(self, auth_level,
                                    reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE):
         return self._test_auth_type_level_bind_nak(auth_type=dcerpc.DCERPC_AUTH_LEVEL_NONE,
-                                               auth_level=auth_level, reason=reason)
+                                                   auth_level=auth_level, reason=reason)
 
     def test_auth_none_none_bind(self):
         return self._test_auth_none_level_bind(dcerpc.DCERPC_AUTH_LEVEL_NONE,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                               reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def test_auth_none_connect_bind(self):
         return self._test_auth_none_level_bind(dcerpc.DCERPC_AUTH_LEVEL_CONNECT)
@@ -1589,15 +1589,15 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
     def test_auth_none_0_bind(self):
         return self._test_auth_none_level_bind(0,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                               reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def test_auth_none_7_bind(self):
         return self._test_auth_none_level_bind(7,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                               reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def test_auth_none_255_bind(self):
         return self._test_auth_none_level_bind(255,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                               reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def _test_auth_none_level_request(self, auth_level):
         ndr32 = base.transfer_syntax_ndr()
@@ -1628,9 +1628,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(len(rep.u.auth_info), 0)
 
@@ -1717,9 +1717,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1748,9 +1748,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -1875,9 +1875,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
@@ -2525,10 +2525,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx = self.prepare_presentation(abstract, ndr32)
 
         req1 = self.generate_request(call_id = 1,
-                                    pfc_flags=dcerpc.DCERPC_PFC_FLAG_FIRST,
-                                    context_id=ctx.context_id,
-                                    opnum=0,
-                                    stub="")
+                                     pfc_flags=dcerpc.DCERPC_PFC_FLAG_FIRST,
+                                     context_id=ctx.context_id,
+                                     opnum=0,
+                                     stub="")
         self.send_pdu(req1)
         rep = self.recv_pdu(timeout=0.1)
         self.assertIsNone(rep)
@@ -2542,9 +2542,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         # And now try a new request
         req2 = self.generate_request(call_id = 2,
-                                    context_id=ctx.context_id,
-                                    opnum=0,
-                                    stub="")
+                                     context_id=ctx.context_id,
+                                     opnum=0,
+                                     stub="")
         self.send_pdu(req2)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req1.call_id,
@@ -2573,10 +2573,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                         pfc_flags=pfc_flags)
 
         req1 = self.generate_request(call_id = 1,
-                                    pfc_flags=dcerpc.DCERPC_PFC_FLAG_FIRST,
-                                    context_id=ctx.context_id,
-                                    opnum=0,
-                                    stub="")
+                                     pfc_flags=dcerpc.DCERPC_PFC_FLAG_FIRST,
+                                     context_id=ctx.context_id,
+                                     opnum=0,
+                                     stub="")
         self.send_pdu(req1)
         rep = self.recv_pdu(timeout=0.1)
         self.assertIsNone(rep)
@@ -2590,9 +2590,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         # And now try a new request
         req2 = self.generate_request(call_id = 2,
-                                    context_id=ctx.context_id-1,
-                                    opnum=0,
-                                    stub="")
+                                     context_id=ctx.context_id-1,
+                                     opnum=0,
+                                     stub="")
         self.send_pdu(req2)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req2.call_id,
@@ -2654,9 +2654,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -2687,9 +2687,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -2804,9 +2804,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -2837,9 +2837,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -2921,9 +2921,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3004,9 +3004,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3094,9 +3094,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3125,9 +3125,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3255,9 +3255,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3286,9 +3286,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3411,9 +3411,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3496,9 +3496,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3583,9 +3583,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3664,9 +3664,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3752,9 +3752,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3840,9 +3840,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3938,9 +3938,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -3984,9 +3984,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -4084,7 +4084,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
         self.assertEquals(rep.u.reject_reason,
-                dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
+                          dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -4155,9 +4155,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -4268,9 +4268,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -4386,9 +4386,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertNotEquals(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
@@ -4443,7 +4443,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         return auth_context["gensec"]
 
     def _test_spnego_level_bind_nak(self, auth_level,
-                                   reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM):
+                                    reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM):
         c = self.get_user_creds()
         return self._test_auth_type_level_bind_nak(auth_type=dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
                                                    auth_level=auth_level, creds=c, reason=reason)
@@ -4540,91 +4540,91 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
     def test_spnego_none_bind(self):
         return self._test_spnego_level_bind_nak(dcerpc.DCERPC_AUTH_LEVEL_NONE,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                                reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def test_spnego_call_bind(self):
         return self._test_spnego_level_bind_nak(dcerpc.DCERPC_AUTH_LEVEL_CALL,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM)
+                                                reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM)
 
     def test_spnego_0_bind(self):
         return self._test_spnego_level_bind_nak(0,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                                reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def test_spnego_7_bind(self):
         return self._test_spnego_level_bind_nak(7,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                                reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def test_spnego_255_bind(self):
         return self._test_spnego_level_bind_nak(255,
-                            reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+                                                reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
 
     def test_spnego_connect_bind_none(self):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT)
 
     def test_spnego_connect_bind_sign(self):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
 
     def test_spnego_connect_bind_seal(self):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY)
 
     def test_spnego_packet_bind_none(self):
         # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
         # DCERPC_AUTH_LEVEL_INTEGRITY
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PACKET,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
-                                    request_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
+                                            request_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
 
     def test_spnego_packet_bind_sign(self):
         # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
         # DCERPC_AUTH_LEVEL_INTEGRITY
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PACKET,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
-                                    request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
-                                    response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                            request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
+                                            response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
 
     def test_spnego_packet_bind_sign(self):
         # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
         # DCERPC_AUTH_LEVEL_INTEGRITY
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PACKET,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
-                                    request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
-                                    response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
+                                            request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
+                                            response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
 
     def test_spnego_integrity_bind_none(self):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
-                                    request_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
+                                            request_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
 
     def test_spnego_integrity_bind_sign(self):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
-                                    request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
-                                    response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                            request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
+                                            response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
 
     def test_spnego_integrity_bind_seal(self):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
-                                    request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
-                                    response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
+                                            request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
+                                            response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
 
     def test_spnego_privacy_bind_none(self):
         # This fails...
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
-                                    alter_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
+                                            alter_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
 
     def test_spnego_privacy_bind_sign(self):
         # This fails...
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
-                                    alter_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                            alter_fault=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
 
     def test_spnego_privacy_bind_seal(self):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
-                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY)
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY)
 
 
 

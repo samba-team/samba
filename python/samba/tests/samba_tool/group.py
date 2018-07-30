@@ -32,7 +32,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
     def setUp(self):
         super(GroupCmdTestCase, self).setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
-            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                   "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.groups = []
         self.groups.append(self._randomGroup({"name": "testgroup1"}))
         self.groups.append(self._randomGroup({"name": "testgroup2"}))
@@ -85,7 +85,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                                  "--description=%s" % group["description"],
                                                  "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                  "-U%s%%%s" % (os.environ["DC_USERNAME"],
-                                                 os.environ["DC_PASSWORD"]))
+                                                               os.environ["DC_PASSWORD"]))
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err,"","There shouldn't be any error message")
@@ -199,8 +199,8 @@ class GroupCmdTestCase(SambaToolCmdTest):
     def _find_group(self, name):
         search_filter = ("(&(sAMAccountName=%s)(objectCategory=%s,%s))" %
                          (ldb.binary_encode(name),
-                         "CN=Group,CN=Schema,CN=Configuration",
-                         self.samdb.domain_dn()))
+                          "CN=Group,CN=Schema,CN=Configuration",
+                          self.samdb.domain_dn()))
         grouplist = self.samdb.search(base=self.samdb.domain_dn(),
                                       scope=ldb.SCOPE_SUBTREE,
                                       expression=search_filter,

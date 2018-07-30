@@ -78,38 +78,38 @@ def parseCommandLine():
     parser.set_defaults(config_file="/etc/samba/smb.conf")
 
     parser.add_option("--client-username", dest="client_username",\
-                help="User name for the client. [default: foo]")
+                      help="User name for the client. [default: foo]")
     parser.add_option("--client-password", dest="client_password",\
-                help="Password the client will send. [default: secret]")
+                      help="Password the client will send. [default: secret]")
     parser.add_option("--client-domain", dest="client_domain",\
-                help="Domain the client authenticates for. [default: FOO]")
+                      help="Domain the client authenticates for. [default: FOO]")
     parser.add_option("--client-helper", dest="client_helper",\
-                help="Helper mode for the ntlm_auth client. [default: ntlmssp-client-1]")
+                      help="Helper mode for the ntlm_auth client. [default: ntlmssp-client-1]")
     parser.add_option("--client-use-cached-creds", dest="client_use_cached_creds",\
-                help="Use winbindd credentials cache (rather than default username/pw)", action="store_true")
+                      help="Use winbindd credentials cache (rather than default username/pw)", action="store_true")
 
     parser.add_option("--target-hostname", dest="target_hostname",\
-                help="Target hostname for kerberos")
+                      help="Target hostname for kerberos")
     parser.add_option("--target-service", dest="target_service",\
-                help="Target service for kerberos")
+                      help="Target service for kerberos")
 
 
     parser.add_option("--server-username", dest="server_username",\
-                help="User name server uses for local auth. [default: foo]")
+                      help="User name server uses for local auth. [default: foo]")
     parser.add_option("--server-password", dest="server_password",\
-                help="Password server uses for local auth. [default: secret]")
+                      help="Password server uses for local auth. [default: secret]")
     parser.add_option("--server-domain", dest="server_domain",\
-                help="Domain server uses for local auth. [default: FOO]")
+                      help="Domain server uses for local auth. [default: FOO]")
     parser.add_option("--server-helper", dest="server_helper",\
-                help="Helper mode for the ntlm_auth server. [default: squid-2.5-server]")
+                      help="Helper mode for the ntlm_auth server. [default: squid-2.5-server]")
     parser.add_option("--server-use-winbindd", dest="server_use_winbindd",\
-                help="Use winbindd to check the password (rather than default username/pw)", action="store_true")
+                      help="Use winbindd to check the password (rather than default username/pw)", action="store_true")
     parser.add_option("--require-membership-of", dest="sid",\
-                help="Require that the user is a member of this group to authenticate.")
+                      help="Require that the user is a member of this group to authenticate.")
 
 
     parser.add_option("-s", "--configfile", dest="config_file",\
-                help="Path to smb.conf file. [default:/etc/samba/smb.conf")
+                      help="Path to smb.conf file. [default:/etc/samba/smb.conf")
 
     (opts, args) = parser.parse_args()
     if len(args) != 1:

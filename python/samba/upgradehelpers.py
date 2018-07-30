@@ -33,9 +33,9 @@ from samba import Ldb, version, ntacls
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
 from samba.provision import (provision_paths_from_lp,
-                            getpolicypath, set_gpos_acl, create_gpo_struct,
-                            provision, ProvisioningError,
-                            setsysvolacl, secretsdb_self_join)
+                             getpolicypath, set_gpos_acl, create_gpo_struct,
+                             provision, ProvisioningError,
+                             setsysvolacl, secretsdb_self_join)
 from samba.provision.common import FILL_FULL
 from samba.dcerpc import xattr, drsblobs, security
 from samba.dcerpc.misc import SEC_CHAN_BDC
@@ -58,13 +58,13 @@ PROVISION =    0x08
 CHANGEALL =    0xff
 
 hashAttrNotCopied = set(["dn", "whenCreated", "whenChanged", "objectGUID",
-    "uSNCreated", "replPropertyMetaData", "uSNChanged", "parentGUID",
-    "objectCategory", "distinguishedName", "nTMixedDomain",
-    "showInAdvancedViewOnly", "instanceType", "msDS-Behavior-Version",
-    "nextRid", "cn", "versionNumber", "lmPwdHistory", "pwdLastSet",
-    "ntPwdHistory", "unicodePwd","dBCSPwd", "supplementalCredentials",
-    "gPCUserExtensionNames", "gPCMachineExtensionNames","maxPwdAge", "secret",
-    "possibleInferiors", "privilege", "sAMAccountType"])
+                         "uSNCreated", "replPropertyMetaData", "uSNChanged", "parentGUID",
+                         "objectCategory", "distinguishedName", "nTMixedDomain",
+                         "showInAdvancedViewOnly", "instanceType", "msDS-Behavior-Version",
+                         "nextRid", "cn", "versionNumber", "lmPwdHistory", "pwdLastSet",
+                         "ntPwdHistory", "unicodePwd","dBCSPwd", "supplementalCredentials",
+                         "gPCUserExtensionNames", "gPCMachineExtensionNames","maxPwdAge", "secret",
+                         "possibleInferiors", "privilege", "sAMAccountType"])
 
 
 class ProvisionLDB(object):
@@ -252,19 +252,19 @@ def newprovision(names, session, smbconf, provdir, logger, base_schema=None):
     os.mkdir(provdir)
     logger.info("Provision stored in %s", provdir)
     return provision(logger, session, smbconf=smbconf,
-            targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
-            domain=names.domain, domainguid=names.domainguid,
-            domainsid=names.domainsid, ntdsguid=names.ntdsguid,
-            policyguid=names.policyid, policyguid_dc=names.policyid_dc,
-            hostname=names.netbiosname.lower(), hostip=None, hostip6=None,
-            invocationid=names.invocation, adminpass=names.adminpass,
-            krbtgtpass=None, machinepass=None, dnspass=None, root=None,
-            nobody=None, users=None,
-            serverrole="domain controller",
-            backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
-            slapd_path=None,
-            dom_for_fun_level=names.domainlevel, dns_backend=names.dns_backend,
-            useeadb=True, use_ntvfs=True, base_schema=base_schema)
+                     targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
+                     domain=names.domain, domainguid=names.domainguid,
+                     domainsid=names.domainsid, ntdsguid=names.ntdsguid,
+                     policyguid=names.policyid, policyguid_dc=names.policyid_dc,
+                     hostname=names.netbiosname.lower(), hostip=None, hostip6=None,
+                     invocationid=names.invocation, adminpass=names.adminpass,
+                     krbtgtpass=None, machinepass=None, dnspass=None, root=None,
+                     nobody=None, users=None,
+                     serverrole="domain controller",
+                     backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
+                     slapd_path=None,
+                     dom_for_fun_level=names.domainlevel, dns_backend=names.dns_backend,
+                     useeadb=True, use_ntvfs=True, base_schema=base_schema)
 
 
 def dn_sort(x, y):
@@ -584,24 +584,24 @@ def update_machine_account_password(samdb, secrets_ldb, names):
         machinepass = samba.generate_random_machine_password(128, 255)
         mputf16 = machinepass.encode('utf-16-le')
         msg["clearTextPassword"] = ldb.MessageElement(mputf16,
-                                                ldb.FLAG_MOD_REPLACE,
-                                                "clearTextPassword")
+                                                      ldb.FLAG_MOD_REPLACE,
+                                                      "clearTextPassword")
         samdb.modify(msg)
 
         res = samdb.search(expression=("samAccountName=%s$" % names.netbiosname),
-                     attrs=["msDs-keyVersionNumber"])
+                           attrs=["msDs-keyVersionNumber"])
         assert(len(res) == 1)
         kvno = int(str(res[0]["msDs-keyVersionNumber"]))
         secChanType = int(secrets_msg[0]["secureChannelType"][0])
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
-                    realm=names.realm,
-                    domainsid=names.domainsid,
-                    dnsdomain=names.dnsdomain,
-                    netbiosname=names.netbiosname,
-                    machinepass=machinepass,
-                    key_version_number=kvno,
-                    secure_channel_type=secChanType)
+                            realm=names.realm,
+                            domainsid=names.domainsid,
+                            dnsdomain=names.dnsdomain,
+                            netbiosname=names.netbiosname,
+                            machinepass=machinepass,
+                            key_version_number=kvno,
+                            secure_channel_type=secChanType)
     else:
         raise ProvisioningError("Unable to find a Secure Channel"
                                 "of type SEC_CHAN_BDC")
@@ -625,13 +625,13 @@ def update_dns_account_password(samdb, secrets_ldb, names):
         machinepass = samba.generate_random_password(128, 255)
         mputf16 = machinepass.encode('utf-16-le')
         msg["clearTextPassword"] = ldb.MessageElement(mputf16,
-                                                ldb.FLAG_MOD_REPLACE,
-                                                "clearTextPassword")
+                                                      ldb.FLAG_MOD_REPLACE,
+                                                      "clearTextPassword")
 
         samdb.modify(msg)
 
         res = samdb.search(expression=expression,
-                     attrs=["msDs-keyVersionNumber"])
+                           attrs=["msDs-keyVersionNumber"])
         assert(len(res) == 1)
         kvno = str(res[0]["msDs-keyVersionNumber"])
 
@@ -640,8 +640,8 @@ def update_dns_account_password(samdb, secrets_ldb, names):
                                            ldb.FLAG_MOD_REPLACE,
                                            "secret")
         msg["msDS-KeyVersionNumber"] = ldb.MessageElement(kvno,
-                                                ldb.FLAG_MOD_REPLACE,
-                                                "msDS-KeyVersionNumber")
+                                                          ldb.FLAG_MOD_REPLACE,
+                                                          "msDS-KeyVersionNumber")
 
         secrets_ldb.modify(msg)
 
@@ -779,8 +779,8 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
             if obj["num"] > limit_print:
                 dt = _glue.nttime2string(_glue.unix2nttime(k*60))
                 print("%s # of modification: %d  \tmin: %d max: %d" % (dt , obj["num"],
-                                                                    obj["min"],
-                                                                    obj["max"]))
+                                                                       obj["min"],
+                                                                       obj["max"]))
             if hash_ts[k]["num"] > 600:
                 kept_record.append(k)
 
@@ -801,7 +801,7 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
                 obj = hash_ts[k]
                 if obj.get("skipped") is None:
                     ldif = "%slastProvisionUSN: %d-%d;%s\n" % (ldif, obj["min"],
-                                obj["max"], id)
+                                                               obj["max"], id)
 
     if ldif != "":
         file = tempfile.mktemp(dir=dest, prefix="usnprov", suffix=".ldif")

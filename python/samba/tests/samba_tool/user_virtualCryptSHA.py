@@ -126,7 +126,7 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
         self.ldb.modify(
             msg,
             controls=["local_oid:%s:0" %
-                dsdb.DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID])
+                      dsdb.DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID])
 
     # gpg decryption not enabled.
     # both virtual attributes specified, no rounds option

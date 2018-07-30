@@ -26,12 +26,12 @@ from samba.credentials import Credentials
 from samba.auth import system_session
 from samba.provision import getpolicypath,find_provision_key_parameters
 from samba.upgradehelpers import (get_paths, get_ldbs,
-                                 identic_rename,
-                                 updateOEMInfo, getOEMInfo, update_gpo,
-                                 delta_update_basesamdb,
-                                 update_dns_account_password,
-                                 search_constructed_attrs_stored,
-                                 increment_calculated_keyversion_number)
+                                  identic_rename,
+                                  updateOEMInfo, getOEMInfo, update_gpo,
+                                  delta_update_basesamdb,
+                                  update_dns_account_password,
+                                  search_constructed_attrs_stored,
+                                  increment_calculated_keyversion_number)
 from samba.tests import env_loadparm, TestCaseInTempDir
 from samba.tests.provision import create_dummy_secretsdb
 import ldb
@@ -82,8 +82,8 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         self.paths = paths
         self.ldbs = get_ldbs(paths, self.creds, system_session(), self.lp)
         self.names = find_provision_key_parameters(self.ldbs.sam,
-                self.ldbs.secrets, self.ldbs.idmap, paths, smb_conf_path,
-                self.lp)
+                                                   self.ldbs.secrets, self.ldbs.idmap, paths, smb_conf_path,
+                                                   self.lp)
         self.referencedb = create_dummy_secretsdb(
             os.path.join(self.tempdir, "ref.ldb"))
 
@@ -104,7 +104,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
                                                self.names.rootdn,
                                                hash)
         self.assertEqual(self.ldbs.sam.get_attribute_replmetadata_version(dn,
-                            "unicodePwd"),
+                                                                          "unicodePwd"),
                             140)
         # This function should not decrement the version
         hash[dn.lower()] = 130
@@ -113,7 +113,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
                                                self.names.rootdn,
                                                hash)
         self.assertEqual(self.ldbs.sam.get_attribute_replmetadata_version(dn,
-                            "unicodePwd"),
+                                                                          "unicodePwd"),
                             140)
 
     def test_identic_rename(self):
@@ -122,7 +122,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         guestDN = ldb.Dn(self.ldbs.sam, "CN=Guest,CN=Users,%s" % rootdn)
         identic_rename(self.ldbs.sam, guestDN)
         res = self.ldbs.sam.search(expression="(name=Guest)", base=rootdn,
-                                scope=ldb.SCOPE_SUBTREE, attrs=["dn"])
+                                   scope=ldb.SCOPE_SUBTREE, attrs=["dn"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0]["dn"]), "CN=Guest,CN=Users,%s" % rootdn)
 
@@ -134,7 +134,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
 
     def test_update_gpo_simple(self):
         dir = getpolicypath(self.paths.sysvol, self.names.dnsdomain,
-                self.names.policyid)
+                            self.names.policyid)
         shutil.rmtree(dir)
         self.assertFalse(os.path.isdir(dir))
         update_gpo(self.paths, self.ldbs.sam, self.names, self.lp, dummymessage)
@@ -147,7 +147,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         os.mkdir(path)
         os.mkdir(os.path.join(path, self.names.dnsdomain))
         os.mkdir(os.path.join(os.path.join(path, self.names.dnsdomain),
-            "Policies"))
+                              "Policies"))
         update_gpo(self.paths, self.ldbs.sam, self.names, self.lp, dummymessage)
         shutil.rmtree(path)
         self.paths.sysvol = save
@@ -160,7 +160,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
 
     def test_update_dns_account(self):
         update_dns_account_password(self.ldbs.sam, self.ldbs.secrets,
-            self.names)
+                                    self.names)
 
     def test_updateOEMInfo(self):
         realm = self.lp.get("realm")

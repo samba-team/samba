@@ -30,11 +30,11 @@ class FsmoCmdTestCase(SambaToolCmdTest):
 
         # Check that the output is sensible
         samdb = self.getSamDB("-H", "ldap://%s" % os.environ["SERVER"],
-            "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
+                              "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
 
         try:
             res = samdb.search(base=ldb.Dn(samdb, "CN=Infrastructure,DC=DomainDnsZones") + samdb.get_default_basedn(),
-                       scope=ldb.SCOPE_BASE, attrs=["fsmoRoleOwner"])
+                               scope=ldb.SCOPE_BASE, attrs=["fsmoRoleOwner"])
 
             self.assertTrue("DomainDnsZonesMasterRole owner: " + res[0]["fsmoRoleOwner"][0] in out)
         except ldb.LdbError as e:

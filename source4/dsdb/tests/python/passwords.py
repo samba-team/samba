@@ -158,7 +158,7 @@ add: userPassword
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["unicodePwd"] = MessageElement("XXXXXXXXXXXXXXXX", FLAG_MOD_REPLACE,
-          "unicodePwd")
+                                         "unicodePwd")
         try:
             self.ldb.modify(m)
             self.fail()
@@ -191,7 +191,7 @@ unicodePwd: YYYYYYYYYYYYYYYY
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["unicodePwd"] = MessageElement("\"thatsAcomplPASS2\"".encode('utf-16-le'),
-          FLAG_MOD_REPLACE, "unicodePwd")
+                                         FLAG_MOD_REPLACE, "unicodePwd")
         self.ldb.modify(m)
 
     def test_unicodePwd_clear_change(self):
@@ -245,7 +245,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["dBCSPwd"] = MessageElement("XXXXXXXXXXXXXXXX", FLAG_MOD_REPLACE,
-          "dBCSPwd")
+                                      "dBCSPwd")
         try:
             self.ldb.modify(m)
             self.fail()
@@ -279,7 +279,7 @@ dBCSPwd: YYYYYYYYYYYYYYYY
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("thatsAcomplPASS2", FLAG_MOD_REPLACE,
-          "userPassword")
+                                           "userPassword")
         self.ldb.modify(m)
 
     def test_userPassword_clear_change(self):
@@ -336,7 +336,7 @@ userPassword: thatsAcomplPASS2
             m = Message()
             m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
             m["clearTextPassword"] = MessageElement("thatsAcomplPASS2".encode('utf-16-le'),
-              FLAG_MOD_REPLACE, "clearTextPassword")
+                                                    FLAG_MOD_REPLACE, "clearTextPassword")
             self.ldb.modify(m)
             # this passes against s4
         except LdbError as e10:
@@ -884,11 +884,11 @@ userPassword: thatsAcomplPASS4
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword", FLAG_MOD_ADD,
-          "userPassword")
+                                           "userPassword")
         self.ldb.modify(m)
 
         res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
-                         scope=SCOPE_BASE, attrs=["userPassword"])
+                              scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword")
@@ -896,11 +896,11 @@ userPassword: thatsAcomplPASS4
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword2", FLAG_MOD_REPLACE,
-          "userPassword")
+                                           "userPassword")
         self.ldb.modify(m)
 
         res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
-                         scope=SCOPE_BASE, attrs=["userPassword"])
+                              scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword2")
@@ -908,11 +908,11 @@ userPassword: thatsAcomplPASS4
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement([], FLAG_MOD_DELETE,
-          "userPassword")
+                                           "userPassword")
         self.ldb.modify(m)
 
         res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
-                         scope=SCOPE_BASE, attrs=["userPassword"])
+                              scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("userPassword" in res[0])
 
@@ -922,11 +922,11 @@ userPassword: thatsAcomplPASS4
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword3", FLAG_MOD_REPLACE,
-          "userPassword")
+                                           "userPassword")
         self.ldb.modify(m)
 
         res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
-                         scope=SCOPE_BASE, attrs=["userPassword"])
+                              scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword3")
@@ -937,11 +937,11 @@ userPassword: thatsAcomplPASS4
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword4", FLAG_MOD_REPLACE,
-          "userPassword")
+                                           "userPassword")
         self.ldb.modify(m)
 
         res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
-                         scope=SCOPE_BASE, attrs=["userPassword"])
+                              scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword4")
@@ -967,7 +967,7 @@ userPassword: thatsAcomplPASS4
         m = Message()
         m.dn = Dn(ldb1, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("thatsAcomplPASS1", FLAG_MOD_REPLACE,
-          "userPassword")
+                                           "userPassword")
         ldb1.modify(m)
 
         res = ldb1.search("cn=testuser,cn=users," + self.base_dn,
@@ -1005,7 +1005,7 @@ userPassword: thatsAcomplPASS4
         m = Message()
         m.dn = Dn(ldb2, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("thatsAcomplPASS2", FLAG_MOD_REPLACE,
-          "userPassword")
+                                           "userPassword")
         ldb2.modify(m)
 
         res = ldb2.search("cn=testuser,cn=users," + self.base_dn,

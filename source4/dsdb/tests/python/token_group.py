@@ -206,7 +206,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.test_group0_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
 
         self.admin_ldb.add_remove_group_members(self.test_group0, [self.test_user],
-                                       add_members_operation=True)
+                                                add_members_operation=True)
 
         self.test_group1 = "tokengroups_group1"
         self.admin_ldb.newgroup(self.test_group1, grouptype=dsdb.GTYPE_SECURITY_GLOBAL_GROUP)
@@ -215,7 +215,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.test_group1_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
 
         self.admin_ldb.add_remove_group_members(self.test_group1, [self.test_user],
-                                       add_members_operation=True)
+                                                add_members_operation=True)
 
         self.test_group2 = "tokengroups_group2"
         self.admin_ldb.newgroup(self.test_group2, grouptype=dsdb.GTYPE_SECURITY_UNIVERSAL_GROUP)
@@ -225,7 +225,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.test_group2_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
 
         self.admin_ldb.add_remove_group_members(self.test_group2, [self.test_user],
-                                       add_members_operation=True)
+                                                add_members_operation=True)
 
         self.test_group3 = "tokengroups_group3"
         self.admin_ldb.newgroup(self.test_group3, grouptype=dsdb.GTYPE_SECURITY_UNIVERSAL_GROUP)
@@ -235,7 +235,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.test_group3_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
 
         self.admin_ldb.add_remove_group_members(self.test_group3, [self.test_group1],
-                                       add_members_operation=True)
+                                                add_members_operation=True)
 
         self.test_group4 = "tokengroups_group4"
         self.admin_ldb.newgroup(self.test_group4, grouptype=dsdb.GTYPE_SECURITY_UNIVERSAL_GROUP)
@@ -245,7 +245,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.test_group4_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
 
         self.admin_ldb.add_remove_group_members(self.test_group4, [self.test_group3],
-                                       add_members_operation=True)
+                                                add_members_operation=True)
 
         self.test_group5 = "tokengroups_group5"
         self.admin_ldb.newgroup(self.test_group5, grouptype=dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP)
@@ -561,7 +561,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         samr_conn = samba.dcerpc.samr.samr("ncacn_ip_tcp:%s[seal]" % host, lp, creds)
         samr_handle = samr_conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         samr_domain = samr_conn.OpenDomain(samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED,
-                                      domain_sid)
+                                           domain_sid)
         user_handle = samr_conn.OpenUser(samr_domain, security.SEC_FLAG_MAXIMUM_ALLOWED, user_rid)
         rids = samr_conn.GetGroupsForUser(user_handle)
         samr_dns = set()
@@ -569,7 +569,7 @@ class DynamicTokenTest(samba.tests.TestCase):
             self.assertEqual(rid.attributes, samr.SE_GROUP_MANDATORY | samr.SE_GROUP_ENABLED_BY_DEFAULT| samr.SE_GROUP_ENABLED)
             sid = "%s-%d" % (domain_sid, rid.rid)
             res = self.admin_ldb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
-                                  attrs=[])
+                                        attrs=[])
             samr_dns.add(res[0].dn.get_casefold())
 
         user_info = samr_conn.QueryUserInfo(user_handle, 1)

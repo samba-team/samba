@@ -49,8 +49,8 @@ f = open(config_h, 'r')
 try:
     lines = f.readlines()
     config_hash = dict((x[0], ' '.join(x[1:]))
-            for x in map(lambda line: line.strip().split(' ')[1:],
-                         filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines)))
+                       for x in map(lambda line: line.strip().split(' ')[1:],
+                                    filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines)))
 finally:
     f.close()
 
@@ -68,20 +68,20 @@ plantestsuite("samba3.local_s3", "nt4_dc:local", [os.path.join(samba3srcdir, "sc
 plantestsuite("samba3.blackbox.registry.upgrade", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_registry_upgrade.sh"), net, dbwrap_tool])
 
 tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7", "LOCK9",
-        "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
-        "OPLOCK1", "OPLOCK2", "OPLOCK4", "STREAMERROR",
-        "DIR", "DIR1", "DIR-CREATETIME", "TCON", "TCONDEV", "RW1", "RW2", "RW3", "LARGE_READX", "RW-SIGNING",
-        "OPEN", "XCOPY", "RENAME", "DELETE", "DELETE-LN", "WILDDELETE", "PROPERTIES", "W2K",
-        "TCON2", "IOCTL", "CHKPATH", "FDSESS", "CHAIN1", "CHAIN2", "OWNER-RIGHTS",
-        "CHAIN3", "PIDHIGH", "CLI_SPLICE",
-        "UID-REGRESSION-TEST", "SHORTNAME-TEST",
-        "CASE-INSENSITIVE-CREATE", "SMB2-BASIC", "NTTRANS-FSCTL", "SMB2-NEGPROT",
-        "SMB2-SESSION-REAUTH", "SMB2-SESSION-RECONNECT", "SMB2-FTRUNCATE",
-        "SMB2-ANONYMOUS", "SMB2-DIR-FSYNC",
-        "CLEANUP1",
-        "CLEANUP2",
-        "CLEANUP4",
-        "BAD-NBT-SESSION"]
+         "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
+         "OPLOCK1", "OPLOCK2", "OPLOCK4", "STREAMERROR",
+         "DIR", "DIR1", "DIR-CREATETIME", "TCON", "TCONDEV", "RW1", "RW2", "RW3", "LARGE_READX", "RW-SIGNING",
+         "OPEN", "XCOPY", "RENAME", "DELETE", "DELETE-LN", "WILDDELETE", "PROPERTIES", "W2K",
+         "TCON2", "IOCTL", "CHKPATH", "FDSESS", "CHAIN1", "CHAIN2", "OWNER-RIGHTS",
+         "CHAIN3", "PIDHIGH", "CLI_SPLICE",
+         "UID-REGRESSION-TEST", "SHORTNAME-TEST",
+         "CASE-INSENSITIVE-CREATE", "SMB2-BASIC", "NTTRANS-FSCTL", "SMB2-NEGPROT",
+         "SMB2-SESSION-REAUTH", "SMB2-SESSION-RECONNECT", "SMB2-FTRUNCATE",
+         "SMB2-ANONYMOUS", "SMB2-DIR-FSYNC",
+         "CLEANUP1",
+         "CLEANUP2",
+         "CLEANUP4",
+         "BAD-NBT-SESSION"]
 
 for t in tests:
     plantestsuite("samba3.smbtorture_s3.plain(fileserver).%s" % t, "fileserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
@@ -131,7 +131,7 @@ for s in shares:
     plansmbtorture4testsuite(t, "simpleserver", "//%s/%s %s" % ('$SERVER_IP', s, ' -U$USERNAME%$PASSWORD'), description=s)
 
 posix_tests = ["POSIX", "POSIX-APPEND", "POSIX-SYMLINK-ACL", "POSIX-SYMLINK-EA", "POSIX-OFD-LOCK",
-              "POSIX-STREAM-DELETE", "WINDOWS-BAD-SYMLINK" ]
+               "POSIX-STREAM-DELETE", "WINDOWS-BAD-SYMLINK" ]
 
 for t in posix_tests:
     plantestsuite("samba3.smbtorture_s3.plain(nt4_dc).%s" % t, "nt4_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/posix_share', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
@@ -226,19 +226,19 @@ t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
 plantestsuite("samba3.wbinfo_name_lookup", env,
               [ os.path.join(srcdir(),
-                            "nsswitch/tests/test_wbinfo_name_lookup.sh"),
+                             "nsswitch/tests/test_wbinfo_name_lookup.sh"),
                 '$DOMAIN', '$REALM', '$DC_USERNAME' ])
 
 env = "ad_member:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [ os.path.join(srcdir(),
-                            "nsswitch/tests/test_wbinfo_user_info.sh"),
+                             "nsswitch/tests/test_wbinfo_user_info.sh"),
                 '$DOMAIN', '$REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
 
 env = "fl2008r2dc:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [ os.path.join(srcdir(),
-                            "nsswitch/tests/test_wbinfo_user_info.sh"),
+                             "nsswitch/tests/test_wbinfo_user_info.sh"),
                 '$TRUST_DOMAIN', '$TRUST_REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
 
 env = "ad_member"
@@ -603,7 +603,7 @@ for s in signseal_options:
             options = binding_string + " -U$USERNAME%$PASSWORD"
             plansmbtorture4testsuite(test, "nt4_dc", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
             plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s] " % (a, s, e), "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
-                                                             "none", options, configuration])
+                                                                                                                 "none", options, configuration])
 
     # We should try more combinations in future, but this is all
     # the pre-calculated credentials cache supports at the moment
@@ -628,7 +628,7 @@ for s in signseal_options:
                                                                                                             "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 plantestsuite("samba3.blackbox.rpcclient_samlogon", "ad_member:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
-                                                                       "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$DC_SERVER", configuration])
+                                                                        "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$DC_SERVER", configuration])
 plantestsuite("samba3.blackbox.sharesec", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_sharesec.sh"),
                configuration, os.path.join(bindir(), "sharesec"), "tmp"])

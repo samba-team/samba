@@ -65,8 +65,8 @@ class LATests(drs_base.DrsBaseTestCase):
     def add_object(self, cn, objectclass):
         dn = "CN=%s,%s" % (cn, self.ou)
         self.samdb.add({'cn': cn,
-                      'objectclass': objectclass,
-                      'dn': dn})
+                        'objectclass': objectclass,
+                        'dn': dn})
 
         return dn
 

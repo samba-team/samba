@@ -57,7 +57,7 @@ class RemotedTestCase(unittest.TestCase):
 
     def error(self, label):
         raise NotImplementedError("%s on RemotedTestCases is not permitted." %
-            label)
+                                  label)
 
     def setUp(self):
         self.error("setUp")

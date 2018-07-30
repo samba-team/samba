@@ -189,9 +189,9 @@ class RawDCERPCTest(TestCase):
         # self.assertEquals(rep.u._pad1, '\0' * port_pad)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                samba.dcerpc.dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          samba.dcerpc.dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ctx.transfer_syntaxes[0])
         ack = rep
         if auth_context is None:
@@ -242,9 +242,9 @@ class RawDCERPCTest(TestCase):
         # self.assertEquals(rep.u._pad1, '\0' * 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
-                samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
+                          samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
         self.assertEquals(rep.u.ctx_list[0].reason,
-                samba.dcerpc.dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
+                          samba.dcerpc.dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ctx.transfer_syntaxes[0])
         self.assertNotEquals(rep.auth_length, 0)
         self.assertGreater(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
@@ -687,10 +687,10 @@ class RawDCERPCTest(TestCase):
         self.assertEqual(p.pfc_flags, pfc_flags)
         self.assertEqual(p.drep, drep)
         self.assertGreaterEqual(p.frag_length,
-                samba.dcerpc.dcerpc.DCERPC_NCACN_PAYLOAD_OFFSET)
+                                samba.dcerpc.dcerpc.DCERPC_NCACN_PAYLOAD_OFFSET)
         if len(ai) > samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH:
             self.assertEqual(p.auth_length,
-                    len(ai) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
+                             len(ai) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
         elif auth_length is not None:
             self.assertEqual(p.auth_length, auth_length)
         else:

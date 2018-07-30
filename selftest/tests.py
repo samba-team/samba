@@ -32,8 +32,8 @@ f = open(config_h, 'r')
 try:
     lines = f.readlines()
     config_hash = dict((x[0], ' '.join(x[1:]))
-            for x in map(lambda line: line.strip().split(' ')[1:],
-                         filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines)))
+                       for x in map(lambda line: line.strip().split(' ')[1:],
+                                    filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines)))
 finally:
     f.close()
 

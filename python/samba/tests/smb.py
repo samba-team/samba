@@ -49,9 +49,9 @@ class SMBTests(samba.tests.TestCase):
     def test_list(self):
         ls = [f['name'] for f in self.conn.list(addom)]
         self.assertIn('scripts', ls,
-            msg='"scripts" directory not found in sysvol')
+                      msg='"scripts" directory not found in sysvol')
         self.assertIn('Policies',ls,
-            msg='"Policies" directory not found in sysvol')
+                      msg='"Policies" directory not found in sysvol')
 
     def test_unlink(self):
         """
@@ -67,7 +67,7 @@ class SMBTests(samba.tests.TestCase):
 
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents.decode('utf8'), test_contents,
-            msg='contents of test file did not match what was written')
+                          msg='contents of test file did not match what was written')
 
     # with python2 this will save/load str type (with embedded nulls)
     # with python3 this will save/load bytes type
@@ -76,7 +76,7 @@ class SMBTests(samba.tests.TestCase):
 
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents, test_literal_bytes_embed_nulls,
-            msg='contents of test file did not match what was written')
+                          msg='contents of test file did not match what was written')
 
     # python3 only this will save/load unicode
     def test_save_load_utfcontents(self):
@@ -85,7 +85,7 @@ class SMBTests(samba.tests.TestCase):
 
             contents = self.conn.loadfile(test_file)
             self.assertEquals(contents.decode('utf8'), utf_contents,
-                msg='contents of test file did not match what was written')
+                              msg='contents of test file did not match what was written')
 
     # with python2 this will save/load str type
     # with python3 this will save/load bytes type
@@ -94,4 +94,4 @@ class SMBTests(samba.tests.TestCase):
 
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents, binary_contents,
-            msg='contents of test file did not match what was written')
+                          msg='contents of test file did not match what was written')

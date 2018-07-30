@@ -19,7 +19,7 @@ parser = optparse.OptionParser("%s <BINDING> [path]" % sys.argv[0])
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option("--createkey", type="string", metavar="KEYNAME", 
-        help="create a key")
+                  help="create a key")
 
 opts, args = parser.parse_args()
 

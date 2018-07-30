@@ -26,7 +26,7 @@ class ForestCmdTestCase(SambaToolCmdTest):
     def setUp(self):
         super(ForestCmdTestCase, self).setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
-            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                   "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.domain_dn = self.samdb.domain_dn()
 
     def tearDown(self):
@@ -43,10 +43,10 @@ class ForestCmdTestCase(SambaToolCmdTest):
     def test_display(self):
         """Tests that we can display forest settings"""
         (result, out, err) = self.runsublevelcmd("forest", ("directory_service",
-                              "show"),
-                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                              "-U%s%%%s" % (os.environ["DC_USERNAME"],
-                                            os.environ["DC_PASSWORD"]))
+                                                            "show"),
+                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                               os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
@@ -56,10 +56,10 @@ class ForestCmdTestCase(SambaToolCmdTest):
         """Test that we can modify the dsheuristics setting"""
 
         (result, out, err) = self.runsublevelcmd("forest", ("directory_service",
-                              "dsheuristics"), "0000002",
-                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                              "-U%s%%%s" % (os.environ["DC_USERNAME"],
-                                            os.environ["DC_PASSWORD"]))
+                                                            "dsheuristics"), "0000002",
+                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                               os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")

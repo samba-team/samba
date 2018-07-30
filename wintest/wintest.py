@@ -302,7 +302,7 @@ class wintest():
     def named_supports_gssapi_keytab(self):
         '''see if named supports tkey-gssapi-keytab'''
         self.write_file("${PREFIX}/named.conf.test",
-                     'options { tkey-gssapi-keytab "test"; };')
+                        'options { tkey-gssapi-keytab "test"; };')
         try:
             self.run_cmd("${NAMED_CHECKCONF} ${PREFIX}/named.conf.test")
         except subprocess.CalledProcessError:
@@ -341,11 +341,11 @@ nameserver %s
         elif self.getvar('NAMESERVER_BACKEND') != 'SAMBA_INTERNAL':
             if self.named_supports_gssapi_keytab():
                 self.setvar("NAMED_TKEY_OPTION",
-                         'tkey-gssapi-keytab "${PREFIX}/bind-dns/dns.keytab";')
+                            'tkey-gssapi-keytab "${PREFIX}/bind-dns/dns.keytab";')
             else:
                 self.info("LCREALM=${LCREALM}")
                 self.setvar("NAMED_TKEY_OPTION",
-                         '''tkey-gssapi-credential "DNS/${LCREALM}";
+                            '''tkey-gssapi-credential "DNS/${LCREALM}";
                             tkey-domain "${LCREALM}";
                  ''')
             self.putenv('KEYTAB_FILE', '${PREFIX}/bind-dns/dns.keytab')
@@ -397,7 +397,7 @@ ${NAMED_INCLUDE}
 
         if self.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
             self.write_file('etc/named.conf',
-                       '''
+                            '''
 zone "%s" IN {
       type forward;
       forward only;
@@ -414,7 +414,7 @@ zone "%s" IN {
 
         for d in domains:
             self.write_file('etc/named.conf',
-                         '''
+                            '''
 zone "%s" IN {
       type forward;
       forward only;
@@ -900,7 +900,7 @@ RebootOnCompletion=No
             child.expect("C:")
             child.sendline("netdom join ${WIN_HOSTNAME} /Domain:%s /UserD:%s /PasswordD:%s" % (domain, username, password))
             i = child.expect(["The command completed successfully", 
-                             "The specified domain either does not exist or could not be contacted."], timeout=120)
+                              "The specified domain either does not exist or could not be contacted."], timeout=120)
             if i == 0:
                 break
             time.sleep(10)
@@ -945,12 +945,12 @@ RebootOnCompletion=No
         self.parser.add_option("--nocleanup", action='store_true', default=False, help='disable cleanup code')
         self.parser.add_option("--use-ntvfs", action='store_true', default=False, help='use NTVFS for the fileserver')
         self.parser.add_option("--dns-backend", type="choice",
-            choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
-            help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
-                 "BIND9_FLATFILE uses bind9 text database to store zone information, " \
-                 "BIND9_DLZ uses samba4 AD to store zone information, " \
-                 "NONE skips the DNS setup entirely (not recommended)",
-            default="SAMBA_INTERNAL")
+                               choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
+                               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
+                               "BIND9_FLATFILE uses bind9 text database to store zone information, " \
+                               "BIND9_DLZ uses samba4 AD to store zone information, " \
+                               "NONE skips the DNS setup entirely (not recommended)",
+                               default="SAMBA_INTERNAL")
 
         self.opts, self.args = self.parser.parse_args()
 

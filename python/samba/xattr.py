@@ -27,10 +27,10 @@ def copyattrs(frompath, topath):
         # Get the xattr attributes if any
         try:
             attribute = samba.xattr_native.wrap_getxattr(frompath,
-                                         xattr.XATTR_NTACL_NAME)
+                                                         xattr.XATTR_NTACL_NAME)
             samba.xattr_native.wrap_setxattr(topath,
-                                         xattr.XATTR_NTACL_NAME,
-                                         attribute)
+                                             xattr.XATTR_NTACL_NAME,
+                                             attribute)
         except Exception:
             pass
             # FIXME:Catch a specific exception

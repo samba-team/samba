@@ -49,8 +49,8 @@ class SlapdAlreadyRunning(Exception):
     def __init__(self, uri):
         self.ldapi_uri = uri
         super(SlapdAlreadyRunning, self).__init__("Another slapd Instance "
-            "seems already running on this host, listening to %s." %
-            self.ldapi_uri)
+                                                  "seems already running on this host, listening to %s." %
+                                                  self.ldapi_uri)
 
 
 class BackendResult(object):
@@ -83,7 +83,7 @@ class LDAPBackendResult(BackendResult):
 class ProvisionBackend(object):
 
     def __init__(self, backend_type, paths=None, lp=None,
-            names=None, logger=None):
+                 names=None, logger=None):
         """Provision a backend for samba4"""
         self.paths = paths
         self.lp = lp
@@ -137,18 +137,18 @@ class LDBBackend(ProvisionBackend):
 class ExistingBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, lp=None,
-            names=None, logger=None, ldapi_uri=None):
+                 names=None, logger=None, ldapi_uri=None):
 
         super(ExistingBackend, self).__init__(backend_type=backend_type,
-                paths=paths, lp=lp,
-                names=names, logger=logger,
-                ldap_backend_forced_uri=ldapi_uri)
+                                              paths=paths, lp=lp,
+                                              names=names, logger=logger,
+                                              ldap_backend_forced_uri=ldapi_uri)
 
     def init(self):
         # Check to see that this 'existing' LDAP backend in fact exists
         ldapi_db = Ldb(self.ldapi_uri)
         ldapi_db.search(base="", scope=SCOPE_BASE,
-            expression="(objectClass=OpenLDAProotDSE)")
+                        expression="(objectClass=OpenLDAProotDSE)")
 
         # For now, assume existing backends at least emulate OpenLDAP
         self.ldap_backend_type = "openldap"
@@ -163,8 +163,8 @@ class LDAPBackend(ProvisionBackend):
                  ldap_backend_forced_uri=None, ldap_dryrun_mode=False):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
-                paths=paths, lp=lp,
-                names=names, logger=logger)
+                                          paths=paths, lp=lp,
+                                          names=names, logger=logger)
 
         self.domainsid = domainsid
         self.schema = schema
@@ -198,7 +198,7 @@ class LDAPBackend(ProvisionBackend):
         try:
             ldapi_db = Ldb(self.ldap_uri)
             ldapi_db.search(base="", scope=SCOPE_BASE,
-                expression="(objectClass=OpenLDAProotDSE)")
+                            expression="(objectClass=OpenLDAProotDSE)")
             try:
                 f = open(self.slapd_pid, "r")
             except IOError as err:
@@ -221,7 +221,7 @@ class LDAPBackend(ProvisionBackend):
             raise ProvisioningError("Warning: LDAP-Backend must be setup with path to slapd, e.g. --slapd-path=\"/usr/local/libexec/slapd\"!")
         if not os.path.exists(self.slapd_path):
             self.logger.warning("Path (%s) to slapd does not exist!",
-                self.slapd_path)
+                                self.slapd_path)
 
         if not os.path.isdir(self.ldapdir):
             os.makedirs(self.ldapdir, 0o700)
@@ -266,7 +266,7 @@ class LDAPBackend(ProvisionBackend):
         # subprocess context around, to kill this off at the successful
         # end of the script
         self.slapd = subprocess.Popen(self.slapd_provision_command,
-            close_fds=True, shell=False)
+                                      close_fds=True, shell=False)
 
         count = 0
         while self.slapd.poll() is None:
@@ -275,7 +275,7 @@ class LDAPBackend(ProvisionBackend):
                 time.sleep(1)
                 ldapi_db = Ldb(self.ldap_uri, lp=self.lp, credentials=self.credentials)
                 ldapi_db.search(base="", scope=SCOPE_BASE,
-                    expression="(objectClass=OpenLDAProotDSE)")
+                                expression="(objectClass=OpenLDAProotDSE)")
                 # If we have got here, then we must have a valid connection to
                 # the LDAP server!
                 return
@@ -306,25 +306,25 @@ class LDAPBackend(ProvisionBackend):
 
     def post_setup(self):
         return LDAPBackendResult(self.slapd_command_escaped,
-                    self.ldapdir)
+                                 self.ldapdir)
 
 
 class OpenLDAPBackend(LDAPBackend):
 
     def __init__(self, backend_type, paths=None, lp=None,
-            credentials=None, names=None, logger=None, domainsid=None,
-            schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-            ldap_backend_extra_port=None, ldap_dryrun_mode=False,
-            ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
+                 credentials=None, names=None, logger=None, domainsid=None,
+                 schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
+                 ldap_backend_extra_port=None, ldap_dryrun_mode=False,
+                 ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
         from samba.provision import setup_path
         super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
-                paths=paths, lp=lp,
-                names=names, logger=logger,
-                domainsid=domainsid, schema=schema, hostname=hostname,
-                ldapadminpass=ldapadminpass, slapd_path=slapd_path,
-                ldap_backend_extra_port=ldap_backend_extra_port,
-                ldap_backend_forced_uri=ldap_backend_forced_uri,
-                ldap_dryrun_mode=ldap_dryrun_mode)
+                                               paths=paths, lp=lp,
+                                               names=names, logger=logger,
+                                               domainsid=domainsid, schema=schema, hostname=hostname,
+                                               ldapadminpass=ldapadminpass, slapd_path=slapd_path,
+                                               ldap_backend_extra_port=ldap_backend_extra_port,
+                                               ldap_backend_forced_uri=ldap_backend_forced_uri,
+                                               ldap_dryrun_mode=ldap_dryrun_mode)
 
         self.ol_mmr_urls = ol_mmr_urls
         self.nosync = nosync
@@ -557,14 +557,14 @@ class OpenLDAPBackend(LDAPBackend):
                 server_port_string = "ldap://0.0.0.0:%d" % self.ldap_backend_extra_port
             else:
                 server_port_string = "ldap://%s.%s:%d" (self.names.hostname,
-                    self.names.dnsdomain, self.ldap_backend_extra_port)
+                                                        self.names.dnsdomain, self.ldap_backend_extra_port)
         else:
             server_port_string = ""
 
         # Prepare the 'result' information - the commands to return in
         # particular
         self.slapd_provision_command = [self.slapd_path, "-F" + self.olcdir,
-            "-h"]
+                                        "-h"]
 
         # copy this command so we have two version, one with -d0 and only
         # ldapi (or the forced ldap_uri), and one with all the listen commands
@@ -619,13 +619,13 @@ class FDSBackend(LDAPBackend):
         from samba.provision import setup_path
 
         super(FDSBackend, self).__init__(backend_type=backend_type,
-                paths=paths, lp=lp,
-                names=names, logger=logger,
-                domainsid=domainsid, schema=schema, hostname=hostname,
-                ldapadminpass=ldapadminpass, slapd_path=slapd_path,
-                ldap_backend_extra_port=ldap_backend_extra_port,
-                ldap_backend_forced_uri=ldap_backend_forced_uri,
-                ldap_dryrun_mode=ldap_dryrun_mode)
+                                         paths=paths, lp=lp,
+                                         names=names, logger=logger,
+                                         domainsid=domainsid, schema=schema, hostname=hostname,
+                                         ldapadminpass=ldapadminpass, slapd_path=slapd_path,
+                                         ldap_backend_extra_port=ldap_backend_extra_port,
+                                         ldap_backend_forced_uri=ldap_backend_forced_uri,
+                                         ldap_dryrun_mode=ldap_dryrun_mode)
 
         self.root = root
         self.setup_ds_path = setup_ds_path
@@ -635,13 +635,13 @@ class FDSBackend(LDAPBackend):
 
         self.fedoradsinf = os.path.join(self.ldapdir, "fedorads.inf")
         self.partitions_ldif = os.path.join(self.ldapdir,
-            "fedorads-partitions.ldif")
+                                            "fedorads-partitions.ldif")
         self.sasl_ldif = os.path.join(self.ldapdir, "fedorads-sasl.ldif")
         self.dna_ldif = os.path.join(self.ldapdir, "fedorads-dna.ldif")
         self.pam_ldif = os.path.join(self.ldapdir, "fedorads-pam.ldif")
         self.refint_ldif = os.path.join(self.ldapdir, "fedorads-refint.ldif")
         self.linked_attrs_ldif = os.path.join(self.ldapdir,
-            "fedorads-linked-attributes.ldif")
+                                              "fedorads-linked-attributes.ldif")
         self.index_ldif = os.path.join(self.ldapdir, "fedorads-index.ldif")
         self.samba_ldif = os.path.join(self.ldapdir, "fedorads-samba.ldif")
 
@@ -650,10 +650,10 @@ class FDSBackend(LDAPBackend):
         self.samba3_ldif = os.path.join(self.ldapdir, "samba3.ldif")
 
         self.retcode = subprocess.call(["bin/oLschema2ldif",
-                "-I", self.samba3_schema,
-                "-O", self.samba3_ldif,
-                "-b", self.names.domaindn],
-                close_fds=True, shell=False)
+                                        "-I", self.samba3_schema,
+                                        "-O", self.samba3_ldif,
+                                        "-b", self.names.domaindn],
+                                       close_fds=True, shell=False)
 
         if self.retcode != 0:
             raise Exception("Unable to convert Samba 3 schema.")
@@ -684,7 +684,7 @@ class FDSBackend(LDAPBackend):
                     "SERVERPORT": serverport})
 
         setup_file(setup_path("fedorads-partitions.ldif"),
-            self.partitions_ldif,
+                   self.partitions_ldif,
                    {"CONFIGDN": self.names.configdn,
                     "SCHEMADN": self.names.schemadn,
                     "SAMBADN": self.sambadn,
@@ -771,7 +771,7 @@ class FDSBackend(LDAPBackend):
         f = open(setup_path(mapping), 'r')
         try:
             backend_schema_data = self.schema.convert_to_openldap("fedora-ds",
-                f.read())
+                                                                  f.read())
         finally:
             f.close()
         assert backend_schema_data is not None
@@ -784,19 +784,21 @@ class FDSBackend(LDAPBackend):
         self.credentials.set_bind_dn(self.names.ldapmanagerdn)
 
         # Destory the target directory, or else setup-ds.pl will complain
-        fedora_ds_dir = os.path.join(self.ldapdir,
-            "slapd-" + self.ldap_instance)
+        fedora_ds_dir = \
+            os.path.join(self.ldapdir,
+                         "slapd-" + self.ldap_instance)
         shutil.rmtree(fedora_ds_dir, True)
 
         self.slapd_provision_command = [self.slapd_path, "-D", fedora_ds_dir,
-                "-i", self.slapd_pid]
+                                        "-i", self.slapd_pid]
         # In the 'provision' command line, stay in the foreground so we can
         # easily kill it
         self.slapd_provision_command.append("-d0")
 
         #the command for the final run is the normal script
-        self.slapd_command = [os.path.join(self.ldapdir,
-            "slapd-" + self.ldap_instance, "start-slapd")]
+        self.slapd_command = \
+            [os.path.join(self.ldapdir,
+                          "slapd-" + self.ldap_instance, "start-slapd")]
 
         # If we were just looking for crashes up to this point, it's a
         # good time to exit before we realise we don't have Fedora DS on
@@ -809,11 +811,11 @@ class FDSBackend(LDAPBackend):
             raise ProvisioningError("Fedora DS LDAP-Backend must be setup with path to setup-ds, e.g. --setup-ds-path=\"/usr/sbin/setup-ds.pl\"!")
         if not os.path.exists(self.setup_ds_path):
             self.logger.warning("Path (%s) to slapd does not exist!",
-                self.setup_ds_path)
+                                self.setup_ds_path)
 
         # Run the Fedora DS setup utility
         retcode = subprocess.call([self.setup_ds_path, "--silent", "--file",
-            self.fedoradsinf], close_fds=True, shell=False)
+                                   self.fedoradsinf], close_fds=True, shell=False)
         if retcode != 0:
             raise ProvisioningError("setup-ds failed")
 
@@ -839,4 +841,4 @@ class FDSBackend(LDAPBackend):
             m.dn = ldb.Dn(ldapi_db, dnstring)
             ldapi_db.modify(m)
         return LDAPBackendResult(self.credentials, self.slapd_command_escaped,
-            self.ldapdir)
+                                 self.ldapdir)

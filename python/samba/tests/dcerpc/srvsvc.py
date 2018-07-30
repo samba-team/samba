@@ -57,12 +57,12 @@ class SrvsvcTests(RpcInterfaceTestCase):
         name = share.name
         share.comment = "now sucessfully modified "
         parm_error = self.pipe.NetShareSetInfo(self.server_unc, name,
-                502, share, parm_error)
+                                               502, share, parm_error)
 
     def test_NetShareDel(self):
         self.skipTest("Dangerous test")
         share = self.getDummyShareObject()
         parm_error = 0x00000000
         self.expectFailure("NetShareAdd doesn't work properly from Python",
-            self.conn.NetShareAdd, self.server_unc, 502, share, parm_error)
+                           self.conn.NetShareAdd, self.server_unc, 502, share, parm_error)
         self.conn.NetShareDel(self.server_unc, share.name, 0)

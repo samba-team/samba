@@ -157,7 +157,7 @@ def join_as_member(t, vm):
     t.cmd_contains("bin/net ads testjoin", ["Join is OK"])
     t.cmd_contains("bin/net ads dns register ${HOSTNAME}.${WIN_REALM} -P", ["Successfully registered hostname with DNS"])
     t.cmd_contains("host -t A ${HOSTNAME}.${WIN_REALM}",
-                 ['${HOSTNAME}.${WIN_REALM} has address'])
+                   ['${HOSTNAME}.${WIN_REALM} has address'])
 
 def create_root_account(t, vm):
     t.setwinvars(vm)

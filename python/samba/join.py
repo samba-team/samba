@@ -227,7 +227,7 @@ class DCJoinContext(object):
                 creds.set_kerberos_state(ctx.creds.get_kerberos_state())
                 machine_samdb = SamDB(url="ldap://%s" % ctx.server,
                                       session_info=system_session(),
-                                    credentials=creds, lp=ctx.lp)
+                                      credentials=creds, lp=ctx.lp)
             except:
                 pass
             else:
@@ -235,10 +235,10 @@ class DCJoinContext(object):
                 if token_res[0]["tokenGroups"][0] \
                    == res[0]["objectSID"][0]:
                     raise DCJoinException("Not removing account %s which "
-                                       "looks like a Samba DC account "
-                                       "matching the password we already have.  "
-                                       "To override, remove secrets.ldb and secrets.tdb"
-                                    % ctx.samname)
+                                          "looks like a Samba DC account "
+                                          "matching the password we already have.  "
+                                          "To override, remove secrets.ldb and secrets.tdb"
+                                          % ctx.samname)
 
         ctx.del_noerror(res[0].dn, recursive=True)
 
@@ -256,13 +256,13 @@ class DCJoinContext(object):
 
         res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
                                expression='(sAMAccountName=%s)' % ldb.binary_encode("dns-%s" % ctx.myname),
-                            attrs=[])
+                               attrs=[])
         if res:
             raise DCJoinException("Not removing account %s which looks like "
-                               "a Samba DNS service account but does not "
-                               "have servicePrincipalName=%s" %
-                               (ldb.binary_encode("dns-%s" % ctx.myname),
-                                ldb.binary_encode("dns/%s" % ctx.dnshostname)))
+                                  "a Samba DNS service account but does not "
+                                  "have servicePrincipalName=%s" %
+                                  (ldb.binary_encode("dns-%s" % ctx.myname),
+                                   ldb.binary_encode("dns/%s" % ctx.dnshostname)))
 
 
     def cleanup_old_join(ctx, force=False):
@@ -656,15 +656,15 @@ class DCJoinContext(object):
             # TODO Is this supposed to be for the schema partition too?
             expr = "(&(objectClass=crossRef)(ncName=%s))" % ldb.binary_encode(ctx.domaindns_zone)
             domain = (ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
-                                      attrs=[],
-                                      base=ctx.samdb.get_partitions_dn(),
-                                      expression=expr), ctx.domaindns_zone)
+                                       attrs=[],
+                                       base=ctx.samdb.get_partitions_dn(),
+                                       expression=expr), ctx.domaindns_zone)
 
             expr = "(&(objectClass=crossRef)(ncName=%s))" % ldb.binary_encode(ctx.forestdns_zone)
             forest = (ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
-                                      attrs=[],
-                                      base=ctx.samdb.get_partitions_dn(),
-                                      expression=expr), ctx.forestdns_zone)
+                                       attrs=[],
+                                       base=ctx.samdb.get_partitions_dn(),
+                                       expression=expr), ctx.forestdns_zone)
 
             for part, zone in (domain, forest):
                 if zone not in ctx.nc_list:
@@ -847,16 +847,16 @@ class DCJoinContext(object):
         smbconf = ctx.lp.configfile
 
         presult = provision(ctx.logger, system_session(), smbconf=smbconf,
-                targetdir=ctx.targetdir, samdb_fill=FILL_DRS, realm=ctx.realm,
-                rootdn=ctx.root_dn, domaindn=ctx.base_dn,
-                schemadn=ctx.schema_dn, configdn=ctx.config_dn,
-                serverdn=ctx.server_dn, domain=ctx.domain_name,
-                hostname=ctx.myname, domainsid=ctx.domsid,
-                machinepass=ctx.acct_pass, serverrole="active directory domain controller",
-                sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
-                use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend,
-                plaintext_secrets=ctx.plaintext_secrets,
-                backend_store=ctx.backend_store
+                            targetdir=ctx.targetdir, samdb_fill=FILL_DRS, realm=ctx.realm,
+                            rootdn=ctx.root_dn, domaindn=ctx.base_dn,
+                            schemadn=ctx.schema_dn, configdn=ctx.config_dn,
+                            serverdn=ctx.server_dn, domain=ctx.domain_name,
+                            hostname=ctx.myname, domainsid=ctx.domsid,
+                            machinepass=ctx.acct_pass, serverrole="active directory domain controller",
+                            sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
+                            use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend,
+                            plaintext_secrets=ctx.plaintext_secrets,
+                            backend_store=ctx.backend_store
                             )
         print("Provision OK for domain DN %s" % presult.domaindn)
         ctx.local_samdb = presult.samdb
@@ -942,19 +942,19 @@ class DCJoinContext(object):
             repl = ctx.create_replicator(repl_creds, binding_options)
 
             repl.replicate(ctx.schema_dn, source_dsa_invocation_id,
-                    destination_dsa_guid, schema=True, rodc=ctx.RODC,
-                    replica_flags=ctx.replica_flags)
+                           destination_dsa_guid, schema=True, rodc=ctx.RODC,
+                           replica_flags=ctx.replica_flags)
             repl.replicate(ctx.config_dn, source_dsa_invocation_id,
-                    destination_dsa_guid, rodc=ctx.RODC,
-                    replica_flags=ctx.replica_flags)
+                           destination_dsa_guid, rodc=ctx.RODC,
+                           replica_flags=ctx.replica_flags)
             if not ctx.subdomain:
                 # Replicate first the critical object for the basedn
                 if not ctx.domain_replica_flags & drsuapi.DRSUAPI_DRS_CRITICAL_ONLY:
                     print("Replicating critical objects from the base DN of the domain")
                     ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
                     repl.replicate(ctx.base_dn, source_dsa_invocation_id,
-                                destination_dsa_guid, rodc=ctx.RODC,
-                                replica_flags=ctx.domain_replica_flags)
+                                   destination_dsa_guid, rodc=ctx.RODC,
+                                   replica_flags=ctx.domain_replica_flags)
                     ctx.domain_replica_flags ^= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
                 repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                destination_dsa_guid, rodc=ctx.RODC,
@@ -973,11 +973,11 @@ class DCJoinContext(object):
 
             if ctx.RODC:
                 repl.replicate(ctx.acct_dn, source_dsa_invocation_id,
-                        destination_dsa_guid,
-                        exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+                               destination_dsa_guid,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
                 repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id,
-                        destination_dsa_guid,
-                        exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+                               destination_dsa_guid,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
             elif ctx.rid_manager_dn != None:
                 # Try and get a RID Set if we can.  This is only possible against the RID Master.  Warn otherwise.
                 try:
@@ -1061,7 +1061,7 @@ class DCJoinContext(object):
 
         binding_options = "sign"
         dns_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
-                                      ctx.lp, ctx.creds)
+                                       ctx.lp, ctx.creds)
 
 
         name_found = True
@@ -1519,10 +1519,10 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
     return ctx
 
 def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
-        netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
-        netbios_domain=None, machinepass=None, adminpass=None, use_ntvfs=False,
-        dns_backend=None, plaintext_secrets=False,
-        backend_store=None):
+                   netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
+                   netbios_domain=None, machinepass=None, adminpass=None, use_ntvfs=False,
+                   dns_backend=None, plaintext_secrets=False,
+                   backend_store=None):
     """Join as a DC."""
     ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
                         targetdir, parent_domain, machinepass, use_ntvfs,
@@ -1696,14 +1696,14 @@ class DCCloneAndRenameContext(DCCloneContext):
 
         # do the provision with the new/renamed domain DN values
         presult = provision(ctx.logger, system_session(),
-                targetdir=ctx.targetdir, samdb_fill=FILL_DRS,
-                realm=ctx.new_realm, lp=non_global_lp,
-                rootdn=ctx.rename_dn(ctx.root_dn), domaindn=ctx.new_base_dn,
-                schemadn=ctx.rename_dn(ctx.schema_dn),
-                configdn=ctx.rename_dn(ctx.config_dn),
-                domain=ctx.new_domain_name, domainsid=ctx.domsid,
-                serverrole="active directory domain controller",
-                dns_backend=ctx.dns_backend)
+                            targetdir=ctx.targetdir, samdb_fill=FILL_DRS,
+                            realm=ctx.new_realm, lp=non_global_lp,
+                            rootdn=ctx.rename_dn(ctx.root_dn), domaindn=ctx.new_base_dn,
+                            schemadn=ctx.rename_dn(ctx.schema_dn),
+                            configdn=ctx.rename_dn(ctx.config_dn),
+                            domain=ctx.new_domain_name, domainsid=ctx.domsid,
+                            serverrole="active directory domain controller",
+                            dns_backend=ctx.dns_backend)
 
         print("Provision OK for renamed domain DN %s" % presult.domaindn)
         ctx.local_samdb = presult.samdb

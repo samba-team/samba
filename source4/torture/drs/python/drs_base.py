@@ -200,7 +200,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
     def _get_identifier(self, ldb_conn, dn):
         res = ldb_conn.search(dn, scope=ldb.SCOPE_BASE,
-                attrs=["objectGUID", "objectSid"])
+                              attrs=["objectGUID", "objectSid"])
         id = drsuapi.DsReplicaObjectIdentifier()
         id.guid = ndr_unpack(misc.GUID, res[0]['objectGUID'][0])
         if "objectSid" in res[0]:
@@ -272,7 +272,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
                 if l.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:
                     state = "Act"
                 print("  v%u %s changed %u" %(l.meta_data.version, state,
-                    l.meta_data.originating_change_time))
+                                              l.meta_data.originating_change_time))
 
             print("HWM:     %d" %(ctr6.new_highwatermark.highest_usn))
             print("Tmp HWM: %d" %(ctr6.new_highwatermark.tmp_highest_usn))

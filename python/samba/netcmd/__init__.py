@@ -34,9 +34,9 @@ class PlainHelpFormatter(optparse.IndentedHelpFormatter):
         paragraphs = description.split('\n')
         wrapped_paragraphs = [
             textwrap.fill(p,
-                    desc_width,
-                    initial_indent=indent,
-                    subsequent_indent=indent)
+                          desc_width,
+                          initial_indent=indent,
+                          subsequent_indent=indent)
             for p in paragraphs]
         result = "\n".join(wrapped_paragraphs) + "\n"
         return result

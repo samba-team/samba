@@ -479,13 +479,13 @@ class cmd_user_list(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
         res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
-                    expression=("(&(objectClass=user)(userAccountControl:%s:=%u))"
-                    % (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT)),
-                    attrs=["samaccountname"])
+                           expression=("(&(objectClass=user)(userAccountControl:%s:=%u))"
+                                       % (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT)),
+                           attrs=["samaccountname"])
         if (len(res) == 0):
             return
 
@@ -554,7 +554,7 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
         try:
             samdb.enable_account(filter)
         except Exception as msg:
@@ -593,7 +593,7 @@ class cmd_user_disable(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
         try:
             samdb.disable_account(filter)
         except Exception as msg:
@@ -659,7 +659,7 @@ Example4 shows how to set the account expiration so that it will never expire.  
         creds = credopts.get_credentials(lp)
 
         samdb = SamDB(url=H, session_info=system_session(),
-            credentials=creds, lp=lp)
+                      credentials=creds, lp=lp)
 
         try:
             samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
