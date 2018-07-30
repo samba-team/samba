@@ -622,7 +622,7 @@ class cmd_domain_dcpromo(Command):
 
         netbios_name = lp.get("netbios name")
 
-        if not role is None:
+        if role is not None:
             role = role.upper()
 
         if role == "DC":
@@ -697,7 +697,7 @@ class cmd_domain_join(Command):
 
         netbios_name = lp.get("netbios name")
 
-        if not role is None:
+        if role is not None:
             role = role.upper()
 
         if role is None or role == "MEMBER":

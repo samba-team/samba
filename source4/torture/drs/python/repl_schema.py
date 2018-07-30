@@ -127,7 +127,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                "subClassOf": "top",
                "systemOnly": "FALSE"}
         # allow overriding/adding attributes
-        if not attrs is None:
+        if attrs is not None:
             rec.update(attrs)
         # add it to the Schema
         try:
@@ -153,7 +153,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                "isSingleValued": "TRUE",
                "systemOnly": "FALSE"}
         # allow overriding/adding attributes
-        if not attrs is None:
+        if attrs is not None:
             rec.update(attrs)
         # add it to the Schema
         ldb_ctx.add(rec)
