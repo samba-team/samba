@@ -43,7 +43,9 @@ try:
 except ImportError:
     # We are built without samdb support,
     # imitate it so that connect_samdb() can recover
-    SamDB = lambda *x: None
+    def SamDB(*args, **kwargs):
+        return None
+
 import samba.ndr
 import samba.dcerpc.dcerpc
 import samba.dcerpc.epmapper
