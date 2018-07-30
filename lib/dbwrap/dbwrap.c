@@ -457,7 +457,7 @@ struct tevent_req *dbwrap_parse_record_send(
 
 	/*
 	 * Copy the key into our state ensuring the key data buffer is always
-	 * available to the all dbwrap backend over the entire lifetime of the
+	 * available to all the dbwrap backends over the entire lifetime of the
 	 * async request. Otherwise the caller might have free'd the key buffer.
 	 */
 	if (key.dsize > sizeof(state->_keybuf)) {
