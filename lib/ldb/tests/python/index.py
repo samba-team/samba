@@ -1316,7 +1316,7 @@ class RejectSubDBIndex(LdbBaseTest):
                     "@IDXONE": [b"1"],
                     "@IDXGUID": [b"objectUUID"],
                     "@IDX_DN_GUID": [b"GUID"],
-            })
+                        })
         except ldb.LdbError as e:
             code = e.args[0]
             string = e.args[1]

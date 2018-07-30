@@ -1974,7 +1974,7 @@ delete: description
                      "objectClass": "computer",
                      "cn": "ldaptestcomputer3",
                      "sAMAccountType": str(ATYPE_NORMAL_ACCOUNT)
-                })
+                     })
             self.fail()
         except LdbError as e95:
             (num, _) = e95.args

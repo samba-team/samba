@@ -162,7 +162,7 @@ class UserTests(samba.tests.TestCase):
     def _test_indexed_search(self):
         expressions = ['(objectclass=group)',
                        '(samaccountname=Administrator)'
-        ]
+                       ]
         for expression in expressions:
             t = time.time()
             for i in range(10000):

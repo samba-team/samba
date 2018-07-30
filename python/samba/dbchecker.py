@@ -1206,7 +1206,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 res = self.samdb.search(base="<GUID=%s>" % guidstr, scope=ldb.SCOPE_BASE,
                                         attrs=attrs, controls=["extended_dn:1:1", "show_recycled:1",
                                                                "reveal_internals:0"
-                                        ])
+                                                               ])
             except ldb.LdbError as e3:
                 (enum, estr) = e3.args
                 if enum != ldb.ERR_NO_SUCH_OBJECT:

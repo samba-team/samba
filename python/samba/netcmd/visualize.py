@@ -503,7 +503,7 @@ class cmd_ntdsconn(GraphCommand):
                                # XXX can't be critical for ldif test
                                #controls=["search_options:1:2"],
                                controls=["search_options:0:2"],
-            )
+                               )
 
             for msg in res:
                 msgdn = str(msg.dn)

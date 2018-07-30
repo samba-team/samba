@@ -461,7 +461,7 @@ class cmd_fsmo_show(Command):
                    (naming_dn, "naming", "DomainNamingMasterRole"),
                    (domaindns_dn, "domaindns", "DomainDnsZonesMasterRole"),
                    (forestdns_dn, "forestdns", "ForestDnsZonesMasterRole"),
-        ]
+                   ]
 
         for master in masters:
             (dn, short_name, long_name) = master

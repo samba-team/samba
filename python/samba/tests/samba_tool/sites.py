@@ -82,7 +82,7 @@ class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
                  ("50.62.1.2/32", self.sitename), # single IP
                  ("aaaa:bbbb:cccc:dddd:eeee:ffff:2222:1100/120",
                   self.sitename2),
-             )
+                 )
 
         for cidr, sitename in cidrs:
             result, out, err = self.runsubcmd("sites", "subnet", "create",
@@ -118,7 +118,7 @@ class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
                  ("7.0.0.0.0/0", self.sitename),    # insufficient zeros
                  ("aaaa:bbbb:cccc:dddd:eeee:ffff:2222:1100/119",
                   self.sitename),                   # insufficient zeros
-             )
+                 )
 
         for cidr, sitename in cidrs:
             result, out, err = self.runsubcmd("sites", "subnet", "create",

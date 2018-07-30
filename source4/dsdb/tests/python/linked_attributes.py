@@ -347,7 +347,7 @@ class LATests(samba.tests.TestCase):
                                   show_recycled=1,
                                   show_deactivated_link=0,
                                   reveal_internals=0
-        )
+                                  )
 
     def test_la_links_delete_link_reveal(self):
         if opts.no_reveal_internals:

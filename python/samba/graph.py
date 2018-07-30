@@ -229,7 +229,7 @@ def compile_graph_key(key_items, nodes_above=[], elisions=None,
             elision_str,
             ';\n'.join(above_lines),
             ' -> '.join(order_lines),
-         ))
+            ))
 
     return s
 
@@ -405,7 +405,7 @@ COLOUR_SETS = {
                              colour.xterm_256_colour(220),
                              colour.xterm_256_colour(214),
                              colour.xterm_256_colour(208),
-        ),
+                             ),
         'header': colour.UNDERLINE,
         'reset': colour.C_NORMAL,
     },
@@ -422,7 +422,7 @@ COLOUR_SETS = {
                              colour.xterm_256_colour(220, bg=True),
                              colour.xterm_256_colour(214, bg=True),
                              colour.xterm_256_colour(208, bg=True),
-        ),
+                             ),
         'header': colour.UNDERLINE,
         'reset': colour.C_NORMAL,
     },
@@ -605,7 +605,7 @@ def distance_matrix(vertices, edges,
                                       horizontal * j,
                                       v,
                                       c_reset
-        ))
+                                      ))
         verticals += c + vertical
 
     connections = find_transitive_distance(vertices, edges)
@@ -768,7 +768,7 @@ def full_matrix(rows,
                                       horizontal * j,
                                       v,
                                       c_reset
-        ))
+                                      ))
         verticals += '%s%s' % (c, vertical)
 
     end_cell = '%s%s' % (' ' * use_padding, c_reset)

@@ -1086,7 +1086,7 @@ for env in [
                            environ={'TEST_SERVER': '$SERVER', 'TEST_USERNAME': '$USERNAME',
                                     'TEST_PASSWORD': '$PASSWORD',
                                     'TEST_ENV': env
-                                },
+                                    },
                            extra_path=[os.path.join(srcdir(), "samba/python"), ]
                            )
     planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs")

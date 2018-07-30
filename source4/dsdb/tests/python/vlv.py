@@ -728,7 +728,7 @@ class VLVTests(samba.tests.TestCase):
                                                int(round((n_users - 1) *
                                                          (offset - 1) /
                                                          (denominator - 1.0)))
-                                )
+                                               )
 
                             self.assertCorrectResults(results, full_results,
                                                       real_offset, before,
@@ -803,7 +803,7 @@ class VLVTests(samba.tests.TestCase):
                  'name',
                  'whenChanged',
                  'usnChanged'
-        ]
+                 ]
 
         # add some deleted users first, just in case there are none
         self.add_deleted_users(6)
@@ -832,8 +832,8 @@ class VLVTests(samba.tests.TestCase):
                                                         "vlv:1:%d:%d:%d:0" %
                                                         (before, after,
                                                          offset)
-                                              ]
-                        )
+                                                        ]
+                                              )
                         results = [x[attr][0] for x in res]
                         self.assertCorrectResults(results, expected_order,
                                                   offset, before, after)
@@ -846,7 +846,7 @@ class VLVTests(samba.tests.TestCase):
                  'sAMAccountName',
                  'objectSid',
                  'whenChanged',
-        ]
+                 ]
 
         # add some deleted users first, just in case there are none
         self.add_deleted_users(4)
@@ -891,7 +891,7 @@ class VLVTests(samba.tests.TestCase):
                  'name',
                  'whenChanged',
                  'usnChanged'
-        ]
+                 ]
         self.add_deleted_users(6)
         random.seed(23)
         for attr in attrs:

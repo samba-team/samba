@@ -252,7 +252,7 @@ class TestCase(unittest.TestCase):
                              "a diff follows\n"
                              % ('when stripped ' if strip else '',
                                 len(a), len(b),
-                             ))
+                                ))
 
             from difflib import unified_diff
             diff = unified_diff(a.splitlines(True),
