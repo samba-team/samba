@@ -1251,7 +1251,7 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
 
     create_named_txt(paths.namedtxt,
                      realm=names.realm, dnsdomain=names.dnsdomain,
-                     dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
+                     dnsname="%s.%s" % (names.hostname, names.dnsdomain),
                      binddns_dir=paths.binddns_dir,
                      keytab_name=paths.dns_keytab)
     logger.info("See %s for an example configuration include file for BIND",

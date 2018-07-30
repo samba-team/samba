@@ -298,7 +298,7 @@ def __parse_schema_file(filename, objectClass):
     return "\n\n".join(out)
 
 
-def read_ms_schema(attr_file, classes_file, dump_attributes = True, dump_classes = True, debug = False):
+def read_ms_schema(attr_file, classes_file, dump_attributes=True, dump_classes=True, debug=False):
     """Read WSPP documentation-derived schema files."""
 
     attr_ldif = ""

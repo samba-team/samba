@@ -121,7 +121,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                         self.get_credentials())
 
         self.samdb = SamDB(url="ldap://%s" % os.environ["DC_SERVER_IP"],
-                           lp = self.get_loadparm(),
+                           lp=self.get_loadparm(),
                            session_info=system_session(),
                            credentials=self.get_credentials())
 

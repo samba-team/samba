@@ -360,8 +360,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0,
                                   msg='lastlogontimestamp with wrong password')
         badPasswordTime = int(res[0]["badPasswordTime"][0])
@@ -386,8 +385,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   logonCount=(logoncount_relation, logonCount),
                                   lastLogon=('greater', lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0,
                                   msg='badPwdCount not reset on RWDC')
 
@@ -422,8 +420,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0,
                                   msg='lastlogontimestamp with wrong password')
         badPasswordTime = int(res[0]["badPasswordTime"][0])
@@ -441,8 +438,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   logonCount=(logoncount_relation, logonCount),
                                   lastLogon=('greater', lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0,
                                   msg='LLTimestamp is updated to lastlogon')
 
@@ -460,8 +456,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -482,8 +477,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -507,8 +501,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         lockoutTime = int(res[0]["lockoutTime"][0])
@@ -529,8 +522,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # The wrong password
@@ -549,8 +541,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # The correct password, but we are locked out
@@ -569,8 +560,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # wait for the lockout to end
@@ -584,8 +574,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # The correct password after letting the timeout expire
@@ -604,8 +593,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lastLogon=(lastlogon_relation, lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0,
                                   msg="lastLogon is way off")
 
@@ -625,8 +613,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -646,8 +633,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -660,8 +646,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # The wrong password
@@ -680,8 +665,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -696,8 +680,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lockoutTime=lockoutTime,
                                   lastLogon=("greater", lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
 class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):

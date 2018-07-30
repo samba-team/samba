@@ -89,7 +89,7 @@ class AuthAdminSessionTests(samba.tests.TestCase):
         self.assertTrue(self.admin_session.security_token.has_builtin_administrators())
 
     def test_session_info_unix_details(self):
-        samba.auth.session_info_fill_unix(session_info = self.admin_session,
+        samba.auth.session_info_fill_unix(session_info=self.admin_session,
                                           lp_ctx=self.lp,
                                           user_name="Administrator")
         self.assertEqual(self.admin_session.unix_info.sanitized_username,

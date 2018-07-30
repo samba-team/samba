@@ -292,7 +292,7 @@ class RawDCERPCTest(TestCase):
                           allow_remaining=False,
                           send_req=True,
                           recv_rep=True,
-                          fault_pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                          fault_pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                           samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                           fault_status=None,
                           fault_context_id=None,
@@ -637,9 +637,9 @@ class RawDCERPCTest(TestCase):
     def generate_pdu(self, ptype, call_id, payload,
                      rpc_vers=5,
                      rpc_vers_minor=0,
-                     pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                     pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                      samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
-                     drep = [samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0],
+                     drep=[samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0],
                      ndr_print=None, hexdump=None):
 
         if getattr(payload, 'auth_info', None):
@@ -669,9 +669,9 @@ class RawDCERPCTest(TestCase):
     def verify_pdu(self, p, ptype, call_id,
                    rpc_vers=5,
                    rpc_vers_minor=0,
-                   pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                   pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
-                   drep = [samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0],
+                   drep=[samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0],
                    auth_length=None):
 
         self.assertIsNotNone(p, "No valid pdu")
@@ -700,7 +700,7 @@ class RawDCERPCTest(TestCase):
         return
 
     def generate_bind(self, call_id,
-                      pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                      pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                       samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                       max_xmit_frag=5840,
                       max_recv_frag=5840,
@@ -726,7 +726,7 @@ class RawDCERPCTest(TestCase):
         return p
 
     def generate_alter(self, call_id,
-                       pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                       pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                        samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                        max_xmit_frag=5840,
                        max_recv_frag=5840,
@@ -752,7 +752,7 @@ class RawDCERPCTest(TestCase):
         return p
 
     def generate_auth3(self, call_id,
-                       pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                       pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                        samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                        auth_info="",
                        ndr_print=None, hexdump=None):
@@ -769,7 +769,7 @@ class RawDCERPCTest(TestCase):
         return p
 
     def generate_request(self, call_id,
-                         pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                         pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                          samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                          alloc_hint=None,
                          context_id=None,
@@ -802,7 +802,7 @@ class RawDCERPCTest(TestCase):
         return p
 
     def generate_co_cancel(self, call_id,
-                           pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                           pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                            samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                            auth_info="",
                            ndr_print=None, hexdump=None):
@@ -819,7 +819,7 @@ class RawDCERPCTest(TestCase):
         return p
 
     def generate_orphaned(self, call_id,
-                          pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                          pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                           samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                           auth_info="",
                           ndr_print=None, hexdump=None):
@@ -836,7 +836,7 @@ class RawDCERPCTest(TestCase):
         return p
 
     def generate_shutdown(self, call_id,
-                          pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                          pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                           samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                           ndr_print=None, hexdump=None):
 

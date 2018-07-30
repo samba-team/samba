@@ -122,7 +122,7 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
-            samdb.newgroup(groupname, groupou=groupou, grouptype = gtype,
+            samdb.newgroup(groupname, groupou=groupou, grouptype=gtype,
                            description=description, mailaddress=mail_address, notes=notes,
                            gidnumber=gid_number, nisdomain=nis_domain)
         except Exception as e:

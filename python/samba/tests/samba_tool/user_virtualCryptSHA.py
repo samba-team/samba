@@ -70,7 +70,7 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
     def setUp(self):
         super(UserCmdCryptShaTestCase, self).setUp()
 
-    def add_user(self, hashes = ""):
+    def add_user(self, hashes=""):
         self.lp = samba.tests.env_loadparm()
 
         # set the extra hashes to be calculated
@@ -92,7 +92,7 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
         super(UserCmdCryptShaTestCase, self).tearDown()
         self.runsubcmd("user", "delete", USER_NAME)
 
-    def _get_password(self, attributes, decrypt = False):
+    def _get_password(self, attributes, decrypt=False):
         command = ["user",
                    "getpassword",
                    USER_NAME,

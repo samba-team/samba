@@ -155,8 +155,7 @@ userAccountControl: %d
                                   logonCount=(logoncount_relation, 0),
                                   lastLogon=(lastlogon_relation, 0),
                                   lastLogonTimestamp=('greater', 0),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         logonCount = int(res[0]["logonCount"][0])
@@ -190,8 +189,7 @@ userPassword: thatsAcomplPASS2
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -211,8 +209,7 @@ userPassword: thatsAcomplPASS2
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # Wrong old password
@@ -237,8 +234,7 @@ userPassword: thatsAcomplPASS2
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -267,8 +263,7 @@ userPassword: thatsAcomplPASS2
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         lockoutTime = int(res[0]["lockoutTime"][0])
@@ -296,8 +291,7 @@ userPassword: thatsAcomplPASS2
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # Wrong old password
@@ -323,8 +317,7 @@ userPassword: thatsAcomplPASS2
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         try:
@@ -350,8 +343,7 @@ userPassword: thatsAcomplPASS2x
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # Now reset the password, which does NOT change the lockout!
@@ -369,8 +361,7 @@ userPassword: thatsAcomplPASS2
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         try:
@@ -396,8 +387,7 @@ userPassword: thatsAcomplPASS2x
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         m = Message()
@@ -416,8 +406,7 @@ userPassword: thatsAcomplPASS2x
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # This shows that setting the UF_LOCKOUT flag makes no difference
@@ -444,8 +433,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         self._reset_by_method(res, method)
@@ -458,8 +446,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # The correct password after doing the unlock
@@ -482,8 +469,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # Wrong old password
@@ -509,8 +495,7 @@ userPassword: thatsAcomplPASS2XYZ
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -537,8 +522,7 @@ userPassword: thatsAcomplPASS2XYZ
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -551,8 +535,7 @@ userPassword: thatsAcomplPASS2XYZ
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
     # The following test lockout behaviour when modifying a user's password
@@ -650,8 +633,7 @@ userPassword: thatsAcomplPASS2XYZ
                                   logonCount=(logoncount_relation, 0),
                                   lastLogon=("greater", 0),
                                   lastLogonTimestamp=("greater", 0),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         logonCount = int(res[0]["logonCount"][0])
@@ -684,8 +666,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -711,8 +692,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # Wrong old password
@@ -737,8 +717,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -753,8 +732,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         print("two failed password change")
@@ -783,8 +761,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         lockoutTime = int(res[0]["lockoutTime"][0])
@@ -812,8 +789,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # Wrong old password
@@ -839,8 +815,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         try:
@@ -866,8 +841,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # Now reset the lockout, by removing ACB_AUTOLOCK (which removes the lock, despite being a generated attribute)
@@ -880,8 +854,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # Correct old password
@@ -907,8 +880,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # Wrong old password
@@ -934,8 +906,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -962,8 +933,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -978,8 +948,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # Wrong old password
@@ -1005,8 +974,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         lockoutTime = int(res[0]["lockoutTime"][0])
@@ -1020,8 +988,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         # SAMR doesn't have any impact if dsdb.UF_LOCKOUT isn't present.
@@ -1036,8 +1003,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
     def test_unicodePwd_lockout_with_clear_change_krb5(self):
@@ -1102,12 +1068,10 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT |
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
                                   dsdb.UF_ACCOUNTDISABLE |
                                   dsdb.UF_PASSWD_NOTREQD,
-                                  msDSUserAccountControlComputed=
-                                  dsdb.UF_PASSWORD_EXPIRED)
+                                  msDSUserAccountControlComputed=dsdb.UF_PASSWORD_EXPIRED)
 
         # SAMR doesn't have any impact if dsdb.UF_LOCKOUT isn't present.
         # It doesn't create "lockoutTime" = 0.
@@ -1119,12 +1083,10 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT |
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
                                   dsdb.UF_ACCOUNTDISABLE |
                                   dsdb.UF_PASSWD_NOTREQD,
-                                  msDSUserAccountControlComputed=
-                                  dsdb.UF_PASSWORD_EXPIRED)
+                                  msDSUserAccountControlComputed=dsdb.UF_PASSWORD_EXPIRED)
 
         # Tests a password change when we don't have any password yet with a
         # wrong old password
@@ -1151,12 +1113,10 @@ userPassword: thatsAcomplPASS2
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT |
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
                                   dsdb.UF_ACCOUNTDISABLE |
                                   dsdb.UF_PASSWD_NOTREQD,
-                                  msDSUserAccountControlComputed=
-                                  dsdb.UF_PASSWORD_EXPIRED)
+                                  msDSUserAccountControlComputed=dsdb.UF_PASSWORD_EXPIRED)
         badPwdCount = int(res[0]["badPwdCount"][0])
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
@@ -1178,8 +1138,7 @@ userPassword: """ + userpass + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT |
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
                                   dsdb.UF_ACCOUNTDISABLE |
                                   dsdb.UF_PASSWD_NOTREQD,
                                   msDSUserAccountControlComputed=0)
@@ -1193,8 +1152,7 @@ userPassword: """ + userpass + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         if lockOutObservationWindow != 0:
             time.sleep(lockOutObservationWindow + 1)
@@ -1209,8 +1167,7 @@ userPassword: """ + userpass + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         ldb = SamDB(url=self.host_url, credentials=creds, lp=self.lp)
@@ -1229,8 +1186,7 @@ userPassword: """ + userpass + """
                                   logonCount=(logoncount_relation, 0),
                                   lastLogon=(lastlogon_relation, 0),
                                   lastLogonTimestamp=('greater', badPasswordTime),
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         logonCount = int(res[0]["logonCount"][0])
@@ -1247,8 +1203,7 @@ userPassword: """ + userpass + """
                                   logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         return ldb
 

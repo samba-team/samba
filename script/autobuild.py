@@ -635,7 +635,7 @@ def write_pidfile(fname):
     f.close()
 
 
-def rebase_tree(rebase_url, rebase_branch = "master"):
+def rebase_tree(rebase_url, rebase_branch="master"):
     rebase_remote = "rebaseon"
     do_print("Rebasing on %s" % rebase_url)
     run_cmd("git describe HEAD", show=True, dir=test_master)
@@ -666,7 +666,7 @@ def rebase_tree(rebase_url, rebase_branch = "master"):
             (rebase_remote, rebase_branch),
             show=True, dir=test_master)
 
-def push_to(push_url, push_branch = "master"):
+def push_to(push_url, push_branch="master"):
     push_remote = "pushto"
     do_print("Pushing to %s" % push_url)
     if options.mark:
@@ -735,7 +735,7 @@ def send_email(subject, text, log_tar):
     outer['Subject'] = subject
     outer['To'] = options.email
     outer['From'] = options.email_from
-    outer['Date'] = email.utils.formatdate(localtime = True)
+    outer['Date'] = email.utils.formatdate(localtime=True)
     outer.preamble = 'Autobuild mails are now in MIME because we optionally attach the logs.\n'
     outer.attach(MIMEText(text, 'plain'))
     if options.attach_logs:

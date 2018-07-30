@@ -730,7 +730,7 @@ Please fix this account before attempting to upgrade again
     result = provision(logger, session_info,
                        targetdir=targetdir, realm=realm, domain=domainname,
                        domainsid=domainsid, next_rid=next_rid,
-                       dc_rid=machinerid, adminpass = adminpass,
+                       dc_rid=machinerid, adminpass=adminpass,
                        dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
                        hostname=netbiosname.lower(), machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,

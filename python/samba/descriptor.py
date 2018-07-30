@@ -524,7 +524,7 @@ def get_clean_sd(sd):
     return sd_clean
 
 
-def get_diff_sds(refsd, cursd, domainsid, checkSacl = True):
+def get_diff_sds(refsd, cursd, domainsid, checkSacl=True):
     """Get the difference between 2 sd
 
     This function split the textual representation of ACL into smaller

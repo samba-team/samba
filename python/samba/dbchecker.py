@@ -1455,8 +1455,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         object. This is used to fix missing replPropertyMetaData elements'''
         guid_str = str(ndr_unpack(misc.GUID, obj['objectGUID'][0]))
         dn = ldb.Dn(self.samdb, "<GUID=%s>" % guid_str)
-        res = self.samdb.search(base = dn, scope=ldb.SCOPE_BASE, attrs = [attr],
-                                controls = ["search_options:1:2",
+        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[attr],
+                                controls=["search_options:1:2",
                                             "show_recycled:1"])
         msg = res[0]
         nmsg = ldb.Message()
