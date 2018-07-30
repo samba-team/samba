@@ -800,7 +800,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         # With a known but wrong syntax we get a protocol error
         # see test_no_auth_presentation_ctx_valid2
-        tsf1b_list = [zero_syntax,samba.dcerpc.epmapper.abstract_syntax(),ndr64]
+        tsf1b_list = [zero_syntax, samba.dcerpc.epmapper.abstract_syntax(), ndr64]
         ctx1b = dcerpc.ctx_list()
         ctx1b.context_id = 1
         ctx1b.num_transfer_syntaxes = len(tsf1b_list)
@@ -862,7 +862,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         # With a unknown but wrong syntaxes we get NO protocol error
         # see test_no_auth_presentation_ctx_invalid4
-        tsf1b_list = [zero_syntax,samba.dcerpc.epmapper.abstract_syntax()]
+        tsf1b_list = [zero_syntax, samba.dcerpc.epmapper.abstract_syntax()]
         ctx1b = dcerpc.ctx_list()
         ctx1b.context_id = 1
         ctx1b.num_transfer_syntaxes = len(tsf1b_list)
@@ -977,7 +977,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
 
-        tsf1_list = [zero_syntax,ndr32]
+        tsf1_list = [zero_syntax, ndr32]
         ctx1 = dcerpc.ctx_list()
         ctx1.context_id = 1
         ctx1.num_transfer_syntaxes = len(tsf1_list)
@@ -1016,7 +1016,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
 
-        tsf2_list = [ndr32,ndr32]
+        tsf2_list = [ndr32, ndr32]
         ctx2 = dcerpc.ctx_list()
         ctx2.context_id = 2
         ctx2.num_transfer_syntaxes = len(tsf2_list)
@@ -1069,7 +1069,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx4.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx4.transfer_syntaxes = tsf4_list
 
-        req = self.generate_alter(call_id=34, ctx_list=[ctx3,ctx4])
+        req = self.generate_alter(call_id=34, ctx_list=[ctx3, ctx4])
         self.send_pdu(req)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
@@ -1106,7 +1106,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
 
-        req = self.generate_alter(call_id=43, ctx_list=[ctx4,ctx3])
+        req = self.generate_alter(call_id=43, ctx_list=[ctx4, ctx3])
         self.send_pdu(req)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
@@ -1156,7 +1156,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
 
-        req = self.generate_alter(call_id=44, ctx_list=[ctx4,ctx4])
+        req = self.generate_alter(call_id=44, ctx_list=[ctx4, ctx4])
         self.send_pdu(req)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
@@ -1220,7 +1220,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx5epm.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx5epm.transfer_syntaxes = tsf5epm_list
 
-        req = self.generate_alter(call_id=55, ctx_list=[ctx5mgmt,ctx5epm])
+        req = self.generate_alter(call_id=55, ctx_list=[ctx5mgmt, ctx5epm])
         self.send_pdu(req)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
@@ -1257,7 +1257,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
 
-        req = self.generate_alter(call_id=55, ctx_list=[ctx5mgmt,ctx5epm])
+        req = self.generate_alter(call_id=55, ctx_list=[ctx5mgmt, ctx5epm])
         self.send_pdu(req)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
@@ -1337,7 +1337,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         zero_syntax = misc.ndr_syntax_id()
         ndr64 = base.transfer_syntax_ndr64()
 
-        tsf1_list = [btf1,btf2,zero_syntax]
+        tsf1_list = [btf1, btf2, zero_syntax]
         ctx1 = dcerpc.ctx_list()
         ctx1.context_id = 1
         ctx1.num_transfer_syntaxes = len(tsf1_list)
@@ -1372,7 +1372,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         zero_syntax = misc.ndr_syntax_id()
 
-        tsf1_list = [zero_syntax,btf1,btf2,zero_syntax]
+        tsf1_list = [zero_syntax, btf1, btf2, zero_syntax]
         ctx1 = dcerpc.ctx_list()
         ctx1.context_id = 1
         ctx1.num_transfer_syntaxes = len(tsf1_list)
@@ -1422,7 +1422,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx2.abstract_syntax = zero_syntax
         ctx2.transfer_syntaxes = tsf2_list
 
-        req = self.generate_bind(call_id=0, ctx_list=[ctx1,ctx2])
+        req = self.generate_bind(call_id=0, ctx_list=[ctx1, ctx2])
         self.send_pdu(req)
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
@@ -1482,7 +1482,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         zero_syntax = misc.ndr_syntax_id()
         ndr64 = base.transfer_syntax_ndr64()
 
-        tsf1_list = [btf1,btf2,zero_syntax]
+        tsf1_list = [btf1, btf2, zero_syntax]
         ctx1 = dcerpc.ctx_list()
         ctx1.context_id = 1
         ctx1.num_transfer_syntaxes = len(tsf1_list)
@@ -1760,8 +1760,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     opnum=0,
                                     alloc_hint=0xffffffff,
                                     stub="\00" * chunk_size)
-        self.send_pdu(req,ndr_print=True,hexdump=True)
-        rep = self.recv_pdu(ndr_print=True,hexdump=True)
+        self.send_pdu(req, ndr_print=True, hexdump=True)
+        rep = self.recv_pdu(ndr_print=True, hexdump=True)
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
         self.assertNotEquals(rep.u.alloc_hint, 0)
@@ -1985,7 +1985,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                 alloc_hint -= thistime
             else:
                 alloc_hint = 0
-            self.send_pdu(req,hexdump=False)
+            self.send_pdu(req, hexdump=False)
             if fault_first is not None:
                 rep = self.recv_pdu()
                 # We get a fault back
@@ -3545,7 +3545,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1.transfer_syntaxes = tsf1_list
 
-        tsf1b_list = [ndr32,ndr64]
+        tsf1b_list = [ndr32, ndr64]
         ctx1b = dcerpc.ctx_list()
         ctx1b.context_id = 1
         ctx1b.num_transfer_syntaxes = len(tsf1b_list)
@@ -3714,7 +3714,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1.transfer_syntaxes = tsf1_list
 
-        tsf1b_list = [ndr32,ndr64]
+        tsf1b_list = [ndr32, ndr64]
         ctx1b = dcerpc.ctx_list()
         ctx1b.context_id = 1
         ctx1b.num_transfer_syntaxes = len(tsf1b_list)
@@ -3802,7 +3802,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1.transfer_syntaxes = tsf1_list
 
-        tsf1b_list = [ndr32,ndr64]
+        tsf1b_list = [ndr32, ndr64]
         ctx1b = dcerpc.ctx_list()
         ctx1b.context_id = 1
         ctx1b.num_transfer_syntaxes = len(tsf1b_list)
@@ -4935,7 +4935,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         time.sleep(0.5)
         self.connect()
 
-        ack2 = self.do_generic_bind(ctx=ctx,assoc_group_id=ack.u.assoc_group_id,
+        ack2 = self.do_generic_bind(ctx=ctx, assoc_group_id=ack.u.assoc_group_id,
                                     nak_reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
         return
 

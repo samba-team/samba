@@ -19,7 +19,7 @@
 from samba.credentials import DONT_USE_KERBEROS
 import samba.getopt as options
 from samba.dcerpc import security, idmap
-from samba.ntacls import setntacl, getntacl,getdosinfo
+from samba.ntacls import setntacl, getntacl, getdosinfo
 from samba import Ldb
 from samba.ndr import ndr_unpack, ndr_print
 from samba.samdb import SamDB
@@ -53,17 +53,17 @@ class cmd_ntacl_set(Command):
     takes_options = [
         Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
-               choices=["native","tdb"]),
+               choices=["native", "tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
         Option("--use-ntvfs", help="Set the ACLs directly to the TDB or xattr for use with the ntvfs file server", action="store_true"),
         Option("--use-s3fs", help="Set the ACLs for use with the default s3fs file server via the VFS layer", action="store_true"),
         Option("--service", help="Name of the smb.conf service to use when applying the ACLs", type="string")
     ]
 
-    takes_args = ["acl","file"]
+    takes_args = ["acl", "file"]
 
     def run(self, acl, file, use_ntvfs=False, use_s3fs=False,
-            quiet=False,xattr_backend=None,eadb_file=None,
+            quiet=False, xattr_backend=None, eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None,
             service=None):
         logger = self.get_logger()
@@ -129,7 +129,7 @@ class cmd_ntacl_get(Command):
     takes_options = [
         Option("--as-sddl", help="Output ACL in the SDDL format", action="store_true"),
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
-               choices=["native","tdb"]),
+               choices=["native", "tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
         Option("--use-ntvfs", help="Get the ACLs directly from the TDB or xattr used with the ntvfs file server", action="store_true"),
         Option("--use-s3fs", help="Get the ACLs for use via the VFS layer used by the default s3fs file server", action="store_true"),
@@ -223,10 +223,10 @@ class cmd_ntacl_sysvolreset(Command):
         # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
-        (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
+        (LA_uid, LA_type) = s4_passdb.sid_to_id(LA_sid)
         if (LA_type != idmap.ID_TYPE_UID and LA_type != idmap.ID_TYPE_BOTH):
             raise CommandError("SID %s is not mapped to a UID" % LA_sid)
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         if (BA_type != idmap.ID_TYPE_GID and BA_type != idmap.ID_TYPE_BOTH):
             raise CommandError("SID %s is not mapped to a GID" % BA_sid)
 

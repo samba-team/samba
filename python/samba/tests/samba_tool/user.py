@@ -52,7 +52,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             (result, out, err) = user["createUserFn"](user)
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err,"","Shouldn't be any error messages")
+            self.assertEquals(err, "", "Shouldn't be any error messages")
             self.assertIn("User '%s' created successfully" % user["name"], out)
 
             user["checkUserFn"](user)
@@ -94,7 +94,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                  "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err,"","Shouldn't be any error messages")
+            self.assertEquals(err, "", "Shouldn't be any error messages")
             self.assertIn("User '%s' created successfully" % user["name"], out)
 
             found = self._find_user(user["name"])
@@ -194,7 +194,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
             self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
-            self.assertEquals(err,"","setpassword with url")
+            self.assertEquals(err, "", "setpassword with url")
             self.assertMatch(out, "Changed password OK", "setpassword with url")
 
         attributes = "sAMAccountName,unicodePwd,supplementalCredentials,virtualClearTextUTF8,virtualClearTextUTF16,virtualSSHA,virtualSambaGPG"
@@ -203,7 +203,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                             "--attributes=%s" % attributes,
                                             "--decrypt-samba-gpg")
         self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --cache-ldb-initialize runs")
-        self.assertEqual(err,"","getpassword without url")
+        self.assertEqual(err, "", "getpassword without url")
         cache_attrs = {
             "objectClass": {"value": "userSyncPasswords"},
             "samdbUrl": {},
@@ -221,7 +221,7 @@ class UserCmdTestCase(SambaToolCmdTest):
 
         (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
         self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --no-wait runs")
-        self.assertEqual(err,"","syncpasswords --no-wait")
+        self.assertEqual(err, "", "syncpasswords --no-wait")
         self.assertMatch(out, "dirsync_loop(): results 0",
                          "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
         for user in self.users:
@@ -242,12 +242,12 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 user["name"],
                                                 "--newpassword=%s" % newpasswd)
             self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
-            self.assertEquals(err,"","setpassword without url")
+            self.assertEquals(err, "", "setpassword without url")
             self.assertMatch(out, "Changed password OK", "setpassword without url")
 
             (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
             self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --no-wait runs")
-            self.assertEqual(err,"","syncpasswords --no-wait")
+            self.assertEqual(err, "", "syncpasswords --no-wait")
             self.assertMatch(out, "dirsync_loop(): results 0",
                              "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
@@ -273,7 +273,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--attributes=%s" % attributes,
                                                 "--decrypt-samba-gpg")
             self.assertCmdSuccess(result, out, err, "Ensure getpassword runs")
-            self.assertEqual(err,"","getpassword without url")
+            self.assertEqual(err, "", "getpassword without url")
             self.assertMatch(out, "Got password OK", "getpassword without url")
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
                              "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
@@ -299,7 +299,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
             self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
-            self.assertEquals(err,"","setpassword with forced change")
+            self.assertEquals(err, "", "setpassword with forced change")
             self.assertMatch(out, "Changed password OK", "setpassword with forced change")
 
 
@@ -464,7 +464,7 @@ sAMAccountName: %s
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
         self._check_posix_user(user)
@@ -493,7 +493,7 @@ sAMAccountName: %s
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
         self._check_posix_user(user)

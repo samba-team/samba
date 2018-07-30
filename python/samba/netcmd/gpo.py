@@ -432,7 +432,7 @@ class cmd_list(Command):
 
         try:
             msg = self.samdb.search(expression='(&(|(samAccountName=%s)(samAccountName=%s$))(objectClass=User))' %
-                                    (ldb.binary_encode(username),ldb.binary_encode(username)))
+                                    (ldb.binary_encode(username), ldb.binary_encode(username)))
             user_dn = msg[0].dn
         except Exception:
             raise CommandError("Failed to find account %s" % username)

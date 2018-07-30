@@ -99,7 +99,7 @@ class SchemaTests(samba.tests.TestCase):
 
     def test_schemaUpdateNow(self):
         """Testing schemaUpdateNow"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
 
@@ -131,7 +131,7 @@ schemaUpdateNow: 1
         # Search for created attribute
         res = []
         res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE,
-                              attrs=["lDAPDisplayName","schemaIDGUID", "msDS-IntID"])
+                              attrs=["lDAPDisplayName", "schemaIDGUID", "msDS-IntID"])
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
         self.assertTrue("schemaIDGUID" in res[0])
@@ -154,7 +154,7 @@ defaultObjectCategory: CN=_
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.6.1.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.1.""" + str(random.randint(1, 100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -178,7 +178,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.6.2.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.2.""" + str(random.randint(1, 100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -260,7 +260,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.6.3.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.3.""" + str(random.randint(1, 100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalUnit
@@ -307,7 +307,7 @@ instanceType: 4
 
     def test_duplicate_attributeID(self):
         """Testing creating a duplicate attribute"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.2." + rand
@@ -351,7 +351,7 @@ systemOnly: FALSE
 
     def test_duplicate_attributeID_governsID(self):
         """Testing creating a duplicate attribute and class"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.3." + rand
@@ -396,7 +396,7 @@ systemOnly: FALSE
 
     def test_duplicate_cn(self):
         """Testing creating a duplicate attribute"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.4." + rand
@@ -439,7 +439,7 @@ systemOnly: FALSE
 
     def test_duplicate_implicit_ldapdisplayname(self):
         """Testing creating a duplicate attribute ldapdisplayname"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.5." + rand
@@ -484,7 +484,7 @@ systemOnly: FALSE
 
     def test_duplicate_explicit_ldapdisplayname(self):
         """Testing creating a duplicate attribute ldapdisplayname"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.6." + rand
@@ -531,7 +531,7 @@ systemOnly: FALSE
     def test_duplicate_explicit_ldapdisplayname_with_class(self):
         """Testing creating a duplicate attribute ldapdisplayname between
         and attribute and a class"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.7." + rand
@@ -579,7 +579,7 @@ systemOnly: FALSE
 
     def test_duplicate_via_rename_ldapdisplayname(self):
         """Testing creating a duplicate attribute ldapdisplayname"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.8." + rand
@@ -634,7 +634,7 @@ ldapDisplayName: """ + attr_ldap_display_name + """
 
     def test_duplicate_via_rename_attributeID(self):
         """Testing creating a duplicate attributeID"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.9." + rand
@@ -688,7 +688,7 @@ attributeId: """ + attributeID + """
 
     def test_remove_ldapdisplayname(self):
         """Testing removing the ldapdisplayname"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.10." + rand
@@ -724,7 +724,7 @@ replace: ldapDisplayName
 
     def test_rename_ldapdisplayname(self):
         """Testing renaming ldapdisplayname"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.11." + rand
@@ -757,7 +757,7 @@ ldapDisplayName: """ + attr_ldap_display_name + """2
 
     def test_change_attributeID(self):
         """Testing change the attributeID"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.12." + rand
@@ -795,7 +795,7 @@ attributeId: """ + attributeID + """.1
 
     def test_change_attributeID_same(self):
         """Testing change the attributeID to the same value"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.13." + rand
@@ -849,7 +849,7 @@ attributeId: """ + attributeID + """
         if dc_level < DS_DOMAIN_FUNCTION_2003:
             return
 
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
 
         attr_name_1 = "test-generated-linkID" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name_1 = attr_name_1.replace("-", "")
@@ -1130,7 +1130,7 @@ systemOnly: FALSE
         duplicate mAPIIDs.
         """
 
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
 
         attr_name_1 = "test-generated-mAPIID" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name_1 = attr_name_1.replace("-", "")
@@ -1203,7 +1203,7 @@ systemOnly: FALSE
 
     def test_change_governsID(self):
         """Testing change the governsID"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         class_name = "test-Class" + time.strftime("%s", time.gmtime()) + "-" + rand
         class_ldap_display_name = class_name.replace("-", "")
         governsID = "1.3.6.1.4.1.7165.4.6.2.6.5." + rand
@@ -1242,7 +1242,7 @@ governsId: """ + governsID + """.1
 
     def test_change_governsID_same(self):
         """Testing change the governsID"""
-        rand = str(random.randint(1,100000))
+        rand = str(random.randint(1, 100000))
         class_name = "test-Class" + time.strftime("%s", time.gmtime()) + "-" + rand
         class_ldap_display_name = class_name.replace("-", "")
         governsID = "1.3.6.1.4.1.7165.4.6.2.6.6." + rand
@@ -1293,7 +1293,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.6.7.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.7.""" + str(random.randint(1, 100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalUnit
@@ -1382,7 +1382,7 @@ objectClass: attributeSchema
 adminDescription: """ + attr_name + """
 adminDisplayName: """ + attr_name + """
 cn: """ + attr_name + """
-attributeId: 1.3.6.1.4.1.7165.4.6.1.6.14.""" + str(random.randint(1,100000)) + """
+attributeId: 1.3.6.1.4.1.7165.4.6.1.6.14.""" + str(random.randint(1, 100000)) + """
 attributeSyntax: 2.5.5.12
 omSyntax: 64
 instanceType: 4
@@ -1502,7 +1502,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.6.%d.""" % sub_oid + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.%d.""" % sub_oid + str(random.randint(1, 100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -1654,7 +1654,7 @@ class SchemaTests_msDS_isRODC(samba.tests.TestCase):
 
     def test_objectClass_computer(self):
         res = self.ldb.search(self.base_dn, expression="objectClass=computer",
-                              attrs=["serverReferenceBL","msDS-isRODC"], controls=["search_options:1:2"])
+                              attrs=["serverReferenceBL", "msDS-isRODC"], controls=["search_options:1:2"])
         for ldb_msg in res:
             if "serverReferenceBL" not in ldb_msg:
                 print("Computer entry %s doesn't have a serverReferenceBL attribute" % ldb_msg['dn'])

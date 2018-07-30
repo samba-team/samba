@@ -67,7 +67,7 @@ class DescriptorTests(samba.tests.TestCase):
 
     def create_schema_class(self, _ldb, desc=None):
         while True:
-            class_id = random.randint(0,65535)
+            class_id = random.randint(0, 65535)
             class_name = "descriptor-test-class%s" % class_id
             class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
             try:
@@ -212,10 +212,10 @@ class OwnerGroupDescriptorTests(DescriptorTests):
                                                 ["testuser1", "testuser5", "testuser6", "testuser8"],
                                                 add_members_operation=True)
         self.ldb_admin.add_remove_group_members("Domain Admins",
-                                                ["testuser2","testuser5","testuser6","testuser7"],
+                                                ["testuser2", "testuser5", "testuser6", "testuser7"],
                                                 add_members_operation=True)
         self.ldb_admin.add_remove_group_members("Schema Admins",
-                                                ["testuser3","testuser6","testuser7","testuser8"],
+                                                ["testuser3", "testuser6", "testuser7", "testuser8"],
                                                 add_members_operation=True)
 
         self.results = {
@@ -2082,7 +2082,7 @@ class SdAutoInheritTests(DescriptorTests):
         sd_sddl = "O:BAG:BAD:P(A;CI;0x000f01ff;;;AU)"
         sd = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
 
-        self.ldb_admin.create_ou(self.ou_dn,sd=sd)
+        self.ldb_admin.create_ou(self.ou_dn, sd=sd)
         self.ldb_admin.create_ou(self.sub_dn)
 
         ou_res0 = self.sd_utils.ldb.search(self.ou_dn, SCOPE_BASE,

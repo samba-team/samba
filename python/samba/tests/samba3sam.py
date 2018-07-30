@@ -203,7 +203,7 @@ class Samba3SamTestCase(MapBaseTestCase):
         #
         msg = self.ldb.search(expression="(cn=Foo)", base="cn=Foo",
                               scope=SCOPE_BASE,
-                              attrs=['foo','blah','cn','showInAdvancedViewOnly'])
+                              attrs=['foo', 'blah', 'cn', 'showInAdvancedViewOnly'])
         self.assertEquals(len(msg), 1)
         self.assertEquals(str(msg[0]["showInAdvancedViewOnly"]), "TRUE")
         self.assertEquals(str(msg[0]["foo"]), "bar")
@@ -218,14 +218,14 @@ class Samba3SamTestCase(MapBaseTestCase):
 
         # Checking for existence of record (remote)
         msg = self.ldb.search(expression="(unixName=bin)",
-                              attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
+                              attrs=['unixName', 'cn', 'dn', 'sambaUnicodePwd'])
         self.assertEquals(len(msg), 1)
         self.assertEquals(str(msg[0]["cn"]), "Niemand")
         self.assertEquals(str(msg[0]["sambaUnicodePwd"]), "geheim")
 
         # Checking for existence of record (local && remote)
         msg = self.ldb.search(expression="(&(unixName=bin)(sambaUnicodePwd=geheim))",
-                              attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
+                              attrs=['unixName', 'cn', 'dn', 'sambaUnicodePwd'])
         self.assertEquals(len(msg), 1)           # TODO: should check with more records
         self.assertEquals(str(msg[0]["cn"]), "Niemand")
         self.assertEquals(str(msg[0]["unixName"]), "bin")
@@ -233,7 +233,7 @@ class Samba3SamTestCase(MapBaseTestCase):
 
         # Checking for existence of record (local || remote)
         msg = self.ldb.search(expression="(|(unixName=bin)(sambaUnicodePwd=geheim))",
-                              attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
+                              attrs=['unixName', 'cn', 'dn', 'sambaUnicodePwd'])
         #print "got %d replies" % len(msg)
         self.assertEquals(len(msg), 1)        # TODO: should check with more records
         self.assertEquals(str(msg[0]["cn"]), "Niemand")
@@ -806,7 +806,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-1052
         self.assertEquals(str(res[4]["lastLogon"]), "z")
 
         # Clean up
-        dns = [self.samba4.dn("cn=%s" % n) for n in ["A","B","C","X","Y","Z"]]
+        dns = [self.samba4.dn("cn=%s" % n) for n in ["A", "B", "C", "X", "Y", "Z"]]
         for dn in dns:
             self.ldb.delete(dn)
 

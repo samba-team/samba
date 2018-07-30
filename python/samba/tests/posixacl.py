@@ -80,7 +80,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
                  session_info=self.get_session_info())
         facl = getntacl(self.lp, self.tempf, direct_db_access=True)
         anysid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(anysid),acl)
+        self.assertEquals(facl.as_sddl(anysid), acl)
 
     def test_setntacl_smbd_setposixacl_getntacl(self):
         acl = ACL
@@ -147,7 +147,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
                  session_info=self.get_session_info())
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(anysid),acl)
+        self.assertEquals(facl.as_sddl(anysid), acl)
 
     def test_setntacl_smbd_getntacl_smbd(self):
         acl = ACL
@@ -155,7 +155,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
                  session_info=self.get_session_info())
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(anysid),acl)
+        self.assertEquals(facl.as_sddl(anysid), acl)
 
     def test_setntacl_smbd_setposixacl_getntacl_smbd(self):
         acl = ACL
@@ -176,11 +176,11 @@ class PosixAclMappingTests(TestCaseInTempDir):
                  session_info=self.get_session_info())
         # This invalidates the hash of the NT acl just set because there is a hook in the posix ACL set code
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         smbd.set_simple_acl(self.tempf, 0o640, BA_gid)
 
         # This should re-calculate an ACL based on the posix details
-        facl = getntacl(self.lp,self.tempf, direct_db_access=False)
+        facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
 
@@ -190,7 +190,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
                  session_info=self.get_session_info())
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         domsid = security.dom_sid(DOM_SID)
-        self.assertEquals(facl.as_sddl(domsid),acl)
+        self.assertEquals(facl.as_sddl(domsid), acl)
 
     def test_setntacl_getposixacl(self):
         acl = ACL
@@ -198,7 +198,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
                  session_info=self.get_session_info())
         facl = getntacl(self.lp, self.tempf)
         anysid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(anysid),acl)
+        self.assertEquals(facl.as_sddl(anysid), acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
     def test_setposixacl_getntacl(self):
@@ -221,10 +221,10 @@ class PosixAclMappingTests(TestCaseInTempDir):
         user_SID = s4_passdb.uid_to_sid(os.stat(self.tempdir).st_uid)
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
-        (BA_id,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_id, BA_type) = s4_passdb.sid_to_id(BA_sid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
         SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
-        (SO_id,SO_type) = s4_passdb.sid_to_id(SO_sid)
+        (SO_id, SO_type) = s4_passdb.sid_to_id(SO_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
         smbd.chown(self.tempdir, BA_id, SO_id)
         smbd.set_simple_acl(self.tempdir, 0o750)
@@ -237,7 +237,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
     def test_setposixacl_group_getntacl_smbd(self):
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         group_SID = s4_passdb.gid_to_sid(os.stat(self.tempf).st_gid)
         user_SID = s4_passdb.uid_to_sid(os.stat(self.tempf).st_uid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
@@ -285,7 +285,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
     def test_setposixacl_group_getposixacl(self):
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
         smbd.set_simple_acl(self.tempf, 0o670, BA_gid)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
@@ -315,7 +315,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         setntacl(self.lp, self.tempf, acl, str(domsid), use_ntvfs=False,
                  session_info=session_info)
         facl = getntacl(self.lp, self.tempf)
-        self.assertEquals(facl.as_sddl(domsid),acl)
+        self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
         nwrap_module_so_path = os.getenv('NSS_WRAPPER_MODULE_SO_PATH')
@@ -335,15 +335,15 @@ class PosixAclMappingTests(TestCaseInTempDir):
         # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
-        (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
+        (LA_uid, LA_type) = s4_passdb.sid_to_id(LA_sid)
         self.assertEquals(LA_type, idmap.ID_TYPE_UID)
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
-        (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
+        (SO_gid, SO_type) = s4_passdb.sid_to_id(SO_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
+        (SY_gid, SY_type) = s4_passdb.sid_to_id(SY_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
+        (AU_gid, AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
 
         self.assertEquals(posix_acl.count, 13, self.print_posix_acl(posix_acl))
@@ -463,7 +463,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         setntacl(self.lp, self.tempdir, acl, str(domsid), use_ntvfs=False,
                  session_info=session_info)
         facl = getntacl(self.lp, self.tempdir)
-        self.assertEquals(facl.as_sddl(domsid),acl)
+        self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
 
         LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
@@ -477,15 +477,15 @@ class PosixAclMappingTests(TestCaseInTempDir):
         # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
-        (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
+        (LA_uid, LA_type) = s4_passdb.sid_to_id(LA_sid)
         self.assertEquals(LA_type, idmap.ID_TYPE_UID)
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
-        (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
+        (SO_gid, SO_type) = s4_passdb.sid_to_id(SO_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
+        (SY_gid, SY_type) = s4_passdb.sid_to_id(SY_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
+        (AU_gid, AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
 
         self.assertEquals(posix_acl.count, 13, self.print_posix_acl(posix_acl))
@@ -558,7 +558,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         setntacl(self.lp, self.tempdir, acl, str(domsid), use_ntvfs=False,
                  session_info=session_info)
         facl = getntacl(self.lp, self.tempdir)
-        self.assertEquals(facl.as_sddl(domsid),acl)
+        self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
 
         LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
@@ -573,17 +573,17 @@ class PosixAclMappingTests(TestCaseInTempDir):
         # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
-        (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
+        (LA_uid, LA_type) = s4_passdb.sid_to_id(LA_sid)
         self.assertEquals(LA_type, idmap.ID_TYPE_UID)
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
-        (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
+        (SO_gid, SO_type) = s4_passdb.sid_to_id(SO_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
+        (SY_gid, SY_type) = s4_passdb.sid_to_id(SY_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
+        (AU_gid, AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
-        (PA_gid,PA_type) = s4_passdb.sid_to_id(PA_sid)
+        (PA_gid, PA_type) = s4_passdb.sid_to_id(PA_sid)
         self.assertEquals(PA_type, idmap.ID_TYPE_BOTH)
 
         self.assertEquals(posix_acl.count, 15, self.print_posix_acl(posix_acl))
@@ -667,7 +667,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         setntacl(self.lp, self.tempf, acl, str(domsid), use_ntvfs=False,
                  session_info=session_info)
         facl = getntacl(self.lp, self.tempf)
-        self.assertEquals(facl.as_sddl(domsid),acl)
+        self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
         nwrap_module_so_path = os.getenv('NSS_WRAPPER_MODULE_SO_PATH')
@@ -688,17 +688,17 @@ class PosixAclMappingTests(TestCaseInTempDir):
         # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
-        (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
+        (LA_uid, LA_type) = s4_passdb.sid_to_id(LA_sid)
         self.assertEquals(LA_type, idmap.ID_TYPE_UID)
-        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
-        (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
+        (SO_gid, SO_type) = s4_passdb.sid_to_id(SO_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
+        (SY_gid, SY_type) = s4_passdb.sid_to_id(SY_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
-        (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
+        (AU_gid, AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
-        (PA_gid,PA_type) = s4_passdb.sid_to_id(PA_sid)
+        (PA_gid, PA_type) = s4_passdb.sid_to_id(PA_sid)
         self.assertEquals(PA_type, idmap.ID_TYPE_BOTH)
 
         self.assertEquals(posix_acl.count, 15, self.print_posix_acl(posix_acl))

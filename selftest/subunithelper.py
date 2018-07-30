@@ -199,7 +199,7 @@ def parse_results(msg_ops, statistics, fh):
     return exitcode
 
 
-class SubunitOps(TestProtocolClient,TestsuiteEnabledTestResult):
+class SubunitOps(TestProtocolClient, TestsuiteEnabledTestResult):
 
     def progress(self, count, whence):
         if whence == subunit.PROGRESS_POP:

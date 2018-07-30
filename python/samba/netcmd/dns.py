@@ -549,7 +549,7 @@ class cmd_serverinfo(Command):
     takes_options = [
         Option('--client-version', help='Client Version',
                default='longhorn', metavar='w2k|dotnet|longhorn',
-               choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
+               choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver'),
     ]
 
     def run(self, server, cli_ver, sambaopts=None, credopts=None,
@@ -581,7 +581,7 @@ class cmd_zoneinfo(Command):
     takes_options = [
         Option('--client-version', help='Client Version',
                default='longhorn', metavar='w2k|dotnet|longhorn',
-               choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
+               choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver'),
     ]
 
     def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
@@ -613,7 +613,7 @@ class cmd_zonelist(Command):
     takes_options = [
         Option('--client-version', help='Client Version',
                default='longhorn', metavar='w2k|dotnet|longhorn',
-               choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
+               choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver'),
         Option('--primary', help='List primary zones (default)',
                action='store_true', dest='primary'),
         Option('--secondary', help='List secondary zones',
@@ -692,7 +692,7 @@ class cmd_zonecreate(Command):
     takes_options = [
         Option('--client-version', help='Client Version',
                default='longhorn', metavar='w2k|dotnet|longhorn',
-               choices=['w2k','dotnet','longhorn'], dest='cli_ver')
+               choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver')
     ]
 
     def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
@@ -923,7 +923,7 @@ class cmd_add_record(Command):
     def run(self, server, zone, name, rtype, data, sambaopts=None,
             credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV','TXT'):
+        if rtype.upper() not in ('A', 'AAAA', 'PTR', 'CNAME', 'NS', 'MX', 'SRV', 'TXT'):
             raise CommandError('Adding record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)
@@ -975,7 +975,7 @@ class cmd_update_record(Command):
     def run(self, server, zone, name, rtype, olddata, newdata,
             sambaopts=None, credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SOA','SRV','TXT'):
+        if rtype.upper() not in ('A', 'AAAA', 'PTR', 'CNAME', 'NS', 'MX', 'SOA', 'SRV', 'TXT'):
             raise CommandError('Updating record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)
@@ -1044,7 +1044,7 @@ class cmd_delete_record(Command):
 
     def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV','TXT'):
+        if rtype.upper() not in ('A', 'AAAA', 'PTR', 'CNAME', 'NS', 'MX', 'SRV', 'TXT'):
             raise CommandError('Deleting record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)

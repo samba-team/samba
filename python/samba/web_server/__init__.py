@@ -61,7 +61,7 @@ def __call__(environ, start_response):
     if name == "":
         if have_swat:
             start_response('301 Redirect',
-                           [('Location', urljoin(application_uri(environ), 'swat')),])
+                           [('Location', urljoin(application_uri(environ), 'swat')), ])
             return []
         else:
             return render_placeholder(environ, start_response)

@@ -403,7 +403,7 @@ class OpenLDAPBackend(LDAPBackend):
             # For now, make these equal
             mmr_pass = self.ldapadminpass
 
-            url_list = filter(None,self.ol_mmr_urls.split(','))
+            url_list = filter(None, self.ol_mmr_urls.split(','))
             for url in url_list:
                 self.logger.info("Using LDAP-URL: " + url)
             if len(url_list) == 1:
@@ -512,7 +512,7 @@ class OpenLDAPBackend(LDAPBackend):
                     "REFINT_CONFIG": refint_config,
                     "INDEX_CONFIG": index_config,
                     "ADMIN_UID": str(os.getuid()),
-                    "NOSYNC": nosync_config,})
+                    "NOSYNC": nosync_config, })
 
         self.setup_db_dir(os.path.join(self.ldapdir, "db", "forestdns"))
         self.setup_db_dir(os.path.join(self.ldapdir, "db", "domaindns"))

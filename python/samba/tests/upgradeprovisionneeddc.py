@@ -24,7 +24,7 @@ import shutil
 from samba import param
 from samba.credentials import Credentials
 from samba.auth import system_session
-from samba.provision import getpolicypath,find_provision_key_parameters
+from samba.provision import getpolicypath, find_provision_key_parameters
 from samba.upgradehelpers import (get_paths, get_ldbs,
                                   identic_rename,
                                   updateOEMInfo, getOEMInfo, update_gpo,

@@ -103,7 +103,7 @@ class SmbDotConfTests(TestCase):
                          'panic action', 'homedir map', 'NIS homedir',
                          'server string', 'netbios name', 'socket options', 'use mmap',
                          'ctdbd socket', 'printing', 'printcap name', 'queueresume command',
-                         'queuepause command','lpresume command', 'lppause command',
+                         'queuepause command', 'lpresume command', 'lppause command',
                          'lprm command', 'lpq command', 'print command', 'template homedir',
                          'max open files',
                          'include system krb5 conf', 'rpc server dynamic port range',
@@ -258,14 +258,14 @@ class SmbDotConfTests(TestCase):
                      'bytes': '10',
                      'octal': '0123',
                      'ustring': 'ustring',
-                     'enum':'', 'boolean-auto': '', 'char': 'a', 'list': 'a, b, c'}
+                     'enum': '', 'boolean-auto': '', 'char': 'a', 'list': 'a, b, c'}
         opposite_arbitrary = {'string': 'string2', 'boolean': 'no', 'integer': '6',
                               'boolean-rev': 'no',
                               'cmdlist': 'd e f',
                               'bytes': '11',
                               'octal': '0567',
                               'ustring': 'ustring2',
-                              'enum':'', 'boolean-auto': '', 'char': 'b', 'list': 'd, e, f'}
+                              'enum': '', 'boolean-auto': '', 'char': 'b', 'list': 'd, e, f'}
 
         failset = set()
         count = 0

@@ -76,7 +76,7 @@ class SpeedTest(samba.tests.TestCase):
 
     def find_domain_sid(self, ldb):
         res = ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack(security.dom_sid,res[0]["objectSid"][0])
+        return ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
 
     def setUp(self):
         super(SpeedTest, self).setUp()

@@ -197,5 +197,5 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         #
         up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
                         binascii.a2b_hex(up_package.data))
-        self.checkUserPassword(up, [("{CRYPT}", "6",10000)])
+        self.checkUserPassword(up, [("{CRYPT}", "6", 10000)])
         self.checkNtHash(USER_PASS, up.current_nt_hash.hash)

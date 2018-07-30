@@ -292,7 +292,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
             (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "-s", smbconf, "--force")
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err,"","Shouldn't be any error messages")
+            self.assertEquals(err, "", "Shouldn't be any error messages")
 
             # 3. Assert we get the RID Set
             res = new_ldb.search(base=server_ref_dn,
@@ -621,7 +621,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             # 4. Seize the RID Manager role
             (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "-s", smbconf, "--force")
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err,"","Shouldn't be any error messages")
+            self.assertEquals(err, "", "Shouldn't be any error messages")
 
             # 5. Add a new user (triggers RID set work)
             new_ldb.newuser("ridalloctestuser", "P@ssword!")

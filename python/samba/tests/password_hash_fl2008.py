@@ -112,7 +112,7 @@ class PassWordHashFl2008Tests(PassWordHashTests):
         #
         up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
                         binascii.a2b_hex(up_package.data))
-        self.checkUserPassword(up, [("{CRYPT}", "6",None)])
+        self.checkUserPassword(up, [("{CRYPT}", "6", None)])
         self.checkNtHash(USER_PASS, up.current_nt_hash.hash)
 
     def test_supplementalCredentials_cleartext(self):
@@ -206,5 +206,5 @@ class PassWordHashFl2008Tests(PassWordHashTests):
         #
         up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
                         binascii.a2b_hex(up_package.data))
-        self.checkUserPassword(up, [("{CRYPT}", "5",100)])
+        self.checkUserPassword(up, [("{CRYPT}", "5", 100)])
         self.checkNtHash(USER_PASS, up.current_nt_hash.hash)

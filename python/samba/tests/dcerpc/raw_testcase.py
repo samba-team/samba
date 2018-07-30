@@ -478,7 +478,7 @@ class RawDCERPCTest(TestCase):
         floor5.lhs = lhs5
         floor5.rhs.ipaddr = "0.0.0.0"
 
-        floors = [floor1,floor2,floor3,floor4,floor5]
+        floors = [floor1, floor2, floor3, floor4, floor5]
         req_tower = samba.dcerpc.epmapper.epm_tower()
         req_tower.num_floors = len(floors)
         req_tower.floors = floors
@@ -572,7 +572,7 @@ class RawDCERPCTest(TestCase):
         try:
             rep_pdu = self.recv_raw(hexdump=hexdump, timeout=timeout)
             if rep_pdu is None:
-                return (None,None)
+                return (None, None)
             rep = ndr_unpack(samba.dcerpc.dcerpc.ncacn_packet, rep_pdu, allow_remaining=True)
             if ndr_print:
                 sys.stderr.write("recv_pdu: %s" % samba.ndr.ndr_print(rep))

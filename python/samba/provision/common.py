@@ -42,7 +42,7 @@ def setup_path(file):
     return os.path.join(setup_dir(), file)
 
 
-def setup_add_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
+def setup_add_ldif(ldb, ldif_path, subst_vars=None, controls=["relax:0"]):
     """Setup a ldb in the private dir.
 
     :param ldb: LDB file to import data into
@@ -55,7 +55,7 @@ def setup_add_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
     ldb.add_ldif(data, controls)
 
 
-def setup_modify_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
+def setup_modify_ldif(ldb, ldif_path, subst_vars=None, controls=["relax:0"]):
     """Modify a ldb in the private dir.
 
     :param ldb: LDB object.

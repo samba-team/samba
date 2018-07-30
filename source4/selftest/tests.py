@@ -204,7 +204,7 @@ for transport in ["ncacn_np", "ncacn_ip_tcp"]:
         bindoptions = ''
         if t == 'rpc.cracknames':
             bindoptions = 'seal'
-        plansmbtorture4testsuite(t, env, ["%s:$SERVER[%s]" % (transport,bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
+        plansmbtorture4testsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
 
 # Tests for the DFS referral calls implementation
 for t in smbtorture4_testsuites("dfs."):
@@ -557,7 +557,7 @@ for env in ["s4member_dflt_domain", "s4member"]:
         if env == "s4member":
             users = ["$DOMAIN/$DC_USERNAME", "$DC_USERNAME@$REALM"]
         for usr in users:
-            plantestsuite("samba4.winbind.dom_name_parse.cmd", env, "%s/dom_parse.sh %s %s" % (bbdir,cmd,usr))
+            plantestsuite("samba4.winbind.dom_name_parse.cmd", env, "%s/dom_parse.sh %s %s" % (bbdir, cmd, usr))
 
 nsstest4 = binpath("nsstest")
 for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", "nt4_member:local"]:

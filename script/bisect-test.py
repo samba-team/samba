@@ -13,7 +13,7 @@ parser.add_option("", "--good", help="known good revision (default HEAD~100)", d
 parser.add_option("", "--bad", help="known bad revision (default HEAD)", default='HEAD')
 parser.add_option("", "--skip-build-errors", help="skip revision where make fails",
                   action='store_true', default=False)
-parser.add_option("", "--autogen", help="run autogen before each build",action="store_true", default=False)
+parser.add_option("", "--autogen", help="run autogen before each build", action="store_true", default=False)
 parser.add_option("", "--autogen-command", help="command to use for autogen (default ./autogen.sh)",
                   type='str', default="./autogen.sh")
 parser.add_option("", "--configure", help="run configure.developer before each build",

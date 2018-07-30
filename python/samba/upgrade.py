@@ -665,7 +665,7 @@ Please fix this account before attempting to upgrade again
         creds.guess(samba3.lp)
         creds.set_bind_dn(ldapuser)
         creds.set_password(ldappass)
-        urls = samba3.lp.get("passdb backend").split(":",1)[1].strip('"')
+        urls = samba3.lp.get("passdb backend").split(":", 1)[1].strip('"')
         for url in urls.split():
             try:
                 ldb_object = Ldb(url, credentials=creds)

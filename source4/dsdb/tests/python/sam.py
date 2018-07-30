@@ -3451,7 +3451,7 @@ class SamTests(samba.tests.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
+        m["description"] = MessageElement(["desc1", "desc2"], FLAG_MOD_REPLACE,
                                           "description")
         try:
             ldb.modify(m)
@@ -3462,7 +3462,7 @@ class SamTests(samba.tests.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_DELETE,
+        m["description"] = MessageElement(["desc1", "desc2"], FLAG_MOD_DELETE,
                                           "description")
         ldb.modify(m)
 
@@ -3518,7 +3518,7 @@ class SamTests(samba.tests.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_DELETE,
+        m["description"] = MessageElement(["desc1", "desc2"], FLAG_MOD_DELETE,
                                           "description")
         try:
             ldb.modify(m)
@@ -3539,7 +3539,7 @@ class SamTests(samba.tests.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
+        m["description"] = MessageElement(["desc1", "desc2"], FLAG_MOD_REPLACE,
                                           "description")
         try:
             ldb.modify(m)
@@ -3673,11 +3673,11 @@ class SamTests(samba.tests.TestCase):
         # a list of some well-known sids
         # objects in Builtin are aready covered by objectclass
         protected_list = [
-            ["CN=Domain Admins","CN=Users,"],
-            ["CN=Schema Admins","CN=Users,"],
-            ["CN=Enterprise Admins","CN=Users,"],
-            ["CN=Administrator","CN=Users,"],
-            ["CN=Domain Controllers","CN=Users,"],
+            ["CN=Domain Admins", "CN=Users,"],
+            ["CN=Schema Admins", "CN=Users,"],
+            ["CN=Enterprise Admins", "CN=Users,"],
+            ["CN=Administrator", "CN=Users,"],
+            ["CN=Domain Controllers", "CN=Users,"],
         ]
 
 
@@ -3720,7 +3720,7 @@ class SamTests(samba.tests.TestCase):
                           "logonCount": MessageElement(["0"]),
                           "cn": MessageElement([user_name]),
                           "countryCode": MessageElement(["0"]),
-                          "objectClass": MessageElement(["top","person","organizationalPerson","user"]),
+                          "objectClass": MessageElement(["top", "person", "organizationalPerson", "user"]),
                           "instanceType": MessageElement(["4"]),
                           "distinguishedName": MessageElement([user_dn]),
                           "sAMAccountType": MessageElement(["805306368"]),

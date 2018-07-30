@@ -219,7 +219,7 @@ def get_linked_attributes(schemadn, schemaldb):
     return attributes
 
 
-def get_dnsyntax_attributes(schemadn,schemaldb):
+def get_dnsyntax_attributes(schemadn, schemaldb):
     res = schemaldb.search(
         expression="(&(!(linkID=*))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))",
         base=schemadn, scope=SCOPE_ONELEVEL,

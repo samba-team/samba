@@ -235,7 +235,7 @@ class DsdbLockTestCase(SamDBTestCase):
 
             backenddb.transaction_start()
 
-            backenddb.add({"dn":"@DSDB_LOCK_TEST"})
+            backenddb.add({"dn": "@DSDB_LOCK_TEST"})
             backenddb.delete("@DSDB_LOCK_TEST")
 
             # Obtain a write lock
@@ -335,7 +335,7 @@ class DsdbLockTestCase(SamDBTestCase):
         os.write(w1, b"started")
 
         self.assertEqual(os.read(r2, 3), b"add")
-        backenddb.add({"dn":"@DSDB_LOCK_TEST"})
+        backenddb.add({"dn": "@DSDB_LOCK_TEST"})
         backenddb.delete("@DSDB_LOCK_TEST")
         os.write(w1, b"added")
 

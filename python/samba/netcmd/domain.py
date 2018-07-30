@@ -148,7 +148,7 @@ def get_testparm_var(testparm, smbconf, varname):
     p = subprocess.Popen([testparm, '-s', '-l',
                           '--parameter-name=%s' % varname, smbconf],
                          stdout=subprocess.PIPE, stderr=errfile)
-    (out,err) = p.communicate()
+    (out, err) = p.communicate()
     errfile.close()
     lines = out.split('\n')
     if lines:
@@ -303,7 +303,7 @@ class cmd_domain_provision(Command):
     ]
 
     ntvfs_options = [
-        Option("--use-xattrs", type="choice", choices=["yes","no","auto"],
+        Option("--use-xattrs", type="choice", choices=["yes", "no", "auto"],
                metavar="[yes|no|auto]",
                help="Define if we should use the native fs capabilities or a tdb file for "
                "storing attributes likes ntacl when --use-ntvfs is set. "
@@ -1365,9 +1365,9 @@ class cmd_domain_passwordsettings_set(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("-q", "--quiet", help="Be quiet", action="store_true"), # unused
-        Option("--complexity", type="choice", choices=["on","off","default"],
+        Option("--complexity", type="choice", choices=["on", "off", "default"],
                help="The password complexity (on | off | default). Default is 'on'"),
-        Option("--store-plaintext", type="choice", choices=["on","off","default"],
+        Option("--store-plaintext", type="choice", choices=["on", "off", "default"],
                help="Store plaintext passwords where account have 'store passwords with reversible encryption' set (on | off | default). Default is 'off'"),
         Option("--history-length",
                help="The password history length (<integer> | default).  Default is 24.", type=str),
@@ -1581,7 +1581,7 @@ class cmd_domain_classicupgrade(Command):
     ]
 
     ntvfs_options = [
-        Option("--use-xattrs", type="choice", choices=["yes","no","auto"],
+        Option("--use-xattrs", type="choice", choices=["yes", "no", "auto"],
                metavar="[yes|no|auto]",
                help="Define if we should use the native fs capabilities or a tdb file for "
                "storing attributes likes ntacl when --use-ntvfs is set. "

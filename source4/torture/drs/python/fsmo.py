@@ -67,7 +67,7 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
                                             cmd_line_auth)
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         if noop == False:
             self.assertTrue("FSMO transfer of '%s' role successful" % role in out)
         else:

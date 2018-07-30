@@ -88,7 +88,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err,"","There shouldn't be any error message")
+            self.assertEquals(err, "", "There shouldn't be any error message")
             self.assertIn("Added group %s" % group["name"], out)
 
             found = self._find_group(group["name"])
@@ -177,7 +177,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                           os.environ["DC_PASSWORD"]))
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("dn: CN=Domain Users,CN=Users,DC=samba,DC=example,DC=com", out)
 
     def _randomGroup(self, base={}):

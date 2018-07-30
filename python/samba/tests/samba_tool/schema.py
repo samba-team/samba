@@ -40,7 +40,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("dn: CN=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
 
     def test_modify_attribute_searchflags(self):
@@ -60,7 +60,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
 
         (result, out, err) = self.runsublevelcmd("schema", ("attribute",
@@ -71,7 +71,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
 
         (result, out, err) = self.runsublevelcmd("schema", ("attribute",
@@ -82,7 +82,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
 
     def test_show_oc_attribute(self):
@@ -94,7 +94,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("--- MAY contain ---", out)
         self.assertIn("--- MUST contain ---", out)
 
@@ -107,7 +107,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("dn: CN=Person,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
 
 

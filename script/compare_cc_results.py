@@ -34,7 +34,7 @@ for fname in sys.argv[1:]:
         lines.append(line)
     f.close()
     if base_fname:
-        diff = list(difflib.unified_diff(base_lines,lines,base_fname,fname))
+        diff = list(difflib.unified_diff(base_lines, lines, base_fname, fname))
         if diff:
             print('configuration files %s and %s do not match' % (base_fname, fname))
             for l in diff:

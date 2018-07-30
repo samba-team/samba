@@ -97,7 +97,7 @@ def preload_rodc_user(user_dn):
            'rodc', 'preload',
            user_dn,
            credstring,
-           '--server', RWDC,]
+           '--server', RWDC, ]
 
     print(' '.join(cmd))
     subprocess.check_call(cmd)

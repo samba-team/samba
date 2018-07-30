@@ -28,7 +28,7 @@ class Option(optparse.Option):
 
 # This help formatter does text wrapping and preserves newlines
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
-    def format_description(self,description=""):
+    def format_description(self, description=""):
         desc_width = self.width - self.current_indent
         indent = " " * self.current_indent
         paragraphs = description.split('\n')
@@ -128,7 +128,7 @@ class Command(object):
             usage=self.synopsis,
             description=self.full_description,
             formatter=PlainHelpFormatter(),
-            prog=prog,epilog=epilog)
+            prog=prog, epilog=epilog)
         parser.add_options(self.takes_options)
         optiongroups = {}
         for name, optiongroup in self.takes_optiongroups.items():

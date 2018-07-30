@@ -10,25 +10,25 @@ try:
     _swig_property = property
 except NameError:
     pass # Python < 2.2 doesn't have 'property'.
-def _swig_setattr_nondynamic(self,class_type,name,value,static=1):
+def _swig_setattr_nondynamic(self, class_type, name, value, static=1):
     if (name == "thisown"): return self.this.own(value)
     if (name == "this"):
         if type(value).__name__ == 'PySwigObject':
             self.__dict__[name] = value
             return
-    method = class_type.__swig_setmethods__.get(name,None)
-    if method: return method(self,value)
-    if (not static) or hasattr(self,name):
+    method = class_type.__swig_setmethods__.get(name, None)
+    if method: return method(self, value)
+    if (not static) or hasattr(self, name):
         self.__dict__[name] = value
     else:
         raise AttributeError("You cannot add attributes to %s" % self)
 
-def _swig_setattr(self,class_type,name,value):
-    return _swig_setattr_nondynamic(self,class_type,name,value,0)
+def _swig_setattr(self, class_type, name, value):
+    return _swig_setattr_nondynamic(self, class_type, name, value, 0)
 
-def _swig_getattr(self,class_type,name):
+def _swig_getattr(self, class_type, name):
     if (name == "thisown"): return self.this.own()
-    method = class_type.__swig_getmethods__.get(name,None)
+    method = class_type.__swig_getmethods__.get(name, None)
     if method: return method(self)
     raise AttributeError(name)
 
@@ -48,10 +48,10 @@ del types
 
 
 def _swig_setattr_nondynamic_method(set):
-    def set_attr(self,name,value):
+    def set_attr(self, name, value):
         if (name == "thisown"): return self.this.own(value)
-        if hasattr(self,name) or (name == "this"):
-            set(self,name,value)
+        if hasattr(self, name) or (name == "this"):
+            set(self, name, value)
         else:
             raise AttributeError("You cannot add attributes to %s" % self)
     return set_attr
@@ -62,9 +62,9 @@ class IUnknown(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        _wmi.IUnknown_swiginit(self,_wmi.new_IUnknown(*args, **kwargs))
+        _wmi.IUnknown_swiginit(self, _wmi.new_IUnknown(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IUnknown
-IUnknown.Release = new_instancemethod(_wmi.IUnknown_Release,None,IUnknown)
+IUnknown.Release = new_instancemethod(_wmi.IUnknown_Release, None, IUnknown)
 IUnknown_swigregister = _wmi.IUnknown_swigregister
 IUnknown_swigregister(IUnknown)
 
@@ -72,11 +72,11 @@ class IWbemServices(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        _wmi.IWbemServices_swiginit(self,_wmi.new_IWbemServices(*args, **kwargs))
+        _wmi.IWbemServices_swiginit(self, _wmi.new_IWbemServices(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IWbemServices
-IWbemServices.ExecQuery = new_instancemethod(_wmi.IWbemServices_ExecQuery,None,IWbemServices)
-IWbemServices.ExecNotificationQuery = new_instancemethod(_wmi.IWbemServices_ExecNotificationQuery,None,IWbemServices)
-IWbemServices.CreateInstanceEnum = new_instancemethod(_wmi.IWbemServices_CreateInstanceEnum,None,IWbemServices)
+IWbemServices.ExecQuery = new_instancemethod(_wmi.IWbemServices_ExecQuery, None, IWbemServices)
+IWbemServices.ExecNotificationQuery = new_instancemethod(_wmi.IWbemServices_ExecNotificationQuery, None, IWbemServices)
+IWbemServices.CreateInstanceEnum = new_instancemethod(_wmi.IWbemServices_CreateInstanceEnum, None, IWbemServices)
 IWbemServices_swigregister = _wmi.IWbemServices_swigregister
 IWbemServices_swigregister(IWbemServices)
 
@@ -84,9 +84,9 @@ class IEnumWbemClassObject(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        _wmi.IEnumWbemClassObject_swiginit(self,_wmi.new_IEnumWbemClassObject(*args, **kwargs))
+        _wmi.IEnumWbemClassObject_swiginit(self, _wmi.new_IEnumWbemClassObject(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IEnumWbemClassObject
-IEnumWbemClassObject.Reset = new_instancemethod(_wmi.IEnumWbemClassObject_Reset,None,IEnumWbemClassObject)
+IEnumWbemClassObject.Reset = new_instancemethod(_wmi.IEnumWbemClassObject_Reset, None, IEnumWbemClassObject)
 IEnumWbemClassObject_swigregister = _wmi.IEnumWbemClassObject_swigregister
 IEnumWbemClassObject_swigregister(IEnumWbemClassObject)
 

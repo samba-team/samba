@@ -97,7 +97,7 @@ class LDAPBase(object):
 
     def find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack(security.dom_sid,res[0]["objectSid"][0])
+        return ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
 
     def find_servers(self):
         """
@@ -492,19 +492,19 @@ class LDAPObject(object):
             # Attributes that contain the Domain name e.g. 'samba.org'
             self.domain_attributes = [
                 "proxyAddresses", "mail", "userPrincipalName", "msExchSmtpFullyQualifiedDomainName",
-                "dnsHostName", "networkAddress", "dnsRoot", "servicePrincipalName",]
+                "dnsHostName", "networkAddress", "dnsRoot", "servicePrincipalName", ]
             self.domain_attributes = [x.upper() for x in self.domain_attributes]
             #
             # May contain DOMAIN_NETBIOS and SERVER_NAME
             self.servername_attributes = ["distinguishedName", "name", "CN", "sAMAccountName", "dNSHostName",
                                            "servicePrincipalName", "rIDSetReferences", "serverReference", "serverReferenceBL",
-                                           "msDS-IsDomainFor", "interSiteTopologyGenerator",]
+                                           "msDS-IsDomainFor", "interSiteTopologyGenerator", ]
             self.servername_attributes = [x.upper() for x in self.servername_attributes]
             #
-            self.netbios_attributes = ["servicePrincipalName", "CN", "distinguishedName", "nETBIOSName", "name",]
+            self.netbios_attributes = ["servicePrincipalName", "CN", "distinguishedName", "nETBIOSName", "name", ]
             self.netbios_attributes = [x.upper() for x in self.netbios_attributes]
             #
-            self.other_attributes = ["name", "DC",]
+            self.other_attributes = ["name", "DC", ]
             self.other_attributes = [x.upper() for x in self.other_attributes]
         #
         self.ignore_attributes = [x.upper() for x in self.ignore_attributes]
@@ -968,7 +968,7 @@ class cmd_ldapcmp(Command):
 
         con1 = LDAPBase(URL1, creds, lp,
                         two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
-                        verbose=verbose,view=view, base=base, scope=scope,
+                        verbose=verbose, view=view, base=base, scope=scope,
                         outf=self.outf, errf=self.errf)
         assert len(con1.base_dn) > 0
 

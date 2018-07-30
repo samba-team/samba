@@ -40,7 +40,7 @@ class RpcEchoTests(RpcInterfaceTestCase):
         self.assertEquals(2, self.conn.AddOne(1))
 
     def test_echodata(self):
-        self.assertEquals([1,2,3], self.conn.EchoData([1, 2, 3]))
+        self.assertEquals([1, 2, 3], self.conn.EchoData([1, 2, 3]))
 
     def test_call(self):
         self.assertEquals(u"foobar", self.conn.TestCall(u"foobar"))
@@ -48,7 +48,7 @@ class RpcEchoTests(RpcInterfaceTestCase):
     def test_surrounding(self):
         surrounding_struct = echo.Surrounding()
         surrounding_struct.x = 4
-        surrounding_struct.surrounding = [1,2,3,4]
+        surrounding_struct.surrounding = [1, 2, 3, 4]
         y = self.conn.TestSurrounding(surrounding_struct)
         self.assertEquals(8 * [0], y.surrounding)
 

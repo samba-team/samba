@@ -83,8 +83,8 @@ oMObjectClassBER = {
 }
 
 # separated by commas in docs, and must be broken up
-multivalued_attrs = set(["auxiliaryclass","maycontain","mustcontain","posssuperiors",
-                         "systemauxiliaryclass","systemmaycontain","systemmustcontain",
+multivalued_attrs = set(["auxiliaryclass", "maycontain", "mustcontain", "posssuperiors",
+                         "systemauxiliaryclass", "systemmaycontain", "systemmustcontain",
                          "systemposssuperiors"])
 
 def __read_folded_line(f, buffer):

@@ -56,10 +56,10 @@ class ShareTests(TestCase):
 
     def test_iter(self):
         self.assertEquals([], list(self._get_shares({})))
-        self.assertEquals([], list(self._get_shares({"global":{}})))
+        self.assertEquals([], list(self._get_shares({"global": {}})))
         self.assertEquals(
             ["bla"],
-            list(self._get_shares({"global":{}, "bla":{}})))
+            list(self._get_shares({"global": {}, "bla": {}})))
 
     def test_len(self):
         shares = self._get_shares({"global": {}})

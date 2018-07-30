@@ -141,7 +141,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
         (result, out, err) = self.runsubcmd(*samba_tool_cmdline)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
 
     def _enable_inbound_repl(self, DC):
         # make base command line
@@ -150,7 +150,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=-DISABLE_INBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
 
     def _disable_inbound_repl(self, DC):
         # make base command line
@@ -159,7 +159,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=+DISABLE_INBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
 
     def _enable_all_repl(self, DC):
         self._enable_inbound_repl(DC)
@@ -169,7 +169,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=-DISABLE_OUTBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
 
     def _disable_all_repl(self, DC):
         self._disable_inbound_repl(DC)
@@ -179,7 +179,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=+DISABLE_OUTBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
 
     def _get_highest_hwm_utdv(self, ldb_conn):
         res = ldb_conn.search("", scope=ldb.SCOPE_BASE, attrs=["highestCommittedUSN"])

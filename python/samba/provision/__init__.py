@@ -204,9 +204,9 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     # netbiosname
     # Get the netbiosname first (could be obtained from smb.conf in theory)
     res = secretsdb.search(expression="(flatname=%s)" %
-                           names.domain,base="CN=Primary Domains",
+                           names.domain, base="CN=Primary Domains",
                            scope=ldb.SCOPE_SUBTREE, attrs=["sAMAccountName"])
-    names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
+    names.netbiosname = str(res[0]["sAMAccountName"]).replace("$", "")
 
     names.smbconf = smbconf
 
@@ -215,7 +215,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     current = samdb.search(expression="(objectClass=*)",
                            base="", scope=ldb.SCOPE_BASE,
                            attrs=["defaultNamingContext", "schemaNamingContext",
-                                  "configurationNamingContext","rootDomainNamingContext",
+                                  "configurationNamingContext", "rootDomainNamingContext",
                                   "namingContexts"])
 
     names.configdn = current[0]["configurationNamingContext"][0]
@@ -275,7 +275,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     # domain guid/sid
     res6 = samdb.search(expression="(objectClass=*)", base=basedn,
                         scope=ldb.SCOPE_BASE, attrs=["objectGUID",
-                                                     "objectSid","msDS-Behavior-Version"])
+                                                     "objectSid", "msDS-Behavior-Version"])
     names.domainguid = str(ndr_unpack(misc.GUID, res6[0]["objectGUID"][0]))
     names.domainsid = ndr_unpack(security.dom_sid, res6[0]["objectSid"][0])
     names.forestsid = ndr_unpack(security.dom_sid, res6[0]["objectSid"][0])
@@ -288,15 +288,15 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     # policy guid
     res7 = samdb.search(expression="(name={%s})" % DEFAULT_POLICY_GUID,
                         base="CN=Policies,CN=System," + basedn,
-                        scope=ldb.SCOPE_ONELEVEL, attrs=["cn","displayName"])
-    names.policyid = str(res7[0]["cn"]).replace("{","").replace("}","")
+                        scope=ldb.SCOPE_ONELEVEL, attrs=["cn", "displayName"])
+    names.policyid = str(res7[0]["cn"]).replace("{", "").replace("}", "")
     # dc policy guid
     res8 = samdb.search(expression="(name={%s})" % DEFAULT_DC_POLICY_GUID,
                         base="CN=Policies,CN=System," + basedn,
                         scope=ldb.SCOPE_ONELEVEL,
-                        attrs=["cn","displayName"])
+                        attrs=["cn", "displayName"])
     if len(res8) == 1:
-        names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
+        names.policyid_dc = str(res8[0]["cn"]).replace("{", "").replace("}", "")
     else:
         names.policyid_dc = None
 
@@ -407,7 +407,7 @@ def set_provision_usn(samdb, low, high, id):
     samdb.add(delta)
 
 
-def get_max_usn(samdb,basedn):
+def get_max_usn(samdb, basedn):
     """ This function return the biggest USN present in the provision
 
     :param samdb: A LDB object pointing to the sam.ldb
@@ -415,8 +415,8 @@ def get_max_usn(samdb,basedn):
                     (ie. DC=foo, DC=bar)
     :return: The biggest USN in the provision"""
 
-    res = samdb.search(expression="objectClass=*",base=basedn,
-                       scope=ldb.SCOPE_SUBTREE,attrs=["uSNChanged"],
+    res = samdb.search(expression="objectClass=*", base=basedn,
+                       scope=ldb.SCOPE_SUBTREE, attrs=["uSNChanged"],
                        controls=["search_options:1:2",
                                  "server_sort:1:1:uSNChanged",
                                  "paged_results:1:1"])
@@ -1264,10 +1264,10 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
     :param policyguid: GUID of the default domain policy
     :param policyguid_dc: GUID of the default domain controler policy
     """
-    policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid)
+    policy_path = getpolicypath(sysvolpath, dnsdomain, policyguid)
     create_gpo_struct(policy_path)
 
-    policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid_dc)
+    policy_path = getpolicypath(sysvolpath, dnsdomain, policyguid_dc)
     create_gpo_struct(policy_path)
 
 

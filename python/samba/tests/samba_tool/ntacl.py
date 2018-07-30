@@ -32,7 +32,7 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-ntvfs")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
         self.assertIn("Please note that POSIX permissions have NOT been changed, only the stored NT ACL", err)
 
     def test_s3fs(self):
@@ -40,34 +40,34 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
                                              "--use-s3fs")
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
 
     def test_ntvfs_check(self):
         (result, out, err) = self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-ntvfs")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
         self.assertIn("Please note that POSIX permissions have NOT been changed, only the stored NT ACL", err)
         # Now check they were set correctly
         (result, out, err) = self.runsubcmd("ntacl", "sysvolcheck")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
 
     def test_s3fs_check(self):
         (result, out, err) = self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-s3fs")
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
 
         # Now check they were set correctly
         (result, out, err) = self.runsubcmd("ntacl", "sysvolcheck")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
 
 class NtACLCmdGetSetTestCase(SambaToolCmdTest):
     """Tests for samba-tool ntacl get/set subcommands"""
@@ -77,59 +77,59 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
 
     def test_ntvfs(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests" +str(int(100000 * random.random())))
+        tempf = os.path.join(path, "pytests" + str(int(100000 * random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
                                              "--use-ntvfs")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
         self.assertIn("Please note that POSIX permissions have NOT been changed, only the stored NT ACL", err)
 
     def test_s3fs(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests" +str(int(100000 * random.random())))
+        tempf = os.path.join(path, "pytests" + str(int(100000 * random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
                                              "--use-s3fs")
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
 
     def test_ntvfs_check(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests" +str(int(100000 * random.random())))
+        tempf = os.path.join(path, "pytests" + str(int(100000 * random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
                                              "--use-ntvfs")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(out,"","Shouldn't be any output messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
         self.assertIn("Please note that POSIX permissions have NOT been changed, only the stored NT ACL", err)
 
         # Now check they were set correctly
         (result, out, err) = self.runsubcmd("ntacl",  "get", tempf,
                                              "--use-ntvfs", "--as-sddl")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertEquals(self.acl + "\n", out, "Output should be the ACL")
 
     def test_s3fs_check(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests" + str(int(100000 *random.random())))
+        tempf = os.path.join(path, "pytests" + str(int(100000 * random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
                                              "--use-s3fs")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(out,"","Shouldn't be any output messages")
-        self.assertEquals(err,"","Shouldn't be any error messages")
+        self.assertEquals(out, "", "Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
 
         # Now check they were set correctly
         (result, out, err) = self.runsubcmd("ntacl",  "get", tempf,
                                              "--use-s3fs", "--as-sddl")
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(self.acl + "\n", out,"Output should be the ACL")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(self.acl + "\n", out, "Output should be the ACL")

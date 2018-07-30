@@ -63,7 +63,7 @@ class BaseDeleteTests(samba.tests.TestCase):
         self.assertEquals(len(res), 1)
         return res[0]
 
-    def search_dn(self,dn):
+    def search_dn(self, dn):
         print("SEARCH by DN %s" % dn)
 
         res = self.ldb.search(expression="(objectClass=*)",
@@ -83,7 +83,7 @@ class BasicDeleteTests(BaseDeleteTests):
     def del_attr_values(self, delObj):
         print("Checking attributes for %s" % delObj["dn"])
 
-        self.assertEquals(delObj["isDeleted"][0],"TRUE")
+        self.assertEquals(delObj["isDeleted"][0], "TRUE")
         self.assertTrue(not("objectCategory" in delObj))
         self.assertTrue(not("sAMAccountType" in delObj))
 

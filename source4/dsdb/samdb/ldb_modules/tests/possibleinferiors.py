@@ -53,7 +53,7 @@ else:
 def uniq_list(alist):
     """return a unique list"""
     set = {}
-    return [set.setdefault(e,e) for e in alist if e not in set]
+    return [set.setdefault(e, e) for e in alist if e not in set]
 
 
 lp_ctx = sambaopts.get_loadparm()
@@ -108,7 +108,7 @@ def supclasses(classinfo, oc):
     res = classinfo[oc]["subClassOf"]
     for r in res:
         list.append(r)
-        list.extend(supclasses(classinfo,r))
+        list.extend(supclasses(classinfo, r))
     classinfo[oc]["SUPCLASSES"] = list
     return list
 
@@ -231,7 +231,7 @@ def test_class(db, classinfo, oc):
         print("Returned incorrect list for objectclass %s" % oc)
         print("search:      %s" % poss1)
         print("constructed: %s" % poss2)
-        for i in range(0,min(len(poss1),len(poss2))):
+        for i in range(0, min(len(poss1), len(poss2))):
             print("%30s %30s" % (poss1[i], poss2[i]))
         print("]")
         sys.exit(1)
@@ -249,8 +249,8 @@ classinfo = pull_classinfo(db)
 
 if objectclass is None:
     for oc in get_object_classes(db):
-        test_class(db,classinfo,oc)
+        test_class(db, classinfo, oc)
 else:
-    test_class(db,classinfo,objectclass)
+    test_class(db, classinfo, objectclass)
 
 print("Lists match OK")

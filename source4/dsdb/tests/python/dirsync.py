@@ -554,7 +554,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         guid = None
         for e in res:
             if str(e["name"]) == "testou3":
-                guid = str(ndr_unpack(misc.GUID,e.get("objectGUID")[0]))
+                guid = str(ndr_unpack(misc.GUID, e.get("objectGUID")[0]))
 
         ctl = str(res.controls[0]).split(":")
         ctl[1] = "1"
@@ -570,7 +570,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="(objectClass=organizationalUnit)",
                                     controls=[control1])
         self.assertEqual(len(res), 1)
-        guid2 = str(ndr_unpack(misc.GUID,res[0].get("objectGUID")[0]))
+        guid2 = str(ndr_unpack(misc.GUID, res[0].get("objectGUID")[0]))
         self.assertEqual(guid2, guid)
         self.assertTrue(res[0].get("isDeleted"))
         self.assertTrue(res[0].get("name") != None)
@@ -674,7 +674,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         guid = None
         for e in res:
             if str(e["name"]) == "testou3":
-                guid = str(ndr_unpack(misc.GUID,e.get("objectGUID")[0]))
+                guid = str(ndr_unpack(misc.GUID, e.get("objectGUID")[0]))
 
         self.assertTrue(guid != None)
         ctl = str(res.controls[0]).split(":")
@@ -692,7 +692,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
                                      expression="(objectClass=organizationalUnit)",
                                      controls=[control1])
         self.assertEqual(len(res), 1)
-        guid2 = str(ndr_unpack(misc.GUID,res[0].get("objectGUID")[0]))
+        guid2 = str(ndr_unpack(misc.GUID, res[0].get("objectGUID")[0]))
         self.assertEqual(guid2, guid)
         self.assertEqual(str(res[0].dn), "")
 

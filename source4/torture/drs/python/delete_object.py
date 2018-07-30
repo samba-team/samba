@@ -74,7 +74,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         name_orig = obj_orig["name"][0]
         name_cur  = user_cur["name"][0]
         if is_deleted:
-            self.assertEquals(user_cur["isDeleted"][0],"TRUE")
+            self.assertEquals(user_cur["isDeleted"][0], "TRUE")
             self.assertFalse("objectCategory" in user_cur)
             self.assertFalse("sAMAccountType" in user_cur)
             self.assertFalse("description" in user_cur)

@@ -1758,7 +1758,7 @@ class AclExtendedTests(AclTests):
         #u3 is member of administrators group, should be able to read sd
         res = self.ldb_user3.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
-        self.assertEqual(len(res),1)
+        self.assertEqual(len(res), 1)
         self.assertTrue("nTSecurityDescriptor" in res[0].keys())
 
 class AclUndeleteTests(AclTests):

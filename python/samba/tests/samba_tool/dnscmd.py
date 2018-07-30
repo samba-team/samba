@@ -88,12 +88,12 @@ class DnsCmdTestCase(SambaToolCmdTest):
                         "::1",
                         "::",
                         "1:1:1:1:1:1:1:1"],
-                "PTR":good_dns,
-                "CNAME":good_dns,
-                "NS":good_dns,
-                "MX":good_mx,
-                "SRV":good_srv,
-                "TXT":["text", "", "@#!", "\n"]
+                "PTR": good_dns,
+                "CNAME": good_dns,
+                "NS": good_dns,
+                "MX": good_mx,
+                "SRV": good_srv,
+                "TXT": ["text", "", "@#!", "\n"]
         }
 
         self.bad_records = {
@@ -105,11 +105,11 @@ class DnsCmdTestCase(SambaToolCmdTest):
                         "1234:5678:9ABC:DEF0:1234:5678:9ABC:DEF0:1234",
                         "1234:5678:9ABC:DEF0:1234:5678:9ABC",
                         "1111::1111::1111"],
-                "PTR":bad_dns,
-                "CNAME":bad_dns,
-                "NS":bad_dns,
-                "MX":bad_mx,
-                "SRV":bad_srv
+                "PTR": bad_dns,
+                "CNAME": bad_dns,
+                "NS": bad_dns,
+                "MX": bad_mx,
+                "SRV": bad_srv
         }
 
     def tearDown(self):

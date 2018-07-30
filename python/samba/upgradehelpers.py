@@ -62,8 +62,8 @@ hashAttrNotCopied = set(["dn", "whenCreated", "whenChanged", "objectGUID",
                          "objectCategory", "distinguishedName", "nTMixedDomain",
                          "showInAdvancedViewOnly", "instanceType", "msDS-Behavior-Version",
                          "nextRid", "cn", "versionNumber", "lmPwdHistory", "pwdLastSet",
-                         "ntPwdHistory", "unicodePwd","dBCSPwd", "supplementalCredentials",
-                         "gPCUserExtensionNames", "gPCMachineExtensionNames","maxPwdAge", "secret",
+                         "ntPwdHistory", "unicodePwd", "dBCSPwd", "supplementalCredentials",
+                         "gPCUserExtensionNames", "gPCMachineExtensionNames", "maxPwdAge", "secret",
                          "possibleInferiors", "privilege", "sAMAccountType"])
 
 
@@ -221,15 +221,15 @@ def update_policyids(names, samdb):
     # policy guid
     res = samdb.search(expression="(displayName=Default Domain Policy)",
                        base="CN=Policies,CN=System," + str(names.rootdn),
-                       scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
-    names.policyid = str(res[0]["cn"]).replace("{","").replace("}","")
+                       scope=SCOPE_ONELEVEL, attrs=["cn", "displayName"])
+    names.policyid = str(res[0]["cn"]).replace("{", "").replace("}", "")
     # dc policy guid
     res2 = samdb.search(expression="(displayName=Default Domain Controllers"
                                    " Policy)",
                         base="CN=Policies,CN=System," + str(names.rootdn),
-                        scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
+                        scope=SCOPE_ONELEVEL, attrs=["cn", "displayName"])
     if len(res2) == 1:
-        names.policyid_dc = str(res2[0]["cn"]).replace("{","").replace("}","")
+        names.policyid_dc = str(res2[0]["cn"]).replace("{", "").replace("}", "")
     else:
         names.policyid_dc = None
 
@@ -290,7 +290,7 @@ def dn_sort(x, y):
             return ret
         else:
             if i == minimum - 1:
-                assert len1 != len2,"PB PB PB" + " ".join(tab1) + " / " + " ".join(tab2)
+                assert len1 != len2, "PB PB PB" + " ".join(tab1) + " / " + " ".join(tab2)
                 if len1 > len2:
                     return 1
                 else:
@@ -480,7 +480,7 @@ def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
                  have
     """
     entry = samdb.search(expression='(objectClass=user)',
-                         base=ldb.Dn(samdb,str(rootdn)),
+                         base=ldb.Dn(samdb, str(rootdn)),
                          scope=SCOPE_SUBTREE, attrs=["msDs-KeyVersionNumber"],
                          controls=["search_options:1:2"])
     done = 0
@@ -560,7 +560,7 @@ def construct_existor_expr(attrs):
     if len(attrs) > 0:
         expr = "(|"
         for att in attrs:
-            expr = "%s(%s=*)" %(expr,att)
+            expr = "%s(%s=*)" %(expr, att)
         expr = "%s)" %expr
     return expr
 
@@ -681,7 +681,7 @@ def search_constructed_attrs_stored(samdb, rootdn, attrs):
         return hashAtt
     entry = samdb.search(expression=expr, base=ldb.Dn(samdb, str(rootdn)),
                          scope=SCOPE_SUBTREE, attrs=attrs,
-                         controls=["search_options:1:2","bypassoperational:0"])
+                         controls=["search_options:1:2", "bypassoperational:0"])
     if len(entry) == 0:
         # Nothing anymore
         return hashAtt
@@ -809,9 +809,9 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
         print("To track the USNs modified/created by provision and upgrade proivsion,")
         print(" the following ranges are proposed to be added to your provision sam.ldb: \n%s" % ldif)
         print("We recommend to review them, and if it's correct to integrate the following ldif: %s in your sam.ldb" % file)
-        print("You can load this file like this: ldbadd -H %s %s\n" %(str(samdb_path),file))
+        print("You can load this file like this: ldbadd -H %s %s\n" %(str(samdb_path), file))
         ldif = "dn: @PROVISION\nprovisionnerID: %s\n%s" % (invocationid, ldif)
-        open(file,'w').write(ldif)
+        open(file, 'w').write(ldif)
 
 def int64range2str(value):
     """Display the int64 range stored in value as xxx-yyy

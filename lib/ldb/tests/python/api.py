@@ -346,7 +346,7 @@ class SimpleLdb(LdbBaseTest):
         m.dn = ldb.Dn(l, "dc=foo4")
         m["bla"] = b"bla"
         self.assertEqual(len(l.search()), 0)
-        self.assertRaises(ldb.LdbError, lambda: l.add(m,["search_options:1:2"]))
+        self.assertRaises(ldb.LdbError, lambda: l.add(m, ["search_options:1:2"]))
 
     def test_add_dict(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
@@ -682,7 +682,7 @@ class SimpleLdb(LdbBaseTest):
 
     def test_no_crash_broken_expr(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
-        self.assertRaises(ldb.LdbError,lambda: l.search("", ldb.SCOPE_SUBTREE, "&(dc=*)(dn=*)", ["dc"]))
+        self.assertRaises(ldb.LdbError, lambda: l.search("", ldb.SCOPE_SUBTREE, "&(dc=*)(dn=*)", ["dc"]))
 
 # Run the SimpleLdb tests against an lmdb backend
 class SimpleLdbLmdb(SimpleLdb):

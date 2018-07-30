@@ -50,13 +50,13 @@ class CommonTests(samba.tests.TestCaseInTempDir):
             dn4 = dsdb_Dn(sam, "B:8:00000000:<GUID=ffffffff-17f4-452a-b002-963e1909d101>;OU=dn4,DC=samba,DC=example,DC=com")
             dn5 = dsdb_Dn(sam, "<GUID=ffffffff-27f4-452a-b002-963e1909d101>;OU=dn5,DC=samba,DC=example,DC=com")
             dn6 = dsdb_Dn(sam, "<GUID=00000000-27f4-452a-b002-963e1909d101>;OU=dn6,DC=samba,DC=example,DC=com")
-            unsorted_links14 = [dn1,dn2,dn3,dn4]
+            unsorted_links14 = [dn1, dn2, dn3, dn4]
             sorted_vals14 = [str(dn) for dn in sorted(unsorted_links14)]
             self.assertEquals(sorted_vals14[0], str(dn3))
             self.assertEquals(sorted_vals14[1], str(dn2))
             self.assertEquals(sorted_vals14[2], str(dn1))
             self.assertEquals(sorted_vals14[3], str(dn4))
-            unsorted_links56 = [dn5,dn6]
+            unsorted_links56 = [dn5, dn6]
             sorted_vals56 = [str(dn) for dn in sorted(unsorted_links56)]
             self.assertEquals(sorted_vals56[0], str(dn6))
             self.assertEquals(sorted_vals56[1], str(dn5))

@@ -54,9 +54,9 @@ class UrgentReplicationTests(samba.tests.TestCase):
         """Test if the urgent replication is not activated when handling a non urgent object."""
         self.ldb.add({
             "dn": "cn=nonurgenttest,cn=users," + self.base_dn,
-            "objectclass":"user",
-            "samaccountname":"nonurgenttest",
-            "description":"nonurgenttest description"})
+            "objectclass": "user",
+            "samaccountname": "nonurgenttest",
+            "description": "nonurgenttest description"})
 
         # urgent replication should not be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)
@@ -81,10 +81,10 @@ class UrgentReplicationTests(samba.tests.TestCase):
         self.ldb.add({
             "dn": "cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,%s" %
             self.ldb.get_config_basedn(),
-            "objectclass":"server",
-            "cn":"test server",
-            "name":"test server",
-            "systemFlags":"50000000"}, ["relax:0"])
+            "objectclass": "server",
+            "cn": "test server",
+            "name": "test server",
+            "systemFlags": "50000000"}, ["relax:0"])
 
         self.ldb.add_ldif(
             """dn: cn=NTDS Settings test,cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration,%s""" % (self.base_dn) + """
@@ -156,7 +156,7 @@ cn: test attributeSchema
 instanceType: 4
 isSingleValued: FALSE
 showInAdvancedViewOnly: FALSE
-attributeID: 1.3.6.1.4.1.7165.4.6.1.4.""" + str(random.randint(1,100000)) + """
+attributeID: 1.3.6.1.4.1.7165.4.6.1.4.""" + str(random.randint(1, 100000)) + """
 attributeSyntax: 2.5.5.12
 adminDisplayName: test attributeSchema
 adminDescription: test attributeSchema
@@ -188,7 +188,7 @@ objectClass: classSchema
 cn: test classSchema
 instanceType: 4
 subClassOf: top
-governsId: 1.3.6.1.4.1.7165.4.6.2.4.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.4.""" + str(random.randint(1, 100000)) + """
 rDNAttID: cn
 showInAdvancedViewOnly: TRUE
 adminDisplayName: test classSchema
@@ -225,10 +225,10 @@ defaultHidingValue: TRUE""")
 
         self.ldb.add({
             "dn": "cn=test secret,cn=System," + self.base_dn,
-            "objectClass":"secret",
-            "cn":"test secret",
-            "name":"test secret",
-            "currentValue":"xxxxxxx"})
+            "objectClass": "secret",
+            "cn": "test secret",
+            "name": "test secret",
+            "currentValue": "xxxxxxx"})
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)
@@ -284,12 +284,12 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
 
         self.ldb.add({
             "dn": "cn=user UrgAttr test,cn=users," + self.base_dn,
-            "objectclass":"user",
-            "samaccountname":"user UrgAttr test",
-            "userAccountControl":str(dsdb.UF_NORMAL_ACCOUNT),
-            "lockoutTime":"0",
-            "pwdLastSet":"0",
-            "description":"urgent attributes test description"})
+            "objectclass": "user",
+            "samaccountname": "user UrgAttr test",
+            "userAccountControl": str(dsdb.UF_NORMAL_ACCOUNT),
+            "lockoutTime": "0",
+            "pwdLastSet": "0",
+            "description": "urgent attributes test description"})
 
         # urgent replication should NOT be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)

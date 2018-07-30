@@ -728,7 +728,7 @@ class BasicTests(samba.tests.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["sAMAccountName"] = MessageElement(["nam1","nam2"], FLAG_MOD_REPLACE,
+        m["sAMAccountName"] = MessageElement(["nam1", "nam2"], FLAG_MOD_REPLACE,
                                              "sAMAccountName")
         try:
             ldb.modify(m)
@@ -1378,7 +1378,7 @@ class BasicTests(samba.tests.TestCase):
         rdn = "CN=a012345678901234567890123456789012345678901234567890123456789012"
         delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
         ldif = """
-dn: %s,%s""" % (rdn,self.base_dn) + """
+dn: %s,%s""" % (rdn, self.base_dn) + """
 objectClass: container
 """
         self.ldb.add_ldif(ldif)
@@ -1388,7 +1388,7 @@ objectClass: container
         delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
         try:
             ldif = """
-dn: %s,%s""" % (rdn,self.base_dn) + """
+dn: %s,%s""" % (rdn, self.base_dn) + """
 objectClass: container
 """
             self.ldb.add_ldif(ldif)
@@ -1575,11 +1575,11 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         """Test parentGUID behaviour"""
         self.ldb.add({
             "dn": "cn=parentguidtest,cn=users," + self.base_dn,
-            "objectclass":"user",
-            "samaccountname":"parentguidtest"})
+            "objectclass": "user",
+            "samaccountname": "parentguidtest"})
         res1 = ldb.search(base="cn=parentguidtest,cn=users," + self.base_dn, scope=SCOPE_BASE,
                           attrs=["parentGUID", "samaccountname"])
-        res2 = ldb.search(base="cn=users," + self.base_dn,scope=SCOPE_BASE,
+        res2 = ldb.search(base="cn=users," + self.base_dn, scope=SCOPE_BASE,
                           attrs=["objectGUID"])
         res3 = ldb.search(base=self.base_dn, scope=SCOPE_BASE,
                           attrs=["parentGUID"])
@@ -1630,8 +1630,8 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
 
         self.ldb.add({
             "dn": "cn=testotherusers," + self.base_dn,
-            "objectclass":"container"})
-        res1 = ldb.search(base="cn=testotherusers," + self.base_dn,scope=SCOPE_BASE,
+            "objectclass": "container"})
+        res1 = ldb.search(base="cn=testotherusers," + self.base_dn, scope=SCOPE_BASE,
                           attrs=["objectGUID"])
         ldb.rename("cn=parentguidtest,cn=users," + self.base_dn,
                    "cn=parentguidtest,cn=testotherusers," + self.base_dn)
@@ -3072,7 +3072,7 @@ nTSecurityDescriptor:: """ + desc_base64
         # there does not seem to be another limitation.
         try:
             dshstr = ""
-            for i in range(1,11):
+            for i in range(1, 11):
                 # This is in the range
                 self.ldb.set_dsheuristics(dshstr + "x")
                 self.ldb.set_dsheuristics(dshstr + "xxxxx")
