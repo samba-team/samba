@@ -2146,7 +2146,7 @@ class SdAutoInheritTests(DescriptorTests):
         self.assertTrue(sub_usn2 == sub_usn0)
 
 
-if not "://" in host:
+if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
     else:

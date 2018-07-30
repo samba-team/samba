@@ -49,7 +49,7 @@ class LDAPBase(object):
                  outf=sys.stdout, errf=sys.stderr, skip_missing_dn=True):
         ldb_options = []
         samdb_url = host
-        if not "://" in host:
+        if "://" not in host:
             if os.path.isfile(host):
                 samdb_url = "tdb://%s" % host
             else:
@@ -580,7 +580,7 @@ class LDAPObject(object):
             #
             title = 4 * " " + "Attributes found only in %s:" % self.con.host
             for x in self.attributes.keys():
-                if not x in other.attributes.keys() and \
+                if x not in other.attributes.keys() and \
                     not x.upper() in [q.upper() for q in other.ignore_attributes]:
                     if title:
                         res += title + "\n"
@@ -590,7 +590,7 @@ class LDAPObject(object):
             #
             title = 4 *" " + "Attributes found only in %s:" % other.con.host
             for x in other.attributes.keys():
-                if not x in self.attributes.keys() and \
+                if x not in self.attributes.keys() and \
                     not x.upper() in [q.upper() for q in self.ignore_attributes]:
                     if title:
                         res += title + "\n"

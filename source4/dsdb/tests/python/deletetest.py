@@ -556,7 +556,7 @@ class BasicTreeDeleteTests(BasicDeleteTests):
         self.assertFalse("CN=Deleted Objects" in str(objDeleted7.dn))
 
 
-if not "://" in host:
+if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
     else:

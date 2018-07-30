@@ -649,7 +649,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.assertEqual(rids.rids[0].rid, user_info.primary_gid)
 
 
-if not "://" in url:
+if "://" not in url:
     if os.path.isfile(url):
         url = "tdb://%s" % url
     else:

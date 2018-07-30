@@ -340,7 +340,7 @@ def import_bundled_package(modulename, location, source_tree_container,
     if in_source_tree():
         extra_path = os.path.join(source_tree_topdir(), source_tree_container,
                                   location)
-        if not extra_path in sys.path:
+        if extra_path not in sys.path:
             sys.path.insert(0, extra_path)
         sys.modules[modulename] = __import__(modulename)
     else:

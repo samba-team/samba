@@ -1134,7 +1134,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).
         self.ldb2 = None
 
 
-if not "://" in host:
+if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
     else:

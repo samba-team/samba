@@ -110,7 +110,7 @@ class cmd_dbcheck(Command):
 
         scope_map = {"SUB": ldb.SCOPE_SUBTREE, "BASE": ldb.SCOPE_BASE, "ONE": ldb.SCOPE_ONELEVEL}
         scope = scope.upper()
-        if not scope in scope_map:
+        if scope not in scope_map:
             raise CommandError("Unknown scope %s" % scope)
         search_scope = scope_map[scope]
 

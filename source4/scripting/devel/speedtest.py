@@ -227,7 +227,7 @@ class AclSearchSpeedTest(SpeedTest):
 # Important unit running information
 
 
-if not "://" in host:
+if "://" not in host:
     host = "ldap://%s" % host
 
 ldb_options = ["modules:paged_searches"]

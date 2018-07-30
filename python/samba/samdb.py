@@ -929,7 +929,7 @@ schemaUpdateNow: 1
         res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["minPwdAge"])
         if len(res) == 0:
             return None
-        elif not "minPwdAge" in res[0]:
+        elif "minPwdAge" not in res[0]:
             return None
         else:
             return int(res[0]["minPwdAge"][0])
@@ -945,7 +945,7 @@ schemaUpdateNow: 1
         res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["maxPwdAge"])
         if len(res) == 0:
             return None
-        elif not "maxPwdAge" in res[0]:
+        elif "maxPwdAge" not in res[0]:
             return None
         else:
             return int(res[0]["maxPwdAge"][0])
@@ -961,7 +961,7 @@ schemaUpdateNow: 1
         res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["minPwdLength"])
         if len(res) == 0:
             return None
-        elif not "minPwdLength" in res[0]:
+        elif "minPwdLength" not in res[0]:
             return None
         else:
             return int(res[0]["minPwdLength"][0])
@@ -977,7 +977,7 @@ schemaUpdateNow: 1
         res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["pwdProperties"])
         if len(res) == 0:
             return None
-        elif not "pwdProperties" in res[0]:
+        elif "pwdProperties" not in res[0]:
             return None
         else:
             return int(res[0]["pwdProperties"][0])

@@ -73,7 +73,7 @@ def drs_get_rodc_partial_attribute_set(samdb, samdb1, exceptions=[]):
                 continue
         try:
             attid = samdb1.get_attid_from_lDAPDisplayName(ldap_display_name)
-            if not attid in exceptions:
+            if attid not in exceptions:
                 attids.append(int(attid))
         except:
             pass

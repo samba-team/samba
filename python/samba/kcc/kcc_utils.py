@@ -744,7 +744,7 @@ class DirectoryServiceAgent(object):
                     flags = dsdn.get_binary_integer()
                     dnstr = str(dsdn.dn)
 
-                    if not dnstr in tmp_table:
+                    if dnstr not in tmp_table:
                         rep = NCReplica(self, dnstr)
                         tmp_table[dnstr] = rep
                     else:

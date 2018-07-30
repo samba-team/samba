@@ -448,7 +448,7 @@ def check_safe_path(path):
     dirs = re.split('/|\\\\', path)
     if 'sysvol' in path:
         dirs = dirs[dirs.index('sysvol') + 1:]
-    if not '..' in dirs:
+    if '..' not in dirs:
         return os.path.join(*dirs)
     raise OSError(path)
 
@@ -567,7 +567,7 @@ def register_gp_extension(guid, name, path,
         return False
 
     lp, parser = parse_gpext_conf(smb_conf)
-    if not guid in parser.sections():
+    if guid not in parser.sections():
         parser.add_section(guid)
     parser.set(guid, 'DllName', path)
     parser.set(guid, 'ProcessGroupPolicy', name)

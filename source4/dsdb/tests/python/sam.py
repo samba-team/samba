@@ -3760,7 +3760,7 @@ class SamTests(samba.tests.TestCase):
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
 
-if not "://" in host:
+if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
     else:

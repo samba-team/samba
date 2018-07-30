@@ -3271,14 +3271,14 @@ class BaseDnTests(samba.tests.TestCase):
         self.assertEquals(given, expected)
 
 
-if not "://" in host:
+if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
     else:
         host = "ldap://%s" % host
 
 ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp)
-if not "tdb://" in host:
+if "tdb://" not in host:
     gc_ldb = Ldb("%s:3268" % host, credentials=creds,
                  session_info=system_session(lp), lp=lp)
 else:

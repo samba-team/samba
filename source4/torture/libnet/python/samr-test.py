@@ -31,10 +31,10 @@ import os
 from samba import net
 import samba.tests
 
-if not "ACCOUNT_NAME" in os.environ.keys():
+if "ACCOUNT_NAME" not in os.environ.keys():
     raise Exception("Please supply ACCOUNT_NAME in environment")
 
-if not "NEW_PASS" in os.environ.keys():
+if "NEW_PASS" not in os.environ.keys():
     raise Exception("Please supply NEW_PASS in environment")
 
 account_name = os.environ["ACCOUNT_NAME"]

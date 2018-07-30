@@ -2056,7 +2056,7 @@ class KCC(object):
         for dc_s in self.my_site.dsa_table.values():
             # If this partition (nc_x) doesn't appear as a
             # replica (f_of_x) on (dc_s) then continue
-            if not nc_x.nc_dnstr in dc_s.current_rep_table:
+            if nc_x.nc_dnstr not in dc_s.current_rep_table:
                 continue
 
             # Pull out the NCReplica (f) of (x) with the dn
@@ -2138,7 +2138,7 @@ class KCC(object):
                 # If this partition NC (x) doesn't appear as a
                 # replica (p) of NC (x) on the dsa DC (s) then
                 # continue
-                if not nc_x.nc_dnstr in dc_s.current_rep_table:
+                if nc_x.nc_dnstr not in dc_s.current_rep_table:
                     continue
 
                 # Pull out the NCReplica with the dn that

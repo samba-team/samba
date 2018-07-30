@@ -58,7 +58,7 @@ if len(args) < 1:
     sys.exit(1)
 
 host = args.pop()
-if not "://" in host:
+if "://" not in host:
     ldaphost = "ldap://%s" % host
     ldapshost = "ldaps://%s" % host
 else:

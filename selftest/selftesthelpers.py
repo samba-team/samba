@@ -106,9 +106,9 @@ def plantestsuite_loadlist(name, env, cmdline):
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
     support_list = ("$LISTOPT" in cmdline)
-    if not "$LISTOPT" in cmdline:
+    if "$LISTOPT" not in cmdline:
         raise AssertionError("loadlist test %s does not support not --list" % name)
-    if not "$LOADLIST" in cmdline:
+    if "$LOADLIST" not in cmdline:
         raise AssertionError("loadlist test %s does not support --load-list" % name)
     print(("%s | %s" % (cmdline.replace("$LOADLIST", ""), add_prefix(name, env, support_list))).replace("$LISTOPT", "--list"))
     print(cmdline.replace("$LISTOPT", "") + " 2>&1 " + " | " + add_prefix(name, env, False))

@@ -49,7 +49,7 @@ class wintest():
 
     def getvar(self, varname):
         '''return a substitution variable'''
-        if not varname in self.vars:
+        if varname not in self.vars:
             return None
         return self.vars[varname]
 
@@ -133,7 +133,7 @@ class wintest():
             if var_end == -1:
                 return text
             var_name = text[var_start + 2:var_end]
-            if not var_name in self.vars:
+            if var_name not in self.vars:
                 raise RuntimeError("Unknown substitution variable ${%s}" % var_name)
             text = text.replace("${%s}" % var_name, self.vars[var_name])
         return text

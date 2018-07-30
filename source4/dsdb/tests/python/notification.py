@@ -365,7 +365,7 @@ delete: otherLoginWorkstations
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
 
-if not "://" in url:
+if "://" not in url:
     if os.path.isfile(url):
         url = "tdb://%s" % url
     else:

@@ -1232,7 +1232,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
             target_is_deleted = 'isDeleted' in res[0] and res[0]['isDeleted'][0].upper() == 'TRUE'
 
-            if is_deleted and not obj.dn in self.deleted_objects_containers and linkID:
+            if is_deleted and obj.dn not in self.deleted_objects_containers and linkID:
                 # A fully deleted object should not have any linked
                 # attributes. (MS-ADTS 3.1.1.5.5.1.1 Tombstone
                 # Requirements and 3.1.1.5.5.1.3 Recycled-Object
@@ -2470,7 +2470,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         error_count = 0
 
         # check that the dsServiceName is in GUID form
-        if not 'dsServiceName' in obj:
+        if 'dsServiceName' not in obj:
             self.report('ERROR: dsServiceName missing in @ROOTDSE')
             return error_count + 1
 

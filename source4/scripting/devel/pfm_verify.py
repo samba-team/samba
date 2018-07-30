@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     if len(args) != 1:
         import os
-        if not "DC_SERVER" in os.environ.keys():
+        if "DC_SERVER" not in os.environ.keys():
             parser.error("You must supply a server")
         args.append(os.environ["DC_SERVER"])
 

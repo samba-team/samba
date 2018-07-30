@@ -601,7 +601,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
         out = ""
         unexpected = False
 
-        if not name in self.test_output:
+        if name not in self.test_output:
             print("no output for name[%s]" % name)
 
         if result in ("success", "xfail"):
@@ -655,7 +655,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
                     'success': '.'}.get(result, "?(%s)" % result))
             return
 
-        if not self.name in self.test_output:
+        if self.name not in self.test_output:
             self.test_output[self.name] = ""
 
         self.test_output[self.name] += "UNEXPECTED(%s): %s\n" % (result, testname)
