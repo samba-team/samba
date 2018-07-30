@@ -56,7 +56,7 @@ class cmd_delegation_show(Command):
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
 
-        if H == None:
+        if H is None:
             path = paths.samdb
         else:
             path = H
@@ -121,7 +121,7 @@ class cmd_delegation_for_any_service(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        if H == None:
+        if H is None:
             path = paths.samdb
         else:
             path = H
@@ -174,7 +174,7 @@ class cmd_delegation_for_any_protocol(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        if H == None:
+        if H is None:
             path = paths.samdb
         else:
             path = H
@@ -219,7 +219,7 @@ class cmd_delegation_add_service(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        if H == None:
+        if H is None:
             path = paths.samdb
         else:
             path = H
@@ -273,7 +273,7 @@ class cmd_delegation_del_service(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        if H == None:
+        if H is None:
             path = paths.samdb
         else:
             path = H

@@ -33,7 +33,7 @@ class PasswordExpirePamTests(samba.tests.TestCase):
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
         res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])
 
-        self.assertTrue(res != None)
+        self.assertTrue(res is not None)
         if warn_pwd_expire == 0:
             self.assertTrue(res.info == ())
         elif warn_pwd_expire == 50:

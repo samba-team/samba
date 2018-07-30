@@ -229,19 +229,19 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="samaccountname=*",
                                     controls=["dirsync:1:0:1"])
         # Check that nTSecurityDescriptor is returned as it's the case when doing dirsync
-        self.assertTrue(res.msgs[0].get("ntsecuritydescriptor") != None)
+        self.assertTrue(res.msgs[0].get("ntsecuritydescriptor") is not None)
         # Check that non replicated attributes are not returned
-        self.assertTrue(res.msgs[0].get("badPwdCount") == None)
+        self.assertTrue(res.msgs[0].get("badPwdCount") is None)
         # Check that non forward link are not returned
-        self.assertTrue(res.msgs[0].get("memberof") == None)
+        self.assertTrue(res.msgs[0].get("memberof") is None)
 
         # Asking for instanceType will return also objectGUID
         res = self.ldb_admin.search(self.base_dn,
                                     expression="samaccountname=Administrator",
                                     attrs=["instanceType"],
                                     controls=["dirsync:1:0:1"])
-        self.assertTrue(res.msgs[0].get("objectGUID") != None)
-        self.assertTrue(res.msgs[0].get("instanceType") != None)
+        self.assertTrue(res.msgs[0].get("objectGUID") is not None)
+        self.assertTrue(res.msgs[0].get("instanceType") is not None)
 
         # We don't return an entry if asked for objectGUID
         res = self.ldb_admin.search(self.base_dn,
@@ -255,10 +255,10 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["name"],
                                     controls=["dirsync:1:0:1"])
-        self.assertTrue(res.msgs[0].get("objectGUID") != None)
-        self.assertTrue(res.msgs[0].get("name") != None)
-        self.assertTrue(res.msgs[0].get("parentGUID") == None)
-        self.assertTrue(res.msgs[0].get("instanceType") != None)
+        self.assertTrue(res.msgs[0].get("objectGUID") is not None)
+        self.assertTrue(res.msgs[0].get("name") is not None)
+        self.assertTrue(res.msgs[0].get("parentGUID") is None)
+        self.assertTrue(res.msgs[0].get("instanceType") is not None)
 
         # Asking for name will return also objectGUID and parentGUID
         # and instanceType and of course name
@@ -266,10 +266,10 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="samaccountname=Administrator",
                                     attrs=["name"],
                                     controls=["dirsync:1:0:1"])
-        self.assertTrue(res.msgs[0].get("objectGUID") != None)
-        self.assertTrue(res.msgs[0].get("name") != None)
-        self.assertTrue(res.msgs[0].get("parentGUID") != None)
-        self.assertTrue(res.msgs[0].get("instanceType") != None)
+        self.assertTrue(res.msgs[0].get("objectGUID") is not None)
+        self.assertTrue(res.msgs[0].get("name") is not None)
+        self.assertTrue(res.msgs[0].get("parentGUID") is not None)
+        self.assertTrue(res.msgs[0].get("instanceType") is not None)
 
         # Asking for dn will not return not only DN but more like if attrs=*
         # parentGUID should be returned
@@ -366,7 +366,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     controls=["dirsync:1:0:0"])
         self.assertEqual(len(res.msgs), nb - 1)
         if nb > 1:
-            self.assertTrue(res.msgs[0].get("objectGUID") != None)
+            self.assertTrue(res.msgs[0].get("objectGUID") is not None)
         else:
             res = self.ldb_admin.search(self.base_dn,
                                         expression="(objectclass=configuration)",
@@ -454,8 +454,8 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
                                     controls=[control3])
 
-        self.assertTrue(res[0].get("parentGUID") != None)
-        self.assertTrue(res[0].get("name") != None)
+        self.assertTrue(res[0].get("parentGUID") is not None)
+        self.assertTrue(res[0].get("name") is not None)
         delete_force(self.ldb_admin, ouname)
 
     def test_dirsync_linkedattributes(self):
@@ -571,7 +571,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         guid2 = str(ndr_unpack(misc.GUID, res[0].get("objectGUID")[0]))
         self.assertEqual(guid2, guid)
         self.assertTrue(res[0].get("isDeleted"))
-        self.assertTrue(res[0].get("name") != None)
+        self.assertTrue(res[0].get("name") is not None)
 
     def test_cookie_from_others(self):
         res = self.ldb_admin.search(self.base_dn,
@@ -596,7 +596,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
                                     expression="(name=Administrators)",
                                     controls=["dirsync:1:%d:1" % flag_incr_linked])
 
-        self.assertTrue(res[0].get("member;range=1-1") != None)
+        self.assertTrue(res[0].get("member;range=1-1") is not None)
         self.assertTrue(len(res[0].get("member;range=1-1")) > 0)
         size = len(res[0].get("member;range=1-1"))
 
@@ -673,7 +673,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
             if str(e["name"]) == "testou3":
                 guid = str(ndr_unpack(misc.GUID, e.get("objectGUID")[0]))
 
-        self.assertTrue(guid != None)
+        self.assertTrue(guid is not None)
         ctl = str(res.controls[0]).split(":")
         ctl[1] = "1"
         ctl[2] = "1"

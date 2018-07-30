@@ -133,7 +133,7 @@ class PassWordHashGpgmeTests(PassWordHashTests):
         sc = self.get_supplemental_creds()
         if expect_cleartext:
             (pos, ct_package) = get_package(sc, "Primary:CLEARTEXT")
-            self.assertTrue(ct_package != None, "Failed to retrieve cleartext")
+            self.assertTrue(ct_package is not None, "Failed to retrieve cleartext")
 
             # Check the clear-text value is correct.
             ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
@@ -141,7 +141,7 @@ class PassWordHashGpgmeTests(PassWordHashTests):
             self.assertEquals(password.encode('utf-16-le'), ct.cleartext)
         else:
             ct_package = get_package(sc, "Primary:CLEARTEXT")
-            self.assertTrue(ct_package == None,
+            self.assertTrue(ct_package is None,
                             "Got cleartext when we shouldn't have")
 
     def test_supplementalCredentials_cleartext_pso(self):

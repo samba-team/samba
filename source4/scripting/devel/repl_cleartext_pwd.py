@@ -240,7 +240,7 @@ if __name__ == "__main__":
 
     while True:
         (level, ctr) = drs_conn.DsGetNCChanges(drs_handle, 8, req8)
-        if ctr.first_object == None and ctr.object_count != 0:
+        if ctr.first_object is None and ctr.object_count != 0:
             raise RuntimeError("DsGetNCChanges: NULL first_object with object_count=%u" % (ctr.object_count))
 
         obj_item = ctr.first_object

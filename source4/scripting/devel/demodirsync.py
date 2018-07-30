@@ -96,7 +96,7 @@ cont = 0
 if (len(ctrls)):
     for ctl in ctrls:
         cookie = printdirsync(ctl)
-    if cookie != None:
+    if cookie is not None:
         cont = (ctl.split(':'))[1]
     print("Returned %d entries" % len(msgs))
 
@@ -112,7 +112,7 @@ while (cont == "1"):
     if (len(ctrls)):
         for ctl in ctrls:
             cookie = printdirsync(ctl)
-        if cookie != None:
+        if cookie is not None:
             cont = (ctl.split(':'))[1]
         print("Returned %d entries" % len(msgs))
 

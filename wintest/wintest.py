@@ -515,7 +515,7 @@ options {
             i = child.exitstatus
             if wait_for_fail:
                 # wait for timeout or fail
-                if i == None or i > 0:
+                if i is None or i > 0:
                     return
             else:
                 if i == 0:

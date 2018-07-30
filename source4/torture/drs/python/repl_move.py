@@ -138,7 +138,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                      version, o.version))
             i = i + 1
 
-        if drs == None:
+        if drs is None:
             return
 
         req8 = DsGetNCChangesRequest8()

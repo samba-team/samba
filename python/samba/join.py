@@ -975,7 +975,7 @@ class DCJoinContext(object):
                 repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id,
                                destination_dsa_guid,
                                exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
-            elif ctx.rid_manager_dn != None:
+            elif ctx.rid_manager_dn is not None:
                 # Try and get a RID Set if we can.  This is only possible against the RID Master.  Warn otherwise.
                 try:
                     repl.replicate(ctx.rid_manager_dn, source_dsa_invocation_id,
