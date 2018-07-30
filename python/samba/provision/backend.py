@@ -339,7 +339,7 @@ class OpenLDAPBackend(LDAPBackend):
 
         self.schema = Schema(self.domainsid,
                              schemadn=self.names.schemadn, files=[
-                setup_path("schema_samba4.ldif")])
+                                 setup_path("schema_samba4.ldif")])
 
     def setup_db_dir(self, dbdir):
         """Create a database directory.

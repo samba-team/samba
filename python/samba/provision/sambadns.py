@@ -469,18 +469,18 @@ def add_host_record(samdb, container_dn, prefix, hostip, hostip6):
 def add_domain_record(samdb, domaindn, prefix, dnsdomain, domainsid, dnsadmins_sid):
     # DC=<DNSDOMAIN>,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     sddl = "O:SYG:BAD:AI" \
-    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
-    "(A;;CC;;;AU)" \
-    "(A;;RPLCLORC;;;WD)" \
-    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
-    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
-    "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;%s)" \
-    "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
-    "(OA;CIID;RPWPCR;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)" \
-    "(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
-    "(A;CIID;LC;;;RU)" \
-    "(A;CIID;RPWPCRCCLCLORCWOWDSDSW;;;BA)" \
-    "S:AI" % dnsadmins_sid
+        "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
+        "(A;;CC;;;AU)" \
+        "(A;;RPLCLORC;;;WD)" \
+        "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+        "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
+        "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;%s)" \
+        "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
+        "(OA;CIID;RPWPCR;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)" \
+        "(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
+        "(A;CIID;LC;;;RU)" \
+        "(A;CIID;RPWPCRCCLCLORCWOWDSDSW;;;BA)" \
+        "S:AI" % dnsadmins_sid
     sec = security.descriptor.from_sddl(sddl, domainsid)
     props = []
     props.append(ndr_pack(TypeProperty()))

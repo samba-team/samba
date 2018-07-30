@@ -1797,7 +1797,7 @@ class SamTests(samba.tests.TestCase):
         def assertLDAPErrorMsg(msg, expected_msg):
             self.assertTrue(expected_msg in msg,
                             "msg[%s] does not contain expected[%s]" % (
-                            msg, expected_msg))
+                                msg, expected_msg))
 
         try:
             ldb_fail = SamDB(url=host, credentials=sasl_wrong_creds, lp=lp)

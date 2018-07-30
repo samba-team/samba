@@ -2465,7 +2465,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise self.LocalRuntimeError(self, error,
                                 "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
-                                lsaString.string))
+                                    lsaString.string))
 
         try:
             lsaString.string = local_trust_info.netbios_name.string
@@ -2476,7 +2476,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise self.LocalRuntimeError(self, error,
                                 "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
-                                lsaString.string))
+                                    lsaString.string))
 
         if remote_trust_info:
             try:
@@ -2488,7 +2488,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error,
                                     "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
-                                    lsaString.string))
+                                        lsaString.string))
 
             try:
                 lsaString.string = remote_trust_info.netbios_name.string
@@ -2499,7 +2499,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error,
                                     "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
-                                    lsaString.string))
+                                        lsaString.string))
 
         try:
             local_netlogon = self.new_local_netlogon_connection()

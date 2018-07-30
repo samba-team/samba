@@ -183,7 +183,7 @@ elephant 2311·-
 [38;5;39melephant[0m [38;5;214m2[0m[38;5;208m3[0m[38;5;112m1[0m[38;5;112m1[0m[0m[38;5;39m·[0m[48;5;124m-[0m
 [38;5;45m    frog[0m [38;5;214m2[0m[38;5;208m3[0m[38;5;112m1[0m[38;5;214m2[0m[38;5;112m1[0m[0m[38;5;45m·[0m[0m
                 ''',
-'utf8 True, colour xterm-256color-heatmap': '''
+            'utf8 True, colour xterm-256color-heatmap': '''
                  [4mdestination[0m
          [0m[38;5;171m╭────── ant[0m
          [38;5;171m│[0m[38;5;207m╭───── bat[0m
@@ -198,7 +198,7 @@ elephant 2311·-
 [38;5;171melephant[0m [48;5;214m2[0m[48;5;208m3[0m[48;5;112m1[0m[48;5;112m1[0m[0m[38;5;171m·[0m[48;5;124m-[0m
 [38;5;207m    frog[0m [48;5;214m2[0m[48;5;208m3[0m[48;5;112m1[0m[48;5;214m2[0m[48;5;112m1[0m[0m[38;5;207m·[0m[0m
 ''',
-'utf8 False, colour None': '''
+            'utf8 False, colour None': '''
                  destination
          ,------ ant
          |,----- bat
@@ -213,7 +213,7 @@ elephant 2311·-
 elephant 23110-
     frog 231210
 ''',
-'utf8 False, colour ansi': '''
+            'utf8 False, colour ansi': '''
                  [4mdestination[0m
          [0m[37m,------ ant[0m
          [37m|[0m[1;30m,----- bat[0m
@@ -228,7 +228,7 @@ elephant 23110-
 [37melephant[0m [33m2[0m[33m3[0m[1;32m1[0m[1;32m1[0m[0m[37m0[0m[1;31m-[0m
 [1;30m    frog[0m [33m2[0m[33m3[0m[1;32m1[0m[33m2[0m[1;32m1[0m[0m[1;30m0[0m[0m
 ''',
-'utf8 False, colour ansi-heatmap': '''
+            'utf8 False, colour ansi-heatmap': '''
                  [4mdestination[0m
          [0m[37m,------ ant[0m
          [37m|[0m[1;30m,----- bat[0m
@@ -243,7 +243,7 @@ elephant 23110-
 [37melephant[0m [43m2[0m[43m3[0m[1;42m1[0m[1;42m1[0m[0m[37m0[0m[1;41m-[0m
 [1;30m    frog[0m [43m2[0m[43m3[0m[1;42m1[0m[43m2[0m[1;42m1[0m[0m[1;30m0[0m[0m
 ''',
-'utf8 False, colour xterm-256color': '''
+            'utf8 False, colour xterm-256color': '''
                  [4mdestination[0m
          [0m[38;5;39m,------ ant[0m
          [38;5;39m|[0m[38;5;45m,----- bat[0m
@@ -258,7 +258,7 @@ elephant 23110-
 [38;5;39melephant[0m [38;5;214m2[0m[38;5;208m3[0m[38;5;112m1[0m[38;5;112m1[0m[0m[38;5;39m0[0m[48;5;124m-[0m
 [38;5;45m    frog[0m [38;5;214m2[0m[38;5;208m3[0m[38;5;112m1[0m[38;5;214m2[0m[38;5;112m1[0m[0m[38;5;45m0[0m[0m
 ''',
-'utf8 False, colour xterm-256color-heatmap': '''
+            'utf8 False, colour xterm-256color-heatmap': '''
                  [4mdestination[0m
          [0m[38;5;171m,------ ant[0m
          [38;5;171m|[0m[38;5;207m,----- bat[0m
@@ -306,7 +306,7 @@ source ││╭─ cat
 [1;30m   bat[0m [1;32m1[0m[0m[1;30m·[0m[33m2[0m[0m
 [37m   cat[0m [33m2[0m[1;32m1[0m[0m[37m·[0m[0m
             ''',
-'utf8 True, colour ansi-heatmap': '''
+            'utf8 True, colour ansi-heatmap': '''
             [4mdestination[0m
        [0m[37m╭─── ant[0m
        [37m│[0m[1;30m╭── bat[0m
@@ -315,7 +315,7 @@ source ││╭─ cat
 [1;30m   bat[0m [1;42m1[0m[0m[1;30m·[0m[43m2[0m[0m
 [37m   cat[0m [43m2[0m[1;42m1[0m[0m[37m·[0m[0m
         ''',
-'utf8 True, colour xterm-256color': '''
+            'utf8 True, colour xterm-256color': '''
             [4mdestination[0m
        [0m[38;5;39m╭─── ant[0m
        [38;5;39m│[0m[38;5;45m╭── bat[0m
@@ -324,7 +324,7 @@ source ││╭─ cat
 [38;5;45m   bat[0m [38;5;112m1[0m[0m[38;5;45m·[0m[38;5;208m2[0m[0m
 [38;5;39m   cat[0m [38;5;208m2[0m[38;5;112m1[0m[0m[38;5;39m·[0m[0m
 ''',
-'utf8 True, colour xterm-256color-heatmap': '''
+            'utf8 True, colour xterm-256color-heatmap': '''
             [4mdestination[0m
        [0m[38;5;171m╭─── ant[0m
        [38;5;171m│[0m[38;5;207m╭── bat[0m
@@ -333,7 +333,7 @@ source ││╭─ cat
 [38;5;207m   bat[0m [48;5;112m1[0m[0m[38;5;207m·[0m[48;5;208m2[0m[0m
 [38;5;171m   cat[0m [48;5;208m2[0m[48;5;112m1[0m[0m[38;5;171m·[0m[0m
 ''',
-'utf8 False, colour None': '''
+            'utf8 False, colour None': '''
             destination
        ,--- ant
        |,-- bat
@@ -342,7 +342,7 @@ source ||,- cat
    bat 102
    cat 210
 ''',
-'utf8 False, colour ansi': '''
+            'utf8 False, colour ansi': '''
             [4mdestination[0m
        [0m[37m,--- ant[0m
        [37m|[0m[1;30m,-- bat[0m
@@ -351,7 +351,7 @@ source ||,- cat
 [1;30m   bat[0m [1;32m1[0m[0m[1;30m0[0m[33m2[0m[0m
 [37m   cat[0m [33m2[0m[1;32m1[0m[0m[37m0[0m[0m
 ''',
-'utf8 False, colour ansi-heatmap': '''
+            'utf8 False, colour ansi-heatmap': '''
             [4mdestination[0m
        [0m[37m,--- ant[0m
        [37m|[0m[1;30m,-- bat[0m
@@ -360,7 +360,7 @@ source ||,- cat
 [1;30m   bat[0m [1;42m1[0m[0m[1;30m0[0m[43m2[0m[0m
 [37m   cat[0m [43m2[0m[1;42m1[0m[0m[37m0[0m[0m
 ''',
-'utf8 False, colour xterm-256color': '''
+            'utf8 False, colour xterm-256color': '''
             [4mdestination[0m
        [0m[38;5;39m,--- ant[0m
        [38;5;39m|[0m[38;5;45m,-- bat[0m
@@ -369,7 +369,7 @@ source ||,- cat
 [38;5;45m   bat[0m [38;5;112m1[0m[0m[38;5;45m0[0m[38;5;208m2[0m[0m
 [38;5;39m   cat[0m [38;5;208m2[0m[38;5;112m1[0m[0m[38;5;39m0[0m[0m
 ''',
-'utf8 False, colour xterm-256color-heatmap': '''
+            'utf8 False, colour xterm-256color-heatmap': '''
             [4mdestination[0m
        [0m[38;5;171m,--- ant[0m
        [38;5;171m|[0m[38;5;207m,-- bat[0m
@@ -394,7 +394,7 @@ source ||,- cat
                  ('dog', 'ant'),
                  ('dog', 'eel')]
         expected = {
-'utf8 True, colour None': '''
+            'utf8 True, colour None': '''
               destination
        ╭───── ant
        │╭──── bat
@@ -407,7 +407,7 @@ source ││││╭─ eel
    dog 123·1
    eel ----·
 ''',
-'utf8 True, colour ansi': '''
+            'utf8 True, colour ansi': '''
               [4mdestination[0m
        [0m[37m╭───── ant[0m
        [37m│[0m[1;30m╭──── bat[0m
@@ -420,7 +420,7 @@ source ││││╭─ eel
 [1;30m   dog[0m [1;32m1[0m[33m2[0m[33m3[0m[0m[1;30m·[0m[1;32m1[0m[0m
 [37m   eel[0m [1;31m-[1;31m-[1;31m-[1;31m-[0m[37m·[0m[0m
 ''',
-'utf8 True, colour ansi-heatmap': '''
+            'utf8 True, colour ansi-heatmap': '''
               [4mdestination[0m
        [0m[37m╭───── ant[0m
        [37m│[0m[1;30m╭──── bat[0m
@@ -433,7 +433,7 @@ source ││││╭─ eel
 [1;30m   dog[0m [1;42m1[0m[43m2[0m[43m3[0m[0m[1;30m·[0m[1;42m1[0m[0m
 [37m   eel[0m [1;41m-[1;41m-[1;41m-[1;41m-[0m[37m·[0m[0m
 ''',
-'utf8 True, colour xterm-256color': '''
+            'utf8 True, colour xterm-256color': '''
               [4mdestination[0m
        [0m[38;5;39m╭───── ant[0m
        [38;5;39m│[0m[38;5;45m╭──── bat[0m
@@ -446,7 +446,7 @@ source ││││╭─ eel
 [38;5;45m   dog[0m [38;5;112m1[0m[38;5;214m2[0m[38;5;208m3[0m[0m[38;5;45m·[0m[38;5;112m1[0m[0m
 [38;5;39m   eel[0m [48;5;124m-[48;5;124m-[48;5;124m-[48;5;124m-[0m[38;5;39m·[0m[0m
 ''',
-'utf8 True, colour xterm-256color-heatmap': '''
+            'utf8 True, colour xterm-256color-heatmap': '''
               [4mdestination[0m
        [0m[38;5;171m╭───── ant[0m
        [38;5;171m│[0m[38;5;207m╭──── bat[0m
@@ -459,7 +459,7 @@ source ││││╭─ eel
 [38;5;207m   dog[0m [48;5;112m1[0m[48;5;214m2[0m[48;5;208m3[0m[0m[38;5;207m·[0m[48;5;112m1[0m[0m
 [38;5;171m   eel[0m [48;5;124m-[48;5;124m-[48;5;124m-[48;5;124m-[0m[38;5;171m·[0m[0m
 ''',
-'utf8 False, colour None': '''
+            'utf8 False, colour None': '''
               destination
        ,----- ant
        |,---- bat
@@ -472,7 +472,7 @@ source ||||,- eel
    dog 12301
    eel ----0
 ''',
-'utf8 False, colour ansi': '''
+            'utf8 False, colour ansi': '''
               [4mdestination[0m
        [0m[37m,----- ant[0m
        [37m|[0m[1;30m,---- bat[0m
@@ -485,7 +485,7 @@ source ||||,- eel
 [1;30m   dog[0m [1;32m1[0m[33m2[0m[33m3[0m[0m[1;30m0[0m[1;32m1[0m[0m
 [37m   eel[0m [1;31m-[1;31m-[1;31m-[1;31m-[0m[37m0[0m[0m
 ''',
-'utf8 False, colour ansi-heatmap': '''
+            'utf8 False, colour ansi-heatmap': '''
               [4mdestination[0m
        [0m[37m,----- ant[0m
        [37m|[0m[1;30m,---- bat[0m
@@ -498,8 +498,8 @@ source ||||,- eel
 [1;30m   dog[0m [1;42m1[0m[43m2[0m[43m3[0m[0m[1;30m0[0m[1;42m1[0m[0m
 [37m   eel[0m [1;41m-[1;41m-[1;41m-[1;41m-[0m[37m0[0m[0m
 ''',
-'utf8 False, colour xterm-256color':
-'''              [4mdestination[0m
+            'utf8 False, colour xterm-256color':
+            '''              [4mdestination[0m
        [0m[38;5;39m,----- ant[0m
        [38;5;39m|[0m[38;5;45m,---- bat[0m
        [38;5;39m|[38;5;45m|[0m[38;5;39m,--- cat[0m
@@ -511,7 +511,7 @@ source ||||,- eel
 [38;5;45m   dog[0m [38;5;112m1[0m[38;5;214m2[0m[38;5;208m3[0m[0m[38;5;45m0[0m[38;5;112m1[0m[0m
 [38;5;39m   eel[0m [48;5;124m-[48;5;124m-[48;5;124m-[48;5;124m-[0m[38;5;39m0[0m[0m
 ''',
-'utf8 False, colour xterm-256color-heatmap': '''
+            'utf8 False, colour xterm-256color-heatmap': '''
               [4mdestination[0m
        [0m[38;5;171m,----- ant[0m
        [38;5;171m|[0m[38;5;207m,---- bat[0m

@@ -741,7 +741,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if check_duplicates is True and self.has_duplicate_links(target_dn, forward_attr, forward_syntax):
             self.report("WARNING: Keep orphaned backlink attribute " + \
                         "'%s' in '%s' for link '%s' in '%s'" % (
-                        backlink_attr, obj_dn, forward_attr, target_dn))
+                            backlink_attr, obj_dn, forward_attr, target_dn))
             return
         self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_attr, obj_dn, forward_attr, target_dn))
         if not self.confirm_all('Remove orphaned backlink %s' % backlink_attr, 'fix_all_orphaned_backlinks'):

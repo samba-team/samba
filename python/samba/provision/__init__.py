@@ -1477,8 +1477,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         logger.info("Modifying display specifiers and extended rights")
         setup_modify_ldif(samdb,
             setup_path("provision_configuration_modify.ldif"), {
-            "CONFIGDN": names.configdn,
-            "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
+                "CONFIGDN": names.configdn,
+                "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
             })
 
     logger.info("Adding users container")
@@ -1527,8 +1527,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         managedservice_descr = b64encode(get_managed_service_accounts_descriptor(names.domainsid)).decode('utf8')
         setup_modify_ldif(samdb,
                           setup_path("provision_configuration_references.ldif"), {
-                "CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn})
+                              "CONFIGDN": names.configdn,
+                              "SCHEMADN": names.schemadn})
 
         logger.info("Setting up well known security principals")
         protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid)).decode('utf8')
@@ -2039,9 +2039,9 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
     try:
         logger.info("Setting up fake yp server settings")
         setup_add_ldif(samdb, setup_path("ypServ30.ldif"), {
-        "DOMAINDN": domaindn,
-        "NETBIOSNAME": netbiosname,
-        "NISDOMAIN": nisdomain,
+            "DOMAINDN": domaindn,
+            "NETBIOSNAME": netbiosname,
+            "NISDOMAIN": nisdomain,
             })
     except:
         samdb.transaction_cancel()

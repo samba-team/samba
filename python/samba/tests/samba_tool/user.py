@@ -381,7 +381,7 @@ company: %s
 sAMAccountName: %s
 
 """ % (user["given-name"], user["surname"], self.samdb.domain_dn(),
-       user["company"], user["name"])
+                user["company"], user["name"])
 
             self.assertEqual(out, expected_out,
                              "Unexpected show output for user '%s'" %
