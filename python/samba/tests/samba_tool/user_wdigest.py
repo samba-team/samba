@@ -275,6 +275,8 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
     #            UPPER(DNSDomainName),
     #            password)
     #
+
+
     def test_Wdigest14(self):
         attribute = "virtualWDigest14"
         expected = calc_digest(USER_NAME.lower(),
@@ -420,6 +422,7 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
     #            "Digest",
     #            password)
     #
+
     def test_Wdigest27(self):
         attribute = "virtualWDigest27"
         name = "%s\\%s" % (self.netbios_domain, USER_NAME)

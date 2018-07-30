@@ -908,6 +908,7 @@ class MaxIndexKeyLengthTests(LdbBaseTest):
     # Test adding to non unique index with identical multivalued index
     # attributes
     #
+
     def test_index_multi_valued_identical_keys(self):
         # 0        1         2         3         4         5
         # 12345678901234567890123456789012345678901234567890

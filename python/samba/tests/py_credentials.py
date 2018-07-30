@@ -214,6 +214,8 @@ class PyCredentialsTests(TestCase):
     # Test Credentials.encrypt_netr_crypt_password
     # By performing a NetrServerPasswordSet2
     # And the logging on using the new password.
+
+
     def test_encrypt_netr_password(self):
         # Change the password
         self.do_Netr_ServerPasswordSet2()
@@ -225,6 +227,7 @@ class PyCredentialsTests(TestCase):
 
    # Change the current machine account password with a
    # netr_ServerPasswordSet2 call.
+
 
     def do_Netr_ServerPasswordSet2(self):
         c = self.get_netlogon_connection()

@@ -1373,6 +1373,8 @@ class BasicTests(samba.tests.TestCase):
 
         # this test needs to be disabled until we really understand
         # what the rDN length constraints are
+
+
     def DISABLED_test_largeRDN(self):
         """Testing large rDN (limit 64 characters)"""
         rdn = "CN=a012345678901234567890123456789012345678901234567890123456789012"

@@ -20,6 +20,7 @@ from samba.gpclass import gp_ext
 
 try:
     import importlib.util
+
     def import_file(name, location):
         spec = importlib.util.spec_from_file_location(name, location)
         module = importlib.util.module_from_spec(spec)
@@ -27,6 +28,7 @@ try:
         return module
 except ImportError:
     import imp
+
     def import_file(name, location):
         return imp.load_source(name, location)
 

@@ -1836,6 +1836,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         return self._test_neg_xmit_check_values(req_xmit=3199,
                                                 req_recv=0,
                                                 rep_both=2048)
+
     def test_neg_xmit_0_3199(self):
         return self._test_neg_xmit_check_values(req_xmit=0,
                                                 req_recv=3199,
@@ -1845,6 +1846,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         return self._test_neg_xmit_check_values(req_xmit=3199,
                                                 req_recv=0xffff,
                                                 rep_both=3192)
+
     def test_neg_xmit_ffff_3199(self):
         return self._test_neg_xmit_check_values(req_xmit=0xffff,
                                                 req_recv=3199,

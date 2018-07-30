@@ -2506,6 +2506,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     ###############################################
     # re-index the database
+
+
     def reindex_database(self):
         '''re-index the whole database'''
         m = ldb.Message()

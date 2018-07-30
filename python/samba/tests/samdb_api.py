@@ -153,6 +153,8 @@ class SamDBApiTestCase(TestCaseInTempDir):
     #
     # Should successful open the SamDB creating a new database file.
     #
+
+
     def test_create_db_new_file(self):
         SamDB(url="tdb://" + self.tempdir + "/test.db", flags=0)
         existing = open(self.tempdir + "/test.db", mode="rb")

@@ -1360,6 +1360,7 @@ class SearchTestsLmdb(SearchTests):
 class IndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+
     def setUp(self):
         super(IndexedSearchTests, self).setUp()
         self.l.add({"dn": "@INDEXLIST",
@@ -1369,6 +1370,7 @@ class IndexedSearchTests(SearchTests):
 class IndexedCheckSearchTests(IndexedSearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things (full scan disabled)"""
+
     def setUp(self):
         self.IDXCHECK = True
         super(IndexedCheckSearchTests, self).setUp()
@@ -1376,6 +1378,7 @@ class IndexedCheckSearchTests(IndexedSearchTests):
 class IndexedSearchDnFilterTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+
     def setUp(self):
         super(IndexedSearchDnFilterTests, self).setUp()
         self.l.add({"dn": "@OPTIONS",
@@ -1389,6 +1392,7 @@ class IndexedSearchDnFilterTests(SearchTests):
 class IndexedAndOneLevelSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
+
     def setUp(self):
         super(IndexedAndOneLevelSearchTests, self).setUp()
         self.l.add({"dn": "@INDEXLIST",
@@ -1400,6 +1404,7 @@ class IndexedAndOneLevelSearchTests(SearchTests):
 class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things (full scan disabled)"""
+
     def setUp(self):
         self.IDXCHECK = True
         super(IndexedCheckedAndOneLevelSearchTests, self).setUp()
@@ -1407,6 +1412,7 @@ class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
 class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
+
     def setUp(self):
         super(IndexedAndOneLevelDNFilterSearchTests, self).setUp()
         self.l.add({"dn": "@OPTIONS",
@@ -1424,6 +1430,7 @@ class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
 class GUIDIndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+
     def setUp(self):
         self.index = {"dn": "@INDEXLIST",
                       "@IDXATTR": [b"x", b"y", b"ou"],
@@ -1438,6 +1445,7 @@ class GUIDIndexedSearchTests(SearchTests):
 class GUIDIndexedDNFilterSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+
     def setUp(self):
         self.index = {"dn": "@INDEXLIST",
                       "@IDXATTR": [b"x", b"y", b"ou"],
@@ -1455,6 +1463,7 @@ class GUIDIndexedDNFilterSearchTests(SearchTests):
 class GUIDAndOneLevelIndexedSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
+
     def setUp(self):
         self.index = {"dn": "@INDEXLIST",
                       "@IDXATTR": [b"x", b"y", b"ou"],
@@ -1713,6 +1722,7 @@ class AddModifyTestsLmdb(AddModifyTests):
 class IndexedAddModifyTests(AddModifyTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+
     def setUp(self):
         if not hasattr(self, 'index'):
             self.index = {"dn": "@INDEXLIST",
@@ -1791,6 +1801,7 @@ class IndexedAddModifyTests(AddModifyTests):
 class GUIDIndexedAddModifyTests(IndexedAddModifyTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+
     def setUp(self):
         self.index = {"dn": "@INDEXLIST",
                       "@IDXATTR": [b"x", b"y", b"ou"],
@@ -1802,6 +1813,7 @@ class GUIDIndexedAddModifyTests(IndexedAddModifyTests):
 
 class GUIDTransIndexedAddModifyTests(GUIDIndexedAddModifyTests):
     """Test GUID index behaviour insdie the transaction"""
+
     def setUp(self):
         super(GUIDTransIndexedAddModifyTests, self).setUp()
         self.l.transaction_start()
@@ -1812,6 +1824,7 @@ class GUIDTransIndexedAddModifyTests(GUIDIndexedAddModifyTests):
 
 class TransIndexedAddModifyTests(IndexedAddModifyTests):
     """Test index behaviour insdie the transaction"""
+
     def setUp(self):
         super(TransIndexedAddModifyTests, self).setUp()
         self.l.transaction_start()
@@ -1992,6 +2005,7 @@ class BadIndexTests(LdbBaseTest):
 
 class GUIDBadIndexTests(BadIndexTests):
     """Test Bad index things with GUID index mode"""
+
     def setUp(self):
         self.IDXGUID = True
 
@@ -2723,6 +2737,8 @@ class LdbResultTests(LdbBaseTest):
 
 
     # Show that search results can't see into a transaction
+
+
     def test_search_against_trans(self):
         found11 = False
 

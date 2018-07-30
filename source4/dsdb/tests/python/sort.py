@@ -345,6 +345,7 @@ class BaseSortTests(samba.tests.TestCase):
 
 class SimpleSortTests(BaseSortTests):
     avoid_tricky_sort = True
+
     def test_server_sort_different_attr(self):
         self._test_server_sort_different_attr()
 

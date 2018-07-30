@@ -565,6 +565,7 @@ sAMAccountName: %s
                               "--company=%s" % user["company"],
                               "-H", "ldap://%s" % os.environ["DC_SERVER"],
                               "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+
     def _create_posix_user(self, user):
         """ create a new user with RFC2307 attributes """
         return self.runsubcmd("user", "create", user["name"], user["password"],

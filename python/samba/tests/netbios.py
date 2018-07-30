@@ -24,8 +24,10 @@ class NetBiosTests(samba.tests.TestCase):
         self.n = netbios.Node()
         self.ifc = os.environ["SERVER_IP"]
         self.dc = os.environ["DC_NETBIOSNAME"]
+
     def tearDown(self):
         super(NetBiosTests, self).tearDown()
+
     def test_query_name(self):
         (reply_from, names, addresses) = self.n.query_name(self.dc, self.ifc, timeout=4)
         assert reply_from == self.ifc
