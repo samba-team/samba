@@ -324,7 +324,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         nwrap_winbind_active = (nwrap_module_so_path != "" and
                                 nwrap_module_fn_prefix == "winbind")
 
-        LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
+        LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
         SY_sid = security.dom_sid(security.SID_NT_SYSTEM)
@@ -466,7 +466,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(facl.as_sddl(domsid),acl)
         posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
 
-        LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
+        LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
         SY_sid = security.dom_sid(security.SID_NT_SYSTEM)
@@ -561,12 +561,12 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(facl.as_sddl(domsid),acl)
         posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
 
-        LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
+        LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
         SY_sid = security.dom_sid(security.SID_NT_SYSTEM)
         AU_sid = security.dom_sid(security.SID_NT_AUTHENTICATED_USERS)
-        PA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_POLICY_ADMINS))
+        PA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_POLICY_ADMINS))
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
@@ -676,12 +676,12 @@ class PosixAclMappingTests(TestCaseInTempDir):
         nwrap_winbind_active = (nwrap_module_so_path != "" and
                                 nwrap_module_fn_prefix == "winbind")
 
-        LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
+        LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
         SY_sid = security.dom_sid(security.SID_NT_SYSTEM)
         AU_sid = security.dom_sid(security.SID_NT_AUTHENTICATED_USERS)
-        PA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_POLICY_ADMINS))
+        PA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_POLICY_ADMINS))
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 

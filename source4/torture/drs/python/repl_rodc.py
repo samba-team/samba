@@ -113,7 +113,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
 
         rodc_creds = Credentials()
         rodc_creds.guess(self.rodc_ctx.lp)
-        rodc_creds.set_username(self.rodc_name+'$')
+        rodc_creds.set_username(self.rodc_name + '$')
         rodc_creds.set_password(self.rodc_pass)
         self.rodc_creds = rodc_creds
 
@@ -293,7 +293,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         (packed_attrs_1, unpacked_attrs_1) = self._assert_in_revealed_users(user_dn, expected_user_attributes)
 
         # Change the user's password on DC1
-        self.ldb_dc1.setpassword("(sAMAccountName=%s)" % user_name, password+"1", False, user_name)
+        self.ldb_dc1.setpassword("(sAMAccountName=%s)" % user_name, password + "1", False, user_name)
 
         (packed_attrs_2, unpacked_attrs_2) = self._assert_in_revealed_users(user_dn, expected_user_attributes)
         self._assert_attrlist_equals(unpacked_attrs_1, unpacked_attrs_2)
@@ -369,7 +369,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         (packed_attrs_1, unpacked_attrs_1) = self._assert_in_revealed_users(user_dn, expected_user_attributes)
 
         # Change the user's password on DC1
-        self.ldb_dc1.setpassword("(sAMAccountName=%s)" % user_name, password+"1", False, user_name)
+        self.ldb_dc1.setpassword("(sAMAccountName=%s)" % user_name, password + "1", False, user_name)
 
         (packed_attrs_2, unpacked_attrs_2) = self._assert_in_revealed_users(user_dn, expected_user_attributes)
         self._assert_attrlist_equals(unpacked_attrs_1, unpacked_attrs_2)
@@ -472,7 +472,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
 
         other_rodc_creds = Credentials()
         other_rodc_creds.guess(other_rodc_ctx.lp)
-        other_rodc_creds.set_username(other_rodc_name+'$')
+        other_rodc_creds.set_username(other_rodc_name + '$')
         other_rodc_creds.set_password(self.rodc_pass)
 
         (other_rodc_drs, other_rodc_drs_handle) = self._ds_bind(self.dnsname_dc1, other_rodc_creds)

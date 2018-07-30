@@ -80,7 +80,7 @@ class SchemaTests(samba.tests.TestCase):
 
     def test_generated_schema(self):
         """Testing we can read the generated schema via LDAP"""
-        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE,
+        res = self.ldb.search("cn=aggregate," + self.schema_dn, scope=SCOPE_BASE,
                               attrs=["objectClasses", "attributeTypes", "dITContentRules"])
         self.assertEquals(len(res), 1)
         self.assertTrue("dITContentRules" in res[0])
@@ -90,7 +90,7 @@ class SchemaTests(samba.tests.TestCase):
     def test_generated_schema_is_operational(self):
         """Testing we don't get the generated schema via LDAP by default"""
         # Must keep the "*" form
-        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE,
+        res = self.ldb.search("cn=aggregate," + self.schema_dn, scope=SCOPE_BASE,
                               attrs=["*"])
         self.assertEquals(len(res), 1)
         self.assertFalse("dITContentRules" in res[0])
@@ -979,7 +979,7 @@ adminDescription: """ + attr_name_3 + """
 adminDisplayName: """ + attr_name_3 + """
 cn: """ + attr_name_3 + """
 attributeId: """ + attributeID_3 + """
-linkID: """ + str(linkID_1+1) + """
+linkID: """ + str(linkID_1 + 1) + """
 attributeSyntax: 2.5.5.1
 ldapDisplayName: """ + attr_ldap_display_name_3 + """
 omSyntax: 127

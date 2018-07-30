@@ -281,16 +281,16 @@ def dn_sort(x, y):
     tab1 = p.split(str(x))
     tab2 = p.split(str(y))
     minimum = min(len(tab1), len(tab2))
-    len1 = len(tab1)-1
-    len2 = len(tab2)-1
+    len1 = len(tab1) -1
+    len2 = len(tab2) -1
     # Note: python range go up to upper limit but do not include it
     for i in range(0, minimum):
-        ret = cmp_fn(tab1[len1-i], tab2[len2-i])
+        ret = cmp_fn(tab1[len1 - i], tab2[len2 - i])
         if ret != 0:
             return ret
         else:
-            if i == minimum-1:
-                assert len1 != len2,"PB PB PB" + " ".join(tab1)+" / " + " ".join(tab2)
+            if i == minimum - 1:
+                assert len1 != len2,"PB PB PB" + " ".join(tab1) + " / " + " ".join(tab2)
                 if len1 > len2:
                     return 1
                 else:
@@ -777,7 +777,7 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
         for k in sorted_keys:
             obj = hash_ts[k]
             if obj["num"] > limit_print:
-                dt = _glue.nttime2string(_glue.unix2nttime(k*60))
+                dt = _glue.nttime2string(_glue.unix2nttime(k * 60))
                 print("%s # of modification: %d  \tmin: %d max: %d" % (dt, obj["num"],
                                                                        obj["min"],
                                                                        obj["max"]))
@@ -788,7 +788,7 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
         for i in range(0, len(kept_record)):
             if i != 0:
                 key1 = kept_record[i]
-                key2 = kept_record[i-1]
+                key2 = kept_record[i - 1]
                 if key1 - key2 == 1:
                     # previous record is just 1 minute away from current
                     if int(hash_ts[key1]["min"]) == int(hash_ts[key2]["max"]) + 1:

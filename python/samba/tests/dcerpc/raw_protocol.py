@@ -1734,7 +1734,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         req = self.generate_alter(call_id=1,
                                   max_xmit_frag=alter_xmit,
                                   max_recv_frag=alter_recv,
-                                  assoc_group_id=0xffffffff-rep.u.assoc_group_id,
+                                  assoc_group_id=0xffffffff - rep.u.assoc_group_id,
                                   ctx_list=[ctx1])
         self.send_pdu(req)
         rep = self.recv_pdu()
@@ -1936,14 +1936,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         computer = 'UNKNOWNCOMPUTER'
         computer_utf16 = unicode(computer, 'utf-8').encode('utf-16-le')
 
-        real_stub  = struct.pack('<IIII', 0x00200000,
-                                 len(server)+1, 0, len(server)+1)
+        real_stub = struct.pack('<IIII', 0x00200000,
+                                 len(server) + 1, 0, len(server) + 1)
         real_stub += server_utf16 + '\x00\x00'
         mod_len = len(real_stub) % 4
         if mod_len != 0:
             real_stub += '\x00' * (4 - mod_len)
         real_stub += struct.pack('<III',
-                                 len(computer)+1, 0, len(computer)+1)
+                                 len(computer) + 1, 0, len(computer) + 1)
         real_stub += computer_utf16 + '\x00\x00'
         real_stub += '\x11\x22\x33\x44\x55\x66\x77\x88'
 
@@ -2590,7 +2590,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         # And now try a new request
         req2 = self.generate_request(call_id = 2,
-                                     context_id=ctx.context_id-1,
+                                     context_id=ctx.context_id - 1,
                                      opnum=0,
                                      stub="")
         self.send_pdu(req2)
@@ -2716,7 +2716,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" *15)
         req = self.generate_request(call_id = 3,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -2736,7 +2736,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" * 15)
         req = self.generate_request(call_id = 4,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -2852,7 +2852,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=dcerpc.DCERPC_AUTH_LEVEL_CONNECT,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" * 15)
         req = self.generate_request(call_id = 3,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -2936,7 +2936,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" * 15)
         req = self.generate_request(call_id = 1,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -3154,7 +3154,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" * 15)
         req = self.generate_request(call_id = 3,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -3315,7 +3315,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" * 15)
         req = self.generate_request(call_id = 3,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -4013,7 +4013,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" * 15)
         req = self.generate_request(call_id = 3,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -4308,7 +4308,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
                                        auth_context_id=auth_context_id,
-                                       auth_blob="\x01"+"\x00"*15)
+                                       auth_blob="\x01" +"\x00" * 15)
         req = self.generate_request(call_id = 3,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -4487,7 +4487,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
             sig_size = g.sig_size(len(stub_bin))
         else:
             sig_size = 16
-        zero_sig = "\x00"*sig_size
+        zero_sig = "\x00" * sig_size
 
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
@@ -4654,7 +4654,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         stub_bin += '\x00' * auth_pad_length
 
         sig_size = g.sig_size(len(stub_bin))
-        zero_sig = "\x00"*sig_size
+        zero_sig = "\x00" * sig_size
 
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
@@ -4720,7 +4720,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         stub_bin += '\x00' * auth_pad_length
 
         sig_size = g.sig_size(len(stub_bin))
-        zero_sig = "\x00"*sig_size
+        zero_sig = "\x00" * sig_size
 
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
@@ -4771,7 +4771,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         stub_bin += '\x00' * auth_pad_length
 
         sig_size = g.sig_size(len(stub_bin))
-        zero_sig = "\x00"*sig_size
+        zero_sig = "\x00" * sig_size
 
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,
@@ -4836,7 +4836,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         stub_bin += '\x00' * auth_pad_length
 
         sig_size = g.sig_size(len(stub_bin))
-        zero_sig = "\x00"*sig_size
+        zero_sig = "\x00" * sig_size
 
         auth_info = self.generate_auth(auth_type=auth_type,
                                        auth_level=auth_level,

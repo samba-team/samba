@@ -2097,7 +2097,7 @@ class DnTests(TestCase):
 
     def test_remove_base_components(self):
         x = ldb.Dn(self.ldb, "dc=foo24,dc=samba,dc=org")
-        x.remove_base_components(len(x)-1)
+        x.remove_base_components(len(x) - 1)
         self.assertEqual("dc=foo24", str(x))
 
     def test_parse_ldif(self):

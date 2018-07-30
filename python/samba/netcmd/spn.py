@@ -52,7 +52,7 @@ class cmd_spn_list(Command):
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
         (cleaneduser, realm, domain) = _get_user_realm_domain(user)
-        self.outf.write(cleaneduser+"\n")
+        self.outf.write(cleaneduser + "\n")
         res = sam.search(
             expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
             scope=ldb.SCOPE_SUBTREE, attrs=["servicePrincipalName"])

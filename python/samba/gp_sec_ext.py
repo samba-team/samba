@@ -20,10 +20,10 @@ from samba.gpclass import gp_ext_setter, gp_inf_ext
 
 class inf_to_kdc_tdb(gp_ext_setter):
     def mins_to_hours(self):
-        return '%d' % (int(self.val)/60)
+        return '%d' % (int(self.val) / 60)
 
     def days_to_hours(self):
-        return '%d' % (int(self.val)*24)
+        return '%d' % (int(self.val) * 24)
 
     def set_kdc_tdb(self, val):
         old_val = self.gp_db.gpostore.get(self.attribute)

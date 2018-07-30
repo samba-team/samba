@@ -58,7 +58,7 @@ class SharesContainer(object):
 
     def __len__(self):
         if "global" in self._lp.services():
-            return len(self._lp)-1
+            return len(self._lp) - 1
         return len(self._lp)
 
     def keys(self):

@@ -88,12 +88,12 @@ class strstr_m_Tests(samba.tests.TestCase):
                  ('longstring ' * 100 + 'a', 'longstring ' * 100, 'longstring ' * 100 + 'a'),
                  (KATAKANA_LETTER_A, KATAKANA_LETTER_A + 'bcd', None),
                  (KATAKANA_LETTER_A + 'bcde', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcde'),
-                 ('d'+KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcd'),
-                 ('d'+KATAKANA_LETTER_A + 'bd', KATAKANA_LETTER_A + 'bcd', None),
+                 ('d' +KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcd'),
+                 ('d' +KATAKANA_LETTER_A + 'bd', KATAKANA_LETTER_A + 'bcd', None),
 
-                 ('e'+KATAKANA_LETTER_A + 'bcdf', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcdf'),
+                 ('e' + KATAKANA_LETTER_A + 'bcdf', KATAKANA_LETTER_A + 'bcd', KATAKANA_LETTER_A + 'bcdf'),
                  (KATAKANA_LETTER_A, KATAKANA_LETTER_A + 'bcd', None),
-                 (KATAKANA_LETTER_A*3, 'a', None),
+                 (KATAKANA_LETTER_A * 3, 'a', None),
                  ]
         for a, b, expect in cases:
             if expect is not None:

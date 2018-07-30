@@ -120,7 +120,7 @@ class VLVTests(samba.tests.TestCase):
             "audio": "%sn octet string %s%s ♫♬\x00lalala" % ('Aa'[i & 1],
                                                              chr(i & 255), i),
             "displayNamePrintable": "%d\x00%c" % (i, i & 255),
-            "adminDisplayName": "%d\x00b" % (n-i),
+            "adminDisplayName": "%d\x00b" % (n - i),
             "title": "%d%sb" % (n - i, '\x00' * i),
             "comment": "Favourite colour is %d" % (n % (i + 1)),
 

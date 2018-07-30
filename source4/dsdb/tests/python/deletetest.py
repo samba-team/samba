@@ -277,7 +277,7 @@ class BasicTreeDeleteTests(BasicDeleteTests):
 
         # user current time in ms to make unique objects
         import time
-        marker = str(int(round(time.time()*1000)))
+        marker = str(int(round(time.time() * 1000)))
         usr1_name = "u_" + marker
         usr2_name = "u2_" + marker
         grp_name = "g1_" + marker

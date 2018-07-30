@@ -681,7 +681,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
             for suite in self.suitesfailed:
                 f.write("== %s ==\n" % suite)
                 if suite in self.test_output:
-                    f.write(self.test_output[suite]+"\n\n")
+                    f.write(self.test_output[suite] + "\n\n")
 
             f.write("\n")
 

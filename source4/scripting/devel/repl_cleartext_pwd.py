@@ -136,9 +136,9 @@ if __name__ == "__main__":
          store_utdv_len, store_utdv_ofs) = \
         struct.unpack("<LLLLLLL", store_hdr)
 
-        store_dn = store_blob[store_dn_ofs:store_dn_ofs+store_dn_len]
-        store_hwm_blob = store_blob[store_hwm_ofs:store_hwm_ofs+store_hwm_len]
-        store_utdv_blob = store_blob[store_utdv_ofs:store_utdv_ofs+store_utdv_len]
+        store_dn = store_blob[store_dn_ofs:store_dn_ofs + store_dn_len]
+        store_hwm_blob = store_blob[store_hwm_ofs:store_hwm_ofs + store_hwm_len]
+        store_utdv_blob = store_blob[store_utdv_ofs:store_utdv_ofs + store_utdv_len]
 
         store_hwm = ndr_unpack(drsuapi.DsReplicaHighWaterMark, store_hwm_blob)
         store_utdv = ndr_unpack(drsblobs.replUpToDateVectorBlob, store_utdv_blob)

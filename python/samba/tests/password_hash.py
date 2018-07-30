@@ -175,130 +175,130 @@ class PassWordHashTests(TestCase):
         self.check_digest(USER_NAME,
                           self.netbios_domain,
                           USER_PASS,
-                          digests.hashes[1-1].hash)
+                          digests.hashes[1 - 1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.netbios_domain.lower(),
                           USER_PASS,
-                          digests.hashes[2-1].hash)
+                          digests.hashes[2 - 1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.netbios_domain.upper(),
                           USER_PASS,
-                          digests.hashes[3-1].hash)
+                          digests.hashes[3 - 1].hash)
         self.check_digest(USER_NAME,
                           self.netbios_domain.upper(),
                           USER_PASS,
-                          digests.hashes[4-1].hash)
+                          digests.hashes[4 - 1].hash)
         self.check_digest(USER_NAME,
                           self.netbios_domain.lower(),
                           USER_PASS,
-                          digests.hashes[5-1].hash)
+                          digests.hashes[5 - 1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.netbios_domain.lower(),
                           USER_PASS,
-                          digests.hashes[6-1].hash)
+                          digests.hashes[6 - 1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.netbios_domain.upper(),
                           USER_PASS,
-                          digests.hashes[7-1].hash)
+                          digests.hashes[7 - 1].hash)
         self.check_digest(USER_NAME,
                           self.dns_domain,
                           USER_PASS,
-                          digests.hashes[8-1].hash)
+                          digests.hashes[8 - 1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.dns_domain.lower(),
                           USER_PASS,
-                          digests.hashes[9-1].hash)
+                          digests.hashes[9 - 1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.dns_domain.upper(),
                           USER_PASS,
-                          digests.hashes[10-1].hash)
+                          digests.hashes[10 - 1].hash)
         self.check_digest(USER_NAME,
                           self.dns_domain.upper(),
                           USER_PASS,
-                          digests.hashes[11-1].hash)
+                          digests.hashes[11 - 1].hash)
         self.check_digest(USER_NAME,
                           self.dns_domain.lower(),
                           USER_PASS,
-                          digests.hashes[12-1].hash)
+                          digests.hashes[12 - 1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.dns_domain.lower(),
                           USER_PASS,
-                          digests.hashes[13-1].hash)
+                          digests.hashes[13 - 1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.dns_domain.upper(),
                           USER_PASS,
-                          digests.hashes[14-1].hash)
+                          digests.hashes[14 - 1].hash)
         self.check_digest(UPN,
                           "",
                           USER_PASS,
-                          digests.hashes[15-1].hash)
+                          digests.hashes[15 - 1].hash)
         self.check_digest(UPN.lower(),
                           "",
                           USER_PASS,
-                          digests.hashes[16-1].hash)
+                          digests.hashes[16 - 1].hash)
         self.check_digest(UPN.upper(),
                           "",
                           USER_PASS,
-                          digests.hashes[17-1].hash)
+                          digests.hashes[17 - 1].hash)
 
         name = "%s\\%s" % (self.netbios_domain, USER_NAME)
         self.check_digest(name,
                           "",
                           USER_PASS,
-                          digests.hashes[18-1].hash)
+                          digests.hashes[18 - 1].hash)
 
         name = "%s\\%s" % (self.netbios_domain.lower(), USER_NAME.lower())
         self.check_digest(name,
                           "",
                           USER_PASS,
-                          digests.hashes[19-1].hash)
+                          digests.hashes[19 - 1].hash)
 
         name = "%s\\%s" % (self.netbios_domain.upper(), USER_NAME.upper())
         self.check_digest(name,
                           "",
                           USER_PASS,
-                          digests.hashes[20-1].hash)
+                          digests.hashes[20 - 1].hash)
         self.check_digest(USER_NAME,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[21-1].hash)
+                          digests.hashes[21 - 1].hash)
         self.check_digest(USER_NAME.lower(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[22-1].hash)
+                          digests.hashes[22 - 1].hash)
         self.check_digest(USER_NAME.upper(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[23-1].hash)
+                          digests.hashes[23 - 1].hash)
         self.check_digest(UPN,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[24-1].hash)
+                          digests.hashes[24 - 1].hash)
         self.check_digest(UPN.lower(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[25-1].hash)
+                          digests.hashes[25 - 1].hash)
         self.check_digest(UPN.upper(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[26-1].hash)
+                          digests.hashes[26 - 1].hash)
         name = "%s\\%s" % (self.netbios_domain, USER_NAME)
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[27-1].hash)
+                          digests.hashes[27 - 1].hash)
 
         name = "%s\\%s" % (self.netbios_domain.lower(), USER_NAME.lower())
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[28-1].hash)
+                          digests.hashes[28 - 1].hash)
 
         name = "%s\\%s" % (self.netbios_domain.upper(), USER_NAME.upper())
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[29-1].hash)
+                          digests.hashes[29 - 1].hash)
 
     def checkUserPassword(self, up, expected):
 

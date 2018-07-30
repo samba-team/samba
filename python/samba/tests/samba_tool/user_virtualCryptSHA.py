@@ -52,7 +52,7 @@ HASH_OPTION = "password hash userPassword schemes"
 # Note: Does not correctly handle values spanning multiple lines,
 #       which is acceptable for it's usage in these tests.
 def _get_attribute(out, name):
-    p = re.compile("^"+name+":\s+(\S+)")
+    p = re.compile("^" + name + ":\s+(\S+)")
     for line in out.split("\n"):
         m = p.match(line)
         if m:

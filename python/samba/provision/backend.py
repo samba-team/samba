@@ -405,7 +405,7 @@ class OpenLDAPBackend(LDAPBackend):
 
             url_list = filter(None,self.ol_mmr_urls.split(','))
             for url in url_list:
-                self.logger.info("Using LDAP-URL: "+url)
+                self.logger.info("Using LDAP-URL: " + url)
             if len(url_list) == 1:
                 raise ProvisioningError("At least 2 LDAP-URLs needed for MMR!")
 

@@ -44,7 +44,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
 
         good_dns = ["SAMDOM.EXAMPLE.COM",
                     "1.EXAMPLE.COM",
-                    "%sEXAMPLE.COM" % ("1."*100),
+                    "%sEXAMPLE.COM" % ("1." * 100),
                     "EXAMPLE",
                     "\n.COM",
                     "!@#$%^&*()_",

@@ -662,7 +662,7 @@ Example4 shows how to set the account expiration so that it will never expire.  
                       credentials=creds, lp=lp)
 
         try:
-            samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
+            samdb.setexpiry(filter, days * 24 * 3600, no_expiry_req=noexpiry)
         except Exception as msg:
             # FIXME: Catch more specific exception
             raise CommandError("Failed to set expiry for user '%s': %s" % (
@@ -1158,7 +1158,7 @@ class GetPasswordCommand(Command):
             digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
                                  primary_wdigest)
             try:
-                digest = binascii.hexlify(bytearray(digests.hashes[i-1].hash))
+                digest = binascii.hexlify(bytearray(digests.hashes[i - 1].hash))
                 return "%s:%s:%s" % (user, realm, digest)
             except IndexError:
                 return None
@@ -2576,7 +2576,7 @@ class cmd_user_move(Command):
                                (new_parent_dn, e.message))
 
         full_new_user_dn = ldb.Dn(samdb, str(user_dn))
-        full_new_user_dn.remove_base_components(len(user_dn)-1)
+        full_new_user_dn.remove_base_components(len(user_dn) - 1)
         full_new_user_dn.add_base(full_new_parent_dn)
 
         try:

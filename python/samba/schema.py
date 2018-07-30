@@ -208,7 +208,7 @@ def get_linked_attributes(schemadn, schemaldb):
     for i in range(0, len(res)):
         expression = ("(&(objectclass=attributeSchema)(linkID=%d)"
                       "(attributeSyntax=2.5.5.1))" %
-                      (int(res[i]["linkID"][0])+1))
+                      (int(res[i]["linkID"][0]) + 1))
         target = schemaldb.searchone(basedn=schemadn,
                                      expression=expression,
                                      attribute="lDAPDisplayName",

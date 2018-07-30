@@ -1125,7 +1125,7 @@ class MatchRuleConditionTests(samba.tests.TestCase):
                                      FLAG_MOD_ADD, "member")
         self.ldb.modify(m)
 
-        self.question = 6*(9-2)
+        self.question = 6 * (9 -2)
         self.answer = 42
 
     def tearDown(self):

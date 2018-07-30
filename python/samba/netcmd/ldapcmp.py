@@ -86,13 +86,13 @@ class LDAPBase(object):
         # when compare content of two DCs. Uncomment for DEBUG purposes.
         if self.two_domains and not self.quiet:
             self.outf.write("\n* Place-holders for %s:\n" % self.host)
-            self.outf.write(4*" " + "${DOMAIN_DN}      => %s\n" %
+            self.outf.write(4 * " " + "${DOMAIN_DN}      => %s\n" %
                             self.base_dn)
-            self.outf.write(4*" " + "${DOMAIN_NETBIOS} => %s\n" %
+            self.outf.write(4 * " " + "${DOMAIN_NETBIOS} => %s\n" %
                             self.domain_netbios)
-            self.outf.write(4*" " + "${SERVER_NAME}     => %s\n" %
+            self.outf.write(4 * " " + "${SERVER_NAME}     => %s\n" %
                             self.server_names)
-            self.outf.write(4*" " + "${DOMAIN_NAME}    => %s\n" %
+            self.outf.write(4 * " " + "${DOMAIN_NAME}    => %s\n" %
                             self.domain_name)
 
     def find_domain_sid(self):
@@ -303,9 +303,9 @@ class Descriptor(object):
     def diff_1(self, other):
         res = ""
         if len(self.dacl_list) != len(other.dacl_list):
-            res += 4*" " + "Difference in ACE count:\n"
-            res += 8*" " + "=> %s\n" % len(self.dacl_list)
-            res += 8*" " + "=> %s\n" % len(other.dacl_list)
+            res += 4 * " " + "Difference in ACE count:\n"
+            res += 8 * " " + "=> %s\n" % len(self.dacl_list)
+            res += 8 * " " + "=> %s\n" % len(other.dacl_list)
         #
         i = 0
         flag = True
@@ -336,9 +336,9 @@ class Descriptor(object):
     def diff_2(self, other):
         res = ""
         if len(self.dacl_list) != len(other.dacl_list):
-            res += 4*" " + "Difference in ACE count:\n"
-            res += 8*" " + "=> %s\n" % len(self.dacl_list)
-            res += 8*" " + "=> %s\n" % len(other.dacl_list)
+            res += 4 * " " + "Difference in ACE count:\n"
+            res += 8 * " " + "=> %s\n" % len(self.dacl_list)
+            res += 8 * " " + "=> %s\n" % len(other.dacl_list)
         #
         common_aces = []
         self_aces = []
@@ -356,9 +356,9 @@ class Descriptor(object):
                 common_aces.append(ace)
         self_aces = sorted(self_aces)
         if len(self_aces) > 0:
-            res += 4*" " + "ACEs found only in %s:\n" % self.con.host
+            res += 4 *" " + "ACEs found only in %s:\n" % self.con.host
             for ace in self_aces:
-                res += 8*" " + ace + "\n"
+                res += 8 * " " + ace + "\n"
         #
         for ace in other_dacl_list_fixed:
             try:
@@ -369,15 +369,15 @@ class Descriptor(object):
                 common_aces.append(ace)
         other_aces = sorted(other_aces)
         if len(other_aces) > 0:
-            res += 4*" " + "ACEs found only in %s:\n" % other.con.host
+            res += 4 *" " + "ACEs found only in %s:\n" % other.con.host
             for ace in other_aces:
-                res += 8*" " + ace + "\n"
+                res += 8 * " " + ace + "\n"
         #
         common_aces = sorted(list(set(common_aces)))
         if self.con.verbose:
-            res += 4*" " + "ACEs found in both:\n"
+            res += 4 *" " + "ACEs found in both:\n"
             for ace in common_aces:
-                res += 8*" " + ace + "\n"
+                res += 8 * " " + ace + "\n"
         return (self_aces == [] and other_aces == [], res)
 
 class LDAPObject(object):
@@ -514,14 +514,14 @@ class LDAPObject(object):
         Log on the screen if there is no --quiet option set
         """
         if not self.quiet:
-            self.outf.write(msg+"\n")
+            self.outf.write(msg +"\n")
 
     def fix_dn(self, s):
         res = "%s" % s
         if not self.two_domains:
             return res
         if res.upper().endswith(self.con.base_dn.upper()):
-            res = res[:len(res)-len(self.con.base_dn)] + "${DOMAIN_DN}"
+            res = res[:len(res) - len(self.con.base_dn)] + "${DOMAIN_DN}"
         return res
 
     def fix_domain_name(self, s):
@@ -575,29 +575,29 @@ class LDAPObject(object):
         other.unique_attrs = []
         if self.attributes.keys() != other.attributes.keys():
             #
-            title = 4*" " + "Attributes found only in %s:" % self.con.host
+            title = 4 * " " + "Attributes found only in %s:" % self.con.host
             for x in self.attributes.keys():
                 if not x in other.attributes.keys() and \
                     not x.upper() in [q.upper() for q in other.ignore_attributes]:
                     if title:
                         res += title + "\n"
                         title = None
-                    res += 8*" " + x + "\n"
+                    res += 8 * " " + x + "\n"
                     self.unique_attrs.append(x)
             #
-            title = 4*" " + "Attributes found only in %s:" % other.con.host
+            title = 4 *" " + "Attributes found only in %s:" % other.con.host
             for x in other.attributes.keys():
                 if not x in self.attributes.keys() and \
                     not x.upper() in [q.upper() for q in self.ignore_attributes]:
                     if title:
                         res += title + "\n"
                         title = None
-                    res += 8*" " + x + "\n"
+                    res += 8 * " " + x + "\n"
                     other.unique_attrs.append(x)
         #
         missing_attrs = [x.upper() for x in self.unique_attrs]
         missing_attrs += [x.upper() for x in other.unique_attrs]
-        title = 4*" " + "Difference in attribute values:"
+        title = 4 * " " + "Difference in attribute values:"
         for x in self.attributes.keys():
             if x.upper() in self.ignore_attributes or x.upper() in missing_attrs:
                 continue
@@ -667,9 +667,9 @@ class LDAPObject(object):
                     res += title + "\n"
                     title = None
                 if p and q:
-                    res += 8*" " + x + " => \n%s\n%s" % (p, q) + "\n"
+                    res += 8 * " " + x + " => \n%s\n%s" % (p, q) + "\n"
                 else:
-                    res += 8*" " + x + " => \n%s\n%s" % (self.attributes[x], other.attributes[x]) + "\n"
+                    res += 8 * " " + x + " => \n%s\n%s" % (self.attributes[x], other.attributes[x]) + "\n"
                 self.df_value_attrs.append(x)
         #
         if self.unique_attrs + other.unique_attrs != []:
@@ -715,7 +715,7 @@ class LDAPBundel(object):
         while counter < len(self.dn_list) and self.two_domains:
             # Use alias reference
             tmp = self.dn_list[counter]
-            tmp = tmp[:len(tmp)-len(self.con.base_dn)] + "${DOMAIN_DN}"
+            tmp = tmp[:len(tmp) -len(self.con.base_dn)] + "${DOMAIN_DN}"
             tmp = tmp.replace("CN=%s" % self.con.domain_netbios, "CN=${DOMAIN_NETBIOS}")
             if len(self.con.server_names) == 1:
                 for x in self.con.server_names:
@@ -731,7 +731,7 @@ class LDAPBundel(object):
         Log on the screen if there is no --quiet option set
         """
         if not self.quiet:
-            self.outf.write(msg+"\n")
+            self.outf.write(msg + "\n")
 
     def update_size(self):
         self.size = len(self.dn_list)
@@ -755,7 +755,7 @@ class LDAPBundel(object):
                         self.log(title)
                         title = None
                         res = False
-                    self.log(4*" " + x)
+                    self.log(4 * " " + x)
                     self.dn_list[self.dn_list.index(x)] = ""
             self.dn_list = [x for x in self.dn_list if x]
             #
@@ -766,7 +766,7 @@ class LDAPBundel(object):
                         self.log(title)
                         title = None
                         res = False
-                    self.log(4*" " + x)
+                    self.log(4 * " " + x)
                     other.dn_list[other.dn_list.index(x)] = ""
             other.dn_list = [x for x in other.dn_list if x]
             #
@@ -811,13 +811,13 @@ class LDAPBundel(object):
                     self.log("\nComparing:")
                     self.log("'%s' [%s]" % (object1.dn, object1.con.host))
                     self.log("'%s' [%s]" % (object2.dn, object2.con.host))
-                    self.log(4*" " + "OK")
+                    self.log(4 * " " + "OK")
             else:
                 self.log("\nComparing:")
                 self.log("'%s' [%s]" % (object1.dn, object1.con.host))
                 self.log("'%s' [%s]" % (object2.dn, object2.con.host))
                 self.log(object1.screen_output)
-                self.log(4*" " + "FAILED")
+                self.log(4 * " " + "FAILED")
                 res = False
             self.summary = object1.summary
             other.summary = object2.summary
@@ -871,11 +871,11 @@ class LDAPBundel(object):
         #
         if self.summary["unique_attrs"]:
             self.log("\nAttributes found only in %s:" % self.con.host)
-            self.log("".join([str("\n" + 4*" " + x) for x in self.summary["unique_attrs"]]))
+            self.log("".join([str("\n" + 4 * " " + x) for x in self.summary["unique_attrs"]]))
         #
         if self.summary["df_value_attrs"]:
             self.log("\nAttributes with different values:")
-            self.log("".join([str("\n" + 4*" " + x) for x in self.summary["df_value_attrs"]]))
+            self.log("".join([str("\n" + 4 * " " + x) for x in self.summary["df_value_attrs"]]))
             self.summary["df_value_attrs"] = []
 
 

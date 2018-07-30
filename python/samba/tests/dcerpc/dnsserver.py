@@ -35,7 +35,7 @@ class DnsserverTests(RpcInterfaceTestCase):
     def setUpClass(cls):
         good_dns = ["SAMDOM.EXAMPLE.COM",
                     "1.EXAMPLE.COM",
-                    "%sEXAMPLE.COM" % ("1."*100),
+                    "%sEXAMPLE.COM" % ("1." * 100),
                     "EXAMPLE",
                     "\n.COM",
                     "!@#$%^&*()_",
@@ -103,7 +103,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         # actually create these records.
         invalid_mx = ["SAMDOM.EXAMPLE.COM -1",
                       "SAMDOM.EXAMPLE.COM 65536",
-                      "%s 1" % "A"*256]
+                      "%s 1" % "A" *256]
         invalid_srv = ["SAMDOM.EXAMPLE.COM 0 65536 0",
                        "SAMDOM.EXAMPLE.COM 0 0 65536",
                        "SAMDOM.EXAMPLE.COM 65536 0 0"]
@@ -516,7 +516,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         """
         for record_type_str in self.good_records:
             for i in range(1, len(self.good_records[record_type_str])):
-                record1 = self.good_records[record_type_str][i-1]
+                record1 = self.good_records[record_type_str][i - 1]
                 record2 = self.good_records[record_type_str][i]
 
                 if record_type_str == 'CNAME':

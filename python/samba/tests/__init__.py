@@ -101,7 +101,7 @@ class TestCase(unittest.TestCase):
                 hr = ' '.join(["%02X" % x for x in lr])
                 ll = ll.translate(HEXDUMP_FILTER).decode('utf8')
                 lr = lr.translate(HEXDUMP_FILTER).decode('utf8')
-            result += "[%04X] %-*s  %-*s  %s %s\n" % (N, 8*3, hl, 8*3, hr, ll, lr)
+            result += "[%04X] %-*s  %-*s  %s %s\n" % (N, 8 * 3, hl, 8 * 3, hr, ll, lr)
             N += 16
         return result
 
@@ -330,7 +330,7 @@ class ValidNetbiosNameTests(TestCase):
         self.assertTrue(samba.valid_netbios_name("FOO"))
 
     def test_too_long(self):
-        self.assertFalse(samba.valid_netbios_name("FOO"*10))
+        self.assertFalse(samba.valid_netbios_name("FOO" * 10))
 
     def test_invalid_characters(self):
         self.assertFalse(samba.valid_netbios_name("*BLA"))

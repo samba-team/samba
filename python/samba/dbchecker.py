@@ -2485,7 +2485,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         # check that the dsServiceName is in GUID form
         if not 'dsServiceName' in obj:
             self.report('ERROR: dsServiceName missing in @ROOTDSE')
-            return error_count+1
+            return error_count + 1
 
         if not obj['dsServiceName'][0].startswith('<GUID='):
             self.report('ERROR: dsServiceName not in GUID form in @ROOTDSE')

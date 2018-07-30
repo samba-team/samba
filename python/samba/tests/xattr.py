@@ -35,7 +35,7 @@ class XattrTests(TestCase):
     def _tmpfilename(self):
         random.seed()
         path = os.environ['SELFTEST_PREFIX']
-        return os.path.join(path, "pytests"+str(int(100000*random.random())))
+        return os.path.join(path, "pytests" +str(int(100000 * random.random())))
 
     def _eadbpath(self):
         return os.path.join(os.environ['SELFTEST_PREFIX'], "eadb.tdb")

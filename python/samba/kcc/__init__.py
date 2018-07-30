@@ -2194,27 +2194,27 @@ class KCC(object):
 
         # For each r(i) from (0 <= i < |R|-1)
         i = 0
-        while i < (r_len-1):
+        while i < (r_len - 1):
             # Add an edge from r(i) to r(i+1) if r(i) is a full
             # replica or r(i+1) is a partial replica
-            if not r_list[i].is_partial() or r_list[i+1].is_partial():
-                graph_list[i+1].add_edge_from(r_list[i].rep_dsa_dnstr)
+            if not r_list[i].is_partial() or r_list[i +1].is_partial():
+                graph_list[i + 1].add_edge_from(r_list[i].rep_dsa_dnstr)
 
             # Add an edge from r(i+1) to r(i) if r(i+1) is a full
             # replica or ri is a partial replica.
-            if not r_list[i+1].is_partial() or r_list[i].is_partial():
-                graph_list[i].add_edge_from(r_list[i+1].rep_dsa_dnstr)
+            if not r_list[i + 1].is_partial() or r_list[i].is_partial():
+                graph_list[i].add_edge_from(r_list[i + 1].rep_dsa_dnstr)
             i = i + 1
 
         # Add an edge from r|R|-1 to r0 if r|R|-1 is a full replica
         # or r0 is a partial replica.
-        if not r_list[r_len-1].is_partial() or r_list[0].is_partial():
-            graph_list[0].add_edge_from(r_list[r_len-1].rep_dsa_dnstr)
+        if not r_list[r_len - 1].is_partial() or r_list[0].is_partial():
+            graph_list[0].add_edge_from(r_list[r_len - 1].rep_dsa_dnstr)
 
         # Add an edge from r0 to r|R|-1 if r0 is a full replica or
         # r|R|-1 is a partial replica.
-        if not r_list[0].is_partial() or r_list[r_len-1].is_partial():
-            graph_list[r_len-1].add_edge_from(r_list[0].rep_dsa_dnstr)
+        if not r_list[0].is_partial() or r_list[r_len -1].is_partial():
+            graph_list[r_len - 1].add_edge_from(r_list[0].rep_dsa_dnstr)
 
         DEBUG("r_list is length %s" % len(r_list))
         DEBUG('\n'.join(str((x.rep_dsa_guid, x.rep_dsa_dnstr))

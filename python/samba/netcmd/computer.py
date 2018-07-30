@@ -565,7 +565,7 @@ class cmd_computer_move(Command):
         if not full_new_ou_dn.is_child_of(domain_dn):
             full_new_ou_dn.add_base(domain_dn)
         new_computer_dn = ldb.Dn(samdb, str(computer_dn))
-        new_computer_dn.remove_base_components(len(computer_dn)-1)
+        new_computer_dn.remove_base_components(len(computer_dn) -1)
         new_computer_dn.add_base(full_new_ou_dn)
         try:
             samdb.rename(computer_dn, new_computer_dn)

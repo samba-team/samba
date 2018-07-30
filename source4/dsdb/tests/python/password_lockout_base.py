@@ -244,7 +244,7 @@ userPassword: """ + userpass + """
         use_kerberos = creds.get_kerberos_state()
         fail_creds = self.insta_creds(self.template_creds,
                                       username=username,
-                                      userpass=userpass+"X",
+                                      userpass=userpass + "X",
                                       kerberos_state=use_kerberos)
         self._check_account_initial(userdn)
 

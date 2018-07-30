@@ -77,7 +77,7 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
 
     def test_ntvfs(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        tempf = os.path.join(path,"pytests" +str(int(100000 * random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
@@ -88,7 +88,7 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
 
     def test_s3fs(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        tempf = os.path.join(path,"pytests" +str(int(100000 * random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
@@ -100,7 +100,7 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
 
     def test_ntvfs_check(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        tempf = os.path.join(path,"pytests" +str(int(100000 * random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
@@ -114,11 +114,11 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
                                              "--use-ntvfs", "--as-sddl")
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(self.acl+"\n", out, "Output should be the ACL")
+        self.assertEquals(self.acl + "\n", out, "Output should be the ACL")
 
     def test_s3fs_check(self):
         path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        tempf = os.path.join(path,"pytests" + str(int(100000 *random.random())))
         open(tempf, 'w').write("empty")
 
         (result, out, err) = self.runsubcmd("ntacl", "set", self.acl, tempf,
@@ -132,4 +132,4 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
                                              "--use-s3fs", "--as-sddl")
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
-        self.assertEquals(self.acl+"\n", out,"Output should be the ACL")
+        self.assertEquals(self.acl + "\n", out,"Output should be the ACL")

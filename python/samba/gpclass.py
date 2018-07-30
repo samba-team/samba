@@ -142,7 +142,7 @@ class gp_log:
             prev = apply_log.find('guid[@value="%s"]' % guid)
             if prev is None:
                 item = etree.SubElement(apply_log, 'guid')
-                item.attrib['count'] = '%d' % (len(apply_log)-1)
+                item.attrib['count'] = '%d' % (len(apply_log) - 1)
                 item.attrib['value'] = guid
 
     def apply_log_pop(self):
@@ -155,7 +155,7 @@ class gp_log:
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         apply_log = user_obj.find('applylog')
         if apply_log is not None:
-            ret = apply_log.find('guid[@count="%d"]' % (len(apply_log)-1))
+            ret = apply_log.find('guid[@count="%d"]' % (len(apply_log) - 1))
             if ret is not None:
                 apply_log.remove(ret)
                 return ret.attrib['value']
@@ -436,7 +436,7 @@ def cache_gpo_dir(conn, cache, sub_dir):
 def check_safe_path(path):
     dirs = re.split('/|\\\\', path)
     if 'sysvol' in path:
-        dirs = dirs[dirs.index('sysvol')+1:]
+        dirs = dirs[dirs.index('sysvol') + 1:]
     if not '..' in dirs:
         return os.path.join(*dirs)
     raise OSError(path)

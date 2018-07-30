@@ -30,7 +30,7 @@ class Option(optparse.Option):
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
     def format_description(self,description=""):
         desc_width = self.width - self.current_indent
-        indent = " "*self.current_indent
+        indent = " " * self.current_indent
         paragraphs = description.split('\n')
         wrapped_paragraphs = [
             textwrap.fill(p,
@@ -137,7 +137,7 @@ class Command(object):
         return parser, optiongroups
 
     def message(self, text):
-        self.outf.write(text+"\n")
+        self.outf.write(text + "\n")
 
     def _run(self, *argv):
         parser, optiongroups = self._create_parser(argv[0])

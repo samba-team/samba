@@ -81,7 +81,7 @@ class wintest():
             if colon == -1:
                 raise RuntimeError("Invalid config line '%s'" % line)
             varname = line[0:colon].strip()
-            value   = line[colon+1:].strip()
+            value   = line[colon + 1:].strip()
             self.setvar(varname, value)
 
     def list_steps_mode(self):
@@ -127,7 +127,7 @@ class wintest():
             var_end = text.find("}", var_start)
             if var_end == -1:
                 return text
-            var_name = text[var_start+2:var_end]
+            var_name = text[var_start + 2:var_end]
             if not var_name in self.vars:
                 raise RuntimeError("Unknown substitution variable ${%s}" % var_name)
             text = text.replace("${%s}" % var_name, self.vars[var_name])

@@ -108,11 +108,11 @@ url: www.example.com
 
     def create_bundle(self, count):
         for i in range(count):
-            self.create_user("cn=speedtestuser%d,cn=Users,%s" % (i+1, self.base_dn))
+            self.create_user("cn=speedtestuser%d,cn=Users,%s" % (i + 1, self.base_dn))
 
     def remove_bundle(self, count):
         for i in range(count):
-            delete_force(self.ldb_admin, "cn=speedtestuser%d,cn=Users,%s" % (i+1, self.base_dn))
+            delete_force(self.ldb_admin, "cn=speedtestuser%d,cn=Users,%s" % (i + 1, self.base_dn))
 
     def remove_test_users(self):
         res = ldb.search(base="cn=Users,%s" % self.base_dn, expression="(objectClass=user)", scope=SCOPE_SUBTREE)
@@ -184,7 +184,7 @@ class AclSearchSpeedTest(SpeedTest):
         mod = "(A;;LC;;;%s)(D;;RP;;;%s)" % (str(self.user_sid), str(self.user_sid))
         for i in range(num):
             self.sd_utils.dacl_add_ace("cn=speedtestuser%d,cn=Users,%s" %
-                                       (i+1, self.base_dn), mod)
+                                       (i + 1, self.base_dn), mod)
         print("\n=== %s user objects created ===\n" % num)
         print("\n=== Test search on %s user objects ===\n" % num)
         avg_search = Decimal("0.0")

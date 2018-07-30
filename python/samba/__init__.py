@@ -271,7 +271,7 @@ def check_all_substituted(text):
     var_end = text.find("}", var_start)
 
     raise Exception("Not all variables substituted: %s" %
-                    text[var_start:var_end+1])
+                    text[var_start:var_end + 1])
 
 
 def read_and_sub_file(file_name, subst_vars):

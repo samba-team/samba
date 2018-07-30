@@ -234,7 +234,7 @@ class PyCredentialsTests(TestCase):
         newpass = samba.generate_random_password(PWD_LEN, PWD_LEN)
         encoded = newpass.encode('utf-16-le')
         pwd_len = len(encoded)
-        filler  = [ord(x) for x in os.urandom(DATA_LEN-pwd_len)]
+        filler  = [ord(x) for x in os.urandom(DATA_LEN - pwd_len)]
         pwd = netlogon.netr_CryptPassword()
         pwd.length = pwd_len
         pwd.data = filler + [ord(x) for x in encoded]

@@ -144,7 +144,7 @@ class cmd_move(Command):
                                (new_parent_dn, e.message))
 
         full_new_ou_dn = ldb.Dn(samdb, str(full_old_ou_dn))
-        full_new_ou_dn.remove_base_components(len(full_old_ou_dn)-1)
+        full_new_ou_dn.remove_base_components(len(full_old_ou_dn) - 1)
         full_new_ou_dn.add_base(full_new_parent_dn)
 
         try:

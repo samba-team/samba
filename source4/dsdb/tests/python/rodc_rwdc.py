@@ -1178,7 +1178,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         use_kerberos = self.lockout1krb5_creds.get_kerberos_state()
         fail_creds = self.insta_creds(self.template_creds,
                                       username=username,
-                                      userpass=userpass+"X",
+                                      userpass=userpass + "X",
                                       kerberos_state=use_kerberos)
 
         try:
@@ -1208,7 +1208,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         use_kerberos = self.lockout1ntlm_creds.get_kerberos_state()
         fail_creds = self.insta_creds(self.template_creds,
                                       username=username,
-                                      userpass=userpass+"X",
+                                      userpass=userpass + "X",
                                       kerberos_state=use_kerberos)
 
         try:
@@ -1233,7 +1233,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         use_kerberos = self.lockout1krb5_creds.get_kerberos_state()
         fail_creds = self.insta_creds(self.template_creds,
                                       username=username,
-                                      userpass=userpass+"X",
+                                      userpass=userpass + "X",
                                       kerberos_state=use_kerberos)
 
         try:
@@ -1263,7 +1263,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         use_kerberos = self.lockout1ntlm_creds.get_kerberos_state()
         fail_creds = self.insta_creds(self.template_creds,
                                       username=username,
-                                      userpass=userpass+"X",
+                                      userpass=userpass + "X",
                                       kerberos_state=use_kerberos)
 
         try:

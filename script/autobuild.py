@@ -802,7 +802,7 @@ The top commit for the tree that was built was:
         if num_lines < 50:
             # Also include stderr (compile failures) if < 50 lines of stdout
             f = open("%s/%s.stderr" % (gitroot, failed_tag), 'r')
-            log_tail += "".join(f.readlines()[-(50-num_lines):])
+            log_tail += "".join(f.readlines()[-(50 - num_lines):])
 
         text += '''
 The last 50 lines of log messages:

@@ -214,7 +214,7 @@ class RawDCERPCTest(TestCase):
                                        auth_blob=to_server)
         req = self.generate_alter(call_id=call_id,
                                   ctx_list=ctx_list,
-                                  assoc_group_id=0xffffffff-assoc_group_id,
+                                  assoc_group_id=0xffffffff -assoc_group_id,
                                   auth_info=auth_info)
         self.send_pdu(req)
         rep = self.recv_pdu()
@@ -331,7 +331,7 @@ class RawDCERPCTest(TestCase):
             else:
                 sig_size = 16
 
-            zero_sig = "\x00"*sig_size
+            zero_sig = "\x00" * sig_size
             auth_info = self.generate_auth(auth_type=auth_context["auth_type"],
                                            auth_level=auth_context["auth_level"],
                                            auth_pad_length=auth_pad_length,

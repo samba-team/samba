@@ -491,7 +491,7 @@ class cmd_group_move(Command):
                                (new_parent_dn, e.message))
 
         full_new_group_dn = ldb.Dn(samdb, str(group_dn))
-        full_new_group_dn.remove_base_components(len(group_dn)-1)
+        full_new_group_dn.remove_base_components(len(group_dn) - 1)
         full_new_group_dn.add_base(full_new_parent_dn)
 
         try:

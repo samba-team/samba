@@ -20,11 +20,11 @@ from samba import smb
 
 PY3 = sys.version_info[0] == 3
 addom = 'addom.samba.example.com/'
-test_contents = 'abcd'*256
-utf_contents = u'Süßigkeiten Äpfel '*128
-test_literal_bytes_embed_nulls = b'\xff\xfe\x14\x61\x00\x00\x62\x63\x64'*256
+test_contents = 'abcd' * 256
+utf_contents = u'Süßigkeiten Äpfel ' * 128
+test_literal_bytes_embed_nulls = b'\xff\xfe\x14\x61\x00\x00\x62\x63\x64' * 256
 binary_contents = b'\xff\xfe'
-binary_contents = binary_contents + "Hello cruel world of python3".encode('utf8')*128
+binary_contents = binary_contents + "Hello cruel world of python3".encode('utf8') * 128
 test_dir = os.path.join(addom, 'testing_%d' % random.randint(0,0xFFFF))
 test_file = os.path.join(test_dir, 'testing').replace('/', '\\')
 
