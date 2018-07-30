@@ -88,7 +88,7 @@ class OUCmdTestCase(SambaToolCmdTest):
         for ou in self.ous:
             (result, out, err) = self.runsubcmd(
                 "ou", "create", "OU=%s" % ou["name"],
-                 "--description=%s" % ou["description"])
+                "--description=%s" % ou["description"])
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "There shouldn't be any error message")
@@ -115,7 +115,7 @@ class OUCmdTestCase(SambaToolCmdTest):
             full_ou_dn = self.samdb.normalize_dn_in_domain("OU=%s" % ou["name"])
             (result, out, err) = self.runsubcmd(
                 "ou", "create", str(full_ou_dn),
-                 "--description=%s" % ou["description"])
+                "--description=%s" % ou["description"])
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "There shouldn't be any error message")

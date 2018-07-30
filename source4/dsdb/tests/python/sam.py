@@ -431,7 +431,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["member"] = MessageElement(
             "cn=ldaptestuser3,cn=users," + self.base_dn,
-          FLAG_MOD_ADD, "member")
+            FLAG_MOD_ADD, "member")
         try:
             ldb.modify(m)
             self.fail()
@@ -504,8 +504,8 @@ class SamTests(samba.tests.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
-              "objectclass": "user",
-              "primaryGroupID": "0"})
+                "objectclass": "user",
+                "primaryGroupID": "0"})
             self.fail()
         except LdbError as e23:
             (num, _) = e23.args
@@ -1009,7 +1009,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1025,7 +1025,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e40:
@@ -1038,7 +1038,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1053,7 +1053,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1068,7 +1068,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1083,7 +1083,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1099,7 +1099,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_SECURITY_GLOBAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e41:
@@ -1113,7 +1113,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e42:
@@ -1129,7 +1129,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1145,7 +1145,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e43:
@@ -1158,7 +1158,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1174,7 +1174,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e44:
@@ -1189,7 +1189,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1205,7 +1205,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e45:
@@ -1218,7 +1218,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1233,7 +1233,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1248,7 +1248,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1263,7 +1263,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1279,7 +1279,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e46:
@@ -1293,7 +1293,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["member"] = MessageElement(
             "cn=ldaptestuser3,cn=users," + self.base_dn,
-          FLAG_MOD_ADD, "member")
+            FLAG_MOD_ADD, "member")
         try:
             ldb.modify(m)
             self.fail()
@@ -1306,7 +1306,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1321,7 +1321,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1339,7 +1339,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1355,7 +1355,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e48:
@@ -1368,7 +1368,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1383,7 +1383,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1398,7 +1398,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1413,7 +1413,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1429,7 +1429,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
             m["groupType"] = MessageElement(
                 str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
-              FLAG_MOD_REPLACE, "groupType")
+                FLAG_MOD_REPLACE, "groupType")
             ldb.modify(m)
             self.fail()
         except LdbError as e49:
@@ -1442,7 +1442,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_UNIVERSAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1457,7 +1457,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["groupType"] = MessageElement(
             str(GTYPE_SECURITY_GLOBAL_GROUP),
-          FLAG_MOD_REPLACE, "groupType")
+            FLAG_MOD_REPLACE, "groupType")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -2016,7 +2016,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_NORMAL_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
         except LdbError as e65:
             (num, _) = e65.args
@@ -2026,7 +2026,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2041,7 +2041,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_ACCOUNTDISABLE),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2063,7 +2063,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_LOCKOUT | UF_PASSWORD_EXPIRED),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2082,7 +2082,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_TEMP_DUPLICATE_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
         except LdbError as e66:
@@ -2094,7 +2094,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_SERVER_TRUST_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
         except LdbError as e67:
@@ -2105,7 +2105,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_WORKSTATION_TRUST_ACCOUNT),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         try:
@@ -2113,7 +2113,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
         except LdbError as e68:
@@ -2130,7 +2130,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2144,7 +2144,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_INTERDOMAIN_TRUST_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
         except LdbError as e69:
@@ -2293,7 +2293,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_NORMAL_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
         except LdbError as e74:
             (num, _) = e74.args
@@ -2303,7 +2303,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2318,7 +2318,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_ACCOUNTDISABLE),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2340,7 +2340,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_LOCKOUT | UF_PASSWORD_EXPIRED),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2359,7 +2359,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_TEMP_DUPLICATE_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
         except LdbError as e75:
@@ -2370,7 +2370,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_SERVER_TRUST_ACCOUNT),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2383,7 +2383,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2396,7 +2396,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_WORKSTATION_TRUST_ACCOUNT),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2409,7 +2409,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2422,7 +2422,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_SERVER_TRUST_ACCOUNT),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2435,7 +2435,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_WORKSTATION_TRUST_ACCOUNT),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2449,7 +2449,7 @@ class SamTests(samba.tests.TestCase):
             m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
             m["userAccountControl"] = MessageElement(
                 str(UF_INTERDOMAIN_TRUST_ACCOUNT),
-              FLAG_MOD_REPLACE, "userAccountControl")
+                FLAG_MOD_REPLACE, "userAccountControl")
             ldb.modify(m)
             self.fail()
         except LdbError as e76:
@@ -2488,7 +2488,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestuser2,cn=users," + self.base_dn,
@@ -2522,7 +2522,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_WORKSTATION_TRUST_ACCOUNT),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2600,7 +2600,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2702,7 +2702,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_SMARTCARD_REQUIRED),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2749,7 +2749,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2850,7 +2850,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2980,7 +2980,7 @@ class SamTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         m["userAccountControl"] = MessageElement(
             str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT),
-          FLAG_MOD_REPLACE, "userAccountControl")
+            FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,

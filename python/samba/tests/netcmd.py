@@ -86,4 +86,4 @@ class CommandTests(NetCmdTestCase):
             return
         self.fail(
             "The following commands do not have a short description set: %r" %
-                missing)
+            missing)

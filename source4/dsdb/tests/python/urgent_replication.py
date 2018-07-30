@@ -80,7 +80,7 @@ class UrgentReplicationTests(samba.tests.TestCase):
         """Test if the urgent replication is activated when handling a nTDSDSA object."""
         self.ldb.add({
             "dn": "cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,%s" %
-                self.ldb.get_config_basedn(),
+            self.ldb.get_config_basedn(),
             "objectclass":"server",
             "cn":"test server",
             "name":"test server",
@@ -117,15 +117,15 @@ systemFlags: 33554432""", ["relax:0"])
     def test_crossRef_object(self):
         """Test if the urgent replication is activated when handling a crossRef object."""
         self.ldb.add({
-                      "dn": "CN=test crossRef,CN=Partitions,CN=Configuration,"+ self.base_dn,
-                      "objectClass": "crossRef",
-                      "cn": "test crossRef",
-                      "dnsRoot": self.get_loadparm().get("realm").lower(),
-                      "instanceType": "4",
-                      "nCName": self.base_dn,
-                      "showInAdvancedViewOnly": "TRUE",
-                      "name": "test crossRef",
-                      "systemFlags": "1"}, ["relax:0"])
+            "dn": "CN=test crossRef,CN=Partitions,CN=Configuration,"+ self.base_dn,
+            "objectClass": "crossRef",
+            "cn": "test crossRef",
+            "dnsRoot": self.get_loadparm().get("realm").lower(),
+            "instanceType": "4",
+            "nCName": self.base_dn,
+            "showInAdvancedViewOnly": "TRUE",
+            "name": "test crossRef",
+            "systemFlags": "1"}, ["relax:0"])
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)

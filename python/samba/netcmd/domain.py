@@ -1228,7 +1228,7 @@ class cmd_domain_level(Command):
                 m.dn = ldb.Dn(samdb, domain_dn)
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
                     str(new_level_domain), ldb.FLAG_MOD_REPLACE,
-                            "msDS-Behavior-Version")
+                    "msDS-Behavior-Version")
                 samdb.modify(m)
                 # Under partitions
                 m = ldb.Message()
@@ -1236,7 +1236,7 @@ class cmd_domain_level(Command):
                               + ",CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
                     str(new_level_domain), ldb.FLAG_MOD_REPLACE,
-                          "msDS-Behavior-Version")
+                    "msDS-Behavior-Version")
                 try:
                     samdb.modify(m)
                 except ldb.LdbError as e2:
@@ -1268,7 +1268,7 @@ class cmd_domain_level(Command):
                 m.dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
                     str(new_level_forest), ldb.FLAG_MOD_REPLACE,
-                          "msDS-Behavior-Version")
+                    "msDS-Behavior-Version")
                 samdb.modify(m)
                 msgs.append("Forest function level changed!")
             msgs.append("All changes applied successfully!")

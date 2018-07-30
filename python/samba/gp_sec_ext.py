@@ -71,7 +71,7 @@ class inf_to_ldb(gp_ext_setter):
         old_val = self.ldb.get_minPwdLength()
         self.logger.info(
             'KDC Minimum Password length was changed from %s to %s' \
-             % (old_val, val))
+            % (old_val, val))
         self.gp_db.store(str(self), self.attribute, str(old_val))
         self.ldb.set_minPwdLength(val)
 

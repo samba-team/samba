@@ -179,8 +179,8 @@ class BasicTests(samba.tests.TestCase):
         # Objects instanciated using "satisfied" abstract classes (concrete
         # subclasses) are allowed
         self.ldb.add({
-             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-             "objectClass": ["top", "leaf", "connectionPoint", "serviceConnectionPoint"] })
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectClass": ["top", "leaf", "connectionPoint", "serviceConnectionPoint"] })
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -196,9 +196,9 @@ class BasicTests(samba.tests.TestCase):
 
         # Test allowed system flags
         self.ldb.add({
-             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-             "objectClass": "person",
-             "systemFlags": str(~(SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)) })
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectClass": "person",
+            "systemFlags": str(~(SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)) })
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["systemFlags"])
@@ -208,8 +208,8 @@ class BasicTests(samba.tests.TestCase):
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         self.ldb.add({
-             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-             "objectClass": "person" })
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectClass": "person" })
 
         # We can remove derivation classes of the structural objectclass
         # but they're going to be readded afterwards
@@ -417,8 +417,8 @@ class BasicTests(samba.tests.TestCase):
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         self.ldb.add({
-             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-             "objectClass": "user" })
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectClass": "user" })
 
         # Add a new top-most structural class "container". This does not work
         # since it stands in no direct relation to the current one.
@@ -573,7 +573,7 @@ class BasicTests(samba.tests.TestCase):
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestgroup,cn=thisdoesnotexist123,"
-                   + self.base_dn,
+                + self.base_dn,
                 "objectclass": "group"})
             self.fail()
         except LdbError as e24:
@@ -611,8 +611,8 @@ class BasicTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
         self.ldb.add({
-             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-             "objectclass": "group"})
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
 
         # modify operation
 
@@ -723,8 +723,8 @@ class BasicTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         self.ldb.add({
-             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-             "objectclass": "group"})
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -904,8 +904,8 @@ class BasicTests(samba.tests.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-               "objectClass": "person",
-               "sn": "" })
+                "objectClass": "person",
+                "sn": "" })
             self.fail()
         except LdbError as e39:
             (num, _) = e39.args
@@ -923,7 +923,7 @@ class BasicTests(samba.tests.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-           "objectClass": "person" })
+            "objectClass": "person" })
 
         # Too short (min. 1)
         m = Message()
@@ -1056,8 +1056,8 @@ class BasicTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         self.ldb.add({
-             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-             "objectclass": "group"})
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -1122,9 +1122,9 @@ class BasicTests(samba.tests.TestCase):
 
         # a wrong "distinguishedName" attribute is obviously tolerated
         self.ldb.add({
-              "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-              "objectclass": "group",
-              "distinguishedName": "cn=ldaptest,cn=users," + self.base_dn})
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "distinguishedName": "cn=ldaptest,cn=users," + self.base_dn})
 
         # proof if the DN has been set correctly
         res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1139,7 +1139,7 @@ class BasicTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["dn"] = MessageElement(
             "cn=ldaptestgroup,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
-          "dn")
+            "dn")
         try:
             ldb.modify(m)
             self.fail()
@@ -1151,7 +1151,7 @@ class BasicTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["distinguishedName"] = MessageElement(
             "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_ADD,
-          "distinguishedName")
+            "distinguishedName")
 
         try:
             ldb.modify(m)
@@ -1164,7 +1164,7 @@ class BasicTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["distinguishedName"] = MessageElement(
             "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
-          "distinguishedName")
+            "distinguishedName")
 
         try:
             ldb.modify(m)
@@ -1177,7 +1177,7 @@ class BasicTests(samba.tests.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["distinguishedName"] = MessageElement(
             "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_DELETE,
-          "distinguishedName")
+            "distinguishedName")
 
         try:
             ldb.modify(m)
@@ -1220,8 +1220,8 @@ class BasicTests(samba.tests.TestCase):
         # empty RDN
         try:
             self.ldb.add({
-                 "dn": "=,cn=users," + self.base_dn,
-                 "objectclass": "group"})
+                "dn": "=,cn=users," + self.base_dn,
+                "objectclass": "group"})
             self.fail()
         except LdbError as e61:
             (num, _) = e61.args
@@ -1230,8 +1230,8 @@ class BasicTests(samba.tests.TestCase):
         # empty RDN name
         try:
             self.ldb.add({
-                 "dn": "=ldaptestgroup,cn=users," + self.base_dn,
-                 "objectclass": "group"})
+                "dn": "=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group"})
             self.fail()
         except LdbError as e62:
             (num, _) = e62.args
@@ -1240,8 +1240,8 @@ class BasicTests(samba.tests.TestCase):
         # empty RDN value
         try:
             self.ldb.add({
-                 "dn": "cn=,cn=users," + self.base_dn,
-                 "objectclass": "group"})
+                "dn": "cn=,cn=users," + self.base_dn,
+                "objectclass": "group"})
             self.fail()
         except LdbError as e63:
             (num, _) = e63.args
@@ -1250,8 +1250,8 @@ class BasicTests(samba.tests.TestCase):
         # a wrong RDN candidate
         try:
             self.ldb.add({
-                 "dn": "description=xyz,cn=users," + self.base_dn,
-                 "objectclass": "group"})
+                "dn": "description=xyz,cn=users," + self.base_dn,
+                "objectclass": "group"})
             self.fail()
         except LdbError as e64:
             (num, _) = e64.args
@@ -1261,9 +1261,9 @@ class BasicTests(samba.tests.TestCase):
 
         # a wrong "name" attribute is obviously tolerated
         self.ldb.add({
-             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-             "objectclass": "group",
-             "name": "ldaptestgroupx"})
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "name": "ldaptestgroupx"})
 
         # proof if the name has been set correctly
         res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1417,8 +1417,8 @@ objectClass: container
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         self.ldb.add({
-             "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
-             "objectclass": "user" })
+            "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
+            "objectclass": "user" })
 
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser2,cn=users," + self.base_dn)
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
@@ -1523,14 +1523,14 @@ objectClass: container
     def test_rename_twice(self):
         """Tests the rename operation twice - this corresponds to a past bug"""
         self.ldb.add({
-             "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
-             "objectclass": "user" })
+            "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
+            "objectclass": "user" })
 
         ldb.rename("cn=ldaptestuser5,cn=users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
         self.ldb.add({
-             "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
-             "objectclass": "user" })
+            "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
+            "objectclass": "user" })
         ldb.rename("cn=ldaptestuser5,cn=Users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
         res = ldb.search(expression="cn=ldaptestuser5")
         self.assertEquals(len(res), 1, "Wrong number of hits for cn=ldaptestuser5")
