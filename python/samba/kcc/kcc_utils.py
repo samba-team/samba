@@ -1645,7 +1645,7 @@ class Site(object):
                 i_idx = j_idx
                 t_time = 0
 
-            #XXX doc says current time < c.timeLastSyncSuccess - f
+            # XXX doc says current time < c.timeLastSyncSuccess - f
             # which is true only if f is negative or clocks are wrong.
             # f is not negative in the default case (2 hours).
             elif self.nt_now - cursor.last_sync_success > f:

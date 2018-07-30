@@ -1093,7 +1093,7 @@ class BasicTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
-        #only write is allowed with NC_HEAD for originating updates
+        # only write is allowed with NC_HEAD for originating updates
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,

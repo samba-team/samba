@@ -269,7 +269,7 @@ You must provide an Admin user and password."""),
             m.dn = ldb.Dn(samdb, self.schema_dn)
         else:
             raise CommandError("Invalid FSMO role.")
-        #first try to transfer to avoid problem if the owner is still active
+        # first try to transfer to avoid problem if the owner is still active
         seize = False
         master_owner = get_fsmo_roleowner(samdb, m.dn, role)
         # if there is a different owner
@@ -282,7 +282,7 @@ You must provide an Admin user and password."""),
                     try:
                         transfer_role(self.outf, role, samdb)
                     except:
-                        #transfer failed, use the big axe...
+                        # transfer failed, use the big axe...
                         seize = True
                         self.message("Transfer unsuccessful, seizing...")
                     else:
@@ -352,7 +352,7 @@ You must provide an Admin user and password."""),
             m.dn = ldb.Dn(samdb, self.forestdns_dn)
         else:
             raise CommandError("Invalid FSMO role.")
-        #first try to transfer to avoid problem if the owner is still active
+        # first try to transfer to avoid problem if the owner is still active
         seize = False
         master_owner = get_fsmo_roleowner(samdb, m.dn, role)
         if master_owner is not None:
@@ -365,7 +365,7 @@ You must provide an Admin user and password."""),
                         transfer_dns_role(self.outf, sambaopts, credopts, role,
                                           samdb)
                     except:
-                        #transfer failed, use the big axe...
+                        # transfer failed, use the big axe...
                         seize = True
                         self.message("Transfer unsuccessful, seizing...")
                     else:

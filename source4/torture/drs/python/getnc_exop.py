@@ -439,7 +439,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                                 expected_links=[ou2_managedBy_dc3, dc3_managedBy_ou1])
 
         # Can fail against Windows due to equal precedence of dc3, cn3
-        #self._check_replication([self.ou,ou1,ou2,dc3,cn3],
+        # self._check_replication([self.ou,ou1,ou2,dc3,cn3],
         #    drsuapi.DRSUAPI_DRS_WRIT_REP|
         #    drsuapi.DRSUAPI_DRS_GET_ANC,
         #    expected_links=[ou2_managedBy_dc3,dc3_managedBy_ou1])
@@ -481,7 +481,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                                 expected_links=[ou2_managedBy_dc3, dc3_managedBy_ou1, dc3_managedBy_ou2])
 
         # Can fail against Windows due to equal precedence of dc3, cn3
-        #self._check_replication([self.ou,ou1,ou2,dc3,cn3],
+        # self._check_replication([self.ou,ou1,ou2,dc3,cn3],
         #    drsuapi.DRSUAPI_DRS_WRIT_REP|
         #    drsuapi.DRSUAPI_DRS_GET_ANC,
         #    expected_links=[ou2_managedBy_dc3,dc3_managedBy_ou1,dc3_managedBy_ou2])

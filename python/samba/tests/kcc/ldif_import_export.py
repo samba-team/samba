@@ -235,7 +235,7 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
                     r = subprocess.call([dot, '-Tcanon', ffn])
                     self.assertEqual(r, 0)
 
-                #even if dot is not there, at least check the file is non-empty
+                # even if dot is not there, at least check the file is non-empty
                 size = os.stat(ffn).st_size
                 self.assertNotEqual(size, 0)
                 files.append(ffn)

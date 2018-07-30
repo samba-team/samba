@@ -144,8 +144,8 @@ if __name__ == "__main__":
         store_utdv = ndr_unpack(drsblobs.replUpToDateVectorBlob, store_utdv_blob)
 
         assert store_dn == dn
-        #print "%s" % ndr_print(store_hwm)
-        #print "%s" % ndr_print(store_utdv)
+        # print "%s" % ndr_print(store_hwm)
+        # print "%s" % ndr_print(store_utdv)
     except Exception:
         store_dn = dn
         store_hwm = drsuapi.DsReplicaHighWaterMark()
@@ -248,7 +248,7 @@ if __name__ == "__main__":
                 obj_item = obj_item.next_object
                 continue
 
-            #print '%s' % obj.identifier.dn
+            # print '%s' % obj.identifier.dn
 
             is_deleted = False
             for i in range(0, obj.attribute_ctr.num_attributes):
@@ -308,7 +308,7 @@ if __name__ == "__main__":
 
             spl = ndr_unpack(drsblobs.supplementalCredentialsBlob, attr_val)
 
-            #print '%s' % ndr_print(spl)
+            # print '%s' % ndr_print(spl)
 
             cleartext_hex = None
 
@@ -344,7 +344,7 @@ if __name__ == "__main__":
                 krb5_old_raw = binascii.a2b_hex(krb5_old_hex)
                 krb5_old = ndr_unpack(drsblobs.package_PrimaryKerberosBlob, krb5_old_raw, allow_remaining=True)
 
-                #print '%s' % ndr_print(krb5_old)
+                # print '%s' % ndr_print(krb5_old)
 
             krb5_new_hex = None
 
@@ -358,7 +358,7 @@ if __name__ == "__main__":
                 krb5_new_raw = binascii.a2b_hex(krb5_new_hex)
                 krb5_new = ndr_unpack(drsblobs.package_PrimaryKerberosBlob, krb5_new_raw, allow_remaining=True)
 
-                #print '%s' % ndr_print(krb5_new)
+                # print '%s' % ndr_print(krb5_new)
 
             obj_item = obj_item.next_object
 
@@ -374,8 +374,8 @@ if __name__ == "__main__":
             store_utdv_ctr.cursors = ctr.uptodateness_vector.cursors
             store_utdv.ctr = store_utdv_ctr
 
-            #print "%s" % ndr_print(store_hwm)
-            #print "%s" % ndr_print(store_utdv)
+            # print "%s" % ndr_print(store_hwm)
+            # print "%s" % ndr_print(store_utdv)
 
             store_hwm_blob = ndr_pack(store_hwm)
             store_utdv_blob = ndr_pack(store_utdv)

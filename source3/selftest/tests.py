@@ -335,7 +335,7 @@ for env in ["fileserver"]:
 
 plantestsuite("samba3.blackbox.net_usershare", "fileserver:local", [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
 
-#TODO encrypted against member, with member creds, and with DC creds
+# TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc", "nt4_dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
                scriptdir, "$SMB_CONF_PATH", net, configuration])
@@ -379,7 +379,7 @@ if with_pthreadpool and have_ldwrap:
 plantestsuite("samba3.async_req", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_async_req.sh")])
 
-#smbtorture4 tests
+# smbtorture4 tests
 
 base = ["base.attr", "base.charset", "base.chkpath", "base.createx_access", "base.defer_open", "base.delaywrite", "base.delete",
         "base.deny1", "base.deny2", "base.deny3", "base.denydos", "base.dir1", "base.dir2",

@@ -115,7 +115,7 @@ class cmd_dsacl_set(Command):
         """Add new ace explicitly."""
         desc = self.read_descriptor(samdb, object_dn)
         desc_sddl = desc.as_sddl(self.get_domain_sid(samdb))
-        #TODO add bindings for descriptor manipulation and get rid of this
+        # TODO add bindings for descriptor manipulation and get rid of this
         desc_aces = re.findall("\(.*?\)", desc_sddl)
         for ace in desc_aces:
             if ("ID" in ace):

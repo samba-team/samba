@@ -77,7 +77,7 @@ class AclTests(samba.tests.TestCase):
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
         self.addCleanup(self.delete_admin_connection)
-        #used for anonymous login
+        # used for anonymous login
         self.creds_tmp = Credentials()
         self.creds_tmp.set_username("")
         self.creds_tmp.set_password("")
@@ -116,7 +116,7 @@ class AclTests(samba.tests.TestCase):
         del self.sd_utils
         del self.ldb_admin
 
-#tests on ldap add operations
+# tests on ldap add operations
 class AclAddTests(AclTests):
 
     def setUp(self):
@@ -269,7 +269,7 @@ class AclAddTests(AclTests):
         else:
             self.fail()
 
-#tests on ldap modify operations
+# tests on ldap modify operations
 class AclModifyTests(AclTests):
 
     def setUp(self):
@@ -545,7 +545,7 @@ dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
 changetype: modify
 add: Member
 Member: """ + self.get_user_dn(self.user_with_sm)
-#the user has no rights granted, this should fail
+# the user has no rights granted, this should fail
         try:
             self.ldb_user2.modify_ldif(ldif)
         except LdbError as e11:
@@ -555,7 +555,7 @@ Member: """ + self.get_user_dn(self.user_with_sm)
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
 
-#grant self-membership, should be able to add himself
+# grant self-membership, should be able to add himself
         user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user_with_sm))
         mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
@@ -563,7 +563,7 @@ Member: """ + self.get_user_dn(self.user_with_sm)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_sm))
-#but not other users
+# but not other users
         ldif = """
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
 changetype: modify
@@ -586,7 +586,7 @@ add: Member
 Member: """ + self.get_user_dn(self.user_with_sm) + """
 Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 
-#grant self-membership, should be able to add himself  but not others at the same time
+# grant self-membership, should be able to add himself  but not others at the same time
         user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user_with_sm))
         mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
@@ -600,7 +600,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 
     def test_modify_u7(self):
         """13 User with WP modifying Member"""
-#a second user is given write property permission
+# a second user is given write property permission
         user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user_with_wp))
         mod = "(A;;WP;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
@@ -646,7 +646,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         else:
             self.fail()
 
-#enable these when we have search implemented
+# enable these when we have search implemented
 class AclSearchTests(AclTests):
 
     def setUp(self):
@@ -726,8 +726,8 @@ class AclSearchTests(AclTests):
         anonymous = SamDB(url=ldaphost, credentials=self.creds_tmp, lp=lp)
         res = anonymous.search("", expression="(objectClass=*)", scope=SCOPE_BASE)
         self.assertEquals(len(res), 1)
-        #verify some of the attributes
-        #don't care about values
+        # verify some of the attributes
+        # don't care about values
         self.assertTrue("ldapServiceName" in res[0])
         self.assertTrue("namingContexts" in res[0])
         self.assertTrue("isSynchronized" in res[0])
@@ -796,7 +796,7 @@ class AclSearchTests(AclTests):
         self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
         self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
-        #regular users must see only ou1 and ou2
+        # regular users must see only ou1 and ou2
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 2)
@@ -806,7 +806,7 @@ class AclSearchTests(AclTests):
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
-        #these users should see all ous
+        # these users should see all ous
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 6)
@@ -831,11 +831,11 @@ class AclSearchTests(AclTests):
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
-        #this user should see all ous
+        # this user should see all ous
         res_list = [x["dn"] for x in res if x["dn"] in self.full_list]
         self.assertEquals(sorted(res_list), sorted(self.full_list))
 
-        #these users should see ou1, 2, 5 and 6 but not 3 and 4
+        # these users should see ou1, 2, 5 and 6 but not 3 and 4
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
@@ -890,7 +890,7 @@ class AclSearchTests(AclTests):
                    Dn(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
 
-        #should not see ou3 and ou4, but should see ou5 and ou6
+        # should not see ou3 and ou4, but should see ou5 and ou6
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 4)
@@ -953,7 +953,7 @@ class AclSearchTests(AclTests):
         res_list = list(res[0].keys())
         self.assertEquals(res_list, ok_list)
 
-        #give read property on ou and assert user can only see dn and ou
+        # give read property on ou and assert user can only see dn and ou
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
@@ -964,7 +964,7 @@ class AclSearchTests(AclTests):
         res_list = list(res[0].keys())
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
-        #give read property on Public Information and assert user can see ou and other members
+        # give read property on Public Information and assert user can see ou and other members
         mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
@@ -987,10 +987,10 @@ class AclSearchTests(AclTests):
 
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
                                    scope=SCOPE_SUBTREE)
-        #nothing should be returned as ou is not accessible
+        # nothing should be returned as ou is not accessible
         self.assertEquals(len(res), 0)
 
-        #give read property on ou and assert user can only see dn and ou
+        # give read property on ou and assert user can only see dn and ou
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
@@ -1000,7 +1000,7 @@ class AclSearchTests(AclTests):
         res_list = list(res[0].keys())
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
-        #give read property on Public Information and assert user can see ou and other members
+        # give read property on Public Information and assert user can see ou and other members
         mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou2)",
@@ -1078,7 +1078,8 @@ class AclSearchTests(AclTests):
             self.assert_search_on_attr(str(ou1_dn), self.ldb_admin, attr,
                                        expected_list=self.full_list)
 
-#tests on ldap delete operations
+
+# tests on ldap delete operations
 class AclDeleteTests(AclTests):
 
     def setUp(self):
@@ -1148,7 +1149,7 @@ class AclDeleteTests(AclTests):
         else:
             self.fail()
 
-#tests on ldap rename operations
+# tests on ldap rename operations
 class AclRenameTests(AclTests):
 
     def setUp(self):
@@ -1391,12 +1392,12 @@ class AclRenameTests(AclTests):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
-        #add an allow ace so we can delete this ou
+        # add an allow ace so we can delete this ou
         mod = "(A;;DC;;;DA)"
         self.sd_utils.dacl_add_ace(ou1_dn, mod)
 
 
-#tests on Control Access Rights
+# tests on Control Access Rights
 class AclCARTests(AclTests):
 
     def setUp(self):
@@ -1432,7 +1433,7 @@ class AclCARTests(AclTests):
 
     def test_change_password1(self):
         """Try a password change operation without any CARs given"""
-        #users have change password by default - remove for negative testing
+        # users have change password by default - remove for negative testing
         desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)", "")
@@ -1562,11 +1563,11 @@ userPassword: thatsAcomplPASS2
 
     def test_change_password7(self):
         """Try a password change operation without any CARs given"""
-        #users have change password by default - remove for negative testing
+        # users have change password by default - remove for negative testing
         desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         self.sd_utils.modify_sd_on_dn(self.get_user_dn(self.user_with_wp), sddl)
-        #first change our own password
+        # first change our own password
         self.ldb_user2.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_pc) + """
 changetype: modify
@@ -1575,7 +1576,7 @@ unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')).decode(
 add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).decode('utf8') + """
 """)
-        #then someone else's
+        # then someone else's
         self.ldb_user2.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
@@ -1701,11 +1702,11 @@ class AclExtendedTests(AclTests):
 
     def setUp(self):
         super(AclExtendedTests, self).setUp()
-        #regular user, will be the creator
+        # regular user, will be the creator
         self.u1 = "ext_u1"
-        #regular user
+        # regular user
         self.u2 = "ext_u2"
-        #admin user
+        # admin user
         self.u3 = "ext_u3"
         self.ldb_admin.newuser(self.u1, self.user_pass)
         self.ldb_admin.newuser(self.u2, self.user_pass)
@@ -1731,31 +1732,31 @@ class AclExtendedTests(AclTests):
         del self.ldb_user3
 
     def test_ntSecurityDescriptor(self):
-        #create empty ou
+        # create empty ou
         self.ldb_admin.create_ou("ou=ext_ou1," + self.base_dn)
-        #give u1 Create children access
+        # give u1 Create children access
         mod = "(A;;CC;;;%s)" % str(self.user_sid1)
         self.sd_utils.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
         mod = "(A;;LC;;;%s)" % str(self.user_sid2)
         self.sd_utils.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
-        #create a group under that, grant RP to u2
+        # create a group under that, grant RP to u2
         self.ldb_user1.newgroup("ext_group1", groupou="OU=ext_ou1",
                                 grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         mod = "(A;;RP;;;%s)" % str(self.user_sid2)
         self.sd_utils.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
-        #u2 must not read the descriptor
+        # u2 must not read the descriptor
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertNotEqual(len(res), 0)
         self.assertFalse("nTSecurityDescriptor" in res[0].keys())
-        #grant RC to u2 - still no access
+        # grant RC to u2 - still no access
         mod = "(A;;RC;;;%s)" % str(self.user_sid2)
         self.sd_utils.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertNotEqual(len(res), 0)
         self.assertFalse("nTSecurityDescriptor" in res[0].keys())
-        #u3 is member of administrators group, should be able to read sd
+        # u3 is member of administrators group, should be able to read sd
         res = self.ldb_user3.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertEqual(len(res), 1)
@@ -2040,7 +2041,7 @@ class AclSPNTests(AclTests):
         self.replace_spn(self.ldb_user1, ctx.acct_dn, "ldap/%s._msdcs.%s" %
                          (ctx.ntds_guid, ctx.dnsdomain))
 
-        #the following spns do not match the restrictions and should fail
+        # the following spns do not match the restrictions and should fail
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "ldap/%s.%s/ForestDnsZones.%s" %
                              (ctx.myname, ctx.dnsdomain, ctx.dnsdomain))
@@ -2109,7 +2110,7 @@ class AclSPNTests(AclTests):
                          (self.computername, self.dcctx.dnsdomain))
         self.replace_spn(self.ldb_admin, self.computerdn, "nosuchservice/%s/%s" % ("abcd", "abcd"))
 
-        #user has neither WP nor Validated-SPN, access denied expected
+        # user has neither WP nor Validated-SPN, access denied expected
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s/%s" % (self.computername, netbiosdomain))
         except LdbError as e45:
@@ -2118,8 +2119,8 @@ class AclSPNTests(AclTests):
 
         mod = "(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;%s)" % str(self.user_sid1)
         self.sd_utils.dacl_add_ace(self.computerdn, mod)
-        #grant Validated-SPN and check which values are accepted
-        #see 3.1.1.5.3.1.1.4 servicePrincipalName for reference
+        # grant Validated-SPN and check which values are accepted
+        # see 3.1.1.5.3.1.1.4 servicePrincipalName for reference
 
         # for regular computer objects we shouldalways get constraint violation
 

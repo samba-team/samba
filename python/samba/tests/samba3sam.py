@@ -234,7 +234,7 @@ class Samba3SamTestCase(MapBaseTestCase):
         # Checking for existence of record (local || remote)
         msg = self.ldb.search(expression="(|(unixName=bin)(sambaUnicodePwd=geheim))",
                               attrs=['unixName', 'cn', 'dn', 'sambaUnicodePwd'])
-        #print "got %d replies" % len(msg)
+        # print "got %d replies" % len(msg)
         self.assertEquals(len(msg), 1)        # TODO: should check with more records
         self.assertEquals(str(msg[0]["cn"]), "Niemand")
         self.assertEquals(str(msg[0]["unixName"]), "bin")
@@ -484,7 +484,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-1052
         # TODO:
         #   Using the SID directly in the parse tree leads to conversion
         #   errors, letting the search fail with no results.
-        #res = self.ldb.search("(objectSid=S-1-5-21-4231626423-2410014848-2360679739-1052)", scope=SCOPE_DEFAULT, attrs)
+        # res = self.ldb.search("(objectSid=S-1-5-21-4231626423-2410014848-2360679739-1052)", scope=SCOPE_DEFAULT, attrs)
         res = self.ldb.search(expression="(objectSid=*)", base=None, scope=SCOPE_DEFAULT, attrs=["dnsHostName", "lastLogon", "objectSid"])
         self.assertEquals(len(res), 4)
         res = sorted(res, key=attrgetter('dn'))
@@ -514,9 +514,9 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-1052
 
         # Note that Xs "objectSid" seems to be fine in the previous search for
         # "objectSid"...
-        #res = ldb.search(expression="(primaryGroupID=*)", NULL, ldb. SCOPE_DEFAULT, attrs)
-        #print len(res) + " results found"
-        #for i in range(len(res)):
+        # res = ldb.search(expression="(primaryGroupID=*)", NULL, ldb. SCOPE_DEFAULT, attrs)
+        # print len(res) + " results found"
+        # for i in range(len(res)):
         #    for (obj in res[i]) {
         #        print obj + ": " + res[i][obj]
         #    }

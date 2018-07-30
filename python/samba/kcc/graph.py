@@ -130,7 +130,7 @@ def combine_repl_info(info_a, info_b):
     info_c.interval = max(info_a.interval, info_b.interval)
     info_c.options = info_a.options & info_b.options
 
-    #schedule of None defaults to "always"
+    # schedule of None defaults to "always"
     if info_a.schedule is None:
         info_a.schedule = [0xFF] * 84
     if info_b.schedule is None:
@@ -262,7 +262,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
     if verify or dot_file_dir is not None:
         graph_edges = [[x.site.site_dnstr for x in e.vertices]
                        for e in edge_list]
-        #add the reverse edge if not directed.
+        # add the reverse edge if not directed.
         graph_edges.extend([x.site.site_dnstr
                             for x in reversed(e.vertices)]
                            for e in edge_list if not e.directed)
@@ -578,7 +578,7 @@ def kruskal(graph, edges):
     # Sorted based on internal comparison function of internal edge
     edges.sort()
 
-    #XXX expected_num_tree_edges is never used
+    # XXX expected_num_tree_edges is never used
     expected_num_tree_edges = 0  # TODO this value makes little sense
 
     count_edges = 0
@@ -734,7 +734,7 @@ class Vertex(object):
         #    SET v.Color to COLOR.RED
         # ELSEIF s contains one or more partial replicas of the NC
         #    SET v.Color to COLOR.BLACK
-        #ELSE
+        # ELSE
         #    SET v.Color to COLOR.WHITE
 
         # set to minimum (no replica)

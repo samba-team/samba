@@ -130,7 +130,7 @@ class UndirectedGraphTests(samba.tests.TestCase):
         self.assertIsNone(fn(*self.complete_graph))
 
     def test_graph_connected_under_vertex_failures(self):
-        #XXX no tests to distinguish this from the edge_failures case
+        # XXX no tests to distinguish this from the edge_failures case
         fn = verify_graph_connected_under_vertex_failures
 
         self.assertGraphError(fn, *self.line)

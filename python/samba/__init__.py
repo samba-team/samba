@@ -99,7 +99,7 @@ class Ldb(_Ldb):
         # TODO set debug
         def msg(l, text):
             print(text)
-        #self.set_debug(msg)
+        # self.set_debug(msg)
 
         self.set_utf8_casefold()
 

@@ -32,8 +32,8 @@ domsid = subprocess.Popen([wbinfo, "-n", domain + "/"],
                           stdout=subprocess.PIPE).communicate()[0]
 domsid = domsid.split(' ')[0]
 
-#print domain
-#print domsid
+# print domain
+# print domsid
 
 sids = [domsid + '-512', 'S-1-5-32-545', domsid + '-513', 'S-1-1-0', 'S-1-3-1', 'S-1-5-1']
 

@@ -177,7 +177,7 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
             plansmbtorture4testsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
         plansmbtorture4testsuite('rpc.samba3-sharesec', env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
 
-#Plugin S4 DC tests (confirms named pipe auth forwarding).  This can be expanded once kerberos is supported in the plugin DC
+# Plugin S4 DC tests (confirms named pipe auth forwarding).  This can be expanded once kerberos is supported in the plugin DC
 #
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
     for t in ncacn_np_tests:
@@ -244,7 +244,7 @@ for t in gpo:
 
 transports = ["ncacn_np", "ncacn_ip_tcp"]
 
-#Kerberos varies between functional levels, so it is important to check this on all of them
+# Kerberos varies between functional levels, so it is important to check this on all of them
 for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc", "ad_dc"]:
     transport = "ncacn_np"
     plansmbtorture4testsuite('rpc.pac', env, ["%s:$SERVER[]" % (transport, ), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.pac on %s" % (transport,))
@@ -313,7 +313,7 @@ ntvfsargs = ["--option=torture:sharedelay=100000", "--option=torture:oplocktimeo
 smb2_s3only = ["smb2.change_notify_disabled", "smb2.dosmode", "smb2.credits", "smb2.kernel-oplocks"]
 smb2 = [x for x in smbtorture4_testsuites("smb2.") if x not in smb2_s3only]
 
-#The QFILEINFO-IPC test needs to be on ipc$
+# The QFILEINFO-IPC test needs to be on ipc$
 raw = filter(lambda x: "raw.qfileinfo.ipc" not in x, smbtorture4_testsuites("raw."))
 base = smbtorture4_testsuites("base.")
 
@@ -345,7 +345,7 @@ plansmbtorture4testsuite('echo.udp', 'ad_dc_ntvfs:local', '//$SERVER/whatever')
 
 # Local tests
 for t in smbtorture4_testsuites("local."):
-    #The local.resolve test needs a name to look up using real system (not emulated) name routines
+    # The local.resolve test needs a name to look up using real system (not emulated) name routines
     plansmbtorture4testsuite(t, "none", "ncalrpc:localhost")
 
 # Confirm these tests with the system iconv too
@@ -384,7 +384,7 @@ for t in smbtorture4_testsuites("dns_internal."):
 
 # Local tests
 for t in smbtorture4_testsuites("dlz_bind9."):
-    #The dlz_bind9 tests needs to look at the DNS database
+    # The dlz_bind9 tests needs to look at the DNS database
     plansmbtorture4testsuite(t, "chgdcpass:local", ["ncalrpc:$SERVER", '-U$USERNAME%$PASSWORD'])
 
 planpythontestsuite("nt4_dc", "samba.tests.libsmb_samba_internal", py3_compatible=True);

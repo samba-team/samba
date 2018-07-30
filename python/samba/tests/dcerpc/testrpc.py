@@ -95,10 +95,10 @@ class RpcTests(object):
                 continue
             value = getattr(interface, n)
             if isinstance(value, str):
-                #print "%s=\"%s\"" % (n, value)
+                # print "%s=\"%s\"" % (n, value)
                 pass
             elif isinstance(value, int) or isinstance(value, long):
-                #print "%s=%d" % (n, value)
+                # print "%s=%d" % (n, value)
                 pass
             elif isinstance(value, type):
                 try:

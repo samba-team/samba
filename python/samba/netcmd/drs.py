@@ -726,7 +726,7 @@ class cmd_drs_options(Command):
                 dsa_opts |= self.option_map[flag]
             else:
                 dsa_opts &= ~self.option_map[flag]
-            #save new options
+            # save new options
             m = ldb.Message()
             m.dn = ldb.Dn(self.samdb, ntds_dn)
             m["options"] = ldb.MessageElement(str(dsa_opts), ldb.FLAG_MOD_REPLACE, "options")

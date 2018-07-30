@@ -515,7 +515,7 @@ options {
             child.close()
             i = child.exitstatus
             if wait_for_fail:
-                #wait for timeout or fail
+                # wait for timeout or fail
                 if i == None or i > 0:
                     return
             else:

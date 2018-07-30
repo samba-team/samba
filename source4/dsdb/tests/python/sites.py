@@ -81,7 +81,7 @@ class SitesBaseTests(samba.tests.TestCase):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
 
-#tests on sites
+# tests on sites
 class SimpleSitesTests(SitesBaseTests):
 
     def test_create_and_delete(self):

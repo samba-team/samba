@@ -338,14 +338,14 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         except LdbError as e4:
             (num, _) = e4.args
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
-        #try to undelete from config to base dn
+        # try to undelete from config to base dn
         try:
             self.restore_deleted_object(self.samdb, objDeleted2.dn, c4)
             self.fail()
         except LdbError as e5:
             (num, _) = e5.args
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
-        #assert undeletion will work in same nc
+        # assert undeletion will work in same nc
         self.restore_deleted_object(self.samdb, objDeleted1.dn, c4)
         self.restore_deleted_object(self.samdb, objDeleted2.dn, c3)
 

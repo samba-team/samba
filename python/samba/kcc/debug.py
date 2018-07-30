@@ -29,7 +29,7 @@ DEBUG = logger.debug
 WARN = logger.warning
 
 
-#colours for prettier logs
+# colours for prettier logs
 from samba.colour import C_NORMAL, REV_RED
 from samba.colour import DARK_RED, RED
 from samba.colour import DARK_GREEN, GREEN

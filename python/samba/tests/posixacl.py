@@ -104,7 +104,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         backend_obj.wrap_setxattr(dbname,
                                   self.tempf, "system.fake_access_acl", b"")
 
-        #however, as this is direct DB access, we do not notice it
+        # however, as this is direct DB access, we do not notice it
         facl = getntacl(self.lp, self.tempf, direct_db_access=True)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
@@ -119,7 +119,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         backend_obj.wrap_setxattr(dbname,
                                   self.tempf, "system.fake_access_acl", b"")
 
-        #the hash would break, and we return an ACL based only on the mode, except we set the ACL using the 'ntvfs' mode that doesn't include a hash
+        # the hash would break, and we return an ACL based only on the mode, except we set the ACL using the 'ntvfs' mode that doesn't include a hash
         facl = getntacl(self.lp, self.tempf)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
@@ -136,7 +136,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         backend_obj.wrap_setxattr(dbname,
                                   self.tempf, "system.fake_access_acl", b"")
 
-        #the hash will break, and we return an ACL based only on the mode
+        # the hash will break, and we return an ACL based only on the mode
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))

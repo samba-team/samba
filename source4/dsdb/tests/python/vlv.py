@@ -521,7 +521,7 @@ class VLVTests(samba.tests.TestCase):
                     start = max(before - 1, 1)
                     end = max(start + 4, original_n - after + 2)
                     for offset in range(start, end):
-                        #if iteration > 2076:
+                        # if iteration > 2076:
                         #    return
                         cookie = get_cookie(controls, original_n)
                         vlv_search = encode_vlv_control(before=before,

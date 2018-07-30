@@ -383,7 +383,7 @@ def add_rootservers(samdb, domaindn, prefix):
     for rserver in rootservers:
         record = [ndr_pack(ARecord(rootservers[rserver], serial=0, ttl=0, rank=dnsp.DNS_RANK_ROOT_HINT))]
         # Add AAAA record as well (How does W2K* add IPv6 records?)
-        #if rserver in rootservers_v6:
+        # if rserver in rootservers_v6:
         #    record.append(ndr_pack(AAAARecord(rootservers_v6[rserver], serial=0, ttl=0)))
         msg = ldb.Message(ldb.Dn(samdb, "DC=%s,%s" % (rserver, container_dn)))
         msg["objectClass"] = ["top", "dnsNode"]
@@ -1065,7 +1065,7 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
     :param autofill: Create DNS records (using fixed template)
     """
 
-    ##### Set up DC=DomainDnsZones,<DOMAINDN>
+    # Set up DC=DomainDnsZones,<DOMAINDN>
     # Add rootserver records
     if add_root:
         add_rootservers(samdb, domaindn, "DC=DomainDnsZones")
@@ -1080,7 +1080,7 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
                               dnsdomain, hostname, hostip, hostip6)
 
     if fill_level != FILL_SUBDOMAIN:
-        ##### Set up DC=ForestDnsZones,<FORESTDN>
+        # Set up DC=ForestDnsZones,<FORESTDN>
         # Add _msdcs record
         add_msdcs_record(samdb, forestdn, "DC=ForestDnsZones", dnsforest)
 

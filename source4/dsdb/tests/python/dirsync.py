@@ -83,7 +83,7 @@ class DirsyncBaseTests(samba.tests.TestCase):
         self.user_pass = samba.generate_random_password(12, 16)
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
-        #used for anonymous login
+        # used for anonymous login
         print("baseDN: %s" % self.base_dn)
 
     def get_user_dn(self, name):
@@ -103,7 +103,7 @@ class DirsyncBaseTests(samba.tests.TestCase):
         return ldb_target
 
 
-#tests on ldap add operations
+# tests on ldap add operations
 class SimpleDirsyncTests(DirsyncBaseTests):
 
     def setUp(self):
@@ -141,7 +141,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         except Exception:
             pass
 
-    #def test_dirsync_errors(self):
+    # def test_dirsync_errors(self):
 
     def test_dirsync_supported(self):
         """Test the basic of the dirsync is supported"""

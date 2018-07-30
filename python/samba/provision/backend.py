@@ -795,7 +795,7 @@ class FDSBackend(LDAPBackend):
         # easily kill it
         self.slapd_provision_command.append("-d0")
 
-        #the command for the final run is the normal script
+        # the command for the final run is the normal script
         self.slapd_command = \
             [os.path.join(self.ldapdir,
                           "slapd-" + self.ldap_instance, "start-slapd")]

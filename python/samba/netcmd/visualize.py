@@ -501,7 +501,7 @@ class cmd_ntdsconn(GraphCommand):
                                expression="(objectClass=nTDSConnection)",
                                attrs=['fromServer'],
                                # XXX can't be critical for ldif test
-                               #controls=["search_options:1:2"],
+                               # controls=["search_options:1:2"],
                                controls=["search_options:0:2"],
                                )
 

@@ -161,7 +161,7 @@ showInAdvancedViewOnly: TRUE
 
     ################################################################################################
 
-    ## Tests for DOMAIN
+    # Tests for DOMAIN
 
     # Default descriptor tests #####################################################################
 
@@ -190,7 +190,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
     def setUp(self):
         super(OwnerGroupDescriptorTests, self).setUp()
         self.deleteAll()
-        ### Create users
+        # Create users
         # User 1 - Enterprise Admins
         self.ldb_admin.newuser("testuser1", "samba123@")
         # User 2 - Domain Admins
@@ -444,7 +444,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
-        #this fails, research why
+        # this fails, research why
         #self.check_modify_inheritance(_ldb, object_dn)
 
     def test_104(self):
@@ -681,7 +681,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.ldb_admin.create_ou(object_dn)
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
 
-    ## Tests for SCHEMA
+    # Tests for SCHEMA
 
     # Defalt descriptor tests ##################################################################
 
@@ -736,7 +736,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.check_user_belongs(self.get_users_domain_dn(user_name), [])
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
-        #Change Schema partition descriptor
+        # Change Schema partition descriptor
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
@@ -752,7 +752,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.check_user_belongs(self.get_users_domain_dn(user_name), ["Enterprise Admins", "Domain Admins"])
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
-        #Change Schema partition descriptor
+        # Change Schema partition descriptor
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
@@ -935,7 +935,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
-    ## Tests for CONFIGURATION
+    # Tests for CONFIGURATION
 
     # Defalt descriptor tests ##################################################################
 
@@ -1959,7 +1959,7 @@ class RightsAttributesTests(DescriptorTests):
     def setUp(self):
         super(RightsAttributesTests, self).setUp()
         self.deleteAll()
-        ### Create users
+        # Create users
         # User 1
         self.ldb_admin.newuser("testuser_attr", "samba123@")
         # User 2, Domain Admins
@@ -1974,36 +1974,36 @@ class RightsAttributesTests(DescriptorTests):
         self.ldb_admin.create_ou(object_dn)
         print(self.get_users_domain_dn("testuser_attr"))
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn("testuser_attr"))
-        #give testuser1 read access so attributes can be retrieved
+        # give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        #user whould have no rights at all
+        # user whould have no rights at all
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], "0")
-        #give the user Write DACL and see what happens
+        # give the user Write DACL and see what happens
         mod = "(A;CI;WD;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        #user whould have DACL_SECURITY_INFORMATION
+        # user whould have DACL_SECURITY_INFORMATION
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], ("%d") % SECINFO_DACL)
-        #give the user Write Owners and see what happens
+        # give the user Write Owners and see what happens
         mod = "(A;CI;WO;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        #user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
+        # user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER))
-        #no way to grant security privilege bu adding ACE's so we use a memeber of Domain Admins
+        # no way to grant security privilege bu adding ACE's so we use a memeber of Domain Admins
         _ldb = self.get_ldb_connection("testuser_attr2", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        #user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
+        # user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["sDRightsEffective"][0], \
                           ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER | SECINFO_SACL))
@@ -2013,16 +2013,16 @@ class RightsAttributesTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn("testuser_attr"))
-        #give testuser1 read access so attributes can be retrieved
+        # give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["allowedChildClassesEffective"])
-        #there should be no allowed child classes
+        # there should be no allowed child classes
         self.assertEquals(len(res), 1)
         self.assertFalse("allowedChildClassesEffective" in res[0].keys())
-        #give the user the right to create children of type user
+        # give the user the right to create children of type user
         mod = "(OA;CI;CC;bf967aba-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
@@ -2037,16 +2037,16 @@ class RightsAttributesTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn("testuser_attr"))
-        #give testuser1 read access so attributes can be retrieved
+        # give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["allowedAttributesEffective"])
-        #there should be no allowed attributes
+        # there should be no allowed attributes
         self.assertEquals(len(res), 1)
         self.assertFalse("allowedAttributesEffective" in res[0].keys())
-        #give the user the right to write displayName and managedBy
+        # give the user the right to write displayName and managedBy
         mod2 = "(OA;CI;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         mod = "(OA;CI;WP;0296c120-40da-11d1-a9c0-0000f80367c1;;%s)" % str(user_sid)
         # also rights to modify an read only attribute, fromEntry
