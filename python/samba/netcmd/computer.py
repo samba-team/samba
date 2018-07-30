@@ -207,10 +207,10 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
         Option("--computerou",
-                help=("DN of alternative location (with or without domainDN "
-                      "counterpart) to default CN=Computers in which new "
-                      "computer object will be created. E.g. 'OU=<OU name>'"),
-                type=str),
+               help=("DN of alternative location (with or without domainDN "
+                     "counterpart) to default CN=Computers in which new "
+                     "computer object will be created. E.g. 'OU=<OU name>'"),
+               type=str),
         Option("--description", help="Computers's description", type=str),
         Option("--prepare-oldjoin",
                help="Prepare enabled machine account for oldjoin mechanism",

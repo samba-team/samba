@@ -160,15 +160,15 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         res2 = self.ldb_admin.search(self.base_dn, scope=SCOPE_BASE, attrs=["objectGUID"])
 
         res = self.ldb_admin.search(self.base_dn,
-                                        expression="name=Configuration",
-                                        controls=["dirsync:1:0:1"])
+                                    expression="name=Configuration",
+                                    controls=["dirsync:1:0:1"])
         self.assertEqual(res2[0].get("objectGUID"), res[0].get("parentGUID"))
 
     def test_ok_not_rootdc(self):
         """Test if it's ok to do dirsync on another NC that is not the root DC"""
         self.ldb_admin.search(self.ldb_admin.get_config_basedn(),
-                                    expression="samaccountname=*",
-                                    controls=["dirsync:1:0:1"])
+                              expression="samaccountname=*",
+                              controls=["dirsync:1:0:1"])
 
     def test_dirsync_errors(self):
         """Test if dirsync returns the correct LDAP errors in case of pb"""
@@ -301,8 +301,8 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         delta = Message()
         delta.dn = Dn(self.ldb_admin, str(ouname))
         delta["cn"] = MessageElement("test ou",
-                                        FLAG_MOD_ADD,
-                                        "cn" )
+                                     FLAG_MOD_ADD,
+                                     "cn" )
         self.ldb_admin.modify(delta)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="name=testou",
@@ -416,8 +416,8 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         delta.dn = Dn(self.ldb_admin, str(ouname))
 
         delta["cn"] = MessageElement("test ou",
-                                        FLAG_MOD_ADD,
-                                        "cn" )
+                                     FLAG_MOD_ADD,
+                                     "cn" )
         self.ldb_admin.modify(delta)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
@@ -430,8 +430,8 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         delta = Message()
         delta.dn = Dn(self.ldb_admin, str(ouname))
         delta["cn"] = MessageElement([],
-                                        FLAG_MOD_DELETE,
-                                        "cn" )
+                                     FLAG_MOD_DELETE,
+                                     "cn" )
         self.ldb_admin.modify(delta)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",

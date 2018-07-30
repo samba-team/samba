@@ -121,8 +121,8 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
         msg = ldb.Message()
         msg.dn = res[0].dn
         msg["unicodePwd"] = ldb.MessageElement(b"ABCDEF1234567890",
-                                                ldb.FLAG_MOD_REPLACE,
-                                                "unicodePwd")
+                                               ldb.FLAG_MOD_REPLACE,
+                                               "unicodePwd")
         self.ldb.modify(
             msg,
             controls=["local_oid:%s:0" %

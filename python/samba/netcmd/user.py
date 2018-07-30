@@ -64,7 +64,7 @@ try:
 except ImportError as e:
     gpgme_support = False
     decrypt_samba_gpg_help = "Decrypt the SambaGPG password not supported, " + \
-            "python-gpgme required"
+    "python-gpgme required"
 
 disabled_virtual_attributes = {
 }
@@ -249,22 +249,22 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-                metavar="URL", dest="H"),
+               metavar="URL", dest="H"),
         Option("--must-change-at-next-login",
-                help="Force password to be changed on next login",
-                action="store_true"),
+               help="Force password to be changed on next login",
+               action="store_true"),
         Option("--random-password",
-                help="Generate random password",
-                action="store_true"),
+               help="Generate random password",
+               action="store_true"),
         Option("--smartcard-required",
-                help="Require a smartcard for interactive logons",
-                action="store_true"),
+               help="Require a smartcard for interactive logons",
+               action="store_true"),
         Option("--use-username-as-cn",
-                help="Force use of username as user's CN",
-                action="store_true"),
+               help="Force use of username as user's CN",
+               action="store_true"),
         Option("--userou",
-                help="DN of alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created. E. g. 'OU=<OU name>'",
-                type=str),
+               help="DN of alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created. E. g. 'OU=<OU name>'",
+               type=str),
         Option("--surname", help="User's surname", type=str),
         Option("--given-name", help="User's given name", type=str),
         Option("--initials", help="User's initials", type=str),
@@ -281,11 +281,11 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
         Option("--telephone-number", help="User's phone number", type=str),
         Option("--physical-delivery-office", help="User's office location", type=str),
         Option("--rfc2307-from-nss",
-                help="Copy Unix user attributes from NSS (will be overridden by explicit UID/GID/GECOS/shell)",
-                action="store_true"),
+               help="Copy Unix user attributes from NSS (will be overridden by explicit UID/GID/GECOS/shell)",
+               action="store_true"),
         Option("--nis-domain", help="User's Unix/RFC2307 NIS domain", type=str),
         Option("--unix-home", help="User's Unix/RFC2307 home directory",
-                type=str),
+               type=str),
         Option("--uid", help="User's Unix/RFC2307 username", type=str),
         Option("--uid-number", help="User's Unix/RFC2307 numeric UID", type=int),
         Option("--gid-number", help="User's Unix/RFC2307 primary GID number", type=int),
@@ -440,7 +440,7 @@ Example2 shows how to delete a user in the domain against the local server.   su
                       credentials=creds, lp=lp)
 
         filter = ("(&(sAMAccountName=%s)(sAMAccountType=805306368))" %
-                   ldb.binary_encode(username))
+                  ldb.binary_encode(username))
 
         try:
             res = samdb.search(base=samdb.domain_dn(),
@@ -692,7 +692,7 @@ class cmd_user_password(Command):
     }
 
     def run(self, credopts=None, sambaopts=None, versionopts=None,
-                newpassword=None):
+            newpassword=None):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
@@ -766,14 +766,14 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
                help="Force password to be changed on next login",
                action="store_true"),
         Option("--random-password",
-                help="Generate random password",
-                action="store_true"),
+               help="Generate random password",
+               action="store_true"),
         Option("--smartcard-required",
-                help="Require a smartcard for interactive logons",
-                action="store_true"),
+               help="Require a smartcard for interactive logons",
+               action="store_true"),
         Option("--clear-smartcard-required",
-                help="Don't require a smartcard for interactive logons",
-                action="store_true"),
+               help="Don't require a smartcard for interactive logons",
+               action="store_true"),
     ]
 
     takes_args = ["username?"]
@@ -1210,8 +1210,8 @@ class GetPasswordCommand(Command):
 
             for h in up.hashes:
                 if (scheme_match is None and
-                      h.scheme == SCHEME and
-                      h.value.startswith(scheme_prefix)):
+                    h.scheme == SCHEME and
+                    h.value.startswith(scheme_prefix)):
                     scheme_match = h.value
                 if h.scheme == SCHEME and h.value.startswith(prefix):
                     return (h.value, scheme_match)

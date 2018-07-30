@@ -298,21 +298,21 @@ class DynamicTokenTest(samba.tests.TestCase):
     def tearDown(self):
         super(DynamicTokenTest, self).tearDown()
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_user, "cn=users", self.base_dn))
+                     (self.test_user, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_group0, "cn=users", self.base_dn))
+                     (self.test_group0, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_group1, "cn=users", self.base_dn))
+                     (self.test_group1, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_group2, "cn=users", self.base_dn))
+                     (self.test_group2, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_group3, "cn=users", self.base_dn))
+                     (self.test_group3, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_group4, "cn=users", self.base_dn))
+                     (self.test_group4, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_group5, "cn=users", self.base_dn))
+                     (self.test_group5, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (self.test_group6, "cn=users", self.base_dn))
+                     (self.test_group6, "cn=users", self.base_dn))
 
     def test_rootDSE_tokenGroups(self):
         """Testing rootDSE tokengroups against internal calculation"""
@@ -644,7 +644,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         rids = samr_conn.GetGroupsForUser(user_handle)
         user_info = samr_conn.QueryUserInfo(user_handle, 1)
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
-                          (test_user, "cn=users", self.base_dn))
+                     (test_user, "cn=users", self.base_dn))
         self.assertEqual(len(rids.rids), 1)
         self.assertEqual(rids.rids[0].rid, user_info.primary_gid)
 

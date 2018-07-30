@@ -625,7 +625,7 @@ for s in signseal_options:
         binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
 
         plantestsuite("samba3.blackbox.rpcclient krb5 ncacn_np with [%s%s%s] " % (a, s, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
-                                                                                                                              "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
+                                                                                                            "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 plantestsuite("samba3.blackbox.rpcclient_samlogon", "ad_member:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
                                                                        "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$DC_SERVER", configuration])

@@ -378,7 +378,7 @@ class BasicTreeDeleteTests(BasicDeleteTests):
             = self.ldb.get_wellknown_dn(self.ldb.get_default_basedn(),
                                         dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
         sites_obj = self.search_dn("cn=sites,%s" \
-                                        % self.ldb.get_config_basedn())
+                                   % self.ldb.get_config_basedn())
         self.sites_dn = sites_obj.dn
         self.sites_guid \
             = sites_obj["objectGUID"][0]

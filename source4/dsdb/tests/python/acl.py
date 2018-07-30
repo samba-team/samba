@@ -148,9 +148,9 @@ class AclAddTests(AclTests):
     def tearDown(self):
         super(AclAddTests, self).tearDown()
         delete_force(self.ldb_admin, "CN=%s,%s,%s" %
-                          (self.test_user1, self.ou2, self.base_dn))
+                     (self.test_user1, self.ou2, self.base_dn))
         delete_force(self.ldb_admin, "CN=%s,%s,%s" %
-                          (self.test_group1, self.ou2, self.base_dn))
+                     (self.test_group1, self.ou2, self.base_dn))
         delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
         delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
         delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
@@ -250,7 +250,7 @@ class AclAddTests(AclTests):
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         self.ldb_owner.newuser(self.test_user1, self.user_pass, userou=self.ou2)
         self.ldb_owner.newgroup("test_add_group1", groupou="OU=test_add_ou2,OU=test_add_ou1",
-                                 grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
+                                grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         # Make sure we have successfully created the two objects -- user and group
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
         self.assertTrue(len(res) > 0)
@@ -756,7 +756,7 @@ class AclSearchTests(AclTests):
             self.fail()
         try:
             res = anonymous.search(anonymous.get_config_basedn(), expression="(objectClass=*)",
-                                        scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         except LdbError as e17:
             (num, _) = e17.args
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
@@ -808,7 +808,7 @@ class AclSearchTests(AclTests):
 
         #these users should see all ous
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 6)
         res_list = [ x["dn"] for x in res if x["dn"] in self.full_list ]
         self.assertEquals(sorted(res_list), sorted(self.full_list))
@@ -837,7 +837,7 @@ class AclSearchTests(AclTests):
 
         #these users should see ou1, 2, 5 and 6 but not 3 and 4
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
@@ -892,7 +892,7 @@ class AclSearchTests(AclTests):
 
         #should not see ou3 and ou4, but should see ou5 and ou6
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 4)
         res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
@@ -925,7 +925,7 @@ class AclSearchTests(AclTests):
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 2)
         res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
@@ -940,14 +940,14 @@ class AclSearchTests(AclTests):
         self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
         # assert user can only see dn
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         ok_list = ['dn']
         self.assertEquals(len(res), 1)
         res_list = list(res[0].keys())
         self.assertEquals(res_list, ok_list)
 
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_BASE, attrs=["ou"])
+                                   scope=SCOPE_BASE, attrs=["ou"])
 
         self.assertEquals(len(res), 1)
         res_list = list(res[0].keys())
@@ -958,7 +958,7 @@ class AclSearchTests(AclTests):
         self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         ok_list = ['dn', 'ou']
         self.assertEquals(len(res), 1)
         res_list = list(res[0].keys())
@@ -969,7 +969,7 @@ class AclSearchTests(AclTests):
         self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
 
         ok_list = ['dn', 'objectClass', 'ou', 'distinguishedName', 'name', 'objectGUID', 'objectCategory']
         res_list = list(res[0].keys())
@@ -986,7 +986,7 @@ class AclSearchTests(AclTests):
         self.ldb_user.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         #nothing should be returned as ou is not accessible
         self.assertEquals(len(res), 0)
 
@@ -994,7 +994,7 @@ class AclSearchTests(AclTests):
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
-                                    scope=SCOPE_SUBTREE)
+                                   scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
         ok_list = ['dn', 'ou']
         res_list = list(res[0].keys())
@@ -1195,7 +1195,7 @@ class AclRenameTests(AclTests):
         self.ldb_admin.newuser(self.testuser1, self.user_pass, userou=self.ou1)
         try:
             self.ldb_user.rename("CN=%s,%s,%s" % (self.testuser1, self.ou1, self.base_dn), \
-                                     "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
+                                 "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
         except LdbError as e21:
             (num, _) = e21.args
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
@@ -1943,7 +1943,7 @@ class AclSPNTests(AclTests):
         msg = Message()
         msg.dn = Dn(self.ldb_admin, dn)
         msg["servicePrincipalName"] = MessageElement(spn, flag,
-                                                         "servicePrincipalName")
+                                                     "servicePrincipalName")
         _ldb.modify(msg)
 
     def create_computer(self, computername, domainname):
@@ -2126,7 +2126,7 @@ class AclSPNTests(AclTests):
         # This does not pass against Windows, although it should according to docs
         self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s" % (self.computername))
         self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s.%s" %
-                             (self.computername, self.dcctx.dnsdomain))
+                         (self.computername, self.dcctx.dnsdomain))
 
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s/%s" % (self.computername, netbiosdomain))

@@ -148,7 +148,7 @@ add: userPassword
         creds2.set_realm(creds.get_realm())
         creds2.set_workstation(creds.get_workstation())
         creds2.set_gensec_features(creds2.get_gensec_features()
-                                                          | gensec.FEATURE_SEAL)
+                                   | gensec.FEATURE_SEAL)
         self.ldb2 = SamDB(url=host, credentials=creds2, lp=lp)
 
     def test_unicodePwd_hash_set(self):

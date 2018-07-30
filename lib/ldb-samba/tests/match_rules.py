@@ -570,16 +570,16 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g3,%s" % self.ou_groups).lower())
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn).lower() for res in res1]
         self.assertTrue(("CN=g3,%s" % self.ou_groups).lower() in dn_list)
         self.assertTrue(("CN=g4,%s" % self.ou_groups).lower() in dn_list)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
+                               scope=SCOPE_ONELEVEL,
+                               expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn).lower() for res in res1]
         self.assertTrue(("CN=g3,%s" % self.ou_groups).lower() in dn_list)
@@ -603,9 +603,9 @@ class MatchRulesTests(samba.tests.TestCase):
 
     def test_extended_dn_u4(self):
         res1 = self.ldb.search("cn=u4,%s" % self.ou_users,
-                                scope=SCOPE_BASE,
-                                expression="objectClass=*",
-                                attrs=['objectSid', 'objectGUID'])
+                               scope=SCOPE_BASE,
+                               expression="objectClass=*",
+                               attrs=['objectSid', 'objectGUID'])
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("cn=u4,%s" % self.ou_users).lower())
 
@@ -613,44 +613,44 @@ class MatchRulesTests(samba.tests.TestCase):
         guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0])
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=<SID=%s>" % sid)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=<SID=%s>" % sid)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g4,%s" % self.ou_groups).lower())
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=<GUID=%s>" % guid)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=<GUID=%s>" % guid)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g4,%s" % self.ou_groups).lower())
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="member=<GUID=%s>" % guid)
+                               scope=SCOPE_ONELEVEL,
+                               expression="member=<GUID=%s>" % guid)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g4,%s" % self.ou_groups).lower())
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g4,%s" % self.ou_groups).lower())
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
+                               scope=SCOPE_ONELEVEL,
+                               expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g4,%s" % self.ou_groups).lower())
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=<GUID=%s>" % guid)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=<GUID=%s>" % guid)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g4,%s" % self.ou_groups).lower())
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="member:1.2.840.113556.1.4.1941:=<GUID=%s>" % guid)
+                               scope=SCOPE_ONELEVEL,
+                               expression="member:1.2.840.113556.1.4.1941:=<GUID=%s>" % guid)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("CN=g4,%s" % self.ou_groups).lower())
 
@@ -721,13 +721,13 @@ class MatchRulesTests(samba.tests.TestCase):
 
     def test_invalid_basedn(self):
         res1 = self.ldb.search(self.base_dn,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=c1,ou=computers,ou=matchrulestest,%sXX" % self.base_dn)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=c1,ou=computers,ou=matchrulestest,%sXX" % self.base_dn)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.base_dn,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=XX,ou=computers,ou=matchrulestest,%s" % self.base_dn)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=XX,ou=computers,ou=matchrulestest,%s" % self.base_dn)
         self.assertEqual(len(res1), 0)
 
     def test_subtree(self):
@@ -754,18 +754,18 @@ class MatchRulesTests(samba.tests.TestCase):
 
     def test_unknown_oid(self):
         res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="member:2.4.681.226012.2.8.3882:=cn=u1,%s" % self.ou_users)
+                               scope=SCOPE_BASE,
+                               expression="member:2.4.681.226012.2.8.3882:=cn=u1,%s" % self.ou_users)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="member:8.16.8720.1008448.8.32.15528:=cn=u1,%s" % self.ou_users)
+                               scope=SCOPE_BASE,
+                               expression="member:8.16.8720.1008448.8.32.15528:=cn=u1,%s" % self.ou_users)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="member:1.2.3.4:=cn=u1,%s" % self.ou_users)
+                               scope=SCOPE_BASE,
+                               expression="member:1.2.3.4:=cn=u1,%s" % self.ou_users)
         self.assertEqual(len(res1), 0)
 
     def test_nul_text(self):
@@ -815,40 +815,40 @@ class MatchRulesTests(samba.tests.TestCase):
 
     def test_misc_matches(self):
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="member=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="member=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search("cn=g1,%s" % self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="member=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="member=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=g2,%s" % self.ou_groups)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="member=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_ONELEVEL,
+                               expression="member=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=g2,%s" % self.ou_groups)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search("cn=g1,%s" % self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g2,%s" % self.ou_groups in dn_list)
@@ -856,8 +856,8 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_ONELEVEL,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g2,%s" % self.ou_groups in dn_list)
@@ -865,50 +865,50 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_ONELEVEL,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="memberOf=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="memberOf=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="memberOf=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="memberOf=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), ("CN=g3,%s" % self.ou_groups))
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="memberOf=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_ONELEVEL,
+                               expression="memberOf=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), ("CN=g3,%s" % self.ou_groups))
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
-                                scope=SCOPE_BASE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_BASE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g1,%s" % self.ou_groups in dn_list)
@@ -916,8 +916,8 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_ONELEVEL,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_ONELEVEL,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g1,%s" % self.ou_groups in dn_list)
@@ -925,13 +925,13 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou_groups,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
 
 class MatchRuleConditionTests(samba.tests.TestCase):
@@ -1126,16 +1126,16 @@ class MatchRuleConditionTests(samba.tests.TestCase):
 
     def test_g1_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=g1,%s" % self.ou_groups)
         self.assertEquals(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g2,%s" % self.ou_groups in dn_list)
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEquals(len(res1), 6)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1146,27 +1146,27 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=g1,%s" % self.ou_groups)
         self.assertEquals(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEquals(len(res1), 0)
 
     def test_g2_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=g2,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=g2,%s" % self.ou_groups)
         self.assertEquals(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s" % self.ou_groups)
         self.assertEquals(len(res1), 5)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1176,29 +1176,29 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=g2,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=g2,%s" % self.ou_groups)
         self.assertEquals(len(res1), 1)
         self.assertEquals(str(res1[0].dn), "CN=g1,%s" % self.ou_groups)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g2,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g2,%s" % self.ou_groups)
         self.assertEquals(len(res1), 1)
         self.assertEquals(str(res1[0].dn), "CN=g1,%s" % self.ou_groups)
 
     def test_g3_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=g3,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=g3,%s" % self.ou_groups)
         self.assertEquals(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s" % self.ou_groups)
         self.assertEquals(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
@@ -1206,14 +1206,14 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=g3,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=g3,%s" % self.ou_groups)
         self.assertEquals(len(res1), 1)
         self.assertEquals(str(res1[0].dn), "CN=g2,%s" % self.ou_groups)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g3,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g3,%s" % self.ou_groups)
         self.assertEquals(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g1,%s" % self.ou_groups in dn_list)
@@ -1221,8 +1221,8 @@ class MatchRuleConditionTests(samba.tests.TestCase):
 
     def test_g4_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=g4,%s" % self.ou_groups)
         self.assertEquals(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
@@ -1230,8 +1230,8 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c4,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEquals(len(res1), 4)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
@@ -1240,70 +1240,70 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c4,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=g4,%s" % self.ou_groups)
         self.assertEquals(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=g4,%s" % self.ou_groups)
         self.assertEquals(len(res1), 0)
 
     def test_u1_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=u1,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=u1,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
         self.assertTrue("CN=c2,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
         self.assertTrue("CN=c2,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=u1,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=u1,%s" % self.ou_users)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
         self.assertEqual(len(res1), 0)
 
     def test_u2_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=u2,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=u2,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=u2,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=u2,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=u2,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=u2,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g1,%s" % self.ou_groups in dn_list)
         self.assertTrue("CN=g2,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=u2,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=u2,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g1,%s" % self.ou_groups in dn_list)
@@ -1311,16 +1311,16 @@ class MatchRuleConditionTests(samba.tests.TestCase):
 
     def test_u3_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=u3,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=u3,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=u3,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=u3,%s" % self.ou_users)
         self.assertEqual(len(res1), 4)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g1,%s" % self.ou_groups in dn_list)
@@ -1329,41 +1329,41 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=u3,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=u3,%s" % self.ou_users)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=c1,%s" % self.ou_computers)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=u3,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=u3,%s" % self.ou_users)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=c1,%s" % self.ou_computers)
 
     def test_u4_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=u4,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=u4,%s" % self.ou_users)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=g4,%s" % self.ou_groups)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=u4,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=u4,%s" % self.ou_users)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=g4,%s" % self.ou_groups)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=u4,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=u4,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
         self.assertTrue("CN=c4,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=u4,%s" % self.ou_users)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=u4,%s" % self.ou_users)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
@@ -1371,8 +1371,8 @@ class MatchRuleConditionTests(samba.tests.TestCase):
 
     def test_c1_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=c1,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=c1,%s" % self.ou_computers)
         self.assertEqual(len(res1), 4)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u1,%s" % self.ou_users in dn_list)
@@ -1381,8 +1381,8 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=u4,%s" % self.ou_users in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=c1,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=c1,%s" % self.ou_computers)
         self.assertEqual(len(res1), 8)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u1,%s" % self.ou_users in dn_list)
@@ -1395,50 +1395,50 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=c1,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=c1,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=c1,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=c1,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
     def test_c2_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=c2,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=c2,%s" % self.ou_computers)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=u1,%s" % self.ou_users)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=c2,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=c2,%s" % self.ou_computers)
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=u1,%s" % self.ou_users)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=c2,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=c2,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=c2,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=c2,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
     def test_c3_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=c3,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=c3,%s" % self.ou_computers)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=c3,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=c3,%s" % self.ou_computers)
         self.assertEqual(len(res1), 4)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1447,48 +1447,48 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=c3,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=c3,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=c3,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=c3,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
     def test_c4_members(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member=cn=c4,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member=cn=c4,%s" % self.ou_computers)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
         self.assertTrue("CN=u4,%s" % self.ou_users in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="member:1.2.840.113556.1.4.1941:=cn=c4,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="member:1.2.840.113556.1.4.1941:=cn=c4,%s" % self.ou_computers)
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u4,%s" % self.ou_users in dn_list)
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf=cn=c4,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf=cn=c4,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=c4,%s" % self.ou_computers)
+                               scope=SCOPE_SUBTREE,
+                               expression="memberOf:1.2.840.113556.1.4.1941:=cn=c4,%s" % self.ou_computers)
         self.assertEqual(len(res1), 0)
 
     def test_or_member_queries(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c1,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=c2,%s))") % (
-                                            self.ou_computers, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c1,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=c2,%s))") % (
+                                    self.ou_computers, self.ou_computers))
         self.assertEqual(len(res1), 8)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u1,%s" % self.ou_users in dn_list)
@@ -1501,10 +1501,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c2,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=c3,%s))") % (
-                                            self.ou_computers, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c2,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=c3,%s))") % (
+                                    self.ou_computers, self.ou_computers))
         self.assertEqual(len(res1), 5)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u1,%s" % self.ou_users in dn_list)
@@ -1514,10 +1514,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c2,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=c4,%s))") % (
-                                            self.ou_computers, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c2,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=c4,%s))") % (
+                                    self.ou_computers, self.ou_computers))
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u1,%s" % self.ou_users in dn_list)
@@ -1525,10 +1525,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c3,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=c4,%s))") % (
-                                            self.ou_computers, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(member:1.2.840.113556.1.4.1941:=cn=c3,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=c4,%s))") % (
+                                    self.ou_computers, self.ou_computers))
         self.assertEqual(len(res1), 6)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1539,10 +1539,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g4,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(member:1.2.840.113556.1.4.1941:=cn=u1,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=c4,%s))") % (
-                                            self.ou_users, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(member:1.2.840.113556.1.4.1941:=cn=u1,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=c4,%s))") % (
+                                    self.ou_users, self.ou_computers))
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u4,%s" % self.ou_users in dn_list)
@@ -1550,25 +1550,25 @@ class MatchRuleConditionTests(samba.tests.TestCase):
 
     def test_and_member_queries(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c1,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=c2,%s))") % (
-                                            self.ou_computers, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c1,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=c2,%s))") % (
+                                    self.ou_computers, self.ou_computers))
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn), "CN=u1,%s" % self.ou_users)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c2,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=c3,%s))") % (
-                                            self.ou_computers, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c2,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=c3,%s))") % (
+                                    self.ou_computers, self.ou_computers))
         self.assertEqual(len(res1), 0)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c3,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=u3,%s))") % (
-                                            self.ou_computers, self.ou_users))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c3,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=u3,%s))") % (
+                                    self.ou_computers, self.ou_users))
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=g1,%s" % self.ou_groups in dn_list)
@@ -1576,18 +1576,18 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=g3,%s" % self.ou_groups in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c1,%s)"
-                                            "(member:1.2.840.113556.1.4.1941:=cn=u4,%s))") % (
-                                            self.ou_computers, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(member:1.2.840.113556.1.4.1941:=cn=c1,%s)"
+                                           "(member:1.2.840.113556.1.4.1941:=cn=u4,%s))") % (
+                                    self.ou_computers, self.ou_computers))
         self.assertEqual(len(res1), 0)
 
     def test_or_memberOf_queries(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 6)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1598,10 +1598,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 6)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1612,10 +1612,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 8)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1628,10 +1628,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c4,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") %
-                                            (self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") %
+                               (self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 5)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1641,10 +1641,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 7)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1656,10 +1656,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c4,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(|(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 5)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
@@ -1670,10 +1670,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
 
     def test_and_memberOf_queries(self):
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 5)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u2,%s" % self.ou_users in dn_list)
@@ -1683,10 +1683,10 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
@@ -1694,20 +1694,20 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 3)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
@@ -1715,30 +1715,30 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         self.assertTrue("CN=c3,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g2,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
-                                            self.ou_groups, self.ou_groups))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g3,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=g4,%s))") % (
+                                    self.ou_groups, self.ou_groups))
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn) for res in res1]
         self.assertTrue("CN=u3,%s" % self.ou_users in dn_list)
         self.assertTrue("CN=c1,%s" % self.ou_computers in dn_list)
 
         res1 = self.ldb.search(self.ou,
-                                scope=SCOPE_SUBTREE,
-                                expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
-                                            "(memberOf:1.2.840.113556.1.4.1941:=cn=c1,%s))") % (
-                                            self.ou_groups, self.ou_computers))
+                               scope=SCOPE_SUBTREE,
+                               expression=("(&(memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s)"
+                                           "(memberOf:1.2.840.113556.1.4.1941:=cn=c1,%s))") % (
+                                    self.ou_groups, self.ou_computers))
         self.assertEqual(len(res1), 0)
 
 parser = optparse.OptionParser("match_rules.py [options] <host>")

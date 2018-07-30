@@ -101,7 +101,7 @@ class cmd_spn_add(Command):
             scope=ldb.SCOPE_SUBTREE)
         if len(res) != 0 and not force:
             raise CommandError("Service principal %s already"
-                                   " affected to another user" % name)
+                               " affected to another user" % name)
 
         (cleaneduser, realm, domain) = _get_user_realm_domain(user)
         res = sam.search(
@@ -128,7 +128,7 @@ class cmd_spn_add(Command):
                 sam.modify(msg)
             else:
                 raise CommandError("Service principal %s already"
-                                       " affected to %s" % (name, user))
+                                   " affected to %s" % (name, user))
         else:
             raise CommandError("User %s not found" % user)
 
@@ -166,7 +166,7 @@ class cmd_spn_delete(Command):
                         result = elem
                 if result is None:
                     raise CommandError("Unable to find user %s with"
-                                           " spn %s" % (user, name))
+                                       " spn %s" % (user, name))
             else:
                 if len(res) != 1:
                     listUser = ""

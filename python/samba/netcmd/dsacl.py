@@ -74,7 +74,7 @@ class cmd_dsacl_set(Command):
                                                 "ro-repl-secret-sync"],
                help=car_help),
         Option("--action", type="choice", choices=["allow", "deny"],
-                help="""Deny or allow access"""),
+               help="""Deny or allow access"""),
         Option("--objectdn", help="DN of the object whose SD to modify",
             type="string"),
         Option("--trusteedn", help="DN of the entity that gets access",

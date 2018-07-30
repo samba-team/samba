@@ -249,7 +249,7 @@ pwdLastSet: 0
             self.transaction_commit()
 
     def add_remove_group_members(self, groupname, members,
-                                  add_members_operation=True):
+                                 add_members_operation=True):
         """Adds or removes group members
 
         :param groupname: Name of the target group
@@ -800,8 +800,8 @@ schemaUpdateNow: 1
         """
         self.hash_oid_name = {}
         res = self.search(expression="objectClass=attributeSchema",
-                           controls=["search_options:1:2"],
-                           attrs=["attributeID",
+                          controls=["search_options:1:2"],
+                          attrs=["attributeID",
                            "lDAPDisplayName"])
         if len(res) > 0:
             for e in res:
@@ -819,9 +819,9 @@ schemaUpdateNow: 1
         """
 
         res = self.search(expression="distinguishedName=%s" % dn,
-                            scope=ldb.SCOPE_SUBTREE,
-                            controls=["search_options:1:2"],
-                            attrs=["replPropertyMetaData"])
+                          scope=ldb.SCOPE_SUBTREE,
+                          controls=["search_options:1:2"],
+                          attrs=["replPropertyMetaData"])
         if len(res) == 0:
             return None
 
@@ -841,9 +841,9 @@ schemaUpdateNow: 1
     def set_attribute_replmetadata_version(self, dn, att, value,
             addifnotexist=False):
         res = self.search(expression="distinguishedName=%s" % dn,
-                            scope=ldb.SCOPE_SUBTREE,
-                            controls=["search_options:1:2"],
-                            attrs=["replPropertyMetaData"])
+                          scope=ldb.SCOPE_SUBTREE,
+                          controls=["search_options:1:2"],
+                          attrs=["replPropertyMetaData"])
         if len(res) == 0:
             return None
 

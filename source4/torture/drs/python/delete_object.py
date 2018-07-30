@@ -160,7 +160,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         m = ldb.Message()
         m.dn = group_dn
         m["member"] = ldb.MessageElement(str(user_dn),
-                                           ldb.FLAG_MOD_ADD, "member")
+                                         ldb.FLAG_MOD_ADD, "member")
         self.ldb_dc2.modify(m)
 
         ldb_res = self.ldb_dc2.search(base=self.domain_dn,
@@ -316,7 +316,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         m = ldb.Message()
         m.dn = group_dn
         m["member"] = ldb.MessageElement(str(user_dn),
-                                           ldb.FLAG_MOD_ADD, "member")
+                                         ldb.FLAG_MOD_ADD, "member")
         self.ldb_dc2.modify(m)
 
         ldb_res = self.ldb_dc2.search(base=self.domain_dn,

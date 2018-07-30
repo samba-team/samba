@@ -56,9 +56,9 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         self.assertEquals(dn_sort("dc=tata,dc=toto", "dc=toto"), 1)
         self.assertEquals(dn_sort("dc=zata", "dc=tata"), 1)
         self.assertEquals(dn_sort("dc=toto,dc=tata",
-                                    "cn=foo,dc=toto,dc=tata"), -1)
+                                  "cn=foo,dc=toto,dc=tata"), -1)
         self.assertEquals(dn_sort("cn=bar, dc=toto,dc=tata",
-                                    "cn=foo, dc=toto,dc=tata"), -1)
+                                  "cn=foo, dc=toto,dc=tata"), -1)
 
     def test_get_diff_sds(self):
         domsid = security.dom_sid('S-1-5-21')

@@ -204,8 +204,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     # netbiosname
     # Get the netbiosname first (could be obtained from smb.conf in theory)
     res = secretsdb.search(expression="(flatname=%s)" %
-                            names.domain,base="CN=Primary Domains",
-                            scope=ldb.SCOPE_SUBTREE, attrs=["sAMAccountName"])
+                           names.domain,base="CN=Primary Domains",
+                           scope=ldb.SCOPE_SUBTREE, attrs=["sAMAccountName"])
     names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
     names.smbconf = smbconf
@@ -261,7 +261,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     names.hostname = str(res4[0]["dNSHostName"]).replace("." + names.dnsdomain, "")
 
     server_res = samdb.search(expression="serverReference=%s" % res4[0].dn,
-                                attrs=[], base=names.configdn)
+                              attrs=[], base=names.configdn)
     names.serverdn = str(server_res[0].dn)
 
     # invocation id/objectguid
@@ -412,10 +412,10 @@ def get_max_usn(samdb,basedn):
     :return: The biggest USN in the provision"""
 
     res = samdb.search(expression="objectClass=*",base=basedn,
-                         scope=ldb.SCOPE_SUBTREE,attrs=["uSNChanged"],
-                         controls=["search_options:1:2",
-                                   "server_sort:1:1:uSNChanged",
-                                   "paged_results:1:1"])
+                       scope=ldb.SCOPE_SUBTREE,attrs=["uSNChanged"],
+                       controls=["search_options:1:2",
+                                 "server_sort:1:1:uSNChanged",
+                                 "paged_results:1:1"])
     return res[0]["uSNChanged"]
 
 
@@ -1607,8 +1607,8 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
             use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=SYSVOL_SERVICE)
 
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
-                        attrs=["cn", "nTSecurityDescriptor"],
-                        expression="", scope=ldb.SCOPE_ONELEVEL)
+                       attrs=["cn", "nTSecurityDescriptor"],
+                       expression="", scope=ldb.SCOPE_ONELEVEL)
 
     for policy in res:
         acl = ndr_unpack(security.descriptor,
@@ -1780,8 +1780,8 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
     if fsacl_sddl != POLICIES_ACL:
         raise ProvisioningError('%s ACL on policy root %s %s does not match expected value %s from provision' % (acl_type(direct_db_access), root_policy_path, fsacl_sddl, fsacl))
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
-                        attrs=["cn", "nTSecurityDescriptor"],
-                        expression="", scope=ldb.SCOPE_ONELEVEL)
+                       attrs=["cn", "nTSecurityDescriptor"],
+                       expression="", scope=ldb.SCOPE_ONELEVEL)
 
     for policy in res:
         acl = ndr_unpack(security.descriptor,

@@ -134,9 +134,9 @@ class OUCmdTestCase(SambaToolCmdTest):
         search_filter = "(objectClass=organizationalUnit)"
 
         oulist = self.samdb.search(base=self.samdb.domain_dn(),
-                                      scope=ldb.SCOPE_SUBTREE,
-                                      expression=search_filter,
-                                      attrs=["name"])
+                                   scope=ldb.SCOPE_SUBTREE,
+                                   expression=search_filter,
+                                   attrs=["name"])
 
         self.assertTrue(len(oulist) > 0, "no ous found in samdb")
 

@@ -49,7 +49,7 @@ def remove_sysvol_references(samdb, logger, dc_name):
                                   % (dn, samdb.get_config_basedn()))
         if dn.add_child("CN=X") == False:
             raise DemoteException("Failed constructing DN %s by adding child CN=X"\
-                                      % (dn))
+                                  % (dn))
         dn.set_component(0, "CN", dc_name)
         try:
             logger.info("Removing Sysvol reference: %s" % dn)

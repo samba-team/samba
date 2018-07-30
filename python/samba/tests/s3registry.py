@@ -51,4 +51,4 @@ class RegistryTestCase(TestCase):
     def test_values(self):
         self.assertEquals({b'DisplayName': (1, b'E\x00v\x00e\x00n\x00t\x00 \x00L\x00o\x00g\x00\x00\x00'),
                            b'ErrorControl': (4, b'\x01\x00\x00\x00')},
-                           self.registry.values(b"HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))
+                          self.registry.values(b"HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))

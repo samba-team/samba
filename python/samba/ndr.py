@@ -83,7 +83,7 @@ def ndr_unpack_in(object, data, bigendian=False, ndr64=False, allow_remaining=Fa
     if ndr_unpack_in_fn is None:
         raise TypeError("%r is not a NDR function object" % object)
     ndr_unpack_in_fn(data, bigendian=bigendian, ndr64=ndr64,
-                      allow_remaining=allow_remaining)
+                     allow_remaining=allow_remaining)
     return object
 
 
@@ -122,7 +122,7 @@ def ndr_unpack_out(object, data, bigendian=False, ndr64=False, allow_remaining=F
     if ndr_unpack_out_fn is None:
         raise TypeError("%r is not a NDR function object" % object)
     ndr_unpack_out_fn(data, bigendian=bigendian, ndr64=ndr64,
-                       allow_remaining=allow_remaining)
+                      allow_remaining=allow_remaining)
     return object
 
 

@@ -279,11 +279,11 @@ class DrsBaseTestCase(SambaToolCmdTest):
             print("More data: %d" %(ctr6.more_data))
 
     def _get_replication(self, replica_flags,
-                          drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,
-                          highwatermark=None, uptodateness_vector=None,
-                          more_flags=0, max_objects=133, exop=0,
-                          dest_dsa=drsuapi.DRSUAPI_DS_BIND_GUID_W2K3,
-                          source_dsa=None, invocation_id=None, nc_dn_str=None):
+                         drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,
+                         highwatermark=None, uptodateness_vector=None,
+                         more_flags=0, max_objects=133, exop=0,
+                         dest_dsa=drsuapi.DRSUAPI_DS_BIND_GUID_W2K3,
+                         source_dsa=None, invocation_id=None, nc_dn_str=None):
         """
         Builds a DsGetNCChanges request based on the information provided
         and returns the response received from the DC.

@@ -386,7 +386,7 @@ class SimpleLdb(LdbBaseTest):
     def test_add_dict_bytes_dn(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
         m = {"dn": b"dc=foo6", "bla": b"bla",
-              "objectUUID": b"0123456789abcdef"}
+             "objectUUID": b"0123456789abcdef"}
         self.assertEqual(len(l.search()), 0)
         l.add(m)
         try:

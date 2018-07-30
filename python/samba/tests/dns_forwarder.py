@@ -89,7 +89,7 @@ class DNSTest(TestCase):
         "Helper function to check opcode"
         p_opcode = packet.operation & 0x7800
         self.assertEquals(p_opcode, opcode, "Expected OPCODE %s, got %s" %
-                            (opcode, p_opcode))
+                          (opcode, p_opcode))
 
     def make_name_packet(self, opcode, qid=None):
         "Helper creating a dns.name_packet"

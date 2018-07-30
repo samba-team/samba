@@ -1267,7 +1267,7 @@ class TrafficModel(object):
             client += 1
 
         print(("we have %d conversations at rate %f" %
-                              (len(conversations), rate)), file=sys.stderr)
+               (len(conversations), rate)), file=sys.stderr)
         conversations.sort()
         return conversations
 
@@ -1500,7 +1500,7 @@ def replay(conversations,
     finally:
         for s in (15, 15, 9):
             print(("killing %d children with -%d" %
-                                 (len(children), s)), file=sys.stderr)
+                   (len(children), s)), file=sys.stderr)
             for pid in children:
                 try:
                     os.kill(pid, s)

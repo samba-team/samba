@@ -264,7 +264,7 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
 
     if found:
         logger.warn('Group already exists sid=%s, groupname=%s existing_groupname=%s, Ignoring.',
-                            str(groupmap.sid), groupmap.nt_name, msg[0]['sAMAccountName'][0])
+                    str(groupmap.sid), groupmap.nt_name, msg[0]['sAMAccountName'][0])
     else:
         if groupmap.sid_name_use == lsa.SID_NAME_WKN_GRP:
             # In a lot of Samba3 databases, aliases are marked as well known groups

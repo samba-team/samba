@@ -25,7 +25,7 @@ from samba.dcerpc import dnsserver, dnsp
 
 class ARecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
-                    node_flag=0):
+                 node_flag=0):
         super(ARecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_A
         self.dwFlags = rank | node_flag
@@ -38,7 +38,7 @@ class ARecord(dnsserver.DNS_RPC_RECORD):
 class AAAARecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, ip6_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
-                    node_flag=0):
+                 node_flag=0):
         super(AAAARecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_AAAA
         self.dwFlags = rank | node_flag
@@ -67,7 +67,7 @@ class PTRRecord(dnsserver.DNS_RPC_RECORD):
 class CNameRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, cname, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
-                    node_flag=0):
+                 node_flag=0):
         super(CNameRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_CNAME
         self.dwFlags = rank | node_flag
@@ -83,7 +83,7 @@ class CNameRecord(dnsserver.DNS_RPC_RECORD):
 class NSRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, dns_server, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
-                    node_flag=0):
+                 node_flag=0):
         super(NSRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_NS
         self.dwFlags = rank | node_flag

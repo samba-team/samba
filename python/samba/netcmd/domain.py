@@ -139,8 +139,8 @@ common_join_options = [
 ]
 
 common_ntvfs_options = [
-        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
-               action="store_true")
+    Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+           action="store_true")
 ]
 
 def get_testparm_var(testparm, smbconf, varname):
@@ -225,63 +225,63 @@ class cmd_domain_provision(Command):
     }
 
     takes_options = [
-         Option("--interactive", help="Ask for names", action="store_true"),
-         Option("--domain", type="string", metavar="DOMAIN",
-                help="NetBIOS domain name to use"),
-         Option("--domain-guid", type="string", metavar="GUID",
-                help="set domainguid (otherwise random)"),
-         Option("--domain-sid", type="string", metavar="SID",
-                help="set domainsid (otherwise random)"),
-         Option("--ntds-guid", type="string", metavar="GUID",
-                help="set NTDS object GUID (otherwise random)"),
-         Option("--invocationid", type="string", metavar="GUID",
-                help="set invocationid (otherwise random)"),
-         Option("--host-name", type="string", metavar="HOSTNAME",
-                help="set hostname"),
-         Option("--host-ip", type="string", metavar="IPADDRESS",
-                help="set IPv4 ipaddress"),
-         Option("--host-ip6", type="string", metavar="IP6ADDRESS",
-                help="set IPv6 ipaddress"),
-         Option("--site", type="string", metavar="SITENAME",
-                help="set site name"),
-         Option("--adminpass", type="string", metavar="PASSWORD",
-                help="choose admin password (otherwise random)"),
-         Option("--krbtgtpass", type="string", metavar="PASSWORD",
-                help="choose krbtgt password (otherwise random)"),
-         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
-                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
-                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
-                     "BIND9_FLATFILE uses bind9 text database to store zone information, "
-                     "BIND9_DLZ uses samba4 AD to store zone information, "
-                     "NONE skips the DNS setup entirely (not recommended)",
-                default="SAMBA_INTERNAL"),
-         Option("--dnspass", type="string", metavar="PASSWORD",
-                help="choose dns password (otherwise random)"),
-         Option("--root", type="string", metavar="USERNAME",
-                help="choose 'root' unix username"),
-         Option("--nobody", type="string", metavar="USERNAME",
-                help="choose 'nobody' user"),
-         Option("--users", type="string", metavar="GROUPNAME",
-                help="choose 'users' group"),
-         Option("--blank", action="store_true",
-                help="do not add users or groups, just the structure"),
-         Option("--server-role", type="choice", metavar="ROLE",
-                choices=["domain controller", "dc", "member server", "member", "standalone"],
-                help="The server role (domain controller | dc | member server | member | standalone). Default is dc.",
-                default="domain controller"),
-         Option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
-                choices=["2000", "2003", "2008", "2008_R2"],
-                help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2008_R2 Native.",
-                default="2008_R2"),
-         Option("--base-schema", type="choice", metavar="BASE-SCHEMA",
-                choices=["2008_R2", "2008_R2_old", "2012", "2012_R2"],
-                help="The base schema files to use. Default is (Windows) 2008_R2.",
-                default="2008_R2"),
-         Option("--next-rid", type="int", metavar="NEXTRID", default=1000,
-                help="The initial nextRid value (only needed for upgrades).  Default is 1000."),
-         Option("--partitions-only",
-                help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true"),
-         Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
+        Option("--interactive", help="Ask for names", action="store_true"),
+        Option("--domain", type="string", metavar="DOMAIN",
+               help="NetBIOS domain name to use"),
+        Option("--domain-guid", type="string", metavar="GUID",
+               help="set domainguid (otherwise random)"),
+        Option("--domain-sid", type="string", metavar="SID",
+               help="set domainsid (otherwise random)"),
+        Option("--ntds-guid", type="string", metavar="GUID",
+               help="set NTDS object GUID (otherwise random)"),
+        Option("--invocationid", type="string", metavar="GUID",
+               help="set invocationid (otherwise random)"),
+        Option("--host-name", type="string", metavar="HOSTNAME",
+               help="set hostname"),
+        Option("--host-ip", type="string", metavar="IPADDRESS",
+               help="set IPv4 ipaddress"),
+        Option("--host-ip6", type="string", metavar="IP6ADDRESS",
+               help="set IPv6 ipaddress"),
+        Option("--site", type="string", metavar="SITENAME",
+               help="set site name"),
+        Option("--adminpass", type="string", metavar="PASSWORD",
+               help="choose admin password (otherwise random)"),
+        Option("--krbtgtpass", type="string", metavar="PASSWORD",
+               help="choose krbtgt password (otherwise random)"),
+        Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
+               choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
+               "BIND9_FLATFILE uses bind9 text database to store zone information, "
+               "BIND9_DLZ uses samba4 AD to store zone information, "
+               "NONE skips the DNS setup entirely (not recommended)",
+               default="SAMBA_INTERNAL"),
+        Option("--dnspass", type="string", metavar="PASSWORD",
+               help="choose dns password (otherwise random)"),
+        Option("--root", type="string", metavar="USERNAME",
+               help="choose 'root' unix username"),
+        Option("--nobody", type="string", metavar="USERNAME",
+               help="choose 'nobody' user"),
+        Option("--users", type="string", metavar="GROUPNAME",
+               help="choose 'users' group"),
+        Option("--blank", action="store_true",
+               help="do not add users or groups, just the structure"),
+        Option("--server-role", type="choice", metavar="ROLE",
+               choices=["domain controller", "dc", "member server", "member", "standalone"],
+               help="The server role (domain controller | dc | member server | member | standalone). Default is dc.",
+               default="domain controller"),
+        Option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
+               choices=["2000", "2003", "2008", "2008_R2"],
+               help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2008_R2 Native.",
+               default="2008_R2"),
+        Option("--base-schema", type="choice", metavar="BASE-SCHEMA",
+               choices=["2008_R2", "2008_R2_old", "2012", "2012_R2"],
+               help="The base schema files to use. Default is (Windows) 2008_R2.",
+               default="2008_R2"),
+        Option("--next-rid", type="int", metavar="NEXTRID", default=1000,
+               help="The initial nextRid value (only needed for upgrades).  Default is 1000."),
+        Option("--partitions-only",
+               help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true"),
+        Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
     ]
 
     openldap_options = [
@@ -291,7 +291,7 @@ class cmd_domain_provision(Command):
                help="Test initialisation support for unsupported LDAP backend type (fedora-ds or openldap) DO NOT USE",
                choices=["fedora-ds", "openldap"]),
         Option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
-                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
+               help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
         Option("--ldap-dryrun-mode", help="Configure LDAP backend, but do not run any binaries and exit early.  Used only for the test environment.  DO NOT USE",
                action="store_true"),
         Option("--slapd-path", type="string", metavar="SLAPD-PATH",
@@ -818,7 +818,7 @@ class cmd_domain_demote(Command):
         dsa_options = int(str(msg[0]['options']))
 
         res = samdb.search(expression="(fSMORoleOwner=%s)" % str(ntds_dn),
-                            controls=["search_options:1:2"])
+                           controls=["search_options:1:2"])
 
         if len(res) != 0:
             raise CommandError("Current DC is still the owner of %d role(s), "
@@ -844,8 +844,8 @@ class cmd_domain_demote(Command):
             self.errf.write("Asking partner server %s to synchronize from us\n"
                             % server)
             for part in (samdb.get_schema_basedn(),
-                            samdb.get_config_basedn(),
-                            samdb.get_root_basedn()):
+                         samdb.get_config_basedn(),
+                         samdb.get_root_basedn()):
                 nc = drsuapi.DsReplicaObjectIdentifier()
                 nc.dn = str(part)
 
@@ -876,7 +876,7 @@ class cmd_domain_demote(Command):
             self.errf.write("Changing userControl and container\n")
             res = remote_samdb.search(base=str(remote_samdb.domain_dn()),
                                 expression="(&(objectClass=user)(sAMAccountName=%s$))" %
-                                            netbios_name.upper(),
+                                      netbios_name.upper(),
                                 attrs=["userAccountControl"])
             dc_dn = res[0].dn
             uac = int(str(res[0]["userAccountControl"]))
@@ -909,8 +909,8 @@ class cmd_domain_demote(Command):
         msg.dn = dc_dn
 
         msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
-                                                        ldb.FLAG_MOD_REPLACE,
-                                                        "userAccountControl")
+                                                       ldb.FLAG_MOD_REPLACE,
+                                                       "userAccountControl")
         try:
             remote_samdb.modify(msg)
         except Exception as e:
@@ -936,11 +936,11 @@ class cmd_domain_demote(Command):
 
         if (len(res) != 0):
             res = remote_samdb.search(base=computer_dn, expression="%s-%d" % (rdn, i),
-                                        scope=ldb.SCOPE_ONELEVEL)
+                                      scope=ldb.SCOPE_ONELEVEL)
             while(len(res) != 0 and i < 100):
                 i = i + 1
                 res = remote_samdb.search(base=computer_dn, expression="%s-%d" % (rdn, i),
-                                            scope=ldb.SCOPE_ONELEVEL)
+                                          scope=ldb.SCOPE_ONELEVEL)
 
             if i == 100:
                 if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
@@ -960,8 +960,8 @@ class cmd_domain_demote(Command):
                 remote_samdb.modify(msg)
 
                 raise CommandError("Unable to find a slot for renaming %s,"
-                                    " all names from %s-1 to %s-%d seemed used" %
-                                    (str(dc_dn), rdn, rdn, i - 9))
+                                   " all names from %s-1 to %s-%d seemed used" %
+                                   (str(dc_dn), rdn, rdn, i - 9))
 
             newrdn = "%s-%d" % (rdn, i)
 
@@ -1564,19 +1564,19 @@ class cmd_domain_classicupgrade(Command):
 
     takes_options = [
         Option("--dbdir", type="string", metavar="DIR",
-                  help="Path to samba classic DC database directory"),
+               help="Path to samba classic DC database directory"),
         Option("--testparm", type="string", metavar="PATH",
-                  help="Path to samba classic DC testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
+               help="Path to samba classic DC testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
         Option("--targetdir", type="string", metavar="DIR",
-                  help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
+               help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
         Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
-                   "BIND9_FLATFILE uses bind9 text database to store zone information, "
-                   "BIND9_DLZ uses samba4 AD to store zone information, "
-                   "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
+               "BIND9_FLATFILE uses bind9 text database to store zone information, "
+               "BIND9_DLZ uses samba4 AD to store zone information, "
+               "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
                default="SAMBA_INTERNAL")
     ]
 
@@ -2607,9 +2607,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
             self.outf.write("Creating local TDO.\n")
             current_request = { "location": "local", "name": "CreateTrustedDomainEx2"}
             local_tdo_handle = local_lsa.CreateTrustedDomainEx2(local_policy,
-                                                                  local_trust_info,
-                                                                  local_auth_info,
-                                                                  lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS)
+                                                                local_trust_info,
+                                                                local_auth_info,
+                                                                lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS)
             self.outf.write("Local TDO created\n")
             if enc_types:
                 self.outf.write("Setting supported encryption types on local TDO.\n")
@@ -3504,8 +3504,8 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
             if replace_upn:
                 update_msg['uPNSuffixes'] = ldb.MessageElement(update_upn_vals,
-                                                                    ldb.FLAG_MOD_REPLACE,
-                                                                    'uPNSuffixes')
+                                                               ldb.FLAG_MOD_REPLACE,
+                                                               'uPNSuffixes')
             if replace_spn:
                 update_msg['msDS-SPNSuffixes'] = ldb.MessageElement(update_spn_vals,
                                                                     ldb.FLAG_MOD_REPLACE,
@@ -3517,7 +3517,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
             try:
                 stored_forest_info = local_netlogon.netr_DsRGetForestTrustInformation(local_netlogon_info.dc_unc,
-                                                                                       None, 0)
+                                                                                      None, 0)
             except RuntimeError as error:
                 raise self.LocalRuntimeError(self, error, "netr_DsRGetForestTrustInformation() failed")
 
@@ -3840,10 +3840,10 @@ This command expunges tombstones from the database."""
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-                metavar="URL", dest="H"),
+               metavar="URL", dest="H"),
         Option("--current-time",
-                help="The current time to evaluate the tombstone lifetime from, expressed as YYYY-MM-DD",
-                type=str),
+               help="The current time to evaluate the tombstone lifetime from, expressed as YYYY-MM-DD",
+               type=str),
         Option("--tombstone-lifetime", help="Number of days a tombstone should be preserved for", type=int),
     ]
 
@@ -3998,7 +3998,7 @@ class cmd_domain_schema_upgrade(Command):
                help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
                default="2012_R2"),
         Option("--ldf-file", type=str, default=None,
-                help="Just apply the schema updates in the adprep/.LDF file(s) specified"),
+               help="Just apply the schema updates in the adprep/.LDF file(s) specified"),
         Option("--base-dir", type=str, default=None,
                help="Location of ldf files Default is ${SETUPDIR}/adprep.")
     ]

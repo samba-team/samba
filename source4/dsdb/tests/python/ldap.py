@@ -1898,7 +1898,7 @@ delete: description
         # Make sure that the "member" attribute for "ldaptestuser" has been
         # removed
         res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["member"])
+                         scope=SCOPE_BASE, attrs=["member"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("member" in res[0])
 
@@ -2268,8 +2268,8 @@ servicePrincipalName: host/ldaptest2computer29
         # ensure we cannot add it again
         try:
             ldb.add({"dn": "cn=ldaptestuser3,cn=userS," + self.base_dn,
-                      "objectClass": "user",
-                      "cn": "LDAPtestUSER3"})
+                     "objectClass": "user",
+                     "cn": "LDAPtestUSER3"})
             self.fail()
         except LdbError as e98:
             (num, _) = e98.args
@@ -2289,8 +2289,8 @@ servicePrincipalName: host/ldaptest2computer29
 
         # ensure can now use that name
         ldb.add({"dn": "cn=ldaptestuser3,cn=users," + self.base_dn,
-                      "objectClass": "user",
-                      "cn": "LDAPtestUSER3"})
+                 "objectClass": "user",
+                 "cn": "LDAPtestUSER3"})
 
         # ensure we now cannot rename
         try:

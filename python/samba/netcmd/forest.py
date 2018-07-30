@@ -45,7 +45,7 @@ class cmd_forest_show(Command):
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
-                type=str, metavar="URL", dest="H"),
+               type=str, metavar="URL", dest="H"),
     ]
 
     def run(self, H=None, credopts=None, sambaopts=None, versionopts=None):
@@ -93,7 +93,7 @@ class cmd_forest_set(Command):
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
-                type=str, metavar="URL", dest="H"),
+               type=str, metavar="URL", dest="H"),
     ]
 
     takes_args = ["value"]

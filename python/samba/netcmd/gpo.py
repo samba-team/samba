@@ -166,14 +166,14 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
 
     try:
         msg = samdb.search(base=base_dn, scope=search_scope,
-                            expression=search_expr,
-                            attrs=['nTSecurityDescriptor',
-                                    'versionNumber',
-                                    'flags',
-                                    'name',
-                                    'displayName',
-                                    'gPCFileSysPath'],
-                            controls=['sd_flags:1:%d' % sd_flags])
+                           expression=search_expr,
+                           attrs=['nTSecurityDescriptor',
+                                  'versionNumber',
+                                  'flags',
+                                  'name',
+                                  'displayName',
+                                  'gPCFileSysPath'],
+                           controls=['sd_flags:1:%d' % sd_flags])
     except Exception as e:
         if gpo is not None:
             mesg = "Cannot get information for GPO %s" % gpo
@@ -201,8 +201,8 @@ def del_gpo_link(samdb, container_dn, gpo):
     # Check if valid Container DN and get existing GPlinks
     try:
         msg = samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
-                            expression="(objectClass=*)",
-                            attrs=['gPLink'])[0]
+                           expression="(objectClass=*)",
+                           attrs=['gPLink'])[0]
     except Exception as e:
         raise CommandError("Container '%s' does not exist" % container_dn, e)
 
@@ -432,7 +432,7 @@ class cmd_list(Command):
 
         try:
             msg = self.samdb.search(expression='(&(|(samAccountName=%s)(samAccountName=%s$))(objectClass=User))' %
-                                                (ldb.binary_encode(username),ldb.binary_encode(username)))
+                                    (ldb.binary_encode(username),ldb.binary_encode(username)))
             user_dn = msg[0].dn
         except Exception:
             raise CommandError("Failed to find account %s" % username)
@@ -585,7 +585,7 @@ class cmd_getlink(Command):
     ]
 
     def run(self, container_dn, H=None, sambaopts=None, credopts=None,
-                versionopts=None):
+            versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -636,7 +636,7 @@ class cmd_setlink(Command):
     ]
 
     def run(self, container_dn, gpo, H=None, disabled=False, enforced=False,
-                sambaopts=None, credopts=None, versionopts=None):
+            sambaopts=None, credopts=None, versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -722,7 +722,7 @@ class cmd_dellink(Command):
     ]
 
     def run(self, container, gpo, H=None, sambaopts=None, credopts=None,
-                versionopts=None):
+            versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -761,7 +761,7 @@ class cmd_listcontainers(Command):
     ]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None,
-                versionopts=None):
+            versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -797,7 +797,7 @@ class cmd_getinheritance(Command):
     ]
 
     def run(self, container_dn, H=None, sambaopts=None, credopts=None,
-                versionopts=None):
+            versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -841,7 +841,7 @@ class cmd_setinheritance(Command):
     ]
 
     def run(self, container_dn, inherit_state, H=None, sambaopts=None, credopts=None,
-                versionopts=None):
+            versionopts=None):
 
         if inherit_state.lower() == 'block':
             inheritance = dsdb.GPO_BLOCK_INHERITANCE
@@ -1421,7 +1421,7 @@ class cmd_del(Command):
     ]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None,
-                versionopts=None):
+            versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)

@@ -255,14 +255,14 @@ def ldapmask2filemask(ldm):
 
     if (ldm & RIGHT_DS_READ_PROPERTY) and (ldm & RIGHT_DS_LIST_CONTENTS):
         filemask = filemask | (SYNCHRONIZE | FILE_LIST_DIRECTORY |
-                                FILE_READ_ATTRIBUTES | FILE_READ_EA |
-                                FILE_READ_DATA | FILE_EXECUTE)
+                               FILE_READ_ATTRIBUTES | FILE_READ_EA |
+                               FILE_READ_DATA | FILE_EXECUTE)
 
     if ldm & RIGHT_DS_WRITE_PROPERTY:
         filemask = filemask | (SYNCHRONIZE | FILE_WRITE_DATA |
-                                FILE_APPEND_DATA | FILE_WRITE_EA |
-                                FILE_WRITE_ATTRIBUTES | FILE_ADD_FILE |
-                                FILE_ADD_SUBDIRECTORY)
+                               FILE_APPEND_DATA | FILE_WRITE_EA |
+                               FILE_WRITE_ATTRIBUTES | FILE_ADD_FILE |
+                               FILE_ADD_SUBDIRECTORY)
 
     if ldm & RIGHT_DS_CREATE_CHILD:
         filemask = filemask | (FILE_ADD_SUBDIRECTORY | FILE_ADD_FILE)

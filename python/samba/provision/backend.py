@@ -527,10 +527,10 @@ class OpenLDAPBackend(LDAPBackend):
             mmr = "#"
 
         cn_samba = read_and_sub_file(
-                    setup_path("cn=samba.ldif"),
-                            { "LDAPADMINPASS": self.ldapadminpass,
-                           "MMR_PASSWORD": mmr_pass,
-                           "MMR": mmr })
+            setup_path("cn=samba.ldif"),
+            { "LDAPADMINPASS": self.ldapadminpass,
+              "MMR_PASSWORD": mmr_pass,
+              "MMR": mmr })
 
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
@@ -588,7 +588,7 @@ class OpenLDAPBackend(LDAPBackend):
             sys.exit(0)
 
         slapd_cmd = [self.slapd_path, "-Ttest", "-n", "0", "-f",
-                         self.slapdconf, "-F", self.olcdir]
+                     self.slapdconf, "-F", self.olcdir]
         retcode = subprocess.call(slapd_cmd, close_fds=True, shell=False)
 
         if retcode != 0:
@@ -659,11 +659,11 @@ class FDSBackend(LDAPBackend):
             raise Exception("Unable to convert Samba 3 schema.")
 
         self.schema = Schema(
-                self.domainsid,
-                schemadn=self.names.schemadn,
-                files=[setup_path("schema_samba4.ldif"), self.samba3_ldif],
-                additional_prefixmap=["1000:1.3.6.1.4.1.7165.2.1",
-                                      "1001:1.3.6.1.4.1.7165.2.2"])
+            self.domainsid,
+            schemadn=self.names.schemadn,
+            files=[setup_path("schema_samba4.ldif"), self.samba3_ldif],
+            additional_prefixmap=["1000:1.3.6.1.4.1.7165.2.1",
+                                  "1001:1.3.6.1.4.1.7165.2.2"])
 
     def provision(self):
         from samba.provision import ProvisioningError, setup_path

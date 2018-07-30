@@ -111,8 +111,8 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         # create user
         self.ldb.newuser(username=self.username, password=self.password)
         ldb_res = self.ldb.search(base=self.domain_dn,
-                                      scope=SCOPE_SUBTREE,
-                                      expression="(samAccountName=%s)" % self.username)
+                                  scope=SCOPE_SUBTREE,
+                                  expression="(samAccountName=%s)" % self.username)
         self.assertEquals(len(ldb_res), 1)
         user_dn = ldb_res[0]["dn"]
         self.addCleanup(delete_force, self.ldb, user_dn)
@@ -145,8 +145,8 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         # create user
         self.ldb.newuser(username=self.username, password=self.password)
         ldb_res = self.ldb.search(base=self.domain_dn,
-                                      scope=SCOPE_SUBTREE,
-                                      expression="(samAccountName=%s)" % self.username)
+                                  scope=SCOPE_SUBTREE,
+                                  expression="(samAccountName=%s)" % self.username)
         self.assertEquals(len(ldb_res), 1)
         user_dn = ldb_res[0]["dn"]
         self.addCleanup(delete_force, self.ldb, user_dn)

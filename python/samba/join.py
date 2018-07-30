@@ -745,11 +745,11 @@ class DCJoinContext(object):
             ctx.dnspass = samba.generate_random_password(128, 255)
 
             recs = ctx.samdb.parse_ldif(read_and_sub_file(setup_path("provision_dns_add_samba.ldif"),
-                                                                {"DNSDOMAIN": ctx.dnsdomain,
-                                                                 "DOMAINDN": ctx.base_dn,
-                                                                 "HOSTNAME" : ctx.myname,
-                                                                 "DNSPASS_B64": b64encode(ctx.dnspass.encode('utf-16-le')).decode('utf8'),
-                                                                 "DNSNAME" : ctx.dnshostname}))
+                                                          {"DNSDOMAIN": ctx.dnsdomain,
+                                                           "DOMAINDN": ctx.base_dn,
+                                                           "HOSTNAME" : ctx.myname,
+                                                           "DNSPASS_B64": b64encode(ctx.dnspass.encode('utf-16-le')).decode('utf8'),
+                                                           "DNSNAME" : ctx.dnshostname}))
             for changetype, msg in recs:
                 assert changetype == ldb.CHANGETYPE_NONE
                 dns_acct_dn = msg["dn"]
@@ -968,8 +968,8 @@ class DCJoinContext(object):
                 if nc in ctx.nc_list:
                     print("Replicating %s" % (str(nc)))
                     repl.replicate(nc, source_dsa_invocation_id,
-                                    destination_dsa_guid, rodc=ctx.RODC,
-                                    replica_flags=ctx.replica_flags)
+                                   destination_dsa_guid, rodc=ctx.RODC,
+                                   replica_flags=ctx.replica_flags)
 
             if ctx.RODC:
                 repl.replicate(ctx.acct_dn, source_dsa_invocation_id,
@@ -1047,7 +1047,7 @@ class DCJoinContext(object):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
         record_type = dnsp.DNS_TYPE_A
         select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA |\
-                       dnsserver.DNS_RPC_VIEW_NO_CHILDREN
+        dnsserver.DNS_RPC_VIEW_NO_CHILDREN
 
         zone = ctx.dnsdomain
         msdcs_zone = "_msdcs.%s" % ctx.dnsforest

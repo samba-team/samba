@@ -2180,7 +2180,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # netr_ServerReqChallenge with given flags
         req = self.generate_request(call_id = 2,
                                     pfc_flags=dcerpc.DCERPC_PFC_FLAG_FIRST |
-                                              dcerpc.DCERPC_PFC_FLAG_PENDING_CANCEL,
+                                    dcerpc.DCERPC_PFC_FLAG_PENDING_CANCEL,
                                     context_id=ctx.context_id,
                                     opnum=4,
                                     stub=real_stub)
@@ -4971,8 +4971,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         conn2.do_single_request(call_id = 1, ctx=ctx1, io=inq_if_ids,
                                 fault_pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
-                                                  samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST |
-                                                  samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
+                                samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST |
+                                samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                                 fault_status=dcerpc.DCERPC_NCA_S_UNKNOWN_IF,
                                 fault_context_id=0)
 

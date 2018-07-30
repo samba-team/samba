@@ -198,7 +198,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 nc_dn_str=dc3,
                                 exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
                                 replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP |
-                                              drsuapi.DRSUAPI_DRS_GET_ANC,
+                                drsuapi.DRSUAPI_DRS_GET_ANC,
                                 more_flags=drsuapi.DRSUAPI_DRS_GET_TGT)
         (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req)
         self._check_ctr6(ctr, [dc3], expected_links=[dc3_link])
@@ -211,7 +211,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 nc_dn_str=ou2,
                                 exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
                                 replica_flags=drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
-                                              drsuapi.DRSUAPI_DRS_GET_ANC,
+                                drsuapi.DRSUAPI_DRS_GET_ANC,
                                 more_flags=drsuapi.DRSUAPI_DRS_GET_TGT)
         (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req)
         self._check_ctr6(ctr, [ou2])

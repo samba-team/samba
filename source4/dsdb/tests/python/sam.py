@@ -3049,7 +3049,7 @@ class SamTests(samba.tests.TestCase):
             "servicePrincipalName": "HOST/testname.testdom"})
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["dNSHostName"])
+                         scope=SCOPE_BASE, attrs=["dNSHostName"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("dNSHostName" in res[0])
 
@@ -3136,7 +3136,7 @@ class SamTests(samba.tests.TestCase):
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["servicePrincipalName"][0],
                           "HOST/testname3.testdom3")

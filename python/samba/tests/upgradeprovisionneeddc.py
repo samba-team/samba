@@ -61,7 +61,7 @@ class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
         rootdn = "dc=samba,dc=example,dc=com"
         ldbs = get_ldbs(paths, creds, system_session(), lp)
         names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
-                                                paths, smb_conf_path, lp)
+                                              paths, smb_conf_path, lp)
         self.assertEquals(names.realm, "SAMBA.EXAMPLE.COM")
         self.assertEquals(str(names.rootdn).lower(), rootdn.lower())
         self.assertNotEquals(names.policyid_dc, None)
@@ -129,8 +129,8 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
     def test_delta_update_basesamdb(self):
         dummysampath = self._getEmptyDbName()
         delta_update_basesamdb(self.paths.samdb, dummysampath,
-                                self.creds, system_session(), self.lp,
-                                dummymessage)
+                               self.creds, system_session(), self.lp,
+                               dummymessage)
 
     def test_update_gpo_simple(self):
         dir = getpolicypath(self.paths.sysvol, self.names.dnsdomain,

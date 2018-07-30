@@ -673,12 +673,12 @@ class DnsserverTests(RpcInterfaceTestCase):
 
         try:
             self.conn.DnssrvUpdateRecord2(client_version,
-                                                   0,
-                                                   self.server,
-                                                   zone,
-                                                   name,
-                                                   None,
-                                                   del_rec_buf)
+                                          0,
+                                          self.server,
+                                          zone,
+                                          name,
+                                          None,
+                                          del_rec_buf)
             if not assertion:
                 raise AssertionError("Successfully deleted record '%s' of type '%s', which should have failed." % (record_str, record_type_str))
         except RuntimeError as e:
@@ -720,16 +720,16 @@ class DnsserverTests(RpcInterfaceTestCase):
 
         # Create zone
         self.conn.DnssrvOperation2(client_version,
-                                    0,
-                                    self.server,
-                                    None,
-                                    0,
-                                    'ZoneCreate',
-                                    dnsserver.DNSSRV_TYPEID_ZONE_CREATE,
-                                    zone_create)
+                                   0,
+                                   self.server,
+                                   None,
+                                   0,
+                                   'ZoneCreate',
+                                   dnsserver.DNSSRV_TYPEID_ZONE_CREATE,
+                                   zone_create)
 
         request_filter = (dnsserver.DNS_ZONE_REQUEST_REVERSE |
-                            dnsserver.DNS_ZONE_REQUEST_PRIMARY)
+                          dnsserver.DNS_ZONE_REQUEST_PRIMARY)
         _, zones = self.conn.DnssrvComplexOperation2(client_version,
                                                      0,
                                                      self.server,
@@ -741,48 +741,48 @@ class DnsserverTests(RpcInterfaceTestCase):
 
         # Delete zone
         self.conn.DnssrvOperation2(client_version,
-                                    0,
-                                    self.server,
-                                    rev_zone,
-                                    0,
-                                    'DeleteZoneFromDs',
-                                    dnsserver.DNSSRV_TYPEID_NULL,
-                                    None)
+                                   0,
+                                   self.server,
+                                   rev_zone,
+                                   0,
+                                   'DeleteZoneFromDs',
+                                   dnsserver.DNSSRV_TYPEID_NULL,
+                                   None)
 
         typeid, zones = self.conn.DnssrvComplexOperation2(client_version,
-                                                            0,
-                                                            self.server,
-                                                            None,
-                                                            'EnumZones',
-                                                            dnsserver.DNSSRV_TYPEID_DWORD,
-                                                            request_filter)
+                                                          0,
+                                                          self.server,
+                                                          None,
+                                                          'EnumZones',
+                                                          dnsserver.DNSSRV_TYPEID_DWORD,
+                                                          request_filter)
         self.assertEquals(0, zones.dwZoneCount)
 
 
     def test_complexoperation2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
         request_filter = (dnsserver.DNS_ZONE_REQUEST_FORWARD |
-                            dnsserver.DNS_ZONE_REQUEST_PRIMARY)
+                          dnsserver.DNS_ZONE_REQUEST_PRIMARY)
 
         typeid, zones = self.conn.DnssrvComplexOperation2(client_version,
-                                                            0,
-                                                            self.server,
-                                                            None,
-                                                            'EnumZones',
-                                                            dnsserver.DNSSRV_TYPEID_DWORD,
-                                                            request_filter)
+                                                          0,
+                                                          self.server,
+                                                          None,
+                                                          'EnumZones',
+                                                          dnsserver.DNSSRV_TYPEID_DWORD,
+                                                          request_filter)
         self.assertEquals(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
         self.assertEquals(3, zones.dwZoneCount)
 
         request_filter = (dnsserver.DNS_ZONE_REQUEST_REVERSE |
-                            dnsserver.DNS_ZONE_REQUEST_PRIMARY)
+                          dnsserver.DNS_ZONE_REQUEST_PRIMARY)
         typeid, zones = self.conn.DnssrvComplexOperation2(client_version,
-                                                            0,
-                                                            self.server,
-                                                            None,
-                                                            'EnumZones',
-                                                            dnsserver.DNSSRV_TYPEID_DWORD,
-                                                            request_filter)
+                                                          0,
+                                                          self.server,
+                                                          None,
+                                                          'EnumZones',
+                                                          dnsserver.DNSSRV_TYPEID_DWORD,
+                                                          request_filter)
         self.assertEquals(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
         self.assertEquals(0, zones.dwZoneCount)
 
@@ -816,12 +816,12 @@ class DnsserverTests(RpcInterfaceTestCase):
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         self.conn.DnssrvUpdateRecord2(client_version,
-                                        0,
-                                        self.server,
-                                        self.zone,
-                                        name,
-                                        add_rec_buf,
-                                        None)
+                                      0,
+                                      self.server,
+                                      self.zone,
+                                      name,
+                                      add_rec_buf,
+                                      None)
 
         _, result = self.conn.DnssrvEnumRecords2(client_version,
                                                  0,
@@ -844,23 +844,23 @@ class DnsserverTests(RpcInterfaceTestCase):
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         del_rec_buf.rec = rec
         self.conn.DnssrvUpdateRecord2(client_version,
-                                        0,
-                                        self.server,
-                                        self.zone,
-                                        name,
-                                        add_rec_buf,
-                                        del_rec_buf)
+                                      0,
+                                      self.server,
+                                      self.zone,
+                                      name,
+                                      add_rec_buf,
+                                      del_rec_buf)
 
         buflen, result = self.conn.DnssrvEnumRecords2(client_version,
-                                                        0,
-                                                        self.server,
-                                                        self.zone,
-                                                        name,
-                                                        None,
-                                                        record_type,
-                                                        select_flags,
-                                                        None,
-                                                        None)
+                                                      0,
+                                                      self.server,
+                                                      self.zone,
+                                                      name,
+                                                      None,
+                                                      record_type,
+                                                      select_flags,
+                                                      None,
+                                                      None)
         self.assertEquals(1, result.count)
         self.assertEquals(1, result.rec[0].wRecordCount)
         self.assertEquals(dnsp.DNS_TYPE_A, result.rec[0].records[0].wType)
@@ -870,24 +870,24 @@ class DnsserverTests(RpcInterfaceTestCase):
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         del_rec_buf.rec = rec2
         self.conn.DnssrvUpdateRecord2(client_version,
-                                        0,
-                                        self.server,
-                                        self.zone,
-                                        name,
-                                        None,
-                                        del_rec_buf)
+                                      0,
+                                      self.server,
+                                      self.zone,
+                                      name,
+                                      None,
+                                      del_rec_buf)
 
         self.assertRaises(RuntimeError, self.conn.DnssrvEnumRecords2,
-                                        client_version,
-                                        0,
-                                        self.server,
-                                        self.zone,
-                                        name,
-                                        None,
-                                        record_type,
-                                        select_flags,
-                                        None,
-                                        None)
+                          client_version,
+                          0,
+                          self.server,
+                          self.zone,
+                          name,
+                          None,
+                          record_type,
+                          select_flags,
+                          None,
+                          None)
 
     # The following tests do not pass against Samba because the owner and
     # group are not consistent with Windows, as well as some ACEs.

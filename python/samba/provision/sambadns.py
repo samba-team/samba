@@ -513,7 +513,7 @@ def add_dc_domain_records(samdb, domaindn, prefix, site, dnsdomain, hostname,
 
     # Set up domain container - DC=<DNSDOMAIN>,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     domain_container_dn = ldb.Dn(samdb, "DC=%s,CN=MicrosoftDNS,%s,%s" %
-                                    (dnsdomain, prefix, domaindn))
+                                 (dnsdomain, prefix, domaindn))
 
     # DC=@ record
     add_at_record(samdb, domain_container_dn, "DC=@", hostname, dnsdomain,
@@ -584,11 +584,11 @@ def add_dc_domain_records(samdb, domaindn, prefix, site, dnsdomain, hostname,
 
     # DC=_ldap._tcp.DomainDnsZones
     add_srv_record(samdb, domain_container_dn, "DC=_ldap._tcp.DomainDnsZones",
-                    fqdn_hostname, 389)
+                   fqdn_hostname, 389)
 
     # DC=_ldap._tcp.ForestDnsZones
     add_srv_record(samdb, domain_container_dn, "DC=_ldap._tcp.ForestDnsZones",
-                    fqdn_hostname, 389)
+                   fqdn_hostname, 389)
 
     # DC=DomainDnsZones
     add_host_record(samdb, domain_container_dn, "DC=DomainDnsZones", hostip,
@@ -600,13 +600,13 @@ def add_dc_domain_records(samdb, domaindn, prefix, site, dnsdomain, hostname,
 
 
 def add_dc_msdcs_records(samdb, forestdn, prefix, site, dnsforest, hostname,
-                            hostip, hostip6, domainguid, ntdsguid):
+                         hostip, hostip6, domainguid, ntdsguid):
 
     fqdn_hostname = "%s.%s" % (hostname, dnsforest)
 
     # Set up forest container - DC=<DNSDOMAIN>,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     forest_container_dn = ldb.Dn(samdb, "DC=_msdcs.%s,CN=MicrosoftDNS,%s,%s" %
-                                    (dnsforest, prefix, forestdn))
+                                 (dnsforest, prefix, forestdn))
 
     # DC=@ record
     add_at_record(samdb, forest_container_dn, "DC=@", hostname, dnsforest,

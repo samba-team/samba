@@ -12,7 +12,7 @@ def set_libpath(t):
 def set_krb5_conf(t):
     t.run_cmd("mkdir -p ${PREFIX}/etc")
     t.write_file("${PREFIX}/etc/krb5.conf", 
-                    '''[libdefaults]
+                 '''[libdefaults]
 	dns_lookup_realm = false
 	dns_lookup_kdc = true''')
 

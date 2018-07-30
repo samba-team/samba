@@ -86,38 +86,38 @@ def bitmap_string(module, bitmap_defs, value):
 
 def boot_method_string(boot_method):
     enum_defs = [ 'DNS_BOOT_METHOD_UNINITIALIZED', 'DNS_BOOT_METHOD_FILE',
-                    'DNS_BOOT_METHOD_REGISTRY', 'DNS_BOOT_METHOD_DIRECTORY' ]
+                  'DNS_BOOT_METHOD_REGISTRY', 'DNS_BOOT_METHOD_DIRECTORY' ]
     return enum_string(dnsserver, enum_defs, boot_method)
 
 
 def name_check_flag_string(check_flag):
     enum_defs = [ 'DNS_ALLOW_RFC_NAMES_ONLY', 'DNS_ALLOW_NONRFC_NAMES',
-                    'DNS_ALLOW_MULTIBYTE_NAMES', 'DNS_ALLOW_ALL_NAMES' ]
+                  'DNS_ALLOW_MULTIBYTE_NAMES', 'DNS_ALLOW_ALL_NAMES' ]
     return enum_string(dnsserver, enum_defs, check_flag)
 
 
 def zone_type_string(zone_type):
     enum_defs = [ 'DNS_ZONE_TYPE_CACHE', 'DNS_ZONE_TYPE_PRIMARY',
-                    'DNS_ZONE_TYPE_SECONDARY', 'DNS_ZONE_TYPE_STUB',
-                    'DNS_ZONE_TYPE_FORWARDER', 'DNS_ZONE_TYPE_SECONDARY_CACHE' ]
+                  'DNS_ZONE_TYPE_SECONDARY', 'DNS_ZONE_TYPE_STUB',
+                  'DNS_ZONE_TYPE_FORWARDER', 'DNS_ZONE_TYPE_SECONDARY_CACHE' ]
     return enum_string(dnsp, enum_defs, zone_type)
 
 
 def zone_update_string(zone_update):
     enum_defs = [ 'DNS_ZONE_UPDATE_OFF', 'DNS_ZONE_UPDATE_UNSECURE',
-                    'DNS_ZONE_UPDATE_SECURE' ]
+                  'DNS_ZONE_UPDATE_SECURE' ]
     return enum_string(dnsp, enum_defs, zone_update)
 
 
 def zone_secondary_security_string(security):
     enum_defs = [ 'DNS_ZONE_SECSECURE_NO_SECURITY', 'DNS_ZONE_SECSECURE_NS_ONLY',
-                    'DNS_ZONE_SECSECURE_LIST_ONLY', 'DNS_ZONE_SECSECURE_NO_XFER' ]
+                  'DNS_ZONE_SECSECURE_LIST_ONLY', 'DNS_ZONE_SECSECURE_NO_XFER' ]
     return enum_string(dnsserver, enum_defs, security)
 
 
 def zone_notify_level_string(notify_level):
     enum_defs = [ 'DNS_ZONE_NOTIFY_OFF', 'DNS_ZONE_NOTIFY_ALL_SECONDARIES',
-                    'DNS_ZONE_NOTIFY_LIST_ONLY' ]
+                  'DNS_ZONE_NOTIFY_LIST_ONLY' ]
     return enum_string(dnsserver, enum_defs, notify_level)
 
 
@@ -214,18 +214,18 @@ def print_serverinfo(outf, typeid, serverinfo):
 
     if typeid != dnsserver.DNSSRV_TYPEID_SERVER_INFO:
         outf.write('  aipServerAddrs              : %s\n' %
-                    ip4_array_string(serverinfo.aipServerAddrs))
+                   ip4_array_string(serverinfo.aipServerAddrs))
         outf.write('  aipListenAddrs              : %s\n' %
-                    ip4_array_string(serverinfo.aipListenAddrs))
+                   ip4_array_string(serverinfo.aipListenAddrs))
         outf.write('  aipForwarders               : %s\n' %
-                    ip4_array_string(serverinfo.aipForwarders))
+                   ip4_array_string(serverinfo.aipForwarders))
     else:
         outf.write('  aipServerAddrs              : %s\n' %
-                    dns_addr_array_string(serverinfo.aipServerAddrs))
+                   dns_addr_array_string(serverinfo.aipServerAddrs))
         outf.write('  aipListenAddrs              : %s\n' %
-                    dns_addr_array_string(serverinfo.aipListenAddrs))
+                   dns_addr_array_string(serverinfo.aipListenAddrs))
         outf.write('  aipForwarders               : %s\n' %
-                    dns_addr_array_string(serverinfo.aipForwarders))
+                   dns_addr_array_string(serverinfo.aipForwarders))
 
     outf.write('  dwLogLevel                  : %d\n' % serverinfo.dwLogLevel)
     outf.write('  dwDebugLevel                : %d\n' % serverinfo.dwDebugLevel)
@@ -287,22 +287,22 @@ def print_zoneinfo(outf, typeid, zoneinfo):
     outf.write('  pszDataFile                 : %s\n' % zoneinfo.pszDataFile)
     if typeid != dnsserver.DNSSRV_TYPEID_ZONE_INFO:
         outf.write('  aipMasters                  : %s\n' %
-                    ip4_array_string(zoneinfo.aipMasters))
+                   ip4_array_string(zoneinfo.aipMasters))
     else:
         outf.write('  aipMasters                  : %s\n' %
-                    dns_addr_array_string(zoneinfo.aipMasters))
+                   dns_addr_array_string(zoneinfo.aipMasters))
     outf.write('  fSecureSecondaries          : %s\n' % zone_secondary_security_string(zoneinfo.fSecureSecondaries))
     outf.write('  fNotifyLevel                : %s\n' % zone_notify_level_string(zoneinfo.fNotifyLevel))
     if typeid != dnsserver.DNSSRV_TYPEID_ZONE_INFO:
         outf.write('  aipSecondaries              : %s\n' %
-                    ip4_array_string(zoneinfo.aipSecondaries))
+                   ip4_array_string(zoneinfo.aipSecondaries))
         outf.write('  aipNotify                   : %s\n' %
-                    ip4_array_string(zoneinfo.aipNotify))
+                   ip4_array_string(zoneinfo.aipNotify))
     else:
         outf.write('  aipSecondaries              : %s\n' %
-                    dns_addr_array_string(zoneinfo.aipSecondaries))
+                   dns_addr_array_string(zoneinfo.aipSecondaries))
         outf.write('  aipNotify                   : %s\n' %
-                    dns_addr_array_string(zoneinfo.aipNotify))
+                   dns_addr_array_string(zoneinfo.aipNotify))
     outf.write('  fUseWins                    : %s\n' % bool_string(zoneinfo.fUseWins))
     outf.write('  fUseNbstat                  : %s\n' % bool_string(zoneinfo.fUseNbstat))
     outf.write('  fAging                      : %s\n' % bool_string(zoneinfo.fAging))
@@ -311,10 +311,10 @@ def print_zoneinfo(outf, typeid, zoneinfo):
     outf.write('  dwAvailForScavengeTime      : %d\n' % zoneinfo.dwAvailForScavengeTime)
     if typeid != dnsserver.DNSSRV_TYPEID_ZONE_INFO:
         outf.write('  aipScavengeServers          : %s\n' %
-                    ip4_array_string(zoneinfo.aipScavengeServers))
+                   ip4_array_string(zoneinfo.aipScavengeServers))
     else:
         outf.write('  aipScavengeServers          : %s\n' %
-                    dns_addr_array_string(zoneinfo.aipScavengeServers))
+                   dns_addr_array_string(zoneinfo.aipScavengeServers))
 
     if typeid != dnsserver.DNSSRV_TYPEID_ZONE_INFO_W2K:
         outf.write('  dwRpcStructureVersion       : 0x%x\n' % zoneinfo.dwRpcStructureVersion)
@@ -322,10 +322,10 @@ def print_zoneinfo(outf, typeid, zoneinfo):
         outf.write('  fForwarderSlave             : %d\n' % zoneinfo.fForwarderSlave)
         if typeid != dnsserver.DNSSRV_TYPEID_ZONE_INFO:
             outf.write('  aipLocalMasters             : %s\n' %
-                        ip4_array_string(zoneinfo.aipLocalMasters))
+                       ip4_array_string(zoneinfo.aipLocalMasters))
         else:
             outf.write('  aipLocalMasters             : %s\n' %
-                        dns_addr_array_string(zoneinfo.aipLocalMasters))
+                       dns_addr_array_string(zoneinfo.aipLocalMasters))
         outf.write('  dwDpFlags                   : %s\n' % dp_flags_string(zoneinfo.dwDpFlags))
         outf.write('  pszDpFqdn                   : %s\n' % zoneinfo.pszDpFqdn)
         outf.write('  pwszZoneDn                  : %s\n' % zoneinfo.pwszZoneDn)
@@ -548,8 +548,8 @@ class cmd_serverinfo(Command):
 
     takes_options = [
         Option('--client-version', help='Client Version',
-                default='longhorn', metavar='w2k|dotnet|longhorn',
-                choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
+               default='longhorn', metavar='w2k|dotnet|longhorn',
+               choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
     ]
 
     def run(self, server, cli_ver, sambaopts=None, credopts=None,
@@ -580,8 +580,8 @@ class cmd_zoneinfo(Command):
 
     takes_options = [
         Option('--client-version', help='Client Version',
-                default='longhorn', metavar='w2k|dotnet|longhorn',
-                choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
+               default='longhorn', metavar='w2k|dotnet|longhorn',
+               choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
     ]
 
     def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
@@ -612,29 +612,29 @@ class cmd_zonelist(Command):
 
     takes_options = [
         Option('--client-version', help='Client Version',
-                default='longhorn', metavar='w2k|dotnet|longhorn',
-                choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
+               default='longhorn', metavar='w2k|dotnet|longhorn',
+               choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
         Option('--primary', help='List primary zones (default)',
-                action='store_true', dest='primary'),
+               action='store_true', dest='primary'),
         Option('--secondary', help='List secondary zones',
-                action='store_true', dest='secondary'),
+               action='store_true', dest='secondary'),
         Option('--cache', help='List cached zones',
-                action='store_true', dest='cache'),
+               action='store_true', dest='cache'),
         Option('--auto', help='List automatically created zones',
-                action='store_true', dest='auto'),
+               action='store_true', dest='auto'),
         Option('--forward', help='List forward zones',
-                action='store_true', dest='forward'),
+               action='store_true', dest='forward'),
         Option('--reverse', help='List reverse zones',
-                action='store_true', dest='reverse'),
+               action='store_true', dest='reverse'),
         Option('--ds', help='List directory integrated zones',
-                action='store_true', dest='ds'),
+               action='store_true', dest='ds'),
         Option('--non-ds', help='List non-directory zones',
-                action='store_true', dest='nonds')
+               action='store_true', dest='nonds')
     ]
 
     def run(self, server, cli_ver, primary=False, secondary=False, cache=False,
-                auto=False, forward=False, reverse=False, ds=False, nonds=False,
-                sambaopts=None, credopts=None, versionopts=None):
+            auto=False, forward=False, reverse=False, ds=False, nonds=False,
+            sambaopts=None, credopts=None, versionopts=None):
         request_filter = 0
 
         if primary:
@@ -664,10 +664,10 @@ class cmd_zonelist(Command):
         client_version = dns_client_version(cli_ver)
 
         typeid, res = dns_conn.DnssrvComplexOperation2(client_version,
-                                                        0, server, None,
-                                                        'EnumZones',
-                                                        dnsserver.DNSSRV_TYPEID_DWORD,
-                                                        request_filter)
+                                                       0, server, None,
+                                                       'EnumZones',
+                                                       dnsserver.DNSSRV_TYPEID_DWORD,
+                                                       request_filter)
 
         if client_version == dnsserver.DNS_CLIENT_VERSION_W2K:
             typeid = dnsserver.DNSSRV_TYPEID_ZONE_W2K
@@ -691,8 +691,8 @@ class cmd_zonecreate(Command):
 
     takes_options = [
         Option('--client-version', help='Client Version',
-                default='longhorn', metavar='w2k|dotnet|longhorn',
-                choices=['w2k','dotnet','longhorn'], dest='cli_ver')
+               default='longhorn', metavar='w2k|dotnet|longhorn',
+               choices=['w2k','dotnet','longhorn'], dest='cli_ver')
     ]
 
     def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
@@ -802,19 +802,19 @@ class cmd_query(Command):
 
     takes_options = [
         Option('--authority', help='Search authoritative records (default)',
-                action='store_true', dest='authority'),
+               action='store_true', dest='authority'),
         Option('--cache', help='Search cached records',
-                action='store_true', dest='cache'),
+               action='store_true', dest='cache'),
         Option('--glue', help='Search glue records',
-                action='store_true', dest='glue'),
+               action='store_true', dest='glue'),
         Option('--root', help='Search root hints',
-                action='store_true', dest='root'),
+               action='store_true', dest='root'),
         Option('--additional', help='List additional records',
-                action='store_true', dest='additional'),
+               action='store_true', dest='additional'),
         Option('--no-children', help='Do not list children',
-                action='store_true', dest='no_children'),
+               action='store_true', dest='no_children'),
         Option('--only-children', help='List only children',
-                action='store_true', dest='only_children')
+               action='store_true', dest='only_children')
     ]
 
     def run(self, server, zone, name, rtype, authority=False, cache=False,
@@ -973,7 +973,7 @@ class cmd_update_record(Command):
     }
 
     def run(self, server, zone, name, rtype, olddata, newdata,
-                sambaopts=None, credopts=None, versionopts=None):
+            sambaopts=None, credopts=None, versionopts=None):
 
         if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SOA','SRV','TXT'):
             raise CommandError('Updating record of type %s is not supported' % rtype)

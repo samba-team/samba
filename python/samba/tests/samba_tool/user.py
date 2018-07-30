@@ -152,7 +152,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                 nidx = nidx + 1
 
         (kidx, kp) = find_package(sc.sub.packages, "Primary:Kerberos",
-                                    start_idx=nidx)
+                                  start_idx=nidx)
         self.assertIsNotNone(pp, "Primary:Kerberos required")
         self.assertEqual(kidx, nidx, "Primary:Kerberos at wrong position")
         nidx = nidx + 1
@@ -168,7 +168,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             nidx = nidx + 1
 
         (cidx, cp) = find_package(sc.sub.packages, "Primary:CLEARTEXT",
-                                    start_idx=nidx)
+                                  start_idx=nidx)
         if cidx is not None:
             self.assertEqual(cidx, nidx, "Primary:CLEARTEXT at wrong position")
             nidx = nidx + 1
@@ -328,10 +328,10 @@ class UserCmdTestCase(SambaToolCmdTest):
         # now run the expiration based on a filter
         fourdays = time.time() + (4 * 24 * 60 * 60)
         (result, out, err) = self.runsubcmd("user", "setexpiry",
-                                                "--filter", "(&(objectClass=user)(company=comp2))",
-                                                "--days=4",
-                                                "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                            "--filter", "(&(objectClass=user)(company=comp2))",
+                                            "--days=4",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.assertCmdSuccess(result, out, err, "Can we run setexpiry with a filter")
 
         for user in self.users:
@@ -452,16 +452,16 @@ sAMAccountName: %s
                         })
         # check if --rfc2307-from-nss sets the same values as we got from pwd.getpwuid()
         (result, out, err) = self.runsubcmd("user", "create", user["name"], user["password"],
-                                                "--surname=%s" % user["surname"],
-                                                "--given-name=%s" % user["given-name"],
-                                                "--job-title=%s" % user["job-title"],
-                                                "--department=%s" % user["department"],
-                                                "--description=%s" % user["description"],
-                                                "--company=%s" % user["company"],
-                                                "--gecos=%s" % user["gecos"],
-                                                "--rfc2307-from-nss",
-                                                "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                            "--surname=%s" % user["surname"],
+                                            "--given-name=%s" % user["given-name"],
+                                            "--job-title=%s" % user["job-title"],
+                                            "--department=%s" % user["department"],
+                                            "--description=%s" % user["description"],
+                                            "--company=%s" % user["company"],
+                                            "--gecos=%s" % user["gecos"],
+                                            "--rfc2307-from-nss",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
@@ -477,20 +477,20 @@ sAMAccountName: %s
         # create a user with posix attributes from nss but override all of them with the
         # random ones just obtained
         (result, out, err) = self.runsubcmd("user", "create", user["name"], user["password"],
-                                                "--surname=%s" % user["surname"],
-                                                "--given-name=%s" % user["given-name"],
-                                                "--job-title=%s" % user["job-title"],
-                                                "--department=%s" % user["department"],
-                                                "--description=%s" % user["description"],
-                                                "--company=%s" % user["company"],
-                                                "--rfc2307-from-nss",
-                                                "--gecos=%s" % user["gecos"],
-                                                "--login-shell=%s" % user["loginShell"],
-                                                "--uid=%s" % user["uid"],
-                                                "--uid-number=%s" % user["uidNumber"],
-                                                "--gid-number=%s" % user["gidNumber"],
-                                                "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                            "--surname=%s" % user["surname"],
+                                            "--given-name=%s" % user["given-name"],
+                                            "--job-title=%s" % user["job-title"],
+                                            "--department=%s" % user["department"],
+                                            "--description=%s" % user["description"],
+                                            "--company=%s" % user["company"],
+                                            "--rfc2307-from-nss",
+                                            "--gecos=%s" % user["gecos"],
+                                            "--login-shell=%s" % user["loginShell"],
+                                            "--uid=%s" % user["uid"],
+                                            "--uid-number=%s" % user["uidNumber"],
+                                            "--gid-number=%s" % user["gidNumber"],
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
@@ -557,30 +557,30 @@ sAMAccountName: %s
 
     def _create_user(self, user):
         return self.runsubcmd("user", "create", user["name"], user["password"],
-                                                "--surname=%s" % user["surname"],
-                                                "--given-name=%s" % user["given-name"],
-                                                "--job-title=%s" % user["job-title"],
-                                                "--department=%s" % user["department"],
-                                                "--description=%s" % user["description"],
-                                                "--company=%s" % user["company"],
-                                                "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                              "--surname=%s" % user["surname"],
+                              "--given-name=%s" % user["given-name"],
+                              "--job-title=%s" % user["job-title"],
+                              "--department=%s" % user["department"],
+                              "--description=%s" % user["description"],
+                              "--company=%s" % user["company"],
+                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                              "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
     def _create_posix_user(self, user):
         """ create a new user with RFC2307 attributes """
         return self.runsubcmd("user", "create", user["name"], user["password"],
-                                                "--surname=%s" % user["surname"],
-                                                "--given-name=%s" % user["given-name"],
-                                                "--job-title=%s" % user["job-title"],
-                                                "--department=%s" % user["department"],
-                                                "--description=%s" % user["description"],
-                                                "--company=%s" % user["company"],
-                                                "--gecos=%s" % user["gecos"],
-                                                "--login-shell=%s" % user["loginShell"],
-                                                "--uid=%s" % user["uid"],
-                                                "--uid-number=%s" % user["uidNumber"],
-                                                "--gid-number=%s" % user["gidNumber"],
-                                                "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                              "--surname=%s" % user["surname"],
+                              "--given-name=%s" % user["given-name"],
+                              "--job-title=%s" % user["job-title"],
+                              "--department=%s" % user["department"],
+                              "--description=%s" % user["description"],
+                              "--company=%s" % user["company"],
+                              "--gecos=%s" % user["gecos"],
+                              "--login-shell=%s" % user["loginShell"],
+                              "--uid=%s" % user["uid"],
+                              "--uid-number=%s" % user["uidNumber"],
+                              "--gid-number=%s" % user["gidNumber"],
+                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                              "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
     def _find_user(self, name):
         search_filter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (ldb.binary_encode(name), "CN=Person,CN=Schema,CN=Configuration", self.samdb.domain_dn())
