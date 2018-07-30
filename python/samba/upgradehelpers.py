@@ -821,5 +821,5 @@ def int64range2str(value):
     """
 
     lvalue = long(value)
-    str = "%d-%d" % (lvalue&0xFFFFFFFF, lvalue>>32)
+    str = "%d-%d" % (lvalue &0xFFFFFFFF, lvalue >>32)
     return str

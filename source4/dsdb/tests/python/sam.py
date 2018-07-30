@@ -1665,7 +1665,7 @@ class SamTests(samba.tests.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["uac1"] = MessageElement(str(uac|UF_PASSWORD_EXPIRED),
+        m["uac1"] = MessageElement(str(uac |UF_PASSWORD_EXPIRED),
                                    FLAG_MOD_REPLACE,
                                    "userAccountControl")
         ldb.modify(m)
@@ -2599,7 +2599,7 @@ class SamTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
-            str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED),
+            str(UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED),
             FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
@@ -2612,7 +2612,7 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res[0]["sAMAccountType"][0]),
                          ATYPE_NORMAL_ACCOUNT)
         self.assertEqual(int(res[0]["userAccountControl"][0]),
-                         UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED)
+                         UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED)
         self.assertEqual(int(res[0]["pwdLastSet"][0]), lastset)
         lastset1 = int(res[0]["pwdLastSet"][0])
         self.assertEqual(int(res[0]["msDS-KeyVersionNumber"][0]), 2)
@@ -2655,7 +2655,7 @@ class SamTests(samba.tests.TestCase):
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "user",
-            "userAccountControl": str(UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE),
+            "userAccountControl": str(UF_NORMAL_ACCOUNT |UF_ACCOUNTDISABLE),
         })
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2667,7 +2667,7 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res[0]["sAMAccountType"][0]),
                          ATYPE_NORMAL_ACCOUNT)
         self.assertEqual(int(res[0]["userAccountControl"][0]),
-                         UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE)
+                         UF_NORMAL_ACCOUNT |UF_ACCOUNTDISABLE)
         self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
         self.assertTrue("msDS-KeyVersionNumber" in res[0])
         self.assertEqual(int(res[0]["msDS-KeyVersionNumber"][0]), 1)
@@ -2701,7 +2701,7 @@ class SamTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
-            str(UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_SMARTCARD_REQUIRED),
+            str(UF_NORMAL_ACCOUNT |UF_ACCOUNTDISABLE |UF_SMARTCARD_REQUIRED),
             FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
@@ -2714,7 +2714,7 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res[0]["sAMAccountType"][0]),
                          ATYPE_NORMAL_ACCOUNT)
         self.assertEqual(int(res[0]["userAccountControl"][0]),
-                         UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_SMARTCARD_REQUIRED)
+                         UF_NORMAL_ACCOUNT |UF_ACCOUNTDISABLE |UF_SMARTCARD_REQUIRED)
         self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
         self.assertEqual(int(res[0]["msDS-KeyVersionNumber"][0]), 2)
         self.assertTrue(len(res[0]["replPropertyMetaData"]) == 1)
@@ -2748,7 +2748,7 @@ class SamTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
-            str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED),
+            str(UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED),
             FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
@@ -2761,7 +2761,7 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res[0]["sAMAccountType"][0]),
                          ATYPE_NORMAL_ACCOUNT)
         self.assertEqual(int(res[0]["userAccountControl"][0]),
-                         UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED)
+                         UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED)
         self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
         self.assertEqual(int(res[0]["msDS-KeyVersionNumber"][0]), 2)
         self.assertTrue(len(res[0]["replPropertyMetaData"]) == 1)
@@ -2803,7 +2803,7 @@ class SamTests(samba.tests.TestCase):
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "user",
-            "userAccountControl": str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED|UF_ACCOUNTDISABLE),
+            "userAccountControl": str(UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED |UF_ACCOUNTDISABLE),
         })
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2815,7 +2815,7 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res[0]["sAMAccountType"][0]),
                          ATYPE_NORMAL_ACCOUNT)
         self.assertEqual(int(res[0]["userAccountControl"][0]),
-                         UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED|UF_ACCOUNTDISABLE)
+                         UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED |UF_ACCOUNTDISABLE)
         self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
         self.assertEqual(int(res[0]["msDS-KeyVersionNumber"][0]), 1)
         self.assertTrue(len(res[0]["replPropertyMetaData"]) == 1)
@@ -2849,7 +2849,7 @@ class SamTests(samba.tests.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
-            str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED),
+            str(UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED),
             FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
 
@@ -2862,7 +2862,7 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res[0]["sAMAccountType"][0]),
                          ATYPE_NORMAL_ACCOUNT)
         self.assertEqual(int(res[0]["userAccountControl"][0]),
-                         UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED)
+                         UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED)
         self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
         self.assertEqual(int(res[0]["msDS-KeyVersionNumber"][0]), 1)
         self.assertTrue(len(res[0]["replPropertyMetaData"]) == 1)

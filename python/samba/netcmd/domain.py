@@ -902,7 +902,7 @@ class cmd_domain_demote(Command):
 
         olduac = uac
 
-        uac &= ~(UF_SERVER_TRUST_ACCOUNT|UF_TRUSTED_FOR_DELEGATION|UF_PARTIAL_SECRETS_ACCOUNT)
+        uac &= ~(UF_SERVER_TRUST_ACCOUNT |UF_TRUSTED_FOR_DELEGATION |UF_PARTIAL_SECRETS_ACCOUNT)
         uac |= UF_WORKSTATION_TRUST_ACCOUNT
 
         msg = ldb.Message()

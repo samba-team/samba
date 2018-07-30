@@ -568,7 +568,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
             next_rid = entry['rid'] + 1
 
         user = s3db.getsampwnam(username)
-        acct_type = (user.acct_ctrl & (samr.ACB_NORMAL|samr.ACB_WSTRUST|samr.ACB_SVRTRUST|samr.ACB_DOMTRUST))
+        acct_type = (user.acct_ctrl & (samr.ACB_NORMAL |samr.ACB_WSTRUST |samr.ACB_SVRTRUST |samr.ACB_DOMTRUST))
         if acct_type == samr.ACB_SVRTRUST:
             logger.warn("  Demoting BDC account trust for %s, this DC must be elevated to an AD DC using 'samba-tool domain dcpromo'" % username[:-1])
             user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_SVRTRUST) | samr.ACB_WSTRUST
@@ -581,11 +581,11 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
             logger.warn("  Skipping account %s that has ACB_WSTRUST (W) set but does not end in $.  This account can not have worked, and is probably left over from a misconfiguration." % username)
             continue
 
-        elif acct_type == (samr.ACB_NORMAL|samr.ACB_WSTRUST) and username[-1] == '$':
+        elif acct_type == (samr.ACB_NORMAL |samr.ACB_WSTRUST) and username[-1] == '$':
             logger.warn("  Fixing account %s which had both ACB_NORMAL (U) and ACB_WSTRUST (W) set.  Account will be marked as ACB_WSTRUST (W), i.e. as a domain member" % username)
             user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_NORMAL)
 
-        elif acct_type == (samr.ACB_NORMAL|samr.ACB_SVRTRUST) and username[-1] == '$':
+        elif acct_type == (samr.ACB_NORMAL |samr.ACB_SVRTRUST) and username[-1] == '$':
             logger.warn("  Fixing account %s which had both ACB_NORMAL (U) and ACB_SVRTRUST (S) set.  Account will be marked as ACB_WSTRUST (S), i.e. as a domain member" % username)
             user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_NORMAL)
 
