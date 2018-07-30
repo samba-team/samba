@@ -89,7 +89,7 @@ class inf_to_ldb(gp_ext_setter):
         sam_add = 10000000
         val = (self.val)
         val = int(val)
-        return  str(-(val * seconds * minutes * hours * sam_add))
+        return str(-(val * seconds * minutes * hours * sam_add))
 
     def mapper(self):
         '''ldap value : samba setter'''

@@ -33,7 +33,7 @@ if PY3:
 
         return (x > y) - (x < y)
     # compat functions
-    from  urllib.parse import quote as urllib_quote
+    from urllib.parse import quote as urllib_quote
     from urllib.request import urlopen as urllib_urlopen
     from functools import cmp_to_key as cmp_to_key_fn
 
