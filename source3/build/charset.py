@@ -22,15 +22,15 @@ def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
                 default_unix_charset=charset
                 break
 
-	# At this point, we have a libiconv candidate. We know that
-	# we have the right headers and libraries, but we don't know
-	# whether it does the conversions we want. We can't test this
-	# because we are cross-compiling. This is not necessarily a big
-	# deal, since we can't guarantee that the results we get now will
-	# match the results we get at runtime anyway.
-	if crossbuild:
-	    default_dos_charset="CP850"
-	    default_unix_charset="UTF-8"
+        # At this point, we have a libiconv candidate. We know that
+        # we have the right headers and libraries, but we don't know
+        # whether it does the conversions we want. We can't test this
+        # because we are cross-compiling. This is not necessarily a big
+        # deal, since we can't guarantee that the results we get now will
+        # match the results we get at runtime anyway.
+        if crossbuild:
+            default_dos_charset="CP850"
+            default_unix_charset="UTF-8"
             # TODO: this used to warn about the set charset on cross builds
 
         if default_dos_charset is False or default_unix_charset is False:

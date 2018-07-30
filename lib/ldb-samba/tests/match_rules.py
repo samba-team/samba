@@ -38,25 +38,25 @@ class MatchRulesTests(samba.tests.TestCase):
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
 
-	# Add the following OU hierarchy and set otherWellKnownObjects,
-	# which has BinaryDN syntax:
-	#
-	# o1
-	# |--> o2
-	# |    |--> o3
-	# |    |    |-->o4
+        # Add the following OU hierarchy and set otherWellKnownObjects,
+        # which has BinaryDN syntax:
+        #
+        # o1
+        # |--> o2
+        # |    |--> o3
+        # |    |    |-->o4
 
-	self.ldb.add({
-	    "dn": "OU=o1,%s" % self.ou,
+        self.ldb.add({
+            "dn": "OU=o1,%s" % self.ou,
             "objectclass": "organizationalUnit"})
-	self.ldb.add({
-	    "dn": "OU=o2,OU=o1,%s" % self.ou,
+        self.ldb.add({
+            "dn": "OU=o2,OU=o1,%s" % self.ou,
             "objectclass": "organizationalUnit"})
-	self.ldb.add({
-	    "dn": "OU=o3,OU=o2,OU=o1,%s" % self.ou,
+        self.ldb.add({
+            "dn": "OU=o3,OU=o2,OU=o1,%s" % self.ou,
             "objectclass": "organizationalUnit"})
-	self.ldb.add({
-	    "dn": "OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou,
+        self.ldb.add({
+            "dn": "OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou,
             "objectclass": "organizationalUnit"})
 
         m = Message()
@@ -83,7 +83,7 @@ class MatchRulesTests(samba.tests.TestCase):
                                      FLAG_MOD_ADD, "otherWellKnownObjects")
         self.ldb.modify(m)
 
-	# Create OU for users and groups
+        # Create OU for users and groups
         self.ldb.add({
             "dn": self.ou_users,
             "objectclass": "organizationalUnit"})
@@ -731,26 +731,26 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 0)
 
     def test_subtree(self):
-	    res1 = self.ldb.search(self.ou,
-			    scope=SCOPE_SUBTREE,
-			    expression="otherWellKnownObjects=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
-	    self.assertEqual(len(res1), 1)
-	    self.assertEqual(str(res1[0].dn).lower(), ("OU=o3,OU=o2,OU=o1,%s" % self.ou).lower())
+        res1 = self.ldb.search(self.ou,
+                        scope=SCOPE_SUBTREE,
+                        expression="otherWellKnownObjects=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
+        self.assertEqual(len(res1), 1)
+        self.assertEqual(str(res1[0].dn).lower(), ("OU=o3,OU=o2,OU=o1,%s" % self.ou).lower())
 
-	    res1 = self.ldb.search(self.ou,
-			    scope=SCOPE_ONELEVEL,
-			    expression="otherWellKnownObjects=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
-	    self.assertEqual(len(res1), 0)
+        res1 = self.ldb.search(self.ou,
+                        scope=SCOPE_ONELEVEL,
+                        expression="otherWellKnownObjects=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
+        self.assertEqual(len(res1), 0)
 
-	    res1 = self.ldb.search(self.ou,
-			    scope=SCOPE_SUBTREE,
-			    expression="otherWellKnownObjects:1.2.840.113556.1.4.1941:=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
-	    self.assertEqual(len(res1), 0)
+        res1 = self.ldb.search(self.ou,
+                        scope=SCOPE_SUBTREE,
+                        expression="otherWellKnownObjects:1.2.840.113556.1.4.1941:=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
+        self.assertEqual(len(res1), 0)
 
-	    res1 = self.ldb.search(self.ou,
-			    scope=SCOPE_ONELEVEL,
-			    expression="otherWellKnownObjects:1.2.840.113556.1.4.1941:=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
-	    self.assertEqual(len(res1), 0)
+        res1 = self.ldb.search(self.ou,
+                        scope=SCOPE_ONELEVEL,
+                        expression="otherWellKnownObjects:1.2.840.113556.1.4.1941:=B:32:00000000000000000000000000000004:OU=o4,OU=o3,OU=o2,OU=o1,%s" % self.ou)
+        self.assertEqual(len(res1), 0)
 
     def test_unknown_oid(self):
         res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,

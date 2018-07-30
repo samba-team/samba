@@ -141,7 +141,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
     def test_do_single_repl(self):
         """
-	Make sure that DRSUAPI_EXOP_REPL_OBJ never replicates more than
+        Make sure that DRSUAPI_EXOP_REPL_OBJ never replicates more than
         one object, even when we use DRS_GET_ANC/GET_TGT.
         """
 

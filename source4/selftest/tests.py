@@ -842,9 +842,9 @@ plantestsuite_loadlist("samba4.ldap.rodc_rwdc.python(rodc)", "rodc:local",
 
 planoldpythontestsuite("rodc:local", "replica_sync_rodc",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
-		       name="samba4.drs.replica_sync_rodc.python(rodc)",
-		       environ={'DC1': '$DC_SERVER', 'DC2': '$RODC_DC_SERVER'},
-		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+                       name="samba4.drs.replica_sync_rodc.python(rodc)",
+                       environ={'DC1': '$DC_SERVER', 'DC2': '$RODC_DC_SERVER'},
+                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 planoldpythontestsuite("ad_dc_ntvfs", "password_settings",
                        extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
@@ -924,13 +924,13 @@ for env in ['rodc', 'offlinebackupdc', 'restoredc', 'renamedc', 'labdc']:
 planpythontestsuite("rodc:local", "samba.tests.samba_tool.rodc")
 
 plantestsuite("samba.blackbox.rpcclient_samlogon", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
-								  "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
+                                                                  "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
 
 plantestsuite("samba.blackbox.rpcclient_samlogon_testallowed", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
-								              "testallowed\ account", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
+                                                                              "testallowed\ account", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
 
 plantestsuite("samba.blackbox.rpcclient_samlogon_testdenied", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
-								             "testdenied", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
+                                                                             "testdenied", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
 
 
 
@@ -995,10 +995,10 @@ for env in ['vampire_dc', 'promoted_dc']:
                            environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "link_conflicts",
-			   extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
-			   name="samba4.drs.link_conflicts.python(%s)" % env,
-			   environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
-			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+                           extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                           name="samba4.drs.link_conflicts.python(%s)" % env,
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['vampire_dc', 'promoted_dc', 'vampire_2000_dc']:
     planoldpythontestsuite(env, "repl_schema",
@@ -1012,10 +1012,10 @@ for env in ['vampire_dc', 'promoted_dc', 'vampire_2000_dc']:
 # down) the other DRS tests
 for env in ['vampire_dc', 'promoted_dc']:
     planoldpythontestsuite(env, "getncchanges",
-			   extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
-			   name="samba4.drs.getncchanges.python(%s)" % env,
-			   environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
-			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+                           extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                           name="samba4.drs.getncchanges.python(%s)" % env,
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['ad_dc_ntvfs']:
     planoldpythontestsuite(env, "repl_rodc",
