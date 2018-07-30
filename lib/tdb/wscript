@@ -213,6 +213,17 @@ def testonly(ctx):
         if not os.path.exists(link):
             os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
 
+        sh_tests = ["test/test_tdbbackup.sh test/jenkins-be-hash.tdb"]
+
+        for sh_test in sh_tests:
+            cmd = "BINDIR={} {}".format(Utils.g_module.blddir, sh_test)
+            print("shell test: " + cmd)
+            ret = samba_utils.RUN_COMMAND(cmd)
+            if ret != 0:
+                print("%s sh test failed" % cmd)
+                ecode = ret
+                break
+
         for t in tdb1_unit_tests:
             f = "tdb1-" + t
             cmd = "cd " + testdir + " && " + os.path.abspath(os.path.join(Utils.g_module.blddir, f)) + " > test-output 2>&1"
