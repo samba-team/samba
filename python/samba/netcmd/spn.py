@@ -89,7 +89,7 @@ class cmd_spn_add(Command):
             ]
     takes_args = ["name", "user"]
 
-    def run(self, name, user,  force=False, credopts=None, sambaopts=None,
+    def run(self, name, user, force=False, credopts=None, sambaopts=None,
             versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)

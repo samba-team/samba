@@ -823,8 +823,8 @@ class DnsCmdTestCase(SambaToolCmdTest):
         """
         num_failures = 0
         failure_msgs = []
-        records = [("*.",       "MISS",         "A", "1.1.1.1"),
-                   ("*.SAMDOM", "MISS.SAMDOM",  "A", "1.1.1.2")]
+        records = [("*.", "MISS", "A", "1.1.1.1"),
+                   ("*.SAMDOM", "MISS.SAMDOM", "A", "1.1.1.2")]
         for (name, miss, dnstype, record) in records:
             try:
                 result, out, err = self.runsubcmd("dns", "add",

@@ -756,7 +756,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
         global_settings["binddns dir"] = os.path.abspath(os.path.join(targetdir, "bind-dns"))
 
         lp.set("lock dir", os.path.abspath(targetdir))
-        lp.set("state directory",  global_settings["state directory"])
+        lp.set("state directory", global_settings["state directory"])
         lp.set("cache directory", global_settings["cache directory"])
         lp.set("binddns dir", global_settings["binddns dir"])
 

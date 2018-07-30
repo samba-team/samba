@@ -110,7 +110,7 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
         self.assertIn("Please note that POSIX permissions have NOT been changed, only the stored NT ACL", err)
 
         # Now check they were set correctly
-        (result, out, err) = self.runsubcmd("ntacl",  "get", tempf,
+        (result, out, err) = self.runsubcmd("ntacl", "get", tempf,
                                              "--use-ntvfs", "--as-sddl")
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
@@ -128,7 +128,7 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
         self.assertEquals(err, "", "Shouldn't be any error messages")
 
         # Now check they were set correctly
-        (result, out, err) = self.runsubcmd("ntacl",  "get", tempf,
+        (result, out, err) = self.runsubcmd("ntacl", "get", tempf,
                                              "--use-s3fs", "--as-sddl")
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")

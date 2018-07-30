@@ -156,7 +156,7 @@ class PassWordHashTests(TestCase):
         return sc
 
     # Calculate and validate a Wdigest value
-    def check_digest(self, user, realm, password,  digest):
+    def check_digest(self, user, realm, password, digest):
         expected = calc_digest(user, realm, password)
         actual = binascii.hexlify(bytearray(digest))
         error = "Digest expected[%s], actual[%s], " \

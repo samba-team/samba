@@ -89,7 +89,7 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
         super(UserCmdWdigestTestCase, self).tearDown()
         self.runsubcmd("user", "delete", USER_NAME)
 
-    def _testWDigest(self,  attribute, expected, missing=False):
+    def _testWDigest(self, attribute, expected, missing=False):
 
         (result, out, err) = self.runsubcmd("user",
                                             "getpassword",

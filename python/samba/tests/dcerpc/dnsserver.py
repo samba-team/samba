@@ -1000,7 +1000,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                               packed_part_sd))
         try:
             msdns_dn = ldb.Dn(self.samdb, "CN=MicrosoftDNS,%s" % str(partition_dn))
-            security_desc_dict = [(current_dn.get_linearized(),  expected_sd),
+            security_desc_dict = [(current_dn.get_linearized(), expected_sd),
                                   (msdns_dn.get_linearized(), expected_msdns_sd),
                                   (partition_dn.get_linearized(), expected_part_sd)]
 
@@ -1072,7 +1072,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                               packed_part_sd))
 
         msdns_dn = ldb.Dn(self.samdb, "CN=MicrosoftDNS,%s" % str(partition_dn))
-        security_desc_dict = [(current_dn.get_linearized(),  expected_sd),
+        security_desc_dict = [(current_dn.get_linearized(), expected_sd),
                               (msdns_dn.get_linearized(), expected_msdns_sd),
                               (partition_dn.get_linearized(), expected_part_sd)]
 

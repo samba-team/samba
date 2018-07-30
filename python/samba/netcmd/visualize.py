@@ -320,7 +320,7 @@ class cmd_reps(GraphCommand):
                     if partition is None or part == partition:
                         nc_reps[part]['needed'].append((dsa_dn, rep))
 
-        all_edges = {'needed':  {'to': [], 'from': []},
+        all_edges = {'needed': {'to': [], 'from': []},
                      'current': {'to': [], 'from': []}}
 
         short_partitions, long_partitions = get_partition_maps(local_kcc.samdb)

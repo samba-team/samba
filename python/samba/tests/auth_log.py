@@ -1278,7 +1278,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("Authorization", msg["type"])
         self.assertEquals("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals("schannel",  msg["Authorization"]["authType"])
+        self.assertEquals("schannel", msg["Authorization"]["authType"])
         self.assertEquals("SEAL", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
@@ -1317,6 +1317,6 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("Authorization", msg["type"])
         self.assertEquals("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals("schannel",  msg["Authorization"]["authType"])
+        self.assertEquals("schannel", msg["Authorization"]["authType"])
         self.assertEquals("SEAL", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))

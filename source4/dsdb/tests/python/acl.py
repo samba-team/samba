@@ -668,12 +668,12 @@ class AclSearchTests(AclTests):
         self.ldb_user = self.get_ldb_connection(self.u1, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.u3, self.user_pass)
-        self.full_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
-                          Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
-                          Dn(self.ldb_admin,  "OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
-                          Dn(self.ldb_admin,  "OU=ou4,OU=ou2,OU=ou1," + self.base_dn),
-                          Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
-                          Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
+        self.full_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin, "OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
         self.user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.u1))
         self.group_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.group1))
 
@@ -800,8 +800,8 @@ class AclSearchTests(AclTests):
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 2)
-        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
+        ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou1," + self.base_dn)]
 
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
         self.assertEquals(sorted(res_list), sorted(ok_list))
@@ -838,10 +838,10 @@ class AclSearchTests(AclTests):
         #these users should see ou1, 2, 5 and 6 but not 3 and 4
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
-        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
+        ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
@@ -877,18 +877,18 @@ class AclSearchTests(AclTests):
         mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
 
-        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
+        ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou1," + self.base_dn)]
 
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
-        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
+        ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
 
         #should not see ou3 and ou4, but should see ou5 and ou6
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
@@ -916,8 +916,8 @@ class AclSearchTests(AclTests):
         self.ldb_user.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
         self.ldb_user.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
-        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
-                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
+        ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin, "OU=ou1," + self.base_dn)]
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 2)

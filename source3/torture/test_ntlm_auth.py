@@ -128,7 +128,7 @@ def main():
     """
     (opts, ntlm_auth_path) = parseCommandLine()
 
-    (client_in_r,  client_in_w)  = os.pipe()
+    (client_in_r, client_in_w) = os.pipe()
     (client_out_r, client_out_w) = os.pipe()
 
     client_pid = os.fork()
@@ -168,7 +168,7 @@ def main():
     client_out = client_out_w
     os.close(client_out_r)
 
-    (server_in_r,  server_in_w)  = os.pipe()
+    (server_in_r, server_in_w) = os.pipe()
     (server_out_r, server_out_w) = os.pipe()
 
     server_pid = os.fork()

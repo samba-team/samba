@@ -404,8 +404,8 @@ class ReplayContext(object):
                                      'conversation-%d' %
                                      conversation.conversation_id)
 
-        self.lp.set("private dir",     self.tempdir)
-        self.lp.set("lock dir",        self.tempdir)
+        self.lp.set("private dir", self.tempdir)
+        self.lp.set("lock dir", self.tempdir)
         self.lp.set("state directory", self.tempdir)
         self.lp.set("tls verify peer", "no_check")
 
@@ -1565,7 +1565,7 @@ def create_ou(ldb, instance_id):
     """
     ou = ou_name(ldb, instance_id)
     try:
-        ldb.add({"dn":          ou.split(',', 1)[1],
+        ldb.add({"dn": ou.split(',', 1)[1],
                  "objectclass": "organizationalunit"})
     except LdbError as e:
         (status, _) = e.args
@@ -1573,7 +1573,7 @@ def create_ou(ldb, instance_id):
         if status != 68:
             raise
     try:
-        ldb.add({"dn":          ou,
+        ldb.add({"dn": ou,
                  "objectclass": "organizationalunit"})
     except LdbError as e:
         (status, _) = e.args
@@ -1692,7 +1692,7 @@ def create_user_account(ldb, instance_id, username, userpass):
 
     # grant user write permission to do things like write account SPN
     sdutils = sd_utils.SDUtils(ldb)
-    sdutils.dacl_add_ace(user_dn,  "(A;;WP;;;PS)")
+    sdutils.dacl_add_ace(user_dn, "(A;;WP;;;PS)")
 
     end = time.time()
     duration = end - start
