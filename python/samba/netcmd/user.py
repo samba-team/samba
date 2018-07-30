@@ -1881,7 +1881,7 @@ samba-tool user syncpasswords --terminate \\
                 self.samdb_url = H
                 self.dirsync_filter = dirsync_filter
                 self.dirsync_attrs = dirsync_attrs
-                self.dirsync_controls = ["dirsync:1:0:0","extended_dn:1:0"];
+                self.dirsync_controls = ["dirsync:1:0:0", "extended_dn:1:0"];
                 self.password_attrs = password_attrs
                 self.decrypt_samba_gpg = decrypt_samba_gpg
                 self.sync_command = sync_command
@@ -1905,7 +1905,7 @@ samba-tool user syncpasswords --terminate \\
                 self.current_pid = None
                 self.outf.write("Initialized cache_ldb[%s]\n" % (cache_ldb))
                 msgs = self.cache.parse_ldif(add_ldif)
-                changetype,msg = next(msgs)
+                changetype, msg = next(msgs)
                 ldif = self.cache.write_ldif(msg, ldb.CHANGETYPE_NONE)
                 self.outf.write("%s" % ldif)
             else:
@@ -2103,7 +2103,7 @@ samba-tool user syncpasswords --terminate \\
             assert len(res_controls) > 0
             assert res_controls[0].oid == "1.2.840.113556.1.4.841"
             res_controls[0].critical = True
-            self.dirsync_controls = [str(res_controls[0]),"extended_dn:1:0"]
+            self.dirsync_controls = [str(res_controls[0]), "extended_dn:1:0"]
             log_msg("dirsyncControls: %r\n" % self.dirsync_controls)
 
             modify_ldif =  "dn: %s\n" % (self.cache_dn)
