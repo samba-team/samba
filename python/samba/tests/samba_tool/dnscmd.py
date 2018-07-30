@@ -24,6 +24,7 @@ from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import dnsp
 from samba.tests.samba_tool.base import SambaToolCmdTest
 
+
 class DnsCmdTestCase(SambaToolCmdTest):
     def setUp(self):
         super(DnsCmdTestCase, self).setUp()

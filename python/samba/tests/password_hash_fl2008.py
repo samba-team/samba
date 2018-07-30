@@ -34,6 +34,7 @@ from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 import binascii
 
+
 class PassWordHashFl2008Tests(PassWordHashTests):
 
     def setUp(self):

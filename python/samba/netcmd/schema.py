@@ -28,6 +28,7 @@ from samba.netcmd import (
     Option
 )
 
+
 class cmd_schema_attribute_modify(Command):
     """Modify attribute settings in the schema partition.
 
@@ -128,6 +129,7 @@ class cmd_schema_attribute_modify(Command):
         samdb.set_schema_update_now()
         self.outf.write("modified %s" % attr_dn)
 
+
 class cmd_schema_attribute_show(Command):
     """Show details about an attribute from the schema.
 
@@ -202,6 +204,7 @@ class cmd_schema_attribute_show(Command):
 
         user_ldif = samdb.write_ldif(res[0], ldb.CHANGETYPE_NONE)
         self.outf.write(user_ldif)
+
 
 class cmd_schema_attribute_show_oc(Command):
     """Show what objectclasses MAY or MUST contain an attribute.
@@ -293,6 +296,7 @@ class cmd_schema_objectclass_show(Command):
             user_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
             self.outf.write(user_ldif)
 
+
 class cmd_schema_attribute(SuperCommand):
     """Query and manage attributes in the schema partition."""
     subcommands = {}
@@ -300,10 +304,12 @@ class cmd_schema_attribute(SuperCommand):
     subcommands["show"] = cmd_schema_attribute_show()
     subcommands["show_oc"] = cmd_schema_attribute_show_oc()
 
+
 class cmd_schema_objectclass(SuperCommand):
     """Query and manage objectclasses in the schema partition."""
     subcommands = {}
     subcommands["show"] = cmd_schema_objectclass_show()
+
 
 class cmd_schema(SuperCommand):
     """Schema querying and management."""

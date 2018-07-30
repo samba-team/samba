@@ -48,6 +48,7 @@ ENV_DSAS = {
                    'CN=LOCALVAMPIREDC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba,DC=example,DC=com'],
 }
 
+
 class KCCTests(samba.tests.TestCase):
     def setUp(self):
         super(KCCTests, self).setUp()

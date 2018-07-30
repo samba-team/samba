@@ -23,6 +23,7 @@ import drs_base
 
 from samba.dcerpc import drsuapi
 
+
 class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsCracknamesTestCase, self).setUp()

@@ -841,6 +841,7 @@ class SessionedPosixAclMappingTests(PosixAclMappingTests):
         return auth.user_session(self.samdb, lp_ctx=self.lp, dn=dn,
                                  session_info_flags=flags)
 
+
 class UnixSessionedPosixAclMappingTests(PosixAclMappingTests):
     """
     Run same test suite with session enabled.

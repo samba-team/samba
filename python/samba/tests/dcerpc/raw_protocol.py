@@ -36,6 +36,7 @@ from samba.tests.dcerpc.raw_testcase import RawDCERPCTest
 global_ndr_print = False
 global_hexdump = False
 
+
 class TestDCERPC_BIND(RawDCERPCTest):
 
     def setUp(self):

@@ -95,16 +95,19 @@ if get_random_bytes_fn is None:
     except ImportError as e:
         pass
 
+
 def check_random():
     if get_random_bytes_fn is not None:
         return None
     return "Crypto.Random or M2Crypto.Rand required"
+
 
 def get_random_bytes(num):
     random_reason = check_random()
     if random_reason is not None:
         raise ImportError(random_reason)
     return get_random_bytes_fn(num)
+
 
 def get_crypt_value(alg, utf8pw, rounds=0):
     algs = {
@@ -139,6 +142,8 @@ def get_crypt_value(alg, utf8pw, rounds=0):
 # i.e. options = "rounds=20;other=ignored;" will return 20
 # if the rounds option is not found or the value is not a number, 0 is returned
 # which indicates that the default number of rounds should be used.
+
+
 def get_rounds(options):
     if not options:
         return 0
@@ -203,6 +208,7 @@ virtual_attributes_help  = "The attributes to display (comma separated). "
 virtual_attributes_help += "Possible supported virtual attributes: %s" % ", ".join(sorted(virtual_attributes.keys()))
 if len(disabled_virtual_attributes) != 0:
     virtual_attributes_help += "Unsupported virtual attributes: %s" % ", ".join(sorted(disabled_virtual_attributes.keys()))
+
 
 class cmd_user_create(Command):
     """Create a new user.
@@ -854,6 +860,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
                 raise CommandError("%s: %s" % (command, msg))
             self.outf.write("Changed password OK\n")
 
+
 class GetPasswordCommand(Command):
 
     def __init__(self):
@@ -1312,6 +1319,7 @@ class GetPasswordCommand(Command):
 
         return password_attrs
 
+
 class cmd_user_getpassword(GetPasswordCommand):
     """Get the password fields of a user/computer account.
 
@@ -1463,6 +1471,7 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
         ldif = samdb.write_ldif(obj, ldb.CHANGETYPE_NONE)
         self.outf.write("%s" % ldif)
         self.outf.write("Got password OK\n")
+
 
 class cmd_user_syncpasswords(GetPasswordCommand):
     """Sync the password of user accounts.
@@ -2296,6 +2305,7 @@ samba-tool user syncpasswords --terminate \\
         update_pid(None)
         return
 
+
 class cmd_user_edit(Command):
     """Modify User AD object.
 
@@ -2429,6 +2439,7 @@ LDAP server using the 'nano' editor.
 
             self.outf.write("Modified User '%s' successfully\n" % username)
 
+
 class cmd_user_show(Command):
     """Display a user AD object.
 
@@ -2506,6 +2517,7 @@ Example3 shows how to display a users objectSid and memberOf attributes.
         for msg in res:
             user_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
             self.outf.write(user_ldif)
+
 
 class cmd_user_move(Command):
     """Move a user to an organizational unit/container.
@@ -2585,6 +2597,7 @@ class cmd_user_move(Command):
             raise CommandError('Failed to move user "%s"' % username, e)
         self.outf.write('Moved user "%s" into "%s"\n' %
                         (username, full_new_parent_dn))
+
 
 class cmd_user(SuperCommand):
     """User management."""

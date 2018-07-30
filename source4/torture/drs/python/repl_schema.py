@@ -44,6 +44,7 @@ from samba.dcerpc import drsuapi, misc
 from samba.drs_utils import drs_DsBind
 from samba import dsdb
 
+
 class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
 
     # prefix for all objects created

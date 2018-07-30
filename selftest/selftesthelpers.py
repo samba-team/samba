@@ -23,17 +23,22 @@ import os
 import subprocess
 import sys
 
+
 def srcdir():
     return os.path.normpath(os.getenv("SRCDIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")))
+
 
 def source4dir():
     return os.path.normpath(os.path.join(srcdir(), "source4"))
 
+
 def source3dir():
     return os.path.normpath(os.path.join(srcdir(), "source3"))
 
+
 def bindir():
     return os.path.normpath(os.getenv("BINDIR", "./bin"))
+
 
 def binpath(name):
     return os.path.join(bindir(), name)

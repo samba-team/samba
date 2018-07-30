@@ -43,6 +43,7 @@ from samba.credentials import Credentials
 import random
 import time
 
+
 def drs_get_rodc_partial_attribute_set(samdb, samdb1, exceptions=[]):
     '''get a list of attributes for RODC replication'''
     partial_attribute_set = drsuapi.DsPartialAttributeSet()
@@ -83,6 +84,7 @@ def drs_get_rodc_partial_attribute_set(samdb, samdb1, exceptions=[]):
     partial_attribute_set.attids         = attids
     partial_attribute_set.num_attids = len(attids)
     return partial_attribute_set
+
 
 class DrsRodcTestCase(drs_base.DrsBaseTestCase):
     """Intended as a semi-black box test case for replication involving

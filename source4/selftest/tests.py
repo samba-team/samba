@@ -26,6 +26,7 @@ from selftesthelpers import *
 
 print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
 
+
 def plansmbtorture4testsuite(name, env, options, modname=None):
     return selftesthelpers.plansmbtorture4testsuite(name, env, options,
                                                     target='samba4', modname=modname)
@@ -569,6 +570,8 @@ for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
 if extra_python is not None:
     subunitrun3 = valgrindify(extra_python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
+
+
 def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[], py3_compatible=False):
     environ = dict(environ)
     py_path = list(extra_path)

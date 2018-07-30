@@ -56,6 +56,7 @@ import os
 
 from ldif import LDIFWriter
 
+
 class globals:
     def __init__(self):
         self.global_objs = {}
@@ -71,6 +72,7 @@ class globals:
             self.ldif.unparse(dn, obj)
             continue
         self.global_objs = {}
+
 
 def attid_equal(a1, a2):
     return (a1 & 0xffffffff) == (a2 & 0xffffffff)

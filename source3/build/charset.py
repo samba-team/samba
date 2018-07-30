@@ -2,6 +2,7 @@
 
 from Configure import conf
 
+
 @conf
 def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
     '''Check for default charsets for Samba3

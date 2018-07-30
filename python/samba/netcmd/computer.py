@@ -435,6 +435,7 @@ class cmd_computer_list(Command):
         for msg in res:
             self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
+
 class cmd_computer_show(Command):
     """Display a computer AD object.
 
@@ -520,6 +521,7 @@ attribute.
         for msg in res:
             computer_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
             self.outf.write(computer_ldif)
+
 
 class cmd_computer_move(Command):
     """Move a computer to an organizational unit/container."""

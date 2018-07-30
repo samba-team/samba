@@ -27,6 +27,7 @@ from samba.credentials import DONT_USE_KERBEROS
 from samba import NTSTATUSError, ntstatus
 import ctypes
 
+
 class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):

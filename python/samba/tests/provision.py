@@ -30,6 +30,7 @@ from samba.provision import (
 import samba.tests
 from samba.tests import env_loadparm, TestCase
 
+
 def create_dummy_secretsdb(path, lp=None):
     """Create a dummy secrets database for use in tests.
 
@@ -72,6 +73,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
             os.unlink(path)
             if os.path.exists(secrets_tdb_path):
                 os.unlink(secrets_tdb_path)
+
 
 class FindNssTests(TestCase):
     """Test findnss() function."""

@@ -24,6 +24,7 @@ from samba.netcmd import (
     Command,
 )
 
+
 class cmd_time(Command):
     """Retrieve the time on a server.
 

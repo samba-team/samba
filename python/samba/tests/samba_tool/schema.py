@@ -19,6 +19,7 @@ import os
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 
+
 class SchemaCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool dsacl subcommands"""
     samdb = None

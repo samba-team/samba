@@ -27,6 +27,7 @@ import samba, ldb
 from samba.dcerpc.drsuapi import DRSUAPI_ATTID_name
 import re
 
+
 class drsException(Exception):
     """Base element for drs errors"""
 

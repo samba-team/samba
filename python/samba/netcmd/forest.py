@@ -27,6 +27,7 @@ from samba.netcmd import (
     Option
 )
 
+
 class cmd_forest_show(Command):
     """Display forest settings.
 
@@ -73,6 +74,7 @@ class cmd_forest_show(Command):
                 self.outf.write("%s: %s\n" % (attr, res_object[attr][0]))
             except KeyError:
                 self.outf.write("%s: <NO VALUE>\n" % attr)
+
 
 class cmd_forest_set(Command):
     """Modify forest settings.
@@ -129,6 +131,7 @@ class cmd_forest_show_directory_service(cmd_forest_show):
     objectdn = "CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration"
     attributes = ['dsheuristics']
 
+
 class cmd_forest_set_directory_service_dsheuristics(cmd_forest_set):
     """Set the value of dsheuristics on the Directory Service.
 
@@ -148,12 +151,14 @@ class cmd_forest_set_directory_service_dsheuristics(cmd_forest_set):
     objectdn = "CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration"
     attribute = 'dsheuristics'
 
+
 class cmd_forest_directory_service(SuperCommand):
     """Forest configuration partition management."""
 
     subcommands = {}
     subcommands["show"] = cmd_forest_show_directory_service()
     subcommands["dsheuristics"] = cmd_forest_set_directory_service_dsheuristics()
+
 
 class cmd_forest(SuperCommand):
     """Forest management."""

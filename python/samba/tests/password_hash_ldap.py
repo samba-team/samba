@@ -49,8 +49,10 @@ from samba.credentials import Credentials
 import binascii
 import os
 
+
 def attid_equal(a1, a2):
     return (a1 & 0xffffffff) == (a2 & 0xffffffff)
+
 
 class PassWordHashLDAPTests(PassWordHashTests):
 

@@ -66,6 +66,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # Tests start here
 #
 
+
 class AclTests(samba.tests.TestCase):
 
     def setUp(self):
@@ -117,6 +118,8 @@ class AclTests(samba.tests.TestCase):
         del self.ldb_admin
 
 # tests on ldap add operations
+
+
 class AclAddTests(AclTests):
 
     def setUp(self):
@@ -270,6 +273,8 @@ class AclAddTests(AclTests):
             self.fail()
 
 # tests on ldap modify operations
+
+
 class AclModifyTests(AclTests):
 
     def setUp(self):
@@ -647,6 +652,8 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
             self.fail()
 
 # enable these when we have search implemented
+
+
 class AclSearchTests(AclTests):
 
     def setUp(self):
@@ -1080,6 +1087,8 @@ class AclSearchTests(AclTests):
 
 
 # tests on ldap delete operations
+
+
 class AclDeleteTests(AclTests):
 
     def setUp(self):
@@ -1150,6 +1159,8 @@ class AclDeleteTests(AclTests):
             self.fail()
 
 # tests on ldap rename operations
+
+
 class AclRenameTests(AclTests):
 
     def setUp(self):
@@ -1698,6 +1709,7 @@ userPassword: thatsAcomplPASS1
             (num, _) = e34.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
+
 class AclExtendedTests(AclTests):
 
     def setUp(self):
@@ -1761,6 +1773,7 @@ class AclExtendedTests(AclTests):
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertEqual(len(res), 1)
         self.assertTrue("nTSecurityDescriptor" in res[0].keys())
+
 
 class AclUndeleteTests(AclTests):
 
@@ -1898,6 +1911,7 @@ class AclUndeleteTests(AclTests):
         except LdbError as e38:
             (num, _) = e38.args
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+
 
 class AclSPNTests(AclTests):
 

@@ -50,6 +50,7 @@ if (len(args) > 1):
 else:
     objectclass = None
 
+
 def uniq_list(alist):
     """return a unique list"""
     set = {}
@@ -74,6 +75,7 @@ res = db.search(base="", expression="",
 rootDse = res[0]
 
 schema_base = rootDse["schemaNamingContext"][0]
+
 
 def possible_inferiors_search(db, oc):
     """return the possible inferiors via a search for the possibleInferiors attribute"""
@@ -112,6 +114,7 @@ def supclasses(classinfo, oc):
     classinfo[oc]["SUPCLASSES"] = list
     return list
 
+
 def auxclasses(classinfo, oclist):
     list = []
     if oclist == []:
@@ -130,11 +133,13 @@ def auxclasses(classinfo, oclist):
             list.extend(list2)
     return list
 
+
 def subclasses(classinfo, oclist):
     list = []
     for oc in oclist:
         list.extend(classinfo[oc]["SUBCLASSES"])
     return list
+
 
 def posssuperiors(classinfo, oclist):
     list = []
@@ -155,6 +160,7 @@ def posssuperiors(classinfo, oclist):
             classinfo[oc]["POSSSUPERIORS"] = list2
             list.extend(list2)
     return list
+
 
 def pull_classinfo(db):
     """At startup we build a classinfo[] dictionary that holds all the information needed to construct the possible inferiors"""
@@ -202,11 +208,13 @@ def pull_classinfo(db):
 
     return classinfo
 
+
 def is_in_list(list, c):
     for a in list:
         if c == a:
             return True
     return False
+
 
 def possible_inferiors_constructed(db, classinfo, c):
     list = []
@@ -220,6 +228,7 @@ def possible_inferiors_constructed(db, classinfo, c):
     list = uniq_list(list)
     list.sort()
     return list
+
 
 def test_class(db, classinfo, oc):
     """test to see if one objectclass returns the correct possibleInferiors"""
@@ -237,6 +246,7 @@ def test_class(db, classinfo, oc):
         sys.exit(1)
     else:
         print("success: objectClass.%s" % oc)
+
 
 def get_object_classes(db):
     """return a list of all object classes"""

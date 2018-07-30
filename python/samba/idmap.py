@@ -23,6 +23,7 @@ __docformat__ = "restructuredText"
 import ldb
 import samba
 
+
 class IDmapDB(samba.Ldb):
     """The IDmap database."""
 

@@ -378,10 +378,12 @@ tasks = {
     'fail': [("fail", 'echo failing && /bin/false', "text/plain")]
 }
 
+
 def do_print(msg):
     print("%s" % msg)
     sys.stdout.flush()
     sys.stderr.flush()
+
 
 def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if show is None:
@@ -628,6 +630,7 @@ def daemonize(logfile):
     os.dup2(0, 1)
     os.dup2(0, 2)
 
+
 def write_pidfile(fname):
     '''write a pid file, cleanup on exit'''
     f = open(fname, mode='w')
@@ -665,6 +668,7 @@ def rebase_tree(rebase_url, rebase_branch="master"):
     run_cmd("git --no-pager diff --stat HEAD %s/%s" %
             (rebase_remote, rebase_branch),
             show=True, dir=test_master)
+
 
 def push_to(push_url, push_branch="master"):
     push_remote = "pushto"
@@ -725,6 +729,7 @@ parser.add_option("", "--attach-logs", help="Attach logs to mails sent on succes
 parser.add_option("", "--restrict-tests", help="run as make test with this TESTS= regex",
                   default='')
 
+
 def send_email(subject, text, log_tar):
     if options.email is None:
         do_print("not sending email because the recipient is not set")
@@ -750,6 +755,7 @@ def send_email(subject, text, log_tar):
     s.sendmail(options.email_from, [options.email], content)
     s.set_debuglevel(1)
     s.quit()
+
 
 def email_failure(status, failed_task, failed_stage, failed_tag, errstr,
                   elapsed_time, log_base=None, add_log_tail=True):
@@ -815,6 +821,7 @@ The last 50 lines of log messages:
     send_email('autobuild[%s] failure on %s for task %s during %s'
                % (options.branch, platform.node(), failed_task, failed_stage),
                text, logs)
+
 
 def email_success(elapsed_time, log_base=None):
     '''send an email to options.email about a successful build'''

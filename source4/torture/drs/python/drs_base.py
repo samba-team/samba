@@ -41,6 +41,7 @@ from ldb import (
 )
 from samba.compat import cmp_fn
 
+
 class DrsBaseTestCase(SambaToolCmdTest):
     """Base class implementation for all DRS python tests.
        It is intended to provide common initialization and

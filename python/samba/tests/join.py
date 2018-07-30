@@ -25,12 +25,14 @@ from samba.join import DCJoinContext
 from samba.dcerpc import drsuapi, misc, dns
 from samba.credentials import Credentials
 
+
 def get_logger(name="subunit"):
     """Get a logger object."""
     import logging
     logger = logging.getLogger(name)
     logger.addHandler(logging.StreamHandler(sys.stderr))
     return logger
+
 
 class JoinTestCase(DNSTKeyTest):
     def setUp(self):

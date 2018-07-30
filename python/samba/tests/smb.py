@@ -28,6 +28,7 @@ binary_contents = binary_contents + "Hello cruel world of python3".encode('utf8'
 test_dir = os.path.join(addom, 'testing_%d' % random.randint(0, 0xFFFF))
 test_file = os.path.join(test_dir, 'testing').replace('/', '\\')
 
+
 class SMBTests(samba.tests.TestCase):
     def setUp(self):
         super(SMBTests, self).setUp()

@@ -45,6 +45,8 @@ UPN       = "PWHash@User.Principle"
 # Get named package from the passed supplemental credentials
 #
 # returns the package and it's position within the supplemental credentials
+
+
 def get_package(sc, name):
     if sc is None:
         return None
@@ -59,6 +61,8 @@ def get_package(sc, name):
 
 # Calculate the MD5 password digest from the supplied user, realm and password
 #
+
+
 def calc_digest(user, realm, password):
 
     data = "%s:%s:%s" % (user, realm, password)

@@ -18,6 +18,7 @@ from samba.tests.password_test import PasswordTestCase
 
 import time
 
+
 class BasePasswordTestCase(PasswordTestCase):
     def _open_samr_user(self, res):
         self.assertTrue("objectSid" in res[0])

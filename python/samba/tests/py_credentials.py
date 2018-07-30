@@ -48,6 +48,7 @@ Integration tests for pycredentials
 MACHINE_NAME = "PCTM"
 USER_NAME    = "PCTU"
 
+
 class PyCredentialsTests(TestCase):
 
     def setUp(self):
@@ -357,6 +358,8 @@ class PyCredentialsTests(TestCase):
 
 #
 # Build the logon data required by NetrLogonSamLogonWithFlags
+
+
 def samlogon_logon_info(domain_name, computer_name, creds,
                         flags=CLI_CRED_NTLMv2_AUTH):
 
@@ -385,6 +388,8 @@ def samlogon_logon_info(domain_name, computer_name, creds,
 
 #
 # Build the samlogon target info.
+
+
 def samlogon_target(domain_name, computer_name):
     target_info = ntlmssp.AV_PAIR_LIST()
     target_info.count = 3

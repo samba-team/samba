@@ -44,6 +44,7 @@ new_pass = os.environ["NEW_PASS"]
 # Tests start here
 #
 
+
 class Libnet_SetPwdTest(samba.tests.TestCase):
 
     ########################################################################################

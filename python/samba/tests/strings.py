@@ -29,6 +29,7 @@ from unicodenames import *
 import samba.tests
 from samba import strcasecmp_m, strstr_m
 
+
 def signum(a):
     if a < 0:
         return -1
@@ -62,6 +63,7 @@ class strcasecmp_m_Tests(samba.tests.TestCase):
             self.assertEquals(signum(strcasecmp_m(a.encode('utf-8'),
                                                   b.encode('utf-8'))),
                               expect)
+
 
 class strstr_m_Tests(samba.tests.TestCase):
     """strstr_m tests in simple ASCII and unicode strings"""

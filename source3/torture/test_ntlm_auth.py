@@ -26,11 +26,14 @@ import os
 import sys
 from optparse import OptionParser
 
+
 class ReadChildError(Exception):
     pass
 
+
 class WriteChildError(Exception):
     pass
+
 
 def readLine(pipe):
     """readLine(pipe) -> str
@@ -48,6 +51,7 @@ def readLine(pipe):
 
     return buf[:newline]
 
+
 def writeLine(pipe, buf):
     """writeLine(pipe, buf) -> nul
     Write a line to the child's pipe.
@@ -57,6 +61,7 @@ def writeLine(pipe, buf):
     if written != len(buf):
         raise WriteChildError()
     os.write(pipe, "\n")
+
 
 def parseCommandLine():
     """parseCommandLine() -> (opts, ntlm_auth_path)

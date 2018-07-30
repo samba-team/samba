@@ -18,6 +18,7 @@
 import os.path
 from samba.gpclass import gp_ext_setter, gp_inf_ext
 
+
 class inf_to_kdc_tdb(gp_ext_setter):
     def mins_to_hours(self):
         return '%d' % (int(self.val) / 60)
@@ -46,6 +47,7 @@ class inf_to_kdc_tdb(gp_ext_setter):
 
     def __str__(self):
         return 'Kerberos Policy'
+
 
 class inf_to_ldb(gp_ext_setter):
     '''This class takes the .inf file parameter (essentially a GPO file mapped
@@ -104,6 +106,7 @@ class inf_to_ldb(gp_ext_setter):
 
     def __str__(self):
         return 'System Access'
+
 
 class gp_sec_ext(gp_inf_ext):
     '''This class does the following two things:

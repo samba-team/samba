@@ -25,6 +25,7 @@ from samba import (
         dsdb
         )
 
+
 class UserCheckPwdTestCase(SambaToolCmdTest):
     """Tests for samba-tool user subcommands"""
     users = []

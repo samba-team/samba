@@ -29,6 +29,7 @@ from ldb import SCOPE_BASE
 import samba.tests
 from samba.dcerpc import security
 
+
 def dummymessage(a=None, b=None):
     pass
 

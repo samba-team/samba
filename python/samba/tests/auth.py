@@ -24,6 +24,7 @@ the functionality, that's already done in other tests.
 from samba import auth
 import samba.tests
 
+
 class AuthSystemSessionTests(samba.tests.TestCase):
 
     def setUp(self):
@@ -56,6 +57,7 @@ class AuthSystemSessionTests(samba.tests.TestCase):
     def test_system_session_security_token(self):
         self.assertTrue(self.system_session.security_token.is_system())
         self.assertFalse(self.system_session.security_token.is_anonymous())
+
 
 class AuthAdminSessionTests(samba.tests.TestCase):
 

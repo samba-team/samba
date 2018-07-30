@@ -46,6 +46,7 @@ from samba.ndr import ndr_unpack, ndr_pack
 from samba.compat import cmp_to_key_fn
 from samba.compat import cmp_fn
 
+
 def _linked_attribute_compare(la1, la2):
     """See CompareLinks() in MS-DRSR section 4.1.10.5.17"""
     la1, la1_target = la1
@@ -597,6 +598,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(ctr.source_dsa_guid, misc.GUID(fsmo_owner["ntds_guid"]))
         self.assertEqual(ctr.source_dsa_invocation_id, misc.GUID(fsmo_owner["invocation_id"]))
 
+
 class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaPrefixMapTestCase, self).setUp()
@@ -944,6 +946,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         pfm.ctr.mappings = pfm.ctr.mappings + [schi]
         pfm.ctr.num_mappings += 1
         return pfm.ctr
+
 
 class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):

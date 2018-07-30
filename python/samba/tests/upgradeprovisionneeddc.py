@@ -42,6 +42,7 @@ def dummymessage(a=None, b=None):
 
 smb_conf_path = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "ad_dc_ntvfs", "etc/smb.conf")
 
+
 class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
     """Some simple tests for individual functions in the provisioning code.
     """

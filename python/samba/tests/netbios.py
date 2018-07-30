@@ -18,6 +18,7 @@
 import samba, os, random, sys
 from samba import netbios
 
+
 class NetBiosTests(samba.tests.TestCase):
     def setUp(self):
         super(NetBiosTests, self).setUp()

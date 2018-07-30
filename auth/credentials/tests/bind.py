@@ -46,6 +46,7 @@ creds_user2 = copy.deepcopy(creds)
 creds_user3 = copy.deepcopy(creds)
 creds_user4 = copy.deepcopy(creds)
 
+
 class BindTests(samba.tests.TestCase):
 
     info_dc = None

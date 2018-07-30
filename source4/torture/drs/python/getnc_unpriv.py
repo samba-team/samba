@@ -45,6 +45,7 @@ import random
 from samba.dcerpc import drsuapi, security
 from samba.credentials import DONT_USE_KERBEROS
 
+
 class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
     """Confirm the behaviour of DsGetNCChanges for unprivileged users"""
 

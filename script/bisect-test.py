@@ -41,6 +41,7 @@ def run_cmd(cmd, dir=".", show=True, output=False, checkfail=True):
     else:
         return call(cmd, shell=True, cwd=dir)
 
+
 def find_git_root():
     '''get to the top of the git repo'''
     p = os.getcwd()
@@ -71,6 +72,7 @@ f.write("%s || exit %u\n" % (opts.build_command, build_err))
 f.write("%s || exit 1\n" % opts.test_command)
 f.write("exit 0\n")
 f.close()
+
 
 def cleanup():
     run_cmd("git bisect reset", dir=gitroot)

@@ -23,6 +23,7 @@ from samba.provision.kerberos_implementation import (
 from samba import is_heimdal_built
 import os
 
+
 def create_kdc_conf(kdcconf, realm, domain, logdir):
 
     if is_heimdal_built():

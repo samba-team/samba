@@ -116,6 +116,7 @@ class cmd_dosinfo_get(Command):
         if dosinfo:
             self.outf.write(ndr_print(dosinfo))
 
+
 class cmd_ntacl_get(Command):
     """Get ACLs of a file."""
     synopsis = "%prog <file> [options]"
@@ -237,6 +238,7 @@ class cmd_ntacl_sysvolreset(Command):
                                LA_uid, BA_gid, domain_sid,
                                lp.get("realm").lower(), samdb.domain_dn(),
                                lp, use_ntvfs=use_ntvfs)
+
 
 class cmd_ntacl_sysvolcheck(Command):
     """Check sysvol ACLs match defaults (including correct ACLs on GPOs)."""

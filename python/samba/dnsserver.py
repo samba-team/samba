@@ -23,6 +23,7 @@ from samba.dcerpc import dnsserver, dnsp
 # to overcome the bug in pidl generated python bindings.
 #
 
+
 class ARecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=0):

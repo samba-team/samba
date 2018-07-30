@@ -24,6 +24,7 @@ from samba import (
         dsdb
         )
 
+
 class GroupCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool group subcommands"""
     groups = []

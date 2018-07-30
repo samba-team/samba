@@ -22,6 +22,8 @@ from ldb import SCOPE_BASE, SCOPE_SUBTREE, SCOPE_ONELEVEL
 #       This should be fixed to work inline with Windows.
 #       The literal strings are in the case Windows uses.
 # Windows appear to preserve casing of the RDN and uppercase the other keys.
+
+
 class MatchRulesTests(samba.tests.TestCase):
     def setUp(self):
         super(MatchRulesTests, self).setUp()
@@ -942,6 +944,7 @@ class MatchRulesTests(samba.tests.TestCase):
                                scope=SCOPE_SUBTREE,
                                expression="memberOf:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
         self.assertEqual(len(res1), 0)
+
 
 class MatchRuleConditionTests(samba.tests.TestCase):
     def setUp(self):

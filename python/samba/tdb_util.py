@@ -22,6 +22,7 @@ import samba
 import subprocess
 import os
 
+
 def tdb_copy(file1, file2, readonly=False):
     """Copy tdb file using tdbbackup utility and rename it
     """

@@ -48,6 +48,7 @@ def _samdb_fetch_pfm(samdb):
 
     return (pfm.ctr, pfm_schi)
 
+
 def _samdb_fetch_schi(samdb):
     """Fetch schemaInfo stored in SamDB using LDB connection"""
     res = samdb.search(base=samdb.get_schema_basedn(), expression="", scope=SCOPE_BASE, attrs=["*"])
@@ -59,6 +60,7 @@ def _samdb_fetch_schi(samdb):
         pfm_schi = drsblobs.schemaInfoBlob()
         pfm_schi.marker = 0xFF;
     return pfm_schi
+
 
 def _drs_fetch_pfm(server, samdb, creds, lp):
     """Fetch prefixMap using DRS interface"""
@@ -107,6 +109,7 @@ def _drs_fetch_pfm(server, samdb, creds, lp):
     pfm.num_mappings -= 1
     return (pfm, pfm_schi)
 
+
 def _pfm_verify(drs_pfm, ldb_pfm):
     errors = []
     if drs_pfm.num_mappings != ldb_pfm.num_mappings:
@@ -126,6 +129,7 @@ def _pfm_verify(drs_pfm, ldb_pfm):
         if len(it_err):
             errors.append("[%2d] differences in (%s)" % (i, it_err))
     return errors
+
 
 def _pfm_schi_verify(drs_schi, ldb_schi):
     errors = []

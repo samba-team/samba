@@ -26,6 +26,7 @@ import threading
 import sys
 import os
 
+
 class LibsmbTestCase(samba.tests.TestCase):
 
     class OpenClose(threading.Thread):

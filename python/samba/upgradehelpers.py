@@ -212,6 +212,7 @@ def get_paths(param, targetdir=None, smbconf=None):
     paths = provision_paths_from_lp(lp, lp.get("realm"))
     return paths
 
+
 def update_policyids(names, samdb):
     """Update policy ids that could have changed after sam update
 
@@ -454,6 +455,7 @@ def updateOEMInfo(samdb, rootdn):
                                                      "oEMInformation")
         samdb.modify(delta)
 
+
 def update_gpo(paths, samdb, names, lp, message):
     """Create missing GPO file object if needed
     """
@@ -466,6 +468,7 @@ def update_gpo(paths, samdb, names, lp, message):
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid_dc)
     if not os.path.isdir(dir):
         create_gpo_struct(dir)
+
 
 def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
     """For a given hash associating dn and a number, this function will
@@ -499,6 +502,8 @@ def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
                     samdb.set_attribute_replmetadata_version(str(e.dn),
                                                              "unicodePwd",
                                                              version, True)
+
+
 def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
     """Update the provision container db: sam.ldb
     This function is aimed for alpha9 and newer;
@@ -564,6 +569,7 @@ def construct_existor_expr(attrs):
         expr = "%s)" %expr
     return expr
 
+
 def update_machine_account_password(samdb, secrets_ldb, names):
     """Update (change) the password of the current DC both in the SAM db and in
        secret one
@@ -606,6 +612,7 @@ def update_machine_account_password(samdb, secrets_ldb, names):
         raise ProvisioningError("Unable to find a Secure Channel"
                                 "of type SEC_CHAN_BDC")
 
+
 def update_dns_account_password(samdb, secrets_ldb, names):
     """Update (change) the password of the dns both in the SAM db and in
        secret one
@@ -645,6 +652,7 @@ def update_dns_account_password(samdb, secrets_ldb, names):
 
         secrets_ldb.modify(msg)
 
+
 def update_krbtgt_account_password(samdb):
     """Update (change) the password of the krbtgt account
 
@@ -662,6 +670,7 @@ def update_krbtgt_account_password(samdb):
                                                   "clearTextPassword")
 
     samdb.modify(msg)
+
 
 def search_constructed_attrs_stored(samdb, rootdn, attrs):
     """Search a given sam DB for calculated attributes that are
@@ -696,6 +705,7 @@ def search_constructed_attrs_stored(samdb, rootdn, attrs):
                     hashAtt[att][str(ent.dn).lower()] = str(ent[att])
 
     return hashAtt
+
 
 def findprovisionrange(samdb, basedn):
     """ Find ranges of usn grouped by invocation id and then by timestamp
@@ -756,6 +766,7 @@ def findprovisionrange(samdb, basedn):
 
     return (hash_id, nb_obj)
 
+
 def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
     """ print the differents ranges passed as parameter
 
@@ -812,6 +823,7 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
         print("You can load this file like this: ldbadd -H %s %s\n" %(str(samdb_path), file))
         ldif = "dn: @PROVISION\nprovisionnerID: %s\n%s" % (invocationid, ldif)
         open(file, 'w').write(ldif)
+
 
 def int64range2str(value):
     """Display the int64 range stored in value as xxx-yyy

@@ -21,6 +21,7 @@
 import samba.tests
 from samba.samdb import SamDB
 
+
 class PasswordCommon:
 
     @staticmethod

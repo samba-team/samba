@@ -28,6 +28,7 @@ from samba.credentials import Credentials
 from samba.tests import TestCase
 from samba.ndr import ndr_pack, ndr_unpack, ndr_unpack_out
 
+
 class RawDCERPCTest(TestCase):
     """A raw DCE/RPC Test case."""
 

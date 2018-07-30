@@ -675,6 +675,7 @@ def transpose_dict_matrix(m):
             m2.setdefault(k2, {})[k1] = dist
     return m2
 
+
 def full_matrix(rows,
                 utf8=False,
                 colour=None,

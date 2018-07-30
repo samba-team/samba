@@ -60,6 +60,7 @@ random.seed(1)
 class PerfTestException(Exception):
     pass
 
+
 class UserTests(samba.tests.TestCase):
 
     def setUp(self):

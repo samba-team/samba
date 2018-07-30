@@ -87,6 +87,7 @@ multivalued_attrs = set(["auxiliaryclass", "maycontain", "mustcontain", "posssup
                          "systemauxiliaryclass", "systemmaycontain", "systemmustcontain",
                          "systemposssuperiors"])
 
+
 def __read_folded_line(f, buffer):
     """ reads a line from an LDIF file, unfolding it"""
     line = buffer
@@ -174,6 +175,7 @@ def fix_dn(dn):
     else:
         return dn
 
+
 def __convert_bitfield(key, value):
     """Evaluate the OR expression in 'value'"""
     assert(isinstance(value, string_types))
@@ -192,6 +194,7 @@ def __convert_bitfield(key, value):
             o = o | (1 << (31 - bitpos))
 
     return str(o)
+
 
 def __write_ldif_one(entry):
     """Write out entry as LDIF"""
@@ -212,6 +215,7 @@ def __write_ldif_one(entry):
 
 
     return "\n".join(out)
+
 
 def __transform_entry(entry, objectClass):
     """Perform transformations required to convert the LDIF-like schema
@@ -285,6 +289,7 @@ def __transform_entry(entry, objectClass):
     entry = header + [x for x in entry if x[0].lower() not in set(['dn', 'changetype', 'objectcategory'])]
 
     return entry
+
 
 def __parse_schema_file(filename, objectClass):
     """Load and transform a schema file."""

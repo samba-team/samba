@@ -26,10 +26,12 @@ import os
 import markdown
 import xml.etree.ElementTree as ET
 
+
 def innertext(tag):
     return (tag.text or '') + \
             ''.join(innertext(e) for e in tag) + \
             (tag.tail or '')
+
 
 def read_ms_markdown(in_file, out_folder):
     """Read Github documentation-derived schema files."""

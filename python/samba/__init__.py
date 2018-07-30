@@ -305,6 +305,8 @@ def setup_file(template, fname, subst_vars=None):
         f.close()
 
 MAX_NETBIOS_NAME_LEN = 15
+
+
 def is_valid_netbios_char(c):
     return (c.isalnum() or c in " !#$%&'()-.@^_{}~")
 
@@ -364,8 +366,10 @@ def dn_from_dns_name(dnsdomain):
     """return a DN from a DNS name domain/forest root"""
     return "DC=" + ",DC=".join(dnsdomain.split("."))
 
+
 def current_unix_time():
     return int(time.time())
+
 
 def string_to_byte_array(string):
     blob = [0] * len(string)
@@ -374,6 +378,7 @@ def string_to_byte_array(string):
         blob[i] = ord(string[i])
 
     return blob
+
 
 def arcfour_encrypt(key, data):
     from samba.crypto import arcfour_crypt_blob

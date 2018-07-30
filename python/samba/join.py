@@ -47,6 +47,7 @@ import re
 import os
 import tempfile
 
+
 class DCJoinException(Exception):
 
     def __init__(self, msg):
@@ -1500,6 +1501,7 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
     ctx.do_join()
     logger.info("Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid))
 
+
 def join_clone(logger=None, server=None, creds=None, lp=None,
                targetdir=None, domain=None, include_secrets=False,
                dns_backend="NONE"):
@@ -1517,6 +1519,7 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
     ctx.do_join()
     logger.info("Cloned domain %s (SID %s)" % (ctx.domain_name, ctx.domsid))
     return ctx
+
 
 def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
                    netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,

@@ -11,6 +11,7 @@ if len(sys.argv) != 3:
 wbinfo = sys.argv[1]
 netcmd = sys.argv[2]
 
+
 def flush_cache(sids=[], uids=[], gids=[]):
     for sid in sids:
         os.system(netcmd + (" cache del IDMAP/SID2XID/%s" % (sid)))
@@ -18,6 +19,7 @@ def flush_cache(sids=[], uids=[], gids=[]):
         os.system(netcmd + (" cache del IDMAP/UID2SID/%s" % (uid)))
     for gids in gids:
         os.system(netcmd + (" cache del IDMAP/GID2SID/%s" % (gid)))
+
 
 def fill_cache(inids, idtype='gid'):
     for inid in inids:
@@ -70,6 +72,8 @@ for line in sids2xids.split('\n'):
 
 # Check the list produced by the sids-to-xids call with the
 # singular variant (sid-to-xid) for each sid in turn.
+
+
 def check_singular(sids, ids, idtype='gid'):
     i = 0
     for sid in sids:
@@ -86,6 +90,8 @@ def check_singular(sids, ids, idtype='gid'):
 
 # Check the list produced by the sids-to-xids call with the
 # multiple variant (sid-to-xid) for each sid in turn.
+
+
 def check_multiple(sids, idtypes):
     sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' + ','.join(sids)],
                                  stdout=subprocess.PIPE).communicate()[0].strip()

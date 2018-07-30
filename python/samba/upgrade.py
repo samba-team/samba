@@ -129,6 +129,7 @@ def add_posix_attrs(logger, samdb, sid, name, nisdomain, xid_type, home=None,
             'Could not add posix attrs for AD entry for sid=%s, (%s)',
             str(sid), str(e))
 
+
 def add_ad_posix_idmap_entry(samdb, sid, xid, xid_type, logger):
     """Create idmap entry
 
@@ -398,6 +399,7 @@ def import_registry(samba4_registry, samba3_regdb):
             ensure_key_exists(subkey)
         for (value_name, (value_type, value_data)) in samba3_regdb.values(key).items():
             key_handle.set_value(value_name, value_type, value_data)
+
 
 def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
     """Get posix attributes from a samba3 ldap backend

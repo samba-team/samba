@@ -18,6 +18,7 @@
 import os, ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 
+
 class JoinCmdTestCase(SambaToolCmdTest):
     """Test for samba-tool fsmo show subcommand"""
 

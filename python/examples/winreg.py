@@ -32,6 +32,7 @@ binding = args[0]
 print "Connecting to " + binding
 conn = winreg.winreg(binding, sambaopts.get_loadparm())
 
+
 def list_values(key):
     (num_values, max_valnamelen, max_valbufsize) = conn.QueryInfoKey(key, winreg.String())[4:8]
     for i in range(num_values):
@@ -52,6 +53,7 @@ def list_values(key):
 #        if (v.type == reg.REG_QWORD) {
 #            printf("\t\t0x%llx (%lld)\n", v.value, v.value)
 #        }
+
 
 def list_path(key, path):
     count = 0

@@ -554,6 +554,7 @@ class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
         self._check_metadata(obj_restore_rmd["replPropertyMetaData"],
                              self._expected_user_restore_metadata())
 
+
 class RestoreUserPwdObjectTestCase(RestoredObjectAttributesBaseTestCase):
     """Test cases for delete/reanimate user objects with password"""
 
@@ -761,6 +762,7 @@ class RestoreUserPwdObjectTestCase(RestoredObjectAttributesBaseTestCase):
         self.assertAttributesExists(self._expected_userpw_restore_attributes(username, guid, sid, usr_dn, "Person"), obj_restore)
         self._check_metadata(obj_restore_rmd["replPropertyMetaData"],
                              self._expected_userpw_restore_metadata())
+
 
 class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
     """Test different scenarios for delete/reanimate group objects"""

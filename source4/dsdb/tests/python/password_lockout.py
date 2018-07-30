@@ -64,6 +64,7 @@ import password_lockout_base
 # Tests start here
 #
 
+
 class PasswordTests(password_lockout_base.BasePasswordTestCase):
     def setUp(self):
         self.host = host

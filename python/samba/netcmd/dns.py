@@ -41,6 +41,7 @@ from samba.dcerpc import dnsp, dnsserver
 
 from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord
 
+
 def dns_connect(server, lp, creds):
     if server.lower() == 'localhost':
         server = '127.0.0.1'

@@ -32,12 +32,14 @@ except ImportError:
     def import_file(name, location):
         return imp.load_source(name, location)
 
+
 def get_gp_ext_from_module(name, mod):
     if mod:
         for k, v in vars(mod).items():
             if k == name and issubclass(v, gp_ext):
                 return v
     return None
+
 
 def get_gp_client_side_extensions(logger, smb_conf):
     user_exts = []

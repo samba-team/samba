@@ -26,6 +26,7 @@ import talloc
 
 talloc.enable_null_tracking()
 
+
 class RpcTests(object):
     '''test type behaviour of pidl generated python RPC code'''
 

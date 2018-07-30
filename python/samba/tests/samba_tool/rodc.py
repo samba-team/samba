@@ -24,6 +24,7 @@ from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.credentials import Credentials
 from samba.auth import system_session
 
+
 class RodcCmdTestCase(SambaToolCmdTest):
     def setUp(self):
         super(RodcCmdTestCase, self).setUp()

@@ -709,6 +709,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
     return names
 
+
 def make_smbconf(smbconf, hostname, domain, realm, targetdir,
                  serverrole=None, eadb=False, use_ntvfs=False, lp=None,
                  global_param=None):
@@ -1060,6 +1061,7 @@ def setup_privileges(path, session_info, lp):
     privilege_ldb = Ldb(path, session_info=session_info, lp=lp)
     privilege_ldb.erase()
     privilege_ldb.load_ldif_file_add(setup_path("provision_privilege.ldif"))
+
 
 def setup_encrypted_secrets_key(path):
     """Setup the encrypted secrets key file.
@@ -1582,6 +1584,7 @@ SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
 SYSVOL_SERVICE = "sysvol"
 
+
 def set_dir_acl(path, acl, lp, domsid, use_ntvfs, passdb, service=SYSVOL_SERVICE):
     setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
     for root, dirs, files in os.walk(path, topdown=False):
@@ -1729,11 +1732,13 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
     # Set acls on Policy folder and policies folders
     set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb=s4_passdb)
 
+
 def acl_type(direct_db_access):
     if direct_db_access:
         return "DB"
     else:
         return "VFS"
+
 
 def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
     fsacl = getntacl(lp, path, direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
@@ -2053,6 +2058,7 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
     else:
         samdb.transaction_commit()
 
+
 def directory_create_or_exists(path, mode=0o755):
     if not os.path.exists(path):
         try:
@@ -2062,6 +2068,7 @@ def directory_create_or_exists(path, mode=0o755):
                 pass
             else:
                 raise ProvisioningError("Failed to create directory %s: %s" % (path, e.strerror))
+
 
 def determine_host_ip(logger, lp, hostip=None):
     if hostip is None:
@@ -2079,6 +2086,7 @@ def determine_host_ip(logger, lp, hostip=None):
 
     return hostip
 
+
 def determine_host_ip6(logger, lp, hostip6=None):
     if hostip6 is None:
         logger.info("Looking up IPv6 addresses")
@@ -2091,6 +2099,7 @@ def determine_host_ip6(logger, lp, hostip6=None):
         logger.warning("No IPv6 address will be assigned")
 
     return hostip6
+
 
 def provision(logger, session_info, smbconf=None,
               targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,

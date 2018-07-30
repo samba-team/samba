@@ -23,6 +23,7 @@ import os
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 
+
 class OUCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool ou subcommands"""
     ous = []

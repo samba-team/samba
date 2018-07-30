@@ -37,6 +37,7 @@ import binascii
 from samba.tests.pso import PasswordSettings
 import samba
 
+
 class PassWordHashGpgmeTests(PassWordHashTests):
 
     def setUp(self):

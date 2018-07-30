@@ -44,6 +44,8 @@ USER_PASS = ''.join(random.choice(string.ascii_uppercase +
 
 # Calculate the MD5 password digest from the supplied user, realm and password
 #
+
+
 def calc_digest(user, realm, password):
     data = "%s:%s:%s" % (user, realm, password)
     if isinstance(data, text_type):

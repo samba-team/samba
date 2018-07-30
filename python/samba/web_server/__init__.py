@@ -21,6 +21,7 @@
 
 from __future__ import print_function
 
+
 def render_placeholder(environ, start_response):
     """Send the user a simple placeholder about missing SWAT."""
     status = '200 OK'

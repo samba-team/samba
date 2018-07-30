@@ -11,6 +11,7 @@ import gc
 import talloc
 import _test_pytalloc
 
+
 def dummy_func():
     pass
 
@@ -108,6 +109,7 @@ class TallocComparisonTests(unittest.TestCase):
         self.assertTrue(obj1 < obj2)
         self.assertFalse(obj1 >= obj2)
         self.assertFalse(obj1 > obj2)
+
 
 class TallocBaseComparisonTests(unittest.TestCase):
 

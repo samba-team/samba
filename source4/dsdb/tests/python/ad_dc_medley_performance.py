@@ -87,6 +87,7 @@ class GlobalState(object):
     test_number = 0
     active_links = set()
 
+
 class UserTests(samba.tests.TestCase):
 
     def add_if_possible(self, *args, **kwargs):

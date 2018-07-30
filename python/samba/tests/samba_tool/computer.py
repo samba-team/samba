@@ -26,6 +26,7 @@ from samba import dsdb
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import dnsp
 
+
 class ComputerCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool computer subcommands"""
     computers = []

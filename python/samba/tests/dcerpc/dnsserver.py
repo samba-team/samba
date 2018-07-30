@@ -29,6 +29,7 @@ from samba.tests import RpcInterfaceTestCase, env_get_var_value
 from samba.netcmd.dns import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SRVRecord, TXTRecord
 from samba import sd_utils, descriptor
 
+
 class DnsserverTests(RpcInterfaceTestCase):
 
     @classmethod

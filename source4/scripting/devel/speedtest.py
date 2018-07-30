@@ -72,6 +72,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # Tests start here
 #
 
+
 class SpeedTest(samba.tests.TestCase):
 
     def find_domain_sid(self, ldb):
@@ -120,6 +121,7 @@ url: www.example.com
         for dn in dn_list:
             delete_force(self.ldb_admin, dn)
 
+
 class SpeedTestAddDel(SpeedTest):
 
     def setUp(self):
@@ -164,6 +166,7 @@ class SpeedTestAddDel(SpeedTest):
             It takes quite the time against Samba4 (1-2 days).
         """
         self.run_bundle(10000)
+
 
 class AclSearchSpeedTest(SpeedTest):
 

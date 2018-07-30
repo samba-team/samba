@@ -23,6 +23,7 @@ from samba.ndr import ndr_unpack, ndr_pack
 import talloc
 import gc
 
+
 class ArrayTests(samba.tests.TestCase):
 
     def setUp(self):

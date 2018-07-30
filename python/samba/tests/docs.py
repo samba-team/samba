@@ -27,6 +27,7 @@ import re
 import subprocess
 import xml.etree.ElementTree as ET
 
+
 class TestCase(samba.tests.TestCaseInTempDir):
 
     def _format_message(self, parameters, message):
@@ -95,6 +96,7 @@ def get_documented_tuples(sourcedir, omit_no_default=True):
         context = parameter.attrib.get("context")
         yield name, default_text, context, param_type
     p.close()
+
 
 class SmbDotConfTests(TestCase):
 

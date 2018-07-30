@@ -61,6 +61,7 @@ from samba.provision.common import (
 
 from samba.samdb import get_default_backend_store
 
+
 def get_domainguid(samdb, domaindn):
     res = samdb.search(base=domaindn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
     domainguid = str(ndr_unpack(misc.GUID, res[0]["objectGUID"][0]))
@@ -389,6 +390,7 @@ def add_rootservers(samdb, domaindn, prefix):
         msg["objectClass"] = ["top", "dnsNode"]
         msg["dnsRecord"] = ldb.MessageElement(record, ldb.FLAG_MOD_ADD, "dnsRecord")
         samdb.add(msg)
+
 
 def add_at_record(samdb, container_dn, prefix, hostname, dnsdomain, hostip, hostip6):
 

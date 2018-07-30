@@ -143,6 +143,7 @@ common_ntvfs_options = [
            action="store_true")
 ]
 
+
 def get_testparm_var(testparm, smbconf, varname):
     errfile = open(os.devnull, 'w')
     p = subprocess.Popen([testparm, '-s', '-l',
@@ -1276,6 +1277,7 @@ class cmd_domain_level(Command):
         else:
             raise CommandError("invalid argument: '%s' (choose from 'show', 'raise')" % subcommand)
 
+
 class cmd_domain_passwordsettings_show(Command):
     """Display current password settings for the domain."""
 
@@ -1342,6 +1344,7 @@ class cmd_domain_passwordsettings_show(Command):
         self.message("Account lockout duration (mins): %d" % cur_account_lockout_duration)
         self.message("Account lockout threshold (attempts): %d" % cur_account_lockout_threshold)
         self.message("Reset account lockout after (mins): %d" % cur_reset_account_lockout_after)
+
 
 class cmd_domain_passwordsettings_set(Command):
     """Set password settings.
@@ -1540,6 +1543,7 @@ class cmd_domain_passwordsettings_set(Command):
         msgs.append("All changes applied successfully!")
         self.message("\n".join(msgs))
 
+
 class cmd_domain_passwordsettings(SuperCommand):
     """Manage password policy settings."""
 
@@ -1547,6 +1551,7 @@ class cmd_domain_passwordsettings(SuperCommand):
     subcommands["pso"] = cmd_domain_passwordsettings_pso()
     subcommands["show"] = cmd_domain_passwordsettings_show()
     subcommands["set"] = cmd_domain_passwordsettings_set()
+
 
 class cmd_domain_classicupgrade(Command):
     """Upgrade from Samba classic (NT4-like) database to Samba AD DC database.
@@ -1696,9 +1701,11 @@ class cmd_domain_samba3upgrade(cmd_domain_classicupgrade):
 
     hidden = True
 
+
 class LocalDCCredentialsOptions(options.CredentialsOptions):
     def __init__(self, parser):
         options.CredentialsOptions.__init__(self, parser, special_name="local-dc")
+
 
 class DomainTrustCommand(Command):
     """List domain trusts."""
@@ -2086,6 +2093,7 @@ class DomainTrustCommand(Command):
                                 d.domain_sid, collision_string))
         return
 
+
 class cmd_domain_trust_list(DomainTrustCommand):
     """List domain trusts."""
 
@@ -2131,6 +2139,7 @@ class cmd_domain_trust_list(DomainTrustCommand):
                             "Direction[%s]" % self.netr_DomainTrust_to_direction(t),
                             "Name[%s]" % self.netr_DomainTrust_to_name(t)))
         return
+
 
 class cmd_domain_trust_show(DomainTrustCommand):
     """Show trusted domain details."""
@@ -2237,6 +2246,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
                                          tln=local_tdo_info.domain_name.string)
 
         return
+
 
 class cmd_domain_trust_create(DomainTrustCommand):
     """Create a domain or forest trust."""
@@ -2785,6 +2795,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
         self.outf.write("Success.\n")
         return
 
+
 class cmd_domain_trust_delete(DomainTrustCommand):
     """Delete a domain trust."""
 
@@ -2945,6 +2956,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                 self.outf.write("%s\n" % self.LocalRuntimeError(self, error, "DeleteObject() failed"))
 
         return
+
 
 class cmd_domain_trust_validate(DomainTrustCommand):
     """Validate a domain trust."""
@@ -3123,6 +3135,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                 self.outf.write("OK: %s\n" % remote_rediscover)
 
         return
+
 
 class cmd_domain_trust_namespaces(DomainTrustCommand):
     """Manage forest trust namespaces."""
@@ -3869,6 +3882,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                                      tln=local_tdo_info.domain_name.string)
         return
 
+
 class cmd_domain_tombstones_expunge(Command):
     """Expunge tombstones from the database.
 
@@ -3953,11 +3967,13 @@ class cmd_domain_trust(SuperCommand):
     subcommands["validate"] = cmd_domain_trust_validate()
     subcommands["namespaces"] = cmd_domain_trust_namespaces()
 
+
 class cmd_domain_tombstones(SuperCommand):
     """Domain tombstone and recycled object management."""
 
     subcommands = {}
     subcommands["expunge"] = cmd_domain_tombstones_expunge()
+
 
 class ldif_schema_update:
     """Helper class for applying LDIF schema updates"""
@@ -4013,6 +4029,7 @@ class ldif_schema_update:
                 raise
 
         return 1
+
 
 class cmd_domain_schema_upgrade(Command):
     """Domain schema upgrading"""
@@ -4264,6 +4281,7 @@ class cmd_domain_schema_upgrade(Command):
         if error_encountered:
             raise CommandError('Failed to upgrade schema')
 
+
 class cmd_domain_functional_prep(Command):
     """Domain functional level preparation"""
 
@@ -4369,6 +4387,7 @@ class cmd_domain_functional_prep(Command):
 
         if error_encountered:
             raise CommandError('Failed to perform functional prep')
+
 
 class cmd_domain(SuperCommand):
     """Domain management."""

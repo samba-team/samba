@@ -60,6 +60,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # Tests start here
 #
 
+
 class DescriptorTests(samba.tests.TestCase):
 
     def get_users_domain_dn(self, name):
@@ -164,6 +165,7 @@ showInAdvancedViewOnly: TRUE
     # Tests for DOMAIN
 
     # Default descriptor tests #####################################################################
+
 
 class OwnerGroupDescriptorTests(DescriptorTests):
 
@@ -1218,6 +1220,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
     ########################################################################################
     # Inheritance tests for DACL
 
+
 class DaclDescriptorTests(DescriptorTests):
 
     def deleteAll(self):
@@ -1949,6 +1952,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
                                     controls=["extended_dn:1:0", "sd_flags:1:0", "search_options:1:1"])
         self.assertFalse("nTSecurityDescriptor" in res[0])
 
+
 class RightsAttributesTests(DescriptorTests):
 
     def deleteAll(self):
@@ -2059,6 +2063,7 @@ class RightsAttributesTests(DescriptorTests):
         self.assertEquals(len(res[0]["allowedAttributesEffective"]), 2)
         self.assertTrue("displayName" in res[0]["allowedAttributesEffective"])
         self.assertTrue("managedBy" in res[0]["allowedAttributesEffective"])
+
 
 class SdAutoInheritTests(DescriptorTests):
     def deleteAll(self):

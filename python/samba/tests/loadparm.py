@@ -22,6 +22,8 @@ import os
 # the python bindings for LoadParm objects map (by default) to a single global
 # object in the underlying C code. E.g. if we create 2 different LoadParm
 # objects in python, really they're just the same object underneath.
+
+
 class LoadParmTest(TestCaseInTempDir):
 
     def test_global_loadparm(self):

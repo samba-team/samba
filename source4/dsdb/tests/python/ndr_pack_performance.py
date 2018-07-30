@@ -141,6 +141,7 @@ e6-11d0-a285-00aa003049e2;ED)""".split())
 # set SCALE = 100 for normal test, or 1 for testing the test.
 SCALE = 100
 
+
 class UserTests(samba.tests.TestCase):
 
     def get_file_blob(self, filename):

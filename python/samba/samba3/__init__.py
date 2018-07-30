@@ -29,6 +29,7 @@ import tdb
 import samba.samba3.passdb
 from samba.samba3 import param as s3param
 
+
 def fetch_uint32(db, key):
     try:
         data = db[key]
@@ -133,6 +134,7 @@ IDMAP_USER_PREFIX = b"UID "
 
 # idmap version determines auto-conversion
 IDMAP_VERSION_V2 = 2
+
 
 class IdmapDatabase(DbDatabase):
     """Samba 3 ID map database reader."""

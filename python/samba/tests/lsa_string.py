@@ -24,6 +24,7 @@ Tests for the C helper functions in source4/librpc/ndr/py_lsa.c
 for samba.dcerpc.lsa.String
 """
 
+
 class LsaStringTests(TestCase):
 
     def test_default_constructor(self):

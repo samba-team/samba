@@ -32,6 +32,7 @@ for arc in lines[1:-1]:
 
 subgraph = {}
 
+
 def add_deps(node):
     if node in graph and node not in subgraph:
         subgraph[node] = graph[node]

@@ -39,6 +39,7 @@ import samba
 samba.ensure_third_party_module("dns", "dnspython")
 import dns.resolver
 
+
 def uint32(v):
     return ctypes.c_uint32(v).value
 

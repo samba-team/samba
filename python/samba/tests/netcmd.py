@@ -23,6 +23,7 @@ from samba.netcmd.testparm import cmd_testparm
 from samba.netcmd.main import cmd_sambatool
 import samba.tests
 
+
 class NetCmdTestCase(samba.tests.TestCase):
 
     def run_netcmd(self, cmd_klass, args, retcode=0):

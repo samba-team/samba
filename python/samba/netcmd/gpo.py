@@ -305,6 +305,7 @@ attr_flags = smb.FILE_ATTRIBUTE_SYSTEM | \
              smb.FILE_ATTRIBUTE_ARCHIVE | \
              smb.FILE_ATTRIBUTE_HIDDEN
 
+
 def copy_directory_remote_to_local(conn, remotedir, localdir):
     if not os.path.isdir(localdir):
         os.mkdir(localdir)

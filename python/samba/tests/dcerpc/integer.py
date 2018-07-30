@@ -20,6 +20,7 @@
 from samba.dcerpc import server_id, misc, srvsvc, samr
 import samba.tests
 
+
 class IntegerTests(samba.tests.TestCase):
 
     def test_uint32_into_hyper(self):

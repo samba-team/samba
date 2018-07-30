@@ -49,6 +49,7 @@ lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
+
 def closure(vSet, wSet, aSet):
     for edge in aSet:
         start, end = edge
@@ -56,6 +57,7 @@ def closure(vSet, wSet, aSet):
             if end not in wSet and end in vSet:
                 wSet.add(end)
                 closure(vSet, wSet, aSet)
+
 
 class StaticTokenTest(samba.tests.TestCase):
 
@@ -171,6 +173,7 @@ class StaticTokenTest(samba.tests.TestCase):
             print("token sids don't match")
             print("difference : %s" % sidset1.difference(sidset2))
             self.fail(msg="calculated groups don't match against user PAC tokenGroups")
+
 
 class DynamicTokenTest(samba.tests.TestCase):
 

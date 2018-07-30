@@ -31,6 +31,7 @@ from samba.netcmd import (
 )
 from samba.samdb import SamDB
 
+
 def get_fsmo_roleowner(samdb, roledn, role):
     """Gets the owner of an FSMO role
 
@@ -151,6 +152,7 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
         outf.write("This DC already has the '%s' FSMO role\n" % role)
         return False
 
+
 def transfer_role(outf, role, samdb):
     """Transfer standard FSMO role. """
 
@@ -212,6 +214,7 @@ def transfer_role(outf, role, samdb):
     else:
         outf.write("This DC already has the '%s' FSMO role\n" % role)
         return False
+
 
 class cmd_fsmo_seize(Command):
     """Seize the role."""
@@ -473,6 +476,7 @@ class cmd_fsmo_show(Command):
                     self.message("%s has no current owner" % (long_name))
             except CommandError as e:
                 self.message("%s: * %s" % (long_name, e.message))
+
 
 class cmd_fsmo_transfer(Command):
     """Transfer the role."""

@@ -73,6 +73,7 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
+
 class BasicTests(samba.tests.TestCase):
 
     def setUp(self):
@@ -3160,6 +3161,7 @@ nTSecurityDescriptor:: """ + desc_base64
             self.assertTrue("msTSExpireDate" in res[0])
             self.assertTrue(len(res[0]["msTSExpireDate"]) == 1)
             self.assertEquals(res[0]["msTSExpireDate"][0], v_get)
+
 
 class BaseDnTests(samba.tests.TestCase):
 

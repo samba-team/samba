@@ -6,6 +6,7 @@ import pexpect, subprocess
 import optparse
 import sys, os, time, re
 
+
 class wintest():
     '''testing of Samba against windows VMs'''
 

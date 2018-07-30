@@ -24,6 +24,7 @@ import os
 import ldb
 import drs_base
 
+
 class SambaToolDrsTests(drs_base.DrsBaseTestCase):
     """Blackbox test case for samba-tool drs."""
 

@@ -30,6 +30,7 @@ from samba.samdb import SamDB
 from samba import dsdb
 from operator import attrgetter
 
+
 class cmd_rename(Command):
     """Rename an organizational unit.
 
@@ -92,6 +93,7 @@ class cmd_rename(Command):
             raise CommandError('Failed to rename ou "%s"' % full_old_ou_dn, e)
         self.outf.write('Renamed ou "%s" to "%s"\n' % (full_old_ou_dn,
                                                        full_new_ou_dn))
+
 
 class cmd_move(Command):
     """Move an organizational unit.
@@ -160,6 +162,7 @@ class cmd_move(Command):
         self.outf.write('Moved ou "%s" into "%s"\n' %
                         (full_old_ou_dn, full_new_parent_dn))
 
+
 class cmd_create(Command):
     """Create an organizational unit.
 
@@ -208,6 +211,7 @@ class cmd_create(Command):
             raise CommandError('Failed to create ou "%s"' % full_ou_dn, e)
 
         self.outf.write('Created ou "%s"\n' % full_ou_dn)
+
 
 class cmd_listobjects(Command):
     """List all objects in an organizational unit.
@@ -278,6 +282,7 @@ class cmd_listobjects(Command):
             raise CommandError('Failed to list contents of ou "%s"' %
                                full_ou_dn, e)
 
+
 class cmd_list(Command):
     """List all organizational units.
 
@@ -321,6 +326,7 @@ class cmd_list(Command):
             if not full_dn:
                 msg.dn.remove_base_components(len(domain_dn))
             self.outf.write("%s\n" % str(msg.dn))
+
 
 class cmd_delete(Command):
     """Delete an organizational unit.

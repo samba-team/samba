@@ -27,6 +27,7 @@ smbtorture4_options.extend([
    '--option=torture:writetimeupdatedelay=500000',
 ])
 
+
 def plansmbtorture4testsuite(name, env, options, description=''):
     if description == '':
         modname = "samba3.%s" % (name, )

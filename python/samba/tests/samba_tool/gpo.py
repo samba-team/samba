@@ -23,6 +23,7 @@ import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import shutil
 
+
 def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
     """Use this function to determine if the GPO backup differs from another.
 
@@ -71,6 +72,7 @@ def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
                         return l_name
 
     return None
+
 
 class GpoCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool time subcommands"""

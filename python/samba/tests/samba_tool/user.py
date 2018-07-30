@@ -28,6 +28,7 @@ from samba import (
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 
+
 class UserCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool user subcommands"""
     users = []

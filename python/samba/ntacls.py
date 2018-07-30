@@ -80,6 +80,7 @@ def checkset_backend(lp, backend, eadbfile):
     else:
         raise XattrBackendError("Invalid xattr backend choice %s" %backend)
 
+
 def getdosinfo(lp, file):
     try:
         attribute = samba.xattr_native.wrap_getxattr(file,
@@ -88,6 +89,7 @@ def getdosinfo(lp, file):
         return
 
     return ndr_unpack(xattr.DOSATTRIB, attribute)
+
 
 def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True, service=None):
     if direct_db_access:

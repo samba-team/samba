@@ -221,6 +221,7 @@ class cmd_sites_subnet(SuperCommand):
         "set-site": cmd_sites_subnet_set_site(),
     }
 
+
 class cmd_sites(SuperCommand):
     """Sites management."""
     subcommands = {}

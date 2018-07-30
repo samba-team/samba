@@ -36,6 +36,7 @@ import ldb
 from ldb import (
     SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT)
 
+
 class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     """Intended as a black box test case for DsReplicaSync
        implementation. It should test the behavior of this

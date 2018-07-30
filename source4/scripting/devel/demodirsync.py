@@ -28,6 +28,7 @@ creds = credopts.get_credentials(lp)
 
 opts = parser.parse_args()[0]
 
+
 def printdirsync(ctl):
         arr = ctl.split(':')
         if arr[0] == 'dirsync':

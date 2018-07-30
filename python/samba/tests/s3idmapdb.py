@@ -27,6 +27,7 @@ for p in ["../../../../../testdata/samba3", "../../../../testdata/samba3"]:
     if os.path.exists(DATADIR):
         break
 
+
 class IdmapDbTestCase(TestCase):
 
     def setUp(self):

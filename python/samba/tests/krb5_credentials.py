@@ -39,6 +39,7 @@ KDC
 
 MACHINE_NAME = "krb5credstest"
 
+
 class PyKrb5CredentialsTests(TestCase):
 
     def setUp(self):

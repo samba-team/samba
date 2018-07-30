@@ -73,6 +73,7 @@ creds = credopts.get_credentials(lp)
 # Tests start here
 #
 
+
 class DirsyncBaseTests(samba.tests.TestCase):
 
     def setUp(self):

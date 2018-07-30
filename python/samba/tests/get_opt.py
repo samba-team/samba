@@ -28,6 +28,7 @@ from samba.getopt import (
 )
 import samba.tests
 
+
 class KerberosOptionTests(samba.tests.TestCase):
 
     def test_parse_true(self):

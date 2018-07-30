@@ -24,6 +24,7 @@ import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import random
 
+
 class NtACLCmdSysvolTestCase(SambaToolCmdTest):
     """Tests for samba-tool ntacl sysvol* subcommands"""
 
@@ -68,6 +69,7 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertEquals(out, "", "Shouldn't be any output messages")
+
 
 class NtACLCmdGetSetTestCase(SambaToolCmdTest):
     """Tests for samba-tool ntacl get/set subcommands"""

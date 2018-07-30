@@ -24,6 +24,7 @@ import ldb
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, LdbError
 from sites import SiteNotFoundException
 
+
 class SubnetException(Exception):
     """Base element for Subnet errors"""
     pass
@@ -129,6 +130,7 @@ def delete_subnet(samdb, configDn, subnet_name):
 
     samdb.delete(dnsubnet)
 
+
 def rename_subnet(samdb, configDn, subnet_name, new_name):
     """Rename a subnet.
 
@@ -163,6 +165,7 @@ def rename_subnet(samdb, configDn, subnet_name, new_name):
                                                                   estr))
         else:
             raise
+
 
 def set_subnet_site(samdb, configDn, subnet_name, site_name):
     """Assign a subnet to a site.

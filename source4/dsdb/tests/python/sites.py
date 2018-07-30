@@ -67,6 +67,7 @@ creds = credopts.get_credentials(lp)
 # Tests start here
 #
 
+
 class SitesBaseTests(samba.tests.TestCase):
 
     def setUp(self):

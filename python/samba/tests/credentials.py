@@ -28,6 +28,7 @@ import binascii
 from samba.compat import PY3
 from samba.dcerpc import misc
 
+
 class CredentialsTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):

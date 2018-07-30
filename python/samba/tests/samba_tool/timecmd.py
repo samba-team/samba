@@ -19,6 +19,7 @@ import os
 from time import localtime, strptime, mktime
 from samba.tests.samba_tool.base import SambaToolCmdTest
 
+
 class TimeCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool time subcommands"""
 

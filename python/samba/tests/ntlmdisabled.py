@@ -31,6 +31,7 @@ from samba.dcerpc import srvsvc, samr, lsa
 Tests behaviour when NTLM is disabled
 """
 
+
 class NtlmDisabledTests(TestCase):
 
     def setUp(self):

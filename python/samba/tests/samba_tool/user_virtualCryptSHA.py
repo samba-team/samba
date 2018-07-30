@@ -51,6 +51,8 @@ HASH_OPTION = "password hash userPassword schemes"
 # Get the value of an attribute from the output string
 # Note: Does not correctly handle values spanning multiple lines,
 #       which is acceptable for it's usage in these tests.
+
+
 def _get_attribute(out, name):
     p = re.compile("^" + name + ":\s+(\S+)")
     for line in out.split("\n"):
@@ -58,6 +60,7 @@ def _get_attribute(out, name):
         if m:
             return m.group(1)
     return ""
+
 
 class UserCmdCryptShaTestCase(SambaToolCmdTest):
     """

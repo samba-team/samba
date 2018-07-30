@@ -19,6 +19,7 @@ from samba.tests.samba_tool.base import SambaToolCmdTest
 import os
 import shutil
 
+
 class ProvisionPasswordTestCase(SambaToolCmdTest):
     """Test for password validation in domain provision subcommand"""
 

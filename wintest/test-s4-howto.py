@@ -5,8 +5,10 @@
 import sys, os
 import wintest, pexpect, time, subprocess
 
+
 def set_krb5_conf(t):
     t.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
+
 
 def build_s4(t):
     '''build samba4'''
@@ -60,6 +62,7 @@ def start_s4(t):
                '--option', 'panic action=gnome-terminal -e "gdb --pid %d"', '--option', 'max protocol=nt1'])
     t.port_wait("${INTERFACE_IP}", 139)
 
+
 def test_smbclient(t):
     '''test smbclient against localhost'''
     t.info('Testing smbclient')
@@ -106,6 +109,7 @@ def test_dns(t):
     t.cmd_contains("host -t A ${HOSTNAME}.${LCREALM}",
                    ['${HOSTNAME}.${LCREALM} has address'])
 
+
 def test_kerberos(t):
     '''test that kerberos is OK'''
     t.info("Testing kerberos")
@@ -128,6 +132,7 @@ def run_winjoin(t, vm):
     t.setwinvars(vm)
 
     t.run_winjoin(t, "${LCREALM}")
+
 
 def test_winjoin(t, vm):
     t.info("Checking the windows join is OK")
@@ -405,6 +410,7 @@ def prep_join_as_dc(t, vm):
     t.run_cmd("rm -rf etc/smb.conf private")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
+
 
 def join_as_dc(t, vm):
     '''join a windows domain as a DC'''

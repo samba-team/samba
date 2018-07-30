@@ -66,6 +66,7 @@ dns_servers = args[2:]
 
 creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
 
+
 def make_txt_record(records):
     rdata_txt = dns.txt_record()
     s_list = dnsp.string_list()

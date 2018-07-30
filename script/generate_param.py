@@ -47,6 +47,7 @@ if options.filename is None:
 if options.output is None:
     parser.error("No output file specified")
 
+
 def iterate_all(path):
     """Iterate and yield all the parameters. 
 
@@ -116,6 +117,7 @@ param_type_dict = {
                     "ustring"      : "_STRING",
                   }
 
+
 def generate_functions(path_in, path_out):
     f = open(path_out, 'w')
     try:
@@ -159,6 +161,7 @@ mapping = {
             'octal'        : 'int ',
             'ustring'      : 'char *',
           }
+
 
 def make_s3_param_proto(path_in, path_out):
     file_out = open(path_out, 'w')
@@ -256,10 +259,12 @@ def make_lib_proto(path_in, path_out):
     finally:
         file_out.close()
 
+
 def get_header(path):
     header = os.path.basename(path).upper()
     header = header.replace(".", "_").replace("\\", "_").replace("-", "_")
     return "__%s__" % header
+
 
 def make_param_defs(path_in, path_out, scope):
     file_out = open(path_out, 'w')
@@ -323,6 +328,7 @@ type_dict = {
               "octal"        : "P_OCTAL",
               "ustring"      : "P_USTRING",
             }
+
 
 def make_param_table(path_in, path_out):
     file_out = open(path_out, 'w')

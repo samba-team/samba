@@ -26,6 +26,7 @@ poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
 dspath = 'CN=Policies,CN=System,DC=addom,DC=samba,DC=example,DC=com'
 gpt_data = '[General]\nVersion=%d'
 
+
 class GPOTests(tests.TestCase):
     def setUp(self):
         super(GPOTests, self).setUp()

@@ -25,6 +25,7 @@ from samba.credentials import Credentials
 from samba import gensec, auth
 import samba.tests
 
+
 class GensecTests(samba.tests.TestCase):
 
     def setUp(self):

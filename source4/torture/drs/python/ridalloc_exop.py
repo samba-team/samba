@@ -45,6 +45,7 @@ from samba.dbchecker import dbcheck
 from samba.ndr import ndr_pack
 from samba.dcerpc import security
 
+
 class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     """Intended as a semi-black box test case for DsGetNCChanges
        implementation for extended operations. It should be testing

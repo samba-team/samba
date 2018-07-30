@@ -29,6 +29,7 @@ import re
 
 VERBOSE = False
 
+
 def debug(msg):
     if VERBOSE:
         sys.stdout.flush()
@@ -84,6 +85,7 @@ class DnsHandler(SocketServer.BaseRequestHandler):
 
         t = Timer(timeout, self.really_handle, [data, socket])
         t.start()
+
 
 def main():
     global SERVER_ID

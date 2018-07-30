@@ -20,6 +20,7 @@ import samba.tests
 import pypamtest
 import os
 
+
 class PasswordExpirePamTests(samba.tests.TestCase):
     def test_auth_expire_warning(self):
         domain = os.environ["DOMAIN"]

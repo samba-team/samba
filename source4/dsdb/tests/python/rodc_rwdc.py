@@ -30,6 +30,7 @@ from samba.dcerpc import security, samr
 
 import password_lockout_base
 
+
 def passwd_encode(pw):
     return base64.b64encode(('"%s"' % pw).encode('utf-16-le')).decode('utf8')
 
@@ -112,6 +113,7 @@ def get_server_ref_from_samdb(samdb):
                        attrs=['serverReference'])
 
     return res[0]['serverReference'][0]
+
 
 class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
     counter = itertools.count(1).next
@@ -682,6 +684,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
+
 
 class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
     counter = itertools.count(1).next
@@ -1260,6 +1263,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         ldb = SamDB(url=self.host_url, credentials=self.lockout1ntlm_creds, lp=self.lp)
 
         self._test_multiple_logon(self.lockout1ntlm_creds)
+
 
 def main():
     global RODC, RWDC, CREDS, LP

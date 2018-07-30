@@ -48,6 +48,7 @@ def drsuapi_connect(ctx):
     except Exception as e:
         raise CommandError("DRS connection to %s failed" % ctx.server, e)
 
+
 def samdb_connect(ctx):
     '''make a ldap connection to the server'''
     try:
@@ -56,6 +57,7 @@ def samdb_connect(ctx):
                           credentials=ctx.creds, lp=ctx.lp)
     except Exception as e:
         raise CommandError("LDAP connection to %s failed" % ctx.server, e)
+
 
 def drs_errmsg(werr):
     '''return "was successful" or an error string'''
@@ -85,6 +87,7 @@ def drs_parse_ntds_dn(ntds_dn):
 
 
 DEFAULT_SHOWREPL_FORMAT = 'classic'
+
 
 class cmd_drs_showrepl(Command):
     """Show replication status."""

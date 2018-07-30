@@ -55,6 +55,7 @@ def ndr_print(object):
         raise TypeError("%r is not a NDR object" % object)
     return ndr_print()
 
+
 def ndr_pack_in(object, bigendian=False, ndr64=False):
     """Pack the input of an NDR function object.
 

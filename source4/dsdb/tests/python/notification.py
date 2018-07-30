@@ -63,6 +63,7 @@ lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
+
 class LDAPNotificationTest(samba.tests.TestCase):
 
     def setUp(self):

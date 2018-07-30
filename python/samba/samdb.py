@@ -41,6 +41,7 @@ __docformat__ = "restructuredText"
 def get_default_backend_store():
     return "tdb"
 
+
 class SamDB(samba.Ldb):
     """The SAM database."""
 

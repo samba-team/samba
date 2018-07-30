@@ -28,6 +28,7 @@ import ctypes
 Tests whether the netlogon service is running
 """
 
+
 class NetlogonServiceTests(TestCase):
 
     def setUp(self):

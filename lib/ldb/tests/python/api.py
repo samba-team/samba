@@ -22,6 +22,7 @@ MDB_INDEX_OBJ = {
     "@IDX_DN_GUID": [b"GUID"]
 }
 
+
 def tempdir():
     import tempfile
     try:
@@ -685,6 +686,8 @@ class SimpleLdb(LdbBaseTest):
         self.assertRaises(ldb.LdbError, lambda: l.search("", ldb.SCOPE_SUBTREE, "&(dc=*)(dn=*)", ["dc"]))
 
 # Run the SimpleLdb tests against an lmdb backend
+
+
 class SimpleLdbLmdb(SimpleLdb):
 
     def setUp(self):
@@ -694,6 +697,7 @@ class SimpleLdbLmdb(SimpleLdb):
 
     def tearDown(self):
         super(SimpleLdbLmdb, self).tearDown()
+
 
 class SearchTests(LdbBaseTest):
     def tearDown(self):
@@ -1367,6 +1371,7 @@ class IndexedSearchTests(SearchTests):
                     "@IDXATTR": [b"x", b"y", b"ou"]})
         self.IDX = True
 
+
 class IndexedCheckSearchTests(IndexedSearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things (full scan disabled)"""
@@ -1374,6 +1379,7 @@ class IndexedCheckSearchTests(IndexedSearchTests):
     def setUp(self):
         self.IDXCHECK = True
         super(IndexedCheckSearchTests, self).setUp()
+
 
 class IndexedSearchDnFilterTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
@@ -1389,6 +1395,7 @@ class IndexedSearchDnFilterTests(SearchTests):
                     "@IDXATTR": [b"x", b"y", b"ou"]})
         self.IDX = True
 
+
 class IndexedAndOneLevelSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
@@ -1401,6 +1408,7 @@ class IndexedAndOneLevelSearchTests(SearchTests):
         self.IDX = True
         self.IDXONE = True
 
+
 class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things (full scan disabled)"""
@@ -1408,6 +1416,7 @@ class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
     def setUp(self):
         self.IDXCHECK = True
         super(IndexedCheckedAndOneLevelSearchTests, self).setUp()
+
 
 class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
@@ -1426,6 +1435,7 @@ class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
                     "@IDXONE": [b"1"]})
         self.IDX = True
         self.IDXONE = True
+
 
 class GUIDIndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
@@ -1460,6 +1470,7 @@ class GUIDIndexedDNFilterSearchTests(SearchTests):
         self.IDX = True
         self.IDXGUID = True
 
+
 class GUIDAndOneLevelIndexedSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
@@ -1478,6 +1489,7 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
         self.IDX = True
         self.IDXGUID = True
         self.IDXONE = True
+
 
 class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
 
@@ -1719,6 +1731,7 @@ class AddModifyTestsLmdb(AddModifyTests):
     def tearDown(self):
         super(AddModifyTestsLmdb, self).tearDown()
 
+
 class IndexedAddModifyTests(AddModifyTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
@@ -1798,6 +1811,7 @@ class IndexedAddModifyTests(AddModifyTests):
                     "x": "z", "y": "a",
                     "objectUUID": b"0123456789abcde2"})
 
+
 class GUIDIndexedAddModifyTests(IndexedAddModifyTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
@@ -1822,6 +1836,7 @@ class GUIDTransIndexedAddModifyTests(GUIDIndexedAddModifyTests):
         self.l.transaction_commit()
         super(GUIDTransIndexedAddModifyTests, self).tearDown()
 
+
 class TransIndexedAddModifyTests(IndexedAddModifyTests):
     """Test index behaviour insdie the transaction"""
 
@@ -1833,6 +1848,7 @@ class TransIndexedAddModifyTests(IndexedAddModifyTests):
         self.l.transaction_commit()
         super(TransIndexedAddModifyTests, self).tearDown()
 
+
 class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
 
     def setUp(self):
@@ -1842,6 +1858,7 @@ class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
     def tearDown(self):
         super(GuidIndexedAddModifyTestsLmdb, self).tearDown()
 
+
 class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
 
     def setUp(self):
@@ -1850,6 +1867,7 @@ class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
 
     def tearDown(self):
         super(GuidTransIndexedAddModifyTestsLmdb, self).tearDown()
+
 
 class BadIndexTests(LdbBaseTest):
     def setUp(self):
@@ -2010,6 +2028,7 @@ class GUIDBadIndexTests(BadIndexTests):
         self.IDXGUID = True
 
         super(GUIDBadIndexTests, self).setUp()
+
 
 class DnTests(TestCase):
 
@@ -2252,6 +2271,7 @@ class DnTests(TestCase):
 
         dn = ldb.Dn(self.ldb, '')
         self.assertTrue(dn.is_null())
+
 
 class LdbMsgTests(TestCase):
 
@@ -2620,6 +2640,7 @@ class ModuleTests(TestCase):
         self.assertEqual([], ops)
         l = ldb.Ldb(self.filename)
         self.assertEqual(["init"], ops)
+
 
 class LdbResultTests(LdbBaseTest):
 

@@ -6,8 +6,10 @@ import sys, os
 import optparse
 import wintest
 
+
 def set_libpath(t):
     t.putenv("LD_LIBRARY_PATH", "${PREFIX}/lib")
+
 
 def set_krb5_conf(t):
     t.run_cmd("mkdir -p ${PREFIX}/etc")
@@ -17,6 +19,7 @@ def set_krb5_conf(t):
 	dns_lookup_kdc = true''')
 
     t.putenv("KRB5_CONFIG", '${PREFIX}/etc/krb5.conf')
+
 
 def build_s3(t):
     '''build samba3'''
@@ -30,6 +33,7 @@ def build_s3(t):
     t.run_cmd('rm -rf ${PREFIX}')
     t.run_cmd('make install')
 
+
 def start_s3(t):
     t.info('Starting Samba3')
     t.chdir("${PREFIX}")
@@ -39,6 +43,7 @@ def start_s3(t):
     t.run_cmd(['sbin/winbindd', "-D"])
     t.run_cmd(['sbin/smbd', "-D"])
     t.port_wait("${INTERFACE_IP}", 139)
+
 
 def test_wbinfo(t):
     t.info('Testing wbinfo')
@@ -103,6 +108,7 @@ def test_smbclient(t):
     child.sendline("cd ..")
     child.sendline("rmdir testdir")
 
+
 def create_shares(t):
     t.info("Adding test shares")
     t.chdir('${PREFIX}')
@@ -147,6 +153,7 @@ def prep_join_as_member(t, vm):
         panic action = xterm -e gdb --pid %d
     ''')
 
+
 def join_as_member(t, vm):
     '''join a windows domain as a member server'''
     t.setwinvars(vm)
@@ -158,6 +165,7 @@ def join_as_member(t, vm):
     t.cmd_contains("bin/net ads dns register ${HOSTNAME}.${WIN_REALM} -P", ["Successfully registered hostname with DNS"])
     t.cmd_contains("host -t A ${HOSTNAME}.${WIN_REALM}",
                    ['${HOSTNAME}.${WIN_REALM} has address'])
+
 
 def create_root_account(t, vm):
     t.setwinvars(vm)
@@ -173,6 +181,7 @@ def create_root_account(t, vm):
     child.expect("net rpc>")
     child.sendline("user edit disabled root no")
     child.expect("Set root's disabled flag")
+
 
 def test_join_as_member(t, vm):
     '''test the domain join'''

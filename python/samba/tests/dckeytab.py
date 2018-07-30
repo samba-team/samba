@@ -22,11 +22,13 @@ import samba.dckeytab
 from samba import tests
 from samba.param import LoadParm
 
+
 def open_bytes(filename):
     if sys.version_info[0] == 3:
         return open(filename, errors='ignore')
     else:
         return open(filename, 'rb')
+
 
 class DCKeytabTests(tests.TestCase):
     def setUp(self):

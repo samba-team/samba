@@ -30,6 +30,7 @@ import random
 import shutil
 import os
 
+
 class XattrTests(TestCase):
 
     def _tmpfilename(self):

@@ -43,6 +43,7 @@ except ImportError:
         ENFORCE = 2
         UNAPPLY = 3
 
+
 class gp_log:
     ''' Log settings overwritten by gpo apply
     The gp_log is an xml file that stores a history of gpo changes (and the
@@ -255,6 +256,7 @@ class gp_log:
         ''' Write gp_log changes to disk '''
         self.gpostore.store(self.username, etree.tostring(self.gpdb, 'utf-8'))
 
+
 class GPOStorage:
     def __init__(self, log_file):
         if os.path.isfile(log_file):
@@ -292,6 +294,7 @@ class GPOStorage:
     def __del__(self):
         self.log.close()
 
+
 class gp_ext(object):
     __metaclass__ = ABCMeta
 
@@ -325,6 +328,7 @@ class gp_ext(object):
     def __str__(self):
         pass
 
+
 class gp_ext_setter():
     __metaclass__ = ABCMeta
 
@@ -350,6 +354,7 @@ class gp_ext_setter():
     @abstractmethod
     def __str__(self):
         pass
+
 
 class gp_inf_ext(gp_ext):
     @abstractmethod
@@ -398,6 +403,8 @@ class gp_inf_ext(gp_ext):
         pass
 
 ''' Fetch the hostname of a writable DC '''
+
+
 def get_dc_hostname(creds, lp):
     net = Net(creds=creds, lp=lp)
     cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
@@ -405,6 +412,8 @@ def get_dc_hostname(creds, lp):
     return cldap_ret.pdc_dns_name
 
 ''' Fetch a list of GUIDs for applicable GPOs '''
+
+
 def get_gpo_list(dc_hostname, creds, lp):
     gpos = []
     ads = gpo.ADS_STRUCT(dc_hostname, lp, creds)
@@ -441,6 +450,7 @@ def check_safe_path(path):
         return os.path.join(*dirs)
     raise OSError(path)
 
+
 def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
     conn = smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds, sign=True)
     cache_path = lp.cache_path('gpo_cache')
@@ -449,11 +459,13 @@ def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
             continue
         cache_gpo_dir(conn, cache_path, check_safe_path(gpo.file_sys_path))
 
+
 def gpo_version(lp, path):
     # gpo.gpo_get_sysvol_gpt_version() reads the GPT.INI from a local file,
     # read from the gpo client cache.
     gpt_path = lp.cache_path(os.path.join('gpo_cache', path))
     return int(gpo.gpo_get_sysvol_gpt_version(gpt_path)[1])
+
 
 def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
@@ -491,6 +503,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         store.store(guid, '%i' % version)
         store.commit()
 
+
 def unapply_log(gp_db):
     while True:
         item = gp_db.apply_log_pop()
@@ -498,6 +511,7 @@ def unapply_log(gp_db):
             yield item
         else:
             break
+
 
 def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
@@ -511,6 +525,7 @@ def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
             gp_db.delete(str(attr_obj), attr[0])
         gp_db.commit()
 
+
 def parse_gpext_conf(smb_conf):
     lp = LoadParm()
     if smb_conf is not None:
@@ -522,11 +537,13 @@ def parse_gpext_conf(smb_conf):
     parser.read(ext_conf)
     return lp, parser
 
+
 def atomic_write_conf(lp, parser):
     ext_conf = lp.state_path('gpext.conf')
     with NamedTemporaryFile(delete=False, dir=os.path.dirname(ext_conf)) as f:
         parser.write(f)
         os.rename(f.name, ext_conf)
+
 
 def check_guid(guid):
     # Check for valid guid with curly braces
@@ -537,6 +554,7 @@ def check_guid(guid):
     except ValueError:
         return False
     return True
+
 
 def register_gp_extension(guid, name, path,
                           smb_conf=None, machine=True, user=True):
@@ -558,6 +576,7 @@ def register_gp_extension(guid, name, path,
 
     return True
 
+
 def list_gp_extensions(smb_conf=None):
     _, parser = parse_gpext_conf(smb_conf)
     results = {}
@@ -570,6 +589,7 @@ def list_gp_extensions(smb_conf=None):
             not int(parser.get(guid, 'NoMachinePolicy'))
         results[guid]['UserPolicy'] = not int(parser.get(guid, 'NoUserPolicy'))
     return results
+
 
 def unregister_gp_extension(guid, smb_conf=None):
     if not check_guid(guid):

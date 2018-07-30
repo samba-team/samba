@@ -58,6 +58,7 @@ except ImportError:
 
 HEXDUMP_FILTER = bytearray([x if ((len(repr(chr(x))) == 3) and (x < 127)) else ord('.') for x in range(256)])
 
+
 class TestCase(unittest.TestCase):
     """A Samba test case."""
 
@@ -320,6 +321,7 @@ def env_get_var_value(var_name, allow_missing=False):
 
 cmdline_credentials = None
 
+
 class RpcInterfaceTestCase(TestCase):
     """DCE/RPC Test case."""
 
@@ -358,6 +360,7 @@ class BlackboxProcessError(Exception):
             s = "%s; message: %s" % (s, self.msg)
 
         return s
+
 
 class BlackboxTestCase(TestCaseInTempDir):
     """Base test case for blackbox tests."""
@@ -489,6 +492,7 @@ def delete_force(samdb, dn, **kwargs):
     except ldb.LdbError as error:
         (num, errstr) = error.args
         assert num == ldb.ERR_NO_SUCH_OBJECT, "ldb.delete() failed: %s" % errstr
+
 
 def create_test_ou(samdb, name):
     """Creates a unique OU for the test"""

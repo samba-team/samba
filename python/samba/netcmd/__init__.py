@@ -23,10 +23,13 @@ from ldb import LdbError
 import sys, traceback
 import textwrap
 
+
 class Option(optparse.Option):
     pass
 
 # This help formatter does text wrapping and preserves newlines
+
+
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
     def format_description(self, description=""):
         desc_width = self.width - self.current_indent
@@ -46,6 +49,7 @@ class PlainHelpFormatter(optparse.IndentedHelpFormatter):
             return "\n" + epilog + "\n"
         else:
             return ""
+
 
 class Command(object):
     """A samba-tool command."""

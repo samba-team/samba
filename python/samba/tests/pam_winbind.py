@@ -20,6 +20,7 @@ import samba.tests
 import pypamtest
 import os
 
+
 class SimplePamTests(samba.tests.TestCase):
     def test_authenticate(self):
         domain = os.environ["DOMAIN"]

@@ -25,6 +25,7 @@ from samba.samdb import SamDB
 import ldb
 import shutil, os
 
+
 class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
     """Blackbox test case for samba_dnsupdate."""
 

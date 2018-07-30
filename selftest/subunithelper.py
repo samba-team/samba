@@ -33,6 +33,7 @@ VALID_RESULTS = set(['success', 'successful', 'failure', 'fail', 'skip',
                      'testsuite-success', 'testsuite-error',
                      'uxsuccess', 'testsuite-uxsuccess'])
 
+
 class TestsuiteEnabledTestResult(unittest.TestResult):
 
     def start_testsuite(self, name):

@@ -66,6 +66,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # Tests start here
 #
 
+
 class PasswordTests(PasswordTestCase):
 
     def setUp(self):

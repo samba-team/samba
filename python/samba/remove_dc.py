@@ -25,6 +25,7 @@ from samba.dcerpc import misc, dnsp
 from samba.dcerpc.dnsp import DNS_TYPE_NS, DNS_TYPE_A, DNS_TYPE_AAAA, \
     DNS_TYPE_CNAME, DNS_TYPE_SRV, DNS_TYPE_PTR
 
+
 class DemoteException(Exception):
     """Base element for demote errors"""
 
@@ -283,6 +284,7 @@ def offline_remove_server(samdb, logger,
 
     if remove_sysvol_obj:
         remove_sysvol_references(samdb, logger, dc_name)
+
 
 def offline_remove_ntds_dc(samdb,
                            logger,

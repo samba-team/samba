@@ -21,6 +21,7 @@
 import os
 from samba.tests.samba_tool.base import SambaToolCmdTest
 
+
 class ProcessCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool process subcommands"""
 

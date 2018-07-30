@@ -33,6 +33,7 @@ from ldb import SCOPE_BASE, LdbError
 
 import samba.tests
 
+
 class SchemaAttributesTestCase(samba.tests.TestCase):
 
     def setUp(self):

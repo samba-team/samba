@@ -30,6 +30,7 @@ import ldb
 import samba
 import uuid
 
+
 class DsdbTests(TestCase):
 
     def setUp(self):
@@ -725,6 +726,7 @@ class DsdbTests(TestCase):
         self.assertEqual(ldb.Dn(self.samdb,
                                 str(part_dn) + "," + str(domain_dn)),
                          self.samdb.normalize_dn_in_domain(part_dn))
+
 
 class DsdbFullScanTests(TestCase):
 

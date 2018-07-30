@@ -40,6 +40,7 @@ from samba.netcmd import (
 global summary
 summary = {}
 
+
 class LDAPBase(object):
 
     def __init__(self, host, creds, lp,
@@ -262,6 +263,7 @@ class LDAPBase(object):
             except KeyError:
                 pass
 
+
 class Descriptor(object):
     def __init__(self, connection, dn, outf=sys.stdout, errf=sys.stderr):
         self.outf = outf
@@ -379,6 +381,7 @@ class Descriptor(object):
             for ace in common_aces:
                 res += 8 * " " + ace + "\n"
         return (self_aces == [] and other_aces == [], res)
+
 
 class LDAPObject(object):
     def __init__(self, connection, dn, summary, filter_list,

@@ -41,6 +41,7 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
+
 class BaseDeleteTests(samba.tests.TestCase):
 
     def GUID_string(self, guid):
@@ -269,6 +270,7 @@ class BasicDeleteTests(BaseDeleteTests):
         except LdbError as e15:
             (num, _) = e15.args
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
 
 class BasicTreeDeleteTests(BasicDeleteTests):
 

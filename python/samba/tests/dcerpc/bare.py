@@ -23,6 +23,7 @@ import os
 from samba.dcerpc import ClientConnection
 import samba.tests
 
+
 class BareTestCase(samba.tests.TestCase):
 
     def test_bare(self):

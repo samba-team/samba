@@ -25,6 +25,7 @@ import samba
 import gc
 import time
 
+
 class DsdbLockTestCase(SamDBTestCase):
     def test_db_lock1(self):
         basedn = self.samdb.get_default_basedn()

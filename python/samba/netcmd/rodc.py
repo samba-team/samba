@@ -25,6 +25,7 @@ from samba.dcerpc import misc, drsuapi
 from samba.drs_utils import drs_Replicate
 import sys
 
+
 class RODCException(Exception):
     def __init__(self, value):
         self.value = value
@@ -32,11 +33,14 @@ class RODCException(Exception):
     def __str__(self):
         return "%s: %s" % (self.__class__.__name__, self.value)
 
+
 class NamingError(RODCException):
     pass
 
+
 class ReplicationError(RODCException):
     pass
+
 
 class cmd_rodc_preload(Command):
     """Preload accounts for an RODC.  Multiple accounts may be requested."""

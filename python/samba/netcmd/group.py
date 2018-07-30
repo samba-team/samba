@@ -359,6 +359,7 @@ class cmd_group_list(Command):
             for msg in res:
                 self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
+
 class cmd_group_list_members(Command):
     """List all members of an AD group.
 
@@ -421,6 +422,7 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
 
         except Exception as e:
             raise CommandError('Failed to list members of "%s" group ' % groupname, e)
+
 
 class cmd_group_move(Command):
     """Move a group to an organizational unit/container.
@@ -501,6 +503,7 @@ class cmd_group_move(Command):
         self.outf.write('Moved group "%s" into "%s"\n' %
                         (groupname, full_new_parent_dn))
 
+
 class cmd_group_show(Command):
     """Display a group AD object.
 
@@ -579,6 +582,7 @@ Example3 shows how to display a users objectGUID and member attributes.
         for msg in res:
             user_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
             self.outf.write(user_ldif)
+
 
 class cmd_group(SuperCommand):
     """Group management."""

@@ -45,6 +45,7 @@ from ldb import (
 import drs_base, ldb
 from samba.dcerpc.drsuapi import *
 
+
 class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
     def _ds_bind(self, server_name):
