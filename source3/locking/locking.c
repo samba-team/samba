@@ -805,9 +805,9 @@ void remove_stale_share_mode_entries(struct share_mode_data *d)
 			struct share_mode_entry *m = d->share_modes;
 			m[i] = m[d->num_share_modes-1];
 			d->num_share_modes -= 1;
-		} else {
-			i += 1;
+			continue;
 		}
+		i += 1;
 	}
 }
 
