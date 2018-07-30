@@ -23,7 +23,8 @@ from samba.credentials import Credentials
 from samba.auth import system_session
 from samba.samdb import SamDB
 import ldb
-import shutil, os
+import shutil
+import os
 
 
 class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):

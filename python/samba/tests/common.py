@@ -17,7 +17,8 @@
 
 """Tests for samba.common"""
 
-import samba, os
+import samba
+import os
 import samba.tests
 from samba.common import *
 from samba.samdb import SamDB

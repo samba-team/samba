@@ -42,7 +42,8 @@ from ldb import (
     SCOPE_SUBTREE,
 )
 
-import drs_base, ldb
+import drs_base
+import ldb
 from samba.dcerpc.drsuapi import *
 
 

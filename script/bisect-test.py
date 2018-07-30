@@ -5,7 +5,9 @@
 
 
 from subprocess import call, check_call, Popen, PIPE
-import os, tempfile, sys
+import os
+import tempfile
+import sys
 from optparse import OptionParser
 
 parser = OptionParser()

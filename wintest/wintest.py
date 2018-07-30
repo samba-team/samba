@@ -2,9 +2,13 @@
 
 '''automated testing library for testing Samba against windows'''
 
-import pexpect, subprocess
+import pexpect
+import subprocess
 import optparse
-import sys, os, time, re
+import sys
+import os
+import time
+import re
 
 
 class wintest():

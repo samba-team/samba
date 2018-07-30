@@ -22,7 +22,10 @@ from __future__ import print_function
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba import gensec, Ldb, drs_utils, arcfour_encrypt, string_to_byte_array
-import ldb, samba, sys, uuid
+import ldb
+import samba
+import sys
+import uuid
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs, dnsserver, dnsp
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003

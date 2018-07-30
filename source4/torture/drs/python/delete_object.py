@@ -34,7 +34,8 @@ from ldb import (
     SCOPE_SUBTREE,
 )
 
-import drs_base, ldb
+import drs_base
+import ldb
 
 
 class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):

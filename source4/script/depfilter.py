@@ -7,7 +7,8 @@
 # Command line stuff
 
 from __future__ import print_function
-import sys, sre
+import sys
+import sre
 
 if len(sys.argv) != 2:
     print('Usage: depfilter.py NODE')

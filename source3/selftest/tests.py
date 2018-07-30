@@ -18,7 +18,8 @@
 # three separated by newlines. All other lines in the output are considered
 # comments.
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 import selftesthelpers
 from selftesthelpers import *

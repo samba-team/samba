@@ -2,8 +2,12 @@
 
 '''automated testing of the steps of the Samba4 HOWTO'''
 
-import sys, os
-import wintest, pexpect, time, subprocess
+import sys
+import os
+import wintest
+import pexpect
+import time
+import subprocess
 
 
 def set_krb5_conf(t):

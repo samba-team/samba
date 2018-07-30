@@ -5,7 +5,10 @@
 
 from __future__ import print_function
 from subprocess import call, check_call, Popen, PIPE
-import os, tarfile, sys, time
+import os
+import tarfile
+import sys
+import time
 from optparse import OptionParser
 import smtplib
 import email

@@ -23,7 +23,8 @@ from samba.ndr import ndr_unpack
 from samba import dsdb
 from samba import werror
 from samba import WERRORError
-import samba, ldb
+import samba
+import ldb
 from samba.dcerpc.drsuapi import DRSUAPI_ATTID_name
 import re
 

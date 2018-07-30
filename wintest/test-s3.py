@@ -2,7 +2,8 @@
 
 '''automated testing of Samba3 against windows'''
 
-import sys, os
+import sys
+import os
 import optparse
 import wintest
 

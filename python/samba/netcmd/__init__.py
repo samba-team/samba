@@ -16,11 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import optparse, samba
+import optparse
+import samba
 from samba import getopt as options
 from samba import colour
 from ldb import LdbError
-import sys, traceback
+import sys
+import traceback
 import textwrap
 
 

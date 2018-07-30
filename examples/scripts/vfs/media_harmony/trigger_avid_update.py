@@ -1,5 +1,8 @@
 #!/usr/bin/python
-import os, socket, sys, stat
+import os
+import socket
+import sys
+import stat
 
 ######################################################################
 ##

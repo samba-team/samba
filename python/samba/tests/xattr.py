@@ -17,7 +17,9 @@
 
 """Tests for samba.xattr_native and samba.xattr_tdb."""
 
-import samba.xattr_native, samba.xattr_tdb, samba.posix_eadb
+import samba.xattr_native
+import samba.xattr_tdb
+import samba.posix_eadb
 from samba.xattr import copytree_with_xattrs
 from samba.dcerpc import xattr
 from samba.ndr import ndr_pack

@@ -16,7 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os, sys, string
+import os
+import sys
+import string
 from samba.net import Net
 import samba.dckeytab
 from samba import tests

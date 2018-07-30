@@ -25,7 +25,9 @@ import tarfile
 import tempfile
 import shutil
 
-import samba.xattr_native, samba.xattr_tdb, samba.posix_eadb
+import samba.xattr_native
+import samba.xattr_tdb
+import samba.posix_eadb
 from samba.samba3 import param as s3param
 from samba.dcerpc import security, xattr, idmap
 from samba.ndr import ndr_pack, ndr_unpack
