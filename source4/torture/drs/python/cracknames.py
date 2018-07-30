@@ -149,6 +149,44 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
 
         self.ldb_dc1.delete(user)
 
+    def test_NoSPNAttribute(self):
+        """
+        Verifies that, if we try and cracknames with the desired output
+        being an SPN, it returns
+        DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE.
+        """
+        username = "Cracknames_no_SPN"
+        user = "cn=%s,%s" % (username, self.ou)
+
+        user_record = {
+            "dn": user,
+            "objectclass": "user",
+            "sAMAccountName" : username,
+            "userPrincipalName" : "test4@test.com",
+            "displayName" : "test4"}
+
+        self.ldb_dc1.add(user_record)
+
+        (result, ctr) = self._do_cracknames(user,
+                                            drsuapi.DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+                                            drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID)
+
+        self.assertEquals(ctr.count, 1)
+        self.assertEquals(ctr.array[0].status,
+                          drsuapi.DRSUAPI_DS_NAME_STATUS_OK)
+
+        user_guid = ctr.array[0].result_name
+
+        (result, ctr) = self._do_cracknames(user_guid,
+                                            drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID,
+                                            drsuapi.DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL)
+
+        self.assertEquals(ctr.count, 1)
+        self.assertEquals(ctr.array[0].status,
+                          drsuapi.DRSUAPI_DS_NAME_STATUS_NOT_FOUND)
+
+        self.ldb_dc1.delete(user)
+
     def _do_cracknames(self, name, format_offered, format_desired):
         req = drsuapi.DsNameRequest1()
         names = drsuapi.DsNameString()
