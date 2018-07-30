@@ -921,11 +921,11 @@ class DnsserverTests(RpcInterfaceTestCase):
 
         dns_admin = str(ndr_unpack(security.dom_sid, res[0]['objectSid'][0]))
 
-        packed_sd = descriptor.sddl2binary("O:SYG:BA" \
-                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
-                                           "(A;;CC;;;AU)" \
-                                           "(A;;RPLCLORC;;;WD)" \
-                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+        packed_sd = descriptor.sddl2binary("O:SYG:BA"
+                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)"
+                                           "(A;;CC;;;AU)"
+                                           "(A;;RPLCLORC;;;WD)"
+                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
                                            "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)",
                                            domain_sid, {"DnsAdmins": dns_admin})
         expected_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_sd))
@@ -981,11 +981,11 @@ class DnsserverTests(RpcInterfaceTestCase):
 
         dns_admin = str(ndr_unpack(security.dom_sid, res[0]['objectSid'][0]))
 
-        packed_sd = descriptor.sddl2binary("O:DAG:DA" \
-                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
-                                           "(A;;CC;;;AU)" \
-                                           "(A;;RPLCLORC;;;WD)" \
-                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+        packed_sd = descriptor.sddl2binary("O:DAG:DA"
+                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)"
+                                           "(A;;CC;;;AU)"
+                                           "(A;;RPLCLORC;;;WD)"
+                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
                                            "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)",
                                            domain_sid, {"DnsAdmins": dns_admin})
         expected_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_sd))
@@ -1053,11 +1053,11 @@ class DnsserverTests(RpcInterfaceTestCase):
 
         dns_admin = str(ndr_unpack(security.dom_sid, res[0]['objectSid'][0]))
 
-        packed_sd = descriptor.sddl2binary("O:DAG:DA" \
-                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
-                                           "(A;;CC;;;AU)" \
-                                           "(A;;RPLCLORC;;;WD)" \
-                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+        packed_sd = descriptor.sddl2binary("O:DAG:DA"
+                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)"
+                                           "(A;;CC;;;AU)"
+                                           "(A;;RPLCLORC;;;WD)"
+                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
                                            "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)",
                                            domain_sid, {"DnsAdmins": dns_admin})
         expected_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_sd))

@@ -476,7 +476,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     try:
         check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
     except:
-        logger.error('Failed downloading gpt cache from \'%s\' using SMB' \
+        logger.error('Failed downloading gpt cache from \'%s\' using SMB'
                      % dc_hostname)
         return
 
@@ -497,7 +497,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
             try:
                 ext.parse(ext.list(path), test_ldb, gp_db, lp)
             except Exception as e:
-                logger.error('Failed to parse gpo %s for extension %s' % \
+                logger.error('Failed to parse gpo %s for extension %s' %
                              (guid, str(ext)))
                 logger.error('Message was: ' + str(e))
                 store.cancel()

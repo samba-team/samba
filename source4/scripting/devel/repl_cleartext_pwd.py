@@ -133,9 +133,9 @@ if __name__ == "__main__":
         f.close()
 
         store_hdr = store_blob[0:28]
-        (store_version, \
-         store_dn_len, store_dn_ofs, \
-         store_hwm_len, store_hwm_ofs, \
+        (store_version,
+         store_dn_len, store_dn_ofs,
+         store_hwm_len, store_hwm_ofs,
          store_utdv_len, store_utdv_ofs) = \
         struct.unpack("<LLLLLLL", store_hdr)
 
@@ -395,9 +395,9 @@ if __name__ == "__main__":
             dn_ofs = store_hdr_len
             hwm_ofs = dn_ofs + len(dn)
             utdv_ofs = hwm_ofs + len(store_hwm_blob)
-            store_blob = struct.pack("<LLLLLLL", 1, \
+            store_blob = struct.pack("<LLLLLLL", 1,
                                      len(dn), dn_ofs,
-                                     len(store_hwm_blob), hwm_ofs, \
+                                     len(store_hwm_blob), hwm_ofs,
                                      len(store_utdv_blob), utdv_ofs) + \
             dn + store_hwm_blob + store_utdv_blob
 

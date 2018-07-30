@@ -109,7 +109,7 @@ class GPOTests(tests.TestCase):
         after = 'addom.samba.example.com/Policies/' \
             '{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI'
         result = check_safe_path(before)
-        self.assertEquals(result, after, 'check_safe_path() didn\'t' \
+        self.assertEquals(result, after, 'check_safe_path() didn\'t'
                           ' correctly convert \\ to /')
 
     def test_gpt_ext_register(self):

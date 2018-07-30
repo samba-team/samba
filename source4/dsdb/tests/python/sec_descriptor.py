@@ -185,7 +185,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
         # SCHEMA
         # CONFIGURATION
-        delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers," \
+        delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers,"
                      + self.configuration_dn)
         delete_force(self.ldb_admin, "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn)
 
@@ -1240,7 +1240,7 @@ class DaclDescriptorTests(DescriptorTests):
 
     def create_clean_ou(self, object_dn):
         """ Base repeating setup for unittests to follow """
-        res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE, \
+        res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE,
                                     expression="distinguishedName=%s" % object_dn)
         # Make sure top testing OU has been deleted before starting the test
         self.assertEqual(len(res), 0)
@@ -2009,7 +2009,7 @@ class RightsAttributesTests(DescriptorTests):
                           attrs=["sDRightsEffective"])
         # user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["sDRightsEffective"][0], \
+        self.assertEquals(res[0]["sDRightsEffective"][0],
                           ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER | SECINFO_SACL))
 
     def test_allowedChildClassesEffective(self):

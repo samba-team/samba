@@ -1053,7 +1053,7 @@ class DCJoinContext(object):
         cname_target = "%s.%s" % (name, zone)
         IPs = samba.interface_ips(ctx.lp, ctx.force_all_ips)
 
-        ctx.logger.info("Adding %d remote DNS records for %s.%s" % \
+        ctx.logger.info("Adding %d remote DNS records for %s.%s" %
                         (len(IPs), name, zone))
 
         binding_options = "sign"

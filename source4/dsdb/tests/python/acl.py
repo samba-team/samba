@@ -538,7 +538,7 @@ adminDescription: blah blah blah"""
         self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         # Modify on attribute you have rights for
         self.ldb_user.modify_ldif(ldif)
-        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                     % self.get_user_dn(self.user_with_wp), attrs=["adminDescription"])
         self.assertEqual(res[0]["adminDescription"][0], "blah blah blah")
 
@@ -564,7 +564,7 @@ Member: """ + self.get_user_dn(self.user_with_sm)
         mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
         self.ldb_user2.modify_ldif(ldif)
-        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_sm))
 # but not other users
@@ -614,7 +614,7 @@ changetype: modify
 add: Member
 Member: """ + self.get_user_dn(self.user_with_wp)
         self.ldb_user.modify_ldif(ldif)
-        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_wp))
         ldif = """
@@ -628,7 +628,7 @@ changetype: modify
 add: Member
 Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         self.ldb_user.modify_ldif(ldif)
-        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], "CN=test_modify_user2,CN=Users," + self.base_dn)
 
@@ -685,7 +685,7 @@ class AclSearchTests(AclTests):
 
     def create_clean_ou(self, object_dn):
         """ Base repeating setup for unittests to follow """
-        res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE, \
+        res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE,
                                     expression="distinguishedName=%s" % object_dn)
         # Make sure top testing OU has been deleted before starting the test
         self.assertEqual(len(res), 0)
@@ -1205,7 +1205,7 @@ class AclRenameTests(AclTests):
         self.ldb_admin.create_ou("OU=test_rename_ou1," + self.base_dn)
         self.ldb_admin.newuser(self.testuser1, self.user_pass, userou=self.ou1)
         try:
-            self.ldb_user.rename("CN=%s,%s,%s" % (self.testuser1, self.ou1, self.base_dn), \
+            self.ldb_user.rename("CN=%s,%s,%s" % (self.testuser1, self.ou1, self.base_dn),
                                  "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
         except LdbError as e21:
             (num, _) = e21.args

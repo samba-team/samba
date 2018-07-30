@@ -46,10 +46,10 @@ def remove_sysvol_references(samdb, logger, dc_name):
         # This is verbose, but it is the safe, escape-proof way
         # to add a base and add an arbitrary RDN.
         if dn.add_base(samdb.get_config_basedn()) == False:
-            raise DemoteException("Failed constructing DN %s by adding base %s" \
+            raise DemoteException("Failed constructing DN %s by adding base %s"
                                   % (dn, samdb.get_config_basedn()))
         if dn.add_child("CN=X") == False:
-            raise DemoteException("Failed constructing DN %s by adding child CN=X"\
+            raise DemoteException("Failed constructing DN %s by adding child CN=X"
                                   % (dn))
         dn.set_component(0, "CN", dc_name)
         try:
@@ -69,7 +69,7 @@ def remove_sysvol_references(samdb, logger, dc_name):
         # to add a base and add an arbitrary RDN.
         dn = ldb.Dn(samdb, s)
         if dn.add_base(samdb.get_default_basedn()) == False:
-            raise DemoteException("Failed constructing DN %s by adding base" % \
+            raise DemoteException("Failed constructing DN %s by adding base" %
                                   (dn, samdb.get_default_basedn()))
         if dn.add_child("CN=X") == False:
             raise DemoteException("Failed constructing DN %s by adding child "
@@ -160,7 +160,7 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
         a_recs = [r for r in a_recs if not a_rec_to_remove(r)]
 
         if len(a_recs) != orig_num_recs:
-            logger.info("updating %s keeping %d values, removing %s values" % \
+            logger.info("updating %s keeping %d values, removing %s values" %
                         (a_name, len(a_recs), orig_num_recs - len(a_recs)))
             samdb.dns_replace(a_name, a_recs)
 
@@ -201,7 +201,7 @@ def remove_hanging_dns_references(samdb, logger, dnsHostNameUpper, zones):
                        for v in orig_values if not to_remove(v)]
 
             if len(values) != len(orig_values):
-                logger.info("updating %s keeping %d values, removing %s values" \
+                logger.info("updating %s keeping %d values, removing %s values"
                             % (record.dn, len(values),
                                len(orig_values) - len(values)))
 

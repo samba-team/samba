@@ -1175,7 +1175,7 @@ class SearchTests(LdbBaseTest):
                               expression="(dn=OU=OU1,DC=SAMBA,DC=ORG)")
         if hasattr(self, 'disallowDNFilter') and \
            hasattr(self, 'IDX') and \
-           (hasattr(self, 'IDXGUID') or \
+           (hasattr(self, 'IDXGUID') or
             ((hasattr(self, 'IDXONE') == False and hasattr(self, 'IDX')))):
             self.assertEqual(len(res11), 0)
         else:

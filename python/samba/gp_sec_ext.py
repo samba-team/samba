@@ -57,14 +57,14 @@ class inf_to_ldb(gp_ext_setter):
 
     def ch_minPwdAge(self, val):
         old_val = self.ldb.get_minPwdAge()
-        self.logger.info('KDC Minimum Password age was changed from %s to %s' \
+        self.logger.info('KDC Minimum Password age was changed from %s to %s'
                          % (old_val, val))
         self.gp_db.store(str(self), self.attribute, str(old_val))
         self.ldb.set_minPwdAge(val)
 
     def ch_maxPwdAge(self, val):
         old_val = self.ldb.get_maxPwdAge()
-        self.logger.info('KDC Maximum Password age was changed from %s to %s' \
+        self.logger.info('KDC Maximum Password age was changed from %s to %s'
                          % (old_val, val))
         self.gp_db.store(str(self), self.attribute, str(old_val))
         self.ldb.set_maxPwdAge(val)
@@ -72,14 +72,14 @@ class inf_to_ldb(gp_ext_setter):
     def ch_minPwdLength(self, val):
         old_val = self.ldb.get_minPwdLength()
         self.logger.info(
-            'KDC Minimum Password length was changed from %s to %s' \
+            'KDC Minimum Password length was changed from %s to %s'
             % (old_val, val))
         self.gp_db.store(str(self), self.attribute, str(old_val))
         self.ldb.set_minPwdLength(val)
 
     def ch_pwdProperties(self, val):
         old_val = self.ldb.get_pwdProperties()
-        self.logger.info('KDC Password Properties were changed from %s to %s' \
+        self.logger.info('KDC Password Properties were changed from %s to %s'
                          % (old_val, val))
         self.gp_db.store(str(self), self.attribute, str(old_val))
         self.ldb.set_pwdProperties(val)

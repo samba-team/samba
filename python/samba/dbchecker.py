@@ -739,7 +739,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                               check_duplicates=True):
         '''handle a orphaned backlink value'''
         if check_duplicates is True and self.has_duplicate_links(target_dn, forward_attr, forward_syntax):
-            self.report("WARNING: Keep orphaned backlink attribute " + \
+            self.report("WARNING: Keep orphaned backlink attribute " +
                         "'%s' in '%s' for link '%s' in '%s'" % (
                             backlink_attr, obj_dn, forward_attr, target_dn))
             return
@@ -1040,7 +1040,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             return (missing_forward_links, error_count)
 
         if "sortedLinks" in self.compatibleFeatures:
-            self.report("Not checking for missing forward links because the db " + \
+            self.report("Not checking for missing forward links because the db " +
                         "has the sortedLinks feature")
             return (missing_forward_links, error_count)
 

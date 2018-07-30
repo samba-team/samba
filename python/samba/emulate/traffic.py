@@ -238,7 +238,7 @@ class Packet(object):
             fn = getattr(traffic_packets, fn_name)
 
         except AttributeError as e:
-            print("Conversation(%s) Missing handler %s" % \
+            print("Conversation(%s) Missing handler %s" %
                   (conversation.conversation_id, fn_name),
                   file=sys.stderr)
             return

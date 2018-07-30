@@ -121,7 +121,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                "objectClass": ["top", "classSchema"],
                "cn": class_name,
                "lDAPDisplayName": class_ldn,
-               "governsId": "1.3.6.1.4.1.7165.4.6.2.5." \
+               "governsId": "1.3.6.1.4.1.7165.4.6.2.5."
                + str((100000 * base_int) + random.randint(1, 100000)) + ".1.5.13",
                "instanceType": "4",
                "objectClassCategory": "%d" % oc_cat,
@@ -146,7 +146,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                "objectClass": ["top", "attributeSchema"],
                "cn": attr_name,
                "lDAPDisplayName": attr_ldn,
-               "attributeId": "1.3.6.1.4.1.7165.4.6.1.5." \
+               "attributeId": "1.3.6.1.4.1.7165.4.6.1.5."
                + str((100000 * base_int) + random.randint(1, 100000)) + ".1.5.13",
                "attributeSyntax": "2.5.5.12",
                "omSyntax": "64",

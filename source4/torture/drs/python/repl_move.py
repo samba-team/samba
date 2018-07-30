@@ -176,9 +176,9 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (attid, orig_dsa, version) = e
 
             # Skip the RDN from the expected set, it is not sent over DRS
-            if (user_dn.get_rdn_name().upper() == "CN" \
+            if (user_dn.get_rdn_name().upper() == "CN"
                 and attid == DRSUAPI_ATTID_cn) \
-                or (user_dn.get_rdn_name().upper() == "OU" \
+                or (user_dn.get_rdn_name().upper() == "OU"
                     and attid == DRSUAPI_ATTID_ou):
                 i = i + 1
                 e = expected[i];
