@@ -1400,6 +1400,7 @@ userPassword: """ + userpass + """
         self._test_samr_password_change(self.lockout1ntlm_creds,
                                         other_creds=self.lockout2ntlm_creds)
 
+
 host_url = "ldap://%s" % host
 
 TestProgram(module=__name__, opts=subunitopts)
