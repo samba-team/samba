@@ -28,6 +28,7 @@ import re
 import shutil
 import samba
 
+from samba.compat import cmp_fn
 from samba import Ldb, version, ntacls
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
@@ -283,9 +284,8 @@ def dn_sort(x, y):
     len1 = len(tab1)-1
     len2 = len(tab2)-1
     # Note: python range go up to upper limit but do not include it
-    cmp = lambda x, y:  (x > y) - (x < y)  # cmp is removed in py3
     for i in range(0, minimum):
-        ret = cmp(tab1[len1-i], tab2[len2-i])
+        ret = cmp_fn(tab1[len1-i], tab2[len2-i])
         if ret != 0:
             return ret
         else:
