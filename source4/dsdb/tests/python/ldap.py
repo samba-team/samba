@@ -660,7 +660,7 @@ class BasicTests(samba.tests.TestCase):
                 "dn": "cn=ldaptestobject," + self.base_dn,
                 "objectclass": "ipProtocol",
                 "ipProtocolNumber": "1",
-                "uid" : "0"})
+                "uid": "0"})
             self.fail()
         except LdbError as e29:
             (num, _) = e29.args
@@ -1667,8 +1667,8 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.ldb.add({
             "dn": "cn=ldaptestcontainer," + self.base_dn,
             "objectclass": "container",
-            "uSNCreated" : "1",
-            "uSNChanged" : "1",
+            "uSNCreated": "1",
+            "uSNChanged": "1",
             "whenCreated": timestring(long(time.time())),
             "whenChanged": timestring(long(time.time()))})
 
@@ -2224,7 +2224,7 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(len(res_user), 1, "Could not find (&(cn=ldaptestUSer2)(objectClass=user))")
 
         # Check rename works with extended/alternate DN forms
-        ldb.rename("<SID=" + ldb.schema_format_value("objectSID", res_user[0]["objectSID"][0]) + ">" , "cn=ldaptestUSER3,cn=users," + self.base_dn)
+        ldb.rename("<SID=" + ldb.schema_format_value("objectSID", res_user[0]["objectSID"][0]) + ">", "cn=ldaptestUSER3,cn=users," + self.base_dn)
 
         # Testing ldb.search for (&(cn=ldaptestuser3)(objectClass=user))
         res = ldb.search(expression="(&(cn=ldaptestuser3)(objectClass=user))")

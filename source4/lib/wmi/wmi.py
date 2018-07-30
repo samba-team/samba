@@ -42,7 +42,7 @@ try:
     _object = types.ObjectType
     _newclass = 1
 except AttributeError:
-    class _object : pass
+    class _object: pass
     _newclass = 0
 del types
 

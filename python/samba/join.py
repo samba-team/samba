@@ -415,12 +415,12 @@ class DCJoinContext(object):
         '''RODCs need a special krbtgt account'''
         print("Adding %s" % ctx.krbtgt_dn)
         rec = {
-            "dn" : ctx.krbtgt_dn,
-            "objectclass" : "user",
-            "useraccountcontrol" : str(samba.dsdb.UF_NORMAL_ACCOUNT |
+            "dn": ctx.krbtgt_dn,
+            "objectclass": "user",
+            "useraccountcontrol": str(samba.dsdb.UF_NORMAL_ACCOUNT |
                                        samba.dsdb.UF_ACCOUNTDISABLE),
-            "showinadvancedviewonly" : "TRUE",
-            "description" : "krbtgt for %s" % ctx.samname}
+            "showinadvancedviewonly": "TRUE",
+            "description": "krbtgt for %s" % ctx.samname}
         ctx.samdb.add(rec, ["rodc_join:1:1"])
 
         # now we need to search for the samAccountName attribute on the krbtgt DN,
@@ -536,10 +536,10 @@ class DCJoinContext(object):
 
         print("Adding %s" % ctx.ntds_dn)
         rec = {
-            "dn" : ctx.ntds_dn,
-            "objectclass" : "nTDSDSA",
-            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
-            "dMDLocation" : ctx.schema_dn}
+            "dn": ctx.ntds_dn,
+            "objectclass": "nTDSDSA",
+            "systemFlags": str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+            "dMDLocation": ctx.schema_dn}
 
         nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]
 
@@ -586,12 +586,12 @@ class DCJoinContext(object):
         if ctx.acct_dn:
             print("Adding %s" % ctx.acct_dn)
             rec = {
-                "dn" : ctx.acct_dn,
+                "dn": ctx.acct_dn,
                 "objectClass": "computer",
                 "displayname": ctx.samname,
-                "samaccountname" : ctx.samname,
-                "userAccountControl" : str(ctx.userAccountControl | samba.dsdb.UF_ACCOUNTDISABLE),
-                "dnshostname" : ctx.dnshostname}
+                "samaccountname": ctx.samname,
+                "userAccountControl": str(ctx.userAccountControl | samba.dsdb.UF_ACCOUNTDISABLE),
+                "dnshostname": ctx.dnshostname}
             if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2008:
                 rec['msDS-SupportedEncryptionTypes'] = str(samba.dsdb.ENC_ALL_TYPES)
             elif ctx.promote_existing:
@@ -631,13 +631,13 @@ class DCJoinContext(object):
             print("Adding %s" % ctx.server_dn)
             rec = {
                 "dn": ctx.server_dn,
-                "objectclass" : "server",
+                "objectclass": "server",
                 # windows uses 50000000 decimal for systemFlags. A windows hex/decimal mixup bug?
-                "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
+                "systemFlags": str(samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
                                     samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE |
                                     samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
                 # windows seems to add the dnsHostName later
-                "dnsHostName" : ctx.dnshostname}
+                "dnsHostName": ctx.dnshostname}
 
             if ctx.acct_dn:
                 rec["serverReference"] = ctx.acct_dn
@@ -684,11 +684,11 @@ class DCJoinContext(object):
         if ctx.connection_dn is not None:
             print("Adding %s" % ctx.connection_dn)
             rec = {
-                "dn" : ctx.connection_dn,
-                "objectclass" : "nTDSConnection",
-                "enabledconnection" : "TRUE",
-                "options" : "65",
-                "fromServer" : ctx.dc_ntds_dn}
+                "dn": ctx.connection_dn,
+                "objectclass": "nTDSConnection",
+                "enabledconnection": "TRUE",
+                "options": "65",
+                "fromServer": ctx.dc_ntds_dn}
             ctx.samdb.add(rec)
 
         if ctx.acct_dn:
@@ -747,9 +747,9 @@ class DCJoinContext(object):
             recs = ctx.samdb.parse_ldif(read_and_sub_file(setup_path("provision_dns_add_samba.ldif"),
                                                           {"DNSDOMAIN": ctx.dnsdomain,
                                                            "DOMAINDN": ctx.base_dn,
-                                                           "HOSTNAME" : ctx.myname,
+                                                           "HOSTNAME": ctx.myname,
                                                            "DNSPASS_B64": b64encode(ctx.dnspass.encode('utf-16-le')).decode('utf8'),
-                                                           "DNSNAME" : ctx.dnshostname}))
+                                                           "DNSNAME": ctx.dnshostname}))
             for changetype, msg in recs:
                 assert changetype == ldb.CHANGETYPE_NONE
                 dns_acct_dn = msg["dn"]
@@ -803,15 +803,15 @@ class DCJoinContext(object):
         name_map = {'SubdomainAdmins': "%s-%s" % (str(ctx.domsid), security.DOMAIN_RID_ADMINS)}
         sd_binary = descriptor.get_paritions_crossref_subdomain_descriptor(ctx.forestsid, name_map=name_map)
         rec = {
-            "dn" : ctx.partition_dn,
-            "objectclass" : "crossRef",
-            "objectCategory" : "CN=Cross-Ref,%s" % ctx.schema_dn,
-            "nCName" : ctx.base_dn,
-            "nETBIOSName" : ctx.domain_name,
+            "dn": ctx.partition_dn,
+            "objectclass": "crossRef",
+            "objectCategory": "CN=Cross-Ref,%s" % ctx.schema_dn,
+            "nCName": ctx.base_dn,
+            "nETBIOSName": ctx.domain_name,
             "dnsRoot": ctx.dnsdomain,
-            "trustParent" : ctx.parent_partition_dn,
-            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN),
-            "ntSecurityDescriptor" : sd_binary,
+            "trustParent": ctx.parent_partition_dn,
+            "systemFlags": str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN),
+            "ntSecurityDescriptor": sd_binary,
         }
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
@@ -1340,25 +1340,25 @@ class DCJoinContext(object):
                                                          security.SEC_STD_DELETE)
 
         rec = {
-            "dn" : "cn=%s,cn=system,%s" % (ctx.dnsforest, ctx.base_dn),
-            "objectclass" : "trustedDomain",
-            "trustType" : str(info.trust_type),
-            "trustAttributes" : str(info.trust_attributes),
-            "trustDirection" : str(info.trust_direction),
-            "flatname" : ctx.forest_domain_name,
-            "trustPartner" : ctx.dnsforest,
-            "trustAuthIncoming" : ndr_pack(outgoing),
-            "trustAuthOutgoing" : ndr_pack(outgoing),
-            "securityIdentifier" : ndr_pack(ctx.forestsid)
+            "dn": "cn=%s,cn=system,%s" % (ctx.dnsforest, ctx.base_dn),
+            "objectclass": "trustedDomain",
+            "trustType": str(info.trust_type),
+            "trustAttributes": str(info.trust_attributes),
+            "trustDirection": str(info.trust_direction),
+            "flatname": ctx.forest_domain_name,
+            "trustPartner": ctx.dnsforest,
+            "trustAuthIncoming": ndr_pack(outgoing),
+            "trustAuthOutgoing": ndr_pack(outgoing),
+            "securityIdentifier": ndr_pack(ctx.forestsid)
         }
         ctx.local_samdb.add(rec)
 
         rec = {
-            "dn" : "cn=%s$,cn=users,%s" % (ctx.forest_domain_name, ctx.base_dn),
-            "objectclass" : "user",
-            "userAccountControl" : str(samba.dsdb.UF_INTERDOMAIN_TRUST_ACCOUNT),
-            "clearTextPassword" : ctx.trustdom_pass.encode('utf-16-le'),
-            "samAccountName" : "%s$" % ctx.forest_domain_name
+            "dn": "cn=%s$,cn=users,%s" % (ctx.forest_domain_name, ctx.base_dn),
+            "objectclass": "user",
+            "userAccountControl": str(samba.dsdb.UF_INTERDOMAIN_TRUST_ACCOUNT),
+            "clearTextPassword": ctx.trustdom_pass.encode('utf-16-le'),
+            "samAccountName": "%s$" % ctx.forest_domain_name
         }
         ctx.local_samdb.add(rec)
 

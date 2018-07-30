@@ -64,16 +64,16 @@ class Schema(object):
 
     # the schema files (and corresponding object version) that we know about
     base_schemas = {
-        "2008_R2_old" : ("MS-AD_Schema_2K8_R2_Attributes.txt",
+        "2008_R2_old": ("MS-AD_Schema_2K8_R2_Attributes.txt",
                          "MS-AD_Schema_2K8_R2_Classes.txt",
                          47),
-       "2008_R2" : ("Attributes_for_AD_DS__Windows_Server_2008_R2.ldf",
+       "2008_R2": ("Attributes_for_AD_DS__Windows_Server_2008_R2.ldf",
                     "Classes_for_AD_DS__Windows_Server_2008_R2.ldf",
                     47),
-       "2012"    : ("AD_DS_Attributes__Windows_Server_2012.ldf",
+       "2012": ("AD_DS_Attributes__Windows_Server_2012.ldf",
                     "AD_DS_Classes__Windows_Server_2012.ldf",
                     56),
-       "2012_R2" : ("AD_DS_Attributes__Windows_Server_2012_R2.ldf",
+       "2012_R2": ("AD_DS_Attributes__Windows_Server_2012_R2.ldf",
                     "AD_DS_Classes__Windows_Server_2012_R2.ldf",
                     69),
     }
@@ -120,7 +120,7 @@ class Schema(object):
         schema_version = str(Schema.get_version(base_schema))
         self.schema_dn_modify = read_and_sub_file(
             setup_path("provision_schema_basedn_modify.ldif"),
-            {"SCHEMADN": schemadn, "OBJVERSION" : schema_version})
+            {"SCHEMADN": schemadn, "OBJVERSION": schema_version})
 
         descr = b64encode(get_schema_descriptor(domain_sid)).decode('utf8')
         self.schema_dn_add = read_and_sub_file(

@@ -168,7 +168,7 @@ except ImportError as e:
         reason += " and " + random_reason
     reason += " required"
     disabled_virtual_attributes["virtualSSHA"] = {
-        "reason" : reason,
+        "reason": reason,
     }
 
 for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
@@ -187,12 +187,12 @@ for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
             reason += " and " + random_reason
         reason += " required"
         disabled_virtual_attributes[attr] = {
-            "reason" : reason,
+            "reason": reason,
         }
     except NotImplementedError as e:
         reason = "modern '$%s$' salt in crypt(3) required" % (alg)
         disabled_virtual_attributes[attr] = {
-            "reason" : reason,
+            "reason": reason,
         }
 
 # Add the wDigest virtual attributes, virtualWDigest01 to virtualWDigest29

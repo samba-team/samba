@@ -421,42 +421,42 @@ class OpenLDAPBackend(LDAPBackend):
                 rid = serverid * 10
                 rid = rid + 1
                 mmr_syncrepl_schema_config += read_and_sub_file(
-                        setup_path("mmr_syncrepl.conf"), {
-                            "RID" : str(rid),
-                           "MMRDN": self.names.schemadn,
-                           "LDAPSERVER" : url,
-                           "MMR_PASSWORD": mmr_pass})
+                    setup_path("mmr_syncrepl.conf"), {
+                        "RID" : str(rid),
+                        "MMRDN": self.names.schemadn,
+                        "LDAPSERVER" : url,
+                        "MMR_PASSWORD": mmr_pass})
 
                 rid = rid + 1
                 mmr_syncrepl_config_config += read_and_sub_file(
                     setup_path("mmr_syncrepl.conf"), {
-                        "RID" : str(rid),
+                        "RID": str(rid),
                         "MMRDN": self.names.configdn,
-                        "LDAPSERVER" : url,
+                        "LDAPSERVER": url,
                         "MMR_PASSWORD": mmr_pass})
 
                 rid = rid + 1
                 mmr_syncrepl_domaindns_config += read_and_sub_file(
                     setup_path("mmr_syncrepl.conf"), {
-                        "RID" : str(rid),
+                        "RID": str(rid),
                         "MMRDN": "dc=DomainDNSZones," + self.names.domaindn,
-                        "LDAPSERVER" : url,
+                        "LDAPSERVER": url,
                         "MMR_PASSWORD": mmr_pass})
 
                 rid = rid + 1
                 mmr_syncrepl_forestdns_config += read_and_sub_file(
                     setup_path("mmr_syncrepl.conf"), {
-                        "RID" : str(rid),
+                        "RID": str(rid),
                         "MMRDN": "dc=ForestDNSZones," + self.names.domaindn,
-                        "LDAPSERVER" : url,
+                        "LDAPSERVER": url,
                         "MMR_PASSWORD": mmr_pass})
 
                 rid = rid + 1
                 mmr_syncrepl_user_config += read_and_sub_file(
                     setup_path("mmr_syncrepl.conf"), {
-                        "RID" : str(rid),
+                        "RID": str(rid),
                         "MMRDN": self.names.domaindn,
-                        "LDAPSERVER" : url,
+                        "LDAPSERVER": url,
                         "MMR_PASSWORD": mmr_pass})
         # OpenLDAP cn=config initialisation
         olc_syncrepl_config = ""
@@ -474,17 +474,17 @@ class OpenLDAPBackend(LDAPBackend):
                 serverid = serverid + 1
                 olc_serverids_config += read_and_sub_file(
                     setup_path("olc_serverid.conf"), {
-                        "SERVERID" : str(serverid), "LDAPSERVER" : url})
+                        "SERVERID": str(serverid), "LDAPSERVER": url})
 
                 rid = rid + 1
                 olc_syncrepl_config += read_and_sub_file(
                     setup_path("olc_syncrepl.conf"), {
-                        "RID" : str(rid), "LDAPSERVER" : url,
+                        "RID": str(rid), "LDAPSERVER": url,
                         "MMR_PASSWORD": mmr_pass})
 
                 olc_syncrepl_seed_config += read_and_sub_file(
                     setup_path("olc_syncrepl_seed.conf"), {
-                        "RID" : str(rid), "LDAPSERVER" : url})
+                        "RID": str(rid), "LDAPSERVER": url})
 
             setup_file(setup_path("olc_seed.ldif"), self.olcseedldif,
                        {"OLC_SERVER_ID_CONF": olc_serverids_config,
@@ -717,14 +717,14 @@ class FDSBackend(LDAPBackend):
             if lnkattr[attr] is not None:
                 refint_config += read_and_sub_file(
                     setup_path("fedorads-refint-add.ldif"),
-                    {"ARG_NUMBER" : str(argnum),
-                           "LINK_ATTR" : attr})
+                    {"ARG_NUMBER": str(argnum),
+                           "LINK_ATTR": attr})
                 memberof_config += read_and_sub_file(
                     setup_path("fedorads-linked-attributes.ldif"),
-                    {"MEMBER_ATTR" : attr,
-                           "MEMBEROF_ATTR" : lnkattr[attr]})
+                    {"MEMBER_ATTR": attr,
+                           "MEMBEROF_ATTR": lnkattr[attr]})
                 index_config += read_and_sub_file(
-                    setup_path("fedorads-index.ldif"), {"ATTR" : attr})
+                    setup_path("fedorads-index.ldif"), {"ATTR": attr})
                 argnum += 1
 
         f = open(self.refint_ldif, 'w')
@@ -751,7 +751,7 @@ class FDSBackend(LDAPBackend):
                 attr = "nsUniqueId"
 
             index_config += read_and_sub_file(
-                setup_path("fedorads-index.ldif"), {"ATTR" : attr})
+                setup_path("fedorads-index.ldif"), {"ATTR": attr})
 
         f = open(self.index_ldif, 'w')
         try:

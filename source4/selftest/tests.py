@@ -1120,11 +1120,11 @@ for env in ['vampire_dc', 'promoted_dc', 'rodc']:
 for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
             'vampire_dc', 'promoted_dc', 'backupfromdc', 'restoredc',
             'renamedc', 'offlinebackupdc', 'labdc']:
-    plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
+    plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local", ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
 
 # cmocka tests not requiring a specific environment
 #
-plantestsuite("samba4.dsdb.samdb.ldb_modules.unique_object_sids" , "none",
+plantestsuite("samba4.dsdb.samdb.ldb_modules.unique_object_sids", "none",
               [os.path.join(bindir(), "test_unique_object_sids")])
 plantestsuite("samba4.dsdb.samdb.ldb_modules.encrypted_secrets", "none",
               [os.path.join(bindir(), "test_encrypted_secrets")])

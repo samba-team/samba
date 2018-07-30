@@ -108,7 +108,7 @@ def parse_gplink(gplink):
         d = g.split(';')
         if len(d) != 2 or not d[0].startswith("[LDAP://"):
             raise RuntimeError("Badly formed gPLink '%s'" % g)
-        ret.append({'dn' : d[0][8:], 'options' : int(d[1])})
+        ret.append({'dn': d[0][8:], 'options': int(d[1])})
     return ret
 
 
@@ -680,10 +680,10 @@ class cmd_setlink(Command):
             if found:
                 raise CommandError("GPO '%s' already linked to this container" % gpo)
             else:
-                gplist.insert(0, {'dn' : gpo_dn, 'options' : gplink_options})
+                gplist.insert(0, {'dn': gpo_dn, 'options': gplink_options})
         else:
             gplist = []
-            gplist.append({'dn' : gpo_dn, 'options' : gplink_options})
+            gplist.append({'dn': gpo_dn, 'options': gplink_options})
 
         gplink_str = encode_gplink(gplist)
 

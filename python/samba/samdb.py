@@ -883,7 +883,7 @@ schemaUpdateNow: 1
             ctr.count = ctr.count + 1
             ctr.array = tab
 
-        if found :
+        if found:
             replBlob = ndr_pack(repl)
             msg = ldb.Message()
             msg.dn = res[0].dn

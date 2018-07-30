@@ -778,7 +778,7 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
             obj = hash_ts[k]
             if obj["num"] > limit_print:
                 dt = _glue.nttime2string(_glue.unix2nttime(k*60))
-                print("%s # of modification: %d  \tmin: %d max: %d" % (dt , obj["num"],
+                print("%s # of modification: %d  \tmin: %d max: %d" % (dt, obj["num"],
                                                                        obj["min"],
                                                                        obj["max"]))
             if hash_ts[k]["num"] > 600:

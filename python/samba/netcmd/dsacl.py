@@ -146,19 +146,19 @@ class cmd_dsacl_set(Command):
 
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
-        cars = {'change-rid' : GUID_DRS_CHANGE_RID_MASTER,
-                'change-pdc' : GUID_DRS_CHANGE_PDC,
-                'change-infrastructure' : GUID_DRS_CHANGE_INFR_MASTER,
-                'change-schema' : GUID_DRS_CHANGE_SCHEMA_MASTER,
-                'change-naming' : GUID_DRS_CHANGE_DOMAIN_MASTER,
-                'allocate_rids' : GUID_DRS_ALLOCATE_RIDS,
-                'get-changes' : GUID_DRS_GET_CHANGES,
-                'get-changes-all' : GUID_DRS_GET_ALL_CHANGES,
-                'get-changes-filtered' : GUID_DRS_GET_FILTERED_ATTRIBUTES,
-                'topology-manage' : GUID_DRS_MANAGE_TOPOLOGY,
-                'topology-monitor' : GUID_DRS_MONITOR_TOPOLOGY,
-                'repl-sync' : GUID_DRS_REPL_SYNCRONIZE,
-                'ro-repl-secret-sync' : GUID_DRS_RO_REPL_SECRET_SYNC,
+        cars = {'change-rid': GUID_DRS_CHANGE_RID_MASTER,
+                'change-pdc': GUID_DRS_CHANGE_PDC,
+                'change-infrastructure': GUID_DRS_CHANGE_INFR_MASTER,
+                'change-schema': GUID_DRS_CHANGE_SCHEMA_MASTER,
+                'change-naming': GUID_DRS_CHANGE_DOMAIN_MASTER,
+                'allocate_rids': GUID_DRS_ALLOCATE_RIDS,
+                'get-changes': GUID_DRS_GET_CHANGES,
+                'get-changes-all': GUID_DRS_GET_ALL_CHANGES,
+                'get-changes-filtered': GUID_DRS_GET_FILTERED_ATTRIBUTES,
+                'topology-manage': GUID_DRS_MANAGE_TOPOLOGY,
+                'topology-monitor': GUID_DRS_MONITOR_TOPOLOGY,
+                'repl-sync': GUID_DRS_REPL_SYNCRONIZE,
+                'ro-repl-secret-sync': GUID_DRS_RO_REPL_SECRET_SYNC,
                 }
         sid = self.find_trustee_sid(samdb, trusteedn)
         if sddl:

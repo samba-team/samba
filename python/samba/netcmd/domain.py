@@ -103,7 +103,7 @@ from samba.netcmd.pso import cmd_domain_passwordsettings_pso
 from samba.netcmd.domain_backup import cmd_domain_backup
 
 string_version_to_constant = {
-    "2008_R2" : DS_DOMAIN_FUNCTION_2008_R2,
+    "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
     "2012": DS_DOMAIN_FUNCTION_2012,
     "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
 }
@@ -1983,46 +1983,46 @@ class DomainTrustCommand(Command):
 
     def trustType_string(self, v):
         types = {
-            lsa.LSA_TRUST_TYPE_DOWNLEVEL : "DOWNLEVEL",
-            lsa.LSA_TRUST_TYPE_UPLEVEL : "UPLEVEL",
-            lsa.LSA_TRUST_TYPE_MIT : "MIT",
-            lsa.LSA_TRUST_TYPE_DCE : "DCE",
+            lsa.LSA_TRUST_TYPE_DOWNLEVEL: "DOWNLEVEL",
+            lsa.LSA_TRUST_TYPE_UPLEVEL: "UPLEVEL",
+            lsa.LSA_TRUST_TYPE_MIT: "MIT",
+            lsa.LSA_TRUST_TYPE_DCE: "DCE",
         }
         return self.generic_enum_to_string(types, v)
 
     def trustDirection_string(self, v):
         directions = {
             lsa.LSA_TRUST_DIRECTION_INBOUND |
-            lsa.LSA_TRUST_DIRECTION_OUTBOUND : "BOTH",
-            lsa.LSA_TRUST_DIRECTION_INBOUND : "INBOUND",
-            lsa.LSA_TRUST_DIRECTION_OUTBOUND : "OUTBOUND",
+            lsa.LSA_TRUST_DIRECTION_OUTBOUND: "BOTH",
+            lsa.LSA_TRUST_DIRECTION_INBOUND: "INBOUND",
+            lsa.LSA_TRUST_DIRECTION_OUTBOUND: "OUTBOUND",
         }
         return self.generic_enum_to_string(directions, v)
 
     def trustAttributes_string(self, v):
         attributes = {
-            lsa.LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE : "NON_TRANSITIVE",
-            lsa.LSA_TRUST_ATTRIBUTE_UPLEVEL_ONLY : "UPLEVEL_ONLY",
-            lsa.LSA_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN : "QUARANTINED_DOMAIN",
-            lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE : "FOREST_TRANSITIVE",
-            lsa.LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION : "CROSS_ORGANIZATION",
-            lsa.LSA_TRUST_ATTRIBUTE_WITHIN_FOREST : "WITHIN_FOREST",
-            lsa.LSA_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL : "TREAT_AS_EXTERNAL",
-            lsa.LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION : "USES_RC4_ENCRYPTION",
+            lsa.LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE: "NON_TRANSITIVE",
+            lsa.LSA_TRUST_ATTRIBUTE_UPLEVEL_ONLY: "UPLEVEL_ONLY",
+            lsa.LSA_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN: "QUARANTINED_DOMAIN",
+            lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE: "FOREST_TRANSITIVE",
+            lsa.LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION: "CROSS_ORGANIZATION",
+            lsa.LSA_TRUST_ATTRIBUTE_WITHIN_FOREST: "WITHIN_FOREST",
+            lsa.LSA_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL: "TREAT_AS_EXTERNAL",
+            lsa.LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION: "USES_RC4_ENCRYPTION",
         }
         return self.generic_bitmap_to_string(attributes, v)
 
     def kerb_EncTypes_string(self, v):
         enctypes = {
-            security.KERB_ENCTYPE_DES_CBC_CRC : "DES_CBC_CRC",
-            security.KERB_ENCTYPE_DES_CBC_MD5 : "DES_CBC_MD5",
-            security.KERB_ENCTYPE_RC4_HMAC_MD5 : "RC4_HMAC_MD5",
-            security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 : "AES128_CTS_HMAC_SHA1_96",
-            security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 : "AES256_CTS_HMAC_SHA1_96",
-            security.KERB_ENCTYPE_FAST_SUPPORTED : "FAST_SUPPORTED",
-            security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED : "COMPOUND_IDENTITY_SUPPORTED",
-            security.KERB_ENCTYPE_CLAIMS_SUPPORTED : "CLAIMS_SUPPORTED",
-            security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED : "RESOURCE_SID_COMPRESSION_DISABLED",
+            security.KERB_ENCTYPE_DES_CBC_CRC: "DES_CBC_CRC",
+            security.KERB_ENCTYPE_DES_CBC_MD5: "DES_CBC_MD5",
+            security.KERB_ENCTYPE_RC4_HMAC_MD5: "RC4_HMAC_MD5",
+            security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96: "AES128_CTS_HMAC_SHA1_96",
+            security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96: "AES256_CTS_HMAC_SHA1_96",
+            security.KERB_ENCTYPE_FAST_SUPPORTED: "FAST_SUPPORTED",
+            security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED: "COMPOUND_IDENTITY_SUPPORTED",
+            security.KERB_ENCTYPE_CLAIMS_SUPPORTED: "CLAIMS_SUPPORTED",
+            security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED: "RESOURCE_SID_COMPRESSION_DISABLED",
         }
         return self.generic_bitmap_to_string(enctypes, v)
 
@@ -2031,9 +2031,9 @@ class DomainTrustCommand(Command):
             return "Status[Enabled]"
 
         flags = {
-            lsa.LSA_TLN_DISABLED_NEW : "Disabled-New",
-            lsa.LSA_TLN_DISABLED_ADMIN : "Disabled",
-            lsa.LSA_TLN_DISABLED_CONFLICT : "Disabled-Conflicting",
+            lsa.LSA_TLN_DISABLED_NEW: "Disabled-New",
+            lsa.LSA_TLN_DISABLED_ADMIN: "Disabled",
+            lsa.LSA_TLN_DISABLED_CONFLICT: "Disabled-Conflicting",
         }
         return "Status[%s]" % self.generic_bitmap_to_string(flags, e_flags, names_only=True)
 
@@ -2042,10 +2042,10 @@ class DomainTrustCommand(Command):
             return "Status[Enabled]"
 
         flags = {
-            lsa.LSA_SID_DISABLED_ADMIN : "Disabled-SID",
-            lsa.LSA_SID_DISABLED_CONFLICT : "Disabled-SID-Conflicting",
-            lsa.LSA_NB_DISABLED_ADMIN : "Disabled-NB",
-            lsa.LSA_NB_DISABLED_CONFLICT : "Disabled-NB-Conflicting",
+            lsa.LSA_SID_DISABLED_ADMIN: "Disabled-SID",
+            lsa.LSA_SID_DISABLED_CONFLICT: "Disabled-SID-Conflicting",
+            lsa.LSA_NB_DISABLED_ADMIN: "Disabled-NB",
+            lsa.LSA_NB_DISABLED_CONFLICT: "Disabled-NB-Conflicting",
         }
         return "Status[%s]" % self.generic_bitmap_to_string(flags, e_flags, names_only=True)
 

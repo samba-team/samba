@@ -38,7 +38,7 @@ unix_now = int(time.time())
 unix_once_upon_a_time = 1000000000 #2001-09-09
 
 ENV_DSAS = {
-    'ad_dc_ntvfs' : ['CN=LOCALDC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba,DC=example,DC=com'],
+    'ad_dc_ntvfs': ['CN=LOCALDC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba,DC=example,DC=com'],
     'fl2000dc': ['CN=DC5,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba2000,DC=example,DC=com'],
     'fl2003dc': ['CN=DC6,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba2003,DC=example,DC=com'],
     'fl2008r2dc': ['CN=DC7,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba2008r2,DC=example,DC=com'],

@@ -247,12 +247,12 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
 
     setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
         "ZONE_DN": domainzone_dn,
-        "SECDESC"      : b64encode(descriptor).decode('utf8')
+        "SECDESC": b64encode(descriptor).decode('utf8')
     })
     if fill_level != FILL_SUBDOMAIN:
         setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
             "ZONE_DN": forestzone_dn,
-            "SECDESC"      : b64encode(descriptor).decode('utf8')
+            "SECDESC": b64encode(descriptor).decode('utf8')
         })
 
     domainzone_guid = get_domainguid(samdb, domainzone_dn)
@@ -681,7 +681,7 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, binddns_dir, realm,
             "DNSPASS_B64": b64encode(dnspass.encode('utf-8')).decode('utf8'),
             "KEY_VERSION_NUMBER": str(key_version_number),
             "HOSTNAME": names.hostname,
-            "DNSNAME" : '%s.%s' % (
+            "DNSNAME": '%s.%s' % (
                 names.netbiosname.lower(), names.dnsdomain.lower())
             })
 
@@ -822,10 +822,10 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         domainguid_line = "objectGUID: %s\n-" % domainguid
         descr = b64encode(get_domain_descriptor(domainsid)).decode('utf8')
         setup_add_ldif(dom_ldb, setup_path("provision_basedn.ldif"), {
-            "DOMAINDN" : names.domaindn,
-            "DOMAINGUID" : domainguid_line,
-            "DOMAINSID" : str(domainsid),
-            "DESCRIPTOR" : descr})
+            "DOMAINDN": names.domaindn,
+            "DOMAINGUID": domainguid_line,
+            "DOMAINSID": str(domainsid),
+            "DESCRIPTOR": descr})
         setup_add_ldif(dom_ldb,
                        setup_path("provision_basedn_options.ldif"), None)
 

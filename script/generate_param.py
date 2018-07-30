@@ -98,7 +98,7 @@ def iterate_all(path):
                'enumlist' : enumlist,
                'handler' : handler,
                'deprecated' : deprecated,
-               'synonyms' : synonyms}
+               'synonyms' : synonyms }
 
 # map doc attributes to a section of the generated function
 context_dict = {"G": "_GLOBAL", "S": "_LOCAL"}

@@ -670,12 +670,12 @@ class SimpleLdb(LdbBaseTest):
         """Testing we do not get trapped in the \0 byte in a property string."""
         l = ldb.Ldb(self.url(), flags=self.flags())
         l.add({
-            "dn" : b"dc=somedn",
-            "objectclass" : b"user",
-            "cN" : b"LDAPtestUSER",
-            "givenname" : b"ldap",
-            "displayname" : b"foo\0bar",
-            "objectUUID" : b"0123456789abcdef"
+            "dn": b"dc=somedn",
+            "objectclass": b"user",
+            "cN": b"LDAPtestUSER",
+            "givenname": b"ldap",
+            "displayname": b"foo\0bar",
+            "objectUUID": b"0123456789abcdef"
         })
         res = l.search(expression="(dn=dc=somedn)")
         self.assertEqual(b"foo\0bar", res[0]["displayname"][0])

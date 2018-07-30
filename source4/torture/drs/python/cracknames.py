@@ -39,10 +39,10 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
         self.user_record = {
             "dn": self.user,
             "objectclass": "user",
-            "sAMAccountName" : self.username,
-            "userPrincipalName" : "test@test.com",
-            "servicePrincipalName" : "test/%s" % self.ldb_dc1.get_default_basedn(),
-            "displayName" : "test"}
+            "sAMAccountName": self.username,
+            "userPrincipalName": "test@test.com",
+            "servicePrincipalName": "test/%s" % self.ldb_dc1.get_default_basedn(),
+            "displayName": "test"}
 
         self.ldb_dc1.add(self.user_record)
         self.ldb_dc1.delete(self.user_record["dn"])
@@ -121,11 +121,11 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
         user_record = {
             "dn": user,
             "objectclass": "user",
-            "sAMAccountName" : username,
-            "userPrincipalName" : "test2@test.com",
-            "servicePrincipalName" : ["test2/%s" % self.ldb_dc1.get_default_basedn(),
+            "sAMAccountName": username,
+            "userPrincipalName": "test2@test.com",
+            "servicePrincipalName": ["test2/%s" % self.ldb_dc1.get_default_basedn(),
                                       "test3/%s" % self.ldb_dc1.get_default_basedn()],
-            "displayName" : "test2"}
+            "displayName": "test2"}
 
         self.ldb_dc1.add(user_record)
 

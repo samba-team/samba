@@ -1127,7 +1127,7 @@ def setup_samdb_rootdse(samdb, names):
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": names.schemadn,
         "DOMAINDN": names.domaindn,
-        "ROOTDN"  : names.rootdn,
+        "ROOTDN": names.rootdn,
         "CONFIGDN": names.configdn,
         "SERVERDN": names.serverdn,
     })
@@ -1220,8 +1220,8 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
               "DNSDOMAIN": names.dnsdomain,
               "DOMAINDN": names.domaindn,
               "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')).decode('utf8'),
-              "HOSTNAME" : names.hostname,
-              "DNSNAME" : '%s.%s' % (
+              "HOSTNAME": names.hostname,
+              "DNSNAME": '%s.%s' % (
                   names.netbiosname.lower(), names.dnsdomain.lower())
               })
 
@@ -1422,7 +1422,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
     # Now register this container in the root of the forest
     msg = ldb.Message(ldb.Dn(samdb, names.domaindn))
-    msg["subRefs"] = ldb.MessageElement(names.configdn , ldb.FLAG_MOD_ADD,
+    msg["subRefs"] = ldb.MessageElement(names.configdn, ldb.FLAG_MOD_ADD,
                                         "subRefs")
 
     samdb.invocation_id = invocationid
@@ -1973,7 +1973,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
 
     logger.info("Setting up sam.ldb rootDSE marking as synchronized")
     setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"),
-                      {'NTDSGUID' : names.ntdsguid})
+                      {'NTDSGUID': names.ntdsguid})
 
     # fix any dangling GUIDs from the provision
     logger.info("Fixing provision GUIDs")
