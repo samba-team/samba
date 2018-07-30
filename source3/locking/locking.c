@@ -769,24 +769,20 @@ bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 	e->stale = true;
 
 	if (d->num_delete_tokens != 0) {
-		uint32_t i, num_stale;
-
-		/*
-		 * We cannot have any delete tokens
-		 * if there are no valid share modes.
-		 */
-
-		num_stale = 0;
+		uint32_t i;
 
 		for (i=0; i<d->num_share_modes; i++) {
-			if (d->share_modes[i].stale) {
-				num_stale += 1;
+			bool valid = !d->share_modes[i].stale;
+			if (valid) {
+				break;
 			}
 		}
 
-		if (num_stale == d->num_share_modes) {
+		if (i == d->num_share_modes) {
 			/*
-			 * No non-stale share mode found
+			 * No valid (non-stale) share mode found, all
+			 * who might have set the delete token are
+			 * gone.
 			 */
 			TALLOC_FREE(d->delete_tokens);
 			d->num_delete_tokens = 0;
