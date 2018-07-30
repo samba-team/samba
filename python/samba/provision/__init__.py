@@ -280,7 +280,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     names.domainsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
     names.forestsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
     if res6[0].get("msDS-Behavior-Version") is None or \
-        int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
+            int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
         names.domainlevel = DS_DOMAIN_FUNCTION_2000
     else:
         names.domainlevel = int(res6[0]["msDS-Behavior-Version"][0])
@@ -1792,7 +1792,7 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
 
 
 def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
-    lp):
+        lp):
     """Set the ACL for the sysvol share and the subfolders
 
     :param samdb: An LDB object on the SAM db

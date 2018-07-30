@@ -530,7 +530,7 @@ def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
             delta = sam.msg_diff(empty, refentry)
             message(CHANGE, "Adding %s to sam db" % str(refentry.dn))
             if str(refentry.dn) == "@PROVISION" and\
-                delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
+                    delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
                 delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
             delta.dn = refentry.dn
             sam.add(delta)
@@ -539,7 +539,7 @@ def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
             if str(refentry.dn) == "@ATTRIBUTES":
                 deltaattr = sam.msg_diff(refentry, entry[0])
             if str(refentry.dn) == "@PROVISION" and\
-                delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
+                    delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
                 delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
             if len(delta.items()) > 1:
                 delta.dn = refentry.dn

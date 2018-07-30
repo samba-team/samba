@@ -980,7 +980,7 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
 
 
 def create_named_txt(path, realm, dnsdomain, dnsname, binddns_dir,
-    keytab_name):
+        keytab_name):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
 

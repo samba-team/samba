@@ -304,7 +304,7 @@ class cmd_list(Command):
     }
 
     def run(self, sambaopts=None, credopts=None, versionopts=None, H=None,
-        full_dn=False):
+            full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, session_info=system_session(),
