@@ -154,7 +154,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                 expression="samaccountname=*",
                 controls=["dirsync:1:0:1"])
         except LdbError as l:
-           self.assertTrue(str(l).find("LDAP_INSUFFICIENT_ACCESS_RIGHTS") != -1)
+            self.assertTrue(str(l).find("LDAP_INSUFFICIENT_ACCESS_RIGHTS") != -1)
 
     def test_parentGUID_referrals(self):
         res2 = self.ldb_admin.search(self.base_dn, scope=SCOPE_BASE, attrs=["objectGUID"])

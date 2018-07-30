@@ -156,31 +156,31 @@ def get_testparm_var(testparm, smbconf, varname):
     return ""
 
 try:
-   import samba.dckeytab
+    import samba.dckeytab
 except ImportError:
-   cmd_domain_export_keytab = None
+    cmd_domain_export_keytab = None
 else:
-   class cmd_domain_export_keytab(Command):
-       """Dump Kerberos keys of the domain into a keytab."""
+    class cmd_domain_export_keytab(Command):
+        """Dump Kerberos keys of the domain into a keytab."""
 
-       synopsis = "%prog <keytab> [options]"
+        synopsis = "%prog <keytab> [options]"
 
-       takes_optiongroups = {
-           "sambaopts": options.SambaOptions,
-           "credopts": options.CredentialsOptions,
-           "versionopts": options.VersionOptions,
-           }
+        takes_optiongroups = {
+            "sambaopts": options.SambaOptions,
+            "credopts": options.CredentialsOptions,
+            "versionopts": options.VersionOptions,
+            }
 
-       takes_options = [
-           Option("--principal", help="extract only this principal", type=str),
-           ]
+        takes_options = [
+            Option("--principal", help="extract only this principal", type=str),
+            ]
 
-       takes_args = ["keytab"]
+        takes_args = ["keytab"]
 
-       def run(self, keytab, credopts=None, sambaopts=None, versionopts=None, principal=None):
-           lp = sambaopts.get_loadparm()
-           net = Net(None, lp)
-           net.export_keytab(keytab=keytab, principal=principal)
+        def run(self, keytab, credopts=None, sambaopts=None, versionopts=None, principal=None):
+            lp = sambaopts.get_loadparm()
+            net = Net(None, lp)
+            net.export_keytab(keytab=keytab, principal=principal)
 
 
 class cmd_domain_info(Command):
@@ -597,7 +597,7 @@ class cmd_domain_dcpromo(Command):
     takes_options.extend(common_provision_join_options)
 
     if samba.is_ntvfs_fileserver_built():
-         takes_options.extend(common_ntvfs_options)
+        takes_options.extend(common_ntvfs_options)
 
 
     takes_args = ["domain", "role?"]
@@ -1893,7 +1893,7 @@ class DomainTrustCommand(Command):
 
     def netr_DomainTrust_to_name(self, t):
         if t.trust_type == lsa.LSA_TRUST_TYPE_DOWNLEVEL:
-             return t.netbios_name
+            return t.netbios_name
 
         return t.dns_name
 
@@ -1901,11 +1901,11 @@ class DomainTrustCommand(Command):
         primary = None
         primary_parent = None
         for _t in a:
-             if _t.trust_flags & netlogon.NETR_TRUST_FLAG_PRIMARY:
-                  primary = _t
-                  if not _t.trust_flags & netlogon.NETR_TRUST_FLAG_TREEROOT:
-                      primary_parent = a[_t.parent_index]
-                  break
+            if _t.trust_flags & netlogon.NETR_TRUST_FLAG_PRIMARY:
+                primary = _t
+                if not _t.trust_flags & netlogon.NETR_TRUST_FLAG_TREEROOT:
+                    primary_parent = a[_t.parent_index]
+                break
 
         if t.trust_flags & netlogon.NETR_TRUST_FLAG_IN_FOREST:
             if t is primary_parent:
@@ -3432,10 +3432,10 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
             self.outf.write("Stored uPNSuffixes attributes[%d]:\n" % len(stored_upn_vals))
             for v in stored_upn_vals:
-                  self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
+                self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
             self.outf.write("Stored msDS-SPNSuffixes attributes[%d]:\n" % len(stored_spn_vals))
             for v in stored_spn_vals:
-                  self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
+                self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
 
             if not require_update:
                 return
@@ -3494,10 +3494,10 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
             self.outf.write("Update uPNSuffixes attributes[%d]:\n" % len(update_upn_vals))
             for v in update_upn_vals:
-                  self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
+                self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
             self.outf.write("Update msDS-SPNSuffixes attributes[%d]:\n" % len(update_spn_vals))
             for v in update_spn_vals:
-                  self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
+                self.outf.write("TLN: %-32s DNS[*.%s]\n" % ("", v))
 
             update_msg = ldb.Message()
             update_msg.dn = stored_msg.dn

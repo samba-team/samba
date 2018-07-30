@@ -29,17 +29,17 @@ class Option(optparse.Option):
 # This help formatter does text wrapping and preserves newlines
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
     def format_description(self,description=""):
-            desc_width = self.width - self.current_indent
-            indent = " "*self.current_indent
-            paragraphs = description.split('\n')
-            wrapped_paragraphs = [
-                textwrap.fill(p,
-                        desc_width,
-                        initial_indent=indent,
-                        subsequent_indent=indent)
-                for p in paragraphs]
-            result = "\n".join(wrapped_paragraphs) + "\n"
-            return result
+        desc_width = self.width - self.current_indent
+        indent = " "*self.current_indent
+        paragraphs = description.split('\n')
+        wrapped_paragraphs = [
+            textwrap.fill(p,
+                    desc_width,
+                    initial_indent=indent,
+                    subsequent_indent=indent)
+            for p in paragraphs]
+        result = "\n".join(wrapped_paragraphs) + "\n"
+        return result
 
     def format_epilog(self, epilog):
         if epilog:
@@ -160,11 +160,11 @@ class Command(object):
         undetermined_max_args = False
         for i, arg in enumerate(self.takes_args):
             if arg[-1] != "?" and arg[-1] != "*":
-               min_args += 1
+                min_args += 1
             if arg[-1] == "+" or arg[-1] == "*":
-               undetermined_max_args = True
+                undetermined_max_args = True
             else:
-               max_args += 1
+                max_args += 1
         if (len(args) < min_args) or (not undetermined_max_args and len(args) > max_args):
             parser.print_usage()
             return -1

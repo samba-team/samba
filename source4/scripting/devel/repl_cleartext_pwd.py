@@ -63,13 +63,13 @@ class globals:
 
     def add_attr(self, dn, attname, vals):
         if dn not in self.global_objs:
-           self.global_objs[dn] = {}
+            self.global_objs[dn] = {}
         self.global_objs[dn][attname] = vals
 
     def print_all(self):
         for dn, obj in self.global_objs.items():
-           self.ldif.unparse(dn, obj)
-           continue
+            self.ldif.unparse(dn, obj)
+            continue
         self.global_objs = {}
 
 def attid_equal(a1,a2):
@@ -125,34 +125,34 @@ if __name__ == "__main__":
 
     gls = globals()
     try:
-       f = open(cookie_file, 'r')
-       store_blob = f.read()
-       f.close()
+        f = open(cookie_file, 'r')
+        store_blob = f.read()
+        f.close()
 
-       store_hdr = store_blob[0:28]
-       (store_version, \
-        store_dn_len, store_dn_ofs, \
-        store_hwm_len, store_hwm_ofs, \
-        store_utdv_len, store_utdv_ofs) = \
-        struct.unpack("<LLLLLLL", store_hdr)
+        store_hdr = store_blob[0:28]
+        (store_version, \
+         store_dn_len, store_dn_ofs, \
+         store_hwm_len, store_hwm_ofs, \
+         store_utdv_len, store_utdv_ofs) = \
+         struct.unpack("<LLLLLLL", store_hdr)
 
-       store_dn = store_blob[store_dn_ofs:store_dn_ofs+store_dn_len]
-       store_hwm_blob = store_blob[store_hwm_ofs:store_hwm_ofs+store_hwm_len]
-       store_utdv_blob = store_blob[store_utdv_ofs:store_utdv_ofs+store_utdv_len]
+        store_dn = store_blob[store_dn_ofs:store_dn_ofs+store_dn_len]
+        store_hwm_blob = store_blob[store_hwm_ofs:store_hwm_ofs+store_hwm_len]
+        store_utdv_blob = store_blob[store_utdv_ofs:store_utdv_ofs+store_utdv_len]
 
-       store_hwm = ndr_unpack(drsuapi.DsReplicaHighWaterMark, store_hwm_blob)
-       store_utdv = ndr_unpack(drsblobs.replUpToDateVectorBlob, store_utdv_blob)
+        store_hwm = ndr_unpack(drsuapi.DsReplicaHighWaterMark, store_hwm_blob)
+        store_utdv = ndr_unpack(drsblobs.replUpToDateVectorBlob, store_utdv_blob)
 
-       assert store_dn == dn
-       #print "%s" % ndr_print(store_hwm)
-       #print "%s" % ndr_print(store_utdv)
+        assert store_dn == dn
+        #print "%s" % ndr_print(store_hwm)
+        #print "%s" % ndr_print(store_utdv)
     except Exception:
-       store_dn = dn
-       store_hwm = drsuapi.DsReplicaHighWaterMark()
-       store_hwm.tmp_highest_usn  = 0
-       store_hwm.reserved_usn     = 0
-       store_hwm.highest_usn      = 0
-       store_utdv = None
+        store_dn = dn
+        store_hwm = drsuapi.DsReplicaHighWaterMark()
+        store_hwm.tmp_highest_usn  = 0
+        store_hwm.reserved_usn     = 0
+        store_hwm.highest_usn      = 0
+        store_utdv = None
 
     binding_str = "ncacn_ip_tcp:%s[spnego,seal]" % server
 

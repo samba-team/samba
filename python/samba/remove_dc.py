@@ -309,7 +309,7 @@ def offline_remove_ntds_dc(samdb,
     except LdbError as e5:
         (enum, estr) = e5.args
         if enum == ldb.ERR_NO_SUCH_OBJECT:
-              raise DemoteException("Given DN %s doesn't exist" % ntds_dn)
+            raise DemoteException("Given DN %s doesn't exist" % ntds_dn)
         else:
             raise
     if (len(msgs) == 0):

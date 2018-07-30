@@ -298,7 +298,7 @@ class FilterOps(unittest.TestResult):
         self.seen_output = True
         test = self._add_prefix(test)
         if self.strip_ok_output:
-           self.output = ""
+            self.output = ""
 
         self._ops.startTest(test)
 

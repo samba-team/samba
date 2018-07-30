@@ -311,11 +311,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_SERVER_TRUST_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
         try:
-             self.samdb.modify(m)
-             self.fail()
+            self.samdb.modify(m)
+            self.fail()
         except LdbError as e10:
-             (enum, estr) = e10.args
-             self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+            (enum, estr) = e10.args
+            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
 
         m = ldb.Message()
         m.dn = res[0].dn

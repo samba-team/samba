@@ -44,7 +44,7 @@ def toArray((handle, array, num_entries)):
     for x in range(num_entries):
         ret.append((array.entries[x].idx, array.entries[x].name))
     return ret
-    
+
 
 def test_Connect(samr):
     """test the samr_Connect interface"""
@@ -98,8 +98,8 @@ def test_EnumDomains(samr, handle):
         samr.Close(dom_handle)
 
 if len(sys.argv) != 2:
-   print "Usage: samr.js <BINDING>"
-   sys.exit(1)
+    print "Usage: samr.js <BINDING>"
+    sys.exit(1)
 
 binding = sys.argv[1]
 

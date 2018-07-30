@@ -678,7 +678,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         dnsdomain = netbiosname.lower()
 
     if rootdn is None:
-       rootdn = domaindn
+        rootdn = domaindn
 
     if configdn is None:
         configdn = "CN=Configuration," + rootdn

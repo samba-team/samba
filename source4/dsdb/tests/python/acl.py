@@ -866,8 +866,8 @@ class AclSearchTests(AclTests):
 
         print("Testing correct behavior on nonaccessible search base")
         try:
-             self.ldb_user3.search("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
-                                   scope=SCOPE_BASE)
+            self.ldb_user3.search("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                  scope=SCOPE_BASE)
         except LdbError as e18:
             (num, _) = e18.args
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
@@ -1959,35 +1959,35 @@ class AclSPNTests(AclTests):
 
     # same as for join_RODC, but do not set any SPNs
     def create_rodc(self, ctx):
-         ctx.nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-         ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-         ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
+        ctx.nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
 
-         ctx.never_reveal_sid = [ "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
-                                  "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
-                                  "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
-                                  "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
-                                  "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS ]
-         ctx.reveal_sid = "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_ALLOW)
+        ctx.never_reveal_sid = [ "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
+                                 "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
+                                 "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
+                                 "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
+                                 "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS ]
+        ctx.reveal_sid = "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_ALLOW)
 
-         mysid = ctx.get_mysid()
-         admin_dn = "<SID=%s>" % mysid
-         ctx.managedby = admin_dn
+        mysid = ctx.get_mysid()
+        admin_dn = "<SID=%s>" % mysid
+        ctx.managedby = admin_dn
 
-         ctx.userAccountControl = (samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
-                              samba.dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION |
-                              samba.dsdb.UF_PARTIAL_SECRETS_ACCOUNT)
+        ctx.userAccountControl = (samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
+                             samba.dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION |
+                             samba.dsdb.UF_PARTIAL_SECRETS_ACCOUNT)
 
-         ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
-         ctx.secure_channel_type = misc.SEC_CHAN_RODC
-         ctx.RODC = True
-         ctx.replica_flags  =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                                drsuapi.DRSUAPI_DRS_PER_SYNC |
-                                drsuapi.DRSUAPI_DRS_GET_ANC |
-                                drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                                drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+        ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
+        ctx.secure_channel_type = misc.SEC_CHAN_RODC
+        ctx.RODC = True
+        ctx.replica_flags  =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                               drsuapi.DRSUAPI_DRS_PER_SYNC |
+                               drsuapi.DRSUAPI_DRS_GET_ANC |
+                               drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
+                               drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
 
-         ctx.join_add_objects()
+        ctx.join_add_objects()
 
     def create_dc(self, ctx):
         ctx.nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]

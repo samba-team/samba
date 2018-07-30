@@ -859,7 +859,7 @@ class LDAPBundel(object):
             self.outf.write("Failed search of base=%s\n" % self.search_base)
             raise
         for x in res:
-           dn_list.append(x["dn"].get_linearized())
+            dn_list.append(x["dn"].get_linearized())
         #
         global summary
         #

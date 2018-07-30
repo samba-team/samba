@@ -165,11 +165,11 @@ systemMustContain: """ + attr_ldap_display_name + """
 systemOnly: FALSE
 """
         try:
-                 self.ldb.add_ldif(ldif)
-                 self.fail()
+            self.ldb.add_ldif(ldif)
+            self.fail()
         except LdbError as e1:
-                 (num, _) = e1.args
-                 self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            (num, _) = e1.args
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         ldif = """
 dn: CN=%s,%s""" % (class_name, self.schema_dn) + """

@@ -50,7 +50,7 @@ def get_documented_parameters(sourcedir):
     for parameter in root:
         name = parameter.attrib.get('name')
         if parameter.attrib.get('removed') == "1":
-           continue
+            continue
         yield name
         syn = parameter.findall('synonym')
         if syn is not None:
@@ -74,7 +74,7 @@ def get_documented_tuples(sourcedir, omit_no_default=True):
         name = parameter.attrib.get("name")
         param_type = parameter.attrib.get("type")
         if parameter.attrib.get('removed') == "1":
-           continue
+            continue
         values = parameter.findall("value")
         defaults = []
         for value in values:
@@ -193,7 +193,7 @@ class SmbDotConfTests(TestCase):
             elif context == "S":
                 section = "test"
             else:
-                 self.fail("%s has no valid context" % param)
+                self.fail("%s has no valid context" % param)
             p = subprocess.Popen(program + ["-s", self.smbconf,
                     "--section-name", section, "--parameter-name", param],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
@@ -223,7 +223,7 @@ class SmbDotConfTests(TestCase):
             elif context == "S":
                 section = "test"
             else:
-                 self.fail("%s has no valid context" % param)
+                self.fail("%s has no valid context" % param)
             p = subprocess.Popen(program + ["-s", self.smbconf,
                     "--section-name", section, "--parameter-name", param,
                     "--option", "%s = %s" % (param, default)],
@@ -277,7 +277,7 @@ class SmbDotConfTests(TestCase):
             elif context == "S":
                 section = "test"
             else:
-                 self.fail("%s has no valid context" % param)
+                self.fail("%s has no valid context" % param)
 
             value_to_use = arbitrary.get(param_type)
             if value_to_use is None:
