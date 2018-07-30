@@ -2065,7 +2065,7 @@ samba-tool user syncpasswords --terminate \\
             if self.current_pid is not None:
                 log_msg("currentPid: %d\n" % self.current_pid)
 
-            modify_ldif =  "dn: %s\n" % (self.cache_dn)
+            modify_ldif = "dn: %s\n" % (self.cache_dn)
             modify_ldif += "changetype: modify\n"
             modify_ldif += "replace: currentPid\n"
             if self.current_pid is not None:
@@ -2082,7 +2082,7 @@ samba-tool user syncpasswords --terminate \\
             self.dirsync_controls = [str(res_controls[0]),"extended_dn:1:0"]
             log_msg("dirsyncControls: %r\n" % self.dirsync_controls)
 
-            modify_ldif =  "dn: %s\n" % (self.cache_dn)
+            modify_ldif = "dn: %s\n" % (self.cache_dn)
             modify_ldif += "changetype: modify\n"
             modify_ldif += "replace: dirsyncControl\n"
             modify_ldif += "dirsyncControl: %s\n" % (self.dirsync_controls[0])
@@ -2129,7 +2129,7 @@ samba-tool user syncpasswords --terminate \\
                     add_ldif += "currentTime: %s\n" % ldb.timestring(int(time.time()))
                     self.cache.add_ldif(add_ldif)
                 else:
-                    modify_ldif =  "dn: %s\n" % (dn)
+                    modify_ldif = "dn: %s\n" % (dn)
                     modify_ldif += "changetype: modify\n"
                     modify_ldif += "replace: lastCookie\n"
                     modify_ldif += "lastCookie: %s\n" % (lastCookie)

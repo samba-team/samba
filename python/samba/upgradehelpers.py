@@ -49,13 +49,13 @@ import tempfile
 # And so opening them create a file in the current directory which is not what
 # we want
 # I still keep them commented because I plan soon to make more cleaner
-ERROR =     -1
-SIMPLE =     0x00
-CHANGE =     0x01
-CHANGESD =     0x02
-GUESS =     0x04
-PROVISION =    0x08
-CHANGEALL =    0xff
+ERROR = -1
+SIMPLE = 0x00
+CHANGE = 0x01
+CHANGESD = 0x02
+GUESS = 0x04
+PROVISION = 0x08
+CHANGEALL = 0xff
 
 hashAttrNotCopied = set(["dn", "whenCreated", "whenChanged", "objectGUID",
                          "uSNCreated", "replPropertyMetaData", "uSNChanged", "parentGUID",
@@ -173,7 +173,7 @@ def usn_in_range(usn, range):
     cont = True
     ok = False
     while cont:
-        if idx ==  len(range):
+        if idx == len(range):
             cont = False
             continue
         if usn < int(range[idx]):

@@ -23,7 +23,7 @@ class NetBiosTests(samba.tests.TestCase):
         super(NetBiosTests, self).setUp()
         self.n = netbios.Node()
         self.ifc = os.environ["SERVER_IP"]
-        self.dc =  os.environ["DC_NETBIOSNAME"]
+        self.dc = os.environ["DC_NETBIOSNAME"]
     def tearDown(self):
         super(NetBiosTests, self).tearDown()
     def test_query_name(self):

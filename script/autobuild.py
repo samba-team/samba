@@ -77,7 +77,7 @@ if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
 ctdb_configure_params = " --enable-developer --picky-developer ${PREFIX}"
 samba_configure_params = " --picky-developer ${PREFIX} ${EXTRA_PYTHON} --with-profiling-data"
 
-samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
+samba_libs_envvars = "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
 samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"

@@ -2324,7 +2324,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             enc_types.enc_types = security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
             enc_types.enc_types |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 
-        local_policy_access =  lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
+        local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
         local_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
         local_policy_access |= lsa.LSA_POLICY_CREATE_SECRET
 
@@ -2810,14 +2810,14 @@ class cmd_domain_trust_delete(DomainTrustCommand):
     def run(self, domain, sambaopts=None, localdcopts=None, credopts=None, versionopts=None,
             delete_location=None):
 
-        local_policy_access =  lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
+        local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
         local_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
         local_policy_access |= lsa.LSA_POLICY_CREATE_SECRET
 
         if delete_location == "local":
             remote_policy_access = None
         else:
-            remote_policy_access =  lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
+            remote_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
             remote_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
             remote_policy_access |= lsa.LSA_POLICY_CREATE_SECRET
 
@@ -2971,7 +2971,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
     def run(self, domain, sambaopts=None, versionopts=None, credopts=None, localdcopts=None,
             validate_location=None):
 
-        local_policy_access =  lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
+        local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
 
         local_server = self.setup_local_server(sambaopts, localdcopts)
         try:
@@ -3378,7 +3378,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                         continue
                     raise CommandError("value[%s] specified for --enable-sid and --disable-sid" % e)
 
-        local_policy_access =  lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
+        local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
         if require_update:
             local_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
 

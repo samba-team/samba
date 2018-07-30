@@ -544,7 +544,7 @@ adminDescription: blah blah blah"""
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
 changetype: modify
 add: Member
-Member: """ +  self.get_user_dn(self.user_with_sm)
+Member: """ + self.get_user_dn(self.user_with_sm)
 #the user has no rights granted, this should fail
         try:
             self.ldb_user2.modify_ldif(ldif)
@@ -583,7 +583,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
 changetype: modify
 add: Member
-Member: """ +  self.get_user_dn(self.user_with_sm) + """
+Member: """ + self.get_user_dn(self.user_with_sm) + """
 Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 
 #grant self-membership, should be able to add himself  but not others at the same time
@@ -608,7 +608,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
 changetype: modify
 add: Member
-Member: """ +  self.get_user_dn(self.user_with_wp)
+Member: """ + self.get_user_dn(self.user_with_wp)
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
@@ -1981,11 +1981,11 @@ class AclSPNTests(AclTests):
         ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
         ctx.secure_channel_type = misc.SEC_CHAN_RODC
         ctx.RODC = True
-        ctx.replica_flags  =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                               drsuapi.DRSUAPI_DRS_PER_SYNC |
-                               drsuapi.DRSUAPI_DRS_GET_ANC |
-                               drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                               drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+        ctx.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                             drsuapi.DRSUAPI_DRS_PER_SYNC |
+                             drsuapi.DRSUAPI_DRS_GET_ANC |
+                             drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
+                             drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
 
         ctx.join_add_objects()
 

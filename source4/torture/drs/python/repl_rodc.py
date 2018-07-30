@@ -683,10 +683,10 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
         ctx.secure_channel_type = misc.SEC_CHAN_RODC
         ctx.RODC = True
-        ctx.replica_flags  =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                               drsuapi.DRSUAPI_DRS_PER_SYNC |
-                               drsuapi.DRSUAPI_DRS_GET_ANC |
-                               drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                               drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+        ctx.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                             drsuapi.DRSUAPI_DRS_PER_SYNC |
+                             drsuapi.DRSUAPI_DRS_GET_ANC |
+                             drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
+                             drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
 
         ctx.join_add_objects()

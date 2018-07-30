@@ -283,7 +283,7 @@ class LDAPBackend(ProvisionBackend):
                 count = count + 1
 
                 if count > 15:
-                    self.logger.error("Could not connect to slapd started with: %s" %  "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
+                    self.logger.error("Could not connect to slapd started with: %s" % "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
                     raise ProvisioningError("slapd never accepted a connection within 15 seconds of starting")
 
         self.logger.error("Could not start slapd with: %s" % "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
@@ -592,7 +592,7 @@ class OpenLDAPBackend(LDAPBackend):
         retcode = subprocess.call(slapd_cmd, close_fds=True, shell=False)
 
         if retcode != 0:
-            self.logger.error("conversion from slapd.conf to cn=config failed slapd started with: %s" %  "\'" + "\' \'".join(slapd_cmd) + "\'")
+            self.logger.error("conversion from slapd.conf to cn=config failed slapd started with: %s" % "\'" + "\' \'".join(slapd_cmd) + "\'")
             raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
         if not os.path.exists(os.path.join(self.olcdir, "cn=config.ldif")):

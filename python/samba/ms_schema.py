@@ -305,7 +305,7 @@ def read_ms_schema(attr_file, classes_file, dump_attributes = True, dump_classes
     classes_ldif = ""
 
     if dump_attributes:
-        attr_ldif =  __parse_schema_file(attr_file, "attributeSchema")
+        attr_ldif = __parse_schema_file(attr_file, "attributeSchema")
     if dump_classes:
         classes_ldif = __parse_schema_file(classes_file, "classSchema")
 

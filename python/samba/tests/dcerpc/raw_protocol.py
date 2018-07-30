@@ -1330,7 +1330,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         features1 = 0
         btf1 = base.bind_time_features_syntax(features1)
 
-        features2 =  dcerpc.DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN
+        features2 = dcerpc.DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN
         features2 |= dcerpc.DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING
         btf2 = base.bind_time_features_syntax(features2)
 

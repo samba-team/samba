@@ -63,7 +63,7 @@ from samba.samdb import get_default_backend_store
 
 def get_domainguid(samdb, domaindn):
     res = samdb.search(base=domaindn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
-    domainguid =  str(ndr_unpack(misc.GUID, res[0]["objectGUID"][0]))
+    domainguid = str(ndr_unpack(misc.GUID, res[0]["objectGUID"][0]))
     return domainguid
 
 

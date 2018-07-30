@@ -295,7 +295,7 @@ def dsacl2fsacl(dssddl, sid, as_sddl=True):
             if str(ace.trustee) == security.SID_CREATOR_OWNER:
                 # For Creator/Owner the IO flag is set as this ACE has only a sense for child objects
                 ace.flags = ace.flags | security.SEC_ACE_FLAG_INHERIT_ONLY
-            ace.access_mask =  ldapmask2filemask(ace.access_mask)
+            ace.access_mask = ldapmask2filemask(ace.access_mask)
             fdescr.dacl_add(ace)
 
     if not as_sddl:

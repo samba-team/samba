@@ -340,7 +340,7 @@ class RawDCERPCTest(TestCase):
         else:
             auth_info=""
 
-        pfc_flags =  samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST
+        pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST
         pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST
         if object is not None:
             pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_OBJECT_UUID

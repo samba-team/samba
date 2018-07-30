@@ -219,7 +219,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             ldb_dc1.modify(m)
         except ldb.LdbError as e1:
             (num, msg) = e1.args
-            self.fail("Failed to reassign RID Master " +  msg)
+            self.fail("Failed to reassign RID Master " + msg)
 
         try:
             # 2. Perform a RID alloc
@@ -260,7 +260,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                 ldb_dc2.modify(m)
             except ldb.LdbError as e:
                 (num, msg) = e.args
-                self.fail("Failed to restore RID Master " +  msg)
+                self.fail("Failed to restore RID Master " + msg)
 
     def test_offline_samba_tool_seized_ridalloc(self):
         """Perform a join against the non-RID manager and then seize the RID Manager role"""

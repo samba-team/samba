@@ -454,7 +454,7 @@ class LDAPObject(object):
         # Two domains - two domain controllers
 
         if self.two_domains:
-            self.ignore_attributes +=  [
+            self.ignore_attributes += [
                 "objectCategory", "objectGUID", "objectSid", "whenCreated",
                 "whenChanged", "pwdLastSet", "uSNCreated", "creationTime",
                 "modifiedCount", "priorSetTime", "rIDManagerReference",

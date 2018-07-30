@@ -78,7 +78,7 @@ class cmd_delegation_show(Command):
         uac = int(res[0].get("userAccountControl")[0])
         allowed = res[0].get("msDS-AllowedToDelegateTo")
 
-        self.outf.write("Account-DN: %s\n" %  str(res[0].dn))
+        self.outf.write("Account-DN: %s\n" % str(res[0].dn))
         self.outf.write("UF_TRUSTED_FOR_DELEGATION: %s\n"
                         % bool(uac & dsdb.UF_TRUSTED_FOR_DELEGATION))
         self.outf.write("UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION: %s\n" %

@@ -39,7 +39,7 @@ sids=[domsid + '-512', 'S-1-5-32-545', domsid + '-513', 'S-1-1-0', 'S-1-3-1', 'S
 
 flush_cache(sids=sids)
 
-sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' +  ','.join(sids)],
+sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' + ','.join(sids)],
                              stdout=subprocess.PIPE).communicate()[0].strip()
 
 gids=[]
@@ -87,7 +87,7 @@ def check_singular(sids, ids, idtype='gid'):
 # Check the list produced by the sids-to-xids call with the
 # multiple variant (sid-to-xid) for each sid in turn.
 def check_multiple(sids, idtypes):
-    sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' +  ','.join(sids)],
+    sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' + ','.join(sids)],
                                  stdout=subprocess.PIPE).communicate()[0].strip()
     # print sids2xids
     i = 0

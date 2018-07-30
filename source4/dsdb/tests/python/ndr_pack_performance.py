@@ -208,7 +208,7 @@ class UserTests(samba.tests.TestCase):
 
     def test_pack_repl_sample(self):
         blob = self.get_file_blob('testdata/replication-ndrpack-example.gz')
-        desc =  ndr_unpack(drsuapi.DsGetNCChangesCtr6, blob)
+        desc = ndr_unpack(drsuapi.DsGetNCChangesCtr6, blob)
         self._test_pack(desc, cycles=20)
 
 if "://" not in host:

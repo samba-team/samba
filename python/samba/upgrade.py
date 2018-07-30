@@ -467,7 +467,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
         machinepass = None
 
     if samba3.lp.get("passdb backend").split(":")[0].strip() == "ldapsam":
-        base_dn =  samba3.lp.get("ldap suffix")
+        base_dn = samba3.lp.get("ldap suffix")
         ldapuser = samba3.lp.get("ldap admin dn")
         ldappass = secrets_db.get_ldap_bind_pw(ldapuser)
         if ldappass is None:

@@ -81,7 +81,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
 
         # test adding groups
         for group in self.groups:
-            (result, out, err) =  self.runsubcmd("group", "add", group["name"],
+            (result, out, err) = self.runsubcmd("group", "add", group["name"],
                                                  "--description=%s" % group["description"],
                                                  "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                  "-U%s%%%s" % (os.environ["DC_USERNAME"],
@@ -140,7 +140,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
 
     def test_move(self):
         full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
-        (result, out, err) =  self.runsubcmd("ou", "create", full_ou_dn)
+        (result, out, err) = self.runsubcmd("ou", "create", full_ou_dn)
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "There shouldn't be any error message")
         self.assertIn('Created ou "%s"' % full_ou_dn, out)
@@ -153,7 +153,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                           (group["name"], full_ou_dn), out)
 
         # Should fail as groups objects are in OU
-        (result, out, err) =  self.runsubcmd("ou", "delete", full_ou_dn)
+        (result, out, err) = self.runsubcmd("ou", "delete", full_ou_dn)
         self.assertCmdFail(result)
         self.assertIn(("subtree_delete: Unable to delete a non-leaf node "
                        "(it has %d children)!") % len(self.groups), err)
