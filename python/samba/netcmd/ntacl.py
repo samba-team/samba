@@ -279,4 +279,3 @@ class cmd_ntacl(SuperCommand):
     subcommands["sysvolreset"] = cmd_ntacl_sysvolreset()
     subcommands["sysvolcheck"] = cmd_ntacl_sysvolcheck()
     subcommands["getdosinfo"] = cmd_dosinfo_get()
-

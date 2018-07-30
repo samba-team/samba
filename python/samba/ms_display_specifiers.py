@@ -193,4 +193,3 @@ if __name__ == '__main__':
         sys.exit(1)
 
     print(read_ms_ldif(display_specifiers_file))
-

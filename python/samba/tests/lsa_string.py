@@ -75,6 +75,3 @@ class LsaStringTests(TestCase):
         # and one with contents
         self.assertEqual("Hello world",
                          str(lsa.String("Hello world")))
-
-
-

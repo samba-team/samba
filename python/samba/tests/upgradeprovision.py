@@ -153,5 +153,3 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
             if os.path.exists(path):
                 os.unlink(path)
         super(UpdateSecretsTests, self).tearDown()
-
-

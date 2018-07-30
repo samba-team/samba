@@ -746,4 +746,3 @@ objectClass: organizationalUnit
         # Check deleted on DC2
         self._check_deleted(self.ldb_dc2, self.ou1)
         self._check_deleted(self.ldb_dc2, self.ou2)
-

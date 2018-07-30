@@ -201,4 +201,3 @@ class cmd_spn(SuperCommand):
     subcommands["add"] = cmd_spn_add()
     subcommands["list"] = cmd_spn_list()
     subcommands["delete"] = cmd_spn_delete()
-

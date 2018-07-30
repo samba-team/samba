@@ -86,4 +86,3 @@ class NtlmDisabledTests(TestCase):
                 pass
             else:
                 raise
-

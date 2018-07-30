@@ -110,5 +110,3 @@ class SchemaCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("dn: CN=Person,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
-
-

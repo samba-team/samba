@@ -118,5 +118,3 @@ IEnumWbemClassObject_swigregister = _wmi.IEnumWbemClassObject_swigregister
 IEnumWbemClassObject_swigregister(IEnumWbemClassObject)
 
 IEnumWbemClassObject_SmartNext = _wmi.IEnumWbemClassObject_SmartNext
-
-

@@ -58,4 +58,3 @@ class PasswordTestCase(samba.tests.TestCase):
             samdb = self.ldb
 
         PasswordCommon.allow_password_changes(self, samdb)
-

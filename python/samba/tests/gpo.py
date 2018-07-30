@@ -148,4 +148,3 @@ class GPOTests(tests.TestCase):
                           'Failed to find test variable in gpext.conf')
         parser.remove_section('test_section')
         atomic_write_conf(lp, parser)
-

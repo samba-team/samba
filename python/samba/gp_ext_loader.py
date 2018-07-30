@@ -57,4 +57,3 @@ def get_gp_client_side_extensions(logger, smb_conf):
             logger.info('Loaded user extension from %s: %s'
                         % (gp_ext['DllName'], ext.__name__))
     return (machine_exts, user_exts)
-

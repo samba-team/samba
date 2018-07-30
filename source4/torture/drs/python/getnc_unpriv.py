@@ -304,5 +304,3 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
                                    partial_attribute_set=self.get_partial_attribute_set())
         self._test_repl_full(expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED],
                              partial_attribute_set=self.get_partial_attribute_set())
-
-

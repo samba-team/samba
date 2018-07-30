@@ -377,4 +377,3 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
 
         # trigger replication from DC1 to DC2, for cleanup
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
-

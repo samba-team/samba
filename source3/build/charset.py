@@ -46,4 +46,3 @@ def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
     else:
         conf.DEFINE('DEFAULT_DOS_CHARSET', "ASCII", quote=True)
         conf.DEFINE('DEFAULT_UNIX_CHARSET', "UTF8", quote=True)
-

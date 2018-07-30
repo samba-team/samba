@@ -193,4 +193,3 @@ systemOnly: FALSE
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
         self._checkSchemaInfo(schi_before, schi_after)
-

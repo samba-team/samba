@@ -57,4 +57,3 @@ class Libnet_SetPwdTest(samba.tests.TestCase):
                         credentials=creds)
 
     ########################################################################################
-
