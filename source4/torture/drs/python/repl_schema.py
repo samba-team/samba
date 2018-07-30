@@ -351,7 +351,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
 
         # force replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn, forced=True)
-        
+
         # check objects are replicated
         self._check_object(c_dn)
         self._check_object(a_dn)
