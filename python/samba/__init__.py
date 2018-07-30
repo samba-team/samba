@@ -264,7 +264,7 @@ def check_all_substituted(text):
 
     :param text: The text to search for substitution variables
     """
-    if not "${" in text:
+    if "${" not in text:
         return
 
     var_start = text.find("${")
