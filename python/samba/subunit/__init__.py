@@ -45,7 +45,7 @@ class RemotedTestCase(unittest.TestCase):
     actions.
     """
 
-    def __eq__ (self, other):
+    def __eq__(self, other):
         try:
             return self.__description == other.__description
         except AttributeError:

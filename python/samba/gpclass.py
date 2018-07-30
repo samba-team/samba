@@ -224,8 +224,7 @@ class gp_log:
                 for attr in attrs:
                     func = None
                     if attr.attrib['name'] in data_maps[ext.attrib['name']]:
-                        func = data_maps[ext.attrib['name']]\
-                               [attr.attrib['name']][-1]
+                        func = data_maps[ext.attrib['name']][attr.attrib['name']][-1]
                     else:
                         for dmap in data_maps[ext.attrib['name']].keys():
                             if data_maps[ext.attrib['name']][dmap][0] == \

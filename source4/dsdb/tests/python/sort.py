@@ -331,7 +331,7 @@ class BaseSortTests(samba.tests.TestCase):
                     # Let's remind ourselves.
                     if result_attr == "msTSExpireDate4":
                         print('-' * 72)
-                        print ("This test fails against Windows with the "
+                        print("This test fails against Windows with the "
                                "default number of elements (33).")
                         print("Try with --elements=27 (or similar).")
                         print('-' * 72)

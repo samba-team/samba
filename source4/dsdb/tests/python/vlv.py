@@ -558,7 +558,7 @@ class VLVTests(samba.tests.TestCase):
                                 skipped += 1
 
                         if expected_results != results:
-                            print ("attr %s before %d after %d offset %d" %
+                            print("attr %s before %d after %d offset %d" %
                                    (attr, before, after, offset))
                         self.assertEquals(expected_results, results)
 
@@ -701,7 +701,7 @@ class VLVTests(samba.tests.TestCase):
                             except ldb.LdbError as e:
                                 if offset != 0:
                                     raise
-                                print ("offset %d denominator %d raised error "
+                                print("offset %d denominator %d raised error "
                                        "expected error %s\n"
                                        "(offset zero is illegal unless "
                                        "content count is zero)" %
@@ -740,7 +740,7 @@ class VLVTests(samba.tests.TestCase):
                                     cstr = str(c)
                                     if cstr.startswith('vlv_resp'):
                                         bits = cstr.rsplit(':')
-                                        print ("the answer is %s; we said %d" %
+                                        print("the answer is %s; we said %d" %
                                                (bits[2], real_offset))
                                         break
 
@@ -858,7 +858,7 @@ class VLVTests(samba.tests.TestCase):
                                                                      expression=expression,
                                                                      base=base,
                                                                      scope=ldb.SCOPE_ONELEVEL)
-            print ("searching for attr %s amongst %d deleted objects" %
+            print("searching for attr %s amongst %d deleted objects" %
                    (attr, len(expected_order)))
             sort_control = "server_sort:1:0:%s" % attr
             step = max(len(expected_order) // 10, 1)
@@ -1010,7 +1010,7 @@ class VLVTests(samba.tests.TestCase):
                             print(middle)
                             print(expected_order)
                             print()
-                            print ("\nattr %s offset %d before %d "
+                            print("\nattr %s offset %d before %d "
                                    "after %d gte %s" %
                                    (attr, offset, before, after, gte))
                         self.assertEquals(expected_results, results)
