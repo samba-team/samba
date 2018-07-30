@@ -39,14 +39,14 @@ from samba import (
     Ldb,
     werror,
     WERRORError
-    )
+)
 
 from samba.netcmd import (
     Command,
     CommandError,
     SuperCommand,
     Option,
-    )
+)
 
 
 def _is_valid_ip(ip_string, address_families=None):
@@ -234,7 +234,7 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, computername, credopts=None, sambaopts=None, versionopts=None,
             H=None, computerou=None, description=None, prepare_oldjoin=False,
@@ -351,7 +351,7 @@ sudo is used so a computer may run the command as root.
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, computername, credopts=None, sambaopts=None,
             versionopts=None, H=None):
@@ -408,13 +408,13 @@ class cmd_computer_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
         lp = sambaopts.get_loadparm()
@@ -485,7 +485,7 @@ attribute.
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, computername, credopts=None, sambaopts=None, versionopts=None,
             H=None, computer_attrs=None):
@@ -536,7 +536,7 @@ class cmd_computer_move(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, computername, new_ou_dn, credopts=None, sambaopts=None,
             versionopts=None, H=None):

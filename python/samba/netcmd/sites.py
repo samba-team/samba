@@ -26,7 +26,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option,
-    )
+)
 
 
 class cmd_sites_create(Command):

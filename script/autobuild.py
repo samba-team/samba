@@ -48,7 +48,7 @@ builddirs = {
     "pass"    : ".",
     "fail"    : ".",
     "retry"   : "."
-    }
+}
 
 defaulttasks = [ "ctdb",
                  "samba",
@@ -490,7 +490,7 @@ class buildlist(object):
                                rebase_remote, rebase_branch,
                                rebase_remote,
                                rebase_remote, rebase_branch
-                                ),
+                            ),
                            "test/plain" ) ]
 
             self.retry = builder('retry', retry_task, cp=False)

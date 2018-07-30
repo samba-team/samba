@@ -35,7 +35,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option,
-    )
+)
 
 
 
@@ -48,7 +48,7 @@ class cmd_ntacl_set(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-q", "--quiet", help="Be quiet", action="store_true"),
@@ -58,7 +58,7 @@ class cmd_ntacl_set(Command):
         Option("--use-ntvfs", help="Set the ACLs directly to the TDB or xattr for use with the ntvfs file server", action="store_true"),
         Option("--use-s3fs", help="Set the ACLs for use with the default s3fs file server via the VFS layer", action="store_true"),
         Option("--service", help="Name of the smb.conf service to use when applying the ACLs", type="string")
-        ]
+    ]
 
     takes_args = ["acl","file"]
 
@@ -103,7 +103,7 @@ class cmd_dosinfo_get(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_args = ["file"]
 
@@ -124,7 +124,7 @@ class cmd_ntacl_get(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("--as-sddl", help="Output ACL in the SDDL format", action="store_true"),
@@ -134,7 +134,7 @@ class cmd_ntacl_get(Command):
         Option("--use-ntvfs", help="Get the ACLs directly from the TDB or xattr used with the ntvfs file server", action="store_true"),
         Option("--use-s3fs", help="Get the ACLs for use via the VFS layer used by the default s3fs file server", action="store_true"),
         Option("--service", help="Name of the smb.conf service to use when getting the ACLs", type="string")
-        ]
+    ]
 
     takes_args = ["file"]
 
@@ -179,12 +179,12 @@ class cmd_ntacl_sysvolreset(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("--use-ntvfs", help="Set the ACLs for use with the ntvfs file server", action="store_true"),
         Option("--use-s3fs", help="Set the ACLs for use with the default s3fs file server", action="store_true")
-        ]
+    ]
 
     def run(self, use_ntvfs=False, use_s3fs=False,
             credopts=None, sambaopts=None, versionopts=None):
@@ -246,7 +246,7 @@ class cmd_ntacl_sysvolcheck(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()

@@ -318,12 +318,12 @@ class cmd_domain_pwdsettings_pso_create(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = pwd_settings_options + [
         Option("-H", "--URL", help="LDB URL for database or target server",
                metavar="URL", dest="H", type=str)
-        ]
+    ]
     takes_args = ["psoname", "precedence"]
 
     def run(self, psoname, precedence, H=None, min_pwd_age=None,
@@ -452,7 +452,7 @@ class cmd_domain_pwdsettings_pso_set(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = pwd_settings_options + [
         Option("--precedence", type=int,
@@ -460,7 +460,7 @@ class cmd_domain_pwdsettings_pso_set(Command):
                      "Lower precedence is better (<integer>).")),
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
-        ]
+    ]
     takes_args = ["psoname"]
 
     def run(self, psoname, H=None, precedence=None, min_pwd_age=None,
@@ -535,12 +535,12 @@ class cmd_domain_pwdsettings_pso_delete(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                metavar="URL", dest="H", type=str)
-        ]
+    ]
     takes_args = ["psoname"]
 
     def run(self, psoname, H=None, credopts=None, sambaopts=None,
@@ -575,12 +575,12 @@ class cmd_domain_pwdsettings_pso_list(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                metavar="URL", dest="H", type=str)
-        ]
+    ]
 
     def run(self, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
@@ -620,12 +620,12 @@ class cmd_domain_pwdsettings_pso_show(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                metavar="URL", dest="H", type=str)
-        ]
+    ]
     takes_args = ["psoname"]
 
     def run(self, psoname, H=None, credopts=None, sambaopts=None,
@@ -650,12 +650,12 @@ class cmd_domain_pwdsettings_pso_show_user(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                metavar="URL", dest="H", type=str)
-        ]
+    ]
     takes_args = ["username"]
 
     def run(self, username, H=None, credopts=None, sambaopts=None,
@@ -686,12 +686,12 @@ class cmd_domain_pwdsettings_pso_apply(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                metavar="URL", dest="H", type=str)
-        ]
+    ]
     takes_args = ["psoname", "user_or_group"]
 
     def run(self, psoname, user_or_group, H=None, credopts=None,
@@ -746,12 +746,12 @@ class cmd_domain_pwdsettings_pso_unapply(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                metavar="URL", dest="H", type=str),
-        ]
+    ]
     takes_args = ["psoname", "user_or_group"]
 
     def run(self, psoname, user_or_group, H=None, credopts=None,

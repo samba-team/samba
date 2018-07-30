@@ -1350,7 +1350,7 @@ class DCJoinContext(object):
             "trustAuthIncoming" : ndr_pack(outgoing),
             "trustAuthOutgoing" : ndr_pack(outgoing),
             "securityIdentifier" : ndr_pack(ctx.forestsid)
-            }
+        }
         ctx.local_samdb.add(rec)
 
         rec = {
@@ -1359,7 +1359,7 @@ class DCJoinContext(object):
             "userAccountControl" : str(samba.dsdb.UF_INTERDOMAIN_TRUST_ACCOUNT),
             "clearTextPassword" : ctx.trustdom_pass.encode('utf-16-le'),
             "samAccountName" : "%s$" % ctx.forest_domain_name
-            }
+        }
         ctx.local_samdb.add(rec)
 
 

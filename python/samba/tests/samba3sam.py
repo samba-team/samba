@@ -325,7 +325,7 @@ class MapTestCase(MapBaseTestCase):
             "sambaSID": "S-1-5-21-4231626423-2410014848-2360679739",
             "sambaNextRid": "2000",
             "sambaDomainName": "TESTS"
-            })
+        })
 
         # Add a set of split records
         self.ldb.add_ldif("""

@@ -1731,7 +1731,7 @@ class SamTests(samba.tests.TestCase):
             "sAMAccountName": username,
             "userAccountControl": str(UF_NORMAL_ACCOUNT),
             "unicodePwd": utf16pw,
-            })
+        })
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE,
@@ -2553,7 +2553,7 @@ class SamTests(samba.tests.TestCase):
             "objectclass": "user",
             "userAccountControl": str(UF_NORMAL_ACCOUNT),
             "unicodePwd": "\"thatsAcomplPASS2\"".encode('utf-16-le')
-            })
+        })
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE,
@@ -2656,7 +2656,7 @@ class SamTests(samba.tests.TestCase):
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "user",
             "userAccountControl": str(UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE),
-            })
+        })
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE,
@@ -2804,7 +2804,7 @@ class SamTests(samba.tests.TestCase):
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "user",
             "userAccountControl": str(UF_NORMAL_ACCOUNT|UF_SMARTCARD_REQUIRED|UF_ACCOUNTDISABLE),
-            })
+        })
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE,
@@ -3678,7 +3678,7 @@ class SamTests(samba.tests.TestCase):
             ["CN=Enterprise Admins","CN=Users,"],
             ["CN=Administrator","CN=Users,"],
             ["CN=Domain Controllers","CN=Users,"],
-            ]
+        ]
 
 
 

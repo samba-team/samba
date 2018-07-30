@@ -30,7 +30,7 @@ from samba.netcmd import (
     CommandError,
     Option,
     SuperCommand,
-    )
+)
 from samba.samdb import SamDB
 from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
@@ -431,7 +431,7 @@ class cmd_drs_replicate(Command):
         Option("--local-online", help="pull changes into the local database (destination DC is ignored) as a normal online replication", action="store_true"),
         Option("--async-op", help="use ASYNC_OP for the replication", action="store_true"),
         Option("--single-object", help="Replicate only the object specified, instead of the whole Naming Context (only with --local)", action="store_true"),
-        ]
+    ]
 
     def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False,
                             single_object=False,
@@ -639,7 +639,7 @@ class cmd_drs_bind(Command):
             ("DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10",   "DRS_EXT_GETCHGREQ_V10"),
             ("DRSUAPI_SUPPORTED_EXTENSION_RESERVED_PART2",   "DRS_EXT_RESERVED_FOR_WIN2K_OR_DOTNET_PART2"),
             ("DRSUAPI_SUPPORTED_EXTENSION_RESERVED_PART3", "DRS_EXT_RESERVED_FOR_WIN2K_OR_DOTNET_PART3")
-            ]
+        ]
 
         optmap_ext = [
             ("DRSUAPI_SUPPORTED_EXTENSION_ADAM", "DRS_EXT_ADAM"),
@@ -689,7 +689,7 @@ class cmd_drs_options(Command):
     takes_options = [
         Option("--dsa-option", help="DSA option to enable/disable", type="str",
                metavar="{+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL | {+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE" ),
-        ]
+    ]
 
     option_map = {"IS_GC": 0x00000001,
                   "DISABLE_INBOUND_REPL": 0x00000002,
@@ -753,7 +753,7 @@ class cmd_drs_clone_dc_database(Command):
         Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("--include-secrets", help="Also replicate secret values", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true")
-        ]
+    ]
 
     takes_args = ["domain"]
 

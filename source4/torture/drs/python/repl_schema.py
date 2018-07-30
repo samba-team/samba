@@ -39,7 +39,7 @@ from ldb import (
     Message,
     FLAG_MOD_ADD,
     FLAG_MOD_REPLACE
-    )
+)
 from samba.dcerpc import drsuapi, misc
 from samba.drs_utils import drs_DsBind
 from samba import dsdb

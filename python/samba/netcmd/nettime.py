@@ -22,7 +22,7 @@ from samba.net import Net
 
 from samba.netcmd import (
     Command,
-    )
+)
 
 class cmd_time(Command):
     """Retrieve the time on a server.
@@ -45,7 +45,7 @@ Example2 return the date and time of the local server.
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_args = ["server_name?"]
 

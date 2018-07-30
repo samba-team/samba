@@ -149,20 +149,20 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.add({
             "dn": ou1,
             "objectclass": "organizationalUnit"
-            })
+        })
         ou1_id = self._get_identifier(self.ldb_dc1, ou1)
         ou2 = "OU=get_anc2,%s" % ou1
         self.ldb_dc1.add({
             "dn": ou2,
             "objectclass": "organizationalUnit"
-            })
+        })
         ou2_id = self._get_identifier(self.ldb_dc1, ou2)
         dc3 = "CN=test_anc_dc_%u,%s" % (random.randint(0, 4294967295), ou2)
         self.ldb_dc1.add({
             "dn": dc3,
             "objectclass": "computer",
             "userAccountControl": "%d" % (samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_SERVER_TRUST_ACCOUNT)
-            })
+        })
         dc3_id = self._get_identifier(self.ldb_dc1, dc3)
 
         # Add some linked attributes (for checking GET_TGT behaviour)
@@ -226,7 +226,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.add({
             "dn": non_nc_ou,
             "objectclass": "organizationalUnit"
-            })
+        })
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=self.ldb_dc1.get_invocation_id(),
                                nc_dn_str=non_nc_ou,
@@ -247,20 +247,20 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.add({
             "dn": ou1,
             "objectclass": "organizationalUnit"
-            })
+        })
         ou1_id = self._get_identifier(self.ldb_dc1, ou1)
         ou2 = "OU=get_anc2,%s" % ou1
         self.ldb_dc1.add({
             "dn": ou2,
             "objectclass": "organizationalUnit"
-            })
+        })
         ou2_id = self._get_identifier(self.ldb_dc1, ou2)
         dc3 = "CN=test_anc_dc_%u,%s" % (random.randint(0, 4294967295), ou2)
         self.ldb_dc1.add({
             "dn": dc3,
             "objectclass": "computer",
             "userAccountControl": "%d" % (samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_SERVER_TRUST_ACCOUNT)
-            })
+        })
         dc3_id = self._get_identifier(self.ldb_dc1, dc3)
 
         (hwm1, utdv1) = self._check_replication([ou1,ou2,dc3],
@@ -371,7 +371,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.add({
             "dn": cn3,
             "objectclass": "container",
-            })
+        })
         cn3_id = self._get_identifier(self.ldb_dc1, cn3)
 
         (hwm5, utdv5) = self._check_replication([dc3,ou1,ou2,self.ou,cn3],

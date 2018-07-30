@@ -25,7 +25,7 @@ from samba.tests import (
     SkipTest,
     TestCase,
     TestCaseInTempDir,
-    )
+)
 import random
 import shutil
 import os

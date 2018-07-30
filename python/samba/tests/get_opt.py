@@ -25,7 +25,7 @@ from samba.getopt import (
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
     parse_kerberos_arg,
-    )
+)
 import samba.tests
 
 class KerberosOptionTests(samba.tests.TestCase):

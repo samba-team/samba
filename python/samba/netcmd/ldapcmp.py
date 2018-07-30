@@ -35,7 +35,7 @@ from samba.netcmd import (
     Command,
     CommandError,
     Option,
-    )
+)
 
 global summary
 summary = {}
@@ -914,7 +914,7 @@ class cmd_ldapcmp(Command):
             help="List of comma separated attributes to ignore in the comparision"),
         Option("--skip-missing-dn", dest="skip_missing_dn", action="store_true", default=False,
             help="Skip report and failure due to missing DNs in one server or another"),
-        ]
+    ]
 
     def run(self, URL1, URL2,
             context1=None, context2=None, context3=None, context4=None, context5=None,

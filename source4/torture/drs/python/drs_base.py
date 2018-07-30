@@ -38,7 +38,7 @@ from ldb import (
     SCOPE_BASE,
     Message,
     FLAG_MOD_REPLACE,
-    )
+)
 from samba.compat import cmp_fn
 
 class DrsBaseTestCase(SambaToolCmdTest):

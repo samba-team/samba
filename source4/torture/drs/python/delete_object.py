@@ -32,7 +32,7 @@ import time
 
 from ldb import (
     SCOPE_SUBTREE,
-    )
+)
 
 import drs_base, ldb
 

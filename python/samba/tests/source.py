@@ -27,7 +27,7 @@ import warnings
 
 from samba.tests import (
     TestCase,
-    )
+)
 
 
 def get_python_source_files():

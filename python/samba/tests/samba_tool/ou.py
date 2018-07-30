@@ -251,7 +251,7 @@ class OUCmdTestCase(SambaToolCmdTest):
         ou = {
             "name": self.randomName(),
             "description": self.randomName(count=100),
-            }
+        }
         ou.update(base)
         return ou
 

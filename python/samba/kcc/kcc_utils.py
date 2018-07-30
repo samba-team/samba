@@ -28,7 +28,7 @@ from samba.dcerpc import (
     drsblobs,
     drsuapi,
     misc,
-    )
+)
 from samba.common import dsdb_Dn
 from samba.ndr import ndr_unpack, ndr_pack
 from collections import Counter

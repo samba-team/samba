@@ -26,7 +26,7 @@ from samba.credentials import (
     AUTO_USE_KERBEROS,
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
-    )
+)
 import sys
 
 

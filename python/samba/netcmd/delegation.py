@@ -30,7 +30,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option
-    )
+)
 
 
 class cmd_delegation_show(Command):
@@ -42,12 +42,12 @@ class cmd_delegation_show(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["accountname"]
 
@@ -98,12 +98,12 @@ class cmd_delegation_for_any_service(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["accountname", "onoff"]
 
@@ -151,12 +151,12 @@ class cmd_delegation_for_any_protocol(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        ]
+    ]
 
 
     takes_args = ["accountname", "onoff"]
@@ -205,12 +205,12 @@ class cmd_delegation_add_service(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["accountname", "principal"]
 
@@ -259,12 +259,12 @@ class cmd_delegation_del_service(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["accountname", "principal"]
 

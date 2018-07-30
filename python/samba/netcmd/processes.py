@@ -47,7 +47,7 @@ class cmd_processes(Command):
                help="Return only processes associated with one particular name"),
         Option("--pid", type=int,
                help="Return only names assoicated with one particular PID"),
-        ]
+    ]
 
     takes_args = []
 

@@ -30,7 +30,7 @@ from samba.dcerpc.netlogon import (
     netr_Authenticator,
     netr_WorkstationInformation,
     MSV1_0_ALLOW_MSVCHAPV2
-    )
+)
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dsdb import (
     UF_WORKSTATION_TRUST_ACCOUNT,

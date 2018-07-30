@@ -25,7 +25,7 @@ from samba.netcmd import (
     CommandError,
     Option,
     SuperCommand,
-    )
+)
 from samba.samdb import SamDB
 from samba import dsdb
 from operator import attrgetter
@@ -58,7 +58,7 @@ class cmd_rename(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, old_ou_dn, new_ou_dn, credopts=None, sambaopts=None,
             versionopts=None, H=None):
@@ -122,7 +122,7 @@ class cmd_move(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, old_ou_dn, new_parent_dn, credopts=None, sambaopts=None,
             versionopts=None, H=None):
@@ -188,7 +188,7 @@ class cmd_create(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, ou_dn, credopts=None, sambaopts=None, versionopts=None,
             H=None, description=None):
@@ -238,7 +238,7 @@ class cmd_listobjects(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, ou_dn, credopts=None, sambaopts=None, versionopts=None,
             H=None, full_dn=False, recursive=False):
@@ -295,13 +295,13 @@ class cmd_list(Command):
                type=str, metavar="URL", dest="H"),
         Option("--full-dn", dest="full_dn", default=False, action='store_true',
                help="Display DNs including the base DN."),
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, sambaopts=None, credopts=None, versionopts=None, H=None,
         full_dn=False):
@@ -350,7 +350,7 @@ class cmd_delete(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, ou_dn, credopts=None, sambaopts=None, versionopts=None,
             H=None, force_subtree_delete=False):

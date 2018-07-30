@@ -167,7 +167,7 @@ smbtorture4_options = [
     "--maximum-runtime=$SELFTEST_MAXTIME",
     "--basedir=$SELFTEST_TMPDIR",
     "--format=subunit"
-    ] + get_env_torture_options()
+] + get_env_torture_options()
 
 
 def plansmbtorture4testsuite(name, env, options, target, modname=None):

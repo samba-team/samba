@@ -53,7 +53,7 @@ class cmd_rodc_preload(Command):
         Option("--server", help="DC to use", type=str),
         Option("--file", help="Read account list from a file, or - for stdin (one per line)", type=str),
         Option("--ignore-errors", help="When preloading multiple accounts, skip any failing accounts", action="store_true"),
-        ]
+    ]
 
     takes_args = ["account*"]
 

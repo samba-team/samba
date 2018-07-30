@@ -60,17 +60,17 @@ from samba import (
     valid_netbios_name,
     version,
     is_heimdal_built,
-    )
+)
 from samba.dcerpc import security, misc
 from samba.dcerpc.misc import (
     SEC_CHAN_BDC,
     SEC_CHAN_WKSTA,
-    )
+)
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003,
     DS_DOMAIN_FUNCTION_2008_R2,
     ENC_ALL_TYPES,
-    )
+)
 from samba.idmap import IDmapDB
 from samba.ms_display_specifiers import read_ms_ldif
 from samba.ntacls import setntacl, getntacl, dsacl2fsacl
@@ -80,7 +80,7 @@ from samba.provision.backend import (
     FDSBackend,
     LDBBackend,
     OpenLDAPBackend,
-    )
+)
 from samba.descriptor import (
     get_empty_descriptor,
     get_config_descriptor,
@@ -102,7 +102,7 @@ from samba.descriptor import (
     get_dns_forest_microsoft_dns_descriptor,
     get_dns_domain_microsoft_dns_descriptor,
     get_managed_service_accounts_descriptor,
-    )
+)
 from samba.provision.common import (
     setup_path,
     setup_add_ldif,
@@ -116,7 +116,7 @@ from samba.provision.sambadns import (
     get_dnsadmins_sid,
     setup_ad_dns,
     create_dns_update_list
-    )
+)
 
 import samba.param
 import samba.registry
@@ -731,7 +731,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
         "workgroup": domain,
         "realm": realm,
         "server role": serverrole,
-        }
+    }
 
     if lp is None:
         lp = samba.param.LoadParm()
@@ -1028,14 +1028,14 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
                     setup_path("secrets_simple_ldap.ldif"), {
                         "LDAPMANAGERDN": backend_credentials.get_bind_dn(),
                         "LDAPMANAGERPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
-                        })
+                    })
             else:
                 setup_add_ldif(secrets_ldb,
                     setup_path("secrets_sasl_ldap.ldif"), {
                         "LDAPADMINUSER": backend_credentials.get_username(),
                         "LDAPADMINREALM": backend_credentials.get_realm(),
                         "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
-                        })
+                    })
     except:
         secrets_ldb.transaction_cancel()
         raise
@@ -1126,7 +1126,7 @@ def setup_samdb_rootdse(samdb, names):
         "ROOTDN"  : names.rootdn,
         "CONFIGDN": names.configdn,
         "SERVERDN": names.serverdn,
-        })
+    })
 
 
 def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
@@ -1194,7 +1194,7 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
                 "DEFAULTSITE": names.sitename,
                 "NETBIOSNAME": names.netbiosname,
                 "SERVERDN": names.serverdn,
-                })
+            })
 
     system_session_info = system_session()
     samdb.set_session_info(system_session_info)
@@ -1392,7 +1392,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
         "SAMBA_VERSION_STRING": version,
         "MIN_PWD_LENGTH": str(DEFAULT_MIN_PWD_LENGTH)
-        })
+    })
 
     # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
     if fill == FILL_FULL:
@@ -1520,7 +1520,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         "SYSTEM_DESCRIPTOR": system_desc,
         "BUILTIN_DESCRIPTOR": builtin_desc,
         "DOMAIN_CONTROLLERS_DESCRIPTOR": controllers_desc,
-        })
+    })
 
     # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
     if fill == FILL_FULL:
@@ -1535,7 +1535,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         setup_add_ldif(samdb, setup_path("provision_well_known_sec_princ.ldif"), {
             "CONFIGDN": names.configdn,
             "WELLKNOWNPRINCIPALS_DESCRIPTOR": protected1wd_descr,
-            }, controls=["relax:0", "provision:0"])
+        }, controls=["relax:0", "provision:0"])
 
     if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
         setup_modify_ldif(samdb,
@@ -1550,7 +1550,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
             "DOMAINSID": str(names.domainsid),
             "ADMINPASS_B64": b64encode(adminpass.encode('utf-16-le')).decode('utf8'),
             "KRBTGTPASS_B64": b64encode(krbtgtpass.encode('utf-16-le')).decode('utf8')
-            }, controls=["relax:0", "provision:0"])
+        }, controls=["relax:0", "provision:0"])
 
         logger.info("Setting up self join")
         setup_self_join(samdb, admin_session_info, names=names, fill=fill,
@@ -2012,7 +2012,7 @@ _ROLES_MAP = {
     "member server": "member server",
     "standalone": "standalone server",
     "standalone server": "standalone server",
-    }
+}
 
 
 def sanitize_server_role(role):
@@ -2042,7 +2042,7 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
             "DOMAINDN": domaindn,
             "NETBIOSNAME": netbiosname,
             "NISDOMAIN": nisdomain,
-            })
+        })
     except:
         samdb.transaction_cancel()
         raise
@@ -2447,7 +2447,7 @@ def create_krb5_conf(path, dnsdomain, hostname, realm):
             "DNSDOMAIN": dnsdomain,
             "HOSTNAME": hostname,
             "REALM": realm,
-        })
+    })
 
 
 class ProvisioningError(Exception):

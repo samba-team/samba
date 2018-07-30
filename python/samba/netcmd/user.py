@@ -45,7 +45,7 @@ from samba import (
     gensec,
     generate_random_password,
     Ldb,
-    )
+)
 from samba.net import Net
 
 from samba.netcmd import (
@@ -53,7 +53,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option,
-    )
+)
 from samba.compat import text_type
 
 try:
@@ -67,19 +67,19 @@ except ImportError as e:
             "python-gpgme required"
 
 disabled_virtual_attributes = {
-    }
+}
 
 virtual_attributes = {
     "virtualClearTextUTF8": {
         "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
-        },
+    },
     "virtualClearTextUTF16": {
         "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
-        },
+    },
     "virtualSambaGPG": {
         "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
-        },
-    }
+    },
+}
 
 get_random_bytes_fn = None
 if get_random_bytes_fn is None:
@@ -161,7 +161,7 @@ try:
     h = hashlib.sha1()
     h = None
     virtual_attributes["virtualSSHA"] = {
-        }
+    }
 except ImportError as e:
     reason = "hashlib.sha1()"
     if random_reason:
@@ -169,7 +169,7 @@ except ImportError as e:
     reason += " required"
     disabled_virtual_attributes["virtualSSHA"] = {
         "reason" : reason,
-        }
+    }
 
 for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
     try:
@@ -180,7 +180,7 @@ for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
         v = get_crypt_value(alg, "")
         v = None
         virtual_attributes[attr] = {
-            }
+        }
     except ImportError as e:
         reason = "crypt"
         if random_reason:
@@ -188,12 +188,12 @@ for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
         reason += " required"
         disabled_virtual_attributes[attr] = {
             "reason" : reason,
-            }
+        }
     except NotImplementedError as e:
         reason = "modern '$%s$' salt in crypt(3) required" % (alg)
         disabled_virtual_attributes[attr] = {
             "reason" : reason,
-            }
+        }
 
 # Add the wDigest virtual attributes, virtualWDigest01 to virtualWDigest29
 for x in range(1, 30):
@@ -299,7 +299,7 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, username, password=None, credopts=None, sambaopts=None,
             versionopts=None, H=None, must_change_at_next_login=False,
@@ -429,7 +429,7 @@ Example2 shows how to delete a user in the domain against the local server.   su
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, username, credopts=None, sambaopts=None, versionopts=None,
             H=None):
@@ -466,13 +466,13 @@ class cmd_user_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
         lp = sambaopts.get_loadparm()
@@ -538,7 +538,7 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
-        ]
+    ]
 
     takes_args = ["username?"]
 
@@ -571,7 +571,7 @@ class cmd_user_disable(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
-        ]
+    ]
 
     takes_args = ["username?"]
 
@@ -579,7 +579,7 @@ class cmd_user_disable(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, username=None, sambaopts=None, credopts=None,
             versionopts=None, filter=None, H=None):
@@ -683,13 +683,13 @@ class cmd_user_password(Command):
 
     takes_options = [
         Option("--newpassword", help="New password", type=str),
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, credopts=None, sambaopts=None, versionopts=None,
                 newpassword=None):
@@ -774,7 +774,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         Option("--clear-smartcard-required",
                 help="Don't require a smartcard for interactive logons",
                 action="store_true"),
-        ]
+    ]
 
     takes_args = ["username?"]
 
@@ -1428,7 +1428,7 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
         Option("--decrypt-samba-gpg",
                help=decrypt_samba_gpg_help,
                action="store_true", default=False, dest="decrypt_samba_gpg"),
-        ]
+    ]
 
     takes_args = ["username?"]
 
@@ -1688,7 +1688,7 @@ samba-tool user syncpasswords --terminate \\
         Option("--terminate",
                help="Send a SIGTERM to an already running (daemon) process",
                action="store_true", default=False, dest="terminate"),
-        ]
+    ]
 
     def run(self, cache_ldb_initialize=False, cache_ldb=None,
             H=None, filter=None,
@@ -2345,7 +2345,7 @@ LDAP server using the 'nano' editor.
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, username, credopts=None, sambaopts=None, versionopts=None,
             H=None, editor=None):
@@ -2477,7 +2477,7 @@ Example3 shows how to display a users objectSid and memberOf attributes.
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, username, credopts=None, sambaopts=None, versionopts=None,
             H=None, user_attrs=None):
@@ -2549,7 +2549,7 @@ class cmd_user_move(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, username, new_parent_dn, credopts=None, sambaopts=None,
             versionopts=None, H=None):

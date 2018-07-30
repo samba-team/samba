@@ -52,7 +52,7 @@ class cmd_sambatool(SuperCommand):
 
     takes_optiongroups = {
         "versionopts": options.VersionOptions,
-        }
+    }
 
     subcommands = cache_loader()
 

@@ -26,7 +26,7 @@ from samba.provision import (
     sanitize_server_role,
     setup_secretsdb,
     findnss,
-    )
+)
 import samba.tests
 from samba.tests import env_loadparm, TestCase
 

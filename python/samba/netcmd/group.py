@@ -309,13 +309,13 @@ class cmd_group_list(Command):
                help="Verbose output, showing group type and group scope.",
                action="store_true"),
 
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, sambaopts=None, credopts=None, versionopts=None, H=None,
             verbose=False):
@@ -373,13 +373,13 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_args = ["groupname"]
 
@@ -464,7 +464,7 @@ class cmd_group_move(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, groupname, new_parent_dn, credopts=None, sambaopts=None,
             versionopts=None, H=None):
@@ -549,7 +549,7 @@ Example3 shows how to display a users objectGUID and member attributes.
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, groupname, credopts=None, sambaopts=None, versionopts=None,
             H=None, group_attrs=None):

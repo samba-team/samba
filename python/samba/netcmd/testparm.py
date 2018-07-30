@@ -66,7 +66,7 @@ class cmd_testparm(Command):
         # These are harder to do with the new code structure
         Option("--show-all-parameters", action="store_true", default=False,
                help="Show the parameters, type, possible values")
-        ]
+    ]
 
     takes_args = []
 

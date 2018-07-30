@@ -40,7 +40,7 @@ from samba.drs_utils import drs_DsBind
 from ldb import (
     SCOPE_BASE,
     SCOPE_SUBTREE,
-    )
+)
 
 import drs_base, ldb
 from samba.dcerpc.drsuapi import *

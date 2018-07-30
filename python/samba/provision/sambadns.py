@@ -39,7 +39,7 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008_R2,
     DS_DOMAIN_FUNCTION_2012_R2,
     DS_DOMAIN_FUNCTION_2016
-    )
+)
 from samba.descriptor import (
     get_domain_descriptor,
     get_domain_delete_protected1_descriptor,
@@ -47,7 +47,7 @@ from samba.descriptor import (
     get_dns_partition_descriptor,
     get_dns_forest_microsoft_dns_descriptor,
     get_dns_domain_microsoft_dns_descriptor
-    )
+)
 from samba.provision.common import (
     setup_path,
     setup_add_ldif,
@@ -57,7 +57,7 @@ from samba.provision.common import (
     FILL_SUBDOMAIN,
     FILL_NT4SYNC,
     FILL_DRS,
-    )
+)
 
 from samba.samdb import get_default_backend_store
 
@@ -248,7 +248,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
     setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
         "ZONE_DN": domainzone_dn,
         "SECDESC"      : b64encode(descriptor).decode('utf8')
-        })
+    })
     if fill_level != FILL_SUBDOMAIN:
         setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
             "ZONE_DN": forestzone_dn,
@@ -269,7 +269,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
         "SERVERDN": serverdn,
         "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc).decode('utf8'),
         "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc).decode('utf8'),
-        })
+    })
     setup_modify_ldif(samdb, setup_path("provision_dnszones_modify.ldif"), {
         "CONFIGDN": configdn,
         "SERVERDN": serverdn,
@@ -300,7 +300,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
 def add_dns_accounts(samdb, domaindn):
     setup_add_ldif(samdb, setup_path("provision_dns_accounts_add.ldif"), {
         "DOMAINDN": domaindn,
-        })
+    })
 
 
 def add_dns_container(samdb, domaindn, prefix, domain_sid, dnsadmins_sid, forest=False):
@@ -763,7 +763,7 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
             "HOSTIP6_HOST_LINE": hostip6_host_line,
             "GC_MSDCS_IP_LINE": gc_msdcs_ip_line,
             "GC_MSDCS_IP6_LINE": gc_msdcs_ip6_line,
-        })
+    })
 
     if paths.bind_gid is not None:
         try:
@@ -997,7 +997,7 @@ def create_named_txt(path, realm, dnsdomain, dnsname, binddns_dir,
             "DNS_KEYTAB": keytab_name,
             "DNS_KEYTAB_ABS": os.path.join(binddns_dir, keytab_name),
             "PRIVATE_DIR": binddns_dir
-        })
+    })
 
 
 def is_valid_dns_backend(dns_backend):

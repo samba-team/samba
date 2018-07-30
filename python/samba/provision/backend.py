@@ -762,7 +762,7 @@ class FDSBackend(LDAPBackend):
         setup_file(setup_path("fedorads-samba.ldif"), self.samba_ldif, {
             "SAMBADN": self.sambadn,
             "LDAPADMINPASS": self.ldapadminpass
-            })
+        })
 
         mapping = "schema-map-fedora-ds-1.0"
         backend_schema = "99_ad.ldif"

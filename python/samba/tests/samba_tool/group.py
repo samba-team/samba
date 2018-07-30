@@ -185,7 +185,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
         group = {
             "name": self.randomName(),
             "description": self.randomName(count=100),
-            }
+        }
         group.update(base)
         return group
 

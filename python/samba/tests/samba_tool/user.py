@@ -512,7 +512,7 @@ sAMAccountName: %s
             "description": self.randomName(count=100),
             "createUserFn": self._create_user,
             "checkUserFn": self._check_user,
-            }
+        }
         user.update(base)
         return user
 

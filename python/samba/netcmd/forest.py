@@ -25,7 +25,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option
-    )
+)
 
 class cmd_forest_show(Command):
     """Display forest settings.
@@ -41,12 +41,12 @@ class cmd_forest_show(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                 type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     def run(self, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
@@ -89,12 +89,12 @@ class cmd_forest_set(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                 type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["value"]
 

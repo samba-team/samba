@@ -28,7 +28,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option,
-    )
+)
 from samba.samdb import SamDB
 
 def get_fsmo_roleowner(samdb, roledn, role):
@@ -222,7 +222,7 @@ class cmd_fsmo_seize(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
@@ -242,7 +242,7 @@ domaindns=DomainDnsZonesMasterRole\n
 forestdns=ForestDnsZonesMasterRole\n
 all=all of the above\n
 You must provide an Admin user and password."""),
-        ]
+    ]
 
     takes_args = []
 
@@ -429,12 +429,12 @@ class cmd_fsmo_show(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = []
 
@@ -483,7 +483,7 @@ class cmd_fsmo_transfer(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
@@ -500,7 +500,7 @@ domaindns=DomainDnsZonesMasterRole\n
 forestdns=ForestDnsZonesMasterRole\n
 all=all of the above\n
 You must provide an Admin user and password."""),
-        ]
+    ]
 
     takes_args = []
 

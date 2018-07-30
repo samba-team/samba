@@ -59,7 +59,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option
-    )
+)
 from samba.netcmd.fsmo import get_fsmo_roleowner
 from samba.netcmd.common import netcmd_get_domain_infos_via_cldap
 from samba.samba3 import Samba3
@@ -84,14 +84,14 @@ from samba.dsdb import (
     UF_SERVER_TRUST_ACCOUNT,
     UF_TRUSTED_FOR_DELEGATION,
     UF_PARTIAL_SECRETS_ACCOUNT
-    )
+)
 
 from samba.provision import (
     provision,
     ProvisioningError,
     DEFAULT_MIN_PWD_LENGTH,
     setup_path
-    )
+)
 
 from samba.provision.common import (
     FILL_FULL,
@@ -169,11 +169,11 @@ else:
             "sambaopts": options.SambaOptions,
             "credopts": options.CredentialsOptions,
             "versionopts": options.VersionOptions,
-            }
+        }
 
         takes_options = [
             Option("--principal", help="extract only this principal", type=str),
-            ]
+        ]
 
         takes_args = ["keytab"]
 
@@ -189,13 +189,13 @@ class cmd_domain_info(Command):
     synopsis = "%prog <ip_address> [options]"
 
     takes_options = [
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_args = ["address"]
 
@@ -282,7 +282,7 @@ class cmd_domain_provision(Command):
          Option("--partitions-only",
                 help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true"),
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
-        ]
+    ]
 
     openldap_options = [
         Option("--ldapadminpass", type="string", metavar="PASSWORD",
@@ -300,7 +300,7 @@ class cmd_domain_provision(Command):
         Option("--ldap-backend-forced-uri", type="string", metavar="LDAP-BACKEND-FORCED-URI",
                help="Force the LDAP backend connection to be to a particular URI.  Use this ONLY for 'existing' backends, or when debugging the interaction with the LDAP backend and you need to intercept the LDA"),
         Option("--ldap-backend-nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true"),
-        ]
+    ]
 
     ntvfs_options = [
         Option("--use-xattrs", type="choice", choices=["yes","no","auto"],
@@ -659,7 +659,7 @@ class cmd_domain_join(Command):
         Option("--parent-domain", help="parent domain to create subdomain under", type=str),
         Option("--adminpass", type="string", metavar="PASSWORD",
                help="choose adminstrator password when joining as a subdomain (otherwise random)"),
-        ]
+    ]
 
     ntvfs_options = [
         Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
@@ -754,13 +754,13 @@ class cmd_domain_demote(Command):
                "to remove ALL references to (rather than this DC)", type=str),
         Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
-        ]
+    ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, sambaopts=None, credopts=None,
             versionopts=None, server=None,
@@ -1052,7 +1052,7 @@ class cmd_domain_level(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -1285,7 +1285,7 @@ class cmd_domain_passwordsettings_show(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -1359,7 +1359,7 @@ class cmd_domain_passwordsettings_set(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -2098,7 +2098,7 @@ class cmd_domain_trust_list(DomainTrustCommand):
     }
 
     takes_options = [
-        ]
+    ]
 
     def run(self, sambaopts=None, versionopts=None, localdcopts=None):
 
@@ -2143,7 +2143,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
     }
 
     takes_options = [
-        ]
+    ]
 
     takes_args = ["domain"]
 
@@ -2286,7 +2286,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                help="Skip validation of the trust.",
                dest='validate',
                default=True),
-        ]
+    ]
 
     takes_args = ["domain"]
 
@@ -2782,7 +2782,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                help="Where to delete the trusted domain object: 'local' or 'both'.",
                dest='delete_location',
                default="both"),
-        ]
+    ]
 
     takes_args = ["domain"]
 
@@ -2939,7 +2939,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                help="Where to validate the trusted domain object: 'local' or 'both'.",
                dest='validate_location',
                default="both"),
-        ]
+    ]
 
     takes_args = ["domain"]
 
@@ -3162,7 +3162,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                help="Delete an existing msDS-SPNSuffixes attribute of the local forest. Can be specified multiple times.",
                dest='delete_spn',
                default=[]),
-        ]
+    ]
 
     takes_args = ["domain?"]
 
@@ -3853,7 +3853,7 @@ This command expunges tombstones from the database."""
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     def run(self, *ncs, **kwargs):
         sambaopts = kwargs.get("sambaopts")

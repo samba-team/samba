@@ -40,7 +40,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option,
-    )
+)
 
 
 
@@ -54,7 +54,7 @@ class cmd_dsacl_set(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
@@ -81,7 +81,7 @@ class cmd_dsacl_set(Command):
             type="string"),
         Option("--sddl", help="An ACE or group of ACEs to be added on the object",
             type="string"),
-        ]
+    ]
 
     def find_trustee_sid(self, samdb, trusteedn):
         res = samdb.search(base=trusteedn, expression="(objectClass=*)",

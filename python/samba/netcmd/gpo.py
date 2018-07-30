@@ -32,7 +32,7 @@ from samba.netcmd import (
     CommandError,
     Option,
     SuperCommand,
-    )
+)
 from samba.samdb import SamDB
 from samba import dsdb
 from samba.dcerpc import security
@@ -381,7 +381,7 @@ class cmd_listall(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H")
-        ]
+    ]
 
     def run(self, H=None, sambaopts=None, credopts=None, versionopts=None):
 
@@ -419,7 +419,7 @@ class cmd_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
             type=str, metavar="URL", dest="H")
-        ]
+    ]
 
     def run(self, username, H=None, sambaopts=None, credopts=None, versionopts=None):
 
@@ -534,7 +534,7 @@ class cmd_show(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
-        ]
+    ]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
 
@@ -582,7 +582,7 @@ class cmd_getlink(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
-        ]
+    ]
 
     def run(self, container_dn, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
@@ -633,7 +633,7 @@ class cmd_setlink(Command):
             help="Disable policy"),
         Option("--enforce", dest="enforced", default=False, action='store_true',
             help="Enforce policy")
-        ]
+    ]
 
     def run(self, container_dn, gpo, H=None, disabled=False, enforced=False,
                 sambaopts=None, credopts=None, versionopts=None):
@@ -719,7 +719,7 @@ class cmd_dellink(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
-        ]
+    ]
 
     def run(self, container, gpo, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
@@ -758,7 +758,7 @@ class cmd_listcontainers(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
-        ]
+    ]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
@@ -794,7 +794,7 @@ class cmd_getinheritance(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
-        ]
+    ]
 
     def run(self, container_dn, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
@@ -838,7 +838,7 @@ class cmd_setinheritance(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
-        ]
+    ]
 
     def run(self, container_dn, inherit_state, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
@@ -893,7 +893,7 @@ class cmd_fetch(Command):
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
         Option("--tmpdir", help="Temporary directory for copying policy files", type=str)
-        ]
+    ]
 
     def run(self, gpo, H=None, tmpdir=None, sambaopts=None, credopts=None, versionopts=None):
 
@@ -1119,7 +1119,7 @@ class cmd_create(Command):
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
         Option("--tmpdir", help="Temporary directory for copying policy files", type=str)
-        ]
+    ]
 
     def run(self, displayname, H=None, tmpdir=None, sambaopts=None, credopts=None,
             versionopts=None):
@@ -1418,7 +1418,7 @@ class cmd_del(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
-        ]
+    ]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
@@ -1493,7 +1493,7 @@ class cmd_aclcheck(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H")
-        ]
+    ]
 
     def run(self, H=None, sambaopts=None, credopts=None, versionopts=None):
 

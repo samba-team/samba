@@ -27,7 +27,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option
-    )
+)
 
 
 class cmd_spn_list(Command):
@@ -39,7 +39,7 @@ class cmd_spn_list(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_args = ["user"]
 
@@ -82,7 +82,7 @@ class cmd_spn_add(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
     takes_options = [
         Option("--force", help="Force the addition of the spn"
                                " even it exists already", action="store_true"),
@@ -142,7 +142,7 @@ class cmd_spn_delete(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
-        }
+    }
 
     takes_args = ["name", "user?"]
 

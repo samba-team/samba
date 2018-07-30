@@ -36,7 +36,7 @@ from samba.netcmd import (
     CommandError,
     Option,
     SuperCommand,
-    )
+)
 from samba.dcerpc import dnsp, dnsserver
 
 from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord

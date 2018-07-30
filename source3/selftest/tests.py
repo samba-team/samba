@@ -25,7 +25,7 @@ from selftesthelpers import *
 smbtorture4_options.extend([
     '--option=torture:sharedelay=100000',
    '--option=torture:writetimeupdatedelay=500000',
-    ])
+])
 
 def plansmbtorture4testsuite(name, env, options, description=''):
     if description == '':

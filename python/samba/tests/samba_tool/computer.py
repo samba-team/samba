@@ -239,7 +239,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         computer = {
             "name": self.randomName(),
             "description": self.randomName(count=100),
-            }
+        }
         computer.update(base)
         return computer
 
@@ -250,7 +250,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         ou = {
             "name": self.randomName(),
             "description": self.randomName(count=100),
-            }
+        }
         ou.update(base)
         return ou
 

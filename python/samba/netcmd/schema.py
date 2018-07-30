@@ -26,7 +26,7 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option
-    )
+)
 
 class cmd_schema_attribute_modify(Command):
     """Modify attribute settings in the schema partition.
@@ -75,13 +75,13 @@ class cmd_schema_attribute_modify(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("--searchflags", help="Search Flags for the attribute", type=str),
         Option("-H", "--URL", help="LDB URL for database or target server",
                 type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["attribute"]
 
@@ -140,12 +140,12 @@ class cmd_schema_attribute_show(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                 type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["attribute"]
 
@@ -215,12 +215,12 @@ class cmd_schema_attribute_show_oc(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                 type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["attribute"]
 
@@ -265,12 +265,12 @@ class cmd_schema_objectclass_show(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
-        }
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                 type=str, metavar="URL", dest="H"),
-        ]
+    ]
 
     takes_args = ["objectclass"]
 

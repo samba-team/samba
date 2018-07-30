@@ -48,7 +48,7 @@ def confirm(msg, forced=False, allow_all=False):
         '': False,
         'N': False,
         'NO': False,
-        }
+    }
 
     prompt = '[y/N]'
 

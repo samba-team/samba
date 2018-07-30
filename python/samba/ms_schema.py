@@ -47,7 +47,7 @@ bitFields["searchflags"] = {
     'fEXTENDEDLINKTRACKING': 21,  # XL
     'fBASEONLY': 20,  # BO
     'fPARTITIONSECRET': 19,  # SE
-    }
+}
 
 # ADTS: 2.2.10
 bitFields["systemflags"] = {
@@ -64,12 +64,12 @@ bitFields["systemflags"] = {
     'FLAG_CONFIG_ALLOW_MOVE': 2,     # AM
     'FLAG_CONFIG_ALLOW_RENAME': 1,     # AR
     'FLAG_DISALLOW_DELETE': 0     # DD
-    }
+}
 
 # ADTS: 2.2.11
 bitFields["schemaflagsex"] = {
     'FLAG_ATTR_IS_CRITICAL': 31
-    }
+}
 
 # ADTS: 3.1.1.2.2.2
 oMObjectClassBER = {
