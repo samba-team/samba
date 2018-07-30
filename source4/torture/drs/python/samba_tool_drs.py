@@ -295,6 +295,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
 
         samdb = samba.tests.connect_samdb("ldb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
                                           ldap_only=False, lp=self.get_loadparm())
+
         def get_krbtgt_pw():
             krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
         self.assertRaises(KeyError, get_krbtgt_pw)
@@ -413,6 +414,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
         server_realm = server_ldap_service_name.split(":")[0]
         creds = self.get_credentials()
+
         def attempt_clone():
             out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s"
                                     % (server_realm,

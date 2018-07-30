@@ -78,6 +78,7 @@ class ContextTests(TestCase):
     def test_timer_deallocate_timer(self):
         """Test timer is scheduled even if reference to it isn't held"""
         collecting_list = []
+
         def callback(t):
             collecting_list.append(True)
         timer = self.ctx.add_timer(0, lambda t: collecting_list.append(True))
@@ -89,6 +90,7 @@ class ContextTests(TestCase):
     def test_timer_deallocate_context(self):
         """Test timer is unscheduled when context is freed"""
         collecting_list = []
+
         def callback(t):
             collecting_list.append(True)
         timer = self.ctx.add_timer(0, lambda t: collecting_list.append(True))

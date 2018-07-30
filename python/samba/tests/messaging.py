@@ -37,6 +37,7 @@ class MessagingTests(TestCase):
 
     def test_register(self):
         x = self.get_context()
+
         def callback():
             pass
         msg_type = x.register((callback, None))
@@ -82,6 +83,7 @@ class MessagingTests(TestCase):
         msg_ping = 0
 
         server_ctx = self.get_context((0, 1))
+
         def ping_callback(got_ping, msg_type, src, data):
             got_ping["count"] += 1
             server_ctx.send(src, msg_pong, data)
@@ -123,6 +125,7 @@ class MessagingTests(TestCase):
 
         pid = os.getpid()
         server_ctx = self.get_context((pid, 1))
+
         def ping_callback(got_ping, msg_type, src, data):
             got_ping["count"] += 1
             server_ctx.send(src, msg_pong, data)

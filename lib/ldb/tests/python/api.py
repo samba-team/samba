@@ -2038,6 +2038,7 @@ class DnTests(TestCase):
 
     def test_set_dn_invalid(self):
         x = ldb.Message()
+
         def assign():
             x.dn = "astring"
         self.assertRaises(TypeError, assign)
@@ -2617,6 +2618,7 @@ class ModuleTests(TestCase):
 
     def test_use_module(self):
         ops = []
+
         class ExampleModule:
             name = "bla"
 

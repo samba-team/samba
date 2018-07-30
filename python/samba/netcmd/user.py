@@ -996,6 +996,7 @@ class GetPasswordCommand(Command):
             del obj["userPrincipalName"]
 
         calculated = {}
+
         def get_package(name, min_idx=0):
             if name in calculated:
                 return calculated[name]
@@ -1068,6 +1069,7 @@ class GetPasswordCommand(Command):
         # Extract the WDigest hash for the value specified by i.
         # Builds an htdigest compatible value
         DIGEST = "Digest"
+
         def get_wDigest(i, primary_wdigest, account_name, account_upn,
                         domain, dns_domain):
             if i == 1:
