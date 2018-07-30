@@ -79,7 +79,8 @@ class RemotedTestCase(unittest.TestCase):
                (self._strclass(), self.__description)
 
     def run(self, result=None):
-        if result is None: result = self.defaultTestResult()
+        if result is None:
+            result = self.defaultTestResult()
         result.startTest(self)
         result.addError(self, RemoteError("Cannot run RemotedTestCases.\n"))
         result.stopTest(self)

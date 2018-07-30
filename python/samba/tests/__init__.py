@@ -194,7 +194,8 @@ class TestCase(unittest.TestCase):
                 result.addSuccess(self)
 
         def run(self, result=None):
-            if result is None: result = self.defaultTestResult()
+            if result is None:
+                result = self.defaultTestResult()
             result.startTest(self)
             testMethod = getattr(self, self._testMethodName)
             try:
@@ -235,7 +236,8 @@ class TestCase(unittest.TestCase):
 
                 for (fn, args, kwargs) in reversed(getattr(self, "_cleanups", [])):
                     fn(*args, **kwargs)
-                if ok: result.addSuccess(self)
+                if ok:
+                    result.addSuccess(self)
             finally:
                 result.stopTest(self)
 
