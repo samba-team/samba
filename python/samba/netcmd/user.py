@@ -2202,7 +2202,7 @@ samba-tool user syncpasswords --terminate \\
             if pid == 0:
                 os.setsid()
                 pid = os.fork()
-                if pid == 0: # Actual daemon
+                if pid == 0:  # Actual daemon
                     pid = os.getpid()
                     log_msg("Daemonized as pid %d (from %d)\n" % (pid, orig_pid))
                     load_cache()
@@ -2220,7 +2220,7 @@ samba-tool user syncpasswords --terminate \\
             import resource      # Resource usage information.
             maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
             if maxfd == resource.RLIM_INFINITY:
-                maxfd = 1024 # Rough guess at maximum number of open file descriptors.
+                maxfd = 1024  # Rough guess at maximum number of open file descriptors.
             logfd = os.open(logfile, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
             self.outf.write("Using logfile[%s]\n" % logfile)
             for fd in range(0, maxfd):

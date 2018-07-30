@@ -109,7 +109,7 @@ class RpcTests(object):
                     print("ERROR: Failed to check_type %s.%s: %r: %s" % (iname, n, e.__class__, e))
                     self.errcount += 1
             elif callable(value):
-                pass # Method
+                pass  # Method
             else:
                 print("UNKNOWN: %s=%s" % (n, value))
         if self.errcount - errcount != 0:

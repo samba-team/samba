@@ -47,5 +47,5 @@ class WinregTests(RpcInterfaceTestCase):
         handle = self.conn.OpenHKLM(None,
                                     winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
         x = self.conn.QueryInfoKey(handle, winreg.String())
-        self.assertEquals(9, len(x)) # should return a 9-tuple
+        self.assertEquals(9, len(x))  # should return a 9-tuple
         self.conn.CloseKey(handle)

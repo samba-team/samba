@@ -1679,9 +1679,9 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.assertFalse("description" in res[0])
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("uSNCreated" in res[0])
-        self.assertFalse(res[0]["uSNCreated"][0] == "1") # these are corrected
+        self.assertFalse(res[0]["uSNCreated"][0] == "1")  # these are corrected
         self.assertTrue("uSNChanged" in res[0])
-        self.assertFalse(res[0]["uSNChanged"][0] == "1") # these are corrected
+        self.assertFalse(res[0]["uSNChanged"][0] == "1")  # these are corrected
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("whenChanged" in res[0])
 

@@ -85,7 +85,7 @@ if __name__ == "__main__":
 				newer_file = True
 
 			if newer_file:
-				utime = None # Sets to current time.
+				utime = None  # Sets to current time.
 				print '...Setting fake mtime to NOW.  Will trigger re-index.'
 			else:
 				mtime = os.stat(media_dir)[stat.ST_MTIME]

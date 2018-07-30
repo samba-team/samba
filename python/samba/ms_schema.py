@@ -36,14 +36,14 @@ bitFields["searchflags"] = {
     'fTUPLEINDEX': 26,       # TP
     'fSUBTREEATTINDEX': 25,  # ST
     'fCONFIDENTIAL': 24,     # CF
-    'fCONFIDENTAIL': 24, # typo
+    'fCONFIDENTAIL': 24,  # typo
     'fNEVERVALUEAUDIT': 23,  # NV
     'fRODCAttribute': 22,    # RO
 
 
     # missing in ADTS but required by LDIF
     'fRODCFilteredAttribute': 22,    # RO
-    'fRODCFILTEREDATTRIBUTE': 22, # case
+    'fRODCFILTEREDATTRIBUTE': 22,  # case
     'fEXTENDEDLINKTRACKING': 21,  # XL
     'fBASEONLY': 20,  # BO
     'fPARTITIONSECRET': 19,  # SE

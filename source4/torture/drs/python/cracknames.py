@@ -192,7 +192,7 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
         names = drsuapi.DsNameString()
         names.str = name
 
-        req.codepage = 1252 # German, but it doesn't really matter here
+        req.codepage = 1252  # German, but it doesn't really matter here
         req.language = 1033
         req.format_flags = 0
         req.format_offered = format_offered

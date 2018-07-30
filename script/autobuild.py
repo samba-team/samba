@@ -607,18 +607,18 @@ def find_git_root():
 
 def daemonize(logfile):
     pid = os.fork()
-    if pid == 0: # Parent
+    if pid == 0:  # Parent
         os.setsid()
         pid = os.fork()
-        if pid != 0: # Actual daemon
+        if pid != 0:  # Actual daemon
             os._exit(0)
-    else: # Grandparent
+    else:  # Grandparent
         os._exit(0)
 
     import resource      # Resource usage information.
     maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
     if maxfd == resource.RLIM_INFINITY:
-        maxfd = 1024 # Rough guess at maximum number of open file descriptors.
+        maxfd = 1024  # Rough guess at maximum number of open file descriptors.
     for fd in range(0, maxfd):
         try:
             os.close(fd)

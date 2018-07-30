@@ -280,7 +280,7 @@ class ImmediateFail(Exception):
 class FilterOps(unittest.TestResult):
 
     def control_msg(self, msg):
-        pass # We regenerate control messages, so ignore this
+        pass  # We regenerate control messages, so ignore this
 
     def time(self, time):
         self._ops.time(time)

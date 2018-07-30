@@ -187,7 +187,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         set_auto_replication(RWDC, True)
 
     def setUp(self):
-        self.kerberos = False # To be set later
+        self.kerberos = False  # To be set later
 
         self.rodc_db = SamDB('ldap://%s' % RODC, credentials=CREDS,
                              session_info=system_session(LP), lp=LP)

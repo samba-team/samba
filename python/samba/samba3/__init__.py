@@ -324,7 +324,7 @@ class WinsDatabase(object):
         f = open(file, 'r')
         assert f.readline().rstrip("\n") == "VERSION 1 0"
         for l in f.readlines():
-            if l[0] == "#": # skip comments
+            if l[0] == "#":  # skip comments
                 continue
             entries = shellsplit(l.rstrip("\n"))
             name = entries[0]
@@ -352,7 +352,7 @@ class WinsDatabase(object):
         """Return the entries in this WINS database."""
         return self.entries.items()
 
-    def close(self): # for consistency
+    def close(self):  # for consistency
         pass
 
 

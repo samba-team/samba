@@ -216,7 +216,7 @@ def test_dcpromo(t, vm):
                      "Last attempt .* was successful",
                      "CN=Configuration,${BASEDN}",
                      "Last attempt .* was successful",
-                     "CN=Configuration,${BASEDN}", # cope with either order
+                     "CN=Configuration,${BASEDN}",  # cope with either order
                      "Last attempt .* was successful",
                      "OUTBOUND NEIGHBORS",
                      "${BASEDN}",

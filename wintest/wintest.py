@@ -866,7 +866,7 @@ RebootOnCompletion=No
         i = child.expect(["You must restart this computer", "failed", "Active Directory Domain Services was not installed", "C:", pexpect.TIMEOUT], timeout=240)
         if i == 1 or i == 2:
             raise Exception("dcpromo failed")
-        if i == 4: # timeout
+        if i == 4:  # timeout
             child = self.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}")
 
         child.sendline("shutdown -r -t 0")

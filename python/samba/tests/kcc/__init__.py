@@ -35,7 +35,7 @@ from samba.credentials import Credentials
 from samba.samdb import SamDB
 
 unix_now = int(time.time())
-unix_once_upon_a_time = 1000000000 #2001-09-09
+unix_once_upon_a_time = 1000000000  # 2001-09-09
 
 ENV_DSAS = {
     'ad_dc_ntvfs': ['CN=LOCALDC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=samba,DC=example,DC=com'],

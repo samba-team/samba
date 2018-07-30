@@ -746,7 +746,7 @@ userPassword: thatsAcomplPASS4
         except LdbError as e35:
             (num, _) = e35.args
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
-                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+                            num == ERR_NO_SUCH_ATTRIBUTE)  # for Windows
 
         delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
 
@@ -789,7 +789,7 @@ userPassword: thatsAcomplPASS4
         except LdbError as e39:
             (num, _) = e39.args
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
-                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+                            num == ERR_NO_SUCH_ATTRIBUTE)  # for Windows
 
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -830,7 +830,7 @@ userPassword: thatsAcomplPASS4
         except LdbError as e43:
             (num, _) = e43.args
             self.assertTrue(num == ERR_UNWILLING_TO_PERFORM or
-                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+                            num == ERR_NO_SUCH_ATTRIBUTE)  # for Windows
 
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -871,7 +871,7 @@ userPassword: thatsAcomplPASS4
         except LdbError as e47:
             (num, _) = e47.args
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
-                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+                            num == ERR_NO_SUCH_ATTRIBUTE)  # for Windows
 
     def test_plain_userPassword(self):
         print("Performs testing about the standard 'userPassword' behaviour")
@@ -879,7 +879,7 @@ userPassword: thatsAcomplPASS4
         # Delete the "dSHeuristics"
         self.ldb.set_dsheuristics(None)
 
-        time.sleep(1) # This switching time is strictly needed!
+        time.sleep(1)  # This switching time is strictly needed!
 
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -1105,7 +1105,7 @@ clearTextPassword: thatsAcomplPASS2
 """)
         except LdbError, (num, msg):
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
-                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+                            num == ERR_NO_SUCH_ATTRIBUTE)  # for Windows
         else:
             self.fail()
 

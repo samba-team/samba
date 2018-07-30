@@ -139,7 +139,7 @@ showInAdvancedViewOnly: TRUE
         creds_tmp.set_workstation(creds.get_workstation())
         creds_tmp.set_gensec_features(creds_tmp.get_gensec_features()
                                       | gensec.FEATURE_SEAL)
-        creds_tmp.set_kerberos_state(DONT_USE_KERBEROS) # kinit is too expensive to use in a tight loop
+        creds_tmp.set_kerberos_state(DONT_USE_KERBEROS)  # kinit is too expensive to use in a tight loop
         ldb_target = SamDB(url=host, credentials=creds_tmp, lp=lp)
         return ldb_target
 
@@ -355,7 +355,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
     def check_modify_inheritance(self, _ldb, object_dn, owner_group=""):
         # Modify
         sd_user_utils = sd_utils.SDUtils(_ldb)
-        ace = "(D;;CC;;;LG)" # Deny Create Children to Guest account
+        ace = "(D;;CC;;;LG)"  # Deny Create Children to Guest account
         if owner_group != "":
             sd_user_utils.modify_sd_on_dn(object_dn, owner_group + "D:" + ace)
         else:
@@ -1366,7 +1366,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
-        mod = mod.replace(";OI;", ";OIIOID;") # change it how it's gonna look like
+        mod = mod.replace(";OI;", ";OIIOID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
         self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
@@ -1392,7 +1392,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
-        mod = mod.replace(";CI;", ";CIID;") # change it how it's gonna look like
+        mod = mod.replace(";CI;", ";CIID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
         self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
@@ -1418,7 +1418,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
-        mod = mod.replace(";OI;", ";OIIOID;") # change it how it's gonna look like
+        mod = mod.replace(";OI;", ";OIIOID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
         self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
@@ -1444,7 +1444,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
-        mod = mod.replace(";CI;", ";CIID;") # change it how it's gonna look like
+        mod = mod.replace(";CI;", ";CIID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
         self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
@@ -1470,7 +1470,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
-        mod = mod.replace(";OI;", ";OIIOID;") # change it how it's gonna look like
+        mod = mod.replace(";OI;", ";OIIOID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
         self.sd_utils.modify_sd_on_dn(group_dn, "D:(OA;OI;WP;bf967a39-0de6-11d0-a285-00aa003049e2;;DU)" + moded)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)

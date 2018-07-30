@@ -351,9 +351,9 @@ def import_wins(samba4_winsdb, samba3_winsdb):
                 rType = 0x0
 
         if ttl > time.time():
-            rState = 0x0 # active
+            rState = 0x0  # active
         else:
-            rState = 0x1 # released
+            rState = 0x1  # released
 
         nType = ((nb_flags & 0x60) >> 5)
 

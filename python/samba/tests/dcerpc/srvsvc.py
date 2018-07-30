@@ -40,7 +40,7 @@ class SrvsvcTests(RpcInterfaceTestCase):
         share.current_users = 0x00000000
         share.max_users = -1
         share.password = None
-        share.path = u'C:\\tmp' # some random path
+        share.path = u'C:\\tmp'  # some random path
         share.permissions = 123434566
         return share
 

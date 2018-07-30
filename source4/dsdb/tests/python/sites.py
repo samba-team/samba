@@ -451,7 +451,7 @@ class SimpleSubnetTests(SitesBaseTests):
             # because it uses a inet_pton / inet_ntop round trip to
             # ascertain correctness.
 
-            "::ffff:0:0/96", #this one fails on WIN2012r2
+            "::ffff:0:0/96",  # this one fails on WIN2012r2
             "::ffff:aaaa:a000/120",
             "::ffff:10:0/120",
             "::ffff:2:300/120",

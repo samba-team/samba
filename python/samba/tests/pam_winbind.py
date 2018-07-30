@@ -26,7 +26,7 @@ class SimplePamTests(samba.tests.TestCase):
         username = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
         unix_username = "%s/%s" % (domain, username)
-        expected_rc = 0 # PAM_SUCCESS
+        expected_rc = 0  # PAM_SUCCESS
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
         res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])
@@ -38,7 +38,7 @@ class SimplePamTests(samba.tests.TestCase):
         username = os.environ["USERNAME"]
         password = "WrongPassword"
         unix_username = "%s/%s" % (domain, username)
-        expected_rc = 7 # PAM_AUTH_ERR
+        expected_rc = 7  # PAM_AUTH_ERR
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
         res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])
@@ -48,7 +48,7 @@ class SimplePamTests(samba.tests.TestCase):
         # Authenticate again to check that we are not locked out with just one
         # failed login
         password = os.environ["PASSWORD"]
-        expected_rc = 0 # PAM_SUCCESS
+        expected_rc = 0  # PAM_SUCCESS
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
         res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])

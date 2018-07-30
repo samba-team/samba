@@ -172,7 +172,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         self.add_record(self.custom_zone, "testrecord", record_type_str, record_str)
 
         dn, record = self.get_record_from_db(self.custom_zone, "testrecord")
-        record.rank = 0 # DNS_RANK_NONE
+        record.rank = 0  # DNS_RANK_NONE
         res = self.samdb.dns_replace_by_dn(dn, [record])
         if res is not None:
             self.fail("Unable to update dns record to have DNS_RANK_NONE.")

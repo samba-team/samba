@@ -507,7 +507,7 @@ def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         unapply_attributes = gp_db.list(gp_extensions)
         for attr in unapply_attributes:
             attr_obj = attr[-1](logger, test_ldb, gp_db, lp, attr[0], attr[1])
-            attr_obj.mapper()[attr[0]][0](attr[1]) # Set the old value
+            attr_obj.mapper()[attr[0]][0](attr[1])  # Set the old value
             gp_db.delete(str(attr_obj), attr[0])
         gp_db.commit()
 

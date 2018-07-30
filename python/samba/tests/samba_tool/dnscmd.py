@@ -171,7 +171,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                               % (record_str, record_type_str))
 
         dn, record = self.get_record_from_db(self.zone, "testrecord")
-        record.rank = 0 # DNS_RANK_NONE
+        record.rank = 0  # DNS_RANK_NONE
         res = self.samdb.dns_replace_by_dn(dn, [record])
         if res is not None:
             self.fail("Unable to update dns record to have DNS_RANK_NONE.")
@@ -386,7 +386,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                 try:
                     self.assertCmdFail(result)
                 except AssertionError:
-                    continue # Don't check this one, because record2 _is_ a valid entry of dnstype1.
+                    continue  # Don't check this one, because record2 _is_ a valid entry of dnstype1.
 
                 # Check both ways: Give the current type and try to update,
                 # and give the new type and try to update.
@@ -484,7 +484,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
         # we can't enter the wrong current value for a given record.
         for dnstype in self.good_records:
             if len(self.good_records[dnstype]) < 3:
-                continue # Not enough records of this type to do this test
+                continue  # Not enough records of this type to do this test
 
             used_record = self.good_records[dnstype][0]
             unused_record = self.good_records[dnstype][1]

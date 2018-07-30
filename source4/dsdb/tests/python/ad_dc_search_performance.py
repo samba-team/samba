@@ -177,7 +177,7 @@ class UserTests(samba.tests.TestCase):
     def _test_complex_search(self):
         classes = ['samaccountname', 'objectCategory', 'dn', 'member']
         values = ['*', '*t*', 'g*', 'user']
-        comparators = ['=', '<=', '>='] # '~=' causes error
+        comparators = ['=', '<=', '>=']  # '~=' causes error
         maybe_not = ['!(', '']
         joiners = ['&', '|']
 

@@ -439,7 +439,7 @@ class LDAPObject(object):
                 "uSNChanged",
                 "uSNCreated",
                 "uSNLastObjRem",
-                "whenChanged", # This is implicitly replicated, but may diverge on updates of non-replicated attributes
+                "whenChanged",  # This is implicitly replicated, but may diverge on updates of non-replicated attributes
         ]
         self.ignore_attributes = self.non_replicated_attributes
         self.ignore_attributes += ["msExchServer1HighestUSN"]
@@ -677,7 +677,7 @@ class LDAPObject(object):
         self.summary["unique_attrs"] += self.unique_attrs
         self.summary["df_value_attrs"] += self.df_value_attrs
         other.summary["unique_attrs"] += other.unique_attrs
-        other.summary["df_value_attrs"] += self.df_value_attrs # they are the same
+        other.summary["df_value_attrs"] += self.df_value_attrs  # they are the same
         #
         self.screen_output = res[:-1]
         other.screen_output = res[:-1]

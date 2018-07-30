@@ -1057,7 +1057,7 @@ class cmd_domain_level(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("-q", "--quiet", help="Be quiet", action="store_true"), # unused
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),  # unused
         Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
                help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)"),
         Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
@@ -1364,7 +1364,7 @@ class cmd_domain_passwordsettings_set(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("-q", "--quiet", help="Be quiet", action="store_true"), # unused
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),  # unused
         Option("--complexity", type="choice", choices=["on", "off", "default"],
                help="The password complexity (on | off | default). Default is 'on'"),
         Option("--store-plaintext", type="choice", choices=["on", "off", "default"],
@@ -4028,7 +4028,7 @@ class cmd_domain_schema_upgrade(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("-q", "--quiet", help="Be quiet", action="store_true"), #unused
+        Option("-q", "--quiet", help="Be quiet", action="store_true"),  # unused
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--schema", type="choice", metavar="SCHEMA",
                choices=["2012", "2012_R2"],
