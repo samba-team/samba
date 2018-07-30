@@ -56,7 +56,6 @@ class BasePasswordTestCase(PasswordTestCase):
                         msg="attr[%s]=%r on dn[%s]" %
                         (name, res[0][name], res[0].dn))
 
-
         print("%s = '%s'" % (name, res[0][name][0]))
 
         if mode == "present":
@@ -188,7 +187,6 @@ class BasePasswordTestCase(PasswordTestCase):
             self.assertEquals(uinfo21.bad_password_count, effective_bad_password_count)
             self.assertEquals(uinfo21.last_logon, lastLogon)
             self.assertEquals(uinfo21.logon_count, logonCount)
-
 
         # check LDAP again and make sure the samr.QueryUserInfo
         # doesn't have any impact.
@@ -391,7 +389,6 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
         print(firstLogon)
         print(lastLogonTimestamp)
-
 
         self.assertGreater(lastLogon, badPasswordTime)
         self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
@@ -734,7 +731,6 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                   msDSUserAccountControlComputed=0,
                                   msg=("second logon, firstlogon was %s" %
                                        firstLogon))
-
 
         lastLogon = int(res[0]["lastLogon"][0])
 

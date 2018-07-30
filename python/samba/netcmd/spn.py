@@ -178,7 +178,6 @@ class cmd_spn_delete(Command):
                 else:
                     result = res[0]
 
-
             msg = ldb.Message()
             spns = result.get("servicePrincipalName")
             tab = []

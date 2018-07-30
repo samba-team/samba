@@ -183,7 +183,6 @@ class wintest():
         else:
             return subprocess.call(cmd, shell=shell, cwd=dir)
 
-
     def run_child(self, cmd, dir="."):
         '''create a child and return the Popen handle to it'''
         cwd = os.getcwd()
@@ -409,7 +408,6 @@ zone "%s" IN {
 ''' % (self.getvar('LCREALM'), self.getvar('INTERFACE_IP')),
                    mode='a')
 
-
         # add forwarding for the windows domains
         domains = self.get_domains()
 
@@ -426,7 +424,6 @@ zone "%s" IN {
 ''' % (d, domains[d]),
                      mode='a')
 
-
         self.write_file("etc/rndc.conf", '''
 # Start of rndc.conf
 key "rndc-key" {
@@ -441,14 +438,12 @@ options {
 };
 ''')
 
-
     def stop_bind(self):
         '''Stop our private BIND from listening and operating'''
         self.rndc_cmd("stop", checkfail=False)
         self.port_wait("${NAMED_INTERFACE_IP}", 53, wait_for_fail=True)
 
         self.run_cmd("rm -rf var/named")
-
 
     def start_bind(self):
         '''restart the test environment version of bind'''
@@ -475,7 +470,6 @@ options {
         if getattr(self, 'resolv_conf_backup', False):
             self.info("restoring /etc/resolv.conf")
             self.run_cmd("mv -f %s /etc/resolv.conf" % self.resolv_conf_backup)
-
 
     def vm_poweroff(self, vmname, checkfail=True):
         '''power off a VM'''
@@ -656,7 +650,6 @@ options {
         child.expect([pexpect.EOF, pexpect.TIMEOUT], timeout=5)
         return True
 
-
     def resolve_ip(self, hostname, retries=60, delay=5):
         '''resolve an IP given a hostname, assuming NBT'''
         while retries > 0:
@@ -672,7 +665,6 @@ options {
             time.sleep(delay)
             self.info("retrying (retries=%u delay=%u)" % (retries, delay))
         raise RuntimeError("Failed to resolve IP of %s" % hostname)
-
 
     def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False, set_ip=False,
                     disable_firewall=True, run_tlntadmn=True, set_noexpire=False):
@@ -820,7 +812,6 @@ options {
                 ret.append(self.vars[v])
         return ret
 
-
     def run_dcpromo_as_first_dc(self, vm, func_level=None):
         self.setwinvars(vm)
         self.info("Configuring a windows VM ${WIN_VM} at the first DC in the domain using dcpromo")
@@ -883,7 +874,6 @@ RebootOnCompletion=No
 
         self.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'], retries=60, delay=5)
 
-
     def start_winvm(self, vm):
         '''start a Windows VM'''
         self.setwinvars(vm)
@@ -915,7 +905,6 @@ RebootOnCompletion=No
         child.expect("Registration of the DNS resource records for all adapters of this computer has been initiated. Any errors will be reported in the Event Viewer")
         child.expect("C:")
 
-
     def test_remote_smbclient(self, vm, username="${WIN_USER}", password="${WIN_PASS}", args=""):
         '''test smbclient against remote server'''
         self.setwinvars(vm)
@@ -931,7 +920,6 @@ RebootOnCompletion=No
         child = self.open_telnet("${WIN_HOSTNAME}", "%s\\%s" % (domain, username), password)
         child.sendline("net use t: \\\\${HOSTNAME}.%s\\test" % realm)
         child.expect("The command completed successfully")
-
 
     def setup(self, testname, subdir):
         '''setup for main tests, parsing command line'''

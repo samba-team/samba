@@ -38,7 +38,6 @@ from samba.netcmd import (
 )
 
 
-
 class cmd_ntacl_set(Command):
     """Set ACLs on a file."""
 
@@ -154,7 +153,6 @@ class cmd_ntacl_get(Command):
             use_ntvfs = "smb" in lp.get("server services")
         elif use_s3fs:
             use_ntvfs = False
-
 
         s3conf = s3param.get_context()
         s3conf.load(lp.configfile)

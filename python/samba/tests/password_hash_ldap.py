@@ -107,7 +107,6 @@ class PassWordHashLDAPTests(PassWordHashTests):
                 net_ctx.replicate_decrypt(drs, attr, 0)
                 sc_blob = attr.value_ctr.values[0].blob
 
-
         sc = ndr_unpack(drsblobs.supplementalCredentialsBlob, sc_blob)
         return sc
 

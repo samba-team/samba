@@ -533,7 +533,6 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
 """
     synopsis = "%prog (<username>|--filter <filter>) [options]"
 
-
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
@@ -1169,7 +1168,6 @@ class GetPasswordCommand(Command):
                 return "%s:%s:%s" % (user, realm, digest)
             except IndexError:
                 return None
-
 
         # get the value for a virtualCrypt attribute.
         # look for an exact match on algorithm and rounds in supplemental creds

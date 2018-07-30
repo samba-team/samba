@@ -67,13 +67,11 @@ def drs_errmsg(werr):
     return "failed, result %u (%s)" % (ecode, estring)
 
 
-
 def attr_default(msg, attrname, default):
     '''get an attribute from a ldap msg with a default'''
     if attrname in msg:
         return msg[attrname][0]
     return default
-
 
 
 def drs_parse_ntds_dn(ntds_dn):
@@ -248,7 +246,6 @@ class cmd_drs_showrepl(Command):
             return 1
 
         self.message(colour.c_GREEN("[ALL GOOD]"))
-
 
     def summary_output(self):
         return self.summary_output_handler("summary")
@@ -552,7 +549,6 @@ class cmd_drs_replicate(Command):
         source_dsa_guid = msg[0]['objectGUID'][0]
         dsa_options = int(attr_default(msg, 'options', 0))
 
-
         req_options = 0
         if not (dsa_options & dsdb.DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL):
             req_options |= drsuapi.DRSUAPI_DRS_WRIT_REP
@@ -575,7 +571,6 @@ class cmd_drs_replicate(Command):
             self.message("Replicate from %s to %s was started." % (SOURCE_DC, DEST_DC))
         else:
             self.message("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
-
 
 
 class cmd_drs_bind(Command):
@@ -673,7 +668,6 @@ class cmd_drs_bind(Command):
         self.message("Repl epoch: %u" % info.info.repl_epoch)
         if isinstance(info.info, drsuapi.DsBindInfo48):
             self.message("Forest GUID: %s" % info.info.config_dn_guid)
-
 
 
 class cmd_drs_options(Command):

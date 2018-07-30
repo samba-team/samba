@@ -114,7 +114,6 @@ class PassWordHashTests(TestCase):
         self.netbios_domain = res[0]["nETBIOSName"][0]
         self.dns_domain = self.ldb.domain_dns_name()
 
-
         # Gets back the basedn
         base_dn = self.ldb.domain_dn()
 

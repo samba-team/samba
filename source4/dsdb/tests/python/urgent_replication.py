@@ -140,7 +140,6 @@ systemFlags: 33554432""", ["relax:0"])
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
 
-
         # urgent replication should be enabled when deleting
         self.delete_force(self.ldb, "cn=test crossRef,CN=Partitions,CN=Configuration," + self.base_dn)
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)

@@ -68,7 +68,6 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
                       credentials=creds, lp=lp)
         return samdb
 
-
     def runcmd(self, name, *args):
         """run a single level command"""
         cmd = cmd_sambatool.subcommands[name]

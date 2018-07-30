@@ -93,7 +93,6 @@ def possible_inferiors_search(db, oc):
     return poss
 
 
-
 # see [MS-ADTS] section 3.1.1.4.5.21
 # and section 3.1.1.4.2 for this algorithm
 

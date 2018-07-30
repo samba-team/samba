@@ -43,7 +43,6 @@ from samba.netcmd import (
 )
 
 
-
 class cmd_dsacl_set(Command):
     """Modify access list on a directory object."""
 

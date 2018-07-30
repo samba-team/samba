@@ -66,7 +66,6 @@ class OUCmdTestCase(SambaToolCmdTest):
                 self.assertCmdSuccess(result, out, err,
                                       "Failed to delete ou '%s'" % ou["name"])
 
-
     def test_newou(self):
         """This tests the "ou create" and "ou delete" commands"""
         # try to create all the ous again, this should fail
@@ -225,7 +224,6 @@ class OUCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, str(obj.dn),
                                      "object '%s' not found" % obj.dn)
 
-
     def test_list(self):
         (result, out, err) = self.runsubcmd("ou", "list",
                                             "--full-dn")
@@ -243,7 +241,6 @@ class OUCmdTestCase(SambaToolCmdTest):
         for obj in objlist:
             found = self.assertMatch(out, str(obj.dn),
                                      "object '%s' not found" % obj.dn)
-
 
     def _randomOU(self, base={}):
         """create an ou with random attribute values, you can specify base

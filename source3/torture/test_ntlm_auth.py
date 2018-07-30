@@ -98,7 +98,6 @@ def parseCommandLine():
     parser.add_option("--target-service", dest="target_service",\
                       help="Target service for kerberos")
 
-
     parser.add_option("--server-username", dest="server_username",\
                       help="User name server uses for local auth. [default: foo]")
     parser.add_option("--server-password", dest="server_password",\
@@ -111,7 +110,6 @@ def parseCommandLine():
                       help="Use winbindd to check the password (rather than default username/pw)", action="store_true")
     parser.add_option("--require-membership-of", dest="sid",\
                       help="Require that the user is a member of this group to authenticate.")
-
 
     parser.add_option("-s", "--configfile", dest="config_file",\
                       help="Path to smb.conf file. [default:/etc/samba/smb.conf")
@@ -243,7 +241,6 @@ def main():
         if buf.count("AF ", 0, 3) != 1:
             sys.exit(4)
 
-
     elif opts.client_helper == "ntlmssp-client-1" and opts.server_helper == "gss-spnego":
         # We're in the parent
         writeLine(client_out, "YR")
@@ -272,7 +269,6 @@ def main():
 
         if buf.count("AF * ", 0, 5) != 1:
             sys.exit(4)
-
 
     elif opts.client_helper == "gss-spnego-client" and opts.server_helper == "gss-spnego":
         # We're in the parent

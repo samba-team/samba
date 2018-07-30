@@ -80,7 +80,6 @@ objectClass: organizationalUnit
         self.assertTrue(dodn in str(ou_cur["dn"]),
                         "OU %s is deleted but it is not located under %s!" % (name_cur, dodn))
 
-
     def test_ReplConflictsRODC(self):
         """Tests that objects created in conflict become conflict DNs"""
         # Replicate all objects to RODC beforehand

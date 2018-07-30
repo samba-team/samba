@@ -159,7 +159,6 @@ class DNSTest(TestCase):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
 
 
-
 def contact_real_server(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
     s.connect((host, port))
@@ -331,7 +330,6 @@ class TestDnsForwarding(DNSTest):
             self.assert_dns_rcode_equals(data, dns.DNS_RCODE_SERVFAIL)
         except socket.timeout:
             self.fail("DNS server is too slow (timeout %s)" % timeout)
-
 
     def test_single_forwarder_waiting_forever(self):
         s = self.start_toy_server(dns_servers[0], 53, 'forwarder1')

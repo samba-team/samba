@@ -158,7 +158,6 @@ class cmd_delegation_for_any_protocol(Command):
                metavar="URL", dest="H"),
     ]
 
-
     takes_args = ["accountname", "onoff"]
 
     def run(self, accountname, onoff, H=None, credopts=None, sambaopts=None,

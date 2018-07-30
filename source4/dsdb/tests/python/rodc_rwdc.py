@@ -105,7 +105,6 @@ def preload_rodc_user(user_dn):
     set_auto_replication(RWDC, False)
 
 
-
 def get_server_ref_from_samdb(samdb):
     server_name = samdb.get_serverName()
     res = samdb.search(server_name,
@@ -1030,7 +1029,6 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                               "Expected: %s Got: %s" %
                               (errno, code))
 
-
     def zero_min_password_age(self):
         min_pwd_age = int(self.rwdc_db.get_minPwdAge())
         if min_pwd_age != 0:
@@ -1144,7 +1142,6 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         # We can forward WRONG_PASSWORD over NTLM.
         # This SHOULD succeed.
         self.try_ldap_logon(RODC, creds2)
-
 
     def test_change_password_reveal_on_demand_ntlm(self):
         CREDS.set_kerberos_state(DONT_USE_KERBEROS)

@@ -58,14 +58,12 @@ class UserCmdTestCase(SambaToolCmdTest):
 
             user["checkUserFn"](user)
 
-
     def tearDown(self):
         super(UserCmdTestCase, self).tearDown()
         # clean up all the left over users, just in case
         for user in self.users:
             if self._find_user(user["name"]):
                 self.runsubcmd("user", "delete", user["name"])
-
 
     def test_newuser(self):
         # try to add all the users again, this should fail
@@ -303,9 +301,6 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertEquals(err, "", "setpassword with forced change")
             self.assertMatch(out, "Changed password OK", "setpassword with forced change")
 
-
-
-
     def test_setexpiry(self):
         for user in self.users:
             twodays = time.time() + (2 * 24 * 60 * 60)
@@ -343,7 +338,6 @@ class UserCmdTestCase(SambaToolCmdTest):
             else:
                 expires = nttime2unix(int("%s" % found.get("accountExpires")))
                 self.assertWithin(expires, twodays, 5, "Ensure account expires is within 5 seconds of the expected time")
-
 
     def test_list(self):
         (result, out, err) = self.runsubcmd("user", "list",

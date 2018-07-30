@@ -328,7 +328,6 @@ def run():
         print 'Unable to open configuration file: ' + configfile
         sys.exit(1)
 
-
     #
     # open the output file
     #    

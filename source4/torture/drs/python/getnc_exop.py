@@ -691,7 +691,6 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
             (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
             pfm = ctr.mapping_ctr
 
-
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=dc_guid_1,
                                nc_dn_str=self.user,
@@ -766,7 +765,6 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
             (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
             pfm = ctr.mapping_ctr
 
-
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=dc_guid_1,
                                nc_dn_str=self.user,
@@ -839,7 +837,6 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
                                    exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ)
             (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
             pfm = ctr.mapping_ctr
-
 
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=dc_guid_1,

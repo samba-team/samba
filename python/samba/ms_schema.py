@@ -213,7 +213,6 @@ def __write_ldif_one(entry):
         for v in vl:
             out.append("%s: %s" % (l[0], v))
 
-
     return "\n".join(out)
 
 

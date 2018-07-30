@@ -600,7 +600,6 @@ class cmd_domain_dcpromo(Command):
     if samba.is_ntvfs_fileserver_built():
         takes_options.extend(common_ntvfs_options)
 
-
     takes_args = ["domain", "role?"]
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
@@ -841,7 +840,6 @@ class cmd_domain_demote(Command):
             nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
             samdb.modify(nmsg)
 
-
             self.errf.write("Asking partner server %s to synchronize from us\n"
                             % server)
             for part in (samdb.get_schema_basedn(),
@@ -986,7 +984,6 @@ class cmd_domain_demote(Command):
 
             remote_samdb.modify(msg)
             raise CommandError("Error while renaming %s to %s" % (str(dc_dn), str(newdn)), e)
-
 
         server_dsa_dn = samdb.get_serverName()
         domain = remote_samdb.get_root_basedn()
@@ -2863,7 +2860,6 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                 raise CommandError("Failed to find trust for domain '%s'" % domain)
             raise self.RemoteRuntimeError(self, error, "failed to locate remote server")
 
-
         if remote_policy_access is not None:
             try:
                 remote_server = self.setup_remote_server(credopts, domain)
@@ -3955,7 +3951,6 @@ This command expunges tombstones from the database."""
                         % (removed_objects, removed_links))
 
 
-
 class cmd_domain_trust(SuperCommand):
     """Domain and forest trust management."""
 
@@ -4139,7 +4134,6 @@ class cmd_domain_schema_upgrade(Command):
             ldif_op.ldif += line + '\n'
 
         return count
-
 
     def _apply_update(self, samdb, update_file, base_dir):
         """Wrapper function for parsing an LDIF file and applying the updates"""

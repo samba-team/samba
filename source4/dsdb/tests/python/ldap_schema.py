@@ -19,7 +19,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
 from __future__ import print_function
 import optparse
 import sys
@@ -304,7 +303,6 @@ instanceType: 4
         # Delete the object
         delete_force(self.ldb, "ou=%s,%s" % (object_name, self.base_dn))
 
-
     def test_duplicate_attributeID(self):
         """Testing creating a duplicate attribute"""
         rand = str(random.randint(1, 100000))
@@ -347,7 +345,6 @@ systemOnly: FALSE
         except LdbError as e2:
             (enum, estr) = e2.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
-
 
     def test_duplicate_attributeID_governsID(self):
         """Testing creating a duplicate attribute and class"""
@@ -392,7 +389,6 @@ systemOnly: FALSE
         except LdbError as e3:
             (enum, estr) = e3.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
-
 
     def test_duplicate_cn(self):
         """Testing creating a duplicate attribute"""
@@ -481,7 +477,6 @@ systemOnly: FALSE
             (enum, estr) = e5.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
-
     def test_duplicate_explicit_ldapdisplayname(self):
         """Testing creating a duplicate attribute ldapdisplayname"""
         rand = str(random.randint(1, 100000))
@@ -526,7 +521,6 @@ systemOnly: FALSE
         except LdbError as e6:
             (enum, estr) = e6.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
-
 
     def test_duplicate_explicit_ldapdisplayname_with_class(self):
         """Testing creating a duplicate attribute ldapdisplayname between
@@ -575,7 +569,6 @@ systemOnly: FALSE
         except LdbError as e7:
             (enum, estr) = e7.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
-
 
     def test_duplicate_via_rename_ldapdisplayname(self):
         """Testing creating a duplicate attribute ldapdisplayname"""
@@ -630,7 +623,6 @@ ldapDisplayName: """ + attr_ldap_display_name + """
         except LdbError as e8:
             (enum, estr) = e8.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
-
 
     def test_duplicate_via_rename_attributeID(self):
         """Testing creating a duplicate attributeID"""
@@ -754,7 +746,6 @@ ldapDisplayName: """ + attr_ldap_display_name + """2
 """
         self.ldb.modify_ldif(ldif)
 
-
     def test_change_attributeID(self):
         """Testing change the attributeID"""
         rand = str(random.randint(1, 100000))
@@ -792,7 +783,6 @@ attributeId: """ + attributeID + """.1
             (enum, estr) = e11.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
 
-
     def test_change_attributeID_same(self):
         """Testing change the attributeID to the same value"""
         rand = str(random.randint(1, 100000))
@@ -829,7 +819,6 @@ attributeId: """ + attributeID + """
         except LdbError as e12:
             (enum, estr) = e12.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
-
 
     def test_generated_linkID(self):
         """
@@ -1200,7 +1189,6 @@ systemOnly: FALSE
             (enum, estr) = e22.args
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
-
     def test_change_governsID(self):
         """Testing change the governsID"""
         rand = str(random.randint(1, 100000))
@@ -1239,7 +1227,6 @@ governsId: """ + governsID + """.1
             (enum, estr) = e23.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
 
-
     def test_change_governsID_same(self):
         """Testing change the governsID"""
         rand = str(random.randint(1, 100000))
@@ -1277,7 +1264,6 @@ governsId: """ + governsID + """.1
         except LdbError as e24:
             (enum, estr) = e24.args
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
-
 
     def test_subClassOf(self):
         """ Testing usage of custom child classSchema
@@ -1493,7 +1479,6 @@ systemOnly: FALSE
             (num, _) = e28.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
-
     def _make_class_ldif(self, class_dn, class_name, sub_oid):
         ldif = """
 dn: """ + class_dn + """
@@ -1595,7 +1580,6 @@ systemOnly: FALSE
         res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["msDS-IntId"])
         self.assertEquals(len(res), 1)
         self.assertFalse("msDS-IntId" in res[0])
-
 
     def test_verify_msDS_IntId(self):
         """Verify msDS-IntId exists only on attributes without FLAG_SCHEMA_BASE_OBJECT flag set"""

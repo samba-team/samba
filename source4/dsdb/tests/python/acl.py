@@ -518,7 +518,6 @@ url: www.samba.org"""
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
 
-
     def test_modify_u4(self):
         """11 Grant WP to PRINCIPAL_SELF and test modify"""
         ldif = """
@@ -1570,7 +1569,6 @@ userPassword: thatsAcomplPASS2
                             num == ERR_UNWILLING_TO_PERFORM)
         else:
             self.fail()
-
 
     def test_change_password7(self):
         """Try a password change operation without any CARs given"""

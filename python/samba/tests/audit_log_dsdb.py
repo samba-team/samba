@@ -492,7 +492,6 @@ class AuditLogDsdbTests(AuditLogTestBase):
         # is subject to a race between smbd and the s4 rpc_server code
         # as to which will set the description as it is DCE/RPC over SMB
 
-
     def test_modify(self):
 
         dn = "cn=" + USER_NAME + ",cn=users," + self.base_dn

@@ -350,7 +350,6 @@ RebootOnCompletion=No
     t.wait_reboot()
 
 
-
 def test_dcpromo_rodc(t, vm):
     '''test the RODC dcpromo worked'''
     t.info("Checking the w2k8 RODC join is OK")

@@ -97,7 +97,6 @@ class StringTests(samba.tests.TestCase):
         self.assertEqual(info.dns_name2, "2.example.com")
         del info
 
-
     def test_string_delete(self):
         gc.collect()
         info = drsblobs.repsFromTo2OtherInfo()

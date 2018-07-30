@@ -737,7 +737,6 @@ class DsdbFullScanTests(TestCase):
         self.creds.guess(self.lp)
         self.session = system_session()
 
-
     def test_sam_ldb_open_no_full_scan(self):
         try:
             self.samdb = SamDB(session_info=self.session,

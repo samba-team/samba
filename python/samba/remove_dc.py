@@ -450,7 +450,6 @@ def remove_dc(samdb, logger, dc_name):
     samdb.transaction_commit()
 
 
-
 def offline_remove_dc_RemoveDsServer(samdb, ntds_dn):
 
     samdb.start_transaction()

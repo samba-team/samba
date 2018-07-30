@@ -491,7 +491,6 @@ class BasicTreeDeleteTests(BasicDeleteTests):
         self.assertEqual(objDeleted7["parentGUID"][0],
                          objDeleted6["objectGUID"][0])
 
-
         objDeleted1 = self.search_guid(self.guid1)
         objDeleted2 = self.search_guid(self.guid2)
         objDeleted3 = self.search_guid(self.guid3)
@@ -555,7 +554,6 @@ class BasicTreeDeleteTests(BasicDeleteTests):
                          self.deleted_objects_config_guid)
         self.assertFalse("CN=Deleted Objects" in str(objDeleted6.dn))
         self.assertFalse("CN=Deleted Objects" in str(objDeleted7.dn))
-
 
 
 if not "://" in host:

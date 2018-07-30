@@ -60,7 +60,6 @@ class PyKrb5CredentialsTests(TestCase):
 
         self.create_machine_account()
 
-
     def tearDown(self):
         super(PyKrb5CredentialsTests, self).tearDown()
         delete_force(self.ldb, self.machine_dn)

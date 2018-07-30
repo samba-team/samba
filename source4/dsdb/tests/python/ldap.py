@@ -770,7 +770,6 @@ class BasicTests(samba.tests.TestCase):
         self.ldb.add({'objectclass': 'organizationalUnit',
                       'dn': ou})
 
-
         managers = []
         for x in range(3):
             m = "cn=manager%d,%s" % (x, ou)
@@ -825,7 +824,6 @@ class BasicTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         self.ldb.delete(ou, ['tree_delete:1'])
-
 
     def test_multivalued_attributes(self):
         """Test multi-valued attributes"""
@@ -897,7 +895,6 @@ class BasicTests(samba.tests.TestCase):
             ldb.modify(m)
 
         self.ldb.delete(ou, ['tree_delete:1'])
-
 
     def test_attribute_ranges(self):
         """Test attribute ranges"""
@@ -1371,10 +1368,8 @@ class BasicTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
-
         # this test needs to be disabled until we really understand
         # what the rDN length constraints are
-
 
     def DISABLED_test_largeRDN(self):
         """Testing large rDN (limit 64 characters)"""
@@ -2095,7 +2090,6 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")
         self.assertEquals(len(res[0]["servicePrincipalName;range=0-19"]), 20)
 
-
         res = ldb.search(self.base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, attrs=["servicePrincipalName;range=0-30"])
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")
         self.assertEquals(len(res[0]["servicePrincipalName;range=0-*"]), 30)
@@ -2107,7 +2101,6 @@ servicePrincipalName: host/ldaptest2computer29
         res = ldb.search(self.base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, attrs=["servicePrincipalName;range=30-40"])
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")
         self.assertEquals(len(res[0]["servicePrincipalName;range=30-*"]), 0)
-
 
         res = ldb.search(self.base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, attrs=["servicePrincipalName;range=10-40"])
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")

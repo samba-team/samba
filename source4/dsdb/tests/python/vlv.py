@@ -880,8 +880,6 @@ class VLVTests(samba.tests.TestCase):
                         self.assertCorrectResults(results, expected_order,
                                                   offset, before, after)
 
-
-
     def test_server_vlv_with_cookie_show_deleted(self):
         """What do we see with the show_deleted control?"""
         attrs = ['objectGUID',
@@ -928,7 +926,6 @@ class VLVTests(samba.tests.TestCase):
 
                     self.assertCorrectResults(results, expected_order,
                                               offset, before, after)
-
 
     def test_server_vlv_gte_with_cookie(self):
         attrs = [x for x in self.users[0].keys() if x not in

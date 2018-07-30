@@ -455,7 +455,6 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
 #
 
-
     def test_setntacl_sysvol_dir_check_getposixacl(self):
         acl = provision.SYSVOL_ACL
         domsid = passdb.get_global_sam_sid()
@@ -549,7 +548,6 @@ class PosixAclMappingTests(TestCaseInTempDir):
 # group:3000003:r-x
 # mask::rwx
 # other::---
-
 
     def test_setntacl_policies_dir_check_getposixacl(self):
         acl = provision.POLICIES_ACL
@@ -656,8 +654,6 @@ class PosixAclMappingTests(TestCaseInTempDir):
 # group:3000004:rwx
 # mask::rwx
 # other::---
-
-
 
     def test_setntacl_policies_check_getposixacl(self):
         acl = provision.POLICIES_ACL

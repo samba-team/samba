@@ -411,7 +411,6 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                    "is of type '%s' where '%s' was expected."
                                    % (record1, record2, dnstype1, dnstype2))
 
-
     def test_update_valid_type(self):
         for dnstype in self.good_records:
             for record in self.good_records[dnstype]:

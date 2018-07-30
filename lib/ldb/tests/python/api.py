@@ -707,7 +707,6 @@ class SearchTests(LdbBaseTest):
         # Ensure the LDB is closed now, so we close the FD
         del(self.l)
 
-
     def setUp(self):
         super(SearchTests, self).setUp()
         self.testdir = tempdir()
@@ -1042,7 +1041,6 @@ class SearchTests(LdbBaseTest):
             self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
             self.assertIn(estr, "ldb FULL SEARCH disabled")
 
-
     def test_subtree_and_or(self):
         """Testing a search"""
 
@@ -1160,7 +1158,6 @@ class SearchTests(LdbBaseTest):
             estr = err.args[1]
             self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
             self.assertIn(estr, "ldb FULL SEARCH disabled")
-
 
     def test_dn_filter_one(self):
         """Testing that a dn= filter succeeds
@@ -2016,7 +2013,6 @@ class BadIndexTests(LdbBaseTest):
             # https://bugzilla.samba.org/show_bug.cgi?id=13361
             self.assertEquals(len(res), 4)
 
-
     def tearDown(self):
         super(BadIndexTests, self).tearDown()
 
@@ -2756,9 +2752,7 @@ class LdbResultTests(LdbBaseTest):
                 found = True
         self.assertTrue(found)
 
-
     # Show that search results can't see into a transaction
-
 
     def test_search_against_trans(self):
         found11 = False
@@ -2823,7 +2817,6 @@ class LdbResultTests(LdbBaseTest):
 
         (got_pid, status) = os.waitpid(pid, 0)
         self.assertEqual(got_pid, pid)
-
 
     def test_search_iter_against_trans(self):
         found = False

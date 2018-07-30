@@ -112,7 +112,6 @@ systemOnly: FALSE
 
         self.assertIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
 
-
     def test_AddUnIndexedAttribute(self):
         # create names for an attribute to add
         (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-Attr-")
@@ -135,7 +134,6 @@ systemOnly: FALSE
         idx_res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
 
         self.assertNotIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
-
 
     def test_AddTwoIndexedAttributes(self):
         # create names for an attribute to add
@@ -208,7 +206,6 @@ systemOnly: FALSE
         self.assertEquals(str(res[0].dn), "@ATTRIBUTES")
         self.assertEquals(len(res[0]), 0)
         self.assertFalse("@TEST_EXTRA" in res[0])
-
 
     def test_modify_at_indexlist(self):
         m = {"dn": "@INDEXLIST",

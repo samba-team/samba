@@ -941,7 +941,6 @@ schemaUpdateNow: 1
         m["maxPwdAge"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "maxPwdAge")
         self.modify(m)
 
-
     def get_maxPwdAge(self):
         res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["maxPwdAge"])
         if len(res) == 0:
@@ -950,8 +949,6 @@ schemaUpdateNow: 1
             return None
         else:
             return int(res[0]["maxPwdAge"][0])
-
-
 
     def set_minPwdLength(self, value):
         value = str(value).encode('utf8')
@@ -1088,7 +1085,6 @@ schemaUpdateNow: 1
                                    tombstone_lifetime=None):
         '''garbage_collect_tombstones(lp, samdb, [dn], current_time, tombstone_lifetime)
         -> (num_objects_expunged, num_links_expunged)'''
-
 
         if tombstone_lifetime is None:
             return dsdb._dsdb_garbage_collect_tombstones(self, dn,

@@ -112,7 +112,6 @@ class LATests(drs_base.DrsBaseTestCase):
 
         return links
 
-
     def assert_forward_links(self, obj, expected, attr='member'):
         results = self.attr_search(obj, expected, attr)
         self.assertEqual(len(results), len(expected))
@@ -144,7 +143,6 @@ class LATests(drs_base.DrsBaseTestCase):
                                 controls=['show_deleted:1'])
         new_dn = res[0].dn
         self.assert_forward_links(new_dn, {})
-
 
     def test_la_links_delete_link(self):
         u1, u2 = self.add_objects(2, 'user', 'u_del_link')

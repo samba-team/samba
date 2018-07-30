@@ -126,7 +126,6 @@ class DnsserverTests(RpcInterfaceTestCase):
                            session_info=system_session(),
                            credentials=self.get_credentials())
 
-
         self.custom_zone = "zone"
         zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
         zone_create_info.pszZoneName = self.custom_zone
@@ -758,7 +757,6 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                           dnsserver.DNSSRV_TYPEID_DWORD,
                                                           request_filter)
         self.assertEquals(0, zones.dwZoneCount)
-
 
     def test_complexoperation2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN

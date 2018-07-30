@@ -63,7 +63,6 @@ class RodcCmdTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("drs", "replicate", "--local", "unused",
                                             os.environ["DC_SERVER"], self.base_dn)
 
-
     def test_single_by_account_name(self):
         (result, out, err) = self.runsubcmd("rodc", "preload", "sambatool1",
                                             "--server", os.environ["DC_SERVER"])

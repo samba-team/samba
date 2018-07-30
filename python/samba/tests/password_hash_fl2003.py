@@ -36,7 +36,6 @@ from samba.dcerpc import drsblobs
 import binascii
 
 
-
 class PassWordHashFl2003Tests(PassWordHashTests):
 
     def setUp(self):
@@ -137,7 +136,6 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         (pos, ct_package) = get_package(sc, "Primary:CLEARTEXT")
         self.assertEquals(4, pos)
         self.assertEquals("Primary:CLEARTEXT", ct_package.name)
-
 
         # Check that the WDigest values are correct.
         #

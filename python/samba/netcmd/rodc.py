@@ -80,7 +80,6 @@ class cmd_rodc_preload(Command):
             raise NamingError("Failed to find account '%s'" % account)
         return str(res[0]["dn"])
 
-
     def run(self, *accounts, **kwargs):
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")

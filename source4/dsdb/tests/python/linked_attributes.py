@@ -492,7 +492,6 @@ class LATests(samba.tests.TestCase):
                                   self.replace_linked_attribute, g2,
                                   [u1, u2, u3, u2])
 
-
     def test_la_links_replace2(self):
         users = self.add_objects(12, 'user', 'u_replace2')
         g1, = self.add_objects(1, 'group', 'g_replace2')

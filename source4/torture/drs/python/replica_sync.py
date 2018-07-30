@@ -439,7 +439,6 @@ objectClass: organizationalUnit
         self._check_deleted(self.ldb_dc2, self.ou1)
         self._check_deleted(self.ldb_dc2, self.ou2)
 
-
     def test_ReplConflictsRenameRemoteWin_with_child(self):
         """Tests that objects created in conflict become conflict DNs"""
         self._disable_inbound_repl(self.dnsname_dc1)
@@ -492,7 +491,6 @@ objectClass: organizationalUnit
         # Check deleted on DC2
         self._check_deleted(self.ldb_dc2, ou1_child)
         self._check_deleted(self.ldb_dc2, ou2_child)
-
 
     def test_ReplConflictsRenameLocalWin(self):
         """Tests that objects created in conflict become conflict DNs"""
@@ -584,7 +582,6 @@ objectClass: organizationalUnit
 
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
-
         # Check all deleted on DC1
         self._check_deleted(self.ldb_dc1, self.ou1)
         self._check_deleted(self.ldb_dc1, self.ou2)
@@ -675,7 +672,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
-
 
         # Check all deleted on DC1
         self._check_deleted(self.ldb_dc1, self.ou1)

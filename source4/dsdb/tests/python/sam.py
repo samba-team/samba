@@ -3588,7 +3588,6 @@ class SamTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
-
     def test_fSMORoleOwner_attribute(self):
         """Test fSMORoleOwner attribute"""
         print("Test fSMORoleOwner attribute")
@@ -3680,8 +3679,6 @@ class SamTests(samba.tests.TestCase):
             ["CN=Administrator", "CN=Users,"],
             ["CN=Domain Controllers", "CN=Users,"],
         ]
-
-
 
         for pr_object in protected_list:
             try:

@@ -635,5 +635,4 @@ class SimpleSubnetTests(SitesBaseTests):
             self.fail()
 
 
-
 TestProgram(module=__name__, opts=subunitopts)

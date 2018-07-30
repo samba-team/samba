@@ -588,7 +588,6 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             self._test_force_demote(fsmo_owner['dns_name'], "RIDALLOCTEST6")
             shutil.rmtree(targetdir, ignore_errors=True)
 
-
     def test_rid_set_dbcheck_after_seize(self):
         """Perform a join against the RID manager and assert we have a RID Set.
         We seize the RID master role, then using dbcheck, we assert that we can

@@ -1232,7 +1232,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
             target_is_deleted = 'isDeleted' in res[0] and res[0]['isDeleted'][0].upper() == 'TRUE'
 
-
             if is_deleted and not obj.dn in self.deleted_objects_containers and linkID:
                 # A fully deleted object should not have any linked
                 # attributes. (MS-ADTS 3.1.1.5.5.1.1 Tombstone
@@ -1406,9 +1405,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                                attrname, syntax_oid)
                     diff_count += 1
 
-
         return error_count
-
 
     def get_originating_time(self, val, attid):
         '''Read metadata properties and return the originating time for
@@ -1448,7 +1445,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 wrong_attids.add(o.attid)
 
         return (set_att, list_attid, wrong_attids)
-
 
     def fix_metadata(self, obj, attr):
         '''re-write replPropertyMetaData elements for a single attribute for a
@@ -1676,7 +1672,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
         self.samdb.set_session_info(self.system_session_info)
 
-
     def has_replmetadata_zero_invocationid(self, dn, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                           str(repl_meta_data))
@@ -1696,7 +1691,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                            self.samdb.get_invocation_id()))
 
         return found
-
 
     def err_replmetadata_zero_invocationid(self, dn, attr, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
@@ -1735,7 +1729,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                               "Failed to fix attribute %s" % attr):
                 self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
 
-
     def err_replmetadata_unknown_attid(self, dn, attr, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                           str(repl_meta_data))
@@ -1747,7 +1740,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             except KeyError:
                 self.report('ERROR: attributeID 0X%0X is not known in our schema, not fixing %s on %s\n' % (o.attid, attr, dn))
                 return
-
 
     def err_replmetadata_incorrect_attid(self, dn, attr, repl_meta_data, wrong_attids):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
@@ -1843,7 +1835,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                  "local_oid:1.3.6.1.4.1.7165.4.3.25:0"],
                           "Failed to fix attribute %s" % attr):
             self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
-
 
     def is_deleted_deleted_objects(self, obj):
         faulty = False
@@ -2040,7 +2031,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             # We have no deleted objects DN for schema, and we check for this above for the other
             # NCs
             deleted_objects_dn = None
-
 
         object_rdn_attr = None
         object_rdn_val = None
@@ -2385,10 +2375,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                             self.samdb.transaction_commit()
 
-
                     elif not self.samdb.am_rodc():
                         self.report("No RID Set found for this server: %s, and we are not the RID Master (so can not self-allocate)" % dn)
-
 
         # Check some details of our own RID Set
         if dn == self.rid_set_dn:
@@ -2465,7 +2453,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     else:
                         next_free_rid += 1
 
-
         return error_count
 
     ################################################################
@@ -2503,10 +2490,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 self.report("Changed dsServiceName to GUID form")
         return error_count
 
-
     ###############################################
     # re-index the database
-
 
     def reindex_database(self):
         '''re-index the whole database'''

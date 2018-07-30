@@ -1135,7 +1135,6 @@ class MatchRuleConditionTests(samba.tests.TestCase):
         super(MatchRuleConditionTests, self).tearDown()
         self.ldb.delete(self.ou, controls=['tree_delete:0'])
 
-
     def test_g1_members(self):
         res1 = self.ldb.search(self.ou,
                                scope=SCOPE_SUBTREE,

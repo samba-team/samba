@@ -101,7 +101,6 @@ class cmd_dbcheck(Command):
             except:
                 raise CommandError("Failed to connect to DB at %s.  If this is a really old sam.ldb (before alpha9), then try again with --force-modules" % H)
 
-
         if H is None or not over_ldap:
             samdb_schema = samdb
         else:

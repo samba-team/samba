@@ -147,13 +147,11 @@ class SamDBApiTestCase(TestCaseInTempDir):
         except IOError as e:
             self.assertEquals(e.errno, errno.ENOENT)
 
-
     # Open a SamDB with the don't create new DB flag cleared.
     # The underlying database file does not exist.
     #
     # Should successful open the SamDB creating a new database file.
     #
-
 
     def test_create_db_new_file(self):
         SamDB(url="tdb://" + self.tempdir + "/test.db", flags=0)

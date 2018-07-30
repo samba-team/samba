@@ -135,8 +135,6 @@ class TestCase(unittest.TestCase):
         c.set_kerberos_state(kerberos_state)
         return c
 
-
-
     # These functions didn't exist before Python2.7:
     if sys.version_info < (2, 7):
         import warnings

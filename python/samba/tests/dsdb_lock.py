@@ -221,7 +221,6 @@ class DsdbLockTestCase(SamDBTestCase):
         self.assertEqual(os.WEXITSTATUS(status), 0)
         self.assertEqual(got_pid, pid)
 
-
     def _test_full_db_lock1(self, backend_path):
         (r1, w1) = os.pipe()
 
@@ -232,7 +231,6 @@ class DsdbLockTestCase(SamDBTestCase):
             gc.collect()
 
             backenddb = ldb.Ldb(backend_path)
-
 
             backenddb.transaction_start()
 
@@ -278,7 +276,6 @@ class DsdbLockTestCase(SamDBTestCase):
         backend_path = self.lp.private_path(backend_subpath)
         self._test_full_db_lock1(backend_path)
 
-
     def test_full_db_lock1_config(self):
         basedn = self.samdb.get_config_basedn()
         backend_filename = "%s.ldb" % basedn.get_casefold()
@@ -286,7 +283,6 @@ class DsdbLockTestCase(SamDBTestCase):
                                        backend_filename)
         backend_path = self.lp.private_path(backend_subpath)
         self._test_full_db_lock1(backend_path)
-
 
     def _test_full_db_lock2(self, backend_path):
         (r1, w1) = os.pipe()

@@ -373,7 +373,6 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                         attrs=["objectGUID"],
                                         controls=["dirsync:1:0:0"])
 
-
     def test_dirsync_send_delta(self):
         """Check that dirsync return correct delta when sending the last cookie"""
         res = self.ldb_admin.search(self.base_dn,
@@ -541,8 +540,6 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.ldb_admin.deletegroup("testgroup")
         self.assertEqual(len(res[0].get("member")), 0)
 
-
-
     def test_dirsync_deleted_items(self):
         """Check that dirsync returnd deleted objects too"""
         # Let's create an OU
@@ -612,7 +609,6 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
                                                 add_members_operation=True)
         self.ldb_admin.add_remove_group_members("Administrators", [self.dirsync_user],
                                                 add_members_operation=True)
-
 
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(name=Administrators)",

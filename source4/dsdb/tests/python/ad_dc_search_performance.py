@@ -190,8 +190,6 @@ class UserTests(samba.tests.TestCase):
                                                   maybe_not, maybe_not))
         random.seed(1)
 
-
-
         for (j, c1, c2, v1, v2,
              o1, o2, n1, n2) in random.sample(all_permutations, 100):
             expression = ''.join(['(', j,
@@ -256,7 +254,6 @@ class UserTests(samba.tests.TestCase):
             self._link_user_and_group(i, g)
             self._link_user_and_group(i, 0)
         self.state.next_linked_user = e
-
 
     test_00_01_adding_users_1000 = _test_add_many_users
 

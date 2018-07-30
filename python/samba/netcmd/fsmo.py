@@ -395,7 +395,6 @@ You must provide an Admin user and password."""),
             self.outf.write("FSMO seize of '%s' role successful\n" % role)
             return True
 
-
     def run(self, force=None, H=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
 

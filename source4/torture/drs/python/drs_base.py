@@ -363,7 +363,6 @@ class DrsBaseTestCase(SambaToolCmdTest):
                          dn_ordered=dn_ordered)
         return (ctr6.new_highwatermark, ctr6.uptodateness_vector)
 
-
     def _get_ctr6_dn_list(self, ctr6):
         """
         Returns the DNs contained in a DsGetNCChanges response.
@@ -376,7 +375,6 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.assertEqual(next_object, None)
 
         return dn_list
-
 
     def _check_ctr6(self, ctr6, expected_dns=[], expected_links=[],
                     dn_ordered=True, links_ordered=True,
@@ -491,7 +489,6 @@ class DrsBaseTestCase(SambaToolCmdTest):
         partial_attribute_set.attids = attids
         partial_attribute_set.num_attids = len(attids)
         return partial_attribute_set
-
 
 
 class AbstractLink:

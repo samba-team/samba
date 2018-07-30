@@ -132,7 +132,6 @@ class LdifImportExportTests(samba.tests.TestCaseInTempDir):
             self.assertEqual(dn, ldb.Dn(samdb, "CN=NTDS Settings," + dsa))
             self.remove_files(dburl)
 
-
     def test_samdb_to_ldif_file(self):
         dburl = os.path.join(self.tempdir, "ldap")
         dburl2 = os.path.join(self.tempdir, "ldap_roundtrip")

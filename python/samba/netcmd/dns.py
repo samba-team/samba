@@ -403,8 +403,6 @@ def print_dnsrecords(outf, records):
                 print_dns_record(outf, dns_rec)
 
 
-
-
 # Convert data into a dns record
 def data_to_dns_record(record_type, data):
     if record_type == dnsp.DNS_TYPE_A:

@@ -104,7 +104,6 @@ class DCJoinContext(object):
             (enum, estr) = e4.args
             raise DCJoinException(estr)
 
-
         ctx.base_dn = str(ctx.samdb.get_default_basedn())
         ctx.root_dn = str(ctx.samdb.get_root_basedn())
         ctx.schema_dn = str(ctx.samdb.get_schema_basedn())
@@ -265,7 +264,6 @@ class DCJoinContext(object):
                                   (ldb.binary_encode("dns-%s" % ctx.myname),
                                    ldb.binary_encode("dns/%s" % ctx.dnshostname)))
 
-
     def cleanup_old_join(ctx, force=False):
         """Remove any DNs from a previous join."""
         # find the krbtgt link
@@ -312,8 +310,6 @@ class DCJoinContext(object):
         if ctx.dns_cname_dn:
             ctx.del_noerror(ctx.dns_cname_dn)
 
-
-
     def promote_possible(ctx):
         """confirm that the account is just a bare NT4 BDC or a member server, so can be safely promoted"""
         if ctx.subdomain:
@@ -332,7 +328,6 @@ class DCJoinContext(object):
 
         ctx.promote_from_dn = res[0].dn
 
-
     def find_dc(ctx, domain):
         """find a writeable DC for the given domain"""
         try:
@@ -345,7 +340,6 @@ class DCJoinContext(object):
         if ctx.cldap_ret.client_site is not None and ctx.cldap_ret.client_site != "":
             ctx.site = ctx.cldap_ret.client_site
         return ctx.cldap_ret.pdc_dns_name
-
 
     def get_behavior_version(ctx):
         res = ctx.samdb.search(base=ctx.base_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
@@ -464,7 +458,6 @@ class DCJoinContext(object):
         r = drsuapi.DsReplicaAttribute()
         r.attid = ctx.tmp_samdb.get_attid_from_lDAPDisplayName(attrname)
         r.value_ctr = 1
-
 
     def DsAddEntry(ctx, recs):
         '''add a record via the DRSUAPI DsAddEntry call'''
@@ -1064,7 +1057,6 @@ class DCJoinContext(object):
         dns_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
                                        ctx.lp, ctx.creds)
 
-
         name_found = True
 
         sd_helper = samba.sd_utils.SDUtils(ctx.samdb)
@@ -1148,7 +1140,6 @@ class DCJoinContext(object):
                                                 % (security.SECINFO_OWNER
                                                    | security.SECINFO_GROUP)])
 
-
             # Add record
             ctx.logger.info("Adding DNS CNAME record %s.%s for %s"
                             % (msdcs_cname, msdcs_zone, cname_target))
@@ -1178,7 +1169,6 @@ class DCJoinContext(object):
         ctx.logger.info("All other DNS records (like _ldap SRV records) " +
                         "will be created samba_dnsupdate on first startup")
 
-
     def join_replicate_new_dns_records(ctx):
         for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
             if nc in ctx.nc_list:
@@ -1187,8 +1177,6 @@ class DCJoinContext(object):
                                    ctx.ntds_guid, rodc=ctx.RODC,
                                    replica_flags=ctx.replica_flags,
                                    full_sync=False)
-
-
 
     def join_finalise(ctx):
         """Finalise the join, mark us synchronised and setup secrets db."""
@@ -1362,7 +1350,6 @@ class DCJoinContext(object):
             "samAccountName": "%s$" % ctx.forest_domain_name
         }
         ctx.local_samdb.add(rec)
-
 
     def build_nc_lists(ctx):
         # nc_list is the list of naming context (NC) for which we will

@@ -74,7 +74,6 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         else:
             self.assertTrue("This DC already has the '%s' FSMO role" % role in out)
 
-
     def _wait_for_role_transfer(self, ldb_dc, role_dn, master):
         """Wait for role transfer for certain amount of time
 

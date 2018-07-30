@@ -179,7 +179,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         # Now reconnect without domain admin rights
         self.samdb = SamDB(url=ldaphost, credentials=self.unpriv_creds, lp=lp)
 
-
     def tearDown(self):
         super(UserAccountControlTests, self).tearDown()
         for computername in self.computernames:
@@ -334,7 +333,6 @@ class UserAccountControlTests(samba.tests.TestCase):
             (enum, estr) = e11.args
             self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
 
-
     def test_admin_mod_uac(self):
         computername = self.computernames[0]
         self.add_computer_ldap(computername, samdb=self.admin_samdb)
@@ -381,7 +379,6 @@ class UserAccountControlTests(samba.tests.TestCase):
                                       attrs=["userAccountControl"])
 
         self.assertEqual(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE)
-
 
     def test_uac_bits_set(self):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
@@ -436,7 +433,6 @@ class UserAccountControlTests(samba.tests.TestCase):
                     self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
                 else:
                     self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
-
 
     def uac_bits_unrelated_modify_helper(self, account_type):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
@@ -660,7 +656,6 @@ class UserAccountControlTests(samba.tests.TestCase):
             (enum, estr) = e13.args
             self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
 
-
     def test_primarygroupID_priv_DC_modify(self):
         computername = self.computernames[0]
 
@@ -671,7 +666,6 @@ class UserAccountControlTests(samba.tests.TestCase):
                                       expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
                                       scope=SCOPE_SUBTREE,
                                       attrs=[""])
-
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.admin_samdb, "<SID=%s-%d>" % (str(self.domain_sid),
@@ -706,7 +700,6 @@ class UserAccountControlTests(samba.tests.TestCase):
                                       scope=SCOPE_SUBTREE,
                                       attrs=[""])
 
-
         m = ldb.Message()
         m.dn = ldb.Dn(self.admin_samdb, "<SID=%s-%d>" % (str(self.domain_sid),
                                                          security.DOMAIN_RID_USERS))
@@ -729,7 +722,6 @@ class UserAccountControlTests(samba.tests.TestCase):
             (enum, estr) = e15.args
             self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
 
-
     def test_primarygroupID_priv_user_modify(self):
         computername = self.computernames[0]
 
@@ -740,7 +732,6 @@ class UserAccountControlTests(samba.tests.TestCase):
                                       expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
                                       scope=SCOPE_SUBTREE,
                                       attrs=[""])
-
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.admin_samdb, "<SID=%s-%d>" % (str(self.domain_sid),

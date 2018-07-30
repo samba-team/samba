@@ -147,11 +147,9 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         response = self.creds.get_ntlm_response(flags=credentials.CLI_CRED_NTLM_AUTH,
                                                 challenge=binascii.a2b_hex(hex_challenge))
 
-
         self.assertEqual(response["nt_response"], binascii.a2b_hex(hex_ntlm_response))
         self.assertEqual(response["nt_session_key"], binascii.a2b_hex(hex_session_key))
         self.assertEqual(response["flags"], credentials.CLI_CRED_NTLM_AUTH)
-
 
     def test_get_nt_hash_string(self):
         self.creds.set_password_will_be_nt_hash(True)

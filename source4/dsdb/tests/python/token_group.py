@@ -407,7 +407,6 @@ class DynamicTokenTest(samba.tests.TestCase):
             print("difference : %s" % sidset1.difference(sidset2))
             self.fail(msg="calculated groups don't match against user PAC tokenGroups")
 
-
     def test_tokenGroups_manual(self):
         # Manually run the tokenGroups algorithm from MS-ADTS 3.1.1.4.5.19 and MS-DRSR 4.1.8.3
         # and compare the result
@@ -466,7 +465,6 @@ class DynamicTokenTest(samba.tests.TestCase):
         if len(tokenGroupsSet.difference(wSet)):
             self.fail(msg="additional tokenGroups: %s" % tokenGroupsSet.difference(wSet))
 
-
     def filtered_closure(self, wSet, filter_grouptype):
         res = self.admin_ldb.search(base=self.base_dn, scope=ldb.SCOPE_SUBTREE,
                                     expression="(|(objectclass=user)(objectclass=group))",
@@ -513,7 +511,6 @@ class DynamicTokenTest(samba.tests.TestCase):
                 uSet.add(v)
 
         closure(uSet, wSet, aSet)
-
 
     def test_tokenGroupsGlobalAndUniversal_manual(self):
         # Manually run the tokenGroups algorithm from MS-ADTS 3.1.1.4.5.19 and MS-DRSR 4.1.8.3

@@ -28,7 +28,6 @@ import random
 class NtACLCmdSysvolTestCase(SambaToolCmdTest):
     """Tests for samba-tool ntacl sysvol* subcommands"""
 
-
     def test_ntvfs(self):
         (result, out, err) = self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-ntvfs")
@@ -75,7 +74,6 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
     """Tests for samba-tool ntacl get/set subcommands"""
 
     acl = "O:DAG:DUD:P(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;EA)(A;OICIIO;0x001f01ff;;;CO)(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001200a9;;;ED)S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
-
 
     def test_ntvfs(self):
         path = os.environ['SELFTEST_PREFIX']

@@ -62,7 +62,6 @@ class GroupCmdTestCase(SambaToolCmdTest):
             if self._find_group(group["name"]):
                 self.runsubcmd("group", "delete", group["name"])
 
-
     def test_newgroup(self):
         """This tests the "group add" and "group delete" commands"""
         # try to add all the groups again, this should fail
@@ -96,7 +95,6 @@ class GroupCmdTestCase(SambaToolCmdTest):
 
             self.assertEquals("%s" % found.get("samaccountname"),
                               "%s" % group["name"])
-
 
     def test_list(self):
         (result, out, err) = self.runsubcmd("group", "list",

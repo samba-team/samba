@@ -254,7 +254,6 @@ def make_lib_proto(path_in, path_out):
                 else:
                     raise Exception(parameter['name'] + " has an invalid param type " + parameter['type'])
 
-
             file_out.write(output_string)
     finally:
         file_out.close()

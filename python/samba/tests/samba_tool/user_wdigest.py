@@ -272,12 +272,10 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
                                USER_PASS)
         self._testWDigest(attribute, expected)
 
-
     # Hash14 MD5(LOWER(sAMAccountName),
     #            UPPER(DNSDomainName),
     #            password)
     #
-
 
     def test_Wdigest14(self):
         attribute = "virtualWDigest14"

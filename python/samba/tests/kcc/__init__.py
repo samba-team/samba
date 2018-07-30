@@ -58,7 +58,6 @@ class KCCTests(samba.tests.TestCase):
         self.creds.set_username(os.environ["USERNAME"])
         self.creds.set_password(os.environ["PASSWORD"])
 
-
     def test_list_dsas(self):
         my_kcc = kcc.KCC(unix_now, False, False, False, False)
         my_kcc.load_samdb("ldap://%s" % os.environ["SERVER"],

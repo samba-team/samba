@@ -83,7 +83,6 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             self.assertEquals("%s" % found.get("description"),
                               computer["description"])
 
-
     def tearDown(self):
         super(ComputerCmdTestCase, self).tearDown()
         # clean up all the left over computers, just in case
@@ -135,7 +134,6 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             (result, out, err) = self._create_computer(computer)
             self.assertCmdFail(result, "Succeeded to create existing computer")
             self.assertIn("already exists", err)
-
 
         # try to delete all the computers we just created
         for computer in self.computers:

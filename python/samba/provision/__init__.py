@@ -883,7 +883,6 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                 "BACKEND_STORE": backend_store_line
         })
 
-
         setup_add_ldif(samdb, setup_path("provision_init.ldif"), {
                 "BACKEND_TYPE": provision_backend.type,
                 "SERVER_ROLE": serverrole,
@@ -1689,7 +1688,6 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
 
         if domain_info["dns_domain"].upper() != dnsdomain.upper():
             raise ProvisioningError('Realm as seen by pdb_samba_dsdb [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
-
 
     try:
         if use_ntvfs:

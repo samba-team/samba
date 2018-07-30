@@ -149,7 +149,6 @@ systemOnly: FALSE
         self._checkSchemaInfo(schi_before, schi_after)
         pass
 
-
     def _make_class_ldif(self, class_name, class_dn, sub_oid):
         ldif = """
 dn: """ + class_dn + """

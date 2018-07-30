@@ -92,7 +92,6 @@ class SecurityDescriptorTests(samba.tests.TestCase):
         desc1 = security.descriptor.from_sddl(text, dom)
         self.assertRaises(TypeError, desc1.as_sddl, text)
 
-
     def test_as_sddl_no_domainsid(self):
         dom = security.dom_sid("S-2-0-0")
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"

@@ -75,7 +75,6 @@ if __name__ == "__main__":
                                        addrecbuf,
                                        None)
 
-
     print("querying the NS record")
     res = dns_conn.DnssrvEnumRecords2(0x00070000,
                                       0,

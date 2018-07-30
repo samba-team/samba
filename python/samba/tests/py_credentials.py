@@ -70,7 +70,6 @@ class PyCredentialsTests(TestCase):
         self.create_machine_account()
         self.create_user_account()
 
-
     def tearDown(self):
         super(PyCredentialsTests, self).tearDown()
         delete_force(self.ldb, self.machine_dn)
@@ -103,7 +102,6 @@ class PyCredentialsTests(TestCase):
         self.do_NetrLogonGetDomainInfo(c, authenticator, subsequent)
         (authenticator, subsequent) = self.get_authenticator(c)
         self.do_NetrLogonGetDomainInfo(c, authenticator, subsequent)
-
 
     def test_SamLogonEx(self):
         c = self.get_netlogon_connection()
@@ -211,11 +209,9 @@ class PyCredentialsTests(TestCase):
             else:
                 raise
 
-
     # Test Credentials.encrypt_netr_crypt_password
     # By performing a NetrServerPasswordSet2
     # And the logging on using the new password.
-
 
     def test_encrypt_netr_password(self):
         # Change the password
@@ -225,10 +221,8 @@ class PyCredentialsTests(TestCase):
                       self.lp,
                       self.machine_creds)
 
-
    # Change the current machine account password with a
    # netr_ServerPasswordSet2 call.
-
 
     def do_Netr_ServerPasswordSet2(self):
         c = self.get_netlogon_connection()

@@ -102,7 +102,6 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         self.rodc_pass = "password12#"
         self.computer_dn = "CN=%s,OU=Domain Controllers,%s" % (self.rodc_name, self.base_dn)
 
-
         self.rodc_ctx = DCJoinContext(server=self.ldb_dc1.host_dns_name(),
                                       creds=self.get_credentials(),
                                       lp=self.get_loadparm(), site=self.site,
@@ -660,7 +659,6 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
                 #self.assertTrue(list_1[i].originating_change_time < list_2[i].originating_change_time)
             else:
                 self.assertEquals(list_1[i].originating_change_time, list_2[i].originating_change_time)
-
 
     def _create_rodc(self, ctx):
         ctx.nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]

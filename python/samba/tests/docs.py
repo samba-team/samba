@@ -148,7 +148,6 @@ class SmbDotConfTests(TestCase):
         except:
             self.fail("Unable to load parameters")
 
-
     def tearDown(self):
         super(SmbDotConfTests, self).tearDown()
         os.unlink(self.smbconf)
@@ -371,7 +370,6 @@ class SmbDotConfTests(TestCase):
 
                         doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
                         failset.add("%s\n      Got: %s" % (doc_triple, value_found))
-
 
         if len(failset) > 0:
             self.fail(self._format_message(failset,

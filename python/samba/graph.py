@@ -135,10 +135,6 @@ def shorten_vertex_names(vertices, suffix=',...', aggressive=False):
     return vmap, replacements
 
 
-
-
-
-
 def compile_graph_key(key_items, nodes_above=[], elisions=None,
                       prefix='key_', width=2):
     """Generate a dot file snippet that acts as a legend for a graph.
@@ -572,7 +568,6 @@ def distance_matrix(vertices, edges,
                                                   aggressive=True)
         vertices = [vmap[x] for x in vertices]
         edges = [(vmap[a], vmap[b]) for a, b in edges]
-
 
     vlen = max(6, max(len(v) for v in vertices))
 

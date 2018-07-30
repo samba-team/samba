@@ -936,7 +936,6 @@ plantestsuite("samba.blackbox.rpcclient_samlogon_testdenied", "rodc:local", [os.
                                                                              "testdenied", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
 
 
-
 plantestsuite("samba4.blackbox.provision-backend", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision-backend.sh"), '$PREFIX/provision'])
 
 # Test renaming the DC

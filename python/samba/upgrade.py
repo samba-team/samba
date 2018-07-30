@@ -809,7 +809,6 @@ Please fix this account before attempting to upgrade again
                (username in pgids) and (pgids[username] is not None):
                 add_posix_attrs(samdb=result.samdb, sid=userdata[username].user_sid, name=username, nisdomain=domainname.lower(), xid_type="ID_TYPE_UID", home=homes[username], shell=shells[username], pgid=pgids[username], logger=logger)
 
-
     logger.info("Adding users to groups")
     # Start a new transaction (should speed this up a little, due to index churn)
     result.samdb.transaction_start()

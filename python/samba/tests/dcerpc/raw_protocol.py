@@ -4629,8 +4629,6 @@ class TestDCERPC_BIND(RawDCERPCTest):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
                                             g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY)
 
-
-
     def _test_spnego_signing_auth_level_request(self, auth_level):
         ndr32 = base.transfer_syntax_ndr()
 
@@ -4903,7 +4901,6 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
     def test_spnego_signing_integrity(self):
         return self._test_spnego_signing_auth_level_request(dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
-
 
     def test_assoc_group_fail1(self):
         abstract = samba.dcerpc.mgmt.abstract_syntax()

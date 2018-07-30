@@ -222,7 +222,6 @@ class RodcTests(samba.tests.TestCase):
                           "%s (which does not exist)" % dn)
 
 
-
 def main():
     global HOST, CREDS, LP
     parser = optparse.OptionParser("rodc.py [options] <host>")
