@@ -1867,7 +1867,7 @@ samba-tool user syncpasswords --terminate \\
                 self.samdb_url = H
                 self.dirsync_filter = dirsync_filter
                 self.dirsync_attrs = dirsync_attrs
-                self.dirsync_controls = ["dirsync:1:0:0", "extended_dn:1:0"];
+                self.dirsync_controls = ["dirsync:1:0:0", "extended_dn:1:0"]
                 self.password_attrs = password_attrs
                 self.decrypt_samba_gpg = decrypt_samba_gpg
                 self.sync_command = sync_command

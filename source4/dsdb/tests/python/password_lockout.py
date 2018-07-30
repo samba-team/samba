@@ -846,7 +846,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # Now reset the lockout, by removing ACB_AUTOLOCK (which removes the lock, despite being a generated attribute)
-        self._reset_samr(res);
+        self._reset_samr(res)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,

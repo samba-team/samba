@@ -172,7 +172,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         for o in drs_ctr.first_object.meta_data_ctr.meta_data:
             i = 0
             drs_attid = drs_ctr.first_object.object.attribute_ctr.attributes[att_idx]
-            e = expected[i];
+            e = expected[i]
             (attid, orig_dsa, version) = e
 
             # Skip the RDN from the expected set, it is not sent over DRS
@@ -181,7 +181,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                 or (user_dn.get_rdn_name().upper() == "OU"
                     and attid == DRSUAPI_ATTID_ou):
                 i = i + 1
-                e = expected[i];
+                e = expected[i]
                 (attid, orig_dsa, version) = e
 
             self.assertEquals(attid, drs_attid.attid,

@@ -329,7 +329,7 @@ nameserver %s
         self.write_file('/etc/resolv.conf.wintest', contents, mode='a')
         self.write_file('/etc/resolv.conf.wintest-bak', contents)
         self.run_cmd("mv -f /etc/resolv.conf.wintest /etc/resolv.conf")
-        self.resolv_conf_backup = '/etc/resolv.conf.wintest-bak';
+        self.resolv_conf_backup = '/etc/resolv.conf.wintest-bak'
 
     def configure_bind(self, kerberos_support=False, include=None):
         self.chdir('${PREFIX}')
@@ -737,7 +737,7 @@ options {
             if set_dns:
                 set_dns = False
                 if self.set_dns(child):
-                    continue;
+                    continue
             if set_route:
                 child.sendline('route add 0.0.0.0 mask 0.0.0.0 ${WIN_DEFAULT_GATEWAY}')
                 child.expect("C:")

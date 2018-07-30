@@ -235,7 +235,7 @@ class AgingEnabledTimeProperty(dnsp.DnsProperty):
     def __init__(self, next_cycle_hours=0):
         super(AgingEnabledTimeProperty, self).__init__()
         self.wDataLength = 1
-        self.version = 1;
+        self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_AGING_ENABLED_TIME
         self.data = next_cycle_hours
 

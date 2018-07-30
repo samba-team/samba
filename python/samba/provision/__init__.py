@@ -2203,7 +2203,7 @@ def provision(logger, session_info, smbconf=None,
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     paths.bind_gid = bind_gid
-    paths.root_uid = root_uid;
+    paths.root_uid = root_uid
     paths.root_gid = root_gid
 
     hostip = determine_host_ip(logger, lp, hostip)

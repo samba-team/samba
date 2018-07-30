@@ -58,7 +58,7 @@ def _samdb_fetch_schi(samdb):
                               str(res[0]['schemaInfo']))
     else:
         pfm_schi = drsblobs.schemaInfoBlob()
-        pfm_schi.marker = 0xFF;
+        pfm_schi.marker = 0xFF
     return pfm_schi
 
 

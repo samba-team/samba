@@ -176,7 +176,7 @@ def create_root_account(t, vm):
     child = t.pexpect_spawn('bin/net ads password root -Uadministrator%${WIN_PASS}')
     child.expect("Enter new password for root")
     child.sendline("${PASSWORD2}")
-    child.expect("Password change for ");
+    child.expect("Password change for ")
     child.expect(" completed")
     child = t.pexpect_spawn('bin/net rpc shell -S ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}')
     child.expect("net rpc>")

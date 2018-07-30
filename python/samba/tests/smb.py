@@ -61,7 +61,7 @@ class SMBTests(samba.tests.TestCase):
         """
         The smb.unlink API should delete file
         """
-        self.conn.savefile(test_file, binary_contents);
+        self.conn.savefile(test_file, binary_contents)
         self.conn.unlink(test_file)
         self.assertFalse(self.conn.chkpath(test_file))
 
@@ -94,7 +94,7 @@ class SMBTests(samba.tests.TestCase):
     # with python2 this will save/load str type
     # with python3 this will save/load bytes type
     def test_save_binary_contents(self):
-        self.conn.savefile(test_file, binary_contents);
+        self.conn.savefile(test_file, binary_contents)
 
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents, binary_contents,

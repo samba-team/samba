@@ -850,7 +850,7 @@ class cmd_domain_demote(Command):
                 nc.dn = str(part)
 
                 req1 = drsuapi.DsReplicaSyncRequest1()
-                req1.naming_context = nc;
+                req1.naming_context = nc
                 req1.options = drsuapi.DRSUAPI_DRS_WRIT_REP
                 req1.source_dsa_guid = misc.GUID(ntds_guid)
 
@@ -1963,7 +1963,7 @@ class DomainTrustCommand(Command):
             w = "__unknown__%08X__" % v32
 
         r = "0x%x (%s)" % (v, w)
-        return r;
+        return r
 
     def generic_bitmap_to_string(self, b_dict, v, names_only=False):
 
@@ -1984,7 +1984,7 @@ class DomainTrustCommand(Command):
         if names_only:
             return w
         r = "0x%x (%s)" % (v, w)
-        return r;
+        return r
 
     def trustType_string(self, v):
         types = {
@@ -2226,7 +2226,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
             local_tdo_forest.count = 0
             local_tdo_forest.entries = []
 
-        self.outf.write("TrustedDomain:\n\n");
+        self.outf.write("TrustedDomain:\n\n")
         self.outf.write("NetbiosName:    %s\n" % local_tdo_info.netbios_name.string)
         if local_tdo_info.netbios_name.string != local_tdo_info.domain_name.string:
             self.outf.write("DnsName:        %s\n" % local_tdo_info.domain_name.string)

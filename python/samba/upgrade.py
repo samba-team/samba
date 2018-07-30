@@ -621,13 +621,13 @@ Please fix this account before attempting to upgrade again
             admin_user = username
 
         try:
-            group_memberships = s3db.enum_group_memberships(user);
+            group_memberships = s3db.enum_group_memberships(user)
             for group in group_memberships:
                 if str(group) in groupmembers:
                     if user.user_sid not in groupmembers[str(group)]:
                         groupmembers[str(group)].append(user.user_sid)
                 else:
-                    groupmembers[str(group)] = [user.user_sid];
+                    groupmembers[str(group)] = [user.user_sid]
         except passdb.error as e:
             logger.warn("Ignoring group memberships of '%s' %s: %s",
                         username, user.user_sid, e)

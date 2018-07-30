@@ -80,7 +80,7 @@ def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid,
     nc.dn = naming_context
 
     req1 = drsuapi.DsReplicaSyncRequest1()
-    req1.naming_context = nc;
+    req1.naming_context = nc
     req1.options = req_option
     req1.source_dsa_guid = misc.GUID(source_dsa_guid)
 

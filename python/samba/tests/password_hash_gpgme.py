@@ -47,7 +47,7 @@ class PassWordHashGpgmeTests(PassWordHashTests):
         self.add_user()
         if not self.lp.get("password hash gpg key ids"):
             self.skipTest("No password hash gpg key ids, " +
-                          "Primary:SambaGPG will not be generated");
+                          "Primary:SambaGPG will not be generated")
 
         sc = self.get_supplemental_creds()
 
@@ -85,7 +85,7 @@ class PassWordHashGpgmeTests(PassWordHashTests):
         self.add_user(clear_text=True)
         if not self.lp.get("password hash gpg key ids"):
             self.skipTest("No password hash gpg key ids, " +
-                          "Primary:SambaGPG will not be generated");
+                          "Primary:SambaGPG will not be generated")
 
         sc = self.get_supplemental_creds()
 

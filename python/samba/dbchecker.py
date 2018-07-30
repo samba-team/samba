@@ -800,7 +800,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         keep_transaction = False
         self.samdb.transaction_start()
         try:
-            nc_root = self.samdb.get_nc_root(obj.dn);
+            nc_root = self.samdb.get_nc_root(obj.dn)
             lost_and_found = self.samdb.get_wellknown_dn(nc_root, dsdb.DS_GUID_LOSTANDFOUND_CONTAINER)
             new_dn = ldb.Dn(self.samdb, str(obj.dn))
             new_dn.remove_base_components(len(new_dn) - 1)

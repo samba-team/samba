@@ -315,8 +315,8 @@ class PyCredentialsTests(TestCase):
     #
     # Get the authenticator from the machine creds.
     def get_authenticator(self, c):
-        auth = self.machine_creds.new_client_authenticator();
-        current  = netr_Authenticator()
+        auth = self.machine_creds.new_client_authenticator()
+        current = netr_Authenticator()
         current.cred.data = [ord(x) for x in auth["credential"]]
         current.timestamp = auth["timestamp"]
 
