@@ -37,7 +37,7 @@ class inf_to_kdc_tdb(gp_ext_setter):
             self.gp_db.delete(str(self), self.attribute)
 
     def mapper(self):
-        return { 'kdc:user_ticket_lifetime': (self.set_kdc_tdb, self.explicit),
+        return {'kdc:user_ticket_lifetime': (self.set_kdc_tdb, self.explicit),
                  'kdc:service_ticket_lifetime': (self.set_kdc_tdb,
                                                  self.mins_to_hours),
                  'kdc:renewal_lifetime': (self.set_kdc_tdb,
@@ -93,7 +93,7 @@ class inf_to_ldb(gp_ext_setter):
 
     def mapper(self):
         '''ldap value : samba setter'''
-        return { "minPwdAge" : (self.ch_minPwdAge, self.days2rel_nttime),
+        return {"minPwdAge" : (self.ch_minPwdAge, self.days2rel_nttime),
                  "maxPwdAge" : (self.ch_maxPwdAge, self.days2rel_nttime),
                  # Could be none, but I like the method assignment in
                  # update_samba

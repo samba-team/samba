@@ -50,7 +50,7 @@ builddirs = {
     "retry"   : "."
 }
 
-defaulttasks = [ "ctdb",
+defaulttasks = ["ctdb",
                  "samba",
                  "samba-nt4",
                  "samba-fileserver",
@@ -91,7 +91,7 @@ else:
     extra_python = "--extra-python=/usr/bin/python3"
 
 tasks = {
-    "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
+    "ctdb" : [("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
                ("configure", "./configure " + ctdb_configure_params, "text/plain"),
                ("make", "make all", "text/plain"),
                ("install", "make install", "text/plain"),
@@ -100,7 +100,7 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install (runs ad_dc_ntvfs and all the other envs)'
-    "samba" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+    "samba" : [("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1 "
                  "TESTS='--exclude-env=none "
@@ -122,7 +122,7 @@ tasks = {
                 ("clean", "make clean", "text/plain") ],
 
     # We split out this so the isolated nt4_dc tests do not wait for ad_dc or ad_dc_ntvfs tests (which are long)
-    "samba-nt4" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-nt4" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                     ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                     ("make", "make -j", "text/plain"),
                     ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
@@ -131,14 +131,14 @@ tasks = {
                     ("clean", "make clean", "text/plain") ],
 
     # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
-    "samba-fileserver" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-fileserver" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json-audit --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                            ("make", "make -j", "text/plain"),
                            ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=fileserver'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
-    "samba-ad-dc" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 TESTS='"
@@ -151,18 +151,18 @@ tasks = {
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
-    "samba-ad-dc-2" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-2" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=chgdcpass --include-env=vampire_2000_dc --include-env=fl2000dc'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-test-only" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
+    "samba-test-only" : [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
                           ("make", "make -j", "text/plain"),
                           ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"',"text/plain") ],
 
     # Test cross-compile infrastructure
-    "samba-xc" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-xc" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                    ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                    ("configure-cross-execute", "./configure.developer -b ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
@@ -171,7 +171,7 @@ tasks = {
                    ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
 
     # test build with -O3 -- catches extra warnings and bugs, tests the ad_dc environments
-    "samba-o3" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-o3" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                    ("configure", "ADDITIONAL_CFLAGS='-O3' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
                    ("make", "make -j", "text/plain"),
                    ("test", "make quicktest FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc'", "text/plain"),
@@ -179,7 +179,7 @@ tasks = {
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "make clean", "text/plain") ],
 
-    "samba-ctdb" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ctdb" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
 
                      # make sure we have tdb around:
                      ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
@@ -374,8 +374,8 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     # these are useful for debugging autobuild
-    'pass' : [ ("pass", 'echo passing && /bin/true', "text/plain") ],
-    'fail' : [ ("fail", 'echo failing && /bin/false', "text/plain") ]
+    'pass' : [("pass", 'echo passing && /bin/true', "text/plain") ],
+    'fail' : [("fail", 'echo failing && /bin/false', "text/plain") ]
 }
 
 def do_print(msg):
@@ -473,7 +473,7 @@ class buildlist(object):
             self.tlist.append(b)
         if options.retry:
             rebase_remote = "rebaseon"
-            retry_task = [ ("retry",
+            retry_task = [("retry",
                             '''set -e
                             git remote add -t %s %s %s
                             git fetch %s

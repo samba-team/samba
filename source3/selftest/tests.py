@@ -225,19 +225,19 @@ env = "ad_member"
 t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
 plantestsuite("samba3.wbinfo_name_lookup", env,
-              [ os.path.join(srcdir(),
+              [os.path.join(srcdir(),
                              "nsswitch/tests/test_wbinfo_name_lookup.sh"),
                 '$DOMAIN', '$REALM', '$DC_USERNAME' ])
 
 env = "ad_member:local"
 plantestsuite("samba3.wbinfo_user_info", env,
-              [ os.path.join(srcdir(),
+              [os.path.join(srcdir(),
                              "nsswitch/tests/test_wbinfo_user_info.sh"),
                 '$DOMAIN', '$REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
 
 env = "fl2008r2dc:local"
 plantestsuite("samba3.wbinfo_user_info", env,
-              [ os.path.join(srcdir(),
+              [os.path.join(srcdir(),
                              "nsswitch/tests/test_wbinfo_user_info.sh"),
                 '$TRUST_DOMAIN', '$TRUST_REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
 
@@ -634,15 +634,15 @@ plantestsuite("samba3.blackbox.sharesec", "simpleserver:local",
                configuration, os.path.join(bindir(), "sharesec"), "tmp"])
 
 plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
-              [ os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
+              [os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
                 smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
                 configuration, '$LOCAL_PATH', '$LOCK_DIR' ])
 
 plantestsuite("samba3.blackbox.smbd_error", "simpleserver:local",
-              [ os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh") ])
+              [os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh") ])
 
 plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member:local",
-              [ os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
+              [os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
                 '$SERVER', 'tmp', '$DC_USERNAME', '$DC_PASSWORD'])
 
 plantestsuite("samba3.blackbox.net_dom_join_fail_dc", "nt4_dc",

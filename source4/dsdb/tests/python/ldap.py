@@ -2828,7 +2828,7 @@ objectClass: posixAccount"""% (self.base_dn))
         #
         delete_force(self.ldb, user_dn)
         try:
-            self.ldb.add({ "dn": user_dn,
+            self.ldb.add({"dn": user_dn,
                            "objectClass": "user",
                            "sAMAccountName": user_name,
                            "nTSecurityDescriptor": [] })
@@ -2850,8 +2850,8 @@ sAMAccountName: """ + user_name + """
 nTSecurityDescriptor: """ + sddl)
             res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
             desc = res[0]["nTSecurityDescriptor"][0]
-            desc = ndr_unpack( security.descriptor, desc )
-            desc_sddl = desc.as_sddl( self.domain_sid )
+            desc = ndr_unpack(security.descriptor, desc )
+            desc_sddl = desc.as_sddl(self.domain_sid )
             self.assertEqual(desc_sddl, sddl)
         finally:
             delete_force(self.ldb, user_dn)
@@ -2886,7 +2886,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         try:
             sddl = "O:DUG:DUD:AI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, security.dom_sid('S-1-5-21'))
-            desc_base64 = base64.b64encode( ndr_pack(desc) ).decode('utf8')
+            desc_base64 = base64.b64encode(ndr_pack(desc) ).decode('utf8')
             self.ldb.add_ldif("""
 dn: """ + user_dn + """
 objectclass: user
@@ -2909,7 +2909,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         # Test an empty security descriptor (naturally this shouldn't work)
         #
         delete_force(self.ldb, user_dn)
-        self.ldb.add({ "dn": user_dn,
+        self.ldb.add({"dn": user_dn,
                        "objectClass": "user",
                        "sAMAccountName": user_name })
 
@@ -3127,7 +3127,7 @@ nTSecurityDescriptor:: """ + desc_base64
         user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
 
         delete_force(self.ldb, user_dn)
-        self.ldb.add({ "dn": user_dn,
+        self.ldb.add({"dn": user_dn,
                        "objectClass": "user",
                        "sAMAccountName": user_name })
 
@@ -3137,7 +3137,7 @@ nTSecurityDescriptor:: """ + desc_base64
         #   370101000000Z     => 20370101000000.0Z
         # 20370102000000.*Z   => 20370102000000.0Z
         #
-        ext = [ "Z", ".0Z", ".Z", ".000Z", ".RandomIgnoredCharacters...987654321Z" ]
+        ext = ["Z", ".0Z", ".Z", ".000Z", ".RandomIgnoredCharacters...987654321Z" ]
         for i in range(0, len(ext)):
             v_raw = "203701%02d000000" % (i + 1)
             if ext[i] == "Z":

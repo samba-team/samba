@@ -2606,7 +2606,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
         try:
             if remote_trust_info:
                 self.outf.write("Creating remote TDO.\n")
-                current_request = { "location": "remote", "name": "CreateTrustedDomainEx2"}
+                current_request = {"location": "remote", "name": "CreateTrustedDomainEx2"}
                 remote_tdo_handle = \
                     remote_lsa.CreateTrustedDomainEx2(remote_policy,
                                                       remote_trust_info,
@@ -2615,13 +2615,13 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 self.outf.write("Remote TDO created.\n")
                 if enc_types:
                     self.outf.write("Setting supported encryption types on remote TDO.\n")
-                    current_request = { "location": "remote", "name": "SetInformationTrustedDomain"}
+                    current_request = {"location": "remote", "name": "SetInformationTrustedDomain"}
                     remote_lsa.SetInformationTrustedDomain(remote_tdo_handle,
                                                            lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES,
                                                            enc_types)
 
             self.outf.write("Creating local TDO.\n")
-            current_request = { "location": "local", "name": "CreateTrustedDomainEx2"}
+            current_request = {"location": "local", "name": "CreateTrustedDomainEx2"}
             local_tdo_handle = local_lsa.CreateTrustedDomainEx2(local_policy,
                                                                 local_trust_info,
                                                                 local_auth_info,
@@ -2629,7 +2629,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             self.outf.write("Local TDO created\n")
             if enc_types:
                 self.outf.write("Setting supported encryption types on local TDO.\n")
-                current_request = { "location": "local", "name": "SetInformationTrustedDomain"}
+                current_request = {"location": "local", "name": "SetInformationTrustedDomain"}
                 local_lsa.SetInformationTrustedDomain(local_tdo_handle,
                                                       lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES,
                                                       enc_types)

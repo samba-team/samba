@@ -459,7 +459,7 @@ class cmd_group_move(Command):
                type=str, metavar="URL", dest="H"),
     ]
 
-    takes_args = [ "groupname", "new_parent_dn" ]
+    takes_args = ["groupname", "new_parent_dn" ]
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
@@ -564,7 +564,7 @@ Example3 shows how to display a users objectGUID and member attributes.
             attrs = group_attrs.split(",")
 
         filter = ("(&(sAMAccountType=%d)(sAMAccountName=%s))" %
-                  ( ATYPE_SECURITY_GLOBAL_GROUP,
+                  (ATYPE_SECURITY_GLOBAL_GROUP,
                     ldb.binary_encode(groupname)))
 
         domaindn = samdb.domain_dn()

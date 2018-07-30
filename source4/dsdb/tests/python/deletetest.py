@@ -316,7 +316,7 @@ class BasicTreeDeleteTests(BasicDeleteTests):
             "objectclass": "group",
             "description": "test group",
             "samaccountname": grp_name,
-            "member": [ self.usr1, self.usr2 ],
+            "member": [self.usr1, self.usr2 ],
             "isDeleted": "FALSE" })
 
         self.ldb.add({

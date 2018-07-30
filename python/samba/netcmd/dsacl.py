@@ -87,7 +87,7 @@ class cmd_dsacl_set(Command):
         res = samdb.search(base=trusteedn, expression="(objectClass=*)",
                            scope=SCOPE_BASE)
         assert(len(res) == 1)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
+        return ndr_unpack(security.dom_sid,res[0]["objectSid"][0])
 
     def modify_descriptor(self, samdb, object_dn, desc, controls=None):
         assert(isinstance(desc, security.descriptor))
@@ -109,7 +109,7 @@ class cmd_dsacl_set(Command):
     def get_domain_sid(self, samdb):
         res = samdb.search(base=samdb.domain_dn(),
                            expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
+        return ndr_unpack(security.dom_sid,res[0]["objectSid"][0])
 
     def add_ace(self, samdb, object_dn, new_ace):
         """Add new ace explicitly."""

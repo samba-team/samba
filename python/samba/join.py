@@ -143,7 +143,7 @@ class DCJoinContext(object):
             else:
                 ctx.topology_dn = None
 
-            ctx.SPNs = [ "HOST/%s" % ctx.myname,
+            ctx.SPNs = ["HOST/%s" % ctx.myname,
                          "HOST/%s" % ctx.dnshostname,
                          "GC/%s/%s" % (ctx.dnshostname, ctx.dnsforest) ]
 
@@ -541,7 +541,7 @@ class DCJoinContext(object):
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
             "dMDLocation" : ctx.schema_dn}
 
-        nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-Behavior-Version"] = str(samba.dsdb.DS_DOMAIN_FUNCTION_2008_R2)
@@ -1369,8 +1369,8 @@ class DCJoinContext(object):
 
         # full_nc_list is the list of naming context (NC) we hold
         # read/write copies of.  These are not subsets of each other.
-        ctx.nc_list = [ ctx.config_dn, ctx.schema_dn ]
-        ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.nc_list = [ctx.config_dn, ctx.schema_dn ]
+        ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
 
         if ctx.subdomain and ctx.dns_backend != "NONE":
             ctx.full_nc_list += [ctx.domaindns_zone]
@@ -1452,13 +1452,13 @@ def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_
                               samba.dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION |
                               samba.dsdb.UF_PARTIAL_SECRETS_ACCOUNT)
 
-    ctx.SPNs.extend([ "RestrictedKrbHost/%s" % ctx.myname,
+    ctx.SPNs.extend(["RestrictedKrbHost/%s" % ctx.myname,
                       "RestrictedKrbHost/%s" % ctx.dnshostname ])
 
     ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
     ctx.secure_channel_type = misc.SEC_CHAN_RODC
     ctx.RODC = True
-    ctx.replica_flags |= ( drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
+    ctx.replica_flags |= (drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
                            drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
     ctx.domain_replica_flags = ctx.replica_flags
     if domain_critical_only:

@@ -175,7 +175,7 @@ def pull_classinfo(db):
             classinfo[name]["objectClassCategory"] = int(r["objectClassCategory"][0])
         else:
             classinfo[name]["objectClassCategory"] = 0
-        for a in [ "possSuperiors", "systemPossSuperiors",
+        for a in ["possSuperiors", "systemPossSuperiors",
                    "auxiliaryClass", "systemAuxiliaryClass",
                    "subClassOf" ]:
             classinfo[name][a] = []

@@ -317,7 +317,7 @@ class OpenLDAPBackend(LDAPBackend):
                  ldap_backend_extra_port=None, ldap_dryrun_mode=False,
                  ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
         from samba.provision import setup_path
-        super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
+        super(OpenLDAPBackend, self).__init__(backend_type=backend_type,
                                                paths=paths, lp=lp,
                                                names=names, logger=logger,
                                                domainsid=domainsid, schema=schema, hostname=hostname,
@@ -528,7 +528,7 @@ class OpenLDAPBackend(LDAPBackend):
 
         cn_samba = read_and_sub_file(
             setup_path("cn=samba.ldif"),
-            { "LDAPADMINPASS": self.ldapadminpass,
+            {"LDAPADMINPASS": self.ldapadminpass,
               "MMR_PASSWORD": mmr_pass,
               "MMR": mmr })
 
@@ -717,14 +717,14 @@ class FDSBackend(LDAPBackend):
             if lnkattr[attr] is not None:
                 refint_config += read_and_sub_file(
                     setup_path("fedorads-refint-add.ldif"),
-                         { "ARG_NUMBER" : str(argnum),
-                           "LINK_ATTR" : attr })
+                    {"ARG_NUMBER" : str(argnum),
+                     "LINK_ATTR" : attr })
                 memberof_config += read_and_sub_file(
                     setup_path("fedorads-linked-attributes.ldif"),
-                         { "MEMBER_ATTR" : attr,
-                           "MEMBEROF_ATTR" : lnkattr[attr] })
+                    {"MEMBER_ATTR" : attr,
+                     "MEMBEROF_ATTR" : lnkattr[attr] })
                 index_config += read_and_sub_file(
-                    setup_path("fedorads-index.ldif"), { "ATTR" : attr })
+                    setup_path("fedorads-index.ldif"), {"ATTR" : attr })
                 argnum += 1
 
         f = open(self.refint_ldif, 'w')
@@ -751,7 +751,7 @@ class FDSBackend(LDAPBackend):
                 attr = "nsUniqueId"
 
             index_config += read_and_sub_file(
-                setup_path("fedorads-index.ldif"), { "ATTR" : attr })
+                setup_path("fedorads-index.ldif"), {"ATTR" : attr })
 
         f = open(self.index_ldif, 'w')
         try:

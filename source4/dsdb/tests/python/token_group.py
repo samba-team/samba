@@ -69,7 +69,7 @@ class StaticTokenTest(samba.tests.TestCase):
 
         self.user_sid_dn = "<SID=%s>" % str(ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["tokenGroups"][0]))
 
-        session_info_flags = ( AUTH_SESSION_INFO_DEFAULT_GROUPS |
+        session_info_flags = (AUTH_SESSION_INFO_DEFAULT_GROUPS |
                                AUTH_SESSION_INFO_AUTHENTICATED |
                                AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
         if creds.get_kerberos_state() == DONT_USE_KERBEROS:
@@ -280,7 +280,7 @@ class DynamicTokenTest(samba.tests.TestCase):
 
         self.test_user_dn = res[0].dn
 
-        session_info_flags = ( AUTH_SESSION_INFO_DEFAULT_GROUPS |
+        session_info_flags = (AUTH_SESSION_INFO_DEFAULT_GROUPS |
                                AUTH_SESSION_INFO_AUTHENTICATED |
                                AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
 

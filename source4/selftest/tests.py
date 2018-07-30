@@ -275,7 +275,7 @@ for env in ["fl2000dc", "fl2008r2dc"]:
     plansmbtorture4testsuite("net.api.become.dc", env, '$SERVER[%s] -U$USERNAME%%$PASSWORD -W$DOMAIN' % validate)
 
 for bindoptions in ["sign", "seal"]:
-    plansmbtorture4testsuite('rpc.backupkey', "ad_dc_ntvfs", ["ncacn_np:$SERVER[%s]" % ( bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.backupkey with %s" % (bindoptions))
+    plansmbtorture4testsuite('rpc.backupkey', "ad_dc_ntvfs", ["ncacn_np:$SERVER[%s]" % (bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.backupkey with %s" % (bindoptions))
 
 for transport in transports:
     for bindoptions in ["sign", "seal"]:
@@ -1093,13 +1093,13 @@ for env in [
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.kcc.kcc_utils")
 
-for env in [ "simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
-             "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc" ]:
+for env in ["simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
+            "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc"]:
     planoldpythontestsuite(env, "netlogonsvc",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
                            name="samba.tests.netlogonsvc.python(%s)" % env)
 
-for env in [ "ktest", "ad_member", "ad_dc_no_ntlm" ]:
+for env in ["ktest", "ad_member", "ad_dc_no_ntlm" ]:
     planoldpythontestsuite(env, "ntlmdisabled",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
                            name="samba.tests.ntlmdisabled.python(%s)" % env)

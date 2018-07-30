@@ -156,7 +156,7 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
             raise DemoteException("lookup of %s failed: %s" % (a_name, estr))
 
         orig_num_recs = len(a_recs)
-        a_recs = [ r for r in a_recs if not a_rec_to_remove(r) ]
+        a_recs = [r for r in a_recs if not a_rec_to_remove(r) ]
 
         if len(a_recs) != orig_num_recs:
             logger.info("updating %s keeping %d values, removing %s values" % \
@@ -196,7 +196,7 @@ def remove_hanging_dns_references(samdb, logger, dnsHostNameUpper, zones):
                 continue
 
             # Remove references to dnsHostName in A, AAAA, NS, CNAME and SRV
-            values = [ ndr_unpack(dnsp.DnssrvRpcRecord, v)
+            values = [ndr_unpack(dnsp.DnssrvRpcRecord, v)
                        for v in orig_values if not to_remove(v) ]
 
             if len(values) != len(orig_values):

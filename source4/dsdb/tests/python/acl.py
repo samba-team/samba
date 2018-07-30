@@ -283,7 +283,7 @@ class AclModifyTests(AclTests):
         self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.user_with_sm, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.user_with_group_sm, self.user_pass)
-        self.user_sid = self.sd_utils.get_object_sid( self.get_user_dn(self.user_with_wp))
+        self.user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user_with_wp))
         self.ldb_admin.newgroup("test_modify_group2", grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         self.ldb_admin.newgroup("test_modify_group3", grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         self.ldb_admin.newuser("test_modify_user2", self.user_pass)
@@ -560,7 +560,7 @@ Member: """ +  self.get_user_dn(self.user_with_sm)
         mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
         self.ldb_user2.modify_ldif(ldif)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_sm))
 #but not other users
@@ -610,7 +610,7 @@ changetype: modify
 add: Member
 Member: """ +  self.get_user_dn(self.user_with_wp)
         self.ldb_user.modify_ldif(ldif)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_wp))
         ldif = """
@@ -624,7 +624,7 @@ changetype: modify
 add: Member
 Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         self.ldb_user.modify_ldif(ldif)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
                                      % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], "CN=test_modify_user2,CN=Users," + self.base_dn)
 
@@ -803,20 +803,20 @@ class AclSearchTests(AclTests):
         ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
 
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         #these users should see all ous
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 6)
-        res_list = [ x["dn"] for x in res if x["dn"] in self.full_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in self.full_list ]
         self.assertEquals(sorted(res_list), sorted(self.full_list))
 
         res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 6)
-        res_list = [ x["dn"] for x in res if x["dn"] in self.full_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in self.full_list ]
         self.assertEquals(sorted(res_list), sorted(self.full_list))
 
     def test_search2(self):
@@ -832,7 +832,7 @@ class AclSearchTests(AclTests):
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         #this user should see all ous
-        res_list = [ x["dn"] for x in res if x["dn"] in self.full_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in self.full_list ]
         self.assertEquals(sorted(res_list), sorted(self.full_list))
 
         #these users should see ou1, 2, 5 and 6 but not 3 and 4
@@ -842,13 +842,13 @@ class AclSearchTests(AclTests):
                    Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 4)
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
     def test_search3(self):
@@ -882,7 +882,7 @@ class AclSearchTests(AclTests):
 
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
@@ -894,13 +894,13 @@ class AclSearchTests(AclTests):
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 4)
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 4)
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
     def test_search4(self):
@@ -921,13 +921,13 @@ class AclSearchTests(AclTests):
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 2)
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 2)
-        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        res_list = [x["dn"] for x in res if x["dn"] in ok_list ]
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
     def test_search5(self):
@@ -1959,11 +1959,11 @@ class AclSPNTests(AclTests):
 
     # same as for join_RODC, but do not set any SPNs
     def create_rodc(self, ctx):
-        ctx.nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-        ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
         ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
 
-        ctx.never_reveal_sid = [ "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
+        ctx.never_reveal_sid = ["<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
                                  "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
                                  "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
                                  "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
@@ -1990,8 +1990,8 @@ class AclSPNTests(AclTests):
         ctx.join_add_objects()
 
     def create_dc(self, ctx):
-        ctx.nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-        ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
         ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
         ctx.secure_channel_type = misc.SEC_CHAN_BDC
         ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |

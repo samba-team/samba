@@ -24,7 +24,7 @@ from __future__ import print_function
 import os
 from samba.tests import BlackboxTestCase
 
-for p in [ "../../../../../source4/librpc/tests", "../../../../../librpc/tests"]:
+for p in ["../../../../../source4/librpc/tests", "../../../../../librpc/tests"]:
     data_path_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), p))
     print(data_path_dir)
     if os.path.exists(data_path_dir):

@@ -108,7 +108,7 @@ def parse_gplink(gplink):
         d = g.split(';')
         if len(d) != 2 or not d[0].startswith("[LDAP://"):
             raise RuntimeError("Badly formed gPLink '%s'" % g)
-        ret.append({ 'dn' : d[0][8:], 'options' : int(d[1])})
+        ret.append({'dn' : d[0][8:], 'options' : int(d[1])})
     return ret
 
 
@@ -308,8 +308,8 @@ attr_flags = smb.FILE_ATTRIBUTE_SYSTEM | \
 def copy_directory_remote_to_local(conn, remotedir, localdir):
     if not os.path.isdir(localdir):
         os.mkdir(localdir)
-    r_dirs = [ remotedir ]
-    l_dirs = [ localdir ]
+    r_dirs = [remotedir ]
+    l_dirs = [localdir ]
     while r_dirs:
         r_dir = r_dirs.pop()
         l_dir = l_dirs.pop()
@@ -333,8 +333,8 @@ def copy_directory_local_to_remote(conn, localdir, remotedir,
                                    ignore_existing=False):
     if not conn.chkpath(remotedir):
         conn.mkdir(remotedir)
-    l_dirs = [ localdir ]
-    r_dirs = [ remotedir ]
+    l_dirs = [localdir ]
+    r_dirs = [remotedir ]
     while l_dirs:
         l_dir = l_dirs.pop()
         r_dir = r_dirs.pop()
@@ -444,7 +444,7 @@ class cmd_list(Command):
         except Exception:
             raise CommandError("Failed to find objectClass for user %s" % username)
 
-        session_info_flags = ( AUTH_SESSION_INFO_DEFAULT_GROUPS |
+        session_info_flags = (AUTH_SESSION_INFO_DEFAULT_GROUPS |
                                AUTH_SESSION_INFO_AUTHENTICATED )
 
         # When connecting to a remote server, don't look up the local privilege DB
@@ -680,10 +680,10 @@ class cmd_setlink(Command):
             if found:
                 raise CommandError("GPO '%s' already linked to this container" % gpo)
             else:
-                gplist.insert(0, { 'dn' : gpo_dn, 'options' : gplink_options })
+                gplist.insert(0, {'dn' : gpo_dn, 'options' : gplink_options })
         else:
             gplist = []
-            gplist.append({ 'dn' : gpo_dn, 'options' : gplink_options })
+            gplist.append({'dn' : gpo_dn, 'options' : gplink_options })
 
         gplink_str = encode_gplink(gplist)
 
@@ -834,7 +834,7 @@ class cmd_setinheritance(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'container_dn', 'inherit_state' ]
+    takes_args = ['container_dn', 'inherit_state' ]
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
@@ -1218,7 +1218,7 @@ class cmd_create(Command):
             self.samdb.add(m)
 
             # Get new security descriptor
-            ds_sd_flags = ( security.SECINFO_OWNER |
+            ds_sd_flags = (security.SECINFO_OWNER |
                             security.SECINFO_GROUP |
                             security.SECINFO_DACL )
             msg = get_gpo_info(self.samdb, gpo=gpo, sd_flags=ds_sd_flags)[0]
@@ -1234,7 +1234,7 @@ class cmd_create(Command):
             create_directory_hier(conn, sharepath)
 
             # Set ACL
-            sio = ( security.SECINFO_OWNER |
+            sio = (security.SECINFO_OWNER |
                     security.SECINFO_GROUP |
                     security.SECINFO_DACL |
                     security.SECINFO_PROTECTED_DACL )

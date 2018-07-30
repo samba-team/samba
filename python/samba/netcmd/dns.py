@@ -85,50 +85,50 @@ def bitmap_string(module, bitmap_defs, value):
 
 
 def boot_method_string(boot_method):
-    enum_defs = [ 'DNS_BOOT_METHOD_UNINITIALIZED', 'DNS_BOOT_METHOD_FILE',
+    enum_defs = ['DNS_BOOT_METHOD_UNINITIALIZED', 'DNS_BOOT_METHOD_FILE',
                   'DNS_BOOT_METHOD_REGISTRY', 'DNS_BOOT_METHOD_DIRECTORY' ]
     return enum_string(dnsserver, enum_defs, boot_method)
 
 
 def name_check_flag_string(check_flag):
-    enum_defs = [ 'DNS_ALLOW_RFC_NAMES_ONLY', 'DNS_ALLOW_NONRFC_NAMES',
+    enum_defs = ['DNS_ALLOW_RFC_NAMES_ONLY', 'DNS_ALLOW_NONRFC_NAMES',
                   'DNS_ALLOW_MULTIBYTE_NAMES', 'DNS_ALLOW_ALL_NAMES' ]
     return enum_string(dnsserver, enum_defs, check_flag)
 
 
 def zone_type_string(zone_type):
-    enum_defs = [ 'DNS_ZONE_TYPE_CACHE', 'DNS_ZONE_TYPE_PRIMARY',
+    enum_defs = ['DNS_ZONE_TYPE_CACHE', 'DNS_ZONE_TYPE_PRIMARY',
                   'DNS_ZONE_TYPE_SECONDARY', 'DNS_ZONE_TYPE_STUB',
                   'DNS_ZONE_TYPE_FORWARDER', 'DNS_ZONE_TYPE_SECONDARY_CACHE' ]
     return enum_string(dnsp, enum_defs, zone_type)
 
 
 def zone_update_string(zone_update):
-    enum_defs = [ 'DNS_ZONE_UPDATE_OFF', 'DNS_ZONE_UPDATE_UNSECURE',
+    enum_defs = ['DNS_ZONE_UPDATE_OFF', 'DNS_ZONE_UPDATE_UNSECURE',
                   'DNS_ZONE_UPDATE_SECURE' ]
     return enum_string(dnsp, enum_defs, zone_update)
 
 
 def zone_secondary_security_string(security):
-    enum_defs = [ 'DNS_ZONE_SECSECURE_NO_SECURITY', 'DNS_ZONE_SECSECURE_NS_ONLY',
+    enum_defs = ['DNS_ZONE_SECSECURE_NO_SECURITY', 'DNS_ZONE_SECSECURE_NS_ONLY',
                   'DNS_ZONE_SECSECURE_LIST_ONLY', 'DNS_ZONE_SECSECURE_NO_XFER' ]
     return enum_string(dnsserver, enum_defs, security)
 
 
 def zone_notify_level_string(notify_level):
-    enum_defs = [ 'DNS_ZONE_NOTIFY_OFF', 'DNS_ZONE_NOTIFY_ALL_SECONDARIES',
+    enum_defs = ['DNS_ZONE_NOTIFY_OFF', 'DNS_ZONE_NOTIFY_ALL_SECONDARIES',
                   'DNS_ZONE_NOTIFY_LIST_ONLY' ]
     return enum_string(dnsserver, enum_defs, notify_level)
 
 
 def dp_flags_string(dp_flags):
-    bitmap_defs = [ 'DNS_DP_AUTOCREATED', 'DNS_DP_LEGACY', 'DNS_DP_DOMAIN_DEFAULT',
+    bitmap_defs = ['DNS_DP_AUTOCREATED', 'DNS_DP_LEGACY', 'DNS_DP_DOMAIN_DEFAULT',
                     'DNS_DP_FOREST_DEFAULT', 'DNS_DP_ENLISTED', 'DNS_DP_DELETED' ]
     return bitmap_string(dnsserver, bitmap_defs, dp_flags)
 
 
 def zone_flags_string(flags):
-    bitmap_defs = [ 'DNS_RPC_ZONE_PAUSED', 'DNS_RPC_ZONE_SHUTDOWN',
+    bitmap_defs = ['DNS_RPC_ZONE_PAUSED', 'DNS_RPC_ZONE_SHUTDOWN',
                     'DNS_RPC_ZONE_REVERSE', 'DNS_RPC_ZONE_AUTOCREATED',
                     'DNS_RPC_ZONE_DSINTEGRATED', 'DNS_RPC_ZONE_AGING',
                     'DNS_RPC_ZONE_UPDATE_UNSECURE', 'DNS_RPC_ZONE_UPDATE_SECURE',
@@ -538,7 +538,7 @@ class cmd_serverinfo(Command):
 
     synopsis = '%prog <server> [options]'
 
-    takes_args = [ 'server' ]
+    takes_args = ['server' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -570,7 +570,7 @@ class cmd_zoneinfo(Command):
 
     synopsis = '%prog <server> <zone> [options]'
 
-    takes_args = [ 'server', 'zone' ]
+    takes_args = ['server', 'zone' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -602,7 +602,7 @@ class cmd_zonelist(Command):
 
     synopsis = '%prog <server> [options]'
 
-    takes_args = [ 'server' ]
+    takes_args = ['server' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -681,7 +681,7 @@ class cmd_zonecreate(Command):
 
     synopsis = '%prog <server> <zone> [options]'
 
-    takes_args = [ 'server', 'zone' ]
+    takes_args = ['server', 'zone' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -758,7 +758,7 @@ class cmd_zonedelete(Command):
 
     synopsis = '%prog <server> <zone> [options]'
 
-    takes_args = [ 'server', 'zone' ]
+    takes_args = ['server', 'zone' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -792,7 +792,7 @@ class cmd_query(Command):
 
     synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|MX|NS|SOA|SRV|TXT|ALL> [options]'
 
-    takes_args = [ 'server', 'zone', 'name', 'rtype' ]
+    takes_args = ['server', 'zone', 'name', 'rtype' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -872,7 +872,7 @@ class cmd_roothints(Command):
 
     synopsis = '%prog <server> [<name>] [options]'
 
-    takes_args = [ 'server', 'name?' ]
+    takes_args = ['server', 'name?' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -912,7 +912,7 @@ class cmd_add_record(Command):
 
     synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV|TXT> <data>'
 
-    takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
+    takes_args = ['server', 'zone', 'name', 'rtype', 'data' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -964,7 +964,7 @@ class cmd_update_record(Command):
 
     synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SOA|SRV|TXT> <olddata> <newdata>'
 
-    takes_args = [ 'server', 'zone', 'name', 'rtype', 'olddata', 'newdata' ]
+    takes_args = ['server', 'zone', 'name', 'rtype', 'olddata', 'newdata' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -1034,7 +1034,7 @@ class cmd_delete_record(Command):
 
     synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV|TXT> <data>'
 
-    takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
+    takes_args = ['server', 'zone', 'name', 'rtype', 'data' ]
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,

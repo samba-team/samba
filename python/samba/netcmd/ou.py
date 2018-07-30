@@ -233,7 +233,7 @@ class cmd_listobjects(Command):
                action='store_true', help="List objects recursively."),
     ]
 
-    takes_args = [ "ou_dn" ]
+    takes_args = ["ou_dn" ]
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,

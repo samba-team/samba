@@ -3320,7 +3320,7 @@ class SamTests(samba.tests.TestCase):
             "objectclass": "computer",
             "dNSHostName": "testname.testdom",
             "sAMAccountName": "testname$",
-            "servicePrincipalName": [ "HOST/testname.testdom", "HOST/testname" ]
+            "servicePrincipalName": ["HOST/testname.testdom", "HOST/testname" ]
         })
 
         m = Message()
@@ -3348,7 +3348,7 @@ class SamTests(samba.tests.TestCase):
             "objectclass": "computer",
             "dNSHostName": "testname.testdom",
             "sAMAccountName": "testname$",
-            "servicePrincipalName": [ "HOST/testname.testdom", "HOST/testname" ]
+            "servicePrincipalName": ["HOST/testname.testdom", "HOST/testname" ]
         })
 
         m = Message()

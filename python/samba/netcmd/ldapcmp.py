@@ -326,10 +326,10 @@ class Descriptor(object):
             self_ace_fixed = "%s" % self.fix_sid(self_ace)
             other_ace_fixed = "%s" % other.fix_sid(other_ace)
             if self_ace_fixed != other_ace_fixed:
-                res += "%60s * %s\n" % ( self_ace_fixed, other_ace_fixed )
+                res += "%60s * %s\n" % (self_ace_fixed, other_ace_fixed )
                 flag = False
             else:
-                res += "%60s | %s\n" % ( self_ace_fixed, other_ace_fixed )
+                res += "%60s | %s\n" % (self_ace_fixed, other_ace_fixed )
             i += 1
         return (flag, res)
 
@@ -345,8 +345,8 @@ class Descriptor(object):
         other_aces = []
         self_dacl_list_fixed = []
         other_dacl_list_fixed = []
-        [self_dacl_list_fixed.append( self.fix_sid(ace) ) for ace in self.dacl_list]
-        [other_dacl_list_fixed.append( other.fix_sid(ace) ) for ace in other.dacl_list]
+        [self_dacl_list_fixed.append(self.fix_sid(ace) ) for ace in self.dacl_list]
+        [other_dacl_list_fixed.append(other.fix_sid(ace) ) for ace in other.dacl_list]
         for ace in self_dacl_list_fixed:
             try:
                 other_dacl_list_fixed.index(ace)
@@ -496,15 +496,15 @@ class LDAPObject(object):
             self.domain_attributes = [x.upper() for x in self.domain_attributes]
             #
             # May contain DOMAIN_NETBIOS and SERVER_NAME
-            self.servername_attributes = [ "distinguishedName", "name", "CN", "sAMAccountName", "dNSHostName",
+            self.servername_attributes = ["distinguishedName", "name", "CN", "sAMAccountName", "dNSHostName",
                                            "servicePrincipalName", "rIDSetReferences", "serverReference", "serverReferenceBL",
                                            "msDS-IsDomainFor", "interSiteTopologyGenerator",]
             self.servername_attributes = [x.upper() for x in self.servername_attributes]
             #
-            self.netbios_attributes = [ "servicePrincipalName", "CN", "distinguishedName", "nETBIOSName", "name",]
+            self.netbios_attributes = ["servicePrincipalName", "CN", "distinguishedName", "nETBIOSName", "name",]
             self.netbios_attributes = [x.upper() for x in self.netbios_attributes]
             #
-            self.other_attributes = [ "name", "DC",]
+            self.other_attributes = ["name", "DC",]
             self.other_attributes = [x.upper() for x in self.other_attributes]
         #
         self.ignore_attributes = [x.upper() for x in self.ignore_attributes]
@@ -740,7 +740,7 @@ class LDAPBundel(object):
     def __eq__(self, other):
         res = True
         if self.size != other.size:
-            self.log( "\n* DN lists have different size: %s != %s" % (self.size, other.size) )
+            self.log("\n* DN lists have different size: %s != %s" % (self.size, other.size) )
             if not self.skip_missing_dn:
                 res = False
         #
@@ -752,10 +752,10 @@ class LDAPBundel(object):
             for x in self.dn_list:
                 if not x.upper() in [q.upper() for q in other.dn_list]:
                     if title and not self.skip_missing_dn:
-                        self.log( title )
+                        self.log(title )
                         title = None
                         res = False
-                    self.log( 4*" " + x )
+                    self.log(4*" " + x )
                     self.dn_list[self.dn_list.index(x)] = ""
             self.dn_list = [x for x in self.dn_list if x]
             #
@@ -763,10 +763,10 @@ class LDAPBundel(object):
             for x in other.dn_list:
                 if not x.upper() in [q.upper() for q in self.dn_list]:
                     if title and not self.skip_missing_dn:
-                        self.log( title )
+                        self.log(title )
                         title = None
                         res = False
-                    self.log( 4*" " + x )
+                    self.log(4*" " + x )
                     other.dn_list[other.dn_list.index(x)] = ""
             other.dn_list = [x for x in other.dn_list if x]
             #
@@ -774,7 +774,7 @@ class LDAPBundel(object):
             other.update_size()
             assert self.size == other.size
             assert sorted([x.upper() for x in self.dn_list]) == sorted([x.upper() for x in other.dn_list])
-        self.log( "\n* Objects to be compared: %s" % self.size )
+        self.log("\n* Objects to be compared: %s" % self.size )
 
         index = 0
         while index < self.size:
@@ -788,7 +788,7 @@ class LDAPBundel(object):
             except LdbError as e:
                 (enum, estr) = e.args
                 if enum == ERR_NO_SUCH_OBJECT:
-                    self.log( "\n!!! Object not found: %s" % self.dn_list[index] )
+                    self.log("\n!!! Object not found: %s" % self.dn_list[index] )
                     skip = True
                 raise
             try:
@@ -800,7 +800,7 @@ class LDAPBundel(object):
             except LdbError as e1:
                 (enum, estr) = e1.args
                 if enum == ERR_NO_SUCH_OBJECT:
-                    self.log( "\n!!! Object not found: %s" % other.dn_list[index] )
+                    self.log("\n!!! Object not found: %s" % other.dn_list[index] )
                     skip = True
                 raise
             if skip:
@@ -808,16 +808,16 @@ class LDAPBundel(object):
                 continue
             if object1 == object2:
                 if self.con.verbose:
-                    self.log( "\nComparing:" )
-                    self.log( "'%s' [%s]" % (object1.dn, object1.con.host) )
-                    self.log( "'%s' [%s]" % (object2.dn, object2.con.host) )
-                    self.log( 4*" " + "OK" )
+                    self.log("\nComparing:" )
+                    self.log("'%s' [%s]" % (object1.dn, object1.con.host) )
+                    self.log("'%s' [%s]" % (object2.dn, object2.con.host) )
+                    self.log(4*" " + "OK" )
             else:
-                self.log( "\nComparing:" )
-                self.log( "'%s' [%s]" % (object1.dn, object1.con.host) )
-                self.log( "'%s' [%s]" % (object2.dn, object2.con.host) )
-                self.log( object1.screen_output )
-                self.log( 4*" " + "FAILED" )
+                self.log("\nComparing:" )
+                self.log("'%s' [%s]" % (object1.dn, object1.con.host) )
+                self.log("'%s' [%s]" % (object2.dn, object2.con.host) )
+                self.log(object1.screen_output )
+                self.log(4*" " + "FAILED" )
                 res = False
             self.summary = object1.summary
             other.summary = object2.summary
@@ -870,12 +870,12 @@ class LDAPBundel(object):
         self.summary["df_value_attrs"] = list(set(self.summary["df_value_attrs"]))
         #
         if self.summary["unique_attrs"]:
-            self.log( "\nAttributes found only in %s:" % self.con.host )
-            self.log( "".join([str("\n" + 4*" " + x) for x in self.summary["unique_attrs"]]) )
+            self.log("\nAttributes found only in %s:" % self.con.host )
+            self.log("".join([str("\n" + 4*" " + x) for x in self.summary["unique_attrs"]]) )
         #
         if self.summary["df_value_attrs"]:
-            self.log( "\nAttributes with different values:" )
-            self.log( "".join([str("\n" + 4*" " + x) for x in self.summary["df_value_attrs"]]) )
+            self.log("\nAttributes with different values:" )
+            self.log("".join([str("\n" + 4*" " + x) for x in self.summary["df_value_attrs"]]) )
             self.summary["df_value_attrs"] = []
 
 
