@@ -259,7 +259,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.assertTrue(res.msgs[0].get("parentGUID") == None)
         self.assertTrue(res.msgs[0].get("instanceType") != None)
 
-         # Asking for name will return also objectGUID and parentGUID
+        # Asking for name will return also objectGUID and parentGUID
         # and instanceType and of course name
         res = self.ldb_admin.search(self.base_dn,
                                     expression="samaccountname=Administrator",

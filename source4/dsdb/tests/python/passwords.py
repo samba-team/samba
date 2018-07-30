@@ -649,7 +649,7 @@ userPassword: thatsAcomplPASS2
 add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).decode('utf8') + """
 """)
-             # this passes against s4
+            # this passes against s4
         except LdbError as e30:
             (num, _) = e30.args
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
@@ -663,7 +663,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).
 add: userPassword
 userPassword: thatsAcomplPASS4
 """)
-             # this passes against s4
+            # this passes against s4
         except LdbError as e31:
             (num, _) = e31.args
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
