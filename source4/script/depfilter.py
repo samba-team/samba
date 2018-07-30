@@ -24,7 +24,7 @@ graph = {}
 for arc in lines[1:-1]:
     match = sre.search('"(.*)" -> "(.*)"', arc)
     n1, n2 = match.group(1), match.group(2)
-    if not graph.has_key(n1):
+    if n1 not in graph:
         graph[n1] = []
     graph[n1].append(n2)
 
@@ -33,7 +33,7 @@ for arc in lines[1:-1]:
 subgraph = {}
 
 def add_deps(node):
-    if graph.has_key(node) and not subgraph.has_key(node):
+    if node in graph and node not in subgraph:
         subgraph[node] = graph[node]
         for n in graph[node]:
             add_deps(n)

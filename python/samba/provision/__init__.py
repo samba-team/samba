@@ -2371,7 +2371,7 @@ def provision(logger, session_info, smbconf=None,
                 os.chmod(paths.binddns_dir, 0o770)
                 os.chown(paths.binddns_dir, -1, paths.bind_gid)
             except OSError:
-                if not os.environ.has_key('SAMBA_SELFTEST'):
+                if 'SAMBA_SELFTEST' not in os.environ:
                     logger.info("Failed to chown %s to bind gid %u",
                                 paths.binddns_dir, paths.bind_gid)
 
@@ -2379,7 +2379,7 @@ def provision(logger, session_info, smbconf=None,
                 os.chmod(bind_dns_keytab_path, 0o640)
                 os.chown(bind_dns_keytab_path, -1, paths.bind_gid)
             except OSError:
-                if not os.environ.has_key('SAMBA_SELFTEST'):
+                if 'SAMBA_SELFTEST' not in os.environ:
                     logger.info("Failed to chown %s to bind gid %u",
                                 bind_dns_keytab_path, paths.bind_gid)
 

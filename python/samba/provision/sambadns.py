@@ -704,7 +704,7 @@ def create_dns_dir(logger, paths):
             # chmod needed to cope with umask
             os.chmod(dns_dir, 0o770)
         except OSError:
-            if not os.environ.has_key('SAMBA_SELFTEST'):
+            if 'SAMBA_SELFTEST' not in os.environ:
                 logger.error("Failed to chown %s to bind gid %u" % (
                     dns_dir, paths.bind_gid))
 
@@ -771,7 +771,7 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
             # chmod needed to cope with umask
             os.chmod(paths.dns, 0o664)
         except OSError:
-            if not os.environ.has_key('SAMBA_SELFTEST'):
+            if 'SAMBA_SELFTEST' not in os.environ:
                 logger.error("Failed to chown %s to bind gid %u" % (
                     paths.dns, paths.bind_gid))
 
@@ -896,11 +896,11 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
                         os.chown(fpath, -1, paths.bind_gid)
                         os.chmod(fpath, 0o660)
         except OSError:
-            if not os.environ.has_key('SAMBA_SELFTEST'):
+            if 'SAMBA_SELFTEST' not in os.environ:
                 logger.error(
                     "Failed to set permissions to sam.ldb* files, fix manually")
     else:
-        if not os.environ.has_key('SAMBA_SELFTEST'):
+        if 'SAMBA_SELFTEST' not in os.environ:
             logger.warning("""Unable to find group id for BIND,
                 set permissions to sam.ldb* files manually""")
 
