@@ -37,6 +37,7 @@ def plansmbtorture4testsuite(name, env, options, description=''):
     selftesthelpers.plansmbtorture4testsuite(
         name, env, options, target='samba3', modname=modname)
 
+
 # find config.h
 try:
     config_h = os.environ["CONFIG_H"]

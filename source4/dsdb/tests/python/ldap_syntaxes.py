@@ -384,4 +384,5 @@ name: """ + object_name + """
             (num, _) = e14.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
+
 TestProgram(module=__name__, opts=subunitopts)

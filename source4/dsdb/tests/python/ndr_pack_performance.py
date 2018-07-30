@@ -212,6 +212,7 @@ class UserTests(samba.tests.TestCase):
         desc = ndr_unpack(drsuapi.DsGetNCChangesCtr6, blob)
         self._test_pack(desc, cycles=20)
 
+
 if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host

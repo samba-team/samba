@@ -69,6 +69,7 @@ def list_path(key, path):
         list_values(subkey)
     return count
 
+
 if len(args) > 1:
     root = args[1]
 else:

@@ -28,6 +28,7 @@ def fill_cache(inids, idtype='gid'):
         subprocess.Popen([wbinfo, '--%s-to-sid=%s' % (idtype, inid)],
                          stdout=subprocess.PIPE).communicate()
 
+
 domain = subprocess.Popen([wbinfo, "--own-domain"],
                           stdout=subprocess.PIPE).communicate()[0].strip()
 domsid = subprocess.Popen([wbinfo, "-n", domain + "/"],
@@ -105,6 +106,7 @@ def check_multiple(sids, idtypes):
             flush_cache(sids=sids, uids=uids, gids=gids)
             sys.exit(1)
         i += 1
+
 
 # first round: with filled cache via sid-to-id
 check_singular(sids, gids, 'gid')

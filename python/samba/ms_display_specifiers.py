@@ -54,6 +54,7 @@ def __read_folded_line(f, buffer):
 
     return (line, buffer)
 
+
 # Only compile regexp once.
 # Will not match options after the attribute type.
 attr_type_re = re.compile("^([A-Za-z][A-Za-z0-9-]*):")
@@ -180,6 +181,7 @@ def read_ms_ldif(filename):
         out.append(__write_ldif_one(__transform_entry(entry)))
 
     return "\n\n".join(out) + "\n\n"
+
 
 if __name__ == '__main__':
     import sys

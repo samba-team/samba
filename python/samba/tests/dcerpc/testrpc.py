@@ -134,6 +134,7 @@ class RpcTests(object):
         self.check_all_interfaces()
         return self.errcount
 
+
 tests = RpcTests()
 errcount = tests.run()
 if errcount == 0:

@@ -39,6 +39,7 @@ def add_deps(node):
         for n in graph[node]:
             add_deps(n)
 
+
 add_deps(top)
 
 # Generate output

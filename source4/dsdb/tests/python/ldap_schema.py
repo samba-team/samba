@@ -1645,6 +1645,7 @@ class SchemaTests_msDS_isRODC(samba.tests.TestCase):
             else:
                 self.assertTrue("msDS-isRODC" in ldb_msg)
 
+
 if not "://" in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host

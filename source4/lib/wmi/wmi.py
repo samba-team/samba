@@ -42,6 +42,7 @@ def _swig_repr(self):
     except: strthis = ""
     return "<%s.%s; %s >" % (self.__class__.__module__, self.__class__.__name__, strthis,)
 
+
 import types
 try:
     _object = types.ObjectType
@@ -72,6 +73,8 @@ class IUnknown(object):
     def __init__(self, *args, **kwargs): 
         _wmi.IUnknown_swiginit(self, _wmi.new_IUnknown(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IUnknown
+
+
 IUnknown.Release = new_instancemethod(_wmi.IUnknown_Release, None, IUnknown)
 IUnknown_swigregister = _wmi.IUnknown_swigregister
 IUnknown_swigregister(IUnknown)
@@ -84,6 +87,8 @@ class IWbemServices(object):
     def __init__(self, *args, **kwargs): 
         _wmi.IWbemServices_swiginit(self, _wmi.new_IWbemServices(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IWbemServices
+
+
 IWbemServices.ExecQuery = new_instancemethod(_wmi.IWbemServices_ExecQuery, None, IWbemServices)
 IWbemServices.ExecNotificationQuery = new_instancemethod(_wmi.IWbemServices_ExecNotificationQuery, None, IWbemServices)
 IWbemServices.CreateInstanceEnum = new_instancemethod(_wmi.IWbemServices_CreateInstanceEnum, None, IWbemServices)
@@ -98,6 +103,8 @@ class IEnumWbemClassObject(object):
     def __init__(self, *args, **kwargs): 
         _wmi.IEnumWbemClassObject_swiginit(self, _wmi.new_IEnumWbemClassObject(*args, **kwargs))
     __swig_destroy__ = _wmi.delete_IEnumWbemClassObject
+
+
 IEnumWbemClassObject.Reset = new_instancemethod(_wmi.IEnumWbemClassObject_Reset, None, IEnumWbemClassObject)
 IEnumWbemClassObject_swigregister = _wmi.IEnumWbemClassObject_swigregister
 IEnumWbemClassObject_swigregister(IEnumWbemClassObject)

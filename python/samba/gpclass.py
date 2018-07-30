@@ -402,6 +402,7 @@ class gp_inf_ext(gp_ext):
     def __str__(self):
         pass
 
+
 ''' Fetch the hostname of a writable DC '''
 
 
@@ -410,6 +411,7 @@ def get_dc_hostname(creds, lp):
     cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
                                                           nbt.NBT_SERVER_DS))
     return cldap_ret.pdc_dns_name
+
 
 ''' Fetch a list of GUIDs for applicable GPOs '''
 

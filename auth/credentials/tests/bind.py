@@ -165,4 +165,5 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
 
         res = ldb_user4.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
+
 TestProgram(module=__name__, opts=subunitopts)

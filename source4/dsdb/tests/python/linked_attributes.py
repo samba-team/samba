@@ -720,6 +720,7 @@ class LATests(samba.tests.TestCase):
         self.assert_forward_links(e1, [], attr='addressBookRoots2',
                                   show_deactivated_link=0)
 
+
 if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host

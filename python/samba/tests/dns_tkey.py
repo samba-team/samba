@@ -211,4 +211,5 @@ class TestDNSUpdates(DNSTKeyTest):
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
 
+
 TestProgram(module=__name__, opts=subunitopts)

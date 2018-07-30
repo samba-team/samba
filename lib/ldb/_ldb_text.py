@@ -92,6 +92,7 @@ class MessageElementTextWrapper(_WrapBase):
     def set_flags(self):
         return self._wrapped.set_flags
 
+
 _wrap_element = MessageElementTextWrapper._wrap
 
 

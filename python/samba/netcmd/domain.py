@@ -156,6 +156,7 @@ def get_testparm_var(testparm, smbconf, varname):
         return lines[0].strip()
     return ""
 
+
 try:
     import samba.dckeytab
 except ImportError:

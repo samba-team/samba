@@ -51,6 +51,7 @@ def find_git_root():
         p = os.path.abspath(os.path.join(p, '..'))
     return None
 
+
 cwd = os.getcwd()
 gitroot = find_git_root()
 
@@ -78,6 +79,7 @@ def cleanup():
     run_cmd("git bisect reset", dir=gitroot)
     os.unlink(f.name)
     sys.exit(-1)
+
 
 # run bisect
 ret = -1

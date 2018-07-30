@@ -1324,6 +1324,7 @@ class RejectSubDBIndex(LdbBaseTest):
             self.assertEqual(ldb.ERR_OPERATIONS_ERROR, code)
             self.assertIn("sub-database index", string)
 
+
 if __name__ == '__main__':
     import unittest
     unittest.TestProgram()

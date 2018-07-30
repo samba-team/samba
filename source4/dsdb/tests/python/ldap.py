@@ -3270,6 +3270,7 @@ class BaseDnTests(samba.tests.TestCase):
         expected = "%s:%s$@%s" % (dns_domainname.lower(), hostname.lower(), dns_domainname.upper())
         self.assertEquals(given, expected)
 
+
 if not "://" in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host

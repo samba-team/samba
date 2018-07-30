@@ -42,6 +42,7 @@ def printdirsync(ctl):
                 print("highest usn in extra %s" % cookie.blob.extra.ctr.cursors[0].highest_usn)
         return cookie
 
+
 remote_ldb = Ldb("ldap://" + opts.host + ":389", credentials=creds, lp=lp)
 tab = []
 if opts.b:

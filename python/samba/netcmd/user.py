@@ -158,6 +158,7 @@ def get_rounds(options):
                 return 0
     return 0
 
+
 try:
     random_reason = check_random()
     if random_reason is not None:

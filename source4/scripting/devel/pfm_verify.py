@@ -146,6 +146,7 @@ def _pfm_schi_verify(drs_schi, ldb_schi):
                       % (drs_schi.invocation_id, ldb_schi.invocation_id))
     return errors
 
+
 ########### main code ###########
 if __name__ == "__main__":
     # command line parsing

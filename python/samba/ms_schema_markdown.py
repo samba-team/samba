@@ -58,6 +58,7 @@ def read_ms_markdown(in_file, out_folder):
         if ldf is not None:
             ldf.close()
 
+
 if __name__ == '__main__':
     import sys
 

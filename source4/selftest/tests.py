@@ -31,6 +31,7 @@ def plansmbtorture4testsuite(name, env, options, modname=None):
     return selftesthelpers.plansmbtorture4testsuite(name, env, options,
                                                     target='samba4', modname=modname)
 
+
 samba4srcdir = source4dir()
 samba4bindir = bindir()
 validate = os.getenv("VALIDATE", "")

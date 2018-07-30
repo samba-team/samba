@@ -254,6 +254,7 @@ def get_object_classes(db):
         list.append(item)
     return list
 
+
 classinfo = pull_classinfo(db)
 
 if objectclass is None:

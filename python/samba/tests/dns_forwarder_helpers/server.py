@@ -36,6 +36,7 @@ def debug(msg):
         print("\033[00;36m%s\033[00m" % msg)
         sys.stdout.flush()
 
+
 timeout = 0
 
 
@@ -92,5 +93,6 @@ def main():
     host, port, SERVER_ID = sys.argv[1:]
     server = SocketServer.UDPServer((host, int(port)), DnsHandler)
     server.serve_forever()
+
 
 main()

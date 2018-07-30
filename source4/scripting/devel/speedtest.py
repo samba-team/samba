@@ -226,6 +226,7 @@ class AclSearchSpeedTest(SpeedTest):
 
 # Important unit running information
 
+
 if not "://" in host:
     host = "ldap://%s" % host
 

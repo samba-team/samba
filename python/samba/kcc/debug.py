@@ -43,6 +43,7 @@ from samba.colour import GREY, WHITE
 def _color_debug(*args, **kwargs):
     DEBUG('%s%s%s' % (kwargs['color'], args[0], C_NORMAL), *args[1:])
 
+
 _globals = globals()
 for _color in ('DARK_RED', 'RED', 'DARK_GREEN', 'GREEN', 'YELLOW',
                'DARK_YELLOW', 'DARK_BLUE', 'BLUE', 'PURPLE', 'MAGENTA',

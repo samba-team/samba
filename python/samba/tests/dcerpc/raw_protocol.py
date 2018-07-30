@@ -4980,6 +4980,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         conn2.do_single_request(call_id=1, ctx=ctx2, io=inq_if_ids)
         return
 
+
 if __name__ == "__main__":
     global_ndr_print = True
     global_hexdump = True

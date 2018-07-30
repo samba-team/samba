@@ -315,6 +315,7 @@ def read_ms_schema(attr_file, classes_file, dump_attributes=True, dump_classes=T
 
     return attr_ldif + "\n\n" + classes_ldif + "\n\n"
 
+
 if __name__ == '__main__':
     import sys
 

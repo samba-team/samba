@@ -50,6 +50,7 @@ def norm(x):
     x = x.decode('utf-8')
     return normalize('NFKC', x).upper().encode('utf-8')
 
+
 # Python, Windows, and Samba all sort the following sequence in
 # drastically different ways. The order here is what you get from
 # Windows2012R2.

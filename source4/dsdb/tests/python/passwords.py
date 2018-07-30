@@ -1133,6 +1133,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).
         # Close the second LDB connection (with the user credentials)
         self.ldb2 = None
 
+
 if not "://" in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host

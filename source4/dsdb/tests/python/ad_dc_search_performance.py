@@ -283,6 +283,7 @@ class UserTests(samba.tests.TestCase):
     def test_03_13_member_search_linked_users(self):
         self._test_member_search(rounds=2)
 
+
 if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host

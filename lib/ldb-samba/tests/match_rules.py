@@ -1752,6 +1752,7 @@ class MatchRuleConditionTests(samba.tests.TestCase):
                                     self.ou_groups, self.ou_computers))
         self.assertEqual(len(res1), 0)
 
+
 parser = optparse.OptionParser("match_rules.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)

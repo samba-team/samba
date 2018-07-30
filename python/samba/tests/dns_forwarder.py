@@ -603,4 +603,5 @@ class TestDnsForwarding(DNSTest):
         except socket.timeout:
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
+
 TestProgram(module=__name__, opts=subunitopts)

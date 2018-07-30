@@ -101,6 +101,7 @@ def iterate_all(path):
                'deprecated' : deprecated,
                'synonyms' : synonyms }
 
+
 # map doc attributes to a section of the generated function
 context_dict = {"G": "_GLOBAL", "S": "_LOCAL"}
 param_type_dict = {
@@ -147,6 +148,7 @@ def generate_functions(path_in, path_out):
             f.write(output_string + "(" + parameter['function'] + ", " + parameter['function'] + ')\n')
     finally:
         f.close()
+
 
 mapping = {
             'boolean'      : 'bool ',
@@ -313,6 +315,7 @@ def make_param_defs(path_in, path_out, scope):
     finally:
         file_out.close()
 
+
 type_dict = {
               "boolean"      : "P_BOOL",
               "boolean-rev"  : "P_BOOLREV",
@@ -399,6 +402,7 @@ def make_param_table(path_in, path_out):
         file_out.write("\n#endif /* %s */\n\n" % header)
     finally:
         file_out.close()
+
 
 if options.mode == 'FUNCTIONS':
     generate_functions(options.filename, options.output)

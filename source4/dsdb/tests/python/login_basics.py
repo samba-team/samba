@@ -179,6 +179,7 @@ userPassword: %s
     def test_login_basics_ntlm(self):
         self._test_login_basics(self.lockout1ntlm_creds)
 
+
 host_url = "ldap://%s" % host
 
 TestProgram(module=__name__, opts=subunitopts)

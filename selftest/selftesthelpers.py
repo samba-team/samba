@@ -43,6 +43,7 @@ def bindir():
 def binpath(name):
     return os.path.join(bindir(), name)
 
+
 # Split perl variable to allow $PERL to be set to e.g. "perl -W"
 perl = os.getenv("PERL", "perl").split()
 

@@ -304,6 +304,7 @@ def setup_file(template, fname, subst_vars=None):
     finally:
         f.close()
 
+
 MAX_NETBIOS_NAME_LEN = 15
 
 
@@ -383,6 +384,7 @@ def string_to_byte_array(string):
 def arcfour_encrypt(key, data):
     from samba.crypto import arcfour_crypt_blob
     return arcfour_crypt_blob(data, key)
+
 
 version = _glue.version
 interface_ips = _glue.interface_ips

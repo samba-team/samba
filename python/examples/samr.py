@@ -106,6 +106,7 @@ def test_EnumDomains(samr, handle):
         test_domain_ops(samr, dom_handle)
         samr.Close(dom_handle)
 
+
 if len(sys.argv) != 2:
     print "Usage: samr.js <BINDING>"
     sys.exit(1)

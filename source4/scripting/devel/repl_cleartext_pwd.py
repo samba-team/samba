@@ -77,6 +77,7 @@ class globals:
 def attid_equal(a1, a2):
     return (a1 & 0xffffffff) == (a2 & 0xffffffff)
 
+
 ########### main code ###########
 if __name__ == "__main__":
     parser = OptionParser("repl_cleartext_pwd.py [options] server dn cookie_file clear_utf8_name [attid attname attmode] [clear_utf16_name")

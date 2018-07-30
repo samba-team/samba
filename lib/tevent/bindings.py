@@ -109,5 +109,6 @@ class ContextTests(TestCase):
         self.ctx.loop_once()
         self.assertEqual(collecting_list, [1, 2])
 
+
 if __name__ == '__main__':
     TestProgram()
