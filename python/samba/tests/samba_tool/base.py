@@ -122,14 +122,14 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
     def randomName(self, count=8):
         """Create a random name, cap letters and numbers, and always starting with a letter"""
         name = random.choice(string.ascii_uppercase)
-        name += ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase+ string.digits) for x in range(count - 1))
+        name += ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(count - 1))
         return name
 
     def randomPass(self, count=16):
         name = random.choice(string.ascii_uppercase)
         name += random.choice(string.digits)
         name += random.choice(string.ascii_lowercase)
-        name += ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase+ string.digits) for x in range(count - 3))
+        name += ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(count - 3))
         return name
 
     def randomXid(self):

@@ -35,15 +35,15 @@ domsid = domsid.split(' ')[0]
 #print domain
 #print domsid
 
-sids=[domsid + '-512', 'S-1-5-32-545', domsid + '-513', 'S-1-1-0', 'S-1-3-1', 'S-1-5-1']
+sids = [domsid + '-512', 'S-1-5-32-545', domsid + '-513', 'S-1-1-0', 'S-1-3-1', 'S-1-5-1']
 
 flush_cache(sids=sids)
 
 sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' + ','.join(sids)],
                              stdout=subprocess.PIPE).communicate()[0].strip()
 
-gids=[]
-uids=[]
+gids = []
+uids = []
 idtypes = []
 
 for line in sids2xids.split('\n'):

@@ -1368,7 +1368,7 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";OI;", ";OIIOID;") # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" +moded)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
@@ -2076,7 +2076,7 @@ class SdAutoInheritTests(DescriptorTests):
             See that only the owner has been changed.
         """
         attrs = ["nTSecurityDescriptor", "replPropertyMetaData", "uSNChanged"]
-        controls=["sd_flags:1:%d" % (SECINFO_DACL)]
+        controls = ["sd_flags:1:%d" % (SECINFO_DACL)]
         ace = "(A;CI;CC;;;NU)"
         sub_ace = "(A;CIID;CC;;;NU)"
         sd_sddl = "O:BAG:BAD:P(A;CI;0x000f01ff;;;AU)"

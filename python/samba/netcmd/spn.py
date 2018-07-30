@@ -56,7 +56,7 @@ class cmd_spn_list(Command):
         res = sam.search(
             expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
             scope=ldb.SCOPE_SUBTREE, attrs=["servicePrincipalName"])
-        if len(res) >0:
+        if len(res) > 0:
             spns = res[0].get("servicePrincipalName")
             found = False
             flag = ldb.FLAG_MOD_ADD
@@ -107,7 +107,7 @@ class cmd_spn_add(Command):
         res = sam.search(
             expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
             scope=ldb.SCOPE_SUBTREE, attrs=["servicePrincipalName"])
-        if len(res) >0:
+        if len(res) > 0:
             res[0].dn
             msg = ldb.Message()
             spns = res[0].get("servicePrincipalName")
@@ -157,7 +157,7 @@ class cmd_spn_delete(Command):
             expression="servicePrincipalName=%s" % ldb.binary_encode(name),
             scope=ldb.SCOPE_SUBTREE,
             attrs=["servicePrincipalName", "samAccountName"])
-        if len(res) >0:
+        if len(res) > 0:
             result = None
             if user is not None:
                 (cleaneduser, realm, domain) = _get_user_realm_domain(user)
@@ -176,7 +176,7 @@ class cmd_spn_delete(Command):
                                        "and no specific user was specified, list of users"
                                        " with this spn:%s" % (name, listUser))
                 else:
-                    result=res[0]
+                    result = res[0]
 
 
             msg = ldb.Message()

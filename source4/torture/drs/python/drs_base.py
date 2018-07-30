@@ -252,7 +252,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
             next_object = ctr6.first_object
             for i in range(0, ctr6.object_count):
-                print("Obj %d: %s %s" %(i, next_object.object.identifier.dn[:25],
+                print("Obj %d: %s %s" % (i, next_object.object.identifier.dn[:25],
                                         next_object.object.identifier.guid))
                 next_object = next_object.next_object
 
@@ -267,16 +267,16 @@ class DrsBaseTestCase(SambaToolCmdTest):
                                         l.value.blob)
 
                 print("Link Tgt %s... <-- Src %s"
-                      %(target.dn[:25], l.identifier.guid))
+                      % (target.dn[:25], l.identifier.guid))
                 state = "Del"
                 if l.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:
                     state = "Act"
-                print("  v%u %s changed %u" %(l.meta_data.version, state,
+                print("  v%u %s changed %u" % (l.meta_data.version, state,
                                               l.meta_data.originating_change_time))
 
-            print("HWM:     %d" %(ctr6.new_highwatermark.highest_usn))
-            print("Tmp HWM: %d" %(ctr6.new_highwatermark.tmp_highest_usn))
-            print("More data: %d" %(ctr6.more_data))
+            print("HWM:     %d" % (ctr6.new_highwatermark.highest_usn))
+            print("Tmp HWM: %d" % (ctr6.new_highwatermark.tmp_highest_usn))
+            print("More data: %d" % (ctr6.more_data))
 
     def _get_replication(self, replica_flags,
                          drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,

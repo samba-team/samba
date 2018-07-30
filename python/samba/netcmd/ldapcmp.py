@@ -748,7 +748,7 @@ class LDAPBundel(object):
         # It does not matter if they are in the same DC, in two DC in one domain or in two
         # different domains.
         if self.search_scope != SCOPE_BASE:
-            title= "\n* DNs found only in %s:" % self.con.host
+            title = "\n* DNs found only in %s:" % self.con.host
             for x in self.dn_list:
                 if not x.upper() in [q.upper() for q in other.dn_list]:
                     if title and not self.skip_missing_dn:
@@ -759,7 +759,7 @@ class LDAPBundel(object):
                     self.dn_list[self.dn_list.index(x)] = ""
             self.dn_list = [x for x in self.dn_list if x]
             #
-            title= "\n* DNs found only in %s:" % other.con.host
+            title = "\n* DNs found only in %s:" % other.con.host
             for x in other.dn_list:
                 if not x.upper() in [q.upper() for q in self.dn_list]:
                     if title and not self.skip_missing_dn:

@@ -177,15 +177,15 @@ systemOnly: FALSE
     def _get_object_ldif(self, object_name, class_name, class_ldap_display_name, attr_name, attr_value):
         # add object with correct syntax
         ldif = """
-dn: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
+dn: CN=%s,CN=Users,%s""" % (object_name, self.base_dn) + """
 objectClass: organizationalPerson
 objectClass: person
 objectClass: """ + class_ldap_display_name + """
 objectClass: top
 cn: """ + object_name + """
 instanceType: 4
-objectCategory: CN=%s,%s"""% (class_name, self.schema_dn) + """
-distinguishedName: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
+objectCategory: CN=%s,%s""" % (class_name, self.schema_dn) + """
+distinguishedName: CN=%s,CN=Users,%s""" % (object_name, self.base_dn) + """
 name: """ + object_name + """
 """ + attr_name + attr_value  + """
 """

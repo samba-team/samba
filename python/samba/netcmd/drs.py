@@ -729,7 +729,7 @@ class cmd_drs_options(Command):
             #save new options
             m = ldb.Message()
             m.dn = ldb.Dn(self.samdb, ntds_dn)
-            m["options"]= ldb.MessageElement(str(dsa_opts), ldb.FLAG_MOD_REPLACE, "options")
+            m["options"] = ldb.MessageElement(str(dsa_opts), ldb.FLAG_MOD_REPLACE, "options")
             self.samdb.modify(m)
             # print out new DSA options
             cur_opts = [x for x in self.option_map if self.option_map[x] & dsa_opts]

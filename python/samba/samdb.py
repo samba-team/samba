@@ -867,7 +867,7 @@ schemaUpdateNow: 1
                 o.originating_usn = seq
                 o.local_usn = seq
 
-        if not found and addifnotexist and len(ctr.array) >0:
+        if not found and addifnotexist and len(ctr.array) > 0:
             o2 = drsblobs.replPropertyMetaData1()
             o2.attid = 589914
             att_oid = self.get_oid_from_attid(o2.attid)

@@ -58,8 +58,8 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
         # objects can be slow to replicate out. So the OU created by a previous
         # testenv may still exist at this point).
         rand = random.randint(1, 10000000)
-        test_ou = "OU=test_getnc_unpriv%d" %rand
-        self.ou = "%s,%s" %(test_ou, self.base_dn)
+        test_ou = "OU=test_getnc_unpriv%d" % rand
+        self.ou = "%s,%s" % (test_ou, self.base_dn)
         self.ldb_dc1.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})

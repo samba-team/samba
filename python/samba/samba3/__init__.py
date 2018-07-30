@@ -333,7 +333,7 @@ class WinsDatabase(object):
             ips = []
             while "." in entries[i]:
                 ips.append(entries[i])
-                i+=1
+                i += 1
             nb_flags = int(entries[i][:-1], 16)
             assert not name in self.entries, "Name %s exists twice" % name
             self.entries[name] = (ttl, ips, nb_flags)

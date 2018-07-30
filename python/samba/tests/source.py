@@ -196,7 +196,7 @@ class TestSource(TestCase):
     def test_shebang_lines(self):
         """Check that files with shebang lines and only those are executable."""
         files_with_shebang = {}
-        files_without_shebang= {}
+        files_without_shebang = {}
         for fname, line_no, line in self._iter_source_files_lines():
             if line_no >= 1:
                 continue

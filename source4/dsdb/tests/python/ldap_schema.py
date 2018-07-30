@@ -210,15 +210,15 @@ schemaUpdateNow: 1
         object_name = "obj" + time.strftime("%s", time.gmtime())
 
         ldif = """
-dn: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
+dn: CN=%s,CN=Users,%s""" % (object_name, self.base_dn) + """
 objectClass: organizationalPerson
 objectClass: person
 objectClass: """ + class_ldap_display_name + """
 objectClass: top
 cn: """ + object_name + """
 instanceType: 4
-objectCategory: CN=%s,%s"""% (class_name, self.schema_dn) + """
-distinguishedName: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
+objectCategory: CN=%s,%s""" % (class_name, self.schema_dn) + """
+distinguishedName: CN=%s,CN=Users,%s""" % (object_name, self.base_dn) + """
 name: """ + object_name + """
 """ + attr_ldap_display_name + """: test
 """

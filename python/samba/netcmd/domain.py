@@ -545,7 +545,7 @@ class cmd_domain_provision(Command):
     def _get_nameserver_ip(self):
         """Grab the nameserver IP address from /etc/resolv.conf."""
         from os import path
-        RESOLV_CONF="/etc/resolv.conf"
+        RESOLV_CONF = "/etc/resolv.conf"
 
         if not path.isfile(RESOLV_CONF):
             self.logger.warning("Failed to locate %s" % RESOLV_CONF)
@@ -1226,7 +1226,7 @@ class cmd_domain_level(Command):
                 # Directly on the base DN
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, domain_dn)
-                m["msDS-Behavior-Version"]= ldb.MessageElement(
+                m["msDS-Behavior-Version"] = ldb.MessageElement(
                     str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                     "msDS-Behavior-Version")
                 samdb.modify(m)
@@ -1234,7 +1234,7 @@ class cmd_domain_level(Command):
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup")
                               + ",CN=Partitions,%s" % samdb.get_config_basedn())
-                m["msDS-Behavior-Version"]= ldb.MessageElement(
+                m["msDS-Behavior-Version"] = ldb.MessageElement(
                     str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                     "msDS-Behavior-Version")
                 try:
@@ -1266,7 +1266,7 @@ class cmd_domain_level(Command):
 
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
-                m["msDS-Behavior-Version"]= ldb.MessageElement(
+                m["msDS-Behavior-Version"] = ldb.MessageElement(
                     str(new_level_forest), ldb.FLAG_MOD_REPLACE,
                     "msDS-Behavior-Version")
                 samdb.modify(m)
@@ -1855,7 +1855,7 @@ class DomainTrustCommand(Command):
                         server_type_string))
 
         self.remote_server = remote_info.pdc_dns_name
-        self.remote_binding_string="ncacn_np:%s[%s]" % (self.remote_server, remote_binding_options)
+        self.remote_binding_string = "ncacn_np:%s[%s]" % (self.remote_server, remote_binding_options)
         self.remote_creds = remote_creds
         return self.remote_server
 
@@ -3977,7 +3977,7 @@ class ldif_schema_update:
             print("Defunct object %s doesn't exist, skipping" % self.dn)
             return True
         elif self.unknown_oid is not None:
-            print("Skipping unknown OID %s for object %s" %(self.unknown_oid, self.dn))
+            print("Skipping unknown OID %s for object %s" % (self.unknown_oid, self.dn))
             return True
 
         return False

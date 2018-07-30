@@ -295,7 +295,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     attrs=["parentGUID"],
                                     controls=["dirsync:1:0:1"])
         self.assertEqual(len(res.msgs), 0)
-        ouname="OU=testou,%s" % self.base_dn
+        ouname = "OU=testou,%s" % self.base_dn
         self.ouname = ouname
         self.ldb_admin.create_ou(ouname)
         delta = Message()
@@ -399,7 +399,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         control2 = str(":".join(ctl))
 
         # Let's create an OU
-        ouname="OU=testou2,%s" % self.base_dn
+        ouname = "OU=testou2,%s" % self.base_dn
         self.ouname = ouname
         self.ldb_admin.create_ou(ouname)
         res = self.ldb_admin.search(self.base_dn,
@@ -545,7 +545,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
     def test_dirsync_deleted_items(self):
         """Check that dirsync returnd deleted objects too"""
         # Let's create an OU
-        ouname="OU=testou3,%s" % self.base_dn
+        ouname = "OU=testou3,%s" % self.base_dn
         self.ouname = ouname
         self.ldb_admin.create_ou(ouname)
         res = self.ldb_admin.search(self.base_dn,
@@ -582,7 +582,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         ctl = str(res.controls[0]).split(":")
         cookie = ndr_unpack(drsblobs.ldapControlDirSyncCookie, base64.b64decode(str(ctl[4])))
         cookie.blob.guid1 = misc.GUID("128a99bf-abcd-1234-abcd-1fb625e530db")
-        controls=["dirsync:1:0:0:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
+        controls = ["dirsync:1:0:0:%s" % base64.b64encode(ndr_pack(cookie)).decode('utf8')]
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
                                     controls=controls)
@@ -662,7 +662,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         """Check that dirsync returnd deleted objects too"""
         # Let's create an OU
         self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
-        ouname="OU=testou3,%s" % self.base_dn
+        ouname = "OU=testou3,%s" % self.base_dn
         self.ouname = ouname
         self.ldb_admin.create_ou(ouname)
 

@@ -597,7 +597,7 @@ def cleanup():
 
 def find_git_root():
     '''get to the top of the git repo'''
-    p=os.getcwd()
+    p = os.getcwd()
     while p != '/':
         if os.path.isdir(os.path.join(p, ".git")):
             return p

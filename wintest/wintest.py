@@ -174,9 +174,9 @@ class wintest():
         if output:
             return subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=dir).communicate()[0]
         if isinstance(cmd, list):
-            shell=False
+            shell = False
         else:
-            shell=True
+            shell = True
         if checkfail:
             return subprocess.check_call(cmd, shell=shell, cwd=dir)
         else:
@@ -192,9 +192,9 @@ class wintest():
         else:
             self.info('$ ' + cmd)
         if isinstance(cmd, list):
-            shell=False
+            shell = False
         else:
-            shell=True
+            shell = True
         os.chdir(dir)
         ret = subprocess.Popen(cmd, shell=shell, stderr=subprocess.STDOUT)
         os.chdir(cwd)
@@ -495,7 +495,7 @@ options {
     def ping_wait(self, hostname):
         '''wait for a hostname to come up on the network'''
         hostname = self.substitute(hostname)
-        loops=10
+        loops = 10
         while loops > 0:
             try:
                 self.run_cmd("ping -c 1 -w 10 %s" % hostname)

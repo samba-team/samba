@@ -338,7 +338,7 @@ class RawDCERPCTest(TestCase):
                                            auth_context_id=auth_context["auth_context_id"],
                                            auth_blob=zero_sig)
         else:
-            auth_info=""
+            auth_info = ""
 
         pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST
         pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST
@@ -604,7 +604,7 @@ class RawDCERPCTest(TestCase):
             a.auth_type = auth_type
             a.auth_level = auth_level
             a.auth_pad_length = auth_pad_length
-            a.auth_context_id= auth_context_id
+            a.auth_context_id = auth_context_id
             a.credentials = auth_blob
 
             ai = ndr_pack(a)

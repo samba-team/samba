@@ -478,7 +478,7 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
                                  "virtualCryptSHA512;rounds=5129",
                                  True)
         self.assertFalse(sha256 == _get_attribute(out, "virtualCryptSHA256"))
-        self.assertFalse(sha512 ==_get_attribute(out, "virtualCryptSHA512"))
+        self.assertFalse(sha512 == _get_attribute(out, "virtualCryptSHA512"))
 
         # The returned hashes should specify the correct number of rounds
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=2561"))

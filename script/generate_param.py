@@ -142,7 +142,7 @@ def generate_functions(path_in, path_out):
             if temp is None:
                 raise Exception(parameter['name'] + " has an invalid param type " + parameter['type'])
             output_string += temp
-            f.write(output_string + "(" + parameter['function'] +", " + parameter['function'] + ')\n')
+            f.write(output_string + "(" + parameter['function'] + ", " + parameter['function'] + ')\n')
     finally:
         f.close()
 

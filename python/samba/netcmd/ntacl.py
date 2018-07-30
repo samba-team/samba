@@ -215,7 +215,7 @@ class cmd_ntacl_sysvolreset(Command):
         s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
         LA_sid = security.dom_sid(str(domain_sid)
-                                  +"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
+                                  + "-"+str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
 
         s4_passdb = passdb.PDB(s3conf.get("passdb backend"))

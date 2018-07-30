@@ -124,19 +124,19 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
                          self.creds.get_secure_channel_type())
 
     def test_get_nt_hash(self):
-        password="geheim"
-        hex_nthash="c2ae1fe6e648846352453e816f2aeb93"
+        password = "geheim"
+        hex_nthash = "c2ae1fe6e648846352453e816f2aeb93"
         self.creds.set_password(password)
         self.assertEqual(password, self.creds.get_password())
         self.assertEqual(binascii.a2b_hex(hex_nthash),
                          self.creds.get_nt_hash())
 
     def test_get_ntlm_response(self):
-        password="SecREt01"
-        hex_challenge="0123456789abcdef"
-        hex_nthash="cd06ca7c7e10c99b1d33b7485a2ed808"
-        hex_session_key="3f373ea8e4af954f14faa506f8eebdc4"
-        hex_ntlm_response="25a98c1c31e81847466b29b2df4680f39958fb8c213a9cc6"
+        password = "SecREt01"
+        hex_challenge = "0123456789abcdef"
+        hex_nthash = "cd06ca7c7e10c99b1d33b7485a2ed808"
+        hex_session_key = "3f373ea8e4af954f14faa506f8eebdc4"
+        hex_ntlm_response = "25a98c1c31e81847466b29b2df4680f39958fb8c213a9cc6"
         self.creds.set_username("fred")
         self.creds.set_domain("nurk")
         self.creds.set_password(password)
@@ -154,7 +154,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
 
     def test_get_nt_hash_string(self):
         self.creds.set_password_will_be_nt_hash(True)
-        hex_nthash="c2ae1fe6e648846352453e816f2aeb93"
+        hex_nthash = "c2ae1fe6e648846352453e816f2aeb93"
         self.creds.set_password(hex_nthash)
         self.assertEqual(None, self.creds.get_password())
         self.assertEqual(binascii.a2b_hex(hex_nthash),
@@ -198,10 +198,10 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.authentication_requested(), False)
 
     def test_parse_file_1(self):
-        realm="realm.example.com"
-        domain="dom"
-        password="pass"
-        username="user"
+        realm = "realm.example.com"
+        domain = "dom"
+        password = "pass"
+        username = "user"
 
         passwd_file_name = os.path.join(self.tempdir, "parse_file")
         passwd_file_fd = open(passwd_file_name, self.open_mode)
@@ -221,10 +221,10 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.unlink(passwd_file_name)
 
     def test_parse_file_2(self):
-        realm="realm.example.com"
-        domain="dom"
-        password="pass"
-        username="user"
+        realm = "realm.example.com"
+        domain = "dom"
+        password = "pass"
+        username = "user"
 
         passwd_file_name = os.path.join(self.tempdir, "parse_file")
         passwd_file_fd = open(passwd_file_name, self.open_mode)
@@ -244,12 +244,12 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.unlink(passwd_file_name)
 
     def test_parse_file_3(self):
-        realm="realm.example.com"
-        domain="domain"
-        password="password"
-        username="username"
+        realm = "realm.example.com"
+        domain = "domain"
+        password = "password"
+        username = "username"
 
-        userdom="userdom"
+        userdom = "userdom"
 
         passwd_file_name = os.path.join(self.tempdir, "parse_file")
         passwd_file_fd = open(passwd_file_name, self.open_mode)
@@ -269,12 +269,12 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.unlink(passwd_file_name)
 
     def test_parse_file_4(self):
-        realm="realm.example.com"
-        domain="domain"
-        password="password"
-        username="username"
+        realm = "realm.example.com"
+        domain = "domain"
+        password = "password"
+        username = "username"
 
-        userdom="userdom"
+        userdom = "userdom"
 
         passwd_file_name = os.path.join(self.tempdir, "parse_file")
         passwd_file_fd = open(passwd_file_name, self.open_mode)
@@ -294,12 +294,12 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.unlink(passwd_file_name)
 
     def test_parse_file_5(self):
-        realm="realm.example.com"
-        domain="domain"
-        password="password"
-        username="username"
+        realm = "realm.example.com"
+        domain = "domain"
+        password = "password"
+        username = "username"
 
-        userdom="userdom"
+        userdom = "userdom"
 
         passwd_file_name = os.path.join(self.tempdir, "parse_file")
         passwd_file_fd = open(passwd_file_name, self.open_mode)

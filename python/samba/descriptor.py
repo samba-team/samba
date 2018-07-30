@@ -44,7 +44,7 @@ def sddl2binary(sddl_in, domain_sid, name_map):
     return ndr_pack(sec)
 
 def get_empty_descriptor(domain_sid, name_map={}):
-    sddl= ""
+    sddl = ""
     return sddl2binary(sddl, domain_sid, name_map)
 
 # "get_schema_descriptor" is located in "schema.py"
@@ -127,7 +127,7 @@ def get_config_delete_protected2_descriptor(domain_sid, name_map={}):
     return sddl2binary(sddl, domain_sid, name_map)
 
 def get_domain_descriptor(domain_sid, name_map={}):
-    sddl= "O:BAG:BAD:AI(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
+    sddl = "O:BAG:BAD:AI(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
         "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
         "(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
         "(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \

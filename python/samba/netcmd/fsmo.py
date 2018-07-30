@@ -118,7 +118,7 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
 
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, role_object)
-        m["fSMORoleOwner"]= ldb.MessageElement(new_owner,
+        m["fSMORoleOwner"] = ldb.MessageElement(new_owner,
                                                ldb.FLAG_MOD_ADD,
                                                "fSMORoleOwner")
         try:
@@ -164,7 +164,7 @@ def transfer_role(outf, role, samdb):
     m.dn = ldb.Dn(samdb, "")
     if role == "rid":
         master_owner = get_fsmo_roleowner(samdb, rid_dn, role)
-        m["becomeRidMaster"]= ldb.MessageElement(
+        m["becomeRidMaster"] = ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeRidMaster")
     elif role == "pdc":
@@ -174,22 +174,22 @@ def transfer_role(outf, role, samdb):
                            scope=ldb.SCOPE_BASE, attrs=["objectSid"])
         assert len(res) == 1
         sid = res[0]["objectSid"][0]
-        m["becomePdc"]= ldb.MessageElement(
+        m["becomePdc"] = ldb.MessageElement(
             sid, ldb.FLAG_MOD_REPLACE,
             "becomePdc")
     elif role == "naming":
         master_owner = get_fsmo_roleowner(samdb, naming_dn, role)
-        m["becomeDomainMaster"]= ldb.MessageElement(
+        m["becomeDomainMaster"] = ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeDomainMaster")
     elif role == "infrastructure":
         master_owner = get_fsmo_roleowner(samdb, infrastructure_dn, role)
-        m["becomeInfrastructureMaster"]= ldb.MessageElement(
+        m["becomeInfrastructureMaster"] = ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeInfrastructureMaster")
     elif role == "schema":
         master_owner = get_fsmo_roleowner(samdb, schema_dn, role)
-        m["becomeSchemaMaster"]= ldb.MessageElement(
+        m["becomeSchemaMaster"] = ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeSchemaMaster")
     else:
@@ -297,7 +297,7 @@ You must provide an Admin user and password."""),
 
         if force is not None or seize == True:
             self.message("Seizing %s FSMO role..." % role)
-            m["fSMORoleOwner"]= ldb.MessageElement(
+            m["fSMORoleOwner"] = ldb.MessageElement(
                 serviceName, ldb.FLAG_MOD_REPLACE,
                 "fSMORoleOwner")
 
@@ -380,7 +380,7 @@ You must provide an Admin user and password."""),
 
         if force is not None or seize == True:
             self.message("Seizing %s FSMO role..." % role)
-            m["fSMORoleOwner"]= ldb.MessageElement(
+            m["fSMORoleOwner"] = ldb.MessageElement(
                 serviceName, ldb.FLAG_MOD_REPLACE,
                 "fSMORoleOwner")
             try:

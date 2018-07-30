@@ -81,7 +81,7 @@ def possible_inferiors_search(db, oc):
                     expression=("ldapDisplayName=%s" % oc),
                     attrs=["possibleInferiors"])
 
-    poss=[]
+    poss = []
     if len(res) == 0 or res[0].get("possibleInferiors") is None:
         return poss
     for item in res[0]["possibleInferiors"]:
@@ -240,7 +240,7 @@ def test_class(db, classinfo, oc):
 
 def get_object_classes(db):
     """return a list of all object classes"""
-    list=[]
+    list = []
     for item in classinfo:
         list.append(item)
     return list

@@ -227,9 +227,9 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                                                           str(current[0]["defaultNamingContext"][0].decode('utf8')),
                                                           paths.smbconf, basedn)))
 
-    names.domaindn=current[0]["defaultNamingContext"][0]
-    names.rootdn=current[0]["rootDomainNamingContext"][0]
-    names.ncs=current[0]["namingContexts"]
+    names.domaindn = current[0]["defaultNamingContext"][0]
+    names.rootdn = current[0]["rootDomainNamingContext"][0]
+    names.ncs = current[0]["namingContexts"]
     names.dnsforestdn = None
     names.dnsdomaindn = None
 
@@ -1580,7 +1580,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
 SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
-SYSVOL_SERVICE="sysvol"
+SYSVOL_SERVICE = "sysvol"
 
 def set_dir_acl(path, acl, lp, domsid, use_ntvfs, passdb, service=SYSVOL_SERVICE):
     setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)

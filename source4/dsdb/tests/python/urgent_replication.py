@@ -117,7 +117,7 @@ systemFlags: 33554432""", ["relax:0"])
     def test_crossRef_object(self):
         """Test if the urgent replication is activated when handling a crossRef object."""
         self.ldb.add({
-            "dn": "CN=test crossRef,CN=Partitions,CN=Configuration,"+ self.base_dn,
+            "dn": "CN=test crossRef,CN=Partitions,CN=Configuration," + self.base_dn,
             "objectClass": "crossRef",
             "cn": "test crossRef",
             "dnsRoot": self.get_loadparm().get("realm").lower(),

@@ -39,7 +39,7 @@ class NtaclsBackupRestoreTests(TestCaseInTempDir):
         super(NtaclsBackupRestoreTests, self).setUp()
 
         self.server = os.environ["SERVER"]  # addc
-        samdb_url='ldap://' + self.server
+        samdb_url = 'ldap://' + self.server
 
         self.service = 'test1'  # service/share to test
         # root path for service

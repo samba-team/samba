@@ -597,7 +597,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_missing_dn_GUID_component(self, dn, attrname, val, dsdb_dn, errstr):
         """handle a missing GUID extended DN component"""
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
-        controls=["extended_dn:1:1", "show_recycled:1"]
+        controls = ["extended_dn:1:1", "show_recycled:1"]
         try:
             res = self.samdb.search(base=str(dsdb_dn.dn), scope=ldb.SCOPE_BASE,
                                     attrs=[], controls=controls)
@@ -629,7 +629,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_incorrect_binary_dn(self, dn, attrname, val, dsdb_dn, errstr):
         """handle an incorrect binary DN component"""
         self.report("ERROR: %s binary component for %s in object %s - %s" % (errstr, attrname, dn, val))
-        controls=["extended_dn:1:1", "show_recycled:1"]
+        controls = ["extended_dn:1:1", "show_recycled:1"]
 
         if not self.confirm_all('Change DN to %s?' % str(dsdb_dn), 'fix_all_binary_dn'):
             self.report("Not fixing %s" % errstr)
@@ -1224,7 +1224,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 dsdb_dn.binary = "%08X" % int(res[0]['instanceType'][0])
 
                 if str(dsdb_dn) != val:
-                    error_count +=1
+                    error_count += 1
                     self.err_incorrect_binary_dn(obj.dn, attrname, val, dsdb_dn, "incorrect instanceType part of Binary DN")
                     continue
 
@@ -2097,7 +2097,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if len(set_attrs_from_md) < len(list_attid_from_md) \
                    or len(wrong_attids) > 0 \
                    or sorted(list_attid_from_md) != list_attid_from_md:
-                    error_count +=1
+                    error_count += 1
                     self.err_replmetadata_incorrect_attid(dn, attrname, obj[attrname], wrong_attids)
 
                 else:

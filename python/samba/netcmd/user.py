@@ -1065,7 +1065,7 @@ class GetPasswordCommand(Command):
                         domain, dns_domain):
             if i == 1:
                 user  = account_name
-                realm= domain
+                realm = domain
             elif i == 2:
                 user  = account_name.lower()
                 realm = domain.lower()
@@ -1950,7 +1950,7 @@ samba-tool user syncpasswords --terminate \\
                         del dirsync_obj[a]
                         dirsync_obj["# %s::" % a] = ["REDACTED SECRET ATTRIBUTE"]
             dirsync_ldif = self.samdb.write_ldif(dirsync_obj, ldb.CHANGETYPE_NONE)
-            log_msg("# Dirsync[%d] %s %s\n%s" %(idx, guid, sid, dirsync_ldif))
+            log_msg("# Dirsync[%d] %s %s\n%s" % (idx, guid, sid, dirsync_ldif))
             obj = self.get_account_attributes(self.samdb,
                                               username="%s" % sid,
                                               basedn="<GUID=%s>" % guid,
@@ -2401,19 +2401,19 @@ LDAP server using the 'nano' editor.
                     line = line[2:]
                     plus_lines.append(line)
 
-            user_ldif="dn: %s\n" % user_dn
+            user_ldif = "dn: %s\n" % user_dn
             user_ldif += "changetype: modify\n"
 
             for line in minus_lines:
                 attr, val = line.split(':', 1)
-                search_attr="%s:" % attr
+                search_attr = "%s:" % attr
                 if not re.search(r'^' + search_attr, str(plus_lines)):
                     user_ldif += "delete: %s\n" % attr
                     user_ldif += "%s: %s\n" % (attr, val)
 
             for line in plus_lines:
                 attr, val = line.split(':', 1)
-                search_attr="%s:" % attr
+                search_attr = "%s:" % attr
                 if re.search(r'^' + search_attr, str(minus_lines)):
                     user_ldif += "replace: %s\n" % attr
                     user_ldif += "%s: %s\n" % (attr, val)

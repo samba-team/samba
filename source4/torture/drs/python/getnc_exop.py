@@ -267,14 +267,14 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                                 drsuapi.DRSUAPI_DRS_WRIT_REP)
 
         self._check_replication([ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([dc3],
                                 drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
 
         self._check_replication([ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         m = ldb.Message()
@@ -286,14 +286,14 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                                 drsuapi.DRSUAPI_DRS_WRIT_REP)
 
         self._check_replication([ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([dc3],
                                 drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
 
         self._check_replication([ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([ou1],
@@ -301,12 +301,12 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 highwatermark=hwm1)
 
         self._check_replication([ou1],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 highwatermark=hwm1)
 
         self._check_replication([ou1],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 uptodateness_vector=utdv1)
 
@@ -319,14 +319,14 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                                 drsuapi.DRSUAPI_DRS_WRIT_REP)
 
         self._check_replication([ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([dc3],
                                 drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
 
         self._check_replication([ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([ou1,ou2],
@@ -334,12 +334,12 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 highwatermark=hwm1)
 
         self._check_replication([ou1,ou2],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 highwatermark=hwm1)
 
         self._check_replication([ou1,ou2],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 uptodateness_vector=utdv1)
 
@@ -352,18 +352,18 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                                 drsuapi.DRSUAPI_DRS_WRIT_REP)
 
         self._check_replication([self.ou,ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([dc3],
                                 drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
 
         self._check_replication([self.ou,ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([self.ou,ou2],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 uptodateness_vector=utdv2)
 
@@ -378,14 +378,14 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                                 drsuapi.DRSUAPI_DRS_WRIT_REP)
 
         self._check_replication([self.ou,ou1,ou2,dc3,cn3],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([dc3],
                                 drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
 
         self._check_replication([self.ou,ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         m = ldb.Message()
@@ -402,7 +402,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
         # Can fail against Windows due to equal precedence of dc3, cn3
         self._check_replication([self.ou,ou1,ou2,dc3,cn3],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 expected_links=[ou2_managedBy_dc3])
 
@@ -410,7 +410,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
 
         self._check_replication([self.ou,ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC)
 
         self._check_replication([],
@@ -453,7 +453,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 expected_links=[dc3_managedBy_ou1])
 
         self._check_replication([self.ou,ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 expected_links=[dc3_managedBy_ou1])
 
@@ -491,7 +491,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2])
 
         self._check_replication([self.ou,ou1,ou2,dc3],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2])
 
@@ -511,7 +511,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 highwatermark=hwm7)
 
         self._check_replication([],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
                                 highwatermark=hwm7)
@@ -522,7 +522,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 highwatermark=hwm7)
 
         self._check_replication([],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
                                 highwatermark=hwm7)
@@ -541,7 +541,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 uptodateness_vector=utdv7)
 
         self._check_replication([],
-                                drsuapi.DRSUAPI_DRS_WRIT_REP|
+                                drsuapi.DRSUAPI_DRS_WRIT_REP |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
                                 uptodateness_vector=utdv7)
@@ -552,7 +552,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                 uptodateness_vector=utdv7)
 
         self._check_replication([],
-                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+                                drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
                                 drsuapi.DRSUAPI_DRS_GET_ANC,
                                 expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
                                 uptodateness_vector=utdv7)

@@ -350,7 +350,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         badPasswordTime = 0
         logonCount = 0
         lastLogon = 0
-        lastLogonTimestamp=0
+        lastLogonTimestamp = 0
         logoncount_relation = ''
         lastlogon_relation = ''
 
@@ -412,7 +412,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         badPasswordTime = 0
         logonCount = 0
         lastLogon = 0
-        lastLogonTimestamp=0
+        lastLogonTimestamp = 0
         logoncount_relation = ''
         lastlogon_relation = ''
 

@@ -329,7 +329,7 @@ class MapTestCase(MapBaseTestCase):
 
         # Add a set of split records
         self.ldb.add_ldif("""
-dn: """+ self.samba4.dn("cn=Domain Users") + """
+dn: """ + self.samba4.dn("cn=Domain Users") + """
 objectClass: group
 cn: Domain Users
 objectSid: S-1-5-21-4231626423-2410014848-2360679739-513
@@ -337,7 +337,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-513
 
         # Add a set of split records
         self.ldb.add_ldif("""
-dn: """+ self.samba4.dn("cn=X") + """
+dn: """ + self.samba4.dn("cn=X") + """
 objectClass: user
 cn: X
 codePage: x

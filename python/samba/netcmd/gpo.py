@@ -471,7 +471,7 @@ class cmd_list(Command):
                         continue
 
                     try:
-                        sd_flags=security.SECINFO_OWNER|security.SECINFO_GROUP|security.SECINFO_DACL
+                        sd_flags = security.SECINFO_OWNER|security.SECINFO_GROUP|security.SECINFO_DACL
                         gmsg = self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE,
                                                  attrs=['name', 'displayName', 'flags',
                                                         'nTSecurityDescriptor'],
@@ -1250,7 +1250,7 @@ class cmd_create(Command):
             m['a05'] = ldb.MessageElement("0", ldb.FLAG_MOD_REPLACE, "versionNumber")
             m['a07'] = ldb.MessageElement("2", ldb.FLAG_MOD_REPLACE, "gpcFunctionalityVersion")
             m['a04'] = ldb.MessageElement("0", ldb.FLAG_MOD_REPLACE, "flags")
-            controls=["permissive_modify:0"]
+            controls = ["permissive_modify:0"]
             self.samdb.modify(m, controls=controls)
         except Exception:
             self.samdb.transaction_cancel()

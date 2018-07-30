@@ -1774,7 +1774,7 @@ class AclUndeleteTests(AclTests):
         self.testuser5 = "to_be_undeleted5"
         self.testuser6 = "to_be_undeleted6"
 
-        self.new_dn_ou = "CN="+ self.testuser4 + "," + self.ou1 + self.base_dn
+        self.new_dn_ou = "CN=" + self.testuser4 + "," + self.ou1 + self.base_dn
 
         # Create regular user
         self.testuser1_dn = self.get_user_dn(self.testuser1)

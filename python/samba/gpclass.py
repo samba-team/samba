@@ -373,7 +373,7 @@ class gp_inf_ext(gp_ext):
         # then we return that boolean at the end.
 
         inf_conf = ConfigParser()
-        inf_conf.optionxform=str
+        inf_conf.optionxform = str
         try:
             inf_conf.readfp(StringIO(policy))
         except:

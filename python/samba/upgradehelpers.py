@@ -177,7 +177,7 @@ def usn_in_range(usn, range):
             cont = False
             continue
         if usn < int(range[idx]):
-            if idx %2 == 1:
+            if idx % 2 == 1:
                 ok = True
             cont = False
         if usn == int(range[idx]):
@@ -290,7 +290,7 @@ def dn_sort(x, y):
             return ret
         else:
             if i == minimum-1:
-                assert len1!=len2,"PB PB PB" + " ".join(tab1)+" / " + " ".join(tab2)
+                assert len1 != len2,"PB PB PB" + " ".join(tab1)+" / " + " ".join(tab2)
                 if len1 > len2:
                     return 1
                 else:
@@ -725,7 +725,7 @@ def findprovisionrange(samdb, basedn):
 
         for o in obj.array:
             # like a timestamp but with the resolution of 1 minute
-            minutestamp =_glue.nttime2unix(o.originating_change_time) // 60
+            minutestamp = _glue.nttime2unix(o.originating_change_time) // 60
             hash_ts = hash_id.get(str(o.originating_invocation_id))
 
             if hash_ts is None:

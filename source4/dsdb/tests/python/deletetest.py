@@ -104,11 +104,11 @@ class BasicDeleteTests(BaseDeleteTests):
 
     def check_rdn(self, liveObj, delObj, rdnName):
         print("Checking for correct rDN")
-        rdn=liveObj[rdnName][0]
-        rdn2=delObj[rdnName][0]
-        name2=delObj["name"][0]
-        dn_rdn=delObj.dn.get_rdn_value()
-        guid=liveObj["objectGUID"][0]
+        rdn = liveObj[rdnName][0]
+        rdn2 = delObj[rdnName][0]
+        name2 = delObj["name"][0]
+        dn_rdn = delObj.dn.get_rdn_value()
+        guid = liveObj["objectGUID"][0]
         self.assertEquals(rdn2, rdn + "\nDEL:" + self.GUID_string(guid))
         self.assertEquals(name2, rdn + "\nDEL:" + self.GUID_string(guid))
         self.assertEquals(name2, dn_rdn)
@@ -336,25 +336,25 @@ class BasicTreeDeleteTests(BasicDeleteTests):
             "objectClass": "server"})
 
         self.objLive1 = self.search_dn(self.usr1)
-        self.guid1=self.objLive1["objectGUID"][0]
+        self.guid1 = self.objLive1["objectGUID"][0]
 
         self.objLive2 = self.search_dn(self.usr2)
-        self.guid2=self.objLive2["objectGUID"][0]
+        self.guid2 = self.objLive2["objectGUID"][0]
 
         self.objLive3 = self.search_dn(self.grp1)
-        self.guid3=self.objLive3["objectGUID"][0]
+        self.guid3 = self.objLive3["objectGUID"][0]
 
         self.objLive4 = self.search_dn(self.sit1)
-        self.guid4=self.objLive4["objectGUID"][0]
+        self.guid4 = self.objLive4["objectGUID"][0]
 
         self.objLive5 = self.search_dn(self.ss1)
-        self.guid5=self.objLive5["objectGUID"][0]
+        self.guid5 = self.objLive5["objectGUID"][0]
 
         self.objLive6 = self.search_dn(self.srv1)
-        self.guid6=self.objLive6["objectGUID"][0]
+        self.guid6 = self.objLive6["objectGUID"][0]
 
         self.objLive7 = self.search_dn(self.srv2)
-        self.guid7=self.objLive7["objectGUID"][0]
+        self.guid7 = self.objLive7["objectGUID"][0]
 
         self.deleted_objects_config_dn \
             = self.ldb.get_wellknown_dn(self.ldb.get_config_basedn(),

@@ -172,7 +172,7 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
         elif transport == "ncacn_ip_tcp":
             tests = ncacn_ip_tcp_tests
         else:
-            raise AssertionError("invalid transport %r"% transport)
+            raise AssertionError("invalid transport %r" % transport)
         for t in tests:
             plansmbtorture4testsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
         plansmbtorture4testsuite('rpc.samba3-sharesec', env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
@@ -1058,7 +1058,7 @@ plansmbtorture4testsuite('krb5.kdc', "rodc", ['ncacn_np:$SERVER_IP', "-k", "yes"
                          "samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC")
 
 # This ensures we have correct behaviour on a server that is not not the PDC emulator
-env="promoted_dc"
+env = "promoted_dc"
 plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'],
                          "samba4.krb5.kdc with specified account")
 

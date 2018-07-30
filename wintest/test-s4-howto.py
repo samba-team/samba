@@ -25,7 +25,7 @@ def provision_s4(t, func_level="2008"):
     t.chdir('${PREFIX}')
     t.del_files(["var", "private"])
     t.run_cmd("rm -f etc/smb.conf")
-    provision=['bin/samba-tool',
+    provision = ['bin/samba-tool',
                'domain',
                'provision',
                '--realm=${LCREALM}',
@@ -256,7 +256,7 @@ def test_dcpromo(t, vm):
         time.sleep(2)
         child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
         i = child.expect(["The command completed successfully", "The network path was not found"])
-        retries -=1
+        retries -= 1
 
     t.run_net_time(child)
 
@@ -447,7 +447,7 @@ def test_join_as_dc(t, vm):
         child.expect("C:")
         if i == 1:
             time.sleep(2)
-        retries -=1
+        retries -= 1
 
     t.info("Checking if showrepl is happy")
     child.sendline("repadmin /showrepl")
@@ -520,7 +520,7 @@ def test_join_as_rodc(t, vm):
         child.expect("C:")
         if i == 1:
             time.sleep(2)
-        retries -=1
+        retries -= 1
 
     t.info("Checking if showrepl is happy")
     child.sendline("repadmin /showrepl")

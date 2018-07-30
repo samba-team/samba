@@ -2788,19 +2788,19 @@ gidNumber: 10126
 homeDirectory: /home/posixuser
 loginShell: /bin/bash
 gecos: Posix User;;;
-description: A POSIX user"""% (self.base_dn))
+description: A POSIX user""" % (self.base_dn))
 
         # Testing removing the posixAccount objectClass from an existing user"
         self.ldb.modify_ldif("""dn: cn=posixuser,CN=Users,%s
 changetype: modify
 delete: objectClass
-objectClass: posixAccount"""% (self.base_dn))
+objectClass: posixAccount""" % (self.base_dn))
 
         # Testing adding the posixAccount objectClass to an existing user"
         self.ldb.modify_ldif("""dn: cn=posixuser,CN=Users,%s
 changetype: modify
 add: objectClass
-objectClass: posixAccount"""% (self.base_dn))
+objectClass: posixAccount""" % (self.base_dn))
 
         delete_force(self.ldb, "cn=posixuser,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
