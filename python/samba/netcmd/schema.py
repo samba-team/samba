@@ -99,7 +99,7 @@ class cmd_schema_attribute_modify(Command):
             flags = searchflags.split(',')
             # We have to normalise all the values. To achieve this predictably
             # we title case (Fattrindex), then swapcase (fATTINDEX)
-            flags = [x.capitalize().swapcase() for x in flags ]
+            flags = [x.capitalize().swapcase() for x in flags]
             for flag in flags:
                 if flag not in bitFields['searchflags'].keys():
                     raise CommandError("Unknown flag '%s', please see --help" % flag)

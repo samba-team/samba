@@ -302,7 +302,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         delta.dn = Dn(self.ldb_admin, str(ouname))
         delta["cn"] = MessageElement("test ou",
                                      FLAG_MOD_ADD,
-                                     "cn" )
+                                     "cn")
         self.ldb_admin.modify(delta)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="name=testou",
@@ -417,7 +417,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
 
         delta["cn"] = MessageElement("test ou",
                                      FLAG_MOD_ADD,
-                                     "cn" )
+                                     "cn")
         self.ldb_admin.modify(delta)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
@@ -431,7 +431,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         delta.dn = Dn(self.ldb_admin, str(ouname))
         delta["cn"] = MessageElement([],
                                      FLAG_MOD_DELETE,
-                                     "cn" )
+                                     "cn")
         self.ldb_admin.modify(delta)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
@@ -496,7 +496,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                      expression="(name=Administrators)",
                                      controls=[control1])
 
-        self.assertEqual(len(res[0].get("member")), size )
+        self.assertEqual(len(res[0].get("member")), size)
 
         self.ldb_admin.newgroup("testgroup")
         self.ldb_admin.add_remove_group_members("testgroup", [self.simple_user],
@@ -507,7 +507,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     controls=["dirsync:1:0:1"])
 
         self.assertEqual(len(res[0].get("member")), 1)
-        self.assertTrue(res[0].get("member") != "" )
+        self.assertTrue(res[0].get("member") != "")
 
         ctl = str(res.controls[0]).split(":")
         ctl[1] = "1"
@@ -598,7 +598,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
                                     expression="(name=Administrators)",
                                     controls=["dirsync:1:%d:1" % flag_incr_linked])
 
-        self.assertTrue(res[0].get("member;range=1-1") != None )
+        self.assertTrue(res[0].get("member;range=1-1") != None)
         self.assertTrue(len(res[0].get("member;range=1-1")) > 0)
         size = len(res[0].get("member;range=1-1"))
 
@@ -632,7 +632,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
                                     expression="(name=Administrators)",
                                     controls=[control1])
 
-        self.assertEqual(res[0].get("member;range=1-1"), None )
+        self.assertEqual(res[0].get("member;range=1-1"), None)
         self.assertEqual(len(res[0].get("member;range=0-0")), 1)
 
         ctl = str(res.controls[0]).split(":")
@@ -648,14 +648,14 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
                                     expression="(name=Administrators)",
                                     controls=[control2])
 
-        self.assertEqual(res[0].get("member;range=1-1"), None )
+        self.assertEqual(res[0].get("member;range=1-1"), None)
         self.assertEqual(len(res[0].get("member;range=0-0")), 1)
 
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(name=Administrators)",
                                     controls=[control1])
 
-        self.assertEqual(res[0].get("member;range=1-1"), None )
+        self.assertEqual(res[0].get("member;range=1-1"), None)
         self.assertEqual(len(res[0].get("member;range=0-0")), 2)
 
     def test_dirsync_deleted_items(self):

@@ -205,7 +205,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --cache-ldb-initialize runs")
         self.assertEqual(err,"","getpassword without url")
         cache_attrs = {
-            "objectClass": {"value": "userSyncPasswords" },
+            "objectClass": {"value": "userSyncPasswords"},
             "samdbUrl": {},
             "dirsyncFilter": {},
             "dirsyncAttribute": {},

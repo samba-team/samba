@@ -695,14 +695,14 @@ userPassword: thatsAcomplPASS4
         self.ldb.add({
              "dn": "cn=testuser2,cn=users," + self.base_dn,
              "objectclass": "user",
-             "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS2"] })
+             "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS2"]})
 
         # This surprisingly should work
         delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser2,cn=users," + self.base_dn,
              "objectclass": "user",
-             "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS1"] })
+             "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS1"]})
 
     def test_empty_passwords(self):
         print("Performs some empty passwords testing")
@@ -711,7 +711,7 @@ userPassword: thatsAcomplPASS4
             self.ldb.add({
                  "dn": "cn=testuser2,cn=users," + self.base_dn,
                  "objectclass": "user",
-                 "unicodePwd": [] })
+                 "unicodePwd": []})
             self.fail()
         except LdbError as e32:
             (num, _) = e32.args
@@ -721,7 +721,7 @@ userPassword: thatsAcomplPASS4
             self.ldb.add({
                  "dn": "cn=testuser2,cn=users," + self.base_dn,
                  "objectclass": "user",
-                 "dBCSPwd": [] })
+                 "dBCSPwd": []})
             self.fail()
         except LdbError as e33:
             (num, _) = e33.args
@@ -731,7 +731,7 @@ userPassword: thatsAcomplPASS4
             self.ldb.add({
                  "dn": "cn=testuser2,cn=users," + self.base_dn,
                  "objectclass": "user",
-                 "userPassword": [] })
+                 "userPassword": []})
             self.fail()
         except LdbError as e34:
             (num, _) = e34.args
@@ -741,7 +741,7 @@ userPassword: thatsAcomplPASS4
             self.ldb.add({
                  "dn": "cn=testuser2,cn=users," + self.base_dn,
                  "objectclass": "user",
-                 "clearTextPassword": [] })
+                 "clearTextPassword": []})
             self.fail()
         except LdbError as e35:
             (num, _) = e35.args

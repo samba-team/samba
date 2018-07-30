@@ -275,7 +275,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     # domain guid/sid
     res6 = samdb.search(expression="(objectClass=*)", base=basedn,
                         scope=ldb.SCOPE_BASE, attrs=["objectGUID",
-                                                     "objectSid","msDS-Behavior-Version" ])
+                                                     "objectSid","msDS-Behavior-Version"])
     names.domainguid = str(ndr_unpack(misc.GUID, res6[0]["objectGUID"][0]))
     names.domainsid = ndr_unpack(security.dom_sid, res6[0]["objectSid"][0])
     names.forestsid = ndr_unpack(security.dom_sid, res6[0]["objectSid"][0])
@@ -978,11 +978,11 @@ def secretsdb_self_join(secretsdb, domain,
         secretsdb.modify(msg)
         secretsdb.rename(res[0].dn, msg.dn)
     else:
-        spn = ['HOST/%s' % shortname ]
+        spn = ['HOST/%s' % shortname]
         if secure_channel_type == SEC_CHAN_BDC and dnsname is not None:
             # we are a domain controller then we add servicePrincipalName
             # entries for the keytab code to update.
-            spn.extend(['HOST/%s' % dnsname ])
+            spn.extend(['HOST/%s' % dnsname])
         msg["servicePrincipalName"] = spn
 
         secretsdb.add(msg)
@@ -1973,7 +1973,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
 
     logger.info("Setting up sam.ldb rootDSE marking as synchronized")
     setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"),
-                      {'NTDSGUID' : names.ntdsguid })
+                      {'NTDSGUID' : names.ntdsguid})
 
     # fix any dangling GUIDs from the provision
     logger.info("Fixing provision GUIDs")

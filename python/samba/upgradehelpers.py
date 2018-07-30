@@ -451,7 +451,7 @@ def updateOEMInfo(samdb, rootdn):
         delta = ldb.Message()
         delta.dn = ldb.Dn(samdb, str(res[0]["dn"]))
         delta["oEMInformation"] = ldb.MessageElement(info, ldb.FLAG_MOD_REPLACE,
-                                                     "oEMInformation" )
+                                                     "oEMInformation")
         samdb.modify(delta)
 
 def update_gpo(paths, samdb, names, lp, message):

@@ -459,7 +459,7 @@ class cmd_group_move(Command):
                type=str, metavar="URL", dest="H"),
     ]
 
-    takes_args = ["groupname", "new_parent_dn" ]
+    takes_args = ["groupname", "new_parent_dn"]
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,

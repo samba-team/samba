@@ -115,7 +115,7 @@ class BasicTests(samba.tests.TestCase):
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectClass": [] })
+                "objectClass": []})
             self.fail()
         except LdbError as e1:
             (num, _) = e1.args
@@ -125,7 +125,7 @@ class BasicTests(samba.tests.TestCase):
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectClass": "X" })
+                "objectClass": "X"})
             self.fail()
         except LdbError as e2:
             (num, _) = e2.args
@@ -136,7 +136,7 @@ class BasicTests(samba.tests.TestCase):
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectClass": "person",
-                "objectCategory": self.base_dn })
+                "objectCategory": self.base_dn})
             self.fail()
         except LdbError as e3:
             (num, _) = e3.args
@@ -147,7 +147,7 @@ class BasicTests(samba.tests.TestCase):
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectClass": "person",
-                "systemFlags": ["0", str(SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE)] })
+                "systemFlags": ["0", str(SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE)]})
             self.fail()
         except LdbError as e4:
             (num, _) = e4.args
@@ -162,7 +162,7 @@ class BasicTests(samba.tests.TestCase):
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectClass": "connectionPoint" })
+                "objectClass": "connectionPoint"})
             self.fail()
         except LdbError as e5:
             (num, _) = e5.args
@@ -170,7 +170,7 @@ class BasicTests(samba.tests.TestCase):
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectClass": ["person", "leaf"] })
+                "objectClass": ["person", "leaf"]})
             self.fail()
         except LdbError as e6:
             (num, _) = e6.args
@@ -180,7 +180,7 @@ class BasicTests(samba.tests.TestCase):
         # subclasses) are allowed
         self.ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectClass": ["top", "leaf", "connectionPoint", "serviceConnectionPoint"] })
+            "objectClass": ["top", "leaf", "connectionPoint", "serviceConnectionPoint"]})
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -188,7 +188,7 @@ class BasicTests(samba.tests.TestCase):
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectClass": ["person", "container"] })
+                "objectClass": ["person", "container"]})
             self.fail()
         except LdbError as e7:
             (num, _) = e7.args
@@ -198,7 +198,7 @@ class BasicTests(samba.tests.TestCase):
         self.ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectClass": "person",
-            "systemFlags": str(~(SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)) })
+            "systemFlags": str(~(SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE))})
 
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["systemFlags"])
@@ -209,7 +209,7 @@ class BasicTests(samba.tests.TestCase):
 
         self.ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectClass": "person" })
+            "objectClass": "person"})
 
         # We can remove derivation classes of the structural objectclass
         # but they're going to be readded afterwards
@@ -418,7 +418,7 @@ class BasicTests(samba.tests.TestCase):
 
         self.ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectClass": "user" })
+            "objectClass": "user"})
 
         # Add a new top-most structural class "container". This does not work
         # since it stands in no direct relation to the current one.
@@ -905,7 +905,7 @@ class BasicTests(samba.tests.TestCase):
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectClass": "person",
-                "sn": "" })
+                "sn": ""})
             self.fail()
         except LdbError as e39:
             (num, _) = e39.args
@@ -923,7 +923,7 @@ class BasicTests(samba.tests.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectClass": "person" })
+            "objectClass": "person"})
 
         # Too short (min. 1)
         m = Message()
@@ -1038,7 +1038,7 @@ class BasicTests(samba.tests.TestCase):
             self.ldb.add({
                 "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
                 "objectclass": "group",
-                "instanceType": "1" })
+                "instanceType": "1"})
             self.fail()
         except LdbError as e47:
             (num, _) = e47.args
@@ -1049,7 +1049,7 @@ class BasicTests(samba.tests.TestCase):
             self.ldb.add({
                 "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
                 "objectclass": "group",
-                "instanceType": "32" })
+                "instanceType": "32"})
             self.fail()
         except LdbError as e48:
             (num, _) = e48.args
@@ -1098,7 +1098,7 @@ class BasicTests(samba.tests.TestCase):
             self.ldb.add({
                 "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
                 "objectclass": "user",
-                "instanceType": "3" })
+                "instanceType": "3"})
             self.fail()
         except LdbError as e52:
             (num, _) = e52.args
@@ -1418,7 +1418,7 @@ objectClass: container
 
         self.ldb.add({
             "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
-            "objectclass": "user" })
+            "objectclass": "user"})
 
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser2,cn=users," + self.base_dn)
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
@@ -1524,13 +1524,13 @@ objectClass: container
         """Tests the rename operation twice - this corresponds to a past bug"""
         self.ldb.add({
             "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
-            "objectclass": "user" })
+            "objectclass": "user"})
 
         ldb.rename("cn=ldaptestuser5,cn=users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
         self.ldb.add({
             "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
-            "objectclass": "user" })
+            "objectclass": "user"})
         ldb.rename("cn=ldaptestuser5,cn=Users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
         res = ldb.search(expression="cn=ldaptestuser5")
         self.assertEquals(len(res), 1, "Wrong number of hits for cn=ldaptestuser5")
@@ -1554,7 +1554,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
 
         self.ldb.add({
             "dn": "cn=ldaptestcontainer," + self.base_dn,
-            "objectClass": "container" })
+            "objectClass": "container"})
 
         # The objectGUID cannot directly be changed
         try:
@@ -1648,7 +1648,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
 
         self.ldb.add({
             "dn": "cn=ldaptestcontainer," + self.base_dn,
-            "objectClass": "container" })
+            "objectClass": "container"})
 
         res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
                          scope=SCOPE_BASE,
@@ -1670,7 +1670,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
             "uSNCreated" : "1",
             "uSNChanged" : "1",
             "whenCreated": timestring(long(time.time())),
-            "whenChanged": timestring(long(time.time())) })
+            "whenChanged": timestring(long(time.time()))})
 
         res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
                          scope=SCOPE_BASE,
@@ -2831,7 +2831,7 @@ objectClass: posixAccount"""% (self.base_dn))
             self.ldb.add({"dn": user_dn,
                            "objectClass": "user",
                            "sAMAccountName": user_name,
-                           "nTSecurityDescriptor": [] })
+                           "nTSecurityDescriptor": []})
             self.fail()
         except LdbError as e107:
             (num, _) = e107.args
@@ -2850,8 +2850,8 @@ sAMAccountName: """ + user_name + """
 nTSecurityDescriptor: """ + sddl)
             res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
             desc = res[0]["nTSecurityDescriptor"][0]
-            desc = ndr_unpack(security.descriptor, desc )
-            desc_sddl = desc.as_sddl(self.domain_sid )
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
             self.assertEqual(desc_sddl, sddl)
         finally:
             delete_force(self.ldb, user_dn)
@@ -2886,7 +2886,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         try:
             sddl = "O:DUG:DUD:AI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, security.dom_sid('S-1-5-21'))
-            desc_base64 = base64.b64encode(ndr_pack(desc) ).decode('utf8')
+            desc_base64 = base64.b64encode(ndr_pack(desc)).decode('utf8')
             self.ldb.add_ldif("""
 dn: """ + user_dn + """
 objectclass: user
@@ -2911,7 +2911,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         delete_force(self.ldb, user_dn)
         self.ldb.add({"dn": user_dn,
                        "objectClass": "user",
-                       "sAMAccountName": user_name })
+                       "sAMAccountName": user_name})
 
         m = Message()
         m.dn = Dn(ldb, user_dn)
@@ -3129,7 +3129,7 @@ nTSecurityDescriptor:: """ + desc_base64
         delete_force(self.ldb, user_dn)
         self.ldb.add({"dn": user_dn,
                        "objectClass": "user",
-                       "sAMAccountName": user_name })
+                       "sAMAccountName": user_name})
 
         #
         # We check the following values:
@@ -3137,7 +3137,7 @@ nTSecurityDescriptor:: """ + desc_base64
         #   370101000000Z     => 20370101000000.0Z
         # 20370102000000.*Z   => 20370102000000.0Z
         #
-        ext = ["Z", ".0Z", ".Z", ".000Z", ".RandomIgnoredCharacters...987654321Z" ]
+        ext = ["Z", ".0Z", ".Z", ".000Z", ".RandomIgnoredCharacters...987654321Z"]
         for i in range(0, len(ext)):
             v_raw = "203701%02d000000" % (i + 1)
             if ext[i] == "Z":

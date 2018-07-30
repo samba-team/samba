@@ -409,7 +409,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create additional object into the first one
@@ -433,7 +433,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create additional object into the first one
@@ -553,7 +553,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create a custom security descriptor
@@ -580,7 +580,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create a custom security descriptor
@@ -670,7 +670,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(D;CI;WP;;;S-1-3-0)"
         #mod = ""
         self.sd_utils.dacl_add_ace(object_dn, mod)
@@ -691,7 +691,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
@@ -737,7 +737,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         #Change Schema partition descriptor
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
@@ -848,7 +848,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         # Create example Schema class
         class_dn = self.create_schema_class(_ldb, desc_sddl)
@@ -863,7 +863,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         # Create example Schema class
         class_dn = self.create_schema_class(_ldb, desc_sddl)
@@ -978,7 +978,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
@@ -999,7 +999,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
@@ -1114,7 +1114,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;;CC;;;AU)"
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
@@ -1137,7 +1137,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;;CC;;;AU)"
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials

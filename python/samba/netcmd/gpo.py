@@ -308,8 +308,8 @@ attr_flags = smb.FILE_ATTRIBUTE_SYSTEM | \
 def copy_directory_remote_to_local(conn, remotedir, localdir):
     if not os.path.isdir(localdir):
         os.mkdir(localdir)
-    r_dirs = [remotedir ]
-    l_dirs = [localdir ]
+    r_dirs = [remotedir]
+    l_dirs = [localdir]
     while r_dirs:
         r_dir = r_dirs.pop()
         l_dir = l_dirs.pop()
@@ -333,8 +333,8 @@ def copy_directory_local_to_remote(conn, localdir, remotedir,
                                    ignore_existing=False):
     if not conn.chkpath(remotedir):
         conn.mkdir(remotedir)
-    l_dirs = [localdir ]
-    r_dirs = [remotedir ]
+    l_dirs = [localdir]
+    r_dirs = [remotedir]
     while l_dirs:
         l_dir = l_dirs.pop()
         r_dir = r_dirs.pop()
@@ -445,7 +445,7 @@ class cmd_list(Command):
             raise CommandError("Failed to find objectClass for user %s" % username)
 
         session_info_flags = (AUTH_SESSION_INFO_DEFAULT_GROUPS |
-                               AUTH_SESSION_INFO_AUTHENTICATED )
+                               AUTH_SESSION_INFO_AUTHENTICATED)
 
         # When connecting to a remote server, don't look up the local privilege DB
         if self.url is not None and self.url.startswith('ldap'):
@@ -680,10 +680,10 @@ class cmd_setlink(Command):
             if found:
                 raise CommandError("GPO '%s' already linked to this container" % gpo)
             else:
-                gplist.insert(0, {'dn' : gpo_dn, 'options' : gplink_options })
+                gplist.insert(0, {'dn' : gpo_dn, 'options' : gplink_options})
         else:
             gplist = []
-            gplist.append({'dn' : gpo_dn, 'options' : gplink_options })
+            gplist.append({'dn' : gpo_dn, 'options' : gplink_options})
 
         gplink_str = encode_gplink(gplist)
 
@@ -834,7 +834,7 @@ class cmd_setinheritance(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = ['container_dn', 'inherit_state' ]
+    takes_args = ['container_dn', 'inherit_state']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
@@ -1220,7 +1220,7 @@ class cmd_create(Command):
             # Get new security descriptor
             ds_sd_flags = (security.SECINFO_OWNER |
                             security.SECINFO_GROUP |
-                            security.SECINFO_DACL )
+                            security.SECINFO_DACL)
             msg = get_gpo_info(self.samdb, gpo=gpo, sd_flags=ds_sd_flags)[0]
             ds_sd_ndr = msg['nTSecurityDescriptor'][0]
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
@@ -1237,7 +1237,7 @@ class cmd_create(Command):
             sio = (security.SECINFO_OWNER |
                     security.SECINFO_GROUP |
                     security.SECINFO_DACL |
-                    security.SECINFO_PROTECTED_DACL )
+                    security.SECINFO_PROTECTED_DACL)
             conn.set_acl(sharepath, fs_sd, sio)
 
             # Copy GPO files over SMB

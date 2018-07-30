@@ -97,7 +97,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
             if orig_val is None:
                 continue
             if not isinstance(orig_val, MessageElement):
-                orig_val = MessageElement(str(orig_val), 0, attr    )
+                orig_val = MessageElement(str(orig_val), 0, attr)
             m = Message()
             m.add(orig_val)
             orig_ldif = self.samdb.write_ldif(m, 0)
@@ -817,7 +817,7 @@ class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
                 'uSNChanged': '**',
                 'instanceType': '4',
                 'adminCount': '0',
-                'cn': groupname }
+                'cn': groupname}
 
     def test_plain_group(self):
         print("Test restored Group attributes")
@@ -882,7 +882,7 @@ class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
                 'uSNCreated': '**',
                 'uSNChanged': '**',
                 'instanceType': '4',
-                rdn.lower(): name }
+                rdn.lower(): name}
 
     def _create_test_ou(self, rdn, name=None, description=None):
         ou_dn = "OU=%s,%s" % (rdn, self.base_dn)

@@ -108,7 +108,7 @@ class cmd_dbcheck(Command):
             samdb_schema = SamDB(session_info=system_session(), url=None,
                                  credentials=creds, lp=lp)
 
-        scope_map = {"SUB": ldb.SCOPE_SUBTREE, "BASE": ldb.SCOPE_BASE, "ONE":ldb.SCOPE_ONELEVEL }
+        scope_map = {"SUB": ldb.SCOPE_SUBTREE, "BASE": ldb.SCOPE_BASE, "ONE":ldb.SCOPE_ONELEVEL}
         scope = scope.upper()
         if not scope in scope_map:
             raise CommandError("Unknown scope %s" % scope)

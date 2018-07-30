@@ -661,15 +661,15 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
 
 
     def _create_rodc(self, ctx):
-        ctx.nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-        ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]
+        ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]
         ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
 
         ctx.never_reveal_sid = ["<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
                                  "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
                                  "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
                                  "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
-                                 "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS ]
+                                 "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS]
         ctx.reveal_sid = "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_ALLOW)
 
         mysid = ctx.get_mysid()

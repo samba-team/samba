@@ -2544,7 +2544,7 @@ class cmd_user_move(Command):
                type=str, metavar="URL", dest="H"),
     ]
 
-    takes_args = ["username", "new_parent_dn" ]
+    takes_args = ["username", "new_parent_dn"]
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,

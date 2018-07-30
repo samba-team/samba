@@ -97,16 +97,16 @@ class MatchRulesTests(samba.tests.TestCase):
         # Add four groups
         self.ldb.add({
             "dn": "cn=g1,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
         self.ldb.add({
             "dn": "cn=g2,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
         self.ldb.add({
             "dn": "cn=g4,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
         self.ldb.add({
             "dn": "cn=g3,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
 
         # Add four users
         self.ldb.add({
@@ -972,16 +972,16 @@ class MatchRuleConditionTests(samba.tests.TestCase):
 
         self.ldb.add({
             "dn": "cn=g1,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
         self.ldb.add({
             "dn": "cn=g2,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
         self.ldb.add({
             "dn": "cn=g3,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
         self.ldb.add({
             "dn": "cn=g4,%s" % self.ou_groups,
-            "objectclass": "group" })
+            "objectclass": "group"})
 
         self.ldb.add({
             "dn": "cn=u1,%s" % self.ou_users,

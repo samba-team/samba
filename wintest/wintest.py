@@ -880,7 +880,7 @@ RebootOnCompletion=No
         # Give DNS registration a kick
         child.sendline("ipconfig /registerdns")
 
-        self.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'], retries=60, delay=5 )
+        self.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'], retries=60, delay=5)
 
 
     def start_winvm(self, vm):

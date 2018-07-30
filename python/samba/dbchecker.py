@@ -2225,7 +2225,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 set_attrs_seen.add(str(attrname).lower())
 
             if syntax_oid in [dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
-                               dsdb.DSDB_SYNTAX_STRING_DN, ldb.SYNTAX_DN ]:
+                               dsdb.DSDB_SYNTAX_STRING_DN, ldb.SYNTAX_DN]:
                 # it's some form of DN, do specialised checking on those
                 error_count += self.check_dn(obj, attrname, syntax_oid)
             else:

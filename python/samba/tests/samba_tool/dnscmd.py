@@ -67,7 +67,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
         good_srv = ["SAMDOM.EXAMPLE.COM 65530 65530 65530"]
         bad_srv = ["SAMDOM.EXAMPLE.COM 0 65536 0",
                    "SAMDOM.EXAMPLE.COM 0 0 65536",
-                   "SAMDOM.EXAMPLE.COM 65536 0 0" ]
+                   "SAMDOM.EXAMPLE.COM 65536 0 0"]
 
         for bad_dn in bad_dns:
             bad_mx.append("%s 1" % bad_dn)

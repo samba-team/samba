@@ -206,7 +206,7 @@ def test_dcpromo(t, vm):
     # the first replication will transfer the dnsHostname attribute
     t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${LCREALM} ${WIN_HOSTNAME} CN=Configuration,${BASEDN} -k yes", ["was successful"])
 
-    for nc in ['${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}' ]:
+    for nc in ['${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}']:
         t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${LCREALM} ${WIN_HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
         t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
 
@@ -242,7 +242,7 @@ def test_dcpromo(t, vm):
                      "CN=Configuration,${BASEDN}",
                      "Last success",
                      "CN=Configuration,${BASEDN}",
-                     "Last success" ],
+                     "Last success"],
                    ordered=True,
                    regex=True)
 
@@ -369,7 +369,7 @@ def test_dcpromo_rodc(t, vm):
     child.expect("CN=Configuration,${BASEDN}")
     child.expect("was successful")
 
-    for nc in ['${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}' ]:
+    for nc in ['${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}']:
         t.cmd_contains("bin/samba-tool drs replicate --add-ref ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} %s" % nc, ["was successful"])
 
     t.cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME}.${LCREALM}",
@@ -380,7 +380,7 @@ def test_dcpromo_rodc(t, vm):
                      "CN=Configuration,${BASEDN}",
                      "Last attempt.*was successful",
                      "CN=Configuration,${BASEDN}",
-                     "Last attempt.*was successful" ],
+                     "Last attempt.*was successful"],
                    ordered=True,
                    regex=True)
 
@@ -411,9 +411,9 @@ def join_as_dc(t, vm):
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a second DC using samba-tool domain join DC")
     t.port_wait("${WIN_IP}", 389)
-    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
+    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'])
 
-    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
+    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'])
     t.run_cmd('bin/samba-tool domain join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
@@ -432,7 +432,7 @@ def test_join_as_dc(t, vm):
     t.run_cmd('bin/samba-tool drs kcc ${HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
     t.kinit("administrator@${WIN_REALM}", "${WIN_PASS}")
-    for nc in ['${WIN_BASEDN}', 'CN=Configuration,${WIN_BASEDN}', 'CN=Schema,CN=Configuration,${WIN_BASEDN}' ]:
+    for nc in ['${WIN_BASEDN}', 'CN=Configuration,${WIN_BASEDN}', 'CN=Schema,CN=Configuration,${WIN_BASEDN}']:
         t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${WIN_REALM} ${WIN_HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
         t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${WIN_REALM} ${HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
 
@@ -489,8 +489,8 @@ def join_as_rodc(t, vm):
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a RODC using samba-tool domain join DC")
     t.port_wait("${WIN_IP}", 389)
-    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
-    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
+    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'])
+    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'])
     t.run_cmd('bin/samba-tool domain join ${WIN_REALM} RODC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
@@ -509,7 +509,7 @@ def test_join_as_rodc(t, vm):
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
     t.kinit("administrator@${WIN_REALM}", "${WIN_PASS}")
-    for nc in ['${WIN_BASEDN}', 'CN=Configuration,${WIN_BASEDN}', 'CN=Schema,CN=Configuration,${WIN_BASEDN}' ]:
+    for nc in ['${WIN_BASEDN}', 'CN=Configuration,${WIN_BASEDN}', 'CN=Schema,CN=Configuration,${WIN_BASEDN}']:
         t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${WIN_REALM} ${WIN_HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
 
     retries = 10
@@ -534,7 +534,7 @@ def test_join_as_rodc(t, vm):
                      "CN=Configuration,${WIN_BASEDN}",
                      "Last attempt .* was successful",
                      "CN=Configuration,${WIN_BASEDN}",
-                     "Last attempt .* was successful" ],
+                     "Last attempt .* was successful"],
                    ordered=True,
                    regex=True)
 

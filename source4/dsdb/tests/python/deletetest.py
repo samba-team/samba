@@ -316,24 +316,24 @@ class BasicTreeDeleteTests(BasicDeleteTests):
             "objectclass": "group",
             "description": "test group",
             "samaccountname": grp_name,
-            "member": [self.usr1, self.usr2 ],
-            "isDeleted": "FALSE" })
+            "member": [self.usr1, self.usr2],
+            "isDeleted": "FALSE"})
 
         self.ldb.add({
             "dn": self.sit1,
-            "objectclass": "site" })
+            "objectclass": "site"})
 
         self.ldb.add({
             "dn": self.ss1,
-            "objectclass": ["applicationSiteSettings", "nTDSSiteSettings"] })
+            "objectclass": ["applicationSiteSettings", "nTDSSiteSettings"]})
 
         self.ldb.add({
             "dn": self.srv1,
-            "objectclass": "serversContainer" })
+            "objectclass": "serversContainer"})
 
         self.ldb.add({
             "dn": self.srv2,
-            "objectClass": "server" })
+            "objectClass": "server"})
 
         self.objLive1 = self.search_dn(self.usr1)
         self.guid1=self.objLive1["objectGUID"][0]

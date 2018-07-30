@@ -688,7 +688,7 @@ class cmd_drs_options(Command):
 
     takes_options = [
         Option("--dsa-option", help="DSA option to enable/disable", type="str",
-               metavar="{+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL | {+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE" ),
+               metavar="{+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL | {+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE"),
     ]
 
     option_map = {"IS_GC": 0x00000001,

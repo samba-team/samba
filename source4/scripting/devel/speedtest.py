@@ -132,17 +132,17 @@ class SpeedTestAddDel(SpeedTest):
         for x in [1, 2, 3]:
             start = time.time()
             self.create_bundle(num)
-            res_add = Decimal(str(time.time() - start) )
+            res_add = Decimal(str(time.time() - start))
             avg_add += res_add
-            print("   Attempt %s ADD: %.3fs" % (x, float(res_add) ))
+            print("   Attempt %s ADD: %.3fs" % (x, float(res_add)))
             #
             start = time.time()
             self.remove_bundle(num)
-            res_del = Decimal(str(time.time() - start) )
+            res_del = Decimal(str(time.time() - start))
             avg_del += res_del
-            print("   Attempt %s DEL: %.3fs" % (x, float(res_del) ))
-        print("Average ADD: %.3fs" % float(Decimal(avg_add) / Decimal("3.0") ))
-        print("Average DEL: %.3fs" % float(Decimal(avg_del) / Decimal("3.0") ))
+            print("   Attempt %s DEL: %.3fs" % (x, float(res_del)))
+        print("Average ADD: %.3fs" % float(Decimal(avg_add) / Decimal("3.0")))
+        print("Average DEL: %.3fs" % float(Decimal(avg_del) / Decimal("3.0")))
         print("")
 
     def test_00000(self):
@@ -191,10 +191,10 @@ class AclSearchSpeedTest(SpeedTest):
         for x in [1, 2, 3]:
             start = time.time()
             res = _ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_SUBTREE)
-            res_search = Decimal(str(time.time() - start) )
+            res_search = Decimal(str(time.time() - start))
             avg_search += res_search
-            print("   Attempt %s SEARCH: %.3fs" % (x, float(res_search) ))
-        print("Average Search: %.3fs" % float(Decimal(avg_search) / Decimal("3.0") ))
+            print("   Attempt %s SEARCH: %.3fs" % (x, float(res_search)))
+        print("Average Search: %.3fs" % float(Decimal(avg_search) / Decimal("3.0")))
         self.remove_bundle(num)
 
     def get_user_dn(self, name):

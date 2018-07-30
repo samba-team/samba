@@ -531,7 +531,7 @@ class cmd_computer_move(Command):
                type=str, metavar="URL", dest="H"),
     ]
 
-    takes_args = ["computername", "new_ou_dn" ]
+    takes_args = ["computername", "new_ou_dn"]
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,

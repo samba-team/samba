@@ -203,7 +203,7 @@ class SamTests(samba.tests.TestCase):
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "user",
-            "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD) })
+            "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
@@ -218,7 +218,7 @@ class SamTests(samba.tests.TestCase):
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "computer",
-            "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
+            "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
@@ -230,7 +230,7 @@ class SamTests(samba.tests.TestCase):
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "computer",
-            "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
+            "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
@@ -245,7 +245,7 @@ class SamTests(samba.tests.TestCase):
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": "computer",
-            "userAccountControl": str(UF_PARTIAL_SECRETS_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
+            "userAccountControl": str(UF_PARTIAL_SECRETS_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
@@ -3320,7 +3320,7 @@ class SamTests(samba.tests.TestCase):
             "objectclass": "computer",
             "dNSHostName": "testname.testdom",
             "sAMAccountName": "testname$",
-            "servicePrincipalName": ["HOST/testname.testdom", "HOST/testname" ]
+            "servicePrincipalName": ["HOST/testname.testdom", "HOST/testname"]
         })
 
         m = Message()
@@ -3348,7 +3348,7 @@ class SamTests(samba.tests.TestCase):
             "objectclass": "computer",
             "dNSHostName": "testname.testdom",
             "sAMAccountName": "testname$",
-            "servicePrincipalName": ["HOST/testname.testdom", "HOST/testname" ]
+            "servicePrincipalName": ["HOST/testname.testdom", "HOST/testname"]
         })
 
         m = Message()
@@ -3470,7 +3470,7 @@ class SamTests(samba.tests.TestCase):
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-            "objectclass": "group" })
+            "objectclass": "group"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -3611,7 +3611,7 @@ class SamTests(samba.tests.TestCase):
             self.ldb.add({
                 "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
                 "objectclass": "group",
-                "fSMORoleOwner": [] })
+                "fSMORoleOwner": []})
             self.fail()
         except LdbError as e84:
             (num, _) = e84.args
@@ -3623,13 +3623,13 @@ class SamTests(samba.tests.TestCase):
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
             "objectclass": "group",
-            "fSMORoleOwner": ds_service_name })
+            "fSMORoleOwner": ds_service_name})
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-            "objectclass": "group" })
+            "objectclass": "group"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)

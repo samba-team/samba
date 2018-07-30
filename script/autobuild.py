@@ -69,7 +69,7 @@ defaulttasks = ["ctdb",
                  "talloc",
                  "replace",
                  "tevent",
-                 "pidl" ]
+                 "pidl"]
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
@@ -97,7 +97,7 @@ tasks = {
                ("install", "make install", "text/plain"),
                ("test", "make autotest", "text/plain"),
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-               ("clean", "make clean", "text/plain") ],
+               ("clean", "make clean", "text/plain")],
 
     # We have 'test' before 'install' because, 'test' should work without 'install (runs ad_dc_ntvfs and all the other envs)'
     "samba" : [("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
@@ -119,7 +119,7 @@ tasks = {
                  "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                ("clean", "make clean", "text/plain") ],
+                ("clean", "make clean", "text/plain")],
 
     # We split out this so the isolated nt4_dc tests do not wait for ad_dc or ad_dc_ntvfs tests (which are long)
     "samba-nt4" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
@@ -128,7 +128,7 @@ tasks = {
                     ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
                     ("install", "make install", "text/plain"),
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                    ("clean", "make clean", "text/plain") ],
+                    ("clean", "make clean", "text/plain")],
 
     # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
     "samba-fileserver" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
@@ -159,7 +159,7 @@ tasks = {
 
     "samba-test-only" : [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
                           ("make", "make -j", "text/plain"),
-                          ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"',"text/plain") ],
+                          ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"',"text/plain")],
 
     # Test cross-compile infrastructure
     "samba-xc" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
@@ -177,7 +177,7 @@ tasks = {
                    ("test", "make quicktest FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc'", "text/plain"),
                    ("install", "make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                   ("clean", "make clean", "text/plain") ],
+                   ("clean", "make clean", "text/plain")],
 
     "samba-ctdb" : [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
 
@@ -197,7 +197,7 @@ tasks = {
                      # clean up:
                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                      ("clean", "make clean", "text/plain"),
-                     ("ctdb-clean", "cd ./ctdb && make clean", "text/plain") ],
+                     ("ctdb-clean", "cd ./ctdb && make clean", "text/plain")],
 
     "samba-libs" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
@@ -320,7 +320,7 @@ tasks = {
               ("install-no-lmdb", "make install", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
-              ("clean", "make clean", "text/plain") ],
+              ("clean", "make clean", "text/plain")],
 
     "tdb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
@@ -330,7 +330,7 @@ tasks = {
               ("test", "make test", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
-              ("clean", "make clean", "text/plain") ],
+              ("clean", "make clean", "text/plain")],
 
     "talloc" : [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
@@ -340,7 +340,7 @@ tasks = {
                  ("test", "make test", "text/plain"),
                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                  ("distcheck", "make distcheck", "text/plain"),
-                 ("clean", "make clean", "text/plain") ],
+                 ("clean", "make clean", "text/plain")],
 
     "replace" : [
                   ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
@@ -350,7 +350,7 @@ tasks = {
                   ("test", "make test", "text/plain"),
                   ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                   ("distcheck", "make distcheck", "text/plain"),
-                  ("clean", "make clean", "text/plain") ],
+                  ("clean", "make clean", "text/plain")],
 
     "tevent" : [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
@@ -360,22 +360,22 @@ tasks = {
                  ("test", "make test", "text/plain"),
                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                  ("distcheck", "make distcheck", "text/plain"),
-                 ("clean", "make clean", "text/plain") ],
+                 ("clean", "make clean", "text/plain")],
 
     "pidl" : [
-               ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
-               ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
-               ("touch", "touch *.yp", "text/plain"),
-               ("make", "make", "text/plain"),
-               ("test", "make test", "text/plain"),
-               ("install", "make install", "text/plain"),
-               ("checkout-yapp-generated", "git checkout lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm", "text/plain"),
-               ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-               ("clean", "make clean", "text/plain") ],
+        ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
+        ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
+        ("touch", "touch *.yp", "text/plain"),
+        ("make", "make", "text/plain"),
+        ("test", "make test", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("checkout-yapp-generated", "git checkout lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm", "text/plain"),
+        ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain")],
 
     # these are useful for debugging autobuild
-    'pass' : [("pass", 'echo passing && /bin/true', "text/plain") ],
-    'fail' : [("fail", 'echo failing && /bin/false', "text/plain") ]
+    'pass' : [("pass", 'echo passing && /bin/true', "text/plain")],
+    'fail' : [("fail", 'echo failing && /bin/false', "text/plain")]
 }
 
 def do_print(msg):
@@ -491,7 +491,7 @@ class buildlist(object):
                                rebase_remote,
                                rebase_remote, rebase_branch
                             ),
-                            "test/plain" ) ]
+                            "test/plain")]
 
             self.retry = builder('retry', retry_task, cp=False)
             self.need_retry = False

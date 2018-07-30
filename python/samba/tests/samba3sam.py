@@ -34,7 +34,7 @@ from operator import attrgetter
 
 def read_datafile(filename):
     paths = ["../../../../../testdata/samba3",
-              "../../../../testdata/samba3" ]
+              "../../../../testdata/samba3"]
     for p in paths:
         datadir = os.path.join(os.path.dirname(__file__), p)
         if os.path.exists(datadir):

@@ -131,7 +131,7 @@ for s in shares:
     plansmbtorture4testsuite(t, "simpleserver", "//%s/%s %s" % ('$SERVER_IP', s, ' -U$USERNAME%$PASSWORD'), description=s)
 
 posix_tests = ["POSIX", "POSIX-APPEND", "POSIX-SYMLINK-ACL", "POSIX-SYMLINK-EA", "POSIX-OFD-LOCK",
-               "POSIX-STREAM-DELETE", "WINDOWS-BAD-SYMLINK" ]
+               "POSIX-STREAM-DELETE", "WINDOWS-BAD-SYMLINK"]
 
 for t in posix_tests:
     plantestsuite("samba3.smbtorture_s3.plain(nt4_dc).%s" % t, "nt4_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/posix_share', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
@@ -227,19 +227,19 @@ plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env,
 plantestsuite("samba3.wbinfo_name_lookup", env,
               [os.path.join(srcdir(),
                              "nsswitch/tests/test_wbinfo_name_lookup.sh"),
-                '$DOMAIN', '$REALM', '$DC_USERNAME' ])
+                '$DOMAIN', '$REALM', '$DC_USERNAME'])
 
 env = "ad_member:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [os.path.join(srcdir(),
                              "nsswitch/tests/test_wbinfo_user_info.sh"),
-                '$DOMAIN', '$REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
+                '$DOMAIN', '$REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe'])
 
 env = "fl2008r2dc:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [os.path.join(srcdir(),
                              "nsswitch/tests/test_wbinfo_user_info.sh"),
-                '$TRUST_DOMAIN', '$TRUST_REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe' ])
+                '$TRUST_DOMAIN', '$TRUST_REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe'])
 
 env = "ad_member"
 t = "WBCLIENT-MULTI-PING"
@@ -426,7 +426,7 @@ rap = ["rap.basic", "rap.rpc", "rap.printing", "rap.sam"]
 
 unix = ["unix.info2", "unix.whoami"]
 
-nbt = ["nbt.dgram" ]
+nbt = ["nbt.dgram"]
 
 libsmbclient = ["libsmbclient"]
 
@@ -636,10 +636,10 @@ plantestsuite("samba3.blackbox.sharesec", "simpleserver:local",
 plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
                 smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
-                configuration, '$LOCAL_PATH', '$LOCK_DIR' ])
+                configuration, '$LOCAL_PATH', '$LOCK_DIR'])
 
 plantestsuite("samba3.blackbox.smbd_error", "simpleserver:local",
-              [os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh") ])
+              [os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh")])
 
 plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),

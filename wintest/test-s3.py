@@ -52,7 +52,7 @@ def test_wbinfo(t):
                 casefold=True)
     t.cmd_contains("bin/wbinfo -u",
                    ["${WIN_DOMAIN}/administrator",
-                    "${WIN_DOMAIN}/krbtgt" ],
+                    "${WIN_DOMAIN}/krbtgt"],
                    casefold=True)
     t.cmd_contains("bin/wbinfo -g",
                    ["${WIN_DOMAIN}/domain users",
@@ -152,7 +152,7 @@ def join_as_member(t, vm):
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a member using net ads join")
     t.port_wait("${WIN_IP}", 389)
-    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
+    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'])
     t.cmd_contains("bin/net ads join -Uadministrator%${WIN_PASS}", ["Joined"])
     t.cmd_contains("bin/net ads testjoin", ["Join is OK"])
     t.cmd_contains("bin/net ads dns register ${HOSTNAME}.${WIN_REALM} -P", ["Successfully registered hostname with DNS"])
