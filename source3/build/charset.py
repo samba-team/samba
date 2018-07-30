@@ -34,7 +34,7 @@ def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
             # TODO: this used to warn about the set charset on cross builds
 
         if default_dos_charset is False or default_unix_charset is False:
-        # we found iconv, but it failed to convert anything (e.g. on AIX)
+            # we found iconv, but it failed to convert anything (e.g. on AIX)
             conf.undefine('HAVE_NATIVE_ICONV');
             default_dos_charset = "ASCII"
             default_unix_charset = "UTF-8"
