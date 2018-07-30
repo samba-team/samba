@@ -739,8 +739,10 @@ bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 	struct share_mode_entry *e;
 
 	if (idx > d->num_share_modes) {
-		DEBUG(1, ("Asking for index %u, only %u around\n",
-			  idx, (unsigned)d->num_share_modes));
+		DBG_WARNING("Asking for index %"PRIu32", "
+			    "only %"PRIu32" around\n",
+			    idx,
+			    d->num_share_modes);
 		return false;
 	}
 	e = &d->share_modes[idx];
@@ -751,14 +753,18 @@ bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 		return true;
 	}
 	if (serverid_exists(&e->pid)) {
-		DEBUG(10, ("PID %s (index %u out of %u) still exists\n",
-			   server_id_str_buf(e->pid, &tmp), idx,
-			   (unsigned)d->num_share_modes));
+		DBG_DEBUG("PID %s (index %"PRIu32" out of %"PRIu32") "
+			  "still exists\n",
+			  server_id_str_buf(e->pid, &tmp),
+			  idx,
+			  d->num_share_modes);
 		return false;
 	}
-	DEBUG(10, ("PID %s (index %u out of %u) does not exist anymore\n",
-		   server_id_str_buf(e->pid, &tmp), idx,
-		   (unsigned)d->num_share_modes));
+	DBG_DEBUG("PID %s (index %"PRIu32" out of %"PRIu32") "
+		  "does not exist anymore\n",
+		  server_id_str_buf(e->pid, &tmp),
+		  idx,
+		  d->num_share_modes);
 
 	e->stale = true;
 
