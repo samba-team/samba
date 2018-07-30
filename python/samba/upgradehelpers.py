@@ -560,8 +560,8 @@ def construct_existor_expr(attrs):
     if len(attrs) > 0:
         expr = "(|"
         for att in attrs:
-            expr = "%s(%s=*)"%(expr,att)
-        expr = "%s)"%expr
+            expr = "%s(%s=*)" %(expr,att)
+        expr = "%s)" %expr
     return expr
 
 def update_machine_account_password(samdb, secrets_ldb, names):
@@ -809,7 +809,7 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
         print("To track the USNs modified/created by provision and upgrade proivsion,")
         print(" the following ranges are proposed to be added to your provision sam.ldb: \n%s" % ldif)
         print("We recommend to review them, and if it's correct to integrate the following ldif: %s in your sam.ldb" % file)
-        print("You can load this file like this: ldbadd -H %s %s\n"%(str(samdb_path),file))
+        print("You can load this file like this: ldbadd -H %s %s\n" %(str(samdb_path),file))
         ldif = "dn: @PROVISION\nprovisionnerID: %s\n%s" % (invocationid, ldif)
         open(file,'w').write(ldif)
 

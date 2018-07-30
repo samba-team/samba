@@ -1140,7 +1140,7 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
-        ntdsguid_line = "objectGUID: %s\n"%ntdsguid
+        ntdsguid_line = "objectGUID: %s\n" %ntdsguid
     else:
         ntdsguid_line = ""
 
@@ -1610,7 +1610,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
     setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid),
              use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=SYSVOL_SERVICE)
 
-    res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
+    res = samdb.search(base="CN=Policies,CN=System,%s" %(domaindn),
                        attrs=["cn", "nTSecurityDescriptor"],
                        expression="", scope=ldb.SCOPE_ONELEVEL)
 
@@ -1783,7 +1783,7 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
     fsacl_sddl = fsacl.as_sddl(domainsid)
     if fsacl_sddl != POLICIES_ACL:
         raise ProvisioningError('%s ACL on policy root %s %s does not match expected value %s from provision' % (acl_type(direct_db_access), root_policy_path, fsacl_sddl, fsacl))
-    res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
+    res = samdb.search(base="CN=Policies,CN=System,%s" %(domaindn),
                        attrs=["cn", "nTSecurityDescriptor"],
                        expression="", scope=ldb.SCOPE_ONELEVEL)
 
