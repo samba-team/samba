@@ -528,8 +528,12 @@ def findnss(nssfn, names):
     raise KeyError("Unable to find user/group in %r" % names)
 
 
-findnss_uid = lambda names: findnss(pwd.getpwnam, names)[2]
-findnss_gid = lambda names: findnss(grp.getgrnam, names)[2]
+def findnss_uid(names):
+    return findnss(pwd.getpwnam, names)[2]
+
+
+def findnss_gid(names):
+    return findnss(grp.getgrnam, names)[2]
 
 
 def provision_paths_from_lp(lp, dnsdomain):
