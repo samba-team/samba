@@ -69,7 +69,7 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
-        if noop == False:
+        if not noop:
             self.assertTrue("FSMO transfer of '%s' role successful" % role in out)
         else:
             self.assertTrue("This DC already has the '%s' FSMO role" % role in out)

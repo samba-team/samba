@@ -384,7 +384,7 @@ sudo is used so a computer may run the command as root.
 
         computer_is_workstation = (
             computer_ac & dsdb.UF_WORKSTATION_TRUST_ACCOUNT)
-        if computer_is_workstation == False:
+        if not computer_is_workstation:
             raise CommandError('Failed to remove computer "%s": '
                                'Computer is not a workstation - removal denied'
                                % computername)

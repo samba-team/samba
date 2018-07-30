@@ -1880,7 +1880,7 @@ samba-tool user syncpasswords --terminate \\
                 add_ldif += "dirsyncControl: %s\n" % self.dirsync_controls[0]
                 for a in self.password_attrs:
                     add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
-                if self.decrypt_samba_gpg == True:
+                if self.decrypt_samba_gpg:
                     add_ldif += "decryptSambaGPG: TRUE\n"
                 else:
                     add_ldif += "decryptSambaGPG: FALSE\n"

@@ -298,7 +298,7 @@ You must provide an Admin user and password."""),
         else:
             seize = True
 
-        if force is not None or seize == True:
+        if force is not None or seize:
             self.message("Seizing %s FSMO role..." % role)
             m["fSMORoleOwner"] = ldb.MessageElement(
                 serviceName, ldb.FLAG_MOD_REPLACE,
@@ -381,7 +381,7 @@ You must provide an Admin user and password."""),
         else:
             seize = True
 
-        if force is not None or seize == True:
+        if force is not None or seize:
             self.message("Seizing %s FSMO role..." % role)
             m["fSMORoleOwner"] = ldb.MessageElement(
                 serviceName, ldb.FLAG_MOD_REPLACE,
