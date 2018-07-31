@@ -718,7 +718,7 @@ last_entry_done:
 		tevent_req_set_callback(subreq,
 					smb2_query_directory_waited,
 					req);
-		return req;
+		return true;
 	}
 
 	tevent_req_done(req);
