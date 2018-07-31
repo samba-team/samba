@@ -286,8 +286,8 @@ There are many changes to CTDB in this release.
     CTDB_SET_TunableVariable=<value> in the main configuration file is
     no longer supported.  See ctdb-tunables(7) for details.
 
-  A script to convert an old-style configuration to a new one will be
-  available for release but is not yet available.
+  A example script to migrate an old-style configuration to the new
+  style is available in ctdb/doc/examples/config_migrate.sh.
 
 * The following configuration variables and corresponding ctdbd
   command-line options have been removed and not replaced with
@@ -323,6 +323,20 @@ There are many changes to CTDB in this release.
   configuration directory
 
   Event scripts must now end with a ".script" suffix.
+
+* The "ctdb event" command has changed in 2 ways:
+
+  - A component is now required for all commands
+
+    In this release the only valid component is "legacy".
+
+  - There is no longer a default event when running "ctdb event status"
+
+    Listing the status of the "monitor" event is now done via:
+
+      ctdb event status legacy monitor
+
+   See ctdb(1) for details.
 
 * The following service-related event script options have been
   removed:
