@@ -149,7 +149,7 @@ const char *path_vardir(void)
 {
 	bool ok;
 
-	if (! ctdb_paths.rundir_set) {
+	if (! ctdb_paths.vardir_set) {
 		ok = path_construct(ctdb_paths.vardir, "var");
 		if (!ok) {
 			D_ERR("Failed to construct VARDIR\n");
