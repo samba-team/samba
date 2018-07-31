@@ -358,13 +358,13 @@ try:
     # Even if hashlib.md5 exists, it may be unusable.
     # Try to use MD5 function. In FIPS mode this will cause an exception
     # and we'll get to the replacement code
-    foo = md5('abcd')
+    foo = md5(b'abcd')
 except:
     try:
         import md5
         # repeat the same check here, mere success of import is not enough.
         # Try to use MD5 function. In FIPS mode this will cause an exception
-        foo = md5.md5('abcd')
+        foo = md5.md5(b'abcd')
     except:
         Context.SIG_NIL = hash('abcd')
         class replace_md5(object):
