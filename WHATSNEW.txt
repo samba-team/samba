@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.9.  This is *not*
+This is the second release candidate of Samba 4.9.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -449,6 +449,41 @@ SMB_VFS_FCHMOD_ACL: Removed: Only FCHMOD is used.
 
 Any external VFS modules will need to be updated to match these
 changes in order to work with 4.9.x.
+
+
+CHANGES SINCE 4.9.0rc1
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13537: s3: smbd:  Using "sendfile = yes" with SMB2 can cause CPU spin.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13535: s3: smbd: Fix path check in
+     smbd_smb2_create_durable_lease_check().
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13538: samba-tool trust: Support discovery via netr_GetDcName.
+   * BUG 13542: s4-dsdb: Only build dsdb Python modules for AD DC.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13520: Fix portability issues on freebsd.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13536: DNS wildcard search does not handle multiple labels correctly.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13308: samba-tool domain trust: Fix trust compatibility to Windows
+     Server 1709 and FreeIPA.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13520: Fix portability issues on freebsd.
+   * BUG 13545: ctdb-protocol: Fix CTDB compilation issues.
+   * BUG 13546: ctdb-docs: Replace obsolete reference to CTDB_DEBUG_HUNG_SCRIPT
+     option.
+   * BUG 13550: ctdb-doc: Provide an example script for migrating old
+     configuration.
+   * BUG 13551: ctdb-event: Implement event tool "script list" command.
+
 
 KNOWN ISSUES
 ============
