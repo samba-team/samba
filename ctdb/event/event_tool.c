@@ -320,7 +320,7 @@ static int event_command_script_list(TALLOC_CTX *mem_ctx,
 
 	subdir = talloc_asprintf(mem_ctx, "events/%s", argv[0]);
 	if (subdir == NULL) {
-		ret = ENOMEM;
+		return ENOMEM;
 	}
 
 	data_dir = path_datadir_append(mem_ctx, subdir);
