@@ -59,15 +59,16 @@ def build(bld):
         'lib/Parse/Pidl/Wireshark/NDR.pm': 'man3/Parse::Pidl::Wireshark::NDR.${PERLMAN3EXT}'
     }
 
-    for k, v in pidl_manpages.iteritems():
-        pidl_manpages[k] = bld.EXPAND_VARIABLES(v)
+    for k in pidl_manpages.keys():
+        pidl_manpages[k] = bld.EXPAND_VARIABLES(pidl_manpages[k])
 
     # use perl to build the manpages
     bld.env.pidl_srcdir = os.path.join(bld.srcnode.abspath(), 'pidl')
 
     bld.SET_BUILD_GROUP('final')
     if 'POD2MAN' in bld.env and bld.env['POD2MAN'] != '':
-        for src, manpage in pidl_manpages.iteritems():
+        for src in pidl_manpages.keys():
+            manpage = pidl_manpages[src]
             section = string.rsplit(manpage, ".", 1)[1]
             bld(rule='${POD2MAN} -c "Samba Documentation" -s %s ${SRC} ${TGT}' % section,
                 shell=True,

@@ -787,8 +787,8 @@ def build(bld):
 
     REPLACE_HOSTCC_SOURCE = ''
 
-    for filename, functions in REPLACEMENT_FUNCTIONS.iteritems():
-        for function in functions:
+    for filename in REPLACEMENT_FUNCTIONS.keys():
+        for function in REPLACEMENT_FUNCTIONS[filename]:
             if not bld.CONFIG_SET('HAVE_%s' % function.upper()):
                 REPLACE_HOSTCC_SOURCE += ' %s' % filename
                 break
