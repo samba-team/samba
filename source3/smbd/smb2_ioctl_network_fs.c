@@ -94,7 +94,6 @@ struct fsctl_srv_copychunk_state {
 		COPYCHUNK_OUT_LIMITS,
 		COPYCHUNK_OUT_RSP,
 	} out_data;
-	bool aapl_copyfile;
 };
 static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq);
 
