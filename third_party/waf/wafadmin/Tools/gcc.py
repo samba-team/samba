@@ -94,8 +94,8 @@ def gcc_modifier_cygwin(conf):
 @conftest
 def gcc_modifier_darwin(conf):
 	v = conf.env
-	v['shlib_CCFLAGS']       = ['-fPIC', '-compatibility_version', '1', '-current_version', '1']
-	v['shlib_LINKFLAGS']     = ['-dynamiclib']
+	v['shlib_CCFLAGS']       = ['-fPIC']
+	v['shlib_LINKFLAGS']     = ['-dynamiclib', '-compatibility_version', '1', '-current_version', '1']
 	v['shlib_PATTERN']       = 'lib%s.dylib'
 
 	v['staticlib_LINKFLAGS'] = []
