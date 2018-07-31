@@ -64,6 +64,41 @@ static bool aclread_is_inaccessible(struct ldb_message_element *el) {
 	return el->flags & LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE;
 }
 
+/*
+ * Returns the access mask required to read a given attribute
+ */
+static uint32_t get_attr_access_mask(const struct dsdb_attribute *attr,
+				     uint32_t sd_flags)
+{
+
+	uint32_t access_mask = 0;
+	bool is_sd;
+
+	/* nTSecurityDescriptor is a special case */
+	is_sd = (ldb_attr_cmp("nTSecurityDescriptor",
+			      attr->lDAPDisplayName) == 0);
+
+	if (is_sd) {
+		if (sd_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
+			access_mask |= SEC_STD_READ_CONTROL;
+		}
+		if (sd_flags & SECINFO_DACL) {
+			access_mask |= SEC_STD_READ_CONTROL;
+		}
+		if (sd_flags & SECINFO_SACL) {
+			access_mask |= SEC_FLAG_SYSTEM_SECURITY;
+		}
+	} else {
+		access_mask = SEC_ADS_READ_PROP;
+	}
+
+	if (attr->searchFlags & SEARCH_FLAG_CONFIDENTIAL) {
+		access_mask |= SEC_ADS_CONTROL_ACCESS;
+	}
+
+	return access_mask;
+}
+
 static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
@@ -183,26 +218,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				aclread_mark_inaccesslible(&msg->elements[i]);
 				continue;
 			}
-			/* nTSecurityDescriptor is a special case */
-			if (is_sd) {
-				access_mask = 0;
-
-				if (ac->sd_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
-					access_mask |= SEC_STD_READ_CONTROL;
-				}
-				if (ac->sd_flags & SECINFO_DACL) {
-					access_mask |= SEC_STD_READ_CONTROL;
-				}
-				if (ac->sd_flags & SECINFO_SACL) {
-					access_mask |= SEC_FLAG_SYSTEM_SECURITY;
-				}
-			} else {
-				access_mask = SEC_ADS_READ_PROP;
-			}
-
-			if (attr->searchFlags & SEARCH_FLAG_CONFIDENTIAL) {
-				access_mask |= SEC_ADS_CONTROL_ACCESS;
-			}
+			access_mask = get_attr_access_mask(attr, ac->sd_flags);
 
 			if (access_mask == 0) {
 				aclread_mark_inaccesslible(&msg->elements[i]);
