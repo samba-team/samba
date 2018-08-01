@@ -16,7 +16,7 @@ abi_type_maps = {
     'struct __va_list_tag *' : 'va_list'
     }
 
-version_key = lambda x: map(int, x.split("."))
+version_key = lambda x: list(map(int, x.split(".")))
 
 def normalise_signature(sig):
     '''normalise a signature from gdb'''
