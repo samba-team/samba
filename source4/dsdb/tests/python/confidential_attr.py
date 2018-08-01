@@ -36,7 +36,6 @@ from samba import gensec, sd_utils
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 import samba.tests
-from samba.tests import delete_force
 import samba.dsdb
 
 parser = optparse.OptionParser("confidential_attr.py [options] <host>")
@@ -80,6 +79,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # disclose any sensitive details by varying what gets returned by the search.
 DC_MODE_RETURN_NONE = 0
 DC_MODE_RETURN_ALL = 1
+
 
 #
 # Tests start here
@@ -130,7 +130,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         self.all_users = [self.user, self.conf_user]
 
-        # add some other users that also have confidential attributes, so we can
+        # add some other users that also have confidential attributes, so we
         # check we don't disclose their details, particularly in '!' searches
         for i in range(1, 3):
             username = "{0}other-user{1}".format(self.user_prefix, i)
@@ -229,11 +229,6 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         creds_tmp.set_kerberos_state(DONT_USE_KERBEROS)
         ldb_target = SamDB(url=ldaphost, credentials=creds_tmp, lp=lp)
         return ldb_target
-
-    def assert_not_in_result(self, res, exclude_dn):
-        for msg in res:
-            self.assertNotEqual(msg.dn, exclude_dn,
-                                "Search revealed object {0}".format(exclude_dn))
 
     def assert_search_result(self, expected_num, expr, samdb):
 
@@ -376,8 +371,9 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         for search in self.get_negative_match_all_searches():
             expected_results[search] = total_objects
 
-        # if the search is matching on an inverse subset (everything except the
-        # object under test), the
+        # if we're matching on everything except the one object under test
+        # (i.e. the inverse subset), we'll still see all objects if
+        # has_rights_to == 0. Or we'll see all bar one if has_rights_to == 1.
         inverse_searches = self.get_inverse_match_searches()
         inverse_searches += ["(!({0}=*))".format(self.conf_attr)]
 
@@ -407,7 +403,9 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
     # Returns the expected negative (i.e. '!') search behaviour. This varies
     # depending on what type of DC we're talking to (i.e. Windows or Samba)
-    # and what access rights the user has
+    # and what access rights the user has.
+    # Note we only handle has_rights_to="all", 1 (the test object), or 0 (i.e.
+    # we don't have rights to any objects)
     def negative_search_expected_results(self, has_rights_to, dc_mode,
                                          total_objects=None):
 
@@ -467,8 +465,10 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
     def assert_attr_visible_to_admin(self):
         # sanity-check the admin user can always see the confidential attribute
-        self.assert_conf_attr_searches(has_rights_to="all", samdb=self.ldb_admin)
-        self.assert_negative_searches(has_rights_to="all", samdb=self.ldb_admin)
+        self.assert_conf_attr_searches(has_rights_to="all",
+                                       samdb=self.ldb_admin)
+        self.assert_negative_searches(has_rights_to="all",
+                                      samdb=self.ldb_admin)
         self.assert_attr_visible(expect_attr=True, samdb=self.ldb_admin)
 
 
@@ -666,6 +666,9 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
             self.assert_search_result(expected_num, search, samdb,
                                       excl_testobj)
 
+    # override method specifically for deny ACL test cases. Instead of being
+    # granted access to either no objects or only one, we are being denied
+    # access to only one object (but can still access the rest).
     def negative_searches_return_none(self, has_rights_to=0):
         expected_results = {}
 
@@ -681,6 +684,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         expected_results[search] = self.total_objects - self.objects_with_attr
         return expected_results
 
+    # override method specifically for deny ACL test cases
     def negative_searches_return_all(self, has_rights_to=0,
                                      total_objects=None):
         expected_results = {}
@@ -699,6 +703,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         expected_results[search] = self.total_objects - has_rights_to
         return expected_results
 
+    # override method specifically for deny ACL test cases
     def assert_negative_searches(self, has_rights_to=0,
                                  dc_mode=DC_MODE_RETURN_NONE, samdb=None):
         """Asserts user without rights cannot see objects in '!' searches"""
@@ -809,11 +814,11 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # attribute filter to avoid complicating our assertions further
         self.attr_filters += [[self.conf_attr, "name"]]
 
+    # override method specifically for dirsync, i.e. add dirsync controls
     def assert_search_result(self, expected_num, expr, samdb, base_dn=None):
 
         # Note dirsync must always search on the partition base DN
-        if base_dn is None:
-            base_dn = self.base_dn
+        base_dn = self.base_dn
 
         # we need an extra filter for dirsync because:
         # - we search on the base DN, so otherwise the '!' searches return
@@ -829,6 +834,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
                             "%u results, not %u for search %s, attr %s" %
                             (len(res), expected_num, search, str(attr)))
 
+    # override method specifically for dirsync, i.e. add dirsync controls
     def assert_attr_returned(self, expect_attr, samdb, attrs,
                              no_result_ok=False):
 
@@ -846,6 +852,8 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
                 attr_returned = True
         self.assertEqual(expect_attr, attr_returned)
 
+    # override method specifically for dirsync (it has slightly different
+    # behaviour to normal when requesting specific attributes)
     def assert_attr_visible(self, expect_attr, samdb=None):
         if samdb is None:
             samdb = self.ldb_user
@@ -875,6 +883,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         self.assert_attr_returned(expect_attr=False, samdb=samdb,
                                   attrs=['name'])
 
+    # override method specifically for dirsync (total object count differs)
     def assert_negative_searches(self, has_rights_to=0,
                                  dc_mode=DC_MODE_RETURN_NONE, samdb=None):
         """Asserts user without rights cannot see objects in '!' searches"""
