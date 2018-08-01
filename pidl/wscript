@@ -69,7 +69,7 @@ def build(bld):
     if 'POD2MAN' in bld.env and bld.env['POD2MAN'] != '':
         for src in pidl_manpages.keys():
             manpage = pidl_manpages[src]
-            section = string.rsplit(manpage, ".", 1)[1]
+            section = manpage.rsplit( ".", 1)[1]
             bld(rule='${POD2MAN} -c "Samba Documentation" -s %s ${SRC} ${TGT}' % section,
                 shell=True,
                 source=src,
