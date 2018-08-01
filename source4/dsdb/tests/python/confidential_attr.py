@@ -28,7 +28,7 @@ import os
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 from ldb import SCOPE_BASE, SCOPE_SUBTREE
-from samba.dsdb import SEARCH_FLAG_CONFIDENTIAL
+from samba.dsdb import SEARCH_FLAG_CONFIDENTIAL, SEARCH_FLAG_PRESERVEONDELETE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE, FLAG_MOD_ADD
 from samba.auth import system_session
@@ -102,11 +102,11 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # schema attribute being modified. There are only a few attributes that
         # meet this criteria (most of which only apply to 'user' objects)
         self.conf_attr = "homePostalAddress"
-        self.conf_attr_cn = "CN=Address-Home"
-        # schemaIdGuid for homePostalAddress:
+        attr_cn = "CN=Address-Home"
+        # schemaIdGuid for homePostalAddress (used for ACE tests)
         self.conf_attr_guid = "16775781-47f3-11d1-a9c3-0000f80367c1"
         self.conf_attr_sec_guid = "77b5b886-944a-11d1-aebd-0000f80367c1"
-        self.attr_dn = "{},{}".format(self.conf_attr_cn, self.schema_dn)
+        self.attr_dn = "{},{}".format(attr_cn, self.schema_dn)
 
         userou = "OU=conf-attr-test"
         self.ou = "{},{}".format(userou, self.base_dn)
@@ -801,28 +801,42 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         super(ConfidentialAttrTestDirsync, self).setUp()
         self.dirsync = ["dirsync:1:1:1000"]
 
-    def assert_search_result(self, expected_num, expr, samdb, base_dn=None):
+        # because we need to search on the base DN when using the dirsync
+        # controls, we need an extra filter for the inverse ('!') search,
+        # so we don't get thousands of objects returned
+        self.extra_filter = \
+            "(&(samaccountname={}*)(!(isDeleted=*)))".format(self.user_prefix)
+        self.single_obj_filter = \
+            "(&(samaccountname={})(!(isDeleted=*)))".format(self.conf_user)
 
-        # Note dirsync must always search on the partition base DN
-        if base_dn is None:
-            base_dn = self.base_dn
-
-        attr_filters = [None, ["*"], ["name"]]
+        self.attr_filters = [None, ["*"], ["name"]]
 
         # Note dirsync behaviour is slighty different for the attribute under
         # test - when you have full access rights, it only returns the objects
         # that actually have this attribute (i.e. it doesn't return an empty
         # message with just the DN). So we add the 'name' attribute into the
         # attribute filter to avoid complicating our assertions further
-        attr_filters += [[self.conf_attr, "name"]]
-        for attr in attr_filters:
-            res = samdb.search(base_dn, expression=expr, scope=SCOPE_SUBTREE,
-                               attrs=attr, controls=self.dirsync)
+        self.attr_filters += [[self.conf_attr, "name"]]
 
+    def assert_search_result(self, expected_num, expr, samdb, base_dn=None):
+
+        # Note dirsync must always search on the partition base DN
+        if base_dn is None:
+            base_dn = self.base_dn
+
+        # we need an extra filter for dirsync because:
+        # - we search on the base DN, so otherwise the '!' searches return
+        #   thousands of unrelated results, and
+        # - we make the test attribute preserve-on-delete in one case, so we
+        #   want to weed out results from any previous test runs
+        search = "(&{}{})".format(expr, self.extra_filter)
+
+        for attr in self.attr_filters:
+            res = samdb.search(base_dn, expression=search, scope=SCOPE_SUBTREE,
+                               attrs=attr, controls=self.dirsync)
             self.assertTrue(len(res) == expected_num,
                             "%u results, not %u for search %s, attr %s" %
-                            (len(res), expected_num, expr, str(attr)))
-
+                            (len(res), expected_num, search, str(attr)))
 
     def assert_attr_returned(self, expect_attr, samdb, attrs,
                              no_result_ok=False):
@@ -830,7 +844,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # When using dirsync, the base DN we search on needs to be a naming
         # context. Add an extra filter to ignore all the objects we aren't
         # interested in
-        expr = "(&(samaccountname={})(!(isDeleted=*)))".format(self.conf_user)
+        expr = self.single_obj_filter
         res = samdb.search(self.base_dn, expression=expr, scope=SCOPE_SUBTREE,
                            attrs=attrs, controls=self.dirsync)
         self.assertTrue(len(res) == 1 or no_result_ok)
@@ -877,21 +891,14 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         if samdb is None:
             samdb = self.ldb_user
 
-        # because we need to search on the base DN when using the dirsync
-        # controls, we need an extra filter for the inverse ('!') search,
-        # so we don't get thousands of objects returned
-        extra_filter = \
-            "(samaccountname={}*)(!(isDeleted=*))".format(self.user_prefix)
-
-        # because of this extra filter, the total objects we expect here only
-        # includes the user objects (not the parent OU)
+        # because dirsync uses an extra filter, the total objects we expect
+        # here only includes the user objects (not the parent OU)
         total_objects = len(self.all_users)
         expected_results = self.negative_search_expected_results(has_rights_to,
                                                                  dc_mode,
                                                                  total_objects)
 
         for search, expected_num in expected_results.items():
-            search = "(&{}{})".format(search, extra_filter)
             self.assert_search_result(expected_num, search, samdb)
 
     def test_search_with_dirsync(self):
@@ -916,5 +923,103 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         self.assert_attr_visible(expect_attr=True, samdb=self.ldb_admin)
         self.assert_negative_searches(has_rights_to="all",
                                       samdb=self.ldb_admin)
+
+    def get_guid(self, dn):
+        """Returns an object's GUID (in string format)"""
+        res = self.ldb_admin.search(base=dn, attrs=["objectGUID"],
+                                    scope=SCOPE_BASE)
+        guid = res[0]['objectGUID'][0]
+        return self.ldb_admin.schema_format_value("objectGUID", guid)
+
+    def make_attr_preserve_on_delete(self):
+        """Marks the attribute under test as being preserve on delete"""
+
+        # work out the original 'searchFlags' value before we overwrite it
+        search_flags = int(self.get_attr_search_flags(self.attr_dn))
+
+        # check we've already set the confidential flag
+        self.assertTrue(search_flags & SEARCH_FLAG_CONFIDENTIAL != 0)
+        search_flags |= SEARCH_FLAG_PRESERVEONDELETE
+
+        self.set_attr_search_flags(self.attr_dn, str(search_flags))
+
+    def change_attr_under_test(self, attr_name, attr_cn):
+        # change the attribute that the test code uses
+        self.conf_attr = attr_name
+        self.attr_dn = "{},{}".format(attr_cn, self.schema_dn)
+
+        # set the new attribute for the user-under-test
+        self.add_attr(self.conf_dn, self.conf_attr, self.conf_value)
+
+        # 2 other users also have the attribute-under-test set (to a randomish
+        # value). Set the new attribute for them now (normally this gets done
+        # in the setUp())
+        for username in self.all_users:
+            if "other-user" in username:
+                dn = self.get_user_dn(username)
+                self.add_attr(dn, self.conf_attr, "xyz-blah")
+
+    def test_search_with_dirsync_deleted_objects(self):
+        """Checks dirsync doesn't reveal confidential info for deleted objs"""
+
+        # change the attribute we're testing (we'll preserve on delete for this
+        # test case, which means the attribute-under-test hangs around after
+        # the test case finishes, and would interfere with the searches for
+        # subsequent other test cases)
+        self.change_attr_under_test("carLicense", "CN=carLicense")
+
+        # Windows dirsync behaviour is a little strange when you request
+        # attributes that deleted objects no longer have, so just request 'all
+        # attributes' to simplify the test logic
+        self.attr_filters = [None, ["*"]]
+
+        # normally dirsync uses extra filters to exclude deleted objects that
+        # we're not interested in. Override these filters so they WILL include
+        # deleted objects, but only from this particular test run. We can do
+        # this by matching lastKnownParent against this test case's OU, which
+        # will match any deleted child objects.
+        ou_guid = self.get_guid(self.ou)
+        deleted_filter = "(lastKnownParent=<GUID={}>)".format(ou_guid)
+
+        # the extra-filter will get combined via AND with the search expression
+        # we're testing, i.e. filter on the confidential attribute AND only
+        # include non-deleted objects, OR deleted objects from this test run
+        exclude_deleted_objs_filter = self.extra_filter
+        self.extra_filter = "(|{}{})".format(exclude_deleted_objs_filter,
+                                             deleted_filter)
+
+        # for matching on a single object, the search expresseion becomes:
+        # match exactly by account-name AND either a non-deleted object OR a
+        # deleted object from this test run
+        match_by_name = "(samaccountname={})".format(self.conf_user)
+        not_deleted = "(!(isDeleted=*))"
+        self.single_obj_filter = "(&{}(|{}{}))".format(match_by_name,
+                                                       not_deleted,
+                                                       deleted_filter)
+
+        # check that the search filters work as expected
+        self.assert_conf_attr_searches(has_rights_to="all")
+        self.assert_attr_visible(expect_attr=True)
+        self.assert_negative_searches(has_rights_to="all")
+
+        # make the test attribute confidential *and* preserve on delete.
+        self.make_attr_confidential()
+        self.make_attr_preserve_on_delete()
+
+        # check we can't see the objects now, even with using dirsync controls
+        self.assert_conf_attr_searches(has_rights_to=0)
+        self.assert_attr_visible(expect_attr=False)
+        dc_mode = self.guess_dc_mode()
+        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+
+        # now delete the users (except for the user whose LDB connection
+        # we're currently using)
+        for user in self.all_users:
+            if user != self.user:
+                self.ldb_admin.delete(self.get_user_dn(user))
+
+        # check we still can't see the objects
+        self.assert_conf_attr_searches(has_rights_to=0)
+        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
 
 TestProgram(module=__name__, opts=subunitopts)
