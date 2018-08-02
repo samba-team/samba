@@ -823,6 +823,30 @@ or workgroup. Defaults to local domain.</para>
 
 </refsect3>
 
+<refsect3>
+<title>LOOKUP NAME [<replaceable>NAME</replaceable>]</title>
+
+<para>Lookup username's sid and type for specified <replaceable>NAME</replaceable>
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>LOOKUP SID [<replaceable>SID</replaceable>]</title>
+
+<para>Give sid's name and type for specified <replaceable>SID</replaceable>
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>LOOKUP DSGETDCNAME [<replaceable>NAME</replaceable>] [<replaceable>FLAGS</replaceable>] [<replaceable>SITENAME</replaceable>]</title>
+
+<para>Give Domain Controller information for specified domain <replaceable>NAME</replaceable>
+</para>
+
+</refsect3>
+
 </refsect2>
 
 <refsect2>
