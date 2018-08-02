@@ -37,6 +37,7 @@
 import datetime
 import string
 import os
+import sys
 
 class GeneratedFile :
     "Represents a generated file"
@@ -56,7 +57,11 @@ class GeneratedFile :
 
 class Header(GeneratedFile) :
     "Represents a generated header file"
-    guardTrans = string.maketrans('-.', '__')
+    if sys.hexversion>0x300000f:
+        guardTrans = bytes.maketrans(b'-.', b'__')
+    else:
+        import string
+        guardTrans = string.maketrans('-.', '__')
     def makeGuard(self) :
         """Return a name to be used as ifdef guard"""
         return string.upper(string.translate(self.name, self.guardTrans))

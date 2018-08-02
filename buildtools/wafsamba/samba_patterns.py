@@ -155,7 +155,7 @@ def write_build_options(task):
     keys_header_other = []
     keys_misc = []
     if sys.hexversion>0x300000f:
-        trans_table = bytes.maketrans('.-()', '____')
+        trans_table = bytes.maketrans(b'.-()', b'____')
     else:
         import string
         trans_table = string.maketrans('.-()', '____')
