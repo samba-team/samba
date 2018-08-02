@@ -190,8 +190,8 @@ def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
         f.write("}%s;\n\n" % last_key)
         last_key = " %s" % symver
     f.write("%s {\n" % current_version)
-    local_abi = filter(lambda x: x[0] == '!', abi_match)
-    global_abi = filter(lambda x: x[0] != '!', abi_match)
+    local_abi = list(filter(lambda x: x[0] == '!', abi_match))
+    global_abi = list(filter(lambda x: x[0] != '!', abi_match))
     f.write("\tglobal:\n")
     if len(global_abi) > 0:
         for x in global_abi:
