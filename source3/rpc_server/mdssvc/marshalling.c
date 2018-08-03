@@ -1058,7 +1058,6 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 	int i, toc_index, subcount;
 	uint64_t result;
 	sl_nil_t nil;
-	sl_bool_t b;
 	struct sl_tag tag, cpx_tag;
 
 	while (count > 0) {
@@ -1119,8 +1118,9 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 			count -= subcount;
 			break;
 
-		case SQ_TYPE_BOOL:
-			b = tag.count != 0 ? true : false;
+		case SQ_TYPE_BOOL: {
+			sl_bool_t b = (tag.count != 0);
+
 			result = dalloc_add_copy(query, &b, sl_bool_t);
 			if (result != 0) {
 				return -1;
@@ -1128,6 +1128,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 			offset += tag.size;
 			count--;
 			break;
+		}
 
 		case SQ_TYPE_INT64:
 			subcount = sl_unpack_ints(query, buf, offset, bufsize, encoding);
