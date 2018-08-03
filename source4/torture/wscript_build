@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+provision = bld.pyembed_libname('PROVISION')
+samba_net = bld.pyembed_libname('samba-net')
 
 bld.SAMBA_SUBSYSTEM('TORTURE_UTIL',
 	source='util_smb.c',
@@ -80,7 +82,6 @@ if bld.AD_DC_BUILD_IS_ENABLED():
         torture_rpc_backupkey = 'rpc/backupkey.c'
     else:
         torture_rpc_backupkey = 'rpc/backupkey_heimdal.c'
-
 bld.SAMBA_MODULE('torture_rpc',
                  source='''
                         rpc/join.c
@@ -167,7 +168,7 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_OXIDRESOLVER
                       RPC_NDR_NTSVCS
                       WB_HELPER
-                      samba-net
+                      %s
                       LIBCLI_AUTH
                       popt
                       POPT_CREDENTIALS
@@ -184,7 +185,7 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_WITNESS
                       RPC_NDR_BACKUPKEY
                       RPC_NDR_WINSPOOL
-                      ''' + ntvfs_specific['deps'],
+                      ''' % samba_net + ntvfs_specific['deps'],
                  internal_module=True,
                  enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
@@ -268,7 +269,7 @@ bld.SAMBA_MODULE('TORTURE_NET',
 	autoproto='libnet/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_net_init',
-	deps='samba-net popt POPT_CREDENTIALS torture_rpc PROVISION',
+	deps='%s popt POPT_CREDENTIALS torture_rpc %s' % (provision, samba_net),
 	internal_module=True,
 	enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	)
