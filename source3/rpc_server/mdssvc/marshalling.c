@@ -1058,9 +1058,10 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 	int i, toc_index, subcount;
 	uint64_t result;
 	sl_nil_t nil;
-	struct sl_tag tag;
 
 	while (count > 0) {
+		struct sl_tag tag;
+
 		if (offset >= toc_offset) {
 			return -1;
 		}
