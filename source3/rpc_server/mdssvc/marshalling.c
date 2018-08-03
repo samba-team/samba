@@ -1057,7 +1057,6 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 {
 	int i, toc_index, subcount;
 	uint64_t result;
-	sl_nil_t nil;
 
 	while (count > 0) {
 		struct sl_tag tag;
@@ -1106,12 +1105,13 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 			break;
 		}
 
-		case SQ_TYPE_NULL:
+		case SQ_TYPE_NULL: {
+			sl_nil_t nil = 0;
+
 			subcount = tag.count;
 			if (subcount > count) {
 				return -1;
 			}
-			nil = 0;
 			for (i = 0; i < subcount; i++) {
 				result = dalloc_add_copy(query, &nil, sl_nil_t);
 				if (result != 0) {
@@ -1121,6 +1121,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 			offset += tag.size;
 			count -= subcount;
 			break;
+		}
 
 		case SQ_TYPE_BOOL: {
 			sl_bool_t b = (tag.count != 0);
