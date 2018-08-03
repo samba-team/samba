@@ -165,7 +165,7 @@ bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 configuration = "--configfile=$SMB_CONF_PATH"
 
 smbtorture4 = binpath("smbtorture")
-smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
+smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].decode('utf8').splitlines()
 
 smbtorture4_options = [
     configuration,
