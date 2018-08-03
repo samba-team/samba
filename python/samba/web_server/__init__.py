@@ -21,32 +21,31 @@
 
 from __future__ import print_function
 
-
 def render_placeholder(environ, start_response):
     """Send the user a simple placeholder about missing SWAT."""
     status = '200 OK'
     response_headers = [('Content-type', 'text/html')]
     start_response(status, response_headers)
 
-    yield "<!doctype html>\n"
-    yield "<html>\n"
-    yield "  <title>The Samba web service</title>\n"
-    yield "</html>\n"
+    yield b"<!doctype html>\n"
+    yield b"<html>\n"
+    yield b"  <title>The Samba web service</title>\n"
+    yield b"</html>\n"
 
-    yield "<body>\n"
-    yield "<p>Welcome to this Samba web server.</p>\n"
-    yield "<p>This page is a simple placeholder. You probably want to install "
-    yield "SWAT. More information can be found "
-    yield "<a href='http://wiki.samba.org/index.php/SWAT2'>on the wiki</a>.</p>"
-    yield "</p>\n"
-    yield "</body>\n"
-    yield "</html>\n"
+    yield b"<body>\n"
+    yield b"<p>Welcome to this Samba web server.</p>\n"
+    yield b"<p>This page is a simple placeholder. You probably want to install "
+    yield b"SWAT. More information can be found "
+    yield b"<a href='http://wiki.samba.org/index.php/SWAT2'>on the wiki</a>.</p>"
+    yield b"</p>\n"
+    yield b"</body>\n"
+    yield b"</html>\n"
 
 
 def __call__(environ, start_response):
     """Handle a HTTP request."""
     from wsgiref.util import application_uri, shift_path_info
-    from urlparse import urljoin
+    from samba.compat import urllib_join
 
     try:
         import swat
@@ -62,7 +61,7 @@ def __call__(environ, start_response):
     if name == "":
         if have_swat:
             start_response('301 Redirect',
-                           [('Location', urljoin(application_uri(environ), 'swat')), ])
+                           [('Location', urllib_join(application_uri(environ), 'swat')), ])
             return []
         else:
             return render_placeholder(environ, start_response)
@@ -72,7 +71,7 @@ def __call__(environ, start_response):
         status = '404 Not found'
         response_headers = [('Content-type', 'text/html')]
         start_response(status, response_headers)
-        return ["The path %s (%s) was not found" % (orig_path, name)]
+        return [("The path %s (%s) was not found" % (orig_path, name)).encode('iso-8859-1')]
 
 
 if __name__ == '__main__':

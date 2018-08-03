@@ -27,6 +27,7 @@
 #include "lib/tls/tls.h"
 #include "lib/tsocket/tsocket.h"
 #include "python/modules.h"
+#include "python/py3compat.h"
 
 typedef struct {
 	PyObject_HEAD
@@ -73,19 +74,19 @@ static PyObject *start_response(PyObject *self, PyObject *args, PyObject *kwargs
 
 		py_name = PyTuple_GetItem(item, 0);
 
-		if (!PyString_Check(py_name)) {
+		if (!PyStr_Check(py_name)) {
 			PyErr_SetString(PyExc_TypeError, "header name should be string");
 			return NULL;
 		}
 
 		py_value = PyTuple_GetItem(item, 1);
-		if (!PyString_Check(py_value)) {
+		if (!PyStr_Check(py_value)) {
 			PyErr_SetString(PyExc_TypeError, "header value should be string");
 			return NULL;
 		}
 
-		hdr->name = talloc_strdup(hdr, PyString_AsString(py_name));
-		hdr->value = talloc_strdup(hdr, PyString_AsString(py_value));
+		hdr->name = talloc_strdup(hdr, PyStr_AsString(py_name));
+		hdr->value = talloc_strdup(hdr, PyStr_AsString(py_value));
 		DLIST_ADD(headers, hdr);
 	}
 
@@ -101,7 +102,7 @@ static PyMethodDef web_request_methods[] = {
 
 
 PyTypeObject web_request_Type = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "wsgi.Request",
 	.tp_methods = web_request_methods,
 	.tp_basicsize = sizeof(web_request_Object),
@@ -142,9 +143,17 @@ static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *k
 	}
 
 	while ((item = PyIter_Next(seq))) {
-		char *str = PyString_AsString(item);
-
-		DEBUG(0, ("%s", str));
+		char *str = NULL;
+		Py_ssize_t size = 0;
+		if (!IsPy3Bytes(item)) {
+			str = PyStr_AsUTF8AndSize(item, &size);
+		} else {
+			str = PyBytes_AsString(item);
+			size = PyBytes_Size(item);
+		}
+		if (size > 0) {
+			DEBUG(0, ("%s", str));
+		}
 	}
 
 	Py_RETURN_NONE;
@@ -158,7 +167,7 @@ static PyMethodDef error_Stream_methods[] = {
 };
 
 PyTypeObject error_Stream_Type = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "wsgi.ErrorStream",
 	.tp_basicsize = sizeof(error_Stream_Object),
 	.tp_methods = error_Stream_methods,
@@ -187,7 +196,7 @@ static PyObject *py_input_read(PyObject *_self, PyObject *args, PyObject *kwargs
 	else
 		size = MIN(size, self->web->input.partial.length-self->offset);
 
-	ret = PyString_FromStringAndSize((char *)self->web->input.partial.data+self->offset, size);
+	ret = PyBytes_FromStringAndSize((char *)self->web->input.partial.data+self->offset, size);
 	self->offset += size;
 
 	return ret;
@@ -232,7 +241,7 @@ static PyMethodDef input_Stream_methods[] = {
 };
 
 PyTypeObject input_Stream_Type = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "wsgi.InputStream",
 	.tp_basicsize = sizeof(input_Stream_Object),
 	.tp_methods = input_Stream_methods,
@@ -323,7 +332,7 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 	PyDict_SetItemString(env, "wsgi.multithread", Py_False);
 	PyDict_SetItemString(env, "wsgi.multiprocess", Py_False);
 	PyDict_SetItemString(env, "wsgi.run_once", Py_False);
-	py_val = PyString_FromString("HTTP/1.0");
+	py_val = PyStr_FromString("HTTP/1.0");
 	if (py_val == NULL) goto error;
 	PyDict_SetItemString(env, "SERVER_PROTOCOL", py_val);
 	Py_DECREF(py_val);
@@ -333,39 +342,39 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 		PyDict_SetItemString(env, "CONTENT_LENGTH", py_val);
 		Py_DECREF(py_val);
 	}
-	py_val = PyString_FromString(request_method);
+	py_val = PyStr_FromString(request_method);
 	if (py_val == NULL) goto error;
 	PyDict_SetItemString(env, "REQUEST_METHOD", py_val);
 	Py_DECREF(py_val);
 
 	/* There is always a single wsgi app to which all requests are redirected,
 	 * so SCRIPT_NAME will be / */
-	py_val = PyString_FromString("/");
+	py_val = PyStr_FromString("/");
 	if (py_val == NULL) goto error;
 	PyDict_SetItemString(env, "SCRIPT_NAME", py_val);
 	Py_DECREF(py_val);
 	questionmark = strchr(request_string, '?');
 	if (questionmark == NULL) {
-		py_val = PyString_FromString(request_string);
+		py_val = PyStr_FromString(request_string);
 		if (py_val == NULL) goto error;
 		PyDict_SetItemString(env, "PATH_INFO", py_val);
 		Py_DECREF(py_val);
 	} else {
-		py_val = PyString_FromString(questionmark+1);
+		py_val = PyStr_FromString(questionmark+1);
 		if (py_val == NULL) goto error;
 		PyDict_SetItemString(env, "QUERY_STRING", py_val);
 		Py_DECREF(py_val);
-		py_val = PyString_FromStringAndSize(request_string, questionmark-request_string);
+		py_val = PyStr_FromStringAndSize(request_string, questionmark-request_string);
 		if (py_val == NULL) goto error;
 		PyDict_SetItemString(env, "PATH_INFO", py_val);
 		Py_DECREF(py_val);
 	}
 
-	py_val = PyString_FromString(servername);
+	py_val = PyStr_FromString(servername);
 	if (py_val == NULL) goto error;
 	PyDict_SetItemString(env, "SERVER_NAME", py_val);
 	Py_DECREF(py_val);
-	py_val = PyString_FromFormat("%d", serverport);
+	py_val = PyStr_FromFormat("%d", serverport);
 	if (py_val == NULL) goto error;
 	PyDict_SetItemString(env, "SERVER_PORT", py_val);
 	Py_DECREF(py_val);
@@ -373,7 +382,7 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 	for (hdr = headers; hdr; hdr = hdr->next) {
 		char *name;
 		if (!strcasecmp(hdr->name, "Content-Type")) {
-			py_val = PyString_FromString(hdr->value);
+			py_val = PyStr_FromString(hdr->value);
 			PyDict_SetItemString(env, "CONTENT_TYPE", py_val);
 			Py_DECREF(py_val);
 		} else {
@@ -381,7 +390,7 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 				PyErr_NoMemory();
 				goto error;
 			}
-			py_val = PyString_FromString(hdr->value);
+			py_val = PyStr_FromString(hdr->value);
 			PyDict_SetItemString(env, name, py_val);
 			Py_DECREF(py_val);
 			free(name);
@@ -389,9 +398,9 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 	}
 
 	if (tls) {
-		py_scheme = PyString_FromString("https");
+		py_scheme = PyStr_FromString("https");
 	} else {
-		py_scheme = PyString_FromString("http");
+		py_scheme = PyStr_FromString("http");
 	}
 	if (py_scheme == NULL) goto error;
 	PyDict_SetItemString(env, "wsgi.url_scheme", py_scheme);
@@ -487,7 +496,16 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 	/* Now, iter over all the data returned */
 
 	while ((item = PyIter_Next(iter))) {
-		websrv_output(web, PyString_AsString(item), PyString_Size(item));
+		Py_ssize_t size = 0;
+		char *value = NULL;
+		int ret = PyBytes_AsStringAndSize(item, &value, &size);
+		if (ret == -1) {
+			DEBUG_Print_PyError(0, "application failed to "
+				"extract string from iterable");
+			wsgi_serve_500(web);
+			return;
+		}
+		websrv_output(web, value, size);
 		Py_DECREF(item);
 	}
 
