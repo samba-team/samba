@@ -1058,7 +1058,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 	int i, toc_index, subcount;
 	uint64_t result;
 	sl_nil_t nil;
-	struct sl_tag tag, cpx_tag;
+	struct sl_tag tag;
 
 	while (count > 0) {
 		if (offset >= toc_offset) {
@@ -1071,7 +1071,9 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 		}
 
 		switch (tag.type) {
-		case SQ_TYPE_COMPLEX:
+		case SQ_TYPE_COMPLEX: {
+			struct sl_tag cpx_tag;
+
 			if (tag.count < 1) {
 				DEBUG(1,("%s: invalid tag.count: %d\n",
 					 __func__, tag.count));
@@ -1101,6 +1103,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 			 */
 			count--;
 			break;
+		}
 
 		case SQ_TYPE_NULL:
 			subcount = tag.count;
