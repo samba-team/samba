@@ -77,10 +77,10 @@ def configure(conf):
             using_system_pytalloc_util = False
         else:
             using_system_pytalloc_util = True
-            if not conf.CHECK_BUNDLED_SYSTEM_PKG('pytalloc-util', minversion=VERSION,
+            name = 'pytalloc-util' + conf.all_envs['default']['PYTHON_SO_ABI_FLAG']
+            if not conf.CHECK_BUNDLED_SYSTEM_PKG(name, minversion=VERSION,
                                                  implied_deps='talloc replace'):
                 using_system_pytalloc_util = False
-
             # We need to get a pytalloc-util for all the python versions
             # we are building for
             if conf.env['EXTRA_PYTHON']:
