@@ -410,20 +410,12 @@ bool posix_locking_end(void)
 }
 
 /****************************************************************************
- Next - the functions that deal with storing fd's that have outstanding
- POSIX locks when closed.
+ Next - the functions that deal with reference count of number of locks open
+ on a dev/ino pair.
 ****************************************************************************/
 
 /****************************************************************************
- The records in posix_pending_close_db are composed of an array of
- ints keyed by dev/ino pair. Those ints are the fd's that were open on
- this dev/ino pair that should have been closed, but can't as the lock
- ref count is non zero.
-****************************************************************************/
-
-/****************************************************************************
- Keep a reference count of the number of locks open on this dev/ino
- pair. Creates entry if it doesn't exist.
+ Increase the lock ref count. Creates lock_ref_count entry if it doesn't exist.
 ****************************************************************************/
 
 static void increment_lock_ref_count(const files_struct *fsp)
@@ -442,6 +434,10 @@ static void increment_lock_ref_count(const files_struct *fsp)
 	DEBUG(10,("lock_ref_count for file %s = %d\n",
 		  fsp_str_dbg(fsp), (int)lock_ref_count));
 }
+
+/****************************************************************************
+ Reduce the lock ref count.
+****************************************************************************/
 
 static void decrement_lock_ref_count(const files_struct *fsp)
 {
@@ -499,6 +495,18 @@ static void delete_lock_ref_count(const files_struct *fsp)
 	DEBUG(10,("delete_lock_ref_count for file %s\n",
 		  fsp_str_dbg(fsp)));
 }
+
+/****************************************************************************
+ Next - the functions that deal with storing fd's that have outstanding
+ POSIX locks when closed.
+****************************************************************************/
+
+/****************************************************************************
+ The records in posix_pending_close_db are composed of an array of
+ ints keyed by dev/ino pair. Those ints are the fd's that were open on
+ this dev/ino pair that should have been closed, but can't as the lock
+ ref count is non zero.
+****************************************************************************/
 
 /****************************************************************************
  Add an fd to the pending close tdb.
@@ -618,8 +626,9 @@ int fd_close_posix(const struct files_struct *fsp)
 
 		/*
 		 * There are outstanding locks on this dev/inode pair on
-		 * other fds. Add our fd to the pending close tdb and set
-		 * fsp->fh->fd to -1.
+		 * other fds. Add our fd to the pending close db. We also
+		 * set fsp->fh->fd to -1 inside fd_close() after returning
+		 * from VFS layer.
 		 */
 
 		add_fd_to_close_entry(fsp);
