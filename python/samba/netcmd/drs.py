@@ -774,8 +774,8 @@ class cmd_drs_clone_dc_database(Command):
         if targetdir is None:
             raise CommandError("--targetdir option must be specified")
 
-
-        join_clone(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
+        join_clone(logger=logger, server=server, creds=creds, lp=lp,
+                   domain=domain, dns_backend='SAMBA_INTERNAL',
                    targetdir=targetdir, include_secrets=include_secrets)
 
 
