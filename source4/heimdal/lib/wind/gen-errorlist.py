@@ -85,7 +85,7 @@ const struct error_entry _wind_errorlist_table[] = {
 
 trans=[]
 
-for t in error_list.iterkeys():
+for t in error_list.keys():
     for l in tables[t]:
         m = re.search('^ *([0-9A-F]+)-([0-9A-F]+); *(.*) *$', l)
         if m:
