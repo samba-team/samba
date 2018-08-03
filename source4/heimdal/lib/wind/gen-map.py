@@ -51,7 +51,7 @@ if len(sys.argv) != 3:
 tables = rfc3454.read(sys.argv[1])
 t2 = rfc4518.read()
 
-for x in t2.iterkeys():
+for x in t2:
     tables[x] = t2[x]
 
 map_list = stringprep.get_maplist()
@@ -88,7 +88,7 @@ const struct translation _wind_map_table[] = {
 
 trans=[]
 
-for t in map_list.iterkeys():
+for t in map_list:
     for l in tables[t]:
         m = re.search('^ *([0-9A-F]+)-([0-9A-F]+); *([^;]+); *(.*) *$', l)
         if m:
