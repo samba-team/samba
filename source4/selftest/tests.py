@@ -323,7 +323,7 @@ smb2_s3only = [
 smb2 = [x for x in smbtorture4_testsuites("smb2.") if x not in smb2_s3only]
 
 # The QFILEINFO-IPC test needs to be on ipc$
-raw = filter(lambda x: "raw.qfileinfo.ipc" not in x, smbtorture4_testsuites("raw."))
+raw = list(filter(lambda x: "raw.qfileinfo.ipc" not in x, smbtorture4_testsuites("raw.")))
 base = smbtorture4_testsuites("base.")
 
 netapi = smbtorture4_testsuites("netapi.")

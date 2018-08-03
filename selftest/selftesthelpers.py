@@ -187,7 +187,7 @@ def plansmbtorture4testsuite(name, env, options, target, modname=None):
 
 
 def smbtorture4_testsuites(prefix):
-    return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
+    return list(filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list))
 
 
 smbclient3 = binpath('smbclient')
