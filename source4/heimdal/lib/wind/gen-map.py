@@ -96,7 +96,7 @@ for t in map_list:
             end   = int(m.group(2), 0x10)
             value = m.group(3)
             desc  = m.group(4)
-            for key in xrange(start,end,1):
+            for key in range(start,end,1):
                 trans.append((key, value, desc, [t]))
             continue
         m = re.search('^ *([^;]+); *([^;]+); *(.*) *$', l)
