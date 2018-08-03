@@ -1,7 +1,8 @@
 [Unit]
 Description=Samba SMB Daemon
 Documentation=man:smbd(8) man:samba(7) man:smb.conf(5)
-After=network.target nmb.service winbind.service
+Wants=network-online.target
+After=network.target network-online.target nmb.service winbind.service
 
 [Service]
 Type=notify
