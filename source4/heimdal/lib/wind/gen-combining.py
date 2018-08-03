@@ -79,8 +79,7 @@ combining_c.file.write(
 const struct translation _wind_combining_table[] = {
 ''')
 
-s = trans.keys()
-s.sort()
+s = sorted(trans)
 for k in s:
     v = trans[k]
     combining_c.file.write("{0x%x, %u}, /* %s */\n"
