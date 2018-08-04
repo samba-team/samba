@@ -26,7 +26,7 @@ class IntegerTests(samba.tests.TestCase):
     def test_uint32_into_hyper(self):
         s = server_id.server_id()
         s.unique_id = server_id.NONCLUSTER_VNN
-        self.assertEquals(s.unique_id, 0xFFFFFFFFL)
+        self.assertEquals(s.unique_id, 0xFFFFFFFF)
 
     def test_int_into_hyper(self):
         s = server_id.server_id()
@@ -68,7 +68,7 @@ class IntegerTests(samba.tests.TestCase):
 
     def test_long_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
-        s.timezone = 5L
+        s.timezone = 5
         self.assertEquals(s.timezone, 5)
 
     def test_larger_long_int_into_int32(self):
@@ -188,12 +188,12 @@ class IntegerTests(samba.tests.TestCase):
     def test_larger_int_into_int64(self):
         s = samr.DomInfo1()
         s.max_password_age = server_id.NONCLUSTER_VNN
-        self.assertEquals(s.max_password_age, 0xFFFFFFFFL)
+        self.assertEquals(s.max_password_age, 0xFFFFFFFF)
 
     def test_larger_negative_int_into_int64(self):
         s = samr.DomInfo1()
         s.max_password_age = -2147483649
-        self.assertEquals(s.max_password_age, -2147483649L)
+        self.assertEquals(s.max_password_age, -2147483649)
 
     def test_int_list_over_list(self):
         g = misc.GUID()
@@ -202,7 +202,7 @@ class IntegerTests(samba.tests.TestCase):
 
     def test_long_int_list_over_uint8_list(self):
         g = misc.GUID()
-        g.node = [5L, 0, 5, 0, 7, 4]
+        g.node = [5, 0, 5, 0, 7, 4]
         self.assertEqual(g.node[0], 5)
 
     def test_negative_list_over_uint8_list(self):
