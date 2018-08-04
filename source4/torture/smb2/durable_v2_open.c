@@ -287,12 +287,43 @@ static bool test_one_durable_v2_open_oplock(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	uint32_t share_capabilities;
+	bool share_is_so;
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
 	bool ret = true;
 	struct smb2_create io;
+	uint8_t expected_oplock_level;
+	bool expected_durable;
 
 	smb2_util_unlink(tree, fname);
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+
+	expected_oplock_level = smb2_util_oplock_level(test.level);
+	expected_durable = test.durable;
+
+	if (share_is_so) {
+		/*
+		 * MS-SMB2 3.3.5.9 Receiving an SMB2 CREATE Request
+		 *
+		 * If Connection.Dialect belongs to the SMB 3.x dialect family,
+		 * TreeConnect.Share.Type is STYPE_CLUSTER_SOFS as specified in
+		 * [MS-SRVS] section 2.2.2.4, and the RequestedOplockLevel is
+		 * SMB2_OPLOCK_LEVEL_BATCH, the server MUST set
+		 * RequestedOplockLevel to SMB2_OPLOCK_LEVEL_II.
+		 */
+		if (expected_oplock_level == SMB2_OPLOCK_LEVEL_BATCH) {
+			expected_oplock_level = SMB2_OPLOCK_LEVEL_II;
+		}
+		/*
+		 * No Durable Handles on SOFS shares, only Persistent Handles.
+		 */
+		if (!request_persistent) {
+			expected_durable = false;
+		}
+	}
 
 	smb2_oplock_create_share(&io, fname,
 				 smb2_util_share_access(test.share_mode),
@@ -308,9 +339,9 @@ static bool test_one_durable_v2_open_oplock(struct torture_context *tctx,
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, test.durable);
+	CHECK_VAL(io.out.durable_open_v2, expected_durable);
 	CHECK_VAL(io.out.persistent_open, test.persistent);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level(test.level));
+	CHECK_VAL(io.out.oplock_level, expected_oplock_level);
 
 done:
 	if (h != NULL) {
