@@ -23,8 +23,13 @@
 # best way to do that yet.
 #
 # -- mbp
+from samba.compat import PY3
+if PY3:
+    import unicodedata
+    KATAKANA_LETTER_A = unicodedata.lookup("KATAKANA LETTER A")
+else:
+    from unicodenames import KATAKANA_LETTER_A as KATAKANA_LETTER_A
 
-from unicodenames import *
 
 import samba.tests
 from samba import strcasecmp_m, strstr_m
@@ -37,7 +42,6 @@ def signum(a):
         return +1
     else:
         return 0
-
 
 class strcasecmp_m_Tests(samba.tests.TestCase):
     """String comparisons in simple ASCII and unicode"""
@@ -60,9 +64,7 @@ class strcasecmp_m_Tests(samba.tests.TestCase):
                  (KATAKANA_LETTER_A, 'a', 1),
                  ]
         for a, b, expect in cases:
-            self.assertEquals(signum(strcasecmp_m(a.encode('utf-8'),
-                                                  b.encode('utf-8'))),
-                              expect)
+            self.assertEquals(signum(strcasecmp_m(a, b)), expect)
 
 
 class strstr_m_Tests(samba.tests.TestCase):
@@ -98,8 +100,4 @@ class strstr_m_Tests(samba.tests.TestCase):
                  (KATAKANA_LETTER_A * 3, 'a', None),
                  ]
         for a, b, expect in cases:
-            if expect is not None:
-                expect = expect.encode('utf-8')
-            self.assertEquals(strstr_m(a.encode('utf-8'),
-                                       b.encode('utf-8')),
-                              expect)
+            self.assertEquals(strstr_m(a, b), expect)
