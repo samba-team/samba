@@ -21,7 +21,7 @@ from wafsamba.samba_abi import (
     normalise_signature,
     )
 
-from cStringIO import StringIO
+from samba.compat import StringIO
 
 
 class NormaliseSignatureTests(TestCase):
