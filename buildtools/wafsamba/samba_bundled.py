@@ -3,7 +3,7 @@
 import sys
 from waflib import Build, Options, Logs
 from waflib.Configure import conf
-from samba_utils import TO_LIST
+from wafsamba import samba_utils
 
 def PRIVATE_NAME(bld, name, private_extension, private_library):
     '''possibly rename a library to include a bundled extension'''
@@ -139,7 +139,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     # We always do a logic validation of 'onlyif' first
     missing = []
     if onlyif:
-        for l in TO_LIST(onlyif):
+        for l in samba_utils.TO_LIST(onlyif):
             f = 'FOUND_SYSTEMLIB_%s' % l
             if not f in conf.env:
                 Logs.error('ERROR: CHECK_BUNDLED_SYSTEM(%s) - ' % (libname) +

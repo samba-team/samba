@@ -7,7 +7,7 @@ import fnmatch
 
 from waflib import Options, Utils, Logs, Task, Build, Errors
 from waflib.TaskGen import feature, before, after
-import samba_utils
+from wafsamba import samba_utils
 
 # these type maps cope with platform specific names for common types
 # please add new type mappings into the list below
