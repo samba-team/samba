@@ -4891,6 +4891,93 @@ done:
 	return ret;
 }
 
+static bool test_fruit_locking_conflict(struct torture_context *tctx,
+					struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx;
+	struct smb2_create create;
+	struct smb2_handle h;
+	struct smb2_lock lck;
+	struct smb2_lock_element el;
+	const char *fname = BASEDIR "\\locking_conflict.txt";
+	NTSTATUS status;
+	bool ret = false;
+
+	mem_ctx = talloc_new(tctx);
+	torture_assert_not_null(tctx, mem_ctx, "talloc_new failed");
+
+	/* clean slate ...*/
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, h);
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_READ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, mem_ctx, &create);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = create.out.file.handle;
+
+	el = (struct smb2_lock_element) {
+		.offset = 0xfffffffffffffffc,
+		.length = 1,
+		.flags = SMB2_LOCK_FLAG_EXCLUSIVE,
+	};
+	lck = (struct smb2_lock) {
+		.in.lock_count = 1,
+		.in.file.handle = h,
+		.in.locks = &el,
+	};
+
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	el = (struct smb2_lock_element) {
+		.offset = 0,
+		.length = 0x7fffffffffffffff,
+		.flags = SMB2_LOCK_FLAG_EXCLUSIVE,
+	};
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	create = (struct smb2_create) {
+		.in.desired_access =
+		SEC_RIGHTS_FILE_READ|SEC_RIGHTS_FILE_WRITE,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, mem_ctx, &create);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	{
+		struct smb2_close cl = {
+			.level = RAW_CLOSE_SMB2,
+			.in.file.handle = h,
+		};
+		smb2_close(tree, &cl);
+	}
+
+	ret = true;
+done:
+	return ret;
+}
+
 struct torture_suite *torture_vfs_fruit_netatalk(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
@@ -4900,6 +4987,8 @@ struct torture_suite *torture_vfs_fruit_netatalk(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
 	torture_suite_add_1smb2_test(suite, "stream names with locally created xattr", test_stream_names_local);
+	torture_suite_add_1smb2_test(
+		suite, "locking conflict", test_fruit_locking_conflict);
 
 	return suite;
 }
