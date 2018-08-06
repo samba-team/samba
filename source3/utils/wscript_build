@@ -86,7 +86,8 @@ bld.SAMBA3_BINARY('eventlogadm',
                  deps='''
                  talloc
                  smbconf
-                 LIBEVENTLOG''')
+                 LIBEVENTLOG''',
+                 install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('sharesec',
                  source='sharesec.c ../lib/util_sd.c',
