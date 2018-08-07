@@ -195,6 +195,12 @@ def main():
                    "--number-of-groups"))
         sys.exit(1)
 
+    if opts.number_of_groups and opts.average_groups_per_user:
+        if opts.number_of_groups < opts.average_groups_per_user:
+            print_err(("--average-groups-per-user can not be more than "
+                       "--number-of-groups"))
+            sys.exit(1)
+
     if not opts.number_of_groups and opts.group_memberships:
         print_err("--group-memberships requires --number-of-groups")
         sys.exit(1)
