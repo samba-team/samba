@@ -498,9 +498,6 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 			ldb_debug(next_module->ldb, LDB_DEBUG_TRACE, "commit ldb transaction error: %s",
 				  ldb_errstring(next_module->ldb));
 		}
-		/* cancel the transaction */
-		FIRST_OP(ldb, del_transaction);
-		next_module->ops->del_transaction(next_module);
 	}
 	return status;
 }
