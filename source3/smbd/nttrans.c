@@ -2317,6 +2317,7 @@ static enum ndr_err_code fill_qtlist_from_sids(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < elems; i++) {
 		SMB_NTQUOTA_STRUCT qt;
 		SMB_NTQUOTA_LIST *list_item;
+		bool ok;
 
 		if (!NT_STATUS_IS_OK(vfs_get_ntquota(fsp,
 						     SMB_USER_QUOTA_TYPE,
@@ -2333,7 +2334,15 @@ static enum ndr_err_code fill_qtlist_from_sids(TALLOC_CTX *mem_ctx,
 			return NDR_ERR_ALLOC;
 		}
 
-		sid_to_uid(&sids[i], &list_item->uid);
+		ok = sid_to_uid(&sids[i], &list_item->uid);
+		if (!ok) {
+			char buf[DOM_SID_STR_BUFLEN];
+			dom_sid_string_buf(&sids[i], buf, sizeof(buf));
+			DBG_WARNING("Could not convert SID %s to uid\n", buf);
+			/* No idea what to return here... */
+			return NDR_ERR_INVALID_POINTER;
+		}
+
 		list_item->quotas = talloc_zero(list_item, SMB_NTQUOTA_STRUCT);
 		if (list_item->quotas == NULL) {
 			DBG_ERR("failed to allocate\n");
