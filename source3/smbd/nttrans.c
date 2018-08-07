@@ -2301,7 +2301,7 @@ static enum ndr_err_code fill_qtlist_from_sids(TALLOC_CTX *mem_ctx,
 					       struct dom_sid *sids,
 					       uint32_t elems)
 {
-	int i;
+	uint32_t i;
 	TALLOC_CTX *list_ctx = NULL;
 
 	list_ctx = talloc_init("quota_sid_list");
