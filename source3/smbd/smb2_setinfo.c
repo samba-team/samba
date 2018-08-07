@@ -572,6 +572,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 
 	case 0x04:/* SMB2_SETINFO_QUOTA */
 	{
+#ifdef HAVE_SYS_QUOTAS
 		struct file_quota_information info = {0};
 		SMB_NTQUOTA_STRUCT qt = {0};
 		enum ndr_err_code err;
@@ -604,6 +605,10 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		}
 		status = NT_STATUS_OK;
 		break;
+#else
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+#endif
 	}
 	default:
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);

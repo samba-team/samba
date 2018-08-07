@@ -523,6 +523,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 	}
 
 	case SMB2_GETINFO_QUOTA: {
+#ifdef HAVE_SYS_QUOTAS
 		struct smb2_query_quota_info info;
 		enum ndr_err_code err;
 		uint8_t *data = NULL;
@@ -602,6 +603,10 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		status  = NT_STATUS_OK;
 		TALLOC_FREE(tmp_ctx);
 		break;
+#else
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+#endif
 	}
 
 	default:
