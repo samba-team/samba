@@ -6355,7 +6355,9 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	DEBUG(6,("smb_set_file_size: size: %.0f ", (double)size));
+	DBG_INFO("size: %"PRIu64", file_size_stat=%"PRIu64"\n",
+		 (uint64_t)size,
+		 get_file_size_stat(psbuf));
 
 	if (size == get_file_size_stat(psbuf)) {
 		return NT_STATUS_OK;
