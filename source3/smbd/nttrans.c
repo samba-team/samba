@@ -2459,7 +2459,7 @@ static enum ndr_err_code extract_sids_from_buf(TALLOC_CTX *mem_ctx,
 			}
 		}
 		*sids = talloc_zero_array(mem_ctx, struct dom_sid, i);
-		if (!sids) {
+		if (*sids == NULL) {
 			DBG_ERR("OOM\n");
 			err = NDR_ERR_ALLOC;
 			goto done;
