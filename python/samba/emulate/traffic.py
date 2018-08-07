@@ -1708,6 +1708,7 @@ def create_group(ldb, instance_id, name):
     ldb.add({
         "dn": dn,
         "objectclass": "group",
+        "sAMAccountName": name,
     })
     end = time.time()
     duration = end - start
