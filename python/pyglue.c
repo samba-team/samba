@@ -297,26 +297,30 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 
 static PyObject *py_strcasecmp_m(PyObject *self, PyObject *args)
 {
-	char *s1, *s2;
+	const char *s1 = NULL;
+	const char *s2 = NULL;
 
-	if (!PyArg_ParseTuple(args, "ss", &s1, &s2))
+	if (!PyArg_ParseTuple(args, "eses", "utf8", &s1, "utf8", &s2)) {
 		return NULL;
+	}
 
 	return PyInt_FromLong(strcasecmp_m(s1, s2));
 }
 
 static PyObject *py_strstr_m(PyObject *self, PyObject *args)
 {
-	char *s1, *s2, *ret;
+	const char *s1 = NULL;
+	const char *s2 = NULL;
+	char *ret = NULL;
 
-	if (!PyArg_ParseTuple(args, "ss", &s1, &s2))
+	if (!PyArg_ParseTuple(args, "eses", "utf8", &s1, "utf8", &s2))
 		return NULL;
 
 	ret = strstr_m(s1, s2);
 	if (!ret) {
 		Py_RETURN_NONE;
 	}
-	return PyStr_FromString(ret);
+	return PyUnicode_FromString(ret);
 }
 
 static PyMethodDef py_misc_methods[] = {
