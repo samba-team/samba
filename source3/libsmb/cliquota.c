@@ -649,7 +649,14 @@ NTSTATUS fill_quota_buffer(TALLOC_CTX *mem_ctx,
 		/* pidl will align to 8 bytes due to 8 byte members*/
 		/* Remember how much align padding we've used. */
 		padding = qndr->offset;
-		ndr_push_align(qndr, 8);
+
+		err = ndr_push_align(qndr, 8);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			DBG_DEBUG("ndr_push_align returned %s\n",
+				  ndr_map_error2string(err));
+			return ndr_map_error2ntstatus(err);
+		}
+
 		padding = qndr->offset - padding;
 
 		/*
