@@ -2949,10 +2949,6 @@ NTSTATUS cli_smb2_get_user_quota(struct cli_state *cli,
 	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
 
 	query.return_single = 1;
-	if (sid_len < 0) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
 
 	info.next_entry_offset = 0;
 	info.sid_length = sid_len;
