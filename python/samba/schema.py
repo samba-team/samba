@@ -112,7 +112,7 @@ class Schema(object):
 
         if files is not None:
             for file in files:
-                self.schema_data += open(file, 'r').read()
+                self.schema_data += open(file, 'rb').read()
 
         self.schema_data = substitute_var(self.schema_data,
                                           {"SCHEMADN": schemadn})
@@ -131,7 +131,7 @@ class Schema(object):
         if override_prefixmap is not None:
             self.prefixmap_data = override_prefixmap
         else:
-            self.prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
+            self.prefixmap_data = open(setup_path("prefixMap.txt"), 'rb').read()
 
         if additional_prefixmap is not None:
             for map in additional_prefixmap:

@@ -1082,7 +1082,7 @@ def setup_encrypted_secrets_key(path):
     finally:
         os.umask(umask_original)
 
-    with os.fdopen(fd, 'w') as f:
+    with os.fdopen(fd, 'wb') as f:
         key = samba.generate_random_bytes(16)
         f.write(key)
 
