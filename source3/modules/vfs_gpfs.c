@@ -1946,6 +1946,21 @@ static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, uint32_t mode,
 			      off_t offset, off_t len)
 {
+	if (mode == (VFS_FALLOCATE_FL_PUNCH_HOLE|VFS_FALLOCATE_FL_KEEP_SIZE) &&
+	    !fsp->is_sparse &&
+	    lp_strict_allocate(SNUM(fsp->conn))) {
+		/*
+		 * This is from a ZERO_DATA request on a non-sparse
+		 * file. GPFS does not support FL_KEEP_SIZE and thus
+		 * cannot fill the whole again in the subsequent
+		 * fallocate(FL_KEEP_SIZE). Deny this FL_PUNCH_HOLE
+		 * call to not end up with a hole in a non-sparse
+		 * file.
+		 */
+		errno = ENOTSUP;
+		return -1;
+	}
+
 	return SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
 }
 
