@@ -293,7 +293,7 @@ class dbcheck(object):
                     # as the original one, so that on replication we
                     # merge, rather than conflict.
                     proposed_objectguid = dsdb_dn.dn.get_extended_component("GUID")
-                listwko.append(o)
+                listwko.append(str(o))
 
             if proposed_objectguid is not None:
                 guid_suffix = "\nobjectGUID: %s" % str(misc.GUID(proposed_objectguid))
@@ -2223,7 +2223,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 values = set()
                 # check for incorrectly normalised attributes
                 for val in obj[attrname]:
-                    values.add(str(val))
+                    values.add(val)
 
                     normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, [val])
                     if len(normalised) != 1 or normalised[0] != val:
