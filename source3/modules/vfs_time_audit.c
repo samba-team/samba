@@ -1930,13 +1930,12 @@ static NTSTATUS smb_time_audit_offload_read_recv(
 	struct tevent_req *req,
 	struct vfs_handle_struct *handle,
 	TALLOC_CTX *mem_ctx,
-	DATA_BLOB *_token_blob)
+	DATA_BLOB *token_blob)
 {
 	struct time_audit_offload_read_state *state = tevent_req_data(
 		req, struct time_audit_offload_read_state);
 	struct timespec ts_recv;
 	double timediff;
-	DATA_BLOB token_blob;
 	NTSTATUS status;
 
 	clock_gettime_mono(&ts_recv);
@@ -1950,13 +1949,8 @@ static NTSTATUS smb_time_audit_offload_read_recv(
 		return status;
 	}
 
-	token_blob = data_blob_talloc(mem_ctx,
-				      state->token_blob.data,
-				      state->token_blob.length);
-	if (token_blob.data == NULL) {
-		tevent_req_received(req);
-		return NT_STATUS_NO_MEMORY;
-	}
+	token_blob->length = state->token_blob.length;
+	token_blob->data = talloc_move(mem_ctx, &state->token_blob.data);
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
