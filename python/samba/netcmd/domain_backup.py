@@ -150,10 +150,10 @@ def check_targetdir(logger, targetdir):
         raise CommandError("%s is not a directory" % targetdir)
 
 
-def check_online_backup_args(logger, credopts, server, targetdir):
+def check_online_backup_args(logger, creds, server, targetdir):
     # Make sure we have all the required args.
-    u_p = {'user': credopts.creds.get_username(),
-           'pass': credopts.creds.get_password()}
+    u_p = {'user': creds.get_username(),
+           'pass': creds.get_password()}
     if None in u_p.values():
         raise CommandError("Creds required.")
     if server is None:
@@ -212,11 +212,11 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         logger = self.get_logger()
         logger.setLevel(logging.DEBUG)
 
-        # Make sure we have all the required args.
-        check_online_backup_args(logger, credopts, server, targetdir)
-
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
+
+        # Make sure we have all the required args.
+        check_online_backup_args(logger, creds, server, targetdir)
 
         tmpdir = tempfile.mkdtemp(dir=targetdir)
 
@@ -680,8 +680,11 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         logger = self.get_logger()
         logger.setLevel(logging.INFO)
 
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
         # Make sure we have all the required args.
-        check_online_backup_args(logger, credopts, server, targetdir)
+        check_online_backup_args(logger, creds, server, targetdir)
         delete_old_dns = not keep_dns_realm
 
         new_dns_realm = new_dns_realm.lower()
@@ -695,8 +698,6 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         tmpdir = tempfile.mkdtemp(dir=targetdir)
 
         # setup a join-context for cloning the remote server
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
         include_secrets = not no_secrets
         ctx = DCCloneAndRenameContext(new_base_dn, new_domain_name,
                                       new_dns_realm, logger=logger,
