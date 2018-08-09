@@ -1548,6 +1548,7 @@ def openLdb(host, creds, lp):
     session = system_session()
     ldb = SamDB(url="ldap://%s" % host,
                 session_info=session,
+                options=['modules:paged_searches'],
                 credentials=creds,
                 lp=lp)
     return ldb
@@ -1718,21 +1719,24 @@ def user_name(instance_id, i):
     return "STGU-%d-%d" % (instance_id, i)
 
 
+def search_objectclass(ldb, objectclass='user', attr='sAMAccountName'):
+    """Seach objectclass, return attr in a set"""
+    objs = ldb.search(
+        expression="(objectClass={})".format(objectclass),
+        attrs=[attr]
+    )
+    return {str(obj[attr]) for obj in objs}
+
+
 def generate_users(ldb, instance_id, number, password):
     """Add users to the server"""
+    existing_objects = search_objectclass(ldb, objectclass='user')
     users = 0
     for i in range(number, 0, -1):
-        try:
-            username = user_name(instance_id, i)
-            create_user_account(ldb, instance_id, username, password)
+        name = user_name(instance_id, i)
+        if name not in existing_objects:
+            create_user_account(ldb, instance_id, name, password)
             users += 1
-        except LdbError as e:
-            (status, _) = e.args
-            # Stop if entry exists
-            if status == 68:
-                break
-            else:
-                raise
 
     return users
 
@@ -1744,19 +1748,14 @@ def group_name(instance_id, i):
 
 def generate_groups(ldb, instance_id, number):
     """Create the required number of groups on the server."""
+    existing_objects = search_objectclass(ldb, objectclass='group')
     groups = 0
     for i in range(number, 0, -1):
-        try:
-            name = group_name(instance_id, i)
+        name = group_name(instance_id, i)
+        if name not in existing_objects:
             create_group(ldb, instance_id, name)
             groups += 1
-        except LdbError as e:
-            (status, _) = e.args
-            # Stop if entry exists
-            if status == 68:
-                break
-            else:
-                raise
+
     return groups
 
 
