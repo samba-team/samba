@@ -35,6 +35,9 @@ import samba.gpo as gpo
 from samba.param import LoadParm
 from uuid import UUID
 from tempfile import NamedTemporaryFile
+from samba.dcerpc import preg
+from samba.dcerpc import misc
+from samba.ndr import ndr_pack, ndr_unpack
 
 try:
     from enum import Enum
@@ -307,7 +310,7 @@ class gp_ext(object):
         local_path = self.lp.cache_path('gpo_cache')
         data_file = os.path.join(local_path, check_safe_path(afile).upper())
         if os.path.exists(data_file):
-            return self.read(open(data_file, 'r').read())
+            return self.read(data_file)
         return None
 
     @abstractmethod
@@ -347,7 +350,8 @@ class gp_ext_setter(object):
 
 
 class gp_inf_ext(gp_ext):
-    def read(self, policy):
+    def read(self, data_file):
+        policy = open(data_file, 'r').read()
         inf_conf = ConfigParser()
         inf_conf.optionxform = str
         try:
@@ -355,6 +359,12 @@ class gp_inf_ext(gp_ext):
         except:
             inf_conf.readfp(StringIO(policy.decode('utf-16')))
         return inf_conf
+
+
+class gp_pol_ext(gp_ext):
+    def read(self, data_file):
+        raw = open(data_file, 'rb').read()
+        return ndr_unpack(preg.file, raw)
 
 
 ''' Fetch the hostname of a writable DC '''
