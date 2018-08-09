@@ -215,6 +215,7 @@ static NTSTATUS gp_get_file (struct smbcli_tree *tree, const char *remote_src,
 	fh_local = open(local_dst, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (fh_local == -1) {
 		DEBUG(0, ("Failed to open local file: %s\n", local_dst));
+		smbcli_close(tree, fh_remote);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -224,11 +225,17 @@ static NTSTATUS gp_get_file (struct smbcli_tree *tree, const char *remote_src,
 			NT_STATUS_IS_ERR(smbcli_getattrE(tree, fh_remote,
 				&attr, &file_size, NULL, NULL, NULL))) {
 		DEBUG(0, ("Failed to get remote file size: %s\n", smbcli_errstr(tree)));
+		smbcli_close(tree, fh_remote);
+		close(fh_local);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	buf = talloc_zero_array(tree, uint8_t, buf_size);
-	NT_STATUS_HAVE_NO_MEMORY(buf);
+	if (buf == NULL) {
+		smbcli_close(tree, fh_remote);
+		close(fh_local);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Copy the contents of the file */
 	while (1) {
@@ -240,20 +247,12 @@ static NTSTATUS gp_get_file (struct smbcli_tree *tree, const char *remote_src,
 
 		if (write(fh_local, buf, n) != n) {
 			DEBUG(0, ("Short write while copying file.\n"));
+			smbcli_close(tree, fh_remote);
+			close(fh_local);
 			talloc_free(buf);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		nread += n;
-	}
-
-	/* Bytes read should match the file size, or the copy was incomplete */
-	if (nread != file_size) {
-		DEBUG(0, ("Remote/local file size mismatch after copying file: "
-		          "%s (remote %zu, local %zu).\n",
-		          remote_src, file_size, nread));
-		close(fh_local);
-		talloc_free(buf);
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Close the files */
@@ -261,6 +260,15 @@ static NTSTATUS gp_get_file (struct smbcli_tree *tree, const char *remote_src,
 	close(fh_local);
 
 	talloc_free(buf);
+
+	/* Bytes read should match the file size, or the copy was incomplete */
+	if (nread != file_size) {
+		DEBUG(0, ("Remote/local file size mismatch after copying file: "
+		          "%s (remote %zu, local %zu).\n",
+		          remote_src, file_size, nread));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	return NT_STATUS_OK;
 }
 
