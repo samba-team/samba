@@ -168,6 +168,7 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	TDB_DATA kbuf, dbuf;
 	char temp[PERFCOUNT_MAX_LEN] = {0};
 	char *buf1 = *retbuf;
+	char *p = NULL;
 	uint32_t working_size = 0;
 	DATA_BLOB name_index, name;
 	bool ok;
@@ -185,13 +186,16 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	}
 	/* First encode the name_index */
 	working_size = (kbuf.dsize + 1)*sizeof(uint16_t);
-	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
-	if(!buf1) {
+	p = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
+	if (p == NULL) {
+		SAFE_FREE(buf1);
 		buffer_size = 0;
 		return buffer_size;
 	}
+	buf1 = p;
 	ok = push_reg_sz(talloc_tos(), &name_index, (const char *)kbuf.dptr);
 	if (!ok) {
+		SAFE_FREE(buf1);
 		buffer_size = 0;
 		return buffer_size;
 	}
@@ -199,16 +203,19 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	buffer_size += working_size;
 	/* Now encode the actual name */
 	working_size = (dbuf.dsize + 1)*sizeof(uint16_t);
-	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
-	if(!buf1) {
+	p = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
+	if (p == NULL) {
+		SAFE_FREE(buf1);
 		buffer_size = 0;
 		return buffer_size;
 	}
+	buf1 = p;
 	memset(temp, 0, sizeof(temp));
 	memcpy(temp, dbuf.dptr, dbuf.dsize);
 	SAFE_FREE(dbuf.dptr);
 	ok = push_reg_sz(talloc_tos(), &name, temp);
 	if (!ok) {
+		SAFE_FREE(buf1);
 		buffer_size = 0;
 		return buffer_size;
 	}
