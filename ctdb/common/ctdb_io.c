@@ -160,7 +160,6 @@ static void queue_io_read(struct ctdb_queue *queue)
 	int num_ready = 0;
 	ssize_t nread;
 	uint8_t *data;
-	int navail;
 
 	/* check how much data is available on the socket for immediately
 	   guaranteed nonblocking access.
@@ -196,10 +195,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 		queue->buffer.extend = 0;
 	}
 
-	navail = queue->buffer.size - queue->buffer.length;
-	if (num_ready > navail) {
-		num_ready = navail;
-	}
+	num_ready = MIN(num_ready, queue->buffer.size - queue->buffer.length);
 
 	if (num_ready > 0) {
 		nread = sys_read(queue->fd,
