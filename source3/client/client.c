@@ -1160,6 +1160,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 				start = lseek(handle, 0, SEEK_END);
 				if (start == -1) {
 					d_printf("Error seeking local file\n");
+					close(handle);
 					return 1;
 				}
 			}
@@ -1181,6 +1182,9 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 				      NULL);
 		if(!NT_STATUS_IS_OK(status)) {
 			d_printf("getattrib: %s\n", nt_errstr(status));
+			if (newhandle) {
+				close(handle);
+			}
 			return 1;
 		}
 	}
@@ -1193,6 +1197,9 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "parallel_read returned %s\n",
 			  nt_errstr(status));
+		if (newhandle) {
+			close(handle);
+		}
 		cli_close(targetcli, fnum);
 		return 1;
 	}
