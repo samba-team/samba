@@ -30,6 +30,9 @@
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/popt_common.h"
 
+/* Tests that configure multiple DLZs will use this. Increase to add stress. */
+#define NUM_DLZS_TO_CONFIGURE 4
+
 struct torture_context *tctx_static;
 
 static void dlz_bind9_log_wrapper(int level, const char *fmt, ...)
@@ -140,6 +143,74 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 				 "Failed to configure samba_dlz");
 
 	dlz_destroy(dbdata);
+
+	return true;
+}
+
+static bool test_dlz_bind9_multiple_configure(struct torture_context *tctx)
+{
+	int i;
+	for(i = 0; i < NUM_DLZS_TO_CONFIGURE; i++){
+		test_dlz_bind9_configure(tctx);
+	}
+	return true;
+}
+
+static bool configure_multiple_dlzs(struct torture_context *tctx,
+				    void **dbdata, int count)
+{
+	int i, res;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		NULL
+	};
+
+	tctx_static = tctx;
+	for(i = 0; i < count; i++){
+		res = dlz_create("samba_dlz", 3, argv, &(dbdata[i]),
+				 "log", dlz_bind9_log_wrapper,
+				 "writeable_zone",
+				 dlz_bind9_writeable_zone_hook, NULL);
+		torture_assert_int_equal(tctx, res, ISC_R_SUCCESS,
+					 "Failed to create samba_dlz");
+
+		res = dlz_configure((void*)tctx, dbdata[i]);
+		torture_assert_int_equal(tctx, res, ISC_R_SUCCESS,
+					 "Failed to configure samba_dlz");
+	}
+
+	return true;
+}
+
+static bool test_dlz_bind9_destroy_oldest_first(struct torture_context *tctx)
+{
+	void *dbdata[NUM_DLZS_TO_CONFIGURE];
+	int i;
+
+	configure_multiple_dlzs(tctx, dbdata, NUM_DLZS_TO_CONFIGURE);
+
+	/* Reload faults are reported to happen on the first destroy */
+	dlz_destroy(dbdata[0]);
+
+	for(i = 1; i < NUM_DLZS_TO_CONFIGURE; i++){
+		dlz_destroy(dbdata[i]);
+	}
+
+	return true;
+}
+
+static bool test_dlz_bind9_destroy_newest_first(struct torture_context *tctx)
+{
+	void *dbdata[NUM_DLZS_TO_CONFIGURE];
+	int i;
+
+	configure_multiple_dlzs(tctx, dbdata, NUM_DLZS_TO_CONFIGURE);
+
+	for(i = NUM_DLZS_TO_CONFIGURE - 1; i >= 0; i--) {
+		dlz_destroy(dbdata[i]);
+	}
 
 	return true;
 }
@@ -1092,6 +1163,13 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "version", test_dlz_bind9_version);
 	torture_suite_add_simple_test(suite, "create", test_dlz_bind9_create);
 	torture_suite_add_simple_test(suite, "configure", test_dlz_bind9_configure);
+	torture_suite_add_simple_test(suite, "destroyoldestfirst",
+				      test_dlz_bind9_destroy_oldest_first);
+	torture_suite_add_simple_test(suite, "destroynewestfirst",
+				      test_dlz_bind9_destroy_newest_first);
+	torture_suite_add_simple_test(suite, "multipleconfigure",
+				      test_dlz_bind9_multiple_configure);
+
 	torture_suite_add_simple_test(suite, "gssapi", test_dlz_bind9_gssapi);
 	torture_suite_add_simple_test(suite, "spnego", test_dlz_bind9_spnego);
 	torture_suite_add_simple_test(suite, "lookup", test_dlz_bind9_lookup);
