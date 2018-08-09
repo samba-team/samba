@@ -747,6 +747,9 @@ static bool wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 	d_printf("%s\n", dc_info->dc_site_name);
 	d_printf("%s\n", dc_info->client_site_name);
 
+	wbcFreeMemory(str);
+	wbcFreeMemory(dc_info);
+
 	return true;
 }
 
