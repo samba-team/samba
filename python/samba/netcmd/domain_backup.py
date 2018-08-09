@@ -32,7 +32,7 @@ from samba.auth import system_session
 from samba.join import DCJoinContext, join_clone, DCCloneAndRenameContext
 from samba.dcerpc.security import dom_sid
 from samba.netcmd import Option, CommandError
-from samba.dcerpc import misc
+from samba.dcerpc import misc, security
 from samba import Ldb
 from fsmo import cmd_fsmo_seize
 from samba.provision import make_smbconf
@@ -152,16 +152,25 @@ def check_targetdir(logger, targetdir):
 
 # For '--no-secrets' backups, this sets the Administrator user's password to a
 # randomly-generated value. This is similar to the provision behaviour
-def set_admin_password(logger, samdb, username):
+def set_admin_password(logger, samdb):
     """Sets a randomly generated password for the backup DB's admin user"""
+
+    # match the admin user by RID
+    domainsid = samdb.get_domain_sid()
+    match_admin = "(objectsid={}-{})".format(domainsid,
+                                             security.DOMAIN_RID_ADMINISTRATOR)
+    search_expr = "(&(objectClass=user){})".format(match_admin)
+
+    # retrieve the admin username (just in case it's been renamed)
+    res = samdb.search(base=samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                       expression=search_expr)
+    username = str(res[0]['samaccountname'])
 
     adminpass = samba.generate_random_password(12, 32)
     logger.info("Setting %s password in backup to: %s" % (username, adminpass))
     logger.info("Run 'samba-tool user setpassword %s' after restoring DB" %
                 username)
-    samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))"
-                      % ldb.binary_encode(username), adminpass,
-                      force_change_at_next_login=False,
+    samdb.setpassword(search_expr, adminpass, force_change_at_next_login=False,
                       username=username)
 
 
@@ -244,7 +253,7 @@ class cmd_domain_backup_online(samba.netcmd.Command):
 
         # ensure the admin user always has a password set (same as provision)
         if no_secrets:
-            set_admin_password(logger, samdb, creds.get_username())
+            set_admin_password(logger, samdb)
 
         # Add everything in the tmpdir to the backup tar file
         backup_file = backup_filepath(targetdir, realm, time_str)
@@ -756,7 +765,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
 
         # ensure the admin user always has a password set (same as provision)
         if no_secrets:
-            set_admin_password(logger, samdb, creds.get_username())
+            set_admin_password(logger, samdb)
 
         # Add everything in the tmpdir to the backup tar file
         backup_file = backup_filepath(targetdir, new_dns_realm, time_str)
