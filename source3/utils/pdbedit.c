@@ -750,7 +750,7 @@ static int new_user(const char *username, const char *fullname,
 	NTSTATUS status;
 	struct dom_sid u_sid;
 	int flags;
-	int ret;
+	int ret = -1;
 
 	tosctx = talloc_tos();
 	if (!tosctx) {
@@ -766,10 +766,14 @@ static int new_user(const char *username, const char *fullname,
 	}
 
 	pwd1 = get_pass( "new password:", stdin_get);
-	pwd2 = get_pass( "retype new password:", stdin_get);
-	if (!pwd1 || !pwd2) {
+	if (pwd1 == NULL) {
 		fprintf(stderr, "Failed to read passwords.\n");
-		return -1;
+		goto done;
+	}
+	pwd2 = get_pass( "retype new password:", stdin_get);
+	if (pwd2 == NULL) {
+		fprintf(stderr, "Failed to read passwords.\n");
+		goto done;
 	}
 	ret = strcmp(pwd1, pwd2);
 	if (ret != 0) {
