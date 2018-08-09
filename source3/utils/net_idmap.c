@@ -417,14 +417,14 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 		if ( (len > 0) && (line[len-1] == '\n') )
 			line[len-1] = '\0';
 
-		if (sscanf(line, "GID %lu %128s", &idval, sid_string) == 2)
+		if (sscanf(line, "GID %lu %127s", &idval, sid_string) == 2)
 		{
 			ret = net_idmap_store_id_mapping(db, ID_TYPE_GID,
 							 idval, sid_string);
 			if (ret != 0) {
 				break;
 			}
-		} else if (sscanf(line, "UID %lu %128s", &idval, sid_string) == 2)
+		} else if (sscanf(line, "UID %lu %127s", &idval, sid_string) == 2)
 		{
 			ret = net_idmap_store_id_mapping(db, ID_TYPE_UID,
 							 idval, sid_string);
