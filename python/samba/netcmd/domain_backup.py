@@ -156,14 +156,6 @@ def check_targetdir(logger, targetdir):
         raise CommandError("%s is not a directory" % targetdir)
 
 
-def check_online_backup_args(logger, creds, server, targetdir):
-    # Make sure we have all the required args.
-    if server is None:
-        raise CommandError('Server required')
-
-    check_targetdir(logger, targetdir)
-
-
 # For '--no-secrets' backups, this sets the Administrator user's password to a
 # randomly-generated value. This is similar to the provision behaviour
 def set_admin_password(logger, samdb, username):
@@ -218,7 +210,10 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         creds = credopts.get_credentials(lp)
 
         # Make sure we have all the required args.
-        check_online_backup_args(logger, creds, server, targetdir)
+        if server is None:
+            raise CommandError('Server required')
+
+        check_targetdir(logger, targetdir)
 
         tmpdir = tempfile.mkdtemp(dir=targetdir)
 
@@ -686,7 +681,11 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         creds = credopts.get_credentials(lp)
 
         # Make sure we have all the required args.
-        check_online_backup_args(logger, creds, server, targetdir)
+        if server is None:
+            raise CommandError('Server required')
+
+        check_targetdir(logger, targetdir)
+
         delete_old_dns = not keep_dns_realm
 
         new_dns_realm = new_dns_realm.lower()
