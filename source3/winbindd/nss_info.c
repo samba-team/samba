@@ -84,7 +84,10 @@ static struct nss_function_entry *nss_get_backend(const char *name )
 /********************************************************************
  *******************************************************************/
 
-static bool parse_nss_parm( const char *config, char **backend, char **domain )
+static bool parse_nss_parm(TALLOC_CTX *mem_ctx,
+			   const char *config,
+			   char **backend,
+			   char **domain)
 {
 	char *p;
 
@@ -98,17 +101,17 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	/* if no : then the string must be the backend name only */
 
 	if ( !p ) {
-		*backend = SMB_STRDUP( config );
+		*backend = talloc_strdup(mem_ctx, config);
 		return (*backend != NULL);
 	}
 
 	/* split the string and return the two parts */
 
 	if ( strlen(p+1) > 0 ) {
-		*domain = SMB_STRDUP( p+1 );
+		*domain = talloc_strdup(mem_ctx, p + 1);
 	}
 
-	*backend = SMB_STRNDUP(config, PTR_DIFF(p, config));
+	*backend = talloc_strndup(mem_ctx, config, PTR_DIFF(p, config));
 	return (*backend != NULL);
 }
 
@@ -158,14 +161,17 @@ static NTSTATUS nss_init(const char **nss_list)
 	NTSTATUS status;
 	static bool nss_initialized = false;
 	int i;
-	char *backend, *domain;
+	char *backend = NULL, *domain = NULL;
 	struct nss_function_entry *nss_backend;
+	TALLOC_CTX *frame;
 
 	/* check for previous successful initializations */
 
 	if (nss_initialized) {
 		return NT_STATUS_OK;
 	}
+
+	frame = talloc_stackframe();
 
 	/* The "template" backend should always be registered as it
 	   is a static module */
@@ -179,8 +185,10 @@ static NTSTATUS nss_init(const char **nss_list)
 	   as necessary) */
 
 	for ( i=0; nss_list && nss_list[i]; i++ ) {
+		bool ok;
 
-		if ( !parse_nss_parm(nss_list[i], &backend, &domain) ) {
+		ok = parse_nss_parm(frame, nss_list[i], &backend, &domain);
+		if (!ok) {
 			DEBUG(0,("nss_init: failed to parse \"%s\"!\n",
 				 nss_list[i]));
 			continue;
@@ -238,9 +246,10 @@ static NTSTATUS nss_init(const char **nss_list)
 
 		/* cleanup */
 
-		SAFE_FREE( backend );
-		SAFE_FREE( domain );
+		TALLOC_FREE(domain);
+		TALLOC_FREE(backend);
 	}
+
 
 	if ( !nss_domain_list ) {
 		DEBUG(3,("nss_init: no nss backends configured.  "
@@ -252,6 +261,7 @@ static NTSTATUS nss_init(const char **nss_list)
 
 	nss_initialized = true;
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
