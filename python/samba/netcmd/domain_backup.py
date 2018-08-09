@@ -158,10 +158,6 @@ def check_targetdir(logger, targetdir):
 
 def check_online_backup_args(logger, creds, server, targetdir):
     # Make sure we have all the required args.
-    u_p = {'user': creds.get_username(),
-           'pass': creds.get_password()}
-    if None in u_p.values():
-        raise CommandError("Creds required.")
     if server is None:
         raise CommandError('Server required')
 
