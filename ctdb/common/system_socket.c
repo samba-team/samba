@@ -172,7 +172,7 @@ static uint16_t ip6_checksum(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
-	int s, ret;
+	int s;
 	struct sockaddr_ll sall = {0};
 	struct ether_header *eh;
 	struct arphdr *ah;
@@ -189,41 +189,42 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	char *ptr;
 	char bdcast[] = {0xff,0xff,0xff,0xff,0xff,0xff};
 	struct ifreq ifr = {{{0}}};
+	int ret = 0;
 
 	s = socket(AF_PACKET, SOCK_RAW, 0);
 	if (s == -1) {
+		ret = errno;
 		DBG_ERR("Failed to open raw socket\n");
-		return -1;
+		return ret;
 	}
 	DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
 
 	/* Find interface */
 	strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
 	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+		ret = errno;
 		DBG_ERR("Interface '%s' not found\n", iface);
-		close(s);
-		return -1;
+		goto fail;
 	}
 
 	/* Get MAC address */
 	strlcpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name));
 	ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
 	if ( ret < 0 ) {
-		close(s);
+		ret = errno;
 		DBG_ERR("ioctl failed\n");
-		return -1;
+		goto fail;
 	}
 	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
+		ret = 0;
 		D_DEBUG("Ignoring loopback arp request\n");
-		close(s);
-		return 0;
+		goto fail;
 	}
 	if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
-		close(s);
-		errno = EINVAL;
+		ret = EINVAL;
 		DBG_ERR("Not an ethernet address family (0x%x)\n",
 			if_hwaddr.ifr_hwaddr.sa_family);
-		return -1;
+		goto fail;;
 	}
 
 	/* Set up most of destination address structure */
@@ -262,10 +263,10 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		ret = sendto(s,buffer, 64, 0,
 			     (struct sockaddr *)&sall, sizeof(sall));
-		if (ret < 0 ){
-			close(s);
+		if (ret < 0 ) {
+			ret = errno;
 			DBG_ERR("Failed sendto\n");
-			return -1;
+			goto fail;
 		}
 
 		/* send unsolicited arp reply broadcast */
@@ -282,10 +283,10 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		ret = sendto(s, buffer, 64, 0,
 			     (struct sockaddr *)&sall, sizeof(sall));
-		if (ret < 0 ){
+		if (ret < 0 ) {
+			ret = errno;
 			DBG_ERR("Failed sendto\n");
-			close(s);
-			return -1;
+			goto fail;
 		}
 
 		close(s);
@@ -314,9 +315,9 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		ret = inet_pton(AF_INET6, "ff02::1", &ip6->ip6_dst);
 		if (ret != 1) {
-			close(s);
+			ret = errno;
 			DBG_ERR("Failed inet_pton\n");
-			return -1;
+			goto fail;
 		}
 
 		nd_na = (struct nd_neighbor_advert *)(ip6+1);
@@ -339,21 +340,26 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		ret = sendto(s, buffer, sizeof(buffer),
 			     0, (struct sockaddr *)&sall, sizeof(sall));
-		if (ret < 0 ){
-			close(s);
+		if (ret < 0 ) {
+			ret = errno;
 			DBG_ERR("Failed sendto\n");
-			return -1;
+			goto fail;
 		}
 
 		close(s);
 		break;
 	default:
+		ret = EINVAL;
 		DBG_ERR("Not an ipv4/ipv6 address (family is %u)\n",
 			addr->ip.sin_family);
-		return -1;
+		goto fail;
 	}
 
 	return 0;
+
+fail:
+	close(s);
+	return ret;
 }
 
 #else /* HAVE_PACKETSOCKET */
@@ -361,8 +367,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	/* Not implemented */
-	errno = ENOSYS;
-	return -1;
+	return ENOSYS;
 }
 
 #endif /* HAVE_PACKETSOCKET */

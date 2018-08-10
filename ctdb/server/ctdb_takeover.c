@@ -376,8 +376,8 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 
 	ret = ctdb_sys_send_arp(&arp->addr, iface);
 	if (ret != 0) {
-		DEBUG(DEBUG_CRIT,(__location__ " sending of arp failed on iface '%s' (%s)\n",
-				  iface, strerror(errno)));
+		DBG_ERR("Failed to send ARP on interface %s: %s\n",
+			iface, strerror(ret));
 	}
 
 	tcparray = arp->tcparray;
@@ -2115,8 +2115,8 @@ static void send_gratious_arp(struct tevent_context *ev,
 
 	ret = ctdb_sys_send_arp(&arp->addr, arp->iface);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " sending of gratious arp on iface '%s' failed (%s)\n",
-				 arp->iface, strerror(errno)));
+		DBG_ERR("Failed to send gratuitous ARP on iface %s: %s\n",
+			arp->iface, strerror(ret));
 	}
 
 
