@@ -190,44 +190,50 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	char bdcast[] = {0xff,0xff,0xff,0xff,0xff,0xff};
 	struct ifreq ifr = {{{0}}};
 
+	s = socket(AF_PACKET, SOCK_RAW, 0);
+	if (s == -1) {
+		DBG_ERR("Failed to open raw socket\n");
+		return -1;
+	}
+	DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
+
+	/* Find interface */
+	strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
+	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+		DBG_ERR("Interface '%s' not found\n", iface);
+		close(s);
+		return -1;
+	}
+
+	/* Get MAC address */
+	strlcpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name));
+	ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
+	if ( ret < 0 ) {
+		close(s);
+		DBG_ERR("ioctl failed\n");
+		return -1;
+	}
+	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
+		D_DEBUG("Ignoring loopback arp request\n");
+		close(s);
+		return 0;
+	}
+	if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
+		close(s);
+		errno = EINVAL;
+		DBG_ERR("Not an ethernet address family (0x%x)\n",
+			if_hwaddr.ifr_hwaddr.sa_family);
+		return -1;
+	}
+
+	/* Set up most of destination address structure */
+	sall.sll_family = AF_PACKET;
+	sall.sll_halen = sizeof(struct ether_addr);
+	sall.sll_protocol = htons(ETH_P_ALL);
+	sall.sll_ifindex = ifr.ifr_ifindex;
+
 	switch (addr->ip.sin_family) {
 	case AF_INET:
-		s = socket(AF_PACKET, SOCK_RAW, 0);
-		if (s == -1){
-			DBG_ERR("Failed to open raw socket\n");
-			return -1;
-		}
-
-		DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
-		strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
-		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
-			DBG_ERR("Interface '%s' not found\n", iface);
-			close(s);
-			return -1;
-		}
-
-		/* get the mac address */
-		strlcpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name));
-		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
-		if ( ret < 0 ) {
-			close(s);
-			DBG_ERR("ioctl failed\n");
-			return -1;
-		}
-		if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
-			D_DEBUG("Ignoring loopback arp request\n");
-			close(s);
-			return 0;
-		}
-		if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
-			close(s);
-			errno = EINVAL;
-			DBG_ERR("Not an ethernet address family (0x%x)\n",
-				if_hwaddr.ifr_hwaddr.sa_family);
-			return -1;
-		}
-
-
 		memset(buffer, 0 , 64);
 		eh = (struct ether_header *)buffer;
 		memset(eh->ether_dhost, 0xff, ETH_ALEN);
@@ -252,11 +258,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		memcpy(ptr, &addr->ip.sin_addr, 4);
 		ptr+=4;
 
-		sall.sll_family = AF_PACKET;
-		sall.sll_halen = 6;
 		memcpy(&sall.sll_addr[0], bdcast, sall.sll_halen);
-		sall.sll_protocol = htons(ETH_P_ALL);
-		sall.sll_ifindex = ifr.ifr_ifindex;
+
 		ret = sendto(s,buffer, 64, 0,
 			     (struct sockaddr *)&sall, sizeof(sall));
 		if (ret < 0 ){
@@ -288,41 +291,6 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		close(s);
 		break;
 	case AF_INET6:
-		s = socket(AF_PACKET, SOCK_RAW, 0);
-		if (s == -1){
-			DBG_ERR("Failed to open raw socket\n");
-			return -1;
-		}
-
-		DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
-		strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
-		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
-			DBG_ERR("Interface '%s' not found\n", iface);
-			close(s);
-			return -1;
-		}
-
-		/* get the mac address */
-		strlcpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name));
-		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
-		if ( ret < 0 ) {
-			close(s);
-			DBG_ERR("ioctl failed\n");
-			return -1;
-		}
-		if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
-			DBG_DEBUG("Ignoring loopback arp request\n");
-			close(s);
-			return 0;
-		}
-		if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
-			close(s);
-			errno = EINVAL;
-			DBG_ERR("Not an ethernet address family (0x%x)\n",
-				if_hwaddr.ifr_hwaddr.sa_family);
-			return -1;
-		}
-
 		memset(buffer, 0 , sizeof(buffer));
 		eh = (struct ether_header *)buffer;
 		/*
@@ -367,11 +335,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		nd_na->nd_na_cksum = ip6_checksum((uint16_t *)nd_na,
 						  ntohs(ip6->ip6_plen), ip6);
 
-		sall.sll_family = AF_PACKET;
-		sall.sll_halen = 6;
 		memcpy(&sall.sll_addr[0], &eh->ether_dhost[0], sall.sll_halen);
-		sall.sll_protocol = htons(ETH_P_ALL);
-		sall.sll_ifindex = ifr.ifr_ifindex;
+
 		ret = sendto(s, buffer, sizeof(buffer),
 			     0, (struct sockaddr *)&sall, sizeof(sall));
 		if (ret < 0 ){
