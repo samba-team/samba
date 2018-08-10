@@ -994,7 +994,7 @@ class NTDSConnection(object):
             self.schedule = ndr_unpack(drsblobs.schedule, msg["schedule"][0])
 
         if "whenCreated" in msg:
-            self.whenCreated = ldb.string_to_time(msg["whenCreated"][0])
+            self.whenCreated = ldb.string_to_time(str(msg["whenCreated"][0]))
 
         if "fromServer" in msg:
             dsdn = dsdb_Dn(samdb, msg["fromServer"][0].decode('utf8'))

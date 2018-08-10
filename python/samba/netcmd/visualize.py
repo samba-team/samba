@@ -275,7 +275,7 @@ class cmd_reps(GraphCommand):
                 res = local_kcc.samdb.search(dsa_dn,
                                              scope=SCOPE_BASE,
                                              attrs=["dNSHostName"])
-                dns_name = res[0]["dNSHostName"][0]
+                dns_name = str(res[0]["dNSHostName"][0])
                 print("Attempting to contact ldap://%s (%s)" %
                       (dns_name, dsa_dn),
                       file=sys.stderr)
@@ -508,7 +508,7 @@ class cmd_ntdsconn(GraphCommand):
             for msg in res:
                 msgdn = str(msg.dn)
                 dest_dn = msgdn[msgdn.index(',') + 1:]
-                attested_edges.append((msg['fromServer'][0],
+                attested_edges.append((str(msg['fromServer'][0]),
                                        dest_dn, ntds_dn))
 
         if importldif and H == self._tmp_fn_to_delete:
@@ -694,7 +694,7 @@ class cmd_uptodateness(GraphCommand):
                                expression=("(&(invocationId=%s)"
                                            "(objectClass=nTDSDSA))" % inv_id),
                                attrs=["distinguishedName", "invocationId"])
-            settings_dn = res[0]["distinguishedName"][0]
+            settings_dn = str(res[0]["distinguishedName"][0])
             prefix, dsa_dn = settings_dn.split(',', 1)
             if prefix != 'CN=NTDS Settings':
                 raise CommandError("Expected NTDS Settings DN, got %s" %
