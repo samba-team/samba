@@ -762,13 +762,9 @@ sub setup_simpleserver
 	my $simpleserver_options = "
 	lanman auth = yes
 	ntlm auth = yes
-	vfs objects = xattr_tdb streams_depot time_audit full_audit
+	vfs objects = xattr_tdb streams_depot
 	change notify = no
 	smb encrypt = off
-
-	full_audit:syslog = no
-	full_audit:success = none
-	full_audit:failure = none
 
 [vfs_aio_pthread]
 	path = $prefix_abs/share
@@ -1766,7 +1762,11 @@ sub provision($$$$$$$$$)
 	dos filemode = yes
 	strict rename = yes
 	strict sync = yes
-	vfs objects = acl_xattr fake_acls xattr_tdb streams_depot
+	vfs objects = acl_xattr fake_acls xattr_tdb streams_depot time_audit full_audit
+
+	full_audit:syslog = no
+	full_audit:success = none
+	full_audit:failure = none
 
 	printing = vlp
 	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s
