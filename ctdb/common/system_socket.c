@@ -216,12 +216,12 @@ static int arp_build(uint8_t *buffer,
 	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
 	eh->ether_type = htons(ETHERTYPE_ARP);
 
-	ea = (struct ether_arp *)&buffer[sizeof(struct ether_header)];
+	ea = (struct ether_arp *)(buffer + sizeof(struct ether_header));
 	ah = &ea->ea_hdr;
 	ah->ar_hrd = htons(ARPHRD_ETHER);
 	ah->ar_pro = htons(ETH_P_IP);
 	ah->ar_hln = ETH_ALEN;
-	ah->ar_pln = 4;
+	ah->ar_pln = sizeof(ea->arp_spa);
 
 	if (! reply) {
 		ah->ar_op  = htons(ARPOP_REQUEST);
@@ -277,9 +277,9 @@ static int ip6_na_build(uint8_t *buffer,
 	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
 	eh->ether_type = htons(ETHERTYPE_IP6);
 
-	ip6 = (struct ip6_hdr *)(eh+1);
+	ip6 = (struct ip6_hdr *)(buffer + sizeof(struct ether_header));
 	ip6->ip6_vfc  = 0x60;
-	ip6->ip6_plen = htons(sizeof(*nd_na) +
+	ip6->ip6_plen = htons(sizeof(struct nd_neighbor_advert) +
 			      sizeof(struct nd_opt_hdr) +
 			      ETH_ALEN);
 	ip6->ip6_nxt  = IPPROTO_ICMPV6;
@@ -292,17 +292,27 @@ static int ip6_na_build(uint8_t *buffer,
 		return EIO;
 	}
 
-	nd_na = (struct nd_neighbor_advert *)(ip6+1);
+	nd_na = (struct nd_neighbor_advert *)(buffer +
+					      sizeof(struct ether_header) +
+					      sizeof(struct ip6_hdr));
 	nd_na->nd_na_type = ND_NEIGHBOR_ADVERT;
 	nd_na->nd_na_code = 0;
 	nd_na->nd_na_flags_reserved = ND_NA_FLAG_OVERRIDE;
 	nd_na->nd_na_target = addr->sin6_addr;
-	/* Option: Target link-layer address */
-	nd_oh = (struct nd_opt_hdr *)(nd_na+1);
-	nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
-	nd_oh->nd_opt_len = 1;
 
-	ea = (struct ether_addr *)(nd_oh+1);
+	/* Option: Target link-layer address */
+	nd_oh = (struct nd_opt_hdr *)(buffer +
+				      sizeof(struct ether_header) +
+				      sizeof(struct ip6_hdr) +
+				      sizeof(struct nd_neighbor_advert));
+	nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
+	nd_oh->nd_opt_len = 1;  /* multiple of 8 octets */
+
+	ea = (struct ether_addr *)(buffer +
+				   sizeof(struct ether_header) +
+				   sizeof(struct ip6_hdr) +
+				   sizeof(struct nd_neighbor_advert) +
+				   sizeof(struct nd_opt_hdr));
 	memcpy(ea, hwaddr, ETH_ALEN);
 
 	nd_na->nd_na_cksum = ip6_checksum((uint16_t *)nd_na,
