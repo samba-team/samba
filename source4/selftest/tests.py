@@ -630,7 +630,7 @@ for env in ["ad_dc:local", "ad_dc_ntvfs:local", "fl2000dc:local", "fl2003dc:loca
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.gpo")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.gpo")
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.processes")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.processes", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user_wdigest")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user")
