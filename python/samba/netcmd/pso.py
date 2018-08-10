@@ -109,8 +109,10 @@ def check_pso_valid(samdb, pso_dn, name):
     try:
         res = samdb.search(pso_dn, scope=ldb.SCOPE_BASE,
                            attrs=['msDS-PasswordSettingsPrecedence'])
-    except Exception as e:
-        raise CommandError("Unable to find PSO '%s'" % name)
+    except ldb.LdbError as e:
+        if e.args[0] == ldb.ERR_NO_SUCH_OBJECT:
+            raise CommandError("Unable to find PSO '%s'" % name)
+        raise
 
     # users need admin permission to modify/view a PSO. In this case, the
     # search succeeds, but it doesn't return any attributes
@@ -323,8 +325,11 @@ class cmd_domain_pwdsettings_pso_create(Command):
         pso_dn = "CN=%s,%s" % (psoname, pso_container(samdb))
         try:
             res = samdb.search(pso_dn, scope=ldb.SCOPE_BASE)
-        except Exception as e:
-            pass
+        except ldb.LdbError as e:
+            if e.args[0] == ldb.ERR_NO_SUCH_OBJECT:
+                pass
+            else:
+                raise
         else:
             raise CommandError("PSO '%s' already exists" % psoname)
 
