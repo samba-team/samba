@@ -311,7 +311,13 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
 
         except samba.tests.BlackboxProcessError as e:
             print("Good, failed as expected after %d rounds: %r" % (i, e.cmd))
-            self.assertIn('There are failing connections', e.stdout)
+            self.assertIn('There are failing connections', e.stdout,
+                          msg=('stdout: %r\nstderr: %r\nretcode: %s'
+                               '\nmessage: %r\ncmd: %r') % (e.stdout,
+                                                            e.stderr,
+                                                            e.returncode,
+                                                            e.msg,
+                                                            e.cmd))
             self.assertRegexpMatches(
                 e.stdout,
                 r'result 845[67] '
