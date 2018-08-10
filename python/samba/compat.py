@@ -92,6 +92,6 @@ else:
     binary_type = str
 
     # alias
-    import StringIO
-    StringIO = StringIO.StringIO
+    import cStringIO
+    StringIO = cStringIO.StringIO
     cmp_fn = cmp
