@@ -173,14 +173,14 @@ static uint16_t ip6_checksum(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	int s, ret;
-	struct sockaddr_ll sall;
+	struct sockaddr_ll sall = {0};
 	struct ether_header *eh;
 	struct arphdr *ah;
 	struct ip6_hdr *ip6;
 	struct nd_neighbor_advert *nd_na;
 	struct nd_opt_hdr *nd_oh;
 	struct ether_addr *ea;
-	struct ifreq if_hwaddr;
+	struct ifreq if_hwaddr = {{{0}}};
 	/* Size of IPv6 neighbor advertisement (with option) */
 	unsigned char buffer[sizeof(struct ether_header) +
 			     sizeof(struct ip6_hdr) +
@@ -188,11 +188,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			     sizeof(struct nd_opt_hdr) + ETH_ALEN];
 	char *ptr;
 	char bdcast[] = {0xff,0xff,0xff,0xff,0xff,0xff};
-	struct ifreq ifr;
-
-	ZERO_STRUCT(sall);
-	ZERO_STRUCT(ifr);
-	ZERO_STRUCT(if_hwaddr);
+	struct ifreq ifr = {{{0}}};
 
 	switch (addr->ip.sin_family) {
 	case AF_INET:
