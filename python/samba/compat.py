@@ -22,6 +22,42 @@ import sys
 PY3 = sys.version_info[0] == 3
 
 if PY3:
+    # Sometimes in PY3 we have variables whose content can be 'bytes' or
+    # 'str' and we can't be sure which. Generally this is because the
+    # code variable can be initialised (or reassigned) a value from different
+    # api(s) or functions depending on complex conditions or logic. Or another
+    # common case is in PY2 the variable is 'type <str>' and in PY3 it is
+    # 'class <str>' and the function to use e.g. b64encode requires 'bytes'
+    # in PY3. In such cases it would be nice to avoid excessive testing in
+    # the client code. Calling such a helper function should be avoided
+    # if possible but sometimes this just isn't possible.
+    # If a 'str' object is passed in it is encoded using 'utf8' or if 'bytes'
+    # is passed in it is returned unchanged.
+    # Using this function is PY2/PY3 code should ensure in most cases
+    # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
+    # encodes the variable (see PY2 implementation of this function below)
+    def get_bytes(bytesorstring):
+       tmp = bytesorstring
+       if isinstance(bytesorstring, str):
+           tmp = bytesorstring.encode('utf8')
+       elif not isinstance(bytesorstring, bytes):
+           raise ValueError('Expected byte or string for %s:%s' % (type(bytesorstring), bytesorstring))
+       return tmp
+
+    # helper function to get a string from a variable that maybe 'str' or
+    # 'bytes' if 'bytes' then it is decoded using 'utf8'. If 'str' is passed
+    # it is returned unchanged
+    # Using this function is PY2/PY3 code should ensure in most cases
+    # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
+    # decodes the variable (see PY2 implementation of this function below)
+    def get_string(bytesorstring):
+       tmp = bytesorstring
+       if isinstance(bytesorstring, bytes):
+           tmp = bytesorstring.decode('utf8')
+       elif not isinstance(bytesorstring, str):
+           raise ValueError('Expected byte of string for %s:%s' % (type(bytesorstring), bytesorstring))
+       return tmp
+
     def cmp_fn(x, y):
         """
         Replacement for built-in function cmp that was removed in Python 3
@@ -47,6 +83,32 @@ if PY3:
     import io
     StringIO = io.StringIO
 else:
+    # Helper function to return bytes.
+    # if 'unicode' is passed in then it is decoded using 'utf8' and
+    # the result returned. If 'str' is passed then it is returned unchanged.
+    # Using this function is PY2/PY3 code should ensure in most cases
+    # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
+    # encodes the variable (see PY3 implementation of this function above)
+    def get_bytes(bytesorstring):
+       tmp = bytesorstring
+       if isinstance(bytesorstring, unicode):
+           tmp = bytesorstring.encode('utf8')
+       elif not isinstance(bytesorstring, str):
+           raise ValueError('Expected string for %s:%s' % (type(bytesorstring), bytesorstring))
+       return tmp
+
+    # Helper function to return string.
+    # if 'str' or 'unicode' passed in they are returned unchanged
+    # otherwise an exception is generated
+    # Using this function is PY2/PY3 code should ensure in most cases
+    # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
+    # decodes the variable (see PY3 implementation of this function above)
+    def get_string(bytesorstring):
+       tmp = bytesorstring
+       if not(isinstance(bytesorstring, str) or isinstance(bytesorstring, unicode)):
+           raise ValueError('Expected str or unicode for %s:%s' % (type(bytesorstring), bytesorstring))
+       return tmp
+
 
     if sys.version_info < (2, 7):
         def cmp_to_key_fn(mycmp):
