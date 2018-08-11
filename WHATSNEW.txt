@@ -1,4 +1,94 @@
                    =============================
+                   Release Notes for Samba 4.8.4
+                           August 14, 2018
+                   =============================
+
+
+This is a security release in order to address the following defects:
+
+o  CVE-2018-1139  (Weak authentication protocol allowed.)
+o  CVE-2018-1140  (Denial of Service Attack on DNS and LDAP server.)
+o  CVE-2018-10858 (Insufficient input validation on client directory
+		   listing in libsmbclient.)
+o  CVE-2018-10918 (Denial of Service Attack on AD DC DRSUAPI server.)
+o  CVE-2018-10919 (Confidential attribute disclosure from the AD LDAP
+		   server.)
+
+
+=======
+Details
+=======
+
+o  CVE-2018-1139:
+   Vulnerability that allows authentication via NTLMv1 even if disabled.
+
+o  CVE-2018-1140:
+   Missing null pointer checks may crash the Samba AD DC, both over
+   DNS and LDAP.
+
+o  CVE-2018-10858:
+   A malicious server could return a directory entry that could corrupt
+   libsmbclient memory.
+
+o  CVE-2018-10918:
+   Missing null pointer checks may crash the Samba AD DC, over the
+   authenticated DRSUAPI RPC service.
+
+o  CVE-2018-10919:
+   Missing access control checks allow discovery of confidential attribute
+   values via authenticated LDAP search expressions.
+
+
+Changes since 4.8.3:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13453: CVE-2018-10858: libsmb: Harden smbc_readdir_internal() against
+     returns from malicious servers.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13374: CVE-2018-1140: ldbsearch '(distinguishedName=abc)' and DNS query
+     with escapes crashes, ldb: Release LDB 1.3.5 for CVE-2018-1140
+   * BUG 13552: CVE-2018-10918: cracknames: Fix DoS (NULL pointer de-ref) when
+     not servicePrincipalName is set on a user.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13434: CVE-2018-10919: acl_read: Fix unauthorized attribute access via
+     searches.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13360: CVE-2018-1139 libcli/auth: Do not allow ntlmv1 over SMB1 when it
+     is disabled via "ntlm auth".
+
+o  Andrej Gessel <Andrej.Gessel@janztec.com>
+   * BUG 13374: CVE-2018-1140 Add NULL check for ldb_dn_get_casefold() in
+     ltdb_index_dn_attr().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.8.3
                             June 26, 2018
                    =============================
@@ -84,8 +174,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.8.2
