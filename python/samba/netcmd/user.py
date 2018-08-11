@@ -55,6 +55,7 @@ from samba.netcmd import (
     Option,
 )
 from samba.compat import text_type
+from samba.compat import get_bytes
 
 try:
     import io
@@ -984,11 +985,11 @@ class GetPasswordCommand(Command):
             unicodePwd = obj["unicodePwd"][0]
             if add_unicodePwd:
                 del obj["unicodePwd"]
-        account_name = obj["sAMAccountName"][0]
+        account_name = str(obj["sAMAccountName"][0])
         if add_sAMAcountName:
             del obj["sAMAccountName"]
         if "userPrincipalName" in obj:
-            account_upn = obj["userPrincipalName"][0]
+            account_upn = str(obj["userPrincipalName"][0])
         else:
             realm = self.lp.get("realm")
             account_upn = "%s@%s" % (account_name, realm.lower())
@@ -1168,7 +1169,7 @@ class GetPasswordCommand(Command):
                                  primary_wdigest)
             try:
                 digest = binascii.hexlify(bytearray(digests.hashes[i - 1].hash))
-                return "%s:%s:%s" % (user, realm, digest)
+                return "%s:%s:%s" % (user, realm, text_type(digest, 'utf8'))
             except IndexError:
                 return None
 
@@ -1873,13 +1874,13 @@ samba-tool user syncpasswords --terminate \\
                 self.sync_command = sync_command
                 add_ldif  = "dn: %s\n" % self.cache_dn
                 add_ldif += "objectClass: userSyncPasswords\n"
-                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(self.samdb_url).decode('utf8')
-                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(self.dirsync_filter).decode('utf8')
+                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(get_bytes(self.samdb_url)).decode('utf8')
+                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(get_bytes(self.dirsync_filter)).decode('utf8')
                 for a in self.dirsync_attrs:
-                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
+                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(get_bytes(a)).decode('utf8')
                 add_ldif += "dirsyncControl: %s\n" % self.dirsync_controls[0]
                 for a in self.password_attrs:
-                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a).decode('utf8')
+                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(get_bytes(a)).decode('utf8')
                 if self.decrypt_samba_gpg:
                     add_ldif += "decryptSambaGPG: TRUE\n"
                 else:
@@ -1895,22 +1896,22 @@ samba-tool user syncpasswords --terminate \\
                 ldif = self.cache.write_ldif(msg, ldb.CHANGETYPE_NONE)
                 self.outf.write("%s" % ldif)
             else:
-                self.dirsync_filter = res[0]["dirsyncFilter"][0]
+                self.dirsync_filter = str(res[0]["dirsyncFilter"][0])
                 self.dirsync_attrs = []
                 for a in res[0]["dirsyncAttribute"]:
-                    self.dirsync_attrs.append(a)
-                self.dirsync_controls = [res[0]["dirsyncControl"][0], "extended_dn:1:0"]
+                    self.dirsync_attrs.append(str(a))
+                self.dirsync_controls = [str(res[0]["dirsyncControl"][0]), "extended_dn:1:0"]
                 self.password_attrs = []
                 for a in res[0]["passwordAttribute"]:
-                    self.password_attrs.append(a)
-                decrypt_string = res[0]["decryptSambaGPG"][0]
+                    self.password_attrs.append(str(a))
+                decrypt_string = str(res[0]["decryptSambaGPG"][0])
                 assert(decrypt_string in ["TRUE", "FALSE"])
                 if decrypt_string == "TRUE":
                     self.decrypt_samba_gpg = True
                 else:
                     self.decrypt_samba_gpg = False
                 if "syncCommand" in res[0]:
-                    self.sync_command = res[0]["syncCommand"][0]
+                    self.sync_command = str(res[0]["syncCommand"][0])
                 else:
                     self.sync_command = None
                 if "currentPid" in res[0]:
@@ -2154,7 +2155,7 @@ samba-tool user syncpasswords --terminate \\
 
         def dirsync_loop():
             while True:
-                res = self.samdb.search(expression=self.dirsync_filter,
+                res = self.samdb.search(expression=str(self.dirsync_filter),
                                         scope=ldb.SCOPE_SUBTREE,
                                         attrs=self.dirsync_attrs,
                                         controls=self.dirsync_controls)
