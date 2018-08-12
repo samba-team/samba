@@ -36,6 +36,9 @@ smbclient="$samba4bindir/smbclient"
 wbinfo="$samba4bindir/wbinfo"
 rpcclient="$samba4bindir/rpcclient"
 samba_tool="$samba4bindir/samba-tool"
+net_tool="$samba4bindir/net -s $SMB_CONF_PATH"
+
+local_service="HOST/$(hostname)@$REALM"
 
 . `dirname $0`/subunit.sh
 . `dirname $0`/common_test_fns.inc
@@ -48,6 +51,7 @@ KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 rm -rf $KRB5CCNAME_PATH
+
 
 echo $TRUST_PASSWORD > $PREFIX/tmppassfile
 testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $TRUST_USERNAME@$TRUST_REALM   || failed=`expr $failed + 1`
@@ -93,6 +97,19 @@ testit "wbinfo change outgoing trust pw" $VALGRIND $wbinfo --change-secret --dom
 testit "wbinfo check outgoing trust pw" $VALGRIND $wbinfo --check-secret --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
 
 test_smbclient "Test user login with the changed outgoing secret" 'ls' "$unc" -k yes -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
+
+
+# Test net-ads-kerberos-pac with impersonate
+testit "dump pac of local machine" $VALGRIND $net_tool -P ads kerberos pac dump || failed=`expr $failed + 1`
+testit "dump pac via impersonate" $VALGRIND $net_tool -P ads kerberos pac dump impersonate=$USERNAME@$REALM || failed=`expr $failed + 1`
+testit "dump pac via impersonate to SPN" $VALGRIND $net_tool -P ads kerberos pac dump impersonate=$USERNAME@$REALM local_service=$local_service || failed=`expr $failed + 1`
+testit "dump pac via impersonate with netbios domain" $VALGRIND $net_tool -P ads kerberos pac dump impersonate=$USERNAME@$DOMAIN local_service=$local_service || failed=`expr $failed + 1`
+
+# Test cross realm S4U2Self with forest trust
+if test x"${TYPE}" = x"forest" ;then
+	testit "dump pac via impersonate with trust" $VALGRIND $net_tool -P ads kerberos pac dump impersonate=$TRUST_USERNAME@$TRUST_REALM local_service=$local_service || failed=`expr $failed + 1`
+fi
+
 
 rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache
 exit $failed
