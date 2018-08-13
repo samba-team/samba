@@ -270,16 +270,20 @@ static uint16_t ip_checksum(uint16_t *data, size_t n, struct ip *ip)
 
 static uint16_t ip6_checksum(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 {
-	uint32_t phdr[2];
+	uint16_t phdr[3];
 	uint32_t sum = 0;
 	uint16_t sum2;
+	uint32_t len;
 
 	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_src, 16);
 	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_dst, 16);
 
-	phdr[0] = htonl(n);
-	phdr[1] = htonl(ip6->ip6_nxt);
-	sum += uint16_checksum((uint16_t *)phdr, 8);
+	len = htonl(n);
+	phdr[0] = len & UINT16_MAX;
+	phdr[1] = (len >> 16) & UINT16_MAX;
+	/* ip6_nxt is only 8 bits, so fits comfortably into a uint16_t */
+	phdr[2] = htons(ip6->ip6_nxt);
+	sum += uint16_checksum(phdr, sizeof(phdr));
 
 	sum += uint16_checksum(data, n);
 
