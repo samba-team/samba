@@ -200,8 +200,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 	TDB_DATA data;
 	size_t i;
 	struct g_lock lck;
-	struct g_lock_rec _mylock;
-	struct g_lock_rec *mylock = NULL;
+	struct g_lock_rec mylock = {0};
 	NTSTATUS status;
 	bool modified = false;
 	bool ok;
@@ -233,9 +232,13 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 		}
 	}
 
-	i = 0;
+	/*
+	 * For the lock upgrade/downgrade case, remove ourselves from
+	 * the list. We re-add ourselves later after we checked the
+	 * other entries for conflict.
+	 */
 
-	while (i < lck.num_recs) {
+	for (i=0; i<lck.num_recs; i++) {
 		struct g_lock_rec lock;
 
 		g_lock_get_rec(&lck, i, &lock);
@@ -245,20 +248,26 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 				status = NT_STATUS_WAS_LOCKED;
 				goto done;
 			}
-			if (mylock != NULL) {
-				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-				goto done;
-			}
-			_mylock = lock;
-			mylock = &_mylock;
-			/*
-			 * Remove "our" lock entry. Re-add it later
-			 * with our new lock type.
-			 */
+
+			mylock = lock;
 			g_lock_rec_del(&lck, i);
 			modified = true;
-			continue;
+			break;
 		}
+	}
+
+	/*
+	 * Check for conflicts with everybody else. Not a for-loop
+	 * because we remove stale entries in the meantime,
+	 * decrementing lck.num_recs.
+	 */
+
+	i = 0;
+
+	while (i < lck.num_recs) {
+		struct g_lock_rec lock;
+
+		g_lock_get_rec(&lck, i, &lock);
 
 		if (g_lock_conflicts(type, lock.lock_type)) {
 			struct server_id pid = lock.pid;
@@ -288,18 +297,26 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 	modified = true;
 
-	_mylock = (struct g_lock_rec) {
+	mylock = (struct g_lock_rec) {
 		.pid = self,
 		.lock_type = type
 	};
-	mylock = &_mylock;
 
 	status = NT_STATUS_OK;
 done:
 	if (modified) {
 		NTSTATUS store_status;
 
-		store_status = g_lock_store(rec, &lck, mylock);
+		/*
+		 * (Re-)add ourselves if needed via non-NULL
+		 * g_lock_store argument
+		 */
+
+		store_status = g_lock_store(
+			rec,
+			&lck,
+			mylock.pid.pid != 0 ? &mylock : NULL);
+
 		if (!NT_STATUS_IS_OK(store_status)) {
 			DBG_WARNING("g_lock_record_store failed: %s\n",
 				    nt_errstr(store_status));
