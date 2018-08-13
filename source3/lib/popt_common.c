@@ -93,6 +93,10 @@ static void popt_common_callback(poptContext con,
 			}
 		}
 
+		if (override_logfile) {
+			setup_logging(lp_logfile(talloc_tos()), DEBUG_FILE );
+		}
+
 		/* Further 'every Samba program must do this' hooks here. */
 		return;
 	}
@@ -287,10 +291,6 @@ static void popt_common_credentials_callback(poptContext con,
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		bool ok;
-
-		if (override_logfile) {
-			setup_logging(lp_logfile(talloc_tos()), DEBUG_FILE );
-		}
 
 		ok = lp_load_client(get_dyn_CONFIGFILE());
 		if (!ok) {
