@@ -578,3 +578,12 @@ bld.SAMBA3_MODULE('vfs_delay_inject',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_delay_inject'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_delay_inject'))
+
+bld.SAMBA3_MODULE('vfs_lttng',
+                  subsystem='vfs',
+                  source='vfs_lttng.c',
+                  deps='lttng-ust',
+                  init_function='',
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_lttng'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_lttng'))
+                

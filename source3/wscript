@@ -1724,6 +1724,9 @@ main() {
     if conf.CONFIG_SET('HAVE_DBUS'):
         default_shared_modules.extend(TO_LIST('vfs_snapper'))
 
+    if conf.CONFIG_SET('HAVE_LTTNG_TRACEF'):
+        default_shared_modules.extend(TO_LIST('vfs_lttng'))
+
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
 
