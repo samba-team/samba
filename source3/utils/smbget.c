@@ -18,7 +18,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "popt_common.h"
+#include "popt_common_cmdline.h"
 #include "libsmbclient.h"
 
 static int columns = 0;

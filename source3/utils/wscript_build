@@ -27,7 +27,7 @@ bld.SAMBA3_BINARY('smbtree',
                  smbconf
                  libsmb
                  msrpc3
-                 popt_samba3
+                 popt_samba3_cmdline
                  RPC_NDR_SRVSVC''')
 
 bld.SAMBA3_BINARY('smbpasswd',
@@ -52,7 +52,7 @@ bld.SAMBA3_BINARY('smbget',
                  source='smbget.c',
                  deps='''
                  talloc
-                 popt_samba3
+                 popt_samba3_cmdline
                  smbclient''')
 
 bld.SAMBA3_BINARY('nmblookup',
@@ -67,7 +67,7 @@ bld.SAMBA3_BINARY('smbcacls',
                  source='smbcacls.c ../lib/util_sd.c',
                  deps='''
                  talloc
-                 popt_samba3
+                 popt_samba3_cmdline
                  msrpc3
                  libcli_lsa3
                  krb5samba''')
@@ -76,7 +76,7 @@ bld.SAMBA3_BINARY('smbcquotas',
                  source='smbcquotas.c',
                  deps='''
                  talloc
-                 popt_samba3
+                 popt_samba3_cmdline
                  libsmb
                  msrpc3
                  libcli_lsa3''')
@@ -150,7 +150,9 @@ bld.SAMBA3_BINARY('samba-regedit',
                             regedit_wrap.c regedit_treeview.c
                             regedit_valuelist.c regedit_dialog.c
                             regedit_hexedit.c regedit_list.c""",
-                  deps='ncurses menu panel form registry smbconf popt_samba3',
+                  deps='''
+                  ncurses menu panel form registry smbconf popt_samba3_cmdline
+                  ''',
                   enabled=bld.env.build_regedit)
 
 bld.SAMBA3_BINARY('testparm',
@@ -217,7 +219,7 @@ bld.SAMBA3_BINARY('net',
                  netapi
                  addns
                  samba_intl
-                 popt_samba3
+                 popt_samba3_cmdline
                  pdb
                  libsmb
                  smbconf

@@ -33,7 +33,7 @@
 #include "../libcli/security/security_descriptor.h"
 #include "../libcli/registry/util_reg.h"
 #include "libsmb/libsmb.h"
-#include "popt_common.h"
+#include "popt_common_cmdline.h"
 
 #define RPCCLIENT_PRINTERNAME(_printername, _cli, _arg) \
 { \

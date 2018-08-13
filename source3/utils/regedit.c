@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "popt_common_cmdline.h"
 #include "lib/util/data_blob.h"
 #include "lib/registry/registry.h"
 #include "regedit.h"
