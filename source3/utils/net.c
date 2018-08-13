@@ -41,7 +41,7 @@
 /*****************************************************/
 
 #include "includes.h"
-#include "popt_common.h"
+#include "popt_common_cmdline.h"
 #include "utils/net.h"
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
