@@ -226,7 +226,8 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 		g_lock_get_rec(&lck, i, &check_rec);
 
-		if (!serverid_exists(&check_rec.pid)) {
+		if ((check_rec.lock_type == G_LOCK_READ) &&
+		    !serverid_exists(&check_rec.pid)) {
 			g_lock_rec_del(&lck, i);
 			modified = true;
 		}
