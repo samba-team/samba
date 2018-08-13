@@ -3973,7 +3973,7 @@ static void test_ldb_unique_index_duplicate_with_guid(void **state)
 	assert_int_equal(ret, LDB_SUCCESS);
 
 	msg02 = ldb_msg_new(tmp_ctx);
-	assert_non_null(msg01);
+	assert_non_null(msg02);
 
 	msg02->dn = ldb_dn_new_fmt(msg02, test_ctx->ldb, "dc=test02");
 	assert_non_null(msg02->dn);
