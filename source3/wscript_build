@@ -268,7 +268,12 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
 
 bld.SAMBA3_LIBRARY('popt_samba3',
                    source='lib/popt_common.c',
-                   deps='popt samba-util util_cmdline',
+                   deps='popt samba-util smbconf',
+                   private_library=True)
+
+bld.SAMBA3_LIBRARY('popt_samba3_cmdline',
+                   source='lib/popt_common_cmdline.c',
+                   deps='popt_samba3 util_cmdline',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('util_cmdline',
@@ -1094,7 +1099,7 @@ bld.SAMBA3_BINARY('client/smbclient',
                         ''',
                  deps='''
                       talloc
-                      popt_samba3
+                      popt_samba3_cmdline
                       smbconf
                       ndr-standard
                       SMBREADLINE
