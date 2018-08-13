@@ -170,25 +170,164 @@ static uint16_t ip6_checksum(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 
 #ifdef HAVE_PACKETSOCKET
 
-int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
+/*
+ * Create IPv4 ARP requests/replies or IPv6 neighbour advertisement
+ * packets
+ */
+
+#define ARP_BUFFER_SIZE 64
+
+#define IP6_NA_BUFFER_SIZE sizeof(struct ether_header) + \
+			   sizeof(struct ip6_hdr) + \
+			   sizeof(struct nd_neighbor_advert) + \
+			   sizeof(struct nd_opt_hdr) + \
+			   sizeof(struct ether_addr)
+
+static int arp_build(uint8_t *buffer,
+		     size_t buflen,
+		     const struct sockaddr_in *addr,
+		     const struct ether_addr *hwaddr,
+		     bool reply,
+		     struct ether_addr **ether_dhost,
+		     size_t *len)
 {
-	int s;
-	struct sockaddr_ll sall = {0};
+	size_t l = ARP_BUFFER_SIZE;
 	struct ether_header *eh;
 	struct arphdr *ah;
+	char *ptr;
+
+	if (addr->sin_family != AF_INET) {
+		return EINVAL;
+	}
+
+	if (buflen < l) {
+		return EMSGSIZE;
+	}
+
+	memset(buffer, 0 , l);
+
+	eh = (struct ether_header *)buffer;
+	memset(eh->ether_dhost, 0xff, ETH_ALEN);
+	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
+	eh->ether_type = htons(ETHERTYPE_ARP);
+
+	ah = (struct arphdr *)&buffer[sizeof(struct ether_header)];
+	ah->ar_hrd = htons(ARPHRD_ETHER);
+	ah->ar_pro = htons(ETH_P_IP);
+	ah->ar_hln = ETH_ALEN;
+	ah->ar_pln = 4;
+
+	if (! reply) {
+		ah->ar_op  = htons(ARPOP_REQUEST);
+		ptr = (char *)&ah[1];
+		memcpy(ptr, hwaddr, ETH_ALEN);
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->sin_addr, 4);
+		ptr+=4;
+		memset(ptr, 0, ETH_ALEN);
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->sin_addr, 4);
+		ptr+=4;
+	} else {
+		ah->ar_op  = htons(ARPOP_REPLY);
+		ptr = (char *)&ah[1];
+		memcpy(ptr, hwaddr, ETH_ALEN);
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->sin_addr, 4);
+		ptr+=4;
+		memcpy(ptr, hwaddr, ETH_ALEN);
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->sin_addr, 4);
+		ptr+=4;
+	}
+
+	*ether_dhost = (struct ether_addr *)eh->ether_dhost;
+	*len = l;
+	return 0;
+}
+
+static int ip6_na_build(uint8_t *buffer,
+			size_t buflen,
+			const struct sockaddr_in6 *addr,
+			const struct ether_addr *hwaddr,
+			struct ether_addr **ether_dhost,
+			size_t *len)
+{
+	size_t l = IP6_NA_BUFFER_SIZE;
+	struct ether_header *eh;
 	struct ip6_hdr *ip6;
 	struct nd_neighbor_advert *nd_na;
 	struct nd_opt_hdr *nd_oh;
 	struct ether_addr *ea;
+	int ret;
+
+	if (addr->sin6_family != AF_INET6) {
+		return EINVAL;
+	}
+
+	if (buflen < l) {
+		return EMSGSIZE;
+	}
+
+	memset(buffer, 0 , l);
+
+	eh = (struct ether_header *)buffer;
+	/*
+	 * Ethernet multicast: 33:33:00:00:00:01 (see RFC2464,
+	 * section 7) - note memset 0 above!
+	 */
+	eh->ether_dhost[0] = eh->ether_dhost[1] = 0x33;
+	eh->ether_dhost[5] = 0x01;
+	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
+	eh->ether_type = htons(ETHERTYPE_IP6);
+
+	ip6 = (struct ip6_hdr *)(eh+1);
+	ip6->ip6_vfc  = 0x60;
+	ip6->ip6_plen = htons(sizeof(*nd_na) +
+			      sizeof(struct nd_opt_hdr) +
+			      ETH_ALEN);
+	ip6->ip6_nxt  = IPPROTO_ICMPV6;
+	ip6->ip6_hlim = 255;
+	ip6->ip6_src  = addr->sin6_addr;
+	/* all-nodes multicast */
+
+	ret = inet_pton(AF_INET6, "ff02::1", &ip6->ip6_dst);
+	if (ret != 1) {
+		return EIO;
+	}
+
+	nd_na = (struct nd_neighbor_advert *)(ip6+1);
+	nd_na->nd_na_type = ND_NEIGHBOR_ADVERT;
+	nd_na->nd_na_code = 0;
+	nd_na->nd_na_flags_reserved = ND_NA_FLAG_OVERRIDE;
+	nd_na->nd_na_target = addr->sin6_addr;
+	/* Option: Target link-layer address */
+	nd_oh = (struct nd_opt_hdr *)(nd_na+1);
+	nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
+	nd_oh->nd_opt_len = 1;
+
+	ea = (struct ether_addr *)(nd_oh+1);
+	memcpy(ea, hwaddr, ETH_ALEN);
+
+	nd_na->nd_na_cksum = ip6_checksum((uint16_t *)nd_na,
+					  ntohs(ip6->ip6_plen),
+					  ip6);
+
+	*ether_dhost = (struct ether_addr *)eh->ether_dhost;
+	*len = l;
+	return 0;
+}
+
+int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
+{
+	int s;
+	struct sockaddr_ll sall = {0};
 	struct ifreq if_hwaddr = {{{0}}};
-	/* Size of IPv6 neighbor advertisement (with option) */
-	unsigned char buffer[sizeof(struct ether_header) +
-			     sizeof(struct ip6_hdr) +
-			     sizeof(struct nd_neighbor_advert) +
-			     sizeof(struct nd_opt_hdr) + ETH_ALEN];
-	char *ptr;
-	char bdcast[] = {0xff,0xff,0xff,0xff,0xff,0xff};
+	uint8_t buffer[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
 	struct ifreq ifr = {{{0}}};
+	struct ether_addr *hwaddr = NULL;
+	struct ether_addr *ether_dhost = NULL;
+	size_t len = 0;
 	int ret = 0;
 
 	s = socket(AF_PACKET, SOCK_RAW, 0);
@@ -233,56 +372,59 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	sall.sll_protocol = htons(ETH_P_ALL);
 	sall.sll_ifindex = ifr.ifr_ifindex;
 
+	/* For clarity */
+	hwaddr = (struct ether_addr *)if_hwaddr.ifr_hwaddr.sa_data;
+
 	switch (addr->ip.sin_family) {
 	case AF_INET:
-		memset(buffer, 0 , 64);
-		eh = (struct ether_header *)buffer;
-		memset(eh->ether_dhost, 0xff, ETH_ALEN);
-		memcpy(eh->ether_shost, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-		eh->ether_type = htons(ETHERTYPE_ARP);
+		/* Send gratuitous ARP */
+		ret = arp_build(buffer,
+				sizeof(buffer),
+				&addr->ip,
+				hwaddr,
+				false,
+				&ether_dhost,
+				&len);
+		if (ret != 0) {
+			DBG_ERR("Failed to build ARP request\n");
+			goto fail;
+		}
 
-		ah = (struct arphdr *)&buffer[sizeof(struct ether_header)];
-		ah->ar_hrd = htons(ARPHRD_ETHER);
-		ah->ar_pro = htons(ETH_P_IP);
-		ah->ar_hln = ETH_ALEN;
-		ah->ar_pln = 4;
+		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
 
-		/* send a gratious arp */
-		ah->ar_op  = htons(ARPOP_REQUEST);
-		ptr = (char *)&ah[1];
-		memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->ip.sin_addr, 4);
-		ptr+=4;
-		memset(ptr, 0, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->ip.sin_addr, 4);
-		ptr+=4;
-
-		memcpy(&sall.sll_addr[0], bdcast, sall.sll_halen);
-
-		ret = sendto(s,buffer, 64, 0,
-			     (struct sockaddr *)&sall, sizeof(sall));
+		ret = sendto(s,
+			     buffer,
+			     len,
+			     0,
+			     (struct sockaddr *)&sall,
+			     sizeof(sall));
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
 			goto fail;
 		}
 
-		/* send unsolicited arp reply broadcast */
-		ah->ar_op  = htons(ARPOP_REPLY);
-		ptr = (char *)&ah[1];
-		memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->ip.sin_addr, 4);
-		ptr+=4;
-		memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->ip.sin_addr, 4);
-		ptr+=4;
+		/* Send unsolicited ARP reply */
+		ret = arp_build(buffer,
+				sizeof(buffer),
+				&addr->ip,
+				hwaddr,
+				true,
+				&ether_dhost,
+				&len);
+		if (ret != 0) {
+			DBG_ERR("Failed to build ARP reply\n");
+			goto fail;
+		}
 
-		ret = sendto(s, buffer, 64, 0,
-			     (struct sockaddr *)&sall, sizeof(sall));
+		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
+
+		ret = sendto(s,
+			     buffer,
+			     len,
+			     0,
+			     (struct sockaddr *)&sall,
+			     sizeof(sall));
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
@@ -291,55 +433,27 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		close(s);
 		break;
+
 	case AF_INET6:
-		memset(buffer, 0 , sizeof(buffer));
-		eh = (struct ether_header *)buffer;
-		/*
-		 * Ethernet multicast: 33:33:00:00:00:01 (see RFC2464,
-		 * section 7) - note zeroes above!
-		 */
-		eh->ether_dhost[0] = eh->ether_dhost[1] = 0x33;
-		eh->ether_dhost[5] = 0x01;
-		memcpy(eh->ether_shost, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-		eh->ether_type = htons(ETHERTYPE_IP6);
-
-		ip6 = (struct ip6_hdr *)(eh+1);
-		ip6->ip6_vfc  = 0x60;
-		ip6->ip6_plen = htons(sizeof(*nd_na) +
-				      sizeof(struct nd_opt_hdr) +
-				      ETH_ALEN);
-		ip6->ip6_nxt  = IPPROTO_ICMPV6;
-		ip6->ip6_hlim = 255;
-		ip6->ip6_src  = addr->ip6.sin6_addr;
-		/* all-nodes multicast */
-
-		ret = inet_pton(AF_INET6, "ff02::1", &ip6->ip6_dst);
-		if (ret != 1) {
-			ret = errno;
-			DBG_ERR("Failed inet_pton\n");
+		ret = ip6_na_build(buffer,
+				   sizeof(buffer),
+				   &addr->ip6,
+				   hwaddr,
+				   &ether_dhost,
+				   &len);
+		if (ret != 0) {
+			DBG_ERR("Failed to build IPv6 neighbor advertisment\n");
 			goto fail;
 		}
 
-		nd_na = (struct nd_neighbor_advert *)(ip6+1);
-		nd_na->nd_na_type = ND_NEIGHBOR_ADVERT;
-		nd_na->nd_na_code = 0;
-		nd_na->nd_na_flags_reserved = ND_NA_FLAG_OVERRIDE;
-		nd_na->nd_na_target = addr->ip6.sin6_addr;
-		/* Option: Target link-layer address */
-		nd_oh = (struct nd_opt_hdr *)(nd_na+1);
-		nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
-		nd_oh->nd_opt_len = 1;
+		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
 
-		ea = (struct ether_addr *)(nd_oh+1);
-		memcpy(ea, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-
-		nd_na->nd_na_cksum = ip6_checksum((uint16_t *)nd_na,
-						  ntohs(ip6->ip6_plen), ip6);
-
-		memcpy(&sall.sll_addr[0], &eh->ether_dhost[0], sall.sll_halen);
-
-		ret = sendto(s, buffer, sizeof(buffer),
-			     0, (struct sockaddr *)&sall, sizeof(sall));
+		ret = sendto(s,
+			     buffer,
+			     len,
+			     0,
+			     (struct sockaddr *)&sall,
+			     sizeof(sall));
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
@@ -348,6 +462,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		close(s);
 		break;
+
 	default:
 		ret = EINVAL;
 		DBG_ERR("Not an ipv4/ipv6 address (family is %u)\n",
