@@ -329,6 +329,10 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			 * Delete stale conflicting entry
 			 */
 			locks[i] = locks[num_locks-1];
+			if (my_lock == num_locks-1) {
+				/* We just moved */
+				my_lock = i;
+			}
 			num_locks -= 1;
 			modified = true;
 			continue;
