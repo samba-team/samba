@@ -173,8 +173,13 @@ smbc_urlencode(char *dest,
                 }
         }
 
-        *dest++ = '\0';
-        max_dest_len--;
+	if (max_dest_len <= 0) {
+		/* Ensure we return -1 if no null termination. */
+		return -1;
+	}
+
+	*dest++ = '\0';
+	max_dest_len--;
 
         return max_dest_len;
 }
