@@ -272,7 +272,8 @@ static int ip6_na_build(uint8_t *buffer,
 	 * Ethernet multicast: 33:33:00:00:00:01 (see RFC2464,
 	 * section 7) - note memset 0 above!
 	 */
-	eh->ether_dhost[0] = eh->ether_dhost[1] = 0x33;
+	eh->ether_dhost[0] = 0x33;
+	eh->ether_dhost[1] = 0x33;
 	eh->ether_dhost[5] = 0x01;
 	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
 	eh->ether_type = htons(ETHERTYPE_IP6);
