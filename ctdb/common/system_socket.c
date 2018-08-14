@@ -177,6 +177,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct ip6_hdr *ip6;
 	struct nd_neighbor_advert *nd_na;
 	struct nd_opt_hdr *nd_oh;
+	struct ether_addr *ea;
 	struct ifreq if_hwaddr;
 	/* Size of IPv6 neighbor advertisement (with option) */
 	unsigned char buffer[sizeof(struct ether_header) +
@@ -361,7 +362,9 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		nd_oh = (struct nd_opt_hdr *)(nd_na+1);
 		nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
 		nd_oh->nd_opt_len = 1;
-		memcpy(&(nd_oh+1)[0], if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
+
+		ea = (struct ether_addr *)(nd_oh+1);
+		memcpy(ea, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
 
 		nd_na->nd_na_cksum = ip6_checksum((uint16_t *)nd_na,
 						  ntohs(ip6->ip6_plen), ip6);
