@@ -998,6 +998,74 @@ class AclSearchTests(AclTests):
         res_list = res[0].keys()
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
+    def assert_search_on_attr(self, dn, samdb, attr, expected_list):
+
+        expected_num = len(expected_list)
+        res = samdb.search(dn, expression="(%s=*)" % attr, scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), expected_num)
+
+        res_list = [ x["dn"] for x in res if x["dn"] in expected_list ]
+        self.assertEquals(sorted(res_list), sorted(expected_list))
+
+    def test_search7(self):
+        """Checks object search visibility when users don't have full rights"""
+        self.create_clean_ou("OU=ou1," + self.base_dn)
+        mod = "(A;;LC;;;%s)(A;;LC;;;%s)" % (str(self.user_sid),
+                                            str(self.group_sid))
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
+                                                 self.domain_sid)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                 sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                 sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                 sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                 sd=tmp_desc)
+
+        ou2_dn = Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn)
+        ou1_dn = Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)
+
+        # even though unprivileged users can't read these attributes for OU2,
+        # the object should still be visible in searches, because they have
+        # 'List Contents' rights still. This isn't really disclosive because
+        # ALL objects have these attributes
+        visible_attrs = ["objectClass", "distinguishedName", "name",
+                         "objectGUID"]
+        two_objects = [ou2_dn, ou1_dn]
+
+        for attr in visible_attrs:
+            # a regular user should just see the 2 objects
+            self.assert_search_on_attr(str(ou1_dn), self.ldb_user3, attr,
+                                       expected_list=two_objects)
+
+            # whereas the following users have LC rights for all the objects,
+            # so they should see them all
+            self.assert_search_on_attr(str(ou1_dn), self.ldb_user, attr,
+                                       expected_list=self.full_list)
+            self.assert_search_on_attr(str(ou1_dn), self.ldb_user2, attr,
+                                       expected_list=self.full_list)
+
+        # however when searching on the following attributes, objects will not
+        # be visible unless the user has Read Property rights
+        hidden_attrs = ["objectCategory", "instanceType", "ou", "uSNChanged",
+                        "uSNCreated", "whenCreated"]
+        one_object = [ou1_dn]
+
+        for attr in hidden_attrs:
+            self.assert_search_on_attr(str(ou1_dn), self.ldb_user3, attr,
+                                       expected_list=one_object)
+            self.assert_search_on_attr(str(ou1_dn), self.ldb_user, attr,
+                                       expected_list=one_object)
+            self.assert_search_on_attr(str(ou1_dn), self.ldb_user2, attr,
+                                       expected_list=one_object)
+
+            # admin has RP rights so can still see all the objects
+            self.assert_search_on_attr(str(ou1_dn), self.ldb_admin, attr,
+                                       expected_list=self.full_list)
+
 #tests on ldap delete operations
 class AclDeleteTests(AclTests):
 

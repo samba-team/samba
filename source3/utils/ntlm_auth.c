@@ -1010,7 +1010,7 @@ static NTSTATUS local_pw_check(struct auth4_context *auth4_context,
 	*pauthoritative = 1;
 
 	nt_status = ntlm_password_check(mem_ctx,
-					true, true, 0,
+					true, NTLM_AUTH_ON, 0,
 					&auth4_context->challenge.data,
 					&user_info->password.response.lanman,
 					&user_info->password.response.nt,
@@ -1719,7 +1719,9 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 
 				nt_lm_owf_gen (opt_password, nt_pw.hash, lm_pw.hash);
 				nt_status = ntlm_password_check(mem_ctx,
-								true, true, 0,
+								true,
+								NTLM_AUTH_ON,
+								0,
 								&challenge,
 								&lm_response,
 								&nt_response,

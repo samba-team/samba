@@ -41,3 +41,16 @@ bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
 bld.SAMBA_SUBSYSTEM('SPNEGO_PARSE',
                     source='spnego_parse.c',
                     deps='asn1util')
+
+bld.SAMBA_BINARY(
+        'test_ntlm_check',
+        source='tests/ntlm_check.c',
+        deps='''
+             NTLM_CHECK
+             CREDENTIALS_NTLM
+             samba-credentials
+             cmocka
+             talloc
+        ''',
+        install=False
+    )

@@ -599,6 +599,15 @@ class BasicTests(samba.tests.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
+        #
+        # When searching the unknown attribute should be ignored
+        expr = "(|(cn=ldaptestgroup)(thisdoesnotexist=x))"
+        res = ldb.search(base=self.base_dn,
+                         expression=expr,
+                         scope=SCOPE_SUBTREE)
+        self.assertTrue(len(res) == 1,
+                        "Search including unknown attribute failed")
+
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         # attributes not in objectclasses and mandatory attributes missing test

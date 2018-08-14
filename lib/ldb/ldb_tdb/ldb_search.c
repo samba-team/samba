@@ -295,6 +295,14 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	};
 	TALLOC_CTX *tdb_key_ctx = NULL;
 
+	bool valid_dn = ldb_dn_validate(dn);
+	if (valid_dn == false) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Invalid Base DN: %s",
+				       ldb_dn_get_linearized(dn));
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
 	if (ltdb->cache->GUID_index_attribute == NULL) {
 		tdb_key_ctx = talloc_new(msg);
 		if (!tdb_key_ctx) {
@@ -803,6 +811,14 @@ int ltdb_search(struct ltdb_context *ctx)
 					       ldb_dn_get_linearized(req->op.search.base));
 		}
 			
+	} else if (ldb_dn_validate(req->op.search.base) == false) {
+
+		/* We don't want invalid base DNs here */
+		ldb_asprintf_errstring(ldb,
+				       "Invalid Base DN: %s",
+				       ldb_dn_get_linearized(req->op.search.base));
+		ret = LDB_ERR_INVALID_DN_SYNTAX;
+
 	} else {
 		/* If we are not checking the base DN life is easy */
 		ret = LDB_SUCCESS;

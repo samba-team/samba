@@ -970,11 +970,20 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
+		bool valid_dn = false;
 		struct ldb_dn *dn
 			= ldb_dn_from_ldb_val(list,
 					      ldb_module_get_ctx(module),
 					      &tree->u.equality.value);
 		if (dn == NULL) {
+			/* If we can't parse it, no match */
+			list->dn = NULL;
+			list->count = 0;
+			return LDB_SUCCESS;
+		}
+
+		valid_dn = ldb_dn_validate(dn);
+		if (valid_dn == false) {
 			/* If we can't parse it, no match */
 			list->dn = NULL;
 			list->count = 0;
@@ -1405,6 +1414,15 @@ static int ltdb_index_dn_attr(struct ldb_module *module,
 
 	/* work out the index key from the parent DN */
 	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(dn));
+	if (val.data == NULL) {
+		const char *dn_str = ldb_dn_get_linearized(dn);
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       __location__
+				       ": Failed to get casefold DN "
+				       "from: %s",
+				       dn_str);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	val.length = strlen((char *)val.data);
 	key = ltdb_index_key(ldb, ltdb, attr, &val, NULL);
 	if (!key) {
