@@ -383,6 +383,7 @@ WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 	struct ldb_result *res;
 	struct ldb_dn *dn;
 	char *encoded_name = ldb_binary_encode_string(mem_ctx, name);
+	struct ldb_val name_val = data_blob_string_const(name);
 	int ret;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_BASE, attrs,
@@ -400,7 +401,7 @@ WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 	dn = ldb_dn_copy(mem_ctx, z->zone_dn);
 	W_ERROR_HAVE_NO_MEMORY(dn);
 
-	if (!ldb_dn_add_child_fmt(dn, "DC=%s", name)) {
+	if (!ldb_dn_add_child_val(dn, "DC", name_val)) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
@@ -1018,6 +1019,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	struct dnsp_DnssrvRpcRecord *dns_rec;
 	struct dnsp_soa soa;
 	char *tmpstr, *server_fqdn, *soa_email;
+	struct ldb_val name_val = data_blob_string_const(zone->name);
 
 	/* We only support primary zones for now */
 	if (zone->zoneinfo->dwZoneType != DNS_ZONE_TYPE_PRIMARY) {
@@ -1043,7 +1045,12 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dn = ldb_dn_copy(tmp_ctx, p->partition_dn);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(dn, tmp_ctx);
 
-	if(!ldb_dn_add_child_fmt(dn, "DC=%s,CN=MicrosoftDNS", zone->name)) {
+	if (!ldb_dn_add_child_fmt(dn, "CN=MicrosoftDNS")) {
+		talloc_free(tmp_ctx);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	if (!ldb_dn_add_child_val(dn, "DC", name_val)) {
 		talloc_free(tmp_ctx);
 		return WERR_NOT_ENOUGH_MEMORY;
 	}

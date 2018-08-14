@@ -1059,7 +1059,6 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 	struct ldb_val host_part;
 	WERROR werr;
 	bool ok;
-	int ret;
 	const char *casefold = NULL;
 
 	if (name == NULL) {
@@ -1116,17 +1115,11 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	ok = ldb_dn_add_child_fmt(dn, "DC=X");
-
-	if (ok == false) {
-		TALLOC_FREE(dn);
-		return WERR_NOT_ENOUGH_MEMORY;
-	}
-
 	host_part = data_blob_const(name, host_part_len);
 
-	ret = ldb_dn_set_component(dn, 0, "DC", host_part);
-	if (ret != LDB_SUCCESS) {
+	ok = ldb_dn_add_child_val(dn, "DC", host_part);
+
+	if (ok == false) {
 		TALLOC_FREE(dn);
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
