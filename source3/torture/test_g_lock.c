@@ -865,6 +865,14 @@ bool run_g_lock6(int dummy)
 				nt_errstr(status));
 			return false;
 		}
+
+		status = g_lock_lock(ctx, lockname, G_LOCK_READ,
+				     (struct timeval) { .tv_sec = 1 });
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr, "g_lock_lock failed: %s\n",
+				nt_errstr(status));
+			return false;
+		}
 	}
 
 	close(exit_pipe[1]);
@@ -876,6 +884,14 @@ bool run_g_lock6(int dummy)
 			perror("waitpid failed");
 			return false;
 		}
+	}
+
+	status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
+			     (struct timeval) { .tv_sec = 1 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_lock failed: %s\n",
+			nt_errstr(status));
+		return false;
 	}
 
 	return true;
