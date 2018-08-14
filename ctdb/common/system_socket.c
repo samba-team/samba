@@ -198,8 +198,8 @@ static int arp_build(uint8_t *buffer,
 {
 	size_t l = ARP_BUFFER_SIZE;
 	struct ether_header *eh;
+	struct ether_arp *ea;
 	struct arphdr *ah;
-	char *ptr;
 
 	if (addr->sin_family != AF_INET) {
 		return EINVAL;
@@ -216,7 +216,8 @@ static int arp_build(uint8_t *buffer,
 	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
 	eh->ether_type = htons(ETHERTYPE_ARP);
 
-	ah = (struct arphdr *)&buffer[sizeof(struct ether_header)];
+	ea = (struct ether_arp *)&buffer[sizeof(struct ether_header)];
+	ah = &ea->ea_hdr;
 	ah->ar_hrd = htons(ARPHRD_ETHER);
 	ah->ar_pro = htons(ETH_P_IP);
 	ah->ar_hln = ETH_ALEN;
@@ -224,26 +225,16 @@ static int arp_build(uint8_t *buffer,
 
 	if (! reply) {
 		ah->ar_op  = htons(ARPOP_REQUEST);
-		ptr = (char *)&ah[1];
-		memcpy(ptr, hwaddr, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->sin_addr, 4);
-		ptr+=4;
-		memset(ptr, 0, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->sin_addr, 4);
-		ptr+=4;
+		memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
+		memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
+		memset(ea->arp_tha, 0, ETH_ALEN);
+		memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
 	} else {
 		ah->ar_op  = htons(ARPOP_REPLY);
-		ptr = (char *)&ah[1];
-		memcpy(ptr, hwaddr, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->sin_addr, 4);
-		ptr+=4;
-		memcpy(ptr, hwaddr, ETH_ALEN);
-		ptr+=ETH_ALEN;
-		memcpy(ptr, &addr->sin_addr, 4);
-		ptr+=4;
+		memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
+		memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
+		memcpy(ea->arp_tha, hwaddr, ETH_ALEN);
+		memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
 	}
 
 	*ether_dhost = (struct ether_addr *)eh->ether_dhost;
