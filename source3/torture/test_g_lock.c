@@ -751,6 +751,24 @@ bool run_g_lock6(int dummy)
 		return false;
 	}
 
+	/*
+	 * Wipe all stale locks -- in clustered mode there's no
+	 * CLEAR_IF_FIRST
+	 */
+	status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
+			     (struct timeval) { .tv_sec = 1 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_lock failed: %s\n",
+			nt_errstr(status));
+		return false;
+	}
+	status = g_lock_unlock(ctx, lockname);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_unlock failed: %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
 	nprocs = 2;
 	for (i=0; i<nprocs; i++) {
 
