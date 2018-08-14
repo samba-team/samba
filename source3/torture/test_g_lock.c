@@ -730,7 +730,7 @@ bool run_g_lock6(int dummy)
 	struct tevent_context *ev = NULL;
 	struct messaging_context *msg = NULL;
 	struct g_lock_ctx *ctx = NULL;
-	const char *lockname = "lock6";
+	TDB_DATA lockname = string_term_tdb_data("lock6");
 	pid_t child;
 	int exit_pipe[2], ready_pipe[2];
 	NTSTATUS status;
@@ -780,7 +780,7 @@ bool run_g_lock6(int dummy)
 				exit(1);
 			}
 			status = g_lock_lock(ctx,
-					     string_term_tdb_data(lockname),
+					     lockname,
 					     G_LOCK_READ,
 					     (struct timeval) { .tv_sec = 1 });
 			if (!NT_STATUS_IS_OK(status)) {
@@ -824,8 +824,7 @@ bool run_g_lock6(int dummy)
 	{
 		struct lock6_parser_state state;
 
-		status = g_lock_dump(ctx, string_term_tdb_data(lockname),
-				     lock6_parser, &state);
+		status = g_lock_dump(ctx, lockname, lock6_parser, &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_dump returned %s\n",
 				nt_errstr(status));
@@ -838,7 +837,8 @@ bool run_g_lock6(int dummy)
 			return false;
 		}
 
-		status = g_lock_lock(ctx, string_term_tdb_data(lockname),
+		status = g_lock_lock(ctx,
+				     lockname,
 				     G_LOCK_WRITE,
 				     (struct timeval) { .tv_sec = 1 });
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
