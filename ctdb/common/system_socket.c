@@ -175,13 +175,18 @@ static uint16_t ip6_checksum(uint16_t *data, size_t n, struct ip6_hdr *ip6)
  * packets
  */
 
-#define ARP_BUFFER_SIZE 64
+#define ARP_STRUCT_SIZE sizeof(struct ether_header) + \
+			sizeof(struct ether_arp)
 
-#define IP6_NA_BUFFER_SIZE sizeof(struct ether_header) + \
+#define IP6_NA_STRUCT_SIZE sizeof(struct ether_header) + \
 			   sizeof(struct ip6_hdr) + \
 			   sizeof(struct nd_neighbor_advert) + \
 			   sizeof(struct nd_opt_hdr) + \
 			   sizeof(struct ether_addr)
+
+#define ARP_BUFFER_SIZE MAX(ARP_STRUCT_SIZE, 64)
+
+#define IP6_NA_BUFFER_SIZE MAX(IP6_NA_STRUCT_SIZE, 64)
 
 static int arp_build(uint8_t *buffer,
 		     size_t buflen,
