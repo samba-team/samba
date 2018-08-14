@@ -222,9 +222,9 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     /* We have to obtain an INITIAL changepw ticket for changing password */
     if (asprintf(&chpw_princ, "kadmin/changepw@%s", realm) == -1) {
 	krb5_get_init_creds_opt_free(context, opts);
+	smb_krb5_free_addresses(context, addr);
 	krb5_free_context(context);
 	free(realm);
-	smb_krb5_free_addresses(context, addr);
 	DEBUG(1,("ads_krb5_chg_password: asprintf fail\n"));
 	return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
     }
