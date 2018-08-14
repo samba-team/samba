@@ -375,6 +375,81 @@ static const struct GUID *get_ace_object_type(struct security_ace *ace)
 }
 
 /**
+ * Evaluates access rights specified in a object-specific ACE for an AD object.
+ * This logic corresponds to MS-ADTS 5.1.3.3.3 Checking Object-Specific Access.
+ * @param[in] ace - the ACE being processed
+ * @param[in/out] tree - remaining_access gets updated for the tree
+ * @param[out] grant_access - set to true if the ACE grants sufficient access
+ *                            rights to the object/attribute
+ * @returns NT_STATUS_OK, unless access was denied
+ */
+static NTSTATUS check_object_specific_access(struct security_ace *ace,
+					     struct object_tree *tree,
+					     bool *grant_access)
+{
+	struct object_tree *node = NULL;
+	const struct GUID *type = NULL;
+
+	*grant_access = false;
+
+	/* if no tree was supplied, we can't do object-specific access checks */
+	if (!tree) {
+		return NT_STATUS_OK;
+	}
+
+	/* Get the ObjectType GUID this ACE applies to */
+	type = get_ace_object_type(ace);
+
+	/*
+	 * If the ACE doesn't have a type, then apply it to the whole tree, i.e.
+	 * treat 'OA' ACEs as 'A' and 'OD' as 'D'
+	 */
+	if (!type) {
+		node = tree;
+	} else {
+
+		/* skip it if the ACE's ObjectType GUID is not in the tree */
+		node = get_object_tree_by_GUID(tree, type);
+		if (!node) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
+
+		/* apply the access rights to this node, and any children */
+		object_tree_modify_access(node, ace->access_mask);
+
+		/*
+		 * Currently all nodes in the tree request the same access mask,
+		 * so we can use any node to check if processing this ACE now
+		 * means the requested access has been granted
+		 */
+		if (node->remaining_access == 0) {
+			*grant_access = true;
+			return NT_STATUS_OK;
+		}
+
+		/*
+		 * As per 5.1.3.3.4 Checking Control Access Right-Based Access,
+		 * if the CONTROL_ACCESS right is present, then we can grant
+		 * access and stop any further access checks
+		 */
+		if (ace->access_mask & SEC_ADS_CONTROL_ACCESS) {
+			*grant_access = true;
+			return NT_STATUS_OK;
+		}
+	} else {
+
+		/* this ACE denies access to the requested object/attribute */
+		if (node->remaining_access & ace->access_mask){
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/**
  * @brief Perform directoryservice (DS) related access checks for a given user
  *
  * Perform DS access checks for the user represented by its security_token, on
@@ -405,8 +480,6 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 {
 	uint32_t i;
 	uint32_t bits_remaining;
-	struct object_tree *node;
-	const struct GUID *type;
 	struct dom_sid self_sid;
 
 	dom_sid_parse(SID_NT_SELF, &self_sid);
@@ -456,6 +529,8 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 	for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
 		struct dom_sid *trustee;
 		struct security_ace *ace = &sd->dacl->aces[i];
+		NTSTATUS status;
+		bool grant_access = false;
 
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 			continue;
@@ -486,34 +561,15 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 			break;
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
 		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
-			/*
-			 * check only in case we have provided a tree,
-			 * the ACE has an object type and that type
-			 * is in the tree
-			 */
-			type = get_ace_object_type(ace);
+			status = check_object_specific_access(ace, tree,
+							      &grant_access);
 
-			if (!tree) {
-				continue;
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 
-			if (!type) {
-				node = tree;
-			} else {
-				if (!(node = get_object_tree_by_GUID(tree, type))) {
-					continue;
-				}
-			}
-
-			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
-				object_tree_modify_access(node, ace->access_mask);
-				if (node->remaining_access == 0) {
-					return NT_STATUS_OK;
-				}
-			} else {
-				if (node->remaining_access & ace->access_mask){
-					return NT_STATUS_ACCESS_DENIED;
-				}
+			if (grant_access) {
+				return NT_STATUS_OK;
 			}
 			break;
 		default:	/* Other ACE types not handled/supported */
