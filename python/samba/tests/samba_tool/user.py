@@ -27,6 +27,8 @@ from samba import (
         )
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
+from samba.compat import get_bytes
+from samba.compat import get_string
 
 
 class UserCmdTestCase(SambaToolCmdTest):
@@ -234,8 +236,8 @@ class UserCmdTestCase(SambaToolCmdTest):
             creds.set_password(newpasswd)
             nthash = creds.get_nt_hash()
             unicodePwd = base64.b64encode(creds.get_nt_hash()).decode('utf8')
-            virtualClearTextUTF8 = base64.b64encode(newpasswd).decode('utf8')
-            virtualClearTextUTF16 = base64.b64encode(unicode(newpasswd, 'utf-8').encode('utf-16-le')).decode('utf8')
+            virtualClearTextUTF8 = base64.b64encode(get_bytes(newpasswd)).decode('utf8')
+            virtualClearTextUTF16 = base64.b64encode(get_string(newpasswd).encode('utf-16-le')).decode('utf8')
 
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
@@ -357,7 +359,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         self.assertTrue(len(userlist) > 0, "no users found in samdb")
 
         for userobj in userlist:
-            name = userobj.get("samaccountname", idx=0)
+            name = str(userobj.get("samaccountname", idx=0))
             found = self.assertMatch(out, name,
                                      "user '%s' not found" % name)
 

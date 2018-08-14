@@ -1060,7 +1060,7 @@ class GetPasswordCommand(Command):
 
         def get_utf8(a, b, username):
             try:
-                u = unicode(b, 'utf-16-le')
+                u = text_type(get_bytes(b), 'utf-16-le')
             except UnicodeDecodeError as e:
                 self.outf.write("WARNING: '%s': CLEARTEXT is invalid UTF-16-LE unable to generate %s\n" % (
                                 username, a))
@@ -1854,7 +1854,7 @@ samba-tool user syncpasswords --terminate \\
                                     attrs=cache_attrs)
             if len(res) == 1:
                 try:
-                    self.samdb_url = res[0]["samdbUrl"][0]
+                    self.samdb_url = str(res[0]["samdbUrl"][0])
                 except KeyError as e:
                     self.samdb_url = None
             else:
@@ -2067,7 +2067,7 @@ samba-tool user syncpasswords --terminate \\
                 try:
                     os.ftruncate(self.lockfd, 0)
                     if buf is not None:
-                        os.write(self.lockfd, buf)
+                        os.write(self.lockfd, get_bytes(buf))
                 except IOError as e3:
                     (err, msg) = e3.args
                     log_msg("check_current_pid_conflict: failed to write pid to [%s] - %s (%d)" %
