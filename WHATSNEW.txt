@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.9.  This is *not*
+This is the third release candidate of Samba 4.9.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -449,6 +449,65 @@ SMB_VFS_FCHMOD_ACL: Removed: Only FCHMOD is used.
 
 Any external VFS modules will need to be updated to match these
 changes in order to work with 4.9.x.
+
+
+CHANGES SINCE 4.9.0rc2
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13453: CVE-2018-10858: libsmb: Harden smbc_readdir_internal() against
+     returns from malicious servers.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13374: CVE-2018-1140: ldbsearch '(distinguishedName=abc)' and DNS query
+     with escapes crashes, ldb: Release LDB 1.3.5 for CVE-2018-1140
+   * BUG 13552: CVE-2018-10918: cracknames: Fix DoS (NULL pointer de-ref) when
+     not servicePrincipalName is set on a user.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13434: CVE-2018-10919: acl_read: Fix unauthorized attribute access via
+     searches.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 13540: ctdb_mutex_ceph_rados_helper: Set SIGINT signal handler.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13360: CVE-2018-1139 libcli/auth: Do not allow ntlmv1 over SMB1 when it
+     is disabled via "ntlm auth".
+   * BUG 13529: s3-tldap: do not install test_tldap.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13540: ctdb_mutex_ceph_rados_helper: Fix deadlock via lock renewals.
+
+o  Andrej Gessel <Andrej.Gessel@janztec.com>
+   * BUG 13374: CVE-2018-1140 Add NULL check for ldb_dn_get_casefold() in
+     ltdb_index_dn_attr().
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13554: ctdb-eventd: Fix CID 1438155.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13553: Fix CIDs 1438243, (Unchecked return value) 1438244
+     (Unsigned compared against 0), 1438245 (Dereference before null check) and
+     1438246 (Unchecked return value).
+   * BUG 13554: ctdb: Fix a cut&paste error.
+
+o  Oleksandr Natalenko <oleksandr@redhat.com>
+   * BUG 13559: systemd: Only start smb when network interfaces are up.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13553: Fix quotas don't work with SMB2.
+   * BUG 13563: s3/smbd: Ensure quota code is only called when quota support
+     detected.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13204: s3/libsmb: Explicitly set delete_on_close token for rmdir.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13561: s3:waf: Install eventlogadm to /usr/sbin.
+
+o  Justin Stephenson <jstephen@redhat.com>
+   * BUG 13562: Shorten description in vfs_linux_xfs_sgid manual.
 
 
 CHANGES SINCE 4.9.0rc1
