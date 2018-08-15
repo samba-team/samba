@@ -1192,7 +1192,9 @@ class GetPasswordCommand(Command):
                 if b is not None:
                     u8 = get_utf8(a, b, username or account_name)
                     if u8 is not None:
-                        sv = get_crypt_value(str(algorithm), u8, rounds)
+                        # in py2 using get_bytes should ensure u8 is unmodified
+                        # in py3 it will be decoded
+                        sv = get_crypt_value(str(algorithm), get_string(u8), rounds)
                 if sv is None:
                     # Unable to calculate a hash with the specified
                     # number of rounds, fall back to the first hash using
@@ -1219,12 +1221,15 @@ class GetPasswordCommand(Command):
             scheme_match = None
 
             for h in up.hashes:
+                # in PY2 this should just do nothing and in PY3 if bytes
+                # it will decode them
+                h_value = get_string(h.value)
                 if (scheme_match is None and
                     h.scheme == SCHEME and
-                    h.value.startswith(scheme_prefix)):
-                    scheme_match = h.value
-                if h.scheme == SCHEME and h.value.startswith(prefix):
-                    return (h.value, scheme_match)
+                    h_value.startswith(scheme_prefix)):
+                    scheme_match = h_value
+                if h.scheme == SCHEME and h_value.startswith(prefix):
+                    return (h_value, scheme_match)
 
             # No match on the number of rounds, return the value of the
             # first matching scheme
