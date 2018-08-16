@@ -879,7 +879,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	commonconfig->rw_ops->get_new_id = idmap_autorid_allocate_id;
 	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
 
-	db_path = state_path("autorid.tdb");
+	db_path = state_path(talloc_tos(), "autorid.tdb");
 	if (db_path == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto error;

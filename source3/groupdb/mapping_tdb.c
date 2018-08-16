@@ -53,7 +53,7 @@ static bool init_group_mapping(void)
 		return true;
 	}
 
-	tdb_path = state_path("group_mapping.tdb");
+	tdb_path = state_path(talloc_tos(), "group_mapping.tdb");
 	if (tdb_path == NULL) {
 		return false;
 	}
@@ -67,7 +67,7 @@ static bool init_group_mapping(void)
 		return false;
 	}
 
-	ldb_path = state_path("group_mapping.ldb");
+	ldb_path = state_path(talloc_tos(), "group_mapping.ldb");
 	if (ldb_path == NULL) {
 		talloc_free(tdb_path);
 		return false;
@@ -1084,7 +1084,7 @@ static bool mapping_switch(const char *ldb_path)
 	}
 
 	/* now rename the old db out of the way */
-	new_path = state_path("group_mapping.ldb.replaced");
+	new_path = state_path(talloc_tos(), "group_mapping.ldb.replaced");
 	if (!new_path) {
 		goto failed;
 	}

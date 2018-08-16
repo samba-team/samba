@@ -336,7 +336,7 @@ static bool tdbsam_upgrade_next_rid(struct db_context *db)
 		return true;
 	}
 
-	db_path = state_path("winbindd_idmap.tdb");
+	db_path = state_path(talloc_tos(), "winbindd_idmap.tdb");
 	if (db_path == NULL) {
 		return false;
 	}

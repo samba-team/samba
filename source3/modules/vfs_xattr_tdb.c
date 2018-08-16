@@ -458,7 +458,7 @@ static bool xattr_tdb_init(int snum, TALLOC_CTX *mem_ctx, struct db_context **p_
 	const char *dbname;
 	char *def_dbname;
 
-	def_dbname = state_path("xattr.tdb");
+	def_dbname = state_path(talloc_tos(), "xattr.tdb");
 	if (def_dbname == NULL) {
 		errno = ENOSYS;
 		return false;

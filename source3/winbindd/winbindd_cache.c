@@ -119,7 +119,7 @@ static char *wcache_path(void)
 	 * Data needs to be kept persistent in state directory for
 	 * running with "winbindd offline logon".
 	 */
-	return state_path("winbindd_cache.tdb");
+	return state_path(talloc_tos(), "winbindd_cache.tdb");
 }
 
 static void winbindd_domain_init_backend(struct winbindd_domain *domain)

@@ -601,7 +601,7 @@ bool initialise_wins(void)
 		return True;
 	}
 
-	db_path = state_path("wins.tdb");
+	db_path = state_path(talloc_tos(), "wins.tdb");
 	if (db_path == NULL) {
 		return false;
 	}
@@ -620,7 +620,7 @@ bool initialise_wins(void)
 
 	add_samba_names_to_subnet(wins_server_subnet);
 
-	list_path = state_path(WINS_LIST);
+	list_path = state_path(talloc_tos(), WINS_LIST);
 	if (list_path == NULL) {
 		tdb_close(wins_tdb);
 		return false;
@@ -2493,7 +2493,7 @@ void wins_write_database(time_t t, bool background)
 		}
 	}
 
-	if (!(fname = state_path(WINS_LIST))) {
+	if (!(fname = state_path(talloc_tos(), WINS_LIST))) {
 		goto err_exit;
 	}
 	/* This is safe as the 0 length means "don't expand". */

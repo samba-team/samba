@@ -152,7 +152,7 @@ static bool print_driver_directories_init(void)
 		}
 	}
 
-	driver_path = state_path("DriverStore");
+	driver_path = state_path(talloc_tos(), "DriverStore");
 	if (driver_path == NULL) {
 		talloc_free(mem_ctx);
 		return false;
@@ -165,7 +165,7 @@ static bool print_driver_directories_init(void)
 		return false;
 	}
 
-	driver_path = state_path("DriverStore/FileRepository");
+	driver_path = state_path(talloc_tos(), "DriverStore/FileRepository");
 	if (driver_path == NULL) {
 		talloc_free(mem_ctx);
 		return false;
@@ -178,7 +178,7 @@ static bool print_driver_directories_init(void)
 		return false;
 	}
 
-	driver_path = state_path("DriverStore/Temp");
+	driver_path = state_path(talloc_tos(), "DriverStore/Temp");
 	if (driver_path == NULL) {
 		talloc_free(mem_ctx);
 		return false;

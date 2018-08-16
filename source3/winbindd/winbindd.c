@@ -1256,7 +1256,7 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 
 char *get_winbind_priv_pipe_dir(void)
 {
-	return state_path(WINBINDD_PRIV_SOCKET_SUBDIR);
+	return state_path(talloc_tos(), WINBINDD_PRIV_SOCKET_SUBDIR);
 }
 
 static void winbindd_setup_max_fds(void)

@@ -310,7 +310,7 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 	mem_ctx = talloc_stackframe();
 
 	/* use the old database if present */
-	tdbfile = state_path("winbindd_idmap.tdb");
+	tdbfile = state_path(talloc_tos(), "winbindd_idmap.tdb");
 	if (!tdbfile) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;

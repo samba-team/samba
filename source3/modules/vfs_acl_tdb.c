@@ -50,7 +50,7 @@ static bool acl_tdb_init(void)
 		return true;
 	}
 
-	dbname = state_path("file_ntacls.tdb");
+	dbname = state_path(talloc_tos(), "file_ntacls.tdb");
 
 	if (dbname == NULL) {
 		errno = ENOSYS;

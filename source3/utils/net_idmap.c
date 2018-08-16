@@ -148,7 +148,7 @@ static char *net_idmap_dbfile(struct net_context *c,
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
 	} else if (strequal(backend, "tdb")) {
-		dbfile = state_path("winbindd_idmap.tdb");
+		dbfile = state_path(talloc_tos(), "winbindd_idmap.tdb");
 		if (dbfile == NULL) {
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
@@ -161,7 +161,7 @@ static char *net_idmap_dbfile(struct net_context *c,
 		}
 		ctx->backend = TDB;
 	} else if (strequal(backend, "autorid")) {
-		dbfile = state_path("autorid.tdb");
+		dbfile = state_path(talloc_tos(), "autorid.tdb");
 		if (dbfile == NULL) {
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}

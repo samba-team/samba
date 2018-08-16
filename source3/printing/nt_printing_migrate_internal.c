@@ -198,9 +198,9 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	NTSTATUS status;
 
 	/* paths talloced on new stackframe */
-	drivers_path = state_path("ntdrivers.tdb");
-	printers_path = state_path("ntprinters.tdb");
-	forms_path = state_path("ntforms.tdb");
+	drivers_path = state_path(talloc_tos(), "ntdrivers.tdb");
+	printers_path = state_path(talloc_tos(), "ntprinters.tdb");
+	forms_path = state_path(talloc_tos(), "ntforms.tdb");
 	if ((drivers_path == NULL) || (printers_path == NULL)
 						|| (forms_path == NULL)) {
 		talloc_free(tmp_ctx);

@@ -78,9 +78,9 @@ char *lock_path(TALLOC_CTX *mem_ctx, const char *name)
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
 
-char *state_path(const char *name)
+char *state_path(TALLOC_CTX *mem_ctx, const char *name)
 {
-	return xx_path(talloc_tos(), name, lp_state_directory());
+	return xx_path(mem_ctx, name, lp_state_directory());
 }
 
 /**

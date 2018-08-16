@@ -148,7 +148,7 @@ bool share_info_db_init(void)
 		return True;
 	}
 
-	db_path = state_path("share_info.tdb");
+	db_path = state_path(talloc_tos(), "share_info.tdb");
 	if (db_path == NULL) {
 		return false;
 	}

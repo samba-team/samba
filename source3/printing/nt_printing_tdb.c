@@ -349,17 +349,17 @@ bool nt_printing_tdb_upgrade(void)
 	int32_t vers_id;
 	bool ret;
 
-	drivers_path = state_path("ntdrivers.tdb");
+	drivers_path = state_path(talloc_tos(), "ntdrivers.tdb");
 	if (drivers_path == NULL) {
 		ret = false;
 		goto err_out;
 	}
-	printers_path = state_path("ntprinters.tdb");
+	printers_path = state_path(talloc_tos(), "ntprinters.tdb");
 	if (printers_path == NULL) {
 		ret = false;
 		goto err_drvdb_free;
 	}
-	forms_path = state_path("ntforms.tdb");
+	forms_path = state_path(talloc_tos(), "ntforms.tdb");
 	if (forms_path == NULL) {
 		ret = false;
 		goto err_prdb_free;

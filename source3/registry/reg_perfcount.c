@@ -48,7 +48,7 @@ static char *counters_directory(const char *dbname)
 	char *db_subpath = NULL;
 	char *ret = NULL;
 
-	dir_path = state_path(PERFCOUNTDIR);
+	dir_path = state_path(talloc_tos(), PERFCOUNTDIR);
 	if (dir_path == NULL) {
 		return NULL;
 	}
@@ -64,7 +64,7 @@ static char *counters_directory(const char *dbname)
 		return NULL;
 	}
 
-	ret = state_path(db_subpath);
+	ret = state_path(talloc_tos(), db_subpath);
 	TALLOC_FREE(dir_path);
 	return ret;
 }

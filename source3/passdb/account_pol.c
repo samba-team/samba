@@ -220,7 +220,7 @@ bool init_account_policy(void)
 		return True;
 	}
 
-	db_path = state_path("account_policy.tdb");
+	db_path = state_path(talloc_tos(), "account_policy.tdb");
 	if (db_path == NULL) {
 		return false;
 	}

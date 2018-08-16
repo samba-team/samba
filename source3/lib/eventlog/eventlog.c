@@ -73,7 +73,7 @@ char *elog_tdbname(TALLOC_CTX *ctx, const char *name )
 	char *file;
 	char *tdbname;
 
-	path = state_path("eventlog");
+	path = state_path(talloc_tos(), "eventlog");
 	if (!path) {
 		return NULL;
 	}
@@ -373,7 +373,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 
 	/* make sure that the eventlog dir exists */
 
-	eventlogdir = state_path("eventlog");
+	eventlogdir = state_path(talloc_tos(), "eventlog");
 	if (eventlogdir == NULL) {
 		return NULL;
 	}

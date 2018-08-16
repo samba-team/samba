@@ -1512,7 +1512,7 @@ static int net_registry_check(struct net_context *c, int argc,
 	} else if (argc > 0) {
 		dbfile = talloc_strdup(talloc_tos(), argv[0]);
 	} else {
-		dbfile = state_path("registry.tdb");
+		dbfile = state_path(talloc_tos(), "registry.tdb");
 	}
 	if (dbfile == NULL) {
 		return -1;
