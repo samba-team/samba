@@ -494,6 +494,121 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 #endif /* HAVE_PACKETSOCKET */
 
+
+#define IP4_TCP_BUFFER_SIZE sizeof(struct ip) + \
+			    sizeof(struct tcphdr)
+
+#define IP6_TCP_BUFFER_SIZE sizeof(struct ip6_hdr) + \
+			    sizeof(struct tcphdr)
+
+static int tcp4_build(uint8_t *buf,
+		      size_t buflen,
+		      const struct sockaddr_in *src,
+		      const struct sockaddr_in *dst,
+		      uint32_t seq,
+		      uint32_t ack,
+		      int rst,
+		      size_t *len)
+{
+	size_t l = IP4_TCP_BUFFER_SIZE;
+	struct {
+		struct ip ip;
+		struct tcphdr tcp;
+	} *ip4pkt;
+
+	if (l != sizeof(*ip4pkt)) {
+		return EMSGSIZE;
+	}
+
+	if (buflen < l) {
+		return EMSGSIZE;
+	}
+
+	ip4pkt = (void *)buf;
+	memset(ip4pkt, 0, l);
+
+	ip4pkt->ip.ip_v     = 4;
+	ip4pkt->ip.ip_hl    = sizeof(ip4pkt->ip)/4;
+	ip4pkt->ip.ip_len   = htons(sizeof(ip4pkt));
+	ip4pkt->ip.ip_ttl   = 255;
+	ip4pkt->ip.ip_p     = IPPROTO_TCP;
+	ip4pkt->ip.ip_src.s_addr = src->sin_addr.s_addr;
+	ip4pkt->ip.ip_dst.s_addr = dst->sin_addr.s_addr;
+	ip4pkt->ip.ip_sum   = 0;
+
+	ip4pkt->tcp.th_sport = src->sin_port;
+	ip4pkt->tcp.th_dport = dst->sin_port;
+	ip4pkt->tcp.th_seq   = seq;
+	ip4pkt->tcp.th_ack   = ack;
+	ip4pkt->tcp.th_flags = 0;
+	ip4pkt->tcp.th_flags |= TH_ACK;
+	if (rst) {
+		ip4pkt->tcp.th_flags |= TH_RST;
+	}
+	ip4pkt->tcp.th_off   = sizeof(ip4pkt->tcp)/4;
+	/* this makes it easier to spot in a sniffer */
+	ip4pkt->tcp.th_win   = htons(1234);
+	ip4pkt->tcp.th_sum   = ip_checksum((uint16_t *)&ip4pkt->tcp,
+					   sizeof(ip4pkt->tcp),
+					   &ip4pkt->ip);
+
+	*len = l;
+	return 0;
+}
+
+static int tcp6_build(uint8_t *buf,
+		      size_t buflen,
+		      const struct sockaddr_in6 *src,
+		      const struct sockaddr_in6 *dst,
+		      uint32_t seq,
+		      uint32_t ack,
+		      int rst,
+		      size_t *len)
+{
+	size_t l = IP6_TCP_BUFFER_SIZE;
+	struct {
+		struct ip6_hdr ip6;
+		struct tcphdr tcp;
+	} *ip6pkt;
+
+	if (l != sizeof(*ip6pkt)) {
+		return EMSGSIZE;
+	}
+
+	if (buflen < l) {
+		return EMSGSIZE;
+	}
+
+	ip6pkt = (void *)buf;
+	memset(ip6pkt, 0, l);
+
+	ip6pkt->ip6.ip6_vfc  = 0x60;
+	ip6pkt->ip6.ip6_plen = htons(20);
+	ip6pkt->ip6.ip6_nxt  = IPPROTO_TCP;
+	ip6pkt->ip6.ip6_hlim = 64;
+	ip6pkt->ip6.ip6_src  = src->sin6_addr;
+	ip6pkt->ip6.ip6_dst  = dst->sin6_addr;
+
+	ip6pkt->tcp.th_sport = src->sin6_port;
+	ip6pkt->tcp.th_dport = dst->sin6_port;
+	ip6pkt->tcp.th_seq   = seq;
+	ip6pkt->tcp.th_ack   = ack;
+	ip6pkt->tcp.th_flags = 0;
+	ip6pkt->tcp.th_flags |= TH_ACK;
+	if (rst) {
+		ip6pkt->tcp.th_flags |= TH_RST;
+	}
+	ip6pkt->tcp.th_off    = sizeof(ip6pkt->tcp)/4;
+	/* this makes it easier to spot in a sniffer */
+	ip6pkt->tcp.th_win   = htons(1234);
+	ip6pkt->tcp.th_sum   = ip6_checksum((uint16_t *)&ip6pkt->tcp,
+					    sizeof(ip6pkt->tcp),
+					    &ip6pkt->ip6);
+
+	*len = l;
+	return 0;
+}
+
 /*
  * Send tcp segment from the specified IP/port to the specified
  * destination IP/port.
@@ -511,48 +626,29 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      uint32_t ack,
 		      int rst)
 {
-	int s;
+	uint8_t buf[MAX(IP4_TCP_BUFFER_SIZE, IP6_TCP_BUFFER_SIZE)];
+	size_t len = 0;
 	int ret;
+	int s;
 	uint32_t one = 1;
 	uint16_t tmpport;
 	ctdb_sock_addr *tmpdest;
-	struct {
-		struct ip ip;
-		struct tcphdr tcp;
-	} ip4pkt;
-	struct {
-		struct ip6_hdr ip6;
-		struct tcphdr tcp;
-	} ip6pkt;
 	int saved_errno;
 
 	switch (src->ip.sin_family) {
 	case AF_INET:
-		ZERO_STRUCT(ip4pkt);
-		ip4pkt.ip.ip_v     = 4;
-		ip4pkt.ip.ip_hl    = sizeof(ip4pkt.ip)/4;
-		ip4pkt.ip.ip_len   = htons(sizeof(ip4pkt));
-		ip4pkt.ip.ip_ttl   = 255;
-		ip4pkt.ip.ip_p     = IPPROTO_TCP;
-		ip4pkt.ip.ip_src.s_addr    = src->ip.sin_addr.s_addr;
-		ip4pkt.ip.ip_dst.s_addr    = dest->ip.sin_addr.s_addr;
-		ip4pkt.ip.ip_sum   = 0;
-
-		ip4pkt.tcp.th_sport = src->ip.sin_port;
-		ip4pkt.tcp.th_dport = dest->ip.sin_port;
-		ip4pkt.tcp.th_seq   = seq;
-		ip4pkt.tcp.th_ack   = ack;
-		ip4pkt.tcp.th_flags = 0;
-		ip4pkt.tcp.th_flags |= TH_ACK;
-		if (rst) {
-			ip4pkt.tcp.th_flags |= TH_RST;
+		ret = tcp4_build(buf,
+				 sizeof(buf),
+				 &src->ip,
+				 &dest->ip,
+				 seq,
+				 ack,
+				 rst,
+				 &len);
+		if (ret != 0) {
+			DBG_ERR("Failed to build TCP packet (%d)\n", ret);
+			return ret;
 		}
-		ip4pkt.tcp.th_off   = sizeof(ip4pkt.tcp)/4;
-		/* this makes it easier to spot in a sniffer */
-		ip4pkt.tcp.th_win   = htons(1234);
-		ip4pkt.tcp.th_sum   = ip_checksum((uint16_t *)&ip4pkt.tcp,
-						  sizeof(ip4pkt.tcp),
-						  &ip4pkt.ip);
 
 		/* open a raw socket to send this segment from */
 		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
@@ -570,40 +666,33 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			return -1;
 		}
 
-		ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0,
+		ret = sendto(s,
+			     buf,
+			     len,
+			     0,
 			     (const struct sockaddr *)&dest->ip,
 			     sizeof(dest->ip));
 		saved_errno = errno;
 		close(s);
-		if (ret != sizeof(ip4pkt)) {
+		if (ret != len) {
 			D_ERR("Failed sendto (%s)\n", strerror(saved_errno));
 			return -1;
 		}
 		break;
-	case AF_INET6:
-		ZERO_STRUCT(ip6pkt);
-		ip6pkt.ip6.ip6_vfc  = 0x60;
-		ip6pkt.ip6.ip6_plen = htons(20);
-		ip6pkt.ip6.ip6_nxt  = IPPROTO_TCP;
-		ip6pkt.ip6.ip6_hlim = 64;
-		ip6pkt.ip6.ip6_src  = src->ip6.sin6_addr;
-		ip6pkt.ip6.ip6_dst  = dest->ip6.sin6_addr;
 
-		ip6pkt.tcp.th_sport = src->ip6.sin6_port;
-		ip6pkt.tcp.th_dport = dest->ip6.sin6_port;
-		ip6pkt.tcp.th_seq   = seq;
-		ip6pkt.tcp.th_ack   = ack;
-		ip6pkt.tcp.th_flags = 0;
-		ip6pkt.tcp.th_flags |= TH_RST;
-		if (rst) {
-			ip6pkt.tcp.th_flags |= TH_RST;
+	case AF_INET6:
+		ret = tcp6_build(buf,
+				 sizeof(buf),
+				 &src->ip6,
+				 &dest->ip6,
+				 seq,
+				 ack,
+				 rst,
+				 &len);
+		if (ret != 0) {
+			DBG_ERR("Failed to build TCP packet (%d)\n", ret);
+			return ret;
 		}
-		ip6pkt.tcp.th_off    = sizeof(ip6pkt.tcp)/4;
-		/* this makes it easier to spot in a sniffer */
-		ip6pkt.tcp.th_win   = htons(1234);
-		ip6pkt.tcp.th_sum   = ip6_checksum((uint16_t *)&ip6pkt.tcp,
-						   sizeof(ip6pkt.tcp),
-						   &ip6pkt.ip6);
 
 		s = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
 		if (s == -1) {
@@ -618,14 +707,17 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		tmpport = tmpdest->ip6.sin6_port;
 
 		tmpdest->ip6.sin6_port = 0;
-		ret = sendto(s, &ip6pkt, sizeof(ip6pkt), 0,
+		ret = sendto(s,
+			     buf,
+			     len,
+			     0,
 			     (const struct sockaddr *)&dest->ip6,
 			     sizeof(dest->ip6));
 		saved_errno = errno;
 		tmpdest->ip6.sin6_port = tmpport;
 		close(s);
 
-		if (ret != sizeof(ip6pkt)) {
+		if (ret != len) {
 			D_ERR("Failed sendto (%s)\n", strerror(saved_errno));
 			return -1;
 		}
