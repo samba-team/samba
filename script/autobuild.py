@@ -404,8 +404,9 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
 class builder(object):
     '''handle build of one directory'''
 
-    def __init__(self, name, sequence, cp=True):
+    def __init__(self, name, sequence, cp=True, py3=False):
         self.name = name
+        self.py3 = py3
         self.dir = builddirs[name]
 
         self.tag = self.name.replace('/', '_')
@@ -474,7 +475,13 @@ class buildlist(object):
             os.environ['AUTOBUILD_RANDOM_SLEEP_OVERRIDE'] = '1'
 
         for n in tasknames:
-            b = builder(n, tasks[n], cp=n is not "pidl")
+            if n not in tasknames and n.endswith("-py3"):
+                b = builder(n,
+                            tasks[n[:-4]],
+                            cp=n is not "pidl",
+                            py3=True)
+            else:
+                b = builder(n, tasks[n], cp=n is not "pidl")
             self.tlist.append(b)
         if options.retry:
             rebase_remote = "rebaseon"
