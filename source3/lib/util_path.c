@@ -38,11 +38,13 @@ struct share_params;
  * @retval Pointer to a string containing the full path.
  **/
 
-static char *xx_path(const char *name, const char *rootpath)
+static char *xx_path(TALLOC_CTX *mem_ctx,
+		     const char *name,
+		     const char *rootpath)
 {
 	char *fname = NULL;
 
-	fname = talloc_strdup(talloc_tos(), rootpath);
+	fname = talloc_strdup(mem_ctx, rootpath);
 	if (!fname) {
 		return NULL;
 	}
@@ -65,7 +67,7 @@ static char *xx_path(const char *name, const char *rootpath)
 
 char *lock_path(const char *name)
 {
-	return xx_path(name, lp_lock_directory());
+	return xx_path(talloc_tos(), name, lp_lock_directory());
 }
 
 /**
@@ -78,7 +80,7 @@ char *lock_path(const char *name)
 
 char *state_path(const char *name)
 {
-	return xx_path(name, lp_state_directory());
+	return xx_path(talloc_tos(), name, lp_state_directory());
 }
 
 /**
@@ -91,7 +93,7 @@ char *state_path(const char *name)
 
 char *cache_path(const char *name)
 {
-	return xx_path(name, lp_cache_directory());
+	return xx_path(talloc_tos(), name, lp_cache_directory());
 }
 
 /**
