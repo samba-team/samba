@@ -3,7 +3,7 @@
                  type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This maximum interval in s between 2 periodically scheduled runs
+	<para>This maximum interval in seconds between 2 periodically scheduled runs
 	where we check for wins.ldb changes and do push notifications to our
 	push partners. Also wins_config.ldb changes are checked in that
 	interval and partner configuration reloads are done.
