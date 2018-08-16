@@ -14,11 +14,23 @@ build_samba:
     # this one takes about 4 hours to finish
     - python script/autobuild.py samba            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
+build_samba_py3:
+  <<: *private_template
+  script:
+    # this one takes about 4 hours to finish
+    - python script/autobuild.py samba-py3        --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
 build_samba_nt4:
   <<: *private_template
   script:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-nt4        --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
+build_samba_nt4_py3:
+  <<: *private_template
+  script:
+    # this one takes about 1 hours to finish
+    - python script/autobuild.py samba-nt4-py3    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_fileserver:
   <<: *private_template
@@ -31,4 +43,10 @@ build_samba_ad_dc:
   script:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-ad-dc     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
+build_samba_ad_dc_py3:
+  <<: *private_template
+  script:
+    # this one takes about 1 hours to finish
+    - python script/autobuild.py samba-ad-dc-py3  --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 

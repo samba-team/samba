@@ -29,6 +29,12 @@ build_samba_none_env:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-none-env    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
+build_samba_none_env_py3:
+  <<: *shared_template
+  script:
+    # this one takes about 1 hours to finish
+    - python script/autobuild.py samba-none-env-py3 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
 build_samba_nopython:
   <<: *shared_template
   script:
@@ -55,10 +61,21 @@ build_samba_ad_dc_2:
     # this one takes about 1 hours to finish
     - python script/autobuild.py samba-ad-dc-2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
+build_samba_ad_dc_2_py3:
+  <<: *shared_template
+  script:
+    # this one takes about 1 hours to finish
+    - python script/autobuild.py samba-ad-dc-2-py3 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
 build_samba_libs:
   <<: *shared_template
   script:
     - python script/autobuild.py samba-libs       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
+build_samba_libs_py3:
+  <<: *shared_template
+  script:
+    - python script/autobuild.py samba-libs-py3   --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_static:
   <<: *shared_template
