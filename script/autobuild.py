@@ -29,17 +29,23 @@ cleanup_list = []
 builddirs = {
     "ctdb": "ctdb",
     "samba": ".",
+    "samba-py3": ".",
     "samba-nt4": ".",
+    "samba-nt4-py3": ".",
     "samba-fileserver": ".",
     "samba-xc": ".",
     "samba-o3": ".",
     "samba-ctdb": ".",
     "samba-libs": ".",
+    "samba-libs-py3": ".",
     "samba-static": ".",
     "samba-test-only": ".",
     "samba-none-env": ".",
+    "samba-none-env-py3": ".",
     "samba-ad-dc": ".",
+    "samba-ad-dc-py3": ".",
     "samba-ad-dc-2": ".",
+    "samba-ad-dc-2-py3": ".",
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "ldb": "lib/ldb",
@@ -54,25 +60,31 @@ builddirs = {
 }
 
 defaulttasks = ["ctdb",
-                 "samba",
-                 "samba-nt4",
-                 "samba-fileserver",
-                 "samba-xc",
-                 "samba-o3",
-                 "samba-ctdb",
-                 "samba-libs",
-                 "samba-static",
-                 "samba-none-env",
-                 "samba-ad-dc",
-                 "samba-ad-dc-2",
-                 "samba-systemkrb5",
-                 "samba-nopython",
-                 "ldb",
-                 "tdb",
-                 "talloc",
-                 "replace",
-                 "tevent",
-                 "pidl"]
+                "samba",
+                "samba-py3",
+                "samba-nt4",
+                "samba-nt4-py3",
+                "samba-fileserver",
+                "samba-xc",
+                "samba-o3",
+                "samba-ctdb",
+                "samba-libs",
+                "samba-libs-py3",
+                "samba-static",
+                "samba-none-env",
+                "samba-none-env-py3",
+                "samba-ad-dc",
+                "samba-ad-dc-py3",
+                "samba-ad-dc-2",
+                "samba-ad-dc-2-py3",
+                "samba-systemkrb5",
+                "samba-nopython",
+                "ldb",
+                "tdb",
+                "talloc",
+                "replace",
+                "tevent",
+                "pidl"]
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
@@ -106,7 +118,8 @@ tasks = {
     "samba": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1 "
-                 "TESTS='--exclude-env=none "
+                 "TESTS='${PY3_ONLY}"
+                 "--exclude-env=none "
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
@@ -128,7 +141,9 @@ tasks = {
     "samba-nt4": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                     ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                     ("make", "make -j", "text/plain"),
-                    ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
+                    ("test", "make test FAIL_IMMEDIATELY=1 "
+                     "TESTS='${PY3_ONLY}"
+                     "--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
                     ("install", "make install", "text/plain"),
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                     ("clean", "make clean", "text/plain")],
@@ -137,14 +152,17 @@ tasks = {
     "samba-fileserver": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json-audit --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                            ("make", "make -j", "text/plain"),
-                           ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=fileserver'", "text/plain"),
+                           ("test", "make test FAIL_IMMEDIATELY=1 "
+                            "TESTS='${PY3_ONLY}"
+                            "--include-env=fileserver'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
     "samba-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
-                      ("test", "make test FAIL_IMMEDIATELY=1 TESTS='"
+                      ("test", "make test FAIL_IMMEDIATELY=1 "
+                       "TESTS='${PY3_ONLY}"
                        "--include-env=ad_dc "
                        "--include-env=fl2003dc "
                        "--include-env=fl2008r2dc "
@@ -157,7 +175,9 @@ tasks = {
     "samba-ad-dc-2": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=chgdcpass --include-env=vampire_2000_dc --include-env=fl2000dc'", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='${PY3_ONLY}"
+                         "--include-env=chgdcpass --include-env=vampire_2000_dc --include-env=fl2000dc'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-test-only": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
@@ -177,7 +197,9 @@ tasks = {
     "samba-o3": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                    ("configure", "ADDITIONAL_CFLAGS='-O3' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
                    ("make", "make -j", "text/plain"),
-                   ("test", "make quicktest FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc'", "text/plain"),
+                   ("test", "make quicktest FAIL_IMMEDIATELY=1 "
+                    "TESTS='${PY3_ONLY}"
+                    "--include-env=ad_dc'", "text/plain"),
                    ("install", "make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "make clean", "text/plain")],
@@ -237,7 +259,8 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       ("test", "make test "
                        "FAIL_IMMEDIATELY=1 "
-                       "TESTS='--include-env=none'",
+                       "TESTS='${PY3_ONLY}"
+                       "--include-env=none'",
                        "text/plain")],
 
     "samba-static": [
@@ -266,7 +289,9 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       # we currently cannot run a full make test, a limited list of tests could be run
                       # via "make test TESTS=sometests"
-                      ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=ktest'", "text/plain"),
+                      ("test", "make test FAIL_IMMEDIATELY=1 "
+                       "TESTS='${PY3_ONLY}"
+                       "--include-env=ktest'", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain")
@@ -442,7 +467,13 @@ class builder(object):
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(standard_lib=1, prefix=self.prefix))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
-        self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
+        if self.py3:
+            self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
+            # The trailing space is important
+            self.cmd = self.cmd.replace("${PY3_ONLY}", "python3 ")
+        else:
+            self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "")
+            self.cmd = self.cmd.replace("${PY3_ONLY}", "")
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
 #        if self.output_mime_type == "text/x-subunit":
