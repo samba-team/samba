@@ -39,7 +39,6 @@ builddirs = {
     "samba-libs": ".",
     "samba-libs-py3": ".",
     "samba-static": ".",
-    "samba-test-only": ".",
     "samba-none-env": ".",
     "samba-none-env-py3": ".",
     "samba-ad-dc": ".",
@@ -53,38 +52,10 @@ builddirs = {
     "talloc": "lib/talloc",
     "replace": "lib/replace",
     "tevent": "lib/tevent",
-    "pidl": "pidl",
-    "pass": ".",
-    "fail": ".",
-    "retry": "."
+    "pidl": "pidl"
 }
 
-defaulttasks = ["ctdb",
-                "samba",
-                "samba-py3",
-                "samba-nt4",
-                "samba-nt4-py3",
-                "samba-fileserver",
-                "samba-xc",
-                "samba-o3",
-                "samba-ctdb",
-                "samba-libs",
-                "samba-libs-py3",
-                "samba-static",
-                "samba-none-env",
-                "samba-none-env-py3",
-                "samba-ad-dc",
-                "samba-ad-dc-py3",
-                "samba-ad-dc-2",
-                "samba-ad-dc-2-py3",
-                "samba-systemkrb5",
-                "samba-nopython",
-                "ldb",
-                "tdb",
-                "talloc",
-                "replace",
-                "tevent",
-                "pidl"]
+defaulttasks = builddirs.keys()
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
@@ -432,7 +403,10 @@ class builder(object):
     def __init__(self, name, sequence, cp=True, py3=False):
         self.name = name
         self.py3 = py3
-        self.dir = builddirs[name]
+        if name in builddirs:
+            self.dir = builddirs[name]
+        else:
+            self.dir = "."
 
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
