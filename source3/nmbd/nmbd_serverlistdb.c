@@ -300,7 +300,7 @@ void write_browse_list(time_t t, bool force_write)
 
 	updatecount++;
 
-	fname = cache_path(SERVER_LIST);
+	fname = cache_path(talloc_tos(), SERVER_LIST);
 	if (!fname) {
 		return;
 	}

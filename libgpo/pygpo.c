@@ -93,7 +93,7 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	}
 
 	if (!cache_dir) {
-		cache_dir = cache_path(GPO_CACHE_DIR);
+		cache_dir = cache_path(talloc_tos(), GPO_CACHE_DIR);
 		if (!cache_dir) {
 			PyErr_SetString(PyExc_MemoryError,
 					"Failed to determine gpo cache dir");

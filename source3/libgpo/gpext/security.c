@@ -154,7 +154,7 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 	char *unix_path = NULL;
 	struct gp_inifile_context *ini_ctx = NULL;
 	const struct GROUP_POLICY_OBJECT *gpo;
-	char *gpo_cache_path = cache_path(GPO_CACHE_DIR);
+	char *gpo_cache_path = cache_path(talloc_tos(), GPO_CACHE_DIR);
 	if (gpo_cache_path == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

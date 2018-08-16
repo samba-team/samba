@@ -51,7 +51,7 @@ bool netsamlogon_cache_init(void)
 		return true;
 	}
 
-	path = cache_path(NETSAMLOGON_TDB);
+	path = cache_path(talloc_tos(), NETSAMLOGON_TDB);
 	if (path == NULL) {
 		return false;
 	}

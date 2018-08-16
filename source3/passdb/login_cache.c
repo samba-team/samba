@@ -38,7 +38,7 @@ bool login_cache_init(void)
 	/* skip file open if it's already opened */
 	if (cache) return True;
 
-	cache_fname = cache_path(LOGIN_CACHE_FILE);
+	cache_fname = cache_path(talloc_tos(), LOGIN_CACHE_FILE);
 	if (cache_fname == NULL) {
 		DEBUG(0, ("Filename allocation failed.\n"));
 		return False;

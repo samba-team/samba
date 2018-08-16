@@ -129,7 +129,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 		return true;
 	}
 
-	db_name = cache_path("smbprofile.tdb");
+	db_name = cache_path(talloc_tos(), "smbprofile.tdb");
 	if (db_name == NULL) {
 		return false;
 	}

@@ -1228,7 +1228,7 @@ static int get_session_info(uint32_t servertype,
 	char **lines;
 	bool local_list_only;
 	int i;
-	char *slist_cache_path = cache_path(SERVER_LIST);
+	char *slist_cache_path = cache_path(talloc_tos(), SERVER_LIST);
 	if (slist_cache_path == NULL) {
 		return 0;
 	}

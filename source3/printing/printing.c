@@ -204,7 +204,7 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 		return false;
 	}
 
-	print_cache_path = cache_path("printing");
+	print_cache_path = cache_path(talloc_tos(), "printing");
 	if (print_cache_path == NULL) {
 		return false;
 	}
@@ -214,7 +214,7 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 		return false;
 	}
 
-	print_cache_path = cache_path("printing.tdb");
+	print_cache_path = cache_path(talloc_tos(), "printing.tdb");
 	if (print_cache_path == NULL) {
 		return false;
 	}

@@ -95,7 +95,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		DLIST_ADD(print_db_head, p);
 	}
 
-	print_cache_path = cache_path("printing/");
+	print_cache_path = cache_path(talloc_tos(), "printing/");
 	if (print_cache_path == NULL) {
 		DLIST_REMOVE(print_db_head, p);
 		SAFE_FREE(p);

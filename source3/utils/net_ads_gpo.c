@@ -100,7 +100,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	d_printf(_("finished\n"));
 
 	d_printf(_("* Refreshing Group Policy Data "));
-	gpo_cache_path = cache_path(GPO_CACHE_DIR);
+	gpo_cache_path = cache_path(talloc_tos(), GPO_CACHE_DIR);
 	if (gpo_cache_path == NULL) {
 		d_printf(_("failed: %s\n"), nt_errstr(NT_STATUS_NO_MEMORY));
 		goto out;
