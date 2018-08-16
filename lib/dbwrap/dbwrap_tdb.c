@@ -111,10 +111,11 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 }
 
 static struct db_record *db_tdb_fetch_locked_internal(
-	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key)
+	struct db_context *db,
+	struct db_tdb_ctx *ctx,
+	TALLOC_CTX *mem_ctx,
+	TDB_DATA key)
 {
-	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
-						       struct db_tdb_ctx);
 	struct tdb_fetch_locked_state state;
 	int ret;
 
@@ -162,7 +163,7 @@ static struct db_record *db_tdb_fetch_locked(
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		return NULL;
 	}
-	return db_tdb_fetch_locked_internal(db, mem_ctx, key);
+	return db_tdb_fetch_locked_internal(db, ctx, mem_ctx, key);
 }
 
 static struct db_record *db_tdb_try_fetch_locked(
@@ -176,7 +177,7 @@ static struct db_record *db_tdb_try_fetch_locked(
 		DEBUG(3, ("tdb_chainlock_nonblock failed\n"));
 		return NULL;
 	}
-	return db_tdb_fetch_locked_internal(db, mem_ctx, key);
+	return db_tdb_fetch_locked_internal(db, ctx, mem_ctx, key);
 }
 
 static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
