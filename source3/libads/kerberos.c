@@ -628,7 +628,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		return false;
 	}
 
-	dname = lock_path("smb_krb5");
+	dname = lock_path(talloc_tos(), "smb_krb5");
 	if (!dname) {
 		return false;
 	}
@@ -639,7 +639,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		goto done;
 	}
 
-	tmpname = lock_path("smb_tmp_krb5.XXXXXX");
+	tmpname = lock_path(talloc_tos(), "smb_tmp_krb5.XXXXXX");
 	if (!tmpname) {
 		goto done;
 	}

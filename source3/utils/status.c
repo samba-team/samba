@@ -685,7 +685,7 @@ int main(int argc, const char *argv[])
 		int result;
 		struct db_context *db;
 
-		db_path = lock_path("locking.tdb");
+		db_path = lock_path(talloc_tos(), "locking.tdb");
 		if (db_path == NULL) {
 			d_printf("Out of memory - exiting\n");
 			ret = -1;

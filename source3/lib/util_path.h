@@ -24,7 +24,10 @@
 #ifndef __LIB_UTIL_PATH_H__
 #define __LIB_UTIL_PATH_H__
 
-char *lock_path(const char *name);
+#include "replace.h"
+#include <talloc.h>
+
+char *lock_path(TALLOC_CTX *mem_ctx, const char *name);
 char *state_path(const char *name);
 char *cache_path(const char *name);
 char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path);

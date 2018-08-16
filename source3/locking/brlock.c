@@ -362,7 +362,7 @@ void brl_init(bool read_only)
 		tdb_flags |= TDB_SEQNUM;
 	}
 
-	db_path = lock_path("brlock.tdb");
+	db_path = lock_path(talloc_tos(), "brlock.tdb");
 	if (db_path == NULL) {
 		DEBUG(0, ("out of memory!\n"));
 		return;

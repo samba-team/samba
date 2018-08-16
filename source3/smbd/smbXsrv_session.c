@@ -67,7 +67,7 @@ NTSTATUS smbXsrv_session_global_init(struct messaging_context *msg_ctx)
 	/*
 	 * This contains secret information like session keys!
 	 */
-	global_path = lock_path("smbXsrv_session_global.tdb");
+	global_path = lock_path(talloc_tos(), "smbXsrv_session_global.tdb");
 	if (global_path == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

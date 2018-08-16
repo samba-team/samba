@@ -39,7 +39,7 @@ static struct db_context *get_printer_list_db(void)
 		return db;
 	}
 
-	db_path = lock_path("printer_list.tdb");
+	db_path = lock_path(talloc_tos(), "printer_list.tdb");
 	if (db_path == NULL) {
 		return NULL;
 	}

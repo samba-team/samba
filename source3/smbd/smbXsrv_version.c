@@ -72,7 +72,7 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 
 	frame = talloc_stackframe();
 
-	global_path = lock_path("smbXsrv_version_global.tdb");
+	global_path = lock_path(talloc_tos(), "smbXsrv_version_global.tdb");
 	if (global_path == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;

@@ -149,7 +149,7 @@ bool lang_tdb_init(const char *lang)
 		goto done;
 	}
 
-	lpath = lock_path("lang_");
+	lpath = lock_path(talloc_tos(), "lang_");
 	if (lpath == NULL) {
 		goto done;
 	}

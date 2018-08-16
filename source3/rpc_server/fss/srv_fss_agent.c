@@ -394,7 +394,7 @@ NTSTATUS srv_fssa_start(struct messaging_context *msg_ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fss_global.db_path = lock_path(FSS_DB_NAME);
+	fss_global.db_path = lock_path(talloc_tos(), FSS_DB_NAME);
 	if (fss_global.db_path == NULL) {
 		talloc_free(fss_global.mem_ctx);
 		return NT_STATUS_NO_MEMORY;

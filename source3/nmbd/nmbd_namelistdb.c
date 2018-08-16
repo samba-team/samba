@@ -647,7 +647,7 @@ void dump_all_namelists(void)
 	struct subnet_record *subrec;
 	char *dump_path;
 
-	dump_path = lock_path("namelist.debug");
+	dump_path = lock_path(talloc_tos(), "namelist.debug");
 	if (dump_path == NULL) {
 		DEBUG(0, ("out of memory!\n"));
 		return;

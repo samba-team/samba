@@ -38,7 +38,7 @@ static struct tdb_wrap *cleanup_db(void)
 		return db;
 	}
 
-	db_path = lock_path("smbd_cleanupd.tdb");
+	db_path = lock_path(talloc_tos(), "smbd_cleanupd.tdb");
 	if (db_path == NULL) {
 		return NULL;
 	}

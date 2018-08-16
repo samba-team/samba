@@ -55,7 +55,7 @@ NTSTATUS smbXsrv_tcon_global_init(void)
 		return NT_STATUS_OK;
 	}
 
-	global_path = lock_path("smbXsrv_tcon_global.tdb");
+	global_path = lock_path(talloc_tos(), "smbXsrv_tcon_global.tdb");
 	if (global_path == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -41,7 +41,7 @@ bool leases_db_init(bool read_only)
 		return true;
 	}
 
-	db_path = lock_path("leases.tdb");
+	db_path = lock_path(talloc_tos(), "leases.tdb");
 	if (db_path == NULL) {
 		return false;
 	}

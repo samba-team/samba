@@ -70,7 +70,7 @@ static bool locking_init_internal(bool read_only)
 	if (lock_db)
 		return True;
 
-	db_path = lock_path("locking.tdb");
+	db_path = lock_path(talloc_tos(), "locking.tdb");
 	if (db_path == NULL) {
 		return false;
 	}

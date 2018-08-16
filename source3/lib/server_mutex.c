@@ -70,7 +70,7 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 		return NULL;
 	}
 
-	fname = lock_path("mutex.tdb");
+	fname = lock_path(talloc_tos(), "mutex.tdb");
 	if (fname == NULL) {
 		TALLOC_FREE(result);
 		return NULL;

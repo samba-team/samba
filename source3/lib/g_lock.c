@@ -154,7 +154,7 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 	}
 	result->msg = msg;
 
-	db_path = lock_path("g_lock.tdb");
+	db_path = lock_path(talloc_tos(), "g_lock.tdb");
 	if (db_path == NULL) {
 		TALLOC_FREE(result);
 		return NULL;
