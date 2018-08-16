@@ -923,7 +923,11 @@ class cmd_fetch(Command):
 
         # SMB connect to DC
         try:
-            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
+            conn = smb.SMB(dc_hostname,
+                           service,
+                           lp=self.lp,
+                           creds=self.creds,
+                           sign=True)
         except Exception:
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
 
