@@ -92,12 +92,76 @@ static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
 
 #endif /* HAVE_PACKETSOCKET */
 
+static void test_tcp(const char *src_str,
+		     const char *dst_str,
+		     const char *seq_str,
+		     const char *ack_str,
+		     const char *rst_str)
+{
+	ctdb_sock_addr src, dst;
+	uint32_t seq, ack;
+	int rst;
+	uint8_t buf[512];
+	struct ether_header *eth;
+	size_t expected_len, len;
+	int ret;
+
+	ret = ctdb_sock_addr_from_string(src_str, &src, true);
+	assert(ret == 0);
+
+	ret = ctdb_sock_addr_from_string(dst_str, &dst, true);
+	assert(ret == 0);
+
+	seq = atoi(seq_str);
+	ack = atoi(ack_str);
+	rst = atoi(rst_str);
+
+	/* Need to fake this up */
+	eth = (struct ether_header *) buf;
+	memset(eth, 0, sizeof(*eth));
+
+	switch (src.ip.sin_family) {
+	case AF_INET:
+		eth->ether_type = htons(ETHERTYPE_IP);
+		expected_len = 40;
+		ret = tcp4_build(buf + sizeof(struct ether_header),
+				 sizeof(buf) - sizeof(struct ether_header),
+				 &src.ip,
+				 &dst.ip,
+				 seq,
+				 ack,
+				 rst,
+				 &len);
+		break;
+	case AF_INET6:
+		eth->ether_type = htons(ETHERTYPE_IP6);
+		expected_len = 60;
+		ret = tcp6_build(buf + sizeof(struct ether_header),
+				 sizeof(buf) - sizeof(struct ether_header),
+				 &src.ip6,
+				 &dst.ip6,
+				 seq,
+				 ack,
+				 rst,
+				 &len);
+		break;
+	default:
+		abort();
+	}
+
+	assert(ret == 0);
+	assert(len == expected_len);
+
+	write(STDOUT_FILENO, buf + sizeof(struct ether_header), len);
+}
+
 static void usage(const char *prog)
 {
 	fprintf(stderr, "usage: %s <cmd> [<arg> ...]\n", prog);
 	fprintf(stderr, "  commands:\n");
 	fprintf(stderr, "    types\n");
 	fprintf(stderr, "    arp <ipaddr> <hwaddr> [reply]\n");
+	fprintf(stderr, "    tcp <src> <dst> <seq> <ack> <rst>\n");
 
 	exit(1);
 }
@@ -120,6 +184,11 @@ int main(int argc, char **argv)
 			usage(argv[0]);
 		}
 		test_arp(argv[2], argv[3], (argc == 5));
+	} else if (strcmp(argv[1], "tcp") == 0) {
+		if (argc != 7) {
+			usage(argv[0]);
+		}
+		test_tcp(argv[2], argv[3], argv[4], argv[5], argv[6]);
 	} else {
 		usage(argv[0]);
 	}
