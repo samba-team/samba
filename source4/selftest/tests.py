@@ -638,7 +638,9 @@ planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.passwordsetting
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.sites")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.dnscmd")
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho", py3_compatible=True)
+# Run this against chgdcpass to ensure at least one python3 test
+# against this autobuild target (samba-ad-dc-2)
+planpythontestsuite("chgdcpass:local", "samba.tests.dcerpc.rpcecho", py3_compatible=True)
 
 planoldpythontestsuite("nt4_dc", "samba.tests.netbios", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'])
