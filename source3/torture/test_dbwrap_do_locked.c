@@ -97,7 +97,7 @@ bool run_dbwrap_do_locked1(int dummy)
 		return false;
 	}
 
-	db = db_open_watched(talloc_tos(), backend, msg);
+	db = db_open_watched(talloc_tos(), &backend, msg);
 	if (db == NULL) {
 		fprintf(stderr, "db_open_watched failed: %s\n",
 			strerror(errno));

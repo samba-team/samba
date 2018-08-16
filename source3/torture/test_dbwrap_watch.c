@@ -56,7 +56,7 @@ bool run_dbwrap_watch1(int dummy)
 		goto fail;
 	}
 
-	db = db_open_watched(ev, backend, msg);
+	db = db_open_watched(ev, &backend, msg);
 
 	rec = dbwrap_fetch_locked(db, db, key);
 	if (rec == NULL) {
@@ -153,7 +153,7 @@ bool run_dbwrap_watch2(int dummy)
 		goto fail;
 	}
 
-	db = db_open_watched(ev, backend, msg);
+	db = db_open_watched(ev, &backend, msg);
 	if (db == NULL) {
 		fprintf(stderr, "db_open_watched failed\n");
 		goto fail;

@@ -25,7 +25,7 @@
 #include "messages.h"
 
 struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
-				   struct db_context *backend,
+				   struct db_context **backend,
 				   struct messaging_context *msg);
 struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,

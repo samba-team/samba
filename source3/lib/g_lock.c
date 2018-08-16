@@ -172,7 +172,7 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result->db = db_open_watched(result, backend, msg);
+	result->db = db_open_watched(result, &backend, msg);
 	if (result->db == NULL) {
 		DBG_WARNING("db_open_watched failed\n");
 		TALLOC_FREE(result);

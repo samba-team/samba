@@ -738,7 +738,7 @@ static size_t dbwrap_watched_id(struct db_context *db, uint8_t *id,
 }
 
 struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
-				   struct db_context *backend,
+				   struct db_context **backend,
 				   struct messaging_context *msg)
 {
 	struct db_context *db;
@@ -757,9 +757,9 @@ struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 
 	ctx->msg = msg;
 
-	db->lock_order = backend->lock_order;
-	backend->lock_order = DBWRAP_LOCK_ORDER_NONE;
-	ctx->backend = talloc_move(ctx, &backend);
+	ctx->backend = talloc_move(ctx, backend);
+	db->lock_order = ctx->backend->lock_order;
+	ctx->backend->lock_order = DBWRAP_LOCK_ORDER_NONE;
 
 	db->fetch_locked = dbwrap_watched_fetch_locked;
 	db->do_locked = dbwrap_watched_do_locked;
