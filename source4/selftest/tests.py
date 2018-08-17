@@ -587,7 +587,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     plantestsuite_loadlist(name, env, args)
     if py3_compatible and extra_python is not None:
         args[args.index(subunitrun)] = subunitrun3
-        plantestsuite_loadlist(name, env, args)
+        plantestsuite_loadlist(name + ".python3", env, args)
 
 
 planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
