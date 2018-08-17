@@ -2364,7 +2364,11 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	req->async_internal = false;
 	req->do_signing = false;
-	req->do_encryption = false;
+	if (opcode != SMB2_OP_SESSSETUP) {
+		req->do_encryption = encryption_desired;
+	} else {
+		req->do_encryption = false;
+	}
 	req->was_encrypted = false;
 	if (intf_v->iov_len == SMB2_TF_HDR_SIZE) {
 		const uint8_t *intf = SMBD_SMB2_IN_TF_PTR(req);
@@ -2388,9 +2392,11 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 
 		req->was_encrypted = true;
+		req->do_encryption = true;
 	}
 
 	if (encryption_required && !req->was_encrypted) {
+		req->do_encryption = true;
 		return smbd_smb2_request_error(req,
 				NT_STATUS_ACCESS_DENIED);
 	}
@@ -2526,13 +2532,12 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			encryption_required = true;
 		}
 		if (encryption_required && !req->was_encrypted) {
+			req->do_encryption = true;
 			return smbd_smb2_request_error(req,
 				NT_STATUS_ACCESS_DENIED);
+		} else if (encryption_desired) {
+			req->do_encryption = true;
 		}
-	}
-
-	if (req->was_encrypted || encryption_desired) {
-		req->do_encryption = true;
 	}
 
 	if (req->session) {
