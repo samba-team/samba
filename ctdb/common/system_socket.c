@@ -736,6 +736,116 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
  * wscript has checked to make sure that pcap is available if needed.
  */
 
+static int tcp4_extract(const uint8_t *ip_pkt,
+			size_t pktlen,
+			struct sockaddr_in *src,
+			struct sockaddr_in *dst,
+			uint32_t *ack_seq,
+			uint32_t *seq,
+			int *rst,
+			uint16_t *window)
+{
+	const struct ip *ip;
+	const struct tcphdr *tcp;
+
+	if (pktlen < sizeof(struct ip)) {
+		return EMSGSIZE;
+	}
+
+	/* IP */
+	ip = (const struct ip *)ip_pkt;
+
+	/* We only want IPv4 packets */
+	if (ip->ip_v != 4) {
+		return ENOMSG;
+	}
+	/* Dont look at fragments */
+	if ((ntohs(ip->ip_off)&0x1fff) != 0) {
+		return ENOMSG;
+	}
+	/* we only want TCP */
+	if (ip->ip_p != IPPROTO_TCP) {
+		return ENOMSG;
+	}
+
+	/* make sure its not a short packet */
+	if (offsetof(struct tcphdr, th_ack) + 4 + (ip->ip_hl*4) > pktlen) {
+		return EMSGSIZE;
+	}
+
+	/* TCP */
+	tcp = (const struct tcphdr *)((ip->ip_hl*4) + (const char *)ip);
+
+	/* tell the caller which one we've found */
+	src->sin_family      = AF_INET;
+	src->sin_addr.s_addr = ip->ip_src.s_addr;
+	src->sin_port        = tcp->th_sport;
+
+	dst->sin_family      = AF_INET;
+	dst->sin_addr.s_addr = ip->ip_dst.s_addr;
+	dst->sin_port        = tcp->th_dport;
+
+	*ack_seq             = tcp->th_ack;
+	*seq                 = tcp->th_seq;
+	if (window != NULL) {
+		*window = tcp->th_win;
+	}
+	if (rst != NULL) {
+		*rst = tcp->th_flags & TH_RST;
+	}
+
+	return 0;
+}
+
+static int tcp6_extract(const uint8_t *ip_pkt,
+			size_t pktlen,
+			struct sockaddr_in6 *src,
+			struct sockaddr_in6 *dst,
+			uint32_t *ack_seq,
+			uint32_t *seq,
+			int *rst,
+			uint16_t *window)
+{
+	const struct ip6_hdr *ip6;
+	const struct tcphdr *tcp;
+
+	if (pktlen < sizeof(struct ip6_hdr)) {
+		return EMSGSIZE;
+	}
+
+	/* IP6 */
+	ip6 = (const struct ip6_hdr *)ip_pkt;
+
+	/* we only want TCP */
+	if (ip6->ip6_nxt != IPPROTO_TCP) {
+		return ENOMSG;
+	}
+
+	/* TCP */
+	tcp = (const struct tcphdr *)(ip6+1);
+
+	/* tell the caller which one we've found */
+	src->sin6_family = AF_INET6;
+	src->sin6_port   = tcp->th_sport;
+	src->sin6_addr   = ip6->ip6_src;
+
+	dst->sin6_family = AF_INET6;
+	dst->sin6_port   = tcp->th_dport;
+	dst->sin6_addr   = ip6->ip6_dst;
+
+	*ack_seq             = tcp->th_ack;
+	*seq                 = tcp->th_seq;
+	if (window != NULL) {
+		*window = tcp->th_win;
+	}
+	if (rst != NULL) {
+		*rst = tcp->th_flags & TH_RST;
+	}
+
+	return 0;
+}
+
+
 #ifdef HAVE_AF_PACKET
 
 /*
@@ -792,13 +902,10 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 	ssize_t nread;
 	uint8_t pkt[100]; /* Large enough for simple ACK/RST packets */
 	struct ether_header *eth;
-	struct iphdr *ip;
-	struct ip6_hdr *ip6;
-	struct tcphdr *tcp;
 	int ret;
 
 	nread = recv(s, pkt, sizeof(pkt), MSG_TRUNC);
-	if (nread < sizeof(*eth)+sizeof(*ip)) {
+	if (nread < sizeof(*eth)) {
 		return EMSGSIZE;
 	}
 
@@ -810,78 +917,26 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 	/* we want either IPv4 or IPv6 */
 	if (ntohs(eth->ether_type) == ETHERTYPE_IP) {
-		/* IP */
-		ip = (struct iphdr *)(eth+1);
+		ret = tcp4_extract(pkt + sizeof(struct ether_header),
+				   (size_t)nread - sizeof(struct ether_header),
+				   &src->ip,
+				   &dst->ip,
+				   ack_seq,
+				   seq,
+				   rst,
+				   window);
+		return ret;
 
-		/* We only want IPv4 packets */
-		if (ip->version != 4) {
-			return ENOMSG;
-		}
-		/* Dont look at fragments */
-		if ((ntohs(ip->frag_off)&0x1fff) != 0) {
-			return ENOMSG;
-		}
-		/* we only want TCP */
-		if (ip->protocol != IPPROTO_TCP) {
-			return ENOMSG;
-		}
-
-		/* make sure its not a short packet */
-		if (offsetof(struct tcphdr, th_ack) + 4 +
-		    (ip->ihl*4) + sizeof(*eth) > nread) {
-			return EMSGSIZE;
-		}
-		/* TCP */
-		tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
-
-		/* tell the caller which one we've found */
-		src->ip.sin_family      = AF_INET;
-		src->ip.sin_addr.s_addr = ip->saddr;
-		src->ip.sin_port        = tcp->th_sport;
-		dst->ip.sin_family      = AF_INET;
-		dst->ip.sin_addr.s_addr = ip->daddr;
-		dst->ip.sin_port        = tcp->th_dport;
-		*ack_seq                = tcp->th_ack;
-		*seq                    = tcp->th_seq;
-		if (window != NULL) {
-			*window = tcp->th_win;
-		}
-		if (rst != NULL) {
-			*rst = tcp->th_flags & TH_RST;
-		}
-
-		return 0;
 	} else if (ntohs(eth->ether_type) == ETHERTYPE_IP6) {
-		/* IP6 */
-		ip6 = (struct ip6_hdr *)(eth+1);
-
-		/* we only want TCP */
-		if (ip6->ip6_nxt != IPPROTO_TCP) {
-			return ENOMSG;
-		}
-
-		/* TCP */
-		tcp = (struct tcphdr *)(ip6+1);
-
-		/* tell the caller which one we've found */
-		src->ip6.sin6_family = AF_INET6;
-		src->ip6.sin6_port   = tcp->th_sport;
-		src->ip6.sin6_addr   = ip6->ip6_src;
-
-		dst->ip6.sin6_family = AF_INET6;
-		dst->ip6.sin6_port   = tcp->th_dport;
-		dst->ip6.sin6_addr   = ip6->ip6_dst;
-
-		*ack_seq             = tcp->th_ack;
-		*seq                 = tcp->th_seq;
-		if (window != NULL) {
-			*window = tcp->th_win;
-		}
-		if (rst != NULL) {
-			*rst = tcp->th_flags & TH_RST;
-		}
-
-		return 0;
+		ret = tcp6_extract(pkt + sizeof(struct ether_header),
+				   (size_t)nread - sizeof(struct ether_header),
+				   &src->ip6,
+				   &dst->ip6,
+				   ack_seq,
+				   seq,
+				   rst,
+				   window);
+		return ret;
 	}
 
 	return ENOMSG;
@@ -923,9 +978,6 @@ int ctdb_sys_read_tcp_packet(int s,
 {
 	int ret;
 	struct ether_header *eth;
-	struct ip *ip;
-	struct ip6_hdr *ip6;
-	struct tcphdr *tcp;
 	struct pcap_pkthdr pkthdr;
 	const u_char *buffer;
 	pcap_t *pt = (pcap_t *)private_data;
@@ -943,78 +995,28 @@ int ctdb_sys_read_tcp_packet(int s,
 
 	/* we want either IPv4 or IPv6 */
 	if (eth->ether_type == htons(ETHERTYPE_IP)) {
-		/* IP */
-		ip = (struct ip *)(eth+1);
+		ret = tcp4_extract(buffer + sizeof(struct ether_header),
+				   (size_t)(pkthdr.caplen -
+					    sizeof(struct ether_header)),
+				   &src->ip,
+				   &dst->ip,
+				   ack_seq,
+				   seq,
+				   rst,
+				   window);
+		return ret;
 
-		/* We only want IPv4 packets */
-		if (ip->ip_v != 4) {
-			return ENOMSG;
-		}
-		/* Dont look at fragments */
-		if ((ntohs(ip->ip_off)&0x1fff) != 0) {
-			return ENOMSG;
-		}
-		/* we only want TCP */
-		if (ip->ip_p != IPPROTO_TCP) {
-			return ENOMSG;
-		}
-
-		/* make sure its not a short packet */
-		if (offsetof(struct tcphdr, th_ack) + 4 +
-		    (ip->ip_hl*4) + sizeof(*eth) > pkthdr.caplen) {
-			return EMSGSIZE;
-		}
-		/* TCP */
-		tcp = (struct tcphdr *)((ip->ip_hl*4) + (char *)ip);
-
-		/* tell the caller which one we've found */
-		src->ip.sin_family      = AF_INET;
-		src->ip.sin_addr.s_addr = ip->ip_src.s_addr;
-		src->ip.sin_port        = tcp->th_sport;
-		dst->ip.sin_family      = AF_INET;
-		dst->ip.sin_addr.s_addr = ip->ip_dst.s_addr;
-		dst->ip.sin_port        = tcp->th_dport;
-		*ack_seq                = tcp->th_ack;
-		*seq                    = tcp->th_seq;
-		if (window != NULL) {
-			*window = tcp->th_win;
-		}
-		if (rst != NULL) {
-			*rst = tcp->th_flags & TH_RST;
-		}
-
-		return 0;
 	} else if (eth->ether_type == htons(ETHERTYPE_IP6)) {
-			/* IP6 */
-		ip6 = (struct ip6_hdr *)(eth+1);
-
-		/* we only want TCP */
-		if (ip6->ip6_nxt != IPPROTO_TCP) {
-			return ENOMSG;
-		}
-
-		/* TCP */
-		tcp = (struct tcphdr *)(ip6+1);
-
-		/* tell the caller which one we've found */
-		src->ip6.sin6_family = AF_INET6;
-		src->ip6.sin6_port   = tcp->th_sport;
-		src->ip6.sin6_addr   = ip6->ip6_src;
-
-		dst->ip6.sin6_family = AF_INET6;
-		dst->ip6.sin6_port   = tcp->th_dport;
-		dst->ip6.sin6_addr   = ip6->ip6_dst;
-
-		*ack_seq             = tcp->th_ack;
-		*seq                 = tcp->th_seq;
-		if (window != NULL) {
-			*window = tcp->th_win;
-		}
-		if (rst != NULL) {
-			*rst = tcp->th_flags & TH_RST;
-		}
-
-		return 0;
+		ret = tcp6_extract(buffer + sizeof(struct ether_header),
+				   (size_t)(pkthdr.caplen -
+					    sizeof(struct ether_header)),
+				   &src->ip6,
+				   &dst->ip6,
+				   ack_seq,
+				   seq,
+				   rst,
+				   window);
+		return ret;
 	}
 
 	return ENOMSG;
