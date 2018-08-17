@@ -799,7 +799,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 	ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
 	if (ret < sizeof(*eth)+sizeof(*ip)) {
-		return -1;
+		return EMSGSIZE;
 	}
 
 	ZERO_STRUCTP(src);
@@ -815,21 +815,21 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 		/* We only want IPv4 packets */
 		if (ip->version != 4) {
-			return -1;
+			return ENOMSG;
 		}
 		/* Dont look at fragments */
 		if ((ntohs(ip->frag_off)&0x1fff) != 0) {
-			return -1;
+			return ENOMSG;
 		}
 		/* we only want TCP */
 		if (ip->protocol != IPPROTO_TCP) {
-			return -1;
+			return ENOMSG;
 		}
 
 		/* make sure its not a short packet */
 		if (offsetof(struct tcphdr, th_ack) + 4 +
 		    (ip->ihl*4) + sizeof(*eth) > ret) {
-			return -1;
+			return EMSGSIZE;
 		}
 		/* TCP */
 		tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
@@ -857,7 +857,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 		/* we only want TCP */
 		if (ip6->ip6_nxt != IPPROTO_TCP) {
-			return -1;
+			return ENOMSG;
 		}
 
 		/* TCP */
@@ -884,7 +884,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 		return 0;
 	}
 
-	return -1;
+	return ENOMSG;
 }
 
 #else /* HAVE_AF_PACKET */
@@ -933,7 +933,7 @@ int ctdb_sys_read_tcp_packet(int s,
 
 	buffer=pcap_next(pt, &pkthdr);
 	if (buffer==NULL) {
-		return -1;
+		return ENOMSG;
 	}
 
 	ZERO_STRUCTP(src);
@@ -949,21 +949,21 @@ int ctdb_sys_read_tcp_packet(int s,
 
 		/* We only want IPv4 packets */
 		if (ip->ip_v != 4) {
-			return -1;
+			return ENOMSG;
 		}
 		/* Dont look at fragments */
 		if ((ntohs(ip->ip_off)&0x1fff) != 0) {
-			return -1;
+			return ENOMSG;
 		}
 		/* we only want TCP */
 		if (ip->ip_p != IPPROTO_TCP) {
-			return -1;
+			return ENOMSG;
 		}
 
 		/* make sure its not a short packet */
 		if (offsetof(struct tcphdr, th_ack) + 4 +
 		    (ip->ip_hl*4) + sizeof(*eth) > pkthdr.caplen) {
-			return -1;
+			return EMSGSIZE;
 		}
 		/* TCP */
 		tcp = (struct tcphdr *)((ip->ip_hl*4) + (char *)ip);
@@ -991,7 +991,7 @@ int ctdb_sys_read_tcp_packet(int s,
 
 		/* we only want TCP */
 		if (ip6->ip6_nxt != IPPROTO_TCP) {
-			return -1;
+			return ENOMSG;
 		}
 
 		/* TCP */
@@ -1018,7 +1018,7 @@ int ctdb_sys_read_tcp_packet(int s,
 		return 0;
 	}
 
-	return -1;
+	return ENOMSG;
 }
 
 #endif /* HAVE_AF_PACKET */
