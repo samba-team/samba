@@ -76,7 +76,7 @@ class TestBrokenQueries(DNSTest):
 
         name = "\x10\x11\x05\xa8.%s" % self.get_dns_domain()
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
+        print("asking for %s" % (q.name))
         questions.append(q)
 
         self.finish_name_packet(p, questions)
