@@ -81,6 +81,7 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 	char *netbios_name = NULL;
 	char *realm = NULL;
 	bool password_change = false;
+	krb5_const_principal client_princ;
 	DATA_BLOB int_data = { NULL, 0 };
 	krb5_data d;
 	krb5_pa_data **e_data;
@@ -90,7 +91,10 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 		return KRB5_KDB_DBNOTINITED;
 	}
 
-	if (ks_is_kadmin(context, kdcreq->client)) {
+	/* Prefer canonicalised name from client entry */
+	client_princ = client ? client->princ : kdcreq->client;
+
+	if (client_princ == NULL || ks_is_kadmin(context, client_princ)) {
 		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	}
 
@@ -111,7 +115,7 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 		goto done;
 	}
 
-	code = krb5_unparse_name(context, kdcreq->client, &client_name);
+	code = krb5_unparse_name(context, client_princ, &client_name);
 	if (code) {
 		goto done;
 	}
