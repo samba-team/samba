@@ -789,16 +789,16 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 			     int *rst,
 			     uint16_t *window)
 {
-	int ret;
-#define RCVPKTSIZE 100
-	char pkt[RCVPKTSIZE];
+	ssize_t nread;
+	uint8_t pkt[100]; /* Large enough for simple ACK/RST packets */
 	struct ether_header *eth;
 	struct iphdr *ip;
 	struct ip6_hdr *ip6;
 	struct tcphdr *tcp;
+	int ret;
 
-	ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
-	if (ret < sizeof(*eth)+sizeof(*ip)) {
+	nread = recv(s, pkt, sizeof(pkt), MSG_TRUNC);
+	if (nread < sizeof(*eth)+sizeof(*ip)) {
 		return EMSGSIZE;
 	}
 
@@ -828,7 +828,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 		/* make sure its not a short packet */
 		if (offsetof(struct tcphdr, th_ack) + 4 +
-		    (ip->ihl*4) + sizeof(*eth) > ret) {
+		    (ip->ihl*4) + sizeof(*eth) > nread) {
 			return EMSGSIZE;
 		}
 		/* TCP */
@@ -926,7 +926,6 @@ int ctdb_sys_read_tcp_packet(int s,
 	struct ip *ip;
 	struct ip6_hdr *ip6;
 	struct tcphdr *tcp;
-	struct ctdb_killtcp_connection *conn;
 	struct pcap_pkthdr pkthdr;
 	const u_char *buffer;
 	pcap_t *pt = (pcap_t *)private_data;
