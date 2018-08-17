@@ -752,18 +752,17 @@ static int tcp4_extract(const uint8_t *ip_pkt,
 		return EMSGSIZE;
 	}
 
-	/* IP */
 	ip = (const struct ip *)ip_pkt;
 
-	/* We only want IPv4 packets */
+	/* IPv4 only */
 	if (ip->ip_v != 4) {
 		return ENOMSG;
 	}
-	/* Dont look at fragments */
+	/* Don't look at fragments */
 	if ((ntohs(ip->ip_off)&0x1fff) != 0) {
 		return ENOMSG;
 	}
-	/* we only want TCP */
+	/* TCP only */
 	if (ip->ip_p != IPPROTO_TCP) {
 		return ENOMSG;
 	}
@@ -774,10 +773,8 @@ static int tcp4_extract(const uint8_t *ip_pkt,
 		return EMSGSIZE;
 	}
 
-	/* TCP */
 	tcp = (const struct tcphdr *)(ip_pkt + (ip->ip_hl * sizeof(uint32_t)));
 
-	/* tell the caller which one we've found */
 	src->sin_family      = AF_INET;
 	src->sin_addr.s_addr = ip->ip_src.s_addr;
 	src->sin_port        = tcp->th_sport;
@@ -815,7 +812,6 @@ static int tcp6_extract(const uint8_t *ip_pkt,
 		return EMSGSIZE;
 	}
 
-	/* IP6 */
 	ip6 = (const struct ip6_hdr *)ip_pkt;
 
 	/* IPv6 only */
@@ -823,15 +819,13 @@ static int tcp6_extract(const uint8_t *ip_pkt,
 		return ENOMSG;
 	}
 
-	/* we only want TCP */
+	/* TCP only */
 	if (ip6->ip6_nxt != IPPROTO_TCP) {
 		return ENOMSG;
 	}
 
-	/* TCP */
 	tcp = (const struct tcphdr *)(ip_pkt + sizeof(struct ip6_hdr));
 
-	/* tell the caller which one we've found */
 	src->sin6_family = AF_INET6;
 	src->sin6_port   = tcp->th_sport;
 	src->sin6_addr   = ip6->ip6_src;
