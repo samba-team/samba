@@ -528,7 +528,7 @@ static int tcp4_build(uint8_t *buf,
 	memset(ip4pkt, 0, l);
 
 	ip4pkt->ip.ip_v     = 4;
-	ip4pkt->ip.ip_hl    = sizeof(ip4pkt->ip)/4;
+	ip4pkt->ip.ip_hl    = sizeof(ip4pkt->ip)/sizeof(uint32_t);
 	ip4pkt->ip.ip_len   = htons(sizeof(ip4pkt));
 	ip4pkt->ip.ip_ttl   = 255;
 	ip4pkt->ip.ip_p     = IPPROTO_TCP;
@@ -545,7 +545,7 @@ static int tcp4_build(uint8_t *buf,
 	if (rst) {
 		ip4pkt->tcp.th_flags |= TH_RST;
 	}
-	ip4pkt->tcp.th_off   = sizeof(ip4pkt->tcp)/4;
+	ip4pkt->tcp.th_off   = sizeof(ip4pkt->tcp)/sizeof(uint32_t);
 	/* this makes it easier to spot in a sniffer */
 	ip4pkt->tcp.th_win   = htons(1234);
 	ip4pkt->tcp.th_sum   = ip_checksum((uint16_t *)&ip4pkt->tcp,
@@ -582,8 +582,8 @@ static int tcp6_build(uint8_t *buf,
 	ip6pkt = (void *)buf;
 	memset(ip6pkt, 0, l);
 
-	ip6pkt->ip6.ip6_vfc  = 0x60;
-	ip6pkt->ip6.ip6_plen = htons(20);
+	ip6pkt->ip6.ip6_vfc  = 6 << 4;
+	ip6pkt->ip6.ip6_plen = htons(sizeof(struct tcphdr));
 	ip6pkt->ip6.ip6_nxt  = IPPROTO_TCP;
 	ip6pkt->ip6.ip6_hlim = 64;
 	ip6pkt->ip6.ip6_src  = src->sin6_addr;
@@ -598,7 +598,7 @@ static int tcp6_build(uint8_t *buf,
 	if (rst) {
 		ip6pkt->tcp.th_flags |= TH_RST;
 	}
-	ip6pkt->tcp.th_off    = sizeof(ip6pkt->tcp)/4;
+	ip6pkt->tcp.th_off    = sizeof(ip6pkt->tcp)/sizeof(uint32_t);
 	/* this makes it easier to spot in a sniffer */
 	ip6pkt->tcp.th_win   = htons(1234);
 	ip6pkt->tcp.th_sum   = ip6_checksum((uint16_t *)&ip6pkt->tcp,
