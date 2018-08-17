@@ -81,6 +81,8 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	struct GROUP_POLICY_OBJECT *gpo_ptr \
 		= (struct GROUP_POLICY_OBJECT *)pytalloc_get_ptr(self);
 
+	frame = talloc_stackframe();
+
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s",
 					 discard_const_p(char *, kwlist),
 					 &cache_dir)) {
@@ -99,11 +101,7 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 		}
 	}
 
-	frame = talloc_stackframe();
-
 	status = gpo_get_unix_path(frame, cache_dir, gpo_ptr, &unix_path);
-
-	TALLOC_FREE(frame);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetString(PyExc_SystemError,
@@ -114,6 +112,7 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	ret = PyStr_FromString(unix_path);
 
 out:
+	TALLOC_FREE(frame);
 	return ret;
 }
 
