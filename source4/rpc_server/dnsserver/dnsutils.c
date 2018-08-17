@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "dnsserver.h"
 #include "rpc_server/common/common.h"
+#include "dns_server/dnsserver_common.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/socket/netif.h"
 #include "lib/util/util_net.h"
@@ -316,7 +317,7 @@ struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones, const c
 	struct dnsserver_zone *z = NULL;
 
 	for (z = zones; z; z = z->next) {
-		if (strcasecmp(zone_name, z->name) == 0) {
+		if (dns_name_equal(zone_name, z->name)) {
 			break;
 		}
 	}
