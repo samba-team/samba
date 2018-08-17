@@ -917,7 +917,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('system_socket_test',
                      source='tests/src/system_socket_test.c',
-                     deps='talloc ctdb-protocol-util',
+                     deps='talloc ctdb-protocol-util pcap',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('porting_tests',

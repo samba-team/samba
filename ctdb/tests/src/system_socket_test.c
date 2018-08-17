@@ -104,6 +104,10 @@ static void test_tcp(const char *src_str,
 	uint8_t buf[512];
 	struct ether_header *eth;
 	size_t expected_len, len;
+	char src_str_out[64], dst_str_out[64];
+	uint32_t seq_out, ack_out;
+	int rst_out;
+	uint16_t window;
 	int ret;
 
 	ret = ctdb_sock_addr_from_string(src_str, &src, true);
@@ -153,6 +157,50 @@ static void test_tcp(const char *src_str,
 	assert(len == expected_len);
 
 	write(STDOUT_FILENO, buf + sizeof(struct ether_header), len);
+
+	switch (ntohs(eth->ether_type)) {
+	case ETHERTYPE_IP:
+		ret = tcp4_extract(buf + sizeof(struct ether_header),
+				   len,
+				   &src.ip,
+				   &dst.ip,
+				   &ack_out,
+				   &seq_out,
+				   &rst_out,
+				   &window);
+		break;
+	case ETHERTYPE_IP6:
+		ret = tcp6_extract(buf + sizeof(struct ether_header),
+				   len,
+				   &src.ip6,
+				   &dst.ip6,
+				   &ack_out,
+				   &seq_out,
+				   &rst_out,
+				   &window);
+		break;
+	default:
+		abort();
+	}
+
+	assert(ret == 0);
+
+	assert(seq == seq_out);
+	assert(ack == ack_out);
+	assert((rst != 0) == (rst_out != 0));
+	assert(window == htons(1234));
+
+	ret = ctdb_sock_addr_to_buf(src_str_out, sizeof(src_str_out),
+				    &src, true);
+	assert(ret == 0);
+	ret = strcmp(src_str, src_str_out);
+	assert(ret == 0);
+
+	ret = ctdb_sock_addr_to_buf(dst_str_out, sizeof(dst_str_out),
+				    &dst, true);
+	assert(ret == 0);
+	ret = strcmp(dst_str, dst_str_out);
+	assert(ret == 0);
 }
 
 static void usage(const char *prog)
