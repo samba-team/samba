@@ -768,13 +768,14 @@ static int tcp4_extract(const uint8_t *ip_pkt,
 		return ENOMSG;
 	}
 
-	/* make sure its not a short packet */
-	if (offsetof(struct tcphdr, th_ack) + 4 + (ip->ip_hl*4) > pktlen) {
+	/* Ensure there is enough of the packet to gather required fields */
+	if (pktlen <
+	    (ip->ip_hl * sizeof(uint32_t)) + offsetof(struct tcphdr, th_sum)) {
 		return EMSGSIZE;
 	}
 
 	/* TCP */
-	tcp = (const struct tcphdr *)((ip->ip_hl*4) + (const char *)ip);
+	tcp = (const struct tcphdr *)(ip_pkt + (ip->ip_hl * sizeof(uint32_t)));
 
 	/* tell the caller which one we've found */
 	src->sin_family      = AF_INET;
@@ -809,7 +810,8 @@ static int tcp6_extract(const uint8_t *ip_pkt,
 	const struct ip6_hdr *ip6;
 	const struct tcphdr *tcp;
 
-	if (pktlen < sizeof(struct ip6_hdr)) {
+	/* Ensure there is enough of the packet to gather required fields */
+	if (pktlen < sizeof(struct ip6_hdr) + offsetof(struct tcphdr, th_sum)) {
 		return EMSGSIZE;
 	}
 
@@ -822,7 +824,7 @@ static int tcp6_extract(const uint8_t *ip_pkt,
 	}
 
 	/* TCP */
-	tcp = (const struct tcphdr *)(ip6+1);
+	tcp = (const struct tcphdr *)(ip_pkt + sizeof(struct ip6_hdr));
 
 	/* tell the caller which one we've found */
 	src->sin6_family = AF_INET6;
