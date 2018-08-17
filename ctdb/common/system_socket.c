@@ -3,6 +3,8 @@
 
    Copyright (C) Ronnie Sahlberg  2007
    Copyright (C) Andrew Tridgell  2007
+   Copyright (C) Marc Dequènes (Duck) 2009
+   Copyright (C) Volker Lendecke 2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
