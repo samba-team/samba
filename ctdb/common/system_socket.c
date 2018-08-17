@@ -631,8 +631,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 	int ret;
 	int s;
 	uint32_t one = 1;
-	uint16_t tmpport;
-	ctdb_sock_addr *tmpdest;
+	struct sockaddr_in6 tmpdest = { 0 };
 	int saved_errno;
 
 	switch (src->ip.sin_family) {
@@ -700,21 +699,20 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			return -1;
 
 		}
-		/* sendto() don't like if the port is set and the socket is
-		   in raw mode.
-		*/
-		tmpdest = discard_const(dest);
-		tmpport = tmpdest->ip6.sin6_port;
+		/*
+		 * sendto() on an IPv6 raw socket requires the port to
+		 * be either 0 or a protocol value
+		 */
+		tmpdest = dest->ip6;
+		tmpdest.sin6_port = 0;
 
-		tmpdest->ip6.sin6_port = 0;
 		ret = sendto(s,
 			     buf,
 			     len,
 			     0,
-			     (const struct sockaddr *)&dest->ip6,
-			     sizeof(dest->ip6));
+			     (const struct sockaddr *)&tmpdest,
+			     sizeof(tmpdest));
 		saved_errno = errno;
-		tmpdest->ip6.sin6_port = tmpport;
 		close(s);
 
 		if (ret != len) {
