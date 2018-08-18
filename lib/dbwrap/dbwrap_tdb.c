@@ -116,13 +116,16 @@ static struct db_record *db_tdb_fetch_locked_internal(
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
 	struct tdb_fetch_locked_state state;
+	int ret;
 
 	state.mem_ctx = mem_ctx;
 	state.result = NULL;
 
-	if ((tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse,
-			      &state) < 0) &&
-	    (tdb_error(ctx->wtdb->tdb) != TDB_ERR_NOEXIST)) {
+	ret = tdb_parse_record(ctx->wtdb->tdb,
+			       key,
+			       db_tdb_fetchlock_parse,
+			       &state);
+	if ((ret < 0) && (tdb_error(ctx->wtdb->tdb) != TDB_ERR_NOEXIST)) {
 		tdb_chainunlock(ctx->wtdb->tdb, key);
 		return NULL;
 	}
