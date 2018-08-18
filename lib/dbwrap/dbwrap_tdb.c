@@ -118,8 +118,9 @@ static struct db_record *db_tdb_fetch_locked_internal(
 	struct tdb_fetch_locked_state state;
 	int ret;
 
-	state.mem_ctx = mem_ctx;
-	state.result = NULL;
+	state = (struct tdb_fetch_locked_state) {
+		.mem_ctx = mem_ctx,
+	};
 
 	ret = tdb_parse_record(ctx->wtdb->tdb,
 			       key,
