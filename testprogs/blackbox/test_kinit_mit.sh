@@ -32,13 +32,13 @@ samba_enableaccount="$samba_tool user enable"
 machineaccountccache="$samba_srcdir/scripting/bin/machineaccountccache"
 
 ldbmodify="ldbmodify"
-if [ -x "$samba4bindir/ldbmodify" ]; then
-	ldbmodify="$samba4bindir/ldbmodify"
+if [ -x "$samba_bindir/ldbmodify" ]; then
+	ldbmodify="$samba_bindir/ldbmodify"
 fi
 
 ldbsearch="ldbsearch"
-if [ -x "$samba4bindir/ldbsearch" ]; then
-	ldbsearch="$samba4bindir/ldbsearch"
+if [ -x "$samba_bindir/ldbsearch" ]; then
+	ldbsearch="$samba_bindir/ldbsearch"
 fi
 
 . `dirname $0`/subunit.sh
