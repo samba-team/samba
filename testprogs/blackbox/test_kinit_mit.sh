@@ -24,6 +24,7 @@ samba_srcdir="$SRCDIR/source4"
 samba_kinit=kinit
 samba_kdestroy=kdestroy
 samba_kpasswd=kpasswd
+samba_kvno=kvno
 
 samba_tool="$samba_bindir/samba-tool"
 samba_texpect="$samba_bindir/texpect"
@@ -298,6 +299,17 @@ testit "kinit with machineaccountccache script" $machineaccountccache $CONFIGURA
 test_smbclient "Test machine account login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
 testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings set $ADMIN_LDBMODIFY_CONFIG --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
+
+###########################################################
+### Test basic s4u2self request
+###########################################################
+
+# Use previous acquired machine creds to request a ticket for self.
+# We expect it to fail for now.
+MACHINE_ACCOUNT="$(hostname -s | tr [a-z] [A-Z])\$@$REALM"
+$samba_kvno -U$MACHINE_ACCOUNT $MACHINE_ACCOUNT
+# But we expect the KDC to be up and running still
+testit "kinit with machineaccountccache after s4u2self" $machineaccountccache $CONFIGURATION $KRB5CCNAME || failed=`expr $failed + 1`
 
 ### Cleanup
 
