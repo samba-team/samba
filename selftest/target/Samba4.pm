@@ -259,7 +259,7 @@ sub wait_for_start($$)
 		my $cmd = "NSS_WRAPPER_PASSWD=$testenv_vars->{NSS_WRAPPER_PASSWD} ";
 		$cmd .= "NSS_WRAPPER_GROUP=$testenv_vars->{NSS_WRAPPER_GROUP} ";
 		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=$testenv_vars->{SELFTEST_WINBINDD_SOCKET_DIR} ";
-		$cmd .= "$wbinfo -p";
+		$cmd .= "$wbinfo -P";
 		$ret = system($cmd);
 
 		if ($ret != 0) {
