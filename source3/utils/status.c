@@ -48,6 +48,7 @@
 #include "serverid.h"
 #include "status_profile.h"
 #include "smbd/notifyd/notifyd.h"
+#include "cmdline_contexts.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
@@ -605,21 +606,9 @@ int main(int argc, const char *argv[])
 		d_printf("using configfile = %s\n", get_dyn_CONFIGFILE());
 	}
 
-	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
-			get_dyn_CONFIGFILE());
-		ret = -1;
-		goto done;
-	}
-
-
-	/*
-	 * This implicitly initializes the global ctdbd connection,
-	 * usable by the db_open() calls further down.
-	 */
-	msg_ctx = messaging_init(NULL, samba_tevent_context_init(NULL));
+	msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
 	if (msg_ctx == NULL) {
-		fprintf(stderr, "messaging_init failed\n");
+		fprintf(stderr, "Could not initialize messaging, not root?\n");
 		ret = -1;
 		goto done;
 	}
