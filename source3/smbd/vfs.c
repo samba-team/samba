@@ -983,7 +983,7 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
- it is below dir in the heirachy. This uses realpath.
+ it is below dir in the hierarchy. This uses realpath.
  This function must run as root, and will return names
  and valid stat structs that can be checked on open.
 ********************************************************************/
@@ -1172,7 +1172,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
- it is below dir in the heirachy. This uses realpath.
+ it is below dir in the hierarchy. This uses realpath.
 
  If cwd_name == NULL then fname is a client given path relative
  to the root path of the share.
@@ -2198,7 +2198,7 @@ struct smb_vfs_ev_glue *smb_vfs_ev_glue_create(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * We now setup the glue hierachie.
+	 * We now setup the glue hierarchy.
 	 *
 	 * Search for "Design of the smb_vfs_ev_glue infrastructure" above
 	 * for a detailed description how the chain works.
