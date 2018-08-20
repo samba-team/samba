@@ -8,7 +8,6 @@ setup ()
 
 	export FAKE_CTDB_TUNABLES_OK="
 	       MonitorInterval
-	       TDBMutexEnabled
 	       DatabaseHashSize
 	       "
 	export FAKE_CTDB_TUNABLES_OBSOLETE="

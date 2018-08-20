@@ -41,6 +41,8 @@
 #include "common/common.h"
 #include "common/logging.h"
 
+#include "server/ctdb_config.h"
+
 #define PERSISTENT_HEALTH_TDB "persistent_health.tdb"
 
 /**
@@ -846,8 +848,9 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 						ctdb->db_directory,
 					   db_name, ctdb->pnn);
 
-	tdb_flags = ctdb_db_tdb_flags(db_flags, ctdb->valgrinding,
-				      ctdb->tunable.mutex_enabled);
+	tdb_flags = ctdb_db_tdb_flags(db_flags,
+				      ctdb->valgrinding,
+				      ctdb_config.tdb_mutexes);
 
 again:
 	ctdb_db->ltdb = tdb_wrap_open(ctdb_db, ctdb_db->db_path,

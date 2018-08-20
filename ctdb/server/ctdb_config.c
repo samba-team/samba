@@ -73,6 +73,10 @@ static void setup_config_pointers(struct conf_context *conf)
 				   DATABASE_CONF_SECTION,
 				   DATABASE_CONF_LOCK_DEBUG_SCRIPT,
 				   &ctdb_config.lock_debug_script);
+	conf_assign_boolean_pointer(conf,
+				    DATABASE_CONF_SECTION,
+				    DATABASE_CONF_TDB_MUTEXES,
+				    &ctdb_config.tdb_mutexes);
 
 	/*
 	 * Event

@@ -27,7 +27,8 @@
 #define DATABASE_CONF_VOLATILE_DB_DIR           "volatile database directory"
 #define DATABASE_CONF_PERSISTENT_DB_DIR         "persistent database directory"
 #define DATABASE_CONF_STATE_DB_DIR              "state database directory"
-#define DATABASE_CONF_LOCK_DEBUG_SCRIPT          "lock debug script"
+#define DATABASE_CONF_LOCK_DEBUG_SCRIPT         "lock debug script"
+#define DATABASE_CONF_TDB_MUTEXES               "tdb mutexes"
 
 void database_conf_init(struct conf_context *conf);
 

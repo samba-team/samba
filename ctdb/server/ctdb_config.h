@@ -33,6 +33,7 @@ struct ctdb_config {
 	const char *dbdir_persistent;
 	const char *dbdir_state;
 	const char *lock_debug_script;
+	bool tdb_mutexes;
 
 	/* Event */
 	const char *event_debug_script;
