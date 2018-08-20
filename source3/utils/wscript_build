@@ -37,7 +37,9 @@ bld.SAMBA3_BINARY('smbpasswd',
                  smbconf
                  pdb
                  PASSWD_UTIL
-                 PASSCHANGE''')
+                 PASSCHANGE
+                 cmdline_contexts
+                 ''')
 
 bld.SAMBA3_BINARY('pdbedit',
                  source='pdbedit.c',
