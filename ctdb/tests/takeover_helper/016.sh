@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "3 nodes, all healthy, IPs all unassigned, DisableIPFailover"
+define_test "3 nodes, all healthy, IPs all unassigned, IP failover disabled"
 
 setup_ctdbd <<EOF
 NODEMAP
@@ -21,7 +21,7 @@ PUBLICIPS
 10.0.0.33  -1
 EOF
 
-ctdb_cmd setvar DisableIPFailover 1
+export CTDB_DISABLE_IP_FAILOVER=1
 
 ok <<EOF
 EOF

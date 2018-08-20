@@ -799,6 +799,7 @@ static void takeover_nodemap_done(struct tevent_req *subreq)
 	bool status;
 	int ret;
 	struct ctdb_node_map *nodemap;
+	const char *ptr;
 
 	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
 	TALLOC_FREE(subreq);
@@ -845,7 +846,8 @@ static void takeover_nodemap_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->tun_list->disable_ip_failover != 0) {
+	ptr = getenv("CTDB_DISABLE_IP_FAILOVER");
+	if (ptr != NULL) {
 		/* IP failover is completely disabled so just send out
 		 * ipreallocated event.
 		 */
