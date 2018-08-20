@@ -35,6 +35,7 @@
 #include "system/filesys.h"
 #include "popt_common.h"
 #include "lib/param/loadparm.h"
+#include "cmdline_contexts.h"
 
 #include <regex.h>
 
@@ -697,6 +698,8 @@ static void do_per_share_checks(int s)
 		ret = 1;
 		goto done;
 	}
+
+	cmdline_messaging_context(config_file);
 
 	fprintf(stderr,"Load smb config files from %s\n",config_file);
 
