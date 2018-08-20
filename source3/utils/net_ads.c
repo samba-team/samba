@@ -386,17 +386,17 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 		   (reply.server_type & NBT_SERVER_DS_8) ? _("yes") : _("no"));
 
 
-	printf(_("Forest:\t\t\t%s\n"), reply.forest);
-	printf(_("Domain:\t\t\t%s\n"), reply.dns_domain);
-	printf(_("Domain Controller:\t%s\n"), reply.pdc_dns_name);
+	printf(_("Forest: %s\n"), reply.forest);
+	printf(_("Domain: %s\n"), reply.dns_domain);
+	printf(_("Domain Controller: %s\n"), reply.pdc_dns_name);
 
-	printf(_("Pre-Win2k Domain:\t%s\n"), reply.domain_name);
-	printf(_("Pre-Win2k Hostname:\t%s\n"), reply.pdc_name);
+	printf(_("Pre-Win2k Domain: %s\n"), reply.domain_name);
+	printf(_("Pre-Win2k Hostname: %s\n"), reply.pdc_name);
 
-	if (*reply.user_name) printf(_("User name:\t%s\n"), reply.user_name);
+	if (*reply.user_name) printf(_("User name: %s\n"), reply.user_name);
 
-	printf(_("Server Site Name :\t\t%s\n"), reply.server_site);
-	printf(_("Client Site Name :\t\t%s\n"), reply.client_site);
+	printf(_("Server Site Name: %s\n"), reply.server_site);
+	printf(_("Client Site Name: %s\n"), reply.client_site);
 
 	d_printf(_("NT Version: %d\n"), reply.nt_version);
 	d_printf(_("LMNT Token: %.2x\n"), reply.lmnt_token);
