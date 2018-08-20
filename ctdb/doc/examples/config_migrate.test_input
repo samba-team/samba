@@ -1,3 +1,5 @@
+CTDB_BASE="/etc/ctdb"
+
 CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 
 CTDB_NODES="/etc/ctdb/nodes"

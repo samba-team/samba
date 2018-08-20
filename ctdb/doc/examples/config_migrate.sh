@@ -155,6 +155,7 @@ check_removed_option ()
 	_option="$1"
 
 	grep -Fqx "$_option" <<EOF
+CTDB_BASE
 CTDB_PIDFILE
 CTDB_SOCKET
 CTDB_EVENT_SCRIPT_DIR
