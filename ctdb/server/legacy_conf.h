@@ -24,7 +24,7 @@
 
 #define LEGACY_CONF_SECTION "legacy"
 
-#define LEGACY_CONF_NO_REALTIME          "no realtime"
+#define LEGACY_CONF_REALTIME_SCHEDULING  "realtime scheduling"
 #define LEGACY_CONF_RECMASTER_CAPABILITY "recmaster capability"
 #define LEGACY_CONF_LMASTER_CAPABILITY   "lmaster capability"
 #define LEGACY_CONF_START_AS_STOPPED     "start as stopped"

@@ -19,9 +19,9 @@ cat > "$conffile" <<EOF
 EOF
 
 ok <<EOF
-false
+true
 EOF
-unit_test ctdb-config get "legacy" "no realtime"
+unit_test ctdb-config get "legacy" "realtime scheduling"
 
 ok <<EOF
 true

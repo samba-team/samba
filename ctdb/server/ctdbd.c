@@ -328,7 +328,7 @@ int main(int argc, const char *argv[])
 		ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
 	}
 
-	ctdb->do_setsched = !ctdb_config.no_realtime;
+	ctdb->do_setsched = ctdb_config.realtime_scheduling;
 
 	/*
 	 * Miscellaneous setup

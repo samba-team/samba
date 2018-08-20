@@ -88,8 +88,8 @@ static void setup_config_pointers(struct conf_context *conf)
 
 	conf_assign_boolean_pointer(conf,
 				    LEGACY_CONF_SECTION,
-				    LEGACY_CONF_NO_REALTIME,
-				    &ctdb_config.no_realtime);
+				    LEGACY_CONF_REALTIME_SCHEDULING,
+				    &ctdb_config.realtime_scheduling);
 	conf_assign_boolean_pointer(conf,
 				    LEGACY_CONF_SECTION,
 				    LEGACY_CONF_RECMASTER_CAPABILITY,

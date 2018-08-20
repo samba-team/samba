@@ -436,17 +436,17 @@
       </varlistentry>
 
       <varlistentry>
-	<term>no realtime = true|false</term>
+	<term>realtime scheduling = true|false</term>
 	<listitem>
 	  <para>
 	    Usually CTDB runs with real-time priority. This helps it
 	    to perform effectively on a busy system, such as when
 	    there are thousands of Samba clients. If you are running
 	    CTDB on a platform that does not support real-time
-	    priority, you can set this to <literal>true</literal>.
+	    priority, you can set this to <literal>false</literal>.
 	  </para>
 	  <para>
-	    Default: <literal>false</literal>
+	    Default: <literal>true</literal>
 	  </para>
 	</listitem>
       </varlistentry>
