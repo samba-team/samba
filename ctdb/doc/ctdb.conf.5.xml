@@ -305,6 +305,23 @@
       </varlistentry>
 
       <varlistentry>
+	<term>tdb mutexes = true|false</term>
+	<listitem>
+	  <para>
+	    This parameter enables TDB_MUTEX_LOCKING feature on
+	    volatile databases if the robust mutexes are
+	    supported. This optimizes the record locking using robust
+	    mutexes and is much more efficient that using posix locks.
+	  </para>
+	  <para>
+	    If robust mutexes are unreliable on the platform being
+	    used then they can be disabled by setting this to
+	    <literal>false</literal>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>lock debug script = <parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>

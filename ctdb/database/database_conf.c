@@ -54,6 +54,22 @@ static bool check_static_string_change(const char *key,
 	return true;
 }
 
+static bool check_static_boolean_change(const char *key,
+					bool old_value,
+					bool new_value,
+					enum conf_update_mode mode)
+{
+	if (mode == CONF_MODE_RELOAD || CONF_MODE_API) {
+		if (old_value != new_value) {
+			D_WARNING("Ignoring update of [%s] -> %s\n",
+				  DATABASE_CONF_SECTION,
+				  key);
+		}
+	}
+
+	return true;
+}
+
 static bool database_conf_validate_lock_debug_script(const char *key,
 						     const char *old_script,
 						     const char *new_script,
@@ -141,4 +157,9 @@ void database_conf_init(struct conf_context *conf)
 			   DATABASE_CONF_LOCK_DEBUG_SCRIPT,
 			   NULL,
 			   database_conf_validate_lock_debug_script);
+	conf_define_boolean(conf,
+			    DATABASE_CONF_SECTION,
+			    DATABASE_CONF_TDB_MUTEXES,
+			    true,
+			    check_static_boolean_change);
 }

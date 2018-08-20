@@ -661,17 +661,6 @@ MonitorInterval=20
     </refsect2>
 
     <refsect2>
-      <title>TDBMutexEnabled</title>
-      <para>Default: 1</para>
-      <para>
-	This parameter enables TDB_MUTEX_LOCKING feature on volatile
-	databases if the robust mutexes are supported. This optimizes the
-	record locking using robust mutexes and is much more efficient
-	that using posix locks.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>TickleUpdateInterval</title>
       <para>Default: 20</para>
       <para>

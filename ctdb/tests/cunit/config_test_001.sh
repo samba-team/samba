@@ -40,6 +40,7 @@ ok <<EOF
 	# persistent database directory = ${database_persistent_dbdir}
 	# state database directory = ${database_state_dbdir}
 	# lock debug script = 
+	# tdb mutexes = true
 [event]
 	# debug script = 
 [legacy]
