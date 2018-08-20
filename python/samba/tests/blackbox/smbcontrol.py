@@ -24,10 +24,10 @@ PING    = "ping"
 USAGE   = "pool-usage"
 
 
-class SmbcontrolBlockboxTests(BlackboxTestCase):
+class SmbcontrolBlackboxTests(BlackboxTestCase):
 
     def setUp(self):
-        super(SmbcontrolBlockboxTests, self).setUp()
+        super(SmbcontrolBlackboxTests, self).setUp()
         lp_ctx = self.get_loadparm()
         self.msg_ctx = Messaging(lp_ctx=lp_ctx)
 
