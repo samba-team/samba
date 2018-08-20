@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/samr.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
+#include "cmdline_contexts.h"
 
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008
@@ -1120,6 +1121,8 @@ int main(int argc, const char **argv)
 
 	if (user_name == NULL)
 		user_name = poptGetArg(pc);
+
+	cmdline_messaging_context(get_dyn_CONFIGFILE());
 
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
