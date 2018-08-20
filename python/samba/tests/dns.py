@@ -1080,7 +1080,7 @@ class TestZones(DNSTest):
             if num != werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST:
                 raise
 
-    def create_zone(self, zone, aging_enabled=False):
+    def make_zone_obj(self, zone, aging_enabled=False):
         zone_create = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
         zone_create.pszZoneName = zone
         zone_create.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
@@ -1089,6 +1089,10 @@ class TestZones(DNSTest):
         zone_create.fDsIntegrated = 1
         zone_create.fLoadExisting = 1
         zone_create.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_UNSECURE
+        return zone_create
+
+    def create_zone(self, zone, aging_enabled=False):
+        zone_create = self.make_zone_obj(zone, aging_enabled)
         try:
             client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
             self.rpc_conn.DnssrvOperation2(client_version,
@@ -1100,7 +1104,7 @@ class TestZones(DNSTest):
                                            dnsserver.DNSSRV_TYPEID_ZONE_CREATE,
                                            zone_create)
         except WERRORError as e:
-            self.fail(str(e))
+            self.fail(e)
 
     def set_params(self, **kwargs):
         zone = kwargs.pop('zone', None)
@@ -1545,6 +1549,59 @@ class TestZones(DNSTest):
                 self.assertEqual(len(recs), 0)
             else:
                 self.assertEqual(len(recs), 1)
+
+    def test_fully_qualified_zone(self):
+
+        def create_zone_expect_exists(zone):
+            try:
+                zone_create = self.make_zone_obj(zone)
+                client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+                zc_type = dnsserver.DNSSRV_TYPEID_ZONE_CREATE
+                self.rpc_conn.DnssrvOperation2(client_version,
+                                               0,
+                                               self.server_ip,
+                                               None,
+                                               0,
+                                               'ZoneCreate',
+                                               zc_type,
+                                               zone_create)
+            except WERRORError as e:
+                enum, _ = e.args
+                if enum != werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS:
+                    self.fail(e)
+                return
+            self.fail("Zone {} should already exist".format(zone))
+
+        # Create unqualified, then check creating qualified fails.
+        self.create_zone(self.zone)
+        create_zone_expect_exists(self.zone + '.')
+
+        # Same again, but the other way around.
+        self.create_zone(self.zone + '2.')
+        create_zone_expect_exists(self.zone + '2')
+
+        client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+        request_filter = dnsserver.DNS_ZONE_REQUEST_PRIMARY
+        tid = dnsserver.DNSSRV_TYPEID_DWORD
+        typeid, res = self.rpc_conn.DnssrvComplexOperation2(client_version,
+                                                            0,
+                                                            self.server_ip,
+                                                            None,
+                                                            'EnumZones',
+                                                            tid,
+                                                            request_filter)
+
+        self.delete_zone(self.zone)
+        self.delete_zone(self.zone + '2')
+
+        # Two zones should've been created, neither of them fully qualified.
+        zones_we_just_made = []
+        zones = [str(z.pszZoneName) for z in res.ZoneArray]
+        for zone in zones:
+            if zone.startswith(self.zone):
+                zones_we_just_made.append(zone)
+        self.assertEqual(len(zones_we_just_made), 2)
+        self.assertEqual(set(zones_we_just_made), {self.zone + '2', self.zone})
 
     def delete_zone(self, zone):
         self.rpc_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
