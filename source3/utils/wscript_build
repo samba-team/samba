@@ -89,6 +89,7 @@ bld.SAMBA3_BINARY('eventlogadm',
                  deps='''
                  talloc
                  smbconf
+                 cmdline_contexts
                  LIBEVENTLOG''',
                  install_path='${SBINDIR}')
 
