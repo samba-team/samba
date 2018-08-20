@@ -98,7 +98,9 @@ bld.SAMBA3_BINARY('sharesec',
                  talloc
                  msrpc3
                  libcli_lsa3
-                 popt_samba3''')
+                 popt_samba3
+                 cmdline_contexts
+                 ''')
 
 bld.SAMBA3_BINARY('log2pcap',
                  source='log2pcaphex.c',
