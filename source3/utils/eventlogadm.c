@@ -30,6 +30,7 @@
 #include "registry/reg_util_token.h"
 #include "registry/reg_backend_db.h"
 #include "../libcli/registry/util_reg.h"
+#include "cmdline_contexts.h"
 
 extern int optind;
 extern char *optarg;
@@ -471,6 +472,9 @@ int main( int argc, char *argv[] )
 		usage( exename );
 		exit( 1 );
 	}
+
+	cmdline_messaging_context(configfile == NULL ?
+				  get_dyn_CONFIGFILE() : configfile);
 
 	if ( configfile == NULL ) {
 		lp_load_global(get_dyn_CONFIGFILE());
