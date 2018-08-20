@@ -281,6 +281,11 @@ bld.SAMBA3_LIBRARY('util_cmdline',
                    deps='secrets3',
                    private_library=True)
 
+bld.SAMBA3_LIBRARY('cmdline_contexts',
+                   source='lib/cmdline_contexts.c',
+                   deps='samba3core',
+                   private_library=True)
+
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                      source='libads/kerberos.c libads/ads_status.c',
                      public_deps='krb5samba asn1util k5crypto gssapi LIBTSOCKET CLDAP LIBNMB')
