@@ -90,3 +90,23 @@ required_result 2 <<EOF
 Configuration option [section] -> "key" not defined
 EOF
 unit_test ctdb-config get section key
+
+# Confirm that an unknown key doesn't stop the rest of the file from
+# loading
+cat > "$conffile" <<EOF
+[database]
+	unknown key = 123
+
+[logging]
+	log level = debug
+EOF
+
+required_result 2 <<EOF
+Failed to load config file $conffile
+EOF
+unit_test ctdb-config validate
+
+ok <<EOF
+debug
+EOF
+unit_test ctdb-config get "logging" "log level"
