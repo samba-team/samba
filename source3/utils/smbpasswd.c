@@ -23,6 +23,7 @@
 #include "../lib/util/util_pw.h"
 #include "libsmb/proto.h"
 #include "passdb.h"
+#include "cmdline_contexts.h"
 
 /*
  * Next two lines needed for SunOS and don't
@@ -195,6 +196,8 @@ static int process_options(int argc, char **argv, int local_flags)
 	default:
 		usage();
 	}
+
+	cmdline_messaging_context(configfile);
 
 	if (!lp_load_global(configfile)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
@@ -614,7 +617,6 @@ static int process_nonroot(int local_flags)
 int main(int argc, char **argv)
 {	
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct messaging_context *msg_ctx = NULL;
 	int local_flags = 0;
 	int ret;
 
@@ -631,19 +633,6 @@ int main(int argc, char **argv)
 	local_flags = process_options(argc, argv, local_flags);
 
 	setup_logging("smbpasswd", DEBUG_STDERR);
-
-	msg_ctx = server_messaging_context();
-	if (msg_ctx == NULL) {
-		if (geteuid() != 0) {
-			DBG_NOTICE("Unable to initialize messaging context. "
-				   "Must be root to do that.\n");
-		} else {
-			fprintf(stderr,
-				"smbpasswd is not able to initialize the "
-				"messaging context!\n");
-			return 1;
-		}
-	}
 
 	/*
 	 * Set the machine NETBIOS name if not already
