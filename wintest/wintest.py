@@ -394,10 +394,10 @@ controls {
 
 ${NAMED_INCLUDE}
 ''')
-        
+
         if self.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
-              self.write_file('etc/named.conf',
-                         '''
+            self.write_file('etc/named.conf',
+                       '''
 zone "%s" IN {
       type forward;
       forward only;
@@ -406,8 +406,8 @@ zone "%s" IN {
       };
 };
 ''' % (self.getvar('LCREALM'), self.getvar('INTERFACE_IP')),
-                     mode='a')
-          
+                   mode='a')
+
 
         # add forwarding for the windows domains
         domains = self.get_domains()
@@ -886,7 +886,7 @@ RebootOnCompletion=No
     def start_winvm(self, vm):
         '''start a Windows VM'''
         self.setwinvars(vm)
-        
+
         self.info("Joining a windows box to the domain")
         self.vm_poweroff("${WIN_VM}", checkfail=False)
         self.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
