@@ -35,6 +35,7 @@
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "messages.h"
+#include "cmdline_contexts.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -950,7 +951,6 @@ out_free:
 	const char *binding_string = NULL;
 	const char *host;
 	int signing_state = SMB_SIGNING_IPC_DEFAULT;
-	struct tevent_context *ev_ctx = NULL;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -1016,30 +1016,7 @@ out_free:
 	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);
 
-	ev_ctx = samba_tevent_context_init(frame);
-	if (ev_ctx == NULL) {
-		fprintf(stderr, "Could not init event context\n");
-		result = 1;
-		goto done;
-	}
-
-	nt_status = messaging_init_client(ev_ctx,
-					  ev_ctx,
-					  &rpcclient_msg_ctx);
-	if (geteuid() != 0 &&
-			NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
-		/*
-		 * Normal to fail to initialize messaging context
-		 * if we're not root as we don't have ability to
-		 * read lock directory.
-		 */
-		DBG_NOTICE("Unable to initialize messaging context. "
-			"Must be root to do that.\n");
-	} else if (!NT_STATUS_IS_OK(nt_status)) {
-		fprintf(stderr, "Could not init messaging context\n");
-		result = 1;
-		goto done;
-	}
+	rpcclient_msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
 
 	if (!init_names()) {
 		result = 1;
@@ -1258,7 +1235,6 @@ done:
 	popt_free_cmdline_auth_info();
 	netlogon_creds_cli_close_global_db();
 	TALLOC_FREE(rpcclient_msg_ctx);
-	TALLOC_FREE(ev_ctx);
 	TALLOC_FREE(frame);
 	return result;
 }
