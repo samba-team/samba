@@ -28,6 +28,7 @@ struct cli_state;
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 #include "util_sd.h"
+#include "cmdline_contexts.h"
 
 static TALLOC_CTX *ctx;
 
@@ -420,6 +421,7 @@ int main(int argc, const char *argv[])
 
 	setlinebuf(stdout);
 
+	cmdline_messaging_context(get_dyn_CONFIGFILE());
 	lp_load_with_registry_shares(get_dyn_CONFIGFILE());
 
 	/* check for initializing secrets.tdb first */
