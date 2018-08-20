@@ -272,9 +272,9 @@ def main():
     if opts.debuglevel > 5:
         for c in conversations:
             for p in c.packets:
-                print("    ", p)
+                print("    ", p, file=sys.stderr)
 
-        print('=' * 72)
+        print('=' * 72, file=sys.stderr)
 
     if opts.number_of_users and opts.number_of_users < len(conversations):
         print_err(("--number-of-users (%d) is less than the "
