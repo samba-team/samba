@@ -547,5 +547,5 @@ simple_test_event ()
 
 simple_test_command ()
 {
-    unit_test "$@"
+    unit_test_notrace "$@"
 }
