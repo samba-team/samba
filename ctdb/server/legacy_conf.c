@@ -54,8 +54,8 @@ void legacy_conf_init(struct conf_context *conf)
 
 	conf_define_boolean(conf,
 			    LEGACY_CONF_SECTION,
-			    LEGACY_CONF_NO_REALTIME,
-			    false,
+			    LEGACY_CONF_REALTIME_SCHEDULING,
+			    true,
 			    NULL);
 	conf_define_boolean(conf,
 			    LEGACY_CONF_SECTION,

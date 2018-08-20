@@ -38,7 +38,7 @@ struct ctdb_config {
 	const char *event_debug_script;
 
 	/* Legacy */
-	bool no_realtime;
+	bool realtime_scheduling;
 	bool recmaster_capability;
 	bool lmaster_capability;
 	bool start_as_stopped;

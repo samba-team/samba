@@ -43,7 +43,7 @@ ok <<EOF
 [event]
 	# debug script = 
 [legacy]
-	# no realtime = false
+	# realtime scheduling = true
 	# recmaster capability = true
 	# lmaster capability = true
 	# start as stopped = false
