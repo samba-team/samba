@@ -128,6 +128,7 @@ bld.SAMBA3_BINARY('ntlm_auth',
                  tiniparser
                  libsmb
                  popt_samba3
+                 cmdline_contexts
                  gse gensec''')
 
 bld.SAMBA3_BINARY('dbwrap_tool',

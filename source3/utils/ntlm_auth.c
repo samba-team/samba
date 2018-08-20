@@ -47,6 +47,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/base64.h"
+#include "cmdline_contexts.h"
 
 #if HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"
@@ -2379,6 +2380,8 @@ enum {
 	}
 
 	poptFreeContext(pc);
+
+	cmdline_messaging_context(get_dyn_CONFIGFILE());
 
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		d_fprintf(stderr, "ntlm_auth: error opening config file %s. Error was %s\n",
