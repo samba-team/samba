@@ -109,33 +109,44 @@ out_file_remove_if_empty ()
 # script
 #
 
-# Convert a ctdbd.conf opt+val into a ctdb.conf section+opt
+# Convert a ctdbd.conf opt+val into a ctdb.conf section+opt+val
 #
 # If opt is matched and val is empty then output is printed, allowing
 # this function to be reused to check if opt is valid.
+#
+# Note that for boolean options, the expected value and the new value
+# form part of the data.
 get_ctdb_conf_option ()
 {
 	_opt="$1"
 	_val="$2"
 
 	awk -v opt="${_opt}" -v val="${_val}" \
-	    '$3 == opt { if (!$4 || !val || val ==$4) { print $1, $2 } }' <<EOF
-cluster		node-address			CTDB_NODE_ADDRESS
-cluster		recovery-lock			CTDB_RECOVERY_LOCK
-cluster		transport			CTDB_TRANSPORT
-database	lock-debug-script		CTDB_DEBUG_LOCKS
-database	persistent-database-directory	CTDB_DBDIR_PERSISTENT
-database	state-database-directory	CTDB_DBDIR_STATE
-database	volatile-database-directory	CTDB_DBDIR
-event		debug-script			CTDB_DEBUG_HUNG_SCRIPT
-legacy		lmaster-capability		CTDB_CAPABILITY_LMASTER	     no
-legacy		no-realtime			CTDB_NOSETSCHED		     yes
-legacy		recmaster-capability		CTDB_CAPABILITY_RECMASTER    no
-legacy		script-log-level		CTDB_SCRIPT_LOG_LEVEL
-legacy		start-as-disabled		CTDB_START_AS_DISABLED	     yes
-legacy		start-as-stopped		CTDB_START_AS_STOPPED	     yes
-logging		location			CTDB_LOGGING
-logging		log-level			CTDB_DEBUGLEVEL
+	    '$3 == opt {
+		if (!$4 || !val || val == $4) {
+		    if ($5) {
+			print $1, $2, $5
+		    } else {
+			print $1, $2, val
+		    }
+		}
+	    }' <<EOF
+cluster	  node-address			CTDB_NODE_ADDRESS
+cluster   recovery-lock			CTDB_RECOVERY_LOCK
+cluster   transport			CTDB_TRANSPORT
+database  lock-debug-script		CTDB_DEBUG_LOCKS
+database  persistent-database-directory CTDB_DBDIR_PERSISTENT
+database  state-database-directory	CTDB_DBDIR_STATE
+database  volatile-database-directory	CTDB_DBDIR
+event     debug-script			CTDB_DEBUG_HUNG_SCRIPT
+legacy    lmaster-capability		CTDB_CAPABILITY_LMASTER		no  false
+legacy    no-realtime			CTDB_NOSETSCHED			yes true
+legacy    recmaster-capability		CTDB_CAPABILITY_RECMASTER       no  false
+legacy    script-log-level		CTDB_SCRIPT_LOG_LEVEL
+legacy    start-as-disabled		CTDB_START_AS_DISABLED		yes true
+legacy    start-as-stopped		CTDB_START_AS_STOPPED		yes true
+logging   location			CTDB_LOGGING
+logging   log-level			CTDB_DEBUGLEVEL
 EOF
 
 }
@@ -502,18 +513,13 @@ build_ctdb_conf ()
 			continue
 		fi
 
-		# ctdb.conf needs true/false, not yes/no
-		case "$_val" in
-		yes) _val="true"  ;;
-		no)  _val="false" ;;
-		esac
-
 		# $_out is section and key, replace dashes with spaces
 		# Intentional word splitting
 		# shellcheck disable=SC2086
 		set -- $_out
 		_section=$(echo "$1" | sed -e 's|-| |g')
 		_key=$(echo "$2" | sed -e 's|-| |g')
+		_newval="$3"
 
 		if ! grep -Fqx "[${_section}]" "$_out_file" ; then
 			# Add blank line if file is not empty
@@ -526,7 +532,7 @@ build_ctdb_conf ()
 
 		# Must escape leading TAB or sed eats it
 		sed -i -e "/\\[${_section}\\]/a\
-\\	${_key} = ${_val}
+\\	${_key} = ${_newval}
 " "$_out_file"
 
 	done
