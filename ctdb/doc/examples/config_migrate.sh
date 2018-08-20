@@ -160,6 +160,39 @@ check_ctdb_conf_option ()
 	[ -n "$_out" ]
 }
 
+# Convert a ctdbd.conf tunable option into a ctdb.conf section+opt
+#
+# The difference between this and get_ctdb_conf_option() is that only
+# the tunable part of the option is passed as opt and it is matched
+# case-insensitively.
+get_ctdb_conf_tunable_option ()
+{
+	_opt="$1"
+	_val="$2"
+
+	awk -v opt="${_opt}" -v val="${_val}" \
+	    'tolower($3) == tolower(opt) {
+		if (!$4 || !val || (val == 0 ? 0 : 1) == $4) {
+		    if ($5) {
+			print $1, $2, $5
+		    } else {
+			print $1, $2, val
+		    }
+		}
+	    }' <<EOF
+EOF
+
+}
+
+# Check if a tunable will convert to a ctdb.conf option
+check_ctdb_conf_tunable_option ()
+{
+	_opt="$1"
+
+	_out=$(get_ctdb_conf_tunable_option "$_opt" "")
+	[ -n "$_out" ]
+}
+
 # Check if an option has been removed
 check_removed_option ()
 {
@@ -508,7 +541,14 @@ build_ctdb_conf ()
 
 	list_options |
 	while read -r _opt _val ; do
-		_out=$(get_ctdb_conf_option "$_opt" "$_val")
+		case "$_opt" in
+		CTDB_SET_*)
+			_opt="${_opt#CTDB_SET_}"
+			_out=$(get_ctdb_conf_tunable_option "$_opt" "$_val")
+			;;
+		*)
+			_out=$(get_ctdb_conf_option "$_opt" "$_val")
+		esac
 		if [ -z "$_out" ] ; then
 			continue
 		fi
@@ -563,6 +603,9 @@ build_ctdb_tunables ()
 
 	list_tunables |
 	while read -r _var _val ; do
+		if check_ctdb_conf_tunable_option "$_var" ; then
+			continue
+		fi
 		if ! check_valid_tunable "$_var" ; then
 			continue
 		fi
