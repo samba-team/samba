@@ -122,12 +122,12 @@ static int string_to_integer(const char *str, int *int_val)
 
 static int string_to_boolean(const char *str, bool *bool_val)
 {
-	if (strcasecmp(str, "true") == 0) {
+	if (strcasecmp(str, "true") == 0 || strcasecmp(str, "yes") == 0) {
 		*bool_val = true;
 		return 0;
 	}
 
-	if (strcasecmp(str, "false") == 0) {
+	if (strcasecmp(str, "false") == 0 || strcasecmp(str, "no") == 0) {
 		*bool_val = false;
 		return 0;
 	}
