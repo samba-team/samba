@@ -202,7 +202,7 @@ tasks = {
                      ("clean", "make clean", "text/plain"),
                      ("ctdb-clean", "cd ./ctdb && make clean", "text/plain")],
 
-    "samba-libs" : [
+    "samba-libs": [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs, "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
@@ -231,7 +231,7 @@ tasks = {
                       ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
                       ("allshared-make", "make -j", "text/plain")],
 
-    "samba-none-env" : [
+    "samba-none-env": [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
@@ -240,7 +240,7 @@ tasks = {
                        "TESTS='--include-env=none'",
                        "text/plain")],
 
-    "samba-static" : [
+    "samba-static": [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       # build with all modules static
                       ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL", "text/plain"),
@@ -260,7 +260,7 @@ tasks = {
                       ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
                       ("nonshared-make", "make -j", "text/plain")],
 
-    "samba-systemkrb5" : [
+    "samba-systemkrb5": [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --without-ad-dc", "text/plain"),
                       ("make", "make -j", "text/plain"),
@@ -278,7 +278,7 @@ tasks = {
     # --disable-python is set (rather than major work being done to
     # support this environment).  The target here is for vendors
     # shipping a minimal smbd.
-    "samba-nopython" : [
+    "samba-nopython": [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
                       ("make", "make -j", "text/plain"),
@@ -312,7 +312,7 @@ tasks = {
 
 
 
-    "ldb" : [
+    "ldb": [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
               ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
               ("make", "make", "text/plain"),
@@ -325,7 +325,7 @@ tasks = {
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain")],
 
-    "tdb" : [
+    "tdb": [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
               ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
               ("make", "make", "text/plain"),
@@ -335,7 +335,7 @@ tasks = {
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain")],
 
-    "talloc" : [
+    "talloc": [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
                  ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
                  ("make", "make", "text/plain"),
@@ -345,7 +345,7 @@ tasks = {
                  ("distcheck", "make distcheck", "text/plain"),
                  ("clean", "make clean", "text/plain")],
 
-    "replace" : [
+    "replace": [
                   ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
                   ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make", "text/plain"),
@@ -355,7 +355,7 @@ tasks = {
                   ("distcheck", "make distcheck", "text/plain"),
                   ("clean", "make clean", "text/plain")],
 
-    "tevent" : [
+    "tevent": [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
                  ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
                  ("make", "make", "text/plain"),

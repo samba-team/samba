@@ -975,12 +975,13 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
             logger.warning("BIND version unknown, please modify %s manually." % paths.namedconf)
         setup_file(setup_path("named.conf.dlz"), paths.namedconf, {
                     "NAMED_CONF": paths.namedconf,
-                    "MODULESDIR" : samba.param.modules_dir(),
-                    "BIND9_8" : bind9_8,
-                    "BIND9_9" : bind9_9,
-                    "BIND9_10" : bind9_10,
-                    "BIND9_11" : bind9_11,
-                    "BIND9_12" : bind9_12
+                    "MODULESDIR": samba.param.modules_dir(),
+                    "BIND9_8": bind9_8,
+                    "BIND9_9": bind9_9,
+                    "BIND9_10": bind9_10,
+                    "BIND9_11": bind9_11,
+                    "BIND9_12": bind9_12
+
                     })
 
 
@@ -997,7 +998,7 @@ def create_named_txt(path, realm, dnsdomain, dnsname, binddns_dir,
     """
     setup_file(setup_path("named.txt"), path, {
             "DNSDOMAIN": dnsdomain,
-            "DNSNAME" : dnsname,
+            "DNSNAME": dnsname,
             "REALM": realm,
             "DNS_KEYTAB": keytab_name,
             "DNS_KEYTAB_ABS": os.path.join(binddns_dir, keytab_name),

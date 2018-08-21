@@ -1468,7 +1468,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
         setup_add_ldif(samdb, setup_path("extended-rights.ldif"), {
                 "CONFIGDN": names.configdn,
-                "INC2012" : incl_2012,
+                "INC2012": incl_2012,
                 })
 
         logger.info("Setting up display specifiers")

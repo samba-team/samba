@@ -422,9 +422,9 @@ class OpenLDAPBackend(LDAPBackend):
                 rid = rid + 1
                 mmr_syncrepl_schema_config += read_and_sub_file(
                     setup_path("mmr_syncrepl.conf"), {
-                        "RID" : str(rid),
+                        "RID": str(rid),
                         "MMRDN": self.names.schemadn,
-                        "LDAPSERVER" : url,
+                        "LDAPSERVER": url,
                         "MMR_PASSWORD": mmr_pass})
 
                 rid = rid + 1
