@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   Common server globals
+   Global contexts
 
    Copyright (C) Simo Sorce <idra@samba.org> 2010
 
@@ -21,46 +21,46 @@
 #include "includes.h"
 #include "messages.h"
 
-static struct tevent_context *server_event_ctx = NULL;
+static struct tevent_context *global_event_ctx = NULL;
 
 struct tevent_context *global_event_context(void)
 {
-	if (!server_event_ctx) {
+	if (!global_event_ctx) {
 		/*
 		 * Note we MUST use the NULL context here, not the
 		 * autofree context, to avoid side effects in forked
 		 * children exiting.
 		 */
-		server_event_ctx = samba_tevent_context_init(NULL);
+		global_event_ctx = samba_tevent_context_init(NULL);
 	}
-	if (!server_event_ctx) {
-		smb_panic("Could not init server's event context");
+	if (!global_event_ctx) {
+		smb_panic("Could not init global event context");
 	}
-	return server_event_ctx;
+	return global_event_ctx;
 }
 
 void global_event_context_free(void)
 {
-	TALLOC_FREE(server_event_ctx);
+	TALLOC_FREE(global_event_ctx);
 }
 
-static struct messaging_context *server_msg_ctx = NULL;
+static struct messaging_context *global_msg_ctx = NULL;
 
 struct messaging_context *global_messaging_context(void)
 {
-	if (server_msg_ctx == NULL) {
+	if (global_msg_ctx == NULL) {
 		/*
 		 * Note we MUST use the NULL context here, not the
 		 * autofree context, to avoid side effects in forked
 		 * children exiting.
 		 */
-		server_msg_ctx = messaging_init(NULL,
+		global_msg_ctx = messaging_init(NULL,
 					        global_event_context());
 	}
-	return server_msg_ctx;
+	return global_msg_ctx;
 }
 
 void global_messaging_context_free(void)
 {
-	TALLOC_FREE(server_msg_ctx);
+	TALLOC_FREE(global_msg_ctx);
 }
