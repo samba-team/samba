@@ -140,7 +140,7 @@ database  state-database-directory	CTDB_DBDIR_STATE
 database  volatile-database-directory	CTDB_DBDIR
 event     debug-script			CTDB_DEBUG_HUNG_SCRIPT
 legacy    lmaster-capability		CTDB_CAPABILITY_LMASTER		no  false
-legacy    no-realtime			CTDB_NOSETSCHED			yes true
+legacy    realtime-scheduling		CTDB_NOSETSCHED			yes false
 legacy    recmaster-capability		CTDB_CAPABILITY_RECMASTER       no  false
 legacy    script-log-level		CTDB_SCRIPT_LOG_LEVEL
 legacy    start-as-disabled		CTDB_START_AS_DISABLED		yes true
