@@ -4685,6 +4685,7 @@ static int replmd_make_prefix_child_dn(TALLOC_CTX *tmp_ctx,
 {
 	struct ldb_val deleted_child_rdn_val;
 	struct GUID_txt_buf guid_str;
+	int ret;
 	bool retb;
 
 	GUID_buf_string(&guid, &guid_str);
@@ -4751,10 +4752,13 @@ static int replmd_make_prefix_child_dn(TALLOC_CTX *tmp_ctx,
 	       sizeof(guid_str.buf));
 
 	/* Now set the value into the RDN, without parsing it */
-	ldb_dn_set_component(dn, 0, rdn_name,
-			     deleted_child_rdn_val);
+	ret = ldb_dn_set_component(
+		dn,
+		0,
+		rdn_name,
+		deleted_child_rdn_val);
 
-	return LDB_SUCCESS;
+	return ret;
 }
 
 
