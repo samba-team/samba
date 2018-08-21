@@ -27,6 +27,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
 #include "util_tdb.h"
+#include "cmdline_contexts.h"
 
 enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS,
 		 OP_EXISTS };
@@ -420,6 +421,8 @@ int main(int argc, const char **argv)
 		extra_argv++;
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
+
+	cmdline_messaging_context(get_dyn_CONFIGFILE());
 
 	lp_load_global(get_dyn_CONFIGFILE());
 
