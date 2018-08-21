@@ -163,7 +163,8 @@ class SmbDotConfTests(TestCase):
                           'registry shares',
                           'smb ports',
                           'rpc server dynamic port range',
-                          'name resolve order'])
+                          'name resolve order',
+                          'clustering'])
         self._test_empty(['bin/testparm'])
 
     def test_default_s4(self):
