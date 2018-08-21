@@ -393,6 +393,35 @@
 
   <refsect1>
     <title>
+      FAILOVER CONFIGURATION
+    </title>
+
+    <para>
+      Options in this section affect CTDB failover. They are
+      valid within the <emphasis>failover</emphasis> section of file,
+      indicated by <literal>[failover]</literal>.
+    </para>
+
+    <variablelist>
+
+      <varlistentry>
+	<term>disabled = true|false</term>
+	<listitem>
+	  <para>
+	    If set to <literal>true</literal> then public IP failover
+	    is disabled.
+	  </para>
+	  <para>
+	    Default: <literal>false</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>
       LEGACY CONFIGURATION
     </title>
 

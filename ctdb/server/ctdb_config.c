@@ -28,6 +28,7 @@
 #include "cluster/cluster_conf.h"
 #include "database/database_conf.h"
 #include "event/event_conf.h"
+#include "failover/failover_conf.h"
 #include "legacy_conf.h"
 
 #include "ctdb_config.h"
@@ -87,6 +88,14 @@ static void setup_config_pointers(struct conf_context *conf)
 				   &ctdb_config.event_debug_script);
 
 	/*
+	 * Failover
+	 */
+	conf_assign_boolean_pointer(conf,
+				    FAILOVER_CONF_SECTION,
+				    FAILOVER_CONF_DISABLED,
+				    &ctdb_config.failover_disabled);
+
+	/*
 	 * Legacy
 	 */
 
@@ -132,6 +141,7 @@ int ctdbd_config_load(TALLOC_CTX *mem_ctx,
 	cluster_conf_init(conf);
 	database_conf_init(conf);
 	event_conf_init(conf);
+	failover_conf_init(conf);
 	legacy_conf_init(conf);
 
 	setup_config_pointers(conf);
