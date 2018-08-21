@@ -135,7 +135,9 @@ bld.SAMBA3_BINARY('dbwrap_tool',
                  source='dbwrap_tool.c',
                  deps='''
                  talloc
-                 popt_samba3''')
+                 popt_samba3
+                 cmdline_contexts
+                 ''')
 
 bld.SAMBA3_BINARY('dbwrap_torture',
                  source='dbwrap_torture.c',
