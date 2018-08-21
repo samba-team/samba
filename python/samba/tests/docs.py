@@ -159,12 +159,13 @@ class SmbDotConfTests(TestCase):
 
         # registry shares appears to need sudo
         self._set_arbitrary(['bin/testparm'],
-                            exceptions=['client lanman auth',
-                                        'client plaintext auth',
-                                        'registry shares',
-                                        'smb ports',
-                                        'rpc server dynamic port range',
-                                        'name resolve order'])
+            exceptions = ['client lanman auth',
+                          'client plaintext auth',
+                          'registry shares',
+                          'smb ports',
+                          'rpc server dynamic port range',
+                          'name resolve order',
+                          'clustering'])
         self._test_empty(['bin/testparm'])
 
     def test_default_s4(self):
