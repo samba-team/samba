@@ -1443,6 +1443,11 @@ int get_real_filename(connection_struct *conn, const char *path,
 	int ret;
 	bool mangled;
 
+	/* handle null paths */
+	if ((path == NULL) || (*path == 0)) {
+		path = ".";
+	}
+
 	mangled = mangle_is_mangled(name, conn->params);
 
 	if (mangled) {
