@@ -181,6 +181,7 @@ get_ctdb_conf_tunable_option ()
 		}
 	    }' <<EOF
 database  tdb-mutexes			TDBMutexEnabled		0 false
+failover  disabled			DisableIPFailover	1 true
 EOF
 
 }
