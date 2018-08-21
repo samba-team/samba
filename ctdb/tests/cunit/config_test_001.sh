@@ -43,6 +43,8 @@ ok <<EOF
 	# tdb mutexes = true
 [event]
 	# debug script = 
+[failover]
+	# disabled = false
 [legacy]
 	# realtime scheduling = true
 	# recmaster capability = true
