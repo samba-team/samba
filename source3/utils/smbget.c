@@ -20,6 +20,7 @@
 #include "system/filesys.h"
 #include "popt_common_cmdline.h"
 #include "libsmbclient.h"
+#include "cmdline_contexts.h"
 
 static int columns = 0;
 
@@ -878,6 +879,8 @@ int main(int argc, char **argv)
 	}
 
 	popt_burn_cmdline_password(argc, argv);
+
+	cmdline_messaging_context(get_dyn_CONFIGFILE());
 
 	if (smbc_init(get_auth_data, opt.debuglevel) < 0) {
 		fprintf(stderr, "Unable to initialize libsmbclient\n");
