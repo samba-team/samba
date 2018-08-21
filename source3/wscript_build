@@ -398,7 +398,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           intl/lang_tdb.c
                           lib/gencache.c
                           lib/util_event.c
-                          lib/server_contexts.c
+                          lib/global_contexts.c
                           lib/server_prefork.c
                           lib/server_prefork_util.c
                           lib/ldap_escape.c
