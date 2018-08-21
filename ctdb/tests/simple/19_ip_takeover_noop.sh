@@ -3,10 +3,7 @@
 test_info()
 {
     cat <<EOF
-Check that CTDB operates correctly if:
-
-* DisableIPFailover is set; or
-* there are 0 public IPs configured
+Check that CTDB operates correctly if there are 0 public IPs configured
 
 This test only does anything with local daemons.  On a real cluster it
 has no way of updating configuration.
@@ -30,30 +27,6 @@ fi
 ctdb_restart_when_done
 
 select_test_node_and_ips
-
-echo "Setting DisableIPFailover=1 on all nodes"
-try_command_on_node all $CTDB setvar DisableIPFailover 1
-
-echo "Getting \"before\" IP allocation..."
-try_command_on_node -v any $CTDB ip all
-before="$out"
-
-echo "Disabling node ${test_node}..."
-try_command_on_node "$test_node" $CTDB disable
-wait_until_node_has_status $test_node disabled
-
-echo "Getting \"after\" IP allocation..."
-try_command_on_node -v any $CTDB ip all
-after="$out"
-
-if [ "$before" == "$after" ] ; then
-	echo "GOOD: IP allocation is unchanged"
-	echo
-else
-	die "BAD: IP allocation changed"
-fi
-
-echo "----------------------------------------"
 
 daemons_stop
 
