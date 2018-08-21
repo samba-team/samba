@@ -92,7 +92,7 @@ class cmd_dsacl_set(Command):
         assert(isinstance(desc, security.descriptor))
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, object_dn)
-        m["nTSecurityDescriptor"]= ldb.MessageElement(
+        m["nTSecurityDescriptor"] = ldb.MessageElement(
                 (ndr_pack(desc)), ldb.FLAG_MOD_REPLACE,
                 "nTSecurityDescriptor")
         samdb.modify(m)
