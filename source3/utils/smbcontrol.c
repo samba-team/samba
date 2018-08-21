@@ -35,6 +35,7 @@
 #include "util_tdb.h"
 #include "../lib/util/pidfile.h"
 #include "serverid.h"
+#include "cmdline_contexts.h"
 
 #if HAVE_LIBUNWIND_H
 #include <libunwind.h>
@@ -1609,21 +1610,23 @@ int main(int argc, const char **argv)
 	if (argc <= 1)
 		usage(pc);
 
+	msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
+	if (msg_ctx == NULL) {
+		fprintf(stderr,
+			"Could not init messaging context, not root?\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
+
+	evt_ctx = server_event_context();
+
 	lp_load_global(get_dyn_CONFIGFILE());
 
 	/* Need to invert sense of return code -- samba
          * routines mostly return True==1 for success, but
          * shell needs 0. */ 
 
-	if (!(evt_ctx = samba_tevent_context_init(NULL)) ||
-	    !(msg_ctx = messaging_init(NULL, evt_ctx))) {
-		fprintf(stderr, "could not init messaging context\n");
-		TALLOC_FREE(frame);
-		exit(1);
-	}
-
 	ret = !do_command(evt_ctx, msg_ctx, argc, argv);
-	TALLOC_FREE(msg_ctx);
 	TALLOC_FREE(frame);
 	return ret;
 }
