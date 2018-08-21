@@ -496,6 +496,10 @@ def build(bld):
                         source='event/event_conf.c',
                         deps='ctdb-util')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-failover-conf',
+                        source='failover/failover_conf.c',
+                        deps='ctdb-util')
+
     bld.SAMBA_SUBSYSTEM('ctdb-legacy-conf',
                         source='server/legacy_conf.c',
                         deps='ctdb-util')
