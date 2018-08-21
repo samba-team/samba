@@ -39,6 +39,7 @@ CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
 CTDB_SET_TDBMutexEnabled=0
 CTDB_SET_IPALLOCALGORITHM=0
 CTDB_SET_noiphostonalldisabled=0
+CTDB_SET_DisableIpFailover=1
 CTDB_SET_foobar=0
 
 CTDB_SUPPRESS_COREFILE="yes"
