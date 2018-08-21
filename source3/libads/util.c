@@ -166,8 +166,7 @@ struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
 	result->serviceclass = talloc_strdup(result, srvprinc);
 	if (result->serviceclass == NULL) {
 		DBG_ERR("Out of memory\n");
-		TALLOC_FREE(result);
-		goto out;
+		goto fail;
 	}
 	result->port = -1;
 
@@ -176,8 +175,7 @@ struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
 		/* illegal */
 		DBG_ERR("Failed to parse spn %s, no host definition\n",
 			srvprinc);
-		TALLOC_FREE(result);
-		goto out;
+		goto fail;
 	}
 
 	/* terminate service principal */
@@ -205,23 +203,20 @@ struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
 		/* illegal */
 		DBG_ERR("Failed to parse spn %s, illegal host definition\n",
 			srvprinc);
-		TALLOC_FREE(result);
-		goto out;
+		goto fail;
 	}
 	result->host = host_str;
 
 	if (result->servicename != NULL && (strlen(result->servicename) == 0)) {
 		DBG_ERR("Failed to parse spn %s, empty servicename "
 			"definition\n", srvprinc);
-		TALLOC_FREE(result);
-		goto out;
+		goto fail;
 	}
 	if (port_str != NULL) {
 		if (strlen(port_str) == 0) {
 			DBG_ERR("Failed to parse spn %s, empty port "
 				"definition\n", srvprinc);
-			TALLOC_FREE(result);
-			goto out;
+			goto fail;
 		}
 		result->port = (int32_t)strtol(port_str, NULL, 10);
 		if (result->port <= 0
@@ -230,10 +225,11 @@ struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
 			DBG_ERR("Failed to parse spn %s, port number "
 				"convertion failed\n", srvprinc);
 			errno = 0;
-			TALLOC_FREE(result);
-			goto out;
+			goto fail;
 		}
 	}
-out:
 	return result;
+fail:
+	TALLOC_FREE(result);
+	return NULL;
 }
