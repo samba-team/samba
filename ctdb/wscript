@@ -511,6 +511,7 @@ def build(bld):
                              ctdb-event-conf
                              ctdb-cluster-conf
                              ctdb-database-conf
+                             ctdb-failover-conf
                              ctdb-legacy-conf
                              ctdb-util samba-util talloc replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
