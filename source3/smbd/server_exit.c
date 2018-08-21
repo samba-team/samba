@@ -92,7 +92,7 @@ static void exit_server_common(enum server_exit_reason how,
 	struct smbXsrv_connection *xconn = NULL;
 	struct smbXsrv_connection *xconn_next = NULL;
 	struct smbd_server_connection *sconn = NULL;
-	struct messaging_context *msg_ctx = server_messaging_context();
+	struct messaging_context *msg_ctx = global_messaging_context();
 
 	if (client != NULL) {
 		sconn = client->sconn;
@@ -217,7 +217,7 @@ static void exit_server_common(enum server_exit_reason how,
 	netlogon_creds_cli_close_global_db();
 	TALLOC_FREE(global_smbXsrv_client);
 	smbprofile_dump();
-	server_messaging_context_free();
+	global_messaging_context_free();
 	global_event_context_free();
 	TALLOC_FREE(smbd_memcache_ctx);
 

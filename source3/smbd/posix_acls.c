@@ -4614,7 +4614,7 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = create_conn_struct_tos(server_messaging_context(),
+	status = create_conn_struct_tos(global_messaging_context(),
 					-1,
 					"/",
 					NULL,

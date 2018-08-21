@@ -1050,7 +1050,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 					      driver_directory);
 	}
 
-	nt_status = create_conn_struct_tos_cwd(server_messaging_context(),
+	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       printdollar_snum,
 					       working_dir,
 					       session_info,
@@ -1525,7 +1525,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		return WERR_BAD_NET_NAME;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(server_messaging_context(),
+	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       printdollar_snum,
 					       lp_path(frame, printdollar_snum),
 					       session_info,
@@ -2067,7 +2067,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 		return false;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(server_messaging_context(),
+	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       printdollar_snum,
 					       lp_path(frame, printdollar_snum),
 					       session_info,

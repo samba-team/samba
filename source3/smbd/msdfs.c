@@ -1210,7 +1210,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct_tos_cwd(server_messaging_context(),
+	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    lp_path(frame, snum),
 					    NULL,
@@ -1424,7 +1424,7 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 	if(snum < 0) {
 		return False;
 	}
-	status = create_conn_struct_tos_cwd(server_messaging_context(),
+	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    lp_path(talloc_tos(), snum),
 					    NULL,
@@ -1594,7 +1594,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct_tos_cwd(server_messaging_context(),
+	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    connect_path,
 					    NULL,
@@ -1691,7 +1691,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct_tos_cwd(server_messaging_context(),
+	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    connect_path,
 					    NULL,

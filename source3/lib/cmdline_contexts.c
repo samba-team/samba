@@ -46,7 +46,7 @@ struct messaging_context *cmdline_messaging_context(const char *config_file)
 		exit(1);
 	}
 
-	msg_ctx = server_messaging_context();
+	msg_ctx = global_messaging_context();
 	if (msg_ctx == NULL) {
 		if (geteuid() == 0) {
 			fprintf(stderr,
@@ -66,5 +66,5 @@ struct messaging_context *cmdline_messaging_context(const char *config_file)
 
 void cmdline_messaging_context_free(void)
 {
-	server_messaging_context_free();
+	global_messaging_context_free();
 }

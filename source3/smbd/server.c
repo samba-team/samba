@@ -1785,7 +1785,7 @@ extern void build_options(bool screen);
 	 * Init the messaging context
 	 * FIXME: This should only call messaging_init()
 	 */
-	msg_ctx = server_messaging_context();
+	msg_ctx = global_messaging_context();
 	if (msg_ctx == NULL) {
 		exit(1);
 	}

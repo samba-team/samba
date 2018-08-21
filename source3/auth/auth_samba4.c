@@ -59,7 +59,7 @@ static struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	msg_ctx = server_messaging_context();
+	msg_ctx = global_messaging_context();
 	if (msg_ctx == NULL) {
 		return NULL;
 	}

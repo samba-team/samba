@@ -86,7 +86,7 @@ static bool locking_init_internal(bool read_only)
 		return False;
 	}
 
-	lock_db = db_open_watched(NULL, &backend, server_messaging_context());
+	lock_db = db_open_watched(NULL, &backend, global_messaging_context());
 	if (lock_db == NULL) {
 		DBG_ERR("db_open_watched failed\n");
 		TALLOC_FREE(backend);

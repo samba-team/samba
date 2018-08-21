@@ -89,7 +89,7 @@ NTSTATUS smbXsrv_session_global_init(struct messaging_context *msg_ctx)
 		return status;
 	}
 
-	db_ctx = db_open_watched(NULL, &backend, server_messaging_context());
+	db_ctx = db_open_watched(NULL, &backend, global_messaging_context());
 	if (db_ctx == NULL) {
 		TALLOC_FREE(backend);
 		return NT_STATUS_NO_MEMORY;

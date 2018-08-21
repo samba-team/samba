@@ -200,7 +200,7 @@ static bool mdssd_child_init(struct tevent_context *ev_ctx,
 			     struct pf_worker_data *pf)
 {
 	NTSTATUS status;
-	struct messaging_context *msg_ctx = server_messaging_context();
+	struct messaging_context *msg_ctx = global_messaging_context();
 	bool ok;
 
 	status = reinit_after_fork(msg_ctx, ev_ctx,

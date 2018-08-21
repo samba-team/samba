@@ -46,7 +46,7 @@ void global_event_context_free(void)
 
 static struct messaging_context *server_msg_ctx = NULL;
 
-struct messaging_context *server_messaging_context(void)
+struct messaging_context *global_messaging_context(void)
 {
 	if (server_msg_ctx == NULL) {
 		/*
@@ -60,7 +60,7 @@ struct messaging_context *server_messaging_context(void)
 	return server_msg_ctx;
 }
 
-void server_messaging_context_free(void)
+void global_messaging_context_free(void)
 {
 	TALLOC_FREE(server_msg_ctx);
 }

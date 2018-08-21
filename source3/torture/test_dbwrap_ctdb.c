@@ -34,7 +34,7 @@ bool run_local_dbwrap_ctdb(int dummy)
 	uint32_t val;
 	struct messaging_context *msg_ctx;
 
-	msg_ctx = server_messaging_context();
+	msg_ctx = global_messaging_context();
 
 	db = db_open_ctdb(talloc_tos(), msg_ctx, "torture.tdb",
 			  0, TDB_DEFAULT,

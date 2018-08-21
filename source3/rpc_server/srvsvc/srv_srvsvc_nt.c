@@ -2345,7 +2345,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(server_messaging_context(),
+	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       snum,
 					       lp_path(frame, snum),
 					       p->session_info,
@@ -2478,7 +2478,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(server_messaging_context(),
+	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       snum,
 					       lp_path(frame, snum),
 					       p->session_info,

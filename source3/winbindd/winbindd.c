@@ -72,9 +72,9 @@ struct imessaging_context *winbind_imessaging_context(void)
 		return msg;
 	}
 
-	msg_ctx = server_messaging_context();
+	msg_ctx = global_messaging_context();
 	if (msg_ctx == NULL) {
-		smb_panic("server_messaging_context failed\n");
+		smb_panic("global_messaging_context failed\n");
 	}
 	myself = messaging_server_id(msg_ctx);
 
@@ -1417,9 +1417,9 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 			   MSG_WINBIND_ONLINESTATUS, winbind_msg_onlinestatus);
 
 	/* Handle domain online/offline messages for domains */
-	messaging_register(server_messaging_context(), NULL,
+	messaging_register(global_messaging_context(), NULL,
 			   MSG_WINBIND_DOMAIN_OFFLINE, winbind_msg_domain_offline);
-	messaging_register(server_messaging_context(), NULL,
+	messaging_register(global_messaging_context(), NULL,
 			   MSG_WINBIND_DOMAIN_ONLINE, winbind_msg_domain_online);
 
 	messaging_register(msg_ctx, NULL,
@@ -1745,7 +1745,7 @@ int main(int argc, const char **argv)
 
 	/* Initialise messaging system */
 
-	if (server_messaging_context() == NULL) {
+	if (global_messaging_context() == NULL) {
 		exit(1);
 	}
 
@@ -1839,7 +1839,7 @@ int main(int argc, const char **argv)
 	 * winbindd-specific resources we must free yet. JRA.
 	 */
 
-	status = reinit_after_fork(server_messaging_context(),
+	status = reinit_after_fork(global_messaging_context(),
 				   global_event_context(),
 				   false, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1857,9 +1857,9 @@ int main(int argc, const char **argv)
 		exit_daemon(nt_errstr(status), map_errno_from_nt_status(status));
 	}
 
-	winbindd_register_handlers(server_messaging_context(), !Fork);
+	winbindd_register_handlers(global_messaging_context(), !Fork);
 
-	if (!messaging_parent_dgm_cleanup_init(server_messaging_context())) {
+	if (!messaging_parent_dgm_cleanup_init(global_messaging_context())) {
 		exit(1);
 	}
 
@@ -1872,7 +1872,7 @@ int main(int argc, const char **argv)
 	rpc_samr_init(NULL);
 
 	winbindd_init_addrchange(NULL, global_event_context(),
-				 server_messaging_context());
+				 global_messaging_context());
 
 	/* setup listen sockets */
 
