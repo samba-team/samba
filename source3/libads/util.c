@@ -166,7 +166,8 @@ struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
 	result->serviceclass = talloc_strdup(result, srvprinc);
 	if (result->serviceclass == NULL) {
 		DBG_ERR("Out of memory\n");
-		return NULL;
+		TALLOC_FREE(result);
+		goto out;
 	}
 	result->port = -1;
 
