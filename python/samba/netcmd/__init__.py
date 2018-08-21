@@ -20,6 +20,7 @@ import optparse
 import samba
 from samba import getopt as options
 from samba import colour
+from samba.logger import get_samba_logger
 from ldb import LdbError
 import sys
 import traceback
@@ -189,12 +190,12 @@ class Command(object):
         """Run the command. This should be overridden by all subclasses."""
         raise NotImplementedError(self.run)
 
-    def get_logger(self, name="netcmd"):
+    def get_logger(self, name="", verbose=False, quiet=False, **kwargs):
         """Get a logger object."""
-        import logging
-        logger = logging.getLogger(name)
-        logger.addHandler(logging.StreamHandler(self.errf))
-        return logger
+        return get_samba_logger(
+            name=name or self.name, stream=self.errf,
+            verbose=verbose, quiet=quiet,
+            **kwargs)
 
     def apply_colour_choice(self, requested):
         """Heuristics to work out whether the user wants colour output, from a

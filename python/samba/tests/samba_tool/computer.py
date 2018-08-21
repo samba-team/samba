@@ -65,7 +65,8 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             (result, out, err) = self._create_computer(computer)
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "There shouldn't be any error message")
+            self.assertNotIn(
+                "ERROR", err, "There shouldn't be any error message")
             self.assertIn("Computer '%s' created successfully" %
                           computer["name"], out)
 
