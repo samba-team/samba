@@ -607,8 +607,9 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		}
 	} else {
 		if (!(instanceType & INSTANCE_TYPE_WRITE)) {
-			DEBUG(0, ("Refusing to replicate %s from a read-only repilca into a read-write replica!\n",
-				  ldb_dn_get_linearized(msg->dn)));
+			DBG_ERR("Refusing to replicate %s from a read-only "
+				"replica into a read-write replica!\n",
+				ldb_dn_get_linearized(msg->dn));
 			return WERR_DS_DRA_SOURCE_IS_PARTIAL_REPLICA;
 		}
 	}
