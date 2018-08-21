@@ -18,6 +18,7 @@ bld.SAMBA3_BINARY('smbcontrol',
                  talloc
                  smbconf
                  popt_samba3
+                 cmdline_contexts
                  PRINTBASE''')
 
 bld.SAMBA3_BINARY('smbtree',
