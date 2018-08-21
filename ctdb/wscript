@@ -577,6 +577,7 @@ def build(bld):
                              ctdb-cluster-conf
                              ctdb-database-conf
                              ctdb-event-conf
+                             ctdb-failover-conf
                              ctdb-legacy-conf
                              ctdb-event-protocol
                              talloc tevent tdb-wrap tdb talloc_report''' +

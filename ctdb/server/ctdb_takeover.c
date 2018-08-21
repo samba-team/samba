@@ -43,6 +43,8 @@
 #include "common/common.h"
 #include "common/logging.h"
 
+#include "server/ctdb_config.h"
+
 #include "server/ipalloc.h"
 
 #define TAKEOVER_TIMEOUT() timeval_current_ofs(ctdb->tunable.takeover_timeout,0)
@@ -750,7 +752,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	if (ctdb->tunable.disable_ip_failover == 0 && ctdb->do_checkpublicip) {
+	if (ctdb_config.failover_disabled == 0 && ctdb->do_checkpublicip) {
 		have_ip = ctdb_sys_have_ip(&pip->addr);
 	}
 	best_iface = ctdb_vnn_best_iface(ctdb, vnn);
@@ -888,7 +890,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 		ctdb_ban_self(ctdb);
 	}
 
-	if (ctdb->tunable.disable_ip_failover == 0 && ctdb->do_checkpublicip) {
+	if (ctdb_config.failover_disabled == 0 && ctdb->do_checkpublicip) {
 		if  (ctdb_sys_have_ip(state->addr)) {
 			DEBUG(DEBUG_ERR,
 			      ("IP %s still hosted during release IP callback, failing\n",
@@ -952,7 +954,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	 * local node.  Redundant releases need to update the PNN but
 	 * are otherwise ignored.
 	 */
-	if (ctdb->tunable.disable_ip_failover == 0 && ctdb->do_checkpublicip) {
+	if (ctdb_config.failover_disabled == 0 && ctdb->do_checkpublicip) {
 		if (!ctdb_sys_have_ip(&pip->addr)) {
 			DEBUG(DEBUG_DEBUG,("Redundant release of IP %s/%u on interface %s (ip not held)\n",
 				ctdb_addr_to_str(&pip->addr),
@@ -1577,7 +1579,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 	struct ctdb_vnn *vnn, *next;
 	int count = 0;
 
-	if (ctdb->tunable.disable_ip_failover == 1) {
+	if (ctdb_config.failover_disabled == 1) {
 		return;
 	}
 

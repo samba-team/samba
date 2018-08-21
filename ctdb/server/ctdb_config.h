@@ -38,6 +38,9 @@ struct ctdb_config {
 	/* Event */
 	const char *event_debug_script;
 
+	/* Failover */
+	bool failover_disabled;
+
 	/* Legacy */
 	bool realtime_scheduling;
 	bool recmaster_capability;

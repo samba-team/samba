@@ -83,7 +83,7 @@ static struct {
 		offsetof(struct ctdb_tunable_list,  reclock_ping_period) },
 	{ "NoIPFailback", 0, false,
 		offsetof(struct ctdb_tunable_list, no_ip_failback) },
-	{ "DisableIPFailover", 0, false,
+	{ "DisableIPFailover", 0, true,
 		offsetof(struct ctdb_tunable_list, disable_ip_failover) },
 	{ "VerboseMemoryNames", 0, false,
 		offsetof(struct ctdb_tunable_list, verbose_memory_names) },

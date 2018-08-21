@@ -32,7 +32,6 @@ DatabaseMaxDead            = 5
 RerecoveryTimeout          = 10
 EnableBans                 = 1
 NoIPFailback               = 0
-DisableIPFailover          = 0
 VerboseMemoryNames         = 0
 RecdPingTimeout            = 60
 RecdFailCount              = 10
