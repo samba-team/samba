@@ -38,7 +38,6 @@ from samba.join import join_clone
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 from samba import colour
-import logging
 
 
 def drsuapi_connect(ctx):
@@ -760,13 +759,7 @@ class cmd_drs_clone_dc_database(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        logger = self.get_logger()
-        if verbose:
-            logger.setLevel(logging.DEBUG)
-        elif quiet:
-            logger.setLevel(logging.WARNING)
-        else:
-            logger.setLevel(logging.INFO)
+        logger = self.get_logger(verbose=verbose, quiet=quiet)
 
         if targetdir is None:
             raise CommandError("--targetdir option must be specified")

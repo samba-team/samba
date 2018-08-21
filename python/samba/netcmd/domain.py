@@ -368,11 +368,7 @@ class cmd_domain_provision(Command):
             plaintext_secrets=False,
             backend_store=None):
 
-        self.logger = self.get_logger("provision")
-        if quiet:
-            self.logger.setLevel(logging.WARNING)
-        else:
-            self.logger.setLevel(logging.INFO)
+        self.logger = self.get_logger(name="provision", quiet=quiet)
 
         lp = sambaopts.get_loadparm()
         smbconf = lp.configfile
@@ -616,13 +612,7 @@ class cmd_domain_dcpromo(Command):
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
 
-        logger = self.get_logger()
-        if verbose:
-            logger.setLevel(logging.DEBUG)
-        elif quiet:
-            logger.setLevel(logging.WARNING)
-        else:
-            logger.setLevel(logging.INFO)
+        logger = self.get_logger(verbose=verbose, quiet=quiet)
 
         netbios_name = lp.get("netbios name")
 
@@ -688,13 +678,7 @@ class cmd_domain_join(Command):
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
 
-        logger = self.get_logger()
-        if verbose:
-            logger.setLevel(logging.DEBUG)
-        elif quiet:
-            logger.setLevel(logging.WARNING)
-        else:
-            logger.setLevel(logging.INFO)
+        logger = self.get_logger(verbose=verbose, quiet=quiet)
 
         netbios_name = lp.get("netbios name")
 
@@ -771,13 +755,7 @@ class cmd_domain_demote(Command):
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
 
-        logger = self.get_logger()
-        if verbose:
-            logger.setLevel(logging.DEBUG)
-        elif quiet:
-            logger.setLevel(logging.WARNING)
-        else:
-            logger.setLevel(logging.INFO)
+        logger = self.get_logger(verbose=verbose, quiet=quiet)
 
         if remove_other_dead_server is not None:
             if server is not None:
@@ -1615,13 +1593,7 @@ class cmd_domain_classicupgrade(Command):
         if not dbdir and not testparm:
             raise CommandError("Please specify either dbdir or testparm")
 
-        logger = self.get_logger()
-        if verbose:
-            logger.setLevel(logging.DEBUG)
-        elif quiet:
-            logger.setLevel(logging.WARNING)
-        else:
-            logger.setLevel(logging.INFO)
+        logger = self.get_logger(verbose=verbose, quiet=quiet)
 
         if dbdir and testparm:
             logger.warning("both dbdir and testparm specified, ignoring dbdir.")
