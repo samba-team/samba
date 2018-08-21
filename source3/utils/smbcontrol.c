@@ -1618,7 +1618,7 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	evt_ctx = server_event_context();
+	evt_ctx = global_event_context();
 
 	lp_load_global(get_dyn_CONFIGFILE());
 

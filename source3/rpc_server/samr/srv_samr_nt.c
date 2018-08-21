@@ -308,7 +308,7 @@ static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromno
 		  (unsigned int)secs_fromnow ));
 
 	disp_info->cache_timeout_event = tevent_add_timer(
-		server_event_context(), NULL,
+		global_event_context(), NULL,
 		timeval_current_ofs(secs_fromnow, 0),
 		disp_info_cache_idle_timeout_handler, (void *)disp_info);
 }

@@ -132,7 +132,7 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		fstrcpy(request->data.auth_crap.workstation, lp_netbios_name());
 	}
 
-	subreq = wb_domain_request_send(state, server_event_context(), domain,
+	subreq = wb_domain_request_send(state, global_event_context(), domain,
 					request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

@@ -46,7 +46,7 @@ time_t StartupTime = 0;
 
 struct tevent_context *nmbd_event_context(void)
 {
-	return server_event_context();
+	return global_event_context();
 }
 
 /**************************************************************************** **
@@ -928,7 +928,7 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	msg = messaging_init(NULL, server_event_context());
+	msg = messaging_init(NULL, global_event_context());
 	if (msg == NULL) {
 		return 1;
 	}

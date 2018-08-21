@@ -83,7 +83,7 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wb_domain_request_send(state, server_event_context(),
+	subreq = wb_domain_request_send(state, global_event_context(),
 					contact_domain, request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

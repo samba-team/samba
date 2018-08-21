@@ -6043,7 +6043,7 @@ WERROR _spoolss_WritePrinter(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 
 	/* print_job_write takes care of checking for PJOB_SMBD_SPOOLING */
-	buffer_written = print_job_write(server_event_context(),p->msg_ctx,
+	buffer_written = print_job_write(global_event_context(),p->msg_ctx,
 						   snum, Printer->jobid,
 						   (const char *)r->in.data.data,
 						   (size_t)r->in._data_size);
@@ -6544,7 +6544,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 			DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
 				printer->drivername));
 
-			notify_printer_driver(server_event_context(), msg_ctx,
+			notify_printer_driver(global_event_context(), msg_ctx,
 					      snum, printer->drivername ?
 					      printer->drivername : "");
 		}
@@ -6572,7 +6572,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!force_update) {
-			notify_printer_comment(server_event_context(), msg_ctx,
+			notify_printer_comment(global_event_context(), msg_ctx,
 					       snum, printer->comment ?
 					       printer->comment : "");
 		}
@@ -6600,7 +6600,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!force_update) {
-			notify_printer_sharename(server_event_context(),
+			notify_printer_sharename(global_event_context(),
 						 msg_ctx,
 						 snum, printer->sharename ?
 						 printer->sharename : "");
@@ -6641,7 +6641,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!force_update) {
-			notify_printer_printername(server_event_context(),
+			notify_printer_printername(global_event_context(),
 						   msg_ctx, snum, p ? p : "");
 		}
 
@@ -6671,7 +6671,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!force_update) {
-			notify_printer_port(server_event_context(),
+			notify_printer_port(global_event_context(),
 					    msg_ctx, snum, printer->portname ?
 					    printer->portname : "");
 		}
@@ -6699,7 +6699,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!force_update) {
-			notify_printer_location(server_event_context(),
+			notify_printer_location(global_event_context(),
 						msg_ctx, snum,
 						printer->location ?
 						printer->location : "");
@@ -6728,7 +6728,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!force_update) {
-			notify_printer_sepfile(server_event_context(),
+			notify_printer_sepfile(global_event_context(),
 					       msg_ctx, snum,
 					       printer->sepfile ?
 					       printer->sepfile : "");
@@ -7718,7 +7718,7 @@ static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!print_job_set_name(server_event_context(), msg_ctx,
+	if (!print_job_set_name(global_event_context(), msg_ctx,
 				printer_name, job_id, r->document_name)) {
 		return WERR_INVALID_HANDLE;
 	}

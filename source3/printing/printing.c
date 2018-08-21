@@ -1682,7 +1682,7 @@ void print_queue_receive(struct messaging_context *msg,
 		return;
 	}
 
-	print_queue_update_with_lock(server_event_context(), msg, sharename,
+	print_queue_update_with_lock(global_event_context(), msg, sharename,
 		get_printer_fns_from_type((enum printing_types)printing_type),
 		lpqcommand, lprmcommand );
 
@@ -1764,7 +1764,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	if ( force || background_lpq_updater_pid == -1 ) {
 		DEBUG(4,("print_queue_update: updating queue [%s] myself\n", sharename));
 		current_printif = get_printer_fns( snum );
-		print_queue_update_with_lock(server_event_context(), msg_ctx,
+		print_queue_update_with_lock(global_event_context(), msg_ctx,
 					     sharename, current_printif,
 					     lpqcommand, lprmcommand);
 
@@ -2307,7 +2307,7 @@ WERROR print_job_delete(const struct auth_session_info *server_info,
 		}
 	}
 
-	if (!print_job_delete1(server_event_context(), msg_ctx, snum, jobid)) {
+	if (!print_job_delete1(global_event_context(), msg_ctx, snum, jobid)) {
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
 	}
@@ -2387,7 +2387,7 @@ WERROR print_job_pause(const struct auth_session_info *server_info,
 
 	/* Send a printer notify message */
 
-	notify_job_status(server_event_context(), msg_ctx, sharename, jobid,
+	notify_job_status(global_event_context(), msg_ctx, sharename, jobid,
 			  JOB_STATUS_PAUSED);
 
 	/* how do we tell if this succeeded? */
@@ -2453,7 +2453,7 @@ WERROR print_job_resume(const struct auth_session_info *server_info,
 
 	/* Send a printer notify message */
 
-	notify_job_status(server_event_context(), msg_ctx, sharename, jobid,
+	notify_job_status(global_event_context(), msg_ctx, sharename, jobid,
 			  JOB_STATUS_QUEUED);
 
 	werr = WERR_OK;
@@ -2881,7 +2881,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 		goto fail;
 	}
 
-	pjob_store(server_event_context(), msg_ctx, sharename, jobid, &pjob);
+	pjob_store(global_event_context(), msg_ctx, sharename, jobid, &pjob);
 
 	/* Update the 'jobs added' entry used by print_queue_status. */
 	add_to_jobs_added(pdb, jobid);
@@ -2896,7 +2896,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 
 fail:
 	if (jobid != -1) {
-		pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
+		pjob_delete(global_event_context(), msg_ctx, sharename, jobid);
 	}
 
 	release_print_db(pdb);
@@ -2930,7 +2930,7 @@ void print_job_endpage(struct messaging_context *msg_ctx,
 	}
 
 	pjob->page_count++;
-	pjob_store(server_event_context(), msg_ctx, sharename, jobid, pjob);
+	pjob_store(global_event_context(), msg_ctx, sharename, jobid, pjob);
 err_out:
 	talloc_free(tmp_ctx);
 }
@@ -3014,7 +3014,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		DEBUG(5,("print_job_end: canceling spool of %s (%s)\n",
 			pjob->filename, pjob->size ? "deleted" : "zero length" ));
 		unlink(pjob->filename);
-		pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
+		pjob_delete(global_event_context(), msg_ctx, sharename, jobid);
 		return NT_STATUS_OK;
 	}
 
@@ -3052,7 +3052,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 
 	pjob->spooled = True;
 	pjob->status = LPQ_QUEUED;
-	pjob_store(server_event_context(), msg_ctx, sharename, jobid, pjob);
+	pjob_store(global_event_context(), msg_ctx, sharename, jobid, pjob);
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
@@ -3066,7 +3066,7 @@ fail:
 	/* Still need to add proper error return propagation! 010122:JRR */
 	pjob->fd = -1;
 	unlink(pjob->filename);
-	pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
+	pjob_delete(global_event_context(), msg_ctx, sharename, jobid);
 err_out:
 	talloc_free(tmp_ctx);
 	return status;
@@ -3344,7 +3344,7 @@ WERROR print_queue_pause(const struct auth_session_info *server_info,
 
 	/* Send a printer notify message */
 
-	notify_printer_status(server_event_context(), msg_ctx, snum,
+	notify_printer_status(global_event_context(), msg_ctx, snum,
 			      PRINTER_STATUS_PAUSED);
 
 	return WERR_OK;
@@ -3381,7 +3381,7 @@ WERROR print_queue_resume(const struct auth_session_info *server_info,
 
 	/* Send a printer notify message */
 
-	notify_printer_status(server_event_context(), msg_ctx, snum,
+	notify_printer_status(global_event_context(), msg_ctx, snum,
 			      PRINTER_STATUS_OK);
 
 	return WERR_OK;
@@ -3431,7 +3431,7 @@ WERROR print_queue_purge(const struct auth_session_info *server_info,
 				 jobid);
 
 		if (owner || can_job_admin) {
-			print_job_delete1(server_event_context(), msg_ctx,
+			print_job_delete1(global_event_context(), msg_ctx,
 					  snum, jobid);
 		}
 	}

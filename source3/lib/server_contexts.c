@@ -23,7 +23,7 @@
 
 static struct tevent_context *server_event_ctx = NULL;
 
-struct tevent_context *server_event_context(void)
+struct tevent_context *global_event_context(void)
 {
 	if (!server_event_ctx) {
 		/*
@@ -39,7 +39,7 @@ struct tevent_context *server_event_context(void)
 	return server_event_ctx;
 }
 
-void server_event_context_free(void)
+void global_event_context_free(void)
 {
 	TALLOC_FREE(server_event_ctx);
 }
@@ -55,7 +55,7 @@ struct messaging_context *server_messaging_context(void)
 		 * children exiting.
 		 */
 		server_msg_ctx = messaging_init(NULL,
-					        server_event_context());
+					        global_event_context());
 	}
 	return server_msg_ctx;
 }

@@ -98,7 +98,7 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	subreq = wb_domain_request_send(state, server_event_context(), domain,
+	subreq = wb_domain_request_send(state, global_event_context(), domain,
 					request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

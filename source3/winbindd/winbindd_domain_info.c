@@ -66,7 +66,7 @@ struct tevent_req *winbindd_domain_info_send(
 	 * Send a ping down. This implicitly initializes the domain.
 	 */
 
-	subreq = wb_domain_request_send(state, server_event_context(),
+	subreq = wb_domain_request_send(state, global_event_context(),
 					state->domain, &state->ping_request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

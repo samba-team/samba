@@ -218,7 +218,7 @@ static void exit_server_common(enum server_exit_reason how,
 	TALLOC_FREE(global_smbXsrv_client);
 	smbprofile_dump();
 	server_messaging_context_free();
-	server_event_context_free();
+	global_event_context_free();
 	TALLOC_FREE(smbd_memcache_ctx);
 
 	locking_end();

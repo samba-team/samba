@@ -83,7 +83,7 @@ void gpupdate_init(void)
 {
 	struct tevent_timer *time_event;
 	struct timeval schedule;
-	TALLOC_CTX * ctx = talloc_new(server_event_context());
+	TALLOC_CTX * ctx = talloc_new(global_event_context());
 	struct gpupdate_state *data = talloc(ctx, struct gpupdate_state);
 	struct loadparm_context *lp_ctx =
 		loadparm_init_s3(NULL, loadparm_s3_helpers());
@@ -107,7 +107,7 @@ void gpupdate_init(void)
 	if (data->lp_ctx == NULL) {
 		smb_panic("Could not load smb.conf\n");
 	}
-	time_event = tevent_add_timer(server_event_context(), data->ctx,
+	time_event = tevent_add_timer(global_event_context(), data->ctx,
 				      schedule, gpupdate_callback, data);
 	if (time_event == NULL) {
 		DEBUG(0, ("Failed scheduling the gpupdate event\n"));

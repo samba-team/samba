@@ -772,7 +772,7 @@ static void tracker_cursor_cb(GObject *object,
 		SLQ_DEBUG(10, slq, "closed");
 		g_main_loop_quit(slq->mds_ctx->gmainloop);
 
-		req = slq_destroy_send(slq, server_event_context(), &slq);
+		req = slq_destroy_send(slq, global_event_context(), &slq);
 		if (req == NULL) {
 			slq->state = SLQ_STATE_ERROR;
 			return;
@@ -1166,7 +1166,7 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	slq->last_used = timeval_current();
 	slq->start_time = slq->last_used;
 	slq->expire_time = timeval_add(&slq->last_used, MAX_SL_RUNTIME, 0);
-	slq->te = tevent_add_timer(server_event_context(), slq,
+	slq->te = tevent_add_timer(global_event_context(), slq,
 				   slq->expire_time, slq_close_timer, slq);
 	if (slq->te == NULL) {
 		DEBUG(1, ("tevent_add_timer failed\n"));
@@ -1361,7 +1361,7 @@ static bool slrpc_fetch_query_results(struct mds_ctx *mds_ctx,
 	TALLOC_FREE(slq->te);
 	slq->last_used = timeval_current();
 	slq->expire_time = timeval_add(&slq->last_used, MAX_SL_RUNTIME, 0);
-	slq->te = tevent_add_timer(server_event_context(), slq,
+	slq->te = tevent_add_timer(global_event_context(), slq,
 				   slq->expire_time, slq_close_timer, slq);
 	if (slq->te == NULL) {
 		DEBUG(1, ("tevent_add_timer failed\n"));

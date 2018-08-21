@@ -256,7 +256,7 @@ static void aio_child_cleanup(struct tevent_context *event_ctx,
 		/*
 		 * Re-schedule the next cleanup round
 		 */
-		list->cleanup_event = tevent_add_timer(server_event_context(), list,
+		list->cleanup_event = tevent_add_timer(global_event_context(), list,
 						      timeval_add(&now, 30, 0),
 						      aio_child_cleanup, list);
 
@@ -287,7 +287,7 @@ static struct aio_child_list *init_aio_children(struct vfs_handle_struct *handle
 
 	if (children->cleanup_event == NULL) {
 		children->cleanup_event =
-			tevent_add_timer(server_event_context(), children,
+			tevent_add_timer(global_event_context(), children,
 					 timeval_current_ofs(30, 0),
 					 aio_child_cleanup, children);
 		if (children->cleanup_event == NULL) {

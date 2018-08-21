@@ -129,7 +129,7 @@ static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *m
 	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					server_event_context(),
+					global_event_context(),
 					req, NDR_WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
 					"winbind_DsrUpdateReadOnlyServerDnsRecords",
 					domain, IRPC_CALL_TIMEOUT);
@@ -212,7 +212,7 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_SamLogon called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					server_event_context(),
+					global_event_context(),
 					req, NDR_WINBIND_SAMLOGON,
 					"winbind_SamLogon",
 					domain, IRPC_CALL_TIMEOUT);
@@ -272,7 +272,7 @@ static NTSTATUS wb_irpc_LogonControl(struct irpc_message *msg,
 
 	TALLOC_FREE(frame);
 	return wb_irpc_forward_rpc_call(msg, msg,
-					server_event_context(),
+					global_event_context(),
 					req, NDR_WINBIND_LOGONCONTROL,
 					"winbind_LogonControl",
 					domain, 45 /* timeout */);
@@ -312,7 +312,7 @@ static NTSTATUS wb_irpc_GetForestTrustInformation(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_GetForestTrustInformation called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					server_event_context(),
+					global_event_context(),
 					req, NDR_WINBIND_GETFORESTTRUSTINFORMATION,
 					"winbind_GetForestTrustInformation",
 					domain, 45 /* timeout */);
@@ -330,7 +330,7 @@ static NTSTATUS wb_irpc_SendToSam(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_SendToSam called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					server_event_context(),
+					global_event_context(),
 					req, NDR_WINBIND_SENDTOSAM,
 					"winbind_SendToSam",
 					domain, IRPC_CALL_TIMEOUT);
@@ -396,7 +396,7 @@ static NTSTATUS wb_irpc_lsa_LookupSids3_call(struct irpc_message *msg,
 	}
 
 	subreq = wb_lookupsids_send(msg,
-				    server_event_context(),
+				    global_event_context(),
 				    sids, req->in.sids->num_sids);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -573,7 +573,7 @@ static NTSTATUS wb_irpc_lsa_LookupNames4_call(struct irpc_message *msg,
 		}
 
 		subreq = wb_lookupname_send(msg,
-					    server_event_context(),
+					    global_event_context(),
 					    nstate->namespace,
 					    nstate->domain,
 					    nstate->name,
@@ -647,7 +647,7 @@ static void wb_irpc_lsa_LookupNames4_done(struct tevent_req *subreq)
 	 * to get a good lsa_RefDomainList
 	 */
 	subreq = wb_lookupsids_send(state,
-				    server_event_context(),
+				    global_event_context(),
 				    state->domain_sids,
 				    state->num_domain_sids);
 	if (subreq == NULL) {
@@ -754,7 +754,7 @@ static NTSTATUS wb_irpc_GetDCName(struct irpc_message *msg,
 	state->req = req;
 
 	subreq = wb_dsgetdcname_send(msg,
-				     server_event_context(),
+				     global_event_context(),
 				     req->in.domain_name,
 				     req->in.domain_guid,
 				     req->in.site_name,

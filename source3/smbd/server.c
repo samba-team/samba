@@ -1776,7 +1776,7 @@ extern void build_options(bool screen);
 	 * initialized before the messaging context, cause the messaging
 	 * context holds an event context.
 	 */
-	ev_ctx = server_event_context();
+	ev_ctx = global_event_context();
 	if (ev_ctx == NULL) {
 		exit(1);
 	}

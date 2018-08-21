@@ -211,8 +211,8 @@ static void bq_setup_sig_term_handler(void)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(server_event_context(),
-			       server_event_context(),
+	se = tevent_add_signal(global_event_context(),
+			       global_event_context(),
 			       SIGTERM, 0,
 			       bq_sig_term_handler,
 			       NULL);

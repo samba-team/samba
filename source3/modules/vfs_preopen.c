@@ -239,7 +239,7 @@ static NTSTATUS preopen_init_helper(struct preopen_helper *h)
 	}
 	close(fdpair[1]);
 	h->fd = fdpair[0];
-	h->fde = tevent_add_fd(server_event_context(), h->state, h->fd,
+	h->fde = tevent_add_fd(global_event_context(), h->state, h->fd,
 			      TEVENT_FD_READ, preopen_helper_readable, h);
 	if (h->fde == NULL) {
 		close(h->fd);
