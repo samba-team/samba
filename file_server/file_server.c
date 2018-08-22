@@ -53,7 +53,7 @@ static void file_server_smbd_done(struct tevent_req *subreq)
 /*
   startup a copy of smbd as a child daemon
 */
-static void s3fs_task_init(struct task_server *task)
+static NTSTATUS s3fs_task_init(struct task_server *task)
 {
 	struct tevent_req *subreq;
 	const char *smbd_path;
@@ -78,17 +78,19 @@ static void s3fs_task_init(struct task_server *task)
 	if (!winbind_off()) {
 		DEBUG(0,("Failed to re-disable recursive winbindd calls after forking smbd\n"));
 		task_server_terminate(task, "Failed to re-disable recursive winbindd calls", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	if (subreq == NULL) {
 		DEBUG(0, ("Failed to start smbd as child daemon\n"));
 		task_server_terminate(task, "Failed to startup s3fs smb task", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	tevent_req_set_callback(subreq, file_server_smbd_done, task);
 
 	DEBUG(5,("Started file server child smbd\n"));
+
+	return NT_STATUS_OK;
 }
 
 /* called at smbd startup - register ourselves as a server service */
@@ -98,7 +100,9 @@ NTSTATUS server_service_s3fs_init(TALLOC_CTX *ctx)
 {
 	struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = s3fs_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "s3fs", s3fs_task_init, &details);
+	return register_server_service(ctx, "s3fs", &details);
 }

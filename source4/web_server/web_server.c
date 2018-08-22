@@ -293,7 +293,7 @@ static const struct stream_server_ops web_stream_ops = {
 /*
   startup the web server task
 */
-static void websrv_task_init(struct task_server *task)
+static NTSTATUS websrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
 	uint16_t port = lpcfg_web_port(task->lp_ctx);
@@ -304,7 +304,10 @@ static void websrv_task_init(struct task_server *task)
 	/* startup the Python processor - unfortunately we can't do this
 	   per connection as that wouldn't allow for session variables */
 	wdata = talloc_zero(task, struct web_server_data);
-	if (wdata == NULL) goto failed;
+	if (wdata == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
 	wdata->task = task;
 	task->private_data = wdata;
@@ -339,6 +342,7 @@ static void websrv_task_init(struct task_server *task)
 		wcard = iface_list_wildcard(task);
 		if (wcard == NULL) {
 			DEBUG(0,("No wildcard addresses available\n"));
+			status = NT_STATUS_UNSUCCESSFUL;
 			goto failed;
 		}
 		for (i=0; wcard[i]; i++) {
@@ -356,15 +360,22 @@ static void websrv_task_init(struct task_server *task)
 	}
 
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
-	if (wdata->tls_params == NULL) goto failed;
+	if (wdata->tls_params == NULL) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto failed;
+	}
 
-	if (!wsgi_initialize(wdata)) goto failed;
+	if (!wsgi_initialize(wdata)) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto failed;
+	}
 
 
-	return;
+	return NT_STATUS_OK;
 
 failed:
 	task_server_terminate(task, "websrv_task_init: failed to startup web server task", true);
+	return status;
 }
 
 
@@ -373,7 +384,9 @@ NTSTATUS server_service_web_init(TALLOC_CTX *ctx)
 {
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = websrv_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "web", websrv_task_init, &details);
+	return register_server_service(ctx, "web", &details);
 }

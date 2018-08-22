@@ -261,7 +261,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 /*
   startup the kdc task
 */
-static void kdc_task_init(struct task_server *task)
+static NTSTATUS kdc_task_init(struct task_server *task)
 {
 	struct kdc_server *kdc;
 	krb5_kdc_configuration *kdc_config = NULL;
@@ -273,14 +273,14 @@ static void kdc_task_init(struct task_server *task)
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "kdc: no KDC required in standalone configuration", false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "kdc: no KDC required in member server configuration", false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
 		task_server_terminate(task, "Cannot start KDC as a 'classic Samba' DC", true);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want a KDC */
 		break;
@@ -290,7 +290,7 @@ static void kdc_task_init(struct task_server *task)
 
 	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured", false);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	task_server_set_title(task, "task[kdc]");
@@ -298,7 +298,7 @@ static void kdc_task_init(struct task_server *task)
 	kdc = talloc_zero(task, struct kdc_server);
 	if (kdc == NULL) {
 		task_server_terminate(task, "kdc: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	kdc->task = task;
@@ -314,7 +314,7 @@ static void kdc_task_init(struct task_server *task)
 	if (!kdc->samdb) {
 		DEBUG(1,("kdc_task_init: unable to connect to samdb\n"));
 		task_server_terminate(task, "kdc: krb5_init_context samdb connect failed", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	ldb_ret = samdb_rodc(kdc->samdb, &kdc->am_rodc);
@@ -322,7 +322,7 @@ static void kdc_task_init(struct task_server *task)
 		DEBUG(1, ("kdc_task_init: Cannot determine if we are an RODC: %s\n",
 			  ldb_errstring(kdc->samdb)));
 		task_server_terminate(task, "kdc: krb5_init_context samdb RODC connect failed", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	kdc->proxy_timeout = lpcfg_parm_int(kdc->task->lp_ctx, NULL, "kdc", "proxy timeout", 5);
@@ -334,7 +334,7 @@ static void kdc_task_init(struct task_server *task)
 		DEBUG(1,("kdc_task_init: krb5_init_context failed (%s)\n",
 			 error_message(ret)));
 		task_server_terminate(task, "kdc: krb5_init_context failed", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	krb5_add_et_list(kdc->smb_krb5_context->krb5_context, initialize_hdb_error_table_r);
@@ -343,14 +343,14 @@ static void kdc_task_init(struct task_server *task)
 				  &kdc_config);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to get KDC configuration", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	kdc_config->logf = (krb5_log_facility *)kdc->smb_krb5_context->pvt_log_data;
 	kdc_config->db = talloc(kdc, struct HDB *);
 	if (!kdc_config->db) {
 		task_server_terminate(task, "kdc: out of memory", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	kdc_config->num_db = 1;
 
@@ -382,7 +382,7 @@ static void kdc_task_init(struct task_server *task)
 	kdc->base_ctx = talloc_zero(kdc, struct samba_kdc_base_context);
 	if (!kdc->base_ctx) {
 		task_server_terminate(task, "kdc: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	kdc->base_ctx->ev_ctx = task->event_ctx;
@@ -394,7 +394,7 @@ static void kdc_task_init(struct task_server *task)
 				       &kdc_config->db[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc: hdb_samba4_create_kdc (setup KDC database) failed", true);
-		return;
+		return status;
 	}
 
 	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context,
@@ -402,13 +402,13 @@ static void kdc_task_init(struct task_server *task)
 				   &hdb_samba4_interface);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to register hdb plugin", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to register keytab plugin", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	kdc->keytab_name = talloc_asprintf(kdc, "HDB:samba4&%p", kdc->base_ctx);
@@ -416,7 +416,7 @@ static void kdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "kdc: Failed to set keytab name",
 				      true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Register WinDC hooks */
@@ -425,21 +425,21 @@ static void kdc_task_init(struct task_server *task)
 				   &windc_plugin_table);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to register windc plugin", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	ret = krb5_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
 
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to init windc plugin", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	ret = krb5_kdc_pkinit_config(kdc->smb_krb5_context->krb5_context, kdc_config);
 
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to init kdc pkinit subsystem", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	kdc->private_data = kdc_config;
 
@@ -448,17 +448,19 @@ static void kdc_task_init(struct task_server *task)
 					task->model_ops);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc failed to setup interfaces", true);
-		return;
+		return status;
 	}
 
 	status = IRPC_REGISTER(task->msg_ctx, irpc, KDC_CHECK_GENERIC_KERBEROS,
 			       kdc_check_generic_kerberos, kdc);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc failed to setup monitoring", true);
-		return;
+		return status;
 	}
 
 	irpc_add_name(task->msg_ctx, "kdc_server");
+
+	return NT_STATUS_OK;
 }
 
 
@@ -478,7 +480,9 @@ NTSTATUS server_service_kdc_init(TALLOC_CTX *ctx)
 		 * the master process is responsible for managing the worker
 		 * processes not performing work.
 		 */
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = kdc_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "kdc", kdc_task_init, &details);
+	return register_server_service(ctx, "kdc", &details);
 }

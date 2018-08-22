@@ -489,7 +489,7 @@ static const struct stream_server_ops ntp_signd_stream_ops = {
 /*
   startup the ntp_signd task
 */
-static void ntp_signd_task_init(struct task_server *task)
+static NTSTATUS ntp_signd_task_init(struct task_server *task)
 {
 	struct ntp_signd_server *ntp_signd;
 	NTSTATUS status;
@@ -501,7 +501,7 @@ static void ntp_signd_task_init(struct task_server *task)
 					      lpcfg_ntp_signd_socket_directory(task->lp_ctx));
 		task_server_terminate(task,
 				      error, true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	task_server_set_title(task, "task[ntp_signd]");
@@ -509,7 +509,7 @@ static void ntp_signd_task_init(struct task_server *task)
 	ntp_signd = talloc(task, struct ntp_signd_server);
 	if (ntp_signd == NULL) {
 		task_server_terminate(task, "ntp_signd: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ntp_signd->task = task;
@@ -523,10 +523,15 @@ static void ntp_signd_task_init(struct task_server *task)
 					 0);
 	if (ntp_signd->samdb == NULL) {
 		task_server_terminate(task, "ntp_signd failed to open samdb", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	address = talloc_asprintf(ntp_signd, "%s/socket", lpcfg_ntp_signd_socket_directory(task->lp_ctx));
+	if (address == NULL) {
+		task_server_terminate(
+		    task, "ntp_signd out of memory in talloc_asprintf()", true);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = stream_setup_socket(ntp_signd->task,
 				     ntp_signd->task->event_ctx,
@@ -540,8 +545,10 @@ static void ntp_signd_task_init(struct task_server *task)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s - %s\n",
 			 address, nt_errstr(status)));
-		return;
+		return status;
 	}
+
+	return NT_STATUS_OK;
 
 }
 
@@ -551,8 +558,9 @@ NTSTATUS server_service_ntp_signd_init(TALLOC_CTX *ctx)
 {
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = ntp_signd_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "ntp_signd", ntp_signd_task_init,
-				       &details);
+	return register_server_service(ctx, "ntp_signd", &details);
 }

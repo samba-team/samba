@@ -393,7 +393,7 @@ static void standard_accept_connection(
 static void standard_new_task(struct tevent_context *ev,
 			      struct loadparm_context *lp_ctx,
 			      const char *service_name,
-			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *, void *),
+			      struct task_server *(*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *, void *),
 			      void *private_data,
 			      const struct service_details *service_details,
 			      int from_parent_fd)
@@ -404,6 +404,7 @@ static void standard_new_task(struct tevent_context *ev,
 	struct tevent_fd *fde = NULL;
 	struct tevent_signal *se = NULL;
 	struct process_context *proc_ctx = NULL;
+	struct task_server* task = NULL;
 
 	state = setup_standard_child_pipe(ev, service_name);
 	if (state == NULL) {
@@ -486,7 +487,16 @@ static void standard_new_task(struct tevent_context *ev,
 	proc_ctx->forked_on_accept = false;
 
 	/* setup this new task.  Cluster ID is PID based for this process model */
-	new_task(ev, lp_ctx, cluster_id(pid, 0), private_data, proc_ctx);
+	task = new_task(ev, lp_ctx, cluster_id(pid, 0), private_data, proc_ctx);
+	/*
+	 * Currently we don't support the post_fork functionality in the
+	 * standard model, i.e. it is only called here not after a new process
+	 * is forked in standard_accept_connection.
+	 */
+	if (task != NULL && service_details->post_fork != NULL) {
+		service_details->post_fork(task);
+	}
+
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no

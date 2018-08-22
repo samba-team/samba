@@ -265,7 +265,7 @@ static NTSTATUS echo_startup_interfaces(struct echo_server *echo,
 
 /* Do the basic task initialization, check if the task should run */
 
-static void echo_task_init(struct task_server *task)
+static NTSTATUS echo_task_init(struct task_server *task)
 {
 	struct interface *ifaces;
 	struct echo_server *echo;
@@ -282,7 +282,7 @@ static void echo_task_init(struct task_server *task)
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "echo: Not starting echo server " \
 				      "for domain members", false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want to run the echo server */
 		break;
@@ -294,7 +294,7 @@ static void echo_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "echo: No network interfaces configured",
 				      false);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	task_server_set_title(task, "task[echo]");
@@ -302,7 +302,7 @@ static void echo_task_init(struct task_server *task)
 	echo = talloc_zero(task, struct echo_server);
 	if (echo == NULL) {
 		task_server_terminate(task, "echo: Out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	echo->task = task;
@@ -312,8 +312,9 @@ static void echo_task_init(struct task_server *task)
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "echo: Failed to set up interfaces",
 				      true);
-		return;
+		return status;
 	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -326,7 +327,10 @@ NTSTATUS server_service_echo_init(TALLOC_CTX *ctx)
 {
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = echo_task_init,
+		.post_fork = NULL
+
 	};
-	return register_server_service(ctx, "echo", echo_task_init, &details);
+	return register_server_service(ctx, "echo", &details);
 }

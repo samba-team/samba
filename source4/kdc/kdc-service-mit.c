@@ -365,8 +365,9 @@ NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx)
 		 * the master process is responsible for managing the worker
 		 * processes not performing work.
 		 */
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = mitkdc_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(mem_ctx, "kdc", mitkdc_task_init,
-				       &details);
+	return register_server_service(mem_ctx, "kdc", &details);
 }

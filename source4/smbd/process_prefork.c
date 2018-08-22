@@ -227,7 +227,7 @@ static void prefork_new_task(
 	struct tevent_context *ev,
 	struct loadparm_context *lp_ctx,
 	const char *service_name,
-	void (*new_task_fn)(struct tevent_context *,
+	struct task_server *(*new_task_fn)(struct tevent_context *,
 			    struct loadparm_context *lp_ctx,
 			    struct server_id , void *, void *),
 	void *private_data,
@@ -239,6 +239,7 @@ static void prefork_new_task(
 	int i, num_children;
 
 	struct tevent_context *ev2;
+	struct task_server *task = NULL;
 
 	t = tfork_create();
 	if (t == NULL) {
@@ -277,8 +278,14 @@ static void prefork_new_task(
 	setup_handlers(ev, from_parent_fd);
 
 	if (service_details->inhibit_pre_fork) {
-		new_task_fn(ev, lp_ctx, cluster_id(pid, 0), private_data, NULL);
-		/* The task does not support pre-fork */
+		task = new_task_fn(
+		    ev, lp_ctx, cluster_id(pid, 0), private_data, NULL);
+		/*
+		 * The task does not support pre-fork
+		 */
+		if (task != NULL && service_details->post_fork != NULL) {
+			service_details->post_fork(task);
+		}
 		tevent_loop_wait(ev);
 		TALLOC_FREE(ev);
 		exit(0);
@@ -298,7 +305,12 @@ static void prefork_new_task(
 	 * process accepting and handling requests, it's responsible for
 	 * monitoring and controlling the child work processes.
 	 */
-	new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private_data, NULL);
+	task = new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private_data, NULL);
+	if (task == NULL) {
+		TALLOC_FREE(ev);
+		TALLOC_FREE(ev2);
+		exit(0);
+	}
 
 	{
 		int default_children;
@@ -313,7 +325,9 @@ static void prefork_new_task(
 	}
 	DBG_NOTICE("Forking %d %s worker processes\n",
 		   num_children, service_name);
-	/* We are now free to spawn some worker processes */
+	/*
+	 * We are now free to spawn some worker processes
+	 */
 	for (i=0; i < num_children; i++) {
 		struct tfork* w = NULL;
 
@@ -335,7 +349,9 @@ static void prefork_new_task(
 			}
 			tevent_fd_set_auto_close(fde);
 		} else {
-			/* tfork uses malloc */
+			/*
+			 * tfork uses malloc
+			 */
 			free(w);
 
 			TALLOC_FREE(ev);
@@ -343,6 +359,9 @@ static void prefork_new_task(
 				     service_name);
 			prefork_reload_after_fork();
 			setup_handlers(ev2, from_parent_fd);
+			if (service_details->post_fork != NULL) {
+				service_details->post_fork(task);
+			}
 			tevent_loop_wait(ev2);
 			talloc_free(ev2);
 			exit(0);

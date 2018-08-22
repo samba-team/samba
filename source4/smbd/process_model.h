@@ -58,7 +58,7 @@ struct model_ops {
 	void (*new_task)(struct tevent_context *, 
 			 struct loadparm_context *lp_ctx,
 			 const char *service_name,
-			 void (*)(struct tevent_context *, 
+			 struct task_server * (*)(struct tevent_context *,
 				  struct loadparm_context *, struct server_id, 
 				  void *, void *),
 			 void *,

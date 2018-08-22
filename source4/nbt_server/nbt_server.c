@@ -35,7 +35,7 @@ NTSTATUS server_service_nbtd_init(TALLOC_CTX *);
 /*
   startup the nbtd task
 */
-static void nbtd_task_init(struct task_server *task)
+static NTSTATUS nbtd_task_init(struct task_server *task)
 {
 	struct nbtd_server *nbtsrv;
 	NTSTATUS status;
@@ -45,12 +45,12 @@ static void nbtd_task_init(struct task_server *task)
 
 	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "nbtd: no network interfaces configured", false);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (lpcfg_disable_netbios(task->lp_ctx)) {
 		task_server_terminate(task, "nbtd: 'disable netbios = yes' set in smb.conf, shutting down nbt server", false);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	task_server_set_title(task, "task[nbtd]");
@@ -58,7 +58,7 @@ static void nbtd_task_init(struct task_server *task)
 	nbtsrv = talloc(task, struct nbtd_server);
 	if (nbtsrv == NULL) {
 		task_server_terminate(task, "nbtd: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	nbtsrv->task            = task;
@@ -70,7 +70,7 @@ static void nbtd_task_init(struct task_server *task)
 	status = nbtd_startup_interfaces(nbtsrv, task->lp_ctx, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to setup interfaces", true);
-		return;
+		return status;
 	}
 
 	nbtsrv->sam_ctx = samdb_connect(nbtsrv,
@@ -81,14 +81,14 @@ static void nbtd_task_init(struct task_server *task)
 					0);
 	if (nbtsrv->sam_ctx == NULL) {
 		task_server_terminate(task, "nbtd failed to open samdb", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* start the WINS server, if appropriate */
 	status = nbtd_winsserver_init(nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to start WINS server", true);
-		return;
+		return status;
 	}
 
 	nbtd_register_irpc(nbtsrv);
@@ -97,6 +97,8 @@ static void nbtd_task_init(struct task_server *task)
 	nbtd_register_names(nbtsrv);
 
 	irpc_add_name(task->msg_ctx, "nbt_server");
+
+	return NT_STATUS_OK;
 }
 
 
@@ -107,7 +109,9 @@ NTSTATUS server_service_nbtd_init(TALLOC_CTX *ctx)
 {
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = nbtd_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "nbt", nbtd_task_init, &details);
+	return register_server_service(ctx, "nbt", &details);
 }

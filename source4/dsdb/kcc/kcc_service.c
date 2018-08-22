@@ -266,7 +266,7 @@ static NTSTATUS kccsrv_replica_get_info(struct irpc_message *msg, struct drsuapi
 /*
   startup the kcc service task
 */
-static void kccsrv_task_init(struct task_server *task)
+static NTSTATUS kccsrv_task_init(struct task_server *task)
 {
 	WERROR status;
 	struct kccsrv_service *service;
@@ -275,10 +275,10 @@ static void kccsrv_task_init(struct task_server *task)
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "kccsrv: no KCC required in standalone configuration", false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "kccsrv: no KCC required in domain member configuration", false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want a KCC */
 		break;
@@ -289,7 +289,7 @@ static void kccsrv_task_init(struct task_server *task)
 	service = talloc_zero(task, struct kccsrv_service);
 	if (!service) {
 		task_server_terminate(task, "kccsrv_task_init: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	service->task		= task;
 	service->startup_time	= timeval_current();
@@ -301,7 +301,7 @@ static void kccsrv_task_init(struct task_server *task)
 				      talloc_asprintf(task,
 						      "kccsrv: Failed to obtain server credentials: %s\n",
 						      win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	status = kccsrv_connect_samdb(service, task->lp_ctx);
@@ -309,7 +309,7 @@ static void kccsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "kccsrv: Failed to connect to local samdb: %s\n",
 							    win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	status = kccsrv_load_partitions(service);
@@ -317,7 +317,7 @@ static void kccsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "kccsrv: Failed to load partitions: %s\n",
 							    win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	periodic_startup_interval =
@@ -338,13 +338,14 @@ static void kccsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "kccsrv: Failed to periodic schedule: %s\n",
 							    win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	irpc_add_name(task->msg_ctx, "kccsrv");
 
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSEXECUTEKCC, kccsrv_execute_kcc, service);
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICAGETINFO, kccsrv_replica_get_info, service);
+	return NT_STATUS_OK;
 }
 
 /*
@@ -354,7 +355,9 @@ NTSTATUS server_service_kcc_init(TALLOC_CTX *ctx)
 {
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = kccsrv_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "kcc", kccsrv_task_init, &details);
+	return register_server_service(ctx, "kcc", &details);
 }

@@ -446,13 +446,13 @@ static NTSTATUS wreplsrv_setup_partners(struct wreplsrv_service *service)
 /*
   startup the wrepl task
 */
-static void wreplsrv_task_init(struct task_server *task)
+static NTSTATUS wreplsrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
 	struct wreplsrv_service *service;
 
 	if (!lpcfg_we_are_a_wins_server(task->lp_ctx)) {
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	}
 
 	task_server_set_title(task, "task[wreplsrv]");
@@ -460,7 +460,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	service = talloc_zero(task, struct wreplsrv_service);
 	if (!service) {
 		task_server_terminate(task, "wreplsrv_task_init: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	service->task		= task;
 	service->startup_time	= timeval_current();
@@ -472,7 +472,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	status = wreplsrv_open_winsdb(service, task->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_open_winsdb() failed", true);
-		return;
+		return status;
 	}
 
 	/*
@@ -481,7 +481,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	status = wreplsrv_setup_partners(service);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_partners() failed", true);
-		return;
+		return status;
 	}
 
 	/* 
@@ -491,16 +491,18 @@ static void wreplsrv_task_init(struct task_server *task)
 	status = wreplsrv_setup_sockets(service, task->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_sockets() failed", true);
-		return;
+		return status;
 	}
 
 	status = wreplsrv_setup_periodic(service);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_periodic() failed", true);
-		return;
+		return status;
 	}
 
 	irpc_add_name(task->msg_ctx, "wrepl_server");
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -510,8 +512,9 @@ NTSTATUS server_service_wrepl_init(TALLOC_CTX *ctx)
 {
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = wreplsrv_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "wrepl", wreplsrv_task_init,
-				       &details);
+	return register_server_service(ctx, "wrepl", &details);
 }

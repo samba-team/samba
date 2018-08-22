@@ -428,7 +428,7 @@ static NTSTATUS dreplsrv_replica_mod(struct irpc_message *msg,
 /*
   startup the dsdb replicator service task
 */
-static void dreplsrv_task_init(struct task_server *task)
+static NTSTATUS dreplsrv_task_init(struct task_server *task)
 {
 	WERROR status;
 	struct dreplsrv_service *service;
@@ -438,11 +438,11 @@ static void dreplsrv_task_init(struct task_server *task)
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration",
 				      false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "dreplsrv: no DSDB replication required in domain member configuration",
 				      false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want DSDB replication */
 		break;
@@ -453,7 +453,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	service = talloc_zero(task, struct dreplsrv_service);
 	if (!service) {
 		task_server_terminate(task, "dreplsrv_task_init: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	service->task		= task;
 	service->startup_time	= timeval_current();
@@ -464,7 +464,7 @@ static void dreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to obtain server credentials: %s\n",
 							    win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	status = dreplsrv_connect_samdb(service, task->lp_ctx);
@@ -472,7 +472,7 @@ static void dreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to connect to local samdb: %s\n",
 							    win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	status = dreplsrv_load_partitions(service);
@@ -480,7 +480,7 @@ static void dreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to load partitions: %s\n",
 							    win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	periodic_startup_interval	= lpcfg_parm_int(task->lp_ctx, NULL, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
@@ -491,7 +491,7 @@ static void dreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to periodic schedule: %s\n",
 							    win_errstr(status)), true);
-		return;
+		return werror_to_ntstatus(status);
 	}
 
 	service->pending.im = tevent_create_immediate(service);
@@ -500,7 +500,7 @@ static void dreplsrv_task_init(struct task_server *task)
 				      "dreplsrv: Failed to create immediate "
 				      "task for future DsReplicaSync\n",
 				      true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* if we are a RODC then we do not send DSReplicaSync*/
@@ -512,7 +512,7 @@ static void dreplsrv_task_init(struct task_server *task)
 			task_server_terminate(task, talloc_asprintf(task,
 						  "dreplsrv: Failed to setup notify schedule: %s\n",
 									win_errstr(status)), true);
-			return;
+			return werror_to_ntstatus(status);
 		}
 	}
 
@@ -526,6 +526,8 @@ static void dreplsrv_task_init(struct task_server *task)
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TAKEFSMOROLE, drepl_take_FSMO_role, service);
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TRIGGER_REPL_SECRET, drepl_trigger_repl_secret, service);
 	imessaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -536,7 +538,8 @@ NTSTATUS server_service_drepl_init(TALLOC_CTX *ctx)
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		.inhibit_pre_fork = true,
+		.task_init = dreplsrv_task_init,
+		.post_fork = NULL,
 	};
-	return register_server_service(ctx, "drepl",  dreplsrv_task_init,
-				       &details);
+	return register_server_service(ctx, "drepl", &details);
 }

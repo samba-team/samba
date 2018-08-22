@@ -790,7 +790,7 @@ static NTSTATUS dns_reload_zones(struct irpc_message *msg,
 	return NT_STATUS_OK;
 }
 
-static void dns_task_init(struct task_server *task)
+static NTSTATUS dns_task_init(struct task_server *task)
 {
 	struct dns_server *dns;
 	NTSTATUS status;
@@ -804,10 +804,10 @@ static void dns_task_init(struct task_server *task)
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "dns: no DNS required in standalone configuration", false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "dns: no DNS required in member server configuration", false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want a DNS */
 		break;
@@ -818,7 +818,7 @@ static void dns_task_init(struct task_server *task)
 
 		if (iface_list_count(ifaces) == 0) {
 			task_server_terminate(task, "dns: no network interfaces configured", false);
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -827,7 +827,7 @@ static void dns_task_init(struct task_server *task)
 	dns = talloc_zero(task, struct dns_server);
 	if (dns == NULL) {
 		task_server_terminate(task, "dns: out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	dns->task = task;
@@ -835,7 +835,7 @@ static void dns_task_init(struct task_server *task)
 	dns->server_credentials = cli_credentials_init(dns);
 	if (!dns->server_credentials) {
 		task_server_terminate(task, "Failed to init server credentials\n", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	dns->samdb = samdb_connect(dns,
@@ -846,7 +846,7 @@ static void dns_task_init(struct task_server *task)
 				   0);
 	if (!dns->samdb) {
 		task_server_terminate(task, "dns: samdb_connect failed", true);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	cli_credentials_set_conf(dns->server_credentials, task->lp_ctx);
@@ -865,7 +865,7 @@ static void dns_task_init(struct task_server *task)
 		TALLOC_FREE(dns_acc);
 		if (!dns_spn) {
 			task_server_terminate(task, "dns: talloc_asprintf failed", true);
-			return;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		status = cli_credentials_set_stored_principal(dns->server_credentials, task->lp_ctx, dns_spn);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -874,7 +874,7 @@ static void dns_task_init(struct task_server *task)
 							      "despite finding it in the samdb! %s\n",
 							      nt_errstr(status)),
 					      true);
-			return;
+			return status;
 		}
 	} else {
 		TALLOC_FREE(dns_spn);
@@ -884,41 +884,42 @@ static void dns_task_init(struct task_server *task)
 					      talloc_asprintf(task, "Failed to obtain server credentials, perhaps a standalone server?: %s\n",
 							      nt_errstr(status)),
 					      true);
-			return;
+			return status;
 		}
 	}
 
 	dns->tkeys = tkey_store_init(dns, TKEY_BUFFER_SIZE);
 	if (!dns->tkeys) {
 		task_server_terminate(task, "Failed to allocate tkey storage\n", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = dns_server_reload_zones(dns);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "dns: failed to load DNS zones", true);
-		return;
+		return status;
 	}
 
 	status = dns_startup_interfaces(dns, ifaces, task->model_ops);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "dns failed to setup interfaces", true);
-		return;
+		return status;
 	}
 
 	/* Setup the IRPC interface and register handlers */
 	status = irpc_add_name(task->msg_ctx, "dnssrv");
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "dns: failed to register IRPC name", true);
-		return;
+		return status;
 	}
 
 	status = IRPC_REGISTER(task->msg_ctx, irpc, DNSSRV_RELOAD_DNS_ZONES,
 			       dns_reload_zones, dns);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "dns: failed to setup reload handler", true);
-		return;
+		return status;
 	}
+	return NT_STATUS_OK;
 }
 
 NTSTATUS server_service_dns_init(TALLOC_CTX *ctx)
@@ -926,6 +927,8 @@ NTSTATUS server_service_dns_init(TALLOC_CTX *ctx)
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		.inhibit_pre_fork = true,
+		.task_init = dns_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "dns", dns_task_init, &details);
+	return register_server_service(ctx, "dns", &details);
 }

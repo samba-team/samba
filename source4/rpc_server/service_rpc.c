@@ -44,9 +44,9 @@ NTSTATUS server_service_rpc_init(TALLOC_CTX *);
 /*
   open the dcerpc server sockets
 */
-static void dcesrv_task_init(struct task_server *task)
+static NTSTATUS dcesrv_task_init(struct task_server *task)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct dcesrv_context *dce_ctx;
 	struct dcesrv_endpoint *e;
 	const struct model_ops *single_model_ops;
@@ -135,9 +135,10 @@ static void dcesrv_task_init(struct task_server *task)
 	}
 
 	irpc_add_name(task->msg_ctx, "rpc_server");
-	return;
+	return NT_STATUS_OK;
 failed:
 	task_server_terminate(task, "Failed to startup dcerpc server task", true);	
+	return status;
 }
 
 NTSTATUS server_service_rpc_init(TALLOC_CTX *ctx)
@@ -151,7 +152,9 @@ NTSTATUS server_service_rpc_init(TALLOC_CTX *ctx)
 		 * mode by defult to get a forking NETLOGON server
 		 */
 		.inhibit_fork_on_accept = false,
-		.inhibit_pre_fork = true
+		.inhibit_pre_fork = true,
+		.task_init = dcesrv_task_init,
+		.post_fork = NULL
 	};
-	return register_server_service(ctx, "rpc", dcesrv_task_init, &details);
+	return register_server_service(ctx, "rpc", &details);
 }

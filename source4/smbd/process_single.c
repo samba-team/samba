@@ -92,7 +92,7 @@ static void single_accept_connection(struct tevent_context *ev,
 static void single_new_task(struct tevent_context *ev,
 			    struct loadparm_context *lp_ctx,
 			    const char *service_name,
-			    void (*new_task)(struct tevent_context *,
+			    struct task_server *(*new_task)(struct tevent_context *,
 				             struct loadparm_context *,
 					     struct server_id, void *, void *),
 			    void *private_data,
@@ -102,7 +102,7 @@ static void single_new_task(struct tevent_context *ev,
 	pid_t pid = getpid();
 	/* start our taskids at MAX_INT32, the first 2^31 tasks are is reserved for fd numbers */
 	static uint32_t taskid = INT32_MAX;
-       
+	struct task_server *task = NULL;
 	/*
 	 * We use the PID so we cannot collide in with cluster ids
 	 * generated in other single mode tasks, and, and won't
@@ -112,7 +112,10 @@ static void single_new_task(struct tevent_context *ev,
 	 * Using the pid unaltered makes debugging of which process
 	 * owns the messaging socket easier.
 	 */
-	new_task(ev, lp_ctx, cluster_id(pid, taskid++), private_data, NULL);
+	task = new_task(ev, lp_ctx, cluster_id(pid, taskid++), private_data, NULL);
+	if (task != NULL && service_details->post_fork != NULL) {
+		service_details->post_fork(task);
+	}
 }
 
 
