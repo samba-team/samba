@@ -517,6 +517,17 @@ struct fio {
 
 	/* Whether the create created the stream */
 	bool created;
+
+	/*
+	 * AFP_AfpInfo stream created, but not written yet, thus still a fake
+	 * pipe fd. This is set to true in fruit_open_meta if there was no
+	 * exisiting stream but the caller requested O_CREAT. It is later set to
+	 * false when we get a write on the stream that then does open and
+	 * create the stream.
+	 */
+	bool fake_fd;
+	int flags;
+	int mode;
 };
 
 /*
