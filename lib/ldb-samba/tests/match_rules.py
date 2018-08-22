@@ -1128,9 +1128,6 @@ class MatchRuleConditionTests(samba.tests.TestCase):
                                      FLAG_MOD_ADD, "member")
         self.ldb.modify(m)
 
-        self.question = 6 * (9 -2)
-        self.answer = 42
-
     def tearDown(self):
         super(MatchRuleConditionTests, self).tearDown()
         self.ldb.delete(self.ou, controls=['tree_delete:0'])
