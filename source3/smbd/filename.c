@@ -164,13 +164,12 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 				char **pp_dirpath,
 				char **pp_start)
 {
-	struct smb_filename parent_fname;
+	struct smb_filename parent_fname = {0};
 	const char *last_component = NULL;
 	NTSTATUS status;
 	int ret;
 	bool parent_fname_has_wild = false;
 
-	ZERO_STRUCT(parent_fname);
 	if (!parent_dirname(ctx, smb_fname->base_name,
 				&parent_fname.base_name,
 				&last_component)) {
