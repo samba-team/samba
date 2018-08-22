@@ -168,7 +168,6 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	const char *last_component = NULL;
 	NTSTATUS status;
 	int ret;
-	bool parent_fname_has_wild = false;
 
 	if (!parent_dirname(ctx, smb_fname->base_name,
 				&parent_fname.base_name,
@@ -177,18 +176,18 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	}
 
 	if (!posix_pathnames) {
-		parent_fname_has_wild = ms_has_wild(parent_fname.base_name);
+		if (ms_has_wild(parent_fname.base_name)) {
+			goto no_optimization_out;
+		}
 	}
 
 	/*
 	 * If there was no parent component in
-	 * smb_fname->base_name of the parent name
-	 * contained a wildcard then don't do this
+	 * smb_fname->base_name then don't do this
 	 * optimization.
 	 */
-	if ((smb_fname->base_name == last_component) ||
-			parent_fname_has_wild) {
-		return NT_STATUS_OK;
+	if (smb_fname->base_name == last_component) {
+		goto no_optimization_out;
 	}
 
 	if (posix_pathnames) {
@@ -201,7 +200,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	   with the normal tree walk. */
 
 	if (ret == -1) {
-		return NT_STATUS_OK;
+		goto no_optimization_out;
 	}
 
 	status = check_for_dot_component(&parent_fname);
@@ -232,6 +231,10 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 		smb_fname->base_name,
 		*pp_dirpath,
 		*pp_start));
+
+	return NT_STATUS_OK;
+
+  no_optimization_out:
 
 	return NT_STATUS_OK;
 }
