@@ -236,6 +236,24 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 
   no_optimization_out:
 
+	/*
+	 * We must still return an *pp_dirpath
+	 * initialized to ".", and a *pp_start
+	 * pointing at smb_fname->base_name.
+	 */
+
+	TALLOC_FREE(parent_fname.base_name);
+
+	*pp_dirpath = talloc_strdup(ctx, ".");
+	if (*pp_dirpath == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	/*
+	 * Safe to use discard_const_p
+	 * here as by convention smb_fname->base_name
+	 * is allocated off ctx.
+	 */
+	*pp_start = discard_const_p(char, smb_fname->base_name);
 	return NT_STATUS_OK;
 }
 
@@ -601,7 +619,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					goto err;
 				}
 				/* dirpath must exist. */
-				dirpath = talloc_strdup(ctx,"");
+				dirpath = talloc_strdup(ctx,".");
 				if (dirpath == NULL) {
 					status = NT_STATUS_NO_MEMORY;
 					goto err;
@@ -638,7 +656,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * building the directories with talloc_asprintf and free it.
 	 */
 
-	if ((dirpath == NULL) && (!(dirpath = talloc_strdup(ctx,"")))) {
+	if ((dirpath == NULL) && (!(dirpath = talloc_strdup(ctx,".")))) {
 		DEBUG(0, ("talloc_strdup failed\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
@@ -1038,7 +1056,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					size_t start_ofs =
 					    start - smb_fname->base_name;
 
-					if (*dirpath != '\0') {
+					if (!ISDOT(dirpath)) {
 						tmp = talloc_asprintf(
 							smb_fname, "%s/%s",
 							dirpath, unmangled);
@@ -1073,7 +1091,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				size_t start_ofs =
 				    start - smb_fname->base_name;
 
-				if (*dirpath != '\0') {
+				if (!ISDOT(dirpath)) {
 					tmp = talloc_asprintf(smb_fname,
 						"%s/%s/%s", dirpath,
 						found_name, end+1);
@@ -1098,7 +1116,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				size_t start_ofs =
 				    start - smb_fname->base_name;
 
-				if (*dirpath != '\0') {
+				if (!ISDOT(dirpath)) {
 					tmp = talloc_asprintf(smb_fname,
 						"%s/%s", dirpath,
 						found_name);
@@ -1139,7 +1157,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 * Add to the dirpath that we have resolved so far.
 		 */
 
-		if (*dirpath != '\0') {
+		if (!ISDOT(dirpath)) {
 			char *tmp = talloc_asprintf(ctx,
 					"%s/%s", dirpath, start);
 			if (!tmp) {
@@ -1209,7 +1227,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
  fail:
 	DEBUG(10, ("dirpath = [%s] start = [%s]\n", dirpath, start));
-	if (dirpath && *dirpath != '\0') {
+	if (dirpath && !ISDOT(dirpath)) {
 		smb_fname->base_name = talloc_asprintf(smb_fname, "%s/%s",
 						       dirpath, start);
 	} else {
