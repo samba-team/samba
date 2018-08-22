@@ -4898,12 +4898,22 @@ static int fruit_stat_meta_stream(vfs_handle_struct *handle,
 				  bool follow_links)
 {
 	int ret;
+	ino_t ino;
+
+	ret = fruit_stat_base(handle, smb_fname, false);
+	if (ret != 0) {
+		return -1;
+	}
+
+	ino = fruit_inode(&smb_fname->st, smb_fname->stream_name);
 
 	if (follow_links) {
 		ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
 	} else {
 		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 	}
+
+	smb_fname->st.st_ex_ino = ino;
 
 	return ret;
 }
@@ -5158,7 +5168,41 @@ static int fruit_fstat_meta_stream(vfs_handle_struct *handle,
 				   files_struct *fsp,
 				   SMB_STRUCT_STAT *sbuf)
 {
-	return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ino_t ino;
+	int ret;
+
+	if (fio == NULL) {
+		return -1;
+	}
+
+	if (fio->fake_fd) {
+		ret = fruit_stat_base(handle, fsp->base_fsp->fsp_name, false);
+		if (ret != 0) {
+			return -1;
+		}
+
+		*sbuf = fsp->base_fsp->fsp_name->st;
+		sbuf->st_ex_size = AFP_INFO_SIZE;
+		sbuf->st_ex_ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
+		return 0;
+	}
+
+	ret = fruit_stat_base(handle, fsp->base_fsp->fsp_name, false);
+	if (ret != 0) {
+		return -1;
+	}
+	*sbuf = fsp->base_fsp->fsp_name->st;
+
+	ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
+
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	if (ret != 0) {
+		return -1;
+	}
+
+	sbuf->st_ex_ino = ino;
+	return 0;
 }
 
 static int fruit_fstat_meta_netatalk(vfs_handle_struct *handle,
@@ -5393,11 +5437,13 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 		goto out;
 	}
 
-	ret = SMB_VFS_NEXT_STAT(handle, sname);
+	ret = fruit_stat_base(handle, sname, false);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
+
+	sname->st.st_ex_ino = fruit_inode(&sname->st, AFPINFO_STREAM);
 
 	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sname->st);
 
