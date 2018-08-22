@@ -142,7 +142,7 @@ failed:
 
 NTSTATUS server_service_rpc_init(TALLOC_CTX *ctx)
 {
-	struct service_details details = {
+	static const struct service_details details = {
 		/* 
 		 * This is a SNOWFLAKE, but sadly one that we
 		 * will have to keep for now.  The RPC server

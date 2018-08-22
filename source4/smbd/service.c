@@ -40,7 +40,7 @@ static struct registered_server {
 NTSTATUS register_server_service(TALLOC_CTX *ctx,
 				const char *name,
 				void (*task_init) (struct task_server *),
-				struct service_details *details)
+				const struct service_details *details)
 {
 	struct registered_server *srv;
 	srv = talloc(ctx, struct registered_server);

@@ -1278,7 +1278,7 @@ failed:
 
 NTSTATUS server_service_ldap_init(TALLOC_CTX *ctx)
 {
-	struct service_details details = {
+	static const struct service_details details = {
 		.inhibit_fork_on_accept = false,
 		.inhibit_pre_fork = false
 	};

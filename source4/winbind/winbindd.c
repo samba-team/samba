@@ -89,7 +89,7 @@ NTSTATUS server_service_winbindd_init(TALLOC_CTX *);
 
 NTSTATUS server_service_winbindd_init(TALLOC_CTX *ctx)
 {
-	struct service_details details = {
+	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		.inhibit_pre_fork = true,
 	};

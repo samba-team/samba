@@ -94,7 +94,7 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_smb_init(TALLOC_CTX *ctx)
 {
-	struct service_details details = {
+	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		.inhibit_pre_fork = true
 	};

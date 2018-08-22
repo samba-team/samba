@@ -352,7 +352,7 @@ NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx);
 
 NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx)
 {
-	struct service_details details = {
+	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		/* 
 		 * Need to prevent pre-forking on kdc.

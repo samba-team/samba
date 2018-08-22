@@ -465,7 +465,7 @@ static void kdc_task_init(struct task_server *task)
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_kdc_init(TALLOC_CTX *ctx)
 {
-	struct service_details details = {
+	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		/* 
 		 * Need to prevent pre-forking on kdc.

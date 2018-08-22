@@ -549,7 +549,7 @@ static void ntp_signd_task_init(struct task_server *task)
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_ntp_signd_init(TALLOC_CTX *ctx)
 {
-	struct service_details details = {
+	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		.inhibit_pre_fork = true
 	};
