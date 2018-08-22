@@ -4485,9 +4485,43 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 					files_struct *fsp, const void *data,
 					size_t n, off_t offset)
 {
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	AfpInfo *ai = NULL;
 	size_t nwritten;
+	int ret;
 	bool ok;
+
+	DBG_DEBUG("Path [%s] offset=%"PRIdMAX", size=%zd\n",
+		  fsp_str_dbg(fsp), (intmax_t)offset, n);
+
+	if (fio == NULL) {
+		return -1;
+	}
+
+	if (fio->fake_fd) {
+		int fd;
+
+		ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
+		if (ret != 0) {
+			DBG_ERR("Close [%s] failed: %s\n",
+				fsp_str_dbg(fsp), strerror(errno));
+			fsp->fh->fd = -1;
+			return -1;
+		}
+
+		fd = SMB_VFS_NEXT_OPEN(handle,
+				       fsp->fsp_name,
+				       fsp,
+				       fio->flags,
+				       fio->mode);
+		if (fd == -1) {
+			DBG_ERR("On-demand create [%s] in write failed: %s\n",
+				fsp_str_dbg(fsp), strerror(errno));
+			return -1;
+		}
+		fsp->fh->fd = fd;
+		fio->fake_fd = false;
+	}
 
 	ai = afpinfo_unpack(talloc_tos(), data);
 	if (ai == NULL) {
