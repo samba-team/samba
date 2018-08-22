@@ -104,7 +104,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         # actually create these records.
         invalid_mx = ["SAMDOM.EXAMPLE.COM -1",
                       "SAMDOM.EXAMPLE.COM 65536",
-                      "%s 1" % "A" *256]
+                      "%s 1" % ("A" * 256)]
         invalid_srv = ["SAMDOM.EXAMPLE.COM 0 65536 0",
                        "SAMDOM.EXAMPLE.COM 0 0 65536",
                        "SAMDOM.EXAMPLE.COM 65536 0 0"]
