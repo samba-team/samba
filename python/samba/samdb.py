@@ -395,7 +395,8 @@ member: %s
                       "objectClass": "user"}
 
         if smartcard_required:
-            ldbmessage["userAccountControl"] = str(dsdb.UF_NORMAL_ACCOUNT |dsdb.UF_SMARTCARD_REQUIRED)
+            ldbmessage["userAccountControl"] = str(dsdb.UF_NORMAL_ACCOUNT |
+                                                   dsdb.UF_SMARTCARD_REQUIRED)
             setpassword = False
 
         if surname is not None:

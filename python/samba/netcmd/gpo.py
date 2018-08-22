@@ -144,7 +144,10 @@ def get_gpo_dn(samdb, gpo):
 
 
 def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
-                 sd_flags=security.SECINFO_OWNER |security.SECINFO_GROUP |security.SECINFO_DACL |security.SECINFO_SACL):
+                 sd_flags=(security.SECINFO_OWNER |
+                           security.SECINFO_GROUP |
+                           security.SECINFO_DACL |
+                           security.SECINFO_SACL)):
     '''Get GPO information using gpo, displayname or dn'''
 
     policies_dn = samdb.get_default_basedn()
@@ -472,7 +475,9 @@ class cmd_list(Command):
                         continue
 
                     try:
-                        sd_flags = security.SECINFO_OWNER |security.SECINFO_GROUP |security.SECINFO_DACL
+                        sd_flags = (security.SECINFO_OWNER |
+                                    security.SECINFO_GROUP |
+                                    security.SECINFO_DACL)
                         gmsg = self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE,
                                                  attrs=['name', 'displayName', 'flags',
                                                         'nTSecurityDescriptor'],
