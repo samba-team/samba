@@ -2661,7 +2661,12 @@ sub wait_for_start($$$$$)
 
 	    my $count = 0;
 	    do {
-		$ret = system(Samba::bindir_path($self, "smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
+		$cmd = Samba::bindir_path($self, "smbclient");
+		$cmd .= " $envvars->{CONFIGURATION}";
+		$cmd .= " -L $envvars->{SERVER}";
+		$cmd .= " -U%";
+		$cmd .= " -p 139";
+		$ret = system($cmd);
 		if ($ret != 0) {
 		    sleep(1);
 		}
