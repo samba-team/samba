@@ -282,8 +282,8 @@ def dn_sort(x, y):
     tab1 = p.split(str(x))
     tab2 = p.split(str(y))
     minimum = min(len(tab1), len(tab2))
-    len1 = len(tab1) -1
-    len2 = len(tab2) -1
+    len1 = len(tab1) - 1
+    len2 = len(tab2) - 1
     # Note: python range go up to upper limit but do not include it
     for i in range(0, minimum):
         ret = cmp_fn(tab1[len1 - i], tab2[len2 - i])

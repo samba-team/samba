@@ -215,7 +215,7 @@ class RawDCERPCTest(TestCase):
                                        auth_blob=to_server)
         req = self.generate_alter(call_id=call_id,
                                   ctx_list=ctx_list,
-                                  assoc_group_id=0xffffffff -assoc_group_id,
+                                  assoc_group_id=0xffffffff - assoc_group_id,
                                   auth_info=auth_info)
         self.send_pdu(req)
         rep = self.recv_pdu()
