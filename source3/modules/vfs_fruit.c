@@ -3403,66 +3403,68 @@ static int fruit_connect(vfs_handle_struct *handle,
 	return rc;
 }
 
+static int fruit_fake_fd(void)
+{
+	int pipe_fds[2];
+	int fd;
+	int ret;
+
+	/*
+	 * Return a valid fd, but ensure any attempt to use it returns
+	 * an error (EPIPE). Once we get a write on the handle, we open
+	 * the real fd.
+	 */
+	ret = pipe(pipe_fds);
+	if (ret != 0) {
+		return -1;
+	}
+	fd = pipe_fds[0];
+	close(pipe_fds[1]);
+
+	return fd;
+}
+
 static int fruit_open_meta_stream(vfs_handle_struct *handle,
 				  struct smb_filename *smb_fname,
 				  files_struct *fsp,
 				  int flags,
 				  mode_t mode)
 {
-	AfpInfo *ai = NULL;
-	char afpinfo_buf[AFP_INFO_SIZE];
-	ssize_t len, written;
-	int hostfd = -1;
-	int rc = -1;
+	struct fruit_config_data *config = NULL;
+	struct fio *fio = NULL;
+	int open_flags = flags & ~O_CREAT;
+	int fd;
 
-	hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	if (hostfd == -1) {
+	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	fio = VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
+	fio->type = ADOUBLE_META;
+	fio->config = config;
+
+	fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, open_flags, mode);
+	if (fd != -1) {
+		return fd;
+	}
+
+	if (!(flags & O_CREAT)) {
+		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
 		return -1;
 	}
 
-	if (!(flags & (O_CREAT | O_TRUNC))) {
-		return hostfd;
+	fd = fruit_fake_fd();
+	if (fd == -1) {
+		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
+		return -1;
 	}
 
-	ai = afpinfo_new(talloc_tos());
-	if (ai == NULL) {
-		rc = -1;
-		goto fail;
-	}
+	fio->fake_fd = true;
+	fio->flags = flags;
+	fio->mode = mode;
 
-	len = afpinfo_pack(ai, afpinfo_buf);
-	if (len != AFP_INFO_SIZE) {
-		rc = -1;
-		goto fail;
-	}
-
-	/* Set fd, needed in SMB_VFS_NEXT_PWRITE() */
-	fsp->fh->fd = hostfd;
-
-	written = SMB_VFS_NEXT_PWRITE(handle, fsp, afpinfo_buf,
-				      AFP_INFO_SIZE, 0);
-	fsp->fh->fd = -1;
-	if (written != AFP_INFO_SIZE) {
-		DBG_ERR("bad write [%zd/%d]\n", written, AFP_INFO_SIZE);
-		rc = -1;
-		goto fail;
-	}
-
-	rc = 0;
-
-fail:
-	DBG_DEBUG("rc=%d, fd=%d\n", rc, hostfd);
-
-	if (rc != 0) {
-		int saved_errno = errno;
-		if (hostfd >= 0) {
-			fsp->fh->fd = hostfd;
-			SMB_VFS_NEXT_CLOSE(handle, fsp);
-		}
-		hostfd = -1;
-		errno = saved_errno;
-	}
-	return hostfd;
+	return fd;
 }
 
 static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
@@ -3471,56 +3473,42 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 				    int flags,
 				    mode_t mode)
 {
-	int rc;
-	int fakefd = -1;
+	struct fruit_config_data *config = NULL;
+	struct fio *fio = NULL;
 	struct adouble *ad = NULL;
-	int fds[2];
+	bool meta_exists = false;
+	int fd;
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
-	/*
-	 * Return a valid fd, but ensure any attempt to use it returns an error
-	 * (EPIPE). All operations on the smb_fname or the fsp will use path
-	 * based syscalls.
-	 */
-	rc = pipe(fds);
-	if (rc != 0) {
-		goto exit;
-	}
-	fakefd = fds[0];
-	close(fds[1]);
-
-	if (flags & (O_CREAT | O_TRUNC)) {
-		/*
-		 * The attribute does not exist or needs to be truncated,
-		 * create an AppleDouble EA
-		 */
-		ad = ad_init(fsp, handle, ADOUBLE_META);
-		if (ad == NULL) {
-			rc = -1;
-			goto exit;
-		}
-
-		rc = ad_set(ad, fsp->fsp_name);
-		if (rc != 0) {
-			rc = -1;
-			goto exit;
-		}
-
-		TALLOC_FREE(ad);
+	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
+	if (ad != NULL) {
+		meta_exists = true;
 	}
 
-exit:
-	DEBUG(10, ("fruit_open meta rc=%d, fd=%d\n", rc, fakefd));
-	if (rc != 0) {
-		int saved_errno = errno;
-		if (fakefd >= 0) {
-			close(fakefd);
-		}
-		fakefd = -1;
-		errno = saved_errno;
+	TALLOC_FREE(ad);
+
+	if (!meta_exists && !(flags & O_CREAT)) {
+		errno = ENOENT;
+		return -1;
 	}
-	return fakefd;
+
+	fd = fruit_fake_fd();
+	if (fd == -1) {
+		return -1;
+	}
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	fio = VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
+	fio->type = ADOUBLE_META;
+	fio->config = config;
+	fio->fake_fd = true;
+	fio->flags = flags;
+	fio->mode = mode;
+
+	return fd;
 }
 
 static int fruit_open_meta(vfs_handle_struct *handle,
@@ -3529,7 +3517,6 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 {
 	int fd;
 	struct fruit_config_data *config = NULL;
-	struct fio *fio = NULL;
 
 	DBG_DEBUG("path [%s]\n", smb_fname_str_dbg(smb_fname));
 
@@ -3553,14 +3540,6 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
-
-	if (fd == -1) {
-		return -1;
-	}
-
-	fio = VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
-	fio->type = ADOUBLE_META;
-	fio->config = config;
 
 	return fd;
 }
