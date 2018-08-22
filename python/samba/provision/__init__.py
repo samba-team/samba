@@ -1141,7 +1141,7 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
-        ntdsguid_line = "objectGUID: %s\n" %ntdsguid
+        ntdsguid_line = "objectGUID: %s\n" % ntdsguid
     else:
         ntdsguid_line = ""
 

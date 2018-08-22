@@ -358,7 +358,7 @@ class Descriptor(object):
                 common_aces.append(ace)
         self_aces = sorted(self_aces)
         if len(self_aces) > 0:
-            res += 4 *" " + "ACEs found only in %s:\n" % self.con.host
+            res += 4 * " " + "ACEs found only in %s:\n" % self.con.host
             for ace in self_aces:
                 res += 8 * " " + ace + "\n"
         #
@@ -371,13 +371,13 @@ class Descriptor(object):
                 common_aces.append(ace)
         other_aces = sorted(other_aces)
         if len(other_aces) > 0:
-            res += 4 *" " + "ACEs found only in %s:\n" % other.con.host
+            res += 4 * " " + "ACEs found only in %s:\n" % other.con.host
             for ace in other_aces:
                 res += 8 * " " + ace + "\n"
         #
         common_aces = sorted(list(set(common_aces)))
         if self.con.verbose:
-            res += 4 *" " + "ACEs found in both:\n"
+            res += 4 * " " + "ACEs found in both:\n"
             for ace in common_aces:
                 res += 8 * " " + ace + "\n"
         return (self_aces == [] and other_aces == [], res)
@@ -588,7 +588,7 @@ class LDAPObject(object):
                     res += 8 * " " + x + "\n"
                     self.unique_attrs.append(x)
             #
-            title = 4 *" " + "Attributes found only in %s:" % other.con.host
+            title = 4 * " " + "Attributes found only in %s:" % other.con.host
             for x in other.attributes.keys():
                 if x not in self.attributes.keys() and \
                     not x.upper() in [q.upper() for q in self.ignore_attributes]:
@@ -718,7 +718,7 @@ class LDAPBundel(object):
         while counter < len(self.dn_list) and self.two_domains:
             # Use alias reference
             tmp = self.dn_list[counter]
-            tmp = tmp[:len(tmp) -len(self.con.base_dn)] + "${DOMAIN_DN}"
+            tmp = tmp[:len(tmp) - len(self.con.base_dn)] + "${DOMAIN_DN}"
             tmp = tmp.replace("CN=%s" % self.con.domain_netbios, "CN=${DOMAIN_NETBIOS}")
             if len(self.con.server_names) == 1:
                 for x in self.con.server_names:

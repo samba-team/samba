@@ -80,7 +80,7 @@ def checkset_backend(lp, backend, eadbfile):
         else:
             return (samba.xattr_tdb, os.path.abspath(os.path.join(lp.get("state dir"), "xattr.tdb")))
     else:
-        raise XattrBackendError("Invalid xattr backend choice %s" %backend)
+        raise XattrBackendError("Invalid xattr backend choice %s" % backend)
 
 
 def getdosinfo(lp, file):
