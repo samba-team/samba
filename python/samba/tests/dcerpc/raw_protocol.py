@@ -4970,9 +4970,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         conn2.do_single_request(call_id=1, ctx=ctx2, io=inq_if_ids)
 
         conn2.do_single_request(call_id=1, ctx=ctx1, io=inq_if_ids,
-                                fault_pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
-                                samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST |
-                                samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
+                                fault_pfc_flags=(
+                                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST |
+                                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE),
                                 fault_status=dcerpc.DCERPC_NCA_S_UNKNOWN_IF,
                                 fault_context_id=0)
 
