@@ -51,6 +51,7 @@ from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba import gensec
 from samba import sd_utils
 from samba.compat import get_string
+from samba.logger import get_samba_logger
 
 SLEEP_OVERHEAD = 3e-4
 
@@ -88,6 +89,8 @@ NO_WAIT_LOG_TIME_RANGE = (-10, -3)
 
 # DEBUG_LEVEL can be changed by scripts with -d
 DEBUG_LEVEL = 0
+
+LOGGER = get_samba_logger(name=__name__)
 
 
 def debug(level, msg, *args):
@@ -1438,7 +1441,7 @@ def replay(conversations,
 
     end = start + duration
 
-    print("Replaying traffic for %u conversations over %d seconds"
+    LOGGER.info("Replaying traffic for %u conversations over %d seconds"
           % (len(conversations), duration))
 
     children = {}
@@ -1672,7 +1675,7 @@ def create_machine_account(ldb, instance_id, netbios_name, machinepass):
         "unicodePwd": utf16pw})
     end = time.time()
     duration = end - start
-    print("%f\t0\tcreate\tmachine\t%f\tTrue\t" % (end, duration))
+    LOGGER.info("%f\t0\tcreate\tmachine\t%f\tTrue\t" % (end, duration))
 
 
 def create_user_account(ldb, instance_id, username, userpass):
@@ -1695,7 +1698,7 @@ def create_user_account(ldb, instance_id, username, userpass):
 
     end = time.time()
     duration = end - start
-    print("%f\t0\tcreate\tuser\t%f\tTrue\t" % (end, duration))
+    LOGGER.info("%f\t0\tcreate\tuser\t%f\tTrue\t" % (end, duration))
 
 
 def create_group(ldb, instance_id, name):
@@ -1711,7 +1714,7 @@ def create_group(ldb, instance_id, name):
     })
     end = time.time()
     duration = end - start
-    print("%f\t0\tcreate\tgroup\t%f\tTrue\t" % (end, duration))
+    LOGGER.info("%f\t0\tcreate\tgroup\t%f\tTrue\t" % (end, duration))
 
 
 def user_name(instance_id, i):
