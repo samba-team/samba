@@ -1069,9 +1069,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
-                                  dsdb.UF_ACCOUNTDISABLE |
-                                  dsdb.UF_PASSWD_NOTREQD,
+                                  userAccountControl=(dsdb.UF_NORMAL_ACCOUNT |
+                                                      dsdb.UF_ACCOUNTDISABLE |
+                                                      dsdb.UF_PASSWD_NOTREQD),
                                   msDSUserAccountControlComputed=dsdb.UF_PASSWORD_EXPIRED)
 
         # SAMR doesn't have any impact if dsdb.UF_LOCKOUT isn't present.
@@ -1084,9 +1084,9 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
-                                  dsdb.UF_ACCOUNTDISABLE |
-                                  dsdb.UF_PASSWD_NOTREQD,
+                                  userAccountControl=(dsdb.UF_NORMAL_ACCOUNT |
+                                                      dsdb.UF_ACCOUNTDISABLE |
+                                                      dsdb.UF_PASSWD_NOTREQD),
                                   msDSUserAccountControlComputed=dsdb.UF_PASSWORD_EXPIRED)
 
         # Tests a password change when we don't have any password yet with a
@@ -1114,9 +1114,9 @@ userPassword: thatsAcomplPASS2
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
-                                  dsdb.UF_ACCOUNTDISABLE |
-                                  dsdb.UF_PASSWD_NOTREQD,
+                                  userAccountControl=(dsdb.UF_NORMAL_ACCOUNT |
+                                                      dsdb.UF_ACCOUNTDISABLE |
+                                                      dsdb.UF_PASSWD_NOTREQD),
                                   msDSUserAccountControlComputed=dsdb.UF_PASSWORD_EXPIRED)
         badPwdCount = int(res[0]["badPwdCount"][0])
         badPasswordTime = int(res[0]["badPasswordTime"][0])
@@ -1139,9 +1139,9 @@ userPassword: """ + userpass + """
                                   logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
-                                  userAccountControl=dsdb.UF_NORMAL_ACCOUNT |
-                                  dsdb.UF_ACCOUNTDISABLE |
-                                  dsdb.UF_PASSWD_NOTREQD,
+                                  userAccountControl=(dsdb.UF_NORMAL_ACCOUNT |
+                                                      dsdb.UF_ACCOUNTDISABLE |
+                                                      dsdb.UF_PASSWD_NOTREQD),
                                   msDSUserAccountControlComputed=0)
 
         # Enables the user account
