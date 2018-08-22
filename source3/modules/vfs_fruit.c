@@ -4194,8 +4194,7 @@ static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 	int ret;
 
 	nread = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
-
-	if (nread == n) {
+	if (nread == -1 || nread == n) {
 		return nread;
 	}
 
@@ -4297,6 +4296,25 @@ static ssize_t fruit_pread_meta(vfs_handle_struct *handle,
 	default:
 		DBG_ERR("Unexpected meta config [%d]\n", fio->config->meta);
 		return -1;
+	}
+
+	if (nread == -1 && fio->created) {
+		AfpInfo *ai = NULL;
+		char afpinfo_buf[AFP_INFO_SIZE];
+
+		ai = afpinfo_new(talloc_tos());
+		if (ai == NULL) {
+			return -1;
+		}
+
+		nread = afpinfo_pack(ai, afpinfo_buf);
+		TALLOC_FREE(ai);
+		if (nread != AFP_INFO_SIZE) {
+			return -1;
+		}
+
+		memcpy(data, afpinfo_buf, to_return);
+		return to_return;
 	}
 
 	return nread;
