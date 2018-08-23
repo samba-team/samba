@@ -108,7 +108,7 @@ class LDAPBase(object):
         assert len(res) > 0
         srv = []
         for x in res:
-            srv.append(x["cn"][0])
+            srv.append(str(x["cn"][0]))
         return srv
 
     def find_netbios(self):
@@ -259,7 +259,7 @@ class LDAPBase(object):
                               expression="(objectSid=*)", scope=SCOPE_SUBTREE, attrs=["objectSid", "sAMAccountName"])
         for item in res:
             try:
-                self.sid_map["%s" % ndr_unpack(security.dom_sid, item["objectSid"][0])] = item["sAMAccountName"][0]
+                self.sid_map["%s" % ndr_unpack(security.dom_sid, item["objectSid"][0])] = str(item["sAMAccountName"][0])
             except KeyError:
                 pass
 

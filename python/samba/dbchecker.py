@@ -1223,7 +1223,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 dsdb_dn.prefix = "B:8:%08X:" % int(res[0]['instanceType'][0])
                 dsdb_dn.binary = "%08X" % int(res[0]['instanceType'][0])
 
-                if str(dsdb_dn) != val:
+                if str(dsdb_dn) != str(val):
                     error_count += 1
                     self.err_incorrect_binary_dn(obj.dn, attrname, val, dsdb_dn, "incorrect instanceType part of Binary DN")
                     continue
@@ -1841,7 +1841,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if "description" not in obj:
             self.report("ERROR: description not present on Deleted Objects container %s" % obj.dn)
             faulty = True
-        if "showInAdvancedViewOnly" not in obj or obj['showInAdvancedViewOnly'][0].upper() == 'FALSE':
+        if "showInAdvancedViewOnly" not in obj or str(obj['showInAdvancedViewOnly'][0]).upper() == 'FALSE':
             self.report("ERROR: showInAdvancedViewOnly not present on Deleted Objects container %s" % obj.dn)
             faulty = True
         if "objectCategory" not in obj:
@@ -1857,11 +1857,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("ERROR: isDeleted not set on Deleted Objects container %s" % obj.dn)
             faulty = True
         if "objectClass" not in obj or (len(obj['objectClass']) != 2 or
-                                        obj['objectClass'][0] != 'top' or
-                                        obj['objectClass'][1] != 'container'):
+                                        str(obj['objectClass'][0]) != 'top' or
+                                        str(obj['objectClass'][1]) != 'container'):
             self.report("ERROR: objectClass incorrectly set on Deleted Objects container %s" % obj.dn)
             faulty = True
-        if "systemFlags" not in obj or obj['systemFlags'][0] != '-1946157056':
+        if "systemFlags" not in obj or str(obj['systemFlags'][0]) != '-1946157056':
             self.report("ERROR: systemFlags incorrectly set on Deleted Objects container %s" % obj.dn)
             faulty = True
         return faulty
