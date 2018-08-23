@@ -76,6 +76,11 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	)
 
+bld.SAMBA_SUBSYSTEM('IREMOTEWINSPOOL_COMMON',
+                    source='rpc/iremotewinspool_common.c',
+                    deps='talloc',
+                    enabled=bld.PYTHON_BUILD_IS_ENABLED())
+
 torture_rpc_backupkey = ''
 if bld.AD_DC_BUILD_IS_ENABLED():
     if bld.CONFIG_SET('HAVE_GNUTLS_3_4_7'):
@@ -185,6 +190,7 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_WITNESS
                       RPC_NDR_BACKUPKEY
                       RPC_NDR_WINSPOOL
+                      IREMOTEWINSPOOL_COMMON
                       ''' % samba_net + ntvfs_specific['deps'],
                  internal_module=True,
                  enabled=bld.PYTHON_BUILD_IS_ENABLED())
