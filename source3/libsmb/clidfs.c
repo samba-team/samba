@@ -137,6 +137,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 					const struct user_auth_info *auth_info,
 					bool force_encrypt,
 					int max_protocol,
+					const struct sockaddr_storage *dest_ss,
 					int port,
 					int name_type,
 					struct cli_state **pcli)
@@ -191,7 +192,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	}
 
 	status = cli_connect_nb(
-		server, NULL, port, name_type, NULL,
+		server, dest_ss, port, name_type, NULL,
 		signing_state,
 		flags, &c);
 
@@ -274,7 +275,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return do_connect(ctx, newserver,
 				newshare, auth_info,
 				force_encrypt, max_protocol,
-				port, name_type, pcli);
+				NULL, port, name_type, pcli);
 	}
 
 	/* must be a normal share */
@@ -329,6 +330,7 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 			       const struct user_auth_info *auth_info,
 			       bool force_encrypt,
 			       int max_protocol,
+			       const struct sockaddr_storage *dest_ss,
 			       int port,
 			       int name_type,
 			       struct cli_state **pcli)
@@ -339,7 +341,7 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 	status = do_connect(ctx, server, share,
 				auth_info,
 				force_encrypt, max_protocol,
-				port, name_type, &cli);
+				dest_ss, port, name_type, &cli);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -453,6 +455,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				auth_info,
 				force_encrypt,
 				max_protocol,
+				NULL, /* dest_ss */
 				port,
 				name_type,
 				&c);
@@ -1058,7 +1061,8 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 				dfs_auth_info,
 				cli_state_is_encryption_on(rootcli),
 				smbXcli_conn_protocol(rootcli->conn),
-				0,
+				NULL, /* dest_ss */
+				0, /* port */
 				0x20,
 				targetcli);
 		if (!NT_STATUS_IS_OK(status)) {
