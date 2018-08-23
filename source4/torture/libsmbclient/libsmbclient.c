@@ -43,11 +43,23 @@ static void debug_callback(void *private_ptr, int level, const char *msg)
 bool torture_libsmbclient_init_context(struct torture_context *tctx,
 				       SMBCCTX **ctx_p)
 {
-	SMBCCTX *ctx;
+	SMBCCTX *ctx = NULL;
+	SMBCCTX *p = NULL;
+	bool ok = true;
 
 	ctx = smbc_new_context();
-	torture_assert(tctx, ctx, "failed to get new context");
-	torture_assert(tctx, smbc_init_context(ctx), "failed to init context");
+	torture_assert_not_null_goto(tctx,
+				     ctx,
+				     ok,
+				     out,
+				     "Failed to create new context");
+
+	p = smbc_init_context(ctx);
+	torture_assert_not_null_goto(tctx,
+				     p,
+				     ok,
+				     out,
+				     "Failed to initialize context");
 
 	smbc_setDebug(ctx, DEBUGLEVEL);
 	smbc_setOptionDebugToStderr(ctx, 1);
@@ -57,7 +69,12 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 
 	*ctx_p = ctx;
 
-	return true;
+out:
+	if (!ok) {
+		smbc_free_context(ctx, 1);
+	}
+
+	return ok;
 }
 
 static bool torture_libsmbclient_version(struct torture_context *tctx)
