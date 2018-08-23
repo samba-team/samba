@@ -426,6 +426,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				const struct user_auth_info *auth_info,
 				bool force_encrypt,
 				int max_protocol,
+				const struct sockaddr_storage *dest_ss,
 				int port,
 				int name_type,
 				struct cli_state **pcli)
@@ -455,7 +456,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				auth_info,
 				force_encrypt,
 				max_protocol,
-				NULL, /* dest_ss */
+				dest_ss,
 				port,
 				name_type,
 				&c);
@@ -1004,6 +1005,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			     dfs_auth_info,
 			     cli_state_is_encryption_on(rootcli),
 			     smbXcli_conn_protocol(rootcli->conn),
+			     NULL, /* dest_ss not needed, we reuse the transport */
 			     0,
 			     0x20,
 			     &cli_ipc);

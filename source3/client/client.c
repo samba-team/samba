@@ -5719,10 +5719,12 @@ static int process_command_string(const char *cmd_in)
 		NTSTATUS status;
 
 		status = cli_cm_open(talloc_tos(), NULL,
-				     have_ip ? dest_ss_str : desthost,
+				     desthost,
 				     service, popt_get_cmdline_auth_info(),
 				     smb_encrypt,
-				     max_protocol, port, name_type,
+				     max_protocol,
+				     have_ip ? &dest_ss : NULL, port,
+				     name_type,
 				     &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
@@ -6162,9 +6164,10 @@ static int process(const char *base_directory)
 	NTSTATUS status;
 
 	status = cli_cm_open(talloc_tos(), NULL,
-			     have_ip ? dest_ss_str : desthost,
+			     desthost,
 			     service, popt_get_cmdline_auth_info(),
-			     smb_encrypt, max_protocol, port,
+			     smb_encrypt, max_protocol,
+			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
@@ -6199,9 +6202,10 @@ static int do_host_query(const char *query_host)
 	NTSTATUS status;
 
 	status = cli_cm_open(talloc_tos(), NULL,
-			     have_ip ? dest_ss_str : query_host,
+			     query_host,
 			     "IPC$", popt_get_cmdline_auth_info(),
-			     smb_encrypt, max_protocol, port,
+			     smb_encrypt, max_protocol,
+			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
@@ -6245,10 +6249,11 @@ static int do_host_query(const char *query_host)
 		cli_shutdown(cli);
 		d_printf("Reconnecting with SMB1 for workgroup listing.\n");
 		status = cli_cm_open(talloc_tos(), NULL,
-				     have_ip ? dest_ss_str : query_host,
+				     query_host,
 				     "IPC$", popt_get_cmdline_auth_info(),
 				     smb_encrypt, max_proto,
-				     NBT_SMB_PORT, name_type, &cli);
+				     have_ip ? &dest_ss : NULL, NBT_SMB_PORT,
+				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("Unable to connect with SMB1 "
 				 "-- no workgroup available\n");
@@ -6278,10 +6283,11 @@ static int do_tar_op(const char *base_directory)
 		NTSTATUS status;
 
 		status = cli_cm_open(talloc_tos(), NULL,
-				     have_ip ? dest_ss_str : desthost,
+				     desthost,
 				     service, popt_get_cmdline_auth_info(),
 				     smb_encrypt, max_protocol,
-				     port, name_type, &cli);
+				     have_ip ? &dest_ss : NULL, port,
+				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
             ret = 1;
             goto out;

@@ -150,6 +150,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				const struct user_auth_info *auth_info,
 				bool force_encrypt,
 				int max_protocol,
+				const struct sockaddr_storage *dest_ss,
 				int port,
 				int name_type,
 				struct cli_state **pcli);
