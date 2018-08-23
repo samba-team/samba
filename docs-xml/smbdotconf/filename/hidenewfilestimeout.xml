@@ -1,0 +1,15 @@
+<samba:parameter name="hide new files timeout"
+                 context="S"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+ <description>
+   <para>Setting this parameter to something but 0 hides files
+   that have been modified less than N seconds ago.</para>
+   <para>It can be used for ingest/process queue style workloads. A
+   processing application should only see files that are definitely
+   finished. As many applications do not have proper external workflow
+   control, this can be a way to make sure processing does not
+   interfere with file ingest.</para>
+</description>
+<value type="default">0</value>
+</samba:parameter>

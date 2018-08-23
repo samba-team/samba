@@ -1536,6 +1536,7 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 	bool hide_unreadable = lp_hide_unreadable(SNUM(conn));
 	bool hide_unwriteable = lp_hide_unwriteable_files(SNUM(conn));
 	bool hide_special = lp_hide_special_files(SNUM(conn));
+	int hide_new_files_timeout = lp_hide_new_files_timeout(SNUM(conn));
 	char *entry = NULL;
 	struct smb_filename *smb_fname_base = NULL;
 	bool ret = false;
@@ -1550,7 +1551,11 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 		return False;
 	}
 
-	if (hide_unreadable || hide_unwriteable || hide_special) {
+	if (hide_unreadable ||
+	    hide_unwriteable ||
+	    hide_special ||
+	    (hide_new_files_timeout != 0))
+	{
 		entry = talloc_asprintf(talloc_tos(), "%s/%s", dir_path, name);
 		if (!entry) {
 			ret = false;
@@ -1602,6 +1607,17 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 				 entry ));
 			ret = false;
 			goto out;
+		}
+
+		if (hide_new_files_timeout != 0) {
+
+			double age = timespec_elapsed(
+				&smb_fname_base->st.st_ex_mtime);
+
+			if (age < (double)hide_new_files_timeout) {
+				ret = false;
+				goto out;
+			}
 		}
 	}
 
