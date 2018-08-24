@@ -439,7 +439,8 @@ int main(int argc, const char **argv)
 		d_fprintf(stderr, "ERROR: you must specify exactly one "
 			  "of --persistent and --non-persistent\n");
 		goto done;
-	} else if (non_persistent == 1) {
+	}
+	if (non_persistent == 1) {
 		tdb_flags |= TDB_CLEAR_IF_FIRST;
 	}
 
