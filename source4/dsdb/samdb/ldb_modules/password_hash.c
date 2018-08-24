@@ -52,6 +52,14 @@
 #ifdef ENABLE_GPGME
 #undef class
 #include <gpgme.h>
+
+/*
+ * 1.2.0 is what dpkg-shlibdeps generates, based on used symbols and
+ * libgpgme11.symbols
+ * https://salsa.debian.org/debian/gpgme/blob/debian/master/debian/libgpgme11.symbols
+ */
+
+#define MINIMUM_GPGME_VERSION "1.2.0"
 #endif
 
 /* If we have decided there is a reason to work on this request, then
@@ -4817,13 +4825,13 @@ int ldb_password_hash_module_init(const char *version)
 	 * if none is active already. See:
 	 * https://www.gnupg.org/documentation/manuals/gpgme/Signal-Handling.html#Signal-Handling
 	 */
-	gversion = gpgme_check_version(GPGME_VERSION);
+	gversion = gpgme_check_version(MINIMUM_GPGME_VERSION);
 	if (gversion == NULL) {
 		fprintf(stderr, "%s() in %s version[%s]: "
 			"gpgme_check_version(%s) not available, "
 			"gpgme_check_version(NULL) => '%s'\n",
 			__func__, __FILE__, version,
-			GPGME_VERSION, gpgme_check_version(NULL));
+			MINIMUM_GPGME_VERSION, gpgme_check_version(NULL));
 		return LDB_ERR_UNAVAILABLE;
 	}
 #endif /* ENABLE_GPGME */
