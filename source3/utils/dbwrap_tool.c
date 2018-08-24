@@ -280,13 +280,6 @@ static int dbwrap_tool_exists(struct db_context *db,
 	return (result)?0:1;
 }
 
-
-static int delete_fn(struct db_record *rec, void *priv)
-{
-	dbwrap_record_delete(rec);
-	return 0;
-}
-
 /**
  * dbwrap_tool_erase: erase the whole data base
  * the keyname argument is not used.
@@ -295,11 +288,11 @@ static int dbwrap_tool_erase(struct db_context *db,
 			     const char *keyname,
 			     const char *data)
 {
-	NTSTATUS status;
+	int ret;
 
-	status = dbwrap_traverse(db, delete_fn, NULL, NULL);
+	ret = dbwrap_wipe(db);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		d_fprintf(stderr, "ERROR erasing the database\n");
 		return -1;
 	}
