@@ -1,4 +1,119 @@
                    =============================
+                   Release Notes for Samba 4.8.5
+                           August 24, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.8 release series.
+
+
+Changes since 4.8.4:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13474: python: pysmbd: Additional error path leak fix.
+   * BUG 13511: libsmbclient: Initialize written value before use.
+   * BUG 13519: ldb: Refuse to build Samba against a newer minor version of
+     ldb.
+   * BUG 13527: s3: libsmbclient: Fix cli_splice() fallback when reading less
+     than a complete file.
+   * BUG 13537: Using "sendfile = yes" with SMB2 can cause CPU spin.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13575: ldb: Release LDB 1.3.6.
+
+o  Bailey Berro <baileyberro@chromium.org>
+   * BUG 13511: libsmbclient: Initialize written in cli_splice_fallback().
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13318: Durable Handles reconnect fails in a cluster when the cluster
+     fs uses different device ids.
+   * BUG 13351: s3: smbd: Always set vuid in check_user_ok().
+   * BUG 13441: vfs_fruit: Delete 0 byte size streams if AAPL is enabled.
+   * BUG 13451: Fail renaming file if that file has open streams.
+   * BUG 13505: lib: smb_threads: Fix access before init bug.
+   * BUG 13535: s3: smbd: Fix path check in
+     smbd_smb2_create_durable_lease_check().
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13538: samba-tool trust: Support discovery via netr_GetDcName.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 13540: ctdb_mutex_ceph_rados_helper: Set SIGINT signal handler.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13506: vfs_ceph: Don't lie about flock support.
+   * BUG 13540: Fix deadlock with ctdb_mutex_ceph_rados_helper.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13493: ctdb: Fix build on FreeBSD and AIX.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13553: libsmb: Fix CID 1438243 (Unchecked return value), CID 1438244
+     (Unsigned compared against 0), CID 1438245 (Dereference before null check),
+     CID 1438246 (Unchecked return value).
+   * BUG 13584: vfs_fruit: Fix a panic if fruit_access_check detects a locking
+     conflict.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13536: The current position in the dns name was not advanced past the
+     '.' character.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13308: samba-tool domain trust: Fix trust compatibility to Windows
+     Server 1709 and FreeIPA.
+
+o  Oleksandr Natalenko <oleksandr@redhat.com>
+   * BUG 13559: systemd: Only start smb when network interfaces are up.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13553: Fix quotas with SMB2.
+   * BUG 13563: s3/smbd: Ensure quota code is only called when quota support
+     detected.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13204: s3/libsmb: Explicitly set delete_on_close token for rmdir.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13489: krb5_plugin: Install plugins to krb5 modules dir.
+   * BUG 13503: s3:winbind: Do not lookup local system accounts in AD.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13499: Don't use CTDB_BROADCAST_VNNMAP.
+   * BUG 13500: ctdb-daemon: Only consider client ID for local database attach.
+
+o  Justin Stephenson <jstephen@redhat.com>
+   * BUG 13485: s3:client: Add "--quiet" option to smbclient.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13568: s3: vfs: time_audit: Fix handling of token_blob in
+     smb_time_audit_offload_read_recv().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.8.4
                            August 14, 2018
                    =============================
@@ -85,8 +200,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.8.3
