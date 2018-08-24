@@ -94,9 +94,11 @@ setup_ctdb ()
 {
 	local no_public_addresses=false
 	local no_event_scripts=false
+	local disable_failover=false
 	case "$1" in
 	--no-public-addresses) no_public_addresses=true ;;
 	--no-event-scripts)    no_event_scripts=true    ;;
+	--disable-failover)    disable_failover=true    ;;
 	esac
 
 	nodes_file="${SIMPLE_TESTS_VAR_DIR}/nodes"
@@ -153,6 +155,9 @@ setup_ctdb ()
 	volatile database directory = ${db_dir}/volatile
 	persistent database directory = ${db_dir}/persistent
 	state database directory = ${db_dir}/state
+
+[failover]
+	disabled = ${disable_failover}
 
 [event]
 	debug script = debug-hung-script.sh
