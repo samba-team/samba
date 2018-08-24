@@ -218,14 +218,18 @@ static bool event_client_recv(struct tevent_req *req, int *perr)
 
 static struct {
 	int pid;
+	int startup_fd;
 } options = {
 	.pid = -1,
+	.startup_fd = -1,
 };
 
 struct poptOption cmdline_options[] = {
 	POPT_AUTOHELP
 	{ "pid", 'P', POPT_ARG_INT, &options.pid, 0,
 		"pid to wait for", "PID" },
+	{ "startup-fd", 'S', POPT_ARG_INT, &options.startup_fd, 0,
+		"file descriptor to notify of successful start", "FD" },
 	POPT_TABLEEND
 };
 
@@ -336,6 +340,10 @@ int main(int argc, const char **argv)
 	if (ret != 0) {
 		D_ERR("Failed to setup socket %s\n", e_state->socket);
 		goto fail;
+	}
+
+	if (options.startup_fd != -1) {
+		sock_daemon_set_startup_fd(e_state->sockd, options.startup_fd);
 	}
 
 	ret = sock_daemon_run(e_state->ev,
