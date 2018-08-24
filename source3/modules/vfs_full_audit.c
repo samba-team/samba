@@ -658,6 +658,32 @@ static const char *smb_fname_str_do_log(const struct smb_filename *cwd,
 	if (smb_fname == NULL) {
 		return "";
 	}
+
+	if (smb_fname->base_name[0] != '/') {
+		char *abs_name = NULL;
+		struct smb_filename *fname_copy = cp_smb_filename(
+							do_log_ctx(),
+							smb_fname);
+		if (fname_copy == NULL) {
+			return "";
+		}
+
+		if (!ISDOT(smb_fname->base_name)) {
+			abs_name = talloc_asprintf(do_log_ctx(),
+					"%s/%s",
+					cwd->base_name,
+					smb_fname->base_name);
+		} else {
+			abs_name = talloc_strdup(do_log_ctx(),
+					cwd->base_name);
+		}
+		if (abs_name == NULL) {
+			return "";
+		}
+		fname_copy->base_name = abs_name;
+		smb_fname = fname_copy;
+	}
+
 	status = get_full_smb_filename(do_log_ctx(), smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return "";
