@@ -59,13 +59,10 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
 			(koplocks != NULL);
 
-	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-		if (use_kernel &&
-		    !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) {
-			DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
-				   "don't support them\n"));
-			return NT_STATUS_NOT_SUPPORTED;
-		}
+	if (fsp->oplock_type == LEVEL_II_OPLOCK && use_kernel) {
+		DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
+			   "don't support them\n"));
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
@@ -747,20 +744,6 @@ static void oplock_timeout_handler(struct tevent_context *ctx,
 
 static void add_oplock_timeout_handler(files_struct *fsp)
 {
-	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
-			(koplocks != NULL);
-
-	/*
-	 * If kernel oplocks already notifies smbds when an oplock break times
-	 * out, just return.
-	 */
-	if (use_kernel &&
-	    (koplocks->flags & KOPLOCKS_TIMEOUT_NOTIFICATION)) {
-		return;
-	}
-
 	if (fsp->oplock_timeout != NULL) {
 		DEBUG(0, ("Logic problem -- have an oplock event hanging "
 			  "around\n"));
@@ -877,7 +860,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 	use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
 			(koplocks != NULL);
-	if (use_kernel && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) {
+	if (use_kernel) {
 		DEBUG(10, ("Kernel oplocks don't allow level2\n"));
 		break_to &= ~SMB2_LEASE_READ;
 	}
