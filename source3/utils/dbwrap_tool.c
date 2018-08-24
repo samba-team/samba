@@ -302,8 +302,9 @@ static int dbwrap_tool_erase(struct db_context *db,
 
 static int listkey_fn(struct db_record *rec, void *private_data)
 {
-	int length = dbwrap_record_get_key(rec).dsize;
-	unsigned char *p = (unsigned char *)dbwrap_record_get_key(rec).dptr;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	size_t length = key.dsize;
+	unsigned char *p = (unsigned char *)key.dptr;
 
 	while (length--) {
 		if (isprint(*p) && !strchr("\"\\", *p)) {
