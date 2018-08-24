@@ -952,8 +952,10 @@ static struct {
 	const char *pidfile;
 	const char *socket;
 	int pid;
+	int startup_fd;
 } options = {
 	.debug_level = "ERR",
+	.startup_fd = -1,
 };
 
 struct poptOption cmdline_options[] = {
@@ -972,6 +974,8 @@ struct poptOption cmdline_options[] = {
 		"eventd pid file", "FILE" },
 	{ "socket", 's', POPT_ARG_STRING, &options.socket, 0,
 		"eventd socket path", "FILE" },
+	{ "startup-fd", 'S', POPT_ARG_INT, &options.startup_fd, 0,
+		"file descriptor to notify of successful start", "FD" },
 	POPT_TABLEEND
 };
 
@@ -1066,6 +1070,10 @@ int main(int argc, const char **argv)
 	ret = sock_daemon_add_unix(sockd, options.socket, &socket_funcs, ectx);
 	if (ret != 0) {
 		goto fail;
+	}
+
+	if (options.startup_fd != -1) {
+		sock_daemon_set_startup_fd(sockd, options.startup_fd);
 	}
 
 	ret = sock_daemon_run(ev, sockd,
