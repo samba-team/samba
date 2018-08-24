@@ -658,7 +658,8 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 /**
  * Return a string using the do_log_ctx()
  */
-static const char *smb_fname_str_do_log(const struct smb_filename *smb_fname)
+static const char *smb_fname_str_do_log(const struct smb_filename *cwd,
+				const struct smb_filename *smb_fname)
 {
 	char *fname = NULL;
 	NTSTATUS status;
@@ -678,7 +679,7 @@ static const char *smb_fname_str_do_log(const struct smb_filename *smb_fname)
  */
 static const char *fsp_str_do_log(const struct files_struct *fsp)
 {
-	return smb_fname_str_do_log(fsp->fsp_name);
+	return smb_fname_str_do_log(fsp->conn->cwd_fname, fsp->fsp_name);
 }
 
 /* Implementation of vfs_ops.  Pass everything on to the default
@@ -1017,7 +1018,7 @@ static int smb_full_audit_open(vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_OPEN, (result >= 0), handle, "%s|%s",
 	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
-	       smb_fname_str_do_log(smb_fname));
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return result;
 }
@@ -1091,7 +1092,8 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_CREATE_FILE, (NT_STATUS_IS_OK(result)), handle,
 	       "0x%x|%s|%s|%s", access_mask,
 	       create_options & FILE_DIRECTORY_FILE ? "dir" : "file",
-	       str_create_disposition, smb_fname_str_do_log(smb_fname));
+	       str_create_disposition,
+		smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return result;
 }
@@ -1330,8 +1332,8 @@ static int smb_full_audit_rename(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 
 	do_log(SMB_VFS_OP_RENAME, (result >= 0), handle, "%s|%s",
-	       smb_fname_str_do_log(smb_fname_src),
-	       smb_fname_str_do_log(smb_fname_dst));
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname_src),
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname_dst));
 
 	return result;    
 }
@@ -1413,7 +1415,7 @@ static int smb_full_audit_stat(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_STAT(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_STAT, (result >= 0), handle, "%s",
-	       smb_fname_str_do_log(smb_fname));
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return result;    
 }
@@ -1439,7 +1441,7 @@ static int smb_full_audit_lstat(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_LSTAT, (result >= 0), handle, "%s",
-	       smb_fname_str_do_log(smb_fname));
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return result;    
 }
@@ -1465,7 +1467,7 @@ static int smb_full_audit_unlink(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_UNLINK, (result >= 0), handle, "%s",
-	       smb_fname_str_do_log(smb_fname));
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return result;
 }
@@ -1576,7 +1578,7 @@ static int smb_full_audit_ntimes(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 
 	do_log(SMB_VFS_OP_NTIMES, (result >= 0), handle, "%s",
-	       smb_fname_str_do_log(smb_fname));
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return result;
 }
@@ -2013,7 +2015,8 @@ static NTSTATUS smb_full_audit_get_compression(vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_GET_COMPRESSION, NT_STATUS_IS_OK(result), handle,
 	       "%s",
-	       (fsp ? fsp_str_do_log(fsp) : smb_fname_str_do_log(smb_fname)));
+	       (fsp ? fsp_str_do_log(fsp) :
+		smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname)));
 
 	return result;
 }
@@ -2044,7 +2047,7 @@ static NTSTATUS smb_full_audit_readdir_attr(struct vfs_handle_struct *handle,
 	status = SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
 
 	do_log(SMB_VFS_OP_READDIR_ATTR, NT_STATUS_IS_OK(status), handle, "%s",
-	       smb_fname_str_do_log(fname));
+	       smb_fname_str_do_log(handle->conn->cwd_fname, fname));
 
 	return status;
 }
@@ -2064,7 +2067,7 @@ static NTSTATUS smb_full_audit_get_dos_attributes(
 		NT_STATUS_IS_OK(status),
 		handle,
 		"%s",
-		smb_fname_str_do_log(smb_fname));
+		smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return status;
 }
@@ -2226,7 +2229,7 @@ static NTSTATUS smb_full_audit_set_dos_attributes(
 		NT_STATUS_IS_OK(status),
 		handle,
 		"%s",
-		smb_fname_str_do_log(smb_fname));
+		smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return status;
 }
@@ -2279,7 +2282,7 @@ static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
 					 mem_ctx, ppdesc);
 
 	do_log(SMB_VFS_OP_GET_NT_ACL, NT_STATUS_IS_OK(result), handle,
-	       "%s", smb_fname_str_do_log(smb_fname));
+	       "%s", smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
 
 	return result;
 }
@@ -2325,7 +2328,8 @@ static NTSTATUS smb_full_audit_audit_file(struct vfs_handle_struct *handle,
 					access_denied);
 
 	do_log(SMB_VFS_OP_AUDIT_FILE, NT_STATUS_IS_OK(result), handle,
-			"%s", smb_fname_str_do_log(file));
+			"%s",
+			smb_fname_str_do_log(handle->conn->cwd_fname, file));
 
 	return result;
 }
