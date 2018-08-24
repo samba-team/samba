@@ -208,6 +208,16 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
 			 void *private_data);
 
 /**
+ * @brief Set file descriptor for indicating startup success
+ *
+ * On successful completion, 0 (unsigned int) will be written to the fd.
+ *
+ * @param[in] sockd Socket daemon context
+ * @param[in] fd File descriptor
+ */
+void sock_daemon_set_startup_fd(struct sock_daemon_context *sockd, int fd);
+
+/**
  * @brief Async computation start to run a socket daemon
  *
  * @param[in] mem_ctx Talloc memory context
