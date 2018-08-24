@@ -83,6 +83,9 @@ if PY3:
     # alias
     import io
     StringIO = io.StringIO
+    def ConfigParser(defaults=None, dict_type=None, allow_no_value=None):
+        from configparser import ConfigParser
+        return ConfigParser(defaults, dict_type, allow_no_value, interpolation=None)
 else:
     # Helper function to return bytes.
     # if 'unicode' is passed in then it is decoded using 'utf8' and
@@ -158,4 +161,5 @@ else:
     # alias
     import cStringIO
     StringIO = cStringIO.StringIO
+    from ConfigParser import ConfigParser
     cmp_fn = cmp
