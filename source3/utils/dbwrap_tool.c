@@ -435,9 +435,7 @@ int main(int argc, const char **argv)
 		goto done;
 	}
 
-	if ((persistent == 0 && non_persistent == 0) ||
-	    (persistent == 1 && non_persistent == 1))
-	{
+	if ((persistent + non_persistent) != 1) {
 		d_fprintf(stderr, "ERROR: you must specify exactly one "
 			  "of --persistent and --non-persistent\n");
 		goto done;
