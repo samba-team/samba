@@ -25,7 +25,6 @@
 #include "popt_common.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
-#include "dbwrap/dbwrap_watch.h"
 #include "messages.h"
 #include "util_tdb.h"
 
@@ -429,7 +428,7 @@ int main(int argc, const char **argv)
 			  "USAGE: %s [options] <database> <op> [<key> [<type> "
 			  "[<value>]]]\n"
 			  "       ops: fetch, store, delete, exists, "
-			  "erase, listkeys, listwatchers\n"
+			  "erase, listkeys\n"
 			  "       types: int32, uint32, string, hex\n",
 			 argv[0]);
 		goto done;
@@ -501,7 +500,7 @@ int main(int argc, const char **argv)
 		d_fprintf(stderr,
 			  "ERROR: invalid op '%s' specified\n"
 			  "       supported ops: fetch, store, delete, exists, "
-			  "erase, listkeys, listwatchers\n",
+			  "erase, listkeys\n",
 			  opname);
 		goto done;
 	}
