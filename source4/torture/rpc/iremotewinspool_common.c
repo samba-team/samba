@@ -48,6 +48,8 @@ bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
 	struct spoolss_UserLevelCtr client_info_ctr;
 	uint32_t access_mask = SERVER_ALL_ACCESS;
 	struct winspool_AsyncOpenPrinter r;
+	NTSTATUS status;
+	bool ok = true;
 
 	ZERO_STRUCT(devmode_ctr);
 
@@ -61,13 +63,15 @@ bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
 	r.in.pClientInfo	= &client_info_ctr;
 	r.out.pHandle		= handle;
 
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_winspool_AsyncOpenPrinter_r(b, tctx, &r),
-		"AsyncOpenPrinter failed");
+	status = dcerpc_winspool_AsyncOpenPrinter_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncOpenPrinter failed");
+
 	torture_assert_werr_ok(tctx, r.out.result,
 		"AsyncOpenPrinter failed");
 
-	return true;
+done:
+
+	return ok;
 }
 
 bool test_get_environment(struct torture_context *tctx,
@@ -79,10 +83,10 @@ bool test_get_environment(struct torture_context *tctx,
 	enum winreg_Type type;
 	uint8_t *data;
 	uint32_t needed;
+	bool ok;
 
-	torture_assert(tctx,
-		test_AsyncGetPrinterData_args(tctx, b, handle, "Architecture", &type, &data, &needed),
-		"failed to get Architecture");
+	ok = test_AsyncGetPrinterData_args(tctx, b, handle, "Architecture", &type, &data, &needed);
+	torture_assert(tctx, ok, "failed to get Architecture");
 
 	torture_assert_int_equal(tctx, type, REG_SZ, "unexpected type");
 
@@ -103,17 +107,21 @@ bool test_AsyncClosePrinter_byhandle(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	struct winspool_AsyncClosePrinter r;
+	NTSTATUS status;
+	bool ok = true;
 
 	r.in.phPrinter = handle;
 	r.out.phPrinter = handle;
 
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_winspool_AsyncClosePrinter_r(b, tctx, &r),
-		"AsyncClosePrinter failed");
+	status = dcerpc_winspool_AsyncClosePrinter_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncClosePrinter failed");
+
 	torture_assert_werr_ok(tctx, r.out.result,
 		"AsyncClosePrinter failed");
 
-	return true;
+done:
+
+	return ok;
 }
 
 static bool test_AsyncGetPrinterData_checktype(struct torture_context *tctx,
@@ -128,6 +136,8 @@ static bool test_AsyncGetPrinterData_checktype(struct torture_context *tctx,
 	struct winspool_AsyncGetPrinterData r;
 	enum winreg_Type type;
 	uint32_t needed;
+	NTSTATUS status;
+	bool ok = true;
 
 	r.in.hPrinter = *handle;
 	r.in.pValueName = value_name;
@@ -139,9 +149,8 @@ static bool test_AsyncGetPrinterData_checktype(struct torture_context *tctx,
 	torture_comment(tctx, "Testing AsyncGetPrinterData(%s)\n",
 		r.in.pValueName);
 
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_winspool_AsyncGetPrinterData_r(b, tctx, &r),
-		"AsyncGetPrinterData failed");
+	status = dcerpc_winspool_AsyncGetPrinterData_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncGetPrinterData failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		if (expected_type) {
@@ -150,9 +159,8 @@ static bool test_AsyncGetPrinterData_checktype(struct torture_context *tctx,
 		r.in.nSize = needed;
 		r.out.pData = talloc_zero_array(tctx, uint8_t, r.in.nSize);
 
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_winspool_AsyncGetPrinterData_r(b, tctx, &r),
-			"AsyncGetPrinterData failed");
+		status = dcerpc_winspool_AsyncGetPrinterData_r(b, tctx, &r);
+		torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncGetPrinterData failed");
 	}
 
 	torture_assert_werr_ok(tctx, r.out.result,
@@ -170,7 +178,9 @@ static bool test_AsyncGetPrinterData_checktype(struct torture_context *tctx,
 		*needed_p = needed;
 	}
 
-	return true;
+done:
+
+	return ok;
 }
 
 bool test_AsyncGetPrinterData_args(struct torture_context *tctx,
