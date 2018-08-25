@@ -35,6 +35,25 @@ from samba.auth import system_session, admin_session
 from samba.netcmd import CommandError
 from samba.netcmd.fsmo import get_fsmo_roleowner
 
+# vals is a sequence of ldb.bytes objects which are a subclass
+# of 'byte' type in python3 and just a str type in python2, to
+# display as string these need to be converted to string via (str)
+# function in python3 but that may generate a UnicodeDecode error,
+# if so use repr instead.  We need to at least try to get the 'str'
+# value if possible to allow some tests which check the strings
+# outputted to pass, these tests compare attr values logged to stdout
+# against those in various results files.
+
+def dump_attr_values(vals):
+    result = ""
+    for value in vals:
+        if len(result):
+           result = "," + result
+        try:
+           result = result + str(value)
+        except UnicodeDecode:
+           result = result + repr(value)
+    return result
 
 class dbcheck(object):
     """check a SAM database for errors"""
@@ -493,7 +512,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_duplicate_values(self, dn, attrname, dup_values, values):
         '''fix attribute normalisation errors'''
         self.report("ERROR: Duplicate values for attribute '%s' in '%s'" % (attrname, dn))
-        self.report("Values contain a duplicate: [%s]/[%s]!" % (','.join(dup_values), ','.join(values)))
+        self.report("Values contain a duplicate: [%s]/[%s]!" % (','.join(dump_attr_values(dup_values)), ','.join(dump_attr_values(values))))
         if not self.confirm_all("Fix duplicates for '%s' from '%s'?" % (attrname, dn), 'fix_all_duplicates'):
             self.report("Not fixing attribute '%s'" % attrname)
             return
@@ -779,7 +798,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         res = self.samdb.search("",
                                 scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
         assert len(res) == 1
-        serviceName = res[0]["dsServiceName"][0]
+        serviceName = str(res[0]["dsServiceName"][0])
         if not self.confirm_all('Sieze role %s onto current DC by adding fSMORoleOwner=%s' % (obj.dn, serviceName), 'seize_fsmo_role'):
             self.report("Not Siezing role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
             return
@@ -902,8 +921,19 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         m = ldb.Message()
         m.dn = obj.dn
-        m['value'] = ldb.MessageElement(obj[attrname][0].decode('utf-16-le').decode('utf-16-le').encode('utf-16-le'),
+        # m['value'] = ldb.MessageElement(obj[attrname][0].decode('utf-16-le').decode('utf-16-le').encode('utf-16-le'),
+        # hmm the above old python2 code doesn't make sense to me and cannot
+        # work in python3 because a string doesn't have a decode method.
+        # However in python2 for some unknown reason this double decode
+        # followed by encode seems to result in what looks like utf8.
+        # In python2 just .decode('utf-16-le').encode('utf-16-le') does nothing
+        # but trigger the 'double UTF16 encoded' condition again :/
+        #
+        # In python2 and python3 value.decode('utf-16-le').encode('utf8') seems
+        # to do the trick and work as expected.
+        m['value'] = ldb.MessageElement(obj[attrname][0].decode('utf-16-le').encode('utf8'),
                                         ldb.FLAG_MOD_REPLACE, 'userParameters')
+
         if self.do_modify(m, [],
                           "Failed to correct doubled-UTF16 encoded userParameters on %s by converting" % (obj.dn)):
             self.report("Corrected doubled-UTF16 encoded userParameters on %s by converting" % (obj.dn))
@@ -1229,8 +1259,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     continue
 
             # now we have two cases - the source object might or might not be deleted
-            is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
-            target_is_deleted = 'isDeleted' in res[0] and res[0]['isDeleted'][0].upper() == 'TRUE'
+            is_deleted = 'isDeleted' in obj and str(obj['isDeleted'][0]).upper() == 'TRUE'
+            target_is_deleted = 'isDeleted' in res[0] and str(res[0]['isDeleted'][0]).upper() == 'TRUE'
 
             if is_deleted and obj.dn not in self.deleted_objects_containers and linkID:
                 # A fully deleted object should not have any linked
@@ -1503,7 +1533,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         sd = ndr_unpack(security.descriptor, sd_val[0])
 
-        is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
+        is_deleted = 'isDeleted' in obj and str(obj['isDeleted'][0]).upper() == 'TRUE'
         if is_deleted:
             # we don't fix deleted objects
             return (sd, None)
@@ -1587,7 +1617,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                     attrs=["isDeleted", "objectClass"],
                                     controls=["show_recycled:1"])
             o = res[0]
-            is_deleted = 'isDeleted' in o and o['isDeleted'][0].upper() == 'TRUE'
+            is_deleted = 'isDeleted' in o and str(o['isDeleted'][0]).upper() == 'TRUE'
             if is_deleted:
                 # we don't fix deleted objects
                 return (sd, None)
@@ -1847,13 +1877,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if "objectCategory" not in obj:
             self.report("ERROR: objectCategory not present on Deleted Objects container %s" % obj.dn)
             faulty = True
-        if "isCriticalSystemObject" not in obj or obj['isCriticalSystemObject'][0].upper() == 'FALSE':
+        if "isCriticalSystemObject" not in obj or str(obj['isCriticalSystemObject'][0]).upper() == 'FALSE':
             self.report("ERROR: isCriticalSystemObject not present on Deleted Objects container %s" % obj.dn)
             faulty = True
         if "isRecycled" in obj:
             self.report("ERROR: isRecycled present on Deleted Objects container %s" % obj.dn)
             faulty = True
-        if "isDeleted" in obj and obj['isDeleted'][0].upper() == 'FALSE':
+        if "isDeleted" in obj and str(obj['isDeleted'][0]).upper() == 'FALSE':
             self.report("ERROR: isDeleted not set on Deleted Objects container %s" % obj.dn)
             faulty = True
         if "objectClass" not in obj or (len(obj['objectClass']) != 2 or
@@ -2148,22 +2178,23 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 continue
 
             if str(attrname).lower() == 'userparameters':
-                if len(obj[attrname][0]) == 1 and obj[attrname][0][0] == '\x20':
+                if len(obj[attrname][0]) == 1 and obj[attrname][0][0] == b'\x20'[0]:
                     error_count += 1
                     self.err_short_userParameters(obj, attrname, obj[attrname])
                     continue
 
-                elif obj[attrname][0][:16] == '\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00':
+                elif obj[attrname][0][:16] == b'\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00':
                     # This is the correct, normal prefix
                     continue
 
-                elif obj[attrname][0][:20] == 'IAAgACAAIAAgACAAIAAg':
+                elif obj[attrname][0][:20] == b'IAAgACAAIAAgACAAIAAg':
                     # this is the typical prefix from a windows migration
                     error_count += 1
                     self.err_base64_userParameters(obj, attrname, obj[attrname])
                     continue
 
-                elif obj[attrname][0][1] != '\x00' and obj[attrname][0][3] != '\x00' and obj[attrname][0][5] != '\x00' and obj[attrname][0][7] != '\x00' and obj[attrname][0][9] != '\x00':
+                #43:00:00:00:74:00:00:00:78
+                elif obj[attrname][0][1] != b'\x00'[0] and obj[attrname][0][3] != b'\x00'[0] and obj[attrname][0][5] != b'\x00'[0] and obj[attrname][0][7] != b'\x00'[0] and obj[attrname][0][9] != b'\x00'[0]:
                     # This is a prefix that is not in UTF-16 format for the space or munged dialback prefix
                     error_count += 1
                     self.err_utf8_userParameters(obj, attrname, obj[attrname])
@@ -2175,7 +2206,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.err_odd_userParameters(obj, attrname, obj[attrname])
                     continue
 
-                elif obj[attrname][0][1] == '\x00' and obj[attrname][0][2] == '\x00' and obj[attrname][0][3] == '\x00' and obj[attrname][0][4] != '\x00' and obj[attrname][0][5] == '\x00':
+                elif obj[attrname][0][1] == b'\x00'[0] and obj[attrname][0][2] == b'\x00'[0] and obj[attrname][0][3] == b'\x00'[0] and obj[attrname][0][4] != b'\x00'[0] and obj[attrname][0][5] == b'\x00'[0]:
                     # This is a prefix that would happen if a SAMR-written value was replicated from a Samba 4.1 server to a working server
                     error_count += 1
                     self.err_doubled_userParameters(obj, attrname, obj[attrname])
@@ -2339,7 +2370,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                 found = False
                 for loc in msg[location]:
-                    if loc == self.samdb.get_dsServiceName():
+                    if str(loc) == self.samdb.get_dsServiceName():
                         found = True
                 if not found:
                     # This DC is not in the replica locations
