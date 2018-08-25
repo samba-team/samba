@@ -103,7 +103,13 @@ tasks = {
                  "--exclude-env=chgdcpass "
                  "--exclude-env=vampire_2000_dc "
                  "--exclude-env=fl2000dc "
-                 "--exclude-env=fileserver'",
+                 "--exclude-env=fileserver "
+                 "--exclude-env=backupfromdc "
+                 "--exclude-env=restoredc "
+                 "--exclude-env=renamedc "
+                 "--exclude-env=offlinebackupdc "
+                 "--exclude-env=labdc "
+                 "'",
                  "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
@@ -152,7 +158,14 @@ tasks = {
                          "--include-env=chgdcpass "
                          "--include-env=vampire_2000_dc "
                          "--include-env=fl2000dc "
-                         "--include-env=ad_dc_no_nss'", "text/plain"),
+                         "--include-env=ad_dc_no_nss "
+                         "--include-env=backupfromdc "
+                         "--include-env=restoredc "
+                         "--include-env=renamedc "
+                         "--include-env=offlinebackupdc "
+                         "--include-env=labdc "
+                         "'",
+                         "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-test-only": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
