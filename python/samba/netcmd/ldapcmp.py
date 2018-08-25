@@ -211,7 +211,7 @@ class LDAPBase(object):
         res = dict(res[0])
         # 'Dn' element is not iterable and we have it as 'distinguishedName'
         del res["dn"]
-        for key in res.keys():
+        for key in list(res.keys()):
             vals = list(res[key])
             del res[key]
             name = self.get_attribute_name(key)
