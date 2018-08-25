@@ -94,6 +94,7 @@ tasks = {
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
+                 "--exclude-env=ad_dc_no_nss "
                  "--exclude-env=fl2003dc "
                  "--exclude-env=fl2008r2dc "
                  "--exclude-env=ad_member "
@@ -148,7 +149,10 @@ tasks = {
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
                          "TESTS='${PY3_ONLY}"
-                         "--include-env=chgdcpass --include-env=vampire_2000_dc --include-env=fl2000dc'", "text/plain"),
+                         "--include-env=chgdcpass "
+                         "--include-env=vampire_2000_dc "
+                         "--include-env=fl2000dc "
+                         "--include-env=ad_dc_no_nss'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-test-only": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
