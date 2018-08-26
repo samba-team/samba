@@ -319,6 +319,26 @@ There are many changes to CTDB in this release.
   When writing tests there are still mechanisms available to change
   the locations of certain directories and files.
 
+* The following ctdbd.conf and ctdbd options have been replaced by new
+  ctdb.conf options:
+
+    CTDB_LOGGING/--logging                     logging  -> location
+    CTDB_DEBUGLEVEL/-d                         logging  -> log level
+    CTDB_TRANSPORT/--transport                 cluster  -> transport
+    CTDB_NODE_ADDRESS/--listen                 cluster  -> node address
+    CTDB_RECOVERY_LOCK/--reclock               cluster  -> recovery lock
+    CTDB_DBDIR/--dbdir                         database -> volatile database directory
+    CTDB_DBDIR_PERSISTENT/--dbdir-persistent   database -> peristent database directory
+    CTDB_DBDIR_STATE/--dbdir-state             database -> state database directory
+    CTDB_DEBUG_LOCKS                           database -> lock debug script
+    CTDB_DEBUG_HUNG_SCRIPT                     event    -> debug script
+    CTDB_NOSETSCHED/--nosetsched               legacy   -> realtime scheduling
+    CTDB_CAPABILITY_RECMASTER/--no-recmaster   legacy   -> recmaster capability
+    CTDB_CAPABILITY_LMASTER/--no-lmaster       legacy   -> lmaster capability
+    CTDB_START_AS_STOPPED/--start-as-stopped   legacy   -> start as stopped
+    CTDB_START_AS_DISABLED/--start-as-disabled legacy   -> start as disabled
+    CTDB_SCRIPT_LOG_LEVEL/--script-log-level   legacy   -> script log level
+
 * Event scripts have moved to the scripts/legacy subdirectory of the
   configuration directory
 
@@ -369,6 +389,11 @@ There are many changes to CTDB in this release.
   system.  If this is desired then a tmpfs filesystem should be
   manually mounted on the directory pointed to by the "volatile
   database directory" option.  See ctdb.conf(5) for more details.
+
+* The following tunable options are now ctdb.conf options:
+
+    DisabledIPFailover    failover -> disabled
+    TDBMutexEnabled       database -> tdb mutexes
 
 * Support for the NoIPHostOnAllDisabled tunable has been removed
 
