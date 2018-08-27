@@ -401,16 +401,17 @@ if __name__ == '__main__':
         ncs = msg.get("msDS-hasMasterNCs")
         if ncs:
             for nc in ncs:
-                master_nclist.append(nc)
+                master_nclist.append(str(nc))
 
         partial_nclist = []
         ncs = msg.get("hasPartialReplicaNCs")
         if ncs:
             for nc in ncs:
-                partial_nclist.append(nc)
+                partial_nclist.append(str(nc))
 
         modified_master = False
         modified_partial = False
+
         for nc in dns_nclist:
             if nc not in master_nclist:
                 master_nclist.append(nc)
@@ -519,7 +520,7 @@ if __name__ == '__main__':
                         logger.info("Failed to chown %s to bind gid %u",
                                     paths.binddns_dir, paths.bind_gid)
                 try:
-                    os.chmod(bind_dns_keytab_path, 0640)
+                    os.chmod(bind_dns_keytab_path, 0o640)
                     os.chown(bind_dns_keytab_path, -1, paths.bind_gid)
                 except OSError:
                     if not os.environ.has_key('SAMBA_SELFTEST'):
