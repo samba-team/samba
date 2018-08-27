@@ -143,8 +143,15 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 		return -1;
 	}
 
+	ret = pipe(fd);
+	if (ret != 0) {
+		return -1;
+	}
+
 	argv = talloc_array(ectx, const char *, 4);
 	if (argv == NULL) {
+		close(fd[0]);
+		close(fd[1]);
 		return -1;
 	}
 
@@ -154,17 +161,14 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 	argv[3] = NULL;
 
 	if (argv[2] == NULL) {
+		close(fd[0]);
+		close(fd[1]);
 		talloc_free(argv);
 		return -1;
 	}
 
 	DEBUG(DEBUG_NOTICE,
 	      ("Starting event daemon %s %s %s\n", argv[0], argv[1], argv[2]));
-
-	ret = pipe(fd);
-	if (ret != 0) {
-		return -1;
-	}
 
 	pid = ctdb_fork(ctdb);
 	if (pid == -1) {
