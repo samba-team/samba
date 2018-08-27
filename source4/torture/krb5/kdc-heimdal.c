@@ -174,6 +174,15 @@ static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
 						 rc, 0,
 						 "Got invalid method data");
 
+			/*
+			 * NOTE:
+			 *
+			 * Windows (eg Server 1709) only returns a
+			 * KRB5_PADATA_ETYPE_INFO2 in this situation.
+			 * This test should be fixed but care needs to
+			 * be taken not to reintroduce
+			 * https://bugzilla.samba.org/show_bug.cgi?id=11539
+			 */
 			torture_assert(test_context->tctx,
 				       m.len > 0,
 				       "No PA_DATA given");
