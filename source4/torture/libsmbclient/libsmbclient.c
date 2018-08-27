@@ -522,6 +522,62 @@ done:
 	return ok;
 }
 
+static bool torture_libsmbclient_list_shares(struct torture_context *tctx)
+{
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	struct smbc_dirent *dirent = NULL;
+	SMBCCTX *ctx = NULL;
+	int dhandle = -1;
+	bool ipc_share_found = false;
+	bool ok = true;
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			     "option --option=torture:smburl="
+			     "smb://user:password@server missing\n");
+	}
+
+	ok = torture_libsmbclient_init_context(tctx, &ctx);
+	torture_assert_goto(tctx,
+			    ok,
+			    ok,
+			    out,
+			    "Failed to init context");
+	smbc_set_context(ctx);
+
+	torture_comment(tctx, "Listing: %s\n", smburl);
+	dhandle = smbc_opendir(smburl);
+	torture_assert_int_not_equal_goto(tctx,
+					  dhandle,
+					  -1,
+					  ok,
+					  out,
+					  "Failed to open smburl");
+
+	while((dirent = smbc_readdir(dhandle)) != NULL) {
+		torture_comment(tctx, "DIR: %s\n", dirent->name);
+		torture_assert_not_null_goto(tctx,
+					     dirent->name,
+					     ok,
+					     out,
+					     "Failed to read name");
+
+		if (strequal(dirent->name, "IPC$")) {
+			ipc_share_found = true;
+		}
+	}
+
+	torture_assert_goto(tctx,
+			    ipc_share_found,
+			    ok,
+			    out,
+			    "Failed to list IPC$ share");
+
+out:
+	smbc_closedir(dhandle);
+	return ok;
+}
+
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
@@ -534,6 +590,7 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "setConfiguration", torture_libsmbclient_setConfiguration);
 	torture_suite_add_simple_test(suite, "options", torture_libsmbclient_options);
 	torture_suite_add_simple_test(suite, "opendir", torture_libsmbclient_opendir);
+	torture_suite_add_simple_test(suite, "list_shares", torture_libsmbclient_list_shares);
 	torture_suite_add_simple_test(suite, "readdirplus",
 		torture_libsmbclient_readdirplus);
 

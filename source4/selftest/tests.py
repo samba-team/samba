@@ -327,7 +327,11 @@ for t in base + raw + smb2 + netapi:
 
 libsmbclient = smbtorture4_testsuites("libsmbclient.")
 for t in libsmbclient:
-    libsmbclient_testargs = ["--option=torture:smburl=smb://$USERNAME:$PASSWORD@$SERVER/tmp",
+    url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
+    if t == "libsmbclient.list_shares":
+        url = "smb://$USERNAME:$PASSWORD@$SERVER"
+
+    libsmbclient_testargs = ["--option=torture:smburl=" + url,
                              "--option=torture:replace_smbconf=%s/testdata/samba3/smb_new.conf" % srcdir()]
     plansmbtorture4testsuite(t, "ad_dc", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + libsmbclient_testargs)
 
