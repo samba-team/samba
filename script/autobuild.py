@@ -407,7 +407,7 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if show:
         do_print("Running: '%s' in '%s'" % (cmd, dir))
     if output:
-        return Popen([cmd], shell=True, stdout=PIPE, cwd=dir).communicate()[0]
+        return Popen([cmd], shell=True, stdout=PIPE, cwd=dir, close_fds=True).communicate()[0]
     elif checkfail:
         return check_call(cmd, shell=True, cwd=dir)
     else:
@@ -473,6 +473,7 @@ class builder(object):
         cwd = os.getcwd()
         os.chdir("%s/%s" % (self.sdir, self.dir))
         self.proc = Popen(self.cmd, shell=True,
+                          close_fds=True,
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
         os.chdir(cwd)
         self.next += 1
@@ -615,7 +616,7 @@ class buildlist(object):
         cwd = os.getcwd()
         cmd = "tail -f *.stdout *.stderr"
         os.chdir(gitroot)
-        self.tail_proc = Popen(cmd, shell=True)
+        self.tail_proc = Popen(cmd, shell=True, close_fds=True)
         os.chdir(cwd)
 
 
