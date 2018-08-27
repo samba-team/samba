@@ -613,11 +613,11 @@ class buildlist(object):
             os.unlink(b.stderr_path)
 
     def start_tail(self):
-        cwd = os.getcwd()
-        cmd = "tail -f *.stdout *.stderr"
-        os.chdir(gitroot)
-        self.tail_proc = Popen(cmd, shell=True, close_fds=True)
-        os.chdir(cwd)
+        cmd = ["tail", "-f"]
+        for b in self.tlist:
+            cmd.append(b.stdout_path)
+            cmd.append(b.stderr_path)
+        self.tail_proc = Popen(cmd, close_fds=True)
 
 
 def cleanup():
