@@ -1,3 +1,108 @@
+                   ==============================
+                   Release Notes for Samba 4.7.10
+                           August 27, 2018
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.7 release series.
+
+
+Changes since 4.7.9:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13474: python: pysmbd: Additional error path leak fix.
+   * BUG 13511: libsmbclient: Initialize written value before use.
+   * BUG 13527: s3: libsmbclient: Fix cli_splice() fallback when reading less
+     than a complete file.
+   * BUG 13537: Using "sendfile = yes" with SMB2 can cause CPU spin.
+
+o  Jeffrey Altman <jaltman@secure-endpoints.com>
+   * BUG 11573: heimdal: lib/krb5: Do not fail set_config_files due to parse
+     error.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13519: ldb: Refuse to build Samba against a newer minor version of
+     ldb.
+
+o  Bailey Berro <baileyberro@chromium.org>
+   * BUG 13511: libsmbclient: Initialize written in cli_splice_fallback().
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13538: samba-tool trust: Support discovery via netr_GetDcName.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13318: Durable Handles reconnect fails in a cluster when the cluster
+     fs uses different device ids.
+   * BUG 13351: s3: smbd: Always set vuid in check_user_ok().
+   * BUG 13505: lib: smb_threads: Fix access before init bug.
+   * BUG 13535: s3: smbd: Fix path check in
+     smbd_smb2_create_durable_lease_check().
+   * BUG 13451: Fail renaming file if that file has open streams.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13437: Fix building Samba with gcc 8.1.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13506: vfs_ceph: Don't lie about flock support.
+   * BUG 13540: Fix deadlock with ctdb_mutex_ceph_rados_helper.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13195: g_lock: Fix lock upgrades.
+   * BUG 13584: vfs_fruit: Fix a panic if fruit_access_check detects a locking
+     conflict.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13536: The current position in the dns name was not advanced past the
+     '.' character.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13308: samba-tool domain trust: Fix trust compatibility to Windows
+     Server 1709 and FreeIPA.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13478: krb5_wrap: Fix keep_old_entries logic for older kerberos
+     libraries.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13437: Fix building Samba with gcc 8.1.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13499: Don't use CTDB_BROADCAST_VNNMAP.
+   * BUG 13500: ctdb-daemon: Only consider client ID for local database attach.
+
+o  Karolin Seeger <kseeger@samba.org>
+   * BUG 13499: s3/notifyd.c: Rename CTDB_BROADCAST_VNNMAP to
+     CTDB_BROADCAST_ACTIVE.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13568: vfs_time_audit: Fix handling of token_blob in
+     smb_time_audit_offload_read_recv().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
                    =============================
                    Release Notes for Samba 4.7.9
                            August 14, 2018
@@ -74,8 +179,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.7.8
