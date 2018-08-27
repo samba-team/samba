@@ -241,7 +241,8 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if (!override_logfile) {
 		if (asprintf(&lfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) == -1) {
-			DEBUG(0, ("fork_child_dc_connect: out of memory.\n"));
+			DBG_ERR("fork_child_dc_connect: "
+				"out of memory in asprintf().\n");
 			_exit(1);
 		}
 	}
