@@ -1,0 +1,16 @@
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account having identical UPN and SPN.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self

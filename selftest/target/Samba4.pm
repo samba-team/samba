@@ -747,6 +747,7 @@ nogroup:x:65534:nobody
 		DOMAIN => $ctx->{domain},
 		USERNAME => $ctx->{username},
 		REALM => $ctx->{realm},
+		DNSNAME => $ctx->{dnsname},
 		SAMSID => $ctx->{samsid},
 		PASSWORD => $ctx->{password},
 		LDAPDIR => $ctx->{ldapdir},
@@ -863,6 +864,28 @@ changetype: modify
 replace: userPrincipalName
 userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 -	    
+";
+	close(LDIF);
+
+	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
+	    . " user create --configfile=$ctx->{smb_conf} testupnspn $ctx->{password}";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to add testupnspn user: \n$samba_tool_cmd\n");
+		return undef;
+	}
+
+	my $user_dn = "cn=testupnspn,cn=users,$base_dn";
+	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
+	print LDIF "dn: $user_dn
+changetype: modify
+replace: userPrincipalName
+userPrincipalName: http/testupnspn.$ctx->{dnsname}\@$ctx->{realm}
+replace: servicePrincipalName
+servicePrincipalName: http/testupnspn.$ctx->{dnsname}
+-
 ";
 	close(LDIF);
 

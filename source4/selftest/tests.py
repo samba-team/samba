@@ -1080,6 +1080,12 @@ plansmbtorture4testsuite('krb5.kdc', "rodc", ['ncacn_np:$SERVER_IP', "-k", "yes"
 env = "promoted_dc"
 plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'],
                          "samba4.krb5.kdc with specified account")
+plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestupnspn%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM',
+                                           '--option=torture:expect_machine_account=true',
+                                           '--option=torture:krb5-upn=http/testupnspn.$DNSNAME@$REALM',
+                                           '--option=torture:krb5-hostname=testupnspn.$DNSNAME',
+                                           '--option=torture:krb5-service=http'],
+                         "samba4.krb5.kdc with account having identical UPN and SPN")
 
 
 for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:

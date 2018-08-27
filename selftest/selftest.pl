@@ -815,6 +815,7 @@ sub get_running_env($)
 my @exported_envvars = (
 	# domain stuff
 	"DOMAIN",
+	"DNSNAME",
 	"REALM",
 	"DOMSID",
 
