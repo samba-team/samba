@@ -475,7 +475,7 @@ class buildlist(object):
             os.environ['AUTOBUILD_RANDOM_SLEEP_OVERRIDE'] = '1'
 
         for n in tasknames:
-            if n not in tasknames and n.endswith("-py3"):
+            if n not in tasks and n.endswith("-py3"):
                 b = builder(n,
                             tasks[n[:-4]],
                             cp=n is not "pidl",
