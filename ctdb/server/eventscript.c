@@ -142,6 +142,100 @@ static bool eventd_context_init(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+struct eventd_startup_state {
+	bool done;
+	int ret;
+	int fd;
+};
+
+static void eventd_startup_timeout_handler(struct tevent_context *ev,
+					   struct tevent_timer *te,
+					   struct timeval t,
+					   void *private_data)
+{
+	struct eventd_startup_state *state =
+		(struct eventd_startup_state *) private_data;
+
+	state->done = true;
+	state->ret = ETIMEDOUT;
+}
+
+static void eventd_startup_handler(struct tevent_context *ev,
+				   struct tevent_fd *fde, uint16_t flags,
+				   void *private_data)
+{
+	struct eventd_startup_state *state =
+		(struct eventd_startup_state *)private_data;
+	unsigned int data;
+	ssize_t num_read;
+
+	num_read = sys_read(state->fd, &data, sizeof(data));
+	if (num_read == sizeof(data)) {
+		if (data == 0) {
+			state->ret = 0;
+		} else {
+			state->ret = EIO;
+		}
+	} else if (num_read == 0) {
+		state->ret = EPIPE;
+	} else if (num_read == -1) {
+		state->ret = errno;
+	} else {
+		state->ret = EINVAL;
+	}
+
+	state->done = true;
+}
+
+
+static int wait_for_daemon_startup(struct tevent_context *ev,
+				   int fd)
+{
+	TALLOC_CTX *mem_ctx;
+	struct tevent_timer *timer;
+	struct tevent_fd *fde;
+	struct eventd_startup_state state = {
+		.done = false,
+		.ret = 0,
+		.fd = fd,
+	};
+
+	mem_ctx = talloc_new(ev);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	timer = tevent_add_timer(ev,
+				 mem_ctx,
+				 tevent_timeval_current_ofs(10, 0),
+				 eventd_startup_timeout_handler,
+				 &state);
+	if (timer == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	fde = tevent_add_fd(ev,
+			    mem_ctx,
+			    fd,
+			    TEVENT_FD_READ,
+			    eventd_startup_handler,
+			    &state);
+	if (fde == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	while (! state.done) {
+		tevent_loop_once(ev);
+	}
+
+	talloc_free(mem_ctx);
+
+	return state.ret;
+}
+
+
 /*
  * Start and stop event daemon
  */
@@ -180,7 +274,7 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	argv = talloc_array(ectx, const char *, 14);
+	argv = talloc_array(ectx, const char *, 16);
 	if (argv == NULL) {
 		close(fd[0]);
 		close(fd[1]);
@@ -198,16 +292,18 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 	argv[8] = getenv("CTDB_LOGGING");
 	argv[9] = "-d";
 	argv[10] = debug_level_to_string(DEBUGLEVEL);
+	argv[11] = "-S";
+	argv[12] = talloc_asprintf(argv, "%d", fd[1]);
 	if (ectx->debug_hung_script == NULL) {
-		argv[11] = NULL;
-		argv[12] = NULL;
+		argv[13] = NULL;
+		argv[14] = NULL;
 	} else {
-		argv[11] = "-D";
-		argv[12] = ectx->debug_hung_script;
+		argv[13] = "-D";
+		argv[14] = ectx->debug_hung_script;
 	}
-	argv[13] = NULL;
+	argv[15] = NULL;
 
-	if (argv[6] == NULL) {
+	if (argv[6] == NULL || argv[12] == NULL) {
 		close(fd[0]);
 		close(fd[1]);
 		talloc_free(argv);
@@ -238,6 +334,14 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 
 	talloc_free(argv);
 	close(fd[1]);
+
+	ret = wait_for_daemon_startup(ctdb->ev, fd[0]);
+	if (ret != 0) {
+		ctdb_kill(ctdb, pid, SIGKILL);
+		close(fd[0]);
+		D_ERR("Failed to initialize event daemon (%d)\n", ret);
+		return -1;
+	}
 
 	ectx->eventd_fde = tevent_add_fd(ctdb->ev, ectx, fd[0],
 					 TEVENT_FD_READ,
