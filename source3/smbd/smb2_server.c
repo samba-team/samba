@@ -3758,6 +3758,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 	while (xconn->smb2.send_queue != NULL) {
 		struct smbd_smb2_send_queue *e = xconn->smb2.send_queue;
 		bool ok;
+		struct msghdr msg;
 
 		if (e->sendfile_header != NULL) {
 			size_t size = 0;
@@ -3806,7 +3807,12 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 			continue;
 		}
 
-		ret = writev(xconn->transport.sock, e->vector, e->count);
+		msg = (struct msghdr) {
+			.msg_iov = e->vector,
+			.msg_iovlen = e->count,
+		};
+
+		ret = sendmsg(xconn->transport.sock, &msg, 0);
 		if (ret == 0) {
 			/* propagate end of file */
 			return NT_STATUS_INTERNAL_ERROR;
@@ -3862,6 +3868,7 @@ static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 	bool retry;
 	NTSTATUS status;
 	NTTIME now;
+	struct msghdr msg;
 
 	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
@@ -3896,7 +3903,12 @@ again:
 		state->vector.iov_len = NBT_HDR_SIZE;
 	}
 
-	ret = readv(xconn->transport.sock, &state->vector, 1);
+	msg = (struct msghdr) {
+		.msg_iov = &state->vector,
+		.msg_iovlen = 1,
+	};
+
+	ret = recvmsg(xconn->transport.sock, &msg, 0);
 	if (ret == 0) {
 		/* propagate end of file */
 		return NT_STATUS_END_OF_FILE;
