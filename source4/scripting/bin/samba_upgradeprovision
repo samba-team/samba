@@ -390,7 +390,7 @@ def handle_special_case(att, delta, new, old, useReplMetadata, basedn, aldb):
                 newval.append(str(elem))
 
             for elem in new[0][att]:
-                if not hash.has_key(str(elem).lower()):
+                if not str(elem).lower() in hash:
                     changeDelta=1
                     newval.append(str(elem))
             if changeDelta == 1:
@@ -445,7 +445,7 @@ def handle_special_case(att, delta, new, old, useReplMetadata, basedn, aldb):
             newval.append(str(elem))
 
         for elem in new[0][att]:
-            if not hash.has_key(str(elem)):
+            if not str(elem) in hash:
                 changeDelta = 1
                 newval.append(str(elem))
         if changeDelta == 1:
@@ -583,7 +583,7 @@ def check_dn_nottobecreated(hash, index, listdn):
         return None
     for dn in listdn:
         key = str(dn).lower()
-        if hash.has_key(key) and hash[key] > index:
+        if key in hash and hash[key] > index:
             return str(dn)
     return None
 
@@ -630,7 +630,7 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
                     skip = True
     finally:
         if delta.get("objectSid"):
-            sid = str(ndr_unpack(security.dom_sid, str(reference[0]["objectSid"])))
+            sid = str(ndr_unpack(security.dom_sid, reference[0]["objectSid"][0]))
             m = re.match(r".*-(\d+)$", sid)
             if m and int(m.group(1))>999:
                 delta.remove("objectSid")
@@ -799,7 +799,7 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
     # Also this function in fact just accept add not removal
 
     for e in res[0][att]:
-        if not hash.has_key(e):
+        if not e in hash:
             # We put in the blacklist all the element that are in the "revealed"
             # result and not in the "standard" result
             # This element are links that were removed before and so that
@@ -807,7 +807,7 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
             blacklist[e] = 1
 
     for e in ref_value:
-        if not blacklist.has_key(e) and not hash.has_key(e):
+        if not e in blacklist and not e in hash:
             newlinklist.append(str(e))
             changed = True
     if changed:
@@ -886,9 +886,9 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
 
         if att == "nTSecurityDescriptor":
             cursd = ndr_unpack(security.descriptor,
-                str(current[0]["nTSecurityDescriptor"]))
+                current[0]["nTSecurityDescriptor"][0])
             refsd = ndr_unpack(security.descriptor,
-                str(reference[0]["nTSecurityDescriptor"]))
+                reference[0]["nTSecurityDescriptor"][0])
 
             diff = get_diff_sds(refsd, cursd, names.domainsid)
             if diff == "":
@@ -1017,7 +1017,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
                                 scope=SCOPE_SUBTREE, controls=controls,
                                 attrs=["replPropertyMetaData"])
             ctr = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                                str(res[0]["replPropertyMetaData"])).ctr
+                                res[0]["replPropertyMetaData"][0]).ctr
 
             hash_attr_usn = {}
             for o in ctr.array:
@@ -1069,7 +1069,7 @@ def reload_full_schema(samdb, names):
     for ent in current:
         schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
 
-    prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
+    prefixmap_data = open(setup_path("prefixMap.txt"), 'rb').read()
     prefixmap_data = b64encode(prefixmap_data).decode('utf8')
 
     # We don't actually add this ldif, just parse it
@@ -1126,7 +1126,7 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
 
 
     for k in hash_new.keys():
-        if not hash.has_key(k):
+        if not k in hash:
             if not str(hash_new[k]) == "CN=Deleted Objects, %s" % names.rootdn:
                 listMissing.append(hash_new[k])
         else:
@@ -1160,7 +1160,7 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
         message(SIMPLE, "There are %d changed objects" % (changed))
         return 1
 
-    except StandardError as err:
+    except Exception as err:
         message(ERROR, "Exception during upgrade of samdb:")
         (typ, val, tb) = sys.exc_info()
         traceback.print_exception(typ, val, tb)
@@ -1192,8 +1192,8 @@ def check_updated_sd(ref_sam, cur_sam, names):
 
     for i in range(0, len(current)):
         key = str(current[i]["dn"]).lower()
-        if hash.has_key(key):
-            cursd_blob = str(current[i]["nTSecurityDescriptor"])
+        if key in hash:
+            cursd_blob = current[i]["nTSecurityDescriptor"][0]
             cursd = ndr_unpack(security.descriptor,
                                cursd_blob)
             if cursd_blob != hash[key]:
@@ -1270,7 +1270,7 @@ def rebuild_sd(samdb, names):
                                 attrs=["nTSecurityDescriptor"],
                                 controls=["sd_flags:1:%d" % sd_flags])
             badsd = ndr_unpack(security.descriptor,
-                        str(res[0]["nTSecurityDescriptor"]))
+                        res[0]["nTSecurityDescriptor"][0])
             message(ERROR, "On %s bad stuff %s" % (str(delta.dn),badsd.as_sddl(names.domainsid)))
             return
 
@@ -1330,7 +1330,7 @@ def simple_update_basesamdb(newpaths, paths, names):
 
     if not os.path.isdir(samldbdir):
         os.mkdir(samldbdir)
-        os.chmod(samldbdir, 0700)
+        os.chmod(samldbdir, 0o700)
     if os.path.isfile(schemaldb):
         tdb_util.tdb_copy(schemaldb, os.path.join(samldbdir,
                                             "%s.ldb"%str(names.schemadn).upper()))
@@ -1412,7 +1412,7 @@ def backup_provision(samdb, paths, dir, only_db):
         tdb_util.tdb_copy(usersldb, os.path.join(dir, "configuration.ldb"))
         tdb_util.tdb_copy(configldb, os.path.join(dir, "users.ldb"))
     else:
-        os.mkdir(os.path.join(dir, "sam.ldb.d"), 0700)
+        os.mkdir(os.path.join(dir, "sam.ldb.d"), 0o700)
 
         for ldb_name in os.listdir(samldbdir):
             if not ldb_name.endswith("-lock"):
@@ -1436,7 +1436,7 @@ def sync_calculated_attributes(samdb, names):
    """
    listAttrs = ["msDs-KeyVersionNumber"]
    hash = search_constructed_attrs_stored(samdb, names.rootdn, listAttrs)
-   if hash.has_key("msDs-KeyVersionNumber"):
+   if "msDs-KeyVersionNumber" in hash:
        increment_calculated_keyversion_number(samdb, names.rootdn,
                                             hash["msDs-KeyVersionNumber"])
 
@@ -1845,7 +1845,7 @@ if __name__ == '__main__':
         message(SIMPLE, "Reindexing finished")
 
         shutil.rmtree(provisiondir)
-    except StandardError as err:
+    except Exception as err:
         message(ERROR, "A problem occurred while trying to upgrade your "
                    "provision. A full backup is located at %s" % backupdir)
         if opts.debugall or opts.debugchange:

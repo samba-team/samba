@@ -366,8 +366,8 @@ def update_provision_usn(samdb, low, high, id, replace=False):
                              scope=ldb.SCOPE_BASE,
                              attrs=[LAST_PROVISION_USN_ATTRIBUTE, "dn"])
         for e in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
-            if not re.search(';', e):
-                e = "%s;%s" % (e, id)
+            if not re.search(';', str(e)):
+                e = "%s;%s" % (str(e), id)
             tab.append(str(e))
 
     tab.append("%s-%s;%s" % (low, high, id))
