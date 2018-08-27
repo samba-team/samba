@@ -18,6 +18,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <dirent.h>
+#include <talloc.h>
+#include <libgen.h>
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_winspool.h"
@@ -26,6 +29,156 @@
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/registry/util_reg.h"
 #include "torture/rpc/iremotewinspool_common.h"
+#include "libcli/libcli.h"
+#include "param/param.h"
+#include "lib/registry/registry.h"
+#include "libcli/libcli.h"
+#include "libcli/raw/raw_proto.h"
+#include "libcli/resolve/resolve.h"
+#include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
+#include "lib/cmdline/popt_common.h"
+#include "system/filesys.h"
+#include "lib/util/tftw.h"
+
+/* Connect to print driver share //server_name/share */
+static bool smb_connect_print_share(struct torture_context *tctx,
+				    const char *server_name,
+				    const char *share_name,
+				    struct smbcli_state **cli)
+{
+	NTSTATUS status;
+	bool ok = true;
+
+	struct smbcli_options smb_options;
+	struct smbcli_session_options smb_session_options;
+
+	torture_comment(tctx, "Connecting to printer driver share '//%s/%s'\n",
+			server_name, share_name);
+
+	lpcfg_smbcli_options(tctx->lp_ctx, &smb_options);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &smb_session_options);
+
+	/* On Windows, SMB1 must be enabled! */
+	status = smbcli_full_connection(tctx, cli, server_name,
+					lpcfg_smb_ports(tctx->lp_ctx),
+					share_name, NULL,
+					lpcfg_socket_options(tctx->lp_ctx),
+					popt_get_cmdline_credentials(),
+					lpcfg_resolve_context(tctx->lp_ctx),
+					tctx->ev,
+					&smb_options,
+					&smb_session_options,
+					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "Failed to connect to print$ share");
+
+done:
+
+	return ok;
+}
+
+/* Copy file to destination where dst_fpath is a smb share path,
+ * files are either created or overwritten */
+static bool smb_copy_files(TALLOC_CTX *tctx,
+				const char *fpath,
+				const char *dst_fpath,
+				struct test_driver_info *dinfo)
+{
+	FILE *fp;
+	int smbfp = 0;
+	char *buffer = NULL;
+	int maxwrite = 64512;
+	size_t nread;
+	ssize_t nwrote;
+	bool ok = true;
+	size_t total_read;
+
+	fp = fopen(fpath, "r");
+	torture_assert_goto(tctx, fp, ok, done, "Failed to open local file\n");
+
+	smbfp = smbcli_open(dinfo->cli->tree, dst_fpath, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+	torture_assert_int_not_equal_goto(tctx, smbfp, -1, ok, done, "Failed to open dst file\n");
+
+	buffer = talloc_array(tctx, char, maxwrite);
+	torture_assert_not_null_goto(tctx, buffer, ok, done, "Failed to allocate buffer\n");
+
+	total_read = 0;
+
+	while (!feof(fp)) {
+		nread = fread(buffer, 1, maxwrite, fp);
+		if (ferror(fp)) {
+			torture_warning(tctx, "Error reading file [%s]\n", fpath);
+			continue;
+		}
+
+		nwrote = smbcli_write(dinfo->cli->tree, smbfp, 0, buffer, total_read, nread);
+		if (nwrote != nread) {
+			torture_warning(tctx, "Not all data in stream written!\n");
+		}
+
+		total_read += nread;
+	}
+
+	fclose(fp);
+	smbcli_close(dinfo->cli->tree, smbfp);
+done:
+
+	TALLOC_FREE(buffer);
+	return ok;
+}
+
+/* Callback function provided to tftw() to
+ * copy driver files to smb share */
+static int copy_driver_files(TALLOC_CTX *tctx,
+			     const char *fpath,
+			     const struct stat *sb,
+			     enum tftw_flags_e flag,
+			     void *userdata)
+{
+	char *dst_fpath = NULL;
+	struct test_driver_info *dinfo = userdata;
+	char *path = NULL;
+	NTSTATUS status;
+	bool ok = true;
+
+	path = talloc_strdup(tctx, fpath + dinfo->driver_path_len);
+	torture_assert_not_null_goto(tctx, path, ok, done, "Cannot allocate memory");
+
+	string_replace(path, '/', '\\');
+
+	dst_fpath = talloc_asprintf(tctx, "%s%s", dinfo->print_upload_guid_dir, path);
+	torture_assert_not_null_goto(tctx, dst_fpath, ok, done, "Cannot allocate memory");
+
+	switch (flag) {
+		case TFTW_FLAG_FILE:
+			ok = smb_copy_files(tctx, fpath, dst_fpath, dinfo);
+			torture_assert_goto(tctx, ok, ok, done, "Failed to copy files over smb");
+			break;
+		case TFTW_FLAG_DIR:
+			status = smbcli_mkdir(dinfo->cli->tree, dst_fpath);
+			torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "Failed to create directories");
+			break;
+		case TFTW_FLAG_SLINK:
+		case TFTW_FLAG_DNR:
+		case TFTW_FLAG_NSTAT:
+		case TFTW_FLAG_SPEC:
+		case TFTW_FLAG_DP:
+		case TFTW_FLAG_SLN:
+			torture_warning(tctx, "WARN: Unhandled typeflag [%s]\n", fpath);
+			break;
+	}
+
+done:
+	TALLOC_FREE(path);
+	TALLOC_FREE(dst_fpath);
+
+	if (ok == true) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
 
 static bool test_get_driver_torture_options(struct torture_context *tctx,
 					    const char **_local_driver_path,
@@ -208,16 +361,46 @@ done:
 
 }
 
+static bool test_init_server_and_share_info(struct torture_context *tctx,
+					    struct test_iremotewinspool_context *t)
+{
+	struct GUID guid;
+	bool ok = true;
+
+	t->dinfo->server_name = talloc_asprintf(tctx, "%s", dcerpc_server_name(t->iremotewinspool_pipe));
+	torture_assert_not_null_goto(tctx, t->dinfo->server_name, ok, done, "Cannot allocate memory");
+
+	t->dinfo->share_name = talloc_strdup(tctx, "print$");
+	torture_assert_not_null_goto(tctx, t->dinfo->share_name, ok, done, "Cannot allocate memory");
+
+	guid = GUID_random();
+	t->dinfo->print_upload_guid_dir = GUID_string2(tctx, &guid);
+done:
+	return ok;
+}
+
+
 static bool torture_rpc_iremotewinspool_drv_setup_common(struct torture_context *tctx,
 						     struct test_iremotewinspool_context *t)
 {
 	bool ok = true;
+	int ret = 0;
+
+	ok = test_init_driver_info(tctx, t);
+	torture_assert_goto(tctx, ok, ok, done, "failed to init driver info");
 
 	ok = test_init_iremotewinspool_conn(tctx, t);
 	torture_assert_goto(tctx, ok, ok, done, "failed to init iremotewinspool conn");
 
 	ok = test_init_iremotewinspool_openprinter(tctx, t);
 	torture_assert_goto(tctx, ok, ok, done, "failed to init iremotewinspool openprinter");
+
+	ok = test_init_server_and_share_info(tctx, t);
+	torture_assert_goto(tctx, ok, ok, done, "failed to init server and share info");
+
+	ret = smb_connect_print_share(tctx, t->dinfo->server_name, t->dinfo->share_name, &t->dinfo->cli);
+	torture_assert_goto(tctx, ret, ok, done, "Failed to connect to print share");
+
 done:
 
 	return ok;
@@ -236,6 +419,8 @@ static bool torture_rpc_iremotewinspool_drv_setup(struct torture_context *tctx,
 static bool torture_rpc_iremotewinspool_drv_teardown_common(struct torture_context *tctx,
 							struct test_iremotewinspool_context *t)
 {
+	smbcli_deltree(t->dinfo->cli->tree, t->dinfo->print_upload_guid_dir);
+	smb_raw_exit(t->dinfo->cli->session);
 
 	test_AsyncClosePrinter_byhandle(tctx, t, t->iremotewinspool_pipe, &t->server_handle);
 
@@ -254,6 +439,31 @@ static bool torture_rpc_iremotewinspool_drv_teardown(struct torture_context *tct
 	return ret;
 }
 
+/* Creates {GUID} directory inside //server/print$ then copies driver files
+ * and directories from torture option driver_path to this directory over smb */
+static bool test_CopyDriverFiles(struct torture_context *tctx,
+				   void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+	talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	bool ret = false;
+	bool ok = true;
+	NTSTATUS status;
+
+	status = smbcli_mkdir(ctx->dinfo->cli->tree, ctx->dinfo->print_upload_guid_dir);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "Failed to create upload directory");
+
+	/* Walk the provided torture option driver_path file tree, creating the directory heirarchy and
+	 * copying all files to print$/{GUID}/ share */
+	ret = tftw(tctx, ctx->dinfo->local_driver_path, copy_driver_files, TFTW_MAX_DEPTH, ctx->dinfo);
+	torture_assert_int_equal_goto(tctx, ret, 0, ok, done, "Failed to copy driver files to print$/{GUID}/ dir");
+
+done:
+
+	return ok;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool_driver");
@@ -262,6 +472,8 @@ struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 	torture_tcase_set_fixture(tcase,
 				  torture_rpc_iremotewinspool_drv_setup,
 				  torture_rpc_iremotewinspool_drv_teardown);
+
+	torture_tcase_add_simple_test(tcase, "CopyDriverFiles", test_CopyDriverFiles);
 
 	return suite;
 }
