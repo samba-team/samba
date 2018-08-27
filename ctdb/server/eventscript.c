@@ -219,6 +219,7 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 	if (pid == -1) {
 		close(fd[0]);
 		close(fd[1]);
+		talloc_free(argv);
 		return -1;
 	}
 
