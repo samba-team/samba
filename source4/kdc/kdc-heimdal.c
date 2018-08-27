@@ -78,8 +78,8 @@ static kdc_code kdc_process(struct kdc_server *kdc,
 		return KDC_ERROR;
 	}
 
-	DEBUG(10,("Received KDC packet of length %lu from %s\n",
-				(long)input->length - 4, pa));
+	DBG_DEBUG("Received KDC packet of length %lu from %s\n",
+		  (long)input->length - 4, pa);
 
 	ret = krb5_kdc_process_krb5_request(kdc->smb_krb5_context->krb5_context,
 					    kdc_config,
@@ -342,15 +342,16 @@ static void kdc_post_fork(struct task_server *task)
 				   NULL,
 				   0);
 	if (!kdc->samdb) {
-		DEBUG(1,("kdc_task_init: unable to connect to samdb\n"));
+		DBG_WARNING("kdc_task_init: unable to connect to samdb\n");
 		task_server_terminate(task, "kdc: krb5_init_context samdb connect failed", true);
 		return;
 	}
 
 	ldb_ret = samdb_rodc(kdc->samdb, &kdc->am_rodc);
 	if (ldb_ret != LDB_SUCCESS) {
-		DEBUG(1, ("kdc_task_init: Cannot determine if we are an RODC: %s\n",
-			  ldb_errstring(kdc->samdb)));
+		DBG_WARNING("kdc_task_init: "
+			    "Cannot determine if we are an RODC: %s\n",
+			    ldb_errstring(kdc->samdb));
 		task_server_terminate(task, "kdc: krb5_init_context samdb RODC connect failed", true);
 		return;
 	}
@@ -361,8 +362,8 @@ static void kdc_post_fork(struct task_server *task)
 
 	ret = smb_krb5_init_context(kdc, task->lp_ctx, &kdc->smb_krb5_context);
 	if (ret) {
-		DEBUG(1,("kdc_task_init: krb5_init_context failed (%s)\n",
-			 error_message(ret)));
+		DBG_WARNING("kdc_task_init: krb5_init_context failed (%s)\n",
+			    error_message(ret));
 		task_server_terminate(task, "kdc: krb5_init_context failed", true);
 		return;
 	}
