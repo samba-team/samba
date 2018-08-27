@@ -251,7 +251,7 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 	const char **argv;
 	int fd[2];
 	pid_t pid;
-	int ret, i;
+	int ret;
 	bool status;
 
 	if (ctdb->ectx == NULL) {
@@ -355,17 +355,9 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 	tevent_fd_set_auto_close(ectx->eventd_fde);
 	ectx->eventd_pid = pid;
 
-	/* Wait to connect to eventd */
-	for (i=0; i<10; i++) {
-		status = eventd_client_connect(ectx);
-		if (status) {
-			break;
-		}
-		sleep(1);
-	}
-
+	status = eventd_client_connect(ectx);
 	if (! status) {
-		DEBUG(DEBUG_ERR, ("Failed to initialize event daemon\n"));
+		DEBUG(DEBUG_ERR, ("Failed to connect to event daemon\n"));
 		ctdb_stop_eventd(ctdb);
 		return -1;
 	}
