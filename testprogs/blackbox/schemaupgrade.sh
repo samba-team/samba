@@ -84,11 +84,11 @@ ldapcmp_2008R2_2008R2_old() {
 }
 
 schema_upgrade() {
-	$BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_schema/private/sam.ldb --schema=2012_R2
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_schema/private/sam.ldb --schema=2012_R2
 }
 
 schema_upgrade_old() {
-	$BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_old_schema/private/sam.ldb --schema=2012_R2
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_old_schema/private/sam.ldb --schema=2012_R2
 }
 
 # double-check we cleaned up from the last test run

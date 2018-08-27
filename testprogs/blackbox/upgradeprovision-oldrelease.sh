@@ -52,30 +52,30 @@ remove_dns_user() {
 }
 
 reindex() {
-       $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
 }
 
 # This should 'fail', because it returns the number of modified records
 dbcheck() {
-       $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
 }
 
 dbcheck_clean() {
-       $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
 }
 
 # This should 'fail', because it returns the number of modified records
 dbcheck_full() {
-       $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
 }
 
 dbcheck_full_clean() {
-       $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
 }
 
 # This checks that after the upgrade, the well known ACLs are correct, so this reset should not want to do anything
 dbcheck_full_clean_well_known_acls() {
-       $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
 }
 
 upgradeprovision() {
@@ -83,15 +83,15 @@ upgradeprovision() {
 	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX_ABS/${RELEASE}_upgrade/etc/smb.conf" --debugchange
 
 	# on top of this, also apply 2008R2 changes we accidentally missed in the past
-	$BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --ldf-file=samba-4.7-missing-for-schema45.ldif,fix-forest-rev.ldf
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --ldf-file=samba-4.7-missing-for-schema45.ldif,fix-forest-rev.ldf
 
 	# add missing domain prep for 2008R2
-	$BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --domain --function-level 2008_R2
+	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --domain --function-level 2008_R2
 }
 
 upgradeprovision_full() {
 	# add missing domain prep for 2008R2
-	$BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb --domain --function-level 2008_R2
+	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb --domain --function-level 2008_R2
 
 	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf" --full --debugchange
 }
