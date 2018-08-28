@@ -2554,7 +2554,7 @@ sub setup_ad_dc
 		return undef;
 	}
 
-	if (not defined($self->check_or_start($env, "single"))) {
+	if (not defined($self->check_or_start($env, "prefork"))) {
 	    return undef;
 	}
 
