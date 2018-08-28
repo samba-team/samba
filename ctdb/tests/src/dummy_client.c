@@ -25,6 +25,7 @@
 #include <tevent.h>
 
 #include "common/logging.h"
+#include "common/path.h"
 
 #include "client/client.h"
 
@@ -64,34 +65,22 @@ int main(int argc, const char *argv[])
 	struct tevent_context *ev;
 	struct ctdb_client_context **client;
 	struct ctdb_client_context *last_client;
-	const char *ctdb_socket;
 	poptContext pc;
 	int opt, ret, i;
 	int log_level;
 	bool status, done;
 
 	/* Set default options */
-	options.sockpath = CTDB_SOCKET;
+	options.sockpath = NULL;
 	options.debuglevel = "ERR";
 	options.num_connections = 1;
 	options.timelimit = 60;
 	options.srvidstr = NULL;
 
-	ctdb_socket = getenv("CTDB_SOCKET");
-	if (ctdb_socket != NULL) {
-		options.sockpath = ctdb_socket;
-	}
-
 	pc = poptGetContext(argv[0], argc, argv, cmdline_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		fprintf(stderr, "Invalid option %s\n", poptBadOption(pc, 0));
-		exit(1);
-	}
-
-	if (options.sockpath == NULL) {
-		fprintf(stderr, "Please specify socket path\n");
-		poptPrintHelp(pc, stdout, 0);
 		exit(1);
 	}
 
@@ -116,6 +105,14 @@ int main(int argc, const char *argv[])
 
 	setup_logging("dummy_client", DEBUG_STDERR);
 	DEBUGLEVEL = log_level;
+
+	if (options.sockpath == NULL) {
+		options.sockpath = path_socket(mem_ctx, "ctdbd");
+		if (options.sockpath == NULL) {
+			D_ERR("Memory allocation error\n");
+			exit(1);
+		}
+	}
 
 	client = talloc_array(mem_ctx, struct ctdb_client_context *,
 			      options.num_connections);
