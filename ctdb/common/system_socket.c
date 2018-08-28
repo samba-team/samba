@@ -818,6 +818,11 @@ static int tcp6_extract(const uint8_t *ip_pkt,
 	/* IP6 */
 	ip6 = (const struct ip6_hdr *)ip_pkt;
 
+	/* IPv6 only */
+	if ((ip6->ip6_vfc >> 4) != 6){
+		return ENOMSG;
+	}
+
 	/* we only want TCP */
 	if (ip6->ip6_nxt != IPPROTO_TCP) {
 		return ENOMSG;
