@@ -4085,9 +4085,13 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	const char *old_dnsname = NULL;
 	char **spns = NULL;
 	int num_spns = 0;
-	char *temp_str;
+	char *temp_str = NULL;
+	char *temp_str2 = NULL;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
+	struct netr_OneDomainInfo *odi1 = NULL;
+	struct netr_OneDomainInfo *odi2 = NULL;
+	struct netr_trust_extension *tex2 = NULL;
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo\n");
 
@@ -4464,6 +4468,130 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		&& (info.domain_info->trusted_domains != NULL),
 		"Trusted domains have been requested!");
 
+	odi1 = &info.domain_info->primary_domain;
+
+	torture_assert(tctx, !GUID_all_zero(&odi1->domain_guid),
+		       "primary domain_guid needs to be valid");
+
+	for (i=0; i < info.domain_info->trusted_domain_count; i++) {
+		struct netr_OneDomainInfo *odiT =
+			&info.domain_info->trusted_domains[i];
+		struct netr_trust_extension *texT = NULL;
+
+		torture_assert_int_equal(tctx, odiT->trust_extension.length, 16,
+					 "trust_list should have extension");
+		torture_assert(tctx, odiT->trust_extension.info != NULL,
+			       "trust_list should have extension");
+		texT = odiT->trust_extension.info;
+
+		if (GUID_equal(&odiT->domain_guid, &odi1->domain_guid)) {
+			odi2 = odiT;
+			tex2 = texT;
+			continue;
+		}
+
+		torture_assert_int_equal(tctx,
+				 texT->flags & NETR_TRUST_FLAG_PRIMARY,
+				 0,
+				 "trust_list flags should not have PRIMARY");
+
+		torture_assert(tctx, odiT->domainname.string != NULL,
+			       "trust_list domainname should be valid");
+		if (texT->trust_type == LSA_TRUST_TYPE_DOWNLEVEL) {
+			torture_assert(tctx, odiT->dns_domainname.string == NULL,
+			       "trust_list dns_domainname should be NULL for downlevel");
+		} else {
+			torture_assert(tctx, odiT->dns_domainname.string != NULL,
+			       "trust_list dns_domainname should be valid for uplevel");
+		}
+		torture_assert(tctx, odiT->dns_forestname.string == NULL,
+			       "trust_list dns_forestname needs to be NULL");
+
+		torture_assert(tctx, odiT->domain_sid != NULL,
+			       "trust_list domain_sid needs to be valid");
+	}
+
+	torture_assert(tctx, odi2 != NULL,
+		       "trust_list primary domain not found.");
+
+	torture_assert_str_equal(tctx,
+				 odi1->domainname.string,
+				 odi2->domainname.string,
+				 "netbios name should match");
+
+	temp_str = talloc_strdup(tctx, odi1->dns_domainname.string);
+	torture_assert(tctx, temp_str != NULL,
+		       "primary_domain dns_domainname copy");
+	temp_str2 = strrchr(temp_str, '.');
+	torture_assert(tctx, temp_str2 != NULL && temp_str2[1] == '\0',
+		       "primary_domain dns_domainname needs trailing '.'");
+	temp_str2[0] = '\0';
+	torture_assert_str_equal(tctx,
+				 temp_str,
+				 odi2->dns_domainname.string,
+				 "dns domainname should match "
+				 "(without trailing '.')");
+
+	temp_str = talloc_strdup(tctx, odi1->dns_forestname.string);
+	torture_assert(tctx, temp_str != NULL,
+		       "primary_domain dns_forestname copy");
+	temp_str2 = strrchr(temp_str, '.');
+	torture_assert(tctx, temp_str2 != NULL && temp_str2[1] == '\0',
+		       "primary_domain dns_forestname needs trailing '.'");
+	temp_str2[0] = '\0';
+	torture_assert(tctx, odi2->dns_forestname.string == NULL,
+		       "trust_list dns_forestname needs to be NULL");
+
+	torture_assert_guid_equal(tctx, odi1->domain_guid, odi2->domain_guid,
+				  "domain_guid should match");
+	torture_assert(tctx, odi1->domain_sid != NULL,
+		       "primary domain_sid needs to be valid");
+	torture_assert(tctx, odi2->domain_sid != NULL,
+		       "trust_list domain_sid needs to be valid");
+	torture_assert_sid_equal(tctx, odi1->domain_sid, odi2->domain_sid,
+				 "domain_sid should match");
+
+	torture_assert_int_equal(tctx, odi1->trust_extension.length, 0,
+				 "primary_domain should not have extension");
+	torture_assert_int_equal(tctx, odi2->trust_extension.length, 16,
+				 "trust_list should have extension");
+	torture_assert(tctx, odi2->trust_extension.info != NULL,
+		       "trust_list should have extension");
+	tex2 = odi2->trust_extension.info;
+	torture_assert_int_equal(tctx,
+				 tex2->flags & NETR_TRUST_FLAG_PRIMARY,
+				 NETR_TRUST_FLAG_PRIMARY,
+				 "trust_list flags should have PRIMARY");
+	torture_assert_int_equal(tctx,
+				 tex2->flags & NETR_TRUST_FLAG_IN_FOREST,
+				 NETR_TRUST_FLAG_IN_FOREST,
+				 "trust_list flags should have IN_FOREST");
+	torture_assert_int_equal(tctx,
+				 tex2->flags & NETR_TRUST_FLAG_NATIVE,
+				 NETR_TRUST_FLAG_NATIVE,
+				 "trust_list flags should have NATIVE");
+	torture_assert_int_equal(tctx,
+				 tex2->flags & ~NETR_TRUST_FLAG_TREEROOT,
+				 NETR_TRUST_FLAG_IN_FOREST |
+				 NETR_TRUST_FLAG_PRIMARY |
+				 NETR_TRUST_FLAG_NATIVE,
+				 "trust_list flags IN_FOREST, PRIMARY, NATIVE "
+				 "(TREEROOT optional)");
+	if (strcmp(odi1->dns_domainname.string, odi1->dns_forestname.string) == 0) {
+		torture_assert_int_equal(tctx,
+					 tex2->flags & NETR_TRUST_FLAG_TREEROOT,
+					 NETR_TRUST_FLAG_TREEROOT,
+					 "trust_list flags TREEROOT on forest root");
+		torture_assert_int_equal(tctx,
+					 tex2->parent_index, 0,
+					 "trust_list no parent on foreset root");
+	}
+	torture_assert_int_equal(tctx,
+				 tex2->trust_type, LSA_TRUST_TYPE_UPLEVEL,
+				 "trust_list uplevel");
+	torture_assert_int_equal(tctx,
+				 tex2->trust_attributes, 0,
+				 "trust_list no attributes");
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 6th call (no DNS hostname)\n");
 	netlogon_creds_client_authenticator(creds, &a);
