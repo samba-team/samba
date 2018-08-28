@@ -1,0 +1,1 @@
+^samba4.rpc.netlogon.*netlogon.GetDomainInfo\(ad_dc\)
