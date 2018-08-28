@@ -2192,6 +2192,71 @@ static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TAL
 
 
 /*
+  fill in a netr_OneDomainInfo from our own domain/forest
+*/
+static NTSTATUS fill_our_one_domain_info(TALLOC_CTX *mem_ctx,
+				const struct lsa_TrustDomainInfoInfoEx *our_tdo,
+				struct GUID domain_guid,
+				struct netr_OneDomainInfo *info,
+				bool is_trust_list)
+{
+	ZERO_STRUCTP(info);
+
+	if (is_trust_list) {
+		struct netr_trust_extension *tei = NULL;
+
+		/* w2k8 only fills this on trusted domains */
+		tei = talloc_zero(mem_ctx, struct netr_trust_extension);
+		if (tei == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		tei->flags |= NETR_TRUST_FLAG_PRIMARY;
+
+		/*
+		 * We're always within a native forest
+		 */
+		tei->flags |= NETR_TRUST_FLAG_IN_FOREST;
+		tei->flags |= NETR_TRUST_FLAG_NATIVE;
+
+		/* For now we assume we're always the tree root */
+		tei->flags |= NETR_TRUST_FLAG_TREEROOT;
+		tei->parent_index = 0;
+
+		tei->trust_type = our_tdo->trust_type;
+		/*
+		 * This needs to be 0 instead of our_tdo->trust_attributes
+		 * It means LSA_TRUST_ATTRIBUTE_WITHIN_FOREST won't
+		 * be set, while NETR_TRUST_FLAG_IN_FOREST is set above.
+		 */
+		tei->trust_attributes = 0;
+
+		info->trust_extension.info = tei;
+		info->trust_extension.length = 16;
+	}
+
+	if (is_trust_list) {
+		info->dns_domainname.string = our_tdo->domain_name.string;
+
+		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
+		info->dns_forestname.string = NULL;
+	} else {
+		info->dns_domainname.string = talloc_asprintf(mem_ctx, "%s.",
+						our_tdo->domain_name.string);
+		if (info->dns_domainname.string == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		info->dns_forestname.string = info->dns_domainname.string;
+	}
+
+	info->domainname.string = our_tdo->netbios_name.string;
+	info->domain_sid = our_tdo->sid;
+	info->domain_guid = domain_guid;
+
+	return NT_STATUS_OK;
+}
+
+/*
   fill in a netr_OneDomainInfo from a ldb search result
 */
 static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
@@ -2264,7 +2329,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		"msDS-SupportedEncryptionTypes", NULL };
 	const char *sam_account_name, *old_dns_hostname, *prefix1, *prefix2;
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res1, **res2, **res3, *new_msg;
+	const struct GUID *our_domain_guid = NULL;
+	struct lsa_TrustDomainInfoInfoEx *our_tdo = NULL;
+	struct ldb_message **res1, **res3, *new_msg;
 	struct ldb_dn *workstation_dn;
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
@@ -2482,15 +2549,14 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 		/* Writes back the domain information */
 
-		/* We need to do two searches. The first will pull our primary
-		   domain and the second will pull any trusted domains. Our
-		   primary domain is also a "trusted" domain, so we need to
-		   put the primary domain into the lists of returned trusts as
-		   well. */
-		ret = gendb_search_dn(sam_ctx, mem_ctx, ldb_get_default_basedn(sam_ctx),
-			&res2, attrs);
-		if (ret != 1) {
+		our_domain_guid = samdb_domain_guid(sam_ctx);
+		if (our_domain_guid == NULL) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		status = dsdb_trust_local_tdo_info(mem_ctx, sam_ctx, &our_tdo);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		ret3 = gendb_search(sam_ctx, mem_ctx, NULL, &res3, attrs,
@@ -2506,11 +2572,14 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 		/* Informations about the local and trusted domains */
 
-		status = fill_one_domain_info(mem_ctx,
-			dce_call->conn->dce_ctx->lp_ctx,
-			sam_ctx, res2[0], &domain_info->primary_domain,
-			true, false);
-		NT_STATUS_NOT_OK_RETURN(status);
+		status = fill_our_one_domain_info(mem_ctx,
+						  our_tdo,
+						  *our_domain_guid,
+						  &domain_info->primary_domain,
+						  false);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
 		domain_info->trusted_domain_count = ret3 + 1;
 		domain_info->trusted_domains = talloc_array(mem_ctx,
@@ -2527,10 +2596,14 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 
-		status = fill_one_domain_info(mem_ctx,
-			dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res2[0],
-			&domain_info->trusted_domains[i], true, true);
-		NT_STATUS_NOT_OK_RETURN(status);
+		status = fill_our_one_domain_info(mem_ctx,
+						  our_tdo,
+						  *our_domain_guid,
+						  &domain_info->trusted_domains[i],
+						  true);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
 		/* Sets the supported encryption types */
 		domain_info->supported_enc_types = ldb_msg_find_attr_as_uint(res1[0],
