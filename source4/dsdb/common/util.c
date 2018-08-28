@@ -1294,6 +1294,61 @@ failed:
 	return false;
 }
 
+/*
+  work out the domain guid for the current open ldb
+*/
+const struct GUID *samdb_domain_guid(struct ldb_context *ldb)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct GUID *domain_guid = NULL;
+	const char *attrs[] = {
+		"objectGUID",
+		NULL
+	};
+	struct ldb_result *res = NULL;
+	int ret;
+
+	/* see if we have a cached copy */
+	domain_guid = (struct GUID *)ldb_get_opaque(ldb, "cache.domain_guid");
+	if (domain_guid) {
+		return domain_guid;
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(ldb, tmp_ctx, &res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, attrs, "objectGUID=*");
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	if (res->count != 1) {
+		goto failed;
+	}
+
+	domain_guid = talloc(tmp_ctx, struct GUID);
+	if (domain_guid == NULL) {
+		goto failed;
+	}
+	*domain_guid = samdb_result_guid(res->msgs[0], "objectGUID");
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.domain_guid", domain_guid) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, domain_guid);
+	talloc_free(tmp_ctx);
+
+	return domain_guid;
+
+failed:
+	talloc_free(tmp_ctx);
+	return NULL;
+}
+
 bool samdb_set_ntds_settings_dn(struct ldb_context *ldb, struct ldb_dn *ntds_settings_dn_in)
 {
 	TALLOC_CTX *tmp_ctx;
