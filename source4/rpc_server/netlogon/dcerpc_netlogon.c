@@ -2582,7 +2582,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		}
 
 		domain_info->trusted_domain_count = ret3 + 1;
-		domain_info->trusted_domains = talloc_array(mem_ctx,
+		domain_info->trusted_domains = talloc_zero_array(mem_ctx,
 			struct netr_OneDomainInfo,
 			domain_info->trusted_domain_count);
 		NT_STATUS_HAVE_NO_MEMORY(domain_info->trusted_domains);
