@@ -2257,57 +2257,57 @@ static NTSTATUS fill_our_one_domain_info(TALLOC_CTX *mem_ctx,
 }
 
 /*
-  fill in a netr_OneDomainInfo from a ldb search result
+  fill in a netr_OneDomainInfo from a trust tdo
 */
-static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
-				     struct loadparm_context *lp_ctx,
-				     struct ldb_context *sam_ctx,
-				     struct ldb_message *res,
-				     struct netr_OneDomainInfo *info,
-				     bool is_local, bool is_trust_list)
+static NTSTATUS fill_trust_one_domain_info(TALLOC_CTX *mem_ctx,
+				struct GUID domain_guid,
+				const struct lsa_TrustDomainInfoInfoEx *tdo,
+				struct netr_OneDomainInfo *info)
 {
+	struct netr_trust_extension *tei = NULL;
+
 	ZERO_STRUCTP(info);
 
-	if (is_trust_list) {
-		/* w2k8 only fills this on trusted domains */
-		info->trust_extension.info = talloc_zero(mem_ctx, struct netr_trust_extension);
-		info->trust_extension.length = 16;
-		info->trust_extension.info->flags =
-			NETR_TRUST_FLAG_TREEROOT |
-			NETR_TRUST_FLAG_IN_FOREST |
-			NETR_TRUST_FLAG_PRIMARY |
-			NETR_TRUST_FLAG_NATIVE;
-
-		info->trust_extension.info->parent_index = 0; /* should be index into array
-								 of parent */
-		info->trust_extension.info->trust_type = LSA_TRUST_TYPE_UPLEVEL; /* should be based on ldb search for trusts */
-		info->trust_extension.info->trust_attributes = 0; /* 	TODO: base on ldb search? */
+	/* w2k8 only fills this on trusted domains */
+	tei = talloc_zero(mem_ctx, struct netr_trust_extension);
+	if (tei == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (is_trust_list) {
-		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
-		info->dns_forestname.string = NULL;
+	if (tdo->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
+		tei->flags |= NETR_TRUST_FLAG_INBOUND;
+	}
+	if (tdo->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
+		tei->flags |= NETR_TRUST_FLAG_OUTBOUND;
+	}
+	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		tei->flags |= NETR_TRUST_FLAG_IN_FOREST;
+	}
+
+	/*
+	 * TODO: once we support multiple domains within our forest,
+	 * we need to fill this correct (or let the caller do it
+	 * for all domains marked with NETR_TRUST_FLAG_IN_FOREST).
+	 */
+	tei->parent_index = 0;
+
+	tei->trust_type = tdo->trust_type;
+	tei->trust_attributes = tdo->trust_attributes;
+
+	info->trust_extension.info = tei;
+	info->trust_extension.length = 16;
+
+	info->domainname.string = tdo->netbios_name.string;
+	if (tdo->trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
+		info->dns_domainname.string = tdo->domain_name.string;
 	} else {
-		info->dns_forestname.string = samdb_forest_name(sam_ctx, mem_ctx);
-		NT_STATUS_HAVE_NO_MEMORY(info->dns_forestname.string);
-		info->dns_forestname.string = talloc_asprintf(mem_ctx, "%s.", info->dns_forestname.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->dns_forestname.string);
+		info->dns_domainname.string = NULL;
 	}
+	info->domain_sid = tdo->sid;
+	info->domain_guid = domain_guid;
 
-	if (is_local) {
-		info->domainname.string = lpcfg_workgroup(lp_ctx);
-		info->dns_domainname.string = lpcfg_dnsdomain(lp_ctx);
-		info->domain_guid = samdb_result_guid(res, "objectGUID");
-		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
-	} else {
-		info->domainname.string = ldb_msg_find_attr_as_string(res, "flatName", NULL);
-		info->dns_domainname.string = ldb_msg_find_attr_as_string(res, "trustPartner", NULL);
-		info->domain_guid = samdb_result_guid(res, "objectGUID");
-		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
-	}
-	if (!is_trust_list) {
-		info->dns_domainname.string = talloc_asprintf(mem_ctx, "%s.", info->dns_domainname.string);
-	}
+	/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
+	info->dns_forestname.string = NULL;
 
 	return NT_STATUS_OK;
 }
@@ -2323,21 +2323,29 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	TALLOC_CTX *mem_ctx, struct netr_LogonGetDomainInfo *r)
 {
 	struct netlogon_creds_CredentialState *creds;
-	const char * const attrs[] = { "objectSid", "objectGUID", "flatName",
-		"securityIdentifier", "trustPartner", NULL };
+	const char * const trusts_attrs[] = {
+		"securityIdentifier",
+		"flatName",
+		"trustPartner",
+		"trustAttributes",
+		"trustDirection",
+		"trustType",
+		NULL
+	};
 	const char * const attrs2[] = { "sAMAccountName", "dNSHostName",
 		"msDS-SupportedEncryptionTypes", NULL };
 	const char *sam_account_name, *old_dns_hostname, *prefix1, *prefix2;
 	struct ldb_context *sam_ctx;
 	const struct GUID *our_domain_guid = NULL;
 	struct lsa_TrustDomainInfoInfoEx *our_tdo = NULL;
-	struct ldb_message **res1, **res3, *new_msg;
+	struct ldb_message **res1, *new_msg;
+	struct ldb_result *trusts_res = NULL;
 	struct ldb_dn *workstation_dn;
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
 	uint32_t default_supported_enc_types = 0xFFFFFFFF;
 	bool update_dns_hostname = true;
-	int ret, ret3, i;
+	int ret, i;
 	NTSTATUS status;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
@@ -2559,10 +2567,13 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			return status;
 		}
 
-		ret3 = gendb_search(sam_ctx, mem_ctx, NULL, &res3, attrs,
-			"(objectClass=trustedDomain)");
-		if (ret3 == -1) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		status = dsdb_trust_search_tdos(sam_ctx,
+						NULL, /* exclude */
+						trusts_attrs,
+						mem_ctx,
+						&trusts_res);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		domain_info = talloc(mem_ctx, struct netr_DomainInformation);
@@ -2581,19 +2592,33 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			return status;
 		}
 
-		domain_info->trusted_domain_count = ret3 + 1;
+		domain_info->trusted_domain_count = trusts_res->count + 1;
 		domain_info->trusted_domains = talloc_zero_array(mem_ctx,
 			struct netr_OneDomainInfo,
 			domain_info->trusted_domain_count);
 		NT_STATUS_HAVE_NO_MEMORY(domain_info->trusted_domains);
 
-		for (i=0;i<ret3;i++) {
-			status = fill_one_domain_info(mem_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				sam_ctx, res3[i],
-				&domain_info->trusted_domains[i],
-				false, true);
-			NT_STATUS_NOT_OK_RETURN(status);
+		for (i=0; i < trusts_res->count; i++) {
+			struct netr_OneDomainInfo *o =
+				&domain_info->trusted_domains[i];
+			/* we can't know the guid of trusts outside our forest */
+			struct GUID trust_domain_guid = GUID_zero();
+			struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+
+			status = dsdb_trust_parse_tdo_info(mem_ctx,
+							   trusts_res->msgs[i],
+							   &tdo);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			status = fill_trust_one_domain_info(mem_ctx,
+							    trust_domain_guid,
+							    tdo,
+							    o);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		}
 
 		status = fill_our_one_domain_info(mem_ctx,
