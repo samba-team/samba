@@ -1651,6 +1651,29 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	session->client = NULL;
 	session->status = NT_STATUS_USER_SESSION_DELETED;
 
+	if (session->compat) {
+		file_close_user(sconn, session->compat->vuid);
+	}
+
+	if (session->tcon_table != NULL) {
+		/*
+		 * Note: We only have a tcon_table for SMB2.
+		 */
+		status = smb2srv_tcon_disconnect_all(session);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
+				  "smb2srv_tcon_disconnect_all() failed: %s\n",
+				  session->global->session_global_id,
+				  nt_errstr(status)));
+			error = status;
+		}
+	}
+
+	if (session->compat) {
+		invalidate_vuid(sconn, session->compat->vuid);
+		session->compat = NULL;
+	}
+
 	global_rec = session->global->db_rec;
 	session->global->db_rec = NULL;
 	if (global_rec == NULL) {
@@ -1709,29 +1732,6 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 		TALLOC_FREE(local_rec);
 	}
 	session->db_rec = NULL;
-
-	if (session->compat) {
-		file_close_user(sconn, session->compat->vuid);
-	}
-
-	if (session->tcon_table != NULL) {
-		/*
-		 * Note: We only have a tcon_table for SMB2.
-		 */
-		status = smb2srv_tcon_disconnect_all(session);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
-				  "smb2srv_tcon_disconnect_all() failed: %s\n",
-				  session->global->session_global_id,
-				  nt_errstr(status)));
-			error = status;
-		}
-	}
-
-	if (session->compat) {
-		invalidate_vuid(sconn, session->compat->vuid);
-		session->compat = NULL;
-	}
 
 	return error;
 }
