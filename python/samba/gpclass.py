@@ -244,12 +244,12 @@ class gp_log:
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         if user_obj is not None:
             apply_log = user_obj.find('applylog')
-            if apply_log is None:
-                return guids
-            for i in reversed(range(0, len(apply_log))):
-                guid_obj = apply_log.find('guid[@count="%d"]' % i)
-                guid = guid_obj.attrib['value']
-                guids.append(guid)
+            if apply_log is not None:
+                guid_objs = apply_log.findall('guid[@count]')
+                guids_by_count = [(g.get('count'), g.get('value'))
+                                  for g in guid_objs]
+                guids_by_count.sort(reverse=True)
+                guids.extend(guid for count, guid in guids_by_count)
         return guids
 
     def get_applied_settings(self, guids):
