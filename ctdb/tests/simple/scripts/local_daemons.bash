@@ -1,19 +1,16 @@
 # If we're not running on a real cluster then we need a local copy of
 # ctdb (and other stuff) in $PATH and we will use local daemons.
 
-# Use in-tree binaries if running against local daemons.
-# Otherwise CTDB need to be installed on all nodes.
-if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
-	# ctdbd_wrapper is in config/ directory
-	PATH="${ctdb_dir}/bin:${ctdb_dir}/config:${PATH}"
-	hdir="${ctdb_dir}/bin"
-	export CTDB_EVENTD="${hdir}/ctdb-eventd"
-	export CTDB_EVENT_HELPER="${hdir}/ctdb-event"
-	export CTDB_LOCK_HELPER="${hdir}/ctdb_lock_helper"
-	export CTDB_RECOVERY_HELPER="${hdir}/ctdb_recovery_helper"
-	export CTDB_TAKEOVER_HELPER="${hdir}/ctdb_takeover_helper"
-	export CTDB_CLUSTER_MUTEX_HELPER="${hdir}/ctdb_mutex_fcntl_helper"
-fi
+# For ctdbd_wrapper
+PATH="${CTDB_SCRIPTS_BASE}:${PATH}"
+
+hdir="$CTDB_SCRIPTS_HELPER_BINDIR"
+export CTDB_EVENTD="${hdir}/ctdb-eventd"
+export CTDB_EVENT_HELPER="${hdir}/ctdb-event"
+export CTDB_LOCK_HELPER="${hdir}/ctdb_lock_helper"
+export CTDB_RECOVERY_HELPER="${hdir}/ctdb_recovery_helper"
+export CTDB_TAKEOVER_HELPER="${hdir}/ctdb_takeover_helper"
+export CTDB_CLUSTER_MUTEX_HELPER="${hdir}/ctdb_mutex_fcntl_helper"
 
 if [ -n "$TEST_SOCKET_WRAPPER_SO_PATH" ] ; then
 	export LD_PRELOAD="$TEST_SOCKET_WRAPPER_SO_PATH"
