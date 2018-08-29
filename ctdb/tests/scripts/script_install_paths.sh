@@ -8,7 +8,7 @@ if [  -n "$ctdb_dir" ] ; then
 	CTDB_SCRIPTS_SBIN_DIR="${ctdb_dir}/config"
 	CTDB_SCRIPTS_TOOLS_BIN_DIR="${ctdb_dir}/tools"
 	CTDB_SCRIPTS_TOOLS_HELPER_DIR="${ctdb_dir}/tools"
-	CTDB_SCRIPTS_HELPER_BINDIR="${ctdb_dir}/bin"
+	CTDB_SCRIPTS_HELPER_BINDIR="${top_dir}/bin"
 	CTDB_SCRIPTS_DATA_DIR="${ctdb_dir}/config"
 else
 	# Installed
