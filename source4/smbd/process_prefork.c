@@ -240,6 +240,7 @@ static void prefork_new_task(
 
 	struct tevent_context *ev2;
 	struct task_server *task = NULL;
+	struct process_details pd = initial_process_details;
 
 	t = tfork_create();
 	if (t == NULL) {
@@ -284,7 +285,7 @@ static void prefork_new_task(
 		 * The task does not support pre-fork
 		 */
 		if (task != NULL && service_details->post_fork != NULL) {
-			service_details->post_fork(task);
+			service_details->post_fork(task, &pd);
 		}
 		tevent_loop_wait(ev);
 		TALLOC_FREE(ev);
@@ -348,6 +349,7 @@ static void prefork_new_task(
 					  "after fork");
 			}
 			tevent_fd_set_auto_close(fde);
+			pd.instances++;
 		} else {
 			/*
 			 * tfork uses malloc
@@ -355,12 +357,13 @@ static void prefork_new_task(
 			free(w);
 
 			TALLOC_FREE(ev);
-			setproctitle("task[%s] pre-forked worker",
-				     service_name);
+			setproctitle("task[%s] pre-forked worker(%d)",
+				     service_name,
+				     pd.instances);
 			prefork_reload_after_fork();
 			setup_handlers(ev2, from_parent_fd);
 			if (service_details->post_fork != NULL) {
-				service_details->post_fork(task);
+				service_details->post_fork(task, &pd);
 			}
 			tevent_loop_wait(ev2);
 			talloc_free(ev2);

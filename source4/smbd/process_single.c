@@ -114,7 +114,8 @@ static void single_new_task(struct tevent_context *ev,
 	 */
 	task = new_task(ev, lp_ctx, cluster_id(pid, taskid++), private_data, NULL);
 	if (task != NULL && service_details->post_fork != NULL) {
-		service_details->post_fork(task);
+		struct process_details pd = initial_process_details;
+		service_details->post_fork(task, &pd);
 	}
 }
 

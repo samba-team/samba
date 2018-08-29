@@ -316,7 +316,7 @@ static NTSTATUS kdc_task_init(struct task_server *task)
 /*
   initialise the kdc task after a fork
 */
-static void kdc_post_fork(struct task_server *task)
+static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 {
 	struct kdc_server *kdc;
 	krb5_kdc_configuration *kdc_config = NULL;

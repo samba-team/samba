@@ -494,7 +494,8 @@ static void standard_new_task(struct tevent_context *ev,
 	 * is forked in standard_accept_connection.
 	 */
 	if (task != NULL && service_details->post_fork != NULL) {
-		service_details->post_fork(task);
+		struct process_details pd = initial_process_details;
+		service_details->post_fork(task, &pd);
 	}
 
 
