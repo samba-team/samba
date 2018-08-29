@@ -251,7 +251,7 @@ class GPOStorage:
         if os.path.isfile(log_file):
             self.log = tdb.open(log_file)
         else:
-            self.log = tdb.Tdb(log_file, 0, tdb.DEFAULT, os.O_CREAT |os.O_RDWR)
+            self.log = tdb.Tdb(log_file, 0, tdb.DEFAULT, os.O_CREAT | os.O_RDWR)
 
     def start(self):
         self.log.transaction_start()
