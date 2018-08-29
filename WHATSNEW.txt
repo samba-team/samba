@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.9.  This is *not*
+This is the fourth release candidate of Samba 4.9.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -474,6 +474,37 @@ SMB_VFS_FCHMOD_ACL: Removed: Only FCHMOD is used.
 
 Any external VFS modules will need to be updated to match these
 changes in order to work with 4.9.x.
+
+
+CHANGES SINCE 4.9.0rc3
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13585: s3: smbd: Ensure get_real_filename() copes with empty
+     pathnames.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13566: samba domain backup online/rename commands force user to specify
+     password on CLI.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13579: wafsamba/samba_abi: Always hide ABI symbols which must be
+     local.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13584: Fix a panic if fruit_access_check detects a locking conflict.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13567: Fix memory and resource leaks.
+   * BUG 13580: python: Fix print in dns_invalid.py.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13588: Aliasing issue causes incorrect IPv6 checksum.
+   * BUG 13589: Fix CTDB configuration issues.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13568: s3: vfs: time_audit: fix handling of token_blob in
+     smb_time_audit_offload_read_recv().
 
 
 CHANGES SINCE 4.9.0rc2
