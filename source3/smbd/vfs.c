@@ -2579,14 +2579,16 @@ ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req,
 {
 	struct smb_vfs_call_pread_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pread_state);
+	ssize_t retval;
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		tevent_req_received(req);
 		return -1;
 	}
 	*vfs_aio_state = state->vfs_aio_state;
+	retval = state->retval;
 	tevent_req_received(req);
-	return state->retval;
+	return retval;
 }
 
 ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
@@ -2653,14 +2655,16 @@ ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req,
 {
 	struct smb_vfs_call_pwrite_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pwrite_state);
+	ssize_t retval;
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		tevent_req_received(req);
 		return -1;
 	}
 	*vfs_aio_state = state->vfs_aio_state;
+	retval = state->retval;
 	tevent_req_received(req);
-	return state->retval;
+	return retval;
 }
 
 off_t smb_vfs_call_lseek(struct vfs_handle_struct *handle,
@@ -2748,14 +2752,16 @@ int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *vfs_aio_sta
 {
 	struct smb_vfs_call_fsync_state *state = tevent_req_data(
 		req, struct smb_vfs_call_fsync_state);
+	ssize_t retval;
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		tevent_req_received(req);
 		return -1;
 	}
 	*vfs_aio_state = state->vfs_aio_state;
+	retval = state->retval;
 	tevent_req_received(req);
-	return state->retval;
+	return retval;
 }
 
 /*
