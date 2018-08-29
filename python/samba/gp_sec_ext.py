@@ -136,8 +136,6 @@ class gp_sec_ext(gp_inf_ext):
         return "Security GPO extension"
 
     def apply_map(self):
-        if self.lp.get('server role') != 'active directory domain controller':
-            return {}
         return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
                                                          inf_to_ldb),
                                   "MaximumPasswordAge": ("maxPwdAge",
