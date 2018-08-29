@@ -278,7 +278,7 @@ static int ip6_na_build(uint8_t *buffer,
 	eh->ether_type = htons(ETHERTYPE_IP6);
 
 	ip6 = (struct ip6_hdr *)(buffer + sizeof(struct ether_header));
-	ip6->ip6_vfc  = 0x60;
+	ip6->ip6_vfc  = 6 << 4;
 	ip6->ip6_plen = htons(sizeof(struct nd_neighbor_advert) +
 			      sizeof(struct nd_opt_hdr) +
 			      ETH_ALEN);
