@@ -2,6 +2,7 @@
  * Tests for strv_util
  *
  * Copyright Martin Schwenke <martin@meltin.net> 2016
+ * Copyright Christof Schmitt <cs@samba.org> 2018
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  */
 
 #include <talloc.h>
+#include <fcntl.h>
 
 #include "replace.h"
 
@@ -364,6 +366,61 @@ static bool test_trim_string(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_directory_create_or_exist(struct torture_context *tctx)
+{
+	char *path = NULL, *new_path = NULL, *file_path = NULL;
+	bool ret = true, b = true;
+	int fd;
+	NTSTATUS status;
+	const mode_t perms = 0741;
+
+	status = torture_temp_dir(tctx, "util_dir", &path);;
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Creating test directory failed.\n");
+
+	b = directory_create_or_exist(path, perms);
+	torture_assert_goto(tctx, b == true, ret, done,
+			    "directory_create_or_exist on "
+			    "existing directory failed.\n");
+
+	new_path = talloc_asprintf(tctx, "%s/%s", path, "dir");
+	torture_assert_goto(tctx, new_path != NULL, ret, done,
+			    "Could not allocate memory for directory path\n");
+
+	b = directory_exist(new_path);
+	torture_assert_goto(tctx, b == false, ret, done,
+			    "Check for non-existing directory failed.\n");
+
+	b = directory_create_or_exist(new_path, perms);
+	torture_assert_goto(tctx, b == true, ret, done,
+			    "directory_create_or_exist for "
+			    "new directory failed.\n");
+
+	b = directory_exist(new_path);
+	torture_assert_goto(tctx, b == true, ret, done,
+			    "Check for existing directory failed.\n");
+
+	b = file_check_permissions(new_path, geteuid(), perms, NULL);
+	torture_assert_goto(tctx, b == true, ret, done,
+			    "Permission check for directory failed.\n");
+
+	file_path = talloc_asprintf(tctx, "%s/%s", path, "file");
+	torture_assert_goto(tctx, file_path != NULL, ret, done,
+			    "Could not allocate memory for file path\n");
+	fd = creat(file_path, perms);
+	torture_assert_goto(tctx, fd != -1, ret, done,
+			    "Creating file failed.\n");
+	close(fd);
+
+	b = directory_create_or_exist(file_path, perms);
+	torture_assert_goto(tctx, b == false, ret, done,
+			    "directory_create_or_exist for "
+			    "existing file failed.\n");
+
+done:
+	return ret;
+}
+
 struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -372,5 +429,8 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "trim_string",
 				      test_trim_string);
+	torture_suite_add_simple_test(suite,
+				      "directory_create_or_exist",
+				      test_directory_create_or_exist);
 	return suite;
 }
