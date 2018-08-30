@@ -121,6 +121,7 @@ cat > "$conffile" <<EOF
 EOF
 
 required_result 2 <<EOF
+conf: unknown option [section1] -> "foo"
 [section1]
 	# key1 = value1
 	# key2 = 10

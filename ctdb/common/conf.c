@@ -1113,8 +1113,14 @@ static bool conf_load_option(const char *name,
 	opt = conf_option_find(state->s, name);
 	if (opt == NULL) {
 		if (state->conf->ignore_unknown) {
+			D_DEBUG("conf: unknown option [%s] -> \"%s\"\n",
+				state->s->name,
+				name);
 			return true;
 		} else {
+			D_ERR("conf: unknown option [%s] -> \"%s\"\n",
+			      state->s->name,
+			      name);
 			state->err = ENOENT;
 			return false;
 		}

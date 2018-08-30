@@ -102,6 +102,7 @@ cat > "$conffile" <<EOF
 EOF
 
 required_result 2 <<EOF
+conf: unknown option [database] -> "unknown key"
 Failed to load config file $conffile
 EOF
 unit_test ctdb-config validate
