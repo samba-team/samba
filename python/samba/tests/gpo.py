@@ -23,6 +23,9 @@ from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
     check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile
+from samba.gp_sec_ext import gp_sec_ext
+import logging
+from samba.credentials import Credentials
 
 poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
 dspath = 'CN=Policies,CN=System,DC=addom,DC=samba,DC=example,DC=com'
@@ -251,3 +254,58 @@ class GPOTests(tests.TestCase):
 
         ret = gpupdate_unapply(self.lp)
         self.assertEquals(ret, 0, 'gpupdate unapply failed')
+
+    def test_process_group_policy(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guids = ['{31B2F340-016D-11D2-945F-00C04FB984F9}',
+                 '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
+        gpofile = '%s/ADDOM.SAMBA.EXAMPLE.COM/POLICIES/%s/MACHINE/MICROSOFT/' \
+                  'WINDOWS NT/SECEDIT/GPTTMPL.INF'
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_sec_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        stage = '[Kerberos Policy]\nMaxTicketAge = %d\n'
+        opts = [100, 200]
+        for i in range(0, 2):
+            gpttmpl = gpofile % (local_path, guids[i])
+            ret = stage_file(gpttmpl, stage % opts[i])
+            self.assertTrue(ret, 'Could not create the target %s' % gpttmpl)
+
+        # Process all gpos
+        ext.process_group_policy([], gpos)
+
+        ret = store.get_int('kdc:user_ticket_lifetime')
+        self.assertEqual(ret, opts[1], 'Higher priority policy was not set')
+
+        # Remove policy
+        gp_db = store.get_gplog(machine_creds.get_username())
+        del_gpos = get_deleted_gpos_list(gp_db, [])
+        ext.process_group_policy(del_gpos, [])
+
+        ret = store.get_int('kdc:user_ticket_lifetime')
+        self.assertEqual(ret, None, 'MaxTicketAge should not have applied')
+
+        # Process just the first gpo
+        ext.process_group_policy([], gpos[:-1])
+
+        ret = store.get_int('kdc:user_ticket_lifetime')
+        self.assertEqual(ret, opts[0], 'Lower priority policy was not set')
+
+        # Remove policy
+        ext.process_group_policy(del_gpos, [])
+
+        for guid in guids:
+            gpttmpl = gpofile % (local_path, guid)
+            unstage_file(gpttmpl)
