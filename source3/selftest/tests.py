@@ -457,7 +457,7 @@ for t in tests:
     elif t == "rpc.samr.passwords.validate":
         plansmbtorture4testsuite(t, "nt4_dc", 'ncacn_ip_tcp:$SERVER_IP[seal] -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
         plansmbtorture4testsuite(t, "ad_dc", 'ncacn_ip_tcp:$SERVER_IP[seal] -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
-    elif t == "smb2.durable-open" or t == "smb2.durable-v2-open" or t == "smb2.replay":
+    elif t == "smb2.durable-open" or t == "smb2.durable-v2-open" or t == "smb2.replay" or t == "smb2.durable-v2-delay":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
     elif t == "base.rw1":
@@ -601,6 +601,9 @@ plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
 
 plantestsuite("samba3.blackbox.smbd_error", "simpleserver:local",
               [ os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh") ])
+
+plantestsuite("samba3.blackbox.durable_v2_delay", "simpleserver:local",
+              [os.path.join(samba3srcdir, "script/tests/test_durable_handle_reconnect.sh")])
 
 plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member:local",
               [ os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
