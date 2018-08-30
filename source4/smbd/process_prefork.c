@@ -37,6 +37,35 @@
 
 NTSTATUS process_model_prefork_init(void);
 
+/*
+ * State needed to restart the master process or a worker process if they
+ * terminate early.
+ */
+struct master_restart_context {
+	struct loadparm_context *lp_ctx;
+	struct task_server *(*new_task_fn)(struct tevent_context *,
+					   struct loadparm_context *lp_ctx,
+					   struct server_id,
+					   void *,
+					   void *);
+	void *private_data;
+};
+
+struct worker_restart_context {
+	unsigned int instance;
+	struct task_server *task;
+	struct tevent_context *ev2;
+};
+
+struct restart_context {
+	struct tfork *t;
+	int from_parent_fd;
+	const struct service_details *service_details;
+	const char *service_name;
+	struct master_restart_context *master;
+	struct worker_restart_context *worker;
+};
+
 static void sighup_signal_handler(struct tevent_context *ev,
 				struct tevent_signal *se,
 				int signum, int count, void *siginfo,
@@ -110,7 +139,7 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 				       uint16_t flags,
 				       void *private_data)
 {
-	struct tfork *t = NULL;
+	struct restart_context *rc = NULL;
 	int status = 0;
 	pid_t pid = 0;
 
@@ -119,11 +148,10 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 
 	/* the child has closed the pipe, assume its dead */
 
-	/* tfork allocates tfork structures with malloc  */
-	t = (struct tfork*)private_data;
-	pid = tfork_child_pid(t);
+	rc = talloc_get_type_abort(private_data, struct restart_context);
+	pid = tfork_child_pid(rc->t);
 	errno = 0;
-	status = tfork_status(&t, false);
+	status = tfork_status(&rc->t, false);
 	if (status == -1) {
 		DBG_ERR("Parent %d, Child %d terminated, "
 			"unable to get status code from tfork\n",
@@ -138,7 +166,8 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 			getpid(), pid, status);
 	}
 	/* tfork allocates tfork structures with malloc */
-	free(t);
+	free(rc->t);
+	TALLOC_FREE(rc);
 	return;
 }
 
@@ -220,6 +249,72 @@ static void setup_handlers(struct tevent_context *ev, int from_parent_fd) {
 	}
 }
 
+static void prefork_fork_worker(struct task_server *task,
+				struct tevent_context *ev,
+				struct tevent_context *ev2,
+				const struct service_details *service_details,
+				const char *service_name,
+				int from_parent_fd,
+				struct process_details *pd)
+{
+	struct tfork *w = NULL;
+	pid_t pid;
+
+	w = tfork_create();
+	if (w == NULL) {
+		smb_panic("failure in tfork\n");
+	}
+
+	pid = tfork_child_pid(w);
+	if (pid != 0) {
+		struct tevent_fd *fde = NULL;
+		int fd = tfork_event_fd(w);
+		struct restart_context *rc = NULL;
+
+		rc = talloc_zero(ev, struct restart_context);
+		if (rc == NULL) {
+			smb_panic("OOM allocating restart context\n");
+		}
+		rc->t = w;
+		rc->service_name = service_name;
+		rc->service_details = service_details;
+		rc->from_parent_fd = from_parent_fd;
+		rc->master = NULL;
+		rc->worker = talloc_zero(rc, struct worker_restart_context);
+		if (rc->worker == NULL) {
+			smb_panic("OOM allocating master restart context\n");
+		}
+		rc->worker->ev2 = ev2;
+		rc->worker->instance = pd->instances;
+		rc->worker->task = task;
+
+		fde = tevent_add_fd(
+		    ev, ev, fd, TEVENT_FD_READ, prefork_child_pipe_handler, rc);
+		if (fde == NULL) {
+			smb_panic("Failed to add child pipe handler, "
+				  "after fork");
+		}
+		tevent_fd_set_auto_close(fde);
+	} else {
+		/*
+		 * tfork uses malloc
+		 */
+		free(w);
+
+		TALLOC_FREE(ev);
+		setproctitle("task[%s] pre-forked worker(%d)",
+			     service_name,
+			     pd->instances);
+		prefork_reload_after_fork();
+		setup_handlers(ev2, from_parent_fd);
+		if (service_details->post_fork != NULL) {
+			service_details->post_fork(task, pd);
+		}
+		tevent_loop_wait(ev2);
+		talloc_free(ev2);
+		exit(0);
+	}
+}
 /*
  * called to create a new server task
  */
@@ -251,12 +346,30 @@ static void prefork_new_task(
 	if (pid != 0) {
 		struct tevent_fd *fde = NULL;
 		int fd = tfork_event_fd(t);
+		struct restart_context *rc = NULL;
 
 		/* Register a pipe handler that gets called when the prefork
 		 * master process terminates.
 		 */
-		fde = tevent_add_fd(ev, ev, fd, TEVENT_FD_READ,
-				    prefork_child_pipe_handler, t);
+		rc = talloc_zero(ev, struct restart_context);
+		if (rc == NULL) {
+			smb_panic("OOM allocating restart context\n");
+		}
+		rc->t = t;
+		rc->service_name = service_name;
+		rc->service_details = service_details;
+		rc->from_parent_fd = from_parent_fd;
+		rc->master = talloc_zero(rc, struct master_restart_context);
+		if (rc->master == NULL) {
+			smb_panic("OOM allocating master restart context\n");
+		}
+
+		rc->master->lp_ctx = lp_ctx;
+		rc->master->new_task_fn = new_task_fn;
+		rc->master->private_data = private_data;
+
+		fde = tevent_add_fd(
+		    ev, ev, fd, TEVENT_FD_READ, prefork_child_pipe_handler, rc);
 		if (fde == NULL) {
 			smb_panic("Failed to add child pipe handler, "
 				  "after fork");
@@ -330,45 +443,14 @@ static void prefork_new_task(
 	 * We are now free to spawn some worker processes
 	 */
 	for (i=0; i < num_children; i++) {
-		struct tfork* w = NULL;
-
-		w = tfork_create();
-		if (w == NULL) {
-			smb_panic("failure in tfork\n");
-		}
-
-		pid = tfork_child_pid(w);
-		if (pid != 0) {
-			struct tevent_fd *fde = NULL;
-			int fd = tfork_event_fd(w);
-
-			fde = tevent_add_fd(ev, ev, fd, TEVENT_FD_READ,
-					    prefork_child_pipe_handler, w);
-			if (fde == NULL) {
-				smb_panic("Failed to add child pipe handler, "
-					  "after fork");
-			}
-			tevent_fd_set_auto_close(fde);
-			pd.instances++;
-		} else {
-			/*
-			 * tfork uses malloc
-			 */
-			free(w);
-
-			TALLOC_FREE(ev);
-			setproctitle("task[%s] pre-forked worker(%d)",
-				     service_name,
-				     pd.instances);
-			prefork_reload_after_fork();
-			setup_handlers(ev2, from_parent_fd);
-			if (service_details->post_fork != NULL) {
-				service_details->post_fork(task, &pd);
-			}
-			tevent_loop_wait(ev2);
-			talloc_free(ev2);
-			exit(0);
-		}
+		prefork_fork_worker(task,
+				    ev,
+				    ev2,
+				    service_details,
+				    service_name,
+				    from_parent_fd,
+				    &pd);
+		pd.instances++;
 	}
 
 	/* Don't listen on the sockets we just gave to the children */
