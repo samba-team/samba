@@ -101,7 +101,7 @@ cat > "$conffile" <<EOF
 	log level = debug
 EOF
 
-required_result 2 <<EOF
+required_error EINVAL <<EOF
 conf: unknown option [database] -> "unknown key"
 Failed to load config file $conffile
 EOF

@@ -120,7 +120,7 @@ cat > "$conffile" <<EOF
     key2 = 20
 EOF
 
-required_result 2 <<EOF
+required_error EINVAL <<EOF
 conf: unknown option [section1] -> "foo"
 [section1]
 	# key1 = value1

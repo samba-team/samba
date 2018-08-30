@@ -1121,7 +1121,7 @@ static bool conf_load_option(const char *name,
 			D_ERR("conf: unknown option [%s] -> \"%s\"\n",
 			      state->s->name,
 			      name);
-			state->err = ENOENT;
+			state->err = EINVAL;
 			return false;
 		}
 	}
@@ -1207,16 +1207,16 @@ static int conf_set(struct conf_context *conf,
 
 	s = conf_section_find(conf, section);
 	if (s == NULL) {
-		return ENOENT;
+		return EINVAL;
 	}
 
 	opt = conf_option_find(s, key);
 	if (opt == NULL) {
-		return ENOENT;
+		return EINVAL;
 	}
 
 	if (opt->type != value->type) {
-		return ENOENT;
+		return EINVAL;
 	}
 
 	ok = conf_option_same_value(opt, value);
@@ -1291,12 +1291,12 @@ static int conf_get(struct conf_context *conf,
 
 	s = conf_section_find(conf, section);
 	if (s == NULL) {
-		return ENOENT;
+		return EINVAL;
 	}
 
 	opt = conf_option_find(s, key);
 	if (opt == NULL) {
-		return ENOENT;
+		return EINVAL;
 	}
 
 	if (opt->type != type) {
