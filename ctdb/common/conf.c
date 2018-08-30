@@ -1135,6 +1135,10 @@ static bool conf_load_option(const char *name,
 	value.type = opt->type;
 	ret = conf_value_from_string(tmp_ctx, value_str, &value);
 	if (ret != 0) {
+		D_ERR("conf: invalid value [%s] -> \"%s\" = \"%s\"\n",
+		      state->s->name,
+		      name,
+		      value_str);
 		talloc_free(tmp_ctx);
 		state->err = ret;
 		return false;
