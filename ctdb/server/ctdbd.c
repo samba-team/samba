@@ -223,7 +223,7 @@ int main(int argc, const char *argv[])
 
 	ret = ctdbd_config_load(ctdb, &conf);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to setup config file handling\n");
+		/* ctdbd_config_load() logs the failure */
 		goto fail;
 	}
 
