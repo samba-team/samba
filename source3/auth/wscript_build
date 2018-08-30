@@ -14,7 +14,7 @@ bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
 			      server_info.c
 			      server_info_sam.c
 			      user_info.c''',
-                     deps='TOKEN_UTIL DCUTIL USER_UTIL')
+                     deps='TOKEN_UTIL DCUTIL USER_UTIL common_auth')
 
 bld.SAMBA3_LIBRARY('auth',
                    source='''auth.c

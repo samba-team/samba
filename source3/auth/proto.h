@@ -270,8 +270,6 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 					 const char *username,
 					 bool is_guest,
 					 struct auth_session_info **session_info);
-struct auth_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
-					     const struct auth_session_info *src);
 bool init_guest_session_info(TALLOC_CTX *mem_ctx);
 NTSTATUS init_system_session_info(TALLOC_CTX *mem_ctx);
 bool session_info_set_session_key(struct auth_session_info *info,

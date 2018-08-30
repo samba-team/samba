@@ -38,6 +38,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "rpc_client/util_netlogon.h"
 #include "source4/auth/auth.h"
+#include "auth/auth_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -1671,44 +1672,6 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	}
 
 	dst->cached_session_info = src;
-	return dst;
-}
-
-struct auth_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
-					     const struct auth_session_info *src)
-{
-	struct auth_session_info *dst;
-	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_push_struct_blob(
-		&blob, talloc_tos(), src,
-		(ndr_push_flags_fn_t)ndr_push_auth_session_info);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("copy_session_info(): ndr_push_auth_session_info failed: "
-			   "%s\n", ndr_errstr(ndr_err)));
-		return NULL;
-	}
-
-	dst = talloc(mem_ctx, struct auth_session_info);
-	if (dst == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(blob.data);
-		return NULL;
-	}
-
-	ndr_err = ndr_pull_struct_blob(
-		&blob, dst, dst,
-		(ndr_pull_flags_fn_t)ndr_pull_auth_session_info);
-	TALLOC_FREE(blob.data);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("copy_session_info(): ndr_pull_auth_session_info failed: "
-			   "%s\n", ndr_errstr(ndr_err)));
-		TALLOC_FREE(dst);
-		return NULL;
-	}
-
 	return dst;
 }
 

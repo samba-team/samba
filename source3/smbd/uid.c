@@ -26,6 +26,7 @@
 #include "libcli/security/security.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
+#include "../auth/auth_util.h"
 #include "lib/util/time_basic.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
 

@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/auth.h"
 #include "../auth/auth_sam_reply.h"
+#include "../auth/auth_util.h"
 #include "auth.h"
 #include "rpc_server/rpc_pipes.h"
 #include "../lib/tsocket/tsocket.h"

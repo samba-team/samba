@@ -28,6 +28,7 @@
 #include "printing/pcap.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
+#include "../auth/auth_util.h"
 #include "lib/param/loadparm.h"
 #include "messages.h"
 #include "lib/afs/afs_funcs.h"

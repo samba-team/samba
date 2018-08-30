@@ -28,6 +28,7 @@
 #include "smbd/globals.h"
 #include "msdfs.h"
 #include "auth.h"
+#include "../auth/auth_util.h"
 #include "lib/param/loadparm.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
