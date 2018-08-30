@@ -315,6 +315,7 @@ smb2_s3only = [
     "smb2.dosmode",
     "smb2.credits",
     "smb2.kernel-oplocks",
+    "smb2.durable-v2-delay",
 ]
 smb2 = [x for x in smbtorture4_testsuites("smb2.") if x not in smb2_s3only]
 
