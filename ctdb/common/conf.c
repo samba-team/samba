@@ -155,7 +155,7 @@ static int conf_value_from_string(TALLOC_CTX *mem_ctx,
 		break;
 
 	default:
-		return ENOENT;
+		return EINVAL;
 	}
 
 	return ret;
@@ -232,7 +232,7 @@ static int conf_value_copy(TALLOC_CTX *mem_ctx,
 		break;
 
 	default:
-		return ENOENT;
+		return EINVAL;
 	}
 
 	return 0;
