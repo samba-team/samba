@@ -1664,6 +1664,12 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	session->status = NT_STATUS_USER_SESSION_DELETED;
 
 	if (session->compat) {
+		/*
+		 * For SMB2 this is a bit redundant as files are also close
+		 * below via smb2srv_tcon_disconnect_all() -> ... ->
+		 * smbXsrv_tcon_disconnect() -> close_cnum() ->
+		 * file_close_conn().
+		 */
 		file_close_user(sconn, session->compat->vuid);
 	}
 
