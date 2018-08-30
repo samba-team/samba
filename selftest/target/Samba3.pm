@@ -2199,6 +2199,14 @@ sub provision($$$$$$$$$)
 	copy = tmp
 	vfs objects = error_inject
 	include = $libdir/error_inject.conf
+
+[delay_inject]
+	copy = tmp
+	vfs objects = delay_inject
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
+	include = $libdir/delay_inject.conf
 	";
 	close(CONF);
 
