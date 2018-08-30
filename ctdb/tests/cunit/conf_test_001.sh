@@ -106,6 +106,7 @@ EOF
 
 required_result 22 <<EOF
 conf: unknown section [section2]
+conf: unknown section for option "foo"
 [section1]
 	# key1 = value1
 	# key2 = 10

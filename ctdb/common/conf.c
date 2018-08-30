@@ -1048,6 +1048,10 @@ static int conf_load_internal(struct conf_context *conf)
 		}
 	}
 
+	if (state.err != 0) {
+		goto fail;
+	}
+
 	conf_all_update(conf);
 	return 0;
 
@@ -1066,7 +1070,7 @@ static bool conf_load_section(const char *section, void *private_data)
 		ok = conf_section_validate(state->conf, state->s, state->mode);
 		if (!ok) {
 			state->err = EINVAL;
-			return false;
+			return true;
 		}
 	}
 
@@ -1078,7 +1082,7 @@ static bool conf_load_section(const char *section, void *private_data)
 		} else {
 			D_ERR("conf: unknown section [%s]\n", section);
 			state->err = EINVAL;
-			return false;
+			return true;
 		}
 	}
 
@@ -1106,7 +1110,7 @@ static bool conf_load_option(const char *name,
 			D_ERR("conf: unknown section for option \"%s\"\n",
 			      name);
 			state->err = EINVAL;
-			return false;
+			return true;
 		}
 	}
 
@@ -1122,7 +1126,7 @@ static bool conf_load_option(const char *name,
 			      state->s->name,
 			      name);
 			state->err = EINVAL;
-			return false;
+			return true;
 		}
 	}
 
@@ -1141,7 +1145,7 @@ static bool conf_load_option(const char *name,
 		      value_str);
 		talloc_free(tmp_ctx);
 		state->err = ret;
-		return false;
+		return true;
 	}
 
 	ok = conf_option_same_value(opt, &value);
@@ -1153,7 +1157,7 @@ static bool conf_load_option(const char *name,
 	if (ret != 0) {
 		talloc_free(tmp_ctx);
 		state->err = ret;
-		return false;
+		return true;
 	}
 
 done:

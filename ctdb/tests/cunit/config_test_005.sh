@@ -30,6 +30,10 @@ EOF
 required_result 22 <<EOF
 volatile database directory "${dbdir_volatile}" does not exist
 conf: validation for option "volatile database directory" failed
+persistent database directory "${dbdir_persistent}" does not exist
+conf: validation for option "persistent database directory" failed
+state database directory "${dbdir_state}" does not exist
+conf: validation for option "state database directory" failed
 Failed to load config file $conffile
 EOF
 unit_test ctdb-config validate
@@ -39,6 +43,8 @@ mkdir -p "$dbdir_volatile"
 required_result 22 <<EOF
 persistent database directory "${dbdir_persistent}" does not exist
 conf: validation for option "persistent database directory" failed
+state database directory "${dbdir_state}" does not exist
+conf: validation for option "state database directory" failed
 Failed to load config file $conffile
 EOF
 unit_test ctdb-config validate
