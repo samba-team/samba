@@ -555,3 +555,10 @@ bld.SAMBA3_MODULE('vfs_error_inject',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_error_inject'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_error_inject'))
+
+bld.SAMBA3_MODULE('vfs_delay_inject',
+                 subsystem='vfs',
+                 source='vfs_delay_inject.c',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_delay_inject'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_delay_inject'))
