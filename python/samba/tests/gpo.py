@@ -20,7 +20,7 @@ from samba.gpclass import register_gp_extension, list_gp_extensions, \
     unregister_gp_extension, gp_log, GPOStorage
 from samba.param import LoadParm
 from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
-    check_guid, parse_gpext_conf, atomic_write_conf
+    check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile
 
@@ -232,6 +232,18 @@ class GPOTests(tests.TestCase):
                 self.assertEqual(int(policy[1]['System Access']['minPwdAge']),
                                  days2rel_nttime(998),
                                  'minPwdAge policy not set')
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, self.creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list('ADDC$')
+        del_gpos = get_deleted_gpos_list(gp_db, gpos[:-1])
+        self.assertEqual(len(del_gpos), 1, 'Returned delete gpos is incorrect')
+        self.assertEqual(guids[-1], del_gpos[0][0],
+                         'GUID for delete gpo is incorrect')
+        self.assertIn('System Access', del_gpos[0][1],
+                      'System Access policies not set for removal')
+        self.assertIn('minPwdAge', del_gpos[0][1]['System Access'],
+                      'minPwdAge policy not set for removal')
 
         for guid in guids:
             gpttmpl = gpofile % (local_path, guid)
