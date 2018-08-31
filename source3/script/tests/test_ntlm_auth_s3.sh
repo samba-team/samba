@@ -269,9 +269,6 @@ EOF
 }
 
 # This should work even with NTLMv2
-testit "wbinfo store cached credentials" $BINDIR/wbinfo --ccache-save=$DOMAIN/$USERNAME%$PASSWORD || failed=`expr $failed + 1`
-testit "ntlm_auth ccached credentials with NTLMSSP client and gss-spnego server" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH $ADDARGS --client-username=$USERNAME --client-domain=$DOMAIN --client-use-cached-creds --client-helper=ntlmssp-client-1 --server-helper=gss-spnego --server-use-winbindd || failed=`expr $failed + 1`
-
 testit "ntlm_auth against winbindd with require-membership-of" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH --client-username=$USERNAME --client-domain=$DOMAIN --client-password=$PASSWORD --server-use-winbindd $ADDARGS --require-membership-of=$SID || failed=`expr $failed + 1`
 testit "ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with require-membership-of" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH --client-username=$USERNAME --client-domain=$DOMAIN --client-password=$PASSWORD --server-use-winbindd --client-helper=gss-spnego-client --server-helper=gss-spnego $ADDARGS --require-membership-of=$SID || failed=`expr $failed + 1`
 

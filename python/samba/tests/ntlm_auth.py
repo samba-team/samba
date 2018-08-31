@@ -114,3 +114,24 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               server_helper="gss-spnego",
                               server_use_winbind=True)
         self.assertTrue(ret)
+
+    def test_ntlmssp_gss_spnego_cached_creds(self):
+        """ ntlm_auth with NTLMSSP client and gss-spnego server against
+        winbind with cached credentials """
+
+        param = "--ccache-save=%s%s%s%%%s" % (self.domain,
+                                              self.winbind_separator,
+                                              self.username,
+                                              self.password)
+        cache_cmd = ["wbinfo",
+                     param]
+        self.check_exit_code(cache_cmd, 0)
+
+        ret = self.run_helper(client_username=self.username,
+                              client_password=self.password,
+                              client_domain=self.domain,
+                              client_use_cached_creds=True,
+                              client_helper="ntlmssp-client-1",
+                              server_helper="gss-spnego",
+                              server_use_winbind=True)
+        self.assertTrue(ret)
