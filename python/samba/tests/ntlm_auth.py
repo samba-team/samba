@@ -66,3 +66,21 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               client_domain=self.domain,
                               server_use_winbind=True)
         self.assertTrue(ret)
+
+    def test_ntlmssp_gss_spnego(self):
+        """ ntlm_auth with NTLMSSP client and gss-spnego server """
+
+        username = "foo"
+        password = "secret"
+        domain = "fOo"
+
+        ret = self.run_helper(client_username=username,
+                              client_password=password,
+                              client_domain=domain,
+                              server_username=username,
+                              server_password=password,
+                              server_domain=domain,
+                              client_helper="ntlmssp-client-1",
+                              server_helper="gss-spnego",
+                              server_use_winbind=False)
+        self.assertTrue(ret)
