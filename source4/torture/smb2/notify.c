@@ -2486,7 +2486,7 @@ static bool torture_smb2_inotify_rename(struct torture_context *torture,
 
 	while (!NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
 		if (tevent_loop_once(torture->ev) != 0) {
-			return false;
+			goto done;
 		}
 	}
 
