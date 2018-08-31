@@ -48,5 +48,8 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 				      struct spoolss_security_descriptor **secdesc);
 const char *spoolss_get_short_filesys_environment(const char *environment);
+WERROR spoolss_init_spoolss_UserLevel1(TALLOC_CTX *mem_ctx,
+				       const char *username,
+				       struct spoolss_UserLevel1 *r);
 
 #endif /* _RPC_CLIENT_INIT_SPOOLSS_H_ */

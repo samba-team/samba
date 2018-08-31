@@ -28,6 +28,7 @@
 #include "rpc_client/cli_spoolss.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
+#include "rpc_client/init_spoolss.h"
 
 /**********************************************************************
  convencience wrapper around rpccli_spoolss_OpenPrinterEx
@@ -49,14 +50,12 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCT(devmode_ctr);
 
-	level1.size	= 28;
-	level1.client	= talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
-	W_ERROR_HAVE_NO_MEMORY(level1.client);
-	level1.user	= cli_credentials_get_username(creds);
-	level1.build	= 1381;
-	level1.major	= 2;
-	level1.minor	= 0;
-	level1.processor = 0;
+	werror = spoolss_init_spoolss_UserLevel1(mem_ctx,
+						 cli_credentials_get_username(creds),
+						 &level1);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
 
 	userlevel_ctr.level = 1;
 	userlevel_ctr.user_info.level1 = &level1;
@@ -229,14 +228,12 @@ WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
 
-	level1.size		= 28;
-	level1.build		= 1381;
-	level1.major		= 2;
-	level1.minor		= 0;
-	level1.processor	= 0;
-	level1.client		= talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
-	W_ERROR_HAVE_NO_MEMORY(level1.client);
-	level1.user	        = cli_credentials_get_username(creds);
+	result = spoolss_init_spoolss_UserLevel1(mem_ctx,
+						 cli_credentials_get_username(creds),
+						 &level1);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
 
 	userlevel_ctr.level = 1;
 	userlevel_ctr.user_info.level1 = &level1;
