@@ -263,7 +263,7 @@ static bool torture_rpc_iremotewinspool_setup_common(struct torture_context *tct
 
 	printer_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(t->iremotewinspool_pipe));
 
-	client_info = test_get_client_info(tctx, WIN_2000, 3, SPOOLSS_MINOR_VERSION_0);
+	client_info = test_get_client_info(tctx, WIN_7, 6, 1);
 
 	torture_assert(tctx,
 		test_AsyncOpenPrinter_byprinter(tctx, t,
@@ -323,7 +323,7 @@ static bool test_AsyncClosePrinter(struct torture_context *tctx,
 
 	printer_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
-	client_info = test_get_client_info(tctx, WIN_2000, 3, SPOOLSS_MINOR_VERSION_0);
+	client_info = test_get_client_info(tctx, WIN_7, 6, 1);
 
 	torture_assert(tctx,
 		test_AsyncOpenPrinter_byprinter(tctx, ctx, p, printer_name, client_info, &handle),
@@ -349,7 +349,7 @@ static bool test_AsyncOpenPrinter(struct torture_context *tctx,
 
 	printer_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
-	client_info = test_get_client_info(tctx, WIN_2000, 3, SPOOLSS_MINOR_VERSION_0);
+	client_info = test_get_client_info(tctx, WIN_7, 6, 1);
 
 	torture_assert(tctx,
 		test_AsyncOpenPrinter_byprinter(tctx, ctx, p, printer_name, client_info, &handle),
@@ -408,7 +408,7 @@ static bool test_AsyncOpenPrinterValidateBuildNumber(struct torture_context *tct
 		"AsyncOpenPrinter should have failed");
 
 	/* succeed with Windows 7 build number */
-	client_info = test_get_client_info(tctx, WIN_7, 3, SPOOLSS_MINOR_VERSION_0);
+	client_info = test_get_client_info(tctx, WIN_7, 6, 1);
 	client_info_ctr.user_info.level1 = &client_info;
 	r.in.pClientInfo	= &client_info_ctr;
 
@@ -1011,7 +1011,7 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 
 	printer_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
-	client_info = test_get_client_info(tctx, WIN_2000, 3, SPOOLSS_MINOR_VERSION_0);
+	client_info = test_get_client_info(tctx, WIN_7, 6, 1);
 
 	torture_assert(tctx,
 		test_AsyncOpenPrinter_byprinter(tctx, ctx, p, printer_name, client_info, &handle),

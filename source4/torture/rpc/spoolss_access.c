@@ -74,9 +74,10 @@ static bool test_openprinter_handle(struct torture_context *tctx,
 	level1.size	= 28;
 	level1.client	= talloc_asprintf(tctx, "\\\\%s", "smbtorture");
 	level1.user	= username;
-	level1.build	= 1381;
-	level1.major	= 3;
-	level1.minor	= 0;
+	/* Windows 7 and Windows Server 2008 R2 */
+	level1.build	= 7007;
+	level1.major	= 6;
+	level1.minor	= 1;
 	level1.processor= 0;
 
 	r.in.printername	= printername;
