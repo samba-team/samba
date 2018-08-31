@@ -23,6 +23,12 @@ from samba.compat import get_string
 
 class NTLMAuthHelpersTests(NTLMAuthTestCase):
 
+    def setUp(self):
+        super(NTLMAuthHelpersTests, self).setUp()
+        self.username = os.environ["DC_USERNAME"]
+        self.password = os.environ["DC_PASSWORD"]
+        self.domain = os.environ["DOMAIN"]
+
     def test_specified_domain(self):
         """ ntlm_auth with specified domain """
 
@@ -50,4 +56,13 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               server_password=password,
                               server_domain=domain,
                               server_use_winbind=False)
+        self.assertTrue(ret)
+
+    def test_agaist_winbind(self):
+        """ ntlm_auth against winbindd """
+
+        ret = self.run_helper(client_username=self.username,
+                              client_password=self.password,
+                              client_domain=self.domain,
+                              server_use_winbind=True)
         self.assertTrue(ret)
