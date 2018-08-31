@@ -81,7 +81,7 @@ foobar = cat
 EOF
 
 required_result 22 <<EOF
-conf: unknown option "foobar"
+conf: unknown section for option "foobar"
 Failed to load config file $conffile
 EOF
 unit_test ctdb-config validate
