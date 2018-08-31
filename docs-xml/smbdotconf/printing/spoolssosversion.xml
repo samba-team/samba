@@ -39,3 +39,42 @@
 <value type="default">2195</value>
 <value type="example">7601</value>
 </samba:parameter>
+
+<samba:parameter name="spoolss_client: os_major"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Windows might require a new os version number. This option allows
+		to modify the build number. The complete default version number is:
+		6.1.7007 (Windows 7 and Windows Server 2008 R2).
+	</para>
+</description>
+<value type="default">6</value>
+</samba:parameter>
+
+<samba:parameter name="spoolss_client: os_minor"
+		 context="G"
+		 type="integer"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Windows might require a new os version number. This option allows
+		to modify the build number. The complete default version number is:
+		6.1.7007 (Windows 7 and Windows Server 2008 R2).
+	</para>
+</description>
+<value type="default">1</value>
+</samba:parameter>
+
+<samba:parameter name="spoolss_client: os_build"
+		 context="G"
+		 type="integer"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Windows might require a new os version number. This option allows
+		to modify the build number. The complete default version number is:
+		6.1.7007 (Windows 7 and Windows Server 2008 R2).
+	</para>
+</description>
+<value type="default">7007</value>
+</samba:parameter>

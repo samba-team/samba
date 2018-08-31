@@ -446,3 +446,33 @@ const char *spoolss_get_short_filesys_environment(const char *environment)
 		return NULL;
 	}
 }
+
+#define GLOBAL_SPOOLSS_CLIENT_OS_MAJOR_DEFAULT 2
+#define GLOBAL_SPOOLSS_CLIENT_OS_MINOR_DEFAULT 0
+#define GLOBAL_SPOOLSS_CLIENT_OS_BUILD_DEFAULT 1381
+
+WERROR spoolss_init_spoolss_UserLevel1(TALLOC_CTX *mem_ctx,
+				       const char *username,
+				       struct spoolss_UserLevel1 *r)
+{
+	ZERO_STRUCTP(r);
+
+	r->size		= 28;
+	r->client	= talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
+	W_ERROR_HAVE_NO_MEMORY(r->client);
+	r->user		= talloc_strdup(mem_ctx, username);
+	W_ERROR_HAVE_NO_MEMORY(r->user);
+	r->processor	= 0;
+
+	r->major	= lp_parm_int(GLOBAL_SECTION_SNUM,
+				      "spoolss_client", "os_major",
+				      GLOBAL_SPOOLSS_CLIENT_OS_MAJOR_DEFAULT);
+	r->minor	= lp_parm_int(GLOBAL_SECTION_SNUM,
+				      "spoolss_client", "os_minor",
+				      GLOBAL_SPOOLSS_CLIENT_OS_MINOR_DEFAULT);
+	r->build	= lp_parm_int(GLOBAL_SECTION_SNUM,
+				      "spoolss_client", "os_build",
+				      GLOBAL_SPOOLSS_CLIENT_OS_BUILD_DEFAULT);
+
+	return WERR_OK;
+}
