@@ -447,9 +447,10 @@ const char *spoolss_get_short_filesys_environment(const char *environment)
 	}
 }
 
-#define GLOBAL_SPOOLSS_CLIENT_OS_MAJOR_DEFAULT 2
-#define GLOBAL_SPOOLSS_CLIENT_OS_MINOR_DEFAULT 0
-#define GLOBAL_SPOOLSS_CLIENT_OS_BUILD_DEFAULT 1381
+/* Windows 7 and Windows Server 2008 R2 */
+#define GLOBAL_SPOOLSS_CLIENT_OS_MAJOR_DEFAULT 6
+#define GLOBAL_SPOOLSS_CLIENT_OS_MINOR_DEFAULT 1
+#define GLOBAL_SPOOLSS_CLIENT_OS_BUILD_DEFAULT 7007
 
 WERROR spoolss_init_spoolss_UserLevel1(TALLOC_CTX *mem_ctx,
 				       const char *username,
