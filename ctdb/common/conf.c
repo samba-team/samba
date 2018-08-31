@@ -1099,11 +1099,12 @@ static bool conf_load_option(const char *name,
 
 	if (state->s == NULL) {
 		if (state->conf->ignore_unknown) {
-			D_DEBUG("conf: ignoring unknown option \"%s\"\n",
+			D_DEBUG("conf: unknown section for option \"%s\"\n",
 				name);
 			return true;
 		} else {
-			D_ERR("conf: unknown option \"%s\"\n", name);
+			D_ERR("conf: unknown section for option \"%s\"\n",
+			      name);
 			state->err = EINVAL;
 			return false;
 		}
