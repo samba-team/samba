@@ -324,7 +324,8 @@ sub setup_nt4_member
 	}
 
 	my $net = Samba::bindir_path($self, "net");
-	my $cmd = "";
+	# Add hosts file for name lookups
+	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net rpc join $ret->{CONFIGURATION} $nt4_dc_vars->{DOMAIN} member";
@@ -335,7 +336,8 @@ sub setup_nt4_member
 	    return undef;
 	}
 
-	my $cmd = "";
+	# Add hosts file for name lookups
+	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net $ret->{CONFIGURATION} primarytrust dumpinfo | grep -q 'REDACTED SECRET VALUES'";
@@ -448,7 +450,8 @@ sub setup_ad_member
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
 	my $net = Samba::bindir_path($self, "net");
-	my $cmd = "";
+	# Add hosts file for name lookups
+	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
 		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
@@ -542,7 +545,8 @@ sub setup_ad_member_rfc2307
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
 	my $net = Samba::bindir_path($self, "net");
-	my $cmd = "";
+	# Add hosts file for name lookups
+	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
 		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
@@ -628,7 +632,8 @@ sub setup_ad_member_idmap_rid
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
 	my $net = Samba::bindir_path($self, "net");
-	my $cmd = "";
+	# Add hosts file for name lookups
+	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
 		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
@@ -715,7 +720,8 @@ sub setup_ad_member_idmap_ad
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
 	my $net = Samba::bindir_path($self, "net");
-	my $cmd = "";
+	# Add hosts file for name lookups
+	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
 		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
