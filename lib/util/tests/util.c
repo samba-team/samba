@@ -22,6 +22,7 @@
 #include <fcntl.h>
 
 #include "replace.h"
+#include "system/filesys.h"
 
 #include "libcli/util/ntstatus.h"
 #include "torture/torture.h"
