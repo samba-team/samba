@@ -148,3 +148,16 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               require_membership=self.group_sid,
                               server_use_winbind=True)
         self.assertTrue(ret)
+
+    def test_require_membership_gss_spnego(self):
+        """ ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server
+        against winbind with require-membership-of """
+
+        ret = self.run_helper(client_username=self.username,
+                              client_password=self.password,
+                              client_domain=self.domain,
+                              require_membership=self.group_sid,
+                              client_helper="gss-spnego-client",
+                              server_helper="gss-spnego",
+                              server_use_winbind=True)
+        self.assertTrue(ret)
