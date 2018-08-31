@@ -31,6 +31,7 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
         out = get_string(self.check_output("wbinfo -n %s" % self.username))
         self.group_sid = out.split(" ")[0]
         self.assertTrue(self.group_sid.startswith("S-1-5-21-"))
+        self.bad_group_sid = self.group_sid[:-2]
 
     def test_specified_domain(self):
         """ ntlm_auth with specified domain """
@@ -148,6 +149,13 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               require_membership=self.group_sid,
                               server_use_winbind=True)
         self.assertTrue(ret)
+
+        ret = self.run_helper(client_username=self.username,
+                              client_password=self.password,
+                              client_domain=self.domain,
+                              require_membership=self.bad_group_sid,
+                              server_use_winbind=True)
+        self.assertFalse(ret)
 
     def test_require_membership_gss_spnego(self):
         """ ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server
