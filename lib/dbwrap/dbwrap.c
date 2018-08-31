@@ -505,7 +505,6 @@ static void dbwrap_parse_record_done(struct tevent_req *subreq)
 	}
 
 	tevent_req_done(req);
-	return;
 }
 
 NTSTATUS dbwrap_parse_record_recv(struct tevent_req *req)
