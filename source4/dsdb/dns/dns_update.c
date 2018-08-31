@@ -124,7 +124,8 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 			  0,
 			  "(&(objectclass=NTDSDSA)(!(msDS-isRODC=TRUE)))");
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Unable to find DCs list - %s", ldb_errstring(service->samdb)));
+		DBG_ERR("Unable to find DCs list - %s\n",
+			ldb_errstring(service->samdb));
 		talloc_free(tmp_ctx);
 		return;
 	}
