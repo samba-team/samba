@@ -24,42 +24,6 @@ BADSID=`eval $BINDIR/wbinfo -n $USERNAME | cut -d ' ' -f1 | sed 's/..$//'`
 
 failed=0
 
-test_ntlm_server_1_check_output()
-{
-	tmpfile=$PREFIX/ntlm_commands
-
-	cat > $tmpfile <<EOF
-LANMAN-Challenge: 0123456789abcdef
-NT-Response: 25a98c1c31e81847466b29b2df4680f39958fb8c213a9cc6
-NT-Domain: TEST
-Username: testuser
-Request-User-Session-Key: Yes
-.
-EOF
-	cmd='$NTLM_AUTH "$@" --helper-protocol=ntlm-server-1  --password=SecREt01< $tmpfile 2>&1'
-	eval echo "$cmd"
-	out=`eval $cmd`
-	ret=$?
-	rm -f $tmpfile
-
-	if [ $ret != 0 ] ; then
-		echo "$out"
-		echo "command failed"
-		false
-		return
-	fi
-
-	echo "$out" | grep "User-Session-Key: 3F373EA8E4AF954F14FAA506F8EEBDC4" >/dev/null 2>&1
-
-	if [ $? = 0 ] ; then
-		# authenticated .. succeed
-		true
-	else
-		echo failed to get successful authentication
-		false
-	fi
-}
-
 test_ntlm_server_1_check_output_fail()
 {
 	tmpfile=$PREFIX/ntlm_commands
@@ -207,7 +171,6 @@ EOF
 }
 
 # This should work even with NTLMv2
-testit "ntlm_auth ntlm-server-1 with fixed password" test_ntlm_server_1_check_output || failed=`expr $failed + 1`
 testit "ntlm_auth ntlm-server-1 with incorrect fixed password" test_ntlm_server_1_check_output_fail || failed=`expr $failed + 1`
 testit "ntlm_auth ntlm-server-1 with plaintext password against winbind" test_ntlm_server_1_check_winbind_output || failed=`expr $failed + 1`
 testit "ntlm_auth ntlm-server-1 with plaintext password against winbind but wrong sid" test_ntlm_server_1_check_winbind_output_wrong_sid || failed=`expr $failed + 1`
