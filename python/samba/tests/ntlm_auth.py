@@ -178,3 +178,17 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               server_helper="gss-spnego",
                               server_use_winbind=True)
         self.assertFalse(ret)
+
+    def test_plaintext_with_membership(self):
+        """ ntlm_auth plaintext authentication with require-membership-of """
+
+        proc = Popen([self.ntlm_auth_path,
+                      "--require-membership-of", self.group_sid,
+                      "--helper-protocol", "squid-2.5-basic"],
+                      stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        creds = "%s%s%s %s\n" % (self.domain, self.winbind_separator,
+                                 self.username,
+                                 self.password)
+        (out, err) = proc.communicate(input=creds.encode('utf-8'))
+        self.assertEqual(proc.returncode, 0)
+        self.assertTrue(out.startswith(b"OK\n"))

@@ -24,37 +24,6 @@ BADSID=`eval $BINDIR/wbinfo -n $USERNAME | cut -d ' ' -f1 | sed 's/..$//'`
 
 failed=0
 
-test_plaintext_check_output_stdout()
-{
-	tmpfile=$PREFIX/ntlm_commands
-
-	cat > $tmpfile <<EOF
-$DOMAIN/$USERNAME $PASSWORD
-EOF
-	cmd='$NTLM_AUTH "$@" --require-membership-of=$SID --helper-protocol=squid-2.5-basic < $tmpfile 2>&1'
-	eval echo "$cmd"
-	out=`eval $cmd`
-	ret=$?
-	rm -f $tmpfile
-
-	if [ $ret != 0 ] ; then
-		echo "$out"
-		echo "command failed"
-		false
-		return
-	fi
-
-	echo "$out" | grep "OK" >/dev/null 2>&1
-
-	if [ $? = 0 ] ; then
-		# authenticated .. succeed
-		true
-	else
-		echo failed to get successful authentication
-		false
-	fi
-}
-
 test_plaintext_check_output_fail()
 {
 	tmpfile=$PREFIX/ntlm_commands
@@ -269,7 +238,6 @@ EOF
 }
 
 # This should work even with NTLMv2
-testit "ntlm_auth plaintext authentication with require-membership-of" test_plaintext_check_output_stdout || failed=`expr $failed + 1`
 testit "ntlm_auth plaintext authentication with failed require-membership-of" test_plaintext_check_output_fail || failed=`expr $failed + 1`
 
 testit "ntlm_auth ntlm-server-1 with fixed password" test_ntlm_server_1_check_output || failed=`expr $failed + 1`
