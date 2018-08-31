@@ -24,6 +24,7 @@
 #include "libsmb/libsmb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
+#include "rpc_client/init_spoolss.h"
 
 /****************************************************************************
 ****************************************************************************/
@@ -33,6 +34,7 @@ static WERROR cmd_iremotewinspool_async_open_printer(struct rpc_pipe_client *cli
 						     int argc, const char **argv)
 {
 	NTSTATUS status;
+	WERROR werror;
 	struct policy_handle hnd;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct spoolss_UserLevelCtr client_info_ctr;
@@ -59,13 +61,13 @@ static WERROR cmd_iremotewinspool_async_open_printer(struct rpc_pipe_client *cli
 
 	ZERO_STRUCT(devmode_ctr);
 
-	level1.size	= 40;
-	level1.client	= talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
-	W_ERROR_HAVE_NO_MEMORY(level1.client);
-	level1.user	= cli_credentials_get_username(creds);
-	level1.build	= 1381;
-	level1.major	= 3;
-	level1.minor	= 0;
+        werror = spoolss_init_spoolss_UserLevel1(mem_ctx,
+						 cli_credentials_get_username(creds),
+						 &level1);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
+
 	level1.processor = PROCESSOR_ARCHITECTURE_AMD64;
 
 	client_info_ctr.level = 1;
