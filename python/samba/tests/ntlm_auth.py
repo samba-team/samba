@@ -169,3 +169,12 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               server_helper="gss-spnego",
                               server_use_winbind=True)
         self.assertTrue(ret)
+
+        ret = self.run_helper(client_username=self.username,
+                              client_password=self.password,
+                              client_domain=self.domain,
+                              require_membership=self.bad_group_sid,
+                              client_helper="gss-spnego-client",
+                              server_helper="gss-spnego",
+                              server_use_winbind=True)
+        self.assertFalse(ret)
