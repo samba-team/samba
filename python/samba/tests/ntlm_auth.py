@@ -233,3 +233,18 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
             lines[1], b"User-Session-Key: 3F373EA8E4AF954F14FAA506F8EEBDC4")
         self.assertEquals(lines[2], b".")
         self.assertEquals(lines[3], b"")
+
+        # Break the password with a leading A on the challenge
+        ntlm_cmds[0] = "LANMAN-Challenge: A123456789abcdef"
+
+        proc = Popen([self.ntlm_auth_path,
+                      "--password", "SecREt01",
+                      "--helper-protocol", "ntlm-server-1"],
+                      stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        buf = "\n".join(ntlm_cmds)
+        (out, err) = proc.communicate(input=buf.encode('utf-8'))
+        self.assertEqual(proc.returncode, 0)
+
+        lines = out.split(b"\n")
+        self.assertEqual(len(lines), 5)
+        self.assertEquals(lines[0], b"Authenticated: No")
