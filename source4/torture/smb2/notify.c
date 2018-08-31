@@ -2559,7 +2559,7 @@ static bool torture_smb2_inotify_rename(struct torture_context *torture,
 	ok = true;
 done:
 	if (!smb2_util_handle_empty(h1)) {
-		smb2_util_close(tree2, h1);
+		smb2_util_close(tree1, h1);
 	}
 	if (!smb2_util_handle_empty(h2)) {
 		smb2_util_close(tree2, h2);
