@@ -290,3 +290,27 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
         self.assertEquals(lines[0], b"Authenticated: No")
         self.assertEquals(lines[1], b".")
         self.assertEquals(lines[2], b"")
+
+    def test_ntlm_server_1_with_incorrect_password_winbind(self):
+        """ ntlm_auth ntlm-server-1 with incorrect fixed password against
+        winbind """
+
+        ntlm_cmds = [
+            "LANMAN-Challenge: 0123456789abcdef",
+            "NT-Response: 25a98c1c31e81847466b29b2df4680f39958fb8c213a9cc6",
+            "NT-Domain: %s" % self.domain,
+            "Username: %s" % self.username,
+            "Request-User-Session-Key: Yes",
+            ".\n" ]
+
+        proc = Popen([self.ntlm_auth_path,
+                      "--helper-protocol", "ntlm-server-1"],
+                      stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        buf = "\n".join(ntlm_cmds)
+        (out, err) = proc.communicate(input=buf.encode('utf-8'))
+        self.assertEqual(proc.returncode, 0)
+
+        lines = out.split(b"\n")
+
+        self.assertEqual(len(lines), 5)
+        self.assertEquals(lines[0], b"Authenticated: No")
