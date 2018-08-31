@@ -28,6 +28,9 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
         self.username = os.environ["DC_USERNAME"]
         self.password = os.environ["DC_PASSWORD"]
         self.domain = os.environ["DOMAIN"]
+        out = get_string(self.check_output("wbinfo -n %s" % self.username))
+        self.group_sid = out.split(" ")[0]
+        self.assertTrue(self.group_sid.startswith("S-1-5-21-"))
 
     def test_specified_domain(self):
         """ ntlm_auth with specified domain """
@@ -133,5 +136,15 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               client_use_cached_creds=True,
                               client_helper="ntlmssp-client-1",
                               server_helper="gss-spnego",
+                              server_use_winbind=True)
+        self.assertTrue(ret)
+
+    def test_require_membership(self):
+        """ ntlm_auth against winbindd with require-membership-of """
+
+        ret = self.run_helper(client_username=self.username,
+                              client_password=self.password,
+                              client_domain=self.domain,
+                              require_membership=self.group_sid,
                               server_use_winbind=True)
         self.assertTrue(ret)
