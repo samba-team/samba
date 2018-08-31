@@ -1645,6 +1645,8 @@ sub provision($$$$$$$$$)
 
 	my $conffile="$libdir/server.conf";
 	my $dfqconffile="$libdir/dfq.conf";
+	my $errorinjectconf="$libdir/error_inject.conf";
+	my $delayinjectconf="$libdir/delay_inject.conf";
 
 	my $nss_wrapper_pl = "$ENV{PERL} $self->{srcdir}/third_party/nss_wrapper/nss_wrapper.pl";
 	my $nss_wrapper_passwd = "$privatedir/passwd";
@@ -2270,7 +2272,7 @@ sub provision($$$$$$$$$)
 [error_inject]
 	copy = tmp
 	vfs objects = error_inject
-	include = $libdir/error_inject.conf
+	include = $errorinjectconf
 
 [delay_inject]
 	copy = tmp
@@ -2278,7 +2280,7 @@ sub provision($$$$$$$$$)
 	kernel share modes = no
 	kernel oplocks = no
 	posix locking = no
-	include = $libdir/delay_inject.conf
+	include = $delayinjectconf
 
 [aio_delay_inject]
 	copy = tmp
@@ -2301,6 +2303,18 @@ sub provision($$$$$$$$$)
 	    warn("Join failed\n$cmd");
 	    return undef;
 	}
+
+	unless (open(ERRORCONF, ">$errorinjectconf")) {
+		warn("Unable to open $errorinjectconf");
+		return undef;
+	}
+	close(ERRORCONF);
+
+	unless (open(DELAYCONF, ">$delayinjectconf")) {
+		warn("Unable to open $delayinjectconf");
+		return undef;
+	}
+	close(DELAYCONF);
 
 	unless (open(DFQCONF, ">$dfqconffile")) {
 	        warn("Unable to open $dfqconffile");
