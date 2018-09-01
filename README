@@ -11,7 +11,7 @@ NOTE: Installation instructions may be found
       docs/htmldocs/Samba3-HOWTO/install.html
 
       For the AD DC implementation a full HOWTO is provided at:
-      http://wiki.samba.org/index.php/Samba4/HOWTO
+      https://wiki.samba.org/index.php/Samba4/HOWTO
 
 This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
@@ -36,7 +36,7 @@ both public specifications and widely implemented in desktop machines
 by default.
 
 The Common Internet File system (CIFS) is what the new SMB initiative
-is called. For details watch http://samba.org/cifs.
+is called. For details watch https://www.samba.org/cifs/.
 
 
 WHY DO PEOPLE WANT TO USE SMB?
@@ -83,7 +83,7 @@ a complete replacement for Windows NT, Warp, NFS or Netware servers."
   functionality, which can be used on Samba, NT workstation and NT server.
 
 For a much better overview have a look at the web site at
-http://samba.org/samba, and browse the user survey.
+https://www.samba.org/samba/, and browse the user survey.
 
 Related packages include:
 
@@ -118,16 +118,16 @@ CONTRIBUTIONS
 
 2. If you want to contribute to the development of the software then
 please join the mailing list. The Samba team accepts patches
-(preferably in "diff -u" format, see http://samba.org/samba/devel/ 
+(preferably in "diff -u" format, see https://www.samba.org/samba/devel/
 for more details) and are always glad to receive feedback or 
 suggestions to the address samba@lists.samba.org.  More information
-on the various Samba mailing lists can be found at http://lists.samba.org/.
+on the various Samba mailing lists can be found at https://lists.samba.org/.
 
 You can also get the Samba sourcecode straight from the git repository - see
-http://wiki.samba.org/index.php/Using_Git_for_Samba_Development.
+https://wiki.samba.org/index.php/Using_Git_for_Samba_Development.
 
 If you like a particular feature then look through the git change-log
-(on the web at http://gitweb.samba.org/?p=samba.git;a=summary) and see
+(on the web at https://gitweb.samba.org/?p=samba.git;a=summary) and see
 who added it, then send them an email.
 
 Remember that free software of this kind lives or dies by the response
@@ -159,15 +159,15 @@ MAILING LIST
 Please do NOT send subscription/unsubscription requests to the lists!
 
 There is a mailing list for discussion of Samba.  For details go to
-<http://lists.samba.org/> or send mail to <samba-subscribe@lists.samba.org>
+<https://lists.samba.org/> or send mail to <samba-subscribe@lists.samba.org>
 
 There is also an announcement mailing list where new versions are
-announced.  To subscribe go to <http://lists.samba.org/> or send mail
+announced.  To subscribe go to <https://lists.samba.org/> or send mail
 to <samba-announce-subscribe@lists.samba.org>.  All announcements also
 go to the samba list, so you only need to be on one.
 
 For details of other Samba mailing lists and for access to archives, see
-<http://lists.samba.org/>
+<https://lists.samba.org/>
 
 
 MAILING LIST ETIQUETTE
@@ -220,7 +220,7 @@ WEB SITE
 
 A Samba WWW site has been setup with lots of useful info. Connect to:
 
-http://samba.org/
+https://www.samba.org/
 
 As well as general information and documentation, this also has searchable 
 archives of the mailing list and a user survey that shows who else is using
