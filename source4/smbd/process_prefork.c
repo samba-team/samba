@@ -36,6 +36,25 @@
 #include "lib/util/tfork.h"
 
 NTSTATUS process_model_prefork_init(void);
+static void prefork_new_task(
+    struct tevent_context *ev,
+    struct loadparm_context *lp_ctx,
+    const char *service_name,
+    struct task_server *(*new_task_fn)(struct tevent_context *,
+				       struct loadparm_context *lp_ctx,
+				       struct server_id,
+				       void *,
+				       void *),
+    void *private_data,
+    const struct service_details *service_details,
+    int from_parent_fd);
+static void prefork_fork_worker(struct task_server *task,
+				struct tevent_context *ev,
+				struct tevent_context *ev2,
+				const struct service_details *service_details,
+				const char *service_name,
+				int control_pipe[2],
+				struct process_details *pd);
 
 /*
  * State needed to restart the master process or a worker process if they
@@ -55,6 +74,7 @@ struct worker_restart_context {
 	unsigned int instance;
 	struct task_server *task;
 	struct tevent_context *ev2;
+	int control_pipe[2];
 };
 
 struct restart_context {
@@ -164,6 +184,39 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 		status = WTERMSIG(status);
 		DBG_ERR("Parent %d, Child %d terminated with signal %d\n",
 			getpid(), pid, status);
+		if (status == SIGABRT || status == SIGBUS || status == SIGFPE ||
+		    status == SIGILL || status == SIGSYS) {
+			/*
+			 * Lets restart the process.
+			 *
+			 */
+			tfork_destroy(&rc->t);
+			if (rc->master != NULL) {
+				DBG_ERR("Restarting [%s] pre-fork master\n",
+					rc->service_name);
+				prefork_new_task(ev,
+						 rc->master->lp_ctx,
+						 rc->service_name,
+						 rc->master->new_task_fn,
+						 rc->master->private_data,
+						 rc->service_details,
+						 rc->from_parent_fd);
+			} else if (rc->worker != NULL) {
+				struct process_details pd =
+				    initial_process_details;
+				DBG_ERR("Restarting [%s] pre-fork worker(%d)\n",
+					rc->service_name,
+					rc->worker->instance);
+				pd.instances = rc->worker->instance;
+				prefork_fork_worker(rc->worker->task,
+						    ev,
+						    rc->worker->ev2,
+						    rc->service_details,
+						    rc->service_name,
+						    rc->worker->control_pipe,
+						    &pd);
+			}
+		}
 	}
 	/* tfork allocates tfork structures with malloc */
 	free(rc->t);
@@ -254,7 +307,7 @@ static void prefork_fork_worker(struct task_server *task,
 				struct tevent_context *ev2,
 				const struct service_details *service_details,
 				const char *service_name,
-				int from_parent_fd,
+				int control_pipe[2],
 				struct process_details *pd)
 {
 	struct tfork *w = NULL;
@@ -278,7 +331,6 @@ static void prefork_fork_worker(struct task_server *task,
 		rc->t = w;
 		rc->service_name = service_name;
 		rc->service_details = service_details;
-		rc->from_parent_fd = from_parent_fd;
 		rc->master = NULL;
 		rc->worker = talloc_zero(rc, struct worker_restart_context);
 		if (rc->worker == NULL) {
@@ -287,6 +339,8 @@ static void prefork_fork_worker(struct task_server *task,
 		rc->worker->ev2 = ev2;
 		rc->worker->instance = pd->instances;
 		rc->worker->task = task;
+		rc->worker->control_pipe[0] = control_pipe[0];
+		rc->worker->control_pipe[1] = control_pipe[1];
 
 		fde = tevent_add_fd(
 		    ev, ev, fd, TEVENT_FD_READ, prefork_child_pipe_handler, rc);
@@ -296,6 +350,8 @@ static void prefork_fork_worker(struct task_server *task,
 		}
 		tevent_fd_set_auto_close(fde);
 	} else {
+		close(control_pipe[1]);
+		setup_handlers(ev2, control_pipe[0]);
 		/*
 		 * tfork uses malloc
 		 */
@@ -306,7 +362,6 @@ static void prefork_fork_worker(struct task_server *task,
 			     service_name,
 			     pd->instances);
 		prefork_reload_after_fork();
-		setup_handlers(ev2, from_parent_fd);
 		if (service_details->post_fork != NULL) {
 			service_details->post_fork(task, pd);
 		}
@@ -336,12 +391,14 @@ static void prefork_new_task(
 	struct tevent_context *ev2;
 	struct task_server *task = NULL;
 	struct process_details pd = initial_process_details;
+	int control_pipe[2];
 
 	t = tfork_create();
 	if (t == NULL) {
 		smb_panic("failure in tfork\n");
 	}
 
+	DBG_NOTICE("Forking [%s] pre-fork master process\n", service_name);
 	pid = tfork_child_pid(t);
 	if (pid != 0) {
 		struct tevent_fd *fde = NULL;
@@ -439,6 +496,16 @@ static void prefork_new_task(
 	}
 	DBG_NOTICE("Forking %d %s worker processes\n",
 		   num_children, service_name);
+	{
+		int ret;
+		ret = pipe(control_pipe);
+		if (ret != 0) {
+			smb_panic("Unable to create worker control pipe\n");
+		}
+		smb_set_close_on_exec(control_pipe[0]);
+		smb_set_close_on_exec(control_pipe[1]);
+	}
+
 	/*
 	 * We are now free to spawn some worker processes
 	 */
@@ -448,7 +515,7 @@ static void prefork_new_task(
 				    ev2,
 				    service_details,
 				    service_name,
-				    from_parent_fd,
+				    control_pipe,
 				    &pd);
 		pd.instances++;
 	}
