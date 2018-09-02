@@ -2451,7 +2451,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	krb5_free_unparsed_name(k5_context, got_principal_string);
 
 	torture_assert(tctx, krb5_principal_compare(k5_context,
-						    my_creds.client, expected_principal),
+						    my_creds.server, expected_principal),
 		       assertion_message);
 
 	krb5_free_principal(k5_context, principal);
