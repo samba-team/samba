@@ -86,6 +86,8 @@ struct torture_krb5_context {
 	struct addrinfo *server;
 	struct test_data *test_data;
 	int packet_count;
+	int impersonating;
+	bool reset_count;
 	enum test_stage test_stage;
 	AS_REQ as_req;
 	AS_REP as_rep;
@@ -356,6 +358,13 @@ static bool torture_krb5_post_recv_as_req_test(struct torture_krb5_context *test
 						 error.error_code,
 						 KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
 						 "Got wrong error.error_code");
+			if (test_context->impersonating) {
+				/* We reach here when the impersonating service
+				 * is done looking up the imperosnated principal
+				 * realm, the next stage is to impersonate. */
+				test_context->test_stage = TEST_TGS_REQ_CANON;
+				test_context->reset_count = true;
+			}
 		}
 
 		free_KRB_ERROR(&error);
@@ -431,7 +440,7 @@ static bool torture_krb5_post_recv_as_req_test(struct torture_krb5_context *test
  *
  * Confirm that the outgoing TGS-REQ packet from krb5_get_creds()
  * for the krbtgt/realm principal meets certain expectations, like
- * that the canonicalize bit is not set
+ * that the canonicalize bit is set
  *
  */
 
@@ -455,7 +464,7 @@ static bool torture_krb5_pre_send_tgs_req_krbtgt_canon_test(struct torture_krb5_
 
 	torture_assert_int_equal(test_context->tctx,
 				 test_context->tgs_req.req_body.sname->name_type,
-				 KRB5_NT_PRINCIPAL,
+				 test_context->impersonating ? KRB5_NT_SRV_INST : KRB5_NT_PRINCIPAL,
 				 "Mismatch in name_type between request and expected request");
 
 	torture_assert_str_equal(test_context->tctx,
@@ -544,6 +553,15 @@ static bool torture_krb5_post_recv_tgs_req_krbtgt_canon_test(struct torture_krb5
 		       test_context->packet_count < 2,
 		       "too many packets");
 	free_TGS_REQ(&test_context->tgs_req);
+
+	/* If we are at the second packet, then the library is about to fail with
+	 * KRB5_GET_IN_TKT_LOOP. In the impersonating case, at this point the library
+	 * will fall back to request a ticket from the service's own realm. */
+	if (test_context->impersonating && (test_context->packet_count == 1)) {
+		test_context->test_stage = TEST_TGS_REQ_CANON;
+		test_context->reset_count = true;
+	}
+
 	return true;
 }
 
@@ -674,6 +692,7 @@ static bool torture_krb5_post_recv_tgs_req_canon_test(struct torture_krb5_contex
 					 0, "Unexpecedly got a RODC number in the KVNO, should just be principal KVNO");
 		free_TGS_REP(&test_context->tgs_rep);
 	}
+
 	torture_assert(test_context->tctx, test_context->packet_count == 0, "too many packets");
 	free_TGS_REQ(&test_context->tgs_req);
 
@@ -1362,7 +1381,13 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 		return EINVAL;
 	}
 
-	test_context->packet_count++;
+	if (test_context->reset_count) {
+		test_context->reset_count = false;
+		test_context->packet_count = 0;
+	}
+	else {
+		test_context->packet_count++;
+	}
 
 	return k5ret;
 }
@@ -1817,6 +1842,25 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 									    opt,
 									    principal),
 					 0, "krb5_get_creds_opt_set_impersonate failed");
+		/*
+		 * When impersonating, we may pass thru other stages with slight difrerences
+		 * for which we need to account, so we need a flag to identify this case.
+		 */
+		test_context->impersonating = true;
+
+		/* S4U2Self for enterprise principal name always start with AS request
+		 * for realm lookup, we later change the stage in the callback */
+		if (test_data->enterprise) {
+			test_context->test_stage = TEST_AS_REQ;
+		}
+		else if (test_data->canonicalize &&
+			(test_data->upper_realm == false || test_data->netbios_realm == true))
+		{
+			/* In this case the library thinks the service and imperosnate user
+			 * are not from the same realm due to netbios or lower realm used,
+			 * and will request a krbtgt to the impersonated realm. */
+			test_context->test_stage = TEST_TGS_REQ_KRBTGT_CANON;
+		}
 	}
 
 	/* Confirm if we can get a ticket to our own name */
