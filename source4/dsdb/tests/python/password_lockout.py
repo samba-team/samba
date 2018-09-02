@@ -616,14 +616,13 @@ userPassword: thatsAcomplPASS2XYZ
                                                           initial_lastlogon_relation='greater')
 
     def use_pso_lockout_settings(self, creds):
-        # create a PSO with the lockout settings the test cases normally expect
-        pso = PasswordSettings("lockout-PSO", self.ldb, lockout_attempts=3,
-                               lockout_duration=3)
-        self.addCleanup(self.ldb.delete, pso.dn)
 
-        # the test cases should sleep() for the PSO's lockoutDuration/obsvWindow
-        self.account_lockout_duration = 3
-        self.lockout_observation_window = 3
+        # create a PSO with the lockout settings the test cases normally expect
+        #
+        # Some test cases sleep() for self.account_lockout_duration
+        pso = PasswordSettings("lockout-PSO", self.ldb, lockout_attempts=3,
+                               lockout_duration=self.account_lockout_duration)
+        self.addCleanup(self.ldb.delete, pso.dn)
 
         userdn = "cn=%s,cn=users,%s" % (creds.get_username(), self.base_dn)
         pso.apply_to(userdn)
