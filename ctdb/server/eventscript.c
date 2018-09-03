@@ -310,10 +310,11 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	DEBUG(DEBUG_NOTICE,
-	      ("Starting event daemon %s %s %s %s %s %s %s %s %s %s %s\n",
-	       argv[0], argv[1], argv[2], argv[3], argv[4], argv[5],
-	       argv[6], argv[7], argv[8], argv[9], argv[10]));
+	D_NOTICE("Starting event daemon "
+		 "%s %s %s %s %s %s %s %s %s %s %s %s %s\n",
+		 argv[0], argv[1], argv[2], argv[3], argv[4], argv[5],
+		 argv[6], argv[7], argv[8], argv[9], argv[10],
+		 argv[11], argv[12]);
 
 	pid = ctdb_fork(ctdb);
 	if (pid == -1) {
