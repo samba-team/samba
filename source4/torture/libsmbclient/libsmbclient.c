@@ -73,6 +73,8 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 		cli_credentials_get_domain(popt_get_cmdline_credentials());
 	const char *username =
 		cli_credentials_get_username(popt_get_cmdline_credentials());
+	const char *client_proto =
+		torture_setting_string(tctx, "clientprotocol", NULL);
 	SMBCCTX *ctx = NULL;
 	SMBCCTX *p = NULL;
 	bool ok = true;
@@ -102,6 +104,10 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 	}
 
 	smbc_setFunctionAuthData(ctx, auth_callback);
+
+	if (client_proto != NULL) {
+		smbc_setOptionProtocols(ctx, client_proto, client_proto);
+	}
 
 	*ctx_p = ctx;
 

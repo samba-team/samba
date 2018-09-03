@@ -332,14 +332,17 @@ for t in base + raw + smb2 + netapi:
     plansmbtorture4testsuite(t, "ad_dc_ntvfs", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + ntvfsargs)
 
 libsmbclient = smbtorture4_testsuites("libsmbclient.")
+protocols = [ 'NT1', 'SMB3' ]
 for t in libsmbclient:
     url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
     if t == "libsmbclient.list_shares":
         url = "smb://$USERNAME:$PASSWORD@$SERVER"
 
-    libsmbclient_testargs = ["--option=torture:smburl=" + url,
-                             "--option=torture:replace_smbconf=%s/testdata/samba3/smb_new.conf" % srcdir()]
-    plansmbtorture4testsuite(t, "ad_dc", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + libsmbclient_testargs)
+    for proto in protocols:
+        libsmbclient_testargs = ["--option=torture:smburl=" + url,
+                                 "--option=torture:replace_smbconf=%s/testdata/samba3/smb_new.conf" % srcdir(),
+                                 "--option=torture:clientprotocol=%s" % proto]
+        plansmbtorture4testsuite(t, "ad_dc", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + libsmbclient_testargs, "samba4.%s.%s" % (t, proto))
 
 plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
