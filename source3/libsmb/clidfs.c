@@ -196,9 +196,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		flags, &c);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Connection to %s failed (Error %s)\n",
-				server,
-				nt_errstr(status));
+		DBG_WARNING("Connection to %s failed (Error %s)\n",
+			    server,
+			    nt_errstr(status));
 		return status;
 	}
 
