@@ -116,8 +116,6 @@ export KRB5CCNAME
 echo "$samba_kinit -k -t $PREFIX/tmpkeytab-server cifs/$SERVER_FQDN"
 testit "kinit with SPN from keytab" $VALGRIND $samba_kinit -k -t $PREFIX/tmpkeytab-server cifs/$SERVER_FQDN || failed=`expr $failed + 1`
 
-exit 0
-
 # cleanup
 testit "delete user $TEST_USER" $VALGRIND $samba_tool user delete nettestuser -k yes $@ || failed=`expr $failed + 1`
 
