@@ -694,6 +694,23 @@ def SAMBA_CONFIG_H(conf, path=None):
             conf.ADD_CFLAGS('-Wp,-D_FORTIFY_SOURCE=2 %s' % (stack_protect_flag))
             break
 
+    flag_supported = conf.check(fragment='''
+                                #include <stdio.h>
+
+                                int main(void)
+                                {
+                                    char t[100000];
+                                    while (fgets(t, sizeof(t), stdin));
+                                    return 0;
+                                }
+                                ''',
+                                execute=0,
+                                ccflags=[ '-Werror', '-fstack-clash-protection'],
+                                mandatory=False,
+                                msg='Checking if compiler accepts -fstack-clash-protection')
+    if flag_supported:
+        conf.ADD_CFLAGS('-fstack-clash-protection')
+
     if Options.options.debug:
         conf.ADD_CFLAGS('-g', testflags=True)
 
