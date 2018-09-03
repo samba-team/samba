@@ -32,6 +32,7 @@ import drs_base
 import samba.tests
 import time
 import ldb
+from samba.compat import get_string
 
 from ldb import (
     SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT)
@@ -62,7 +63,7 @@ objectClass: organizationalUnit
         samdb.add_ldif(ldif)
         res = samdb.search(base="%s,%s" % (name, self.domain_dn),
                            scope=SCOPE_BASE, attrs=["objectGUID"])
-        return self._GUID_string(res[0]["objectGUID"][0])
+        return get_string(self._GUID_string(res[0]["objectGUID"][0]))
 
     def _check_deleted(self, sam_ldb, guid):
         # search the user by guid as it may be deleted
