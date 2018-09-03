@@ -879,7 +879,7 @@ static bool ctdb_recovery_have_lock(struct ctdb_recoverd *rec)
 	return (rec->recovery_lock_handle != NULL);
 }
 
-struct hold_reclock_state {
+struct ctdb_recovery_lock_handle {
 	bool done;
 	bool locked;
 	double latency;
@@ -889,8 +889,8 @@ static void take_reclock_handler(char status,
 				 double latency,
 				 void *private_data)
 {
-	struct hold_reclock_state *s =
-		(struct hold_reclock_state *) private_data;
+	struct ctdb_recovery_lock_handle *s =
+		(struct ctdb_recovery_lock_handle *) private_data;
 
 	switch (status) {
 	case '0':
@@ -930,7 +930,7 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_cluster_mutex_handle *h;
-	struct hold_reclock_state s = {
+	struct ctdb_recovery_lock_handle s = {
 		.done = false,
 		.locked = false,
 		.latency = 0,
