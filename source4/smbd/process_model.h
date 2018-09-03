@@ -69,7 +69,8 @@ struct model_ops {
 	void (*terminate)(struct tevent_context *,
 			  struct loadparm_context *lp_ctx,
 			  const char *reason,
-			  void * process_context);
+			  bool fatal,
+			  void *process_context);
 
 	/* function to set a title for the connection or task */
 	void (*set_title)(struct tevent_context *, const char *title);

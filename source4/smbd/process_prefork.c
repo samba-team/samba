@@ -534,6 +534,7 @@ static void prefork_new_task(
 static void prefork_terminate(struct tevent_context *ev,
 			      struct loadparm_context *lp_ctx,
 			      const char *reason,
+			      bool fatal,
 			      void *process_context)
 {
 	DBG_DEBUG("called with reason[%s]\n", reason);

@@ -124,6 +124,7 @@ static void single_new_task(struct tevent_context *ev,
 static void single_terminate(struct tevent_context *ev,
 			     struct loadparm_context *lp_ctx,
 			     const char *reason,
+			     bool fatal,
 			     void *process_context)
 {
 	DBG_NOTICE("single_terminate: reason[%s]\n",reason);

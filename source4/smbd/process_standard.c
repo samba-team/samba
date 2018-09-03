@@ -513,6 +513,7 @@ static void standard_new_task(struct tevent_context *ev,
 static void standard_terminate(struct tevent_context *ev,
 			       struct loadparm_context *lp_ctx,
 			       const char *reason,
+			       bool fatal,
 			       void *process_context)
 {
 	struct process_context *proc_ctx = NULL;
