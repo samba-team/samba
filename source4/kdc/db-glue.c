@@ -914,7 +914,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			krb5_clear_error_message(context);
 			goto out;
 		}
-	} else if (flags & SDB_F_CANON && flags & SDB_F_FOR_AS_REQ) {
+	} else if ((flags & SDB_F_CANON) && (flags & SDB_F_FOR_AS_REQ)) {
 		/*
 		 * SDB_F_CANON maps from the canonicalize flag in the
 		 * packet, and has a different meaning between AS-REQ
