@@ -777,7 +777,7 @@ parser.add_option("", "--restrict-tests", help="run as make test with this TESTS
 def send_email(subject, text, log_tar):
     if options.email is None:
         do_print("not sending email because the recipient is not set")
-        do_print("the text content would have been:\n\nSubject: %s\n\nTs" %
+        do_print("the text content would have been:\n\nSubject: %s\n\n%s" %
                  (subject, text))
         return
     outer = MIMEMultipart()
