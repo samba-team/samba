@@ -37,12 +37,12 @@ if PY3:
     # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
     # encodes the variable (see PY2 implementation of this function below)
     def get_bytes(bytesorstring):
-       tmp = bytesorstring
-       if isinstance(bytesorstring, str):
-           tmp = bytesorstring.encode('utf8')
-       elif not isinstance(bytesorstring, bytes):
-           raise ValueError('Expected byte or string for %s:%s' % (type(bytesorstring), bytesorstring))
-       return tmp
+        tmp = bytesorstring
+        if isinstance(bytesorstring, str):
+            tmp = bytesorstring.encode('utf8')
+        elif not isinstance(bytesorstring, bytes):
+            raise ValueError('Expected byte or string for %s:%s' % (type(bytesorstring), bytesorstring))
+        return tmp
 
     # helper function to get a string from a variable that maybe 'str' or
     # 'bytes' if 'bytes' then it is decoded using 'utf8'. If 'str' is passed
@@ -51,12 +51,12 @@ if PY3:
     # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
     # decodes the variable (see PY2 implementation of this function below)
     def get_string(bytesorstring):
-       tmp = bytesorstring
-       if isinstance(bytesorstring, bytes):
-           tmp = bytesorstring.decode('utf8')
-       elif not isinstance(bytesorstring, str):
-           raise ValueError('Expected byte of string for %s:%s' % (type(bytesorstring), bytesorstring))
-       return tmp
+        tmp = bytesorstring
+        if isinstance(bytesorstring, bytes):
+            tmp = bytesorstring.decode('utf8')
+        elif not isinstance(bytesorstring, str):
+            raise ValueError('Expected byte of string for %s:%s' % (type(bytesorstring), bytesorstring))
+        return tmp
 
     def cmp_fn(x, y):
         """
@@ -90,12 +90,12 @@ else:
     # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
     # encodes the variable (see PY3 implementation of this function above)
     def get_bytes(bytesorstring):
-       tmp = bytesorstring
-       if isinstance(bytesorstring, unicode):
-           tmp = bytesorstring.encode('utf8')
-       elif not isinstance(bytesorstring, str):
-           raise ValueError('Expected string for %s:%s' % (type(bytesorstring), bytesorstring))
-       return tmp
+        tmp = bytesorstring
+        if isinstance(bytesorstring, unicode):
+            tmp = bytesorstring.encode('utf8')
+        elif not isinstance(bytesorstring, str):
+            raise ValueError('Expected string for %s:%s' % (type(bytesorstring), bytesorstring))
+        return tmp
 
     # Helper function to return string.
     # if 'str' or 'unicode' passed in they are returned unchanged
@@ -104,10 +104,10 @@ else:
     # the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
     # decodes the variable (see PY3 implementation of this function above)
     def get_string(bytesorstring):
-       tmp = bytesorstring
-       if not(isinstance(bytesorstring, str) or isinstance(bytesorstring, unicode)):
-           raise ValueError('Expected str or unicode for %s:%s' % (type(bytesorstring), bytesorstring))
-       return tmp
+        tmp = bytesorstring
+        if not(isinstance(bytesorstring, str) or isinstance(bytesorstring, unicode)):
+            raise ValueError('Expected str or unicode for %s:%s' % (type(bytesorstring), bytesorstring))
+        return tmp
 
 
     if sys.version_info < (2, 7):
