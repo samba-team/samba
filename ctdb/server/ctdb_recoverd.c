@@ -978,6 +978,20 @@ static void ctdb_recovery_unlock(struct ctdb_recoverd *rec)
 		return;
 	}
 
+	if (! rec->recovery_lock_handle->done) {
+		/*
+		 * Taking of recovery lock still in progress.  Free
+		 * the cluster mutex handle to release it but leave
+		 * the recovery lock handle in place to allow taking
+		 * of the lock to fail.
+		 */
+		D_NOTICE("Cancelling recovery lock\n");
+		TALLOC_FREE(rec->recovery_lock_handle->h);
+		rec->recovery_lock_handle->done = true;
+		rec->recovery_lock_handle->locked = false;
+		return;
+	}
+
 	D_NOTICE("Releasing recovery lock\n");
 	TALLOC_FREE(rec->recovery_lock_handle);
 }
