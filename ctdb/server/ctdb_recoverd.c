@@ -956,17 +956,18 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 		return false;
 	}
 
+	rec->recovery_lock_handle = s;
+	s->h = h;
+
 	while (! s->done) {
 		tevent_loop_once(ctdb->ev);
 	}
 
 	if (! s->locked) {
-		talloc_free(s);
+		TALLOC_FREE(rec->recovery_lock_handle);
 		return false;
 	}
 
-	rec->recovery_lock_handle = s;
-	s->h = h;
 	ctdb_ctrl_report_recd_lock_latency(ctdb,
 					   CONTROL_TIMEOUT(),
 					   s->latency);
