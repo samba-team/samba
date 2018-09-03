@@ -43,7 +43,7 @@ class inf_to_kdc_tdb(gp_ext_setter):
                                                  self.mins_to_hours),
                  'kdc:renewal_lifetime': (self.set_kdc_tdb,
                                           self.days_to_hours),
-                 }
+                }
 
     def __str__(self):
         return 'Kerberos Policy'
@@ -102,7 +102,7 @@ class inf_to_ldb(gp_ext_setter):
                  "minPwdLength": (self.ch_minPwdLength, self.explicit),
                  "pwdProperties": (self.ch_pwdProperties, self.explicit),
 
-                 }
+                }
 
     def __str__(self):
         return 'System Access'

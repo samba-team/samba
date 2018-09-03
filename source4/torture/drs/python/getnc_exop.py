@@ -1036,7 +1036,7 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
                                            drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
                                            g_guid,
                                            u2_guid),
-        ])
+                              ])
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
 
