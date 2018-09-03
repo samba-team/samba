@@ -980,7 +980,7 @@ class cmd_backup(Command):
                default=False, action='store_true'),
         Option("--entities", help="File to export defining XML entities for the restore",
                dest='ent_file', type=str)
-        ]
+    ]
 
     def run(self, gpo, H=None, tmpdir=None, generalize=False, sambaopts=None,
             credopts=None, versionopts=None, ent_file=None):
@@ -1284,7 +1284,7 @@ class cmd_restore(cmd_create):
         Option("-H", help="LDB URL for database or target server", type=str),
         Option("--tmpdir", help="Temporary directory for copying policy files", type=str),
         Option("--entities", help="File defining XML entities to insert into DOCTYPE header", type=str)
-        ]
+    ]
 
     def restore_from_backup_to_local_dir(self, sourcedir, targetdir, dtd_header=''):
         SUFFIX = '.SAMBABACKUP'

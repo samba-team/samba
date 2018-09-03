@@ -1066,7 +1066,7 @@ class cmd_domain_level(Command):
                help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)"),
         Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
                help="The domain function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)")
-        ]
+    ]
 
     takes_args = ["subcommand"]
 
@@ -1389,7 +1389,7 @@ class cmd_domain_passwordsettings_set(Command):
                help="The number of bad password attempts allowed before locking out the account (<integer> | default).  Default is 0 (never lock out).", type=str),
         Option("--reset-account-lockout-after",
                help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer> | default).  Default is 30.", type=str),
-        ]
+    ]
 
     def run(self, H=None, min_pwd_age=None, max_pwd_age=None,
             quiet=False, complexity=None, store_plaintext=None, history_length=None,
