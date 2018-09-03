@@ -930,31 +930,43 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_cluster_mutex_handle *h;
-	struct ctdb_recovery_lock_handle s = {
-		.done = false,
-		.locked = false,
-		.latency = 0,
+	struct ctdb_recovery_lock_handle *s;
+
+	s = talloc_zero(rec, struct ctdb_recovery_lock_handle);
+	if (s == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return false;
 	};
 
-	h = ctdb_cluster_mutex(rec, ctdb, ctdb->recovery_lock, 0,
-			       take_reclock_handler, &s,
-			       lost_reclock_handler, rec);
+	h = ctdb_cluster_mutex(rec,
+			       ctdb,
+			       ctdb->recovery_lock,
+			       0,
+			       take_reclock_handler,
+			       s,
+			       lost_reclock_handler,
+			       rec);
 	if (h == NULL) {
+		talloc_free(s);
 		return false;
 	}
 
-	while (!s.done) {
+	while (! s->done) {
 		tevent_loop_once(ctdb->ev);
 	}
 
-	if (! s.locked) {
+	if (! s->locked) {
+		talloc_free(s);
 		talloc_free(h);
 		return false;
 	}
 
 	rec->recovery_lock_handle = h;
-	ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(),
-					   s.latency);
+	ctdb_ctrl_report_recd_lock_latency(ctdb,
+					   CONTROL_TIMEOUT(),
+					   s->latency);
+
+	talloc_free(s);
 
 	return true;
 }
