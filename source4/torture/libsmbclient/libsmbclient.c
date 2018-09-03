@@ -40,9 +40,39 @@ static void debug_callback(void *private_ptr, int level, const char *msg)
 	return;
 }
 
+static void auth_callback(const char *srv,
+			  const char *shr,
+			  char *wg, int wglen,
+			  char *un, int unlen,
+			  char *pw, int pwlen)
+{
+	const char *workgroup =
+		cli_credentials_get_domain(popt_get_cmdline_credentials());
+	const char *username =
+		cli_credentials_get_username(popt_get_cmdline_credentials());
+	const char *password =
+		cli_credentials_get_password(popt_get_cmdline_credentials());
+
+	if (workgroup != NULL) {
+		snprintf(wg, wglen, "%s", workgroup);
+	}
+
+	if (username != NULL) {
+		snprintf(un, unlen, "%s", username);
+	}
+
+	if (password != NULL) {
+		snprintf(pw, pwlen, "%s", password);
+	}
+};
+
 bool torture_libsmbclient_init_context(struct torture_context *tctx,
 				       SMBCCTX **ctx_p)
 {
+	const char *workgroup =
+		cli_credentials_get_domain(popt_get_cmdline_credentials());
+	const char *username =
+		cli_credentials_get_username(popt_get_cmdline_credentials());
 	SMBCCTX *ctx = NULL;
 	SMBCCTX *p = NULL;
 	bool ok = true;
@@ -64,8 +94,14 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 	smbc_setDebug(ctx, DEBUGLEVEL);
 	smbc_setOptionDebugToStderr(ctx, 1);
 
-	smbc_setUser(ctx,
-		     cli_credentials_get_username(popt_get_cmdline_credentials()));
+	if (workgroup != NULL) {
+		smbc_setWorkgroup(ctx, workgroup);
+	}
+	if (username != NULL) {
+		smbc_setUser(ctx, username);
+	}
+
+	smbc_setFunctionAuthData(ctx, auth_callback);
 
 	*ctx_p = ctx;
 
