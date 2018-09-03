@@ -104,7 +104,7 @@ systemOnly: FALSE
 
         self.assertIn(attr_ldap_name, attr_res[0])
         self.assertEquals(len(attr_res[0][attr_ldap_name]), 1)
-        self.assertEquals(attr_res[0][attr_ldap_name][0], "CASE_INSENSITIVE")
+        self.assertEquals(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
 
         # Check @INDEXLIST
 
@@ -127,7 +127,7 @@ systemOnly: FALSE
 
         self.assertIn(attr_ldap_name, attr_res[0])
         self.assertEquals(len(attr_res[0][attr_ldap_name]), 1)
-        self.assertEquals(attr_res[0][attr_ldap_name][0], "CASE_INSENSITIVE")
+        self.assertEquals(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
 
         # Check @INDEXLIST
 
@@ -160,11 +160,11 @@ systemOnly: FALSE
 
         self.assertIn(attr_ldap_name, attr_res[0])
         self.assertEquals(len(attr_res[0][attr_ldap_name]), 1)
-        self.assertEquals(attr_res[0][attr_ldap_name][0], "CASE_INSENSITIVE")
+        self.assertEquals(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
 
         self.assertIn(attr_ldap_name2, attr_res[0])
         self.assertEquals(len(attr_res[0][attr_ldap_name2]), 1)
-        self.assertEquals(attr_res[0][attr_ldap_name2][0], "CASE_INSENSITIVE")
+        self.assertEquals(str(attr_res[0][attr_ldap_name2][0]), "CASE_INSENSITIVE")
 
         # Check @INDEXLIST
 
@@ -188,7 +188,7 @@ systemOnly: FALSE
         self.assertEquals(len(res[0]), 1)
         self.assertTrue("@TEST_EXTRA" in res[0])
         self.assertEquals(len(res[0]["@TEST_EXTRA"]), 1)
-        self.assertEquals(res[0]["@TEST_EXTRA"][0], "HIDDEN")
+        self.assertEquals(str(res[0]["@TEST_EXTRA"][0]), "HIDDEN")
 
         samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
 
@@ -222,7 +222,7 @@ systemOnly: FALSE
         self.assertEquals(len(res[0]), 1)
         self.assertTrue("@TEST_EXTRA" in res[0])
         self.assertEquals(len(res[0]["@TEST_EXTRA"]), 1)
-        self.assertEquals(res[0]["@TEST_EXTRA"][0], "1")
+        self.assertEquals(str(res[0]["@TEST_EXTRA"][0]), "1")
 
         samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
 
