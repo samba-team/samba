@@ -56,5 +56,5 @@ class DCKeytabTests(tests.TestCase):
                     result += c
             principal_parts = self.principal.split('@')
             assert principal_parts[0] in result and \
-            principal_parts[1] in result, \
-            'Principal not found in generated keytab'
+                principal_parts[1] in result, \
+                'Principal not found in generated keytab'

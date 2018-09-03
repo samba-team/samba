@@ -237,9 +237,9 @@ class cmd_schema_attribute_show_oc(Command):
         schema_dn = samdb.schema_dn()
 
         may_filt = '(&(objectClass=classSchema)' \
-        '(|(mayContain={0})(systemMayContain={0})))'.format(attribute)
+            '(|(mayContain={0})(systemMayContain={0})))'.format(attribute)
         must_filt = '(&(objectClass=classSchema)' \
-        '(|(mustContain={0})(systemMustContain={0})))'.format(attribute)
+            '(|(mustContain={0})(systemMustContain={0})))'.format(attribute)
 
         may_res = samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
                                expression=may_filt, attrs=['cn'])

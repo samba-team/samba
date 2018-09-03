@@ -1045,7 +1045,7 @@ class DCJoinContext(object):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
         record_type = dnsp.DNS_TYPE_A
         select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA |\
-        dnsserver.DNS_RPC_VIEW_NO_CHILDREN
+            dnsserver.DNS_RPC_VIEW_NO_CHILDREN
 
         zone = ctx.dnsdomain
         msdcs_zone = "_msdcs.%s" % ctx.dnsforest

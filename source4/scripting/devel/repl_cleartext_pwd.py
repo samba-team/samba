@@ -137,7 +137,7 @@ if __name__ == "__main__":
          store_dn_len, store_dn_ofs,
          store_hwm_len, store_hwm_ofs,
          store_utdv_len, store_utdv_ofs) = \
-        struct.unpack("<LLLLLLL", store_hdr)
+            struct.unpack("<LLLLLLL", store_hdr)
 
         store_dn = store_blob[store_dn_ofs:store_dn_ofs + store_dn_len]
         store_hwm_blob = store_blob[store_hwm_ofs:store_hwm_ofs + store_hwm_len]
@@ -399,7 +399,7 @@ if __name__ == "__main__":
                                      len(dn), dn_ofs,
                                      len(store_hwm_blob), hwm_ofs,
                                      len(store_utdv_blob), utdv_ofs) + \
-            dn + store_hwm_blob + store_utdv_blob
+                dn + store_hwm_blob + store_utdv_blob
 
             tmp_file = "%s.tmp" % cookie_file
             f = open(tmp_file, 'wb')

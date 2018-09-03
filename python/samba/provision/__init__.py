@@ -1032,16 +1032,16 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
             if backend_credentials.get_bind_dn() is not None:
                 setup_add_ldif(secrets_ldb,
                                setup_path("secrets_simple_ldap.ldif"), {
-                        "LDAPMANAGERDN": backend_credentials.get_bind_dn(),
-                        "LDAPMANAGERPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
-                    })
+                                   "LDAPMANAGERDN": backend_credentials.get_bind_dn(),
+                                   "LDAPMANAGERPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
+                                   })
             else:
                 setup_add_ldif(secrets_ldb,
                                setup_path("secrets_sasl_ldap.ldif"), {
-                        "LDAPADMINUSER": backend_credentials.get_username(),
-                        "LDAPADMINREALM": backend_credentials.get_realm(),
-                        "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
-                    })
+                                   "LDAPADMINUSER": backend_credentials.get_username(),
+                                   "LDAPADMINREALM": backend_credentials.get_realm(),
+                                   "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
+                                   })
     except:
         secrets_ldb.transaction_cancel()
         raise
@@ -1196,12 +1196,12 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
     # Setup fSMORoleOwner entries to point at the newly created DC entry
         setup_modify_ldif(samdb,
                           setup_path("provision_self_join_modify_config.ldif"), {
-                "CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn,
-                "DEFAULTSITE": names.sitename,
-                "NETBIOSNAME": names.netbiosname,
-                "SERVERDN": names.serverdn,
-            })
+                              "CONFIGDN": names.configdn,
+                              "SCHEMADN": names.schemadn,
+                              "DEFAULTSITE": names.sitename,
+                              "NETBIOSNAME": names.netbiosname,
+                              "SERVERDN": names.serverdn,
+                              })
 
     system_session_info = system_session()
     samdb.set_session_info(system_session_info)
@@ -1484,9 +1484,9 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         logger.info("Modifying display specifiers and extended rights")
         setup_modify_ldif(samdb,
                           setup_path("provision_configuration_modify.ldif"), {
-                "CONFIGDN": names.configdn,
-                "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
-            })
+                              "CONFIGDN": names.configdn,
+                              "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
+                              })
 
     logger.info("Adding users container")
     users_desc = b64encode(get_domain_users_descriptor(names.domainsid)).decode('utf8')
@@ -1506,7 +1506,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
     logger.info("Modifying computers container")
     setup_modify_ldif(samdb,
                       setup_path("provision_computers_modify.ldif"), {
-            "DOMAINDN": names.domaindn})
+                          "DOMAINDN": names.domaindn})
     logger.info("Setting up sam.ldb data")
     infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(names.domainsid)).decode('utf8')
     lostandfound_desc = b64encode(get_domain_delete_protected2_descriptor(names.domainsid)).decode('utf8')

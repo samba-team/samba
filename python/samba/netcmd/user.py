@@ -66,7 +66,7 @@ try:
 except ImportError as e:
     gpgme_support = False
     decrypt_samba_gpg_help = "Decrypt the SambaGPG password not supported, " + \
-    "python-gpgme required"
+        "python-gpgme required"
 
 disabled_virtual_attributes = {
 }

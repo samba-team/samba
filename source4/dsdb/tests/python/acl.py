@@ -169,7 +169,7 @@ class AclAddTests(AclTests):
     def assert_top_ou_deleted(self):
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s,%s)" % (
-                "OU=test_add_ou1", self.base_dn))
+                                        "OU=test_add_ou1", self.base_dn))
         self.assertEqual(len(res), 0)
 
     def test_add_u1(self):
