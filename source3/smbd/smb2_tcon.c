@@ -33,6 +33,7 @@
 static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbd_smb2_request *smb2req,
+					uint16_t in_flags,
 					const char *in_path);
 static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
 					    uint8_t *out_share_type,
@@ -46,7 +47,9 @@ static void smbd_smb2_request_tcon_done(struct tevent_req *subreq);
 
 NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *xconn = req->xconn;
 	const uint8_t *inbody;
+	uint16_t in_flags;
 	uint16_t in_path_offset;
 	uint16_t in_path_length;
 	DATA_BLOB in_path_buffer;
@@ -62,6 +65,11 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	}
 	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
+	if (xconn->protocol >= PROTOCOL_SMB3_11) {
+		in_flags = SVAL(inbody, 0x02);
+	} else {
+		in_flags = 0;
+	}
 	in_path_offset = SVAL(inbody, 0x04);
 	in_path_length = SVAL(inbody, 0x06);
 
@@ -96,6 +104,7 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	subreq = smbd_smb2_tree_connect_send(req,
 					     req->sconn->ev_ctx,
 					     req,
+					     in_flags,
 					     in_path_string);
 	if (subreq == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
@@ -425,6 +434,7 @@ struct smbd_smb2_tree_connect_state {
 static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbd_smb2_request *smb2req,
+					uint16_t in_flags,
 					const char *in_path)
 {
 	struct tevent_req *req;
