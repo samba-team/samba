@@ -581,7 +581,7 @@ class LDAPObject(object):
             title = 4 * " " + "Attributes found only in %s:" % self.con.host
             for x in self.attributes.keys():
                 if x not in other.attributes.keys() and \
-                    not x.upper() in [q.upper() for q in other.ignore_attributes]:
+                        not x.upper() in [q.upper() for q in other.ignore_attributes]:
                     if title:
                         res += title + "\n"
                         title = None
@@ -591,7 +591,7 @@ class LDAPObject(object):
             title = 4 * " " + "Attributes found only in %s:" % other.con.host
             for x in other.attributes.keys():
                 if x not in self.attributes.keys() and \
-                    not x.upper() in [q.upper() for q in self.ignore_attributes]:
+                        not x.upper() in [q.upper() for q in self.ignore_attributes]:
                     if title:
                         res += title + "\n"
                         title = None
