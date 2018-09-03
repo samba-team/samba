@@ -307,7 +307,9 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge\n");
 
@@ -377,7 +379,9 @@ bool test_SetupCredentialsDowngrade(struct torture_context *tctx,
 	uint32_t negotiate_flags = 0;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge\n");
 
@@ -1255,7 +1259,9 @@ static bool test_ServerReqChallengeGlobal(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b2 = NULL;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
@@ -1334,7 +1340,9 @@ static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b3 = NULL;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
@@ -1429,7 +1437,9 @@ static bool test_ServerReqChallengeReuseGlobal2(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b2 = NULL;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
@@ -1517,7 +1527,9 @@ static bool test_ServerReqChallengeReuseGlobal3(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b2 = NULL;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
@@ -1607,7 +1619,9 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b2 = NULL;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
@@ -1722,7 +1736,9 @@ static bool test_ServerReqChallengeReuse(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	machine_name = cli_credentials_get_workstation(machine_credentials);
+	torture_assert(tctx, machine_name != NULL, "machine_name");
 	plain_pass = cli_credentials_get_password(machine_credentials);
+	torture_assert(tctx, plain_pass != NULL, "plain_pass");
 
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
