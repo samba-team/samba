@@ -1385,7 +1385,7 @@ class cmd_restore(cmd_create):
             dtd_header += '\n]>\n'
 
         super(cmd_restore, self).run(displayname, H, tmpdir, sambaopts,
-                                    credopts, versionopts)
+                                     credopts, versionopts)
 
         try:
             # Iterate over backup files and restore with DTD

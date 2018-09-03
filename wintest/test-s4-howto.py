@@ -32,20 +32,20 @@ def provision_s4(t, func_level="2008"):
     t.del_files(["var", "private"])
     t.run_cmd("rm -f etc/smb.conf")
     provision = ['bin/samba-tool',
-               'domain',
-               'provision',
-               '--realm=${LCREALM}',
-               '--domain=${DOMAIN}',
-               '--adminpass=${PASSWORD1}',
-               '--server-role=domain controller',
-               '--function-level=%s' % func_level,
-               '-d${DEBUGLEVEL}',
-               '--option=interfaces=${INTERFACE}',
-               '--host-ip=${INTERFACE_IP}',
-               '--option=bind interfaces only=yes',
-               '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
-               '--dns-backend=${NAMESERVER_BACKEND}',
-               '${DNS_FORWARDER}']
+                 'domain',
+                 'provision',
+                 '--realm=${LCREALM}',
+                 '--domain=${DOMAIN}',
+                 '--adminpass=${PASSWORD1}',
+                 '--server-role=domain controller',
+                 '--function-level=%s' % func_level,
+                 '-d${DEBUGLEVEL}',
+                 '--option=interfaces=${INTERFACE}',
+                 '--host-ip=${INTERFACE_IP}',
+                 '--option=bind interfaces only=yes',
+                 '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
+                 '--dns-backend=${NAMESERVER_BACKEND}',
+                 '${DNS_FORWARDER}']
     if t.getvar('USE_NTVFS'):
         provision.append('${USE_NTVFS}')
 

@@ -1327,7 +1327,7 @@ class SearchTests(LdbBaseTest):
 
         try:
             res11 = self.l.search(base="DC=SAMBA,DCXXXX",
-                              scope=ldb.SCOPE_ONELEVEL)
+                                  scope=ldb.SCOPE_ONELEVEL)
             self.fail("Should have failed with ERR_INVALID_DN_SYNTAX")
         except ldb.LdbError as err:
             enum = err.args[0]

@@ -102,7 +102,7 @@ def get_quotas(uid, quota_list):
 
 def get_users():
     output = subprocess.Popen(['getent', 'passwd'],
-                             stdout=subprocess.PIPE).communicate()[0].decode("utf-8").split('\n')
+                              stdout=subprocess.PIPE).communicate()[0].decode("utf-8").split('\n')
     users = []
     for line in output:
         info = line.split(':')
@@ -222,7 +222,7 @@ def main():
     env.envdir = sys.argv[5]
     env.smbcquotas = sys.argv[6]
     quota_script = os.path.join(os.path.dirname(sys.argv[0]),
-                            "getset_quota.py")
+                                "getset_quota.py")
     #copy the quota script to the evironment
     shutil.copy2(quota_script, env.envdir)
 

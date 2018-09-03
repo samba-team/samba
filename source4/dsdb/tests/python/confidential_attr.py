@@ -628,7 +628,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
             res = samdb.search(self.test_dn, expression=expr,
                                scope=SCOPE_SUBTREE, attrs=attr)
             self.assertTrue(len(res) == expected_num,
-                           "%u results, not %u for search %s, attr %s" %
+                            "%u results, not %u for search %s, attr %s" %
                             (len(res), expected_num, expr, str(attr)))
 
             # assert we haven't revealed the hidden test-object

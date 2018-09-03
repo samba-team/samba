@@ -254,7 +254,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
             next_object = ctr6.first_object
             for i in range(0, ctr6.object_count):
                 print("Obj %d: %s %s" % (i, next_object.object.identifier.dn[:25],
-                                        next_object.object.identifier.guid))
+                                         next_object.object.identifier.guid))
                 next_object = next_object.next_object
 
             print("Linked Attributes: %d" % ctr6.linked_attributes_count)
@@ -273,7 +273,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
                 if l.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:
                     state = "Act"
                 print("  v%u %s changed %u" % (l.meta_data.version, state,
-                                              l.meta_data.originating_change_time))
+                                               l.meta_data.originating_change_time))
 
             print("HWM:     %d" % (ctr6.new_highwatermark.highest_usn))
             print("Tmp HWM: %d" % (ctr6.new_highwatermark.tmp_highest_usn))

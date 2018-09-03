@@ -120,8 +120,8 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, role_object)
         m["fSMORoleOwner"] = ldb.MessageElement(new_owner,
-                                               ldb.FLAG_MOD_ADD,
-                                               "fSMORoleOwner")
+                                                ldb.FLAG_MOD_ADD,
+                                                "fSMORoleOwner")
         try:
             samdb.modify(m)
         except LdbError as e5:
