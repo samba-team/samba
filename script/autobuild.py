@@ -19,6 +19,13 @@ from email.mime.multipart import MIMEMultipart
 from distutils.sysconfig import get_python_lib
 import platform
 
+try:
+    from waflib.Build import CACHE_SUFFIX
+except ImportError:
+    sys.path.insert(0, "./third_party/waf")
+    from waflib.Build import CACHE_SUFFIX
+
+
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 # This speeds up testing remarkably.
@@ -179,7 +186,10 @@ tasks = {
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
                    ("configure-cross-answers", "./configure.developer --out ./bin-xa --cross-compile" \
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
-                   ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
+                   ("compare-results", "script/compare_cc_results.py "
+                    "./bin/c4che/default{} "
+                    "./bin-xe/c4che/default{} "
+                    "./bin-xa/c4che/default{}".format(*([CACHE_SUFFIX]*3)), "text/plain")],
 
     # test build with -O3 -- catches extra warnings and bugs, tests the ad_dc environments
     "samba-o3": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
