@@ -92,15 +92,15 @@ class UserCmdTestCase(SambaToolCmdTest):
         # test adding users with --use-username-as-cn
         for user in self.users:
             (result, out, err) = self.runsubcmd("user", "create", user["name"], user["password"],
-                                                 "--use-username-as-cn",
-                                                 "--surname=%s" % user["surname"],
-                                                 "--given-name=%s" % user["given-name"],
-                                                 "--job-title=%s" % user["job-title"],
-                                                 "--department=%s" % user["department"],
-                                                 "--description=%s" % user["description"],
-                                                 "--company=%s" % user["company"],
-                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+                                                "--use-username-as-cn",
+                                                "--surname=%s" % user["surname"],
+                                                "--given-name=%s" % user["given-name"],
+                                                "--job-title=%s" % user["job-title"],
+                                                "--department=%s" % user["department"],
+                                                "--description=%s" % user["description"],
+                                                "--company=%s" % user["company"],
+                                                "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                                "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "Shouldn't be any error messages")

@@ -500,8 +500,8 @@ class LDAPObject(object):
             #
             # May contain DOMAIN_NETBIOS and SERVER_NAME
             self.servername_attributes = ["distinguishedName", "name", "CN", "sAMAccountName", "dNSHostName",
-                                           "servicePrincipalName", "rIDSetReferences", "serverReference", "serverReferenceBL",
-                                           "msDS-IsDomainFor", "interSiteTopologyGenerator", ]
+                                          "servicePrincipalName", "rIDSetReferences", "serverReference", "serverReferenceBL",
+                                          "msDS-IsDomainFor", "interSiteTopologyGenerator", ]
             self.servername_attributes = [x.upper() for x in self.servername_attributes]
             #
             self.netbios_attributes = ["servicePrincipalName", "CN", "distinguishedName", "nETBIOSName", "name", ]

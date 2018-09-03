@@ -107,7 +107,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
                                                hash)
         self.assertEqual(self.ldbs.sam.get_attribute_replmetadata_version(dn,
                                                                           "unicodePwd"),
-                            140)
+                         140)
         # This function should not decrement the version
         hash[dn.lower()] = 130
 
@@ -116,7 +116,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
                                                hash)
         self.assertEqual(self.ldbs.sam.get_attribute_replmetadata_version(dn,
                                                                           "unicodePwd"),
-                            140)
+                         140)
 
     def test_identic_rename(self):
         rootdn = "DC=samba,DC=example,DC=com"

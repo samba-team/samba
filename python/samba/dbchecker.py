@@ -1453,7 +1453,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         dn = ldb.Dn(self.samdb, "<GUID=%s>" % guid_str)
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[attr],
                                 controls=["search_options:1:2",
-                                            "show_recycled:1"])
+                                          "show_recycled:1"])
         msg = res[0]
         nmsg = ldb.Message()
         nmsg.dn = dn
@@ -2215,7 +2215,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 set_attrs_seen.add(str(attrname).lower())
 
             if syntax_oid in [dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
-                               dsdb.DSDB_SYNTAX_STRING_DN, ldb.SYNTAX_DN]:
+                              dsdb.DSDB_SYNTAX_STRING_DN, ldb.SYNTAX_DN]:
                 # it's some form of DN, do specialised checking on those
                 error_count += self.check_dn(obj, attrname, syntax_oid)
             else:

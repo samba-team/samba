@@ -565,7 +565,7 @@ Member: """ + self.get_user_dn(self.user_with_sm)
         self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
         self.ldb_user2.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
-                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
+                                    % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_sm))
 # but not other users
         ldif = """
@@ -615,7 +615,7 @@ add: Member
 Member: """ + self.get_user_dn(self.user_with_wp)
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
-                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
+                                    % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_wp))
         ldif = """
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
@@ -629,7 +629,7 @@ add: Member
 Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
-                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
+                                    % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], "CN=test_modify_user2,CN=Users," + self.base_dn)
 
     def test_modify_anonymous(self):
@@ -1977,10 +1977,10 @@ class AclSPNTests(AclTests):
         ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
 
         ctx.never_reveal_sid = ["<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
-                                 "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
-                                 "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
-                                 "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
-                                 "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS]
+                                "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
+                                "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
+                                "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
+                                "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS]
         ctx.reveal_sid = "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_ALLOW)
 
         mysid = ctx.get_mysid()

@@ -125,7 +125,7 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
             "sAMAccountName": username,
             "userPrincipalName": "test2@test.com",
             "servicePrincipalName": ["test2/%s" % self.ldb_dc1.get_default_basedn(),
-                                      "test3/%s" % self.ldb_dc1.get_default_basedn()],
+                                     "test3/%s" % self.ldb_dc1.get_default_basedn()],
             "displayName": "test2"}
 
         self.ldb_dc1.add(user_record)

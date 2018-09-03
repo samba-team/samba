@@ -1947,7 +1947,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
             computer_utf16 = computer.encode('utf-16-le')
 
         real_stub = struct.pack('<IIII', 0x00200000,
-                                 len(server) + 1, 0, len(server) + 1)
+                                len(server) + 1, 0, len(server) + 1)
         real_stub += server_utf16 + b'\x00\x00'
         mod_len = len(real_stub) % 4
         if mod_len != 0:

@@ -2825,9 +2825,9 @@ objectClass: posixAccount""" % (self.base_dn))
         delete_force(self.ldb, user_dn)
         try:
             self.ldb.add({"dn": user_dn,
-                           "objectClass": "user",
-                           "sAMAccountName": user_name,
-                           "nTSecurityDescriptor": []})
+                          "objectClass": "user",
+                          "sAMAccountName": user_name,
+                          "nTSecurityDescriptor": []})
             self.fail()
         except LdbError as e107:
             (num, _) = e107.args
@@ -2906,8 +2906,8 @@ nTSecurityDescriptor:: """ + desc_base64)
         #
         delete_force(self.ldb, user_dn)
         self.ldb.add({"dn": user_dn,
-                       "objectClass": "user",
-                       "sAMAccountName": user_name})
+                      "objectClass": "user",
+                      "sAMAccountName": user_name})
 
         m = Message()
         m.dn = Dn(ldb, user_dn)
@@ -3124,8 +3124,8 @@ nTSecurityDescriptor:: """ + desc_base64
 
         delete_force(self.ldb, user_dn)
         self.ldb.add({"dn": user_dn,
-                       "objectClass": "user",
-                       "sAMAccountName": user_name})
+                      "objectClass": "user",
+                      "sAMAccountName": user_name})
 
         #
         # We check the following values:

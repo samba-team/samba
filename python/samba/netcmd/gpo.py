@@ -449,7 +449,7 @@ class cmd_list(Command):
             raise CommandError("Failed to find objectClass for user %s" % username)
 
         session_info_flags = (AUTH_SESSION_INFO_DEFAULT_GROUPS |
-                               AUTH_SESSION_INFO_AUTHENTICATED)
+                              AUTH_SESSION_INFO_AUTHENTICATED)
 
         # When connecting to a remote server, don't look up the local privilege DB
         if self.url is not None and self.url.startswith('ldap'):
@@ -1225,8 +1225,8 @@ class cmd_create(Command):
 
             # Get new security descriptor
             ds_sd_flags = (security.SECINFO_OWNER |
-                            security.SECINFO_GROUP |
-                            security.SECINFO_DACL)
+                           security.SECINFO_GROUP |
+                           security.SECINFO_DACL)
             msg = get_gpo_info(self.samdb, gpo=gpo, sd_flags=ds_sd_flags)[0]
             ds_sd_ndr = msg['nTSecurityDescriptor'][0]
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
@@ -1241,9 +1241,9 @@ class cmd_create(Command):
 
             # Set ACL
             sio = (security.SECINFO_OWNER |
-                    security.SECINFO_GROUP |
-                    security.SECINFO_DACL |
-                    security.SECINFO_PROTECTED_DACL)
+                   security.SECINFO_GROUP |
+                   security.SECINFO_DACL |
+                   security.SECINFO_PROTECTED_DACL)
             conn.set_acl(sharepath, fs_sd, sio)
 
             # Copy GPO files over SMB

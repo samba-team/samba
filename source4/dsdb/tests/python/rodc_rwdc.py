@@ -86,7 +86,7 @@ def set_auto_replication(dc, allow):
             if 'LDAP_REFERRAL' not in stderr:
                 raise RodcRwdcTestException()
             print("ignoring +%s REFERRAL error; assuming %s is RODC" %
-                   (opt, dc))
+                  (opt, dc))
 
 
 def preload_rodc_user(user_dn):

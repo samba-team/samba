@@ -82,10 +82,10 @@ class GroupCmdTestCase(SambaToolCmdTest):
         # test adding groups
         for group in self.groups:
             (result, out, err) = self.runsubcmd("group", "add", group["name"],
-                                                 "--description=%s" % group["description"],
-                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"],
-                                                               os.environ["DC_PASSWORD"]))
+                                                "--description=%s" % group["description"],
+                                                "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                                "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                              os.environ["DC_PASSWORD"]))
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "There shouldn't be any error message")

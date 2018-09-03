@@ -39,10 +39,10 @@ class inf_to_kdc_tdb(gp_ext_setter):
 
     def mapper(self):
         return {'kdc:user_ticket_lifetime': (self.set_kdc_tdb, self.explicit),
-                 'kdc:service_ticket_lifetime': (self.set_kdc_tdb,
-                                                 self.mins_to_hours),
-                 'kdc:renewal_lifetime': (self.set_kdc_tdb,
-                                          self.days_to_hours),
+                'kdc:service_ticket_lifetime': (self.set_kdc_tdb,
+                                                self.mins_to_hours),
+                'kdc:renewal_lifetime': (self.set_kdc_tdb,
+                                         self.days_to_hours),
                 }
 
     def __str__(self):
@@ -96,11 +96,11 @@ class inf_to_ldb(gp_ext_setter):
     def mapper(self):
         '''ldap value : samba setter'''
         return {"minPwdAge": (self.ch_minPwdAge, self.days2rel_nttime),
-                 "maxPwdAge": (self.ch_maxPwdAge, self.days2rel_nttime),
-                 # Could be none, but I like the method assignment in
-                 # update_samba
-                 "minPwdLength": (self.ch_minPwdLength, self.explicit),
-                 "pwdProperties": (self.ch_pwdProperties, self.explicit),
+                "maxPwdAge": (self.ch_maxPwdAge, self.days2rel_nttime),
+                # Could be none, but I like the method assignment in
+                # update_samba
+                "minPwdLength": (self.ch_minPwdLength, self.explicit),
+                "pwdProperties": (self.ch_pwdProperties, self.explicit),
 
                 }
 

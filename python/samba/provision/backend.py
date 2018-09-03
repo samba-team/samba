@@ -318,13 +318,13 @@ class OpenLDAPBackend(LDAPBackend):
                  ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
         from samba.provision import setup_path
         super(OpenLDAPBackend, self).__init__(backend_type=backend_type,
-                                               paths=paths, lp=lp,
-                                               names=names, logger=logger,
-                                               domainsid=domainsid, schema=schema, hostname=hostname,
-                                               ldapadminpass=ldapadminpass, slapd_path=slapd_path,
-                                               ldap_backend_extra_port=ldap_backend_extra_port,
-                                               ldap_backend_forced_uri=ldap_backend_forced_uri,
-                                               ldap_dryrun_mode=ldap_dryrun_mode)
+                                              paths=paths, lp=lp,
+                                              names=names, logger=logger,
+                                              domainsid=domainsid, schema=schema, hostname=hostname,
+                                              ldapadminpass=ldapadminpass, slapd_path=slapd_path,
+                                              ldap_backend_extra_port=ldap_backend_extra_port,
+                                              ldap_backend_forced_uri=ldap_backend_forced_uri,
+                                              ldap_dryrun_mode=ldap_dryrun_mode)
 
         self.ol_mmr_urls = ol_mmr_urls
         self.nosync = nosync
@@ -529,8 +529,8 @@ class OpenLDAPBackend(LDAPBackend):
         cn_samba = read_and_sub_file(
             setup_path("cn=samba.ldif"),
             {"LDAPADMINPASS": self.ldapadminpass,
-              "MMR_PASSWORD": mmr_pass,
-              "MMR": mmr})
+             "MMR_PASSWORD": mmr_pass,
+             "MMR": mmr})
 
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
@@ -718,11 +718,11 @@ class FDSBackend(LDAPBackend):
                 refint_config += read_and_sub_file(
                     setup_path("fedorads-refint-add.ldif"),
                     {"ARG_NUMBER": str(argnum),
-                           "LINK_ATTR": attr})
+                     "LINK_ATTR": attr})
                 memberof_config += read_and_sub_file(
                     setup_path("fedorads-linked-attributes.ldif"),
                     {"MEMBER_ATTR": attr,
-                           "MEMBEROF_ATTR": lnkattr[attr]})
+                     "MEMBEROF_ATTR": lnkattr[attr]})
                 index_config += read_and_sub_file(
                     setup_path("fedorads-index.ldif"), {"ATTR": attr})
                 argnum += 1

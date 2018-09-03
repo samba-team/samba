@@ -147,8 +147,8 @@ class DCJoinContext(object):
                 ctx.topology_dn = None
 
             ctx.SPNs = ["HOST/%s" % ctx.myname,
-                         "HOST/%s" % ctx.dnshostname,
-                         "GC/%s/%s" % (ctx.dnshostname, ctx.dnsforest)]
+                        "HOST/%s" % ctx.dnshostname,
+                        "GC/%s/%s" % (ctx.dnshostname, ctx.dnsforest)]
 
             res_rid_manager = ctx.samdb.search(scope=ldb.SCOPE_BASE,
                                                attrs=["rIDManagerReference"],
@@ -417,7 +417,7 @@ class DCJoinContext(object):
             "dn": ctx.krbtgt_dn,
             "objectclass": "user",
             "useraccountcontrol": str(samba.dsdb.UF_NORMAL_ACCOUNT |
-                                       samba.dsdb.UF_ACCOUNTDISABLE),
+                                      samba.dsdb.UF_ACCOUNTDISABLE),
             "showinadvancedviewonly": "TRUE",
             "description": "krbtgt for %s" % ctx.samname}
         ctx.samdb.add(rec, ["rodc_join:1:1"])
@@ -632,8 +632,8 @@ class DCJoinContext(object):
                 "objectclass": "server",
                 # windows uses 50000000 decimal for systemFlags. A windows hex/decimal mixup bug?
                 "systemFlags": str(samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
-                                    samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE |
-                                    samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+                                   samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE |
+                                   samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
                 # windows seems to add the dnsHostName later
                 "dnsHostName": ctx.dnshostname}
 
@@ -1445,13 +1445,13 @@ def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_
                               samba.dsdb.UF_PARTIAL_SECRETS_ACCOUNT)
 
     ctx.SPNs.extend(["RestrictedKrbHost/%s" % ctx.myname,
-                      "RestrictedKrbHost/%s" % ctx.dnshostname])
+                     "RestrictedKrbHost/%s" % ctx.dnshostname])
 
     ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
     ctx.secure_channel_type = misc.SEC_CHAN_RODC
     ctx.RODC = True
     ctx.replica_flags |= (drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
-                           drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
+                          drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
     ctx.domain_replica_flags = ctx.replica_flags
     if domain_critical_only:
         ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY

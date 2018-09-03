@@ -1610,7 +1610,7 @@ class SchemaTests_msDS_isRODC(samba.tests.TestCase):
     def setUp(self):
         super(SchemaTests_msDS_isRODC, self).setUp()
         self.ldb = SamDB(host, credentials=creds,
-                          session_info=system_session(lp), lp=lp, options=ldb_options)
+                         session_info=system_session(lp), lp=lp, options=ldb_options)
         res = self.ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["defaultNamingContext"])
         self.assertEquals(len(res), 1)
         self.base_dn = res[0]["defaultNamingContext"][0]
