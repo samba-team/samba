@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import os
-import Logs
 import sys
+from waflib import Logs
 
 def configure(conf):
     pkg_name = 'libtasn1'
