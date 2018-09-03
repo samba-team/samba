@@ -8,6 +8,7 @@ from waflib.TaskGen import feature, before, after
 from waflib.Configure import ConfigurationContext
 from waflib.Logs import debug
 from waflib import ConfigSet
+from waflib.Build import CACHE_SUFFIX
 
 # TODO: make this a --option
 LIB_PATH="shared"
@@ -393,7 +394,7 @@ def LOAD_ENVIRONMENT():
        from new commands'''
     env = ConfigSet.ConfigSet()
     try:
-        p = os.path.join(Context.g_module.out, 'c4che/default_cache.py')
+        p = os.path.join(Context.g_module.out, 'c4che/default'+CACHE_SUFFIX)
         env.load(p)
     except (OSError, IOError):
         pass
