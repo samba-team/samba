@@ -402,58 +402,54 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[12].a_type, smb_acl.SMB_ACL_MASK)
         self.assertEquals(posix_acl.acl[12].a_perm, 7)
 
+        # check that it matches:
+        # user::rwx
+        # user:root:rwx (selftest user actually)
+        # group::rwx
+        # group:Local Admins:rwx
+        # group:3000000:r-x
+        # group:3000001:rwx
+        # group:3000002:r-x
+        # mask::rwx
+        # other::---
 
-# check that it matches:
-# user::rwx
-# user:root:rwx (selftest user actually)
-# group::rwx
-# group:Local Admins:rwx
-# group:3000000:r-x
-# group:3000001:rwx
-# group:3000002:r-x
-# mask::rwx
-# other::---
-
-#
-# This is in this order in the NDR smb_acl (not re-orderded for display)
-# a_type: GROUP
-# a_perm: 7
-# uid: -1
-# gid: 10
-# a_type: USER
-# a_perm: 6
-# uid: 0 (selftest user actually)
-# gid: -1
-# a_type: OTHER
-# a_perm: 0
-# uid: -1
-# gid: -1
-# a_type: USER_OBJ
-# a_perm: 6
-# uid: -1
-# gid: -1
-# a_type: GROUP_OBJ
-# a_perm: 7
-# uid: -1
-# gid: -1
-# a_type: GROUP
-# a_perm: 5
-# uid: -1
-# gid: 3000020
-# a_type: GROUP
-# a_perm: 7
-# uid: -1
-# gid: 3000000
-# a_type: GROUP
-# a_perm: 5
-# uid: -1
-# gid: 3000001
-# a_type: MASK
-# a_perm: 7
-# uid: -1
-# gid: -1
-
-#
+        # This is in this order in the NDR smb_acl(not re-orderded for display)
+        # a_type: GROUP
+        # a_perm: 7
+        # uid: -1
+        # gid: 10
+        # a_type: USER
+        # a_perm: 6
+        # uid: 0 (selftest user actually)
+        # gid: -1
+        # a_type: OTHER
+        # a_perm: 0
+        # uid: -1
+        # gid: -1
+        # a_type: USER_OBJ
+        # a_perm: 6
+        # uid: -1
+        # gid: -1
+        # a_type: GROUP_OBJ
+        # a_perm: 7
+        # uid: -1
+        # gid: -1
+        # a_type: GROUP
+        # a_perm: 5
+        # uid: -1
+        # gid: 3000020
+        # a_type: GROUP
+        # a_perm: 7
+        # uid: -1
+        # gid: 3000000
+        # a_type: GROUP
+        # a_perm: 5
+        # uid: -1
+        # gid: 3000001
+        # a_type: MASK
+        # a_perm: 7
+        # uid: -1
+        # gid: -1
 
     def test_setntacl_sysvol_dir_check_getposixacl(self):
         acl = provision.SYSVOL_ACL
@@ -537,17 +533,16 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[12].a_type, smb_acl.SMB_ACL_MASK)
         self.assertEquals(posix_acl.acl[12].a_perm, 7)
 
-
-# check that it matches:
-# user::rwx
-# user:root:rwx (selftest user actually)
-# group::rwx
-# group:3000000:rwx
-# group:3000001:r-x
-# group:3000002:rwx
-# group:3000003:r-x
-# mask::rwx
-# other::---
+        # check that it matches:
+        # user::rwx
+        # user:root:rwx (selftest user actually)
+        # group::rwx
+        # group:3000000:rwx
+        # group:3000001:r-x
+        # group:3000002:rwx
+        # group:3000003:r-x
+        # mask::rwx
+        # other::---
 
     def test_setntacl_policies_dir_check_getposixacl(self):
         acl = provision.POLICIES_ACL
@@ -642,18 +637,17 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[14].a_type, smb_acl.SMB_ACL_MASK)
         self.assertEquals(posix_acl.acl[14].a_perm, 7)
 
-
-# check that it matches:
-# user::rwx
-# user:root:rwx  (selftest user actually)
-# group::rwx
-# group:3000000:rwx
-# group:3000001:r-x
-# group:3000002:rwx
-# group:3000003:r-x
-# group:3000004:rwx
-# mask::rwx
-# other::---
+        # check that it matches:
+        # user::rwx
+        # user:root:rwx  (selftest user actually)
+        # group::rwx
+        # group:3000000:rwx
+        # group:3000001:r-x
+        # group:3000002:rwx
+        # group:3000003:r-x
+        # group:3000004:rwx
+        # mask::rwx
+        # other::---
 
     def test_setntacl_policies_check_getposixacl(self):
         acl = provision.POLICIES_ACL
@@ -761,61 +755,60 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[14].a_type, smb_acl.SMB_ACL_MASK)
         self.assertEquals(posix_acl.acl[14].a_perm, 7)
 
+        # check that it matches:
+        # user::rwx
+        # user:root:rwx (selftest user actually)
+        # group::rwx
+        # group:Local Admins:rwx
+        # group:3000000:r-x
+        # group:3000001:rwx
+        # group:3000002:r-x
+        # group:3000003:rwx
+        # mask::rwx
+        # other::---
 
-# check that it matches:
-# user::rwx
-# user:root:rwx (selftest user actually)
-# group::rwx
-# group:Local Admins:rwx
-# group:3000000:r-x
-# group:3000001:rwx
-# group:3000002:r-x
-# group:3000003:rwx
-# mask::rwx
-# other::---
+        # This is in this order in the NDR smb_acl(not re-orderded for display)
+        # a_type: GROUP
+        # a_perm: 7
+        # uid: -1
+        # gid: 10
+        # a_type: USER
+        # a_perm: 6
+        # uid: 0 (selftest user actually)
+        # gid: -1
+        # a_type: OTHER
+        # a_perm: 0
+        # uid: -1
+        # gid: -1
+        # a_type: USER_OBJ
+        # a_perm: 6
+        # uid: -1
+        # gid: -1
+        # a_type: GROUP_OBJ
+        # a_perm: 7
+        # uid: -1
+        # gid: -1
+        # a_type: GROUP
+        # a_perm: 5
+        # uid: -1
+        # gid: 3000020
+        # a_type: GROUP
+        # a_perm: 7
+        # uid: -1
+        # gid: 3000000
+        # a_type: GROUP
+        # a_perm: 5
+        # uid: -1
+        # gid: 3000001
+        # a_type: GROUP
+        # a_perm: 7
+        # uid: -1
+        # gid: 3000003
+        # a_type: MASK
+        # a_perm: 7
+        # uid: -1
+        # gid: -1
 
-#
-# This is in this order in the NDR smb_acl (not re-orderded for display)
-# a_type: GROUP
-# a_perm: 7
-# uid: -1
-# gid: 10
-# a_type: USER
-# a_perm: 6
-# uid: 0 (selftest user actually)
-# gid: -1
-# a_type: OTHER
-# a_perm: 0
-# uid: -1
-# gid: -1
-# a_type: USER_OBJ
-# a_perm: 6
-# uid: -1
-# gid: -1
-# a_type: GROUP_OBJ
-# a_perm: 7
-# uid: -1
-# gid: -1
-# a_type: GROUP
-# a_perm: 5
-# uid: -1
-# gid: 3000020
-# a_type: GROUP
-# a_perm: 7
-# uid: -1
-# gid: 3000000
-# a_type: GROUP
-# a_perm: 5
-# uid: -1
-# gid: 3000001
-# a_type: GROUP
-# a_perm: 7
-# uid: -1
-# gid: 3000003
-# a_type: MASK
-# a_perm: 7
-# uid: -1
-# gid: -1
 
 class SessionedPosixAclMappingTests(PosixAclMappingTests):
     """
