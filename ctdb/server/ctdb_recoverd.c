@@ -239,6 +239,8 @@ struct ctdb_banning_state {
 	struct timeval last_reported_time;
 };
 
+struct ctdb_recovery_lock_handle;
+
 /*
   private state of recovery daemon
  */
@@ -260,7 +262,7 @@ struct ctdb_recoverd {
 	uint32_t *force_rebalance_nodes;
 	struct ctdb_node_capabilities *caps;
 	bool frozen_on_inactive;
-	struct ctdb_cluster_mutex_handle *recovery_lock_handle;
+	struct ctdb_recovery_lock_handle *recovery_lock_handle;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -885,6 +887,7 @@ struct ctdb_recovery_lock_handle {
 	bool done;
 	bool locked;
 	double latency;
+	struct ctdb_cluster_mutex_handle *h;
 };
 
 static void take_reclock_handler(char status,
@@ -940,7 +943,7 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 		return false;
 	};
 
-	h = ctdb_cluster_mutex(rec,
+	h = ctdb_cluster_mutex(s,
 			       ctdb,
 			       ctdb->recovery_lock,
 			       0,
@@ -959,16 +962,14 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 
 	if (! s->locked) {
 		talloc_free(s);
-		talloc_free(h);
 		return false;
 	}
 
-	rec->recovery_lock_handle = h;
+	rec->recovery_lock_handle = s;
+	s->h = h;
 	ctdb_ctrl_report_recd_lock_latency(ctdb,
 					   CONTROL_TIMEOUT(),
 					   s->latency);
-
-	talloc_free(s);
 
 	return true;
 }
