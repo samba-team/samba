@@ -432,9 +432,9 @@ unix = ["unix.info2", "unix.whoami"]
 nbt = ["nbt.dgram"]
 
 libsmbclient = ["libsmbclient.version", "libsmbclient.initialize",
-		"libsmbclient.configuration", "libsmbclient.setConfiguration",
-		"libsmbclient.options", "libsmbclient.opendir",
-		"libsmbclient.list_shares", "libsmbclient.readdirplus"]
+                "libsmbclient.configuration", "libsmbclient.setConfiguration",
+                "libsmbclient.options", "libsmbclient.opendir",
+                "libsmbclient.list_shares", "libsmbclient.readdirplus"]
 
 vfs = ["vfs.fruit", "vfs.acl_xattr", "vfs.fruit_netatalk", "vfs.fruit_file_id", "vfs.fruit_timemachine"]
 
@@ -583,9 +583,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:wksname=samba3rpctest')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD --option=torture:wksname=samba3rpctest')
     elif t.startswith("libsmbclient"):
-	url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
-	if t == "libsmbclient.list_shares":
-		url = "smb://$USERNAME:$PASSWORD@$SERVER"
+        url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
+        if t == "libsmbclient.list_shares":
+            url = "smb://$USERNAME:$PASSWORD@$SERVER"
 
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%%$PASSWORD '
                                     '--option=torture:smburl=' + url +
