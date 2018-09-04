@@ -262,8 +262,8 @@ def create_uic_task(self, node):
 
 	"""
 	If UIC file is used in more than one bld, we would have a conflict in parallel execution
-	It is not possible to change the file names (like .self.idx. as for objects) as they have
-	to be referenced by the source file, but we can assume that the transformation will be identical
+	It is not possible to change the file names (like .self.idx. as for objects) as they have 
+	to be referenced by the source file, but we can assume that the transformation will be identical 
 	and the tasks can be shared in a global cache.
 	"""
 	try:

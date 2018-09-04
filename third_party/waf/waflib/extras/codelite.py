@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 """
 
 """
-
+ 
 
 To add this tool to your project:
 def options(conf):
@@ -93,19 +93,19 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
-  ${for x in project.source}
+  ${for x in project.source}  
   ${if (project.get_key(x)=="sourcefile")}
   <File Name="${x.abspath()}"/>
   ${endif}
   ${endfor}  
   </VirtualDirectory>
-  <VirtualDirectory Name="include">
+  <VirtualDirectory Name="include">  
   ${for x in project.source}
   ${if (project.get_key(x)=="headerfile")}
   <File Name="${x.abspath()}"/>
   ${endif}
   ${endfor}
-  </VirtualDirectory>
+  </VirtualDirectory>  
   <Settings Type="Dynamic Library">
     <GlobalSettings>
       <Compiler Options="" C_Options="">
@@ -141,7 +141,7 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
         <CleanCommand>${xml:project.get_clean_command(project.build_properties[0])}</CleanCommand>
         <BuildCommand>${xml:project.get_build_command(project.build_properties[0])}</BuildCommand> 
         <Target Name="Install">${xml:project.get_install_command(project.build_properties[0])}</Target>
-        <Target Name="Build and Install">${xml:project.get_build_and_install_command(project.build_properties[0])}</Target>
+        <Target Name="Build and Install">${xml:project.get_build_and_install_command(project.build_properties[0])}</Target>        
         <Target Name="Build All">${xml:project.get_build_all_command(project.build_properties[0])}</Target>
         <Target Name="Rebuild All">${xml:project.get_rebuild_all_command(project.build_properties[0])}</Target>
         <Target Name="Clean All">${xml:project.get_clean_all_command(project.build_properties[0])}</Target>
@@ -171,9 +171,9 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
       <General OutputFile="" IntermediateDirectory="./Release" Command="" CommandArguments="" UseSeparateReleaseArgs="no" ReleaseArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes"/>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[
-
-
-
+      
+      
+      
       ]]>
       </Environment>
       <Releaseger IsRemote="no" RemoteHostName="" RemoteHostPort="" ReleasegerPath="">
@@ -216,9 +216,9 @@ ${endfor}
   <BuildMatrix>
     <WorkspaceConfiguration Name="Release" Selected="yes">
 ${for p in project.all_projects}
-      <Project Name="${p.name}" ConfigName="Release"/>
+      <Project Name="${p.name}" ConfigName="Release"/>        
 ${endfor}
-    </WorkspaceConfiguration>
+    </WorkspaceConfiguration>        
   </BuildMatrix>
 </CodeLite_Workspace>'''
 

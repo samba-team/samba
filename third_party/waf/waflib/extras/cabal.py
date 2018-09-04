@@ -122,7 +122,7 @@ class ghcpkg_register(Cabal):
     def runnable_status(self):
         global lock, registering
 
-        val = False
+        val = False 
         lock.acquire()
         val = registering
         lock.release()

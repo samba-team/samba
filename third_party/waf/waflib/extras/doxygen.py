@@ -190,13 +190,13 @@ class tar(Task.Task):
 @feature('doxygen')
 def process_doxy(self):
 	if not getattr(self, 'doxyfile', None):
-		self.bld.fatal('no doxyfile variable specified??')
+		self.generator.bld.fatal('no doxyfile??')
 
 	node = self.doxyfile
 	if not isinstance(node, Node.Node):
 		node = self.path.find_resource(node)
 	if not node:
-		self.bld.fatal('doxygen file %s not found' % self.doxyfile)
+		raise ValueError('doxygen file not found')
 
 	# the task instance
 	dsk = self.create_task('doxygen', node)
