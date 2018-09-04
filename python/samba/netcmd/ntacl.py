@@ -77,26 +77,38 @@ class cmd_ntacl_set(Command):
             service=None):
         logger = self.get_logger()
         lp = sambaopts.get_loadparm()
-        try:
-            samdb = SamDB(session_info=system_session(),
-                          lp=lp)
-        except Exception as e:
-            raise CommandError("Unable to open samdb:", e)
+
+        is_ad_dc = False
+        server_role = lp.server_role()
+        if server_role == "ROLE_ACTIVE_DIRECTORY_DC":
+            is_ad_dc = True
 
         if not use_ntvfs and not use_s3fs:
             use_ntvfs = "smb" in lp.get("server services")
         elif use_s3fs:
             use_ntvfs = False
 
-        try:
-            domain_sid = security.dom_sid(samdb.domain_sid)
-        except:
-            raise CommandError("Unable to read domain SID from configuration files")
-
         s3conf = s3param.get_context()
         s3conf.load(lp.configfile)
-        # ensure we are using the right samba_dsdb passdb backend, no matter what
-        s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
+
+        if is_ad_dc:
+            try:
+                samdb = SamDB(session_info=system_session(),
+                              lp=lp)
+            except Exception as e:
+                raise CommandError("Unable to open samdb:", e)
+            # ensure we are using the right samba_dsdb passdb backend, no
+            # matter what
+            s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
+
+        try:
+            if is_ad_dc:
+                domain_sid = security.dom_sid(samdb.domain_sid)
+            else:
+                domain_sid = passdb.get_domain_sid()
+        except:
+            raise CommandError("Unable to read domain SID from configuration "
+                               "files")
 
         setntacl(lp,
                  file,
@@ -161,11 +173,11 @@ class cmd_ntacl_get(Command):
             credopts=None, sambaopts=None, versionopts=None,
             service=None):
         lp = sambaopts.get_loadparm()
-        try:
-            samdb = SamDB(session_info=system_session(),
-                          lp=lp)
-        except Exception as e:
-            raise CommandError("Unable to open samdb:", e)
+
+        is_ad_dc = False
+        server_role = lp.server_role()
+        if server_role == "ROLE_ACTIVE_DIRECTORY_DC":
+            is_ad_dc = True
 
         if not use_ntvfs and not use_s3fs:
             use_ntvfs = "smb" in lp.get("server services")
@@ -174,8 +186,16 @@ class cmd_ntacl_get(Command):
 
         s3conf = s3param.get_context()
         s3conf.load(lp.configfile)
-        # ensure we are using the right samba_dsdb passdb backend, no matter what
-        s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
+        if is_ad_dc:
+            try:
+                samdb = SamDB(session_info=system_session(),
+                              lp=lp)
+            except Exception as e:
+                raise CommandError("Unable to open samdb:", e)
+
+            # ensure we are using the right samba_dsdb passdb backend, no
+            # matter what
+            s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
         acl = getntacl(lp,
                        file,
@@ -186,9 +206,13 @@ class cmd_ntacl_get(Command):
                        session_info=system_session_unix())
         if as_sddl:
             try:
-                domain_sid = security.dom_sid(samdb.domain_sid)
+                if is_ad_dc:
+                    domain_sid = security.dom_sid(samdb.domain_sid)
+                else:
+                    domain_sid = passdb.get_domain_sid()
             except:
-                raise CommandError("Unable to read domain SID from configuration files")
+                raise CommandError("Unable to read domain SID from "
+                                   "configuration files")
             self.outf.write(acl.as_sddl(domain_sid) + "\n")
         else:
             self.outf.write(ndr_print(acl))
