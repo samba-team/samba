@@ -147,6 +147,33 @@ static void prefork_pipe_handler(struct tevent_context *event_ctx,
 	exit(0);
 }
 
+static void prefork_restart(struct tevent_context *ev,
+			    struct restart_context *rc)
+{
+	if (rc->master != NULL) {
+		DBG_ERR("Restarting [%s] pre-fork master\n", rc->service_name);
+		prefork_new_task(ev,
+				 rc->master->lp_ctx,
+				 rc->service_name,
+				 rc->master->new_task_fn,
+				 rc->master->private_data,
+				 rc->service_details,
+				 rc->from_parent_fd);
+	} else if (rc->worker != NULL) {
+		struct process_details pd = initial_process_details;
+		DBG_ERR("Restarting [%s] pre-fork worker(%d)\n",
+			rc->service_name,
+			rc->worker->instance);
+		pd.instances = rc->worker->instance;
+		prefork_fork_worker(rc->worker->task,
+				    ev,
+				    rc->worker->ev2,
+				    rc->service_details,
+				    rc->service_name,
+				    rc->worker->control_pipe,
+				    &pd);
+	}
+}
 /*
   handle EOF on the child pipe in the parent, so we know when a
   process terminates without using SIGCHLD or waiting on all possible pids.
@@ -176,49 +203,26 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 		DBG_ERR("Parent %d, Child %d terminated, "
 			"unable to get status code from tfork\n",
 			getpid(), pid);
+		prefork_restart(ev, rc);
 	} else if (WIFEXITED(status)) {
 		status = WEXITSTATUS(status);
 		DBG_ERR("Parent %d, Child %d exited with status %d\n",
 			 getpid(), pid,  status);
+		if (status != 0) {
+			prefork_restart(ev, rc);
+		}
 	} else if (WIFSIGNALED(status)) {
 		status = WTERMSIG(status);
 		DBG_ERR("Parent %d, Child %d terminated with signal %d\n",
 			getpid(), pid, status);
 		if (status == SIGABRT || status == SIGBUS || status == SIGFPE ||
-		    status == SIGILL || status == SIGSYS) {
-			/*
-			 * Lets restart the process.
-			 *
-			 */
-			tfork_destroy(&rc->t);
-			if (rc->master != NULL) {
-				DBG_ERR("Restarting [%s] pre-fork master\n",
-					rc->service_name);
-				prefork_new_task(ev,
-						 rc->master->lp_ctx,
-						 rc->service_name,
-						 rc->master->new_task_fn,
-						 rc->master->private_data,
-						 rc->service_details,
-						 rc->from_parent_fd);
-			} else if (rc->worker != NULL) {
-				struct process_details pd =
-				    initial_process_details;
-				DBG_ERR("Restarting [%s] pre-fork worker(%d)\n",
-					rc->service_name,
-					rc->worker->instance);
-				pd.instances = rc->worker->instance;
-				prefork_fork_worker(rc->worker->task,
-						    ev,
-						    rc->worker->ev2,
-						    rc->service_details,
-						    rc->service_name,
-						    rc->worker->control_pipe,
-						    &pd);
-			}
+		    status == SIGILL || status == SIGSYS || status == SIGSEGV) {
+
+			prefork_restart(ev, rc);
 		}
 	}
 	/* tfork allocates tfork structures with malloc */
+	tfork_destroy(&rc->t);
 	free(rc->t);
 	TALLOC_FREE(rc);
 	return;
@@ -529,15 +533,31 @@ static void prefork_new_task(
 
 }
 
-
-/* called when a task goes down */
-static void prefork_terminate(struct tevent_context *ev,
-			      struct loadparm_context *lp_ctx,
-			      const char *reason,
-			      bool fatal,
-			      void *process_context)
+/*
+ * called when a task terminates
+ */
+static void prefork_terminate_task(struct tevent_context *ev,
+				   struct loadparm_context *lp_ctx,
+				   const char *reason,
+				   bool fatal,
+				   void *process_context)
 {
 	DBG_DEBUG("called with reason[%s]\n", reason);
+	if (fatal == true) {
+		exit(127);
+	} else {
+		exit(0);
+	}
+}
+
+/*
+ * called when a connection completes
+ */
+static void prefork_terminate_connection(struct tevent_context *ev,
+					 struct loadparm_context *lp_ctx,
+					 const char *reason,
+					 void *process_context)
+{
 }
 
 /* called to set a title of a task or connection */
@@ -550,7 +570,8 @@ static const struct model_ops prefork_ops = {
 	.model_init		= prefork_model_init,
 	.accept_connection	= prefork_accept_connection,
 	.new_task		= prefork_new_task,
-	.terminate		= prefork_terminate,
+	.terminate_task		= prefork_terminate_task,
+	.terminate_connection	= prefork_terminate_connection,
 	.set_title		= prefork_set_title,
 };
 

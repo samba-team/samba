@@ -119,15 +119,26 @@ static void single_new_task(struct tevent_context *ev,
 	}
 }
 
-
-/* called when a task goes down */
-static void single_terminate(struct tevent_context *ev,
-			     struct loadparm_context *lp_ctx,
-			     const char *reason,
-			     bool fatal,
-			     void *process_context)
+/*
+ * Called when a task goes down
+ */
+static void single_terminate_task(struct tevent_context *ev,
+				  struct loadparm_context *lp_ctx,
+				  const char *reason,
+				  bool fatal,
+				  void *process_context)
 {
 	DBG_NOTICE("single_terminate: reason[%s]\n",reason);
+}
+
+/*
+ * Called when a connection has ended
+ */
+static void single_terminate_connection(struct tevent_context *ev,
+					struct loadparm_context *lp_ctx,
+					const char *reason,
+					void *process_context)
+{
 }
 
 /* called to set a title of a task or connection */
@@ -138,9 +149,10 @@ static void single_set_title(struct tevent_context *ev, const char *title)
 const struct model_ops single_ops = {
 	.name			= "single",
 	.model_init		= single_model_init,
-	.new_task               = single_new_task,
+	.new_task		= single_new_task,
 	.accept_connection	= single_accept_connection,
-	.terminate              = single_terminate,
+	.terminate_task		= single_terminate_task,
+	.terminate_connection	= single_terminate_connection,
 	.set_title		= single_set_title,
 };
 

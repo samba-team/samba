@@ -57,7 +57,6 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	const struct model_ops *model_ops = srv_conn->model_ops;
 	struct loadparm_context *lp_ctx = srv_conn->lp_ctx;
 	void *process_context = srv_conn->process_context;
-	bool fatal = true;
 	TALLOC_CTX *frame = NULL;
 
 	if (!reason) reason = "unknown reason";
@@ -92,7 +91,8 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	srv_conn->event.fde = NULL;
 	imessaging_cleanup(srv_conn->msg_ctx);
 	TALLOC_FREE(srv_conn);
-	model_ops->terminate(event_ctx, lp_ctx, reason, fatal, process_context);
+	model_ops->terminate_connection(
+	    event_ctx, lp_ctx, reason, process_context);
 	TALLOC_FREE(frame);
 }
 

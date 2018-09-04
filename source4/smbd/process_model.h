@@ -65,12 +65,17 @@ struct model_ops {
 			 const struct service_details*,
 			 const int);
 
-	/* function to terminate a connection or task */
-	void (*terminate)(struct tevent_context *,
-			  struct loadparm_context *lp_ctx,
-			  const char *reason,
-			  bool fatal,
-			  void *process_context);
+	/* function to terminate a task */
+	void (*terminate_task)(struct tevent_context *,
+			       struct loadparm_context *lp_ctx,
+			       const char *reason,
+			       bool fatal,
+			       void *process_context);
+	/* function to terminate a connection */
+	void (*terminate_connection)(struct tevent_context *,
+				     struct loadparm_context *lp_ctx,
+				     const char *reason,
+				     void *process_context);
 
 	/* function to set a title for the connection or task */
 	void (*set_title)(struct tevent_context *, const char *title);

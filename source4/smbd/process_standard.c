@@ -510,15 +510,27 @@ static void standard_new_task(struct tevent_context *ev,
 
 
 /* called when a task goes down */
-static void standard_terminate(struct tevent_context *ev,
-			       struct loadparm_context *lp_ctx,
-			       const char *reason,
-			       bool fatal,
-			       void *process_context)
+static void standard_terminate_task(struct tevent_context *ev,
+				    struct loadparm_context *lp_ctx,
+				    const char *reason,
+				    bool fatal,
+				    void *process_context)
+{
+	if (fatal == true) {
+		exit(127);
+	}
+	exit(0);
+}
+
+/* called when a connection terminates*/
+static void standard_terminate_connection(struct tevent_context *ev,
+					  struct loadparm_context *lp_ctx,
+					  const char *reason,
+					  void *process_context)
 {
 	struct process_context *proc_ctx = NULL;
 
-	DBG_DEBUG("process terminating reason[%s]\n", reason);
+	DBG_DEBUG("connection terminating reason[%s]\n", reason);
 	if (process_context == NULL) {
 		smb_panic("Panicking process_context is NULL");
 	}
@@ -547,7 +559,6 @@ static void standard_terminate(struct tevent_context *ev,
 	/* terminate this process */
 	exit(0);
 }
-
 /* called to set a title of a task or connection */
 static void standard_set_title(struct tevent_context *ev, const char *title) 
 {
@@ -562,9 +573,10 @@ static const struct model_ops standard_ops = {
 	.name			= "standard",
 	.model_init		= standard_model_init,
 	.accept_connection	= standard_accept_connection,
-	.new_task               = standard_new_task,
-	.terminate              = standard_terminate,
-	.set_title              = standard_set_title,
+	.new_task		= standard_new_task,
+	.terminate_task		= standard_terminate_task,
+	.terminate_connection	= standard_terminate_connection,
+	.set_title		= standard_set_title,
 };
 
 /*
