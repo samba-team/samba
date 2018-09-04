@@ -26,6 +26,7 @@
 #include "pyldb.h"
 #include "auth/system_session_proto.h"
 #include "auth/auth.h"
+#include "auth/auth_util.h"
 #include "param/pyparam.h"
 #include "libcli/security/security.h"
 #include "auth/credentials/pycredentials.h"
@@ -38,6 +39,60 @@ static PyTypeObject PyAuthContext;
 static PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
 {
 	return py_return_ndr_struct("samba.dcerpc.auth", "session_info", session, session);
+}
+
+static PyObject *py_copy_session_info(PyObject *module,
+				      PyObject *args,
+				      PyObject *kwargs)
+{
+	PyObject *py_session = Py_None;
+	PyObject *result = Py_None;
+	struct auth_session_info *session = NULL;
+	struct auth_session_info *session_duplicate = NULL;
+	TALLOC_CTX *frame;
+	int ret = 1;
+
+	const char * const kwnames[] = { "session_info", NULL };
+
+	ret = PyArg_ParseTupleAndKeywords(args,
+					  kwargs,
+					  "O",
+					  discard_const_p(char *, kwnames),
+					  &py_session);
+	if (!ret) {
+		return NULL;
+	}
+
+	ret = py_check_dcerpc_type(py_session,
+				   "samba.dcerpc.auth",
+				   "session_info");
+	if (!ret) {
+		return NULL;
+	}
+	session = pytalloc_get_type(py_session,
+				    struct auth_session_info);
+	if (!session) {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected auth_session_info for session_info "
+			     "argument got %s",
+			     talloc_get_name(pytalloc_get_ptr(py_session)));
+		return NULL;
+	}
+
+	frame = talloc_stackframe();
+	if (frame == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	session_duplicate = copy_session_info(frame, session);
+	if (session_duplicate == NULL) {
+		TALLOC_FREE(frame);
+		return PyErr_NoMemory();
+	}
+
+	result = PyAuthSession_FromSession(session_duplicate);
+	TALLOC_FREE(frame);
+	return result;
 }
 
 static PyObject *py_system_session(PyObject *module, PyObject *args)
@@ -361,6 +416,10 @@ static PyMethodDef py_auth_methods[] = {
 	{ "user_session", (PyCFunction)py_user_session, METH_VARARGS|METH_KEYWORDS, NULL },
 	{ "session_info_fill_unix",
 	  (PyCFunction)py_session_info_fill_unix,
+	  METH_VARARGS|METH_KEYWORDS,
+	  NULL },
+	{ "copy_session_info",
+	  (PyCFunction)py_copy_session_info,
 	  METH_VARARGS|METH_KEYWORDS,
 	  NULL },
 	{ NULL },
