@@ -4901,6 +4901,7 @@ static bool browse_host_rpc(bool sort)
 static bool browse_host(bool sort)
 {
 	int ret;
+
 	if (!grepable) {
 	        d_printf("\n\tSharename       Type      Comment\n");
 	        d_printf("\t---------       ----      -------\n");
@@ -4910,7 +4911,12 @@ static bool browse_host(bool sort)
 		return true;
 	}
 
-	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1) {
+	if (lp_client_min_protocol() > PROTOCOL_NT1) {
+		return false;
+	}
+
+	ret = cli_RNetShareEnum(cli, browse_fn, NULL);
+	if (ret == -1) {
 		NTSTATUS status = cli_nt_error(cli);
 		d_printf("Error returning browse list: %s\n",
 			 nt_errstr(status));
