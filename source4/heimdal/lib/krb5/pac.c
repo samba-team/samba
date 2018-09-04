@@ -592,7 +592,8 @@ verify_logonname(krb5_context context,
 		 const struct PAC_INFO_BUFFER *logon_name,
 		 const krb5_data *data,
 		 time_t authtime,
-		 krb5_const_principal principal)
+		 krb5_const_principal principal,
+		 krb5_boolean with_realm)
 {
     krb5_error_code ret;
     uint32_t time1, time2;
@@ -601,6 +602,7 @@ verify_logonname(krb5_context context,
     char *s = NULL;
     char *principal_string = NULL;
     char *logon_string = NULL;
+    int parse_flags;
 
     sp = krb5_storage_from_readonly_mem((const char *)data->data + logon_name->offset_lo,
 					logon_name->buffersize);
@@ -678,10 +680,12 @@ verify_logonname(krb5_context context,
 	    return ret;
 	}
     }
-    ret = krb5_unparse_name_flags(context, principal,
-				  KRB5_PRINCIPAL_UNPARSE_NO_REALM |
-				  KRB5_PRINCIPAL_UNPARSE_DISPLAY,
-				  &principal_string);
+
+    parse_flags = KRB5_PRINCIPAL_UNPARSE_DISPLAY;
+    if (!with_realm)
+	parse_flags |= KRB5_PRINCIPAL_UNPARSE_NO_REALM;
+
+    ret = krb5_unparse_name_flags(context, principal, parse_flags, &principal_string);
     if (ret) {
 	free(logon_string);
 	return ret;
@@ -708,13 +712,15 @@ static krb5_error_code
 build_logon_name(krb5_context context,
 		 time_t authtime,
 		 krb5_const_principal principal,
-		 krb5_data *logon)
+		 krb5_data *logon,
+		 krb5_boolean with_realm)
 {
     krb5_error_code ret;
     krb5_storage *sp;
     uint64_t t;
     char *s, *s2;
     size_t s2_len;
+    int parse_flags;
 
     t = unix2nttime(authtime);
 
@@ -729,10 +735,11 @@ build_logon_name(krb5_context context,
     CHECK(ret, krb5_store_uint32(sp, t & 0xffffffff), out);
     CHECK(ret, krb5_store_uint32(sp, t >> 32), out);
 
-    ret = krb5_unparse_name_flags(context, principal,
-				  KRB5_PRINCIPAL_UNPARSE_NO_REALM |
-				  KRB5_PRINCIPAL_UNPARSE_DISPLAY,
-				  &s);
+    parse_flags = KRB5_PRINCIPAL_UNPARSE_DISPLAY;
+    if (!with_realm)
+	parse_flags |= KRB5_PRINCIPAL_UNPARSE_NO_REALM;
+
+    ret = krb5_unparse_name_flags(context, principal, parse_flags, &s);
     if (ret)
 	goto out;
 
@@ -804,7 +811,6 @@ out:
     return ret;
 }
 
-
 /**
  * Verify the PAC.
  *
@@ -829,6 +835,23 @@ krb5_pac_verify(krb5_context context,
 		const krb5_keyblock *server,
 		const krb5_keyblock *privsvr)
 {
+    return krb5_pac_verify_ex(context, pac, authtime, principal,
+			      server, privsvr, false);
+}
+
+/* Verify PAC, with option to include the realm when
+ * comparing the logon-name. Needed for KDC processing
+ * of cross realm s4u2self tickets */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_pac_verify_ex(krb5_context context,
+		   const krb5_pac pac,
+		   time_t authtime,
+		   krb5_const_principal principal,
+		   const krb5_keyblock *server,
+		   const krb5_keyblock *privsvr,
+		   krb5_boolean with_realm)
+{
     krb5_error_code ret;
 
     if (pac->server_checksum == NULL) {
@@ -848,7 +871,8 @@ krb5_pac_verify(krb5_context context,
 			   pac->logon_name,
 			   &pac->data,
 			   authtime,
-			   principal);
+			   principal,
+			   with_realm);
     if (ret)
 	return ret;
 
@@ -967,6 +991,23 @@ _krb5_pac_sign(krb5_context context,
 	       const krb5_keyblock *priv_key,
 	       krb5_data *data)
 {
+    return _krb5_pac_sign_ex(context, p, authtime, principal,
+			     server_key, priv_key, data, false);
+}
+
+/* Sign PAC, with option to include the realm in the logon-name.
+ * Needed for KDC issuing cross realm s4u2self tickets */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_pac_sign_ex(krb5_context context,
+		  krb5_pac p,
+		  time_t authtime,
+		  krb5_principal principal,
+		  const krb5_keyblock *server_key,
+		  const krb5_keyblock *priv_key,
+		  krb5_data *data,
+		  krb5_boolean with_realm)
+{
     krb5_error_code ret;
     krb5_storage *sp = NULL, *spdata = NULL;
     uint32_t end;
@@ -1047,7 +1088,7 @@ _krb5_pac_sign(krb5_context context,
     }
 
     /* Calculate LOGON NAME */
-    ret = build_logon_name(context, authtime, principal, &logon);
+    ret = build_logon_name(context, authtime, principal, &logon, with_realm);
     if (ret)
 	goto out;
 

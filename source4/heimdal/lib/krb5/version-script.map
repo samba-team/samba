@@ -474,6 +474,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_pac_init;
 		krb5_pac_parse;
 		krb5_pac_verify;
+		krb5_pac_verify_ex;
 		krb5_padata_add;
 		krb5_parse_address;
 		krb5_parse_name;
@@ -751,6 +752,7 @@ HEIMDAL_KRB5_2.0 {
 		_krb5_get_host_realm_int;
 		_krb5_get_int;
 		_krb5_pac_sign;
+		_krb5_pac_sign_ex;
 		_krb5_parse_moduli;
 		_krb5_pk_kdf;
 		_krb5_pk_load_id;
