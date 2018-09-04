@@ -1,6 +1,6 @@
 /*
  * Copyright 2008 Google Inc.
- * Copyright 2014-2015 Andreas Schneider <asn@cryptomilk.org>
+ * Copyright 2014-2018 Andreas Schneider <asn@cryptomilk.org>
  * Copyright 2015      Jakub Hrozek <jakub.hrozek@posteo.se>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,7 +45,7 @@
 #include <time.h>
 
 /*
- * This allows one to add a platform specific header file. Some embedded platforms
+ * This allows to add a platform specific header file. Some embedded platforms
  * sometimes miss certain types and definitions.
  *
  * Example:
@@ -148,12 +148,17 @@ typedef struct ListNode {
 } ListNode;
 
 /* Debug information for malloc(). */
-typedef struct MallocBlockInfo {
+struct MallocBlockInfoData {
     void* block;              /* Address of the block returned by malloc(). */
     size_t allocated_size;    /* Total size of the allocated block. */
     size_t size;              /* Request block size. */
     SourceLocation location;  /* Where the block was allocated. */
     ListNode node;            /* Node within list of all allocated blocks. */
+};
+
+typedef union {
+    struct MallocBlockInfoData *data;
+    char *ptr;
 } MallocBlockInfo;
 
 /* State of each test. */
@@ -247,7 +252,7 @@ static void remove_always_return_values(ListNode * const map_head,
 static size_t check_for_leftover_values_list(const ListNode * head,
                                              const char * const error_message);
 
-static int check_for_leftover_values(
+static size_t check_for_leftover_values(
     const ListNode * const map_head, const char * const error_message,
     const size_t number_of_symbol_names);
 
@@ -304,6 +309,8 @@ static CMOCKA_THREAD SourceLocation global_last_call_ordering_location;
 static CMOCKA_THREAD ListNode global_allocated_blocks;
 
 static enum cm_message_output global_msg_output = CM_OUTPUT_STDOUT;
+
+static const char *global_test_filter_pattern;
 
 #ifndef _WIN32
 /* Signals caught by exception_handler(). */
@@ -381,9 +388,15 @@ struct CMUnitTestState {
 /* Exit the currently executing test. */
 static void exit_test(const int quit_application)
 {
-    const char *abort_test = getenv("CMOCKA_TEST_ABORT");
+    const char *env = getenv("CMOCKA_TEST_ABORT");
+    int abort_test = 0;
 
-    if (abort_test != NULL && abort_test[0] == '1') {
+    if (env != NULL && strlen(env) == 1) {
+        abort_test = (env[0] == '1');
+    }
+
+    if (global_skip_test == 0 &&
+        abort_test == 1) {
         print_error("%s", cm_error_message);
         abort();
     } else if (global_running_test) {
@@ -453,13 +466,71 @@ static int c_strreplace(char *src,
             memmove(src + of + rl, src + of + pl, l - of - pl + 1);
         }
 
-        strncpy(src + of, repl, rl);
+        memcpy(src + of, repl, rl);
 
         if (str_replaced != NULL) {
             *str_replaced = 1;
         }
         p = strstr(src, pattern);
     } while (p != NULL);
+
+    return 0;
+}
+
+static int c_strmatch(const char *str, const char *pattern)
+{
+    int ok;
+
+    if (str == NULL || pattern == NULL) {
+        return 0;
+    }
+
+    for (;;) {
+        /* Check if pattern is done */
+        if (*pattern == '\0') {
+            /* If string is at the end, we're good */
+            if (*str == '\0') {
+                return 1;
+            }
+
+            return 0;
+        }
+
+        if (*pattern == '*') {
+            /* Move on */
+            pattern++;
+
+            /* If we are at the end, everything is fine */
+            if (*pattern == '\0') {
+                return 1;
+            }
+
+            /* Try to match each position */
+            for (; *str != '\0'; str++) {
+                ok = c_strmatch(str, pattern);
+                if (ok) {
+                    return 1;
+                }
+            }
+
+            /* No match */
+            return 0;
+        }
+
+        /* If we are at the end, leave */
+        if (*str == '\0') {
+            return 0;
+        }
+
+        /* Check if we have a single wildcard or matching char */
+        if (*pattern != '?' && *str != *pattern) {
+            return 0;
+        }
+
+        /* Move string and pattern */
+        str++;
+        pattern++;
+    }
 
     return 0;
 }
@@ -489,7 +560,8 @@ static void fail_if_leftover_values(const char *test_name) {
     remove_always_return_values(&global_function_parameter_map_head, 2);
     if (check_for_leftover_values(
             &global_function_parameter_map_head,
-            "%s parameter still has values that haven't been checked.\n", 2)) {
+            "'%s' parameter still has values that haven't been checked.\n",
+            2)) {
         error_occurred = 1;
     }
 
@@ -620,7 +692,7 @@ static int list_find(ListNode * const head, const void *value,
 
 /* Returns the first node of a list */
 static int list_first(ListNode * const head, ListNode **output) {
-    ListNode *target_node;
+    ListNode *target_node = NULL;
     assert_non_null(head);
     if (list_empty(head)) {
         return 0;
@@ -708,8 +780,8 @@ static void add_symbol_value(ListNode * const symbol_map_head,
 static int get_symbol_value(
         ListNode * const head, const char * const symbol_names[],
         const size_t number_of_symbol_names, void **output) {
-    const char* symbol_name;
-    ListNode *target_node;
+    const char* symbol_name = NULL;
+    ListNode *target_node = NULL;
     assert_non_null(head);
     assert_non_null(symbol_names);
     assert_true(number_of_symbol_names);
@@ -717,8 +789,8 @@ static int get_symbol_value(
     symbol_name = symbol_names[0];
 
     if (list_find(head, symbol_name, symbol_names_match, &target_node)) {
-        SymbolMapValue *map_value;
-        ListNode *child_list;
+        SymbolMapValue *map_value = NULL;
+        ListNode *child_list = NULL;
         int return_value = 0;
         assert_non_null(target_node);
         assert_non_null(target_node->value);
@@ -730,6 +802,10 @@ static int get_symbol_value(
             ListNode *value_node = NULL;
             return_value = list_first(child_list, &value_node);
             assert_true(return_value);
+            /* Add a check to silence clang analyzer */
+            if (return_value == 0) {
+                goto out;
+            }
             *output = (void*) value_node->value;
             return_value = value_node->refcount;
             if (value_node->refcount - 1 == 0) {
@@ -746,9 +822,9 @@ static int get_symbol_value(
             list_remove_free(target_node, free_symbol_map_value, (void*)0);
         }
         return return_value;
-    } else {
-        cm_print_error("No entries for symbol %s.\n", symbol_name);
     }
+out:
+    cm_print_error("No entries for symbol %s.\n", symbol_name);
     return 0;
 }
 
@@ -835,11 +911,11 @@ static size_t check_for_leftover_values_list(const ListNode * head,
  * Checks if there are any leftover values set up by the test that were never
  * retrieved through execution, and fail the test if that is the case.
  */
-static int check_for_leftover_values(
+static size_t check_for_leftover_values(
         const ListNode * const map_head, const char * const error_message,
         const size_t number_of_symbol_names) {
     const ListNode *current;
-    int symbols_with_leftover_values = 0;
+    size_t symbols_with_leftover_values = 0;
     assert_non_null(map_head);
     assert_true(number_of_symbol_names);
 
@@ -865,7 +941,7 @@ static int check_for_leftover_values(
                                    location->file, location->line);
                 }
             } else {
-                cm_print_error("%s.", value->symbol_name);
+                cm_print_error("%s: ", value->symbol_name);
                 check_for_leftover_values(child_list, error_message,
                                           number_of_symbol_names - 1);
             }
@@ -1187,19 +1263,24 @@ static int string_not_equal_display_error(
  */
 static int memory_equal_display_error(const char* const a, const char* const b,
                                       const size_t size) {
-    int differences = 0;
+    size_t differences = 0;
     size_t i;
     for (i = 0; i < size; i++) {
         const char l = a[i];
         const char r = b[i];
         if (l != r) {
-            cm_print_error("difference at offset %" PRIdS " 0x%02x 0x%02x\n",
-                           i, l, r);
+            if (differences < 16) {
+                cm_print_error("difference at offset %" PRIdS " 0x%02x 0x%02x\n",
+                               i, l, r);
+            }
             differences ++;
         }
     }
-    if (differences) {
-        cm_print_error("%d bytes of %p and %p differ\n",
+    if (differences > 0) {
+        if (differences >= 16) {
+            cm_print_error("...\n");
+        }
+        cm_print_error("%"PRIdS " bytes of %p and %p differ\n",
                        differences, (void *)a, (void *)b);
         return 0;
     }
@@ -1526,7 +1607,7 @@ void _expect_any(
 void _check_expected(
         const char * const function_name, const char * const parameter_name,
         const char* file, const int line, const LargestIntegralType value) {
-    void *result;
+    void *result = NULL;
     const char* symbols[] = {function_name, parameter_name};
     const int rc = get_symbol_value(&global_function_parameter_map_head,
                                     symbols, 2, &result);
@@ -1819,16 +1900,22 @@ static void vcm_free_error(char *err_msg)
 /* Use the real malloc in this function. */
 #undef malloc
 void* _test_malloc(const size_t size, const char* file, const int line) {
-    char* ptr;
-    MallocBlockInfo *block_info;
+    char *ptr = NULL;
+    MallocBlockInfo block_info;
     ListNode * const block_list = get_allocated_blocks_list();
-    const size_t allocate_size = size + (MALLOC_GUARD_SIZE * 2) +
-        sizeof(*block_info) + MALLOC_ALIGNMENT;
-    char* const block = (char*)malloc(allocate_size);
+    size_t allocate_size;
+    char *block = NULL;
+
+    allocate_size = size + (MALLOC_GUARD_SIZE * 2) +
+                    sizeof(struct MallocBlockInfoData) + MALLOC_ALIGNMENT;
+    assert_true(allocate_size > size);
+
+    block = (char *)malloc(allocate_size);
     assert_non_null(block);
 
     /* Calculate the returned address. */
-    ptr = (char*)(((size_t)block + MALLOC_GUARD_SIZE + sizeof(*block_info) +
+    ptr = (char*)(((size_t)block + MALLOC_GUARD_SIZE +
+                  sizeof(struct MallocBlockInfoData) +
                   MALLOC_ALIGNMENT) & ~(MALLOC_ALIGNMENT - 1));
 
     /* Initialize the guard blocks. */
@@ -1836,14 +1923,14 @@ void* _test_malloc(const size_t size, const char* file, const int line) {
     memset(ptr + size, MALLOC_GUARD_PATTERN, MALLOC_GUARD_SIZE);
     memset(ptr, MALLOC_ALLOC_PATTERN, size);
 
-    block_info = (MallocBlockInfo*)(ptr - (MALLOC_GUARD_SIZE +
-                                             sizeof(*block_info)));
-    set_source_location(&block_info->location, file, line);
-    block_info->allocated_size = allocate_size;
-    block_info->size = size;
-    block_info->block = block;
-    block_info->node.value = block_info;
-    list_add(block_list, &block_info->node);
+    block_info.ptr = ptr - (MALLOC_GUARD_SIZE +
+                            sizeof(struct MallocBlockInfoData));
+    set_source_location(&block_info.data->location, file, line);
+    block_info.data->allocated_size = allocate_size;
+    block_info.data->size = size;
+    block_info.data->block = block;
+    block_info.data->node.value = block_info.ptr;
+    list_add(block_list, &block_info.data->node);
     return ptr;
 }
 #define malloc test_malloc
@@ -1864,19 +1951,19 @@ void* _test_calloc(const size_t number_of_elements, const size_t size,
 void _test_free(void* const ptr, const char* file, const int line) {
     unsigned int i;
     char *block = discard_const_p(char, ptr);
-    MallocBlockInfo *block_info;
+    MallocBlockInfo block_info;
 
     if (ptr == NULL) {
         return;
     }
 
     _assert_true(cast_ptr_to_largest_integral_type(ptr), "ptr", file, line);
-    block_info = (MallocBlockInfo*)(block - (MALLOC_GUARD_SIZE +
-                                               sizeof(*block_info)));
+    block_info.ptr = block - (MALLOC_GUARD_SIZE +
+                              sizeof(struct MallocBlockInfoData));
     /* Check the guard blocks. */
     {
         char *guards[2] = {block - MALLOC_GUARD_SIZE,
-                           block + block_info->size};
+                           block + block_info.data->size};
         for (i = 0; i < ARRAY_SIZE(guards); i++) {
             unsigned int j;
             char * const guard = guards[i];
@@ -1886,19 +1973,22 @@ void _test_free(void* const ptr, const char* file, const int line) {
                     cm_print_error(SOURCE_LOCATION_FORMAT
                                    ": error: Guard block of %p size=%lu is corrupt\n"
                                    SOURCE_LOCATION_FORMAT ": note: allocated here at %p\n",
-                                   file, line,
-                                   ptr, (unsigned long)block_info->size,
-                                   block_info->location.file, block_info->location.line,
+                                   file,
+                                   line,
+                                   ptr,
+                                   (unsigned long)block_info.data->size,
+                                   block_info.data->location.file,
+                                   block_info.data->location.line,
                                    (void *)&guard[j]);
                     _fail(file, line);
                 }
             }
         }
     }
-    list_remove(&block_info->node, NULL, NULL);
+    list_remove(&block_info.data->node, NULL, NULL);
 
-    block = discard_const_p(char, block_info->block);
-    memset(block, MALLOC_FREE_PATTERN, block_info->allocated_size);
+    block = discard_const_p(char, block_info.data->block);
+    memset(block, MALLOC_FREE_PATTERN, block_info.data->allocated_size);
     free(block);
 }
 #define free test_free
@@ -1909,7 +1999,7 @@ void *_test_realloc(void *ptr,
                    const char *file,
                    const int line)
 {
-    MallocBlockInfo *block_info;
+    MallocBlockInfo block_info;
     char *block = ptr;
     size_t block_size = size;
     void *new_block;
@@ -1923,16 +2013,16 @@ void *_test_realloc(void *ptr,
         return NULL;
     }
 
-    block_info = (MallocBlockInfo*)(block - (MALLOC_GUARD_SIZE +
-                                             sizeof(*block_info)));
+    block_info.ptr = block - (MALLOC_GUARD_SIZE +
+                              sizeof(struct MallocBlockInfoData));
 
     new_block = _test_malloc(size, file, line);
     if (new_block == NULL) {
         return NULL;
     }
 
-    if (block_info->size < size) {
-        block_size = block_info->size;
+    if (block_info.data->size < size) {
+        block_size = block_info.data->size;
     }
 
     memcpy(new_block, ptr, block_size);
@@ -1960,17 +2050,18 @@ static size_t display_allocated_blocks(const ListNode * const check_point) {
     assert_non_null(check_point->next);
 
     for (node = check_point->next; node != head; node = node->next) {
-        const MallocBlockInfo * const block_info =
-            (const MallocBlockInfo*)node->value;
-        assert_non_null(block_info);
+        const MallocBlockInfo block_info = {
+            .ptr = discard_const(node->value),
+        };
+        assert_non_null(block_info.ptr);
 
         if (allocated_blocks == 0) {
             cm_print_error("Blocks allocated...\n");
         }
         cm_print_error(SOURCE_LOCATION_FORMAT ": note: block %p allocated here\n",
-                       block_info->location.file,
-                       block_info->location.line,
-                       block_info->block);
+                       block_info.data->location.file,
+                       block_info.data->location.line,
+                       block_info.data->block);
         allocated_blocks++;
     }
     return allocated_blocks;
@@ -1987,9 +2078,13 @@ static void free_allocated_blocks(const ListNode * const check_point) {
     assert_non_null(node);
 
     while (node != head) {
-        MallocBlockInfo * const block_info = (MallocBlockInfo*)node->value;
+        const MallocBlockInfo block_info = {
+            .ptr = discard_const(node->value),
+        };
         node = node->next;
-        free(discard_const_p(char, block_info) + sizeof(*block_info) + MALLOC_GUARD_SIZE);
+        free(discard_const_p(char, block_info.data) +
+             sizeof(struct MallocBlockInfoData) +
+             MALLOC_GUARD_SIZE);
     }
 }
 
@@ -2415,7 +2510,7 @@ static void cmprintf_subunit(enum cm_printf_type type,
     case PRINTF_TEST_FAILURE:
         print_message("failure: %s", test_name);
         if (error_message != NULL) {
-            print_message(" [\n%s]\n", error_message);
+            print_message(" [\n%s\n]\n", error_message);
         }
         break;
     case PRINTF_TEST_SKIPPED:
@@ -2513,6 +2608,11 @@ static void cmprintf(enum cm_printf_type type,
 void cmocka_set_message_output(enum cm_message_output output)
 {
     global_msg_output = output;
+}
+
+void cmocka_set_test_filter(const char *pattern)
+{
+    global_test_filter_pattern = pattern;
 }
 
 /****************************************************************************
@@ -2800,7 +2900,15 @@ int _cmocka_run_group_tests(const char *group_name,
             (tests[i].test_func != NULL
              || tests[i].setup_func != NULL
              || tests[i].teardown_func != NULL)) {
-            cm_tests[i] = (struct CMUnitTestState) {
+            if (global_test_filter_pattern != NULL) {
+                int ok;
+
+                ok = c_strmatch(tests[i].name, global_test_filter_pattern);
+                if (!ok) {
+                    continue;
+                }
+            }
+            cm_tests[total_tests] = (struct CMUnitTestState) {
                 .test = &tests[i],
                 .status = CM_TEST_NOT_STARTED,
                 .state = NULL,
@@ -2871,10 +2979,16 @@ int _cmocka_run_group_tests(const char *group_name,
                         break;
                 }
             } else {
+                char err_msg[2048] = {0};
+
+                snprintf(err_msg, sizeof(err_msg),
+                         "Could not run test: %s",
+                         cmtest->error_message);
+
                 cmprintf(PRINTF_TEST_ERROR,
                          test_number,
                          cmtest->test->name,
-                         "Could not run the test - check test fixtures");
+                         err_msg);
                 total_errors++;
             }
         }
@@ -3167,7 +3281,7 @@ int _run_group_tests(const UnitTest * const tests, const size_t number_of_tests)
     const char *setup_name;
     size_t num_setups = 0;
     UnitTestFunction teardown = NULL;
-    const char *teardown_name;
+    const char *teardown_name = NULL;
     size_t num_teardowns = 0;
     size_t current_test = 0;
     size_t i;
@@ -3178,10 +3292,21 @@ int _run_group_tests(const UnitTest * const tests, const size_t number_of_tests)
     size_t total_failed = 0;
     /* Check point of the heap state. */
     const ListNode * const check_point = check_point_allocated_blocks();
-    const char** failed_names = (const char**)malloc(number_of_tests *
-                                       sizeof(*failed_names));
+    const char **failed_names = NULL;
     void **current_state = NULL;
-    TestState group_state;
+    TestState group_state = {
+        .check_point = NULL,
+    };
+
+    if (number_of_tests == 0) {
+        return -1;
+    }
+
+    failed_names = (const char **)malloc(number_of_tests *
+                                         sizeof(*failed_names));
+    if (failed_names == NULL) {
+        return -2;
+    }
 
     /* Find setup and teardown function */
     for (i = 0; i < number_of_tests; i++) {

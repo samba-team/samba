@@ -1,5 +1,6 @@
 /*
  * Copyright 2008 Google Inc.
+ * Copyright 2014-2018 Andreas Schneider <asn@cryptomilk.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +57,7 @@ int __stdcall IsDebuggerPresent();
 
 /* If __WORDSIZE is not set, try to figure it out and default to 32 bit. */
 #ifndef __WORDSIZE
-# if defined(__x86_64__) && !defined(__ILP32__)
+# if (defined(__x86_64__) && !defined(__ILP32__)) || defined(__sparc_v9__) || defined(__sparcv9)
 #  define __WORDSIZE 64
 # else
 #  define __WORDSIZE 32
@@ -1107,7 +1108,7 @@ void assert_return_code(int rc, int error);
  * @brief Assert that the given pointer is non-NULL.
  *
  * The function prints an error message to standard error and terminates the
- * test by calling fail() if the pointer is non-NULL.
+ * test by calling fail() if the pointer is NULL.
  *
  * @param[in]  pointer  The pointer to evaluate.
  *
@@ -1698,8 +1699,8 @@ static inline void _unit_test_dummy(void **state) {
  */
 #define cmocka_unit_test_prestate_setup_teardown(f, setup, teardown, state) { #f, f, setup, teardown, state }
 
-#define run_tests(tests) _run_tests(tests, sizeof(tests) / sizeof(tests)[0])
-#define run_group_tests(tests) _run_group_tests(tests, sizeof(tests) / sizeof(tests)[0])
+#define run_tests(tests) _run_tests(tests, sizeof(tests) / sizeof((tests)[0]))
+#define run_group_tests(tests) _run_group_tests(tests, sizeof(tests) / sizeof((tests)[0]))
 
 #ifdef DOXYGEN
 /**
@@ -1763,7 +1764,7 @@ int cmocka_run_group_tests(const struct CMUnitTest group_tests[],
                            CMFixtureFunction group_teardown);
 #else
 # define cmocka_run_group_tests(group_tests, group_setup, group_teardown) \
-        _cmocka_run_group_tests(#group_tests, group_tests, sizeof(group_tests) / sizeof(group_tests)[0], group_setup, group_teardown)
+        _cmocka_run_group_tests(#group_tests, group_tests, sizeof(group_tests) / sizeof((group_tests)[0]), group_setup, group_teardown)
 #endif
 
 #ifdef DOXYGEN
@@ -1832,7 +1833,7 @@ int cmocka_run_group_tests_name(const char *group_name,
                                 CMFixtureFunction group_teardown);
 #else
 # define cmocka_run_group_tests_name(group_name, group_tests, group_setup, group_teardown) \
-        _cmocka_run_group_tests(group_name, group_tests, sizeof(group_tests) / sizeof(group_tests)[0], group_setup, group_teardown)
+        _cmocka_run_group_tests(group_name, group_tests, sizeof(group_tests) / sizeof((group_tests)[0]), group_setup, group_teardown)
 #endif
 
 /** @} */
@@ -2269,7 +2270,7 @@ enum cm_message_output {
 /**
  * @brief Function to set the output format for a test.
  *
- * The output format for the test can either be set globally using this
+ * The ouput format for the test can either be set globally using this
  * function or overriden with environment variable CMOCKA_MESSAGE_OUTPUT.
  *
  * The environment variable can be set to either STDOUT, SUBUNIT, TAP or XML.
@@ -2278,6 +2279,19 @@ enum cm_message_output {
  *
  */
 void cmocka_set_message_output(enum cm_message_output output);
+
+
+/**
+ * @brief Set a pattern to only run the test matching the pattern.
+ *
+ * This allows to filter tests and only run the ones matching the pattern. Thep
+ * pattern can include two wildards. The first is '*', a wildcard that matches
+ * zero or more characters, or ‘?’, a wildcard that matches exactly one
+ * character.
+ *
+ * @param[in]  pattern    The pattern to match, e.g. "test_wurst*"
+ */
+void cmocka_set_test_filter(const char *pattern);
 
 /** @} */
 
