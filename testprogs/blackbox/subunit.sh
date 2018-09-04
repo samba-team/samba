@@ -90,6 +90,31 @@ testit () {
 	return $status
 }
 
+# This returns 0 if the command gave success and the grep value was found
+# all other cases return != 0
+testit_grep () {
+	name="$1"
+	shift
+	grep="$1"
+	shift
+	cmdline="$@"
+	subunit_start_test "$name"
+	output=`$cmdline 2>&1`
+	status=$?
+	if [ x$status != x0 ]; then
+		printf '%s' "$output" | subunit_fail_test "$name"
+		return $status
+	fi
+	printf '%s' "$output" | grep -q "$grep"
+	gstatus=$?
+	if [ x$gstatus = x0 ]; then
+		subunit_pass_test "$name"
+	else
+		printf 'GREP: "%s" not found in output:\n%s' "$grep" "$output" | subunit_fail_test "$name"
+	fi
+	return $status
+}
+
 testit_expect_failure () {
 	name="$1"
 	shift
@@ -101,6 +126,31 @@ testit_expect_failure () {
 		echo "$output" | subunit_fail_test "$name"
 	else
 		subunit_pass_test "$name"
+	fi
+	return $status
+}
+
+# This returns 0 if the command gave a failure and the grep value was found
+# all other cases return != 0
+testit_expect_failure_grep () {
+	name="$1"
+	shift
+	grep="$1"
+	shift
+	cmdline="$@"
+	subunit_start_test "$name"
+	output=`$cmdline 2>&1`
+	status=$?
+	if [ x$status = x0 ]; then
+		printf '%s' "$output" | subunit_fail_test "$name"
+		return 1
+	fi
+	printf '%s' "$output" | grep -q "$grep"
+	gstatus=$?
+	if [ x$gstatus = x0 ]; then
+		subunit_pass_test "$name"
+	else
+		printf 'GREP: "%s" not found in output:\n%s' "$grep" "$output" | subunit_fail_test "$name"
 	fi
 	return $status
 }
