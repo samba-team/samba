@@ -1232,12 +1232,14 @@ again:
 	result->value.dsize = ctdb_data.dsize - sizeof(crec->header);
 	result->value.dptr = NULL;
 
-	if ((result->value.dsize != 0)
-	    && !(result->value.dptr = (uint8_t *)talloc_memdup(
-			 result, ctdb_data.dptr + sizeof(crec->header),
-			 result->value.dsize))) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(result);
+	if (result->value.dsize != 0) {
+		result->value.dptr = talloc_memdup(
+			result, ctdb_data.dptr + sizeof(crec->header),
+			result->value.dsize);
+		if (result->value.dptr == NULL) {
+			DBG_ERR("talloc failed\n");
+			TALLOC_FREE(result);
+		}
 	}
 
 	SAFE_FREE(ctdb_data.dptr);
