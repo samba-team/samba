@@ -62,8 +62,7 @@ _PUBLIC_ struct auth_session_info *system_session(struct loadparm_context *lp_ct
 					     lp_ctx,
 					     &static_session);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(static_session);
-		static_session = NULL;
+		TALLOC_FREE(static_session);
 		return NULL;
 	}
 	talloc_set_destructor(static_session, system_session_destructor);
