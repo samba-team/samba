@@ -41,7 +41,7 @@ static int system_session_destructor(struct auth_session_info *info)
 }
 
 /* Create a security token for a session SYSTEM (the most
- * trusted/prvilaged account), including the local machine account as
+ * trusted/privileged account), including the local machine account as
  * the off-host credentials
  */ 
 _PUBLIC_ struct auth_session_info *system_session(struct loadparm_context *lp_ctx)
