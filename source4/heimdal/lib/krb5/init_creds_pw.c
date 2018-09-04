@@ -1925,12 +1925,15 @@ krb5_init_creds_free(krb5_context context,
  *
  * @param context A Kerberos 5 context.
  * @param ctx The krb5_init_creds_context to process.
+ * @param func The krb5_kdc_retry fucntion to use.
+ * @param func The data to pass to krb5_kdc_retry fucntion.
  *
  * @ingroup krb5_credential
  */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
+krb5_init_creds_get_retry(krb5_context context, krb5_init_creds_context ctx,
+			  krb5_sendto_ctx_func func, void *data)
 {
     krb5_sendto_ctx stctx = NULL;
     krb5_krbhst_info *hostinfo = NULL;
@@ -1944,7 +1947,7 @@ krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
     ret = krb5_sendto_ctx_alloc(context, &stctx);
     if (ret)
 	goto out;
-    krb5_sendto_ctx_set_func(stctx, _krb5_kdc_retry, NULL);
+    krb5_sendto_ctx_set_func(stctx, func, data);
 
     while (1) {
 	flags = 0;
@@ -1970,6 +1973,20 @@ krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
     return ret;
 }
 
+/**
+ * Get new credentials as setup by the krb5_init_creds_context.
+ *
+ * @param context A Kerberos 5 context.
+ * @param ctx The krb5_init_creds_context to process.
+ *
+ * @ingroup krb5_credential
+ */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
+{
+    return krb5_init_creds_get_retry(context, ctx, _krb5_kdc_retry, NULL);
+}
 /**
  * Get new credentials using password.
  *

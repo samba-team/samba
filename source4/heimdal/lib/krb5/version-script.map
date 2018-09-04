@@ -387,6 +387,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_init_ets;
 		krb5_init_creds_init;
 		krb5_init_creds_get_error;
+		krb5_init_creds_get_retry;
 		krb5_init_creds_free;
 		krb5_initlog;
 		krb5_is_config_principal;
