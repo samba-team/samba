@@ -16,6 +16,8 @@ def configure(conf):
             conf.DEFINE('HAVE_WINEXE_CC_WIN32', 1);
 	    break
 
+    found = False
+
     for a in AR64:
         for t in TC:
 	    if conf.find_program(a + '-' + t + '-gcc', var='WINEXE_CC_WIN64'):
