@@ -93,7 +93,13 @@ def getdosinfo(lp, file):
     return ndr_unpack(xattr.DOSATTRIB, attribute)
 
 
-def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True, service=None):
+def getntacl(lp,
+             file,
+             backend=None,
+             eadbfile=None,
+             direct_db_access=True,
+             service=None,
+             session_info=None):
     if direct_db_access:
         (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
         if dbname is not None:
@@ -119,7 +125,10 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True, servi
         elif ntacl.version == 4:
             return ntacl.info.sd
     else:
-        return smbd.get_nt_acl(file, SECURITY_SECINFO_FLAGS, service=service)
+        return smbd.get_nt_acl(file,
+                               SECURITY_SECINFO_FLAGS,
+                               service=service,
+                               session_info=session_info)
 
 
 def setntacl(lp, file, sddl, domsid,

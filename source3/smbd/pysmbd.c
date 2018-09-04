@@ -31,6 +31,9 @@
 #include "librpc/rpc/pyrpc_util.h"
 #include <pytalloc.h>
 #include "system/filesys.h"
+#include "passdb.h"
+#include "secrets.h"
+#include "auth.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -622,22 +625,55 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kw
  */
 static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname", "security_info_wanted", "service", NULL };
+	const char * const kwnames[] = { "fname",
+					 "security_info_wanted",
+					 "service",
+					 "session_info",
+					 NULL };
 	char *fname, *service = NULL;
 	int security_info_wanted;
 	PyObject *py_sd;
 	struct security_descriptor *sd;
 	TALLOC_CTX *frame = talloc_stackframe();
+	PyObject *py_session = Py_None;
+	struct auth_session_info *session_info = NULL;
 	connection_struct *conn;
 	NTSTATUS status;
+	int ret = 1;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|z", discard_const_p(char *, kwnames),
-					 &fname, &security_info_wanted, &service)) {
+	ret = PyArg_ParseTupleAndKeywords(args,
+					  kwargs,
+					  "si|zO",
+					  discard_const_p(char *, kwnames),
+					  &fname,
+					  &security_info_wanted,
+					  &service,
+					  &py_session);
+	if (!ret) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	conn = get_conn_tos(service, NULL);
+	if (py_session != Py_None) {
+		if (!py_check_dcerpc_type(py_session,
+					  "samba.dcerpc.auth",
+					  "session_info")) {
+			TALLOC_FREE(frame);
+			return NULL;
+		}
+		session_info = pytalloc_get_type(py_session,
+						 struct auth_session_info);
+		if (!session_info) {
+			PyErr_Format(
+				PyExc_TypeError,
+				"Expected auth_session_info for "
+				"session_info argument got %s",
+				talloc_get_name(pytalloc_get_ptr(py_session)));
+			return NULL;
+		}
+	}
+
+	conn = get_conn_tos(service, session_info);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
