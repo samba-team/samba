@@ -3662,6 +3662,31 @@ static PyObject *py_reload_static_pdb(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_get_domain_sid(PyObject *self, PyObject *unused)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct dom_sid domain_sid, *domain_sid_copy;
+	PyObject *py_dom_sid = Py_None;
+	bool ret = false;
+
+	ret = secrets_fetch_domain_sid(lp_workgroup(), &domain_sid);
+	if (!ret) {
+		talloc_free(frame);
+		return PyErr_NoMemory();
+	}
+
+	domain_sid_copy = dom_sid_dup(frame, &domain_sid);
+	if (domain_sid_copy == NULL) {
+		talloc_free(frame);
+		return PyErr_NoMemory();
+	}
+
+	py_dom_sid = pytalloc_steal(dom_sid_Type, domain_sid_copy);
+
+	talloc_free(frame);
+	return py_dom_sid;
+}
+
 static PyObject *py_get_global_sam_sid(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -3697,6 +3722,9 @@ static PyMethodDef py_passdb_methods[] = {
 	{ "get_global_sam_sid", py_get_global_sam_sid, METH_NOARGS,
 		"get_global_sam_sid() -> dom_sid\n\n \
 		Return domain SID." },
+	{ "get_domain_sid", py_get_domain_sid, METH_NOARGS,
+		"get_domain_sid() -> dom_sid\n\n \
+		Return domain SID from secrets database." },
 	{ "reload_static_pdb", py_reload_static_pdb, METH_NOARGS,
 		"reload_static_pdb() -> None\n\n \
 		Re-initalise the static pdb used internally.  Needed if 'passdb backend' is changed." },
