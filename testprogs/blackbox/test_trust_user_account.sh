@@ -37,6 +37,20 @@ export KRB5CCNAME
 
 rm -f $KRB5CCNAME
 
+EXPECTED_SALT="${OUR_REALM}krbtgt${REMOTE_FLAT}"
+#
+# Note the \$ is for the end of line in grep
+#
+# There must be no trailing '$' in the SALT string itself,
+# it's removed from the sAMAccountName value (which includes the trailing '$')
+# before construting the salt!
+#
+# Otherwise this would be:
+# "^virtualKerberosSalt: ${EXPECTED_SALT}\\\$\$"
+#
+EXPECTED_GREP="^virtualKerberosSalt: ${EXPECTED_SALT}\$"
+testit_grep "get virtualKerberosSalt for TDA of $REMOTE_FLAT\$" "$EXPECTED_GREP" $samba_tool user getpassword "$REMOTE_FLAT\$" $CONFIGURATION --attributes=virtualKerberosSalt || failed=`expr $failed + 1`
+
 testit "kinit with keytab for TDA of $REMOTE_REALM" $samba4kinit -t $KEYTAB "$REMOTE_FLAT\$@$OUR_REALM" || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME $KEYTAB
