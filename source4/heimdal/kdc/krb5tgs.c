@@ -1503,6 +1503,74 @@ eout:
 }
 
 static krb5_error_code
+check_padata_for_user(krb5_context context,
+		      krb5_kdc_configuration *config,
+		      KDC_REQ *req,
+		      const krb5_keyblock *key,
+		      krb5_principal *impersonated)
+{
+    krb5_error_code ret = 0;
+    const PA_DATA *sdata;
+    int i = 0;
+
+    sdata = _kdc_find_padata(req, &i, KRB5_PADATA_FOR_USER);
+    if (sdata) {
+	krb5_crypto crypto;
+	krb5_data datack;
+	PA_S4U2Self self;
+
+	ret = decode_PA_S4U2Self(sdata->padata_value.data,
+				 sdata->padata_value.length,
+				 &self, NULL);
+	if (ret) {
+	    kdc_log(context, config, 0, "Failed to decode PA-S4U2Self");
+	    return ret;
+	}
+
+	ret = _krb5_s4u2self_to_checksumdata(context, &self, &datack);
+	if (ret) {
+	    free_PA_S4U2Self(&self);
+	    return ret;
+	}
+
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	if (ret) {
+	    const char *msg = krb5_get_error_message(context, ret);
+	    free_PA_S4U2Self(&self);
+	    krb5_data_free(&datack);
+	    kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
+	    krb5_free_error_message(context, msg);
+	    return ret;
+	}
+
+	ret = krb5_verify_checksum(context,
+				   crypto,
+				   KRB5_KU_OTHER_CKSUM,
+				   datack.data,
+				   datack.length,
+				   &self.cksum);
+	krb5_data_free(&datack);
+	krb5_crypto_destroy(context, crypto);
+	if (ret) {
+	    const char *msg = krb5_get_error_message(context, ret);
+	    free_PA_S4U2Self(&self);
+	    kdc_log(context, config, 0,
+		    "krb5_verify_checksum failed for S4U2Self: %s", msg);
+	    krb5_free_error_message(context, msg);
+	    return ret;
+	}
+
+	ret = _krb5_principalname2krb5_principal(context,
+						 impersonated,
+						 self.name,
+						 self.realm);
+	free_PA_S4U2Self(&self);
+    }
+
+    return ret;
+}
+
+static krb5_error_code
 tgs_build_reply(krb5_context context,
 		krb5_kdc_configuration *config,
 		KDC_REQ *req,
@@ -1921,63 +1989,16 @@ server_lookup:
     tpn = cpn;
 
     if (client) {
-	const PA_DATA *sdata;
-	int i = 0;
+	krb5_principal for_user_principal = NULL;
+	const char *str;
 
-	sdata = _kdc_find_padata(req, &i, KRB5_PADATA_FOR_USER);
-	if (sdata) {
-	    krb5_crypto crypto;
-	    krb5_data datack;
-	    PA_S4U2Self self;
-	    const char *str;
+	ret = check_padata_for_user(context, config, req, &tgt->key,
+                                    &for_user_principal);
+        if (ret)
+	    goto out;
 
-	    ret = decode_PA_S4U2Self(sdata->padata_value.data,
-				     sdata->padata_value.length,
-				     &self, NULL);
-	    if (ret) {
-		kdc_log(context, config, 0, "Failed to decode PA-S4U2Self");
-		goto out;
-	    }
-
-	    ret = _krb5_s4u2self_to_checksumdata(context, &self, &datack);
-	    if (ret)
-		goto out;
-
-	    ret = krb5_crypto_init(context, &tgt->key, 0, &crypto);
-	    if (ret) {
-		const char *msg = krb5_get_error_message(context, ret);
-		free_PA_S4U2Self(&self);
-		krb5_data_free(&datack);
-		kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
-		krb5_free_error_message(context, msg);
-		goto out;
-	    }
-
-	    ret = krb5_verify_checksum(context,
-				       crypto,
-				       KRB5_KU_OTHER_CKSUM,
-				       datack.data,
-				       datack.length,
-				       &self.cksum);
-	    krb5_data_free(&datack);
-	    krb5_crypto_destroy(context, crypto);
-	    if (ret) {
-		const char *msg = krb5_get_error_message(context, ret);
-		free_PA_S4U2Self(&self);
-		kdc_log(context, config, 0,
-			"krb5_verify_checksum failed for S4U2Self: %s", msg);
-		krb5_free_error_message(context, msg);
-		goto out;
-	    }
-
-	    ret = _krb5_principalname2krb5_principal(context,
-						     &tp,
-						     self.name,
-						     self.realm);
-	    free_PA_S4U2Self(&self);
-	    if (ret)
-		goto out;
-
+	if (for_user_principal != NULL) {
+	    tp = for_user_principal;
 	    ret = krb5_unparse_name(context, tp, &tpn);
 	    if (ret)
 		goto out;
