@@ -831,7 +831,24 @@ smbc_getOptionUseNTHash(SMBCCTX *c);
 void
 smbc_setOptionUseNTHash(SMBCCTX *c, smbc_bool b);
 
-
+/**
+ * @brief Set the 'client min protocol' and the 'client max protocol'.
+ *
+ * IMPORTANT: This overrrides the values 'client min protocol' and 'client max
+ * protocol' set in the smb.conf file!
+ *
+ * @param[in]  c  The smbc context to use.
+ *
+ * @param[in]  min_proto  The minimal protocol to use or NULL for leaving it
+ *                        untouched.
+ *
+ * @param[in]  max_proto  The maximum protocol to use or NULL for leaving it
+ *                        untouched.
+ *
+ * @returns true for success, false otherwise
+ */
+smbc_bool
+smbc_setOptionProtocols(SMBCCTX *c, const char *min_proto, const char *max_proto);
 
 /*************************************
  * Getters and setters for FUNCTIONS *

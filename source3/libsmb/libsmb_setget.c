@@ -526,6 +526,24 @@ smbc_setOptionUseNTHash(SMBCCTX *c, smbc_bool b)
         }
 }
 
+smbc_bool
+smbc_setOptionProtocols(SMBCCTX *c,
+			const char *min_proto,
+			const char *max_proto)
+{
+	bool ok = true;
+
+	if (min_proto != NULL) {
+		ok = lp_set_cmdline("client min protocol", min_proto);
+	}
+
+	if (max_proto != NULL) {
+		ok &= lp_set_cmdline("client min protocol", max_proto);
+	}
+
+	return ok;
+}
+
 /** Get the function for obtaining authentication data */
 smbc_get_auth_data_fn
 smbc_getFunctionAuthData(SMBCCTX *c)
