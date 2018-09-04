@@ -76,7 +76,12 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
-	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	TALLOC_CTX *mem_ctx = NULL;
+
+	mem_ctx = talloc_new(parent_ctx);
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	
 	nt_status = auth_system_user_info_dc(mem_ctx, lpcfg_netbios_name(lp_ctx),
 					    &user_info_dc);
