@@ -35,6 +35,8 @@
 #include "ldb_wrap.h"
 #include "lib/util/tfork.h"
 
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+
 NTSTATUS process_model_prefork_init(void);
 static void prefork_new_task(
     struct tevent_context *ev,
@@ -51,17 +53,23 @@ static void prefork_new_task(
 static void prefork_fork_worker(struct task_server *task,
 				struct tevent_context *ev,
 				struct tevent_context *ev2,
+				struct loadparm_context *lp_ctx,
 				const struct service_details *service_details,
 				const char *service_name,
 				int control_pipe[2],
+				unsigned restart_delay,
 				struct process_details *pd);
+static void prefork_child_pipe_handler(struct tevent_context *ev,
+				       struct tevent_fd *fde,
+				       uint16_t flags,
+				       void *private_data);
+static void setup_handlers(struct tevent_context *ev, int from_parent_fd);
 
 /*
  * State needed to restart the master process or a worker process if they
  * terminate early.
  */
 struct master_restart_context {
-	struct loadparm_context *lp_ctx;
 	struct task_server *(*new_task_fn)(struct tevent_context *,
 					   struct loadparm_context *lp_ctx,
 					   struct server_id,
@@ -78,10 +86,12 @@ struct worker_restart_context {
 };
 
 struct restart_context {
+	struct loadparm_context *lp_ctx;
 	struct tfork *t;
 	int from_parent_fd;
 	const struct service_details *service_details;
 	const char *service_name;
+	unsigned restart_delay;
 	struct master_restart_context *master;
 	struct worker_restart_context *worker;
 };
@@ -147,18 +157,213 @@ static void prefork_pipe_handler(struct tevent_context *event_ctx,
 	exit(0);
 }
 
+
+/*
+ * called to create a new server task
+ */
+static void prefork_fork_master(
+    struct tevent_context *ev,
+    struct loadparm_context *lp_ctx,
+    const char *service_name,
+    struct task_server *(*new_task_fn)(struct tevent_context *,
+				       struct loadparm_context *lp_ctx,
+				       struct server_id,
+				       void *,
+				       void *),
+    void *private_data,
+    const struct service_details *service_details,
+    unsigned restart_delay,
+    int from_parent_fd)
+{
+	pid_t pid;
+	struct tfork* t = NULL;
+	int i, num_children;
+
+	struct tevent_context *ev2;
+	struct task_server *task = NULL;
+	struct process_details pd = initial_process_details;
+	int control_pipe[2];
+
+	t = tfork_create();
+	if (t == NULL) {
+		smb_panic("failure in tfork\n");
+	}
+
+	DBG_NOTICE("Forking [%s] pre-fork master process\n", service_name);
+	pid = tfork_child_pid(t);
+	if (pid != 0) {
+		struct tevent_fd *fde = NULL;
+		int fd = tfork_event_fd(t);
+		struct restart_context *rc = NULL;
+
+		/* Register a pipe handler that gets called when the prefork
+		 * master process terminates.
+		 */
+		rc = talloc_zero(ev, struct restart_context);
+		if (rc == NULL) {
+			smb_panic("OOM allocating restart context\n");
+		}
+		rc->t = t;
+		rc->lp_ctx = lp_ctx;
+		rc->service_name = service_name;
+		rc->service_details = service_details;
+		rc->from_parent_fd = from_parent_fd;
+		rc->restart_delay = restart_delay;
+		rc->master = talloc_zero(rc, struct master_restart_context);
+		if (rc->master == NULL) {
+			smb_panic("OOM allocating master restart context\n");
+		}
+
+		rc->master->new_task_fn = new_task_fn;
+		rc->master->private_data = private_data;
+
+		fde = tevent_add_fd(
+		    ev, ev, fd, TEVENT_FD_READ, prefork_child_pipe_handler, rc);
+		if (fde == NULL) {
+			smb_panic("Failed to add child pipe handler, "
+				  "after fork");
+		}
+		tevent_fd_set_auto_close(fde);
+		return;
+	}
+
+	pid = getpid();
+	setproctitle("task[%s] pre-fork master", service_name);
+
+	/*
+	 * this will free all the listening sockets and all state that
+	 * is not associated with this new connection
+	 */
+	if (tevent_re_initialise(ev) != 0) {
+		smb_panic("Failed to re-initialise tevent after fork");
+	}
+	prefork_reload_after_fork();
+	setup_handlers(ev, from_parent_fd);
+
+	if (service_details->inhibit_pre_fork) {
+		task = new_task_fn(
+		    ev, lp_ctx, cluster_id(pid, 0), private_data, NULL);
+		/*
+		 * The task does not support pre-fork
+		 */
+		if (task != NULL && service_details->post_fork != NULL) {
+			service_details->post_fork(task, &pd);
+		}
+		tevent_loop_wait(ev);
+		TALLOC_FREE(ev);
+		exit(0);
+	}
+
+	/*
+	 * This is now the child code. We need a completely new event_context
+	 * to work with
+	 */
+	ev2 = s4_event_context_init(NULL);
+
+	/* setup this new connection: process will bind to it's sockets etc
+	 *
+	 * While we can use ev for the child, which has been re-initialised
+	 * above we must run the new task under ev2 otherwise the children would
+	 * be listening on the sockets.  Also we don't want the top level
+	 * process accepting and handling requests, it's responsible for
+	 * monitoring and controlling the child work processes.
+	 */
+	task = new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private_data, NULL);
+	if (task == NULL) {
+		TALLOC_FREE(ev);
+		TALLOC_FREE(ev2);
+		exit(0);
+	}
+
+	{
+		int default_children;
+		default_children = lpcfg_prefork_children(lp_ctx);
+		num_children = lpcfg_parm_int(lp_ctx, NULL, "prefork children",
+			                      service_name, default_children);
+	}
+	if (num_children == 0) {
+		DBG_WARNING("Number of pre-fork children for %s is zero, "
+			    "NO worker processes will be started for %s\n",
+			    service_name, service_name);
+	}
+	DBG_NOTICE("Forking %d %s worker processes\n",
+		   num_children, service_name);
+	{
+		int ret;
+		ret = pipe(control_pipe);
+		if (ret != 0) {
+			smb_panic("Unable to create worker control pipe\n");
+		}
+		smb_set_close_on_exec(control_pipe[0]);
+		smb_set_close_on_exec(control_pipe[1]);
+	}
+
+	/*
+	 * We are now free to spawn some worker processes
+	 */
+	for (i=0; i < num_children; i++) {
+		prefork_fork_worker(task,
+				    ev,
+				    ev2,
+				    lp_ctx,
+				    service_details,
+				    service_name,
+				    control_pipe,
+				    0,
+				    &pd);
+		pd.instances++;
+	}
+
+	/* Don't listen on the sockets we just gave to the children */
+	tevent_loop_wait(ev);
+	TALLOC_FREE(ev);
+	/* We need to keep ev2 until we're finished for the messaging to work */
+	TALLOC_FREE(ev2);
+	exit(0);
+
+}
 static void prefork_restart(struct tevent_context *ev,
 			    struct restart_context *rc)
 {
+	unsigned max_backoff = 0;
+	unsigned backoff = 0;
+	unsigned restart_delay = rc->restart_delay;
+	unsigned default_value = 0;
+
+	default_value = lpcfg_prefork_backoff_increment(rc->lp_ctx);
+	backoff = lpcfg_parm_int(rc->lp_ctx,
+				 NULL,
+				 "prefork backoff increment",
+				 rc->service_name,
+				 default_value);
+
+	default_value = lpcfg_prefork_maximum_backoff(rc->lp_ctx);
+	max_backoff = lpcfg_parm_int(rc->lp_ctx,
+				     NULL,
+				     "prefork maximum backoff",
+				     rc->service_name,
+				     default_value);
+
+	if (restart_delay > 0) {
+		DBG_ERR("Restarting [%s] pre-fork %s in (%d) seconds\n",
+			rc->service_name,
+			(rc->master == NULL) ? "worker" : "master",
+			restart_delay);
+		sleep(restart_delay);
+	}
+	restart_delay += backoff;
+	restart_delay = min(restart_delay, max_backoff);
+
 	if (rc->master != NULL) {
 		DBG_ERR("Restarting [%s] pre-fork master\n", rc->service_name);
-		prefork_new_task(ev,
-				 rc->master->lp_ctx,
-				 rc->service_name,
-				 rc->master->new_task_fn,
-				 rc->master->private_data,
-				 rc->service_details,
-				 rc->from_parent_fd);
+		prefork_fork_master(ev,
+				    rc->lp_ctx,
+				    rc->service_name,
+				    rc->master->new_task_fn,
+				    rc->master->private_data,
+				    rc->service_details,
+				    restart_delay,
+				    rc->from_parent_fd);
 	} else if (rc->worker != NULL) {
 		struct process_details pd = initial_process_details;
 		DBG_ERR("Restarting [%s] pre-fork worker(%d)\n",
@@ -168,9 +373,11 @@ static void prefork_restart(struct tevent_context *ev,
 		prefork_fork_worker(rc->worker->task,
 				    ev,
 				    rc->worker->ev2,
+				    rc->lp_ctx,
 				    rc->service_details,
 				    rc->service_name,
 				    rc->worker->control_pipe,
+				    restart_delay,
 				    &pd);
 	}
 }
@@ -309,9 +516,11 @@ static void setup_handlers(struct tevent_context *ev, int from_parent_fd) {
 static void prefork_fork_worker(struct task_server *task,
 				struct tevent_context *ev,
 				struct tevent_context *ev2,
+				struct loadparm_context *lp_ctx,
 				const struct service_details *service_details,
 				const char *service_name,
 				int control_pipe[2],
+				unsigned restart_delay,
 				struct process_details *pd)
 {
 	struct tfork *w = NULL;
@@ -333,8 +542,10 @@ static void prefork_fork_worker(struct task_server *task,
 			smb_panic("OOM allocating restart context\n");
 		}
 		rc->t = w;
+		rc->lp_ctx = lp_ctx;
 		rc->service_name = service_name;
 		rc->service_details = service_details;
+		rc->restart_delay = restart_delay;
 		rc->master = NULL;
 		rc->worker = talloc_zero(rc, struct worker_restart_context);
 		if (rc->worker == NULL) {
@@ -388,148 +599,14 @@ static void prefork_new_task(
 	const struct service_details *service_details,
 	int from_parent_fd)
 {
-	pid_t pid;
-	struct tfork* t = NULL;
-	int i, num_children;
-
-	struct tevent_context *ev2;
-	struct task_server *task = NULL;
-	struct process_details pd = initial_process_details;
-	int control_pipe[2];
-
-	t = tfork_create();
-	if (t == NULL) {
-		smb_panic("failure in tfork\n");
-	}
-
-	DBG_NOTICE("Forking [%s] pre-fork master process\n", service_name);
-	pid = tfork_child_pid(t);
-	if (pid != 0) {
-		struct tevent_fd *fde = NULL;
-		int fd = tfork_event_fd(t);
-		struct restart_context *rc = NULL;
-
-		/* Register a pipe handler that gets called when the prefork
-		 * master process terminates.
-		 */
-		rc = talloc_zero(ev, struct restart_context);
-		if (rc == NULL) {
-			smb_panic("OOM allocating restart context\n");
-		}
-		rc->t = t;
-		rc->service_name = service_name;
-		rc->service_details = service_details;
-		rc->from_parent_fd = from_parent_fd;
-		rc->master = talloc_zero(rc, struct master_restart_context);
-		if (rc->master == NULL) {
-			smb_panic("OOM allocating master restart context\n");
-		}
-
-		rc->master->lp_ctx = lp_ctx;
-		rc->master->new_task_fn = new_task_fn;
-		rc->master->private_data = private_data;
-
-		fde = tevent_add_fd(
-		    ev, ev, fd, TEVENT_FD_READ, prefork_child_pipe_handler, rc);
-		if (fde == NULL) {
-			smb_panic("Failed to add child pipe handler, "
-				  "after fork");
-		}
-		tevent_fd_set_auto_close(fde);
-		return;
-	}
-
-	pid = getpid();
-	setproctitle("task[%s] pre-fork master", service_name);
-
-	/*
-	 * this will free all the listening sockets and all state that
-	 * is not associated with this new connection
-	 */
-	if (tevent_re_initialise(ev) != 0) {
-		smb_panic("Failed to re-initialise tevent after fork");
-	}
-	prefork_reload_after_fork();
-	setup_handlers(ev, from_parent_fd);
-
-	if (service_details->inhibit_pre_fork) {
-		task = new_task_fn(
-		    ev, lp_ctx, cluster_id(pid, 0), private_data, NULL);
-		/*
-		 * The task does not support pre-fork
-		 */
-		if (task != NULL && service_details->post_fork != NULL) {
-			service_details->post_fork(task, &pd);
-		}
-		tevent_loop_wait(ev);
-		TALLOC_FREE(ev);
-		exit(0);
-	}
-
-	/*
-	 * This is now the child code. We need a completely new event_context
-	 * to work with
-	 */
-	ev2 = s4_event_context_init(NULL);
-
-	/* setup this new connection: process will bind to it's sockets etc
-	 *
-	 * While we can use ev for the child, which has been re-initialised
-	 * above we must run the new task under ev2 otherwise the children would
-	 * be listening on the sockets.  Also we don't want the top level
-	 * process accepting and handling requests, it's responsible for
-	 * monitoring and controlling the child work processes.
-	 */
-	task = new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private_data, NULL);
-	if (task == NULL) {
-		TALLOC_FREE(ev);
-		TALLOC_FREE(ev2);
-		exit(0);
-	}
-
-	{
-		int default_children;
-		default_children = lpcfg_prefork_children(lp_ctx);
-		num_children = lpcfg_parm_int(lp_ctx, NULL, "prefork children",
-			                      service_name, default_children);
-	}
-	if (num_children == 0) {
-		DBG_WARNING("Number of pre-fork children for %s is zero, "
-			    "NO worker processes will be started for %s\n",
-			    service_name, service_name);
-	}
-	DBG_NOTICE("Forking %d %s worker processes\n",
-		   num_children, service_name);
-	{
-		int ret;
-		ret = pipe(control_pipe);
-		if (ret != 0) {
-			smb_panic("Unable to create worker control pipe\n");
-		}
-		smb_set_close_on_exec(control_pipe[0]);
-		smb_set_close_on_exec(control_pipe[1]);
-	}
-
-	/*
-	 * We are now free to spawn some worker processes
-	 */
-	for (i=0; i < num_children; i++) {
-		prefork_fork_worker(task,
-				    ev,
-				    ev2,
-				    service_details,
-				    service_name,
-				    control_pipe,
-				    &pd);
-		pd.instances++;
-	}
-
-	/* Don't listen on the sockets we just gave to the children */
-	tevent_loop_wait(ev);
-	TALLOC_FREE(ev);
-	/* We need to keep ev2 until we're finished for the messaging to work */
-	TALLOC_FREE(ev2);
-	exit(0);
+	prefork_fork_master(ev,
+			    lp_ctx,
+			    service_name,
+			    new_task_fn,
+			    private_data,
+			    service_details,
+			    0,
+			    from_parent_fd);
 
 }
 

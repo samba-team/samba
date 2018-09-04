@@ -1,0 +1,13 @@
+<samba:parameter name="prefork maximum backoff"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls the maximum delay before a failed pre-fork
+		process is restarted.
+	</para>
+
+</description>
+
+<value type="default">120</value>
+</samba:parameter>

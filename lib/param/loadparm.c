@@ -2997,6 +2997,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "49152-65535");
 
 	lpcfg_do_global_parameter(lp_ctx, "prefork children", "4");
+	lpcfg_do_global_parameter(lp_ctx, "prefork backoff increment", "10");
+	lpcfg_do_global_parameter(lp_ctx, "prefork maximum backoff", "120");
 
 	lpcfg_do_global_parameter(lp_ctx, "check parent directory delete on close", "no");
 

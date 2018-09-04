@@ -958,6 +958,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.rpc_low_port = SERVER_TCP_LOW_PORT;
 	Globals.rpc_high_port = SERVER_TCP_HIGH_PORT;
 	Globals.prefork_children = 4;
+	Globals.prefork_backoff_increment = 10;
+	Globals.prefork_maximum_backoff = 120;
 
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();

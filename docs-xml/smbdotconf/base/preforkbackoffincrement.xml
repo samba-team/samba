@@ -1,0 +1,25 @@
+<samba:parameter name="prefork backoff increment"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option specifies the number of seconds added to the delay
+		before a prefork master or worker process is restarted.  The
+		restart is initially zero, the prefork backoff increment is
+		added to the delay on each restart up to the value specified by
+		"prefork maximum backoff".
+	</para>
+
+	<para>Additionally the the backoff for an individual service by using
+		"prefork backoff increment: service name"
+		i.e. "prefork backoff increment:ldap = 2" to set the
+		backoff increment to 2.</para>
+
+	<para>If the backoff increment is 2 and the maximum backoff is 5.
+		There will be a zero second delay for the first restart. A two
+		second delay for the second restart. A four second delay for the
+		third and any subsequent restarts</para>
+</description>
+
+<value type="default">10</value>
+</samba:parameter>
