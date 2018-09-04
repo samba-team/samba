@@ -825,6 +825,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				}
 			} else if (srv ||
                                    (resolve_name(server, &rem_ss, 0x20, false))) {
+				int rc;
 
                                 /*
                                  * If we hadn't found the server, get one now
@@ -851,24 +852,24 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
                                 /* List the shares ... */
 
-                                if (net_share_enum_rpc(
-                                            srv->cli,
-                                            list_fn,
-                                            (void *) dir) < 0 &&
-                                    cli_RNetShareEnum(
-                                            srv->cli,
-                                            list_fn,
-                                            (void *)dir) < 0) {
-
-                                        errno = cli_errno(srv->cli);
-                                        if (dir) {
-                                                SAFE_FREE(dir->fname);
-                                                SAFE_FREE(dir);
-                                        }
+				rc = net_share_enum_rpc(srv->cli,
+							list_fn,
+							(void *)dir);
+				if (rc != 0 &&
+				    lp_client_min_protocol() <= PROTOCOL_NT1) {
+					rc = cli_RNetShareEnum(srv->cli,
+							       list_fn,
+							       (void *)dir);
+				}
+				if (rc != 0) {
+					errno = cli_errno(srv->cli);
+					if (dir != NULL) {
+						SAFE_FREE(dir->fname);
+						SAFE_FREE(dir);
+					}
 					TALLOC_FREE(frame);
-                                        return NULL;
-
-                                }
+					return NULL;
+				}
                         } else {
                                 /* Neither the workgroup nor server exists */
                                 errno = ECONNREFUSED;
