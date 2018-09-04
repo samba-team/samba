@@ -199,6 +199,9 @@ for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
 for x in range(1, 30):
     virtual_attributes["virtualWDigest%02d" % x] = {}
 
+# Add Kerberos virtual attributes
+virtual_attributes["virtualKerberosSalt"] = {}
+
 virtual_attributes_help  = "The attributes to display (comma separated). "
 virtual_attributes_help += "Possible supported virtual attributes: %s" % ", ".join(sorted(virtual_attributes.keys()))
 if len(disabled_virtual_attributes) != 0:
@@ -1217,6 +1220,16 @@ class GetPasswordCommand(Command):
             # first matching scheme
             return (None, scheme_match)
 
+        def get_kerberos_ctr():
+            primary_krb5 = get_package("Primary:Kerberos-Newer-Keys")
+            if primary_krb5 is None:
+                primary_krb5 = get_package("Primary:Kerberos")
+            if primary_krb5 is None:
+                return (0, None)
+            krb5_blob = ndr_unpack(drsblobs.package_PrimaryKerberosBlob,
+                                   primary_krb5)
+            return (krb5_blob.version, krb5_blob.ctr)
+
         # We use sort here in order to have a predictable processing order
         for a in sorted(virtual_attributes.keys()):
             if not a.lower() in lower_attrs:
@@ -1268,6 +1281,11 @@ class GetPasswordCommand(Command):
                 v = get_package("Primary:SambaGPG", min_idx=-1)
                 if v is None:
                     continue
+            elif a == "virtualKerberosSalt":
+                (krb5_v, krb5_ctr) = get_kerberos_ctr()
+                if krb5_v not in [3, 4]:
+                    continue
+                v = krb5_ctr.salt.string
             elif a.startswith("virtualWDigest"):
                 primary_wdigest = get_package("Primary:WDigest")
                 if primary_wdigest is None:
@@ -1383,6 +1401,9 @@ for which virtual attributes are supported in your environment):
                           3.1.1.8.11.3.1 WDIGEST_CREDENTIALS Construction
                         https://msdn.microsoft.com/en-us/library/cc245680.aspx
                           is incorrect
+
+   virtualKerberosSalt:   This results the salt string that is used to compute
+                          Kerberos keys from a UTF-8 cleartext password.
 
    virtualSambaGPG:       The raw cleartext as stored in the
                           'Primary:SambaGPG' buffer inside of the
@@ -1550,6 +1571,9 @@ for supported virtual attributes in your environment):
                           3.1.1.8.11.3.1 WDIGEST_CREDENTIALS Construction
                         https://msdn.microsoft.com/en-us/library/cc245680.aspx
                           is incorrect.
+
+   virtualKerberosSalt:   This results the salt string that is used to compute
+                          Kerberos keys from a UTF-8 cleartext password.
 
    virtualSambaGPG:       The raw cleartext as stored in the
                           'Primary:SambaGPG' buffer inside of the
