@@ -135,6 +135,14 @@ int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			uint64_t srvid, uint32_t flags, TDB_DATA data,
 			TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			int32_t *cstatus);
+int ctdbd_control_broadcast(struct ctdbd_connection *conn,
+			    uint32_t opcode,
+			    uint64_t srvid,
+			    uint32_t flags,
+			    TDB_DATA data,
+			    TALLOC_CTX *mem_ctx,
+			    TDB_DATA *outdata,
+			    int32_t *cstatus);
 int ctdb_watch_us(struct ctdbd_connection *conn);
 int ctdb_unwatch(struct ctdbd_connection *conn);
 

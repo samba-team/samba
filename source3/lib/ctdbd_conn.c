@@ -1789,6 +1789,29 @@ int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			     mem_ctx, outdata, cstatus);
 }
 
+/*
+  call a control on all active nodes
+ */
+int ctdbd_control_broadcast(struct ctdbd_connection *conn,
+			    uint32_t opcode,
+			    uint64_t srvid,
+			    uint32_t flags,
+			    TDB_DATA data,
+			    TALLOC_CTX *mem_ctx,
+			    TDB_DATA *outdata,
+			    int32_t *cstatus)
+{
+	return ctdbd_control(conn,
+			     CTDB_BROADCAST_ACTIVE,
+			     opcode,
+			     srvid,
+			     flags,
+			     data,
+			     mem_ctx,
+			     outdata,
+			     cstatus);
+}
+
 int ctdb_watch_us(struct ctdbd_connection *conn)
 {
 	struct ctdb_notify_data_old reg_data;
