@@ -29,7 +29,11 @@ from samba import provision
 from ldb import SCOPE_BASE
 import os
 
-from samba.auth import system_session
+from samba.auth import (
+    system_session,
+    session_info_fill_unix,
+    copy_session_info,
+)
 from samba.netcmd import (
     Command,
     CommandError,
@@ -37,6 +41,12 @@ from samba.netcmd import (
     Option,
 )
 
+def system_session_unix():
+    session_info = system_session()
+    session_info_unix = copy_session_info(session_info)
+    session_info_fill_unix(session_info_unix, None)
+
+    return session_info_unix
 
 class cmd_ntacl_set(Command):
     """Set ACLs on a file."""
@@ -88,7 +98,15 @@ class cmd_ntacl_set(Command):
         # ensure we are using the right samba_dsdb passdb backend, no matter what
         s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
-        setntacl(lp, file, acl, str(domain_sid), xattr_backend, eadb_file, use_ntvfs=use_ntvfs, service=service)
+        setntacl(lp,
+                 file,
+                 acl,
+                 str(domain_sid),
+                 xattr_backend,
+                 eadb_file,
+                 use_ntvfs=use_ntvfs,
+                 service=service,
+                 session_info=system_session_unix())
 
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
@@ -159,7 +177,13 @@ class cmd_ntacl_get(Command):
         # ensure we are using the right samba_dsdb passdb backend, no matter what
         s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
-        acl = getntacl(lp, file, xattr_backend, eadb_file, direct_db_access=use_ntvfs, service=service)
+        acl = getntacl(lp,
+                       file,
+                       xattr_backend,
+                       eadb_file,
+                       direct_db_access=use_ntvfs,
+                       service=service,
+                       session_info=system_session_unix())
         if as_sddl:
             try:
                 domain_sid = security.dom_sid(samdb.domain_sid)
