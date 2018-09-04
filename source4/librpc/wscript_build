@@ -295,7 +295,7 @@ for env in bld.gen_python_environments():
 
 	bld.SAMBA_PYTHON('python_preg',
 		source='../../librpc/gen_ndr/py_preg.c',
-		deps='NDR_PREG pytalloc-util pyrpc_util',
+		deps='NDR_PREG %s %s' % (pytalloc_util, pyrpc_util),
 		realname='samba/dcerpc/preg.so',
                 cflags_end=gen_cflags
 		)
