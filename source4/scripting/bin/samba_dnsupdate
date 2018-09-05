@@ -102,6 +102,8 @@ else:
 
 nsupdate_cmd = lp.get('nsupdate command')
 
+dns_zone_scavenging = lp.get("dns zone scavenging")
+
 if len(IPs) == 0:
     print "No IP interfaces - skipping DNS updates"
     sys.exit(0)
@@ -847,7 +849,18 @@ for d in dns_list:
         rebuild_cache = True
         if opts.verbose:
             print "need cache add: %s" % d
-    update_list.append(d)
+    if dns_zone_scavenging:
+        update_list.append(d)
+        if opts.verbose:
+            print "scavenging requires update: %s" % d
+    elif opts.all_names:
+        update_list.append(d)
+        if opts.verbose:
+            print "force update: %s" % d
+    elif not check_dns_name(d):
+        update_list.append(d)
+        if opts.verbose:
+            print "need update: %s" % d
 
 for c in cache_list:
     found = False
