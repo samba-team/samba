@@ -1618,7 +1618,7 @@ main() {
     if Options.options.with_spotlight:
 
         Logs.info("Requested Spotlight support, checking for bison")
-        bison.detect(conf)
+        bison.configure(conf)
         if not conf.env['BISON']:
             conf.fatal("Spotlight support requested but bison missing")
         conf.CHECK_COMMAND('%s --version | head -n1' % conf.env['BISON'], msg='Using bison version', define=None, on_target=False)
