@@ -1623,7 +1623,7 @@ main() {
             conf.fatal("Spotlight support requested but bison missing")
         conf.CHECK_COMMAND('%s --version | head -n1' % conf.env['BISON'], msg='Using bison version', define=None, on_target=False)
         Logs.info("Requested Spotlight support, checking for flex")
-        flex.detect(conf)
+        flex.configure(conf)
         if not conf.env['FLEX']:
             conf.fatal("Spotlight support requested but flex missing")
         conf.CHECK_COMMAND('%s --version' % conf.env['FLEX'], msg='Using flex version', define=None, on_target=False)
