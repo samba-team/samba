@@ -6,9 +6,9 @@
 	<para>This option controls the number of worker processes that are
 		started for each service when prefork process model is enabled.
 		The prefork children are only started for those services that
-		support prefork (currently only ldap). For processes that don't
-		support preforking all requests are handled by a single process
-		for that service.
+		support prefork (currently ldap, kdc and netlogon).
+		For processes that don't support preforking all requests are
+		handled by a single process for that service.
 	</para>
 
 	<para>This should be set to a small multiple of the number of CPU's
@@ -20,5 +20,5 @@
 		worker processes.</para>
 </description>
 
-<value type="default">1</value>
+<value type="default">4</value>
 </samba:parameter>
