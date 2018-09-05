@@ -9,7 +9,8 @@ from waflib.Configure import conftest
 
 from waflib.Tools.compiler_c import c_compiler
 
-c_compiler['default'] = ['gcc', 'generic_cc']
+c_compiler['default'] = ['gcc', 'generic_cc', 'clang']
+c_compiler['freebsd'] = ['clang', 'generic_cc', 'gcc']
 c_compiler['hpux'] = ['gcc', 'generic_cc']
 
 @conftest
