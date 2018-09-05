@@ -68,7 +68,7 @@ def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
             else:
                 if (l_name.endswith('.xml') and xml or
                     l_name.endswith('.SAMBABACKUP') and binary):
-                    if open(l_name).read() != open(r_name).read():
+                    if open(l_name, "rb").read() != open(r_name, "rb").read():
                         return l_name
 
     return None
@@ -343,7 +343,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
         alt_entity_file = os.path.join(new_path, 'entities')
         with open(alt_entity_file, 'wb') as f:
-            f.write('''<!ENTITY SAMBA__NETWORK_PATH__82419dafed126a07d6b96c66fc943735__ "\\\\samdom.example.com">
+            f.write(b'''<!ENTITY SAMBA__NETWORK_PATH__82419dafed126a07d6b96c66fc943735__ "\\\\samdom.example.com">
 <!ENTITY SAMBA__NETWORK_PATH__0484cd41ded45a0728333a9c5e5ef619__ "\\\\samdom">
 <!ENTITY SAMBA____SDDL_ACL____4ce8277be3f630300cbcf80a80e21cf4__ "D:PAR(A;CI;KA;;;BA)(A;CIIO;KA;;;CO)(A;CI;KA;;;SY)(A;CI;KR;;;S-1-16-0)">
 <!ENTITY SAMBA____USER_ID_____d0970f5a1e19cb803f916c203d5c39c4__ "*S-1-5-113">
