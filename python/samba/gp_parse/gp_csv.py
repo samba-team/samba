@@ -34,10 +34,9 @@ class GPAuditCsvParser(GPParser):
 
     def parse(self, contents):
         self.lines = []
-        reader = UnicodeReader(BytesIO(contents),
-                               encoding=self.encoding)
+        reader = csv.reader(codecs.getreader(self.encoding)(BytesIO(contents)))
 
-        self.header = reader.next()
+        self.header = next(reader)
         for row in reader:
             line = {}
             for i, x in enumerate(row):
