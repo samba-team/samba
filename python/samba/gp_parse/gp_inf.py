@@ -337,7 +337,7 @@ class GptTmplInfParser(GPParser):
                 self.sections[s].write_section(s, f)
 
     def write_xml(self, filename):
-        with file(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             root = Element('GptTmplInfFile')
 
             for sec_inf in self.sections:

@@ -61,7 +61,7 @@ class GPParser(object):
         pass
 
     def write_xml(self, filename):
-        with file(filename, 'w') as f:
+        with open(filename, 'w') as f:
             f.write('<?xml version="1.0" encoding="utf-8"?><UnknownFile/>')
 
     def load_xml(self, filename):

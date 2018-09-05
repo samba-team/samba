@@ -47,7 +47,7 @@ class GPAuditCsvParser(GPParser):
             # print line
 
     def write_xml(self, filename):
-        with file(filename, 'wb') as f:
+        with open(filename, 'wb') as f:
             root = Element('CsvFile')
             child = SubElement(root, 'Row')
             for e in self.header:
@@ -93,7 +93,7 @@ class GPAuditCsvParser(GPParser):
                 self.lines.append(line)
 
     def write_binary(self, filename):
-        with file(filename, 'wb') as f:
+        with open(filename, 'wb') as f:
             # This should be using a unicode writer, but it seems to be in the
             # right encoding at least by default.
             #

@@ -295,7 +295,7 @@ def backup_directory_remote_to_local(conn, remotedir, localdir):
                 os.mkdir(l_name)
             else:
                 data = conn.loadfile(r_name)
-                with file(l_name + SUFFIX, 'w') as f:
+                with open(l_name + SUFFIX, 'w') as f:
                     f.write(data)
 
                 parser = find_parser(e['name'])
