@@ -23,7 +23,7 @@ import io
 
 from io import BytesIO
 from xml.etree.ElementTree import Element, SubElement
-
+from samba.compat import PY3
 from samba.gp_parse import GPParser
 
 # [MS-GPAC] Group Policy Audit Configuration
@@ -93,11 +93,9 @@ class GPAuditCsvParser(GPParser):
                 self.lines.append(line)
 
     def write_binary(self, filename):
-        with open(filename, 'wb') as f:
-            # This should be using a unicode writer, but it seems to be in the
-            # right encoding at least by default.
-            #
-            # writer = UnicodeWriter(f, quoting=csv.QUOTE_MINIMAL)
+        from io import open
+        with open(filename, 'w', self.encoding) as f:
+            # In this case "binary" means "utf-8", so we let Python do that.
             writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
             writer.writerow(self.header)
             for line in self.lines:
