@@ -2331,7 +2331,7 @@ static off_t access_to_netatalk_brl(enum apple_fork fork_type,
 static off_t denymode_to_netatalk_brl(enum apple_fork fork_type,
 				      uint32_t deny_mode)
 {
-	off_t offset;
+	off_t offset = 0;
 
 	switch (deny_mode) {
 	case DENY_READ:
