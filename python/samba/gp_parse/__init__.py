@@ -21,6 +21,7 @@ from xml.dom import minidom
 from io import BytesIO
 from xml.etree.ElementTree import ElementTree, fromstring, tostring
 from hashlib import md5
+from samba.compat import get_bytes
 
 
 ENTITY_USER_ID = 0
@@ -81,7 +82,7 @@ class GPParser(object):
         handle.write(minidom_parsed.toprettyxml(encoding=self.output_encoding))
 
     def new_xml_entity(self, name, ent_type):
-        identifier = md5(name).hexdigest()
+        identifier = md5(get_bytes(name)).hexdigest()
 
         type_str = entity_type_to_string(ent_type)
 
@@ -99,7 +100,7 @@ class GPParser(object):
 
         # Locate all user_id and all ACLs
         user_ids = root.findall('.//*[@user_id="TRUE"]')
-        user_ids.sort()
+        user_ids.sort(key = lambda x: x.tag)
 
         for elem in user_ids:
             old_text = elem.text
@@ -117,7 +118,7 @@ class GPParser(object):
                 global_entities.update([(old_text, elem.text)])
 
         acls = root.findall('.//*[@acl="TRUE"]')
-        acls.sort()
+        acls.sort(key = lambda x: x.tag)
 
         for elem in acls:
             old_text = elem.text
@@ -136,7 +137,7 @@ class GPParser(object):
                 global_entities.update([(old_text, elem.text)])
 
         share_paths = root.findall('.//*[@network_path="TRUE"]')
-        share_paths.sort()
+        share_paths.sort(key = lambda x: x.tag)
 
         for elem in share_paths:
             old_text = elem.text
@@ -171,7 +172,8 @@ class GPParser(object):
         output_xml = tostring(root)
 
         for ent in entities:
-            output_xml = output_xml.replace(ent[0].replace('&', '&amp;'), ent[0])
+            entb = get_bytes(ent[0])
+            output_xml = output_xml.replace(entb.replace(b'&', b'&amp;'), entb)
 
         with open(out_file, 'wb') as f:
             f.write(output_xml)
