@@ -70,7 +70,7 @@ class GPIniParser(GPParser):
         return section_name
 
     def write_xml(self, filename):
-        with open(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             root = Element('IniFile')
 
             for sec_ini in self.ini_conf.sections():
