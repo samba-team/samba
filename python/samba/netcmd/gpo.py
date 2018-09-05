@@ -212,7 +212,7 @@ def del_gpo_link(samdb, container_dn, gpo):
     found = False
     gpo_dn = str(get_gpo_dn(samdb, gpo))
     if 'gPLink' in msg:
-        gplist = parse_gplink(msg['gPLink'][0])
+        gplist = parse_gplink(str(msg['gPLink'][0]))
         for g in gplist:
             if g['dn'].lower() == gpo_dn.lower():
                 gplist.remove(g)
@@ -284,7 +284,7 @@ def backup_directory_remote_to_local(conn, remotedir, localdir):
         l_dir = l_dirs.pop()
 
         dirlist = conn.list(r_dir, attribs=attr_flags)
-        dirlist.sort()
+        dirlist.sort(key=lambda x : x['name'])
         for e in dirlist:
             r_name = r_dir + '\\' + e['name']
             l_name = os.path.join(l_dir, e['name'])
@@ -295,7 +295,7 @@ def backup_directory_remote_to_local(conn, remotedir, localdir):
                 os.mkdir(l_name)
             else:
                 data = conn.loadfile(r_name)
-                with open(l_name + SUFFIX, 'w') as f:
+                with open(l_name + SUFFIX, 'wb') as f:
                     f.write(data)
 
                 parser = find_parser(e['name'])
@@ -319,7 +319,7 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
         l_dir = l_dirs.pop()
 
         dirlist = conn.list(r_dir, attribs=attr_flags)
-        dirlist.sort()
+        dirlist.sort(key=lambda x : x['name'])
         for e in dirlist:
             r_name = r_dir + '\\' + e['name']
             l_name = os.path.join(l_dir, e['name'])
@@ -330,7 +330,7 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
                 os.mkdir(l_name)
             else:
                 data = conn.loadfile(r_name)
-                open(l_name, 'w').write(data)
+                open(l_name, 'wb').write(data)
 
 
 def copy_directory_local_to_remote(conn, localdir, remotedir,
@@ -358,7 +358,7 @@ def copy_directory_local_to_remote(conn, localdir, remotedir,
                     if not ignore_existing:
                         raise
             else:
-                data = open(l_name, 'r').read()
+                data = open(l_name, 'rb').read()
                 conn.savefile(r_name, data)
 
 
@@ -467,7 +467,7 @@ class cmd_list(Command):
         while True:
             msg = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['gPLink', 'gPOptions'])[0]
             if 'gPLink' in msg:
-                glist = parse_gplink(msg['gPLink'][0])
+                glist = parse_gplink(str(msg['gPLink'][0]))
                 for g in glist:
                     if not inherit and not (g['options'] & dsdb.GPLINK_OPT_ENFORCE):
                         continue
@@ -609,7 +609,7 @@ class cmd_getlink(Command):
 
         if msg['gPLink']:
             self.outf.write("GPO(s) linked to DN %s\n" % container_dn)
-            gplist = parse_gplink(msg['gPLink'][0])
+            gplist = parse_gplink(str(msg['gPLink'][0]))
             for g in gplist:
                 msg = get_gpo_info(self.samdb, dn=g['dn'])
                 self.outf.write("    GPO     : %s\n" % msg[0]['name'][0])
@@ -675,7 +675,7 @@ class cmd_setlink(Command):
         # Update existing GPlinks or Add new one
         existing_gplink = False
         if 'gPLink' in msg:
-            gplist = parse_gplink(msg['gPLink'][0])
+            gplist = parse_gplink(str(msg['gPLink'][0]))
             existing_gplink = True
             found = False
             for g in gplist:
@@ -921,7 +921,7 @@ class cmd_fetch(Command):
             raise CommandError("GPO '%s' does not exist" % gpo)
 
         # verify UNC path
-        unc = msg['gPCFileSysPath'][0]
+        unc = str(msg['gPCFileSysPath'][0])
         try:
             [dom_name, service, sharepath] = parse_unc(unc)
         except ValueError:
@@ -1003,7 +1003,7 @@ class cmd_backup(Command):
             raise CommandError("GPO '%s' does not exist" % gpo)
 
         # verify UNC path
-        unc = msg['gPCFileSysPath'][0]
+        unc = str(msg['gPCFileSysPath'][0])
         try:
             [dom_name, service, sharepath] = parse_unc(unc)
         except ValueError:
@@ -1445,7 +1445,7 @@ class cmd_del(Command):
         # Check if valid GPO
         try:
             msg = get_gpo_info(self.samdb, gpo=gpo)[0]
-            unc_path = msg['gPCFileSysPath'][0]
+            unc_path = str(msg['gPCFileSysPath'][0])
         except Exception:
             raise CommandError("GPO '%s' does not exist" % gpo)
 
@@ -1522,7 +1522,7 @@ class cmd_aclcheck(Command):
 
         for m in msg:
             # verify UNC path
-            unc = m['gPCFileSysPath'][0]
+            unc = str(m['gPCFileSysPath'][0])
             try:
                 [dom_name, service, sharepath] = parse_unc(unc)
             except ValueError:
