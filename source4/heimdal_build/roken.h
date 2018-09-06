@@ -31,6 +31,9 @@
 /* even if we do have dlopen, we don't want heimdal using it */
 #undef HAVE_DLOPEN
 
+/* even if we have LMDB, we don't want heimdal using it */
+#undef HAVE_LMDB
+
 /* we need to tell roken about the functions that Samba replaces in lib/replace */
 #ifndef HAVE_SETEUID
 #define HAVE_SETEUID 1
