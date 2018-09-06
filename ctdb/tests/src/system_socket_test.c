@@ -109,7 +109,7 @@ static void test_tcp(const char *src_str,
 	ssize_t num_written;
 	char src_str_out[64], dst_str_out[64];
 	uint32_t seq_out, ack_out;
-	int rst_out;
+	int rst_out = 0;
 	uint16_t window;
 	int ret;
 
