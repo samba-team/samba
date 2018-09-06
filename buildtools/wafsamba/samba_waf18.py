@@ -6,9 +6,36 @@ from waflib import ConfigSet
 from waflib.TaskGen import feature, after
 from waflib.Configure import conf, ConfigurationContext
 
-from waflib.Tools import bison, flex
-sys.modules['bison'] = bison
-sys.modules['flex'] = flex
+from waflib.Tools.flex import decide_ext
+
+# This version of flexfun runs in tsk.get_cwd() as opposed to the
+# bld.variant_dir: since input paths adjusted against tsk.get_cwd(), we have to
+# use tsk.get_cwd() for the work directory as well.
+def flexfun(tsk):
+    env = tsk.env
+    bld = tsk.generator.bld
+    def to_list(xx):
+        if isinstance(xx, str):
+            return [xx]
+        return xx
+    tsk.last_cmd = lst = []
+    lst.extend(to_list(env.FLEX))
+    lst.extend(to_list(env.FLEXFLAGS))
+    inputs = [a.path_from(tsk.get_cwd()) for a in tsk.inputs]
+    if env.FLEX_MSYS:
+        inputs = [x.replace(os.sep, '/') for x in inputs]
+    lst.extend(inputs)
+    lst = [x for x in lst if x]
+    txt = bld.cmd_and_log(lst, cwd=tsk.get_cwd(), env=env.env or None, quiet=0)
+    tsk.outputs[0].write(txt.replace('\r\n', '\n').replace('\r', '\n')) # issue #1207
+
+TaskGen.declare_chain(
+    name = 'flex',
+    rule = flexfun, # issue #854
+    ext_in = '.l',
+    decider = decide_ext,
+)
+
 
 for y in (Build.BuildContext, Build.CleanContext, Build.InstallContext, Build.UninstallContext, Build.ListContext):
     class tmp(y):
