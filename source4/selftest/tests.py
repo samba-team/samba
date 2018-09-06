@@ -592,6 +592,9 @@ for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "s4member", "chgdcpass
 
     planpythontestsuite(env + ":local", "samba.tests.ntlm_auth", py3_compatible=True)
 
+for env in ["ktest"]:
+    planpythontestsuite(env + ":local", "samba.tests.ntlm_auth_krb5", py3_compatible=True)
+
 for env in ["s4member_dflt_domain", "s4member"]:
     for cmd in ["id", "getent"]:
         users = ["$DC_USERNAME", "$DC_USERNAME@$REALM"]
