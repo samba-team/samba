@@ -10,6 +10,13 @@
     conditions, each user will have an <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> associated with him or her to handle connections to all
     shares from a given host.</para>
+
+    <para>For a Samba ADDC running the standard process model this option
+    limits the number of processes forked to handle requests.
+    Currently new processes are only forked for ldap and netlogon
+    requests.
+    </para>
+
 </description>
 
 <value type="default">0</value>

@@ -32,6 +32,9 @@
 #include "lib/util/debug.h"
 #include "source3/lib/messages_dgm.h"
 
+static unsigned connections_active = 0;
+static unsigned smbd_max_processes = 0;
+
 struct standard_child_state {
 	const char *name;
 	pid_t pid;
@@ -143,8 +146,7 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 		if (errno == 0) {
 			errno = ECHILD;
 		}
-		TALLOC_FREE(state);
-		return;
+		goto done;
 	}
 	if (WIFEXITED(status)) {
 		status = WEXITSTATUS(status);
@@ -157,7 +159,17 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 		DBG_ERR("Child %d (%s) terminated with signal %d\n",
 			(int)state->pid, state->name, status);
 	}
+done:
 	TALLOC_FREE(state);
+	if (smbd_max_processes > 0) {
+		if (connections_active < 1) {
+			DBG_ERR("Number of active connections "
+				"less than 1 (%d)\n",
+				connections_active);
+			connections_active = 1;
+		}
+		connections_active--;
+	}
 	return;
 }
 
@@ -280,6 +292,21 @@ static void standard_accept_connection(
 			 cluster_id(pid, socket_get_fd(sock2)), private_data,
 			 process_context);
 		return;
+	}
+
+	if (smbd_max_processes > 0) {
+		if (connections_active >= smbd_max_processes) {
+			DBG_ERR("(%d) connections already active, "
+				"maximum is (%d). Dropping request\n",
+				connections_active,
+				smbd_max_processes);
+			/*
+			 * Drop the connection as we're overloaded at the moment
+			 */
+			talloc_free(sock2);
+			return;
+		}
+		connections_active++;
 	}
 
 	state = setup_standard_child_pipe(ev, NULL);
@@ -485,6 +512,8 @@ static void standard_new_task(struct tevent_context *ev,
 	proc_ctx->inhibit_fork_on_accept  =
 		service_details->inhibit_fork_on_accept;
 	proc_ctx->forked_on_accept = false;
+
+	smbd_max_processes = lpcfg_max_smbd_processes(lp_ctx);
 
 	/* setup this new task.  Cluster ID is PID based for this process model */
 	task = new_task(ev, lp_ctx, cluster_id(pid, 0), private_data, proc_ctx);
