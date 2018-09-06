@@ -402,7 +402,8 @@ def CHECK_CODE(conf, code, define,
             extra_cflags = "-Werror"
         elif conf.env["CC_NAME"] == "xlc":
             extra_cflags = "-qhalt=w"
-        cflags.append(extra_cflags)
+        if extra_cflags:
+            cflags.append(extra_cflags)
 
     if local_include:
         cflags.append('-I%s' % conf.path.abspath())
@@ -451,7 +452,13 @@ def CHECK_CODE(conf, code, define,
             raise
         return False
     else:
-        # success
+        # Success is indicated by ret but we should unset
+        # defines set by WAF's c_config.check() because it
+        # defines it to int(ret) and we want to undefine it
+        if not ret:
+            conf.undefine(define)
+            conf.COMPOUND_END(False)
+            return False
         if not define_ret:
             conf.DEFINE(define, 1)
             conf.COMPOUND_END(True)

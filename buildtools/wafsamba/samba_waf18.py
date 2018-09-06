@@ -69,10 +69,10 @@ def apply_incpaths(self):
 def define(self, key, val, quote=True, comment=None):
    assert key and isinstance(key, str)
 
-   if val is True:
-           val = 1
-   elif val in (False, None):
-           val = 0
+   if val is None:
+       val = ()
+   elif isinstance(val, bool):
+       val = int(val)
 
    # waf 1.5
    self.env[key] = val
