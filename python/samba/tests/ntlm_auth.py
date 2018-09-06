@@ -314,3 +314,12 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
 
         self.assertEqual(len(lines), 5)
         self.assertEquals(lines[0], b"Authenticated: No")
+
+    def test_diagnostics(self):
+        """ ntlm_auth diagnostics """
+        cmd_line = [self.ntlm_auth_path,
+                    "--username", self.username,
+                    "--password", self.password,
+                    "--domain", self.domain,
+                    "--diagnostics"]
+        self.check_exit_code(cmd_line, 0)
