@@ -314,6 +314,7 @@ def configure(conf):
                     'HAVE_FALLTHROUGH_ATTRIBUTE',
                     addmain=False,
                     strict=True,
+                    cflags=['-Werror=missing-declarations'],
                     msg='Checking for fallthrough attribute')
 
     # these may be builtins, so we need the link=False strategy
