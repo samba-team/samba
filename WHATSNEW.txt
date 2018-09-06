@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.9.  This is *not*
+This is the fifth release candidate of Samba 4.9.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -17,8 +17,8 @@ NEW FEATURES/CHANGES
 ====================
 
 
-net ads setspn
----------------
+'net ads setspn'
+----------------
 
 There is a new 'net ads setspn' sub command for managing Windows SPN(s)
 on the AD. This command aims to give the basic functionality that is
@@ -39,8 +39,9 @@ The format of a Windows SPN is
 
 serviceclass/host is generally sufficient to specify a host based service.
 
-net ads keytab changes
-----------------------
+'net ads keytab' changes
+------------------------
+
 net ads keytab add no longer attempts to convert the passed serviceclass
 (e.g. nfs, html etc.) into a Windows SPN which is added to the Windows AD
 computer object. By default just the keytab file is modified.
@@ -62,14 +63,14 @@ local account name as inputs and can then check if they match. This can resolve
 issues with canonicalized names returned by Kerberos within AD. If the user
 tries to log in as 'alice', but the samAccountName is set to ALICE (uppercase),
 Kerberos would return ALICE as the username. Kerberos would not be able to map
-'alice' to 'ALICE' in this case and auth would fail.  With this plugin account
+'alice' to 'ALICE' in this case and auth would fail.  With this plugin, account
 names can be correctly mapped. This only applies to GSSAPI authentication,
-not for the getting the initial ticket granting ticket.
+not for getting the initial ticket granting ticket.
 
 VFS audit modules
 -----------------
 
-The vfs_full_audit module has changed it's default set of monitored successful
+The vfs_full_audit module has changed its default set of monitored successful
 and failed operations from "all" to "none". That helps to prevent potential
 denial of service caused by simple addition of the module to the VFS objects.
 
@@ -111,27 +112,28 @@ entries.
 JSON library Jansson required for the AD DC
 -------------------------------------------
 
-By default the Jansson JSON library is required for Samba to build.
+By default, the Jansson JSON library is required for Samba to build.
 It is strictly required for the Samba AD DC, and is optional for
-builds --without-ad-dc by specifying --without-json-audit at configure
+builds "--without-ad-dc" by specifying "--without-json-audit" at configure
 time.
 
-New Experimental LMDB LDB backend
+New experimental LMDB LDB backend
 ---------------------------------
 
 A new experimental LDB backend using LMDB is now available. This allows
 databases larger than 4Gb (Currently the limit is set to 6Gb, but this will be
 increased in a future release). To enable lmdb, provision or join a domain using
-the --backend-store=mdb option.
+the "--backend-store=mdb" option.
 
 This requires that a version of lmdb greater than 0.9.16 is installed and that
-samba has not been built with the --without-ldb-lmdb option.
+samba has not been built with the "--without-ldb-lmdb" option.
 
 Please note this is an experimental feature and is not recommended for
 production deployments.
 
 Password Settings Objects
 -------------------------
+
 Support has been added for Password Settings Objects (PSOs). This AD feature is
 also known as Fine-Grained Password Policies (FGPP).
 
@@ -147,9 +149,10 @@ passwordsettings pso' set of commands.
 
 Domain backup and restore
 -------------------------
-A new samba-tool command has been added that allows administrators to create a
-backup-file of their domain DB. In the event of a catastrophic failure of the
-domain, this backup-file can be used to restore Samba services.
+
+A new 'samba-tool' subcommand has been added that allows administrators to
+create a backup-file of their domain DB. In the event of a catastrophic failure
+of the domain, this backup-file can be used to restore Samba services.
 
 The new 'samba-tool domain backup online' command takes a snapshot of the
 domain DB from a given DC. In the event of a catastrophic DB failure, all DCs
@@ -161,6 +164,7 @@ network.
 
 Domain rename tool
 ------------------
+
 Basic support has been added for renaming a Samba domain. The rename feature is
 designed for the following cases:
 1). Running a temporary alternate domain, in the event of a catastrophic
@@ -203,8 +207,8 @@ This, combined with efforts to correctly identify the client side in
 the GetDCName Netlogon call will improve service to sites without a
 local DC.
 
-Improved samba-tool computer command
-------------------------------------
+Improved 'samba-tool computer' command
+--------------------------------------
 
 The 'samba-tool computer' command allow manipulation of computer
 accounts including creating a new computer and resetting the password.
@@ -214,7 +218,7 @@ Samba AD domain.
 Samba performance tool now operates against Microsoft Windows AD
 ----------------------------------------------------------------
 
-The Samba AD performance testing tool traffic_reply can now operate
+The Samba AD performance testing tool 'traffic_reply' can now operate
 against a Windows based AD domain.  Previously it only operated
 correctly against Samba.
 
@@ -222,10 +226,10 @@ DNS entries are now cleaned up during DC demote
 -----------------------------------------------
 
 DNS records are now cleaned up as part of the 'samba-tool domain
-demote' including both the default and --remove-other-dead-server
+demote' including both the default and '--remove-other-dead-server'
 modes.
 
-Additionally DNS records can be automatically cleaned up for a given
+Additionally, DNS records can be automatically cleaned up for a given
 name with the 'samba-tool dns cleanup' command, which aids in cleaning
 up partially removed DCs.
 
@@ -434,8 +438,8 @@ There are many changes to CTDB in this release.
 GPO Improvements
 ----------------
 
-The samba_gpoupdate command (used in applying Group Policies to the
-samba machine itself) has been renamed to samba_gpupdate and had the
+The 'samba_gpoupdate' command (used in applying Group Policies to the
+Samba machine itself) has been renamed to "samba_gpupdate" and had the
 syntax changed to better match the same tool on Windows.
 
 
@@ -474,6 +478,38 @@ SMB_VFS_FCHMOD_ACL: Removed: Only FCHMOD is used.
 
 Any external VFS modules will need to be updated to match these
 changes in order to work with 4.9.x.
+
+
+CHANGES SINCE 4.9.0rc4
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13565: s3: VFS: vfs_full_audit: Ensure smb_fname_str_do_log() only
+     returns absolute pathnames.
+
+o  Paulo Alcantara <paulo@paulo.ac>
+   * BUG 13578: s3: util: Do not take over stderr when there is no log file.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13549: Durable Reconnect fails because cookie.allow_reconnect is not
+     set.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13539: krb5-samba: Interdomain trust uses different salt principal.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13441: vfs_fruit: Don't unlink the main file.
+   * BUG 13602: smbd: Fix a memleak in async search ask sharemode.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11517: Fix Samba GPO issue when Trust is enabled.
+   * BUG 13539: samba-tool: Add "virtualKerberosSalt" attribute to
+     'user getpassword/syncpasswords'.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13589: Fix CTDB configuration issues.
+   * BUG 13592: ctdbd logs an error until it can successfully connect to
+     eventd.
 
 
 CHANGES SINCE 4.9.0rc3
