@@ -1248,7 +1248,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if local_usn:
                     if 'replPropertyMetaData' in res[0]:
                         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                                          str(res[0]['replPropertyMetadata']))
+                                          res[0]['replPropertyMetadata'][0])
                         found_data = False
                         for o in repl.ctr.array:
                             if o.attid == drsuapi.DRSUAPI_ATTID_isDeleted:
@@ -1414,7 +1414,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
            :return: the originating time or 0 if not found
         '''
 
-        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
         obj = repl.ctr
 
         for o in repl.ctr.array:
@@ -1432,7 +1432,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         list_attid = []
         in_schema_nc = dn.is_child_of(self.schema_dn)
 
-        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
         obj = repl.ctr
 
         for o in repl.ctr.array:
@@ -1501,7 +1501,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         sd_attr = "nTSecurityDescriptor"
         sd_val = obj[sd_attr]
 
-        sd = ndr_unpack(security.descriptor, str(sd_val))
+        sd = ndr_unpack(security.descriptor, sd_val[0])
 
         is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
         if is_deleted:
@@ -1674,7 +1674,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def has_replmetadata_zero_invocationid(self, dn, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                          str(repl_meta_data))
+                          repl_meta_data)
         ctr = repl.ctr
         found = False
         for o in ctr.array:
@@ -1694,7 +1694,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def err_replmetadata_zero_invocationid(self, dn, attr, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                          str(repl_meta_data))
+                          repl_meta_data)
         ctr = repl.ctr
         now = samba.unix2nttime(int(time.time()))
         found = False
@@ -1731,7 +1731,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def err_replmetadata_unknown_attid(self, dn, attr, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                          str(repl_meta_data))
+                          repl_meta_data)
         ctr = repl.ctr
         for o in ctr.array:
             # Search for an invalid attid
@@ -1743,7 +1743,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def err_replmetadata_incorrect_attid(self, dn, attr, repl_meta_data, wrong_attids):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
-                          str(repl_meta_data))
+                          repl_meta_data)
         fix = False
 
         set_att = set()
@@ -2070,15 +2070,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 systemFlags = int(obj[attrname][0])
 
             if str(attrname).lower() == 'replpropertymetadata':
-                if self.has_replmetadata_zero_invocationid(dn, obj[attrname]):
+                if self.has_replmetadata_zero_invocationid(dn, obj[attrname][0]):
                     error_count += 1
-                    self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname])
+                    self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname][0])
                     # We don't continue, as we may also have other fixes for this attribute
                     # based on what other attributes we see.
 
                 try:
                     (set_attrs_from_md, list_attid_from_md, wrong_attids) \
-                        = self.process_metadata(dn, obj[attrname])
+                        = self.process_metadata(dn, obj[attrname][0])
                 except KeyError:
                     error_count += 1
                     self.err_replmetadata_unknown_attid(dn, attrname, obj[attrname])
@@ -2088,7 +2088,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                    or len(wrong_attids) > 0 \
                    or sorted(list_attid_from_md) != list_attid_from_md:
                     error_count += 1
-                    self.err_replmetadata_incorrect_attid(dn, attrname, obj[attrname], wrong_attids)
+                    self.err_replmetadata_incorrect_attid(dn, attrname, obj[attrname][0], wrong_attids)
 
                 else:
                     # Here we check that the first attid is 0
@@ -2120,7 +2120,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                         continue
 
                     current_sd = ndr_unpack(security.descriptor,
-                                            str(obj[attrname][0]))
+                                            obj[attrname][0])
 
                     diff = get_diff_sds(well_known_sd, current_sd, security.dom_sid(self.samdb.get_domain_sid()))
                     if diff != "":
