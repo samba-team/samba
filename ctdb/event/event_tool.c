@@ -308,6 +308,7 @@ static int event_command_script_list(TALLOC_CTX *mem_ctx,
 	char *subdir = NULL;
 	char *data_dir = NULL;
 	char *etc_dir = NULL;
+	char *t = NULL;
 	struct event_script_list *data_list = NULL;
 	struct event_script_list *etc_list = NULL;
 	unsigned int i, j, matched;
@@ -326,6 +327,20 @@ static int event_command_script_list(TALLOC_CTX *mem_ctx,
 	data_dir = path_datadir_append(mem_ctx, subdir);
 	if (data_dir == NULL) {
 		return ENOMEM;
+	}
+
+	t = talloc_size(mem_ctx, PATH_MAX);
+	if (t == NULL) {
+		return ENOMEM;
+	}
+
+	data_dir = realpath(data_dir, t);
+	if (data_dir == NULL) {
+		if (errno != ENOENT) {
+			return errno;
+		}
+		D_ERR("Command script list finished with result=%d\n", ENOENT);
+		return ENOENT;
 	}
 
 	etc_dir = path_etcdir_append(mem_ctx, subdir);
@@ -550,11 +565,28 @@ static int event_command_script_enable(TALLOC_CTX *mem_ctx,
 		return EINVAL;
 	} else {
 		if (errno == ENOENT) {
+			char *t;
 			char *data_script;
 
 			data_script = path_datadir_append(mem_ctx, script);
 			if (data_script == NULL) {
 				return ENOMEM;
+			}
+
+			t = talloc_size(mem_ctx, PATH_MAX);
+			if (t == NULL) {
+				return ENOMEM;
+			}
+
+			data_script = realpath(data_script, t);
+			if (data_script == NULL) {
+				if (errno != ENOENT) {
+					return errno;
+				}
+				printf("Script %s does not exist in %s\n",
+				       argv[1],
+				       argv[0]);
+				return ENOENT;
 			}
 
 			ret = stat(data_script, &statbuf);
