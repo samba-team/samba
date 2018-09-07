@@ -2320,7 +2320,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 # It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
 
                 expectedTimeDo = 2650466015990000000
-                originating = self.get_originating_time(obj["replPropertyMetaData"], isDeletedAttId)
+                originating = self.get_originating_time(obj["replPropertyMetaData"][0], isDeletedAttId)
                 if originating != expectedTimeDo:
                     if self.confirm_all("Fix isDeleted originating_change_time on '%s'" % str(dn), 'fix_time_metadata'):
                         nmsg = ldb.Message()
