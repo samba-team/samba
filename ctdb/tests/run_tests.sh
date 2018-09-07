@@ -248,10 +248,6 @@ if [ -z "$TEST_VAR_DIR" ] ; then
 fi
 mkdir -p "$TEST_VAR_DIR"
 
-# Must be absolute
-TEST_VAR_DIR=$(cd "$TEST_VAR_DIR"; echo "$PWD")
-echo "TEST_VAR_DIR=$TEST_VAR_DIR"
-
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 unit_tests="
