@@ -25,7 +25,6 @@ import samba_install
 import samba_conftests
 import samba_abi
 import samba_headers
-import tru64cc
 import generic_cc
 import samba_dist
 import samba_wildcard
