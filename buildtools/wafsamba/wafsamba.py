@@ -26,7 +26,6 @@ import samba_conftests
 import samba_abi
 import samba_headers
 import tru64cc
-import irixcc
 import hpuxcc
 import generic_cc
 import samba_dist
