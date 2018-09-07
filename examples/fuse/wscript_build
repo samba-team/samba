@@ -3,5 +3,5 @@
 if bld.env.HAVE_FUSE:
     bld.SAMBA_BINARY('smb2mount',
                      source='smb2mount.c clifuse.c',
-                     deps='smbconf popt_samba3 libsmb fuse',
+                     deps='smbconf popt_samba3_cmdline libsmb fuse',
                      install=False)
