@@ -20,7 +20,7 @@
 
 #include "source3/include/includes.h"
 #include "popt.h"
-#include "popt_common.h"
+#include "popt_common_cmdline.h"
 #include "client.h"
 #include "libsmb/proto.h"
 #include "clifuse.h"
