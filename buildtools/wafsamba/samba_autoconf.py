@@ -447,6 +447,8 @@ def CHECK_CODE(conf, code, define,
     except Exception:
         if always:
             conf.DEFINE(define, 0)
+        else:
+            conf.undefine(define)
         conf.COMPOUND_END(False)
         if mandatory:
             raise
