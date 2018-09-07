@@ -5,6 +5,8 @@
 scriptdir="${TEST_VAR_DIR}/cunit/scriptdir"
 mkdir -p "${scriptdir}"
 
+scriptdir=$(cd "$scriptdir" && echo "$PWD")
+
 test_cleanup "rm -rf ${scriptdir}"
 
 # Invalid path
