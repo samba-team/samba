@@ -515,7 +515,7 @@ static int event_command_script_enable(TALLOC_CTX *mem_ctx,
 	struct event_tool_context *ctx = talloc_get_type_abort(
 		private_data, struct event_tool_context);
 	struct stat statbuf;
-	char *script, *etc_script, *data_script;
+	char *script, *etc_script;
 	int ret;
 
 	if (argc != 2) {
@@ -530,11 +530,6 @@ static int event_command_script_enable(TALLOC_CTX *mem_ctx,
 
 	etc_script = path_etcdir_append(mem_ctx, script);
 	if (etc_script == NULL) {
-		return ENOMEM;
-	}
-
-	data_script = path_datadir_append(mem_ctx, script);
-	if (data_script == NULL) {
 		return ENOMEM;
 	}
 
@@ -555,6 +550,13 @@ static int event_command_script_enable(TALLOC_CTX *mem_ctx,
 		return EINVAL;
 	} else {
 		if (errno == ENOENT) {
+			char *data_script;
+
+			data_script = path_datadir_append(mem_ctx, script);
+			if (data_script == NULL) {
+				return ENOMEM;
+			}
+
 			ret = stat(data_script, &statbuf);
 			if (ret != 0) {
 				printf("Script %s does not exist in %s\n",
