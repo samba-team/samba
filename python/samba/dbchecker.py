@@ -1989,8 +1989,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     raise
             else:
                 instancetype |= dsdb.INSTANCE_TYPE_NC_ABOVE
-
-        if self.write_ncs is not None and str(nc_root) in self.write_ncs:
+        if self.write_ncs is not None and str(nc_root) in [str(x) for x in self.write_ncs]:
             instancetype |= dsdb.INSTANCE_TYPE_WRITE
 
         return instancetype
@@ -2111,10 +2110,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
                                 (len(obj[attrname]), attrname, str(obj.dn)))
                 else:
-                    object_rdn_val = obj[attrname][0]
+                    object_rdn_val = str(obj[attrname][0])
 
             if str(attrname).lower() == 'isdeleted':
-                if obj[attrname][0] != "FALSE":
+                if str(obj[attrname][0]) != "FALSE":
                     isDeleted = True
 
             if str(attrname).lower() == 'systemflags':
@@ -2289,7 +2288,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if str(attrname).lower() == "instancetype":
                 calculated_instancetype = self.calculate_instancetype(dn)
-                if len(obj["instanceType"]) != 1 or obj["instanceType"][0] != str(calculated_instancetype):
+                if len(obj["instanceType"]) != 1 or int(obj["instanceType"][0]) != calculated_instancetype:
                     error_count += 1
                     self.err_wrong_instancetype(obj, calculated_instancetype)
 
