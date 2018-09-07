@@ -66,7 +66,8 @@ simple_test script list data
 # Local/3rd-party link, not enabled
 touch "${CTDB_BASE}/foo"
 chmod 644 "${CTDB_BASE}/foo"
-ln -s "${CTDB_BASE}/foo" "${CTDB_BASE}/events/data/04.locallink.script"
+abs_base=$(cd "$CTDB_BASE" && echo "$PWD")
+ln -s "${abs_base}/foo" "${CTDB_BASE}/events/data/04.locallink.script"
 
 ok <<EOF
 * 01.dummy
@@ -99,7 +100,7 @@ simple_test script list data
 
 # Local/3rd-party link, enabled
 chmod +x "${CTDB_BASE}/foo"
-ln -s "${CTDB_BASE}/foo" "${CTDB_BASE}/events/data/04.locallink.script"
+ln -s "${abs_base}/foo" "${CTDB_BASE}/events/data/04.locallink.script"
 
 ok <<EOF
 * 01.dummy
