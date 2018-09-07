@@ -250,7 +250,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
 
     # default site name
     res3 = samdb.search(expression="(objectClass=site)",
-                        base="CN=Sites," + names.configdn, scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
+                        base="CN=Sites," + str(names.configdn), scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
     names.sitename = str(res3[0]["cn"])
 
     # dns hostname and server dn
