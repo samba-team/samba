@@ -1305,31 +1305,38 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		goto fail;
 	}
 
-        if (ctdb->recovery_lock != NULL) {
+	if (ctdb->recovery_lock != NULL) {
 		if (ctdb_recovery_have_lock(rec)) {
-			DEBUG(DEBUG_NOTICE, ("Already holding recovery lock\n"));
+			D_NOTICE("Already holding recovery lock\n");
 		} else {
-			DEBUG(DEBUG_NOTICE, ("Attempting to take recovery lock (%s)\n",
-					     ctdb->recovery_lock));
-			if (!ctdb_recovery_lock(rec)) {
-				if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
-					/* If ctdb is trying first recovery, it's
-					 * possible that current node does not know
-					 * yet who the recmaster is.
+			bool ok;
+
+			D_NOTICE("Attempting to take recovery lock (%s)\n",
+				 ctdb->recovery_lock);
+
+			ok = ctdb_recovery_lock(rec);
+			if (! ok) {
+				D_ERR("Unable to take recovery lock\n");
+				if (ctdb->runstate ==
+				    CTDB_RUNSTATE_FIRST_RECOVERY) {
+					/*
+					 * First recovery?  Perhaps
+					 * current node does not yet
+					 * know who the recmaster is.
 					 */
-					DEBUG(DEBUG_ERR, ("Unable to get recovery lock"
-							  " - retrying recovery\n"));
+					D_ERR("Retrying recovery\n");
 					goto fail;
 				}
 
-				DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery "
-						 "and ban ourself for %u seconds\n",
-						 ctdb->tunable.recovery_ban_period));
-				ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
+				D_ERR("Abort recovery, "
+				      "ban this node for %u seconds\n",
+				      ctdb->tunable.recovery_ban_period);
+				ctdb_ban_node(rec,
+					      pnn,
+					      ctdb->tunable.recovery_ban_period);
 				goto fail;
 			}
-			DEBUG(DEBUG_NOTICE,
-			      ("Recovery lock taken successfully by recovery daemon\n"));
+			D_NOTICE("Recovery lock taken successfully\n");
 		}
 	}
 
