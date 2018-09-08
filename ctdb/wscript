@@ -64,12 +64,15 @@ manpages_ceph = [
 VERSION = ''
 
 def get_version():
-    if Context.g_module.VERSION:
-        return Context.g_module.VERSION
     import samba_version
     env = samba_utils.LOAD_ENVIRONMENT()
 
-    version = samba_version.samba_version_file('%s/VERSION' % vdir, vdir, env)
+    return samba_version.samba_version_file('%s/VERSION' % vdir, vdir, env)
+
+def get_version_string():
+    if Context.g_module.VERSION:
+        return Context.g_module.VERSION
+    version = get_version()
     Context.g_module.VERSION = version.STRING.replace('-', '.')
     return Context.g_module.VERSION
 
@@ -341,7 +344,7 @@ def gen_ctdb_version(task):
     fp.write('/* This file is auto-generated from waf */\n')
     fp.write('#include "version.h"\n')
     fp.write('\n')
-    fp.write('#define CTDB_VERSION_STRING "%s"\n' % get_version())
+    fp.write('#define CTDB_VERSION_STRING "%s"\n' % get_version_string())
     fp.close()
 
 
@@ -357,7 +360,7 @@ def build(bld):
                             target='include/ctdb_version.h',
                             rule=gen_ctdb_version,
                             dep_vars=['VERSION'])
-    t.env.VERSION = get_version()
+    t.env.VERSION = get_version_string()
 
     bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
@@ -1136,7 +1139,7 @@ def autotest(ctx):
 
 
 def show_version(ctx):
-    print get_version()
+    print get_version_string()
 
 
 def manpages(ctx):
@@ -1162,6 +1165,8 @@ def manpages(ctx):
 def distonly(ctx):
     samba_dist.DIST_FILES('VERSION:VERSION', extend=True)
 
+    version = get_version()
+
     distfile = file('.distversion', 'w')
     for field in version.vcs_fields:
         distfile.write('%s=%s\n' % (field, str(version.vcs_fields[field])))
@@ -1169,7 +1174,7 @@ def distonly(ctx):
     samba_dist.DIST_FILES('ctdb/.distversion:.distversion', extend=True)
 
     t = 'ctdb.spec'
-    sed_expr1 = 's/@VERSION@/%s/g' % get_version()
+    sed_expr1 = 's/@VERSION@/%s/g' % get_version_string()
     sed_expr2 = 's/@RELEASE@/%s/g' % '1'
     cmd = 'sed -e "%s" -e "%s" packaging/RPM/ctdb.spec.in > %s' % (
         sed_expr1, sed_expr2, t)
@@ -1195,7 +1200,8 @@ def dist():
 
 def rpmonly(ctx):
     opts = os.getenv('RPM_OPTIONS') or ''
-    cmd = 'rpmbuild -ta --clean --rmsource %s ctdb-%s.tar.gz' % (opts, get_version())
+    cmd = 'rpmbuild -ta --clean --rmsource %s ctdb-%s.tar.gz' % \
+          (opts, get_version_string())
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
         print('rpmbuild exited with exit status %d' % ret)
