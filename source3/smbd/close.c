@@ -1153,23 +1153,27 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		 * case, then don't delete. If all opens are POSIX delete now. */
 		for (i=0; i<lck->data->num_share_modes; i++) {
 			struct share_mode_entry *e = &lck->data->share_modes[i];
-			if (is_valid_share_mode_entry(e) &&
-					e->name_hash == fsp->name_hash) {
-				if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
-				    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN))
-				{
-					continue;
-				}
-				if (serverid_equal(&self, &e->pid) &&
-				    (e->share_file_id == fsp->fh->gen_id)) {
-					continue;
-				}
-				if (share_mode_stale_pid(lck->data, i)) {
-					continue;
-				}
-				delete_dir = False;
-				break;
+
+			if (!is_valid_share_mode_entry(e)) {
+				continue;
 			}
+			if (e->name_hash != fsp->name_hash) {
+				continue;
+			}
+			if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
+			    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN))
+			{
+				continue;
+			}
+			if (serverid_equal(&self, &e->pid) &&
+			    (e->share_file_id == fsp->fh->gen_id)) {
+				continue;
+			}
+			if (share_mode_stale_pid(lck->data, i)) {
+				continue;
+			}
+			delete_dir = False;
+			break;
 		}
 	}
 
