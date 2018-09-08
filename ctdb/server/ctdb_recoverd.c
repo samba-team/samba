@@ -1327,6 +1327,15 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			ok = ctdb_recovery_lock(rec);
 			if (! ok) {
 				D_ERR("Unable to take recovery lock\n");
+
+				if (pnn != rec->recmaster) {
+					D_NOTICE("Recovery master changed to %u,"
+						 " aborting recovery\n",
+						 rec->recmaster);
+					rec->need_recovery = false;
+					goto fail;
+				}
+
 				if (ctdb->runstate ==
 				    CTDB_RUNSTATE_FIRST_RECOVERY) {
 					/*
