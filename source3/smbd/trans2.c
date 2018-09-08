@@ -32,7 +32,6 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/xattr.h"
 #include "../librpc/gen_ndr/ndr_security.h"
-#include "../librpc/gen_ndr/open_files.h"
 #include "libcli/security/security.h"
 #include "trans2.h"
 #include "auth.h"
@@ -41,6 +40,7 @@
 #include "printing.h"
 #include "lib/util_ea.h"
 #include "lib/readdir_attr.h"
+#include "messages.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -8309,14 +8309,15 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				int total_data,
 				struct smb_filename *smb_fname)
 {
+	struct server_id self = messaging_server_id(conn->sconn->msg_ctx);
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	uint16_t flags = 0;
 	char del = 1;
 	int info = 0;
 	int create_options = 0;
-	int i;
 	struct share_mode_lock *lck = NULL;
+	bool other_nonposix_opens;
 
 	if (total_data < 2) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -8379,25 +8380,12 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/*
-	 * See if others still have the file open. If this is the case, then
-	 * don't delete. If all opens are POSIX delete we can set the delete
-	 * on close disposition.
-	 */
-	for (i=0; i<lck->data->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->data->share_modes[i];
-		if (is_valid_share_mode_entry(e)) {
-			if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
-				continue;
-			}
-			if (share_mode_stale_pid(lck->data, i)) {
-				continue;
-			}
-			/* Fail with sharing violation. */
-			TALLOC_FREE(lck);
-			close_file(req, fsp, NORMAL_CLOSE);
-			return NT_STATUS_SHARING_VIOLATION;
-		}
+	other_nonposix_opens = has_other_nonposix_opens(lck, fsp, self);
+	if (other_nonposix_opens) {
+		/* Fail with sharing violation. */
+		TALLOC_FREE(lck);
+		close_file(req, fsp, NORMAL_CLOSE);
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	/*
