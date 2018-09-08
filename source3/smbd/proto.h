@@ -146,6 +146,9 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 bool recursive_rmdir(TALLOC_CTX *ctx,
 		     connection_struct *conn,
 		     struct smb_filename *smb_dname);
+bool has_other_nonposix_opens(struct share_mode_lock *lck,
+			      struct files_struct *fsp,
+			      struct server_id self);
 
 /* The following definitions come from smbd/conn.c  */
 

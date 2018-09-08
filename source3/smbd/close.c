@@ -233,6 +233,39 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 	return status;
 }
 
+bool has_other_nonposix_opens(struct share_mode_lock *lck,
+			      struct files_struct *fsp,
+			      struct server_id self)
+{
+	struct share_mode_data *data = lck->data;
+	uint32_t i;
+
+	for (i=0; i<data->num_share_modes; i++) {
+		struct share_mode_entry *e = &data->share_modes[i];
+
+		if (!is_valid_share_mode_entry(e)) {
+			continue;
+		}
+		if (e->name_hash != fsp->name_hash) {
+			continue;
+		}
+		if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
+		    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
+			continue;
+		}
+		if (serverid_equal(&self, &e->pid) &&
+		    (e->share_file_id == fsp->fh->gen_id)) {
+			continue;
+		}
+		if (share_mode_stale_pid(data, i)) {
+			continue;
+		}
+		return true;
+	}
+
+	return false;
+}
+
 /****************************************************************************
  Deal with removing a share mode on last close.
 ****************************************************************************/
@@ -320,35 +353,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	delete_file = is_delete_on_close_set(lck, fsp->name_hash);
 
-	if (delete_file) {
-		int i;
-		/* See if others still have the file open via this pathname.
-		   If this is the case, then don't delete. If all opens are
-		   POSIX delete now. */
-		for (i=0; i<lck->data->num_share_modes; i++) {
-			struct share_mode_entry *e = &lck->data->share_modes[i];
-
-			if (!is_valid_share_mode_entry(e)) {
-				continue;
-			}
-			if (e->name_hash != fsp->name_hash) {
-				continue;
-			}
-			if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)
-			    && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
-				continue;
-			}
-			if (serverid_equal(&self, &e->pid) &&
-			    (e->share_file_id == fsp->fh->gen_id)) {
-				continue;
-			}
-			if (share_mode_stale_pid(lck->data, i)) {
-				continue;
-			}
-			delete_file = False;
-			break;
-		}
-	}
+	delete_file &= !has_other_nonposix_opens(lck, fsp, self);
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -1147,35 +1152,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	delete_dir = get_delete_on_close_token(lck, fsp->name_hash,
 					&del_nt_token, &del_token);
 
-	if (delete_dir) {
-		int i;
-		/* See if others still have the dir open. If this is the
-		 * case, then don't delete. If all opens are POSIX delete now. */
-		for (i=0; i<lck->data->num_share_modes; i++) {
-			struct share_mode_entry *e = &lck->data->share_modes[i];
-
-			if (!is_valid_share_mode_entry(e)) {
-				continue;
-			}
-			if (e->name_hash != fsp->name_hash) {
-				continue;
-			}
-			if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
-			    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN))
-			{
-				continue;
-			}
-			if (serverid_equal(&self, &e->pid) &&
-			    (e->share_file_id == fsp->fh->gen_id)) {
-				continue;
-			}
-			if (share_mode_stale_pid(lck->data, i)) {
-				continue;
-			}
-			delete_dir = False;
-			break;
-		}
-	}
+	delete_dir &= !has_other_nonposix_opens(lck, fsp, self);
 
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				delete_dir) {
