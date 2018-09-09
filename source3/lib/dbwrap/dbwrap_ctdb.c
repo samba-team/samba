@@ -1532,11 +1532,18 @@ struct traverse_state {
 static void traverse_callback(TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	struct traverse_state *state = (struct traverse_state *)private_data;
-	struct db_record *rec;
-	TALLOC_CTX *tmp_ctx = talloc_new(state->db);
+	struct db_record *rec = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	tmp_ctx = talloc_new(state->db);
+	if (tmp_ctx == NULL) {
+		DBG_ERR("talloc_new failed\n");
+		return;
+	}
+
 	/* we have to give them a locked record to prevent races */
 	rec = db_ctdb_fetch_locked(state->db, tmp_ctx, key);
-	if (rec && rec->value.dsize > 0) {
+	if (rec != NULL && rec->value.dsize > 0) {
 		state->fn(rec, state->private_data);
 	}
 	talloc_free(tmp_ctx);
