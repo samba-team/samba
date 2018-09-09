@@ -861,12 +861,12 @@ def build(bld):
                       'config/notification.README',
                       destname='README')
 
-    bld.install_dir(bld.env.CTDB_LOGDIR)
-    bld.install_dir(bld.env.CTDB_RUNDIR)
-    bld.install_dir(bld.env.CTDB_VARDIR)
+    bld.INSTALL_DIR(bld.env.CTDB_LOGDIR)
+    bld.INSTALL_DIR(bld.env.CTDB_RUNDIR)
+    bld.INSTALL_DIR(bld.env.CTDB_VARDIR)
 
     for d in ['volatile', 'persistent', 'state']:
-        bld.install_dir(os.path.join(bld.env.CTDB_VARDIR, d))
+        bld.INSTALL_DIR(os.path.join(bld.env.CTDB_VARDIR, d))
 
     bld.SAMBA_BINARY('errcode',
                      source='tests/src/errcode.c',
