@@ -1757,10 +1757,11 @@ static int db_ctdb_traverse_read(struct db_context *db,
                                                         struct db_ctdb_ctx);
 	struct traverse_state state;
 
-	state.db = db;
-	state.fn = fn;
-	state.private_data = private_data;
-	state.count = 0;
+	state = (struct traverse_state) {
+		.db = db,
+		.fn = fn,
+		.private_data = private_data,
+	};
 
 	if (db->persistent) {
 		/* for persistent databases we don't need to do a ctdb traverse,
