@@ -1545,6 +1545,7 @@ static void traverse_callback(TDB_DATA key, TDB_DATA data, void *private_data)
 	rec = db_ctdb_fetch_locked(state->db, tmp_ctx, key);
 	if (rec != NULL && rec->value.dsize > 0) {
 		state->fn(rec, state->private_data);
+		state->count++;
 	}
 	talloc_free(tmp_ctx);
 }
