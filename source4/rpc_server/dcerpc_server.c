@@ -2723,8 +2723,6 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	srv_conn->private_data = dcesrv_conn;
 
-	irpc_add_name(srv_conn->msg_ctx, "rpc_server");
-
 	subreq = dcerpc_read_ncacn_packet_send(dcesrv_conn,
 					       dcesrv_conn->event_ctx,
 					       dcesrv_conn->stream);
