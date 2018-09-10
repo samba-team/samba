@@ -123,7 +123,8 @@ else:
                     idtree_random.c base64.c
                     util_str.c util_str_common.c ms_fnmatch.c
                     server_id.c dprintf.c
-                    tevent_debug.c memcache.c unix_match.c tfork.c''',
+                    tevent_debug.c memcache.c unix_match.c tfork.c
+                    tftw.c''',
                   deps='samba-util-core DYNCONFIG close-low-fd tiniparser genrand util_str_hex',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h genrand.h tfork.h',
