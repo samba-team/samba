@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "torture/util.h"
 #include "torture/raw/proto.h"
+#include "lib/events/events.h"
 
 #define BASEDIR "\\test_notify"
 
@@ -2000,6 +2001,20 @@ done:
 	return ret;
 }
 
+struct cb_data {
+	struct smbcli_request *req;
+	bool timed_out;
+};
+
+static void timeout_cb(struct tevent_context *ev,
+			struct tevent_timer *te,
+			struct timeval current_time,
+			void *private_data)
+{
+	struct cb_data *cbp = (struct cb_data *)private_data;
+	cbp->req->state = SMBCLI_REQUEST_ERROR;
+	cbp->timed_out = true;
+}
 
 /*
    testing alignment of multiple change notify infos
@@ -2013,14 +2028,20 @@ static bool test_notify_alignment(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
-	int i, fnum, fnum2;
+	int fnum, fnum2;
 	struct smbcli_request *req;
 	const char *fname = BASEDIR_CN1_NALIGN "\\starter";
 	const char *fnames[] = { "a",
 				 "ab",
 				 "abc",
 				 "abcd" };
-	int num_names = ARRAY_SIZE(fnames);
+	bool fnames_received[] = {false,
+				  false,
+				  false,
+				  false};
+	size_t total_names_received = 0;
+	size_t num_names = ARRAY_SIZE(fnames);
+	size_t i;
 	char *fpath = NULL;
 
 	torture_comment(tctx, "TESTING CHANGE NOTIFY REPLY ALIGNMENT\n");
@@ -2079,19 +2100,91 @@ static bool test_notify_alignment(struct torture_context *tctx,
 		talloc_free(fpath);
 	}
 
-	/* We send a notify packet, and let smb_raw_changenotify_recv() do
-	 * the alignment checking for us. */
-	req = smb_raw_changenotify_send(cli->tree, &notify);
-	status = smb_raw_changenotify_recv(req, tctx, &notify);
-	torture_assert_ntstatus_ok(tctx, status, "smb_raw_changenotify_recv");
+	/*
+	 * Slow cloud filesystems mean we might
+	 * not get everything in one go. Keep going
+	 * until we get them all.
+	 */
+	while (total_names_received < num_names) {
+		struct tevent_timer *te = NULL;
+		struct cb_data to_data = {0};
 
-	/* Do basic checking for correctness. */
-	torture_assert(tctx, notify.nttrans.out.num_changes == num_names, "");
-	for (i = 0; i < num_names; i++) {
-		torture_assert(tctx, notify.nttrans.out.changes[i].action ==
-		    NOTIFY_ACTION_ADDED, "");
-		CHECK_WSTR(tctx, notify.nttrans.out.changes[i].name, fnames[i],
-		    STR_UNICODE);
+		/*
+		 * We send a notify packet, and let
+		 * smb_raw_changenotify_recv() do
+		 * the alignment checking for us.
+		 */
+		req = smb_raw_changenotify_send(cli->tree, &notify);
+		torture_assert(tctx,
+			req != NULL,
+			"smb_raw_changenotify_send failed\n");
+
+		/* Ensure we don't wait more than 30 seconds. */
+		to_data.req = req;
+		to_data.timed_out = false;
+
+		te = tevent_add_timer(tctx->ev,
+				req,
+				tevent_timeval_current_ofs(30, 0),
+				timeout_cb,
+				&to_data);
+		if (te == NULL) {
+			torture_fail(tctx, "tevent_add_timer fail\n");
+		}
+
+		status = smb_raw_changenotify_recv(req, tctx, &notify);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (to_data.timed_out == true) {
+				torture_fail(tctx, "smb_raw_changenotify_recv "
+					"timed out\n");
+			}
+		}
+
+		torture_assert_ntstatus_ok(tctx, status,
+			"smb_raw_changenotify_recv");
+
+		for (i = 0; i < notify.nttrans.out.num_changes; i++) {
+			size_t j;
+
+			/* Ensure it was an 'add'. */
+			torture_assert(tctx,
+				notify.nttrans.out.changes[i].action ==
+					NOTIFY_ACTION_ADDED,
+				"");
+
+			for (j = 0; j < num_names; j++) {
+				if (strcmp(notify.nttrans.out.changes[i].name.s,
+						fnames[j]) == 0) {
+					if (fnames_received[j] == true) {
+						const char *err =
+							talloc_asprintf(tctx,
+								"Duplicate "
+								"name %s\n",
+								fnames[j]);
+						if (err == NULL) {
+							torture_fail(tctx,
+								"talloc "
+								"fail\n");
+						}
+						/* already got this. */
+						torture_fail(tctx, err);
+					}
+					fnames_received[j] = true;
+					break;
+				}
+			}
+			if (j == num_names) {
+				/* No name match. */
+				const char *err = talloc_asprintf(tctx,
+					"Unexpected name %s\n",
+					notify.nttrans.out.changes[i].name.s);
+				if (err == NULL) {
+					torture_fail(tctx, "talloc fail\n");
+				}
+				torture_fail(tctx, err);
+			}
+			total_names_received++;
+		}
 	}
 
 	smb_raw_exit(cli->session);
