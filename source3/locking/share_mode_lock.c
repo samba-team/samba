@@ -142,7 +142,7 @@ static TDB_DATA locking_key(const struct file_id *id)
  necessary we can always make this a separate (smaller) cache.
 ******************************************************************/
 
-static const DATA_BLOB memcache_key(const struct file_id *id)
+static DATA_BLOB memcache_key(const struct file_id *id)
 {
 	return data_blob_const((const void *)id, sizeof(*id));
 }
