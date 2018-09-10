@@ -616,7 +616,6 @@ def configure(conf):
                        define='HAVE_WORKING_STRPTIME',
                        execute=True,
                        addmain=False,
-                       always=True,
                        msg='Checking for working strptime')
 
     conf.CHECK_C_PROTOTYPE('gettimeofday',
@@ -647,7 +646,7 @@ def configure(conf):
     # OpenBSD (and I've heard HPUX) doesn't sync between mmap and write.
     # FIXME: Anything other than a 0 or 1 exit code should abort configure!
     conf.CHECK_CODE('#include "test/incoherent_mmap.c"',
-                    addmain=False, add_headers=False, execute=True, always=True,
+                    addmain=False, add_headers=False, execute=True,
                     define='HAVE_INCOHERENT_MMAP',
                     msg="Checking for HAVE_INCOHERENT_MMAP")
 
