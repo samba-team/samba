@@ -151,10 +151,10 @@ static void share_mode_memcache_delete(struct share_mode_data *d)
 {
 	const DATA_BLOB key = memcache_key(&d->id);
 
-	DEBUG(10,("deleting entry for file %s seq 0x%llu key %s\n",
-		d->base_name,
-		(unsigned long long) d->sequence_number,
-		file_id_string(talloc_tos(), &d->id)));
+	DBG_DEBUG("deleting entry for file %s seq %"PRIx64" key %s\n",
+		  d->base_name,
+		  d->sequence_number,
+		  file_id_string(talloc_tos(), &d->id));
 
 	memcache_delete(NULL,
 			SHARE_MODE_LOCK_CACHE,
@@ -165,10 +165,10 @@ static void share_mode_memcache_store(struct share_mode_data *d)
 {
 	const DATA_BLOB key = memcache_key(&d->id);
 
-	DEBUG(10,("stored entry for file %s seq 0x%llu key %s\n",
-		d->base_name,
-		(unsigned long long) d->sequence_number,
-		file_id_string(talloc_tos(), &d->id)));
+	DBG_DEBUG("stored entry for file %s seq %"PRIx64" key %s\n",
+		  d->base_name,
+		  d->sequence_number,
+		  file_id_string(talloc_tos(), &d->id));
 
 	/* Ensure everything stored in the cache is pristine. */
 	d->modified = false;
@@ -250,11 +250,11 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 
 	d = (struct share_mode_data *)ptr;
 	if (d->sequence_number != sequence_number) {
-		DEBUG(10,("seq changed (cached 0x%llu) (new 0x%llu) "
-			"for key %s\n",
-			(unsigned long long)d->sequence_number,
-			(unsigned long long)sequence_number,
-			file_id_string(mem_ctx, &id)));
+		DBG_DEBUG("seq changed (cached %"PRIx64") (new %"PRIx64") "
+			  "for key %s\n",
+			  d->sequence_number,
+			  sequence_number,
+			  file_id_string(mem_ctx, &id));
 		/* Cache out of date. Remove entry. */
 		memcache_delete(NULL,
 			SHARE_MODE_LOCK_CACHE,
@@ -279,10 +279,10 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 	/* And reset the destructor to none. */
 	talloc_set_destructor(d, NULL);
 
-	DEBUG(10,("fetched entry for file %s seq 0x%llu key %s\n",
-		d->base_name,
-		(unsigned long long)d->sequence_number,
-		file_id_string(mem_ctx, &id)));
+	DBG_DEBUG("fetched entry for file %s seq %"PRIx64" key %s\n",
+		  d->base_name,
+		  d->sequence_number,
+		  file_id_string(mem_ctx, &id));
 
 	return d;
 }
@@ -948,21 +948,20 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 			goto done;
 		}
 		if (open_persistent_id != entry->share_file_id) {
-			DEBUG(5, ("share_mode_cleanup_disconnected: "
-				  "entry for file "
-				  "(file-id='%s', servicepath='%s', "
-				  "base_name='%s%s%s') "
-				  "has share_file_id %llu but expected %llu"
-				  "==> do not cleanup\n",
-				  file_id_string(frame, &fid),
-				  data->servicepath,
-				  data->base_name,
-				  (data->stream_name == NULL)
-				  ? "" : "', stream_name='",
-				  (data->stream_name == NULL)
-				  ? "" : data->stream_name,
-				  (unsigned long long)entry->share_file_id,
-				  (unsigned long long)open_persistent_id));
+			DBG_INFO("entry for file "
+				 "(file-id='%s', servicepath='%s', "
+				 "base_name='%s%s%s') "
+				 "has share_file_id %"PRIu64" but expected "
+				 "%"PRIu64"==> do not cleanup\n",
+				 file_id_string(frame, &fid),
+				 data->servicepath,
+				 data->base_name,
+				 (data->stream_name == NULL)
+				 ? "" : "', stream_name='",
+				 (data->stream_name == NULL)
+				 ? "" : data->stream_name,
+				 entry->share_file_id,
+				 open_persistent_id);
 			goto done;
 		}
 	}
@@ -979,36 +978,34 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 
 	ok = brl_cleanup_disconnected(fid, open_persistent_id);
 	if (!ok) {
-		DEBUG(10, ("share_mode_cleanup_disconnected: "
-			   "failed to clean up byte range locks associated "
-			   "with file (file-id='%s', servicepath='%s', "
-			   "base_name='%s%s%s') and open_persistent_id %llu "
-			   "==> do not cleanup\n",
-			   file_id_string(frame, &fid),
-			   data->servicepath,
-			   data->base_name,
-			   (data->stream_name == NULL)
-			   ? "" : "', stream_name='",
-			   (data->stream_name == NULL)
-			   ? "" : data->stream_name,
-			   (unsigned long long)open_persistent_id));
+		DBG_DEBUG("failed to clean up byte range locks associated "
+			  "with file (file-id='%s', servicepath='%s', "
+			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "==> do not cleanup\n",
+			  file_id_string(frame, &fid),
+			  data->servicepath,
+			  data->base_name,
+			  (data->stream_name == NULL)
+			  ? "" : "', stream_name='",
+			  (data->stream_name == NULL)
+			  ? "" : data->stream_name,
+			  open_persistent_id);
 		goto done;
 	}
 
-	DEBUG(10, ("share_mode_cleanup_disconnected: "
-		   "cleaning up %u entries for file "
-		   "(file-id='%s', servicepath='%s', "
-		   "base_name='%s%s%s') "
-		   "from open_persistent_id %llu\n",
-		   data->num_share_modes,
-		   file_id_string(frame, &fid),
-		   data->servicepath,
-		   data->base_name,
-		   (data->stream_name == NULL)
-		   ? "" : "', stream_name='",
-		   (data->stream_name == NULL)
-		   ? "" : data->stream_name,
-		   (unsigned long long)open_persistent_id));
+	DBG_DEBUG("cleaning up %u entries for file "
+		  "(file-id='%s', servicepath='%s', "
+		  "base_name='%s%s%s') "
+		  "from open_persistent_id %"PRIu64"\n",
+		  data->num_share_modes,
+		  file_id_string(frame, &fid),
+		  data->servicepath,
+		  data->base_name,
+		  (data->stream_name == NULL)
+		  ? "" : "', stream_name='",
+		  (data->stream_name == NULL)
+		  ? "" : data->stream_name,
+		  open_persistent_id);
 
 	data->num_share_modes = 0;
 	data->num_leases = 0;
