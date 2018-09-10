@@ -546,10 +546,11 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	 * call below.
 	 */
 
-	ZERO_STRUCT(cookie);
-
-	ndr_err = ndr_pull_struct_blob(&old_cookie, talloc_tos(), &cookie,
-			(ndr_pull_flags_fn_t)ndr_pull_vfs_default_durable_cookie);
+	ndr_err = ndr_pull_struct_blob_all(
+		&old_cookie,
+		talloc_tos(),
+		&cookie,
+		(ndr_pull_flags_fn_t)ndr_pull_vfs_default_durable_cookie);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
