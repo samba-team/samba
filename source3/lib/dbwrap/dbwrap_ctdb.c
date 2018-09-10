@@ -1768,7 +1768,15 @@ static int db_ctdb_traverse_read(struct db_context *db,
 	if (db->persistent) {
 		/* for persistent databases we don't need to do a ctdb traverse,
 		   we can do a faster local traverse */
-		return tdb_traverse_read(ctx->wtdb->tdb, traverse_persistent_callback_read, &state);
+		int nrecs;
+
+		nrecs = tdb_traverse_read(ctx->wtdb->tdb,
+					  traverse_persistent_callback_read,
+					  &state);
+		if (nrecs == -1) {
+			return -1;
+		}
+		return state.count;
 	}
 
 	ret = db_ctdbd_traverse(ctx->db_id, traverse_read_callback, &state);
