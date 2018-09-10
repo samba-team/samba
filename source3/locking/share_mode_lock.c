@@ -297,7 +297,6 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 {
 	struct share_mode_data *d;
 	enum ndr_err_code ndr_err;
-	uint32_t i;
 	DATA_BLOB blob;
 
 	blob.data = dbuf.dptr;
@@ -322,17 +321,6 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 			  ndr_errstr(ndr_err)));
 		goto fail;
 	}
-
-	/*
-	 * Initialize the values that are [skip] or [ignore]
-	 * in the idl. The NDR code does not initialize them.
-	 */
-
-	for (i=0; i<d->num_share_modes; i++) {
-		d->share_modes[i].stale = false;
-	}
-	d->modified = false;
-	d->fresh = false;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("parse_share_modes:\n"));
@@ -786,7 +774,6 @@ static int share_mode_traverse_fn(struct db_record *rec, void *_state)
 {
 	struct share_mode_forall_state *state =
 		(struct share_mode_forall_state *)_state;
-	uint32_t i;
 	TDB_DATA key;
 	TDB_DATA value;
 	DATA_BLOB blob;
@@ -817,10 +804,6 @@ static int share_mode_traverse_fn(struct db_record *rec, void *_state)
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
 		return 0;
-	}
-
-	for (i=0; i<d->num_share_modes; i++) {
-		d->share_modes[i].stale = false;
 	}
 
 	if (DEBUGLEVEL > 10) {
