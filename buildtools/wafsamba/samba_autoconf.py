@@ -445,12 +445,8 @@ def CHECK_CODE(conf, code, define,
                      exec_args=exec_args,
                      define_ret=define_ret)
     except Exception:
-        # Even when exception happened, conf.check might have set the define
-        # already to int(ret). We want to undefine it in the case of 'always'.
-        # Otherwise, we'd get defines set to 0 when they should be undefined
-        # and it foils #ifdef check
         if always:
-            conf.undefine(define)
+            conf.DEFINE(define, 0)
         conf.COMPOUND_END(False)
         if mandatory:
             raise
