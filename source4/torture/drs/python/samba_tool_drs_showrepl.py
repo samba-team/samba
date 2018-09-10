@@ -26,12 +26,8 @@ import re
 import json
 import ldb
 import random
-from samba.compat import PY3
-
-if PY3:
-    json_str = str
-else:
-    json_str = unicode
+from samba.compat import text_type
+from samba.compat import get_string
 
 GUID_RE = r'[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}'
 HEX8_RE = r'0x[\da-f]{8}'
@@ -69,6 +65,7 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs showrepl "
                                 "%s %s" % (self.dc1, self.cmdline_creds))
 
+        out = get_string(out)
         # We want to assert that we are getting the same results, but
         # dates and GUIDs change randomly.
         #
@@ -150,7 +147,7 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
                 for k in ("last attempt time",
                           "last attempt message",
                           "last success"):
-                    self.assertTrue(isinstance(r[k], json_str))
+                    self.assertTrue(isinstance(r[k], text_type))
                 self.assertRegexpMatches(r["DSA objectGUID"], '^%s$' % GUID_RE)
                 self.assertTrue(isinstance(r["consecutive failures"], int))
 
@@ -239,21 +236,26 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
             out = self.check_output(
                 "samba-tool drs showrepl --pull-summary %s %s" %
                 (self.dc1, self.cmdline_creds))
+            out = get_string(out)
             self.assertStringsEqual(out, "[ALL GOOD]\n")
+            out = get_string(out)
 
             out = self.check_output("samba-tool drs showrepl --pull-summary "
                                     "--color=yes %s %s" %
                                     (self.dc1, self.cmdline_creds))
+            out = get_string(out)
             self.assertStringsEqual(out, "\033[1;32m[ALL GOOD]\033[0m\n")
 
             # --verbose output is still quiet when all is good.
             out = self.check_output(
                 "samba-tool drs showrepl --pull-summary -v %s %s" %
                 (self.dc1, self.cmdline_creds))
+            out = get_string(out)
             self.assertStringsEqual(out, "[ALL GOOD]\n")
             out = self.check_output("samba-tool drs showrepl --pull-summary -v "
                                     "--color=yes %s %s" %
                                     (self.dc1, self.cmdline_creds))
+            out = get_string(out)
 
         except samba.tests.BlackboxProcessError as e:
             self.fail(str(e))
@@ -303,28 +305,32 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
                 out = self.check_output("samba-tool drs showrepl --summary -v "
                                         "%s %s" %
                                         (self.dc1, self.cmdline_creds))
+                out = get_string(out)
                 self.assertStringsEqual('[ALL GOOD]', out, strip=True)
                 out = self.check_output("samba-tool drs showrepl --summary -v "
                                         "--color=yes %s %s" %
                                         (self.dc2, self.cmdline_creds))
+                out = get_string(out)
                 self.assertIn('[ALL GOOD]', out)
 
         except samba.tests.BlackboxProcessError as e:
+            e_stdout = get_string(e.stdout)
+            e_stderr = get_string(e.stderr)
             print("Good, failed as expected after %d rounds: %r" % (i, e.cmd))
-            self.assertIn('There are failing connections', e.stdout,
+            self.assertIn('There are failing connections', e_stdout,
                           msg=('stdout: %r\nstderr: %r\nretcode: %s'
-                               '\nmessage: %r\ncmd: %r') % (e.stdout,
-                                                            e.stderr,
+                               '\nmessage: %r\ncmd: %r') % (e_stdout,
+                                                            e_stderr,
                                                             e.returncode,
                                                             e.msg,
                                                             e.cmd))
             self.assertRegexpMatches(
-                e.stdout,
+                e_stdout,
                 r'result 845[67] '
                 r'\(WERR_DS_DRA_(SINK|SOURCE)_DISABLED\)',
                 msg=("The process should have failed "
                      "because replication was forced off, "
                      "but it failed for some other reason."))
-            self.assertIn('consecutive failure(s).', e.stdout)
+            self.assertIn('consecutive failure(s).', e_stdout)
         else:
             self.fail("No DRS failure noticed after 100 rounds of trying")
