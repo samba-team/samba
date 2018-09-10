@@ -879,8 +879,7 @@ struct share_mode_entry *find_share_mode_entry(
 }
 
 /*******************************************************************
- Del the share mode of a file for this process. Return the number of
- entries left.
+ Del the share mode of a file for this process.
 ********************************************************************/
 
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
