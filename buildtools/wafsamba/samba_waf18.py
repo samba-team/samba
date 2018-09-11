@@ -133,23 +133,6 @@ def undefine(self, key, from_env=True, comment=None):
     if from_env:
         self.env[key] = ()
 
-def install_dir(self, path):
-        if not path:
-                return []
-
-        destpath = Utils.subst_vars(path, self.env)
-
-        if self.is_install > 0:
-                Logs.info('* creating %s', destpath)
-                Utils.check_dir(destpath)
-        elif self.is_install < 0:
-                Logs.info('* removing %s', destpath)
-                try:
-                        os.remove(destpath)
-                except OSError:
-                        pass
-Build.BuildContext.install_dir = install_dir
-
 class ConfigurationContext(Configure.ConfigurationContext):
     def init_dirs(self):
         self.setenv('default')
