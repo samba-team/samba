@@ -196,6 +196,9 @@ static NTSTATUS leases_db_do_locked(
 
 struct leases_db_add_state {
 	const struct file_id *id;
+	uint32_t current_state;
+	uint16_t lease_version;
+	uint16_t epoch;
 	const char *servicepath;
 	const char *base_name;
 	const char *stream_name;
@@ -215,6 +218,13 @@ static void leases_db_add_fn(
 			state->status = NT_STATUS_OBJECT_NAME_COLLISION;
 			return;
 		}
+	}
+
+	if (value->num_files == 0) {
+		/* new record */
+		value->current_state = state->current_state;
+		value->lease_version = state->lease_version;
+		value->epoch = state->epoch;
 	}
 
 	tmp = talloc_realloc(
@@ -242,12 +252,18 @@ static void leases_db_add_fn(
 NTSTATUS leases_db_add(const struct GUID *client_guid,
 		       const struct smb2_lease_key *lease_key,
 		       const struct file_id *id,
+		       uint32_t current_state,
+		       uint16_t lease_version,
+		       uint16_t epoch,
 		       const char *servicepath,
 		       const char *base_name,
 		       const char *stream_name)
 {
 	struct leases_db_add_state state = {
 		.id = id,
+		.current_state = current_state,
+		.lease_version = lease_version,
+		.epoch = epoch,
 		.servicepath = servicepath,
 		.base_name = base_name,
 		.stream_name = stream_name,

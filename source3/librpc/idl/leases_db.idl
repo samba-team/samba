@@ -22,6 +22,32 @@ interface leases_db
 	} leases_db_file;
 
 	typedef [public] struct {
+		smb2_lease_state	current_state;
+		/*
+		 * 'breaking' indicates that we're waiting
+		 * for a lease break ack from the client
+		 * and breaking_to_requested and breaking_to_required
+		 * have a meaning.
+		 *
+		 * breaking_to_requested is the value already sent to
+		 * the client, the client needs to ack to this (or less).
+		 *
+		 * breaking_to_required is the internal value that needs to
+		 * be reached before we can reset breaking = false, this
+		 * may requires multiple roundtrips to the client, e.g.
+		 * when the lease broken to a more reduced value, while
+		 * the lease break is still in progress.
+		 *
+		 * The following can be assumed (if breaking == true):
+		 *
+		 * current_state>breaking_to_requested>=breaking_to_required
+		 */
+		boolean8		breaking;
+		smb2_lease_state	breaking_to_requested;
+		smb2_lease_state	breaking_to_required;
+		uint16			lease_version;
+		uint16			epoch;
+
 		uint32 num_files;
 		[size_is(num_files)] leases_db_file files[];
 	} leases_db_value;

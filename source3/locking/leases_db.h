@@ -30,6 +30,9 @@ bool leases_db_init(bool read_only);
 NTSTATUS leases_db_add(const struct GUID *client_guid,
 		       const struct smb2_lease_key *lease_key,
 		       const struct file_id *id,
+		       uint32_t current_state,
+		       uint16_t lease_version,
+		       uint16_t epoch,
 		       const char *servicepath,
 		       const char *filename,
 		       const char *stream_name);
