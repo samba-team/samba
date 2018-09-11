@@ -538,7 +538,7 @@ smbc_setOptionProtocols(SMBCCTX *c,
 	}
 
 	if (max_proto != NULL) {
-		ok &= lp_set_cmdline("client min protocol", max_proto);
+		ok &= lp_set_cmdline("client max protocol", max_proto);
 	}
 
 	return ok;
