@@ -1055,8 +1055,7 @@ static bool ad_convert_xattr(struct adouble *ad,
  * Convert from Apple's ._ file to Netatalk
  *
  * Apple's AppleDouble may contain a FinderInfo entry longer then 32
- * bytes containing packed xattrs. Netatalk can't deal with that, so
- * we simply discard the packed xattrs.
+ * bytes containing packed xattrs.
  *
  * @return -1 in case an error occurred, 0 if no conversion was done, 1
  * otherwise
@@ -1374,9 +1373,7 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 
 	/*
 	 * Try to fixup AppleDouble files created by OS X with xattrs
-	 * appended to the ADEID_FINDERI entry. We simply remove the
-	 * xattrs blob, this means any fancy xattr that was stored
-	 * there is lost.
+	 * appended to the ADEID_FINDERI entry.
 	 */
 
 	ret = ad_convert(ad, smb_fname, ad->ad_fd);
