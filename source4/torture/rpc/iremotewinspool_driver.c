@@ -464,6 +464,64 @@ done:
 	return ok;
 }
 
+/*
+ * Upload print driver package files and inf file, preparing the print server
+ * for driver installation
+ */
+static bool test_UploadPrinterDriverPackage(struct torture_context *tctx,
+					    void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	struct spoolss_AddDriverInfo8 *parsed_dinfo;
+	struct winspool_AsyncUploadPrinterDriverPackage r;
+	uint32_t pcchDestInfPath = 0;
+	NTSTATUS status;
+	bool ok = true;
+
+	parsed_dinfo = ctx->dinfo->info;
+
+	r.in.pszServer = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	torture_assert_not_null_goto(tctx, r.in.pszServer, ok, done, "Cannot allocate memory");
+
+	r.in.pszInfPath = talloc_asprintf(tctx, "\\\\%s\\%s\\%s\\%s", ctx->dinfo->server_name,
+								      ctx->dinfo->share_name,
+							              ctx->dinfo->print_upload_guid_dir,
+							              ctx->dinfo->inf_file);
+	torture_assert_not_null_goto(tctx, r.in.pszInfPath, ok, done, "Cannot allocate memory");
+
+	r.in.pszEnvironment = parsed_dinfo->architecture;
+	/* Upload driver package files even if the driver package is already present
+	 * on the print server */
+	r.in.dwFlags = UPDP_UPLOAD_ALWAYS;
+	pcchDestInfPath = 260;
+	r.in.pszDestInfPath = NULL;
+	r.in.pcchDestInfPath = &pcchDestInfPath;
+	r.out.pszDestInfPath = NULL;
+	r.out.pcchDestInfPath = &pcchDestInfPath;
+
+	r.in.pszDestInfPath = talloc_zero(tctx, const char);
+	torture_assert_not_null_goto(tctx, r.in.pszDestInfPath, ok, done, "Cannot allocate memory");
+	r.out.pszDestInfPath = talloc_zero(tctx, const char);
+	torture_assert_not_null_goto(tctx, r.out.pszDestInfPath, ok, done, "Cannot allocate memory");
+
+	status = dcerpc_winspool_AsyncUploadPrinterDriverPackage_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncUploadPrinterDriverPackage failed");
+
+	torture_assert_hresult_ok(tctx, r.out.result, "AsyncUploadPrinterDriverPackage failed");
+
+	ctx->dinfo->uploaded_inf_path = talloc_strdup(tctx, r.out.pszDestInfPath);
+	torture_assert_not_null_goto(tctx, ctx->dinfo->uploaded_inf_path, ok, done, "Cannot allocate memory");
+
+done:
+
+	return ok;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool_driver");
@@ -474,6 +532,7 @@ struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 				  torture_rpc_iremotewinspool_drv_teardown);
 
 	torture_tcase_add_simple_test(tcase, "CopyDriverFiles", test_CopyDriverFiles);
+	torture_tcase_add_simple_test(tcase, "UploadPrinterDriverPackage", test_UploadPrinterDriverPackage);
 
 	return suite;
 }
