@@ -903,6 +903,7 @@ def INSTALL_DIR(bld, path, chmod=0o755, env=None):
     if bld.is_install > 0:
         if not os.path.isdir(destpath):
             try:
+                Logs.info('* create %s', destpath)
                 os.makedirs(destpath)
                 os.chmod(destpath, chmod)
             except OSError as e:
