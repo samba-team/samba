@@ -976,10 +976,12 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 
 static void ctdb_recovery_unlock(struct ctdb_recoverd *rec)
 {
-	if (rec->recovery_lock_handle != NULL) {
-		DEBUG(DEBUG_NOTICE, ("Releasing recovery lock\n"));
-		TALLOC_FREE(rec->recovery_lock_handle);
+	if (rec->recovery_lock_handle == NULL) {
+		return;
 	}
+
+	D_NOTICE("Releasing recovery lock\n");
+	TALLOC_FREE(rec->recovery_lock_handle);
 }
 
 static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
