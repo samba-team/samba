@@ -459,6 +459,175 @@ NTSTATUS leases_db_rename(const struct GUID *client_guid,
 	return state.status;
 }
 
+struct leases_db_set_state {
+	uint32_t current_state;
+	bool breaking;
+	uint32_t breaking_to_requested;
+	uint32_t breaking_to_required;
+	uint16_t lease_version;
+	uint16_t epoch;
+};
+
+static void leases_db_set_fn(
+	struct leases_db_value *value, bool *modified, void *private_data)
+{
+	struct leases_db_set_state *state = private_data;
+
+	if (value->num_files == 0) {
+		DBG_WARNING("leases_db_set on new entry\n");
+		return;
+	}
+	value->current_state = state->current_state;
+	value->breaking = state->breaking;
+	value->breaking_to_requested = state->breaking_to_requested;
+	value->breaking_to_required = state->breaking_to_required;
+	value->lease_version = state->lease_version;
+	value->epoch = state->epoch;
+	*modified = true;
+}
+
+NTSTATUS leases_db_set(const struct GUID *client_guid,
+		       const struct smb2_lease_key *lease_key,
+		       uint32_t current_state,
+		       bool breaking,
+		       uint32_t breaking_to_requested,
+		       uint32_t	breaking_to_required,
+		       uint16_t lease_version,
+		       uint16_t epoch)
+{
+	struct leases_db_set_state state = {
+		.current_state = current_state,
+		.breaking = breaking,
+		.breaking_to_requested = breaking_to_requested,
+		.breaking_to_required = breaking_to_required,
+		.lease_version = lease_version,
+		.epoch = epoch,
+	};
+	NTSTATUS status;
+
+	status = leases_db_do_locked(
+		client_guid, lease_key, leases_db_set_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("leases_db_do_locked failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+struct leases_db_get_state {
+	const struct file_id *file_id;
+	uint32_t *current_state;
+	bool *breaking;
+	uint32_t *breaking_to_requested;
+	uint32_t *breaking_to_required;
+	uint16_t *lease_version;
+	uint16_t *epoch;
+	NTSTATUS status;
+};
+
+static void leases_db_get_fn(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct leases_db_get_state *state = private_data;
+	DATA_BLOB blob = { .data = data.dptr, .length = data.dsize };
+	enum ndr_err_code ndr_err;
+	struct leases_db_value *value;
+	uint32_t i;
+
+	value = talloc(talloc_tos(), struct leases_db_value);
+	if (value == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
+		return;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(
+		&blob, value, value,
+		(ndr_pull_flags_fn_t)ndr_pull_leases_db_value);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_pull_struct_blob_failed: %s\n",
+			  ndr_errstr(ndr_err));
+		TALLOC_FREE(value);
+		state->status = ndr_map_error2ntstatus(ndr_err);
+		return;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		DBG_DEBUG("\n");
+		NDR_PRINT_DEBUG(leases_db_value, value);
+	}
+
+	/* id must exist. */
+	for (i = 0; i < value->num_files; i++) {
+		if (file_id_equal(state->file_id, &value->files[i].id)) {
+			break;
+		}
+	}
+
+	if (i == value->num_files) {
+		state->status = NT_STATUS_NOT_FOUND;
+		TALLOC_FREE(value);
+		return;
+	}
+
+	if (state->current_state != NULL) {
+		*state->current_state = value->current_state;
+	};
+	if (state->breaking != NULL) {
+		*state->breaking = value->breaking;
+	};
+	if (state->breaking_to_requested != NULL) {
+		*state->breaking_to_requested = value->breaking_to_requested;
+	};
+	if (state->breaking_to_required != NULL) {
+		*state->breaking_to_required = value->breaking_to_required;
+	};
+	if (state->lease_version != NULL) {
+		*state->lease_version = value->lease_version;
+	};
+	if (state->epoch != NULL) {
+		*state->epoch = value->epoch;
+	};
+
+	TALLOC_FREE(value);
+	state->status = NT_STATUS_OK;
+}
+
+NTSTATUS leases_db_get(const struct GUID *client_guid,
+		       const struct smb2_lease_key *lease_key,
+		       const struct file_id *file_id,
+		       uint32_t *current_state,
+		       bool *breaking,
+		       uint32_t *breaking_to_requested,
+		       uint32_t	*breaking_to_required,
+		       uint16_t *lease_version,
+		       uint16_t *epoch)
+{
+	struct leases_db_get_state state = {
+		.file_id = file_id,
+		.current_state = current_state,
+		.breaking = breaking,
+		.breaking_to_requested = breaking_to_requested,
+		.breaking_to_required = breaking_to_required,
+		.lease_version = lease_version,
+		.epoch = epoch,
+	};
+	struct leases_db_key_buf keybuf;
+	TDB_DATA db_key = leases_db_key(&keybuf, client_guid, lease_key);
+	NTSTATUS status;
+
+	if (!leases_db_init(true)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = dbwrap_parse_record(
+		leases_db, db_key, leases_db_get_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return state.status;
+
+}
+
 NTSTATUS leases_db_copy_file_ids(TALLOC_CTX *mem_ctx,
 			uint32_t num_files,
 			const struct leases_db_file *files,
