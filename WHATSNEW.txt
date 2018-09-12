@@ -265,6 +265,38 @@ feature, currently it should be enabled from the DNS Manager tool from
 Windows. Also the feature needs to have been enabled by setting the smb.conf
 parameter "dns zone scavenging = yes".
 
+Improved support for trusted domains (as AD DC)
+-----------------------------------------------
+
+The support for trusted domains/forests has been further improved.
+
+External domain trusts, as well a transitive forest trusts,
+are supported in both directions (inbound and outbound)
+for Kerberos and NTLM authentication.
+
+The following features are new in 4.9 (compared to 4.8):
+
+- It's now possible to add users/groups of a trusted domain
+  into domain groups. The group memberships are expanded
+  on trust boundaries.
+- foreignSecurityPrincipal objects (FPO) are now automatically
+  created when members (as SID) of a trusted domain/forest
+  are added to a group.
+- The 'samba-tool group *members' commands allow
+  members to be specified as foreign SIDs.
+
+However there are currently still a few limitations:
+
+- Both sides of the trust need to fully trust each other!
+- No SID filtering rules are applied at all!
+- This means DCs of domain A can grant domain admin rights
+  in domain B.
+- Selective (CROSS_ORIGANIZATION) authentication is
+  not supported. It's possible to create such a trust,
+  but the KDC and winbindd ignore them.
+- Samba can still only operate in a forest with just
+  one single domain.
+
 CTDB changes
 ------------
 
