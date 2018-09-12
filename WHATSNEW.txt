@@ -215,6 +215,25 @@ accounts including creating a new computer and resetting the password.
 This allows an 'offline join' of a member server or workstation to the
 Samba AD domain.
 
+New 'samba-tool ou' command
+---------------------------
+
+The new 'samba-tool ou' command allows to manage organizational units.
+
+Available subcommands are:
+  create       - Create an organizational unit.
+  delete       - Delete an organizational unit.
+  list         - List all organizational units
+  listobjects  - List all objects in an organizational unit.
+  move         - Move an organizational unit.
+  rename       - Rename an organizational unit.
+
+In addition to the ou commands, there are new subcommands for the user
+and group management, which can make use of the organizational units:
+  group move   - Move a group to an organizational unit/container.
+  user move    - Move a user to an organizational unit/container.
+  user show    - Display a user AD object.
+
 Samba performance tool now operates against Microsoft Windows AD
 ----------------------------------------------------------------
 
