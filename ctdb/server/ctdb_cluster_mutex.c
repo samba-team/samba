@@ -196,6 +196,7 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_cluster_mutex_handle *h;
 	char **args;
+	sigset_t sigset_term;
 	int ret;
 
 	h = talloc(mem_ctx, struct ctdb_cluster_mutex_handle);
@@ -225,11 +226,22 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	sigemptyset(&sigset_term);
+	sigaddset(&sigset_term, SIGTERM);
+	ret = sigprocmask(SIG_BLOCK, &sigset_term, NULL);
+	if (ret != 0) {
+		DBG_WARNING("Failed to block SIGTERM (%d)\n", errno);
+	}
+
 	h->child = ctdb_fork(ctdb);
 	if (h->child == (pid_t)-1) {
 		close(h->fd[0]);
 		close(h->fd[1]);
 		talloc_free(h);
+		ret = sigprocmask(SIG_UNBLOCK, &sigset_term, NULL);
+		if (ret != 0) {
+			DBG_WARNING("Failed to unblock SIGTERM (%d)\n", errno);
+		}
 		return NULL;
 	}
 
@@ -242,6 +254,11 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		if (ret != 0) {
 			DBG_WARNING("Failed to reset signal handler (%d)\n",
 				    errno);
+		}
+
+		ret = sigprocmask(SIG_UNBLOCK, &sigset_term, NULL);
+		if (ret != 0) {
+			DBG_WARNING("Failed to unblock SIGTERM (%d)\n", errno);
 		}
 
 		/* Make stdout point to the pipe */
@@ -257,6 +274,11 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Parent */
+
+	ret = sigprocmask(SIG_UNBLOCK, &sigset_term, NULL);
+	if (ret != 0) {
+		DBG_WARNING("Failed to unblock SIGTERM (%d)\n", errno);
+	}
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d\n", h->fd[0]));
 	set_close_on_exec(h->fd[0]);
