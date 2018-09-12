@@ -234,6 +234,16 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 	}
 
 	if (h->child == 0) {
+		struct sigaction sa = {
+			.sa_handler = SIG_DFL,
+		};
+
+		ret = sigaction(SIGTERM, &sa, NULL);
+		if (ret != 0) {
+			DBG_WARNING("Failed to reset signal handler (%d)\n",
+				    errno);
+		}
+
 		/* Make stdout point to the pipe */
 		close(STDOUT_FILENO);
 		dup2(h->fd[1], STDOUT_FILENO);
