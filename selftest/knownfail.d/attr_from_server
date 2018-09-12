@@ -1,5 +1,0 @@
-# test currently fails because once we have a fromServer attribute that points
-# to a non-existent object, the extended_dn DSDB module then suppresses that
-# attribute, which means the object is missing a mandatory attribute, thus
-# invalidating the schema 
-^samba4.tests.attr_from_server.python\(ad_dc_ntvfs\).__main__.FromServerAttrTest.test_dangling_server_attr\(ad_dc_ntvfs:local\)

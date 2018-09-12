@@ -617,6 +617,17 @@ static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
 
+	/*
+	 * This ensures we see if there was a DN, that pointed at an
+	 * object that is now deleted, that we still consider the
+	 * schema check to have passed
+	 */
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_REVEAL_INTERNALS,
+				      false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+
 	ret = ldb_next_request(ac->module, search_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);
