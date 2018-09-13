@@ -310,7 +310,7 @@ However there are currently still a few limitations:
 - No SID filtering rules are applied at all!
 - This means DCs of domain A can grant domain admin rights
   in domain B.
-- Selective (CROSS_ORIGANIZATION) authentication is
+- Selective (CROSS_ORGANIZATION) authentication is
   not supported. It's possible to create such a trust,
   but the KDC and winbindd ignore them.
 - Samba can still only operate in a forest with just
