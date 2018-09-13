@@ -347,6 +347,12 @@ static void lease_timeout_handler(struct tevent_context *ctx,
 		return;
 	}
 
+	/*
+	 * Paranoia check: There can only be one fsp_lease per lease
+	 * key
+	 */
+	SMB_ASSERT(fsp->lease == lease);
+
 	lck = get_existing_share_mode_lock(
 			talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
