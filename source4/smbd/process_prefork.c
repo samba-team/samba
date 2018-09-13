@@ -34,6 +34,7 @@
 #include "param/param.h"
 #include "ldb_wrap.h"
 #include "lib/util/tfork.h"
+#include "lib/messaging/irpc.h"
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -63,7 +64,9 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 				       struct tevent_fd *fde,
 				       uint16_t flags,
 				       void *private_data);
-static void setup_handlers(struct tevent_context *ev, int from_parent_fd);
+static void setup_handlers(struct tevent_context *ev,
+			   struct loadparm_context *lp_ctx,
+                           int from_parent_fd);
 
 /*
  * State needed to restart the master process or a worker process if they
@@ -120,7 +123,7 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 	}
 #endif
 	DBG_NOTICE("Exiting pid %d on SIGTERM\n", getpid());
-	talloc_free(ev);
+	TALLOC_FREE(ev);
 	exit(127);
 }
 
@@ -144,16 +147,63 @@ static void prefork_reload_after_fork(void)
 }
 
 /*
+ * clean up any messaging associated with the old process.
+ *
+ */
+static void irpc_cleanup(
+	struct loadparm_context *lp_ctx,
+	struct tevent_context *ev,
+	pid_t pid)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct imessaging_context *msg_ctx = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (mem_ctx == NULL) {
+		DBG_ERR("OOM cleaning up irpc\n");
+		return;
+	}
+	msg_ctx = imessaging_client_init(mem_ctx, lp_ctx, ev);
+	if (msg_ctx == NULL) {
+		DBG_ERR("Unable to create imessaging_context\n");
+		TALLOC_FREE(mem_ctx);
+		return;
+	}
+	status = imessaging_process_cleanup(msg_ctx, pid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("imessaging_process_cleanup returned (%s)\n",
+			nt_errstr(status));
+		TALLOC_FREE(mem_ctx);
+		return;
+	}
+
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
   handle EOF on the parent-to-all-children pipe in the child
 */
 static void prefork_pipe_handler(struct tevent_context *event_ctx,
 		                 struct tevent_fd *fde, uint16_t flags,
 				 void *private_data)
 {
-	/* free the fde which removes the event and stops it firing again */
+	struct loadparm_context *lp_ctx = NULL;
+	pid_t pid;
+
+	/*
+	 * free the fde which removes the event and stops it firing again
+	 */
 	TALLOC_FREE(fde);
+
+	/*
+	 * Clean up any irpc end points this process had.
+	 */
+	pid = getpid();
+	lp_ctx = talloc_get_type_abort(private_data, struct loadparm_context);
+	irpc_cleanup(lp_ctx, event_ctx, pid);
+
 	DBG_NOTICE("Child %d exiting\n", getpid());
-	talloc_free(event_ctx);
+	TALLOC_FREE(event_ctx);
 	exit(0);
 }
 
@@ -238,7 +288,7 @@ static void prefork_fork_master(
 		smb_panic("Failed to re-initialise tevent after fork");
 	}
 	prefork_reload_after_fork();
-	setup_handlers(ev, from_parent_fd);
+	setup_handlers(ev, lp_ctx, from_parent_fd);
 
 	if (service_details->inhibit_pre_fork) {
 		task = new_task_fn(
@@ -272,7 +322,23 @@ static void prefork_fork_master(
 	if (task == NULL) {
 		TALLOC_FREE(ev);
 		TALLOC_FREE(ev2);
-		exit(0);
+		exit(127);
+	}
+
+	/*
+	 * Register an irpc name that can be used by the samba-tool processes
+	 * command
+	 */
+	{
+		struct talloc_ctx *ctx = talloc_new(NULL);
+		char *name = NULL;
+		if (ctx == NULL) {
+			DBG_ERR("Out of memory");
+			exit(127);
+		}
+		name = talloc_asprintf(ctx, "prefork-master-%s", service_name);
+		irpc_add_name(task->msg_ctx, name);
+		TALLOC_FREE(ctx);
 	}
 
 	{
@@ -405,6 +471,8 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 	rc = talloc_get_type_abort(private_data, struct restart_context);
 	pid = tfork_child_pid(rc->t);
 	errno = 0;
+
+	irpc_cleanup(rc->lp_ctx, ev, pid);
 	status = tfork_status(&rc->t, false);
 	if (status == -1) {
 		DBG_ERR("Parent %d, Child %d terminated, "
@@ -482,12 +550,16 @@ static void prefork_accept_connection(
 		 private_data, process_context);
 }
 
-static void setup_handlers(struct tevent_context *ev, int from_parent_fd) {
+static void setup_handlers(
+	struct tevent_context *ev,
+	struct loadparm_context *lp_ctx,
+	int from_parent_fd)
+{
 	struct tevent_fd *fde = NULL;
 	struct tevent_signal *se = NULL;
 
 	fde = tevent_add_fd(ev, ev, from_parent_fd, TEVENT_FD_READ,
-		      prefork_pipe_handler, NULL);
+		      prefork_pipe_handler, lp_ctx);
 	if (fde == NULL) {
 		smb_panic("Failed to add fd handler after fork");
 	}
@@ -566,7 +638,7 @@ static void prefork_fork_worker(struct task_server *task,
 		tevent_fd_set_auto_close(fde);
 	} else {
 		close(control_pipe[1]);
-		setup_handlers(ev2, control_pipe[0]);
+		setup_handlers(ev2, lp_ctx, control_pipe[0]);
 		/*
 		 * tfork uses malloc
 		 */
@@ -579,6 +651,19 @@ static void prefork_fork_worker(struct task_server *task,
 		prefork_reload_after_fork();
 		if (service_details->post_fork != NULL) {
 			service_details->post_fork(task, pd);
+		}
+		{
+			struct talloc_ctx *ctx = talloc_new(NULL);
+			char *name = NULL;
+			if (ctx == NULL) {
+				smb_panic("OOM allocating talloc context\n");
+			}
+			name = talloc_asprintf(ctx,
+					       "prefork-worker-%s-%d",
+					       service_name,
+					       pd->instances);
+			irpc_add_name(task->msg_ctx, name);
+			TALLOC_FREE(ctx);
 		}
 		tevent_loop_wait(ev2);
 		talloc_free(ev2);
@@ -620,6 +705,7 @@ static void prefork_terminate_task(struct tevent_context *ev,
 				   void *process_context)
 {
 	DBG_DEBUG("called with reason[%s]\n", reason);
+	TALLOC_FREE(ev);
 	if (fatal == true) {
 		exit(127);
 	} else {
