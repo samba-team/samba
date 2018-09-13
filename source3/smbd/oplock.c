@@ -176,7 +176,21 @@ uint32_t get_lease_type(const struct share_mode_data *d,
 			const struct share_mode_entry *e)
 {
 	if (e->op_type == LEASE_OPLOCK) {
-		return d->leases[e->lease_idx].current_state;
+		NTSTATUS status;
+		uint32_t current_state;
+
+		status = leases_db_get(
+			&e->client_guid,
+			&e->lease_key,
+			&d->id,
+			&current_state,
+			NULL,	/* breaking */
+			NULL,	/* breaking_to_requested */
+			NULL,	/* breaking_to_required */
+			NULL,	/* lease_version */
+			NULL);	/* epoch */
+		SMB_ASSERT(NT_STATUS_IS_OK(status));
+		return current_state;
 	}
 	return map_oplock_to_lease_type(e->op_type);
 }
