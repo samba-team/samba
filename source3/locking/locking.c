@@ -844,6 +844,10 @@ bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
 	e->op_mid = mid;
 	e->op_type = op_type;
 	e->lease_idx = lease_idx;
+	if (lease_idx != UINT32_MAX) {
+		e->client_guid = lck->data->leases[lease_idx].client_guid;
+		e->lease_key = lck->data->leases[lease_idx].lease_key;
+	}
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
 	e->share_file_id = fsp->fh->gen_id;
