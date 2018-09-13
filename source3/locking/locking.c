@@ -998,8 +998,9 @@ NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
 	l = &d->leases[i];
 
 	if (!l->breaking) {
-		DEBUG(1, ("Attempt to break from %d to %d - but we're not in breaking state\n",
-			   (int)l->current_state, (int)new_lease_state));
+		DBG_WARNING("Attempt to break from %"PRIu32" to %"PRIu32" - "
+			    "but we're not in breaking state\n",
+			    l->current_state, new_lease_state);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1008,9 +1009,10 @@ NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
 	 * must be a strict bitwise superset of new_lease_state
 	 */
 	if ((new_lease_state & l->breaking_to_requested) != new_lease_state) {
-		DEBUG(1, ("Attempt to upgrade from %d to %d - expected %d\n",
-			   (int)l->current_state, (int)new_lease_state,
-			   (int)l->breaking_to_requested));
+		DBG_WARNING("Attempt to upgrade from %"PRIu32" to %"PRIu32" "
+			    "- expected %"PRIu32"\n",
+			    l->current_state, new_lease_state,
+			    l->breaking_to_requested);
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
@@ -1020,10 +1022,11 @@ NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
 	}
 
 	if ((new_lease_state & ~l->breaking_to_required) != 0) {
-		DEBUG(5, ("lease state %d not fully broken from %d to %d\n",
-			   (int)new_lease_state,
-			   (int)l->current_state,
-			   (int)l->breaking_to_required));
+		DBG_INFO("lease state %"PRIu32" not fully broken from "
+			 "%"PRIu32" to %"PRIu32"\n",
+			 new_lease_state,
+			 l->current_state,
+			 l->breaking_to_required);
 		l->breaking_to_requested = l->breaking_to_required;
 		if (l->current_state & (~SMB2_LEASE_READ)) {
 			/*
@@ -1037,9 +1040,11 @@ NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
 		return NT_STATUS_OPLOCK_BREAK_IN_PROGRESS;
 	}
 
-	DEBUG(10, ("breaking from %d to %d - expected %d\n",
-		   (int)l->current_state, (int)new_lease_state,
-		   (int)l->breaking_to_requested));
+	DBG_DEBUG("breaking from %"PRIu32" to %"PRIu32" - "
+		  "expected %"PRIu32"\n",
+		  l->current_state,
+		  new_lease_state,
+		  l->breaking_to_requested);
 
 	l->breaking_to_requested = 0;
 	l->breaking_to_required = 0;
