@@ -248,6 +248,48 @@ static void imessaging_dgm_recv(struct tevent_context *ev,
 /* Keep a list of imessaging contexts */
 static struct imessaging_context *msg_ctxs;
 
+/*
+ * A process has terminated, clean-up any names it has registered.
+ */
+NTSTATUS imessaging_process_cleanup(
+	struct imessaging_context *msg_ctx,
+	pid_t pid)
+{
+	struct irpc_name_records *names = NULL;
+	int i = 0;
+	int j = 0;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	if (mem_ctx == NULL) {
+		DBG_ERR("OOM unable to clean up messaging for process (%d)\n",
+			pid);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	names = irpc_all_servers(msg_ctx, mem_ctx);
+	if (names == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_OK;
+	}
+	for (i = 0; i < names->num_records; i++) {
+		for (j = 0; j < names->names[i]->count; j++) {
+			if (names->names[i]->ids[j].pid == pid) {
+				int ret = server_id_db_prune_name(
+					msg_ctx->names,
+					names->names[i]->name,
+					names->names[i]->ids[j]);
+				if (ret != 0 && ret != ENOENT) {
+					TALLOC_FREE(mem_ctx);
+					return map_nt_error_from_unix_common(
+					    ret);
+				}
+			}
+		}
+	}
+	TALLOC_FREE(mem_ctx);
+	return NT_STATUS_OK;
+}
+
 static int imessaging_context_destructor(struct imessaging_context *msg)
 {
 	DLIST_REMOVE(msg_ctxs, msg);
