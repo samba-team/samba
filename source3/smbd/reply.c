@@ -5267,6 +5267,23 @@ void reply_lseek(struct smb_request *req)
 	return;
 }
 
+static struct files_struct *file_sync_one_fn(struct files_struct *fsp,
+					     void *private_data)
+{
+	connection_struct *conn = talloc_get_type_abort(
+		private_data, connection_struct);
+
+	if (conn != fsp->conn) {
+		return NULL;
+	}
+	if (fsp->fh->fd == -1) {
+		return NULL;
+	}
+	sync_file(conn, fsp, True /* write through */);
+
+	return NULL;
+}
+
 /****************************************************************************
  Reply to a flush.
 ****************************************************************************/
@@ -5292,7 +5309,7 @@ void reply_flush(struct smb_request *req)
 	}
 
 	if (!fsp) {
-		file_sync_all(conn);
+		files_forall(req->sconn, file_sync_one_fn, conn);
 	} else {
 		NTSTATUS status = sync_file(conn, fsp, True);
 		if (!NT_STATUS_IS_OK(status)) {

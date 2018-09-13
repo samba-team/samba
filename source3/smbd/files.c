@@ -455,22 +455,6 @@ bool file_find_subpath(files_struct *dir_fsp)
 }
 
 /****************************************************************************
- Sync open files on a connection.
-****************************************************************************/
-
-void file_sync_all(connection_struct *conn)
-{
-	files_struct *fsp, *next;
-
-	for (fsp=conn->sconn->files; fsp; fsp=next) {
-		next=fsp->next;
-		if ((conn == fsp->conn) && (fsp->fh->fd != -1)) {
-			sync_file(conn, fsp, True /* write through */);
-		}
-	}
-}
-
-/****************************************************************************
  Free up a fsp.
 ****************************************************************************/
 
