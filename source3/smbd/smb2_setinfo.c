@@ -202,7 +202,6 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
-		struct share_mode_lease *l = NULL;
 		uint32_t e_lease_type;
 		uint32_t break_to;
 
@@ -216,12 +215,10 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 			continue;
 		}
 
-		l = &d->leases[e->lease_idx];
-
 		if (smb2_lease_equal(fsp_client_guid(fsp),
 				&fsp->lease->lease.lease_key,
-				&l->client_guid,
-				&l->lease_key)) {
+				&e->client_guid,
+				&e->lease_key)) {
 			continue;
 		}
 
