@@ -897,8 +897,9 @@ def INSTALL_DIR(bld, path, chmod=0o755, env=None):
     if not path:
         return []
 
-    destpath = os.path.join(Options.options.destdir,
-                            bld.EXPAND_VARIABLES(path).lstrip(os.sep))
+    destpath = bld.EXPAND_VARIABLES(path)
+    if Options.options.destdir:
+        destpath = os.path.join(Options.options.destdir, destpath.lstrip(os.sep))
 
     if bld.is_install > 0:
         if not os.path.isdir(destpath):
