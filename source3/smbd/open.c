@@ -1869,7 +1869,19 @@ static bool delay_for_oplock(files_struct *fsp,
 		bool lease_is_breaking = false;
 
 		if (e_is_lease) {
-			lease_is_breaking = d->leases[e->lease_idx].breaking;
+			NTSTATUS status;
+
+			status = leases_db_get(
+				&e->client_guid,
+				&e->lease_key,
+				&fsp->file_id,
+				NULL, /* current_state */
+				&lease_is_breaking,
+				NULL, /* breaking_to_requested */
+				NULL, /* breaking_to_required */
+				NULL, /* lease_version */
+				NULL); /* epoch */
+			SMB_ASSERT(NT_STATUS_IS_OK(status));
 		}
 
 		if (have_sharing_violation) {
