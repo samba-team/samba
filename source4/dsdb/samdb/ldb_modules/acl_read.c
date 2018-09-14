@@ -38,9 +38,6 @@
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
-/* The attributeSecurityGuid for the Public Information Property-Set */
-#define PUBLIC_INFO_PROPERTY_SET "e48d0154-bcf8-11d1-8702-00c04fb96050"
-
 struct aclread_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
@@ -282,15 +279,12 @@ static int check_attr_access_rights(TALLOC_CTX *mem_ctx, const char *attr_name,
 				    struct aclread_context *ac,
 				    struct security_descriptor *sd,
 				    const struct dsdb_class *objectclass,
-				    struct dom_sid *sid, struct ldb_dn *dn,
-				    bool *is_public_info)
+				    struct dom_sid *sid, struct ldb_dn *dn)
 {
 	int ret;
 	const struct dsdb_attribute *attr = NULL;
 	uint32_t access_mask;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-
-	*is_public_info = false;
 
 	attr = dsdb_attribute_by_lDAPDisplayName(ac->schema, attr_name);
 	if (!attr) {
@@ -300,35 +294,6 @@ static int check_attr_access_rights(TALLOC_CTX *mem_ctx, const char *attr_name,
 			      "ignoring\n",
 			      ldb_dn_get_linearized(dn), attr_name);
 		return LDB_SUCCESS;
-	}
-
-	/*
-	 * If we have no Read Property (RP) rights for a child object, it should
-	 * still appear as a visible object in 'objectClass=*' searches,
-	 * as long as we have List Contents (LC) rights for it.
-	 * This is needed for the acl.py tests (e.g. test_search1()).
-	 * I couldn't find the Windows behaviour documented in the specs, so
-	 * this is a guess, but it seems to only apply to attributes in the
-	 * Public Information Property Set that have the systemOnly flag set to
-	 * TRUE. (This makes sense in a way, as it's not disclosive to find out
-	 * that a child object has a 'objectClass' or 'name' attribute, as every
-	 * object has these attributes).
-	 */
-	if (attr->systemOnly) {
-		struct GUID public_info_guid;
-		NTSTATUS status;
-
-		status = GUID_from_string(PUBLIC_INFO_PROPERTY_SET,
-					  &public_info_guid);
-		if (!NT_STATUS_IS_OK(status)) {
-			ldb_set_errstring(ldb, "Public Info GUID parse error");
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		if (GUID_compare(&attr->attributeSecurityGUID,
-				 &public_info_guid) == 0) {
-			*is_public_info = true;
-		}
 	}
 
 	access_mask = get_attr_access_mask(attr, ac->sd_flags);
@@ -399,8 +364,14 @@ static int parse_tree_check_attr_access(struct ldb_parse_tree *tree,
 {
 	struct parse_tree_aclread_ctx *ctx = NULL;
 	const char *attr_name = NULL;
-	bool is_public_info = false;
 	int ret;
+	static const char * const attrs_always_present[] = {
+		"objectClass",
+		"distinguishedName",
+		"name",
+		"objectGUID",
+		NULL
+	};
 
 	ctx = (struct parse_tree_aclread_ctx *)private_context;
 
@@ -418,9 +389,24 @@ static int parse_tree_check_attr_access(struct ldb_parse_tree *tree,
 		return LDB_SUCCESS;
 	}
 
+	/*
+	 * If the search filter is checking for an attribute's presence, and the
+	 * attribute is always present, we can skip access rights checks. Every
+	 * object has these attributes, and so there's no security reason to
+	 * hide their presence.
+	 * Note: the acl.py tests (e.g. test_search1()) rely on this exception.
+	 * I.e. even if we lack Read Property (RP) rights for a child object, it
+	 * should still appear as a visible object in 'objectClass=*' searches,
+	 * so long as we have List Contents (LC) rights for the object.
+	 */
+	if (tree->operation == LDB_OP_PRESENT &&
+	    is_attr_in_list(attrs_always_present, attr_name)) {
+		return LDB_SUCCESS;
+	}
+
 	ret = check_attr_access_rights(ctx->mem_ctx, attr_name, ctx->ac,
 				       ctx->sd, ctx->objectclass, ctx->sid,
-				       ctx->dn, &is_public_info);
+				       ctx->dn);
 
 	/*
 	 * if the user does not have the rights to view this attribute, then we
@@ -428,17 +414,6 @@ static int parse_tree_check_attr_access(struct ldb_parse_tree *tree,
 	 * object doesn't exist (for this particular user, at least)
 	 */
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-
-		/*
-		 * We make an exception for attribute=* searches involving the
-		 * Public Information property-set. This allows searches like
-		 * objectClass=* to return visible objects, even if the user
-		 * doesn't have Read Property rights on the attribute
-		 */
-		if (tree->operation == LDB_OP_PRESENT && is_public_info) {
-			return LDB_SUCCESS;
-		}
-
 		ctx->suppress_result = true;
 		return LDB_SUCCESS;
 	}
