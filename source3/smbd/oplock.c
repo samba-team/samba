@@ -639,9 +639,6 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 		}
 
 		state->xconn = xconn;
-		if (l->current_state & (~SMB2_LEASE_READ)) {
-			state->break_flags = SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED;
-		}
 		state->lease_key = l->lease_key;
 		state->break_from = l->current_state;
 		state->break_to = l->breaking_to_requested;
@@ -649,7 +646,10 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			state->new_epoch = l->epoch;
 		}
 
-		if (state->break_flags == 0) {
+		if (l->current_state & (~SMB2_LEASE_READ)) {
+			state->break_flags =
+				SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED;
+		} else {
 			/*
 			 * This is an async break without
 			 * SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED
