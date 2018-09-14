@@ -637,6 +637,14 @@ class BasicTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1,
                         "Search including unknown attribute failed")
 
+        # likewise, if we specifically request an unknown attribute
+        res = ldb.search(base=self.base_dn,
+                         expression="(cn=ldaptestgroup)",
+                         scope=SCOPE_SUBTREE,
+                         attrs=["thisdoesnotexist"])
+        self.assertTrue(len(res) == 1,
+                        "Search requesting unknown attribute failed")
+
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         # attributes not in objectclasses and mandatory attributes missing test
