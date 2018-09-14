@@ -525,24 +525,18 @@ static NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
 {
 	struct share_mode_data *d = lck->data;
 	struct share_mode_lease *l;
-	uint32_t i;
+	int idx;
 
 	*_l = NULL;
 
-	for (i=0; i<d->num_leases; i++) {
-		if (smb2_lease_equal(&sconn->client->connections->smb2.client.guid,
-				     key,
-				     &d->leases[i].client_guid,
-				     &d->leases[i].lease_key)) {
-			break;
-		}
-	}
-	if (i == d->num_leases) {
+	idx = find_share_mode_lease(
+		d, &sconn->client->connections->smb2.client.guid, key);
+	if (idx == -1) {
 		DEBUG(10, ("lease not found\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	l = &d->leases[i];
+	l = &d->leases[idx];
 
 	if (!l->breaking) {
 		DBG_WARNING("Attempt to break from %"PRIu32" to %"PRIu32" - "
