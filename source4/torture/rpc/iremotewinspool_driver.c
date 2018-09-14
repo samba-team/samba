@@ -522,6 +522,60 @@ done:
 	return ok;
 }
 
+/* Install the driver that was successfully uploaded to the printer driver
+ * store, note that Windows validates the pszDriverName as mentioned below */
+static bool test_InstallPrinterDriverFromPackage(struct torture_context *tctx,
+					     void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	char *abs_inf_path = NULL;
+	struct spoolss_AddDriverInfo8 *parsed_dinfo;
+	struct winspool_AsyncInstallPrinterDriverFromPackage r;
+	bool ok = true;
+	NTSTATUS status;
+
+	parsed_dinfo = ctx->dinfo->info;
+
+	r.in.pszServer = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	torture_assert_not_null_goto(tctx, r.in.pszServer, ok, done, "Cannot allocate memory");
+
+	/* output string(pszDestInfPath) from test_UploadPrinterDriverPackage() */
+	r.in.pszInfPath = talloc_strdup(tctx, ctx->dinfo->uploaded_inf_path);
+	torture_assert_not_null_goto(tctx, r.in.pszInfPath, ok, done, "Cannot allocate memory");
+
+	abs_inf_path = talloc_asprintf(tctx, "%s/%s", ctx->dinfo->local_driver_path, ctx->dinfo->inf_file);
+	torture_assert_not_null_goto(tctx, abs_inf_path, ok, done, "Cannot allocate memory");
+
+	r.in.pszEnvironment = parsed_dinfo->architecture;
+	torture_assert_not_null_goto(tctx, r.in.pszEnvironment, ok, done, "Cannot allocate memory");
+
+	/* Windows validates the print driver name by checking the pszDriverName input against the inf file:
+	 * 1) "DriverName" value
+	 * 2) "CompatName" value
+	 * 3) left-hand-side value under the [Model] section
+	 * otherwise ERROR_UNKNOWN_PRINTER_DRIVER is returned */
+	r.in.pszDriverName = parsed_dinfo->driver_name;
+	torture_assert_not_null_goto(tctx, r.in.pszDriverName, ok, done, "Cannot allocate memory");
+
+	/* All files should be installed, even if doing so would overwrite some newer
+	 * versions */
+	r.in.dwFlags = IPDFP_COPY_ALL_FILES;
+
+	status = dcerpc_winspool_AsyncInstallPrinterDriverFromPackage_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncInstallPrinterDriverFromPackage failed");
+
+	torture_assert_hresult_ok(tctx, r.out.result, "AsyncInstallPrinterDriverFromPackage failed");
+done:
+	TALLOC_FREE(abs_inf_path);
+
+	return ok;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool_driver");
@@ -533,6 +587,7 @@ struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 
 	torture_tcase_add_simple_test(tcase, "CopyDriverFiles", test_CopyDriverFiles);
 	torture_tcase_add_simple_test(tcase, "UploadPrinterDriverPackage", test_UploadPrinterDriverPackage);
+	torture_tcase_add_simple_test(tcase, "InstallPrinterDriverFromPackage", test_InstallPrinterDriverFromPackage);
 
 	return suite;
 }
