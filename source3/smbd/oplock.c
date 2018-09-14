@@ -517,6 +517,91 @@ static struct files_struct *downgrade_lease_fsps(struct files_struct *fsp,
 	return NULL;
 }
 
+static NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
+				      struct share_mode_lock *lck,
+				      const struct smb2_lease_key *key,
+				      uint32_t new_lease_state,
+				      struct share_mode_lease **_l)
+{
+	struct share_mode_data *d = lck->data;
+	struct share_mode_lease *l;
+	uint32_t i;
+
+	*_l = NULL;
+
+	for (i=0; i<d->num_leases; i++) {
+		if (smb2_lease_equal(&sconn->client->connections->smb2.client.guid,
+				     key,
+				     &d->leases[i].client_guid,
+				     &d->leases[i].lease_key)) {
+			break;
+		}
+	}
+	if (i == d->num_leases) {
+		DEBUG(10, ("lease not found\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	l = &d->leases[i];
+
+	if (!l->breaking) {
+		DBG_WARNING("Attempt to break from %"PRIu32" to %"PRIu32" - "
+			    "but we're not in breaking state\n",
+			    l->current_state, new_lease_state);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/*
+	 * Can't upgrade anything: l->breaking_to_requested (and l->current_state)
+	 * must be a strict bitwise superset of new_lease_state
+	 */
+	if ((new_lease_state & l->breaking_to_requested) != new_lease_state) {
+		DBG_WARNING("Attempt to upgrade from %"PRIu32" to %"PRIu32" "
+			    "- expected %"PRIu32"\n",
+			    l->current_state, new_lease_state,
+			    l->breaking_to_requested);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	if (l->current_state != new_lease_state) {
+		l->current_state = new_lease_state;
+		d->modified = true;
+	}
+
+	if ((new_lease_state & ~l->breaking_to_required) != 0) {
+		DBG_INFO("lease state %"PRIu32" not fully broken from "
+			 "%"PRIu32" to %"PRIu32"\n",
+			 new_lease_state,
+			 l->current_state,
+			 l->breaking_to_required);
+		l->breaking_to_requested = l->breaking_to_required;
+		if (l->current_state & (~SMB2_LEASE_READ)) {
+			/*
+			 * Here we break in steps, as windows does
+			 * see the breaking3 and v2_breaking3 tests.
+			 */
+			l->breaking_to_requested |= SMB2_LEASE_READ;
+		}
+		d->modified = true;
+		*_l = l;
+		return NT_STATUS_OPLOCK_BREAK_IN_PROGRESS;
+	}
+
+	DBG_DEBUG("breaking from %"PRIu32" to %"PRIu32" - "
+		  "expected %"PRIu32"\n",
+		  l->current_state,
+		  new_lease_state,
+		  l->breaking_to_requested);
+
+	l->breaking_to_requested = 0;
+	l->breaking_to_required = 0;
+	l->breaking = false;
+
+	d->modified = true;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			 uint32_t num_file_ids,
 			 const struct file_id *ids,
