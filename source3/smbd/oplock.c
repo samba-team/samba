@@ -569,7 +569,7 @@ static NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
 			 l->current_state,
 			 l->breaking_to_required);
 		l->breaking_to_requested = l->breaking_to_required;
-		if (l->current_state & (~SMB2_LEASE_READ)) {
+		if (l->current_state & (SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE)) {
 			/*
 			 * Here we break in steps, as windows does
 			 * see the breaking3 and v2_breaking3 tests.
@@ -646,7 +646,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			state->new_epoch = l->epoch;
 		}
 
-		if (l->current_state & (~SMB2_LEASE_READ)) {
+		if (l->current_state & (SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE)) {
 			state->break_flags =
 				SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED;
 		} else {
