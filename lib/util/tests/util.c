@@ -19,7 +19,6 @@
  */
 
 #include <talloc.h>
-#include <fcntl.h>
 
 #include "replace.h"
 #include "system/filesys.h"
