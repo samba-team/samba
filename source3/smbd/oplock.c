@@ -580,6 +580,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 	d->modified = true;
 
 	if ((lease_state & ~l->breaking_to_required) != 0) {
+		struct downgrade_lease_additional_state *state;
 
 		DBG_INFO("lease state %"PRIu32" not fully broken from "
 			 "%"PRIu32" to %"PRIu32"\n",
@@ -596,15 +597,6 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			 */
 			l->breaking_to_requested |= SMB2_LEASE_READ;
 		}
-
-		status = NT_STATUS_OPLOCK_BREAK_IN_PROGRESS;
-	}
-
-	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
-		   file_id_string_tos(&id), (unsigned)lease_state, nt_errstr(status)));
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_BREAK_IN_PROGRESS)) {
-		struct downgrade_lease_additional_state *state;
 
 		state = talloc_zero(xconn,
 				    struct downgrade_lease_additional_state);
@@ -651,6 +643,8 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 					  xconn->client->raw_ev_ctx,
 					  downgrade_lease_additional_trigger,
 					  state);
+
+		status = NT_STATUS_OPLOCK_BREAK_IN_PROGRESS;
 	} else {
 		DBG_DEBUG("breaking from %"PRIu32" to %"PRIu32" - "
 			  "expected %"PRIu32"\n",
@@ -664,6 +658,9 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 
 		d->modified = true;
 	}
+
+	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
+		   file_id_string_tos(&id), (unsigned)lease_state, nt_errstr(status)));
 
 	{
 		struct downgrade_lease_fsps_state state = {
