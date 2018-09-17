@@ -1348,6 +1348,57 @@ static void send_break_to_none(struct messaging_context *msg_ctx,
 			   (uint8_t *)msg, sizeof(msg));
 }
 
+static bool do_break_lease_to_none(struct share_mode_lock *lck,
+				   struct share_mode_entry *e,
+				   void *private_data)
+{
+	struct break_to_none_state *state = talloc_get_type_abort(
+		private_data, struct break_to_none_state);
+	uint32_t current_state = 0;
+	bool our_own;
+	NTSTATUS status;
+
+	DBG_DEBUG("lease_key=%"PRIu64"/%"PRIu64"\n",
+		  e->lease_key.data[0],
+		  e->lease_key.data[1]);
+
+	status = leases_db_get(&e->client_guid,
+			       &e->lease_key,
+			       &state->id,
+			       &current_state,
+			       NULL, /* breaking */
+			       NULL, /* breaking_to_requested */
+			       NULL, /* breaking_to_required */
+			       NULL, /* lease_version */
+			       NULL); /* epoch */
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("leases_db_get failed: %s\n",
+			    nt_errstr(status));
+		return false;
+	}
+
+	if ((current_state & SMB2_LEASE_READ) == 0) {
+		return false;
+	}
+
+	our_own = smb2_lease_equal(&state->client_guid,
+				   &state->lease_key,
+				   &e->client_guid,
+				   &e->lease_key);
+	if (our_own) {
+		DEBUG(10, ("Don't break our own lease\n"));
+		return false;
+	}
+
+	DBG_DEBUG("Breaking %"PRIu64"/%"PRIu64" to none\n",
+		  e->lease_key.data[0],
+		  e->lease_key.data[1]);
+
+	send_break_to_none(state->sconn->msg_ctx, &state->id, e);
+
+	return false;
+}
+
 static void do_break_to_none(struct tevent_context *ctx,
 			     struct tevent_immediate *im,
 			     void *private_data)
@@ -1357,6 +1408,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 	uint32_t i;
 	struct share_mode_lock *lck;
 	struct share_mode_data *d;
+	bool ok;
 
 	lck = get_existing_share_mode_lock(talloc_tos(), state->id);
 	if (lck == NULL) {
@@ -1373,42 +1425,9 @@ static void do_break_to_none(struct tevent_context *ctx,
 	 * separately.
 	 */
 
-	for (i=0; i<d->num_leases; i++) {
-		struct share_mode_lease *l = &d->leases[i];
-		struct share_mode_entry *e = NULL;
-		uint32_t j;
-
-		if ((l->current_state & SMB2_LEASE_READ) == 0) {
-			continue;
-		}
-		if (smb2_lease_equal(&state->client_guid,
-				     &state->lease_key,
-				     &l->client_guid,
-				     &l->lease_key)) {
-			DEBUG(10, ("Don't break our own lease\n"));
-			continue;
-		}
-
-		for (j=0; j<d->num_share_modes; j++) {
-			e = &d->share_modes[j];
-
-			if (!is_valid_share_mode_entry(e)) {
-				continue;
-			}
-			if (e->lease_idx == i) {
-				break;
-			}
-		}
-		if (j == d->num_share_modes) {
-			DEBUG(0, ("leases[%"PRIu32"] has no share mode\n",
-				  i));
-			continue;
-		}
-
-		DEBUG(10, ("Breaking lease# %"PRIu32" with share_entry# "
-			   "%"PRIu32"\n", i, j));
-
-		send_break_to_none(state->sconn->msg_ctx, &state->id, e);
+	ok = share_mode_forall_leases(lck, do_break_lease_to_none, state);
+	if (!ok) {
+		DBG_WARNING("share_mode_forall_leases failed\n");
 	}
 
 	for(i = 0; i < d->num_share_modes; i++) {
