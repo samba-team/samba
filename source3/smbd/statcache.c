@@ -261,10 +261,7 @@ bool stat_cache_lookup(connection_struct *conn,
 		 * Count the number of times we have done this, we'll
 		 * need it when reconstructing the string.
 		 */
-
-		if (sizechanged) {
-			num_components++;
-		}
+		num_components++;
 
 		if ((*chk_name == '\0')
 		    || ISDOT(chk_name) || ISDOTDOT(chk_name)) {
@@ -301,7 +298,12 @@ bool stat_cache_lookup(connection_struct *conn,
 		TALLOC_FREE(translated_path);
 		return False;
 	}
-	*pst = smb_fname.st;
+	/*
+	 * Only copy the stat struct back if we actually hit the full path
+	 */
+	if (num_components == 0) {
+		*pst = smb_fname.st;
+	}
 
 	if (!sizechanged) {
 		memcpy(*pp_name, translated_path,
