@@ -459,6 +459,32 @@ struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 	return get_share_mode_lock(mem_ctx, id, NULL, NULL, NULL);
 }
 
+static bool rename_lease_fn(struct share_mode_lock *lck,
+			    struct share_mode_entry *e,
+			    void *private_data)
+{
+	struct share_mode_data *d = lck->data;
+	NTSTATUS status;
+
+	status = leases_db_rename(&e->client_guid,
+				  &e->lease_key,
+				  &d->id,
+				  d->servicepath,
+				  d->base_name,
+				  d->stream_name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Any error recovery possible here ? */
+		DBG_WARNING("Failed to rename lease key for "
+			    "renamed file %s:%s. %s\n",
+			    d->base_name,
+			    d->stream_name,
+			    nt_errstr(status));
+	}
+
+	return false;
+}
+
 /*******************************************************************
  Sets the service name and filename for rename.
  At this point we emit "file renamed" messages to all
@@ -484,6 +510,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	bool strip_two_chars = false;
 	bool has_stream = smb_fname_dst->stream_name != NULL;
 	struct server_id self_pid = messaging_server_id(msg_ctx);
+	bool ok;
 
 	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
 		   servicepath, smb_fname_dst->base_name));
@@ -576,28 +603,12 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 				   (uint8_t *)frm, msg_len);
 	}
 
-	for (i=0; i<d->num_leases; i++) {
-		/* Update the filename in leases_db. */
-		NTSTATUS status;
-		struct share_mode_lease *l;
-
-		l = &d->leases[i];
-
-		status = leases_db_rename(&l->client_guid,
-					&l->lease_key,
-					&id,
-					d->servicepath,
-					d->base_name,
-					d->stream_name);
-		if (!NT_STATUS_IS_OK(status)) {
-			/* Any error recovery possible here ? */
-			DEBUG(1,("Failed to rename lease key for "
-				"renamed file %s:%s. %s\n",
-				d->base_name,
-				d->stream_name,
-				nt_errstr(status)));
-			continue;
-		}
+	ok = share_mode_forall_leases(lck, rename_lease_fn, NULL);
+	if (!ok) {
+		/*
+		 * Ignore error here. Not sure what to do..
+		 */
+		DBG_WARNING("share_mode_forall_leases failed\n");
 	}
 
 	return True;
