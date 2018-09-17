@@ -35,7 +35,7 @@ from samba.netcmd import Option, CommandError
 from samba.dcerpc import misc, security
 from samba import Ldb
 from fsmo import cmd_fsmo_seize
-from samba.provision import make_smbconf
+from samba.provision import make_smbconf, DEFAULTSITE
 from samba.upgradehelpers import update_krbtgt_account_password
 from samba.remove_dc import remove_dc
 from samba.provision import secretsdb_self_join
@@ -289,6 +289,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                help="set IPv4 ipaddress"),
         Option("--host-ip6", type="string", metavar="IP6ADDRESS",
                help="set IPv6 ipaddress"),
+        Option("--site", help="Site to add the new server in", type=str),
     ]
 
     takes_optiongroups = {
@@ -297,7 +298,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
     }
 
     def register_dns_zone(self, logger, samdb, lp, ntdsguid, host_ip,
-                          host_ip6):
+                          host_ip6, site):
         '''
         Registers the new realm's DNS objects when a renamed domain backup
         is restored.
@@ -324,7 +325,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
 
         # Add the DNS objects for the new realm (note: the backup clone already
         # has the root server objects, so don't add them again)
-        fill_dns_data_partitions(samdb, domainsid, names.sitename, domaindn,
+        fill_dns_data_partitions(samdb, domainsid, site, domaindn,
                                  forestdn, dnsdomain, dnsforest, hostname,
                                  host_ip, host_ip6, domainguid, ntdsguid,
                                  dnsadmins_sid, add_root=False)
@@ -355,7 +356,8 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         samdb.transaction_commit()
 
     def run(self, sambaopts=None, credopts=None, backup_file=None,
-            targetdir=None, newservername=None, host_ip=None, host_ip6=None):
+            targetdir=None, newservername=None, host_ip=None, host_ip6=None,
+            site=DEFAULTSITE):
         if not (backup_file and os.path.exists(backup_file)):
             raise CommandError('Backup file not found.')
         if targetdir is None:
@@ -407,7 +409,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         ncs = [str(r) for r in res[0].get('namingContexts')]
 
         creds = credopts.get_credentials(lp)
-        ctx = DCJoinContext(logger, creds=creds, lp=lp,
+        ctx = DCJoinContext(logger, creds=creds, lp=lp, site=site,
                             forced_local_samdb=samdb,
                             netbios_name=newservername)
         ctx.nc_list = ncs
@@ -445,7 +447,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         # know the new DC's IP address)
         if is_rename:
             self.register_dns_zone(logger, samdb, lp, ctx.ntds_guid,
-                                   host_ip, host_ip6)
+                                   host_ip, host_ip6, site)
 
         secrets_path = os.path.join(private_dir, 'secrets.ldb')
         secrets_ldb = Ldb(secrets_path, session_info=system_session(), lp=lp)
