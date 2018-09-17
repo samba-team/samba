@@ -59,13 +59,13 @@ def configure(conf):
             addmain=False,
             strict=True,
             msg='Checking for printf format validation support')
-	# Prototype checks
-	conf.CHECK_C_PROTOTYPE('setgroups',
-			'int setgroups(int ngroups, const gid_t *grouplist)',
-			define='HAVE_SETGROUPS_INT', headers='unistd.h sys/types.h')
-	conf.CHECK_C_PROTOTYPE('syscall',
-			'int syscall(int number, ...)',
-			define='HAVE_SYSCALL_INT', headers='unistd.h sys/syscall.h')
+        # Prototype checks
+        conf.CHECK_C_PROTOTYPE('setgroups',
+                'int setgroups(int ngroups, const gid_t *grouplist)',
+        define='HAVE_SETGROUPS_INT', headers='unistd.h sys/types.h')
+        conf.CHECK_C_PROTOTYPE('syscall',
+                'int syscall(int number, ...)',
+        define='HAVE_SYSCALL_INT', headers='unistd.h sys/syscall.h')
 
         if (sys.platform.rfind('linux') > -1):
             conf.CHECK_CODE('''
