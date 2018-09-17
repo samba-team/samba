@@ -2603,7 +2603,7 @@ static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 	struct ldb_message *msg = NULL;
 	int trust_direction_flags;
 	int trust_type;
-	int i;
+	uint32_t i; /* The same type as old_blob.current.count */
 	const struct ldb_val *old_val = NULL;
 	struct trustAuthInOutBlob old_blob = {};
 	uint32_t old_version = 0;
