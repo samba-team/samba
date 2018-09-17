@@ -1232,3 +1232,13 @@ plantestsuite("samba4.dsdb.samdb.ldb_modules.group_audit", "none",
               [os.path.join(bindir(), "test_group_audit")])
 plantestsuite("samba4.dsdb.samdb.ldb_modules.group_audit.errors", "none",
               [os.path.join(bindir(), "test_group_audit_errors")])
+
+# process restart and limit tests, these break the environment so need to run
+# in their own specific environment
+planoldpythontestsuite("preforkrestartdc:local",
+                       "samba.tests.prefork_restart",
+                       extra_path=[
+                           os.path.join(srcdir(), 'python/samba/tests')],
+                       extra_args=['-U"$USERNAME%$PASSWORD"'],
+                       name="samba.tests.prefork_restart",
+                       py3_compatible=True)

@@ -101,3 +101,9 @@ the issue, without fear of never seeing the problem again.
 
 You could even spin up a 'lab DC' inside a testenv, by taking a backup of a
 real network DC.
+
+preforkrestartdc testenv
+------------------------
+Used to test killing and restarting processes under the pre-fork model. Due to
+the destructive nature of the tests, it's not recommended to use this testenv
+for anything else.

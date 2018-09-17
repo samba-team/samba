@@ -1,0 +1,8 @@
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_ldap_all_workers_restart
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_ldap_master_restart
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_ldap_worker_restart
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_master_restart_backoff
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_rpc_all_workers_restart
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_rpc_master_restart
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_rpc_worker_zero_restart
+^samba.tests.prefork_restart.samba.tests.prefork_restart.PreforkProcessRestartTests.test_worker_restart_backoff

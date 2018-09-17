@@ -2185,6 +2185,7 @@ sub check_env($$)
 	ad_dc_ntvfs          => [],
 	backupfromdc         => [],
 	customdc             => [],
+	preforkrestartdc     => [],
 
 	fl2008r2dc           => ["ad_dc"],
 	fl2003dc             => ["ad_dc"],
@@ -2614,6 +2615,45 @@ sub setup_ad_dc_no_ntlm
 	unless ($env) {
 		return undef;
 	}
+
+	if (not defined($self->check_or_start($env, "prefork"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+#
+# AD DC test environment used solely to test pre-fork process restarts.
+# As processes get killed off and restarted it should not be used for other
+sub setup_preforkrestartdc
+{
+	my ($self, $path) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->{target3}->have_ads()) {
+	       return "UNKNOWN";
+	}
+
+	# note DC name must be <= 15 chars so we use 'prockill' instead of
+	# 'preforkrestart'
+	my $env = $self->provision_ad_dc(
+		$path,
+		"prockilldc",
+		"PROCKILLDOMAIN",
+		"prockilldom.samba.example.com",
+		"prefork backoff increment = 5\nprefork maximum backoff=10");
+	unless ($env) {
+		return undef;
+	}
+
+	$env->{NSS_WRAPPER_MODULE_SO_PATH} = undef;
+	$env->{NSS_WRAPPER_MODULE_FN_PREFIX} = undef;
 
 	if (not defined($self->check_or_start($env, "prefork"))) {
 	    return undef;
