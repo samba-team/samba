@@ -288,7 +288,7 @@ void announce_my_server_names(time_t t)
 			}
 
 			/* Announce every minute at first then progress to every 12 mins */
-			if (t > work->lastannounce_time &&
+			if (t >= work->lastannounce_time &&
 			    (t - work->lastannounce_time) < work->announce_interval) {
 				continue;
 			}
