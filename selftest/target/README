@@ -108,3 +108,10 @@ preforkrestartdc testenv
 Used to test killing and restarting processes under the pre-fork model. Due to
 the destructive nature of the tests, it's not recommended to use this testenv
 for anything else.
+
+proclimitdc testenv
+-------------------
+Used to test process limits on the standard model. It sets the number of
+allowed processes artificially low, to test that new connections are refused
+correctly.  Due to the limited number of connections accepted, it's not
+recommended to use this testenv for anything else.

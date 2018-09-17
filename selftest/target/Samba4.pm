@@ -2228,6 +2228,7 @@ sub check_env($$)
 	renamedc             => ["backupfromdc"],
 	offlinebackupdc      => ["backupfromdc"],
 	labdc                => ["backupfromdc"],
+	proclimitdc          => [],
 
 	none                 => [],
 );
@@ -2677,6 +2678,44 @@ sub setup_preforkrestartdc
 	$env->{NSS_WRAPPER_MODULE_FN_PREFIX} = undef;
 
 	if (not defined($self->check_or_start($env, "prefork"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+#
+# ad_dc test environment used solely to test standard process model connection
+# process limits. As the limit is set artificially low it should not be used
+# for other tests.
+sub setup_proclimitdc
+{
+	my ($self, $path) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->{target3}->have_ads()) {
+	       return "UNKNOWN";
+	}
+
+	my $env = $self->provision_ad_dc(
+		$path,
+		"proclimitdc",
+		"PROCLIMITDOM",
+		"proclimit.samba.example.com",
+		"max smbd processes = 20");
+	unless ($env) {
+		return undef;
+	}
+
+	$env->{NSS_WRAPPER_MODULE_SO_PATH} = undef;
+	$env->{NSS_WRAPPER_MODULE_FN_PREFIX} = undef;
+
+	if (not defined($self->check_or_start($env, "standard"))) {
 	    return undef;
 	}
 
