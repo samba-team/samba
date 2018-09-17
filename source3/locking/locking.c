@@ -1296,3 +1296,77 @@ bool file_has_open_streams(files_struct *fsp)
 	TALLOC_FREE(lock);
 	return false;
 }
+
+/*
+ * Walk share mode entries, looking at every lease only once
+ */
+
+bool share_mode_forall_leases(
+	struct share_mode_lock *lck,
+	bool (*fn)(struct share_mode_lock *lck,
+		   struct share_mode_entry *e,
+		   void *private_data),
+	void *private_data)
+{
+	struct share_mode_data *d = lck->data;
+	uint32_t *leases = NULL;
+	uint32_t num_leases = 0;
+	uint32_t i;
+
+	leases = talloc_array(talloc_tos(), uint32_t, d->num_share_modes);
+	if (leases == NULL) {
+		return false;
+	}
+
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+		uint32_t j;
+		bool ok, stop;
+
+		ok = is_valid_share_mode_entry(e);
+		if (!ok) {
+			continue;
+		}
+
+		if (e->op_type != LEASE_OPLOCK) {
+			continue;
+		}
+
+		/*
+		 * See if we have already seen "e"'s lease. This is
+		 * O(n^2). If we sort "leases", we can get this down
+		 * to O(n).
+		 */
+
+		for (j=0; j<num_leases; j++) {
+			uint32_t idx = leases[j];
+			struct share_mode_entry *l = &d->share_modes[idx];
+
+			if (smb2_lease_equal(&e->client_guid,
+					     &e->lease_key,
+					     &l->client_guid,
+					     &l->lease_key)) {
+				break;
+			}
+		}
+		if (j < num_leases) {
+			/*
+			 * Don't look at "e"'s lease, we've already
+			 * seen it.
+			 */
+			continue;
+		}
+
+		stop = fn(lck, e, private_data);
+		if (stop) {
+			TALLOC_FREE(leases);
+			return true;
+		}
+
+		leases[num_leases] = i;
+		num_leases += 1;
+	}
+
+	TALLOC_FREE(leases);
+	return true;
+}
