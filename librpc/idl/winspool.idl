@@ -761,7 +761,7 @@ import "misc.idl", "security.idl", "winreg.idl", "spoolss.idl";
 		[in] [string,charset(UTF16)] uint16 *pszInfPath,
 		[in] [string,charset(UTF16)] uint16 *pszEnvironment,
 		[in] winspool_UploadPrinterDriverPackageFlags dwFlags,
-		[in, out, unique, size_is(*pcchDestInfPath)] uint16 *pszDestInfPath,
+		[in, out, unique, size_is(*pcchDestInfPath)] [charset(UTF16)] uint16 *pszDestInfPath,
 		[in, out]                  uint32 *pcchDestInfPath
 	);
 

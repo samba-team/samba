@@ -399,8 +399,8 @@ static bool test_AsyncUploadPrinterDriverPackage(struct torture_context *tctx,
 		"AsyncUploadPrinterDriverPackage failed");
 
 	pcchDestInfPath = 260;
-	r.in.pszDestInfPath = talloc_zero_array(tctx, uint16_t, pcchDestInfPath);
-	r.out.pszDestInfPath = talloc_zero_array(tctx, uint16_t, pcchDestInfPath);
+	r.in.pszDestInfPath = talloc_zero(tctx, const char);
+	r.out.pszDestInfPath = talloc_zero(tctx, const char);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_winspool_AsyncUploadPrinterDriverPackage_r(b, tctx, &r),
