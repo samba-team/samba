@@ -30,7 +30,8 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs, dnsserver, dnsp
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 from samba.credentials import Credentials, DONT_USE_KERBEROS
-from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
+from samba.provision import (secretsdb_self_join, provision, provision_fill,
+                             FILL_DRS, FILL_SUBDOMAIN, DEFAULTSITE)
 from samba.provision.common import setup_path
 from samba.schema import Schema
 from samba import descriptor
@@ -68,7 +69,7 @@ class DCJoinContext(object):
                  promote_existing=False, plaintext_secrets=False,
                  backend_store=None, forced_local_samdb=None):
         if site is None:
-            site = "Default-First-Site-Name"
+            site = DEFAULTSITE
 
         ctx.logger = logger
         ctx.creds = creds
