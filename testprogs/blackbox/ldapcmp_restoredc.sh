@@ -55,6 +55,9 @@ ldapcmp_with_orig() {
     # these are just differences between provisioning a domain and joining a DC
     IGNORE_ATTRS="$IGNORE_ATTRS,localPolicyFlags,operatingSystem,displayName"
 
+    # the restored DC may use a different side compared to the original DC
+    IGNORE_ATTRS="$IGNORE_ATTRS,serverReferenceBL,msDS-IsDomainFor"
+
     LDAPCMP_CMD="$PYTHON $BINDIR/samba-tool ldapcmp"
     $LDAPCMP_CMD $DB1_PATH $DB2_PATH --two --filter=$IGNORE_ATTRS $BASE_DN_OPTS
 }
