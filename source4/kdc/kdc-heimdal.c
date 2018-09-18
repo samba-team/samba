@@ -438,17 +438,17 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 		return;
 	}
 
-	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);
-	if(ret) {
-		task_server_terminate(task, "kdc: failed to register keytab plugin", true);
-		return;
-	}
-
 	kdc->keytab_name = talloc_asprintf(kdc, "HDB:samba4:&%p", kdc->base_ctx);
 	if (kdc->keytab_name == NULL) {
 		task_server_terminate(task,
 				      "kdc: Failed to set keytab name",
 				      true);
+		return;
+	}
+
+	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to register keytab plugin", true);
 		return;
 	}
 
