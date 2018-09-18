@@ -2101,23 +2101,33 @@ static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
 				  uint32_t granted)
 {
 	struct share_mode_data *d = lck->data;
-	int idx;
-	struct share_mode_lease *l = NULL;
 	bool do_upgrade;
+	uint32_t current_state, breaking_to_requested, breaking_to_required;
+	bool breaking;
+	uint16_t lease_version, epoch;
 	uint32_t existing, requested;
+	NTSTATUS status;
 
-	idx = find_share_mode_lease(d, client_guid, &lease->lease_key);
-	if (idx == -1) {
-		return NT_STATUS_NOT_FOUND;
+	status = leases_db_get(
+		client_guid,
+		&lease->lease_key,
+		&fsp->file_id,
+		&current_state,
+		&breaking,
+		&breaking_to_requested,
+		&breaking_to_required,
+		&lease_version,
+		&epoch);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	l = &d->leases[idx];
 
 	fsp->lease = find_fsp_lease(
 		fsp,
 		&lease->lease_key,
-		l->current_state,
-		l->lease_version,
-		l->epoch);
+		current_state,
+		lease_version,
+		epoch);
 	if (fsp->lease == NULL) {
 		DEBUG(1, ("Did not find existing lease for file %s\n",
 			  fsp_str_dbg(fsp)));
@@ -2127,7 +2137,7 @@ static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
 	/*
 	 * Upgrade only if the requested lease is a strict upgrade.
 	 */
-	existing = l->current_state;
+	existing = current_state;
 	requested = lease->lease_state;
 
 	/*
@@ -2150,35 +2160,41 @@ static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
 	/*
 	 * only upgrade if we are not in breaking state
 	 */
-	do_upgrade &= !l->breaking;
+	do_upgrade &= !breaking;
 
 	DEBUG(10, ("existing=%"PRIu32", requested=%"PRIu32", "
 		   "granted=%"PRIu32", do_upgrade=%d\n",
 		   existing, requested, granted, (int)do_upgrade));
 
 	if (do_upgrade) {
-		l->current_state = granted;
-		l->epoch += 1;
-	}
-
-	{
 		NTSTATUS set_status;
+
+		current_state = granted;
+		epoch += 1;
 
 		set_status = leases_db_set(
 			client_guid,
 			&lease->lease_key,
-			l->current_state,
-			l->breaking,
-			l->breaking_to_requested,
-			l->breaking_to_required,
-			l->lease_version,
-			l->epoch);
+			current_state,
+			breaking,
+			breaking_to_requested,
+			breaking_to_required,
+			lease_version,
+			epoch);
 
 		if (!NT_STATUS_IS_OK(set_status)) {
 			DBG_DEBUG("leases_db_set failed: %s\n",
 				  nt_errstr(set_status));
 			return set_status;
 		}
+	}
+
+	status = update_share_mode_lease_from_db(
+		d, client_guid, &lease->lease_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("update_share_mode_lease_from_db failed: %s\n",
+			    nt_errstr(status));
+		return status;
 	}
 
 	fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
