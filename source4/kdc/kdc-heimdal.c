@@ -431,7 +431,7 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 	}
 
 	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context,
-				   PLUGIN_TYPE_DATA, "hdb",
+				   PLUGIN_TYPE_DATA, "hdb_samba4_interface",
 				   &hdb_samba4_interface);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to register hdb plugin", true);
@@ -444,7 +444,7 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 		return;
 	}
 
-	kdc->keytab_name = talloc_asprintf(kdc, "HDB:samba4&%p", kdc->base_ctx);
+	kdc->keytab_name = talloc_asprintf(kdc, "HDB:samba4:&%p", kdc->base_ctx);
 	if (kdc->keytab_name == NULL) {
 		task_server_terminate(task,
 				      "kdc: Failed to set keytab name",
