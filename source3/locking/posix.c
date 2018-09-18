@@ -432,7 +432,7 @@ static void increment_lock_ref_count(const files_struct *fsp)
 	SMB_ASSERT(lock_ref_count < INT32_MAX);
 
 	DEBUG(10,("lock_ref_count for file %s = %d\n",
-		  fsp_str_dbg(fsp), (int)lock_ref_count));
+		  fsp_str_dbg(fsp), (int)(lock_ref_count + 1)));
 }
 
 /****************************************************************************
@@ -453,7 +453,7 @@ static void decrement_lock_ref_count(const files_struct *fsp)
 	SMB_ASSERT(lock_ref_count > 0);
 
 	DEBUG(10,("lock_ref_count for file %s = %d\n",
-		  fsp_str_dbg(fsp), (int)lock_ref_count));
+		  fsp_str_dbg(fsp), (int)(lock_ref_count - 1)));
 }
 
 /****************************************************************************
