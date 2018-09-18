@@ -2166,6 +2166,26 @@ static bool is_same_lease(const files_struct *fsp,
 				&d->leases[e->lease_idx].lease_key);
 }
 
+static int map_lease_type_to_oplock(uint32_t lease_type)
+{
+	int result = NO_OPLOCK;
+
+	switch (lease_type) {
+	case SMB2_LEASE_READ|SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE:
+		result = BATCH_OPLOCK|EXCLUSIVE_OPLOCK;
+		break;
+	case SMB2_LEASE_READ|SMB2_LEASE_WRITE:
+		result = EXCLUSIVE_OPLOCK;
+		break;
+	case SMB2_LEASE_READ|SMB2_LEASE_HANDLE:
+	case SMB2_LEASE_READ:
+		result = LEVEL_II_OPLOCK;
+		break;
+	}
+
+	return result;
+}
+
 static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 				      struct files_struct *fsp,
 				      struct share_mode_lock *lck,
@@ -2281,21 +2301,7 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 			granted = SMB2_LEASE_NONE;
 		}
 
-		switch (granted) {
-		case SMB2_LEASE_READ|SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE:
-			fsp->oplock_type = BATCH_OPLOCK|EXCLUSIVE_OPLOCK;
-			break;
-		case SMB2_LEASE_READ|SMB2_LEASE_WRITE:
-			fsp->oplock_type = EXCLUSIVE_OPLOCK;
-			break;
-		case SMB2_LEASE_READ|SMB2_LEASE_HANDLE:
-		case SMB2_LEASE_READ:
-			fsp->oplock_type = LEVEL_II_OPLOCK;
-			break;
-		default:
-			fsp->oplock_type = NO_OPLOCK;
-			break;
-		}
+		fsp->oplock_type = map_lease_type_to_oplock(granted);
 
 		status = set_file_oplock(fsp);
 		if (!NT_STATUS_IS_OK(status)) {
