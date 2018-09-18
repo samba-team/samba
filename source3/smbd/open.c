@@ -2042,7 +2042,6 @@ struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 				struct share_mode_lock *lck,
 				const struct smb2_lease *lease,
-				uint32_t *p_lease_idx,
 				uint32_t granted)
 {
 	struct share_mode_data *d = lck->data;
@@ -2069,8 +2068,6 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 				  fsp_str_dbg(fsp)));
 			return NT_STATUS_NO_MEMORY;
 		}
-
-		*p_lease_idx = idx;
 
 		/*
 		 * Upgrade only if the requested lease is a strict upgrade.
@@ -2159,8 +2156,6 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 	fsp->lease->lease.lease_state = granted;
 	fsp->lease->lease.lease_epoch = lease->lease_epoch + 1;
 
-	*p_lease_idx = d->num_leases;
-
 	d->leases[d->num_leases] = (struct share_mode_lease) {
 		.client_guid = *client_guid,
 		.lease_key = fsp->lease->lease.lease_key,
@@ -2240,7 +2235,6 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 	bool got_oplock = false;
 	uint32_t i;
 	uint32_t granted;
-	uint32_t lease_idx = UINT32_MAX;
 	const struct GUID *client_guid = NULL;
 	const struct smb2_lease_key *lease_key = NULL;
 	bool ok;
@@ -2333,8 +2327,7 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 
 		fsp->oplock_type = LEASE_OPLOCK;
 
-		status = grant_fsp_lease(fsp, lck, lease, &lease_idx,
-					 granted);
+		status = grant_fsp_lease(fsp, lck, lease, granted);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 
