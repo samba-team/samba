@@ -2241,6 +2241,8 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 	uint32_t i;
 	uint32_t granted;
 	uint32_t lease_idx = UINT32_MAX;
+	const struct GUID *client_guid = NULL;
+	const struct smb2_lease_key *lease_key = NULL;
 	bool ok;
 	NTSTATUS status;
 
@@ -2338,6 +2340,10 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 
 		}
 		*lease = fsp->lease->lease;
+
+		lease_key = &fsp->lease->lease.lease_key;
+		client_guid = fsp_client_guid(fsp);
+
 		DEBUG(10, ("lease_state=%d\n", lease->lease_state));
 	} else {
 		if (got_handle_lease) {
@@ -2355,10 +2361,14 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		}
 	}
 
-	ok = set_share_mode(lck, fsp, get_current_uid(fsp->conn),
-			    req ? req->mid : 0,
-			    fsp->oplock_type,
-			    lease_idx);
+	ok = set_share_mode(
+		lck,
+		fsp,
+		get_current_uid(fsp->conn),
+		req ? req->mid : 0,
+		fsp->oplock_type,
+		client_guid,
+		lease_key);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4323,9 +4333,14 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	ok = set_share_mode(lck, fsp, get_current_uid(conn),
-			    req ? req->mid : 0, NO_OPLOCK,
-			    UINT32_MAX);
+	ok = set_share_mode(
+		lck,
+		fsp,
+		get_current_uid(conn),
+		req ? req->mid : 0,
+		NO_OPLOCK,
+		NULL,
+		NULL);
 	if (!ok) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);

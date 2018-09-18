@@ -812,17 +812,16 @@ void remove_stale_share_mode_entries(struct share_mode_data *d)
 	}
 }
 
-bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
-		    uid_t uid, uint64_t mid, uint16_t op_type,
-		    uint32_t lease_idx)
+bool set_share_mode(struct share_mode_lock *lck,
+		    struct files_struct *fsp,
+		    uid_t uid,
+		    uint64_t mid,
+		    uint16_t op_type,
+		    const struct GUID *client_guid,
+		    const struct smb2_lease_key *lease_key)
 {
 	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *tmp, *e;
-
-	if ((lease_idx != UINT32_MAX) &&
-	    (lease_idx >= d->num_leases)) {
-		return false;
-	}
 
 	tmp = talloc_realloc(d, d->share_modes, struct share_mode_entry,
 			     d->num_share_modes+1);
@@ -841,11 +840,41 @@ bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
 	e->access_mask = fsp->access_mask;
 	e->op_mid = mid;
 	e->op_type = op_type;
-	e->lease_idx = lease_idx;
-	if (lease_idx != UINT32_MAX) {
-		e->client_guid = lck->data->leases[lease_idx].client_guid;
-		e->lease_key = lck->data->leases[lease_idx].lease_key;
+
+	if (op_type == LEASE_OPLOCK) {
+		uint32_t i;
+
+		e->client_guid = *client_guid;
+		e->lease_key = *lease_key;
+
+		/*
+		 * Need to set lease_idx. This is essentially
+		 * find_share_mode_lease(), but that will go away
+		 * soon. So don't add the dependency here.
+		 */
+
+		for (i=0; i<d->num_leases; i++) {
+			struct share_mode_lease *l = &d->leases[i];
+
+			if (smb2_lease_equal(client_guid,
+					     lease_key,
+					     &l->client_guid,
+					     &l->lease_key)) {
+				break;
+			}
+		}
+
+		if (i == d->num_leases) {
+			DBG_WARNING("lease not found\n");
+			d->num_share_modes -= 1;
+			return false;
+		}
+
+		e->lease_idx = i;
+	} else {
+		e->lease_idx = UINT32_MAX;
 	}
+
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
 	e->share_file_id = fsp->fh->gen_id;
