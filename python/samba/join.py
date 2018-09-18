@@ -68,8 +68,6 @@ class DCJoinContext(object):
                  machinepass=None, use_ntvfs=False, dns_backend=None,
                  promote_existing=False, plaintext_secrets=False,
                  backend_store=None, forced_local_samdb=None):
-        if site is None:
-            site = DEFAULTSITE
 
         ctx.logger = logger
         ctx.creds = creds
@@ -96,13 +94,22 @@ class DCJoinContext(object):
             ctx.samdb = forced_local_samdb
             ctx.server = ctx.samdb.url
         else:
-            if not ctx.server:
+            if ctx.server:
+                # work out the DC's site (if not already specified)
+                if site is None:
+                    ctx.site = ctx.find_dc_site(ctx.server)
+            else:
+                # work out the Primary DC for the domain (as well as an
+                # appropriate site for the new DC)
                 ctx.logger.info("Finding a writeable DC for domain '%s'" % domain)
                 ctx.server = ctx.find_dc(domain)
                 ctx.logger.info("Found DC %s" % ctx.server)
             ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                               session_info=system_session(),
                               credentials=ctx.creds, lp=ctx.lp)
+
+        if ctx.site is None:
+            ctx.site = DEFAULTSITE
 
         try:
             ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL, attrs=["dn"])
@@ -347,6 +354,14 @@ class DCJoinContext(object):
         if ctx.cldap_ret.client_site is not None and ctx.cldap_ret.client_site != "":
             ctx.site = ctx.cldap_ret.client_site
         return ctx.cldap_ret.pdc_dns_name
+
+    def find_dc_site(ctx, server):
+        site = None
+        cldap_ret = ctx.net.finddc(address=server,
+                                   flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS)
+        if cldap_ret.client_site is not None and cldap_ret.client_site != "":
+            site = cldap_ret.client_site
+        return site
 
     def get_behavior_version(ctx):
         res = ctx.samdb.search(base=ctx.base_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
