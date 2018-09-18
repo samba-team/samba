@@ -2094,101 +2094,107 @@ struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 	return new_fsp->lease;
 }
 
-static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
-				struct share_mode_lock *lck,
-				const struct smb2_lease *lease,
-				uint32_t granted)
+static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
+				  struct share_mode_lock *lck,
+				  const struct GUID *client_guid,
+				  const struct smb2_lease *lease,
+				  uint32_t granted)
 {
 	struct share_mode_data *d = lck->data;
-	const struct GUID *client_guid = fsp_client_guid(fsp);
-	struct share_mode_lease *tmp;
-	NTSTATUS status;
 	int idx;
+	struct share_mode_lease *l = NULL;
+	bool do_upgrade;
+	uint32_t existing, requested;
 
 	idx = find_share_mode_lease(d, client_guid, &lease->lease_key);
+	if (idx == -1) {
+		return NT_STATUS_NOT_FOUND;
+	}
+	l = &d->leases[idx];
 
-	if (idx != -1) {
-		struct share_mode_lease *l = &d->leases[idx];
-		bool do_upgrade;
-		uint32_t existing, requested;
-
-		fsp->lease = find_fsp_lease(
-			fsp,
-			&lease->lease_key,
-			l->current_state,
-			l->lease_version,
-			l->epoch);
-		if (fsp->lease == NULL) {
-			DEBUG(1, ("Did not find existing lease for file %s\n",
-				  fsp_str_dbg(fsp)));
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/*
-		 * Upgrade only if the requested lease is a strict upgrade.
-		 */
-		existing = l->current_state;
-		requested = lease->lease_state;
-
-		/*
-		 * Tricky: This test makes sure that "requested" is a
-		 * strict bitwise superset of "existing".
-		 */
-		do_upgrade = ((existing & requested) == existing);
-
-		/*
-		 * Upgrade only if there's a change.
-		 */
-		do_upgrade &= (granted != existing);
-
-		/*
-		 * Upgrade only if other leases don't prevent what was asked
-		 * for.
-		 */
-		do_upgrade &= (granted == requested);
-
-		/*
-		 * only upgrade if we are not in breaking state
-		 */
-		do_upgrade &= !l->breaking;
-
-		DEBUG(10, ("existing=%"PRIu32", requested=%"PRIu32", "
-			   "granted=%"PRIu32", do_upgrade=%d\n",
-			   existing, requested, granted, (int)do_upgrade));
-
-		if (do_upgrade) {
-			l->current_state = granted;
-			l->epoch += 1;
-		}
-
-		{
-			NTSTATUS set_status;
-
-			set_status = leases_db_set(
-				client_guid,
-				&lease->lease_key,
-				l->current_state,
-				l->breaking,
-				l->breaking_to_requested,
-				l->breaking_to_required,
-				l->lease_version,
-				l->epoch);
-
-			if (!NT_STATUS_IS_OK(set_status)) {
-				DBG_DEBUG("leases_db_set failed: %s\n",
-					  nt_errstr(set_status));
-				return set_status;
-			}
-		}
-
-		/* Ensure we're in sync with current lease state. */
-		fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
-		return NT_STATUS_OK;
+	fsp->lease = find_fsp_lease(
+		fsp,
+		&lease->lease_key,
+		l->current_state,
+		l->lease_version,
+		l->epoch);
+	if (fsp->lease == NULL) {
+		DEBUG(1, ("Did not find existing lease for file %s\n",
+			  fsp_str_dbg(fsp)));
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
-	 * Create new lease
+	 * Upgrade only if the requested lease is a strict upgrade.
 	 */
+	existing = l->current_state;
+	requested = lease->lease_state;
+
+	/*
+	 * Tricky: This test makes sure that "requested" is a
+	 * strict bitwise superset of "existing".
+	 */
+	do_upgrade = ((existing & requested) == existing);
+
+	/*
+	 * Upgrade only if there's a change.
+	 */
+	do_upgrade &= (granted != existing);
+
+	/*
+	 * Upgrade only if other leases don't prevent what was asked
+	 * for.
+	 */
+	do_upgrade &= (granted == requested);
+
+	/*
+	 * only upgrade if we are not in breaking state
+	 */
+	do_upgrade &= !l->breaking;
+
+	DEBUG(10, ("existing=%"PRIu32", requested=%"PRIu32", "
+		   "granted=%"PRIu32", do_upgrade=%d\n",
+		   existing, requested, granted, (int)do_upgrade));
+
+	if (do_upgrade) {
+		l->current_state = granted;
+		l->epoch += 1;
+	}
+
+	{
+		NTSTATUS set_status;
+
+		set_status = leases_db_set(
+			client_guid,
+			&lease->lease_key,
+			l->current_state,
+			l->breaking,
+			l->breaking_to_requested,
+			l->breaking_to_required,
+			l->lease_version,
+			l->epoch);
+
+		if (!NT_STATUS_IS_OK(set_status)) {
+			DBG_DEBUG("leases_db_set failed: %s\n",
+				  nt_errstr(set_status));
+			return set_status;
+		}
+	}
+
+	fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
+				    struct share_mode_lock *lck,
+				    const struct GUID *client_guid,
+				    const struct smb2_lease *lease,
+				    uint32_t granted)
+{
+	struct share_mode_data *d = lck->data;
+	struct share_mode_lease *tmp;
+	NTSTATUS status;
 
 	tmp = talloc_realloc(d, d->leases, struct share_mode_lease,
 			     d->num_leases+1);
@@ -2239,6 +2245,24 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 	d->modified = true;
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
+				struct share_mode_lock *lck,
+				const struct smb2_lease *lease,
+				uint32_t granted)
+{
+	const struct GUID *client_guid = fsp_client_guid(fsp);
+	NTSTATUS status;
+
+	status = try_lease_upgrade(fsp, lck, client_guid, lease, granted);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		status = grant_new_fsp_lease(
+			fsp, lck, client_guid, lease, granted);
+	}
+
+	return status;
 }
 
 static bool is_same_lease(const files_struct *fsp,
