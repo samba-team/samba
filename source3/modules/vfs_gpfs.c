@@ -2078,6 +2078,7 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 {
 	struct gpfs_config_data *config;
 	int ret;
+	bool check_fstype;
 
 	gpfswrap_lib_init(0);
 
@@ -2092,6 +2093,31 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 	if (ret < 0) {
 		TALLOC_FREE(config);
 		return ret;
+	}
+
+	check_fstype = lp_parm_bool(SNUM(handle->conn), "gpfs",
+				    "check_fstype", true);
+
+	if (check_fstype && !IS_IPC(handle->conn)) {
+		const char *connectpath = handle->conn->connectpath;
+		struct statfs buf = { 0 };
+
+		ret = statfs(connectpath, &buf);
+		if (ret != 0) {
+			DBG_ERR("statfs failed for share %s at path %s: %s\n",
+				service, connectpath, strerror(errno));
+			TALLOC_FREE(config);
+			return ret;
+		}
+
+		if (buf.f_type != GPFS_SUPER_MAGIC) {
+			DBG_ERR("SMB share %s, path %s not in GPFS file system."
+				" statfs magic: 0x%lx\n",
+				service, connectpath, buf.f_type);
+			errno = EINVAL;
+			TALLOC_FREE(config);
+			return -1;
+		}
 	}
 
 	ret = smbacl4_get_vfs_params(handle->conn, &config->nfs4_params);
