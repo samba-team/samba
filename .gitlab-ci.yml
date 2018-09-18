@@ -85,12 +85,12 @@ build_samba_static:
 build_ctdb:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-ctdb       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py ctdb       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_ctdb:
   <<: *shared_template
   script:
-    - python script/autobuild.py ctdb             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-ctdb             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_others:
   <<: *shared_template
