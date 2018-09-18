@@ -614,6 +614,8 @@ struct ea_list {
 #define SAMBA_XATTR_DOSSTREAM_PREFIX "user.DosStream."
 /* Prefix for xattrs storing streams. */
 #define SAMBA_XATTR_MARKER "user.SAMBA_STREAMS"
+/* EA to use to store reparse points. */
+#define SAMBA_XATTR_REPARSE_ATTRIB "user.SmbReparse"
 
 /* usershare error codes. */
 enum usershare_err {

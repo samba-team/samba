@@ -164,6 +164,7 @@ bool samba_private_attr_name(const char *unix_ea_name)
 	prohibited |= strequal(unix_ea_name, SAMBA_POSIX_INHERITANCE_EA_NAME);
 	prohibited |= strequal(unix_ea_name, SAMBA_XATTR_DOS_ATTRIB);
 	prohibited |= strequal(unix_ea_name, SAMBA_XATTR_MARKER);
+	prohibited |= strequal(unix_ea_name, SAMBA_XATTR_REPARSE_ATTRIB);
 	prohibited |= strequal(unix_ea_name, XATTR_NTACL_NAME);
 	prohibited |= strequal(unix_ea_name, AFPINFO_EA_NETATALK);
 
