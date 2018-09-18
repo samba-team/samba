@@ -1983,7 +1983,9 @@ int find_share_mode_lease(struct share_mode_data *d,
 
 struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 				 const struct smb2_lease_key *key,
-				 const struct share_mode_lease *l)
+				 uint32_t current_state,
+				 uint16_t lease_version,
+				 uint16_t lease_epoch)
 {
 	struct files_struct *fsp;
 
@@ -2016,14 +2018,14 @@ struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 	new_fsp->lease->ref_count = 1;
 	new_fsp->lease->sconn = new_fsp->conn->sconn;
 	new_fsp->lease->lease.lease_key = *key;
-	new_fsp->lease->lease.lease_state = l->current_state;
+	new_fsp->lease->lease.lease_state = current_state;
 	/*
 	 * We internally treat all leases as V2 and update
 	 * the epoch, but when sending breaks it matters if
 	 * the requesting lease was v1 or v2.
 	 */
-	new_fsp->lease->lease.lease_version = l->lease_version;
-	new_fsp->lease->lease.lease_epoch = l->epoch;
+	new_fsp->lease->lease.lease_version = lease_version;
+	new_fsp->lease->lease.lease_epoch = lease_epoch;
 	return new_fsp->lease;
 }
 
@@ -2046,7 +2048,12 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 		bool do_upgrade;
 		uint32_t existing, requested;
 
-		fsp->lease = find_fsp_lease(fsp, &lease->lease_key, l);
+		fsp->lease = find_fsp_lease(
+			fsp,
+			&lease->lease_key,
+			l->current_state,
+			l->lease_version,
+			l->epoch);
 		if (fsp->lease == NULL) {
 			DEBUG(1, ("Did not find existing lease for file %s\n",
 				  fsp_str_dbg(fsp)));

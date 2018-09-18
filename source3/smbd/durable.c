@@ -709,7 +709,12 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		key.data[0] = l->lease_key.data[0];
 		key.data[1] = l->lease_key.data[1];
 
-		fsp->lease = find_fsp_lease(fsp, &key, l);
+		fsp->lease = find_fsp_lease(
+			fsp,
+			&key,
+			l->current_state,
+			l->lease_version,
+			l->epoch);
 		if (fsp->lease == NULL) {
 			TALLOC_FREE(lck);
 			fsp_free(fsp);
