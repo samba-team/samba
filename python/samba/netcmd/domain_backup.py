@@ -45,6 +45,7 @@ from samba.provision import guess_names, determine_host_ip, determine_host_ip6
 from samba.provision.sambadns import (fill_dns_data_partitions,
                                       get_dnsadmins_sid,
                                       get_domainguid)
+from samba import sites
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.
@@ -355,9 +356,23 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         chk.check_database(controls=controls, attrs=attrs)
         samdb.transaction_commit()
 
+    def create_default_site(self, samdb, logger):
+        '''Creates the default site, if it doesn't already exist'''
+
+        sitename = DEFAULTSITE
+        search_expr = "(&(cn={0})(objectclass=site))".format(sitename)
+        res = samdb.search(samdb.get_config_basedn(), scope=ldb.SCOPE_SUBTREE,
+                           expression=search_expr)
+
+        if len(res) == 0:
+            logger.info("Creating default site '{0}'".format(sitename))
+            sites.create_site(samdb, samdb.get_config_basedn(), sitename)
+
+        return sitename
+
     def run(self, sambaopts=None, credopts=None, backup_file=None,
             targetdir=None, newservername=None, host_ip=None, host_ip6=None,
-            site=DEFAULTSITE):
+            site=None):
         if not (backup_file and os.path.exists(backup_file)):
             raise CommandError('Backup file not found.')
         if targetdir is None:
@@ -400,6 +415,13 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         private_dir = os.path.join(targetdir, 'private')
         samdb_path = os.path.join(private_dir, 'sam.ldb')
         samdb = SamDB(url=samdb_path, session_info=system_session(), lp=lp)
+
+        if site is None:
+            # There's no great way to work out the correct site to add the
+            # restored DC to. By default, add it to Default-First-Site-Name,
+            # creating the site if it doesn't already exist
+            site = self.create_default_site(samdb, logger)
+            logger.info("Adding new DC to site '{0}'".format(site))
 
         # Create account using the join_add_objects function in the join object
         # We need namingContexts, account control flags, and the sid saved by
