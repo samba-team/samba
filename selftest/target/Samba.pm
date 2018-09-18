@@ -362,26 +362,36 @@ sub mk_realms_stanza($$$$)
 	my ($realm, $dnsname, $domain, $kdc_ipv4) = @_;
 	my $lc_domain = lc($domain);
 
+	# The   pkinit_require_krbtgt_otherName = false
+	# is just because the certificates we have saved
+	# do not have the realm in the subjectAltName
+	# (specially encoded as a principal)
+	# per
+	# https://github.com/heimdal/heimdal/wiki/Setting-up-PK-INIT-and-Certificates
 	my $realms_stanza = "
  $realm = {
   kdc = $kdc_ipv4:88
   admin_server = $kdc_ipv4:88
   default_domain = $dnsname
+  pkinit_require_krbtgt_otherName = false
  }
  $dnsname = {
   kdc = $kdc_ipv4:88
   admin_server = $kdc_ipv4:88
   default_domain = $dnsname
+  pkinit_require_krbtgt_otherName = false
  }
  $domain = {
   kdc = $kdc_ipv4:88
   admin_server = $kdc_ipv4:88
   default_domain = $dnsname
+  pkinit_require_krbtgt_otherName = false
  }
  $lc_domain = {
   kdc = $kdc_ipv4:88
   admin_server = $kdc_ipv4:88
   default_domain = $dnsname
+  pkinit_require_krbtgt_otherName = false
  }
 
 ";
