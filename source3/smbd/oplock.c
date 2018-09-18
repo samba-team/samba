@@ -1018,8 +1018,13 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 	if (fsp->oplock_type == LEASE_OPLOCK) {
+		const struct GUID *client_guid = fsp_client_guid(fsp);
 		struct share_mode_lock *lck;
-		int idx;
+		uint32_t current_state;
+		uint32_t breaking_to_requested, breaking_to_required;
+		bool breaking;
+		uint16_t lease_version, epoch;
+		NTSTATUS status;
 
 		lck = get_existing_share_mode_lock(
 			talloc_tos(), fsp->file_id);
@@ -1033,69 +1038,83 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 			return;
 		}
 
-		idx = find_share_mode_lease(
-			lck->data,
-			fsp_client_guid(fsp),
-			&fsp->lease->lease.lease_key);
-		if (idx != -1) {
-			struct share_mode_lease *l;
-			l = &lck->data->leases[idx];
-
-			break_from = l->current_state;
-			break_to &= l->current_state;
-
-			if (l->breaking) {
-				break_to &= l->breaking_to_required;
-				if (l->breaking_to_required != break_to) {
-					/*
-					 * Note we don't increment the epoch
-					 * here, which might be a bug in
-					 * Windows too...
-					 */
-					l->breaking_to_required = break_to;
-					lck->data->modified = true;
-				}
-				break_needed = false;
-			} else if (l->current_state == break_to) {
-				break_needed = false;
-			} else if (l->current_state == SMB2_LEASE_READ) {
-				l->current_state = SMB2_LEASE_NONE;
-				/* Need to increment the epoch */
-				l->epoch += 1;
-				lck->data->modified = true;
-			} else {
-				l->breaking = true;
-				l->breaking_to_required = break_to;
-				l->breaking_to_requested = break_to;
-				/* Need to increment the epoch */
-				l->epoch += 1;
-				lck->data->modified = true;
-			}
-
-			{
-				NTSTATUS set_status;
-
-				set_status = leases_db_set(
-					&sconn->client->connections->
-					smb2.client.guid,
-					&fsp->lease->lease.lease_key,
-					l->current_state,
-					l->breaking,
-					l->breaking_to_requested,
-					l->breaking_to_required,
-					l->lease_version,
-					l->epoch);
-
-				if (!NT_STATUS_IS_OK(set_status)) {
-					DBG_DEBUG("leases_db_set failed: %s\n",
-						  nt_errstr(set_status));
-					return;
-				}
-			}
-
-			/* Ensure we're in sync with current lease state. */
-			fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
+		status = leases_db_get(client_guid,
+				       &fsp->lease->lease.lease_key,
+				       &id,
+				       &current_state,
+				       &breaking,
+				       &breaking_to_requested,
+				       &breaking_to_required,
+				       &lease_version,
+				       &epoch);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("leases_db_get returned %s\n",
+				    nt_errstr(status));
+			TALLOC_FREE(lck);
+			return;
 		}
+
+		break_from = current_state;
+		break_to &= current_state;
+
+		if (breaking) {
+			break_to &= breaking_to_required;
+			if (breaking_to_required != break_to) {
+				/*
+				 * Note we don't increment the epoch
+				 * here, which might be a bug in
+				 * Windows too...
+				 */
+				breaking_to_required = break_to;
+			}
+			break_needed = false;
+		} else if (current_state == break_to) {
+			break_needed = false;
+		} else if (current_state == SMB2_LEASE_READ) {
+			current_state = SMB2_LEASE_NONE;
+			/* Need to increment the epoch */
+			epoch += 1;
+		} else {
+			breaking = true;
+			breaking_to_required = break_to;
+			breaking_to_requested = break_to;
+			/* Need to increment the epoch */
+			epoch += 1;
+		}
+
+		{
+			NTSTATUS set_status;
+
+			set_status = leases_db_set(
+				client_guid,
+				&fsp->lease->lease.lease_key,
+				current_state,
+				breaking,
+				breaking_to_requested,
+				breaking_to_required,
+				lease_version,
+				epoch);
+
+			if (!NT_STATUS_IS_OK(set_status)) {
+				DBG_DEBUG("leases_db_set failed: %s\n",
+					  nt_errstr(set_status));
+				return;
+			}
+		}
+
+		status = update_share_mode_lease_from_db(
+			lck->data,
+			client_guid,
+			&fsp->lease->lease.lease_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("update_share_mode_lease_from_db "
+				    "failed: %s\n", nt_errstr(status));
+			TALLOC_FREE(lck);
+			return;
+		}
+
+		/* Ensure we're in sync with current lease state. */
+		fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
 
 		TALLOC_FREE(lck);
 	}
