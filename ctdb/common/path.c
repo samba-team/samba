@@ -188,6 +188,14 @@ char *path_config(TALLOC_CTX *mem_ctx)
 
 char *path_socket(TALLOC_CTX *mem_ctx, const char *daemon)
 {
+	if (strcmp(daemon, "ctdbd") == 0) {
+		const char *t = getenv("CTDB_SOCKET");
+
+		if (t != NULL) {
+			return talloc_strdup(mem_ctx, t);
+		}
+	}
+
 	return talloc_asprintf(mem_ctx,
 			       "%s/%s.socket",
 			       path_rundir(),
