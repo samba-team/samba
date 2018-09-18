@@ -917,7 +917,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
         backup_dirs = [paths.private_dir, paths.state_dir,
                        os.path.dirname(paths.smbconf)]  # etc dir
-        logger.info('running backup on dirs: {}'.format(backup_dirs))
+        logger.info('running backup on dirs: {}'.format(' '.join(backup_dirs)))
 
         # Recursively get all file paths in the backup directories
         all_files = []
