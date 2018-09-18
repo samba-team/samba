@@ -1833,7 +1833,8 @@ sub read_config_h($)
 
 sub provision_ad_dc($$$$$$)
 {
-	my ($self, $prefix, $hostname, $domain, $realm, $smbconf_args) = @_;
+	my ($self, $prefix, $hostname, $domain, $realm, $smbconf_args,
+		$extra_provision_options) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 
@@ -1944,7 +1945,6 @@ sub provision_ad_dc($$$$$$)
 	copy = print1
 ";
 
-	my $extra_provision_options = undef;
 	push (@{$extra_provision_options}, "--backend-store=mdb");
 	print "PROVISIONING AD DC...\n";
 	my $ret = $self->provision($prefix,
@@ -2508,7 +2508,7 @@ sub setup_ad_dc
 	}
 
 	my $env = $self->provision_ad_dc($path, "addc", "ADDOMAIN",
-					 "addom.samba.example.com", "");
+					 "addom.samba.example.com", "", undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2535,7 +2535,7 @@ sub setup_ad_dc_no_nss
 	}
 
 	my $env = $self->provision_ad_dc($path, "addc_no_nss", "ADNONSSDOMAIN",
-					 "adnonssdom.samba.example.com", "");
+					 "adnonssdom.samba.example.com", "", undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2566,7 +2566,7 @@ sub setup_ad_dc_no_ntlm
 
 	my $env = $self->provision_ad_dc($path, "addc_no_ntlm", "ADNONTLMDOMAIN",
 					 "adnontlmdom.samba.example.com",
-					 "ntlm auth = disabled");
+					 "ntlm auth = disabled", undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2597,8 +2597,11 @@ sub setup_backupfromdc
 	       return "UNKNOWN";
 	}
 
+	my $provision_args = ["--site=Backup-Site"];
+
 	my $env = $self->provision_ad_dc($path, "backupfromdc", "BACKUPDOMAIN",
-					 "backupdom.samba.example.com", "");
+					 "backupdom.samba.example.com", "",
+					 $provision_args);
 	unless ($env) {
 		return undef;
 	}
