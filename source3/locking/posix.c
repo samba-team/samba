@@ -509,7 +509,7 @@ static void delete_lock_ref_count(const files_struct *fsp)
 ****************************************************************************/
 
 /****************************************************************************
- Add an fd to the pending close tdb.
+ Add an fd to the pending close db.
 ****************************************************************************/
 
 static void add_fd_to_close_entry(const files_struct *fsp)
@@ -599,7 +599,7 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
 
 /****************************************************************************
  Deal with pending closes needed by POSIX locking support.
- Note that posix_locking_close_file() is expected to have been called
+ Note that locking_close_file() is expected to have been called
  to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
@@ -637,7 +637,7 @@ int fd_close_posix(const struct files_struct *fsp)
 
 	/*
 	 * No outstanding locks. Get the pending close fd's
-	 * from the tdb and close them all.
+	 * from the db and close them all.
 	 */
 
 	count = get_posix_pending_close_entries(talloc_tos(), fsp, &fd_array);
@@ -653,7 +653,7 @@ int fd_close_posix(const struct files_struct *fsp)
 		}
 
 		/*
-		 * Delete all fd's stored in the tdb
+		 * Delete all fd's stored in the db
 		 * for this dev/inode pair.
 		 */
 
