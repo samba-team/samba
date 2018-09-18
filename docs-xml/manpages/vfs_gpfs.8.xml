@@ -244,6 +244,28 @@
 		</varlistentry>
 		<varlistentry>
 
+		<term>gpfs:check_fstype = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Check for a mounted GPFS file system on access to a SMB share.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>yes(default)</command> - Check that the SMB share path
+		is on a GPFS file system. Share access will be denied when a
+		different file system is found.
+		</para></listitem>
+		<listitem><para>
+		<command>no</command> - skip check for GPFS file system on SMB
+		share path.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>gpfs:refuse_dacl_protected = [ yes | no ]</term>
 		<listitem>
 		<para>
