@@ -27,6 +27,7 @@ from samba.auth import system_session
 from samba import Ldb, dn_from_dns_name
 from samba.netcmd.fsmo import get_fsmo_roleowner
 import re
+from samba import sites
 
 
 def get_prim_dom(secrets_path, lp):
@@ -147,6 +148,32 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
 
         # assert that we don't find user secrets in the DB
         self.check_restored_database(lp, expect_secrets=False)
+
+    def _test_backup_restore_into_site(self):
+        """Does a backup and restores into a non-default site"""
+
+        # create a new non-default site
+        sitename = "Test-Site-For-Backups"
+        sites.create_site(self.ldb, self.ldb.get_config_basedn(), sitename)
+        self.addCleanup(sites.delete_site, self.ldb,
+                        self.ldb.get_config_basedn(), sitename)
+
+        # restore the backup DC into the site we just created
+        backup_file = self.create_backup()
+        self.restore_backup(backup_file, ["--site=" + sitename])
+
+        lp = self.check_restored_smbconf()
+        restored_ldb = self.check_restored_database(lp)
+
+        # check the restored DC was added to the site we created, i.e. there's
+        # an entry matching the new DC sitting underneath the site DN
+        site_dn = "CN={0},CN=Sites,{1}".format(sitename,
+                                               restored_ldb.get_config_basedn())
+        match_server = "(&(objectClass=server)(cn={0}))".format(self.new_server)
+        res = restored_ldb.search(site_dn, scope=ldb.SCOPE_SUBTREE,
+                                  expression=match_server)
+        self.assertTrue(len(res) == 1,
+                        "Failed to find new DC under site")
 
     def create_smbconf(self, settings):
         """Creates a very basic smb.conf to pass to the restore tool"""
@@ -372,6 +399,9 @@ class DomainBackupOnline(DomainBackupBase):
     def test_backup_restore_no_secrets(self):
         self._test_backup_restore_no_secrets()
 
+    def test_backup_restore_into_site(self):
+        self._test_backup_restore_into_site()
+
 
 class DomainBackupRename(DomainBackupBase):
 
@@ -398,6 +428,9 @@ class DomainBackupRename(DomainBackupBase):
 
     def test_backup_restore_no_secrets(self):
         self._test_backup_restore_no_secrets()
+
+    def test_backup_restore_into_site(self):
+        self._test_backup_restore_into_site()
 
     def test_backup_invalid_args(self):
         """Checks that rename commands with invalid args are rejected"""
