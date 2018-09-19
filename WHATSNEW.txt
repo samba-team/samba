@@ -75,6 +75,15 @@ delay between restart attempts up until it reaches "prefork maximum backoff".
 Using the default sequence the restart delays (in seconds) are:
   0, 10, 20, ..., 120, 120, ...
 
+standard process model
+----------------------
+
+When using the standard process model samba forks a new process to handle ldap
+and netlogon connections.  Samba now honours the 'max smbd processes' smb.conf
+parameter.  The default value of 0, indicates there is no limit.  The limit
+is applied individually to netlogon and ldap.  When the process limit is
+exceeded Samba drops new connections immediately.
+
 REMOVED FEATURES
 ================
 
