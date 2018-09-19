@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_open_files.h"
 #include "serverid.h"
 #include "fake_file.h"
+#include "locking/leases_db.h"
 
 NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 				    TALLOC_CTX *mem_ctx,
@@ -703,23 +704,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	fsp->oplock_type = e->op_type;
 
 	if (fsp->oplock_type == LEASE_OPLOCK) {
-		struct share_mode_lease *l = &lck->data->leases[e->lease_idx];
-		struct smb2_lease_key key;
-
-		key.data[0] = l->lease_key.data[0];
-		key.data[1] = l->lease_key.data[1];
-
-		fsp->lease = find_fsp_lease(
-			fsp,
-			&key,
-			l->current_state,
-			l->lease_version,
-			l->epoch);
-		if (fsp->lease == NULL) {
-			TALLOC_FREE(lck);
-			fsp_free(fsp);
-			return NT_STATUS_NO_MEMORY;
-		}
+		uint32_t current_state;
+		uint16_t lease_version, epoch;
 
 		/*
 		 * Ensure the existing client guid matches the
@@ -730,6 +716,34 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 			TALLOC_FREE(lck);
 			fsp_free(fsp);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+
+		status = leases_db_get(
+			&e->client_guid,
+			&e->lease_key,
+			&file_id,
+			&current_state, /* current_state */
+			NULL, /* breaking */
+			NULL, /* breaking_to_requested */
+			NULL, /* breaking_to_required */
+			&lease_version, /* lease_version */
+			&epoch); /* epoch */
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(lck);
+			fsp_free(fsp);
+			return status;
+		}
+
+		fsp->lease = find_fsp_lease(
+			fsp,
+			&e->lease_key,
+			current_state,
+			lease_version,
+			epoch);
+		if (fsp->lease == NULL) {
+			TALLOC_FREE(lck);
+			fsp_free(fsp);
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
