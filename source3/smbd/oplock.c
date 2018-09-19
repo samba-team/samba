@@ -557,13 +557,14 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			 uint32_t lease_state)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
+	const struct GUID *client_guid = NULL;
 	struct share_mode_lock *lck;
-	struct share_mode_data *d = NULL;
-	struct share_mode_lease *l = NULL;
 	const struct file_id id = ids[0];
-	int idx;
-	uint32_t i;
+	uint32_t current_state, breaking_to_requested, breaking_to_required;
+	bool breaking;
+	uint16_t lease_version, epoch;
 	NTSTATUS status;
+	uint32_t i;
 
 	DEBUG(10, ("%s: Downgrading %s to %x\n", __func__,
 		   file_id_string_tos(&id), (unsigned)lease_state));
@@ -572,63 +573,69 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 	if (lck == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	d = lck->data;
 
-	idx = find_share_mode_lease(
-		d, &sconn->client->connections->smb2.client.guid, key);
-	if (idx == -1) {
-		DEBUG(10, ("lease not found\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+	client_guid = &sconn->client->connections->smb2.client.guid;
+
+	status = leases_db_get(client_guid,
+			       key,
+			       &id,
+			       &current_state,
+			       &breaking,
+			       &breaking_to_requested,
+			       &breaking_to_required,
+			       &lease_version,
+			       &epoch);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("leases_db_get returned %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(lck);
+		return status;
 	}
-	l = &d->leases[idx];
 
-	if (!l->breaking) {
+	if (!breaking) {
 		DBG_WARNING("Attempt to break from %"PRIu32" to %"PRIu32" - "
 			    "but we're not in breaking state\n",
-			    l->current_state, lease_state);
+			    current_state, lease_state);
 		TALLOC_FREE(lck);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/*
-	 * Can't upgrade anything: l->breaking_to_requested (and l->current_state)
+	 * Can't upgrade anything: breaking_to_requested (and current_state)
 	 * must be a strict bitwise superset of new_lease_state
 	 */
-	if ((lease_state & l->breaking_to_requested) != lease_state) {
+	if ((lease_state & breaking_to_requested) != lease_state) {
 		DBG_WARNING("Attempt to upgrade from %"PRIu32" to %"PRIu32" "
 			    "- expected %"PRIu32"\n",
-			    l->current_state, lease_state,
-			    l->breaking_to_requested);
+			    current_state, lease_state,
+			    breaking_to_requested);
 		TALLOC_FREE(lck);
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	if (l->current_state != lease_state) {
-		l->current_state = lease_state;
-		d->modified = true;
+	if (current_state != lease_state) {
+		current_state = lease_state;
 	}
 
 	status = NT_STATUS_OK;
 
-	d->modified = true;
-
-	if ((lease_state & ~l->breaking_to_required) != 0) {
+	if ((lease_state & ~breaking_to_required) != 0) {
 		struct downgrade_lease_additional_state *state;
 
 		DBG_INFO("lease state %"PRIu32" not fully broken from "
 			 "%"PRIu32" to %"PRIu32"\n",
 			 lease_state,
-			 l->current_state,
-			 l->breaking_to_required);
+			 current_state,
+			 breaking_to_required);
 
-		l->breaking_to_requested = l->breaking_to_required;
+		breaking_to_requested = breaking_to_required;
 
-		if (l->current_state & (SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE)) {
+		if (current_state & (SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE)) {
 			/*
 			 * Here we break in steps, as windows does
 			 * see the breaking3 and v2_breaking3 tests.
 			 */
-			l->breaking_to_requested |= SMB2_LEASE_READ;
+			breaking_to_requested |= SMB2_LEASE_READ;
 		}
 
 		state = talloc_zero(xconn,
@@ -646,14 +653,14 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 		}
 
 		state->xconn = xconn;
-		state->lease_key = l->lease_key;
-		state->break_from = l->current_state;
-		state->break_to = l->breaking_to_requested;
-		if (l->lease_version > 1) {
-			state->new_epoch = l->epoch;
+		state->lease_key = *key;
+		state->break_from = current_state;
+		state->break_to = breaking_to_requested;
+		if (lease_version > 1) {
+			state->new_epoch = epoch;
 		}
 
-		if (l->current_state & (SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE)) {
+		if (current_state & (SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE)) {
 			state->break_flags =
 				SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED;
 		} else {
@@ -664,12 +671,10 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			 * we need to store NONE state in the
 			 * database.
 			 */
-			l->current_state = 0;
-			l->breaking_to_requested = 0;
-			l->breaking_to_required = 0;
-			l->breaking = false;
-
-			lck->data->modified = true;
+			current_state = 0;
+			breaking_to_requested = 0;
+			breaking_to_required = 0;
+			breaking = false;
 
 			{
 				NTSTATUS set_status;
@@ -678,12 +683,12 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 					&sconn->client->connections->
 					smb2.client.guid,
 					key,
-					l->current_state,
-					l->breaking,
-					l->breaking_to_requested,
-					l->breaking_to_required,
-					l->lease_version,
-					l->epoch);
+					current_state,
+					breaking,
+					breaking_to_requested,
+					breaking_to_required,
+					lease_version,
+					epoch);
 
 				if (!NT_STATUS_IS_OK(set_status)) {
 					DBG_DEBUG("leases_db_set failed: %s\n",
@@ -702,35 +707,42 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 	} else {
 		DBG_DEBUG("breaking from %"PRIu32" to %"PRIu32" - "
 			  "expected %"PRIu32"\n",
-			  l->current_state,
+			  current_state,
 			  lease_state,
-			  l->breaking_to_requested);
+			  breaking_to_requested);
 
-		l->breaking_to_requested = 0;
-		l->breaking_to_required = 0;
-		l->breaking = false;
-
-		d->modified = true;
+		breaking_to_requested = 0;
+		breaking_to_required = 0;
+		breaking = false;
 	}
 
 	{
 		NTSTATUS set_status;
 
 		set_status = leases_db_set(
-			&sconn->client->connections->smb2.client.guid,
+			client_guid,
 			key,
-			l->current_state,
-			l->breaking,
-			l->breaking_to_requested,
-			l->breaking_to_required,
-			l->lease_version,
-			l->epoch);
+			current_state,
+			breaking,
+			breaking_to_requested,
+			breaking_to_required,
+			lease_version,
+			epoch);
 
 		if (!NT_STATUS_IS_OK(set_status)) {
 			DBG_DEBUG("leases_db_set failed: %s\n",
 				  nt_errstr(set_status));
+			TALLOC_FREE(lck);
 			return set_status;
 		}
+	}
+
+	status = update_share_mode_lease_from_db(lck->data, client_guid, key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("update_share_mode_lease_from_db failed: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(lck);
+		return status;
 	}
 
 	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
