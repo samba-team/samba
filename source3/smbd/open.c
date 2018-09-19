@@ -1991,6 +1991,61 @@ int find_share_mode_lease(struct share_mode_data *d,
 	return -1;
 }
 
+NTSTATUS update_share_mode_lease_from_db(
+	struct share_mode_data *d,
+	const struct GUID *client_guid,
+	const struct smb2_lease_key *lease_key)
+{
+	int idx;
+	struct share_mode_lease *l;
+	uint32_t current_state, breaking_to_requested, breaking_to_required;
+	bool breaking;
+	uint16_t lease_version, epoch;
+	NTSTATUS status;
+
+	idx = find_share_mode_lease(d, client_guid, lease_key);
+	if (idx == -1) {
+		DBG_WARNING("find_share_mode_lease failed\n");
+		return NT_STATUS_NOT_FOUND;
+	}
+	l = &d->leases[idx];
+
+	status = leases_db_get(client_guid,
+			       lease_key,
+			       &d->id,
+			       &current_state,
+			       &breaking,
+			       &breaking_to_requested,
+			       &breaking_to_required,
+			       &lease_version,
+			       &epoch);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("leases_db_get returned %s\n",
+			    nt_errstr(status));
+		return status;
+	}
+
+	if ((l->current_state == current_state) &&
+	    (l->breaking == breaking) &&
+	    (l->breaking_to_requested == breaking_to_requested) &&
+	    (l->breaking_to_required == breaking_to_required) &&
+	    (l->lease_version == lease_version) &&
+	    (l->epoch == epoch)) {
+		return NT_STATUS_OK;
+	}
+
+	l->current_state = current_state;
+	l->breaking = breaking;
+	l->breaking_to_requested = breaking_to_requested;
+	l->breaking_to_required = breaking_to_required;
+	l->lease_version = lease_version;
+	l->epoch = epoch;
+
+	d->modified = true;
+
+	return NT_STATUS_OK;
+}
+
 struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 				 const struct smb2_lease_key *key,
 				 uint32_t current_state,
