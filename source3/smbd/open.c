@@ -1971,9 +1971,9 @@ static bool file_has_brlocks(files_struct *fsp)
 	return (brl_num_locks(br_lck) > 0);
 }
 
-int find_share_mode_lease(struct share_mode_data *d,
-			  const struct GUID *client_guid,
-			  const struct smb2_lease_key *key)
+static int find_share_mode_lease(struct share_mode_data *d,
+				 const struct GUID *client_guid,
+				 const struct smb2_lease_key *key)
 {
 	uint32_t i;
 
