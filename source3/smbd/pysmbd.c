@@ -150,7 +150,11 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	fsp->fsp_name = smb_fname;
 	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, 00644);
 	if (fsp->fh->fd == -1) {
+		int err = errno;
 		umask(saved_umask);
+		if (err == ENOENT) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -204,8 +208,11 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("open: error=%d (%s)\n", errno, strerror(errno));
-		SMB_VFS_CLOSE(fsp);
+		DBG_ERR("init_files_struct failed: %s\n",
+			nt_errstr(status));
+		if (fsp != NULL) {
+			SMB_VFS_CLOSE(fsp);
+		}
 		TALLOC_FREE(frame);
 		return status;
 	}
