@@ -63,6 +63,18 @@ information about how the users are spread across groups in your domain.
 The 'samba-tool group list --verbose' command has also been updated to include
 the number of users in each group.
 
+prefork process restart
+-----------------------
+
+The pre-fork process model now restarts failed processes. The delay between
+restart attempts is controlled by the "prefork backoff increment" (default = 10)
+and "prefork maximum backoff" (default = 120) smbd.conf parameters.  A linear
+back off strategy is used with "prefork backoff increment" added to the
+delay between restart attempts up until it reaches "prefork maximum backoff".
+
+Using the default sequence the restart delays (in seconds) are:
+  0, 10, 20, ..., 120, 120, ...
+
 REMOVED FEATURES
 ================
 
@@ -75,8 +87,12 @@ The samba_backup script has been removed. This has now been replaced by the
 smb.conf changes
 ================
 
-  Parameter Name                     Description             Default
-  --------------                     -----------             -------
+  Parameter Name                     Description                Default
+  --------------                     -----------                -------
+  prefork backoff increment   Delay added to process restart    10 (seconds)
+                              between attempts.
+  prefork maximum backoff     Maximum delay for process between 120 (seconds)
+                              process restart attempts
 
 
 KNOWN ISSUES
