@@ -684,14 +684,19 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 	e->lease_idx = UINT32_MAX;
 
 	for (i=0; i<d->num_share_modes; i++) {
-		if (d->share_modes[i].stale) {
+		struct share_mode_entry *e2 = &d->share_modes[i];
+
+		if (e2->stale) {
 			continue;
 		}
-		if (e == &d->share_modes[i]) {
+		if (e == e2) {
 			/* Not ourselves. */
 			continue;
 		}
-		if (d->share_modes[i].lease_idx == lease_idx) {
+		if (smb2_lease_equal(&e->client_guid,
+				     &e->lease_key,
+				     &e2->client_guid,
+				     &e2->lease_key)) {
 			break;
 		}
 	}
