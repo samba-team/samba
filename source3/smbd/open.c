@@ -2193,8 +2193,8 @@ static bool is_same_lease(const files_struct *fsp,
 
 	return smb2_lease_equal(fsp_client_guid(fsp),
 				&lease->lease_key,
-				&d->leases[e->lease_idx].client_guid,
-				&d->leases[e->lease_idx].lease_key);
+				&e->client_guid,
+				&e->lease_key);
 }
 
 static int map_lease_type_to_oplock(uint32_t lease_type)
