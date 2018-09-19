@@ -49,6 +49,7 @@
 #include "status_profile.h"
 #include "smbd/notifyd/notifyd.h"
 #include "cmdline_contexts.h"
+#include "locking/leases_db.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
@@ -186,15 +187,31 @@ static int print_share_mode(struct file_id fid,
 		} else if (e->op_type & LEVEL_II_OPLOCK) {
 			d_printf("LEVEL_II        ");
 		} else if (e->op_type == LEASE_OPLOCK) {
-			struct share_mode_lease *l = &d->leases[e->lease_idx];
-			uint32_t lstate = l->current_state;
-			d_printf("LEASE(%s%s%s)%s%s%s      ",
-				 (lstate & SMB2_LEASE_READ)?"R":"",
-				 (lstate & SMB2_LEASE_WRITE)?"W":"",
-				 (lstate & SMB2_LEASE_HANDLE)?"H":"",
-				 (lstate & SMB2_LEASE_READ)?"":" ",
-				 (lstate & SMB2_LEASE_WRITE)?"":" ",
-				 (lstate & SMB2_LEASE_HANDLE)?"":" ");
+			NTSTATUS status;
+			uint32_t lstate;
+
+			status = leases_db_get(
+				&e->client_guid,
+				&e->lease_key,
+				&d->id,
+				&lstate, /* current_state */
+				NULL, /* breaking */
+				NULL, /* breaking_to_requested */
+				NULL, /* breaking_to_required */
+				NULL, /* lease_version */
+				NULL); /* epoch */
+
+			if (NT_STATUS_IS_OK(status)) {
+				d_printf("LEASE(%s%s%s)%s%s%s      ",
+					 (lstate & SMB2_LEASE_READ)?"R":"",
+					 (lstate & SMB2_LEASE_WRITE)?"W":"",
+					 (lstate & SMB2_LEASE_HANDLE)?"H":"",
+					 (lstate & SMB2_LEASE_READ)?"":" ",
+					 (lstate & SMB2_LEASE_WRITE)?"":" ",
+					 (lstate & SMB2_LEASE_HANDLE)?"":" ");
+			} else {
+				d_printf("LEASE STATE UNKNOWN");
+			}
 		} else {
 			d_printf("NONE            ");
 		}
