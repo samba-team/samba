@@ -737,16 +737,16 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 		}
 	}
 
-	status = update_share_mode_lease_from_db(lck->data, client_guid, key);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("update_share_mode_lease_from_db failed: %s\n",
-			    nt_errstr(status));
-		TALLOC_FREE(lck);
-		return status;
-	}
-
 	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
 		   file_id_string_tos(&id), (unsigned)lease_state, nt_errstr(status)));
+
+	/*
+	 * No, we did not modify the share mode array. We did modify
+	 * the leases_db. But without this we don't notify a lease
+	 * break waiter via dbwrap_watch_record. We need to make
+	 * leases_db watched too.
+	 */
+	lck->data->modified = true;
 
 	{
 		struct downgrade_lease_fsps_state state = {
@@ -1100,17 +1100,6 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 					  nt_errstr(set_status));
 				return;
 			}
-		}
-
-		status = update_share_mode_lease_from_db(
-			lck->data,
-			client_guid,
-			&fsp->lease->lease.lease_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("update_share_mode_lease_from_db "
-				    "failed: %s\n", nt_errstr(status));
-			TALLOC_FREE(lck);
-			return;
 		}
 
 		/* Ensure we're in sync with current lease state. */

@@ -691,11 +691,6 @@ void msg_file_was_renamed(struct messaging_context *msg,
 			  uint32_t msg_type,
 			  struct server_id server_id,
 			  DATA_BLOB *data);
-struct share_mode_lease;
-NTSTATUS update_share_mode_lease_from_db(
-	struct share_mode_data *d,
-	const struct GUID *client_guid,
-	const struct smb2_lease_key *lease_key);
 struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 				 const struct smb2_lease_key *key,
 				 uint32_t current_state,

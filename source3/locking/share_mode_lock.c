@@ -1011,7 +1011,6 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		  open_persistent_id);
 
 	data->num_share_modes = 0;
-	data->num_leases = 0;
 	data->modified = true;
 
 	ret = true;

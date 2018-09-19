@@ -1971,81 +1971,6 @@ static bool file_has_brlocks(files_struct *fsp)
 	return (brl_num_locks(br_lck) > 0);
 }
 
-static int find_share_mode_lease(struct share_mode_data *d,
-				 const struct GUID *client_guid,
-				 const struct smb2_lease_key *key)
-{
-	uint32_t i;
-
-	for (i=0; i<d->num_leases; i++) {
-		struct share_mode_lease *l = &d->leases[i];
-
-		if (smb2_lease_equal(client_guid,
-				     key,
-				     &l->client_guid,
-				     &l->lease_key)) {
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-NTSTATUS update_share_mode_lease_from_db(
-	struct share_mode_data *d,
-	const struct GUID *client_guid,
-	const struct smb2_lease_key *lease_key)
-{
-	int idx;
-	struct share_mode_lease *l;
-	uint32_t current_state, breaking_to_requested, breaking_to_required;
-	bool breaking;
-	uint16_t lease_version, epoch;
-	NTSTATUS status;
-
-	idx = find_share_mode_lease(d, client_guid, lease_key);
-	if (idx == -1) {
-		DBG_WARNING("find_share_mode_lease failed\n");
-		return NT_STATUS_NOT_FOUND;
-	}
-	l = &d->leases[idx];
-
-	status = leases_db_get(client_guid,
-			       lease_key,
-			       &d->id,
-			       &current_state,
-			       &breaking,
-			       &breaking_to_requested,
-			       &breaking_to_required,
-			       &lease_version,
-			       &epoch);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("leases_db_get returned %s\n",
-			    nt_errstr(status));
-		return status;
-	}
-
-	if ((l->current_state == current_state) &&
-	    (l->breaking == breaking) &&
-	    (l->breaking_to_requested == breaking_to_requested) &&
-	    (l->breaking_to_required == breaking_to_required) &&
-	    (l->lease_version == lease_version) &&
-	    (l->epoch == epoch)) {
-		return NT_STATUS_OK;
-	}
-
-	l->current_state = current_state;
-	l->breaking = breaking;
-	l->breaking_to_requested = breaking_to_requested;
-	l->breaking_to_required = breaking_to_required;
-	l->lease_version = lease_version;
-	l->epoch = epoch;
-
-	d->modified = true;
-
-	return NT_STATUS_OK;
-}
-
 struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 				 const struct smb2_lease_key *key,
 				 uint32_t current_state,
@@ -2100,7 +2025,6 @@ static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
 				  const struct smb2_lease *lease,
 				  uint32_t granted)
 {
-	struct share_mode_data *d = lck->data;
 	bool do_upgrade;
 	uint32_t current_state, breaking_to_requested, breaking_to_required;
 	bool breaking;
@@ -2189,14 +2113,6 @@ static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
 		}
 	}
 
-	status = update_share_mode_lease_from_db(
-		d, client_guid, &lease->lease_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("update_share_mode_lease_from_db failed: %s\n",
-			    nt_errstr(status));
-		return status;
-	}
-
 	fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
 
 	return NT_STATUS_OK;
@@ -2209,18 +2125,7 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 				    uint32_t granted)
 {
 	struct share_mode_data *d = lck->data;
-	struct share_mode_lease *tmp;
 	NTSTATUS status;
-
-	tmp = talloc_realloc(d, d->leases, struct share_mode_lease,
-			     d->num_leases+1);
-	if (tmp == NULL) {
-		/*
-		 * See [MS-SMB2]
-		 */
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
-	}
-	d->leases = tmp;
 
 	fsp->lease = talloc_zero(fsp->conn->sconn, struct fsp_lease);
 	if (fsp->lease == NULL) {
@@ -2232,14 +2137,6 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 	fsp->lease->lease.lease_key = lease->lease_key;
 	fsp->lease->lease.lease_state = granted;
 	fsp->lease->lease.lease_epoch = lease->lease_epoch + 1;
-
-	d->leases[d->num_leases] = (struct share_mode_lease) {
-		.client_guid = *client_guid,
-		.lease_key = fsp->lease->lease.lease_key,
-		.current_state = fsp->lease->lease.lease_state,
-		.lease_version = fsp->lease->lease.lease_version,
-		.epoch = fsp->lease->lease.lease_epoch,
-	};
 
 	status = leases_db_add(client_guid,
 			       &lease->lease_key,
@@ -2257,7 +2154,6 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 
-	d->num_leases += 1;
 	d->modified = true;
 
 	return NT_STATUS_OK;

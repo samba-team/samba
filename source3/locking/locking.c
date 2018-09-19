@@ -672,7 +672,6 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 				    struct share_mode_entry *e)
 {
 	uint16_t op_type;
-	uint32_t lease_idx;
 	uint32_t i;
 
 	op_type = e->op_type;
@@ -688,9 +687,6 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 	 * This used to reference a lease. If there's no other one referencing
 	 * it, remove it.
 	 */
-
-	lease_idx = e->lease_idx;
-	e->lease_idx = UINT32_MAX;
 
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e2 = &d->share_modes[i];
@@ -714,18 +710,6 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 		 * Found another one
 		 */
 		return;
-	}
-
-	d->num_leases -= 1;
-	d->leases[lease_idx] = d->leases[d->num_leases];
-
-	/*
-	 * We changed the lease array. Fix all references to it.
-	 */
-	for (i=0; i<d->num_share_modes; i++) {
-		if (d->share_modes[i].lease_idx == d->num_leases) {
-			d->share_modes[i].lease_idx = lease_idx;
-		}
 	}
 
 	{
@@ -853,37 +837,8 @@ bool set_share_mode(struct share_mode_lock *lck,
 	e->op_type = op_type;
 
 	if (op_type == LEASE_OPLOCK) {
-		uint32_t i;
-
 		e->client_guid = *client_guid;
 		e->lease_key = *lease_key;
-
-		/*
-		 * Need to set lease_idx. This is essentially
-		 * find_share_mode_lease(), but that will go away
-		 * soon. So don't add the dependency here.
-		 */
-
-		for (i=0; i<d->num_leases; i++) {
-			struct share_mode_lease *l = &d->leases[i];
-
-			if (smb2_lease_equal(client_guid,
-					     lease_key,
-					     &l->client_guid,
-					     &l->lease_key)) {
-				break;
-			}
-		}
-
-		if (i == d->num_leases) {
-			DBG_WARNING("lease not found\n");
-			d->num_share_modes -= 1;
-			return false;
-		}
-
-		e->lease_idx = i;
-	} else {
-		e->lease_idx = UINT32_MAX;
 	}
 
 	e->time.tv_sec = fsp->open_time.tv_sec;
