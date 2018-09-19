@@ -39,6 +39,12 @@ prefork 'prefork children'
 The default value for this smdb.conf parameter has been increased from 1 to
 4.
 
+netlogon prefork
+----------------
+
+DCERPC now supports pre-forked NETLOGON processes. The netlogon processes are
+pre-forked when the prefork process model is selected for samba.
+
 REMOVED FEATURES
 ================
 
