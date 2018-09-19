@@ -33,6 +33,12 @@ kdc prefork
 The KDC now supports the pre-fork process model and worker processes will be
 forked for the KDC when the pre-fork process model is selected for samba.
 
+prefork 'prefork children'
+--------------------------
+
+The default value for this smdb.conf parameter has been increased from 1 to
+4.
+
 REMOVED FEATURES
 ================
 
