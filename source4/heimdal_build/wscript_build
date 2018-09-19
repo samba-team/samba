@@ -82,9 +82,8 @@ def HEIMDAL_ASN1(name, source,
     t.env.ASN1OPTIONS  = options
     t.env.BLDBIN       = os.path.normpath(os.path.join(bld.srcnode.abspath(bld.env), '..'))
     if option_file is not None:
-        t.env.OPTION_FILE = "--option-file='{}'".format(
-                os.path.normpath(
-                    os.path.join(bld.path.abspath(), option_file)))
+        t.env.OPTION_FILE = "--option-file='%s'" % \
+            os.path.normpath(os.path.join(bld.path.abspath(), option_file))
 
     cfile = out_files[0][0:-2] + '.c'
     hfile = out_files[1][0:-3] + '.h'
