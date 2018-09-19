@@ -4962,13 +4962,13 @@ static NTSTATUS lease_match(connection_struct *conn,
 		for (j=0; j<d->num_share_modes; j++) {
 			struct share_mode_entry *e = &d->share_modes[j];
 			uint32_t e_lease_type = get_lease_type(d, e);
-			struct share_mode_lease *l = NULL;
 
 			if (share_mode_stale_pid(d, j)) {
 				continue;
 			}
 
 			if (e->op_type == LEASE_OPLOCK) {
+				struct share_mode_lease *l = NULL;
 				l = &lck->data->leases[e->lease_idx];
 				if (!smb2_lease_key_equal(&l->lease_key,
 							  lease_key)) {
