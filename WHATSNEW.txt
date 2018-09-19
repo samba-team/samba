@@ -27,6 +27,11 @@ rebuild the Group Policy Objects from the XML after generalization.
 (The administrator needs to correct the values of XML entities between
 the backup and restore to account for the change in domain).
 
+kdc prefork
+-----------
+
+The KDC now supports the pre-fork process model and worker processes will be
+forked for the KDC when the pre-fork process model is selected for samba.
 
 REMOVED FEATURES
 ================
