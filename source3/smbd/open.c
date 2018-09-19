@@ -5117,6 +5117,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 	for (i = 0; i < state.num_file_ids; i++) {
 		struct share_mode_lock *lck;
 		struct share_mode_data *d;
+		struct share_mode_entry *lease_entry = NULL;
 		uint32_t j;
 
 		if (file_id_equal(&state.ids[i], &state.id)) {
@@ -5139,14 +5140,11 @@ static NTSTATUS lease_match(connection_struct *conn,
 			}
 
 			if (e->op_type == LEASE_OPLOCK) {
-				struct share_mode_lease *l = NULL;
-				l = &lck->data->leases[e->lease_idx];
 				if (!smb2_lease_key_equal(&e->lease_key,
 							  lease_key)) {
 					continue;
 				}
-				*p_epoch = l->epoch;
-				*p_version = l->lease_version;
+				lease_entry = e;
 			}
 
 			if (e_lease_type == SMB2_LEASE_NONE) {
@@ -5180,6 +5178,25 @@ static NTSTATUS lease_match(connection_struct *conn,
 			 */
 
 		}
+
+		if (lease_entry != NULL) {
+			status = leases_db_get(
+				&lease_entry->client_guid,
+				&lease_entry->lease_key,
+				&d->id,
+				NULL, /* current_state */
+				NULL, /* breaking */
+				NULL, /* breaking_to_requested */
+				NULL, /* breaking_to_required */
+				p_version, /* lease_version */
+				p_epoch); /* epoch */
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("Could not find version/epoch: "
+					    "%s\n",
+					    nt_errstr(status));
+			}
+		}
+
 		TALLOC_FREE(lck);
 	}
 	/*
