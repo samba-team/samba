@@ -889,6 +889,23 @@ int share_entry_forall(int (*fn)(struct file_id fid,
 	return share_mode_forall(share_entry_traverse_fn, &state);
 }
 
+static bool cleanup_disconnected_lease(struct share_mode_lock *lck,
+				       struct share_mode_entry *e,
+				       void *private_data)
+{
+	struct share_mode_data *d = lck->data;
+	NTSTATUS status;
+
+	status = leases_db_del(&e->client_guid, &e->lease_key, &d->id);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("leases_db_del failed: %s\n",
+			  nt_errstr(status));
+	}
+
+	return false;
+}
+
 bool share_mode_cleanup_disconnected(struct file_id fid,
 				     uint64_t open_persistent_id)
 {
@@ -946,14 +963,20 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		}
 	}
 
-	for (n=0; n < data->num_leases; n++) {
-		struct share_mode_lease *l = &data->leases[n];
-		NTSTATUS status;
-
-		status = leases_db_del(&l->client_guid, &l->lease_key, &fid);
-
-		DEBUG(10, ("%s: leases_db_del returned %s\n", __func__,
-			   nt_errstr(status)));
+	ok = share_mode_forall_leases(lck, cleanup_disconnected_lease, NULL);
+	if (!ok) {
+		DBG_DEBUG("failed to clean up leases associated "
+			  "with file (file-id='%s', servicepath='%s', "
+			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "==> do not cleanup\n",
+			  file_id_string(frame, &fid),
+			  data->servicepath,
+			  data->base_name,
+			  (data->stream_name == NULL)
+			  ? "" : "', stream_name='",
+			  (data->stream_name == NULL)
+			  ? "" : data->stream_name,
+			  open_persistent_id);
 	}
 
 	ok = brl_cleanup_disconnected(fid, open_persistent_id);
