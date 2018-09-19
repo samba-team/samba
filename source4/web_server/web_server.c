@@ -248,8 +248,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 */
 static void websrv_accept(struct stream_connection *conn)
 {
-	struct task_server *task = talloc_get_type_abort(conn->private_data, struct task_server);
-	struct web_server_data *wdata = talloc_get_type_abort(task->private_data, struct web_server_data);
+	struct web_server_data *wdata = talloc_get_type_abort(conn->private_data, struct web_server_data);
 	struct websrv_context *web;
 	struct socket_context *tls_socket;
 
