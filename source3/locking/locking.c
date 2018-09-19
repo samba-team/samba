@@ -660,8 +660,6 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 static void remove_share_mode_lease(struct share_mode_data *d,
 				    struct share_mode_entry *e)
 {
-	struct GUID client_guid;
-	struct smb2_lease_key lease_key;
 	uint16_t op_type;
 	uint32_t lease_idx;
 	uint32_t i;
@@ -707,11 +705,6 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 		return;
 	}
 
-	memcpy(&client_guid,
-		&d->leases[lease_idx].client_guid,
-		sizeof(client_guid));
-	lease_key = d->leases[lease_idx].lease_key;
-
 	d->num_leases -= 1;
 	d->leases[lease_idx] = d->leases[d->num_leases];
 
@@ -727,9 +720,9 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 	{
 		NTSTATUS status;
 
-		status = leases_db_del(&client_guid,
-					&lease_key,
-					&d->id);
+		status = leases_db_del(&e->client_guid,
+				       &e->lease_key,
+				       &d->id);
 
 		DEBUG(10, ("%s: leases_db_del returned %s\n", __func__,
 			   nt_errstr(status)));
