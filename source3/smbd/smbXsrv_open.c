@@ -56,6 +56,7 @@ NTSTATUS smbXsrv_open_global_init(void)
 {
 	char *global_path = NULL;
 	struct db_context *db_ctx = NULL;
+	uint64_t dbwrap_flags = DBWRAP_FLAG_NONE;
 
 	if (smbXsrv_open_global_db_ctx != NULL) {
 		return NT_STATUS_OK;
@@ -66,12 +67,16 @@ NTSTATUS smbXsrv_open_global_init(void)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (lp_persistent_handles()) {
+		dbwrap_flags = DBWRAP_FLAG_PER_REC_PERSISTENT;
+	}
+
 	db_ctx = db_open(NULL, global_path,
 			 SMBD_VOLATILE_TDB_HASH_SIZE,
 			 SMBD_VOLATILE_TDB_FLAGS,
 			 O_RDWR | O_CREAT, 0600,
 			 DBWRAP_LOCK_ORDER_1,
-			 DBWRAP_FLAG_NONE);
+			 dbwrap_flags);
 	TALLOC_FREE(global_path);
 	if (db_ctx == NULL) {
 		NTSTATUS status = map_nt_error_from_unix_common(errno);
