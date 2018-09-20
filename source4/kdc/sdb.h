@@ -104,6 +104,8 @@ struct sdb_entry_ex {
 #define SDB_ERR_NOT_FOUND_HERE 36150287
 #define SDB_ERR_WRONG_REALM 36150289
 
+/* These must match the values in hdb.h */
+
 #define SDB_F_DECRYPT		1	/* decrypt keys */
 #define SDB_F_GET_CLIENT	4	/* fetch client */
 #define SDB_F_GET_SERVER	8	/* fetch server */
