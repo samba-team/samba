@@ -214,12 +214,11 @@ static int pamtest_simple_conv(int num_msg,
 			       struct pam_response **response,
 			       void *appdata_ptr)
 {
-	int i, ri = 0;
+	int i = 0;
 	int ret;
 	struct pam_response *reply = NULL;
 	const char *prompt;
-	struct pamtest_conv_ctx *cctx = \
-				    (struct pamtest_conv_ctx *) appdata_ptr;
+	struct pamtest_conv_ctx *cctx = (struct pamtest_conv_ctx *)appdata_ptr;
 
 	if (cctx == NULL) {
 		return PAM_CONV_ERR;
@@ -241,15 +240,12 @@ static int pamtest_simple_conv(int num_msg,
 
 			if (reply != NULL) {
 				if (prompt != NULL) {
-					ret = add_to_reply(&reply[ri], prompt);
+					ret = add_to_reply(&reply[i], prompt);
 					if (ret != PAM_SUCCESS) {
 						free_reply(reply, num_msg);
 						return ret;
 					}
-				} else {
-					reply[ri].resp = NULL;
 				}
-				ri++;
 			}
 
 			cctx->echo_off_idx++;
@@ -264,18 +260,25 @@ static int pamtest_simple_conv(int num_msg,
 
 			if (reply != NULL) {
 				if (prompt != NULL) {
-					ret = add_to_reply(&reply[ri], prompt);
+					ret = add_to_reply(&reply[i], prompt);
 					if (ret != PAM_SUCCESS) {
 						free_reply(reply, num_msg);
 						return ret;
 					}
 				}
-				ri++;
 			}
 
 			cctx->echo_on_idx++;
 			break;
 		case PAM_ERROR_MSG:
+			if (reply != NULL) {
+				ret = add_to_reply(&reply[i], msgm[i]->msg);
+				if (ret != PAM_SUCCESS) {
+					free_reply(reply, num_msg);
+					return ret;
+				}
+			}
+
 			if (cctx->data->out_err != NULL) {
 				memcpy(cctx->data->out_err[cctx->err_idx],
 				       msgm[i]->msg,
@@ -285,6 +288,14 @@ static int pamtest_simple_conv(int num_msg,
 			}
 			break;
 		case PAM_TEXT_INFO:
+			if (reply != NULL) {
+				ret = add_to_reply(&reply[i], msgm[i]->msg);
+				if (ret != PAM_SUCCESS) {
+					free_reply(reply, num_msg);
+					return ret;
+				}
+			}
+
 			if (cctx->data->out_info != NULL) {
 				memcpy(cctx->data->out_info[cctx->info_idx],
 				       msgm[i]->msg,
@@ -298,7 +309,7 @@ static int pamtest_simple_conv(int num_msg,
 		}
 	}
 
-	if (response && ri > 0) {
+	if (response != NULL) {
 		*response = reply;
 	} else {
 		free(reply);

@@ -300,7 +300,15 @@ static void *pwrap_load_lib_handle(enum pwrap_lib lib)
 	void *handle = NULL;
 
 #ifdef RTLD_DEEPBIND
-	flags |= RTLD_DEEPBIND;
+	const char *env = getenv("LD_PRELOAD");
+
+	/* Don't do a deepbind if we run with libasan */
+	if (env != NULL && strlen(env) < PATH_MAX) {
+		const char *p = strstr(env, "libasan.so");
+		if (p == NULL) {
+			flags |= RTLD_DEEPBIND;
+		}
+	}
 #endif
 
 	switch (lib) {
@@ -896,8 +904,6 @@ static void pwrap_init(void)
 
 	PWRAP_LOG(PWRAP_LOG_DEBUG, "Initialize pam_wrapper");
 
-	pwrap_clean_stale_dirs(tmp_config_dir);
-
 	pwrap.config_dir = strdup(tmp_config_dir);
 	if (pwrap.config_dir == NULL) {
 		PWRAP_LOG(PWRAP_LOG_ERROR,
@@ -945,7 +951,7 @@ static void pwrap_init(void)
 	rc = mkdir(libpam_path, 0755);
 	if (rc != 0) {
 		PWRAP_LOG(PWRAP_LOG_ERROR,
-			  "Failed to create pam_wrapper config dir: %s - %s",
+			  "Failed to create path for libpam: %s - %s",
 			  tmp_config_dir, strerror(errno));
 		p_rmdirs(pwrap.config_dir);
 		exit(1);

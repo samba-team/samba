@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.0.6"
+VERSION="1.0.7"
 
 def find_library(library_names, lookup_paths):
     for directory in lookup_paths:
