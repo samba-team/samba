@@ -168,12 +168,9 @@ start_ctdb_1 ()
 
 ctdb_start_all ()
 {
-    echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
+	echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
 
-    local pnn
-    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	start_ctdb_1 "$pnn"
-    done
+	onnode all $VALGRIND ctdbd
 }
 
 stop_ctdb_1 ()
@@ -185,12 +182,9 @@ stop_ctdb_1 ()
 
 ctdb_stop_all ()
 {
-    echo "Stopping $TEST_LOCAL_DAEMONS ctdb daemons..."
+	echo "Stopping $TEST_LOCAL_DAEMONS ctdb daemons..."
 
-    local pnn
-    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	stop_ctdb_1 "$pnn"
-    done
+	onnode -p all $CTDB shutdown
 }
 
 restart_ctdb_1 ()
