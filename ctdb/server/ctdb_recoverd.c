@@ -506,6 +506,33 @@ static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
 	return 0;
 }
 
+static bool ctdb_recovery_lock(struct ctdb_recoverd *rec);
+static bool ctdb_recovery_have_lock(struct ctdb_recoverd *rec);
+
+static bool cluster_lock_take(struct ctdb_recoverd *rec)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	bool lock_taken;
+
+	if (ctdb->recovery_lock == NULL) {
+		return true;
+	}
+
+	if (ctdb_recovery_have_lock(rec)) {
+		D_NOTICE("Already holding recovery lock\n");
+		return true;
+	}
+
+	D_NOTICE("Attempting to take recovery lock (%s)\n", ctdb->recovery_lock);
+	lock_taken = ctdb_recovery_lock(rec);
+	if (!lock_taken) {
+		return false;
+	}
+
+	D_NOTICE("Recovery lock taken successfully\n");
+	return true;
+}
+
 /*
   called when ctdb_wait_timeout should finish
  */
@@ -1244,31 +1271,23 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 	}
 
 	if (ctdb->recovery_lock != NULL) {
-		if (ctdb_recovery_have_lock(rec)) {
-			D_NOTICE("Already holding recovery lock\n");
-		} else {
-			bool ok;
+		bool ok;
 
-			D_NOTICE("Attempting to take recovery lock (%s)\n",
-				 ctdb->recovery_lock);
+		ok = cluster_lock_take(rec);
+		if (!ok) {
+			D_ERR("Unable to take recovery lock\n");
 
-			ok = ctdb_recovery_lock(rec);
-			if (! ok) {
-				D_ERR("Unable to take recovery lock\n");
-
-				if (!this_node_is_leader(rec)) {
-					D_NOTICE("Leader changed to %u,"
-						 " aborting recovery\n",
-						 rec->leader);
-					rec->need_recovery = false;
-					goto fail;
-				}
-
-				D_ERR("Abort recovery, ban this node\n");
-				ctdb_ban_node(rec, rec->pnn);
+			if (!this_node_is_leader(rec)) {
+				D_NOTICE("Leader changed to %u,"
+					 " aborting recovery\n",
+					 rec->leader);
+				rec->need_recovery = false;
 				goto fail;
 			}
-			D_NOTICE("Recovery lock taken successfully\n");
+
+			D_ERR("Abort recovery, ban this node\n");
+			ctdb_ban_node(rec, rec->pnn);
+			goto fail;
 		}
 	}
 
