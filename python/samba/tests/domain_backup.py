@@ -320,9 +320,9 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
                      "CN=Infrastructure,DC=ForestDnsZones," + forest_dn}
         for role, dn in fsmos.items():
             owner = get_fsmo_roleowner(samdb, ldb.Dn(samdb, dn), role)
-            self.assertTrue("CN={},".format(server) in owner.extended_str(),
+            self.assertTrue("CN={0},".format(server) in owner.extended_str(),
                             "Expected %s to own FSMO role %s" % (server, role))
-            self.assertTrue("CN={},".format(exclude_server)
+            self.assertTrue("CN={0},".format(exclude_server)
                             not in owner.extended_str(),
                             "%s found as FSMO %s role owner" % (server, role))
 
