@@ -653,11 +653,23 @@ static void ctdb_election_timeout(struct tevent_context *ev,
 				  struct timeval t, void *p)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+	bool ok;
+
 	rec->election_in_progress = false;
 	rec->election_timeout = NULL;
 	fast_start = false;
 
 	D_WARNING("Election period ended, leader=%u\n", rec->leader);
+
+	if (!this_node_is_leader(rec)) {
+		return;
+	}
+
+	ok = cluster_lock_take(rec);
+	if (!ok) {
+		D_ERR("Unable to get cluster lock, banning node\n");
+		ctdb_ban_node(rec, rec->pnn);
+	}
 }
 
 
