@@ -39,10 +39,10 @@ setup_nodes ()
 {
 	local have_all_ips=true
 	local i
-	for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
+	for i in $(seq 0 $((TEST_LOCAL_DAEMONS - 1)) ) ; do
 		if [ -n "$CTDB_USE_IPV6" ]; then
-			local j=$(printf "%02x" $i)
-			local node_ip="fd00::5357:5f${j}"
+			local j=$(printf "%04x" $((0x5f00 + 1 + i)) )
+			local node_ip="fd00::5357:${j}"
 			if have_ip "$node_ip" ; then
 				echo "$node_ip"
 			else
@@ -52,8 +52,9 @@ EOF
 				have_all_ips=false
 			fi
 		else
-			local j=$((i + 10))
-			echo "127.0.0.${j}"
+			local c=$(( i / 100 ))
+			local d=$(( 1 + (i % 100) ))
+			echo "127.0.${c}.${d}"
 		fi
 	done
 
