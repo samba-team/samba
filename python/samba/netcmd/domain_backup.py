@@ -105,7 +105,7 @@ def get_timestamp():
 
 
 def backup_filepath(targetdir, name, time_str):
-    filename = 'samba-backup-{}-{}.tar.bz2'.format(name, time_str)
+    filename = 'samba-backup-%s-%s.tar.bz2' % (name, time_str)
     return os.path.join(targetdir, filename)
 
 
@@ -164,9 +164,9 @@ def set_admin_password(logger, samdb):
 
     # match the admin user by RID
     domainsid = samdb.get_domain_sid()
-    match_admin = "(objectsid={}-{})".format(domainsid,
-                                             security.DOMAIN_RID_ADMINISTRATOR)
-    search_expr = "(&(objectClass=user){})".format(match_admin)
+    match_admin = "(objectsid=%s-%s)" % (domainsid,
+                                         security.DOMAIN_RID_ADMINISTRATOR)
+    search_expr = "(&(objectClass=user)%s)" % (match_admin,)
 
     # retrieve the admin username (just in case it's been renamed)
     res = samdb.search(base=samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
@@ -850,7 +850,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                 raise e
             raise copy_err
         if not os.path.exists(backup_path):
-            s = "tdbbackup said backup succeeded but {} not found"
+            s = "tdbbackup said backup succeeded but {0} not found"
             raise CommandError(s.format(backup_path))
 
     def offline_mdb_copy(self, path):
@@ -941,7 +941,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
         backup_dirs = [paths.private_dir, paths.state_dir,
                        os.path.dirname(paths.smbconf)]  # etc dir
-        logger.info('running backup on dirs: {}'.format(' '.join(backup_dirs)))
+        logger.info('running backup on dirs: {0}'.format(' '.join(backup_dirs)))
 
         # Recursively get all file paths in the backup directories
         all_files = []
@@ -1026,8 +1026,9 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                 tar.add(path, arcname=arc_path)
 
         tar.close()
-        os.rename(temp_tar_name, os.path.join(targetdir,
-                  'samba-backup-{}.tar.bz2'.format(time_str)))
+        os.rename(temp_tar_name,
+                  os.path.join(targetdir,
+                               'samba-backup-{0}.tar.bz2'.format(time_str)))
         os.rmdir(temp_tar_dir)
         logger.info('Backup succeeded.')
 
