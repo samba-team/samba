@@ -29,6 +29,7 @@
 #include "dsdb/common/util.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include "param/secrets.h"
 #include "../lib/crypto/md4.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
@@ -317,6 +318,104 @@ static int samba_kdc_sort_encryption_keys(struct sdb_entry_ex *entry_ex)
 	return 0;
 }
 
+int samba_kdc_set_fixed_keys(krb5_context context,
+			     struct samba_kdc_db_context *kdc_db_ctx,
+			     const struct ldb_val *secretbuffer,
+			     struct sdb_entry_ex *entry_ex)
+{
+	const uint32_t supported_enctypes = ENC_ALL_TYPES;
+	uint16_t allocated_keys = 0;
+	int ret;
+
+	allocated_keys = 3;
+	entry_ex->entry.keys.len = 0;
+	entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(struct sdb_key));
+	if (entry_ex->entry.keys.val == NULL) {
+		memset(secretbuffer->data, 0, secretbuffer->length);
+		ret = ENOMEM;
+		goto out;
+	}
+
+	if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
+		struct sdb_key key = {};
+
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+						      secretbuffer->data,
+						      MIN(secretbuffer->length, 32),
+						      &key.key);
+		if (ret) {
+			memset(secretbuffer->data, 0, secretbuffer->length);
+			goto out;
+		}
+
+		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+		entry_ex->entry.keys.len++;
+	}
+
+	if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
+		struct sdb_key key = {};
+
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+						      secretbuffer->data,
+						      MIN(secretbuffer->length, 16),
+						      &key.key);
+		if (ret) {
+			memset(secretbuffer->data, 0, secretbuffer->length);
+			goto out;
+		}
+
+		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+		entry_ex->entry.keys.len++;
+	}
+
+	if (supported_enctypes & ENC_RC4_HMAC_MD5) {
+		struct sdb_key key = {};
+
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      secretbuffer->data,
+						      MIN(secretbuffer->length, 16),
+						      &key.key);
+		if (ret) {
+			memset(secretbuffer->data, 0, secretbuffer->length);
+			goto out;
+		}
+
+		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+		entry_ex->entry.keys.len++;
+	}
+	ret = 0;
+out:
+	return ret;
+}
+
+
+static int samba_kdc_set_random_keys(krb5_context context,
+				     struct samba_kdc_db_context *kdc_db_ctx,
+				     struct sdb_entry_ex *entry_ex)
+{
+	struct ldb_val secret_val;
+	uint8_t secretbuffer[32];
+
+	/*
+	 * Fake keys until we have a better way to reject
+	 * non-pkinit requests.
+	 *
+	 * We just need to indicate which encryption types are
+	 * supported.
+	 */
+	generate_secret_buffer(secretbuffer, sizeof(secretbuffer));
+
+	secret_val = data_blob_const(secretbuffer,
+				     sizeof(secretbuffer));
+	return samba_kdc_set_fixed_keys(context, kdc_db_ctx,
+					&secret_val,
+					entry_ex);
+}
+
+
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
 						    TALLOC_CTX *mem_ctx,
@@ -386,75 +485,9 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	if ((ent_type == SAMBA_KDC_ENT_TYPE_CLIENT)
 	    && (userAccountControl & UF_SMARTCARD_REQUIRED)) {
-		uint8_t secretbuffer[32];
-
-		/*
-		 * Fake keys until we have a better way to reject
-		 * non-pkinit requests.
-		 *
-		 * We just need to indicate which encryption types are
-		 * supported.
-		 */
-		generate_secret_buffer(secretbuffer, sizeof(secretbuffer));
-
-		allocated_keys = 3;
-		entry_ex->entry.keys.len = 0;
-		entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(struct sdb_key));
-		if (entry_ex->entry.keys.val == NULL) {
-			ZERO_STRUCT(secretbuffer);
-			ret = ENOMEM;
-			goto out;
-		}
-
-		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
-			struct sdb_key key = {};
-
-			ret = smb_krb5_keyblock_init_contents(context,
-							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-							      secretbuffer, 32,
-							      &key.key);
-			if (ret) {
-				ZERO_STRUCT(secretbuffer);
-				goto out;
-			}
-
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
-		}
-
-		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
-			struct sdb_key key = {};
-
-			ret = smb_krb5_keyblock_init_contents(context,
-							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-							      secretbuffer, 16,
-							      &key.key);
-			if (ret) {
-				ZERO_STRUCT(secretbuffer);
-				goto out;
-			}
-
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
-		}
-
-		if (supported_enctypes & ENC_RC4_HMAC_MD5) {
-			struct sdb_key key = {};
-
-			ret = smb_krb5_keyblock_init_contents(context,
-							      ENCTYPE_ARCFOUR_HMAC,
-							      secretbuffer, 16,
-							      &key.key);
-			if (ret) {
-				ZERO_STRUCT(secretbuffer);
-				goto out;
-			}
-
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
-		}
-
-		ret = 0;
+		ret = samba_kdc_set_random_keys(context,
+						kdc_db_ctx,
+						entry_ex);
 		goto out;
 	}
 
@@ -2787,6 +2820,21 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	if (session_info == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	/* Setup the link to secrets.ldb */
+
+	kdc_db_ctx->secrets_db = secrets_db_connect(kdc_db_ctx,
+						    base_ctx->lp_ctx);
+	if (kdc_db_ctx->secrets_db == NULL) {
+		DEBUG(1, ("samba_kdc_setup_db_ctx: "
+			  "Cannot open secrets.ldb for KDC backend!"));
+		talloc_free(kdc_db_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	kdc_db_ctx->fx_cookie_dn = ldb_dn_new(kdc_db_ctx,
+					      kdc_db_ctx->secrets_db,
+					      "CN=FX Cookie");
 
 	/* Setup the link to LDB */
 	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx,

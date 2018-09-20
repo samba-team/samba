@@ -23,6 +23,12 @@
 
 struct sdb_entry_ex;
 
+
+int samba_kdc_set_fixed_keys(krb5_context context,
+			     struct samba_kdc_db_context *kdc_db_ctx,
+			     const struct ldb_val *secretbuffer,
+			     struct sdb_entry_ex *entry_ex);
+
 krb5_error_code samba_kdc_fetch(krb5_context context,
 				struct samba_kdc_db_context *kdc_db_ctx,
 				krb5_const_principal principal,
