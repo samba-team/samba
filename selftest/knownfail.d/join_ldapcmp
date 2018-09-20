@@ -1,0 +1,5 @@
+# 'samba-tool domain join --server' fails if the domain does not contain the
+# Default-First-Site-Name site
+samba4.blackbox.join_ldapcmp.check_dc_join\(backupfromdc\)
+samba4.blackbox.join_ldapcmp.new_db_matches\(backupfromdc\)
+

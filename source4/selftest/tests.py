@@ -852,6 +852,11 @@ for env in ['offlinebackupdc', 'restoredc', 'renamedc', 'labdc']:
                   ["PYTHON=%s" % python,
                    os.path.join(bbdir, "ldapcmp_restoredc.sh"),
                    '$PREFIX_ABS/backupfromdc', '$PREFIX_ABS/%s' % env])
+
+# we also test joining backupfromdc here, as it's a bit special in that it
+# doesn't have Default-First-Site-Name
+for env in ['backupfromdc', 'offlinebackupdc', 'restoredc', 'renamedc',
+	    'labdc']:
     # basic test that we can join the testenv DC
     plantestsuite("samba4.blackbox.join_ldapcmp", env,
                   ["PYTHON=%s" % python, os.path.join(bbdir, "join_ldapcmp.sh")])
