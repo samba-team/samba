@@ -78,8 +78,8 @@ setup_public_addresses ()
 			printf "fc00:10::1:%x/64 lo\n" "$i"
 			printf "fc00:10::1:%x/64 lo\n" "$j"
 		else
-			printf "192.168.234.%x/24 lo\n" "$i"
-			printf "192.168.234.%x/24 lo\n" "$j"
+			printf "192.168.234.${i}/24 lo\n"
+			printf "192.168.234.${j}/24 lo\n"
 		fi
 	done
 }
