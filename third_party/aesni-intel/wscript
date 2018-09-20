@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from waflib import Options, Utils
-from subprocess import Popen, PIPE
 
 def configure(conf):
     if Options.options.accel_aes.lower() != "intelaesni":
@@ -24,7 +23,7 @@ def configure(conf):
     linking check.
     ''' 
     if platform == "sunos":
-        arch = Popen(['isainfo'], stdout=PIPE).communicate()[0]
+        arch = Utils.cmd_output('isainfo').strip('\n')
         if "amd64" in arch:
             amd64 = True
     else:
