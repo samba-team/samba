@@ -67,20 +67,22 @@ setup_public_addresses ()
 	local pnn_no_ips="$1"
 
 	local i
-	for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
-		if  [ $((i - 1)) -eq $pnn_no_ips ] ; then
+	for i in $(seq 0 $((TEST_LOCAL_DAEMONS - 1)) ) ; do
+		if  [ $i -eq $pnn_no_ips ] ; then
 			continue
 		fi
 
 		# 2 public addresses on most nodes, just to make
 		# things interesting
-		local j=$((i + TEST_LOCAL_DAEMONS))
 		if [ -n "$CTDB_USE_IPV6" ]; then
-			printf "fc00:10::1:%x/64 lo\n" "$i"
-			printf "fc00:10::1:%x/64 lo\n" "$j"
+			printf "fc00:10::1:%x/64 lo\n" $((1 + i))
+			printf "fc00:10::2:%x/64 lo\n" $((1 + i))
 		else
-			printf "192.168.234.${i}/24 lo\n"
-			printf "192.168.234.${j}/24 lo\n"
+			local c1=$(( 100 + (i / 100) ))
+			local c2=$(( 200 + (i / 100) ))
+			local d=$(( 1 + (i % 100) ))
+			printf "192.168.${c1}.${d}/24 lo\n"
+			printf "192.168.${c2}.${d}/24 lo\n"
 		fi
 	done
 }
