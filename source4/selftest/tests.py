@@ -627,6 +627,12 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         args[args.index(subunitrun)] = subunitrun3
         plantestsuite_loadlist(name + ".python3", env, args)
 
+# Run complex search expressions test once for each database backend.
+# Right now ad_dc has mdb and ad_dc_ntvfs has tdb
+mdb_testenv = "ad_dc"
+tdb_testenv = "ad_dc_ntvfs"
+for testenv in [mdb_testenv, tdb_testenv]:
+    planoldpythontestsuite(testenv, "samba.tests.complex_expressions", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 
 planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python",  py3_compatible=True)

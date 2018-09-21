@@ -1,0 +1,4 @@
+# Ldb accepts invalid search expressions and returns weird results.
+.*samba.tests.complex_expressions.ComplexExpressionTests.test_largeint_invalid_expressions.*
+.*samba.tests.complex_expressions.ComplexExpressionTests.test_enum_invalid_expressions.*
+.*samba.tests.complex_expressions.ComplexExpressionTests.test_invalid_expressions.*
