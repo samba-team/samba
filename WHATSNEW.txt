@@ -1,4 +1,62 @@
                    =============================
+                   Release Notes for Samba 4.9.1
+                         September 24, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.9 release series.
+
+
+Major enhancements include:
+---------------------------
+
+   o  s3: nmbd: Stop nmbd network announce storm (bug #13620).
+
+
+Changes since 4.9.0:
+--------------------
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13620: s3: nmbd: Stop nmbd network announce storm.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13597: s3-rpcclient: Use spoolss_init_spoolss_UserLevel1 in winspool
+     cmds.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13617: CTDB recovery lock has some race conditions.
+
+o  Justin Stephenson <jstephen@redhat.com>
+   * BUG 13597: s3-rpc_client: Advertise Windows 7 client info.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13610: ctdb-doc: Remove PIDFILE option from ctdbd_wrapper man page.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:                                        
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.9.0
                         September 13, 2018
 		   =============================
