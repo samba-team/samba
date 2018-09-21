@@ -1002,7 +1002,7 @@ class TestZones(DNSTest):
                 self.fail(str(e))
 
     def ldap_modify_dnsrecs(self, name, func):
-        dn = 'DC={},{}'.format(name, self.zone_dn)
+        dn = 'DC={0},{1}'.format(name, self.zone_dn)
         dns_recs = self.ldap_get_dns_records(name)
         for rec in dns_recs:
             func(rec)
@@ -1033,7 +1033,7 @@ class TestZones(DNSTest):
         # The use of SCOPE_SUBTREE here avoids raising an exception in the
         # 0 results case for a test below.
 
-        expr = "(&(objectClass=dnsNode)(name={}))".format(name)
+        expr = "(&(objectClass=dnsNode)(name={0}))".format(name)
         return self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_SUBTREE,
                                  expression=expr, attrs=["*"])
 
@@ -1045,7 +1045,7 @@ class TestZones(DNSTest):
     def ldap_get_zone_settings(self):
         records = self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_BASE,
                                     expression="(&(objectClass=dnsZone)" +
-                                    "(name={}))".format(self.zone),
+                                    "(name={0}))".format(self.zone),
                                     attrs=["dNSProperty"])
         self.assertEqual(len(records), 1)
         props = [ndr_unpack(dnsp.DnsProperty, r)
@@ -1259,7 +1259,7 @@ class TestZones(DNSTest):
         self.dns_tombstone(name5, txt5, self.zone)
 
         self.ldap_get_dns_records(name3)
-        expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={})"
+        expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={0})"
         expr = expr.format(int(last_update.dwTimeStamp) - 1)
         try:
             res = self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_SUBTREE,
@@ -1281,7 +1281,7 @@ class TestZones(DNSTest):
                         Aging=1, zone=self.zone,
                         AllowUpdate=dnsp.DNS_ZONE_UPDATE_UNSECURE)
 
-        expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={})"
+        expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={0})"
         expr = expr.format(1)
 
         try:
@@ -1328,7 +1328,7 @@ class TestZones(DNSTest):
 
         # Tombstone time longer than 64 characters
         try:
-            expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={})"
+            expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={0})"
             expr = expr.format("1" * 65)
             res = samdb.search(base=self.zone_dn, scope=ldb.SCOPE_SUBTREE,
                                expression=expr, attrs=["*"])

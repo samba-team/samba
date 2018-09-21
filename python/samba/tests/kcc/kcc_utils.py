@@ -69,7 +69,7 @@ class SiteCoverageTests(samba.tests.TestCase):
         self.samdb.transaction_commit()
 
     def _add_server(self, name, site):
-        dn = "CN={},CN=Servers,{}".format(name, site)
+        dn = "CN={0},CN=Servers,{1}".format(name, site)
         self.samdb.add({
             "dn": dn,
             "objectClass": "server",
@@ -78,7 +78,7 @@ class SiteCoverageTests(samba.tests.TestCase):
         return dn
 
     def _add_site(self, name):
-        dn = "CN={},CN=Sites,{}".format(
+        dn = "CN={0},CN=Sites,{1}".format(
             name, self.samdb.get_config_basedn()
         )
         self.samdb.add({
@@ -94,7 +94,7 @@ class SiteCoverageTests(samba.tests.TestCase):
         return dn, name.lower()
 
     def _add_site_link(self, name, links=[], cost=100):
-        dn = "CN={},CN=IP,CN=Inter-Site Transports,CN=Sites,{}".format(
+        dn = "CN={0},CN=IP,CN=Inter-Site Transports,CN=Sites,{1}".format(
             name, self.samdb.get_config_basedn()
         )
         self.samdb.add({

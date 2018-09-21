@@ -99,14 +99,14 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, 'CN=DEFAULTIPSITELINK,CN=IP,'
-                      'CN=Inter-Site Transports,CN=Sites,{}'.format(
+                      'CN=Inter-Site Transports,CN=Sites,{0}'.format(
                           self.samdb.get_config_basedn()))
-        m['siteList'] = ldb.MessageElement("CN={},CN=Sites,{}".format(
+        m['siteList'] = ldb.MessageElement("CN={0},CN=Sites,{1}".format(
             site_name,
             self.samdb.get_config_basedn()),
             ldb.FLAG_MOD_ADD, "siteList")
 
-        dns_c = "samba_dnsupdate --verbose --use-file={}".format(tmp_uc)
+        dns_c = "samba_dnsupdate --verbose --use-file={0}".format(tmp_uc)
         out = self.check_output(dns_c)
         self.assertFalse(site_name.lower() in out, out)
 

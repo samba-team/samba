@@ -712,7 +712,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
 
     def format_password_for_ldif(self, password):
         """Encodes/decodes the password so that it's accepted in an LDIF"""
-        pwd = '"{}"'.format(password)
+        pwd = '"{0}"'.format(password)
         return base64.b64encode(pwd.encode('utf-16-le')).decode('utf8')
 
     # The 'user add' case is a bit more complicated as you can't really query

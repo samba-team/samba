@@ -106,10 +106,10 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # schemaIdGuid for homePostalAddress (used for ACE tests)
         self.conf_attr_guid = "16775781-47f3-11d1-a9c3-0000f80367c1"
         self.conf_attr_sec_guid = "77b5b886-944a-11d1-aebd-0000f80367c1"
-        self.attr_dn = "{},{}".format(attr_cn, self.schema_dn)
+        self.attr_dn = "{0},{1}".format(attr_cn, self.schema_dn)
 
         userou = "OU=conf-attr-test"
-        self.ou = "{},{}".format(userou, self.base_dn)
+        self.ou = "{0},{1}".format(userou, self.base_dn)
         self.ldb_admin.create_ou(self.ou)
 
         # use a common username prefix, so we can use sAMAccountName=CATC-* as
@@ -118,13 +118,13 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         # add a test object with this attribute set
         self.conf_value = "abcdef"
-        self.conf_user = "{}conf-user".format(self.user_prefix)
+        self.conf_user = "{0}conf-user".format(self.user_prefix)
         self.ldb_admin.newuser(self.conf_user, self.user_pass, userou=userou)
         self.conf_dn = self.get_user_dn(self.conf_user)
         self.add_attr(self.conf_dn, self.conf_attr, self.conf_value)
 
         # add a sneaky user that will try to steal our secrets
-        self.user = "{}sneaky-user".format(self.user_prefix)
+        self.user = "{0}sneaky-user".format(self.user_prefix)
         self.ldb_admin.newuser(self.user, self.user_pass, userou=userou)
         self.ldb_user = self.get_ldb_connection(self.user, self.user_pass)
 
@@ -133,10 +133,10 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # add some other users that also have confidential attributes, so we can
         # check we don't disclose their details, particularly in '!' searches
         for i in range(1, 3):
-            username = "{}other-user{}".format(self.user_prefix, i)
+            username = "{0}other-user{1}".format(self.user_prefix, i)
             self.ldb_admin.newuser(username, self.user_pass, userou=userou)
             userdn = self.get_user_dn(username)
-            self.add_attr(userdn, self.conf_attr, "xyz{}".format(i))
+            self.add_attr(userdn, self.conf_attr, "xyz{0}".format(i))
             self.all_users.append(username)
 
         # there are 4 users in the OU, plus the OU itself
@@ -148,8 +148,8 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # previous test run didn't clean up properly)
         search_flags = self.get_attr_search_flags(self.attr_dn)
         self.assertTrue(int(search_flags) & SEARCH_FLAG_CONFIDENTIAL == 0,
-                        "{} searchFlags already {}".format(self.conf_attr,
-                                                           search_flags))
+                        "{0} searchFlags already {1}".format(self.conf_attr,
+                                                             search_flags))
 
     def tearDown(self):
         super(ConfidentialAttrCommon, self).tearDown()
@@ -210,7 +210,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         return DC_MODE_RETURN_NONE
 
     def get_user_dn(self, name):
-        return "CN={},{}".format(name, self.ou)
+        return "CN={0},{1}".format(name, self.ou)
 
     def get_user_sid_string(self, username):
         user_dn = self.get_user_dn(username)
@@ -233,7 +233,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
     def assert_not_in_result(self, res, exclude_dn):
         for msg in res:
             self.assertNotEqual(msg.dn, exclude_dn,
-                                "Search revealed object {}".format(exclude_dn))
+                                "Search revealed object {0}".format(exclude_dn))
 
     def assert_search_result(self, expected_num, expr, samdb):
 
@@ -256,21 +256,21 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         searches = [
             # search for the attribute using a sub-string wildcard
             # (which could reveal the attribute's actual value)
-            "({}={}*)".format(test_attr, first_char),
-            "({}=*{})".format(test_attr, last_char),
+            "({0}={1}*)".format(test_attr, first_char),
+            "({0}=*{1})".format(test_attr, last_char),
 
             # sanity-check equality against an exact match on value
-            "({}={})".format(test_attr, self.conf_value),
+            "({0}={1})".format(test_attr, self.conf_value),
 
             # '~=' searches don't work against Samba
             # sanity-check an approx search against an exact match on value
-            # "({}~={})".format(test_attr, self.conf_value),
+            # "({0}~={1})".format(test_attr, self.conf_value),
 
             # check wildcard in an AND search...
-            "(&({}={}*)(objectclass=*))".format(test_attr, first_char),
+            "(&({0}={1}*)(objectclass=*))".format(test_attr, first_char),
 
             # ...an OR search (against another term that will never match)
-            "(|({}={}*)(objectclass=banana))".format(test_attr, first_char)]
+            "(|({0}={1}*)(objectclass=banana))".format(test_attr, first_char)]
 
         return searches
 
@@ -279,17 +279,17 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         searches = [
             # check a full wildcard against the confidential attribute
             # (which could reveal the attribute's presence/absence)
-            "({}=*)".format(self.conf_attr),
+            "({0}=*)".format(self.conf_attr),
 
             # check wildcard in an AND search...
-            "(&(objectclass=*)({}=*))".format(self.conf_attr),
+            "(&(objectclass=*)({0}=*))".format(self.conf_attr),
 
             # ...an OR search (against another term that will never match)
-            "(|(objectclass=banana)({}=*))".format(self.conf_attr),
+            "(|(objectclass=banana)({0}=*))".format(self.conf_attr),
 
             # check <=, and >= expressions that would normally find a match
-            "({}>=0)".format(self.conf_attr),
-            "({}<=ZZZZZZZZZZZ)".format(self.conf_attr)]
+            "({0}>=0)".format(self.conf_attr),
+            "({0}<=ZZZZZZZZZZZ)".format(self.conf_attr)]
 
         return searches
 
@@ -323,8 +323,8 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         not_last_char = chr(ord(last_char) + 1)
 
         searches = [
-            "(!({}={}*))".format(self.conf_attr, not_first_char),
-            "(!({}=*{}))".format(self.conf_attr, not_last_char)]
+            "(!({0}={1}*))".format(self.conf_attr, not_first_char),
+            "(!({0}=*{1}))".format(self.conf_attr, not_last_char)]
         return searches
 
     # the following searches will not match against the test object(s). So
@@ -335,8 +335,8 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         first_char = self.conf_value[:1]
         last_char = self.conf_value[-1:]
         searches = [
-            "(!({}={}*))".format(self.conf_attr, first_char),
-            "(!({}=*{}))".format(self.conf_attr, last_char)]
+            "(!({0}={1}*))".format(self.conf_attr, first_char),
+            "(!({0}=*{1}))".format(self.conf_attr, last_char)]
         return searches
 
     def negative_searches_all_rights(self, total_objects=None):
@@ -350,7 +350,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
             expected_results[search] = total_objects
 
         # a ! wildcard should only match the objects without the attribute
-        search = "(!({}=*))".format(self.conf_attr)
+        search = "(!({0}=*))".format(self.conf_attr)
         expected_results[search] = total_objects - self.objects_with_attr
 
         # whereas the inverse searches should match all objects *except* the
@@ -379,7 +379,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # if the search is matching on an inverse subset (everything except the
         # object under test), the
         inverse_searches = self.get_inverse_match_searches()
-        inverse_searches += ["(!({}=*))".format(self.conf_attr)]
+        inverse_searches += ["(!({0}=*))".format(self.conf_attr)]
 
         for search in inverse_searches:
             expected_results[search] = total_objects - has_rights_to
@@ -399,7 +399,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         # for inverse matches, we should NOT be told about any objects at all
         inverse_searches = self.get_inverse_match_searches()
-        inverse_searches += ["(!({}=*))".format(self.conf_attr)]
+        inverse_searches += ["(!({0}=*))".format(self.conf_attr)]
         for search in inverse_searches:
             expected_results[search] = 0
 
@@ -522,7 +522,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         # set the SEC_ADS_CONTROL_ACCESS bit ('CR') for the user for the
         # attribute under test, so the user can see it once more
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(OA;;CR;{};;{})".format(self.conf_attr_guid, user_sid)
+        ace = "(OA;;CR;{0};;{1})".format(self.conf_attr_guid, user_sid)
 
         self._test_search_with_allow_acl(ace)
 
@@ -533,7 +533,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         # property-set containing the attribute under test (i.e. the
         # attributeSecurityGuid), so the user can see it once more
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(OA;;CR;{};;{})".format(self.conf_attr_sec_guid, user_sid)
+        ace = "(OA;;CR;{0};;{1})".format(self.conf_attr_sec_guid, user_sid)
 
         self._test_search_with_allow_acl(ace)
 
@@ -542,7 +542,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
 
         # set the allow SEC_ADS_CONTROL_ACCESS bit ('CR') for the user
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(A;;CR;;;{})".format(user_sid)
+        ace = "(A;;CR;;;{0})".format(user_sid)
 
         self._test_search_with_allow_acl(ace)
 
@@ -552,7 +552,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         # this just checks that an Object Access (OA) ACE without a GUID
         # specified will work the same as an 'Access' (A) ACE
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(OA;;CR;;;{})".format(user_sid)
+        ace = "(OA;;CR;;;{0})".format(user_sid)
 
         self._test_search_with_allow_acl(ace)
 
@@ -583,7 +583,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
 
         # give the user all rights *except* CR and check it makes no difference
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(A;;RPWPCCDCLCLORCWOWDSDDTSW;;;{})".format(user_sid)
+        ace = "(A;;RPWPCCDCLCLORCWOWDSDDTSW;;;{0})".format(user_sid)
         self._test_search_with_neutral_acl(ace)
 
     def test_search_with_neutral_attr_acl(self):
@@ -592,7 +592,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         # giving user all OA rights *except* CR should make no difference
         user_sid = self.get_user_sid_string(self.user)
         rights = "RPWPCCDCLCLORCWOWDSDDTSW"
-        ace = "(OA;;{};{};;{})".format(rights, self.conf_attr_guid, user_sid)
+        ace = "(OA;;{0};{1};;{2})".format(rights, self.conf_attr_guid, user_sid)
         self._test_search_with_neutral_acl(ace)
 
     def test_search_with_neutral_cr_acl(self):
@@ -602,7 +602,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         user_sid = self.get_user_sid_string(self.user)
         # use the GUID for sAMAccountName here (for no particular reason)
         unrelated_attr = "3e0abfd0-126a-11d0-a060-00aa006c33ed"
-        ace = "(OA;;CR;{};;{})".format(unrelated_attr, user_sid)
+        ace = "(OA;;CR;{0};;{1})".format(unrelated_attr, user_sid)
         self._test_search_with_neutral_acl(ace)
 
 
@@ -612,7 +612,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
     def assert_not_in_result(self, res, exclude_dn):
         for msg in res:
             self.assertNotEqual(msg.dn, exclude_dn,
-                                "Search revealed object {}".format(exclude_dn))
+                                "Search revealed object {0}".format(exclude_dn))
 
     # deny ACL tests are slightly different as we are only denying access to
     # the one object under test (rather than any objects with that attribute).
@@ -677,7 +677,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
             expected_results[search] = self.total_objects - 1
 
         # The wildcard returns the objects without this attribute as normal.
-        search = "(!({}=*))".format(self.conf_attr)
+        search = "(!({0}=*))".format(self.conf_attr)
         expected_results[search] = self.total_objects - self.objects_with_attr
         return expected_results
 
@@ -694,7 +694,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
 
         # in the wildcard case, the one object we don't have rights to gets
         # bundled in with the objects that don't have the attribute at all
-        search = "(!({}=*))".format(self.conf_attr)
+        search = "(!({0}=*))".format(self.conf_attr)
         has_rights_to = self.objects_with_attr - 1
         expected_results[search] = self.total_objects - has_rights_to
         return expected_results
@@ -747,7 +747,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         # add an ACE that denies the user Read Property (RP) access to the attr
         # (which is similar to making the attribute confidential)
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(OD;;RP;{};;{})".format(self.conf_attr_guid, user_sid)
+        ace = "(OD;;RP;{0};;{1})".format(self.conf_attr_guid, user_sid)
 
         # check the user cannot see the attribute anymore
         self._test_search_with_deny_acl(ace)
@@ -758,7 +758,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         # add an blanket deny ACE for Read Property (RP) rights
         user_dn = self.get_user_dn(self.user)
         user_sid = self.sd_utils.get_object_sid(user_dn)
-        ace = "(D;;RP;;;{})".format(str(user_sid))
+        ace = "(D;;RP;;;{0})".format(str(user_sid))
 
         # check the user cannot see the attribute anymore
         self._test_search_with_deny_acl(ace)
@@ -768,7 +768,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
 
         # add an blanket deny ACE for Read Property (RP) rights
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(OD;;RP;{};;{})".format(self.conf_attr_sec_guid, user_sid)
+        ace = "(OD;;RP;{0};;{1})".format(self.conf_attr_sec_guid, user_sid)
 
         # check the user cannot see the attribute anymore
         self._test_search_with_deny_acl(ace)
@@ -779,7 +779,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         # this just checks that adding a 'Object Deny' (OD) ACE without
         # specifying a GUID will work the same way as a 'Deny' (D) ACE
         user_sid = self.get_user_sid_string(self.user)
-        ace = "(OD;;RP;;;{})".format(user_sid)
+        ace = "(OD;;RP;;;{0})".format(user_sid)
 
         # check the user cannot see the attribute anymore
         self._test_search_with_deny_acl(ace)
@@ -796,9 +796,9 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # controls, we need an extra filter for the inverse ('!') search,
         # so we don't get thousands of objects returned
         self.extra_filter = \
-            "(&(samaccountname={}*)(!(isDeleted=*)))".format(self.user_prefix)
+            "(&(samaccountname={0}*)(!(isDeleted=*)))".format(self.user_prefix)
         self.single_obj_filter = \
-            "(&(samaccountname={})(!(isDeleted=*)))".format(self.conf_user)
+            "(&(samaccountname={0})(!(isDeleted=*)))".format(self.conf_user)
 
         self.attr_filters = [None, ["*"], ["name"]]
 
@@ -820,7 +820,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         #   thousands of unrelated results, and
         # - we make the test attribute preserve-on-delete in one case, so we
         #   want to weed out results from any previous test runs
-        search = "(&{}{})".format(expr, self.extra_filter)
+        search = "(&{0}{1})".format(expr, self.extra_filter)
 
         for attr in self.attr_filters:
             res = samdb.search(base_dn, expression=search, scope=SCOPE_SUBTREE,
@@ -937,7 +937,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
     def change_attr_under_test(self, attr_name, attr_cn):
         # change the attribute that the test code uses
         self.conf_attr = attr_name
-        self.attr_dn = "{},{}".format(attr_cn, self.schema_dn)
+        self.attr_dn = "{0},{1}".format(attr_cn, self.schema_dn)
 
         # set the new attribute for the user-under-test
         self.add_attr(self.conf_dn, self.conf_attr, self.conf_value)
@@ -970,23 +970,23 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # this by matching lastKnownParent against this test case's OU, which
         # will match any deleted child objects.
         ou_guid = self.get_guid(self.ou)
-        deleted_filter = "(lastKnownParent=<GUID={}>)".format(ou_guid)
+        deleted_filter = "(lastKnownParent=<GUID={0}>)".format(ou_guid)
 
         # the extra-filter will get combined via AND with the search expression
         # we're testing, i.e. filter on the confidential attribute AND only
         # include non-deleted objects, OR deleted objects from this test run
         exclude_deleted_objs_filter = self.extra_filter
-        self.extra_filter = "(|{}{})".format(exclude_deleted_objs_filter,
-                                             deleted_filter)
+        self.extra_filter = "(|{0}{1})".format(exclude_deleted_objs_filter,
+                                               deleted_filter)
 
         # for matching on a single object, the search expresseion becomes:
         # match exactly by account-name AND either a non-deleted object OR a
         # deleted object from this test run
-        match_by_name = "(samaccountname={})".format(self.conf_user)
+        match_by_name = "(samaccountname={0})".format(self.conf_user)
         not_deleted = "(!(isDeleted=*))"
-        self.single_obj_filter = "(&{}(|{}{}))".format(match_by_name,
-                                                       not_deleted,
-                                                       deleted_filter)
+        self.single_obj_filter = "(&{0}(|{1}{2}))".format(match_by_name,
+                                                          not_deleted,
+                                                          deleted_filter)
 
         # check that the search filters work as expected
         self.assert_conf_attr_searches(has_rights_to="all")

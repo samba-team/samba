@@ -670,7 +670,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                        'testa', "A", self.testip, self.creds_string)
 
         # the above A record points to this host
-        dnshostname = '{}.{}'.format('testa', self.zone.lower())
+        dnshostname = '{0}.{1}'.format('testa', self.zone.lower())
 
         # add a CNAME record points to above host
         self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
@@ -685,7 +685,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                        'testptr', "PTR", dnshostname, self.creds_string)
 
         # add a SRV record points to above host
-        srv_record = "{} 65530 65530 65530".format(dnshostname)
+        srv_record = "{0} 65530 65530 65530".format(dnshostname)
         self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
                        'testsrv', "SRV", srv_record, self.creds_string)
 
@@ -697,9 +697,9 @@ class DnsCmdTestCase(SambaToolCmdTest):
         for record_name in ['testa', 'testcname', 'testns', 'testptr', 'testsrv']:
 
             records = self.samdb.search(
-                base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+                base="DC=DomainDnsZones,{0}".format(self.samdb.get_default_basedn()),
                 scope=ldb.SCOPE_SUBTREE,
-                expression="(&(objectClass=dnsNode)(name={}))".format(record_name),
+                expression="(&(objectClass=dnsNode)(name={0}))".format(record_name),
                 attrs=["dNSTombstoned"])
 
             self.assertEqual(len(records), 1)
@@ -716,7 +716,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                        'notesta', "A", self.testip, self.creds_string)
 
         # the above A record points to this host
-        dnshostname = '{}.{}'.format('testa', self.zone.lower())
+        dnshostname = '{0}.{1}'.format('testa', self.zone.lower())
 
         # add a CNAME record points to above host
         self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
@@ -731,7 +731,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                        'notestptr', "PTR", dnshostname, self.creds_string)
 
         # add a SRV record points to above host
-        srv_record = "{} 65530 65530 65530".format(dnshostname)
+        srv_record = "{0} 65530 65530 65530".format(dnshostname)
         self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
                        'notestsrv', "SRV", srv_record, self.creds_string)
 
@@ -747,9 +747,9 @@ class DnsCmdTestCase(SambaToolCmdTest):
         for record_name in ['notestcname', 'notestns', 'notestptr', 'notestsrv']:
 
             records = self.samdb.search(
-                base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+                base="DC=DomainDnsZones,{0}".format(self.samdb.get_default_basedn()),
                 scope=ldb.SCOPE_SUBTREE,
-                expression="(&(objectClass=dnsNode)(name={}))".format(record_name),
+                expression="(&(objectClass=dnsNode)(name={0}))".format(record_name),
                 attrs=["dNSTombstoned"])
 
             self.assertEqual(len(records), 1)
@@ -776,30 +776,30 @@ class DnsCmdTestCase(SambaToolCmdTest):
                            host, "A", self.testip, self.creds_string)
 
             # the above A record points to this host
-            dnshostname = '{}.{}'.format(host, self.zone.lower())
+            dnshostname = '{0}.{1}'.format(host, self.zone.lower())
 
             # add a SRV record points to above host
-            srv_record = "{} 65530 65530 65530".format(dnshostname)
+            srv_record = "{0} 65530 65530 65530".format(dnshostname)
             self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
                            srv_name, "SRV", srv_record, self.creds_string)
 
         records = self.samdb.search(
-            base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+            base="DC=DomainDnsZones,{0}".format(self.samdb.get_default_basedn()),
             scope=ldb.SCOPE_SUBTREE,
-            expression="(&(objectClass=dnsNode)(name={}))".format(srv_name),
+            expression="(&(objectClass=dnsNode)(name={0}))".format(srv_name),
             attrs=['dnsRecord'])
         # should have 2 records here
         self.assertEqual(len(records[0]['dnsRecord']), 2)
 
         # cleanup record for dns host1
-        dnshostname1 = 'host1.{}'.format(self.zone.lower())
+        dnshostname1 = 'host1.{0}'.format(self.zone.lower())
         self.runsubcmd("dns", "cleanup", os.environ["SERVER"],
                        dnshostname1, self.creds_string)
 
         records = self.samdb.search(
-            base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+            base="DC=DomainDnsZones,{0}".format(self.samdb.get_default_basedn()),
             scope=ldb.SCOPE_SUBTREE,
-            expression="(&(objectClass=dnsNode)(name={}))".format(srv_name),
+            expression="(&(objectClass=dnsNode)(name={0}))".format(srv_name),
             attrs=['dnsRecord', 'dNSTombstoned'])
 
         # dnsRecord for host1 should be deleted
@@ -810,7 +810,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
         dns_record_obj = ndr_unpack(dnsp.DnssrvRpcRecord, dns_record_bin)
 
         # dnsRecord for host2 is still there and is the only one
-        dnshostname2 = 'host2.{}'.format(self.zone.lower())
+        dnshostname2 = 'host2.{0}'.format(self.zone.lower())
         self.assertEqual(dns_record_obj.data.nameTarget, dnshostname2)
 
         # assert that the record isn't spuriously tombstoned

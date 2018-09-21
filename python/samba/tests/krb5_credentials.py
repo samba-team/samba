@@ -95,7 +95,7 @@ class PyKrb5CredentialsTests(TestCase):
         delete_force(self.ldb, self.machine_dn)
         # get unicode str for both py2 and py3
         pass_unicode = self.machine_pass.encode('utf-8').decode('utf-8')
-        utf16pw = u'"{}"'.format(pass_unicode).encode('utf-16-le')
+        utf16pw = u'"{0}"'.format(pass_unicode).encode('utf-16-le')
         self.ldb.add({
             "dn": self.machine_dn,
             "objectclass": "computer",

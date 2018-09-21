@@ -823,7 +823,7 @@ class SessionedPosixAclMappingTests(PosixAclMappingTests):
             # fake it with admin session as domsid is not in local db
             return auth.admin_session(self.lp, str(domsid))
 
-        dn = '<SID={}-{}>'.format(domsid, security.DOMAIN_RID_ADMINISTRATOR)
+        dn = '<SID={0}-{1}>'.format(domsid, security.DOMAIN_RID_ADMINISTRATOR)
         flags = (auth.AUTH_SESSION_INFO_DEFAULT_GROUPS |
                  auth.AUTH_SESSION_INFO_AUTHENTICATED |
                  auth.AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
@@ -844,7 +844,7 @@ class UnixSessionedPosixAclMappingTests(PosixAclMappingTests):
             # fake it with admin session as domsid is not in local db
             return auth.admin_session(self.lp, str(domsid))
 
-        dn = '<SID={}-{}>'.format(domsid, security.DOMAIN_RID_ADMINISTRATOR)
+        dn = '<SID={0}-{1}>'.format(domsid, security.DOMAIN_RID_ADMINISTRATOR)
         flags = (auth.AUTH_SESSION_INFO_DEFAULT_GROUPS |
                  auth.AUTH_SESSION_INFO_AUTHENTICATED |
                  auth.AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)

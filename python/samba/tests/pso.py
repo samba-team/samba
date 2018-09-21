@@ -228,18 +228,18 @@ class PasswordSettings:
 
         # all the following fields are mandatory for the PSO object
         ldif = """
-dn: {}
+dn: {0}
 objectClass: msDS-PasswordSettings
-msDS-PasswordSettingsPrecedence: {}
-msDS-PasswordReversibleEncryptionEnabled: {}
-msDS-PasswordHistoryLength: {}
-msDS-PasswordComplexityEnabled: {}
-msDS-MinimumPasswordLength: {}
-msDS-MinimumPasswordAge: {}
-msDS-MaximumPasswordAge: {}
-msDS-LockoutThreshold: {}
-msDS-LockoutObservationWindow: {}
-msDS-LockoutDuration: {}
+msDS-PasswordSettingsPrecedence: {1}
+msDS-PasswordReversibleEncryptionEnabled: {2}
+msDS-PasswordHistoryLength: {3}
+msDS-PasswordComplexityEnabled: {4}
+msDS-MinimumPasswordLength: {5}
+msDS-MinimumPasswordAge: {6}
+msDS-MaximumPasswordAge: {7}
+msDS-LockoutThreshold: {8}
+msDS-LockoutObservationWindow: {9}
+msDS-LockoutDuration: {10}
 """.format(self.dn, self.precedence, plaintext_str, self.history_len,
            complexity_str, self.password_len, min_age, max_age,
            self.lockout_attempts, lockout_window, lockout_duration)

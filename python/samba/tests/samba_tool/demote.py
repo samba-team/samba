@@ -25,7 +25,7 @@ class DemoteCmdTestCase(SambaToolCmdTest):
 
     def setUp(self):
         super(DemoteCmdTestCase, self).setUp()
-        self.creds_string = "-U{}%{}".format(
+        self.creds_string = "-U{0}%{1}".format(
             os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"])
 
         self.dc_server = os.environ['DC_SERVER']
@@ -58,10 +58,10 @@ class DemoteCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
 
         # the above A record points to this host
-        dnshostname = '{}.{}'.format(server, zone)
+        dnshostname = '{0}.{1}'.format(server, zone)
 
         # add a SRV record points to above host
-        srv_record = "{} 65530 65530 65530".format(dnshostname)
+        srv_record = "{0} 65530 65530 65530".format(dnshostname)
         self.runsubcmd(
             "dns", "add", self.dc_server, zone, 'testrecord', "SRV",
             srv_record, self.creds_string)

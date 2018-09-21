@@ -111,7 +111,7 @@ class DomainBackupOfflineCmp(SambaToolCmdTest, TestCaseInTempDir):
                      fn.endswith(".tar.bz2")]
         if len(tar_files) != 1:
             raise CommandError("expected domain backup to create one tar" +
-                               " file but got {}".format(len(tar_files)))
+                               " file but got {0}".format(len(tar_files)))
 
         backup_file = os.path.join(prov_dir, tar_files[0])
         return prov_dir, backup_file

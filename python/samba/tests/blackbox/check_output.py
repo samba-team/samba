@@ -55,7 +55,9 @@ class TimeoutHelper():
 
 def _make_cmdline(data='$', repeat=(5 * 1024 * 1024), retcode=0):
     """Build a command to call gen_output.py to generate large output"""
-    return 'gen_output.py --data {} --repeat {} --retcode {}'.format(data, repeat, retcode)
+    return 'gen_output.py --data {0} --repeat {1} --retcode {2}'.format(data,
+                                                                        repeat,
+                                                                        retcode)
 
 
 class CheckOutputTests(BlackboxTestCase):
