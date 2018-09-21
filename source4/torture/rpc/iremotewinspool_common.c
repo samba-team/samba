@@ -10,13 +10,15 @@
 struct spoolss_UserLevel1 test_get_client_info(struct torture_context *tctx,
 						      enum client_os_version os,
 						      enum spoolss_MajorVersion major_number,
-						      enum spoolss_MinorVersion minor_number)
+						      enum spoolss_MinorVersion minor_number,
+						      const char *machine,
+						      const char *user)
 {
 	struct spoolss_UserLevel1 level1;
 
 	level1.size	= 28;
-	level1.client	= talloc_asprintf(tctx, "\\\\%s", "mthelena");
-	level1.user	= "GD";
+	level1.client	= talloc_asprintf(tctx, "\\\\%s", machine);
+	level1.user	= user;
 	level1.processor = PROCESSOR_ARCHITECTURE_AMD64;
 	level1.major	= major_number;
 	level1.minor	= minor_number;

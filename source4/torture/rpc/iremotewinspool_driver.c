@@ -63,7 +63,8 @@ static bool test_init_iremotewinspool_openprinter(struct torture_context *tctx,
 	printer_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(t->iremotewinspool_pipe));
 	torture_assert_not_null_goto(tctx, printer_name, ok, done, "Cannot allocate memory");
 
-	client_info = test_get_client_info(tctx, WIN_7, 3, SPOOLSS_MINOR_VERSION_0);
+	client_info = test_get_client_info(tctx, WIN_7, 3, SPOOLSS_MINOR_VERSION_0,
+					   "testclient_machine", "testclient_user");
 
 	ok = test_AsyncOpenPrinter_byprinter(tctx, t, t->iremotewinspool_pipe, printer_name,
 					     client_info, &t->server_handle);

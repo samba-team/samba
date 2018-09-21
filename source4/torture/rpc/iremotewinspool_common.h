@@ -44,7 +44,9 @@ enum client_os_version
 struct spoolss_UserLevel1 test_get_client_info(struct torture_context *tctx,
 						      enum client_os_version os,
 						      enum spoolss_MajorVersion major_number,
-						      enum spoolss_MinorVersion minor_number);
+						      enum spoolss_MinorVersion minor_number,
+						      const char *machine,
+						      const char *user);
 
 bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
 					    struct test_iremotewinspool_context *ctx,
