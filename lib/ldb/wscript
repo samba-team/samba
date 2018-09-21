@@ -446,7 +446,7 @@ def build(bld):
                          init_function='ldb_ldb_init',
                          module_init_name='ldb_init_module',
                          internal_module=False,
-                         deps='ldb ldb_tdb ldb_key_value' + lmdb_deps,
+                         deps='ldb ldb_tdb_int ldb_key_value' + lmdb_deps,
                          subsystem='ldb')
 
         # have a separate subsystem for common/ldb.c, so it can rebuild
