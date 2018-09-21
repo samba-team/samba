@@ -49,50 +49,6 @@ manpages='''
          manpages/testparm.1
          manpages/traffic_learner.7
          manpages/traffic_replay.7
-         manpages/vfs_acl_tdb.8
-         manpages/vfs_acl_xattr.8
-         manpages/vfs_aio_fork.8
-         manpages/vfs_aio_pthread.8
-         manpages/vfs_audit.8
-         manpages/vfs_btrfs.8
-         manpages/vfs_cacheprime.8
-         manpages/vfs_cap.8
-         manpages/vfs_catia.8
-         manpages/vfs_ceph.8
-         manpages/vfs_commit.8
-         manpages/vfs_crossrename.8
-         manpages/vfs_default_quota.8
-         manpages/vfs_dirsort.8
-         manpages/vfs_extd_audit.8
-         manpages/vfs_fake_perms.8
-         manpages/vfs_fileid.8
-         manpages/vfs_fruit.8
-         manpages/vfs_full_audit.8
-         manpages/vfs_glusterfs.8
-         manpages/vfs_gpfs.8
-         manpages/vfs_linux_xfs_sgid.8
-         manpages/vfs_media_harmony.8
-         manpages/vfs_netatalk.8
-         manpages/vfs_nfs4acl_xattr.8
-         manpages/vfs_offline.8
-         manpages/vfs_prealloc.8
-         manpages/vfs_preopen.8
-         manpages/vfs_readahead.8
-         manpages/vfs_readonly.8
-         manpages/vfs_recycle.8
-         manpages/vfs_shadow_copy.8
-         manpages/vfs_shadow_copy2.8
-         manpages/vfs_shell_snap.8
-         manpages/vfs_snapper.8
-         manpages/vfs_streams_depot.8
-         manpages/vfs_streams_xattr.8
-         manpages/vfs_syncops.8
-         manpages/vfs_time_audit.8
-         manpages/vfs_tsmsm.8
-         manpages/vfs_unityed_media.8
-         manpages/vfs_virusfilter.8
-         manpages/vfs_worm.8
-         manpages/vfs_xattr_tdb.8
          manpages/vfstest.1
          manpages/wbinfo.1
          manpages/winbindd.8
@@ -105,6 +61,52 @@ pam_winbind_manpages = '''
 
 krb5_locator_manpages = 'manpages/winbind_krb5_locator.8'
 krb5_localauth_manpages = 'manpages/winbind_krb5_localauth.8'
+
+vfs_module_manpages = ['vfs_acl_tdb',
+                       'vfs_acl_xattr',
+                       'vfs_aio_fork',
+                       'vfs_aio_pthread',
+                       'vfs_audit',
+                       'vfs_btrfs',
+                       'vfs_cacheprime',
+                       'vfs_cap',
+                       'vfs_catia',
+                       'vfs_ceph',
+                       'vfs_commit',
+                       'vfs_crossrename',
+                       'vfs_default_quota',
+                       'vfs_dirsort',
+                       'vfs_extd_audit',
+                       'vfs_fake_perms',
+                       'vfs_fileid',
+                       'vfs_fruit',
+                       'vfs_full_audit',
+                       'vfs_glusterfs',
+                       'vfs_gpfs',
+                       'vfs_linux_xfs_sgid',
+                       'vfs_media_harmony',
+                       'vfs_netatalk',
+                       'vfs_nfs4acl_xattr',
+                       'vfs_offline',
+                       'vfs_prealloc',
+                       'vfs_preopen',
+                       'vfs_readahead',
+                       'vfs_readonly',
+                       'vfs_recycle',
+                       'vfs_shadow_copy',
+                       'vfs_shadow_copy2',
+                       'vfs_shell_snap',
+                       'vfs_snapper',
+                       'vfs_streams_depot',
+                       'vfs_streams_xattr',
+                       'vfs_syncops',
+                       'vfs_time_audit',
+                       'vfs_tsmsm',
+                       'vfs_unityed_media',
+                       'vfs_virusfilter',
+                       'vfs_worm',
+                       'vfs_xattr_tdb',
+                       'vfs_zfsacl' ]
 
 def smbdotconf_generate_parameter_list(task):
     parameter_all = task.outputs[0].bldpath(task.env)
@@ -166,5 +168,6 @@ if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
     if bld.CONFIG_SET('HAVE_KRB5_LOCALAUTH_PLUGIN_H'):
         bld.SAMBAMANPAGES(krb5_localauth_manpages)
 
-    if bld.SAMBA3_IS_ENABLED_MODULE('vfs_zfsacl'):
-        bld.SAMBAMANPAGES('manpages/vfs_zfsacl.8')
+    for manpage in vfs_module_manpages:
+        if bld.SAMBA3_IS_ENABLED_MODULE(manpage):
+            bld.SAMBAMANPAGES('manpages/%s.8' % manpage)
