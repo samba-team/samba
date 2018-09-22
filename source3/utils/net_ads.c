@@ -308,8 +308,9 @@ failure:
 #else /* [HAVE_JANSSON] */
 
 static int net_ads_cldap_netlogon_json
-	(ADS_STRUCT *, const char *,
-	 const struct NETLOGON_SAM_LOGON_RESPONSE_EX *)
+	(ADS_STRUCT *ads,
+	 const char *addr,
+	 const struct NETLOGON_SAM_LOGON_RESPONSE_EX * reply)
 {
 	d_fprintf(stderr, _("JSON support not available\n"));
 
@@ -517,7 +518,7 @@ failure:
 
 #else /* [HAVE_JANSSON] */
 
-static int net_ads_info_json(ADS_STRUCT *)
+static int net_ads_info_json(ADS_STRUCT *ads)
 {
 	d_fprintf(stderr, _("JSON support not available\n"));
 
