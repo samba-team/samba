@@ -893,22 +893,22 @@ static PySequenceMethods py_ldb_dn_seq = {
 
 static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	struct ldb_dn *ret;
-	char *str;
-	PyObject *py_ldb;
-	struct ldb_context *ldb_ctx;
-	TALLOC_CTX *mem_ctx;
-	PyLdbDnObject *py_ret;
+	struct ldb_dn *ret = NULL;
+	char *str = NULL;
+	PyObject *py_ldb = NULL;
+	struct ldb_context *ldb_ctx = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	PyLdbDnObject *py_ret = NULL;
 	const char * const kwnames[] = { "ldb", "dn", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Os",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oes",
 					 discard_const_p(char *, kwnames),
-					 &py_ldb, &str))
-		return NULL;
+					 &py_ldb, "utf8", &str))
+		goto out;
 
 	if (!PyLdb_Check(py_ldb)) {
 		PyErr_SetString(PyExc_TypeError, "Expected Ldb");
-		return NULL;
+		goto out;
 	}
 
 	ldb_ctx = pyldb_Ldb_AsLdbContext(py_ldb);
@@ -916,24 +916,28 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
-		return NULL;
+		goto out;
 	}
 
 	ret = ldb_dn_new(mem_ctx, ldb_ctx, str);
 	if (!ldb_dn_validate(ret)) {
 		talloc_free(mem_ctx);
 		PyErr_SetString(PyExc_ValueError, "unable to parse dn string");
-		return NULL;
+		goto out;
 	}
 
 	py_ret = (PyLdbDnObject *)type->tp_alloc(type, 0);
 	if (py_ret == NULL) {
 		talloc_free(mem_ctx);
 		PyErr_NoMemory();
-		return NULL;
+		goto out;
 	}
 	py_ret->mem_ctx = mem_ctx;
 	py_ret->dn = ret;
+out:
+	if (str != NULL) {
+		PyMem_Free(discard_const_p(char, str));
+	}
 	return (PyObject *)py_ret;
 }
 
