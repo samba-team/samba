@@ -927,7 +927,7 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 	}
 
 	py_ret = (PyLdbDnObject *)type->tp_alloc(type, 0);
-	if (ret == NULL) {
+	if (py_ret == NULL) {
 		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
