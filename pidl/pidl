@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 ###################################################
 # package to parse IDL files and generate code for
