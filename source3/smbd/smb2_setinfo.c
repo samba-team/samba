@@ -203,10 +203,16 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
 		struct share_mode_lease *l = NULL;
-		uint32_t e_lease_type = get_lease_type(d, e);
+		uint32_t e_lease_type;
 		uint32_t break_to;
 
 		if (e->op_type != LEASE_OPLOCK) {
+			continue;
+		}
+
+		e_lease_type = get_lease_type(d, e);
+
+		if (!(e_lease_type & SMB2_LEASE_HANDLE)) {
 			continue;
 		}
 
@@ -220,10 +226,6 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 		}
 
 		if (share_mode_stale_pid(d, i)) {
-			continue;
-		}
-
-		if (!(e_lease_type & SMB2_LEASE_HANDLE)) {
 			continue;
 		}
 
