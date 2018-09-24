@@ -137,6 +137,10 @@ class SimpleLdb(LdbBaseTest):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertEqual(len(l.search(controls=["paged_results:0:5"])), 0)
 
+    def test_utf8_ldb_Dn(self):
+        l = ldb.Ldb(self.url(), flags=self.flags())
+        dn = ldb.Dn(l, (b'a=' + b'\xc4\x85\xc4\x87\xc4\x99\xc5\x82\xc5\x84\xc3\xb3\xc5\x9b\xc5\xba\xc5\xbc').decode('utf8'))
+
     def test_search_attrs(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertEqual(len(l.search(ldb.Dn(l, ""), ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
