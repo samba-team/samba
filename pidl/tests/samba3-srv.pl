@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # (C) 2008 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU General Public License
 use strict;

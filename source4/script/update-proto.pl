@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Simple script for updating the prototypes in a C header file
 #
 # Copyright (C) 2006 Jelmer Vernooij <jelmer@samba.org>

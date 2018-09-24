@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 # Copyright (C) Guenther Deschner <gd@samba.org> 2006
 

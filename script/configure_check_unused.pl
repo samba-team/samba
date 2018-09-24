@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Script that finds macros in a configure script that are not 
 # used in a set of C files.
 # Copyright Jelmer Vernooij <jelmer@samba.org>, GPL

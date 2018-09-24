@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Simple tests for unique pointers
 # (C) 2006 Jelmer Vernooij <jelmer@samba.org>.
 # Published under the GNU General Public License.

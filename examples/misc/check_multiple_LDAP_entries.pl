@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # Guenther Deschner <gd@samba.org>
 #
 # check for multiple LDAP entries

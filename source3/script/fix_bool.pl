@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 open(INFILE, "$ARGV[0]") || die $@;
 open(OUTFILE, ">$ARGV[0].new") || die $@;

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # Unix SMB/CIFS implementation.
 # Test suite for the tar backup mode of smbclient.

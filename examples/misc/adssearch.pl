@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # 
 # adssearch.pl 	- query an Active Directory server and
 #		  display objects in a human readable format

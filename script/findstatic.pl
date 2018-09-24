@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # find a list of fns and variables in the code that could be static
 # usually called with something like this:
 #    findstatic.pl `find . -name "*.o"`

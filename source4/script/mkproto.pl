@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Simple script for generating prototypes for C functions
 # Written by Jelmer Vernooij
 # based on the original mkproto.sh by Andrew Tridgell

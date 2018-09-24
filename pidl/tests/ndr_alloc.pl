@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # NDR allocation tests
 # (C) 2005 Jelmer Vernooij. Published under the GNU GPL
 use strict;

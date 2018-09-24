@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # update a win2000 DNS server using gss-tsig 
 # tridge@samba.org, October 2002
 

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Simple tests for pidl's handling of ref pointers, based
 # on tridge's ref_notes.txt
 # (C) 2005 Jelmer Vernooij <jelmer@samba.org>.

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ##   Delete printer script for samba, APW, and cups
 ##   Copyright (C) Gerald (Jerry) Carter <jerry@samba.rog>    2004
 ##
