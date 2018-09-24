@@ -133,8 +133,9 @@ static struct db_record *smbXsrv_client_global_fetch_locked(
 	rec = dbwrap_fetch_locked(db, mem_ctx, key);
 
 	if (rec == NULL) {
+		struct GUID_txt_buf buf;
 		DBG_DEBUG("Failed to lock guid [%s], key '%s'\n",
-			  GUID_string(talloc_tos(), client_guid),
+			  GUID_buf_string(client_guid, &buf),
 			  hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
 	}
 
@@ -533,13 +534,14 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		struct smbXsrv_clientB client_blob;
+		struct GUID_txt_buf buf;
 
 		ZERO_STRUCT(client_blob);
 		client_blob.version = SMBXSRV_VERSION_0;
 		client_blob.info.info0 = client;
 
 		DBG_DEBUG("client_guid[%s] stored\n",
-			  GUID_string(talloc_tos(), &global->client_guid));
+			  GUID_buf_string(&global->client_guid, &buf));
 		NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
 	}
 
@@ -626,9 +628,13 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 
 	if (!GUID_equal(&client->global->client_guid, &pass_info0->client_guid))
 	{
+		struct GUID_txt_buf buf1, buf2;
+
 		DBG_WARNING("client's client_guid [%s] != passed guid [%s]\n",
-			GUID_string(talloc_tos(), &client->global->client_guid),
-			GUID_string(talloc_tos(), &pass_info0->client_guid));
+			    GUID_buf_string(&client->global->client_guid,
+					    &buf1),
+			    GUID_buf_string(&pass_info0->client_guid,
+					    &buf2));
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 		}
@@ -700,9 +706,10 @@ NTSTATUS smbXsrv_client_update(struct smbXsrv_client *client)
 	NTSTATUS status;
 
 	if (client->global->db_rec != NULL) {
+		struct GUID_txt_buf buf;
 		DBG_ERR("guid [%s]: Called with db_rec != NULL'\n",
-			GUID_string(talloc_tos(),
-			&client->global->client_guid));
+			GUID_buf_string(&client->global->client_guid,
+					&buf));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -716,21 +723,25 @@ NTSTATUS smbXsrv_client_update(struct smbXsrv_client *client)
 
 	status = smbXsrv_client_global_store(client->global);
 	if (!NT_STATUS_IS_OK(status)) {
+		struct GUID_txt_buf buf;
 		DBG_ERR("client_guid[%s] store failed - %s\n",
-			GUID_string(talloc_tos(), &client->global->client_guid),
+			GUID_buf_string(&client->global->client_guid,
+					&buf),
 			nt_errstr(status));
 		return status;
 	}
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		struct smbXsrv_clientB client_blob;
+		struct GUID_txt_buf buf;
 
 		ZERO_STRUCT(client_blob);
 		client_blob.version = SMBXSRV_VERSION_0;
 		client_blob.info.info0 = client;
 
 		DBG_DEBUG("client_guid[%s] stored\n",
-			GUID_string(talloc_tos(), &client->global->client_guid));
+			  GUID_buf_string(&client->global->client_guid,
+					  &buf));
 		NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
 	}
 
@@ -743,8 +754,10 @@ NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 	NTSTATUS status;
 
 	if (client->global->db_rec != NULL) {
+		struct GUID_txt_buf buf;
 		DBG_ERR("client_guid[%s]: Called with db_rec != NULL'\n",
-			GUID_string(talloc_tos(), &client->global->client_guid));
+			GUID_buf_string(&client->global->client_guid,
+					&buf));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -762,21 +775,23 @@ NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 
 	status = smbXsrv_client_global_remove(client->global);
 	if (!NT_STATUS_IS_OK(status)) {
+		struct GUID_txt_buf buf;
 		DBG_ERR("client_guid[%s] store failed - %s\n",
-			GUID_string(talloc_tos(), &client->global->client_guid),
+			GUID_buf_string(&client->global->client_guid, &buf),
 			nt_errstr(status));
 		return status;
 	}
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		struct smbXsrv_clientB client_blob;
+		struct GUID_txt_buf buf;
 
 		ZERO_STRUCT(client_blob);
 		client_blob.version = SMBXSRV_VERSION_0;
 		client_blob.info.info0 = client;
 
 		DBG_DEBUG("client_guid[%s] stored\n",
-			GUID_string(talloc_tos(), &client->global->client_guid));
+			  GUID_buf_string(&client->global->client_guid, &buf));
 		NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
 	}
 
