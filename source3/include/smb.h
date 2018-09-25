@@ -546,11 +546,6 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 
 #define FNUM_FIELD_INVALID 0
 
-/* 
- * Size of buffer to use when moving files across filesystems. 
- */
-#define COPYBUF_SIZE (8*1024)
-
 /*
  * Map the Core and Extended Oplock requesst bits down
  * to common bits (EXCLUSIVE_OPLOCK & BATCH_OPLOCK).
