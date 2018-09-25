@@ -140,40 +140,6 @@ size_t tdb_pack(uint8_t *buf, int bufsize, const char *fmt, ...)
 	return result;
 }
 
-bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8_t **buf, size_t *len,
-		     const char *fmt, ...)
-{
-	va_list ap;
-	size_t len1, len2;
-
-	va_start(ap, fmt);
-	len1 = tdb_pack_va(NULL, 0, fmt, ap);
-	va_end(ap);
-
-	if (mem_ctx != NULL) {
-		*buf = talloc_realloc(mem_ctx, *buf, uint8_t,
-					    (*len) + len1);
-	} else {
-		*buf = SMB_REALLOC_ARRAY(*buf, uint8_t, (*len) + len1);
-	}
-
-	if (*buf == NULL) {
-		return False;
-	}
-
-	va_start(ap, fmt);
-	len2 = tdb_pack_va((*buf)+(*len), len1, fmt, ap);
-	va_end(ap);
-
-	if (len1 != len2) {
-		return False;
-	}
-
-	*len += len2;
-
-	return True;
-}
-
 /****************************************************************************
  Useful pair of routines for packing/unpacking data consisting of
  integers and strings.
