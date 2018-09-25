@@ -38,6 +38,21 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	uint32_t s, g;
 	NTSTATUS status;
 	struct id_map *ids;
+	bool match;
+
+	match = security_token_is_system(token);
+	if (match) {
+		/*
+		 * SYSTEM user uid and gid is 0
+		 */
+
+		*sec = talloc_zero(mem_ctx, struct security_unix_token);
+		if (*sec == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		return NT_STATUS_OK;
+	}
 
 	/* we can't do unix security without a user and group */
 	if (token->num_sids < 2) {
