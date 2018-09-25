@@ -50,10 +50,6 @@
 
 #define SIZEOFWORD 2
 
-#ifndef DEF_CREATE_MASK
-#define DEF_CREATE_MASK (0755)
-#endif
-
 /* string manipulation flags - see clistr.c and srvstr.c */
 #define STR_TERMINATE 1
 #define STR_UPPER 2
