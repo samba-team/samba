@@ -29,17 +29,6 @@
 #undef calloc
 #undef strdup
 
-/* these are little tdb utility functions that are meant to make
-   dealing with a tdb database a little less cumbersome in Samba */
-
-int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
-			     TDB_DATA data, int flags)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_trans_store(tdb, key, data, flags);
-}
-
 /****************************************************************************
  Useful pair of routines for packing/unpacking data consisting of
  integers and strings.
@@ -317,61 +306,6 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 		return NULL;
 
 	return tdb;
-}
-
-/****************************************************************************
- tdb_store, wrapped in a transaction. This way we make sure that a process
- that dies within writing does not leave a corrupt tdb behind.
-****************************************************************************/
-
-int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
-		    int flag)
-{
-	int res;
-
-	if ((res = tdb_transaction_start(tdb)) != 0) {
-		DEBUG(5, ("tdb_transaction_start failed\n"));
-		return res;
-	}
-
-	if ((res = tdb_store(tdb, key, dbuf, flag)) != 0) {
-		DEBUG(10, ("tdb_store failed\n"));
-		tdb_transaction_cancel(tdb);
-		return res;
-	}
-
-	if ((res = tdb_transaction_commit(tdb)) != 0) {
-		DEBUG(5, ("tdb_transaction_commit failed\n"));
-	}
-
-	return res;
-}
-
-/****************************************************************************
- tdb_delete, wrapped in a transaction. This way we make sure that a process
- that dies within deleting does not leave a corrupt tdb behind.
-****************************************************************************/
-
-int tdb_trans_delete(struct tdb_context *tdb, TDB_DATA key)
-{
-	int res;
-
-	if ((res = tdb_transaction_start(tdb)) != 0) {
-		DEBUG(5, ("tdb_transaction_start failed\n"));
-		return res;
-	}
-
-	if ((res = tdb_delete(tdb, key)) != 0) {
-		DEBUG(10, ("tdb_delete failed\n"));
-		tdb_transaction_cancel(tdb);
-		return res;
-	}
-
-	if ((res = tdb_transaction_commit(tdb)) != 0) {
-		DEBUG(5, ("tdb_transaction_commit failed\n"));
-	}
-
-	return res;
 }
 
 int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2)
