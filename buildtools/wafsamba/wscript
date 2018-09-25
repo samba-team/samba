@@ -597,6 +597,8 @@ struct foo bar = { .y = 'X', .x = 1 };
     if conf.env.enable_libfuzzer:
         conf.DEFINE('ENABLE_LIBFUZZER', 1)
 
+    conf.load('clang_compilation_database')
+
     conf.SAMBA_BUILD_ENV()
 
 
