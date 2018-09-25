@@ -231,7 +231,7 @@ def configure(conf):
 
     conf.CHECK_CC_ENV()
 
-    conf.load('compiler_cc')
+    conf.load('compiler_c')
 
     conf.CHECK_STANDARD_LIBPATH()
 
