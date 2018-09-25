@@ -160,6 +160,10 @@ NTSTATUS auth_session_info_fill_unix(struct loadparm_context *lp_ctx,
 							     session_info->info->account_name);
 	NT_STATUS_HAVE_NO_MEMORY(session_info->unix_info->unix_name);
 
+	if (original_user_name == NULL) {
+		original_user_name = session_info->unix_info->unix_name;
+	}
+
 	len = strlen(original_user_name) + 1;
 	session_info->unix_info->sanitized_username = su = talloc_array(session_info->unix_info, char, len);
 	NT_STATUS_HAVE_NO_MEMORY(su);
