@@ -56,7 +56,7 @@
 
     <para>Authentication and authorization audit information is logged
     under the auth_audit, and if Samba was not compiled with
-    --without-json-audit, a JSON representation is logged under
+    --without-json, a JSON representation is logged under
     auth_json_audit.</para>
 
     <para>Support is comprehensive for all authentication and authorisation

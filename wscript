@@ -35,7 +35,6 @@ def system_mitkrb5_callback(option, opt, value, parser):
 def options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
-    opt.RECURSE('lib/audit_logging')
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
     opt.RECURSE('packaging')
@@ -103,6 +102,13 @@ def options(opt):
     opt.load('python') # options for disabling pyc or pyo compilation
     # enable options related to building python extensions
 
+    opt.add_option('--with-json',
+                   action='store_true', dest='with_json',
+                   help=("Build with JSON support (default=True). This "
+                         "requires the jansson development headers."))
+    opt.add_option('--without-json',
+                   action='store_false', dest='with_json',
+                   help=("Build without JSON support."))
 
 def configure(conf):
     version = samba_version.load_version(env=conf.env)
@@ -234,7 +240,6 @@ def configure(conf):
     # system-provided or embedded Heimdal build
     if conf.CONFIG_GET('KRB5_VENDOR') in (None, 'heimdal'):
         conf.RECURSE('source4/heimdal_build')
-    conf.RECURSE('lib/audit_logging')
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/dsdb/samdb/ldb_modules')
     conf.RECURSE('source4/ntvfs/sysdep')
@@ -273,6 +278,28 @@ def configure(conf):
             if not conf.CONFIG_SET('HAVE___THREAD'):
                 Logs.warn("pthreadpool support cannot be enabled when __thread support was not found")
             conf.undefine('WITH_PTHREADPOOL')
+
+    conf.SET_TARGET_TYPE('jansson', 'EMPTY')
+
+    if Options.options.with_json != False:
+        if conf.CHECK_CFG(package='jansson', args='--cflags --libs',
+                          msg='Checking for jansson'):
+            conf.CHECK_FUNCS_IN('json_object', 'jansson')
+
+    if not conf.CONFIG_GET('HAVE_JSON_OBJECT'):
+        if Options.options.with_json != False:
+            conf.fatal("Jansson JSON support not found. "
+                       "Try installing libjansson-dev or jansson-devel. "
+                       "Otherwise, use --without-json to build without "
+                       "JSON support. "
+                       "JSON support is required for the JSON "
+                       "formatted audit log feature, the AD DC, and "
+                       "the JSON printers of the net utility")
+        if not Options.options.without_ad_dc:
+            raise Errors.WafError('--without-json requires --without-ad-dc. '
+                                 'Jansson JSON library is required for '
+                                 'building the AD DC')
+        Logs.info("Building without Jansson JSON log support")
 
     conf.RECURSE('source3')
     conf.RECURSE('lib/texpect')
