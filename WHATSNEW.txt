@@ -1,4 +1,72 @@
                    =============================
+                   Release Notes for Samba 4.8.6
+                           October 9, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.8 release series.
+
+
+Changes since 4.8.5:
+--------------------
+
+o  Paulo Alcantara <paulo@paulo.ac>
+   * BUG 13578: s3: util: Do not take over stderr when there is no log file.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13585: s3: smbd: Ensure get_real_filename() copes with empty pathnames.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13441: vfs_fruit: delete 0 byte size streams if AAPL is enabled.
+   * BUG 13549: s3:smbd: Durable Reconnect fails because cookie.allow_reconnect
+     is not set.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13539: krb5-samba: Interdomain trust uses different salt principal.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13362: Fix possible memory leak in the Samba process.
+   * BUG 13441: vfs_fruit: Don't unlink the main file.
+   * BUG 13602: smbd: Fix a memleak in async search ask sharemode.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11517: Fix Samba GPO issue when Trust is enabled.
+   * BUG 13539: samba-tool: Add virtualKerberosSalt attribute to 'user
+     getpassword/syncpasswords'.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13606: wafsamba: Fix 'make -j<jobs>'.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13592: ctdbd logs an error until it can successfully connect to
+     eventd.
+   * BUG 13617: Fix race conditions in CTDB recovery lock.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.8.5
                            August 24, 2018
                    =============================
@@ -110,8 +178,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.8.4
