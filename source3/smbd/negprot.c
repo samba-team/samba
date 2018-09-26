@@ -28,6 +28,13 @@
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smb_signing.h"
 
+/*
+ * MS-CIFS, 2.2.4.52.2 SMB_COM_NEGOTIATE Response:
+ * If the server does not support any of the listed dialects, it MUST return a
+ * DialectIndex of 0XFFFF
+ */
+#define NO_PROTOCOL_CHOSEN	0xffff
+
 extern fstring remote_proto;
 
 static void get_challenge(struct smbXsrv_connection *xconn, uint8_t buff[8])
@@ -748,7 +755,7 @@ void reply_negprot(struct smb_request *req)
 
 		DBG_NOTICE("No protocol supported !\n");
 		reply_outbuf(req, 1, 0);
-		SSVAL(req->outbuf, smb_vwv0, choice);
+		SSVAL(req->outbuf, smb_vwv0, NO_PROTOCOL_CHOSEN);
 
 		ok = srv_send_smb(xconn, (char *)req->outbuf,
 				  false, 0, false, NULL);
