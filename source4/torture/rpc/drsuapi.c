@@ -94,6 +94,7 @@ static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 	struct dcerpc_pipe *p = priv->drs_pipe;
 	struct drsuapi_DsGetDomainControllerInfo r;
 	union drsuapi_DsGetDCInfoCtr ctr;
+	union drsuapi_DsGetDCInfoRequest req;
 	int32_t level_out = 0;
 	bool found = false;
 	int i, j, k;
@@ -124,7 +125,6 @@ static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 		for (j=0; j < ARRAY_SIZE(names); j++) {
-			union drsuapi_DsGetDCInfoRequest req;
 			level = levels[i];
 			r.in.bind_handle = &priv->bind_handle;
 			r.in.level = 1;
