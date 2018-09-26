@@ -52,7 +52,7 @@ def PKG_CONFIG_FILES(bld, pc_files, vnum=None, extra_name=None):
                                 rule=subst_at_vars,
                                 source=f+'.in',
                                 target=target)
-        bld.add_manual_dependency(bld.path.find_or_declare(f), bld.env['PREFIX'])
+        bld.add_manual_dependency(bld.path.find_or_declare(f), bld.env['PREFIX'].encode('utf8'))
         t.vars = []
         if t.env.RPATH_ON_INSTALL:
             t.env.LIB_RPATH = t.env.RPATH_ST % t.env.LIBDIR
