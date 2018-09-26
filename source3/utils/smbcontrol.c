@@ -1142,14 +1142,13 @@ static bool do_winbind_offline(struct tevent_context *ev_ctx,
 
 		/* Check that the entry "WINBINDD_OFFLINE" still exists. */
 		d = tdb_fetch_bystring( tdb, "WINBINDD_OFFLINE" );
-
-		if (!d.dptr || d.dsize != 4) {
-			SAFE_FREE(d.dptr);
-			DEBUG(10,("do_winbind_offline: offline state not set - retrying.\n"));
-		} else {
+		if (d.dptr != NULL && d.dsize == 4) {
 			SAFE_FREE(d.dptr);
 			break;
 		}
+
+		SAFE_FREE(d.dptr);
+		DEBUG(10,("do_winbind_offline: offline state not set - retrying.\n"));
 	}
 
 	tdb_close(tdb);
