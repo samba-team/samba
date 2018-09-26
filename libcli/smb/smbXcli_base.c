@@ -4369,6 +4369,7 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 	}
 
 	if (conn->protocol == PROTOCOL_NONE) {
+		DBG_ERR("No compatible protocol selected by server.\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
