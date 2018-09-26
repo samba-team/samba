@@ -59,11 +59,12 @@ _PUBLIC_ NTSTATUS GUID_from_ndr_blob(const DATA_BLOB *b, struct GUID *guid)
 _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	uint32_t time_low;
-	uint32_t time_mid, time_hi_and_version;
-	uint32_t clock_seq[2];
-	uint32_t node[6];
-	uint8_t buf16[16];
+	uint32_t time_low = 0;
+	uint32_t time_mid = 0;
+	uint32_t time_hi_and_version = 0;
+	uint32_t clock_seq[2] = {0};
+	uint32_t node[6] = {0};
+	uint8_t buf16[16] = {0};
 
 	DATA_BLOB blob16 = data_blob_const(buf16, sizeof(buf16));
 	int i;
