@@ -186,9 +186,9 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	}
 	/* First encode the name_index */
 	working_size = (kbuf.dsize + 1)*sizeof(uint16_t);
+	/* SMB_REALLOC frees buf1 on error */
 	p = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
 	if (p == NULL) {
-		SAFE_FREE(buf1);
 		buffer_size = 0;
 		return buffer_size;
 	}
@@ -203,9 +203,9 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	buffer_size += working_size;
 	/* Now encode the actual name */
 	working_size = (dbuf.dsize + 1)*sizeof(uint16_t);
+	/* SMB_REALLOC frees buf1 on error */
 	p = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
 	if (p == NULL) {
-		SAFE_FREE(buf1);
 		buffer_size = 0;
 		return buffer_size;
 	}
