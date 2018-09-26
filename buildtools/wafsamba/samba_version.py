@@ -198,7 +198,7 @@ also accepted as dictionary entries here
         for name in sorted(self.vcs_fields.keys()):
             string+="#define SAMBA_VERSION_%s " % name
             value = self.vcs_fields[name]
-            if isinstance(value, basestring):
+            if isinstance(value, str) or isinstance(value, basestring):
                 string += "\"%s\"" % value
             elif type(value) is int:
                 string += "%d" % value
