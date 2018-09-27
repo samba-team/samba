@@ -498,7 +498,7 @@ ctdb_stop_all ()
 {
 	onnode -p all $CTDB_TEST_WRAPPER _service_ctdb stop
 }
-_ctdb_start_all ()
+ctdb_start_all ()
 {
 	onnode -p all $CTDB_TEST_WRAPPER _service_ctdb start
 }
@@ -528,7 +528,7 @@ ctdb_init ()
 {
     local i
     for i in $(seq 1 5) ; do
-	_ctdb_start_all || {
+	ctdb_start_all || {
 	    echo "Start failed.  Trying again in a few seconds..."
 	    sleep_for 5
 	    continue

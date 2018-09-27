@@ -215,7 +215,7 @@ ctdb_stop_all ()
 	daemons_stop
 }
 
-_ctdb_start_all ()
+ctdb_start_all ()
 {
 	daemons_start
 }
