@@ -31,11 +31,11 @@ ctdb_restart_when_done
 
 select_test_node_and_ips
 
-daemons_stop
+ctdb_stop_all
 
 echo "Starting CTDB with failover disabled..."
 setup_ctdb --disable-failover
-daemons_start
+ctdb_start_all
 
 wait_until_ready
 
@@ -53,11 +53,11 @@ EOF
 echo "GOOD: All IP addresses are unassigned"
 
 echo "----------------------------------------"
-daemons_stop
+ctdb_stop_all
 
 echo "Starting CTDB with an empty public addresses configuration..."
 setup_ctdb --no-public-addresses
-daemons_start
+ctdb_start_all
 
 wait_until_ready
 

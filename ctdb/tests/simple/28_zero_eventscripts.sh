@@ -26,14 +26,14 @@ fi
 # Reset configuration
 ctdb_restart_when_done
 
-daemons_stop
+ctdb_stop_all
 
 echo "Starting CTDB with an empty eventscript directory..."
 setup_ctdb --no-event-scripts
-daemons_start
+ctdb_start_all
 
 wait_until_ready
 
 echo "Good, that seems to work!"
 
-daemons_stop
+ctdb_stop_all
