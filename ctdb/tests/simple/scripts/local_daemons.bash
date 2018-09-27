@@ -195,8 +195,6 @@ ctdb_stop_all ()
     for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
 	stop_ctdb_1 "$pnn"
     done
-
-    rm -rf "${SIMPLE_TESTS_VAR_DIR}/test.db"
 }
 
 restart_ctdb_1 ()
