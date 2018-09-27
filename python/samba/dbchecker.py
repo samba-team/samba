@@ -2719,34 +2719,60 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                         self.report("No RID Set found for this server: %s, and we are not the RID Master (so can not self-allocate)" % dn)
 
         # Check some details of our own RID Set
+        #
+        # Note that the attributes have very bad names.  From ridalloc.c:
+        #
+        #   Note: the RID allocation attributes in AD are very badly named. Here
+        #     is what we think they really do:
+        #
+        #     in RID Set object:
+        #       - rIDPreviousAllocationPool: the pool which a DC is currently
+        #         pulling RIDs from. Managed by client DC
+        #
+        #       - rIDAllocationPool: the pool that the DC will switch to next,
+        #         when rIDPreviousAllocationPool is exhausted. Managed by RID Manager.
+        #
+        #       - rIDNextRID: the last RID allocated by this DC. Managed by client DC
+        #
+        #     in RID Manager object:
+        #       - rIDAvailablePool: the pool where the RID Manager gets new rID
+        #         pools from when it gets a EXOP_RID_ALLOC getncchanges call (or
+        #         locally when the DC is the RID Manager)
+
         if dn == self.rid_set_dn:
             res = self.samdb.search(base=self.rid_set_dn, scope=ldb.SCOPE_BASE,
                                     attrs=["rIDAllocationPool",
                                            "rIDPreviousAllocationPool",
                                            "rIDUsedPool",
                                            "rIDNextRID"])
+            pool_attr = "rIDPreviousAllocationPool"
+            if (pool_attr not in res[0]
+                or int(res[0][pool_attr][0]) == 0):
+                # We have not used it yet, check the next pool instead
+                pool_attr = "rIDAllocationPool"
+
             if "rIDAllocationPool" not in res[0]:
                 self.report("No rIDAllocationPool found in %s" % dn)
                 error_count += 1
             else:
-                next_pool = int(res[0]["rIDAllocationPool"][0])
+                current_pool = int(res[0][pool_attr][0])
 
-                high = (0xFFFFFFFF00000000 & next_pool) >> 32
-                low = 0x00000000FFFFFFFF & next_pool
+                high = (0xFFFFFFFF00000000 & current_pool) >> 32
+                low = 0x00000000FFFFFFFF & current_pool
 
                 if high <= low:
-                    self.report("Invalid RID set %d-%s, %d > %d!" % (low, high, low, high))
+                    self.report("Invalid RID set %d-%s, %d >= %d!" % (low, high, low, high))
                     error_count += 1
 
                 if "rIDNextRID" in res[0]:
-                    next_free_rid = int(res[0]["rIDNextRID"][0])
+                    last_used_rid = int(res[0]["rIDNextRID"][0])
                 else:
-                    next_free_rid = 0
+                    last_used_rid = 0
 
-                if next_free_rid == 0:
+                if last_used_rid == 0:
                     next_free_rid = low
                 else:
-                    next_free_rid += 1
+                    next_free_rid = last_used_rid + 1
 
                 # Check the remainder of this pool for conflicts.  If
                 # ridalloc_allocate_rid() moves to a new pool, this
