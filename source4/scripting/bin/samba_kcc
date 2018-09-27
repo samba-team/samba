@@ -20,6 +20,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
 
 import os
 import sys
@@ -278,7 +279,7 @@ if opts.now:
             pass
     else:
         # else happens if break doesn't --> no match
-        print >> sys.stderr, "could not parse time '%s'" % opts.now
+        print("could not parse time '%s'" % (opts.now), file = sys.stderr)
         sys.exit(1)
     unix_now = int(time.mktime(now_tuple))
 else:
@@ -328,7 +329,7 @@ if opts.test_all_reps_from:
     sys.exit()
 
 if opts.list_valid_dsas:
-    print '\n'.join(kcc.list_dsas())
+    print('\n'.join(kcc.list_dsas()))
     sys.exit()
 
 try:
@@ -338,5 +339,5 @@ try:
     sys.exit(rc)
 
 except GraphError as e:
-    print e
+    print( e)
     sys.exit(1)

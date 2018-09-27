@@ -26,115 +26,115 @@ if opts.format is None:
     opts.format = "summary"
 
 def print_header(txt):
-    print "\n%s" % txt
-    print "=" * len(txt)
+    print("\n%s" % txt)
+    print("=" * len(txt))
 
 def print_samba3_policy(pol):
     print_header("Account Policies")
-    print "Min password length: %d" % pol['min password length']
-    print "Password history length: %d" % pol['password history']
+    print("Min password length: %d" % pol['min password length'])
+    print("Password history length: %d" % pol['password history'])
     if pol['user must logon to change password']:
-        print "User must logon to change password: %d" % pol['user must logon to change password']
+        print("User must logon to change password: %d" % pol['user must logon to change password'])
     if pol['maximum password age']:
-        print "Maximum password age: %d" % pol['maximum password age']
+        print("Maximum password age: %d" % pol['maximum password age'])
     if pol['minimum password age']:
-        print "Minimum password age: %d" % pol['minimum password age']
+        print("Minimum password age: %d" % pol['minimum password age'])
     if pol['lockout duration']:
-        print "Lockout duration: %d" % pol['lockout duration']
+        print("Lockout duration: %d" % pol['lockout duration'])
     if pol['reset count minutes']:
-        print "Reset Count Minutes: %d" % pol['reset count minutes']
+        print("Reset Count Minutes: %d" % pol['reset count minutes'])
     if pol['bad lockout attempt']:
-        print "Bad Lockout Minutes: %d" % pol['bad lockout attempt']
+        print("Bad Lockout Minutes: %d" % pol['bad lockout attempt'])
     if pol['disconnect time']:
-        print "Disconnect Time: %d" % pol['disconnect time']
+        print("Disconnect Time: %d" % pol['disconnect time'])
     if pol['refuse machine password change']:
-        print "Refuse Machine Password Change: %d" % pol['refuse machine password change']
+        print("Refuse Machine Password Change: %d" % pol['refuse machine password change'])
 
 def print_samba3_sam(samdb):
     print_header("SAM Database")
     for user in samdb.search_users(0):
-        print "%s (%d): %s" % (user['account_name'], user['rid'], user['fullname'])
+        print("%s (%d): %s" % (user['account_name'], user['rid'], user['fullname']))
 
 def print_samba3_shares(lp):
     print_header("Configured shares")
     for s in lp.services():
-        print "--- %s ---" % s
+        print("--- %s ---" % s)
         for p in ['path']:
-            print "\t%s = %s" % (p, lp.get(p, s))
-        print ""
+            print("\t%s = %s" % (p, lp.get(p, s)))
+        print("")
 
 def print_samba3_secrets(secrets):
     print_header("Secrets")
 
     if secrets.get_auth_user():
-        print "IPC Credentials:"
+        print("IPC Credentials:")
         if secrets.get_auth_user():
-            print "    User: %s\n" % secrets.get_auth_user()
+            print("    User: %s\n" % secrets.get_auth_user())
         if secrets.get_auth_password():
-            print "    Password: %s\n" % secrets.get_auth_password()
+            print("    Password: %s\n" % secrets.get_auth_password())
         if secrets.get_auth_domain():
-            print "    Domain: %s\n" % secrets.get_auth_domain()
+            print("    Domain: %s\n" % secrets.get_auth_domain())
 
     if len(list(secrets.ldap_dns())) > 0:
-        print "LDAP passwords:"
+        print("LDAP passwords:")
         for dn in secrets.ldap_dns():
-            print "\t%s -> %s" % (dn, secrets.get_ldap_bind_pw(dn))
-        print ""
+            print("\t%s -> %s" % (dn, secrets.get_ldap_bind_pw(dn)))
+        print("")
 
-    print "Domains:"
+    print("Domains:")
     for domain in secrets.domains():
-        print "\t--- %s ---" % domain
-        print "\tSID: %s" % secrets.get_sid(domain)
-        print "\tGUID: %s" % secrets.get_domain_guid(domain)
-        print "\tPlaintext pwd: %s" % secrets.get_machine_password(domain)
+        print("\t--- %s ---" % domain)
+        print("\tSID: %s" % secrets.get_sid(domain))
+        print("\tGUID: %s" % secrets.get_domain_guid(domain))
+        print("\tPlaintext pwd: %s" % secrets.get_machine_password(domain))
         if secrets.get_machine_last_change_time(domain):
-            print "\tLast Changed: %lu" % secrets.get_machine_last_change_time(domain)
+            print("\tLast Changed: %lu" % secrets.get_machine_last_change_time(domain))
         if secrets.get_machine_sec_channel_type(domain):
-            print "\tSecure Channel Type: %d\n" % secrets.get_machine_sec_channel_type(domain)
+            print("\tSecure Channel Type: %d\n" % secrets.get_machine_sec_channel_type(domain))
 
-    print "Trusted domains:"
+    print("Trusted domains:")
     for td in secrets.trusted_domains():
-        print td
+        print(td)
 
 def print_samba3_regdb(regdb):
     print_header("Registry")
     from samba.registry import str_regtype
 
     for k in regdb.keys():
-        print "[%s]" % k
+        print("[%s]" % k)
         for (value_name, (type, value))  in regdb.values(k).items():
-            print "\"%s\"=%s:%s" % (value_name, str_regtype(type), value)
+            print("\"%s\"=%s:%s" % (value_name, str_regtype(type), value))
 
 def print_samba3_winsdb(winsdb):
     print_header("WINS Database")
 
     for name in winsdb:
         (ttl, ips, nb_flags) = winsdb[name]
-        print "%s, nb_flags: %s, ttl: %lu, %d ips, fst: %s" % (name, nb_flags, ttl, len(ips), ips[0])
+        print("%s, nb_flags: %s, ttl: %lu, %d ips, fst: %s" % (name, nb_flags, ttl, len(ips), ips[0]))
 
 def print_samba3_groupmappings(groupdb):
     print_header("Group Mappings")
     
     for g in groupdb.enum_group_mapping(samba.samba3.passdb.get_global_sam_sid(),
                                         lsa.SID_NAME_DOM_GRP):
-        print "\t--- Group: %s ---" % g.sid
+        print("\t--- Group: %s ---" % g.sid)
 
 def print_samba3_aliases(groupdb):
     for g in groupdb.enum_group_mapping(samba.samba3.passdb.get_global_sam_sid(),
                                         lsa.SID_NAME_ALIAS):
-        print "\t--- Alias: %s ---" % g.sid
+        print("\t--- Alias: %s ---" % g.sid)
 
 def print_samba3_idmapdb(idmapdb):
     print_header("Winbindd SID<->GID/UID mappings")
 
-    print "User High Water Mark: %d" % idmapdb.get_user_hwm()
-    print "Group High Water Mark: %d\n" % idmapdb.get_group_hwm()
+    print("User High Water Mark: %d" % idmapdb.get_user_hwm())
+    print("Group High Water Mark: %d\n" % idmapdb.get_group_hwm())
 
     for uid in idmapdb.uids():
-        print "%s -> UID %d" % (idmapdb.get_user_sid(uid), uid)
+        print("%s -> UID %d" % (idmapdb.get_user_sid(uid), uid))
 
     for gid in idmapdb.gids():
-        print "%s -> GID %d" % (idmapdb.get_group_sid(gid), gid)
+        print("%s -> GID %d" % (idmapdb.get_group_sid(gid), gid))
 
 def print_samba3(samba3):
     passdb = samba3.get_sam_db()
@@ -149,13 +149,13 @@ def print_samba3(samba3):
     print_samba3_shares(samba3.lp)
 
 def print_samba3_summary(samba3):
-    print "WINS db entries: %d" % len(samba3.get_wins_db())
-    print "Registry key count: %d" % len(samba3.get_registry())
+    print("WINS db entries: %d" % len(samba3.get_wins_db()))
+    print("Registry key count: %d" % len(samba3.get_registry()))
     passdb = samba3.get_sam_db()
-    print "Groupmap count: %d" % len(passdb.enum_group_mapping())
-    print "Alias count: %d" % len(passdb.search_aliases())
+    print("Groupmap count: %d" % len(passdb.enum_group_mapping()))
+    print("Alias count: %d" % len(passdb.search_aliases()))
     idmapdb = samba3.get_idmap_db()
-    print "Idmap count: %d" % (len(list(idmapdb.uids())) + len(list(idmapdb.gids())))
+    print("Idmap count: %d" % (len(list(idmapdb.uids())) + len(list(idmapdb.gids()))))
 
 if len(args) < 1:
     parser.print_help()

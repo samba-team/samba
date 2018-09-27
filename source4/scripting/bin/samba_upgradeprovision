@@ -308,13 +308,13 @@ def sanitychecks(samdb, names):
                          scope=SCOPE_SUBTREE, attrs=["dn"],
                          controls=["search_options:1:2"])
     if len(res) == 0:
-        print "No DC found. Your provision is most probably broken!"
+        print("No DC found. Your provision is most probably broken!")
         return False
     elif len(res) != 1:
-        print "Found %d domain controllers. For the moment " \
+        print("Found %d domain controllers. For the moment " \
               "upgradeprovision is not able to handle an upgrade on a " \
               "domain with more than one DC. Please demote the other " \
-              "DC(s) before upgrading" % len(res)
+              "DC(s) before upgrading") % len(res)
         return False
     else:
         return True

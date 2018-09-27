@@ -105,7 +105,7 @@ nsupdate_cmd = lp.get('nsupdate command')
 dns_zone_scavenging = lp.get("dns zone scavenging")
 
 if len(IPs) == 0:
-    print "No IP interfaces - skipping DNS updates"
+    print("No IP interfaces - skipping DNS updates")
     sys.exit(0)
 
 if opts.rpc_server_ip:
@@ -123,7 +123,7 @@ for i in IPs:
 
 
 if opts.verbose:
-    print "IPs: %s" % IPs
+    print("IPs: %s" % IPs)
 
 def get_possible_rw_dns_server(creds, domain):
     """Get a list of possible read-write DNS servers, starting with
@@ -175,8 +175,8 @@ def get_krb5_rw_dns_server(creds, domain):
         try:
             (client_finished, client_to_server) = gensec_client.update(server_to_client)
             if opts.verbose:
-                print "Successfully obtained Kerberos ticket to DNS/%s as %s" \
-                    % (target_hostname, creds.get_username())
+                print("Successfully obtained Kerberos ticket to DNS/%s as %s" \
+                    % (target_hostname, creds.get_username()))
             return target_hostname
         except RuntimeError:
             # Only raise an exception if they all failed
@@ -262,7 +262,7 @@ def parse_dns_line(line, sub_vars):
     if line.startswith("SRV _ldap._tcp.pdc._msdcs.") and not samdb.am_pdc():
         # We keep this as compat to the dns_update_list of 4.0/4.1
         if opts.verbose:
-            print "Skipping PDC entry (%s) as we are not a PDC" % line
+            print("Skipping PDC entry (%s) as we are not a PDC" % line)
         return None
     subline = samba.substitute_var(line, sub_vars)
     if subline == '' or subline[0] == "#":
@@ -299,7 +299,7 @@ def check_dns_name(d):
     """check that a DNS entry exists."""
     normalised_name = d.name.rstrip('.') + '.'
     if opts.verbose:
-        print "Looking for DNS entry %s as %s" % (d, normalised_name)
+        print("Looking for DNS entry %s as %s" % (d, normalised_name))
 
     if opts.use_file is not None:
         try:
@@ -323,11 +323,11 @@ def check_dns_name(d):
         raise Exception("Unable to contact a working DNS server while looking for %s as %s" % (d, normalised_name))
     except dns.resolver.NXDOMAIN:
         if opts.verbose:
-            print "The DNS entry %s, queried as %s does not exist" % (d, normalised_name)
+            print("The DNS entry %s, queried as %s does not exist" % (d, normalised_name))
         return False
     except dns.resolver.NoAnswer:
         if opts.verbose:
-            print "The DNS entry %s, queried as %s does not hold this record type" % (d, normalised_name)
+            print("The DNS entry %s, queried as %s does not hold this record type" % (d, normalised_name))
         return False
     except dns.exception.DNSException:
         raise Exception("Failure while trying to resolve %s as %s" % (d, normalised_name))
@@ -349,7 +349,7 @@ def check_dns_name(d):
     elif d.type == 'SRV':
         for rdata in ans:
             if opts.verbose:
-                print "Checking %s against %s" % (rdata, d)
+                print("Checking %s against %s" % (rdata, d))
             if hostname_match(rdata.target, d.dest):
                 if str(rdata.port) == str(d.port):
                     return True
@@ -358,7 +358,7 @@ def check_dns_name(d):
                     d.existing_weight = str(rdata.weight)
 
     if opts.verbose:
-        print "Lookup of %s succeeded, but we failed to find a matching DNS entry for %s" % (normalised_name, d)
+        print("Lookup of %s succeeded, but we failed to find a matching DNS entry for %s" % (normalised_name, d))
 
     return False
 
@@ -443,7 +443,7 @@ def call_nsupdate(d, op="add"):
     assert(op in ["add", "delete"])
 
     if opts.verbose:
-        print "Calling nsupdate for %s (%s)" % (d, op)
+        print("Calling nsupdate for %s (%s)" % (d, op))
 
     if opts.use_file is not None:
         try:
@@ -562,11 +562,11 @@ def call_samba_tool(d, op="add", zone=None):
 
     if (sub_vars['DNSFOREST'] != sub_vars['DNSDOMAIN']) and \
        sub_vars['DNSFOREST'].endswith('.' + sub_vars['DNSDOMAIN']):
-        print "Refusing to use samba-tool when forest %s is under domain %s" \
-            % (sub_vars['DNSFOREST'], sub_vars['DNSDOMAIN'])
+        print("Refusing to use samba-tool when forest %s is under domain %s" \
+            % (sub_vars['DNSFOREST'], sub_vars['DNSDOMAIN']))
 
     if opts.verbose:
-        print "Calling samba-tool dns for %s (%s)" % (d, op)
+        print("Calling samba-tool dns for %s (%s)" % (d, op))
 
     normalised_name = d.name.rstrip('.') + '.'
     if zone is None:
@@ -581,7 +581,7 @@ def call_samba_tool(d, op="add", zone=None):
             zone = '_msdcs.' + sub_vars['DNSFOREST']
         else:
             if not normalised_name.endswith('.' + sub_vars['DNSDOMAIN'] + '.'):
-                print "Not Calling samba-tool dns for %s (%s), %s not in %s" % (d, op, normalised_name, sub_vars['DNSDOMAIN'] + '.')
+                print("Not Calling samba-tool dns for %s (%s), %s not in %s" % (d, op, normalised_name, sub_vars['DNSDOMAIN'] + '.'))
                 return False
             elif normalised_name.endswith('._msdcs.' + sub_vars['DNSFOREST'] + '.'):
                 zone = '_msdcs.' + sub_vars['DNSFOREST']
@@ -599,7 +599,7 @@ def call_samba_tool(d, op="add", zone=None):
         args = [rpc_server_ip, zone, short_name, "AAAA", d.ip]
     if d.type == "SRV":
         if op == "add" and d.existing_port is not None:
-            print "Not handling modify of exising SRV %s using samba-tool" % d
+            print("Not handling modify of exising SRV %s using samba-tool" % d)
             return False
             op = "update"
             args = [rpc_server_ip, zone, short_name, "SRV",
@@ -623,7 +623,7 @@ def call_samba_tool(d, op="add", zone=None):
     try:
         cmd = cmd_dns()
         if opts.verbose:
-            print "Calling samba-tool dns %s -k no -P %s" % (op, args)
+            print("Calling samba-tool dns %s -k no -P %s" % (op, args))
         ret = cmd._run("dns", op, "-k", "no", "-P", *args)
         if ret == -1:
             if opts.fail_immediately:
@@ -646,7 +646,7 @@ def rodc_dns_update(d, t, op):
     assert(op in ["add", "delete"])
 
     if opts.verbose:
-        print "Calling netlogon RODC update for %s" % d
+        print("Calling netlogon RODC update for %s" % d)
 
     typemap = {
         netlogon.NlDnsLdapAtSite       : netlogon.NlDnsInfoTypeNone,
@@ -848,19 +848,19 @@ for d in dns_list:
     if not found:
         rebuild_cache = True
         if opts.verbose:
-            print "need cache add: %s" % d
+            print("need cache add: %s" % d)
     if dns_zone_scavenging:
         update_list.append(d)
         if opts.verbose:
-            print "scavenging requires update: %s" % d
+            print("scavenging requires update: %s" % d)
     elif opts.all_names:
         update_list.append(d)
         if opts.verbose:
-            print "force update: %s" % d
+            print("force update: %s" % d)
     elif not check_dns_name(d):
         update_list.append(d)
         if opts.verbose:
-            print "need update: %s" % d
+            print("need update: %s" % d)
 
 for c in cache_list:
     found = False
@@ -872,20 +872,20 @@ for c in cache_list:
         continue
     rebuild_cache = True
     if opts.verbose:
-        print "need cache remove: %s" % c
+        print("need cache remove: %s" % c)
     if not opts.all_names and not check_dns_name(c):
         continue
     delete_list.append(c)
     if opts.verbose:
-        print "need delete: %s" % c
+        print("need delete: %s" % c)
 
 if len(delete_list) == 0 and len(update_list) == 0 and not rebuild_cache:
     if opts.verbose:
-        print "No DNS updates needed"
+        print("No DNS updates needed")
     sys.exit(0)
 else:
     if opts.verbose:
-        print "%d DNS updates and %d DNS deletes needed" % (len(update_list), len(delete_list))
+        print("%d DNS updates and %d DNS deletes needed" % (len(update_list), len(delete_list)))
 
 use_samba_tool = opts.use_samba_tool
 use_nsupdate = opts.use_nsupdate
@@ -902,7 +902,7 @@ if len(delete_list) != 0 or len(update_list) != 0 and not opts.nocreds:
         if use_nsupdate:
             raise
 
-        print "Failed to get Kerberos credentials, falling back to samba-tool: %s" % e
+        print("Failed to get Kerberos credentials, falling back to samba-tool: %s" % e)
         use_samba_tool = True
 
 
@@ -910,60 +910,60 @@ if len(delete_list) != 0 or len(update_list) != 0 and not opts.nocreds:
 for d in delete_list:
     if d.rpc or (not use_nsupdate and use_samba_tool):
         if opts.verbose:
-            print "update (samba-tool): %s" % d
+            print("update (samba-tool): %s" % d)
         call_samba_tool(d, op="delete", zone=d.zone)
 
     elif am_rodc:
         if d.name.lower() == domain.lower():
             if opts.verbose:
-                print "skip delete (rodc): %s" % d
+                print("skip delete (rodc): %s" % d)
             continue
         if not d.type in [ 'A', 'AAAA' ]:
             if opts.verbose:
-                print "delete (rodc): %s" % d
+                print("delete (rodc): %s" % d)
             call_rodc_update(d, op="delete")
         else:
             if opts.verbose:
-                print "delete (nsupdate): %s" % d
+                print("delete (nsupdate): %s" % d)
             call_nsupdate(d, op="delete")
     else:
         if opts.verbose:
-            print "delete (nsupdate): %s" % d
+            print("delete (nsupdate): %s" % d)
         call_nsupdate(d, op="delete")
 
 # ask nsupdate to add entries as needed
 for d in update_list:
     if d.rpc or (not use_nsupdate and use_samba_tool):
         if opts.verbose:
-            print "update (samba-tool): %s" % d
+            print("update (samba-tool): %s" % d)
         call_samba_tool(d, zone=d.zone)
 
     elif am_rodc:
         if d.name.lower() == domain.lower():
             if opts.verbose:
-                print "skip (rodc): %s" % d
+                print("skip (rodc): %s" % d)
             continue
         if not d.type in [ 'A', 'AAAA' ]:
             if opts.verbose:
-                print "update (rodc): %s" % d
+                print("update (rodc): %s" % d)
             call_rodc_update(d)
         else:
             if opts.verbose:
-                print "update (nsupdate): %s" % d
+                print("update (nsupdate): %s" % d)
             call_nsupdate(d)
     else:
         if opts.verbose:
-            print "update(nsupdate): %s" % d
+            print("update(nsupdate): %s" % d)
         call_nsupdate(d)
 
 if rebuild_cache:
-    print "Rebuilding cache at %s" % dns_update_cache
+    print("Rebuilding cache at %s" % dns_update_cache)
     (file_dir, file_name) = os.path.split(dns_update_cache)
     (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
     wfile = os.fdopen(tmp_fd, 'a')
     for d in dns_list:
         if opts.verbose:
-            print "Adding %s to %s" % (str(d), file_name)
+            print("Adding %s to %s" % (str(d), file_name))
         wfile.write(str(d)+"\n")
     os.rename(tmpfile, dns_update_cache)
 fcntl.lockf(cfile, fcntl.LOCK_UN)

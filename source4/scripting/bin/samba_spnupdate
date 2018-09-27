@@ -244,7 +244,7 @@ def call_rodc_update(d):
     req1.spn_names = spn_names
     (level, res) = drs.DsWriteAccountSpn(drs_handle, 1, req1)
     if (res.status != (0, 'WERR_OK')):
-        print "WriteAccountSpn has failed with error %s" % str(res.status)
+        print("WriteAccountSpn has failed with error %s" % str(res.status))
 
 if samdb.am_rodc():
     call_rodc_update(add_list)
