@@ -178,6 +178,10 @@ class SmbDotConfTests(TestCase):
         self._test_empty(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
+
+        if program[0] == 'bin/samba-tool' and os.getenv("PYTHON", None):
+            program = [os.environ["PYTHON"]] + program
+
         failset = set()
         count = 0
 
@@ -216,6 +220,10 @@ class SmbDotConfTests(TestCase):
                                            "Parameters that do not have matching defaults:"))
 
     def _set_defaults(self, program):
+
+        if program[0] == 'bin/samba-tool' and os.getenv("PYTHON", None):
+            program = [os.environ["PYTHON"]] + program
+
         failset = set()
         count = 0
 
@@ -254,6 +262,10 @@ class SmbDotConfTests(TestCase):
                                            "Parameters that do not have matching defaults:"))
 
     def _set_arbitrary(self, program, exceptions=None):
+
+        if program[0] == 'bin/samba-tool' and os.getenv("PYTHON", None):
+            program = [os.environ["PYTHON"]] + program
+
         arbitrary = {'string': 'string', 'boolean': 'yes', 'integer': '5',
                      'boolean-rev': 'yes',
                      'cmdlist': 'a b c',
@@ -377,6 +389,10 @@ class SmbDotConfTests(TestCase):
                                            "Parameters that were unexpectedly not set:"))
 
     def _test_empty(self, program):
+
+        if program[0] == 'bin/samba-tool' and os.getenv("PYTHON", None):
+            program = [os.environ["PYTHON"]] + program
+
         p = subprocess.Popen(program + ["-s",
                                         self.blankconf,
                                         "--suppress-prompt"],

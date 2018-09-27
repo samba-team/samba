@@ -371,7 +371,10 @@ class BlackboxTestCase(TestCaseInTempDir):
         bindir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../bin"))
         parts = line.split(" ")
         if os.path.exists(os.path.join(bindir, parts[0])):
+            cmd = parts[0]
             parts[0] = os.path.join(bindir, parts[0])
+            if cmd == "samba-tool" and os.getenv("PYTHON", None):
+                parts = [os.environ["PYTHON"]] + parts
         line = " ".join(parts)
         return line
 
