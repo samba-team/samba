@@ -1,4 +1,4 @@
-import os
+import os, sys
 from waflib import Utils, Context
 import samba_utils
 from samba_git import find_git
@@ -198,7 +198,10 @@ also accepted as dictionary entries here
         for name in sorted(self.vcs_fields.keys()):
             string+="#define SAMBA_VERSION_%s " % name
             value = self.vcs_fields[name]
-            if isinstance(value, str) or isinstance(value, basestring):
+            string_types = str
+            if sys.version_info[0] < 3:
+                string_types = basestring
+            if isinstance(value, string_types):
                 string += "\"%s\"" % value
             elif type(value) is int:
                 string += "%d" % value
