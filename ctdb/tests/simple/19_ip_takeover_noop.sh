@@ -66,5 +66,3 @@ try_command_on_node any $CTDB ipreallocate
 
 echo "Good, that seems to work!"
 echo
-
-ps_ctdbd
