@@ -48,11 +48,11 @@ ctdb_test_exit ()
 	echo "Reconfiguring cluster..."
 	setup_ctdb
 
-	ctdb_start_all
+	ctdb_init
     else
 	# This could be made unconditional but then we might get
-	# duplication from the recovery in ctdb_start_all().  We want to
-	# leave the recovery in ctdb_start_all() so that future tests that
+	# duplication from the recovery in ctdb_init().  We want to
+	# leave the recovery in ctdb_init() so that future tests that
 	# might do a manual restart mid-test will benefit.
 	echo "Forcing a recovery..."
 	onnode 0 $CTDB recover
@@ -524,7 +524,7 @@ restart_ctdb_1 ()
     onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb restart
 }
 
-ctdb_start_all ()
+ctdb_init ()
 {
     local i
     for i in $(seq 1 5) ; do

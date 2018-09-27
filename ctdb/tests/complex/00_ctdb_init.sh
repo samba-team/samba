@@ -21,4 +21,4 @@ ctdb_stop_all >/dev/null 2>&1 || true
 
 ctdb_enable_cluster_test_event_scripts
 
-ctdb_start_all
+ctdb_init

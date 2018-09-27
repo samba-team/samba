@@ -36,4 +36,4 @@ fi
 
 setup_ctdb
 
-ctdb_start_all
+ctdb_init
