@@ -1600,11 +1600,42 @@ static int smb_full_audit_ntimes(vfs_handle_struct *handle,
 				 struct smb_file_time *ft)
 {
 	int result;
+	time_t create_time = convert_timespec_to_time_t(ft->create_time);
+	time_t atime = convert_timespec_to_time_t(ft->atime);
+	time_t mtime = convert_timespec_to_time_t(ft->mtime);
+	time_t ctime = convert_timespec_to_time_t(ft->ctime);
+	const char *create_time_str = "";
+	const char *atime_str = "";
+	const char *mtime_str = "";
+	const char *ctime_str = "";
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	result = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 
-	do_log(SMB_VFS_OP_NTIMES, (result >= 0), handle, "%s",
-	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname));
+	if (create_time > 0) {
+		create_time_str = timestring(frame, create_time);
+	}
+	if (atime > 0) {
+		atime_str = timestring(frame, atime);
+	}
+	if (mtime > 0) {
+		mtime_str = timestring(frame, mtime);
+	}
+	if (ctime > 0) {
+		ctime_str = timestring(frame, ctime);
+	}
+
+	do_log(SMB_VFS_OP_NTIMES,
+	       (result >= 0),
+	       handle,
+	       "%s|%s|%s|%s|%s",
+	       smb_fname_str_do_log(handle->conn->cwd_fname, smb_fname),
+	       create_time_str,
+	       atime_str,
+	       mtime_str,
+	       ctime_str);
+
+	TALLOC_FREE(frame);
 
 	return result;
 }
