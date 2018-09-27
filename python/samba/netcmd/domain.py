@@ -1848,7 +1848,7 @@ class DomainTrustCommand(Command):
         objectAttr = lsa.ObjectAttribute()
         objectAttr.sec_qos = lsa.QosInfo()
 
-        policy = conn.OpenPolicy2(''.decode('utf-8'),
+        policy = conn.OpenPolicy2(b''.decode('utf-8'),
                                   objectAttr, policy_access)
 
         info = conn.QueryInfoPolicy2(policy, lsa.LSA_POLICY_INFO_DNS)
