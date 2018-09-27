@@ -170,7 +170,7 @@ start_ctdb_1 ()
 	     onnode "$pnn" ctdbd_wrapper start
 }
 
-daemons_start ()
+ctdb_start_all ()
 {
     echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
 
@@ -187,7 +187,7 @@ stop_ctdb_1 ()
 	onnode "$pnn" ctdbd_wrapper stop
 }
 
-daemons_stop ()
+ctdb_stop_all ()
 {
     echo "Stopping $TEST_LOCAL_DAEMONS ctdb daemons..."
 
@@ -207,17 +207,7 @@ restart_ctdb_1 ()
 
 maybe_stop_ctdb ()
 {
-    daemons_stop
-}
-
-ctdb_stop_all ()
-{
-	daemons_stop
-}
-
-ctdb_start_all ()
-{
-	daemons_start
+	ctdb_stop_all
 }
 
 # onnode will use CTDB_BASES to help the ctdb tool connection to each
