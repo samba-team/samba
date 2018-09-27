@@ -381,6 +381,7 @@ sub setup_trust($$$$$)
 	$localenv->{TRUST_DOMSID} = $remoteenv->{DOMSID};
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+
 	# setup the trust
 	my $cmd_env = "NSS_WRAPPER_HOSTS='$localenv->{NSS_WRAPPER_HOSTS}' ";
 	$cmd_env .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$localenv->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
@@ -428,6 +429,11 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 	    $domain, $realm, $samsid, $functional_level,
 	    $password, $kdc_ipv4, $kdc_ipv6) = @_;
 	my $ctx;
+	my $python_cmd = "";
+	if (defined $ENV{PYTHON}) {
+		$python_cmd = $ENV{PYTHON} . " ";
+	}
+	$ctx->{python} = $python_cmd;
 	my $netbiosname = uc($hostname);
 
 	unless(-d $prefix or mkdir($prefix, 0777)) {
@@ -504,8 +510,10 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 	if ($ENV{SAMBA_DNS_FAKING}) {
 		$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}";
+		$ctx->{samba_dnsupdate} = $python_cmd .  $ctx->{samba_dnsupdate};
 	} else {
 	        $ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces";
+		$ctx->{samba_dnsupdate} = $python_cmd .  $ctx->{samba_dnsupdate};
 		$ctx->{use_resolv_wrapper} = 1;
 	}
 	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
@@ -553,10 +561,10 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 		    push (@provision_options, "python");
 		}
 	}
-	if (defined($ENV{PYTHON})) {
-		push (@provision_options, $ENV{PYTHON});
-	}
-	push (@provision_options, Samba::bindir_path($self, "samba-tool"));
+
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+
+	push (@provision_options, $samba_tool);
 	push (@provision_options, "domain");
 	push (@provision_options, "provision");
 	push (@provision_options, "--configfile=$ctx->{smb_conf}");
@@ -640,8 +648,9 @@ sub provision_raw_step1($$)
 	ntlm auth = Yes
 	rndc command = true
 	dns update command = $ctx->{samba_dnsupdate}
-	spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
-	gpo update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba-gpupdate -s $ctx->{smb_conf} --target=Computer
+	spn update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
+	gpo update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba-gpupdate -s $ctx->{smb_conf} --target=Computer
+	samba kcc command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_kcc
 	dreplsrv:periodic_startup_interval = 0
 	dsdb:schema update allowed = yes
 

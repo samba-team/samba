@@ -94,9 +94,20 @@ sub bindir_path($$) {
 	my ($object, $path) = @_;
 
 	my $valpath = "$object->{bindir}/$path";
+	my $python_cmd = "";
+	my $result = $path;
+	if (defined $ENV{'PYTHON'}) {
+		$python_cmd = $ENV{'PYTHON'} . " ";
+	}
 
-	return $valpath if (-f $valpath or -d $valpath);
-	return $path;
+	if (-f $valpath or -d $valpath) {
+		$result = $valpath;
+	}
+	# make sure we prepend samba-tool with calling $PYTHON python version
+	if ($path eq "samba-tool") {
+		$result = $python_cmd . $result;
+	}
+	return $result;
 }
 
 sub nss_wrapper_winbind_so_path($) {
