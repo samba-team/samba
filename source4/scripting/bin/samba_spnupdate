@@ -106,7 +106,8 @@ try:
         credentials = None
 
     samdb = SamDB(url=lp.samdb_url(), session_info=system_session(), credentials=credentials, lp=lp)
-except ldb.LdbError, (num, msg):
+except ldb.LdbError as e:
+    (num, msg) = e.args
     print("Unable to open sam database %s : %s" % (lp.samdb_url(), msg))
     sys.exit(1)
 
