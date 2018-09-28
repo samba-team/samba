@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'ldb'
-VERSION = '1.4.2'
+VERSION = '1.4.3'
 
 blddir = 'bin'
 
