@@ -147,6 +147,11 @@ if os.path.exists(os.path.join(samba4bindir, "ldbtest")):
 else:
     skiptestsuite("ldb.base", "Using system LDB, ldbtest not available")
 
+plantestsuite_loadlist("samba4.tests.attr_from_server.python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs:local",
+                       [python, os.path.join(samba4srcdir, "dsdb/tests/python/attr_from_server.py"),
+                        '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '$LOADLIST', '$LISTOPT'])
+
 # Tests for RPC
 
 # add tests to this list as they start passing, so we test
