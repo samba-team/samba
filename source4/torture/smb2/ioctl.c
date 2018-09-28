@@ -3235,6 +3235,55 @@ static NTSTATUS test_sparse_get(struct torture_context *torture,
 	return status;
 }
 
+/*
+ * Manually test setting and clearing sparse flag. Intended for file system
+ * specifc tests to toggle the flag through SMB and check the status in the
+ * file system.
+ */
+bool test_ioctl_set_sparse(struct torture_context *tctx)
+{
+	bool set, ret = true;
+	const char *filename = NULL;
+	struct smb2_create create = { };
+	struct smb2_tree *tree = NULL;
+	NTSTATUS status;
+
+	set = torture_setting_bool(tctx, "set_sparse", true);
+	filename = torture_setting_string(tctx, "filename", NULL);
+
+	if (filename == NULL) {
+		torture_fail(tctx, "Need to provide filename through "
+			     "--option=torture:filename=testfile\n");
+		return false;
+	}
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_comment(tctx, "Initializing smb2 connection failed.\n");
+		return false;
+	}
+
+	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	create.in.create_options = 0;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE |
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.fname = filename;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE failed.\n");
+
+	status = test_ioctl_sparse_req(tctx, tctx, tree,
+				       create.out.file.handle, set);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"FSCTL_SET_SPARSE failed.\n");
+done:
+
+	return ret;
+}
+
 static bool test_ioctl_sparse_file_flag(struct torture_context *torture,
 					struct smb2_tree *tree)
 {
