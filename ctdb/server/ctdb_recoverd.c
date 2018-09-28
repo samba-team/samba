@@ -425,22 +425,21 @@ static int set_recovery_mode(struct ctdb_context *ctdb,
 }
 
 /*
- * Set/clear flags on a remote node
+ * Update flags on all connected nodes
  */
-static int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
-			      struct timeval timeout,
-			      uint32_t destnode,
-			      uint32_t set,
-			      uint32_t clear)
+static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
+				     uint32_t pnn,
+				     uint32_t flags)
 {
-	int ret;
+	struct ctdb_context *ctdb = rec->ctdb;
+	struct timeval timeout = CONTROL_TIMEOUT();
 	TDB_DATA data;
 	struct ctdb_node_map_old *nodemap=NULL;
 	struct ctdb_node_flag_change c;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t recmaster;
 	uint32_t *nodes;
-
+	int ret;
 
 	/* find the recovery master */
 	ret = ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, timeout, CTDB_CURRENT_NODE, &recmaster);
@@ -450,25 +449,24 @@ static int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 		return ret;
 	}
 
-
 	/* read the node flags from the recmaster */
 	ret = ctdb_ctrl_getnodemap(ctdb, timeout, recmaster, tmp_ctx, &nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", destnode));
+		DBG_ERR("Unable to get nodemap from node %u\n", recmaster);
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	if (destnode >= nodemap->num) {
-		DEBUG(DEBUG_ERR,(__location__ " Nodemap from recmaster does not contain node %d\n", destnode));
+	if (pnn >= nodemap->num) {
+		DBG_ERR("Nodemap from recmaster does not contain node %d\n", pnn);
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	c.pnn       = destnode;
-	c.old_flags = nodemap->nodes[destnode].flags;
+	c.pnn       = pnn;
+	c.old_flags = nodemap->nodes[pnn].flags;
 	c.new_flags = c.old_flags;
-	c.new_flags |= set;
-	c.new_flags &= ~clear;
+	c.new_flags |= flags;
+	c.new_flags &= flags;
 
 	data.dsize = sizeof(c);
 	data.dptr = (unsigned char *)&c;
@@ -476,38 +474,23 @@ static int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 	/* send the flags update to all connected nodes */
 	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
 
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_MODIFY_FLAGS,
-					nodes, 0,
-					timeout, false, data,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
-
+	ret = ctdb_client_async_control(ctdb,
+					CTDB_CONTROL_MODIFY_FLAGS,
+					nodes,
+					0,
+					timeout,
+					false,
+					data,
+					NULL,
+					NULL,
+					NULL);
+	if (ret != 0) {
+		DBG_ERR("Unable to update flags on remote nodes\n");
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 	talloc_free(tmp_ctx);
-	return 0;
-}
-
-
-/*
- * Update flags on all connected nodes
- */
-static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
-				     uint32_t pnn,
-				     uint32_t flags)
-{
-	struct ctdb_context *ctdb = rec->ctdb;
-	int ret;
-
-	ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, flags, ~flags);
-		if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
-		return -1;
-	}
-
 	return 0;
 }
 
