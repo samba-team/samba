@@ -205,11 +205,6 @@ restart_ctdb_1 ()
 	start_ctdb_1 "$1"
 }
 
-maybe_stop_ctdb ()
-{
-	ctdb_stop_all
-}
-
 # onnode will use CTDB_BASES to help the ctdb tool connection to each
 # daemon
 export CTDB_BASES=""

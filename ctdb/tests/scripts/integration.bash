@@ -580,12 +580,6 @@ ctdb_init ()
     return 1
 }
 
-# Does nothing on cluster and should be overridden for local daemons
-maybe_stop_ctdb ()
-{
-    :
-}
-
 ctdb_restart_when_done ()
 {
     ctdb_test_restart_scheduled=true
