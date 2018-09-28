@@ -3894,6 +3894,67 @@ err_out:
 	return status;
 }
 
+bool test_ioctl_zero_data(struct torture_context *tctx)
+{
+	bool ret = true;
+	int offset, beyond_final_zero;
+	const char *filename;
+	NTSTATUS status;
+	struct smb2_create create = { };
+	struct smb2_tree *tree = NULL;
+
+	offset = torture_setting_int(tctx, "offset", -1);
+
+	if (offset < 0) {
+		torture_fail(tctx, "Need to provide non-negative offset "
+			     "through --option=torture:offset=NNN\n");
+		return false;
+	}
+
+	beyond_final_zero = torture_setting_int(tctx, "beyond_final_zero",
+						-1);
+	if (beyond_final_zero < 0) {
+		torture_fail(tctx, "Need to provide non-negative "
+			     "'beyond final zero' through "
+			     "--option=torture:beyond_final_zero=NNN\n");
+		return false;
+	}
+	filename = torture_setting_string(tctx, "filename", NULL);
+	if (filename == NULL) {
+		torture_fail(tctx, "Need to provide filename through "
+			     "--option=torture:filename=testfile\n");
+		return false;
+	}
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_comment(tctx, "Initializing smb2 connection failed.\n");
+		return false;
+	}
+
+	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	create.in.create_options = 0;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE |
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = filename;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE failed.\n");
+
+	status = test_ioctl_zdata_req(tctx, tctx, tree,
+				      create.out.file.handle,
+				      offset,
+				      beyond_final_zero);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"FSCTL_ZERO_DATA failed.\n");
+
+done:
+	return ret;
+}
+
 static bool test_ioctl_sparse_punch(struct torture_context *torture,
 				    struct smb2_tree *tree)
 {
