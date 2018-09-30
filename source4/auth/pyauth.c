@@ -265,23 +265,25 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 {
 	PyObject *py_lp_ctx = Py_None;
 	PyObject *py_ldb = Py_None;
-	PyObject *py_imessaging_ctx = Py_None;
 	PyObject *py_auth_context = Py_None;
 	PyObject *py_methods = Py_None;
 	TALLOC_CTX *mem_ctx;
 	struct auth4_context *auth_context;
-	struct imessaging_context *imessaging_context = NULL;
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *ev;
 	struct ldb_context *ldb = NULL;
 	NTSTATUS nt_status;
 	const char **methods;
 
-	const char * const kwnames[] = { "lp_ctx", "messaging_ctx", "ldb", "methods", NULL };
+	const char *const kwnames[] = {"lp_ctx", "ldb", "methods", NULL};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOOO",
+	if (!PyArg_ParseTupleAndKeywords(args,
+					 kwargs,
+					 "|OOO",
 					 discard_const_p(char *, kwnames),
-					 &py_lp_ctx, &py_imessaging_ctx, &py_ldb, &py_methods))
+					 &py_lp_ctx,
+					 &py_ldb,
+					 &py_methods))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -306,12 +308,9 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 		return NULL;
 	}
 
-	if (py_imessaging_ctx != Py_None) {
-		imessaging_context = pytalloc_get_type(py_imessaging_ctx, struct imessaging_context);
-	}
-
 	if (py_methods == Py_None && py_ldb == Py_None) {
-		nt_status = auth_context_create(mem_ctx, ev, imessaging_context, lp_ctx, &auth_context);
+		nt_status = auth_context_create(
+		    mem_ctx, ev, NULL, lp_ctx, &auth_context);
 	} else {
 		if (py_methods != Py_None) {
 			methods = PyList_AsStringList(mem_ctx, py_methods, "methods");
@@ -322,9 +321,8 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 		} else {
 			methods = auth_methods_from_lp(mem_ctx, lp_ctx);
 		}
-		nt_status = auth_context_create_methods(mem_ctx, methods, ev, 
-							imessaging_context, lp_ctx,
-							ldb, &auth_context);
+		nt_status = auth_context_create_methods(
+		    mem_ctx, methods, ev, NULL, lp_ctx, ldb, &auth_context);
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
