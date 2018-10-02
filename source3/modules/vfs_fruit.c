@@ -1052,6 +1052,7 @@ static bool ad_convert_xattr(struct adouble *ad,
 		fsp = NULL;
 	}
 
+	ad_setentrylen(ad, ADEID_FINDERI, ADEDLEN_FINDERI);
 	return true;
 }
 
@@ -1096,7 +1097,6 @@ static int ad_convert(struct adouble *ad,
 			ad_getentrylen(ad, ADEID_RFORK));
 	}
 
-	ad_setentrylen(ad, ADEID_FINDERI, ADEDLEN_FINDERI);
 	ad_setentryoff(ad, ADEID_RFORK,
 		       ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI);
 
