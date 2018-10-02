@@ -1,4 +1,3 @@
 ^samba3.vfs.fruit streams_depot.OS X AppleDouble file conversion\(nt4_dc\)
 ^samba3.vfs.fruit streams_depot.OS X AppleDouble file conversion without embedded xattr\(nt4_dc\)
-^samba3.vfs.fruit_conversion wipe_intentionally_left_blank_rfork.convert_xattr_and_empty_rfork_then_delete\(nt4_dc\)
 ^samba3.vfs.fruit_conversion delete_empty_adfiles.convert_xattr_and_empty_rfork_then_delete\(nt4_dc\)
