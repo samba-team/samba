@@ -27,6 +27,10 @@
 #include "system/select.h"
 #include "winbind_client.h"
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 /* Global context */
 
 struct winbindd_context {
@@ -34,6 +38,10 @@ struct winbindd_context {
 	bool is_privileged;	/* using the privileged socket? */
 	pid_t our_pid;		/* calling process pid */
 };
+
+#if HAVE_PTHREAD
+static pthread_mutex_t wb_global_ctx_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 static struct winbindd_context *get_wb_global_ctx(void)
 {
@@ -43,12 +51,17 @@ static struct winbindd_context *get_wb_global_ctx(void)
 		.our_pid = 0
 	};
 
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&wb_global_ctx_mutex);
+#endif
 	return &wb_global_ctx;
 }
 
 static void put_wb_global_ctx(void)
 {
-	/* noop for now */
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&wb_global_ctx_mutex);
+#endif
 	return;
 }
 
