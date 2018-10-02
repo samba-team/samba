@@ -378,6 +378,20 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:wipe_intentionally_left_blank_rfork = yes | no</term>
+	    <listitem>
+	      <para>Whether to wipe Resource Fork data that matches the special
+	      286 bytes sized placeholder blob that macOS client create on
+	      occasion. The blob contains a string <quote>This resource fork
+	      intentionally left blank</quote>, the remaining bytes being mostly
+	      zero. There being no one use of this data, it is probably safe to
+	      discard it. When this option is enabled, this module truncates the
+	      Resource Fork stream to 0 bytes.</para>
+	      <para>The default is <emphasis>no</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 
