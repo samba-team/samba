@@ -41,6 +41,7 @@ from samba import getopt as options
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
+from samba.compat import get_string
 
 parser = optparse.OptionParser("samba_spnupdate")
 sambaopts = options.SambaOptions(parser)
@@ -79,7 +80,7 @@ def get_subst_vars(samdb):
     vars['NTDSGUID']  = samdb.get_ntds_GUID()
     res = samdb.search(base=samdb.get_default_basedn(), scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
     guid = samdb.schema_format_value("objectGUID", res[0]['objectGUID'][0])
-    vars['DOMAINGUID'] = guid
+    vars['DOMAINGUID'] = get_string(guid)
     return vars
 
 try:

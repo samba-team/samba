@@ -49,6 +49,7 @@ from samba.dcerpc import netlogon, winbind
 from samba.netcmd.dns import cmd_dns
 from samba import gensec
 from samba.kcc import kcc_utils
+from samba.compat import get_string
 import ldb
 
 samba.ensure_third_party_module("dns", "dnspython")
@@ -375,7 +376,7 @@ def get_subst_vars(samdb):
     vars['SITE']      = samdb.server_site_name()
     res = samdb.search(base=samdb.get_default_basedn(), scope=SCOPE_BASE, attrs=["objectGUID"])
     guid = samdb.schema_format_value("objectGUID", res[0]['objectGUID'][0])
-    vars['DOMAINGUID'] = guid
+    vars['DOMAINGUID'] = get_string(guid)
 
     vars['IF_DC'] = ""
     vars['IF_RWDC'] = "# "
