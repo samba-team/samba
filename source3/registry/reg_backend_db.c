@@ -1833,9 +1833,12 @@ static int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
  Unpack a list of registry values frem the TDB
  ***************************************************************************/
 
-static int regdb_unpack_values(struct regval_ctr *values, uint8_t *buf, int buflen)
+static int regdb_unpack_values(struct regval_ctr *values,
+			       uint8_t *buf,
+			       size_t buflen)
 {
-	int 		len = 0;
+	int this_len;
+	size_t 		len = 0;
 	uint32_t	type;
 	fstring valuename;
 	uint32_t	size;
@@ -1845,7 +1848,13 @@ static int regdb_unpack_values(struct regval_ctr *values, uint8_t *buf, int bufl
 
 	/* loop and unpack the rest of the registry values */
 
-	len += tdb_unpack(buf+len, buflen-len, "d", &num_values);
+	this_len = tdb_unpack(buf, buflen, "d", &num_values);
+	if (this_len == -1) {
+		DBG_WARNING("Invalid registry data, "
+			    "tdb_unpack failed\n");
+		return -1;
+	}
+	len = this_len;
 
 	for ( i=0; i<num_values; i++ ) {
 		/* unpack the next regval */
@@ -1854,11 +1863,22 @@ static int regdb_unpack_values(struct regval_ctr *values, uint8_t *buf, int bufl
 		size = 0;
 		data_p = NULL;
 		valuename[0] = '\0';
-		len += tdb_unpack(buf+len, buflen-len, "fdB",
-				  valuename,
-				  &type,
-				  &size,
-				  &data_p);
+		this_len = tdb_unpack(buf+len, buflen-len, "fdB",
+				      valuename,
+				      &type,
+				      &size,
+				      &data_p);
+		if (this_len == -1) {
+			DBG_WARNING("Invalid registry data, "
+				    "tdb_unpack failed\n");
+			return -1;
+		}
+		len += this_len;
+		if (len < (size_t)this_len) {
+			DBG_WARNING("Invalid registry data, "
+				    "integer overflow\n");
+			return -1;
+		}
 
 		regval_ctr_addvalue(values, valuename, type,
 				(uint8_t *)data_p, size);
