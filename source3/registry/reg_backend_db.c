@@ -1981,7 +1981,11 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 		goto done;
 	}
 
-	regdb_unpack_values(values, value.dptr, value.dsize);
+	ret = regdb_unpack_values(values, value.dptr, value.dsize);
+	if (ret == -1) {
+		DBG_WARNING("regdb_unpack_values failed\n");
+	}
+
 	ret = regval_ctr_numvals(values);
 
 done:
