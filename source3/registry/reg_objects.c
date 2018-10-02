@@ -484,7 +484,7 @@ int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint32_t type,
 		return 0;
 	}
 
-	/* allocate a new value and store the pointer in the arrya */
+	/* allocate a new value and store the pointer in the array */
 
 	ctr->values[ctr->num_values] = regval_compose(ctr, name, type, data_p,
 						      size);
