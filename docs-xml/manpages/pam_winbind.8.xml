@@ -123,6 +123,14 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>try_authtok</term>
+		<listitem><para>
+		Same as the use_authtok option (previous item), except that if the new password is not
+		valid, PAM will prompt for a password.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>krb5_auth</term>
 		<listitem><para>
 

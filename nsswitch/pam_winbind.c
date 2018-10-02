@@ -492,6 +492,8 @@ config_from_pam:
 			ctrl |= WINBIND_SILENT;
 		else if (!strcasecmp(*v, "use_authtok"))
 			ctrl |= WINBIND_USE_AUTHTOK_ARG;
+		else if (!strcasecmp(*v, "try_authtok"))
+			ctrl |= WINBIND_TRY_AUTHTOK_ARG;
 		else if (!strcasecmp(*v, "use_first_pass"))
 			ctrl |= WINBIND_USE_FIRST_PASS_ARG;
 		else if (!strcasecmp(*v, "try_first_pass"))
@@ -3180,6 +3182,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 		if (on(WINBIND_USE_AUTHTOK_ARG, lctrl)) {
 			lctrl |= WINBIND_USE_FIRST_PASS_ARG;
+		}
+		if (on(WINBIND_TRY_AUTHTOK_ARG, lctrl)) {
+			lctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 		}
 		retry = 0;
 		ret = PAM_AUTHTOK_ERR;

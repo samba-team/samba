@@ -214,7 +214,7 @@ static int pamtest_simple_conv(int num_msg,
 			       struct pam_response **response,
 			       void *appdata_ptr)
 {
-	int i, ri = 0;
+	int i = 0;
 	int ret;
 	struct pam_response *reply = NULL;
 	const char *prompt;
@@ -241,15 +241,12 @@ static int pamtest_simple_conv(int num_msg,
 
 			if (reply != NULL) {
 				if (prompt != NULL) {
-					ret = add_to_reply(&reply[ri], prompt);
+					ret = add_to_reply(&reply[i], prompt);
 					if (ret != PAM_SUCCESS) {
 						free_reply(reply, num_msg);
 						return ret;
 					}
-				} else {
-					reply[ri].resp = NULL;
 				}
-				ri++;
 			}
 
 			cctx->echo_off_idx++;
@@ -264,13 +261,12 @@ static int pamtest_simple_conv(int num_msg,
 
 			if (reply != NULL) {
 				if (prompt != NULL) {
-					ret = add_to_reply(&reply[ri], prompt);
+					ret = add_to_reply(&reply[i], prompt);
 					if (ret != PAM_SUCCESS) {
 						free_reply(reply, num_msg);
 						return ret;
 					}
 				}
-				ri++;
 			}
 
 			cctx->echo_on_idx++;
@@ -298,7 +294,7 @@ static int pamtest_simple_conv(int num_msg,
 		}
 	}
 
-	if (response && ri > 0) {
+	if (response) {
 		*response = reply;
 	} else {
 		free(reply);
