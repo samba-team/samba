@@ -731,10 +731,12 @@ NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 	}
 
 	status = winbindd_send_request(ctx, req_type, 0, request);
-	if (status != NSS_STATUS_SUCCESS)
-		return (status);
+	if (status != NSS_STATUS_SUCCESS) {
+		goto out;
+	}
 	status = winbindd_get_response(ctx, response);
 
+out:
 	return status;
 }
 
@@ -750,10 +752,12 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 	}
 
 	status = winbindd_send_request(ctx, req_type, 1, request);
-	if (status != NSS_STATUS_SUCCESS)
-		return (status);
+	if (status != NSS_STATUS_SUCCESS) {
+		goto out;
+	}
 	status = winbindd_get_response(ctx, response);
 
+out:
 	return status;
 }
 
