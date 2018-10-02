@@ -540,6 +540,16 @@ def findnss_gid(names):
     return findnss(grp.getgrnam, names)[2]
 
 
+def get_root_uid(root, logger):
+    try:
+        root_uid = findnss_uid(root)
+    except KeyError as e:
+        logger.info(e)
+        logger.info("Assuming root user has UID zero")
+        root_uid = 0
+    return root_uid
+
+
 def provision_paths_from_lp(lp, dnsdomain):
     """Set the default paths for provisioning.
 
@@ -2152,7 +2162,7 @@ def provision(logger, session_info, smbconf=None,
     if domainsid is None:
         domainsid = security.random_sid()
 
-    root_uid = findnss_uid([root or "root"])
+    root_uid = get_root_uid([root or "root"], logger)
     nobody_uid = findnss_uid([nobody or "nobody"])
     users_gid = findnss_gid([users or "users", 'users', 'other', 'staff'])
     root_gid = pwd.getpwuid(root_uid).pw_gid
