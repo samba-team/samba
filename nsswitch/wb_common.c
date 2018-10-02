@@ -35,11 +35,22 @@ struct winbindd_context {
 	pid_t our_pid;		/* calling process pid */
 };
 
-static struct winbindd_context wb_global_ctx = {
-	.winbindd_fd = -1,
-	.is_privileged = false,
-	.our_pid = 0
-};
+static struct winbindd_context *get_wb_global_ctx(void)
+{
+	static struct winbindd_context wb_global_ctx = {
+		.winbindd_fd = -1,
+		.is_privileged = false,
+		.our_pid = 0
+	};
+
+	return &wb_global_ctx;
+}
+
+static void put_wb_global_ctx(void)
+{
+	/* noop for now */
+	return;
+}
 
 /* Free a response structure */
 
@@ -93,7 +104,11 @@ __attribute__((destructor))
 #endif
 static void winbind_destructor(void)
 {
-	winbind_close_sock(&wb_global_ctx);
+	struct winbindd_context *ctx;
+
+	ctx = get_wb_global_ctx();
+	winbind_close_sock(ctx);
+	put_wb_global_ctx();
 }
 
 #define CONNECT_TIMEOUT 30
@@ -725,9 +740,11 @@ NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 				     struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
+	bool release_global_ctx = false;
 
 	if (ctx == NULL) {
-		ctx = &wb_global_ctx;
+		ctx = get_wb_global_ctx();
+		release_global_ctx = true;
 	}
 
 	status = winbindd_send_request(ctx, req_type, 0, request);
@@ -737,6 +754,9 @@ NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 	status = winbindd_get_response(ctx, response);
 
 out:
+	if (release_global_ctx) {
+		put_wb_global_ctx();
+	}
 	return status;
 }
 
@@ -746,9 +766,11 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 					  struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
+	bool release_global_ctx = false;
 
 	if (ctx == NULL) {
-		ctx = &wb_global_ctx;
+		ctx = get_wb_global_ctx();
+		release_global_ctx = true;
 	}
 
 	status = winbindd_send_request(ctx, req_type, 1, request);
@@ -758,6 +780,9 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 	status = winbindd_get_response(ctx, response);
 
 out:
+	if (release_global_ctx) {
+		put_wb_global_ctx();
+	}
 	return status;
 }
 
