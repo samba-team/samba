@@ -1784,7 +1784,23 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	}
 
 	for (i=0; i<num_items; i++) {
-		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
+		int this_len;
+
+		this_len = tdb_unpack(buf+len, buflen-len, "f", subkeyname);
+		if (this_len == -1) {
+			DBG_WARNING("Invalid registry data, "
+				    "tdb_unpack failed\n");
+			werr = WERR_INTERNAL_DB_CORRUPTION;
+			goto done;
+		}
+		len += this_len;
+		if (len < this_len) {
+			DBG_WARNING("Invalid registry data, "
+				    "integer overflow\n");
+			werr = WERR_INTERNAL_DB_CORRUPTION;
+			goto done;
+		}
+
 		werr = regsubkey_ctr_addkey(ctr, subkeyname);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(5, ("regdb_fetch_keys: regsubkey_ctr_addkey "
