@@ -220,8 +220,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                                   "configurationNamingContext", "rootDomainNamingContext",
                                   "namingContexts"])
 
-    names.configdn = current[0]["configurationNamingContext"][0]
-    names.schemadn = current[0]["schemaNamingContext"][0]
+    names.configdn = str(current[0]["configurationNamingContext"][0])
+    names.schemadn = str(current[0]["schemaNamingContext"][0])
     if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
                                              current[0]["defaultNamingContext"][0].decode('utf8')))):
         raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
@@ -229,8 +229,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                                                           str(current[0]["defaultNamingContext"][0].decode('utf8')),
                                                           paths.smbconf, basedn)))
 
-    names.domaindn = current[0]["defaultNamingContext"][0]
-    names.rootdn = current[0]["rootDomainNamingContext"][0]
+    names.domaindn = str(current[0]["defaultNamingContext"][0])
+    names.rootdn = str(current[0]["rootDomainNamingContext"][0])
     names.ncs = current[0]["namingContexts"]
     names.dnsforestdn = None
     names.dnsdomaindn = None
