@@ -46,6 +46,7 @@ from samba.uptodateness import (
     get_utdv,
     get_utdv_edges,
     get_utdv_distances,
+    get_utdv_max_distance,
 )
 
 COMMON_OPTIONS = [
@@ -692,7 +693,9 @@ class cmd_uptodateness(GraphCommand):
 
             utdv_edges = get_utdv_edges(local_kcc, dsas, part_dn, lp, creds)
 
-            distances, max_distance = get_utdv_distances(utdv_edges, dsas)
+            distances = get_utdv_distances(utdv_edges, dsas)
+
+            max_distance = get_utdv_max_distance(distances)
 
             digits = min(max_digits, len(str(max_distance)))
             if digits < 1:
