@@ -25,8 +25,8 @@ static void internal_obsolete_keytab_test(int num_principals, int num_kvnos,
 	krb5_error_code code;
 
 	int i,j;
-	char princ_name[6] = "user0";
-	char expect_princ_name[23] = "user0@samba.example.com";
+	char princ_name[] = "user0";
+	char expect_princ_name[] = "user0@samba.example.com";
 	bool found_previous;
 	const char *error_str;
 
