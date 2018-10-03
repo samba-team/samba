@@ -113,3 +113,29 @@ def get_utdv_edges(local_kcc, dsas, part_dn, lp, creds):
             continue
         utdv_edges[dsa_dn] = remotes
     return utdv_edges
+
+
+def get_utdv_distances(utdv_edges, dsas):
+    distances = {}
+    max_distance = 0
+    for dn1 in dsas:
+        try:
+            peak = utdv_edges[dn1][dn1]
+        except KeyError as e:
+            peak = 0
+        d = {}
+        distances[dn1] = d
+        for dn2 in dsas:
+            if dn2 in utdv_edges:
+                if dn1 in utdv_edges[dn2]:
+                    dist = peak - utdv_edges[dn2][dn1]
+                    d[dn2] = dist
+                    if dist > max_distance:
+                        max_distance = dist
+                else:
+                    print("Missing dn %s from UTD vector" % dn1,
+                          file=sys.stderr)
+            else:
+                print("missing dn %s from UTD vector list" % dn2,
+                      file=sys.stderr)
+    return distances, max_distance
