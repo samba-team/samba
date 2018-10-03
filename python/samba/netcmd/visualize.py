@@ -688,8 +688,6 @@ class cmd_uptodateness(GraphCommand):
             if partition not in (part_dn, None):
                 continue  # we aren't doing this partition
 
-            cursors = get_utdv(self.samdb, part_dn)
-
             # we talk to each remote and make a matrix of the vectors
             # -- for each partition
             # normalise by oldest
