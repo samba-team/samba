@@ -197,6 +197,7 @@ def configure(conf):
 
         if conf.CHECK_FUNCS_IN('mdb_env_create', 'lmdb', headers='lmdb.h'):
             conf.DEFINE('HAVE_LMDB', '1')
+            conf.env.HAVE_LMDB = True
 
 
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
@@ -539,21 +540,26 @@ def build(bld):
                              cflags='-DTEST_BE=\"mdb\"',
                              deps='cmocka ldb',
                              install=False)
+        else:
+            bld.SAMBA_BINARY('ldb_no_lmdb_test',
+                             source='tests/ldb_no_lmdb_test.c',
+                             deps='cmocka ldb',
+                             install=False)
 
 def test(ctx):
     '''run ldb testsuite'''
     env = samba_utils.LOAD_ENVIRONMENT()
     ctx.env = env
 
-    if not env.HAVE_LMDB:
-        raise Errors.WafError('make test called, but ldb was built '
-                             '--without-ldb-lmdb')
-
     test_prefix = "%s/st" % (Context.g_module.out)
     shutil.rmtree(test_prefix, ignore_errors=True)
     os.makedirs(test_prefix)
     os.environ['TEST_DATA_PREFIX'] = test_prefix
     os.environ['LDB_MODULES_PATH'] = Context.g_module.out + "/modules/ldb"
+    if env.HAVE_LMDB:
+        os.environ['HAVE_LMDB'] = '1'
+    else:
+        os.environ['HAVE_LMDB'] = '0'
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
 
@@ -578,13 +584,17 @@ def test(ctx):
                  'ldb_msg_test',
                  'ldb_tdb_kv_ops_test',
                  'ldb_tdb_test',
-                 'ldb_mdb_mod_op_test',
-                 'ldb_lmdb_test',
-                 # we don't want to run ldb_lmdb_size_test (which proves we can
-                 # fit > 4G of data into the DB), it would fill up the disk on
-                 # many of our test instances
-                 'ldb_mdb_kv_ops_test',
                  'ldb_match_test']
+
+    if env.HAVE_LMDB:
+        test_exes += ['ldb_mdb_mod_op_test',
+                     'ldb_lmdb_test',
+                     # we don't want to run ldb_lmdb_size_test (which proves we can
+                     # fit > 4G of data into the DB), it would fill up the disk on
+                     # many of our test instances
+                     'ldb_mdb_kv_ops_test']
+    else:
+        test_exes += ['ldb_no_lmdb_test']
 
     for test_exe in test_exes:
             cmd = os.path.join(Context.g_module.out, test_exe)

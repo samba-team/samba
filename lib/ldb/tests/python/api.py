@@ -710,12 +710,37 @@ class SimpleLdb(LdbBaseTest):
 class SimpleLdbLmdb(SimpleLdb):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
         super(SimpleLdbLmdb, self).setUp()
 
     def tearDown(self):
         super(SimpleLdbLmdb, self).tearDown()
+
+
+class SimpleLdbNoLmdb(LdbBaseTest):
+
+    def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') != '0':
+            self.skipTest("lmdb backend enabled")
+        self.prefix = MDB_PREFIX
+        self.index = MDB_INDEX_OBJ
+        super(SimpleLdbNoLmdb, self).setUp()
+
+    def tearDown(self):
+        super(SimpleLdbNoLmdb, self).tearDown()
+
+    def test_lmdb_disabled(self):
+        self.testdir = tempdir()
+        self.filename = os.path.join(self.testdir, "test.ldb")
+        try:
+            self.ldb = ldb.Ldb(self.url(), flags=self.flags())
+            self.fail("Should have failed on missing LMDB")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.LDB_ERR_OTHER)
 
 
 class SearchTests(LdbBaseTest):
@@ -1369,6 +1394,8 @@ class SearchTests(LdbBaseTest):
 class SearchTestsLmdb(SearchTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
         super(SearchTestsLmdb, self).setUp()
@@ -1510,6 +1537,8 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
 class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(GUIDIndexedSearchTestsLmdb, self).setUp()
 
@@ -1520,6 +1549,8 @@ class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
 class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(GUIDIndexedDNFilterSearchTestsLmdb, self).setUp()
 
@@ -1530,6 +1561,8 @@ class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
 class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(GUIDAndOneLevelIndexedSearchTestsLmdb, self).setUp()
 
@@ -1740,6 +1773,8 @@ class AddModifyTests(LdbBaseTest):
 class AddModifyTestsLmdb(AddModifyTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
         super(AddModifyTestsLmdb, self).setUp()
@@ -1868,6 +1903,8 @@ class TransIndexedAddModifyTests(IndexedAddModifyTests):
 class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(GuidIndexedAddModifyTestsLmdb, self).setUp()
 
@@ -1878,6 +1915,8 @@ class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
 class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(GuidTransIndexedAddModifyTestsLmdb, self).setUp()
 
@@ -2933,6 +2972,8 @@ class LdbResultTests(LdbBaseTest):
 class LdbResultTestsLmdb(LdbResultTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
         super(LdbResultTestsLmdb, self).setUp()

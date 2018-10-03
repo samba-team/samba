@@ -1286,6 +1286,8 @@ class MaxIndexKeyLengthTests(LdbBaseTest):
 class MaxIndexKeyLengthTestsLmdb(MaxIndexKeyLengthTests):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(MaxIndexKeyLengthTestsLmdb, self).setUp()
 
@@ -1297,6 +1299,8 @@ class MaxIndexKeyLengthTestsLmdb(MaxIndexKeyLengthTests):
 class RejectSubDBIndex(LdbBaseTest):
 
     def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(RejectSubDBIndex, self).setUp()
         self.testdir = tempdir()
