@@ -143,6 +143,7 @@ struct fruit_config_data {
 	bool time_machine;
 	off_t time_machine_max_size;
 	bool wipe_intentionally_left_blank_rfork;
+	bool delete_empty_adfiles;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -2207,6 +2208,10 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	config->wipe_intentionally_left_blank_rfork = lp_parm_bool(
 		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
 		"wipe_intentionally_left_blank_rfork", false);
+
+	config->delete_empty_adfiles = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+		"delete_empty_adfiles", false);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct fruit_config_data,
