@@ -142,6 +142,7 @@ struct fruit_config_data {
 	const char *model;
 	bool time_machine;
 	off_t time_machine_max_size;
+	bool wipe_intentionally_left_blank_rfork;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -2093,6 +2094,10 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	if (tm_size_str != NULL) {
 		config->time_machine_max_size = conv_str_size(tm_size_str);
 	}
+
+	config->wipe_intentionally_left_blank_rfork = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+		"wipe_intentionally_left_blank_rfork", false);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct fruit_config_data,
