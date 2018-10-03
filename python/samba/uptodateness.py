@@ -16,7 +16,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import time
 
+from ldb import SCOPE_BASE
+
+from samba import nttime2unix, dsdb
 from samba.netcmd import CommandError
 
 
@@ -48,3 +52,35 @@ def get_partition(samdb, part):
         if part not in long_partitions:
             raise CommandError("unknown partition %s" % part)
     return part
+
+
+def get_utdv(samdb, dn):
+    """This finds the uptodateness vector in the database."""
+    cursors = []
+    config_dn = samdb.get_config_basedn()
+    for c in dsdb._dsdb_load_udv_v2(samdb, dn):
+        inv_id = str(c.source_dsa_invocation_id)
+        res = samdb.search(base=config_dn,
+                           expression=("(&(invocationId=%s)"
+                                       "(objectClass=nTDSDSA))" % inv_id),
+                           attrs=["distinguishedName", "invocationId"])
+        settings_dn = str(res[0]["distinguishedName"][0])
+        prefix, dsa_dn = settings_dn.split(',', 1)
+        if prefix != 'CN=NTDS Settings':
+            raise CommandError("Expected NTDS Settings DN, got %s" %
+                               settings_dn)
+
+        cursors.append((dsa_dn,
+                        inv_id,
+                        int(c.highest_usn),
+                        nttime2unix(c.last_sync_success)))
+    return cursors
+
+
+def get_own_cursor(samdb):
+    res = samdb.search(base="",
+                       scope=SCOPE_BASE,
+                       attrs=["highestCommittedUSN"])
+    usn = int(res[0]["highestCommittedUSN"][0])
+    now = int(time.time())
+    return (usn, now)

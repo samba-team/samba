@@ -42,6 +42,8 @@ from samba.compat import text_type
 from samba.uptodateness import (
     get_partition_maps,
     get_partition,
+    get_own_cursor,
+    get_utdv,
 )
 
 COMMON_OPTIONS = [
@@ -658,36 +660,6 @@ class cmd_uptodateness(GraphCommand):
                help="display this many digits of out-of-date-ness"),
     ]
 
-    def get_utdv(self, samdb, dn):
-        """This finds the uptodateness vector in the database."""
-        cursors = []
-        config_dn = samdb.get_config_basedn()
-        for c in dsdb._dsdb_load_udv_v2(samdb, dn):
-            inv_id = str(c.source_dsa_invocation_id)
-            res = samdb.search(base=config_dn,
-                               expression=("(&(invocationId=%s)"
-                                           "(objectClass=nTDSDSA))" % inv_id),
-                               attrs=["distinguishedName", "invocationId"])
-            settings_dn = str(res[0]["distinguishedName"][0])
-            prefix, dsa_dn = settings_dn.split(',', 1)
-            if prefix != 'CN=NTDS Settings':
-                raise CommandError("Expected NTDS Settings DN, got %s" %
-                                   settings_dn)
-
-            cursors.append((dsa_dn,
-                            inv_id,
-                            int(c.highest_usn),
-                            nttime2unix(c.last_sync_success)))
-        return cursors
-
-    def get_own_cursor(self, samdb):
-            res = samdb.search(base="",
-                               scope=SCOPE_BASE,
-                               attrs=["highestCommittedUSN"])
-            usn = int(res[0]["highestCommittedUSN"][0])
-            now = int(time.time())
-            return (usn, now)
-
     def run(self, H=None, output=None, shorten_names=False,
             key=True, talk_to_remote=False,
             sambaopts=None, credopts=None, versionopts=None,
@@ -716,7 +688,7 @@ class cmd_uptodateness(GraphCommand):
             if partition not in (part_dn, None):
                 continue  # we aren't doing this partition
 
-            cursors = self.get_utdv(self.samdb, part_dn)
+            cursors = get_utdv(self.samdb, part_dn)
 
             # we talk to each remote and make a matrix of the vectors
             # -- for each partition
@@ -729,8 +701,8 @@ class cmd_uptodateness(GraphCommand):
                 ldap_url = "ldap://%s" % res[0]["dNSHostName"][0]
                 try:
                     samdb = self.get_db(ldap_url, sambaopts, credopts)
-                    cursors = self.get_utdv(samdb, part_dn)
-                    own_usn, own_time = self.get_own_cursor(samdb)
+                    cursors = get_utdv(samdb, part_dn)
+                    own_usn, own_time = get_own_cursor(samdb)
                     remotes = {dsa_dn: own_usn}
                     for dn, guid, usn, t in cursors:
                         remotes[dn] = usn
