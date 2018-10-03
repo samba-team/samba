@@ -159,3 +159,41 @@ def get_utdv_max_distance(distances):
         for distance in vector.values():
             max_distance = max(max_distance, distance)
     return max_distance
+
+
+def get_utdv_summary(distances, filters=None):
+    maximum = failure = 0
+    median = 0.0  # could be average of 2 median values
+    values = []
+    # put all values into a list, exclude self to self ones
+    for dn_outer, vector in distances.items():
+        for dn_inner, distance in vector.items():
+            if dn_outer != dn_inner:
+                values.append(distance)
+
+    if values:
+        values.sort()
+        maximum = values[-1]
+        length = len(values)
+        if length % 2 == 0:
+            index = length/2 - 1
+            median = (values[index] + values[index+1])/2.0
+            median = round(median, 1)  # keep only 1 decimal digit like 2.5
+        else:
+            index = (length - 1)/2
+            median = values[index]
+            median = float(median)  # ensure median is always a float like 1.0
+        # if value not exist, that's a failure
+        expected_length = len(distances) * (len(distances) - 1)
+        failure = expected_length - length
+
+    summary = {
+        'maximum': maximum,
+        'median': median,
+        'failure': failure,
+    }
+
+    if filters:
+        return {key: summary[key] for key in filters}
+    else:
+        return summary
