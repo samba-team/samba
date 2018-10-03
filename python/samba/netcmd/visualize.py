@@ -39,6 +39,10 @@ import re
 from samba.kcc import KCC, ldif_import_export
 from samba.kcc.kcc_utils import KCCError
 from samba.compat import text_type
+from samba.uptodateness import (
+    get_partition_maps,
+    get_partition,
+)
 
 COMMON_OPTIONS = [
     Option("-H", "--URL", help="LDB URL for database or target server",
@@ -205,36 +209,6 @@ def colour_hash(x):
         tmp_str = tmp_str.encode('utf8')
     c = int(md5(tmp_str).hexdigest()[:6], base=16) & 0x7f7f7f
     return '#%06x' % c
-
-
-def get_partition_maps(samdb):
-    """Generate dictionaries mapping short partition names to the
-    appropriate DNs."""
-    base_dn = samdb.domain_dn()
-    short_to_long = {
-        "DOMAIN": base_dn,
-        "CONFIGURATION": str(samdb.get_config_basedn()),
-        "SCHEMA": "CN=Schema,%s" % samdb.get_config_basedn(),
-        "DNSDOMAIN": "DC=DomainDnsZones,%s" % base_dn,
-        "DNSFOREST": "DC=ForestDnsZones,%s" % base_dn
-    }
-
-    long_to_short = {}
-    for s, l in short_to_long.items():
-        long_to_short[l] = s
-
-    return short_to_long, long_to_short
-
-
-def get_partition(samdb, part):
-    # Allow people to say "--partition=DOMAIN" rather than
-    # "--partition=DC=blah,DC=..."
-    if part is not None:
-        short_partitions, long_partitions = get_partition_maps(samdb)
-        part = short_partitions.get(part.upper(), part)
-        if part not in long_partitions:
-            raise CommandError("unknown partition %s" % part)
-    return part
 
 
 class cmd_reps(GraphCommand):
