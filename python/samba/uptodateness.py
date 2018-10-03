@@ -16,12 +16,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
+
+import sys
 import time
 
-from ldb import SCOPE_BASE
+from ldb import SCOPE_BASE, LdbError
 
 from samba import nttime2unix, dsdb
 from samba.netcmd import CommandError
+from samba.samdb import SamDB
 
 
 def get_partition_maps(samdb):
@@ -84,3 +88,28 @@ def get_own_cursor(samdb):
     usn = int(res[0]["highestCommittedUSN"][0])
     now = int(time.time())
     return (usn, now)
+
+
+def get_utdv_edges(local_kcc, dsas, part_dn, lp, creds):
+    # we talk to each remote and make a matrix of the vectors
+    # for each partition
+    # normalise by oldest
+    utdv_edges = {}
+    for dsa_dn in dsas:
+        res = local_kcc.samdb.search(dsa_dn,
+                                     scope=SCOPE_BASE,
+                                     attrs=["dNSHostName"])
+        ldap_url = "ldap://%s" % res[0]["dNSHostName"][0]
+        try:
+            samdb = SamDB(url=ldap_url, credentials=creds, lp=lp)
+            cursors = get_utdv(samdb, part_dn)
+            own_usn, own_time = get_own_cursor(samdb)
+            remotes = {dsa_dn: own_usn}
+            for dn, guid, usn, t in cursors:
+                remotes[dn] = usn
+        except LdbError as e:
+            print("Could not contact %s (%s)" % (ldap_url, e),
+                  file=sys.stderr)
+            continue
+        utdv_edges[dsa_dn] = remotes
+    return utdv_edges

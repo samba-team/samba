@@ -44,6 +44,7 @@ from samba.uptodateness import (
     get_partition,
     get_own_cursor,
     get_utdv,
+    get_utdv_edges,
 )
 
 COMMON_OPTIONS = [
@@ -688,27 +689,7 @@ class cmd_uptodateness(GraphCommand):
             if partition not in (part_dn, None):
                 continue  # we aren't doing this partition
 
-            # we talk to each remote and make a matrix of the vectors
-            # -- for each partition
-            # normalise by oldest
-            utdv_edges = {}
-            for dsa_dn in dsas:
-                res = local_kcc.samdb.search(dsa_dn,
-                                             scope=SCOPE_BASE,
-                                             attrs=["dNSHostName"])
-                ldap_url = "ldap://%s" % res[0]["dNSHostName"][0]
-                try:
-                    samdb = self.get_db(ldap_url, sambaopts, credopts)
-                    cursors = get_utdv(samdb, part_dn)
-                    own_usn, own_time = get_own_cursor(samdb)
-                    remotes = {dsa_dn: own_usn}
-                    for dn, guid, usn, t in cursors:
-                        remotes[dn] = usn
-                except LdbError as e:
-                    print("Could not contact %s (%s)" % (ldap_url, e),
-                          file=sys.stderr)
-                    continue
-                utdv_edges[dsa_dn] = remotes
+            utdv_edges = get_utdv_edges(local_kcc, dsas, part_dn, lp, creds)
 
             distances = {}
             max_distance = 0
