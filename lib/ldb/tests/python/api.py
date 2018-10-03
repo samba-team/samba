@@ -740,7 +740,7 @@ class SimpleLdbNoLmdb(LdbBaseTest):
             self.fail("Should have failed on missing LMDB")
         except ldb.LdbError as err:
             enum = err.args[0]
-            self.assertEqual(enum, ldb.LDB_ERR_OTHER)
+            self.assertEqual(enum, ldb.ERR_OTHER)
 
 
 class SearchTests(LdbBaseTest):
