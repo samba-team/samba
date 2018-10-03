@@ -47,6 +47,7 @@ from samba.uptodateness import (
     get_utdv_edges,
     get_utdv_distances,
     get_utdv_max_distance,
+    get_kcc_and_dsas,
 )
 
 COMMON_OPTIONS = [
@@ -99,19 +100,6 @@ class GraphCommand(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, credentials=creds, lp=lp)
         return samdb
-
-    def get_kcc_and_dsas(self, H, lp, creds):
-        """Get a readonly KCC object and the list of DSAs it knows about."""
-        unix_now = int(time.time())
-        kcc = KCC(unix_now, readonly=True)
-        kcc.load_samdb(H, lp, creds)
-
-        dsa_list = kcc.list_dsas()
-        dsas = set(dsa_list)
-        if len(dsas) != len(dsa_list):
-            print("There seem to be duplicate dsas", file=sys.stderr)
-
-        return kcc, dsas
 
     def write(self, s, fn=None, suffix='.dot'):
         """Decide whether we're dealing with a filename, a tempfile, or
@@ -233,7 +221,7 @@ class cmd_reps(GraphCommand):
         # replication graph.
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        local_kcc, dsas = self.get_kcc_and_dsas(H, lp, creds)
+        local_kcc, dsas = get_kcc_and_dsas(H, lp, creds)
         unix_now = local_kcc.unix_now
 
         partition = get_partition(local_kcc.samdb, partition)
@@ -442,7 +430,7 @@ class cmd_ntdsconn(GraphCommand):
             creds = None
             H = self.import_ldif_db(importldif, lp)
 
-        local_kcc, dsas = self.get_kcc_and_dsas(H, lp, creds)
+        local_kcc, dsas = get_kcc_and_dsas(H, lp, creds)
         local_dsa_dn = local_kcc.my_dsa_dnstr.split(',', 1)[1]
         vertices = set()
         attested_edges = []
@@ -678,7 +666,7 @@ class cmd_uptodateness(GraphCommand):
         # replication graph.
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        local_kcc, dsas = self.get_kcc_and_dsas(H, lp, creds)
+        local_kcc, dsas = get_kcc_and_dsas(H, lp, creds)
         self.samdb = local_kcc.samdb
         partition = get_partition(self.samdb, partition)
 

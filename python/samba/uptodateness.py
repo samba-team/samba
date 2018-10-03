@@ -26,6 +26,21 @@ from ldb import SCOPE_BASE, LdbError
 from samba import nttime2unix, dsdb
 from samba.netcmd import CommandError
 from samba.samdb import SamDB
+from samba.kcc import KCC
+
+
+def get_kcc_and_dsas(url, lp, creds):
+    """Get a readonly KCC object and the list of DSAs it knows about."""
+    unix_now = int(time.time())
+    kcc = KCC(unix_now, readonly=True)
+    kcc.load_samdb(url, lp, creds)
+
+    dsa_list = kcc.list_dsas()
+    dsas = set(dsa_list)
+    if len(dsas) != len(dsa_list):
+        print("There seem to be duplicate dsas", file=sys.stderr)
+
+    return kcc, dsas
 
 
 def get_partition_maps(samdb):
