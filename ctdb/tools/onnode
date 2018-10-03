@@ -302,12 +302,9 @@ else
 	# Could "2>/dev/null || true" but want to see errors from typos in file.
 	[ -r "${CTDB_BASE}/onnode.conf" ] && . "${CTDB_BASE}/onnode.conf"
 	[ -n "$ONNODE_SSH" ] || ONNODE_SSH=ssh
-	if [ "$ONNODE_SSH" = "ssh" ] ; then
-		if $parallel || ! $stdin ; then
-			ssh_opts="-n"
-		fi
-	else
-		: # rsh? All bets are off!
+	# $ONNODE_SSH must accept the -n option - it can be ignored!
+	if $parallel || ! $stdin ; then
+		ssh_opts="-n"
 	fi
 fi
 
