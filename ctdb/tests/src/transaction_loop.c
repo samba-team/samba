@@ -39,6 +39,7 @@ struct transaction_loop_state {
 	struct ctdb_transaction_handle *h;
 	uint32_t *old_counter, *counter;
 	struct tevent_req *subreq;
+	bool done;
 };
 
 static void transaction_loop_start(struct tevent_req *subreq);
@@ -223,6 +224,20 @@ static void transaction_loop_committed(struct tevent_req *subreq)
 		}
 	}
 
+	if (state->done) {
+		int i;
+
+		printf("Transaction[%u]: ", ctdb_client_pnn(state->client));
+		for (i=0; i<state->num_nodes; i++) {
+			printf("%6u ", state->counter[i]);
+		}
+		printf("\n");
+
+		tevent_req_done(req);
+
+		return;
+	}
+
 	subreq = ctdb_transaction_start_send(state, state->ev, state->client,
 					     tevent_timeval_current_ofs(
 						     state->timelimit, 0),
@@ -299,23 +314,16 @@ static void transaction_loop_finish(struct tevent_req *subreq)
 	struct transaction_loop_state *state = tevent_req_data(
 		req, struct transaction_loop_state);
 	bool status;
-	int i;
 
 	status = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
-	TALLOC_FREE(state->subreq);
+
+	state->done = true;
+
 	if (! status) {
 		tevent_req_error(req, EIO);
 		return;
 	}
-
-	printf("Transaction[%u]: ", ctdb_client_pnn(state->client));
-	for (i=0; i<state->num_nodes; i++) {
-		printf("%6u ", state->counter[i]);
-	}
-	printf("\n");
-
-	tevent_req_done(req);
 }
 
 static bool transaction_loop_recv(struct tevent_req *req, int *perr)
