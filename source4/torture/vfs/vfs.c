@@ -113,6 +113,7 @@ NTSTATUS torture_vfs_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_acl_xattr(suite));
 	torture_suite_add_suite(suite, torture_vfs_fruit_file_id(suite));
 	torture_suite_add_suite(suite, torture_vfs_fruit_timemachine(suite));
+	torture_suite_add_suite(suite, torture_vfs_fruit_conversion(suite));
 
 	torture_register_suite(ctx, suite);
 

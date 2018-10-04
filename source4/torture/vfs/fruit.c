@@ -5412,3 +5412,194 @@ struct torture_suite *torture_vfs_fruit_timemachine(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+static bool test_convert_xattr_and_empty_rfork_then_delete(
+	struct torture_context *tctx,
+	struct smb2_tree *tree1,
+	struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\test_adouble_conversion";
+	const char *adname = BASEDIR "/._test_adouble_conversion";
+	const char *rfork = BASEDIR "\\test_adouble_conversion" AFPRESOURCE_STREAM_NAME;
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	const char *streams[] = {
+		"::$DATA",
+		AFPINFO_STREAM,
+		":com.apple.metadata" "\xef\x80\xa2" "_kMDItemUserTags:$DATA",
+		":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
+	};
+	struct smb2_create create;
+	struct smb2_find find;
+	unsigned int count;
+	union smb_search_data *d;
+	bool delete_empty_adfiles;
+	int expected_num_files;
+
+	delete_empty_adfiles = torture_setting_bool(tctx,
+						    "delete_empty_adfiles",
+						    false);
+
+	smb2_deltree(tree1, BASEDIR);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree1, testdirh);
+
+	ret = torture_setup_file(tctx, tree1, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_setup_file failed\n");
+
+	ret = torture_setup_file(tctx, tree1, adname, false);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_setup_file failed\n");
+
+	ret = write_stream(tree1, __location__, tctx, mem_ctx,
+			   adname, NULL,
+			   0, sizeof(osx_adouble_w_xattr), osx_adouble_w_xattr);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "write_stream failed\n");
+
+	ret = enable_aapl(tctx, tree2);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	/*
+	 * Issue a smb2_find(), this triggers the server-side conversion
+	 */
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_DIR_READ,
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = BASEDIR,
+	};
+
+	status = smb2_create(tree2, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	find = (struct smb2_find) {
+		.in.file.handle = create.out.file.handle,
+		.in.pattern = "*",
+		.in.max_response_size = 0x1000,
+		.in.level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO,
+	};
+
+	status = smb2_find_level(tree2, tree2, &find, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+
+	status = smb2_util_close(tree2, create.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
+
+	/*
+	 * Check number of streams
+	 */
+
+	ret = check_stream_list(tree2, tctx, fname, 4, streams, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream_list");
+
+	/*
+	 * Check Resource Fork is gone
+	 */
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_READ|SEC_RIGHTS_FILE_WRITE,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = rfork,
+	};
+
+	status = smb2_create(tree2, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		ret, done, "Bad smb2_create return\n");
+
+	/*
+	 * Check xattr data has been migrated from the AppleDouble file to
+	 * streams.
+	 */
+
+	ret = check_stream(tree2, __location__, tctx, mem_ctx,
+			   fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, "TESTSLOW");
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "check AFPINFO_STREAM failed\n");
+
+	ret = check_stream(tree2, __location__, tctx, mem_ctx,
+			   fname, ":foo" "\xef\x80\xa2" "bar", /* foo:bar */
+			   0, 3, 0, 3, "baz");
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "check foo stream failed\n");
+
+	/*
+	 * Now check number of files. If delete_empty_adfiles is set, the
+	 * AppleDouble files should have been deleted.
+	 */
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_DIR_READ,
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = BASEDIR,
+	};
+
+	status = smb2_create(tree2, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	find = (struct smb2_find) {
+		.in.file.handle = create.out.file.handle,
+		.in.pattern = "*",
+		.in.max_response_size = 0x1000,
+		.in.level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO,
+	};
+
+	status = smb2_find_level(tree2, tree2, &find, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+
+	status = smb2_util_close(tree2, create.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
+
+	if (delete_empty_adfiles) {
+		expected_num_files = 3;
+	} else {
+		expected_num_files = 4;
+	}
+	torture_assert_int_equal_goto(tctx, count, expected_num_files, ret, done,
+				      "Wrong number of files\n");
+
+done:
+	smb2_deltree(tree1, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+struct torture_suite *torture_vfs_fruit_conversion(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(
+		ctx, "fruit_conversion");
+
+	suite->description = talloc_strdup(
+		suite, "vfs_fruit conversion tests");
+
+	torture_suite_add_2ns_smb2_test(
+		suite, "convert_xattr_and_empty_rfork_then_delete",
+		test_convert_xattr_and_empty_rfork_then_delete);
+
+	return suite;
+}
