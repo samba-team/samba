@@ -227,6 +227,9 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 				break;
 			}
 			len += *i;
+			if (len < *i) {
+				goto no_space;
+			}
 			if (bufsize < len)
 				goto no_space;
 			*b = (char *)SMB_MALLOC(*i);
