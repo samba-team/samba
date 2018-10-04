@@ -1186,7 +1186,7 @@ def check_updated_sd(ref_sam, cur_sam, names):
                                 controls=["search_options:1:2"])
     hash = {}
     for i in range(0, len(reference)):
-        refsd_blob = str(reference[i]["nTSecurityDescriptor"])
+        refsd_blob = reference[i]["nTSecurityDescriptor"][0]
         hash[str(reference[i]["dn"]).lower()] = refsd_blob
 
 
