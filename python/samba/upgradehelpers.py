@@ -831,7 +831,6 @@ def int64range2str(value):
     :param value: The int64 range
     :return: A string of the representation of the range
     """
-
-    lvalue = long(value)
+    lvalue = int(value)
     str = "%d-%d" % (lvalue &0xFFFFFFFF, lvalue >>32)
     return str
