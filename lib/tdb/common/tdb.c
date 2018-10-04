@@ -523,6 +523,7 @@ tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 			tdb_off_t *p_last_ptr)
 {
 	tdb_off_t rec_ptr, last_ptr;
+	struct tdb_chainwalk_ctx chainwalk;
 	tdb_off_t best_rec_ptr = 0;
 	tdb_off_t best_last_ptr = 0;
 	struct tdb_record best = { .rec_len = UINT32_MAX };
@@ -535,8 +536,12 @@ tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 	if (tdb_ofs_read(tdb, last_ptr, &rec_ptr) == -1)
 		return 0;
 
+	tdb_chainwalk_init(&chainwalk, rec_ptr);
+
 	/* keep looking until we find the right record */
 	while (rec_ptr) {
+		bool ok;
+
 		if (tdb_rec_read(tdb, rec_ptr, r) == -1)
 			return 0;
 
@@ -548,6 +553,11 @@ tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 		}
 		last_ptr = rec_ptr;
 		rec_ptr = r->next;
+
+		ok = tdb_chainwalk_check(tdb, &chainwalk, rec_ptr);
+		if (!ok) {
+			return 0;
+		}
 	}
 
 	if (best.rec_len == UINT32_MAX) {
