@@ -114,13 +114,18 @@ static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 			struct tdb_record *r)
 {
 	tdb_off_t rec_ptr;
+	struct tdb_chainwalk_ctx chainwalk;
 
 	/* read in the hash top */
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
 		return 0;
 
+	tdb_chainwalk_init(&chainwalk, rec_ptr);
+
 	/* keep looking until we find the right record */
 	while (rec_ptr) {
+		bool ok;
+
 		if (tdb_rec_read(tdb, rec_ptr, r) == -1)
 			return 0;
 
@@ -131,13 +136,12 @@ static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 				      NULL) == 0) {
 			return rec_ptr;
 		}
-		/* detect tight infinite loop */
-		if (rec_ptr == r->next) {
-			tdb->ecode = TDB_ERR_CORRUPT;
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_find: loop detected.\n"));
+		rec_ptr = r->next;
+
+		ok = tdb_chainwalk_check(tdb, &chainwalk, rec_ptr);
+		if (!ok) {
 			return 0;
 		}
-		rec_ptr = r->next;
 	}
 	tdb->ecode = TDB_ERR_NOEXIST;
 	return 0;
