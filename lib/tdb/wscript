@@ -56,6 +56,7 @@ tdb1_unit_tests = [
     'run-mutex-die',
     'run-mutex1',
     'run-circular-chain',
+    'run-circular-freelist',
 ]
 
 def options(opt):
