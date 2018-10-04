@@ -153,7 +153,7 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 	uint32_t *d;
 	size_t bufsize = in_bufsize;
 	size_t len;
-	int *i;
+	uint32_t *i;
 	void **p;
 	char *s, **b, **ps;
 	char c;
@@ -216,7 +216,7 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 			memcpy(s, buf, len);
 			break;
 		case 'B': /* fixed-length string */
-			i = va_arg(ap, int *);
+			i = va_arg(ap, uint32_t *);
 			b = va_arg(ap, char **);
 			len = 4;
 			if (bufsize < len)

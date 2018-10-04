@@ -352,7 +352,7 @@ static int unpack_devicemode(TALLOC_CTX *mem_ctx,
 	struct spoolss_DeviceMode *dm;
 	enum ndr_err_code ndr_err;
 	char *data = NULL;
-	int data_len = 0;
+	uint32_t data_len = 0;
 	DATA_BLOB blob;
 	int len = 0;
 
