@@ -79,6 +79,35 @@ static int tdb_key_compare(TDB_DATA key, TDB_DATA data, void *private_data)
 	return memcmp(data.dptr, key.dptr, data.dsize);
 }
 
+void tdb_chainwalk_init(struct tdb_chainwalk_ctx *ctx, tdb_off_t ptr)
+{
+	*ctx = (struct tdb_chainwalk_ctx) { .slow_ptr = ptr };
+}
+
+bool tdb_chainwalk_check(struct tdb_context *tdb,
+			 struct tdb_chainwalk_ctx *ctx,
+			 tdb_off_t next_ptr)
+{
+	int ret;
+
+	if (ctx->slow_chase) {
+		ret = tdb_ofs_read(tdb, ctx->slow_ptr, &ctx->slow_ptr);
+		if (ret == -1) {
+			return false;
+		}
+	}
+	ctx->slow_chase = !ctx->slow_chase;
+
+	if (next_ptr == ctx->slow_ptr) {
+		tdb->ecode = TDB_ERR_CORRUPT;
+		TDB_LOG((tdb, TDB_DEBUG_ERROR,
+			 "tdb_chainwalk_check: circular chain\n"));
+		return false;
+	}
+
+	return true;
+}
+
 /* Returns 0 on fail.  On success, return offset of record, and fills
    in rec */
 static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,

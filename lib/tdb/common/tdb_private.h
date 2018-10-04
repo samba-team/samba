@@ -191,12 +191,22 @@ struct tdb_lock_type {
 	uint32_t ltype;
 };
 
+struct tdb_chainwalk_ctx {
+	tdb_off_t slow_ptr;
+	bool slow_chase;
+};
+
 struct tdb_traverse_lock {
 	struct tdb_traverse_lock *next;
 	uint32_t off;
 	uint32_t list;
 	int lock_rw;
 };
+
+void tdb_chainwalk_init(struct tdb_chainwalk_ctx *ctx, tdb_off_t ptr);
+bool tdb_chainwalk_check(struct tdb_context *tdb,
+			 struct tdb_chainwalk_ctx *ctx,
+			 tdb_off_t next_ptr);
 
 enum tdb_lock_flags {
 	/* WAIT == F_SETLKW, NOWAIT == F_SETLK */
