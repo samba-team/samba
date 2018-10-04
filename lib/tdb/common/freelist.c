@@ -444,6 +444,8 @@ static tdb_off_t tdb_allocate_from_freelist(
 	struct tdb_context *tdb, tdb_len_t length, struct tdb_record *rec)
 {
 	tdb_off_t rec_ptr, last_ptr, newrec_ptr;
+	struct tdb_chainwalk_ctx chainwalk;
+	bool modified;
 	struct {
 		tdb_off_t rec_ptr, last_ptr;
 		tdb_len_t rec_len;
@@ -465,6 +467,9 @@ static tdb_off_t tdb_allocate_from_freelist(
 	/* read in the freelist top */
 	if (tdb_ofs_read(tdb, FREELIST_TOP, &rec_ptr) == -1)
 		return 0;
+
+	modified = false;
+	tdb_chainwalk_init(&chainwalk, rec_ptr);
 
 	bestfit.rec_ptr = 0;
 	bestfit.last_ptr = 0;
@@ -526,6 +531,8 @@ static tdb_off_t tdb_allocate_from_freelist(
 				merge_created_candidate = true;
 			}
 
+			modified = true;
+
 			continue;
 		}
 
@@ -541,6 +548,14 @@ static tdb_off_t tdb_allocate_from_freelist(
 		/* move to the next record */
 		last_ptr = rec_ptr;
 		rec_ptr = rec->next;
+
+		if (!modified) {
+			bool ok;
+			ok = tdb_chainwalk_check(tdb, &chainwalk, rec_ptr);
+			if (!ok) {
+				return 0;
+			}
+		}
 
 		/* if we've found a record that is big enough, then
 		   stop searching if its also not too big. The
