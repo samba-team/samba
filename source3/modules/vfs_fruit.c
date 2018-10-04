@@ -1066,8 +1066,7 @@ static bool ad_convert_xattr(struct adouble *ad,
  * otherwise
  **/
 static int ad_convert(struct adouble *ad,
-		      const struct smb_filename *smb_fname,
-		      int fd)
+		      const struct smb_filename *smb_fname)
 {
 	int rc = 0;
 	char *map = MAP_FAILED;
@@ -1078,7 +1077,8 @@ static int ad_convert(struct adouble *ad,
 		ad_getentrylen(ad, ADEID_RFORK);
 
 	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
-	map = mmap(NULL, origlen, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	map = mmap(NULL, origlen, PROT_READ|PROT_WRITE, MAP_SHARED,
+		   ad->ad_fd, 0);
 	if (map == MAP_FAILED) {
 		DEBUG(2, ("mmap AppleDouble: %s\n", strerror(errno)));
 		return -1;
@@ -1103,7 +1103,7 @@ static int ad_convert(struct adouble *ad,
 	 * FIXME: direct ftruncate(), but we don't have a fsp for the
 	 * VFS call
 	 */
-	rc = ftruncate(fd, ad_getentryoff(ad, ADEID_RFORK)
+	rc = ftruncate(ad->ad_fd, ad_getentryoff(ad, ADEID_RFORK)
 		       + ad_getentrylen(ad, ADEID_RFORK));
 	if (rc != 0) {
 		munmap(map, origlen);
@@ -1385,7 +1385,7 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 	 * appended to the ADEID_FINDERI entry.
 	 */
 
-	ret = ad_convert(ad, smb_fname, ad->ad_fd);
+	ret = ad_convert(ad, smb_fname);
 	if (ret != 0) {
 		DBG_WARNING("Failed to convert [%s]\n", smb_fname->base_name);
 		return len;
