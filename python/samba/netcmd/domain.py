@@ -3891,10 +3891,10 @@ This command expunges tombstones from the database."""
 
         if current_time_string is not None:
             current_time_obj = time.strptime(current_time_string, "%Y-%m-%d")
-            current_time = long(time.mktime(current_time_obj))
+            current_time = int(time.mktime(current_time_obj))
 
         else:
-            current_time = long(time.time())
+            current_time = int(time.time())
 
         if len(ncs) == 0:
             res = samdb.search(expression="", base="", scope=ldb.SCOPE_BASE,
