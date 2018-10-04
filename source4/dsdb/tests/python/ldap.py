@@ -1675,8 +1675,8 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
             "objectclass": "container",
             "uSNCreated": "1",
             "uSNChanged": "1",
-            "whenCreated": timestring(long(time.time())),
-            "whenChanged": timestring(long(time.time()))})
+            "whenCreated": timestring(int(time.time())),
+            "whenChanged": timestring(int(time.time()))})
 
         res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
                          scope=SCOPE_BASE,
