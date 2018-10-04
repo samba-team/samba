@@ -72,18 +72,26 @@ static size_t tally_mean(const struct tally *tally)
 static size_t get_hash_length(struct tdb_context *tdb, unsigned int i)
 {
 	tdb_off_t rec_ptr;
+	struct tdb_chainwalk_ctx chainwalk;
 	size_t count = 0;
 
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(i), &rec_ptr) == -1)
 		return 0;
 
+	tdb_chainwalk_init(&chainwalk, rec_ptr);
+
 	/* keep looking until we find the right record */
 	while (rec_ptr) {
 		struct tdb_record r;
+		bool ok;
 		++count;
 		if (tdb_rec_read(tdb, rec_ptr, &r) == -1)
 			return 0;
 		rec_ptr = r.next;
+		ok = tdb_chainwalk_check(tdb, &chainwalk, rec_ptr);
+		if (!ok) {
+			return SIZE_MAX;
+		}
 	}
 	return count;
 }
