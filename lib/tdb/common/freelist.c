@@ -605,7 +605,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
 		       struct tdb_record *rec)
 {
 	tdb_off_t ret;
-	int i;
+	uint32_t i;
 
 	if (tdb->max_dead_records == 0) {
 		/*
