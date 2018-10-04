@@ -57,6 +57,15 @@ for i in $(seq 1 345) ; do
     try_command_on_node 0 $CTDB pstore $TEST1DB record$i $RECDATA || exit 1
 done
 
+num_records=$(db_ctdb_cattdb_count_records 0 $TEST1DB)
+if [ $num_records = "345" ] ; then
+	echo "OK: records added correctly"
+else
+	echo "BAD: persistent database has $num_records of 345 records"
+	try_command_on_node -v 0 "$CTDB cattdb $TEST1DB | tail -n 1"
+	exit 1
+fi
+
 # Create a volatile database to test
 echo "create volatile test database $TEST2DB"
 try_command_on_node 0 $CTDB attach $TEST2DB
@@ -76,6 +85,15 @@ for i in $(seq 1 1234) ; do
     try_command_on_node 0 $CTDB writekey $TEST2DB record$i $v3 || exit 1
 done
 
+num_records=$(db_ctdb_cattdb_count_records 0 $TEST2DB)
+if [ $num_records = "1234" ] ; then
+	echo "OK: records added correctly"
+else
+	echo "BAD: volatile database has $num_records of 1234 records"
+	try_command_on_node -v 0 "$CTDB cattdb $TEST2DB | tail -n 1"
+	exit 1
+fi
+
 echo "Find out which node is recmaster"
 try_command_on_node 0 $CTDB recmaster
 recmaster="$out"
@@ -92,16 +110,18 @@ wait_until_node_has_status 0 recovered 30
 # check that there are correct number of records
 num_records=$(db_ctdb_cattdb_count_records 0 $TEST1DB)
 if [ $num_records = "345" ] ; then
-    echo "OK: persistent database recovered correctly"
+	echo "OK: persistent database recovered correctly"
 else
-    echo "BAD: persistent database ended up with $num_records of 345 records"
-    exit 1
+	echo "BAD: persistent database has $num_records of 345 records"
+	try_command_on_node -v 0 "$CTDB cattdb $TEST1DB | tail -n 1"
+	exit 1
 fi
 
 num_records=$(db_ctdb_cattdb_count_records 0 $TEST2DB)
 if [ $num_records = "1234" ] ; then
-    echo "OK: volatile database recovered correctly"
+	echo "OK: volatile database recovered correctly"
 else
-    echo "BAD: volatile database ended up with $num_records of 1234 records"
-    exit 1
+	echo "BAD: volatile database has $num_records of 1234 records"
+	try_command_on_node -v 0 "$CTDB cattdb $TEST2DB | tail -n 1"
+	exit 1
 fi
