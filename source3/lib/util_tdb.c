@@ -145,20 +145,20 @@ size_t tdb_pack(uint8_t *buf, int bufsize, const char *fmt, ...)
  integers and strings.
 ****************************************************************************/
 
-int tdb_unpack(const uint8_t *buf, int bufsize, const char *fmt, ...)
+int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint8_t *bt;
 	uint16_t *w;
 	uint32_t *d;
-	int len;
+	size_t bufsize = in_bufsize;
+	size_t len;
 	int *i;
 	void **p;
 	char *s, **b, **ps;
 	char c;
 	const uint8_t *buf0 = buf;
 	const char *fmt0 = fmt;
-	int bufsize0 = bufsize;
 
 	va_start(ap, fmt);
 
@@ -249,7 +249,7 @@ int tdb_unpack(const uint8_t *buf, int bufsize, const char *fmt, ...)
 	va_end(ap);
 
 	DEBUG(18,("tdb_unpack(%s, %d) -> %d\n",
-		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
+		 fmt0, in_bufsize, (int)PTR_DIFF(buf, buf0)));
 
 	return PTR_DIFF(buf, buf0);
 
