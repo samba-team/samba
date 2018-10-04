@@ -772,9 +772,9 @@ WERROR regdb_init(void)
 	status = dbwrap_fetch_int32_bystring(regdb, REGDB_VERSION_KEYNAME,
 					     &vers_id);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("regdb_init: registry version uninitialized "
-			   "(got %d), initializing to version %d\n",
-			   vers_id, REGDB_VERSION_V1));
+		DBG_DEBUG("Reading registry version failed: %s, "
+			  "initializing to version %d\n",
+			  nt_errstr(status), REGDB_VERSION_V1);
 
 		/*
 		 * There was a regdb format version prior to version 1
