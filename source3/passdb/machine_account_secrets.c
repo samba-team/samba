@@ -114,6 +114,7 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 {
 	char *protect_ids;
 	bool ret;
+	struct dom_sid clean_sid = { 0 };
 
 	protect_ids = secrets_fetch(protect_ids_keystr(domain), NULL);
 	if (protect_ids) {
@@ -126,7 +127,15 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 	}
 	SAFE_FREE(protect_ids);
 
-	ret = secrets_store(domain_sid_keystr(domain), sid, sizeof(struct dom_sid ));
+	/*
+	 * use a copy to prevent uninitialized memory from being carried over
+	 * to the tdb
+	 */
+	sid_copy(&clean_sid, sid);
+
+	ret = secrets_store(domain_sid_keystr(domain),
+			    &clean_sid,
+			    sizeof(struct dom_sid));
 
 	/* Force a re-query, in the case where we modified our domain */
 	if (ret) {
