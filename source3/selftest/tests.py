@@ -442,7 +442,13 @@ libsmbclient = ["libsmbclient.version", "libsmbclient.initialize",
                 "libsmbclient.options", "libsmbclient.opendir",
                 "libsmbclient.list_shares", "libsmbclient.readdirplus"]
 
-vfs = ["vfs.fruit", "vfs.acl_xattr", "vfs.fruit_netatalk", "vfs.fruit_file_id", "vfs.fruit_timemachine"]
+vfs = [
+    "vfs.fruit",
+    "vfs.acl_xattr",
+    "vfs.fruit_netatalk",
+    "vfs.fruit_file_id",
+    "vfs.fruit_timemachine",
+]
 
 tests = base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap + vfs
 
