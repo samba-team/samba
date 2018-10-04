@@ -56,6 +56,9 @@ except ImportError:
     class SkipTest(Exception):
         """Test skipped."""
 
+BINDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                      "../../../../bin"))
+
 HEXDUMP_FILTER = bytearray([x if ((len(repr(chr(x))) == 3) and (x < 127)) else ord('.') for x in range(256)])
 
 
@@ -348,14 +351,20 @@ class BlackboxProcessError(Exception):
 
     def __init__(self, returncode, cmd, stdout, stderr, msg=None):
         self.returncode = returncode
-        self.cmd = cmd
+        if isinstance(cmd, list):
+            self.cmd = ' '.join(cmd)
+            self.shell = False
+        else:
+            self.cmd = cmd
+            self.shell = True
         self.stdout = stdout
         self.stderr = stderr
         self.msg = msg
 
     def __str__(self):
-        s = ("Command '%s'; exit status %d; stdout: '%s'; stderr: '%s'" %
-             (self.cmd, self.returncode, self.stdout, self.stderr))
+        s = ("Command '%s'; shell %s; exit status %d; "
+             "stdout: '%s'; stderr: '%s'" %
+             (self.cmd, self.shell, self.returncode, self.stdout, self.stderr))
         if self.msg is not None:
             s = "%s; message: %s" % (s, self.msg)
 
@@ -366,14 +375,22 @@ class BlackboxTestCase(TestCaseInTempDir):
     """Base test case for blackbox tests."""
 
     def _make_cmdline(self, line):
-        bindir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../bin"))
-        parts = line.split(" ")
-        if os.path.exists(os.path.join(bindir, parts[0])):
-            cmd = parts[0]
-            parts[0] = os.path.join(bindir, parts[0])
-            if cmd == "samba-tool" and os.getenv("PYTHON", None):
-                parts = [os.environ["PYTHON"]] + parts
-        line = " ".join(parts)
+        """Expand the called script into a fully resolved path in the bin
+        directory."""
+        if isinstance(line, list):
+            parts = line
+        else:
+            parts = line.split(" ", 1)
+        cmd = parts[0]
+        exe = os.path.join(BINDIR, cmd)
+        if os.path.exists(exe):
+            parts[0] = exe
+            if cmd =='samba-tool' and os.getenv("PYTHON", None):
+                parts.insert(0, os.environ["PYTHON"])
+
+        if not isinstance(line, list):
+            line = " ".join(parts)
+
         return line
 
     def check_run(self, line, msg=None):
@@ -381,10 +398,11 @@ class BlackboxTestCase(TestCaseInTempDir):
 
     def check_exit_code(self, line, expected, msg=None):
         line = self._make_cmdline(line)
+        use_shell = not isinstance(line, list)
         p = subprocess.Popen(line,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
-                             shell=True)
+                             shell=use_shell)
         stdoutdata, stderrdata = p.communicate()
         retcode = p.returncode
         if retcode != expected:
@@ -395,8 +413,10 @@ class BlackboxTestCase(TestCaseInTempDir):
                                        msg)
 
     def check_output(self, line):
+        use_shell = not isinstance(line, list)
         line = self._make_cmdline(line)
-        p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True)
+        p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             shell=use_shell, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
         retcode = p.returncode
         if retcode:
