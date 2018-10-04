@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 use Time::Local ('timegm');
 my $in = STDIN;
 use strict;
