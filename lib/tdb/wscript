@@ -55,6 +55,7 @@ tdb1_unit_tests = [
     'run-mutex-transaction1',
     'run-mutex-die',
     'run-mutex1',
+    'run-circular-chain',
 ]
 
 def options(opt):
