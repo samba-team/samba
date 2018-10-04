@@ -392,6 +392,17 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:delete_empty_adfiles = yes | no</term>
+	    <listitem>
+	      <para>Whether to delete empty AppleDouble files. Empty means that
+	      the resource fork entry in the AppleDouble files is of size 0, or
+	      the size is exactly 286 bytes and the content matches a special
+	      boilerplate resource fork created my macOS.</para>
+	      <para>The default is <emphasis>no</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 
