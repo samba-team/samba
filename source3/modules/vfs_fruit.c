@@ -1081,8 +1081,7 @@ static int ad_convert(struct adouble *ad,
 	map = mmap(NULL, origlen, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	if (map == MAP_FAILED) {
 		DEBUG(2, ("mmap AppleDouble: %s\n", strerror(errno)));
-		rc = -1;
-		goto exit;
+		return -1;
 	}
 
 	ok = ad_convert_xattr(ad, smb_fname, map);
@@ -1106,12 +1105,18 @@ static int ad_convert(struct adouble *ad,
 	 */
 	rc = ftruncate(fd, ad_getentryoff(ad, ADEID_RFORK)
 		       + ad_getentrylen(ad, ADEID_RFORK));
-
-exit:
-	if (map != MAP_FAILED) {
+	if (rc != 0) {
 		munmap(map, origlen);
+		return -1;
 	}
-	return rc;
+
+	rc = munmap(map, origlen);
+	if (rc != 0) {
+		DBG_ERR("munmap failed: %s\n", strerror(errno));
+		return -1;
+	}
+
+	return 0;
 }
 
 /**
