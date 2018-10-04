@@ -1957,6 +1957,24 @@ sub provision($$$$$$$$$)
 	fruit:time machine = yes
 	fruit:time machine max size = 32K
 
+[vfs_fruit_wipe_intentionally_left_blank_rfork]
+	path = $shrdir
+	vfs objects = fruit streams_xattr acl_xattr xattr_tdb
+	fruit:resource = file
+	fruit:metadata = stream
+	fruit:wipe_intentionally_left_blank_rfork = true
+	fruit:delete_empty_adfiles = false
+	fruit:veto_appledouble = no
+
+[vfs_fruit_delete_empty_adfiles]
+	path = $shrdir
+	vfs objects = fruit streams_xattr acl_xattr xattr_tdb
+	fruit:resource = file
+	fruit:metadata = stream
+	fruit:wipe_intentionally_left_blank_rfork = true
+	fruit:delete_empty_adfiles = true
+	fruit:veto_appledouble = no
+
 [badname-tmp]
 	path = $badnames_shrdir
 	guest ok = yes
