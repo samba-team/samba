@@ -1170,6 +1170,24 @@ static bool ad_convert_truncate(struct adouble *ad,
 	return true;
 }
 
+static bool ad_convert_move_reso(struct adouble *ad,
+				 const struct smb_filename *smb_fname,
+				 char *map)
+{
+	if (ad_getentrylen(ad, ADEID_RFORK) == 0) {
+		return true;
+	}
+
+	memmove(map + ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI,
+		map + ad_getentryoff(ad, ADEID_RFORK),
+		ad_getentrylen(ad, ADEID_RFORK));
+
+	ad_setentryoff(ad, ADEID_RFORK,
+		       ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI);
+
+	return true;
+}
+
 /**
  * Convert from Apple's ._ file to Netatalk
  *
@@ -1209,14 +1227,11 @@ static int ad_convert(struct adouble *ad,
 		return -1;
 	}
 
-	if (ad_getentrylen(ad, ADEID_RFORK) > 0) {
-		memmove(map + ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI,
-			map + ad_getentryoff(ad, ADEID_RFORK),
-			ad_getentrylen(ad, ADEID_RFORK));
+	ok = ad_convert_move_reso(ad, smb_fname, map);
+	if (!ok) {
+		munmap(map, origlen);
+		return -1;
 	}
-
-	ad_setentryoff(ad, ADEID_RFORK,
-		       ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI);
 
 	ok = ad_convert_truncate(ad, smb_fname);
 	if (!ok) {
