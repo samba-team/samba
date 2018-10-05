@@ -943,13 +943,16 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 }
 
 static bool ad_convert_xattr(struct adouble *ad,
-			     const struct smb_filename *smb_fname,
-			     char *map)
+			     const struct smb_filename *smb_fname)
 {
 	static struct char_mappings **string_replace_cmaps = NULL;
+	char *map = MAP_FAILED;
+	size_t maplen;
 	uint16_t i;
 	int saved_errno = 0;
 	NTSTATUS status;
+	int rc;
+	bool ok;
 
 	if (ad->adx_header.adx_num_attrs == 0) {
 		return true;
@@ -965,6 +968,17 @@ static bool ad_convert_xattr(struct adouble *ad,
 		}
 		string_replace_cmaps = string_replace_init_map(mappings);
 		TALLOC_FREE(mappings);
+	}
+
+	maplen = ad_getentryoff(ad, ADEID_RFORK) +
+		ad_getentrylen(ad, ADEID_RFORK);
+
+	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
+	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
+		   ad->ad_fd, 0);
+	if (map == MAP_FAILED) {
+		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
+		return false;
 	}
 
 	for (i = 0; i < ad->adx_header.adx_num_attrs; i++) {
@@ -985,14 +999,16 @@ static bool ad_convert_xattr(struct adouble *ad,
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))
 		{
 			DBG_ERR("string_replace_allocate failed\n");
-			return false;
+			ok = false;
+			goto fail;
 		}
 
 		tmp = mapped_name;
 		mapped_name = talloc_asprintf(talloc_tos(), ":%s", tmp);
 		TALLOC_FREE(tmp);
 		if (mapped_name == NULL) {
-			return false;
+			ok = false;
+			goto fail;
 		}
 
 		stream_name = synthetic_smb_fname(talloc_tos(),
@@ -1003,7 +1019,8 @@ static bool ad_convert_xattr(struct adouble *ad,
 		TALLOC_FREE(mapped_name);
 		if (stream_name == NULL) {
 			DBG_ERR("synthetic_smb_fname failed\n");
-			return false;
+			ok = false;
+			goto fail;
 		}
 
 		DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
@@ -1030,7 +1047,8 @@ static bool ad_convert_xattr(struct adouble *ad,
 		TALLOC_FREE(stream_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("SMB_VFS_CREATE_FILE failed\n");
-			return false;
+			ok = false;
+			goto fail;
 		}
 
 		nwritten = SMB_VFS_PWRITE(fsp,
@@ -1042,18 +1060,29 @@ static bool ad_convert_xattr(struct adouble *ad,
 			saved_errno = errno;
 			close_file(NULL, fsp, ERROR_CLOSE);
 			errno = saved_errno;
-			return false;
+			ok = false;
+			goto fail;
 		}
 
 		status = close_file(NULL, fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			ok = false;
+			goto fail;
 		}
 		fsp = NULL;
 	}
 
 	ad_setentrylen(ad, ADEID_FINDERI, ADEDLEN_FINDERI);
-	return true;
+	ok = true;
+
+fail:
+	rc = munmap(map, maplen);
+	if (rc != 0) {
+		DBG_ERR("munmap failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	return ok;
 }
 
 static bool ad_convert_finderinfo(struct adouble *ad,
@@ -1171,16 +1200,36 @@ static bool ad_convert_truncate(struct adouble *ad,
 }
 
 static bool ad_convert_move_reso(struct adouble *ad,
-				 const struct smb_filename *smb_fname,
-				 char *map)
+				 const struct smb_filename *smb_fname)
 {
+	char *map = MAP_FAILED;
+	size_t maplen;
+	int rc;
+
 	if (ad_getentrylen(ad, ADEID_RFORK) == 0) {
 		return true;
+	}
+
+	maplen = ad_getentryoff(ad, ADEID_RFORK) +
+		ad_getentrylen(ad, ADEID_RFORK);
+
+	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
+	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
+		   ad->ad_fd, 0);
+	if (map == MAP_FAILED) {
+		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
+		return false;
 	}
 
 	memmove(map + ADEDOFF_RFORK_DOT_UND,
 		map + ad_getentryoff(ad, ADEID_RFORK),
 		ad_getentrylen(ad, ADEID_RFORK));
+
+	rc = munmap(map, maplen);
+	if (rc != 0) {
+		DBG_ERR("munmap failed: %s\n", strerror(errno));
+		return false;
+	}
 
 	ad_setentryoff(ad, ADEID_RFORK, ADEDOFF_RFORK_DOT_UND);
 
@@ -1199,9 +1248,6 @@ static bool ad_convert_move_reso(struct adouble *ad,
 static int ad_convert(struct adouble *ad,
 		      const struct smb_filename *smb_fname)
 {
-	int rc = 0;
-	char *map = MAP_FAILED;
-	size_t origlen;
 	ssize_t len;
 	bool ok;
 
@@ -1209,38 +1255,18 @@ static int ad_convert(struct adouble *ad,
 		return 0;
 	}
 
-	origlen = ad_getentryoff(ad, ADEID_RFORK) +
-		ad_getentrylen(ad, ADEID_RFORK);
-
-	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
-	map = mmap(NULL, origlen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fd, 0);
-	if (map == MAP_FAILED) {
-		DEBUG(2, ("mmap AppleDouble: %s\n", strerror(errno)));
+	ok = ad_convert_xattr(ad, smb_fname);
+	if (!ok) {
 		return -1;
 	}
 
-	ok = ad_convert_xattr(ad, smb_fname, map);
+	ok = ad_convert_move_reso(ad, smb_fname);
 	if (!ok) {
-		munmap(map, origlen);
-		return -1;
-	}
-
-	ok = ad_convert_move_reso(ad, smb_fname, map);
-	if (!ok) {
-		munmap(map, origlen);
 		return -1;
 	}
 
 	ok = ad_convert_truncate(ad, smb_fname);
 	if (!ok) {
-		munmap(map, origlen);
-		return -1;
-	}
-
-	rc = munmap(map, origlen);
-	if (rc != 0) {
-		DBG_ERR("munmap failed: %s\n", strerror(errno));
 		return -1;
 	}
 
