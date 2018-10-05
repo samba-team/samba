@@ -1056,6 +1056,102 @@ static bool ad_convert_xattr(struct adouble *ad,
 	return true;
 }
 
+static bool ad_convert_finderinfo(struct adouble *ad,
+				  const struct smb_filename *smb_fname)
+{
+	char *p_ad = NULL;
+	AfpInfo *ai = NULL;
+	DATA_BLOB aiblob;
+	struct smb_filename *stream_name = NULL;
+	files_struct *fsp = NULL;
+	size_t size;
+	ssize_t nwritten;
+	NTSTATUS status;
+	int saved_errno = 0;
+
+	p_ad = ad_get_entry(ad, ADEID_FINDERI);
+	if (p_ad == NULL) {
+		return false;
+	}
+
+	ai = afpinfo_new(talloc_tos());
+	if (ai == NULL) {
+		return false;
+	}
+
+	memcpy(ai->afpi_FinderInfo, p_ad, ADEDLEN_FINDERI);
+
+	aiblob = data_blob_talloc(talloc_tos(), NULL, AFP_INFO_SIZE);
+	if (aiblob.data == NULL) {
+		TALLOC_FREE(ai);
+		return false;
+	}
+
+	size = afpinfo_pack(ai, (char *)aiblob.data);
+	TALLOC_FREE(ai);
+	if (size != AFP_INFO_SIZE) {
+		return false;
+	}
+
+	stream_name = synthetic_smb_fname(talloc_tos(),
+					  smb_fname->base_name,
+					  AFPINFO_STREAM,
+					  NULL,
+					  smb_fname->flags);
+	if (stream_name == NULL) {
+		data_blob_free(&aiblob);
+		DBG_ERR("synthetic_smb_fname failed\n");
+		return false;
+	}
+
+	DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
+
+	status = SMB_VFS_CREATE_FILE(
+		ad->ad_handle->conn,		/* conn */
+		NULL,				/* req */
+		0,				/* root_dir_fid */
+		stream_name,			/* fname */
+		FILE_GENERIC_WRITE,		/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */
+		FILE_OPEN_IF,			/* create_disposition */
+		0,				/* create_options */
+		0,				/* file_attributes */
+		INTERNAL_OPEN_ONLY,		/* oplock_request */
+		NULL,				/* lease */
+		0,				/* allocation_size */
+		0,				/* private_flags */
+		NULL,				/* sd */
+		NULL,				/* ea_list */
+		&fsp,				/* result */
+		NULL,				/* psbuf */
+		NULL, NULL);			/* create context */
+	TALLOC_FREE(stream_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("SMB_VFS_CREATE_FILE failed\n");
+		return false;
+	}
+
+	nwritten = SMB_VFS_PWRITE(fsp,
+				  aiblob.data,
+				  aiblob.length,
+				  0);
+	if (nwritten == -1) {
+		DBG_ERR("SMB_VFS_PWRITE failed\n");
+		saved_errno = errno;
+		close_file(NULL, fsp, ERROR_CLOSE);
+		errno = saved_errno;
+		return false;
+	}
+
+	status = close_file(NULL, fsp, NORMAL_CLOSE);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	fsp = NULL;
+
+	return true;
+}
+
 /**
  * Convert from Apple's ._ file to Netatalk
  *
@@ -1126,6 +1222,13 @@ static int ad_convert(struct adouble *ad,
 	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
 	if (len != AD_DATASZ_DOT_UND) {
 		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
+		return -1;
+	}
+
+	ok = ad_convert_finderinfo(ad, smb_fname);
+	if (!ok) {
+		DBG_ERR("Failed to convert [%s]\n",
+			smb_fname_str_dbg(smb_fname));
 		return -1;
 	}
 
@@ -1325,15 +1428,8 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 {
 	SMB_STRUCT_STAT sbuf;
 	char *p_ad = NULL;
-	AfpInfo *ai = NULL;
-	DATA_BLOB aiblob;
-	struct smb_filename *stream_name = NULL;
-	files_struct *fsp = NULL;
-	ssize_t len;
 	size_t size;
-	ssize_t nwritten;
-	NTSTATUS status;
-	int saved_errno = 0;
+	ssize_t len;
 	int ret;
 	bool ok;
 
@@ -1403,86 +1499,6 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 		DBG_WARNING("Failed to convert [%s]\n", smb_fname->base_name);
 		return len;
 	}
-
-	p_ad = ad_get_entry(ad, ADEID_FINDERI);
-	if (p_ad == NULL) {
-		return -1;
-	}
-
-	ai = afpinfo_new(talloc_tos());
-	if (ai == NULL) {
-		return -1;
-	}
-
-	memcpy(ai->afpi_FinderInfo, p_ad, ADEDLEN_FINDERI);
-
-	aiblob = data_blob_talloc(talloc_tos(), NULL, AFP_INFO_SIZE);
-	if (aiblob.data == NULL) {
-		TALLOC_FREE(ai);
-		return -1;
-	}
-
-	size = afpinfo_pack(ai, (char *)aiblob.data);
-	TALLOC_FREE(ai);
-	if (size != AFP_INFO_SIZE) {
-		return -1;
-	}
-
-	stream_name = synthetic_smb_fname(talloc_tos(),
-					  smb_fname->base_name,
-					  AFPINFO_STREAM,
-					  NULL,
-					  smb_fname->flags);
-	if (stream_name == NULL) {
-		data_blob_free(&aiblob);
-		DBG_ERR("synthetic_smb_fname failed\n");
-		return -1;
-	}
-
-	DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
-
-	status = SMB_VFS_CREATE_FILE(
-		ad->ad_handle->conn,		/* conn */
-		NULL,				/* req */
-		0,				/* root_dir_fid */
-		stream_name,			/* fname */
-		FILE_GENERIC_WRITE,		/* access_mask */
-		FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */
-		FILE_OPEN_IF,			/* create_disposition */
-		0,				/* create_options */
-		0,				/* file_attributes */
-		INTERNAL_OPEN_ONLY,		/* oplock_request */
-		NULL,				/* lease */
-		0,				/* allocation_size */
-		0,				/* private_flags */
-		NULL,				/* sd */
-		NULL,				/* ea_list */
-		&fsp,				/* result */
-		NULL,				/* psbuf */
-		NULL, NULL);			/* create context */
-	TALLOC_FREE(stream_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("SMB_VFS_CREATE_FILE failed\n");
-		return -1;
-	}
-
-	nwritten = SMB_VFS_PWRITE(fsp,
-				  aiblob.data,
-				  aiblob.length,
-				  0);
-	if (nwritten == -1) {
-		DBG_ERR("SMB_VFS_PWRITE failed\n");
-		saved_errno = errno;
-		close_file(NULL, fsp, ERROR_CLOSE);
-		errno = saved_errno;
-		return -1;
-	}
-
-	status = close_file(NULL, fsp, NORMAL_CLOSE);
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	}
-	fsp = NULL;
 
 	return len;
 }
