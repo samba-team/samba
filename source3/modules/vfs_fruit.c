@@ -985,14 +985,14 @@ static bool ad_convert_xattr(struct adouble *ad,
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))
 		{
 			DBG_ERR("string_replace_allocate failed\n");
-			return -1;
+			return false;
 		}
 
 		tmp = mapped_name;
 		mapped_name = talloc_asprintf(talloc_tos(), ":%s", tmp);
 		TALLOC_FREE(tmp);
 		if (mapped_name == NULL) {
-			return -1;
+			return false;
 		}
 
 		stream_name = synthetic_smb_fname(talloc_tos(),
@@ -1003,7 +1003,7 @@ static bool ad_convert_xattr(struct adouble *ad,
 		TALLOC_FREE(mapped_name);
 		if (stream_name == NULL) {
 			DBG_ERR("synthetic_smb_fname failed\n");
-			return -1;
+			return false;
 		}
 
 		DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
@@ -1030,7 +1030,7 @@ static bool ad_convert_xattr(struct adouble *ad,
 		TALLOC_FREE(stream_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("SMB_VFS_CREATE_FILE failed\n");
-			return -1;
+			return false;
 		}
 
 		nwritten = SMB_VFS_PWRITE(fsp,
@@ -1042,12 +1042,12 @@ static bool ad_convert_xattr(struct adouble *ad,
 			saved_errno = errno;
 			close_file(NULL, fsp, ERROR_CLOSE);
 			errno = saved_errno;
-			return -1;
+			return false;
 		}
 
 		status = close_file(NULL, fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
-			return -1;
+			return false;
 		}
 		fsp = NULL;
 	}
