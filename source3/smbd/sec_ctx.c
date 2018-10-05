@@ -282,7 +282,7 @@ static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *grou
 
 static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 {
-	int max = groups_max();
+	int max = NGROUPS_MAX;
 
 	/* Start context switch */
 	gain_root();
