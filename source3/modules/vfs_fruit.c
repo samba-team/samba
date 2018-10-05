@@ -1170,6 +1170,10 @@ static int ad_convert(struct adouble *ad,
 	ssize_t len;
 	bool ok;
 
+	if (ad_getentrylen(ad, ADEID_FINDERI) == ADEDLEN_FINDERI) {
+		return 0;
+	}
+
 	origlen = ad_getentryoff(ad, ADEID_RFORK) +
 		ad_getentrylen(ad, ADEID_RFORK);
 
@@ -1483,10 +1487,6 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 			smb_fname->base_name);
 		errno = EINVAL;
 		return -1;
-	}
-
-	if (ad_getentrylen(ad, ADEID_FINDERI) == ADEDLEN_FINDERI) {
-		return len;
 	}
 
 	/*
