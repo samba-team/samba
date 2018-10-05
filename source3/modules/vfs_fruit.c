@@ -1071,6 +1071,7 @@ static int ad_convert(struct adouble *ad,
 	int rc = 0;
 	char *map = MAP_FAILED;
 	size_t origlen;
+	ssize_t len;
 	bool ok;
 
 	origlen = ad_getentryoff(ad, ADEID_RFORK) +
@@ -1113,6 +1114,18 @@ static int ad_convert(struct adouble *ad,
 	rc = munmap(map, origlen);
 	if (rc != 0) {
 		DBG_ERR("munmap failed: %s\n", strerror(errno));
+		return -1;
+	}
+
+	ok = ad_pack(ad);
+	if (!ok) {
+		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
+		return -1;
+	}
+
+	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	if (len != AD_DATASZ_DOT_UND) {
+		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
 		return -1;
 	}
 
@@ -1389,18 +1402,6 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 	if (ret != 0) {
 		DBG_WARNING("Failed to convert [%s]\n", smb_fname->base_name);
 		return len;
-	}
-
-	ok = ad_pack(ad);
-	if (!ok) {
-		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
-		return -1;
-	}
-
-	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-	if (len != AD_DATASZ_DOT_UND) {
-		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
-		return -1;
 	}
 
 	p_ad = ad_get_entry(ad, ADEID_FINDERI);
