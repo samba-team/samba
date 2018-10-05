@@ -1161,8 +1161,8 @@ static bool ad_convert_truncate(struct adouble *ad,
 	 * FIXME: direct ftruncate(), but we don't have a fsp for the
 	 * VFS call
 	 */
-	rc = ftruncate(ad->ad_fd, ad_getentryoff(ad, ADEID_RFORK)
-		       + ad_getentrylen(ad, ADEID_RFORK));
+	rc = ftruncate(ad->ad_fd, ADEDOFF_RFORK_DOT_UND +
+		       ad_getentrylen(ad, ADEID_RFORK));
 	if (rc != 0) {
 		return false;
 	}
