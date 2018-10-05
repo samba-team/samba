@@ -262,6 +262,7 @@ typedef enum {ADOUBLE_META, ADOUBLE_RSRC} adouble_type_t;
 #define ADEDLEN_VERSION     4
 #define ADEDLEN_FILLER      16
 #define AD_FILLER_TAG       "Netatalk        " /* should be 16 bytes */
+#define AD_FILLER_TAG_OSX   "Mac OS X        " /* should be 16 bytes */
 #define ADEDLEN_NENTRIES    2
 #define AD_HEADER_LEN       (ADEDLEN_MAGIC + ADEDLEN_VERSION + \
 			     ADEDLEN_FILLER + ADEDLEN_NENTRIES) /* 26 */
@@ -414,6 +415,7 @@ struct adouble {
 	adouble_type_t            ad_type;
 	uint32_t                  ad_magic;
 	uint32_t                  ad_version;
+	uint8_t                   ad_filler[ADEDLEN_FILLER];
 	struct ad_entry           ad_eid[ADEID_MAX];
 	char                     *ad_data;
 	struct ad_xattr_header    adx_header;
@@ -836,6 +838,8 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		DEBUG(1, ("wrong magic or version\n"));
 		return false;
 	}
+
+	memcpy(ad->ad_filler, ad->ad_data + ADEDOFF_FILLER, ADEDLEN_FILLER);
 
 	adentries = RSVAL(ad->ad_data, ADEDOFF_NENTRIES);
 	if (adentries != nentries) {
