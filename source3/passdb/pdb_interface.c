@@ -1238,7 +1238,7 @@ bool pdb_sid_to_id(const struct dom_sid *sid, struct unixid *id)
 
 	ret = pdb->sid_to_id(pdb, sid, id);
 
-	if (ret == true) {
+	if (ret) {
 		idmap_cache_set_sid2unixid(sid, id);
 	}
 
@@ -1540,7 +1540,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	 * "Unix User" and "Unix Group"
 	 */
 	ret = pdb_sid_to_id_unix_users_and_groups(sid, id);
-	if (ret == true) {
+	if (ret) {
 		goto done;
 	}
 
