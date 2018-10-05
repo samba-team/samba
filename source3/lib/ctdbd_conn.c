@@ -405,8 +405,8 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 
 	ret = ctdb_read_packet(conn->fd, conn->timeout, mem_ctx, &hdr);
 	if (ret != 0) {
-		DEBUG(0, ("ctdb_read_packet failed: %s\n", strerror(ret)));
-		cluster_fatal("ctdbd died\n");
+		DBG_ERR("ctdb_read_packet failed: %s\n", strerror(ret));
+		cluster_fatal("failed to read data from ctdbd\n");
 	}
 
 	DEBUG(11, ("Received ctdb packet\n"));
@@ -601,8 +601,8 @@ void ctdbd_socket_readable(struct tevent_context *ev,
 
 	ret = ctdb_read_packet(conn->fd, conn->timeout, talloc_tos(), &hdr);
 	if (ret != 0) {
-		DEBUG(0, ("ctdb_read_packet failed: %s\n", strerror(ret)));
-		cluster_fatal("ctdbd died\n");
+		DBG_ERR("ctdb_read_packet failed: %s\n", strerror(ret));
+		cluster_fatal("failed to read data from ctdbd\n");
 	}
 
 	ret = ctdb_handle_message(ev, conn, hdr);
@@ -1082,9 +1082,8 @@ int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 
 		ret = ctdb_read_packet(conn->fd, conn->timeout, conn, &hdr);
 		if (ret != 0) {
-			DEBUG(0, ("ctdb_read_packet failed: %s\n",
-				  strerror(ret)));
-			cluster_fatal("ctdbd died\n");
+			DBG_ERR("ctdb_read_packet failed: %s\n", strerror(ret));
+			cluster_fatal("failed to read data from ctdbd\n");
 		}
 
 		if (hdr->operation != CTDB_REQ_MESSAGE) {
