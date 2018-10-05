@@ -1178,12 +1178,11 @@ static bool ad_convert_move_reso(struct adouble *ad,
 		return true;
 	}
 
-	memmove(map + ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI,
+	memmove(map + ADEDOFF_RFORK_DOT_UND,
 		map + ad_getentryoff(ad, ADEID_RFORK),
 		ad_getentrylen(ad, ADEID_RFORK));
 
-	ad_setentryoff(ad, ADEID_RFORK,
-		       ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI);
+	ad_setentryoff(ad, ADEID_RFORK, ADEDOFF_RFORK_DOT_UND);
 
 	return true;
 }
