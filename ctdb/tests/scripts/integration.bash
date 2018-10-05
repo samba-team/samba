@@ -701,9 +701,13 @@ db_get_path ()
 # $1: pnn, $2: DB name
 db_ctdb_cattdb_count_records ()
 {
-    try_command_on_node -v $1 $CTDB cattdb "$2" |
-    grep '^key' | grep -v '__db_sequence_number__' |
-    wc -l
+	# Count the number of keys, excluding any that begin with '_'.
+	# This excludes at least the sequence number record in
+	# persistent/replicated databases.  The trailing "|| :" forces
+	# the command to succeed when no records are matched.
+	try_command_on_node $1 \
+		"$CTDB cattdb $2 | grep -c '^key([0-9][0-9]*) = \"[^_]' || :"
+	echo "$out"
 }
 
 # $1: pnn, $2: DB name, $3: key string, $4: value string, $5: RSN (default 7)
