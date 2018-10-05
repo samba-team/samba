@@ -220,8 +220,7 @@ static NTSTATUS add_builtin_guests(struct security_token *token,
 	/*
 	 * First check the local GUEST account.
 	 */
-	sid_copy(&tmp_sid, get_global_sam_sid());
-	sid_append_rid(&tmp_sid, DOMAIN_RID_GUEST);
+	sid_compose(&tmp_sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
 
 	if (nt_token_check_sid(&tmp_sid, token)) {
 		status = add_sid_to_array_unique(token,
@@ -237,8 +236,7 @@ static NTSTATUS add_builtin_guests(struct security_token *token,
 	/*
 	 * First check the local GUESTS group.
 	 */
-	sid_copy(&tmp_sid, get_global_sam_sid());
-	sid_append_rid(&tmp_sid, DOMAIN_RID_GUESTS);
+	sid_compose(&tmp_sid, get_global_sam_sid(), DOMAIN_RID_GUESTS);
 
 	if (nt_token_check_sid(&tmp_sid, token)) {
 		status = add_sid_to_array_unique(token,
