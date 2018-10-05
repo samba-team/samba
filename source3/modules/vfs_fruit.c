@@ -949,6 +949,7 @@ static bool ad_convert_xattr(struct adouble *ad,
 	char *map = MAP_FAILED;
 	size_t maplen;
 	uint16_t i;
+	ssize_t len;
 	int saved_errno = 0;
 	NTSTATUS status;
 	int rc;
@@ -1073,6 +1074,20 @@ static bool ad_convert_xattr(struct adouble *ad,
 	}
 
 	ad_setentrylen(ad, ADEID_FINDERI, ADEDLEN_FINDERI);
+
+	ok = ad_pack(ad);
+	if (!ok) {
+		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
+		goto fail;
+	}
+
+	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	if (len != AD_DATASZ_DOT_UND) {
+		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
+		ok = false;
+		goto fail;
+	}
+
 	ok = true;
 
 fail:
@@ -1204,7 +1219,9 @@ static bool ad_convert_move_reso(struct adouble *ad,
 {
 	char *map = MAP_FAILED;
 	size_t maplen;
+	ssize_t len;
 	int rc;
+	bool ok;
 
 	if (ad_getentrylen(ad, ADEID_RFORK) == 0) {
 		return true;
@@ -1233,6 +1250,18 @@ static bool ad_convert_move_reso(struct adouble *ad,
 
 	ad_setentryoff(ad, ADEID_RFORK, ADEDOFF_RFORK_DOT_UND);
 
+	ok = ad_pack(ad);
+	if (!ok) {
+		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
+		return false;
+	}
+
+	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	if (len != AD_DATASZ_DOT_UND) {
+		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
+		return false;
+	}
+
 	return true;
 }
 
@@ -1248,7 +1277,6 @@ static bool ad_convert_move_reso(struct adouble *ad,
 static int ad_convert(struct adouble *ad,
 		      const struct smb_filename *smb_fname)
 {
-	ssize_t len;
 	bool ok;
 
 	if (ad_getentrylen(ad, ADEID_FINDERI) == ADEDLEN_FINDERI) {
@@ -1267,18 +1295,6 @@ static int ad_convert(struct adouble *ad,
 
 	ok = ad_convert_truncate(ad, smb_fname);
 	if (!ok) {
-		return -1;
-	}
-
-	ok = ad_pack(ad);
-	if (!ok) {
-		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
-		return -1;
-	}
-
-	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-	if (len != AD_DATASZ_DOT_UND) {
-		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
 		return -1;
 	}
 
