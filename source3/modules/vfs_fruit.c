@@ -1152,6 +1152,24 @@ static bool ad_convert_finderinfo(struct adouble *ad,
 	return true;
 }
 
+static bool ad_convert_truncate(struct adouble *ad,
+				const struct smb_filename *smb_fname)
+{
+	int rc;
+
+	/*
+	 * FIXME: direct ftruncate(), but we don't have a fsp for the
+	 * VFS call
+	 */
+	rc = ftruncate(ad->ad_fd, ad_getentryoff(ad, ADEID_RFORK)
+		       + ad_getentrylen(ad, ADEID_RFORK));
+	if (rc != 0) {
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * Convert from Apple's ._ file to Netatalk
  *
@@ -1200,13 +1218,8 @@ static int ad_convert(struct adouble *ad,
 	ad_setentryoff(ad, ADEID_RFORK,
 		       ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI);
 
-	/*
-	 * FIXME: direct ftruncate(), but we don't have a fsp for the
-	 * VFS call
-	 */
-	rc = ftruncate(ad->ad_fd, ad_getentryoff(ad, ADEID_RFORK)
-		       + ad_getentrylen(ad, ADEID_RFORK));
-	if (rc != 0) {
+	ok = ad_convert_truncate(ad, smb_fname);
+	if (!ok) {
 		munmap(map, origlen);
 		return -1;
 	}
