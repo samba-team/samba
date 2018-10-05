@@ -385,6 +385,13 @@ if with_pthreadpool and have_ldwrap:
     plantestsuite("samba3.pthreadpool_cmocka", "none",
                   [os.path.join(bindir(), "pthreadpooltest_cmocka")])
 
+if with_pthreadpool:
+    plantestsuite("samba3.libwbclient_threads",
+                  "nt4_member",
+                  [os.path.join(samba3srcdir,
+                                "script/tests/test_libwbclient_threads.sh"),
+                   "$DOMAIN", "$DC_USERNAME"])
+
 plantestsuite("samba3.async_req", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_async_req.sh")])
 
