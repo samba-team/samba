@@ -776,7 +776,18 @@ void sys_srandom(unsigned int seed)
 
 int groups_max(void)
 {
-#if defined(SYSCONF_SC_NGROUPS_MAX)
+#if defined(DARWINOS)
+	/*
+	 * On MacOS sysconf(_SC_NGROUPS_MAX) returns 16
+	 * due to MacOS's group nesting. However, getgroups()
+	 * will return a flat list and return -1 if that flat list
+	 * exceeds the limit of 16 (which seems to be the case for
+	 * the root user on any 10.14 system). Since the sysconf()
+	 * constant is not related to what getgroups() uses we
+	 * return a fixed constant here.
+	 */
+	return 128;
+#elif defined(SYSCONF_SC_NGROUPS_MAX)
 	int ret = sysconf(_SC_NGROUPS_MAX);
 	return (ret == -1) ? NGROUPS_MAX : ret;
 #else
