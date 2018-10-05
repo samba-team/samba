@@ -236,7 +236,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     names.dnsdomaindn = None
 
     for i in range(0, len(names.ncs)):
-        nc = names.ncs[i]
+        nc = str(names.ncs[i])
 
         dnsforestdn = "DC=ForestDnsZones,%s" % (str(names.rootdn))
         if nc == dnsforestdn:
@@ -307,8 +307,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                           attrs=["xidNumber", "type"])
     if len(res9) != 1:
         raise ProvisioningError("Unable to find uid/gid for Domain Admins rid (%s-%s" % (str(names.domainsid), security.DOMAIN_RID_ADMINISTRATOR))
-    if res9[0]["type"][0] == "ID_TYPE_BOTH":
-        names.root_gid = res9[0]["xidNumber"][0]
+    if str(res9[0]["type"][0]) == "ID_TYPE_BOTH":
+        names.root_gid = int(res9[0]["xidNumber"][0])
     else:
         names.root_gid = pwd.getpwuid(int(res9[0]["xidNumber"][0])).pw_gid
 

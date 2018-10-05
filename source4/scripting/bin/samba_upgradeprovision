@@ -1387,7 +1387,7 @@ def backup_provision(samdb, paths, dir, only_db):
                        scope=ldb.SCOPE_BASE,
                        attrs=["backendStore"])
     if "backendStore" in res[0]:
-        backend_store = res[0]["backendStore"][0]
+        backend_store = str(res[0]["backendStore"][0])
 
 
     if paths.sysvol and not only_db:
