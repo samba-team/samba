@@ -942,6 +942,58 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 	return true;
 }
 
+static bool ad_convert_move_reso(struct adouble *ad,
+				 const struct smb_filename *smb_fname)
+{
+	char *map = MAP_FAILED;
+	size_t maplen;
+	ssize_t len;
+	int rc;
+	bool ok;
+
+	if (ad_getentrylen(ad, ADEID_RFORK) == 0) {
+		return true;
+	}
+
+	maplen = ad_getentryoff(ad, ADEID_RFORK) +
+		ad_getentrylen(ad, ADEID_RFORK);
+
+	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
+	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
+		   ad->ad_fd, 0);
+	if (map == MAP_FAILED) {
+		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
+		return false;
+	}
+
+
+	memmove(map + ADEDOFF_RFORK_DOT_UND,
+		map + ad_getentryoff(ad, ADEID_RFORK),
+		ad_getentrylen(ad, ADEID_RFORK));
+
+	rc = munmap(map, maplen);
+	if (rc != 0) {
+		DBG_ERR("munmap failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	ad_setentryoff(ad, ADEID_RFORK, ADEDOFF_RFORK_DOT_UND);
+
+	ok = ad_pack(ad);
+	if (!ok) {
+		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
+		return false;
+	}
+
+	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	if (len != AD_DATASZ_DOT_UND) {
+		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
+		return false;
+	}
+
+	return true;
+}
+
 static bool ad_convert_xattr(struct adouble *ad,
 			     const struct smb_filename *smb_fname)
 {
@@ -1088,6 +1140,11 @@ static bool ad_convert_xattr(struct adouble *ad,
 		goto fail;
 	}
 
+	ok = ad_convert_move_reso(ad, smb_fname);
+	if (!ok) {
+		goto fail;
+	}
+
 	ok = true;
 
 fail:
@@ -1214,57 +1271,6 @@ static bool ad_convert_truncate(struct adouble *ad,
 	return true;
 }
 
-static bool ad_convert_move_reso(struct adouble *ad,
-				 const struct smb_filename *smb_fname)
-{
-	char *map = MAP_FAILED;
-	size_t maplen;
-	ssize_t len;
-	int rc;
-	bool ok;
-
-	if (ad_getentrylen(ad, ADEID_RFORK) == 0) {
-		return true;
-	}
-
-	maplen = ad_getentryoff(ad, ADEID_RFORK) +
-		ad_getentrylen(ad, ADEID_RFORK);
-
-	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
-	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fd, 0);
-	if (map == MAP_FAILED) {
-		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
-		return false;
-	}
-
-	memmove(map + ADEDOFF_RFORK_DOT_UND,
-		map + ad_getentryoff(ad, ADEID_RFORK),
-		ad_getentrylen(ad, ADEID_RFORK));
-
-	rc = munmap(map, maplen);
-	if (rc != 0) {
-		DBG_ERR("munmap failed: %s\n", strerror(errno));
-		return false;
-	}
-
-	ad_setentryoff(ad, ADEID_RFORK, ADEDOFF_RFORK_DOT_UND);
-
-	ok = ad_pack(ad);
-	if (!ok) {
-		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
-		return false;
-	}
-
-	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-	if (len != AD_DATASZ_DOT_UND) {
-		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
-		return false;
-	}
-
-	return true;
-}
-
 /**
  * Convert from Apple's ._ file to Netatalk
  *
@@ -1284,11 +1290,6 @@ static int ad_convert(struct adouble *ad,
 	}
 
 	ok = ad_convert_xattr(ad, smb_fname);
-	if (!ok) {
-		return -1;
-	}
-
-	ok = ad_convert_move_reso(ad, smb_fname);
 	if (!ok) {
 		return -1;
 	}
