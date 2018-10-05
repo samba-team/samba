@@ -17,6 +17,13 @@ bld.SAMBA_BINARY('nsstest',
                  install=False
 		 )
 
+if bld.CONFIG_SET('HAVE_PTHREAD'):
+    bld.SAMBA_BINARY('stress-nss-libwbclient',
+		     source='stress-nss-libwbclient.c',
+		     deps='wbclient',
+		     install=False
+		     )
+
 # The nss_wrapper code relies strictly on the linux implementation and
 # name, so compile but do not install a copy under this name.
 bld.SAMBA_LIBRARY('nss_wrapper_winbind',
