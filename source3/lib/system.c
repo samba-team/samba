@@ -756,13 +756,31 @@ void sys_srandom(unsigned int seed)
  Returns equivalent to NGROUPS_MAX - using sysconf if needed.
 ****************************************************************************/
 
-int groups_max(void)
+int setgroups_max(void)
 {
 #if defined(SYSCONF_SC_NGROUPS_MAX)
 	int ret = sysconf(_SC_NGROUPS_MAX);
 	return (ret == -1) ? NGROUPS_MAX : ret;
 #else
 	return NGROUPS_MAX;
+#endif
+}
+
+int getgroups_max(void)
+{
+#if defined(DARWINOS)
+	/*
+	 * On MacOS sysconf(_SC_NGROUPS_MAX) returns 16 due to MacOS's group
+	 * nesting. However, The initgroups() manpage states the following:
+	 * "Note that OS X supports group membership in an unlimited number
+	 * of groups. The OS X kernel uses the group list stored in the process
+	 * credentials only as an initial cache.  Additional group memberships
+	 * are determined by communication between the operating system and the
+	 * opendirectoryd daemon."
+	 */
+	return INT_MAX;
+#else
+	return setgroups_max();
 #endif
 }
 
@@ -831,7 +849,7 @@ static int sys_broken_setgroups(int setlen, gid_t *gidset)
 	if (setlen == 0)
 		return 0 ;
 
-	if (setlen < 0 || setlen > groups_max()) {
+	if (setlen < 0 || setlen > setgroups_max()) {
 		errno = EINVAL; 
 		return -1;   
 	}
@@ -882,7 +900,7 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 	int ret;
 
 	/* setgroups(2) will fail with EINVAL if we pass too many groups. */
-	max = groups_max();
+	max = setgroups_max();
 
 	/* No group list, just make sure we are setting the efective GID. */
 	if (setlen == 0) {

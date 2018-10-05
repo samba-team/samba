@@ -30,7 +30,7 @@ void get_random_grouplist(int *ngroups, gid_t **groups)
 {
 	int i;
 
-	*ngroups = random() % groups_max();
+	*ngroups = random() % setgroups_max();
 	*groups = malloc(*ngroups * sizeof(gid_t));
 
 	if (!groups) {

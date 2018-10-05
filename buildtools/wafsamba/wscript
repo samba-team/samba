@@ -539,7 +539,10 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_HEADERS('strings.h inttypes.h stdint.h unistd.h minix/config.h', add_headers=True)
     conf.CHECK_HEADERS('ctype.h', add_headers=True)
 
-    if sys.platform != 'darwin':
+    if sys.platform == 'darwin':
+        conf.DEFINE('_DARWIN_C_SOURCE', 1, add_to_cflags=True)
+        conf.DEFINE('_DARWIN_UNLIMITED_GETGROUPS', 1, add_to_cflags=True)
+    else:
         conf.CHECK_HEADERS('standards.h', add_headers=True)
 
     conf.CHECK_HEADERS('stdbool.h stdint.h stdarg.h vararg.h', add_headers=True)
