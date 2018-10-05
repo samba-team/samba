@@ -71,7 +71,7 @@ def main():
     parser.add_option('-c', '--clean-up',
                       action="store_true",
                       help='Clean up the generated groups and user accounts')
-    parser.add_option('--random-seed', type='int', default=0,
+    parser.add_option('--random-seed', type='int', default=None,
                       help='Use to keep randomness consistent across multiple runs')
 
     model_group = optparse.OptionGroup(parser, 'Traffic Model Options',
@@ -173,7 +173,7 @@ def main():
                       " for the users created as part of this test"))
         sys.exit(1)
 
-    if opts.random_seed:
+    if opts.random_seed is not None:
         random.seed(opts.random_seed)
 
     creds = credopts.get_credentials(lp)
