@@ -886,6 +886,147 @@ static char osx_adouble_w_xattr[] = {
 	0x00, 0x00, 0x00, 0x1c, 0x00, 0x1e, 0xff, 0xff
 };
 
+/*
+ * The buf below contains the following AppleDouble encoded data:
+ *
+ * -------------------------------------------------------------------------------
+ * MagicNumber: 00051607                                        : AppleDouble
+ * Version    : 00020000                                        : Version 2
+ * Filler     : 4D 61 63 20 4F 53 20 58 20 20 20 20 20 20 20 20 : Mac OS X
+ * Num. of ent: 0002                                            : 2
+ *
+ * -------------------------------------------------------------------------------
+ * Entry ID   : 00000002 : Resource Fork
+ * Offset     : 00000052 : 82
+ * Length     : 0000011E : 286
+ *
+ * -RAW DUMP--:  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F : (ASCII)
+ * 00000000   : 00 00 01 00 00 00 01 00 00 00 00 00 00 00 00 1E : ................
+ * 00000010   : 54 68 69 73 20 72 65 73 6F 75 72 63 65 20 66 6F : This resource fo
+ * 00000020   : 72 6B 20 69 6E 74 65 6E 74 69 6F 6E 61 6C 6C 79 : rk intentionally
+ * 00000030   : 20 6C 65 66 74 20 62 6C 61 6E 6B 20 20 20 00 00 :  left blank   ..
+ * 00000040   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000050   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000060   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000070   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000080   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000090   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 000000A0   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 000000B0   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 000000C0   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 000000D0   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 000000E0   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 000000F0   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000100   : 00 00 01 00 00 00 01 00 00 00 00 00 00 00 00 1E : ................
+ * 00000110   : 00 00 00 00 00 00 00 00 00 1C 00 1E FF FF       : ..............
+ *
+ * Entry ID   : 00000009 : Finder Info
+ * Offset     : 00000032 : 50
+ * Length     : 00000020 : 32
+ *
+ * -NOTE------: cannot detect whether FInfo or DInfo. assume FInfo.
+ *
+ * -FInfo-----:
+ * Type       : 57415645 : WAVE
+ * Creator    : 5054756C : PTul
+ * isAlias    : 0
+ * Invisible  : 0
+ * hasBundle  : 0
+ * nameLocked : 0
+ * Stationery : 0
+ * CustomIcon : 0
+ * Reserved   : 0
+ * Inited     : 0
+ * NoINITS    : 0
+ * Shared     : 0
+ * SwitchLaunc: 0
+ * Hidden Ext : 0
+ * color      : 000      : none
+ * isOnDesk   : 0
+ * Location v : 0000     : 0
+ * Location h : 0000     : 0
+ * Fldr       : 0000     : ..
+ *
+ * -FXInfo----:
+ * Rsvd|IconID: 0000     : 0
+ * Rsvd       : 0000     : ..
+ * Rsvd       : 0000     : ..
+ * Rsvd       : 0000     : ..
+ * AreInvalid : 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * CustomBadge: 0
+ * ObjctIsBusy: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * RoutingInfo: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * Rsvd|commnt: 0000     : 0
+ * PutAway    : 00000000 : 0
+ *
+ * -RAW DUMP--:  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F : (ASCII)
+ * 00000000   : 57 41 56 45 50 54 75 6C 00 00 00 00 00 00 00 00 : WAVEPTul........
+ * 00000010   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ *  *
+ * It was created with:
+ * $ hexdump -ve '"\t" 7/1 "0x%02x, " 1/1 " 0x%02x," "\n"'
+ */
+static char osx_adouble_without_xattr[] = {
+	0x00, 0x05, 0x16, 0x07, 0x00, 0x02, 0x00, 0x00,
+	0x4d, 0x61, 0x63, 0x20, 0x4f, 0x53, 0x20, 0x58,
+	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+	0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00,
+	0x00, 0x52, 0x00, 0x00, 0x01, 0x1e, 0x00, 0x00,
+	0x00, 0x09, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00,
+	0x00, 0x20, 0x57, 0x41, 0x56, 0x45, 0x50, 0x54,
+	0x75, 0x6c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x1e, 0x54, 0x68, 0x69, 0x73, 0x20, 0x72,
+	0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x20,
+	0x66, 0x6f, 0x72, 0x6b, 0x20, 0x69, 0x6e, 0x74,
+	0x65, 0x6e, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c,
+	0x6c, 0x79, 0x20, 0x6c, 0x65, 0x66, 0x74, 0x20,
+	0x62, 0x6c, 0x61, 0x6e, 0x6b, 0x20, 0x20, 0x20,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x1c, 0x00, 0x1e, 0xff, 0xff
+};
+
 /**
  * talloc and intialize an AfpInfo
  **/
@@ -2014,6 +2155,122 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 
 	ret = check_stream_list(tree, tctx, fname, 5, streams, false);
 	torture_assert_goto(tctx, ret == true, ret, done, "check_stream_list");
+
+done:
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
+ * Test conversion of AppleDouble file without embedded xattr data
+ */
+static bool test_adouble_conversion_wo_xattr(struct torture_context *tctx,
+					     struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\test_adouble_conversion";
+	const char *adname = BASEDIR "/._test_adouble_conversion";
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	const char *streams[] = {
+		"::$DATA",
+		AFPINFO_STREAM,
+		AFPRESOURCE_STREAM
+	};
+	struct smb2_create create;
+	struct smb2_find find;
+	unsigned int count;
+	union smb_search_data *d;
+	const char *data = "This resource fork intentionally left blank";
+	size_t datalen = strlen(data);
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree, testdirh);
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_setup_file failed\n");
+
+	ret = torture_setup_file(tctx, tree, adname, false);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_setup_file failed\n");
+
+	ret = write_stream(tree, __location__, tctx, mem_ctx,
+			   adname, NULL, 0,
+			   sizeof(osx_adouble_without_xattr),
+			   osx_adouble_without_xattr);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "write_stream failed\n");
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	/*
+	 * Issue a smb2_find(), this triggers the server-side conversion
+	 */
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_DIR_READ,
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = BASEDIR,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	find = (struct smb2_find) {
+		.in.file.handle = create.out.file.handle,
+		.in.pattern = "*",
+		.in.max_response_size = 0x1000,
+		.in.level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO,
+	};
+
+	status = smb2_find_level(tree, tree, &find, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+
+	status = smb2_util_close(tree, create.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
+
+	/*
+	 * Check number of streams
+	 */
+
+	ret = check_stream_list(tree, tctx, fname, 3, streams, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream_list");
+
+
+	/*
+	 * Check Resourcefork data can be read.
+	 */
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx,
+			   fname, AFPRESOURCE_STREAM,
+			   16, datalen, 0, datalen, data);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "check AFPRESOURCE_STREAM failed\n");
+
+	/*
+	 * Check FinderInfo data has been migrated to stream.
+	 */
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx,
+			   fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, "WAVEPTul");
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "check AFPINFO_STREAM failed\n");
 
 done:
 	smb2_deltree(tree, BASEDIR);
@@ -4861,6 +5118,7 @@ struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "copy-chunk streams", test_copy_chunk_streams);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 	torture_suite_add_1smb2_test(suite, "NFS ACE entries", test_nfs_aces);
+	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion without embedded xattr", test_adouble_conversion_wo_xattr);
 
 	return suite;
 }
