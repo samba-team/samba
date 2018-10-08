@@ -3,15 +3,7 @@
 test_info()
 {
     cat <<EOF
-Verify the operation of the 'ctdb continue' command.
-
-After stopping a node...
-
-* Verify that the status of the node changes back to 'OK' and that
-  some public IP addresses move back to the node.
-
-This test does not do any network level checks to make sure IP
-addresses are actually on interfaces.  It just consults "ctdb ip".
+Verify the operation of "ctdb stop" and "ctdb continue"
 EOF
 }
 

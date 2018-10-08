@@ -3,17 +3,7 @@
 test_info()
 {
     cat <<EOF
-Verify the operation of 'ctdb enable'.
-
-After disabling a node...
-
-* Verify that the status of a re-enabled node changes back to 'OK'.
-
-* Verify that some public IP addreses are rebalanced to a re-enabled
-  node.
-
-This test does not do any network level checks to make sure IP
-addresses are actually on interfaces.  It just consults "ctdb ip".
+Verify the operation of "ctdb disable" and "ctdb enable"
 EOF
 }
 
