@@ -1169,6 +1169,12 @@ static bool ad_convert_finderinfo(struct adouble *ad,
 	ssize_t nwritten;
 	NTSTATUS status;
 	int saved_errno = 0;
+	int cmp;
+
+	cmp = memcmp(ad->ad_filler, AD_FILLER_TAG_OSX, ADEDLEN_FILLER);
+	if (cmp != 0) {
+		return true;
+	}
 
 	p_ad = ad_get_entry(ad, ADEID_FINDERI);
 	if (p_ad == NULL) {
