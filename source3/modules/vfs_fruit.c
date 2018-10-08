@@ -995,7 +995,8 @@ static bool ad_convert_move_reso(struct adouble *ad,
 }
 
 static bool ad_convert_xattr(struct adouble *ad,
-			     const struct smb_filename *smb_fname)
+			     const struct smb_filename *smb_fname,
+			     bool *converted_xattr)
 {
 	static struct char_mappings **string_replace_cmaps = NULL;
 	char *map = MAP_FAILED;
@@ -1006,6 +1007,8 @@ static bool ad_convert_xattr(struct adouble *ad,
 	NTSTATUS status;
 	int rc;
 	bool ok;
+
+	*converted_xattr = false;
 
 	if (ad->adx_header.adx_num_attrs == 0) {
 		return true;
@@ -1145,6 +1148,7 @@ static bool ad_convert_xattr(struct adouble *ad,
 		goto fail;
 	}
 
+	*converted_xattr = true;
 	ok = true;
 
 fail:
@@ -1290,12 +1294,13 @@ static int ad_convert(struct adouble *ad,
 		      const struct smb_filename *smb_fname)
 {
 	bool ok;
+	bool converted_xattr = false;
 
 	if (ad_getentrylen(ad, ADEID_FINDERI) == ADEDLEN_FINDERI) {
 		return 0;
 	}
 
-	ok = ad_convert_xattr(ad, smb_fname);
+	ok = ad_convert_xattr(ad, smb_fname, &converted_xattr);
 	if (!ok) {
 		return -1;
 	}
