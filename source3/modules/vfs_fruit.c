@@ -1305,9 +1305,11 @@ static int ad_convert(struct adouble *ad,
 		return -1;
 	}
 
-	ok = ad_convert_truncate(ad, smb_fname);
-	if (!ok) {
-		return -1;
+	if (converted_xattr) {
+		ok = ad_convert_truncate(ad, smb_fname);
+		if (!ok) {
+			return -1;
+		}
 	}
 
 	ok = ad_convert_finderinfo(ad, smb_fname);
