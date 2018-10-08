@@ -34,6 +34,7 @@ from samba.dsdb import (
 from samba import generate_random_password
 import os
 
+
 # FIXME: Pidl should be doing this for us
 def toArray(handle, array, num_entries):
     return [(entry.idx, entry.name) for entry in array.entries[:num_entries]]
@@ -72,7 +73,8 @@ class SamrTests(RpcInterfaceTestCase):
             self.handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
     def test_connect5(self):
-        (level, info, handle) = self.conn.Connect5(None, 0, 1, samr.ConnectInfo1())
+        (level, info, handle) =\
+            self.conn.Connect5(None, 0, 1, samr.ConnectInfo1())
 
     def test_connect2(self):
         handle = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
@@ -80,7 +82,7 @@ class SamrTests(RpcInterfaceTestCase):
 
     def test_EnumDomains(self):
         handle = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
-        domains = toArray(*self.conn.EnumDomains(handle, 0, 4294967295))
+        toArray(*self.conn.EnumDomains(handle, 0, 4294967295))
         self.conn.Close(handle)
 
     # Create groups based on the id list supplied, the id is used to
