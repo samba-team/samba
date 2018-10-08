@@ -48,9 +48,6 @@ ctdb_test_check_real_cluster
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 select_test_node_and_ips
 
 echo "Removing ${test_ip} from the local ARP table..."

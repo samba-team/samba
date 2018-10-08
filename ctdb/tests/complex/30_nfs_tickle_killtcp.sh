@@ -37,9 +37,6 @@ ctdb_test_check_real_cluster
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 select_test_node_and_ips
 
 test_port=2049

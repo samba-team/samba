@@ -15,9 +15,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 select_test_node_and_ips
 
 echo "Stopping node ${test_node}..."

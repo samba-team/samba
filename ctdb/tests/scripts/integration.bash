@@ -57,8 +57,6 @@ ctdb_test_exit_hook_add ()
 
 ctdb_test_init ()
 {
-	ctdb_test_restart_scheduled=false
-
 	trap "ctdb_test_exit" 0
 
 	ctdb_stop_all >/dev/null 2>&1 || true
@@ -582,11 +580,6 @@ ctdb_init ()
     # Try to make the calling test fail
     status=1
     return 1
-}
-
-ctdb_restart_when_done ()
-{
-    ctdb_test_restart_scheduled=true
 }
 
 ctdb_base_show ()

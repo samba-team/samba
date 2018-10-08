@@ -15,9 +15,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 testdb="rec_test.tdb"
 
 echo "Getting list of nodes..."

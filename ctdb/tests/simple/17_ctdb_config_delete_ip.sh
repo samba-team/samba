@@ -18,9 +18,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 select_test_node_and_ips
 
 echo "Deleting IP ${test_ip} from node ${test_node}"

@@ -30,9 +30,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 echo "Finding out which node is the recovery master..."
 try_command_on_node -v 0 "$CTDB recmaster"
 test_node=$out

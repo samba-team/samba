@@ -30,9 +30,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 ######################################################################
 
 try_command_on_node 0 "$CTDB listnodes -X"

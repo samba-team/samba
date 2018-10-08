@@ -26,9 +26,6 @@ if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 	exit 0
 fi
 
-# Reset configuration
-ctdb_restart_when_done
-
 select_test_node_and_ips
 
 ctdb_stop_all

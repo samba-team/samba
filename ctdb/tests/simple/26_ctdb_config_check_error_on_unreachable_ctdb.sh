@@ -40,9 +40,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 test_node=1
 
 try_command_on_node 0 "$CTDB listnodes"

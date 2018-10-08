@@ -38,8 +38,6 @@ set -e
 
 cluster_is_healthy
 
-ctdb_restart_when_done
-
 TESTDB="persistent_trans.tdb"
 
 try_command_on_node 0 "$CTDB attach $TESTDB persistent"

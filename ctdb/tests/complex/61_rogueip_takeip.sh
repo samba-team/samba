@@ -17,9 +17,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 select_test_node_and_ips
 
 echo "Running test against node $test_node and IP $test_ip"

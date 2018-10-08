@@ -19,8 +19,6 @@ set -e
 
 cluster_is_healthy
 
-ctdb_restart_when_done
-
 select_test_node_and_ips
 
 get_debug ()

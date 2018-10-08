@@ -42,9 +42,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 ######################################################################
 
 # Confirm that no nodes have databases with read-only delegations

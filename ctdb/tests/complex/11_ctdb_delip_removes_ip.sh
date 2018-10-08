@@ -19,9 +19,6 @@ ctdb_test_check_real_cluster
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 select_test_node_and_ips
 get_test_ip_mask_and_iface
 

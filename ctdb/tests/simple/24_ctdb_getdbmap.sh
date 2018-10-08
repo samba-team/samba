@@ -31,9 +31,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 make_temp_db_filename ()
 {
     dd if=/dev/urandom count=1 bs=512 2>/dev/null |

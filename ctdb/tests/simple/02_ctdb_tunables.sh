@@ -15,8 +15,6 @@ set -e
 
 cluster_is_healthy
 
-ctdb_restart_when_done
-
 try_command_on_node -v 0 "$CTDB listvars"
 
 sanity_check_output \

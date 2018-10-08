@@ -29,9 +29,6 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
-ctdb_restart_when_done
-
 #
 # Main test
 #

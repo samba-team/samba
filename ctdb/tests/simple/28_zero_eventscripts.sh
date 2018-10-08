@@ -23,9 +23,6 @@ if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 	exit 0
 fi
 
-# Reset configuration
-ctdb_restart_when_done
-
 ctdb_stop_all
 
 echo "Starting CTDB with an empty eventscript directory..."
