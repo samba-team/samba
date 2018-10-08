@@ -480,6 +480,13 @@ wait_until_node_has_some_ips ()
     wait_until 60 node_has_some_ips "$@"
 }
 
+wait_until_node_has_no_ips ()
+{
+    echo "Waiting until no IPs are assigned to node ${test_node}"
+
+    wait_until 60 ! node_has_some_ips "$@"
+}
+
 #######################################
 
 _service_ctdb ()
