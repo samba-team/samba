@@ -3,30 +3,7 @@
 test_info()
 {
     cat <<EOF
-Verify that 'ctdb setvar' works correctly.
-
-Doesn't strictly follow the procedure outlines below, since it doesn't
-pick a variable from the output of 'ctdb listvars'.  However, it
-verifies the value with 'ctdb getvar' in addition to 'ctdb listvars'.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Get a list of all the ctdb tunable variables, using the 'ctdb
-   listvars' command.
-3. Increment the value of one of the variables using the 'setvar' control on
-   one of the nodes.  E.g. 'ctdb setvar RecoverTimeout 31'.
-4. Verify that the 'listvars' control now shows the new value for the
-   variable.
-
-Expected results:
-
-* After setting a value using 'ctdb setvar', 'ctdb listvars' shows the
-  modified value of the variable.
+Verify the operation of "ctdb listvars", "ctdb getvar", "ctdb setvar"
 EOF
 }
 
@@ -38,8 +15,30 @@ set -e
 
 cluster_is_healthy
 
-# Reset configuration
 ctdb_restart_when_done
+
+try_command_on_node -v 0 "$CTDB listvars"
+
+sanity_check_output \
+    5 \
+    '^[[:alpha:]][[:alnum:]]+[[:space:]]*=[[:space:]]*[[:digit:]]+$' \
+    "$out"
+
+echo "Verifying all variable values using \"ctdb getvar\"..."
+
+echo "$out" |
+while read var x val ; do
+    try_command_on_node 0 "$CTDB getvar $var"
+
+    val2="${out#*= }"
+
+    if [ "$val" != "$val2" ] ; then
+	echo "MISMATCH on $var: $val != $val2"
+	exit 1
+    fi
+done
+
+echo "GOOD: all tunables match"
 
 var="RecoverTimeout"
 
