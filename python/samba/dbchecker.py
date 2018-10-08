@@ -378,10 +378,11 @@ systemFlags: -1946157056%s""" % (dn, guid_suffix),
 
     def do_modify(self, m, controls, msg, validate=True):
         '''perform a modify with optional verbose output'''
+        controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+            self.report("controls: %r" % controls)
         try:
-            controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.modify(m, controls=controls, validate=validate)
         except Exception, err:
             if self.in_transaction:
