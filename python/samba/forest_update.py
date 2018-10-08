@@ -346,7 +346,7 @@ objectClass: container
                                 controls=["search_options:1:2"])
 
         assert len(msg) == 1
-        existing_sddl = msg[0][attr][0]
+        existing_sddl = str(msg[0][attr][0])
         index = existing_sddl.rfind("S:")
         if index != -1:
             new_sddl = existing_sddl[:index] + ace + existing_sddl[index:]
