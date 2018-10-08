@@ -19,7 +19,7 @@ EOF
 
 set -e
 
-ctdb_test_init "$@"
+ctdb_test_init
 
 cluster_is_healthy
 

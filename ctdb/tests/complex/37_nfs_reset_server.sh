@@ -27,7 +27,7 @@ EOF
 
 set -e
 
-ctdb_test_init "$@"
+ctdb_test_init
 
 ctdb_test_check_real_cluster
 
