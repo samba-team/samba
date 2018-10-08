@@ -127,10 +127,12 @@ static bool gencache_init(void)
 
 static TDB_DATA last_stabilize_key(void)
 {
-	TDB_DATA result;
-	result.dptr = discard_const_p(uint8_t, "@LAST_STABILIZED");
-	result.dsize = 17;
-	return result;
+	const char key[] = "@LAST_STABILIZED";
+
+	return (TDB_DATA) {
+		.dptr = discard_const_p(uint8_t, key),
+		.dsize = sizeof(key),
+	};
 }
 
 struct gencache_have_val_state {
