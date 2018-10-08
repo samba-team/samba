@@ -55,7 +55,7 @@
 
 #include "lib/audit_logging/audit_logging.h"
 
-const int JANNASON_FAILURE = -1;
+const int JANSSON_FAILURE = -1;
 const int CALL_ORIG = -2;
 
 /*
@@ -300,7 +300,7 @@ static void test_json_add_int(_UNUSED_ void **state)
 	 * Test json object set new failure
 	 */
 	will_return(__wrap_json_integer, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_int(&object, "name", 2);
 
 	assert_false(json_is_invalid(&object));
@@ -320,7 +320,7 @@ static void test_json_add_bool(_UNUSED_ void **state)
 	 * json_boolean does not return an error code.
 	 * Test json object set new failure
 	 */
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_bool(&object, "name", true);
 
 	assert_false(json_is_invalid(&object));
@@ -351,7 +351,7 @@ static void test_json_add_string(_UNUSED_ void **state)
 	 * Test json object set new failure
 	 */
 	will_return(__wrap_json_string, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_string(&object, "name", "value");
 
 	assert_false(json_is_invalid(&object));
@@ -360,7 +360,7 @@ static void test_json_add_string(_UNUSED_ void **state)
 	/*
 	 * Test json object set new failure for a NULL string
 	 */
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_string(&object, "null", NULL);
 
 	assert_false(json_is_invalid(&object));
@@ -384,7 +384,7 @@ static void test_json_add_object(_UNUSED_ void **state)
 	/*
 	 * Test json object set new failure
 	 */
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_object(&object, "name", &value);
 
 	assert_false(json_is_invalid(&object));
@@ -394,7 +394,7 @@ static void test_json_add_object(_UNUSED_ void **state)
 	/*
 	 * Test json object set new failure for a NULL value
 	 */
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_object(&object, "null", NULL);
 
 	assert_false(json_is_invalid(&object));
@@ -419,7 +419,7 @@ static void test_json_add_to_array(_UNUSED_ void **state)
 	/*
 	 * Test json array append new failure
 	 */
-	will_return(__wrap_json_array_append_new, JANNASON_FAILURE);
+	will_return(__wrap_json_array_append_new, JANSSON_FAILURE);
 	rc = json_add_object(&array, "name", &value);
 
 	assert_false(json_is_invalid(&array));
@@ -429,7 +429,7 @@ static void test_json_add_to_array(_UNUSED_ void **state)
 	/*
 	 * Test json append new failure with a NULL value
 	 */
-	will_return(__wrap_json_array_append_new, JANNASON_FAILURE);
+	will_return(__wrap_json_array_append_new, JANSSON_FAILURE);
 	rc = json_add_object(&array, "null", NULL);
 
 	assert_false(json_is_invalid(&array));
@@ -461,7 +461,7 @@ static void test_json_add_timestamp(_UNUSED_ void **state)
 	will_return(__wrap_gettimeofday, 0);
 	will_return(__wrap_localtime, false);
 	will_return(__wrap_json_string, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_timestamp(&object);
 
 	assert_false(json_is_invalid(&object));
@@ -511,7 +511,7 @@ static void test_json_add_stringn(_UNUSED_ void **state)
 	 * Test json object set new failure
 	 */
 	will_return(__wrap_json_string, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_stringn(&object, "name", "value", 3);
 
 	assert_false(json_is_invalid(&object));
@@ -520,7 +520,7 @@ static void test_json_add_stringn(_UNUSED_ void **state)
 	/*
 	 * Test json object set new failure for a NULL string
 	 */
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_stringn(&object, "null", NULL, 2);
 
 	assert_false(json_is_invalid(&object));
@@ -529,7 +529,7 @@ static void test_json_add_stringn(_UNUSED_ void **state)
 	/*
 	 * Test json object set new failure for a zero string size
 	 */
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_stringn(&object, "zero", "no value", 0);
 
 	assert_false(json_is_invalid(&object));
@@ -567,7 +567,7 @@ static void test_json_add_version(_UNUSED_ void **state)
 
 	will_return(__wrap_json_object, false);
 	will_return(__wrap_json_integer, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_version(&object, 2, 12);
 
 	assert_false(json_is_invalid(&object));
@@ -588,7 +588,7 @@ static void test_json_add_version(_UNUSED_ void **state)
 	will_return(__wrap_json_integer, false);
 	will_return(__wrap_json_object_set_new, CALL_ORIG);
 	will_return(__wrap_json_integer, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_version(&object, 3, 13);
 
 	assert_false(json_is_invalid(&object));
@@ -609,7 +609,7 @@ static void test_json_add_version(_UNUSED_ void **state)
 	will_return(__wrap_json_integer, false);
 	will_return(__wrap_json_object_set_new, CALL_ORIG);
 	will_return(__wrap_json_integer, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_version(&object, 4, 14);
 
 	assert_false(json_is_invalid(&object));
@@ -635,7 +635,7 @@ static void test_json_add_address(_UNUSED_ void **state)
 	will_return(__wrap_json_object, false);
 	object = json_new_object();
 
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_address(&object, "name", NULL);
 
 	assert_false(json_is_invalid(&object));
@@ -650,7 +650,7 @@ static void test_json_add_address(_UNUSED_ void **state)
 	will_return(__wrap_talloc_named_const, REAL_TALLOC);
 	will_return(__wrap_tsocket_address_string, false);
 	will_return(__wrap_json_string, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_address(&object, "name", ip);
 
 	assert_false(json_is_invalid(&object));
@@ -698,7 +698,7 @@ static void test_json_add_sid(void **state)
 	will_return(__wrap_json_object, false);
 	object = json_new_object();
 
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_sid(&object, "null", NULL);
 	assert_int_equal(JSON_ERROR, rc);
 
@@ -707,7 +707,7 @@ static void test_json_add_sid(void **state)
 	 */
 	assert_true(string_to_sid(&sid, SID));
 	will_return(__wrap_json_string, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_sid(&object, "sid", &sid);
 	assert_int_equal(JSON_ERROR, rc);
 
@@ -728,7 +728,7 @@ static void test_json_add_guid(void **state)
 	will_return(__wrap_json_object, false);
 	object = json_new_object();
 
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_guid(&object, "null", NULL);
 	assert_int_equal(JSON_ERROR, rc);
 
@@ -738,7 +738,7 @@ static void test_json_add_guid(void **state)
 	status = GUID_from_string(GUID, &guid);
 	assert_true(NT_STATUS_IS_OK(status));
 	will_return(__wrap_json_string, false);
-	will_return(__wrap_json_object_set_new, JANNASON_FAILURE);
+	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_guid(&object, "guid", &guid);
 	assert_int_equal(JSON_ERROR, rc);
 
@@ -818,7 +818,7 @@ static void test_json_get_object(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_object stored;
-	struct json_object retreived;
+	struct json_object retrieved;
 
 	int rc;
 
@@ -839,8 +839,8 @@ static void test_json_get_object(_UNUSED_ void **state)
 	 */
 	will_return(__wrap_json_object, false);
 	will_return(__wrap_json_object_update, true);
-	retreived = json_get_object(&object, "stored");
-	assert_true(json_is_invalid(&retreived));
+	retrieved = json_get_object(&object, "stored");
+	assert_true(json_is_invalid(&retrieved));
 
 	json_free(&object);
 }

@@ -294,7 +294,7 @@ void audit_message_send(
  * Create a new json object, the json_object wraps the underlying json
  * implementations JSON Object representation.
  *
- * Free with a call to json_free_object, note that the jansson inplementation
+ * Free with a call to json_free_object, note that the jansson implementation
  * allocates memory with malloc and not talloc.
  *
  * @return a struct json_object, valid will be set to false if the object
@@ -321,7 +321,7 @@ struct json_object json_new_object(void) {
  * Create a new json object, the json_object wraps the underlying json
  * implementations JSON Array representation.
  *
- * Free with a call to json_free_object, note that the jansson inplementation
+ * Free with a call to json_free_object, note that the jansson implementation
  * allocates memory with malloc and not talloc.
  *
  * @return a struct json_object, error will be set to true if the array
