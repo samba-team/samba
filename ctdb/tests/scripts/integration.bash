@@ -288,24 +288,25 @@ _cluster_is_ready ()
 
 cluster_is_healthy ()
 {
-    if onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
-	echo "Cluster is HEALTHY"
-	if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_recovered ; then
-	  echo "WARNING: cluster in recovery mode!"
+	if onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
+		echo "Cluster is HEALTHY"
+		if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_recovered ; then
+			echo "WARNING: cluster in recovery mode!"
+		fi
+		return 0
 	fi
-	return 0
-    else
+
 	echo "Cluster is UNHEALTHY"
-	if ! ${ctdb_test_restart_scheduled:-false} ; then
-	    echo "DEBUG AT $(date '+%F %T'):"
-	    local i
-	    for i in "onnode -q 0 $CTDB status" "onnode -q 0 onnode all $CTDB scriptstatus" ; do
+
+	echo "DEBUG AT $(date '+%F %T'):"
+	local i
+	for i in "onnode -q 0 $CTDB status" \
+			 "onnode -q 0 onnode all $CTDB scriptstatus" ; do
 		echo "$i"
 		$i || true
-	    done
-	fi
+	done
+
 	return 1
-    fi
 }
 
 wait_until_ready ()
