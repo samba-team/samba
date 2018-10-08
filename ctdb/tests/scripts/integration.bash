@@ -62,7 +62,7 @@ ctdb_test_init ()
 	ctdb_stop_all >/dev/null 2>&1 || true
 
 	echo "Configuring cluster..."
-	setup_ctdb || exit 1
+	setup_ctdb "$@" || exit 1
 
 	echo "Starting cluster..."
 	ctdb_init || exit 1

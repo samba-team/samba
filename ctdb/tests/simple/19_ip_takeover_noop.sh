@@ -15,26 +15,17 @@ EOF
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
-
-cluster_is_healthy
 
 if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 	echo "SKIPPING this test - only runs against local daemons"
 	exit 0
 fi
 
-select_test_node_and_ips
-
-ctdb_stop_all
-
 echo "Starting CTDB with failover disabled..."
-setup_ctdb --disable-failover
-ctdb_start_all
+ctdb_test_init --disable-failover
 
-wait_until_ready
+cluster_is_healthy
 
 echo "Getting IP allocation..."
 try_command_on_node -v any "$CTDB ip all | tail -n +2"
@@ -50,13 +41,11 @@ EOF
 echo "GOOD: All IP addresses are unassigned"
 
 echo "----------------------------------------"
-ctdb_stop_all
 
 echo "Starting CTDB with an empty public addresses configuration..."
-setup_ctdb --no-public-addresses
-ctdb_start_all
+ctdb_test_init --no-public-addresses
 
-wait_until_ready
+cluster_is_healthy
 
 echo "Trying explicit ipreallocate..."
 try_command_on_node any $CTDB ipreallocate
