@@ -82,6 +82,5 @@ echo "MAC address is: ${new_mac}"
 if [ "$original_mac" != "$new_mac" ] ; then
     echo "GOOD: MAC address changed"
 else
-    echo "BAD: MAC address did not change"
-    testfailures=1
+    die "BAD: MAC address did not change"
 fi

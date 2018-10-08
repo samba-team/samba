@@ -70,6 +70,5 @@ new_sum=$(sum $nfs_local_file)
 if [ "$original_md5" = "$new_md5" ] ; then
     echo "GOOD: file contents unchanged after failover"
 else
-    echo "BAD: file contents are different after failover"
-    testfailures=1
+    die "BAD: file contents are different after failover"
 fi

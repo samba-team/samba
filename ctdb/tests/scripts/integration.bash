@@ -29,9 +29,6 @@ ctdb_test_exit ()
 
     trap - 0
 
-    [ $(($testfailures+0)) -eq 0 -a $status -ne 0 ] && testfailures=$status
-    status=$(($testfailures+0))
-
     # Avoid making a test fail from this point onwards.  The test is
     # now complete.
     set +e
@@ -69,7 +66,6 @@ ctdb_test_exit_hook_add ()
 ctdb_test_init ()
 {
     scriptname=$(basename "$0")
-    testfailures=0
     ctdb_test_restart_scheduled=false
 
     trap "ctdb_test_exit" 0

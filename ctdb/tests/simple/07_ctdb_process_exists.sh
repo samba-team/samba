@@ -62,8 +62,7 @@ echo "$out"
 if [ $status -eq 0 ] ; then
     echo "OK"
 else
-    echo "BAD"
-    testfailures=1
+    die "BAD"
 fi
 
 echo "Checking for PID $client_pid with SRVID $srvid on node $test_node"
@@ -75,8 +74,7 @@ echo "$out"
 if [ $status -eq 0 ] ; then
     echo "OK"
 else
-    echo "BAD"
-    testfailures=1
+    die "BAD"
 fi
 
 echo "Checking for PID $client_pid with SRVID $client_pid on node $test_node"

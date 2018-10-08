@@ -19,6 +19,8 @@ set -e
 
 cluster_is_healthy
 
+ctdb_restart_when_done
+
 select_test_node_and_ips
 
 get_debug ()
@@ -45,8 +47,7 @@ set_and_check_debug ()
     get_debug $node
 
     if [ "$levelstr" != "$check_debug" ] ; then
-	echo "BAD: Debug level should have changed to \"$levelstr\" but it is \"$check_debug\"."
-	testfailures=1
+	die "BAD: Debug level \"$levelstr\" != \"$check_debug\"."
     fi
 }
 
@@ -80,9 +81,3 @@ INFO 8
 INFO 9
 DEBUG 10
 EOF
-
-if [ "$testfailures" != 1 ] ; then
-    echo
-    echo "Returning the debug level to its initial value..."
-    set_and_check_debug $test_node "$initial_debug"
-fi

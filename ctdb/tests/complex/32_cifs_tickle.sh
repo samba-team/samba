@@ -69,8 +69,7 @@ echo "$out"
 if [ "${out/SRC: ${src_socket} /}" != "$out" ] ; then
     echo "GOOD: CIFS connection tracked OK by CTDB."
 else
-    echo "BAD: Socket not tracked by CTDB."
-    testfailures=1
+    die "BAD: Socket not tracked by CTDB."
 fi
 
 # This is almost immediate.  However, it is sent between nodes

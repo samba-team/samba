@@ -55,7 +55,7 @@ while [ $n -lt $num_nodes ] ; do
     else
 	echo "DIFFERs from node 0:"
 	echo "$out"
-	testfailures=1
+	exit 1
     fi
     n=$(($n + 1))
 done

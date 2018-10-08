@@ -42,18 +42,17 @@ machineout=$(echo "$out" | sed -r \
 	-e 's@\]@@g')
 
 if [ -z "$TEST_LOCAL_DAEMONS" ]; then
-    while read ip pnn ; do
-        try_command_on_node $pnn "ip addr show"
-        if [ "${out/inet* ${ip}\/}" != "$out" ] ; then
-            echo "GOOD: node $pnn appears to have $ip assigned"
-        else
-            echo "BAD:  node $pnn does not appear to have $ip assigned"
-            testfailures=1
-        fi
-    done <<<"$ips" # bashism to avoid problem setting variable in pipeline.
+	while read ip pnn ; do
+		try_command_on_node $pnn "ip addr show"
+		if [ "${out/inet* ${ip}\/}" != "$out" ] ; then
+			echo "GOOD: node $pnn appears to have $ip assigned"
+		else
+			die "BAD: node $pnn does not appear to have $ip assigned"
+		fi
+	done <<<"$ips" # bashism to avoid problem setting variable in pipeline.
 fi
 
-[ "$testfailures" != 1 ] && echo "Looks good!"
+echo "Looks good!"
 
 cmd="$CTDB -X ip all | tail -n +2"
 echo "Checking that \"$cmd\" produces expected output..."
@@ -66,5 +65,5 @@ else
     echo "$out"
     echo "Should be like this:"
     echo "$machineout"
-    testfailures=1
+    exit 1
 fi

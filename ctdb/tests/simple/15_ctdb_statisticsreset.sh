@@ -52,8 +52,7 @@ check_reduced ()
     if [ $after -lt $before ] ; then
 	echo "GOOD: ${label} reduced from ${before} to ${after}"
     else
-	echo "BAD: ${label} did not reduce from ${before} to ${after}"
-	testfailures=1
+	die "BAD: ${label} did not reduce from ${before} to ${after}"
     fi
 }
 

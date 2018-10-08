@@ -51,8 +51,7 @@ getdebug_n="$out"
 if [ "$getdebug_onnode" = "$getdebug_n" ] ; then
     echo "They're the same... cool!"
 else
-    echo "Error: they differ."
-    testfailures=1
+    die "Error: they differ."
 fi
 
 seps=""

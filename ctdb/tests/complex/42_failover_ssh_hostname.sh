@@ -78,6 +78,5 @@ echo "Hostname is: ${new_hostname}"
 if [ "$original_hostname" != "$new_hostname" ] ; then
     echo "GOOD: hostname changed"
 else
-    echo "BAD: hostname did not change"
-    testfailures=1
+    die "BAD: hostname did not change"
 fi

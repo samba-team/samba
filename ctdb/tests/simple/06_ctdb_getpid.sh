@@ -51,8 +51,7 @@ pids_getpid_n="$out"
 if [ "$pids_onnode" = "$pids_getpid_n" ] ; then
     echo "They're the same... cool!"
 else
-    echo "Error: they differ."
-    testfailures=1
+    die "Error: they differ."
 fi
 
 echo "Checking each PID for validity"
@@ -68,8 +67,7 @@ while [ $n -lt $num_nodes ] ; do
 	# We could check cmdline too if this isn't good enough.
 	echo "GOOD enough!"
     else
-	echo "BAD!"
-	testfailures=1
+	die "BAD!"
     fi
     n=$(($n + 1))
 done <<<"$pids_onnode"

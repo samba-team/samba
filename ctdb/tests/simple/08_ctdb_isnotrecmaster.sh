@@ -44,13 +44,11 @@ num_not_rm_lines=$(echo "$out" | fgrep -c 'this node is not the recmaster') || t
 if [ $num_rm_lines -eq 1 ] ; then
     echo "OK, there is only 1 recmaster"
 else
-    echo "BAD, there are ${num_rm_lines} nodes claiming to be the recmaster"
-    testfailures=1
+    die "BAD, there are ${num_rm_lines} nodes claiming to be the recmaster"
 fi
 
 if [ $(($num_all_lines - $num_not_rm_lines)) -eq 1 ] ; then
     echo "OK, all the other nodes claim not to be the recmaster"
 else
-    echo "BAD, there are only ${num_not_rm_lines} nodes claiming not to be the recmaster"
-    testfailures=1
+    die "BAD, there are only ${num_not_rm_lines} notrecmaster nodes"
 fi
