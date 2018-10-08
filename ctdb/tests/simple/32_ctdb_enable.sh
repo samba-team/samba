@@ -32,9 +32,7 @@ select_test_node_and_ips
 echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node
 wait_until_node_has_status $test_node disabled
-
-echo "Waiting for IPs to no longer be hosted on node ${test_node}"
-wait_until_ips_are_on_node '!' $test_node $test_node_ips
+wait_until_node_has_no_ips "$test_node"
 
 echo "Re-enabling node $test_node"
 try_command_on_node 1 $CTDB enable -n $test_node
