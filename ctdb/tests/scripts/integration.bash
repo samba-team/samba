@@ -44,22 +44,8 @@ ctdb_test_exit ()
     eval "$ctdb_test_exit_hook" || true
     unset ctdb_test_exit_hook
 
-    if $ctdb_test_restart_scheduled || ! cluster_is_healthy ; then
-	echo "Restarting CTDB (scheduled)..."
-	ctdb_stop_all || true  # Might be restarting some daemons were shutdown
-
-	echo "Reconfiguring cluster..."
-	setup_ctdb
-
-	ctdb_init
-    else
-	# This could be made unconditional but then we might get
-	# duplication from the recovery in ctdb_init().  We want to
-	# leave the recovery in ctdb_init() so that future tests that
-	# might do a manual restart mid-test will benefit.
-	echo "Forcing a recovery..."
-	onnode 0 $CTDB recover
-    fi
+    echo "Stopping cluster..."
+    ctdb_stop_all
 
     exit $status
 }
@@ -71,9 +57,19 @@ ctdb_test_exit_hook_add ()
 
 ctdb_test_init ()
 {
-    ctdb_test_restart_scheduled=false
+	ctdb_test_restart_scheduled=false
 
-    trap "ctdb_test_exit" 0
+	trap "ctdb_test_exit" 0
+
+	ctdb_stop_all >/dev/null 2>&1 || true
+
+	echo "Configuring cluster..."
+	setup_ctdb || exit 1
+
+	echo "Starting cluster..."
+	ctdb_init || exit 1
+
+	echo  "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
 }
 
 ########################################
