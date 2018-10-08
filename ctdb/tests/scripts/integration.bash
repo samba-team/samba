@@ -65,7 +65,6 @@ ctdb_test_exit_hook_add ()
 
 ctdb_test_init ()
 {
-    scriptname=$(basename "$0")
     ctdb_test_restart_scheduled=false
 
     trap "ctdb_test_exit" 0
