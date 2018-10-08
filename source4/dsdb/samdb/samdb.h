@@ -135,6 +135,9 @@ struct dsdb_control_password_change {
 /* passed by dbcheck to fix the DN string of a one-way-link (bug #13495) */
 #define DSDB_CONTROL_DBCHECK_FIX_LINK_DN_NAME "1.3.6.1.4.1.7165.4.3.19.3"
 
+/* passed by dbcheck to fix the DN SID of a one-way-link (bug #13418) */
+#define DSDB_CONTROL_DBCHECK_FIX_LINK_DN_SID "1.3.6.1.4.1.7165.4.3.19.4"
+
 /* passed when importing plain text password on upgrades */
 #define DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID "1.3.6.1.4.1.7165.4.3.20"
 
