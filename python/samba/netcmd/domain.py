@@ -4092,7 +4092,7 @@ class cmd_domain_schema_upgrade(Command):
                     if len(res) != 1:
                         ldif_op.unknown_oid = value
                     else:
-                        display_name = res[0]['ldapDisplayName'][0]
+                        display_name = str(res[0]['ldapDisplayName'][0])
                         line = line.replace(value, ' ' + display_name)
 
             # Microsoft has marked objects as defunct that Samba doesn't know about
