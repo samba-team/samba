@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+bld.SAMBA_LIBRARY('printer_driver',
+                  source='printer_driver.c',
+                  deps='gpo cli_spoolss',
+		  private_library=True)
