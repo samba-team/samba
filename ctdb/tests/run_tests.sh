@@ -284,7 +284,8 @@ do_cleanup ()
     fi
 }
 
-trap do_cleanup SIGINT SIGTERM
+trap "do_cleanup ; exit 130" SIGINT
+trap "do_cleanup ; exit 143" SIGTERM
 
 declare -a tests
 i=0
