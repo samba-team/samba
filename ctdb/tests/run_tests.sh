@@ -284,18 +284,7 @@ do_cleanup ()
     fi
 }
 
-cleanup_handler ()
-{
-    if $TEST_CLEANUP ; then
-	if [ -n "$TEST_LOCAL_DAEMONS" -a "$f" = "simple" ] ; then
-	    echo "***** shutting down daemons *****"
-	    find_and_run_one_test simple/99_daemons_shutdown.sh "$tests_dir"
-	fi
-    fi
-    do_cleanup
-}
-
-trap cleanup_handler SIGINT SIGTERM
+trap do_cleanup SIGINT SIGTERM
 
 declare -a tests
 i=0
