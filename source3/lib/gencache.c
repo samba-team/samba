@@ -273,13 +273,13 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 	static int writecount;
 	TDB_DATA dbufs[2];
 
-	if (tdb_data_cmp(string_term_tdb_data(keystr),
-			 last_stabilize_key()) == 0) {
-		DEBUG(10, ("Can't store %s as a key\n", keystr));
+	if ((keystr == NULL) || (blob.data == NULL)) {
 		return false;
 	}
 
-	if ((keystr == NULL) || (blob.data == NULL)) {
+	if (tdb_data_cmp(string_term_tdb_data(keystr),
+			 last_stabilize_key()) == 0) {
+		DEBUG(10, ("Can't store %s as a key\n", keystr));
 		return false;
 	}
 
