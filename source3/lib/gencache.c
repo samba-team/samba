@@ -408,19 +408,24 @@ bool gencache_del(const char *keystr)
 	return result;
 }
 
-static bool gencache_pull_timeout(uint8_t *val, time_t *pres, char **payload)
+static bool gencache_pull_timeout(TDB_DATA data, time_t *pres, char **payload)
 {
 	time_t res;
+	char *slash = NULL;
 	char *endptr;
 
-	if (val == NULL) {
+	if (data.dptr == NULL) {
+		return false;
+	}
+	slash = memchr(data.dptr, '/', data.dsize);
+	if (slash == NULL) {
 		return false;
 	}
 
-	res = strtol((char *)val, &endptr, 10);
+	res = strtol((char *)data.dptr, &endptr, 10);
 
 	if ((endptr == NULL) || (*endptr != '/')) {
-		DEBUG(2, ("Invalid gencache data format: %s\n", (char *)val));
+		DBG_WARNING("Invalid gencache data format\n");
 		return false;
 	}
 	if (pres != NULL) {
@@ -451,7 +456,7 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 	if (data.dptr == NULL) {
 		return -1;
 	}
-	ret = gencache_pull_timeout(data.dptr, &t.timeout, &payload);
+	ret = gencache_pull_timeout(data, &t.timeout, &payload);
 	if (!ret) {
 		return -1;
 	}
@@ -716,7 +721,7 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 		return 0;
 	}
 
-	if (!gencache_pull_timeout(val.dptr, &timeout, NULL)) {
+	if (!gencache_pull_timeout(val, &timeout, NULL)) {
 		DEBUG(10, ("Ignoring invalid entry\n"));
 		return 0;
 	}
@@ -841,7 +846,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		}
 	}
 
-	if (!gencache_pull_timeout(data.dptr, &timeout, &payload)) {
+	if (!gencache_pull_timeout(data, &timeout, &payload)) {
 		goto done;
 	}
 
