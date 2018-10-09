@@ -25,11 +25,6 @@ if ! $CTDB_TESTS_ARE_INSTALLED ; then
 
 	ctdb_dir=$(dirname "$CTDB_TEST_DIR")
 
-	_tools_dir="${ctdb_dir}/tools"
-	if [ -d "$_tools_dir" ] ; then
-		PATH="${_tools_dir}:$PATH"
-	fi
-
 	top_dir=$(cd -P "$ctdb_dir" && echo "$PWD") # real path
 	if [ ! -d "${top_dir}/bin" ] ; then
 		top_dir=$(dirname "$top_dir")
@@ -37,6 +32,10 @@ if ! $CTDB_TESTS_ARE_INSTALLED ; then
 fi
 
 . "${TEST_SCRIPTS_DIR}/script_install_paths.sh"
+
+if [ -d "$CTDB_SCRIPTS_TOOLS_BIN_DIR" ] ; then
+	PATH="${CTDB_SCRIPTS_TOOLS_BIN_DIR}:${PATH}"
+fi
 
 if [ -d "$CTDB_SCRIPTS_TESTS_BINDIR" ] ; then
 	PATH="${CTDB_SCRIPTS_TESTS_BINDIR}:${PATH}"
