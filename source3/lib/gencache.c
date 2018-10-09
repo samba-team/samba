@@ -408,7 +408,7 @@ bool gencache_del(const char *keystr)
 	return result;
 }
 
-static bool gencache_pull_timeout(TDB_DATA data, time_t *pres, char **payload)
+static bool gencache_pull_timeout(TDB_DATA data, time_t *pres, DATA_BLOB *payload)
 {
 	time_t res;
 	char *slash = NULL;
@@ -432,7 +432,11 @@ static bool gencache_pull_timeout(TDB_DATA data, time_t *pres, char **payload)
 		*pres = res;
 	}
 	if (payload != NULL) {
-		*payload = endptr+1;
+		endptr += 1;
+		*payload = (DATA_BLOB) {
+			.data = discard_const_p(uint8_t, endptr),
+			.length = data.dsize - PTR_DIFF(endptr, data.dptr),
+		};
 	}
 	return true;
 }
@@ -448,9 +452,8 @@ struct gencache_parse_state {
 static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	struct gencache_parse_state *state;
-	DATA_BLOB blob;
 	struct gencache_timeout t;
-	char *payload;
+	DATA_BLOB payload;
 	bool ret;
 
 	if (data.dptr == NULL) {
@@ -461,9 +464,7 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 		return -1;
 	}
 	state = (struct gencache_parse_state *)private_data;
-	blob = data_blob_const(
-		payload, data.dsize - PTR_DIFF(payload, data.dptr));
-	state->parser(&t, blob, state->private_data);
+	state->parser(&t, payload, state->private_data);
 
 	if (state->copy_to_notrans) {
 		tdb_store(cache_notrans->tdb, key, data, 0);
@@ -826,7 +827,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 	char *keystr;
 	char *free_key = NULL;
 	time_t timeout;
-	char *payload;
+	DATA_BLOB payload;
 
 	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
 		return 0;
@@ -863,10 +864,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		   "(key=[%s], timeout=[%s])\n",
 		   keystr, timestring(talloc_tos(), timeout)));
 
-	state->fn(keystr,
-		  data_blob_const(payload,
-				  data.dsize - PTR_DIFF(payload, data.dptr)),
-		  timeout, state->private_data);
+	state->fn(keystr, payload, timeout, state->private_data);
 
  done:
 	TALLOC_FREE(free_key);
