@@ -266,6 +266,7 @@ static int last_stabilize_parser(TDB_DATA key, TDB_DATA data,
 bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 			    time_t timeout)
 {
+	TDB_DATA key;
 	int ret;
 	fstring hdr;
 	int hdr_len;
@@ -277,8 +278,10 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 		return false;
 	}
 
-	if (tdb_data_cmp(string_term_tdb_data(keystr),
-			 last_stabilize_key()) == 0) {
+	key = string_term_tdb_data(keystr);
+
+	ret = tdb_data_cmp(key, last_stabilize_key());
+	if (ret == 0) {
 		DEBUG(10, ("Can't store %s as a key\n", keystr));
 		return false;
 	}
@@ -311,8 +314,7 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	ret = tdb_storev(cache_notrans->tdb, string_term_tdb_data(keystr),
-			 dbufs, 2, 0);
+	ret = tdb_storev(cache_notrans->tdb, key, dbufs, 2, 0);
 	if (ret != 0) {
 		return false;
 	}
