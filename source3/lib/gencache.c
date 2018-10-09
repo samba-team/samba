@@ -301,9 +301,6 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 	if (hdr_len == -1) {
 		return false;
 	}
-	if ((blob.length + (size_t)hdr_len) < blob.length) {
-		return false;
-	}
 
 	dbufs[0] = (TDB_DATA) { .dptr = (uint8_t *)hdr, .dsize = hdr_len };
 	dbufs[1] = (TDB_DATA) { .dptr = blob.data, .dsize = blob.length };
