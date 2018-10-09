@@ -456,9 +456,6 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 	DATA_BLOB payload;
 	bool ret;
 
-	if (data.dptr == NULL) {
-		return -1;
-	}
 	ret = gencache_pull_timeout(data, &t.timeout, &payload);
 	if (!ret) {
 		return -1;
