@@ -1010,6 +1010,10 @@ static bool ad_convert_xattr(struct adouble *ad,
 
 	*converted_xattr = false;
 
+	if (ad_getentrylen(ad, ADEID_FINDERI) == ADEDLEN_FINDERI) {
+		return true;
+	}
+
 	if (ad->adx_header.adx_num_attrs == 0) {
 		return true;
 	}
@@ -1295,10 +1299,6 @@ static int ad_convert(struct adouble *ad,
 {
 	bool ok;
 	bool converted_xattr = false;
-
-	if (ad_getentrylen(ad, ADEID_FINDERI) == ADEDLEN_FINDERI) {
-		return 0;
-	}
 
 	ok = ad_convert_xattr(ad, smb_fname, &converted_xattr);
 	if (!ok) {
