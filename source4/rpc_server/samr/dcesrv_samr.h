@@ -43,6 +43,20 @@ struct samr_connect_state {
 };
 
 /*
+ * Cache of object GUIDS
+ */
+struct samr_guid_cache {
+	unsigned handle;
+	unsigned size;
+	struct GUID *entries;
+};
+
+enum samr_guid_cache_id {
+	SAMR_QUERY_DISPLAY_INFO_CACHE,
+	SAMR_LAST_CACHE
+};
+
+/*
   state associated with a samr_OpenDomain() operation
 */
 struct samr_domain_state {
@@ -55,6 +69,7 @@ struct samr_domain_state {
 	enum server_role role;
 	bool builtin;
 	struct loadparm_context *lp_ctx;
+	struct samr_guid_cache guid_caches[SAMR_LAST_CACHE];
 };
 
 /*
