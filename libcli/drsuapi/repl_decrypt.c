@@ -25,7 +25,9 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "../lib/crypto/crypto.h"
+#include "../lib/crypto/md5.h"
+#include "../lib/crypto/arcfour.h"
+#include "zlib.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "libcli/auth/libcli_auth.h"
 #include "dsdb/samdb/samdb.h"
@@ -94,7 +96,10 @@ WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	 * of the remaining bytes
 	 */
 	crc32_given = IVAL(dec_buffer.data, 0);
-	crc32_calc = crc32_calc_buffer(dec_buffer.data + 4 , dec_buffer.length - 4);
+	crc32_calc = crc32(0, Z_NULL, 0);
+	crc32_calc = crc32(crc32_calc,
+			   dec_buffer.data + 4 ,
+			   dec_buffer.length - 4);
 	checked_buffer = data_blob_const(dec_buffer.data + 4, dec_buffer.length - 4);
 
 	plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
@@ -278,7 +283,8 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	 * the first 4 byte are the crc32 checksum
 	 * of the remaining bytes
 	 */
-	crc32_calc = crc32_calc_buffer(in->data, in->length);
+	crc32_calc = crc32(0, Z_NULL, 0);
+	crc32_calc = crc32(crc32_calc, in->data, in->length);
 	SIVAL(enc_buffer.data, 16, crc32_calc);
 
 	/*

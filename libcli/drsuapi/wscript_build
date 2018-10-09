@@ -3,6 +3,6 @@
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_DRSUAPI',
 	source='repl_decrypt.c',
-	public_deps='LIBCLI_AUTH samdb'
+	public_deps='LIBCLI_AUTH samdb z'
 	)
 
