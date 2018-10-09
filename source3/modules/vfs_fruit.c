@@ -1386,6 +1386,43 @@ static bool ad_convert_blank_rfork(struct adouble *ad,
 	return true;
 }
 
+static bool ad_convert_delete_adfile(struct adouble *ad,
+				     const struct smb_filename *smb_fname)
+{
+	struct fruit_config_data *config = NULL;
+	struct smb_filename *ad_name = NULL;
+	int rc;
+
+	if (ad_getentrylen(ad, ADEID_RFORK) > 0) {
+		return true;
+	}
+
+	SMB_VFS_HANDLE_GET_DATA(ad->ad_handle, config,
+				struct fruit_config_data, return false);
+
+	if (!config->delete_empty_adfiles) {
+		return true;
+	}
+
+	rc = adouble_path(talloc_tos(), smb_fname, &ad_name);
+	if (rc != 0) {
+		return false;
+	}
+
+	rc = SMB_VFS_NEXT_UNLINK(ad->ad_handle, ad_name);
+	if (rc != 0) {
+		DBG_ERR("Unlinking [%s] failed: %s\n",
+			smb_fname_str_dbg(ad_name), strerror(errno));
+		TALLOC_FREE(ad_name);
+		return false;
+	}
+
+	DBG_WARNING("Unlinked [%s] after conversion\n", smb_fname_str_dbg(ad_name));
+	TALLOC_FREE(ad_name);
+
+	return true;
+}
+
 /**
  * Convert from Apple's ._ file to Netatalk
  *
@@ -1423,6 +1460,11 @@ static int ad_convert(struct adouble *ad,
 	if (!ok) {
 		DBG_ERR("Failed to convert [%s]\n",
 			smb_fname_str_dbg(smb_fname));
+		return -1;
+	}
+
+	ok = ad_convert_delete_adfile(ad, smb_fname);
+	if (!ok) {
 		return -1;
 	}
 
