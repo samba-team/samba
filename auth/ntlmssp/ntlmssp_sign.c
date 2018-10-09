@@ -23,7 +23,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/md5.h"
 #include "../lib/crypto/hmacmd5.h"
-#include "../lib/crypto/crc32.h"
+#include "zlib.h"
 #include "../auth/ntlmssp/ntlmssp_private.h"
 
 #undef DBGC_CLASS
@@ -136,7 +136,8 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		NTSTATUS status;
 		uint32_t crc;
 
-		crc = crc32_calc_buffer(data, length);
+		crc = crc32(0, Z_NULL, 0);
+		crc = crc32(crc, data, length);
 
 		status = msrpc_gen(sig_mem_ctx,
 			       sig, "dddd",
@@ -318,7 +319,8 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		NTSTATUS status;
 		uint32_t crc;
 
-		crc = crc32_calc_buffer(data, length);
+		crc = crc32(0, Z_NULL, 0);
+		crc = crc32(crc, data, length);
 
 		status = msrpc_gen(sig_mem_ctx,
 			       sig, "dddd",
