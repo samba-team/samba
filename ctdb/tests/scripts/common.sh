@@ -17,15 +17,8 @@ fi
 # If we are running from within the source tree then, depending on the
 # tests that we're running, we may need to add the top level bin/ and
 # tools/ subdirectories to $PATH.  In this case, sanity check that
-# run_tests.sh is in the expected place.  If the tests are installed
-# then sanity check that TEST_BIN_DIR is set.
-if $CTDB_TESTS_ARE_INSTALLED ; then
-	if [ -z "$TEST_BIN_DIR" ] ; then
-		die "CTDB_TESTS_ARE_INSTALLED but TEST_BIN_DIR not set"
-	fi
-
-	_test_bin_dir="$TEST_BIN_DIR"
-else
+# run_tests.sh is in the expected place.
+if ! $CTDB_TESTS_ARE_INSTALLED ; then
 	if [ ! -f "${CTDB_TEST_DIR}/run_tests.sh" ] ; then
 		die "Tests not installed but can't find run_tests.sh"
 	fi
@@ -38,19 +31,16 @@ else
 	fi
 
 	top_dir=$(cd -P "$ctdb_dir" && echo "$PWD") # real path
-
-	_test_bin_dir="${top_dir}/bin"
-	if [ ! -d "$_test_bin_dir" ] ; then
+	if [ ! -d "${top_dir}/bin" ] ; then
 		top_dir=$(dirname "$top_dir")
-		_test_bin_dir="${top_dir}/bin"
 	fi
 fi
 
-if [ -d "$_test_bin_dir" ] ; then
-	PATH="${_test_bin_dir}:$PATH"
-fi
-
 . "${TEST_SCRIPTS_DIR}/script_install_paths.sh"
+
+if [ -d "$CTDB_SCRIPTS_TESTS_BINDIR" ] ; then
+	PATH="${CTDB_SCRIPTS_TESTS_BINDIR}:${PATH}"
+fi
 
 # Wait until either timeout expires or command succeeds.  The command
 # will be tried once per second, unless timeout has format T/I, where
