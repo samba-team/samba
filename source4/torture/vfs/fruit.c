@@ -3450,6 +3450,10 @@ static bool test_setinfo_delete_on_close(struct torture_context *tctx,
 	const char *sname = BASEDIR "\\file" AFPINFO_STREAM_NAME;
 	const char *type_creator = "SMB,OLE!";
 	AfpInfo *info = NULL;
+	const char *streams[] = {
+		AFPINFO_STREAM,
+		"::$DATA"
+	};
 	const char *streams_basic[] = {
 		"::$DATA"
 	};
@@ -3490,6 +3494,19 @@ static bool test_setinfo_delete_on_close(struct torture_context *tctx,
 	sfinfo.generic.in.file.handle = h1;
 	status = smb2_setinfo_file(tree, &sfinfo);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "set delete-on-close failed");
+
+	ret = check_stream_list(tree, tctx, fname, 2, streams, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.fname = sname;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_DELETE_PENDING,
+					   ret, done, "Got unexpected AFP_AfpInfo stream");
 
 	smb2_util_close(tree, h1);
 
