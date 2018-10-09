@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # find a list of #include lines in C code that might not be needed
 # usually called with something like this:
 #    minimal_includes.pl `find . -name "*.c"`

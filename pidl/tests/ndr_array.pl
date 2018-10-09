@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Array testing
 # (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU General Public License

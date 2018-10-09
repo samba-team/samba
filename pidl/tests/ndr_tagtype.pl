@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Support for tagged types
 # (C) 2005 Jelmer Vernooij. Published under the GNU GPL
 use strict;

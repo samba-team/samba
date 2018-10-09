@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 # A perl script to connect to a VMware server and revert a VM snapshot.
 # Copyright Brad Henry <brad@samba.org> 2006

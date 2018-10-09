@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # Nagios plugin to monitor CTDB (Clustered Trivial Database)
 #
 # License: GPL

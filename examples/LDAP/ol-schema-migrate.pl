@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 #
 # Convert OpenLDAP schema files into Fedora DS format with RFC2252 compliant printing
 #

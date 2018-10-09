@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 ###################################################
 # package to parse ASN.1 files and generate code for

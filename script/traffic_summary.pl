@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#!/usr/bin/env perl
 #
 # Summarise tshark pdml output into a form suitable for the load test tool
 #

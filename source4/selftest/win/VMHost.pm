@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 # A perl object to provide a simple, unified method of handling some
 # VMware Server VM management functions using the perl and VIX API's.

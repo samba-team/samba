@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # 0 == stdin  == docuement
 # 1 == stdout == printer

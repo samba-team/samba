@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ##   Add printer script for samba, APW, and cups
 ##   Copyright (C) Jeff Hardy <hardyjm@potsdam.edu> 2004
 ##

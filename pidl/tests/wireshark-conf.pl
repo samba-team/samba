@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # (C) 2007 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU General Public License
 # test parsing wireshark conformance files

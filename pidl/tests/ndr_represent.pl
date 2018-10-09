@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # NDR represent_as() / transmit_as() tests
 # (C) 2006 Jelmer Vernooij. Published under the GNU GPL
 use strict;

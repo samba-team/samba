@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Bootstrap Samba and run a number of tests against it.
 # Copyright (C) 2005-2007 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later.
