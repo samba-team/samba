@@ -14,23 +14,6 @@ if [ $(dirname "$TEST_SUBDIR") = "." ] ; then
 	TEST_SUBDIR=$(cd "$TEST_SUBDIR" ; pwd)
 fi
 
-# If we are running from within the source tree then, depending on the
-# tests that we're running, we may need to add the top level bin/ and
-# tools/ subdirectories to $PATH.  In this case, sanity check that
-# run_tests.sh is in the expected place.
-if ! $CTDB_TESTS_ARE_INSTALLED ; then
-	if [ ! -f "${CTDB_TEST_DIR}/run_tests.sh" ] ; then
-		die "Tests not installed but can't find run_tests.sh"
-	fi
-
-	ctdb_dir=$(dirname "$CTDB_TEST_DIR")
-
-	top_dir=$(cd -P "$ctdb_dir" && echo "$PWD") # real path
-	if [ ! -d "${top_dir}/bin" ] ; then
-		top_dir=$(dirname "$top_dir")
-	fi
-fi
-
 . "${TEST_SCRIPTS_DIR}/script_install_paths.sh"
 
 if [ -d "$CTDB_SCRIPTS_TOOLS_BIN_DIR" ] ; then

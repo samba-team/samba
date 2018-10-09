@@ -1,8 +1,17 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# $ctdb_dir is set in common.sh
-if [  -n "$ctdb_dir" ] ; then
-	# Running in-tree
+if ! $CTDB_TESTS_ARE_INSTALLED ; then
+	if [ ! -f "${CTDB_TEST_DIR}/run_tests.sh" ] ; then
+		die "Tests not installed but can't find run_tests.sh"
+	fi
+
+	ctdb_dir=$(dirname "$CTDB_TEST_DIR")
+
+	top_dir=$(cd -P "$ctdb_dir" && echo "$PWD") # real path
+	if [ ! -d "${top_dir}/bin" ] ; then
+		top_dir=$(dirname "$top_dir")
+	fi
+
 	CTDB_SCRIPTS_BASE="${ctdb_dir}/config"
 	CTDB_SCRIPTS_INIT_SCRIPT="${ctdb_dir}/config/ctdb.init"
 	CTDB_SCRIPTS_SBIN_DIR="${ctdb_dir}/config"
