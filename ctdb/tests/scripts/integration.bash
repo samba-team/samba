@@ -507,10 +507,9 @@ ctdb_start_all ()
 	onnode -p all $CTDB_TEST_WRAPPER _service_ctdb start
 }
 
-# Nothing needed for a cluster.  Override for local daemons.
 setup_ctdb ()
 {
-    :
+	ctdb_enable_cluster_test_event_scripts
 }
 
 start_ctdb_1 ()

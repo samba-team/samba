@@ -19,6 +19,4 @@ ctdb_test_check_real_cluster
 
 ctdb_stop_all >/dev/null 2>&1 || true
 
-ctdb_enable_cluster_test_event_scripts
-
 ctdb_init
