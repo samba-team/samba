@@ -61,11 +61,11 @@ def get_sid_for_restore(samdb):
     # Find the DN of the RID set of the server
     res = samdb.search(base=ldb.Dn(samdb, samdb.get_serverName()),
                        scope=ldb.SCOPE_BASE, attrs=["serverReference"])
-    server_ref_dn = ldb.Dn(samdb, res[0]['serverReference'][0])
+    server_ref_dn = ldb.Dn(samdb, str(res[0]['serverReference'][0]))
     res = samdb.search(base=server_ref_dn,
                        scope=ldb.SCOPE_BASE,
                        attrs=['rIDSetReferences'])
-    rid_set_dn = ldb.Dn(samdb, res[0]['rIDSetReferences'][0])
+    rid_set_dn = ldb.Dn(samdb, str(res[0]['rIDSetReferences'][0]))
 
     # Get the alloc pools and next RID of the RID set
     res = samdb.search(base=rid_set_dn,
@@ -460,7 +460,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         is_rename = True if 'backupRename' in res[0] else False
         sid = res[0].get('sidForRestore')[0]
         logger.info('Creating account with SID: ' + str(sid))
-        ctx.join_add_objects(specified_sid=dom_sid(sid))
+        ctx.join_add_objects(specified_sid=dom_sid(str(sid)))
 
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, '@ROOTDSE')
@@ -512,7 +512,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         res = samdb.search(samdb.get_config_basedn(), scope=ldb.SCOPE_SUBTREE,
                            expression=search_expr)
         for m in res:
-            cn = m.get('cn')[0]
+            cn = str(m.get('cn')[0])
             if cn != newservername:
                 remove_dc(samdb, logger, cn)
 
@@ -875,7 +875,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         store_label = "backendStore"
         res = samdb.search(base="@PARTITION", scope=ldb.SCOPE_BASE,
                            attrs=[store_label])
-        mdb_backend = store_label in res[0] and res[0][store_label][0] == 'mdb'
+        mdb_backend = store_label in res[0] and str(res[0][store_label][0]) == 'mdb'
 
         sam_ldb_path = os.path.join(private_dir, 'sam.ldb')
         copy_function = None
