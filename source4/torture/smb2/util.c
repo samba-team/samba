@@ -528,6 +528,36 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 }
 
 /*
+  create and return a handle to a test file
+  with a specific access mask
+*/
+NTSTATUS torture_smb2_open(struct smb2_tree *tree,
+			   const char *fname,
+			   uint32_t desired_access,
+			   struct smb2_handle *handle)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+
+	io = (struct smb2_create) {
+		.in.fname = fname,
+		.in.desired_access = desired_access,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+	};
+
+	status = smb2_create(tree, tree, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*handle = io.out.file.handle;
+
+	return NT_STATUS_OK;
+}
+
+/*
   create and return a handle to a test directory
   with specific desired access
 */
