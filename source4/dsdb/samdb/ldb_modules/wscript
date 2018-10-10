@@ -13,16 +13,6 @@ def options(opt):
     return
 
 def configure(conf):
-    if conf.env.HAVE_GNUTLS:
-        if conf.CHECK_FUNCS_IN(
-            'gnutls_aead_cipher_init',
-            'gnutls',
-            headers='gnutls/gnutls.h'):
-
-                conf.DEFINE('HAVE_GNUTLS_AEAD', '1')
-        else:
-            Logs.warn('No gnutls support for AEAD encryption')
-
     conf.SET_TARGET_TYPE('gpgme', 'EMPTY')
 
     if not Options.options.without_ad_dc \

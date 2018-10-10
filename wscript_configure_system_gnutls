@@ -26,5 +26,13 @@ conf.CHECK_FUNCS_IN('gnutls_x509_crt_set_subject_unique_id', 'gnutls')
 # Check for gnutls_pkcs7_get_embedded_data_oid (>= 3.5.5) required by libmscat
 conf.CHECK_FUNCS_IN('gnutls_pkcs7_get_embedded_data_oid', 'gnutls')
 
+# Check for gnutls_aead_cipher_init (>= 3.4.0) used by encrypted_secrets
+if conf.CHECK_FUNCS_IN('gnutls_aead_cipher_init',
+                       'gnutls',
+                       headers='gnutls/gnutls.h'):
+    conf.DEFINE('HAVE_GNUTLS_AEAD', '1')
+else:
+    Logs.warn('No gnutls support for AEAD encryption')
+
 conf.DEFINE('HAVE_GNUTLS3', 1)
 conf.DEFINE('ENABLE_GNUTLS', 1)
