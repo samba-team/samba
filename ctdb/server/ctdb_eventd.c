@@ -990,6 +990,7 @@ int main(int argc, const char **argv)
 	struct sock_socket_funcs socket_funcs;
 	struct stat statbuf;
 	int opt, ret;
+	bool ok;
 
 	/* Set default options */
 	options.pid = -1;
@@ -1073,7 +1074,10 @@ int main(int argc, const char **argv)
 	}
 
 	if (options.startup_fd != -1) {
-		sock_daemon_set_startup_fd(sockd, options.startup_fd);
+		ok = sock_daemon_set_startup_fd(sockd, options.startup_fd);
+		if (!ok) {
+			goto fail;
+		}
 	}
 
 	ret = sock_daemon_run(ev, sockd,
