@@ -36,6 +36,9 @@
 #include <standards.h>
 #endif
 
+/* Needs to be defined before std*.h and string*.h are included */
+#define __STDC_WANT_LIB_EXT1__ 1
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -923,6 +926,11 @@ void rep_setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
 #ifndef HAVE_SETPROCTITLE_INIT
 #define setproctitle_init rep_setproctitle_init
 void rep_setproctitle_init(int argc, char *argv[], char *envp[]);
+#endif
+
+#ifndef HAVE_MEMSET_S
+#define memset_s rep_memset_s
+int rep_memset_s(void *dest, size_t destsz, int ch, size_t count);
 #endif
 
 #ifndef FALL_THROUGH

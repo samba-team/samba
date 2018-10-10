@@ -947,3 +947,34 @@ void rep_setproctitle_init(int argc, char *argv[], char *envp[])
 {
 }
 #endif
+
+#ifndef HAVE_MEMSET_S
+# ifndef RSIZE_MAX
+#  define RSIZE_MAX (SIZE_MAX >> 1)
+# endif
+
+int rep_memset_s(void *dest, size_t destsz, int ch, size_t count)
+{
+	if (dest == NULL) {
+		return EINVAL;
+	}
+
+	if (destsz > RSIZE_MAX ||
+	    count > RSIZE_MAX ||
+	    count > destsz) {
+		return ERANGE;
+	}
+
+#if defined(HAVE_MEMSET_EXPLICIT)
+	memset_explicit(dest, destsz, ch, count);
+#else /* HAVE_MEMSET_EXPLICIT */
+	memset(dest, ch, count);
+# if defined(HAVE_GCC_VOLATILE_MEMORY_PROTECTION)
+	/* See http://llvm.org/bugs/show_bug.cgi?id=15495 */
+	__asm__ volatile("" : : "g"(dest) : "memory");
+# endif /* HAVE_GCC_VOLATILE_MEMORY_PROTECTION */
+#endif /* HAVE_MEMSET_EXPLICIT */
+
+	return 0;
+}
+#endif /* HAVE_MEMSET_S */

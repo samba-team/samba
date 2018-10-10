@@ -195,6 +195,23 @@ def configure(conf):
                         'socket nsl', checklibc=True,
                         headers='sys/socket.h netinet/in.h arpa/inet.h netdb.h')
 
+    conf.CHECK_FUNCS('memset_s memset_explicit')
+
+    conf.CHECK_CODE('''
+                    #include <string.h>
+
+                    int main(void)
+                    {
+                        char buf[] = "This is some content";
+                        memset(buf, '\0', sizeof(buf)); __asm__ volatile("" : : "g"(&buf) : "memory");
+                        return 0;
+                    }
+                    ''',
+                    define='HAVE_GCC_VOLATILE_MEMORY_PROTECTION',
+                    addmain=False,
+                    msg='Checking for volatile memory protection',
+                    local_include=False)
+
     # Some old Linux systems have broken header files and
     # miss the IPV6_V6ONLY define in netinet/in.h,
     # but have it in linux/in6.h.
