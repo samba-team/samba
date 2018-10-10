@@ -45,7 +45,7 @@ import samba.ntacls
 from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
 from samba.samdb import SamDB, get_default_backend_store
-from samba.ndr import ndr_unpack, ndr_pack, ndr_print
+from samba.ndr import ndr_pack, ndr_print
 from samba.dcerpc import drsuapi
 from samba.dcerpc import drsblobs
 from samba.dcerpc import lsa
@@ -65,9 +65,7 @@ from samba.netcmd.common import netcmd_get_domain_infos_via_cldap
 from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
 from samba.upgrade import upgrade_from_samba3
-from samba.drs_utils import (
-                            sendDsReplicaSync, drsuapi_connect, drsException,
-                            sendRemoveDsServer)
+from samba.drs_utils import drsuapi_connect
 from samba import remove_dc, arcfour_encrypt, string_to_byte_array
 
 from samba.dsdb import (
