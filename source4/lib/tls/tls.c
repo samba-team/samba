@@ -28,14 +28,9 @@
 #include "lib/tls/tls.h"
 #include "param/param.h"
 
-#if ENABLE_GNUTLS
 #include <gnutls/gnutls.h>
 
 #define DH_BITS 2048
-
-#if defined(HAVE_GNUTLS_DATUM) && !defined(HAVE_GNUTLS_DATUM_T)
-typedef gnutls_datum gnutls_datum_t;
-#endif
 
 /* hold persistent tls data */
 struct tls_params {
@@ -44,14 +39,12 @@ struct tls_params {
 	bool tls_enabled;
 	const char *tls_priority;
 };
-#endif
 
 /* hold per connection tls data */
 struct tls_context {
 	struct socket_context *socket;
 	struct tevent_fd *fde;
 	bool tls_enabled;
-#if ENABLE_GNUTLS
 	gnutls_session_t session;
 	bool done_handshake;
 	bool have_first_byte;
@@ -61,7 +54,6 @@ struct tls_context {
 	bool output_pending;
 	gnutls_certificate_credentials_t xcred;
 	bool interrupted;
-#endif
 };
 
 bool tls_enabled(struct socket_context *sock)
@@ -80,8 +72,6 @@ bool tls_enabled(struct socket_context *sock)
 	return tls->tls_enabled;
 }
 
-
-#if ENABLE_GNUTLS
 
 static const struct socket_ops tls_socket_ops;
 
@@ -548,9 +538,6 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	gnutls_transport_set_ptr(tls->session, (gnutls_transport_ptr_t)tls);
 	gnutls_transport_set_pull_function(tls->session, (gnutls_pull_func)tls_pull);
 	gnutls_transport_set_push_function(tls->session, (gnutls_push_func)tls_push);
-#if GNUTLS_VERSION_MAJOR < 3
-	gnutls_transport_set_lowat(tls->session, 0);
-#endif
 
 	tls->plain_chars = plain_chars;
 	if (plain_chars) {
@@ -620,28 +607,3 @@ static const struct socket_ops tls_socket_ops = {
 	.fn_get_my_addr		= tls_socket_get_my_addr,
 	.fn_get_fd		= tls_socket_get_fd
 };
-
-#else
-
-/* for systems without tls we just fail the operations, and the caller
- * will retain the original socket */
-
-struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
-{
-	return talloc_new(mem_ctx);
-}
-
-/*
-  setup for a new connection
-*/
-struct socket_context *tls_init_server(struct tls_params *params,
-				    struct socket_context *socket,
-				    struct tevent_fd *fde,
-				    const char *plain_chars)
-{
-	return NULL;
-}
-
-
-#endif
-
