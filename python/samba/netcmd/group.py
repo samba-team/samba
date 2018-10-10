@@ -22,7 +22,6 @@ import ldb
 from samba.ndr import ndr_unpack
 from samba.dcerpc import security
 
-from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dsdb import (
