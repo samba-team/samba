@@ -244,6 +244,7 @@ int main(int argc, const char **argv)
 	const char *t;
 	int interactive = 0;
 	int opt, ret;
+	bool ok;
 
 	pc = poptGetContext(argv[0],
 			    argc,
@@ -343,7 +344,11 @@ int main(int argc, const char **argv)
 	}
 
 	if (options.startup_fd != -1) {
-		sock_daemon_set_startup_fd(e_state->sockd, options.startup_fd);
+		ok = sock_daemon_set_startup_fd(e_state->sockd,
+						options.startup_fd);
+		if (!ok) {
+			goto fail;
+		}
 	}
 
 	ret = sock_daemon_run(e_state->ev,
