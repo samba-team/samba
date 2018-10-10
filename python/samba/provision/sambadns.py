@@ -60,7 +60,7 @@ from samba.provision.common import (
 )
 
 from samba.samdb import get_default_backend_store
-
+from samba.compat import get_string
 
 def get_domainguid(samdb, domaindn):
     res = samdb.search(base=domaindn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
@@ -798,12 +798,12 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
                        scope=ldb.SCOPE_BASE,
                        attrs=["partition", "backendStore"])
     for tmp in res[0]["partition"]:
-        (nc, fname) = tmp.split(':')
+        (nc, fname) = str(tmp).split(':')
         partfile[nc.upper()] = fname
 
     backend_store = get_default_backend_store()
     if "backendStore" in res[0]:
-        backend_store = res[0]["backendStore"][0]
+        backend_store = str(res[0]["backendStore"][0])
 
     # Create empty domain partition
 
@@ -954,6 +954,7 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT,
                                      cwd='.').communicate()[0]
+        bind_info = get_string(bind_info)
         bind9_8 = '#'
         bind9_9 = '#'
         bind9_10 = '#'
