@@ -16,25 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import re
 import ldb
 import samba
-import time
-from base64 import b64decode
-from samba import dsdb
-from samba import common
 from samba import sd_utils
-from samba.dcerpc import misc
-from samba.dcerpc import drsuapi
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.dcerpc import drsblobs
-from samba.common import dsdb_Dn
 from samba.dcerpc import security
 from samba.dcerpc.security import SECINFO_DACL
-from samba.descriptor import get_wellknown_sds, get_diff_sds
-from samba.auth import system_session, admin_session
-from samba.netcmd import CommandError
-from samba.netcmd.fsmo import get_fsmo_roleowner
 from samba.provision.common import setup_path
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008,
