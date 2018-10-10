@@ -403,7 +403,7 @@ class OpenLDAPBackend(LDAPBackend):
             # For now, make these equal
             mmr_pass = self.ldapadminpass
 
-            url_list = filter(None, self.ol_mmr_urls.split(','))
+            url_list = list(filter(None, self.ol_mmr_urls.split(',')))
             for url in url_list:
                 self.logger.info("Using LDAP-URL: " + url)
             if len(url_list) == 1:
