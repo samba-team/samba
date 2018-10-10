@@ -216,8 +216,9 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
  *
  * @param[in] sockd Socket daemon context
  * @param[in] fd File descriptor
+ * @return true on success, false on error
  */
-void sock_daemon_set_startup_fd(struct sock_daemon_context *sockd, int fd);
+bool sock_daemon_set_startup_fd(struct sock_daemon_context *sockd, int fd);
 
 /**
  * @brief Async computation start to run a socket daemon
