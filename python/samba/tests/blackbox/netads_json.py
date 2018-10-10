@@ -19,6 +19,7 @@ import json
 import re
 
 import samba.tests
+from samba.compat import get_string
 
 COMMAND         = "bin/net ads"
 # extract keys from non-json version
@@ -56,7 +57,7 @@ class BaseWrapper (object):
             """
             argv = "%s %s" % (COMMAND, self.subcmd)
             try:
-                out_plain = self.check_output(argv)
+                out_plain = get_string(self.check_output(argv))
             except samba.tests.BlackboxProcessError as e:
                 self.fail("Error calling [%s]: %s" % (argv, e))
 
