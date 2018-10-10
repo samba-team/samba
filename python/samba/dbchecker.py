@@ -650,7 +650,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_incorrect_binary_dn(self, dn, attrname, val, dsdb_dn, errstr):
         """handle an incorrect binary DN component"""
         self.report("ERROR: %s binary component for %s in object %s - %s" % (errstr, attrname, dn, val))
-        controls = ["extended_dn:1:1", "show_recycled:1"]
 
         if not self.confirm_all('Change DN to %s?' % str(dsdb_dn), 'fix_all_binary_dn'):
             self.report("Not fixing %s" % errstr)
@@ -1486,7 +1485,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         '''
 
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
-        obj = repl.ctr
 
         for o in repl.ctr.array:
             if o.attid == attid:
@@ -1504,7 +1502,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         in_schema_nc = dn.is_child_of(self.schema_dn)
 
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
-        obj = repl.ctr
 
         for o in repl.ctr.array:
             att = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
@@ -1694,7 +1691,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         '''re-write the SD due to not matching the default (optional mode for fixing an incorrect provision)'''
         sd_attr = "nTSecurityDescriptor"
         sd_val = ndr_pack(sd)
-        sd_old_val = ndr_pack(sd_old)
         sd_flags = security.SECINFO_DACL | security.SECINFO_SACL
         if sd.owner_sid is not None:
             sd_flags |= security.SECINFO_OWNER
