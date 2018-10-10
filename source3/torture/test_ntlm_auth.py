@@ -41,12 +41,12 @@ def readLine(pipe):
     Throws ReadChildError if the read fails.
     """
     newline = -1
-    buf = ""
+    buf = b""
     while newline == -1:
         more = os.read(pipe, 2047)
         buf = buf + more
-        newline = buf.find('\n')
-        if more == "":
+        newline = buf.find(b'\n')
+        if more == b"":
             raise ReadChildError()
 
     return buf[:newline]
@@ -60,7 +60,7 @@ def writeLine(pipe, buf):
     written = os.write(pipe, buf)
     if written != len(buf):
         raise WriteChildError()
-    os.write(pipe, "\n")
+    os.write(pipe, b"\n")
 
 
 def parseCommandLine():
@@ -214,113 +214,112 @@ def main():
     if opts.client_helper == "ntlmssp-client-1" and opts.server_helper == "squid-2.5-ntlmssp":
 
         # We're in the parent
-        writeLine(client_out, "YR")
+        writeLine(client_out, b"YR")
         buf = readLine(client_in)
-
-        if buf.count("YR ", 0, 3) != 1:
+        if buf.count(b"YR ", 0, 3) != 1:
             sys.exit(1)
 
         writeLine(server_out, buf)
         buf = readLine(server_in)
 
-        if buf.count("TT ", 0, 3) != 1:
+        if buf.count(b"TT ", 0, 3) != 1:
             sys.exit(2)
 
         writeLine(client_out, buf)
         buf = readLine(client_in)
 
-        if buf.count("AF ", 0, 3) != 1:
+        if buf.count(b"AF ", 0, 3) != 1:
             sys.exit(3)
 
         # Client sends 'AF <base64 blob>' but server expects 'KK <abse64 blob>'
-        buf = buf.replace("AF", "KK", 1)
+        buf = buf.replace(b"AF", b"KK", 1)
 
         writeLine(server_out, buf)
         buf = readLine(server_in)
 
-        if buf.count("AF ", 0, 3) != 1:
+        if buf.count(b"AF ", 0, 3) != 1:
             sys.exit(4)
 
     elif opts.client_helper == "ntlmssp-client-1" and opts.server_helper == "gss-spnego":
         # We're in the parent
-        writeLine(client_out, "YR")
+        writeLine(client_out, b"YR")
         buf = readLine(client_in)
 
-        if buf.count("YR ", 0, 3) != 1:
+        if buf.count(b"YR ", 0, 3) != 1:
             sys.exit(1)
 
         writeLine(server_out, buf)
         buf = readLine(server_in)
 
-        if buf.count("TT ", 0, 3) != 1:
+        if buf.count(b"TT ", 0, 3) != 1:
             sys.exit(2)
 
         writeLine(client_out, buf)
         buf = readLine(client_in)
 
-        if buf.count("AF ", 0, 3) != 1:
+        if buf.count(b"AF ", 0, 3) != 1:
             sys.exit(3)
 
         # Client sends 'AF <base64 blob>' but server expects 'KK <abse64 blob>'
-        buf = buf.replace("AF", "KK", 1)
+        buf = buf.replace(b"AF", b"KK", 1)
 
         writeLine(server_out, buf)
         buf = readLine(server_in)
 
-        if buf.count("AF * ", 0, 5) != 1:
+        if buf.count(b"AF * ", 0, 5) != 1:
             sys.exit(4)
 
     elif opts.client_helper == "gss-spnego-client" and opts.server_helper == "gss-spnego":
         # We're in the parent
-        writeLine(server_out, "YR")
+        writeLine(server_out, b"YR")
         buf = readLine(server_in)
 
         while True:
-            if buf.count("AF ", 0, 3) != 1 and buf.count("TT ", 0, 3) != 1:
+            if buf.count(b"AF ", 0, 3) != 1 and buf.count(b"TT ", 0, 3) != 1:
                 sys.exit(1)
 
             writeLine(client_out, buf)
             buf = readLine(client_in)
 
-            if buf.count("AF", 0, 2) == 1:
+            if buf.count(b"AF", 0, 2) == 1:
                 break
 
-            if buf.count("AF ", 0, 5) != 1 and buf.count("KK ", 0, 3) != 1 and buf.count("TT ", 0, 3) != 1:
+            if buf.count(b"AF ", 0, 5) != 1 and buf.count(b"KK ", 0, 3) != 1 and buf.count(b"TT ", 0, 3) != 1:
                 sys.exit(2)
 
             writeLine(server_out, buf)
             buf = readLine(server_in)
 
-            if buf.count("AF * ", 0, 5) == 1:
+            if buf.count(b"AF * ", 0, 5) == 1:
                 break
 
     else:
         sys.exit(5)
 
     if opts.client_helper == "ntlmssp-client-1":
-        writeLine(client_out, "GK")
+        writeLine(client_out, b"GK")
         buf = readLine(client_in)
 
-        if buf.count("GK ", 0, 3) != 1:
+        if buf.count(b"GK ", 0, 3) != 1:
             sys.exit(4)
 
-        writeLine(client_out, "GF")
+        writeLine(client_out, b"GF")
         buf = readLine(client_in)
 
-        if buf.count("GF ", 0, 3) != 1:
+        if buf.count(b"GF ", 0, 3) != 1:
             sys.exit(4)
 
     if opts.server_helper == "squid-2.5-ntlmssp":
-        writeLine(server_out, "GK")
+        writeLine(server_out, b"GK")
         buf = readLine(server_in)
 
-        if buf.count("GK ", 0, 3) != 1:
+        if buf.count(b"GK ", 0, 3) != 1:
             sys.exit(4)
 
-        writeLine(server_out, "GF")
+        writeLine(server_out, b"GF")
         buf = readLine(server_in)
 
-        if buf.count("GF ", 0, 3) != 1:
+        if buf.count(b"GF ", 0, 3) != 1:
             sys.exit(4)
 
     os.close(server_in)
