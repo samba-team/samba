@@ -103,6 +103,7 @@ from samba.netcmd.pso import cmd_domain_passwordsettings_pso
 from samba.netcmd.domain_backup import cmd_domain_backup
 
 from samba.compat import binary_type
+from samba.compat import get_string
 
 string_version_to_constant = {
     "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
@@ -153,9 +154,9 @@ def get_testparm_var(testparm, smbconf, varname):
                          stdout=subprocess.PIPE, stderr=errfile)
     (out, err) = p.communicate()
     errfile.close()
-    lines = out.split('\n')
+    lines = out.split(b'\n')
     if lines:
-        return lines[0].strip()
+        return get_string(lines[0]).strip()
     return ""
 
 
