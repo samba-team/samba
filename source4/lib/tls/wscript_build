@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+bld.SAMBA_SUBSYSTEM('LIBTLS',
+                    source='''
+                           tls.c
+                           tlscert.c
+                           tls_tstream.c
+                           ''',
+                    public_deps='''
+                                talloc
+                                gnutls
+                                samba-hostconfig
+                                samba_socket
+                                LIBTSOCKET
+                                tevent
+                                tevent-util
+                                ''')

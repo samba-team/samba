@@ -40,7 +40,6 @@ def options(opt):
     opt.RECURSE('packaging')
     opt.RECURSE('lib/ldb')
     opt.RECURSE('selftest')
-    opt.RECURSE('source4/lib/tls')
     opt.RECURSE('source4/dsdb/samdb/ldb_modules')
     opt.RECURSE('pidl')
     opt.RECURSE('source3')
@@ -253,7 +252,6 @@ def configure(conf):
 
     conf.PROCESS_SEPARATE_RULE('system_gnutls')
 
-    conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/dsdb/samdb/ldb_modules')
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
