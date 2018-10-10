@@ -24,9 +24,6 @@
 # Useful for a quick 'syntax check' of a configuration file.
 #
 
-import os
-import sys
-
 import samba
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option
