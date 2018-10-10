@@ -26,6 +26,9 @@
 #include "libcli/auth/libcli_auth.h"
 #include "../libcli/security/dom_sid.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
 				      const struct netr_Credential *in,
 				      struct netr_Credential *out)
@@ -102,22 +105,38 @@ static void netlogon_creds_init_hmac_sha256(struct netlogon_creds_CredentialStat
 					    const struct netr_Credential *server_challenge,
 					    const struct samr_Password *machine_password)
 {
-	struct HMACSHA256Context ctx;
-	uint8_t digest[SHA256_DIGEST_LENGTH];
+	gnutls_hmac_hd_t hmac_hnd = NULL;
+	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+	int rc;
 
 	ZERO_ARRAY(creds->session_key);
 
-	hmac_sha256_init(machine_password->hash,
-			 sizeof(machine_password->hash),
-			 &ctx);
-	hmac_sha256_update(client_challenge->data, 8, &ctx);
-	hmac_sha256_update(server_challenge->data, 8, &ctx);
-	hmac_sha256_final(digest, &ctx);
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_SHA256,
+			      machine_password->hash,
+			      sizeof(machine_password->hash));
+	if (rc < 0) {
+		return;
+	}
+	rc = gnutls_hmac(hmac_hnd,
+			 client_challenge->data,
+			 8);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return;
+	}
+	rc  = gnutls_hmac(hmac_hnd,
+			  server_challenge->data,
+			  8);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return;
+	}
+	gnutls_hmac_deinit(hmac_hnd, digest);
 
 	memcpy(creds->session_key, digest, sizeof(creds->session_key));
 
-	ZERO_STRUCT(digest);
-	ZERO_STRUCT(ctx);
+	ZERO_ARRAY(digest);
 }
 
 static void netlogon_creds_first_step(struct netlogon_creds_CredentialState *creds,
