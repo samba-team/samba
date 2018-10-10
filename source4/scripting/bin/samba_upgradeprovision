@@ -637,7 +637,6 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
             delta.remove(att)
         for att in backlinked:
             delta.remove(att)
-        depend_on_yettobecreated = None
         for att in dn_syntax_att:
             depend_on_yet_tobecreated = check_dn_nottobecreated(hash, index,
                                                                 delta.get(str(att)))
