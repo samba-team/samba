@@ -4091,6 +4091,8 @@ static bool test_null_afpinfo(struct torture_context *tctx,
 	AfpInfo *afpinfo = NULL;
 	char *afpinfo_buf = NULL;
 	const char *type_creator = "SMB,OLE!";
+	struct smb2_handle handle2;
+	struct smb2_read r;
 
 	torture_comment(tctx, "Checking create of AfpInfo stream\n");
 
@@ -4128,6 +4130,20 @@ static bool test_null_afpinfo(struct torture_context *tctx,
 
 	status = smb2_read_recv(req[1], tree, &read);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_read_recv failed");
+
+	status = torture_smb2_testfile_access(tree, sname, &handle2,
+					      SEC_FILE_READ_DATA);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed\n");
+	r = (struct smb2_read) {
+		.in.file.handle = handle2,
+		.in.length      = AFP_INFO_SIZE,
+	};
+
+	status = smb2_read(tree, tree, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed\n");
+	smb2_util_close(tree, handle2);
 
 	afpinfo = torture_afpinfo_new(mem_ctx);
 	torture_assert_goto(tctx, afpinfo != NULL, ret, done, "torture_afpinfo_new failed");
