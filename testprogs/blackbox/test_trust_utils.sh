@@ -35,23 +35,23 @@ CREDS="${DOMAIN}\\${USERNAME}%${PASSWORD}"
 TRUST_CREDS="${TRUST_DOMAIN}\\${TRUST_USERNAME}%${TRUST_PASSWORD}"
 TRUST_SERVER_CREDS_ARGS="--local-dc-ipaddress ${TRUST_SERVER} --local-dc-username ${TRUST_CREDS}"
 
-list="$VALGRIND $samba_tool domain trust list"
+list="$VALGRIND $PYTHON $samba_tool domain trust list"
 testit "list domains default" $list || failed=`expr $failed + 1`
 testit "list domains reverse" $list ${TRUST_SERVER_CREDS_ARGS} || failed=`expr $failed + 1`
 
-show="$VALGRIND $samba_tool domain trust show"
+show="$VALGRIND $PYTHON $samba_tool domain trust show"
 testit "show domains default realm" $show ${TRUST_REALM} || failed=`expr $failed + 1`
 testit "show domains reverse realm" $show ${REALM} ${TRUST_SERVER_CREDS_ARGS} || failed=`expr $failed + 1`
 testit "show domains default netbios" $show ${TRUST_DOMAIN} || failed=`expr $failed + 1`
 testit "show domains reverse netbios" $show ${DOMAIN} ${TRUST_SERVER_CREDS_ARGS} || failed=`expr $failed + 1`
 
-validate="$VALGRIND $samba_tool domain trust validate"
+validate="$VALGRIND $PYTHON $samba_tool domain trust validate"
 testit "validate trust default both" $validate ${TRUST_REALM} -U${TRUST_CREDS}|| failed=`expr $failed + 1`
 testit "validate trust default local" $validate ${TRUST_REALM} --validate-location=local || failed=`expr $failed + 1`
 testit "validate trust reverse both" $validate ${REALM} ${TRUST_SERVER_CREDS_ARGS} -U${CREDS} || failed=`expr $failed + 1`
 testit "validate trust reverse local" $validate ${REALM} ${TRUST_SERVER_CREDS_ARGS} --validate-location=local || failed=`expr $failed + 1`
 
-namespaces="$VALGRIND $samba_tool domain trust namespaces"
+namespaces="$VALGRIND $PYTHON $samba_tool domain trust namespaces"
 testit "namespaces own default" $namespaces || failed=`expr $failed + 1`
 testit "namespaces own reverse" $namespaces ${TRUST_SERVER_CREDS_ARGS} || failed=`expr $failed + 1`
 

@@ -30,7 +30,7 @@ KEYTAB="$PREFIX/tmptda.keytab"
 KRB5_TRACE=/dev/stderr
 export KRB5_TRACE
 
-testit "retrieve keytab for TDA of $REMOTE_REALM" $samba_tool domain exportkeytab $KEYTAB $CONFIGURATION --principal "$REMOTE_FLAT\$@$OUR_REALM" || failed=`expr $failed + 1`
+testit "retrieve keytab for TDA of $REMOTE_REALM" $PYTHON $samba_tool domain exportkeytab $KEYTAB $CONFIGURATION --principal "$REMOTE_FLAT\$@$OUR_REALM" || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmptda.ccache"
 export KRB5CCNAME
@@ -49,7 +49,7 @@ EXPECTED_SALT="${OUR_REALM}krbtgt${REMOTE_FLAT}"
 # "^virtualKerberosSalt: ${EXPECTED_SALT}\\\$\$"
 #
 EXPECTED_GREP="^virtualKerberosSalt: ${EXPECTED_SALT}\$"
-testit_grep "get virtualKerberosSalt for TDA of $REMOTE_FLAT\$" "$EXPECTED_GREP" $samba_tool user getpassword "$REMOTE_FLAT\$" $CONFIGURATION --attributes=virtualKerberosSalt || failed=`expr $failed + 1`
+testit_grep "get virtualKerberosSalt for TDA of $REMOTE_FLAT\$" "$EXPECTED_GREP" $PYTHON $samba_tool user getpassword "$REMOTE_FLAT\$" $CONFIGURATION --attributes=virtualKerberosSalt || failed=`expr $failed + 1`
 
 testit "kinit with keytab for TDA of $REMOTE_REALM" $samba4kinit -t $KEYTAB "$REMOTE_FLAT\$@$OUR_REALM" || failed=`expr $failed + 1`
 

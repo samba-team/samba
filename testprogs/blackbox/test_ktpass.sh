@@ -25,7 +25,7 @@ CONFIG="--configfile=$PREFIX/etc/smb.conf"
 
 TESTUSER="ktpassUser"
 
-testit "user create" $samba_tool user create $CONFIG $TESTUSER testp@ssw0Rd || failed=`expr $failed + 1`
+testit "user create" $PYTHON $samba_tool user create $CONFIG $TESTUSER testp@ssw0Rd || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME

@@ -27,15 +27,15 @@ fi
 
 . `dirname $0`/subunit.sh
 
-testit "run samba_upgradedns converting to bind9 DLZ" $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=BIND9_DLZ -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "run samba_upgradedns converting to bind9 DLZ" $PYTHON $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=BIND9_DLZ -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
-testit "run samba_upgradedns converting to internal" $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=SAMBA_INTERNAL -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "run samba_upgradedns converting to internal" $PYTHON $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=SAMBA_INTERNAL -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
-testit "run samba_upgradedns converting to internal (2nd time)" $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=SAMBA_INTERNAL -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "run samba_upgradedns converting to internal (2nd time)" $PYTHON $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=SAMBA_INTERNAL -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
-testit "run samba_upgradedns converting to bind9 DLZ (2nd time)" $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=BIND9_DLZ -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "run samba_upgradedns converting to bind9 DLZ (2nd time)" $PYTHON $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=BIND9_DLZ -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
-testit "run samba_upgradedns converting to bind9 DLZ (3rd time)" $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=BIND9_DLZ -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "run samba_upgradedns converting to bind9 DLZ (3rd time)" $PYTHON $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=BIND9_DLZ -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
 
 exit $failed

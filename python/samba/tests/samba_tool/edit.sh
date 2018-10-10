@@ -33,7 +33,7 @@ failed=0
 
 # Create a test user
 subunit_start_test "Create_User"
-output=$(${STpath}/source4/scripting/bin/samba-tool user create sambatool1 --random-password \
+output=$($PYTHON ${STpath}/source4/scripting/bin/samba-tool user create sambatool1 --random-password \
 -H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD")
 status=$?
 if [ "x$status" = "x0" ]; then
@@ -45,7 +45,7 @@ fi
 
 # Edit test user
 subunit_start_test "Edit_User"
-output=$(${STpath}/source4/scripting/bin/samba-tool user edit sambatool1 --editor=$tmpeditor \
+output=$($PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit sambatool1 --editor=$tmpeditor \
 -H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD")
 status=$?
 if [ "x$status" = "x0" ]; then
@@ -57,7 +57,7 @@ fi
 
 # Delete test user
 subunit_start_test "Delete_User"
-output=$(${STpath}/source4/scripting/bin/samba-tool user delete sambatool1 \
+output=$($PYTHON ${STpath}/source4/scripting/bin/samba-tool user delete sambatool1 \
 -H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD")
 status=$?
 if [ "x$status" = "x0" ]; then

@@ -45,8 +45,8 @@ test_drs() {
 	shift
 	shift
 	echo "test: $name"
-	echo $VALGRIND $samba4bindir/samba-tool drs $function $SERVER -k yes $@
-	$VALGRIND $samba4bindir/samba-tool drs $function $SERVER -k yes $@
+	echo $VALGRIND $PYTHON $samba4bindir/samba-tool drs $function $SERVER -k yes $@
+	$VALGRIND $PYTHON $samba4bindir/samba-tool drs $function $SERVER -k yes $@
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "success: $name"
@@ -77,7 +77,7 @@ test_drs bind "Test drs bind with with kerberos ccache" || failed=`expr $failed 
 #check that drs options works before we change the password (prime the ccache)
 test_drs options "Test drs options with with kerberos ccache" || failed=`expr $failed + 1`
 
-testit "change dc password" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "change dc password" $PYTHON $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
 #This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC password is changed
 test_smbclient "Test login with kerberos ccache after password change" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
@@ -88,7 +88,7 @@ test_drs bind "Test drs bind with new password" || failed=`expr $failed + 1`
 #check that drs options works after we change the password
 test_drs options "Test drs options with new password" || failed=`expr $failed + 1`
 
-testit "change dc password (2nd time)" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "change dc password (2nd time)" $PYTHON $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
 # This is important because it shows that the old ticket is discarded if the server rejects it (as it must) after the password was changed twice in succession.
 # This also ensures we handle the case where the domain is re-provisioned etc

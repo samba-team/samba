@@ -76,7 +76,7 @@ testit "kinit renew ticket" $samba4kinit $enctype --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
-testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
+testit "check time with kerberos ccache" $VALGRIND $PYTHON $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
 
 lowerrealm=$(echo $TRUST_REALM | tr '[A-Z]' '[a-z]')
 test_smbclient "Test login with user kerberos lowercase realm" 'ls' "$unc" -k yes -U$TRUST_USERNAME@$lowerrealm%$TRUST_PASSWORD || failed=`expr $failed + 1`
@@ -86,7 +86,7 @@ test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' "$unc" -k 
 SMBCLIENT_UNC="//$TRUST_SERVER.$TRUST_REALM/tmp"
 test_smbclient "Test user login with the first outgoing secret" 'ls' "$unc" -k yes -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
 
-testit_expect_failure "setpassword should not work" $VALGRIND $samba_tool user setpassword "${TRUST_DOMAIN}\$" --random-password || failed=`expr $failed + 1`
+testit_expect_failure "setpassword should not work" $VALGRIND $PYTHON $samba_tool user setpassword "${TRUST_DOMAIN}\$" --random-password || failed=`expr $failed + 1`
 
 testit "wbinfo ping dc" $VALGRIND $wbinfo --ping-dc --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
 testit "wbinfo change outgoing trust pw" $VALGRIND $wbinfo --change-secret --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
