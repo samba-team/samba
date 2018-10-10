@@ -302,7 +302,7 @@ class cmd_drs_showrepl(Command):
                 (errno, _) = e.args
                 if errno == ldb.ERR_NO_SUCH_OBJECT:
                     d['is deleted'] = True
-            except KeyError:
+            except (KeyError, IndexError):
                 pass
 
             d['replicates NC'] = []
@@ -360,7 +360,7 @@ class cmd_drs_showrepl(Command):
 
             self.message("\tConnection name: %s" % d['name'])
             self.message("\tEnabled        : %s" % str(d['enabled']).upper())
-            self.message("\tServer DNS name : %s" % d['dns name'])
+            self.message("\tServer DNS name : %s" % d.get('dns name'))
             self.message("\tServer DN name  : %s" % d['remote DN'])
             self.message("\t\tTransportType: RPC")
             self.message("\t\toptions: 0x%08X" % d['options'])
