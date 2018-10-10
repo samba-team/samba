@@ -24,7 +24,6 @@ import os
 import re
 import tempfile
 import difflib
-import sys
 import fcntl
 import signal
 import errno
