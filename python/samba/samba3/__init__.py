@@ -28,7 +28,7 @@ import tdb
 
 import samba.samba3.passdb
 from samba.samba3 import param as s3param
-
+from samba.compat import get_bytes
 
 def fetch_uint32(db, key):
     try:
@@ -168,7 +168,7 @@ class IdmapDatabase(DbDatabase):
         :param xid: UID or GID to retrieve SID for.
         :param id_type: Type of id specified - 'UID' or 'GID'
         """
-        data = self.db.get("%s %s\0" % (id_type, str(xid)))
+        data = self.db.get(get_bytes("%s %s\0" % (id_type, str(xid))))
         if data is None:
             return data
         return data.rstrip("\0")
@@ -203,16 +203,16 @@ class SecretsDatabase(DbDatabase):
     """Samba 3 Secrets database reader."""
 
     def get_auth_password(self):
-        return self.db.get("SECRETS/AUTH_PASSWORD")
+        return self.db.get(b"SECRETS/AUTH_PASSWORD")
 
     def get_auth_domain(self):
-        return self.db.get("SECRETS/AUTH_DOMAIN")
+        return self.db.get(b"SECRETS/AUTH_DOMAIN")
 
     def get_auth_user(self):
-        return self.db.get("SECRETS/AUTH_USER")
+        return self.db.get(b"SECRETS/AUTH_USER")
 
     def get_domain_guid(self, host):
-        return self.db.get("SECRETS/DOMGUID/%s" % host)
+        return self.db.get(b"SECRETS/DOMGUID/%s" % host)
 
     def ldap_dns(self):
         for k in self.db:
@@ -229,25 +229,25 @@ class SecretsDatabase(DbDatabase):
                 yield k[len("SECRETS/SID/"):].rstrip("\0")
 
     def get_ldap_bind_pw(self, host):
-        return self.db.get("SECRETS/LDAP_BIND_PW/%s" % host)
+        return self.db.get(get_bytes("SECRETS/LDAP_BIND_PW/%s" % host))
 
     def get_afs_keyfile(self, host):
-        return self.db.get("SECRETS/AFS_KEYFILE/%s" % host)
+        return self.db.get(get_bytes("SECRETS/AFS_KEYFILE/%s" % host))
 
     def get_machine_sec_channel_type(self, host):
-        return fetch_uint32(self.db, "SECRETS/MACHINE_SEC_CHANNEL_TYPE/%s" % host)
+        return fetch_uint32(self.db, get_bytes("SECRETS/MACHINE_SEC_CHANNEL_TYPE/%s" % host))
 
     def get_machine_last_change_time(self, host):
         return fetch_uint32(self.db, "SECRETS/MACHINE_LAST_CHANGE_TIME/%s" % host)
 
     def get_machine_password(self, host):
-        return self.db.get("SECRETS/MACHINE_PASSWORD/%s" % host)
+        return self.db.get(get_bytes("SECRETS/MACHINE_PASSWORD/%s" % host))
 
     def get_machine_acc(self, host):
-        return self.db.get("SECRETS/$MACHINE.ACC/%s" % host)
+        return self.db.get(get_bytes("SECRETS/$MACHINE.ACC/%s" % host))
 
     def get_domtrust_acc(self, host):
-        return self.db.get("SECRETS/$DOMTRUST.ACC/%s" % host)
+        return self.db.get(get_bytes("SECRETS/$DOMTRUST.ACC/%s" % host))
 
     def trusted_domains(self):
         for k in self.db:
@@ -255,10 +255,10 @@ class SecretsDatabase(DbDatabase):
                 yield k[len("SECRETS/$DOMTRUST.ACC/"):].rstrip("\0")
 
     def get_random_seed(self):
-        return self.db.get("INFO/random_seed")
+        return self.db.get(b"INFO/random_seed")
 
     def get_sid(self, host):
-        return self.db.get("SECRETS/SID/%s" % host.upper())
+        return self.db.get(get_bytes("SECRETS/SID/%s" % host.upper()))
 
 
 SHARE_DATABASE_VERSION_V1 = 1
@@ -276,7 +276,7 @@ class ShareInfoDatabase(DbDatabase):
 
         :param name: Name of the share
         """
-        secdesc = self.db.get("SECDESC/%s" % name)
+        secdesc = self.db.get(get_bytes("SECDESC/%s" % name))
         # FIXME: Run ndr_pull_security_descriptor
         return secdesc
 
