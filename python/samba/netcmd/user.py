@@ -2421,7 +2421,7 @@ LDAP server using the 'nano' editor.
                     editor = 'vi'
 
             with tempfile.NamedTemporaryFile(suffix=".tmp") as t_file:
-                t_file.write(result_ldif)
+                t_file.write(get_bytes(result_ldif))
                 t_file.flush()
                 try:
                     check_call([editor, t_file.name])
