@@ -217,7 +217,7 @@ void popt_burn_cmdline_password(int argc, char *argv[])
 
 			p = strchr_m(p, '%');
 			if (p != NULL) {
-				memset(p, '\0', strlen(p));
+				memset_s(p, strlen(p), '\0', strlen(p));
 			}
 			found = false;
 		}
