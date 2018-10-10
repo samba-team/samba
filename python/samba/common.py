@@ -31,6 +31,8 @@ if PY3:
     def cmp(a, b):
         return (a > b) - (a < b)
 
+    raw_input = input
+
 
 def confirm(msg, forced=False, allow_all=False):
     """confirm an action with the user
