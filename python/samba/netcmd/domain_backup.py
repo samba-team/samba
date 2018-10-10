@@ -49,7 +49,6 @@ from samba.provision.sambadns import (fill_dns_data_partitions,
 from samba.tdb_util import tdb_copy
 from samba.mdb_util import mdb_copy
 import errno
-import tdb
 from subprocess import CalledProcessError
 from samba import sites
 

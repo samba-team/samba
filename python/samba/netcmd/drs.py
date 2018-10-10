@@ -37,8 +37,6 @@ from samba.samdb import SamDB
 from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
 from samba.join import join_clone
-from samba.ndr import ndr_unpack
-from samba.dcerpc import drsblobs
 from samba import colour
 
 from samba.uptodateness import (
