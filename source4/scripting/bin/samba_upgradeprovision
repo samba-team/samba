@@ -377,7 +377,7 @@ def handle_special_case(att, delta, new, old, useReplMetadata, basedn, aldb):
                             (int(str(old[0][att])), int(str(new[0][att]))))
             return False
         if (att == "minPwdAge" and flag == FLAG_MOD_REPLACE):
-            if (long(str(old[0][att])) == 0):
+            if (int(str(old[0][att])) == 0):
                 delta[att] = MessageElement(new[0][att], FLAG_MOD_REPLACE, att)
             return True
 
