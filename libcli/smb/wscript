@@ -46,7 +46,7 @@ def build(bld):
            tstream_smbXcli_np.c
     ''',
     deps='''
-        LIBCRYPTO NDR_SMB2_LEASE_STRUCT samba-errors gensec krb5samba
+        LIBCRYPTO gnutls NDR_SMB2_LEASE_STRUCT samba-errors gensec krb5samba
         smb_transport
     ''',
     public_deps='talloc samba-util iov_buf',
