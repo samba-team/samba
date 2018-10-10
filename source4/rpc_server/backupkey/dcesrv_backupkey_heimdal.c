@@ -45,9 +45,6 @@
 #include "libds/common/roles.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
-#if defined(HAVE_GCRYPT_H) && !defined(HAVE_GNUTLS3)
-#include <gcrypt.h>
-#endif
 
 #define DCESRV_INTERFACE_BACKUPKEY_BIND(context, iface) \
 	dcesrv_interface_backupkey_bind(context, iface)
@@ -837,10 +834,7 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 		DBG_ERR("TLS error: %s\n", gnutls_strerror(ret));
 		return WERR_INTERNAL_ERROR;
 	}
-#if defined(HAVE_GCRYPT_H) && !defined(HAVE_GNUTLS3)
-	DEBUG(3,("Enabling QUICK mode in gcrypt\n"));
-	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0);
-#endif
+
 	ret = gnutls_x509_privkey_init(&gtls_key);
 	if (ret != 0) {
 		gnutls_global_deinit();
