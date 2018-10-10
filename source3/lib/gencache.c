@@ -27,6 +27,7 @@
 #include "system/glob.h"
 #include "util_tdb.h"
 #include "tdb_wrap/tdb_wrap.h"
+#include "zlib.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
@@ -269,7 +270,8 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 	int ret;
 	time_t last_stabilize;
 	static int writecount;
-	TDB_DATA dbufs[2];
+	TDB_DATA dbufs[3];
+	uint32_t crc;
 
 	if ((keystr == NULL) || (blob.data == NULL)) {
 		return false;
@@ -297,13 +299,21 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 				.dsize = sizeof(time_t) };
 	dbufs[1] = (TDB_DATA) { .dptr = blob.data, .dsize = blob.length };
 
+	crc = crc32(0, Z_NULL, 0);
+	crc = crc32(crc, key.dptr, key.dsize);
+	crc = crc32(crc, dbufs[0].dptr, dbufs[0].dsize);
+	crc = crc32(crc, dbufs[1].dptr, dbufs[1].dsize);
+
+	dbufs[2] = (TDB_DATA) { .dptr = (uint8_t *)&crc,
+				.dsize = sizeof(crc) };
+
 	DEBUG(10, ("Adding cache entry with key=[%s] and timeout="
 	           "[%s] (%d seconds %s)\n", keystr,
 		   timestring(talloc_tos(), timeout),
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	ret = tdb_storev(cache_notrans->tdb, key, dbufs, 2, 0);
+	ret = tdb_storev(cache_notrans->tdb, key, dbufs, ARRAY_SIZE(dbufs), 0);
 	if (ret != 0) {
 		return false;
 	}
@@ -397,18 +407,38 @@ bool gencache_del(const char *keystr)
 	return result;
 }
 
-static bool gencache_pull_timeout(TDB_DATA data, time_t *pres, DATA_BLOB *payload)
+static bool gencache_pull_timeout(TDB_DATA key,
+				  TDB_DATA data,
+				  time_t *pres,
+				  DATA_BLOB *payload)
 {
-	if ((data.dptr == NULL) || (data.dsize < sizeof(time_t))) {
+	size_t crc_ofs;
+	uint32_t crc, stored_crc;
+
+	if ((data.dptr == NULL) ||
+	    (data.dsize < (sizeof(time_t) + sizeof(uint32_t)))) {
 		return false;
 	}
+
+	crc_ofs = data.dsize - sizeof(uint32_t);
+
+	crc = crc32(0, Z_NULL, 0);
+	crc = crc32(crc, key.dptr, key.dsize);
+	crc = crc32(crc, data.dptr, crc_ofs);
+
+	memcpy(&stored_crc, data.dptr + crc_ofs, sizeof(uint32_t));
+
+	if (stored_crc != crc) {
+		return false;
+	}
+
 	if (pres != NULL) {
 		memcpy(pres, data.dptr, sizeof(time_t));
 	}
 	if (payload != NULL) {
 		*payload = (DATA_BLOB) {
-			.data = data.dptr + sizeof(time_t),
-			.length = data.dsize - sizeof(time_t),
+			.data = data.dptr+sizeof(time_t),
+			.length = data.dsize-sizeof(time_t)-sizeof(uint32_t),
 		};
 	}
 	return true;
@@ -429,7 +459,7 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 	DATA_BLOB payload;
 	bool ret;
 
-	ret = gencache_pull_timeout(data, &t.timeout, &payload);
+	ret = gencache_pull_timeout(key, data, &t.timeout, &payload);
 	if (!ret) {
 		return -1;
 	}
@@ -692,7 +722,7 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 		return 0;
 	}
 
-	if (!gencache_pull_timeout(val, &timeout, NULL)) {
+	if (!gencache_pull_timeout(key, val, &timeout, NULL)) {
 		DEBUG(10, ("Ignoring invalid entry\n"));
 		return 0;
 	}
@@ -817,7 +847,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		}
 	}
 
-	if (!gencache_pull_timeout(data, &timeout, &payload)) {
+	if (!gencache_pull_timeout(key, data, &timeout, &payload)) {
 		goto done;
 	}
 
