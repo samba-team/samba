@@ -854,7 +854,7 @@ class LDAPBundel(object):
         elif self.search_scope == "ONE":
             self.search_scope = SCOPE_ONELEVEL
         else:
-            raise StandardError("Wrong 'scope' given. Choose from: SUB, ONE, BASE")
+            raise ValueError("Wrong 'scope' given. Choose from: SUB, ONE, BASE")
         try:
             res = self.con.ldb.search(base=self.search_base, scope=self.search_scope, attrs=["dn"])
         except LdbError as e3:
