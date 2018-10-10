@@ -26,14 +26,12 @@ from samba.samdb import SamDB
 from samba.samba3 import param as s3param, passdb, smbd
 from samba import provision
 
-from ldb import SCOPE_BASE
-import os
-
 from samba.auth import (
     system_session,
     session_info_fill_unix,
     copy_session_info,
 )
+
 from samba.netcmd import (
     Command,
     CommandError,
@@ -236,7 +234,6 @@ class cmd_ntacl_sysvolreset(Command):
     def run(self, use_ntvfs=False, use_s3fs=False,
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        path = lp.private_path("secrets.ldb")
         creds = credopts.get_credentials(lp)
         creds.set_kerberos_state(DONT_USE_KERBEROS)
         logger = self.get_logger()
@@ -298,7 +295,6 @@ class cmd_ntacl_sysvolcheck(Command):
 
     def run(self, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        path = lp.private_path("secrets.ldb")
         creds = credopts.get_credentials(lp)
         creds.set_kerberos_state(DONT_USE_KERBEROS)
         logger = self.get_logger()
