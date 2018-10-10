@@ -33,6 +33,3 @@ if conf.CHECK_FUNCS_IN('gnutls_aead_cipher_init',
     conf.DEFINE('HAVE_GNUTLS_AEAD', '1')
 else:
     Logs.warn('No gnutls support for AEAD encryption')
-
-conf.DEFINE('HAVE_GNUTLS3', 1)
-conf.DEFINE('ENABLE_GNUTLS', 1)
