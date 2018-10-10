@@ -39,7 +39,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb1.conf <<EOF
    debug level = 0
 EOF
 
-testit "samba3-upgrade-member" $samba_tool domain classicupgrade $PREFIX/samba3-upgrade/samba3/smb1.conf --targetdir=$PREFIX/samba3-upgrade/s4_1 --dbdir=$PREFIX/samba3-upgrade/samba3 --use-ntvfs
+testit "samba3-upgrade-member" $PYTHON $samba_tool domain classicupgrade $PREFIX/samba3-upgrade/samba3/smb1.conf --targetdir=$PREFIX/samba3-upgrade/s4_1 --dbdir=$PREFIX/samba3-upgrade/samba3 --use-ntvfs
 testit "samba3-upgrade-member-getlocalsid" $samba_net getlocalsid s3upgrade -s $PREFIX/samba3-upgrade/s4_1/etc/smb.conf
 
 # Test 2 (s3 dc)
@@ -64,7 +64,7 @@ EOF
 mv $PREFIX/samba3-upgrade/samba3/wins.dat2 $PREFIX/samba3-upgrade/samba3/wins.dat
 
 # Upgrade NT4-like domains in samba3upgrade
-testit "samba3-upgrade-dc" $samba_tool domain classicupgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --dbdir=$PREFIX/samba3-upgrade/samba3 --use-ntvfs
+testit "samba3-upgrade-dc" $PYTHON $samba_tool domain classicupgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --dbdir=$PREFIX/samba3-upgrade/samba3 --use-ntvfs
 testit "samba3-upgrade-dc-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
 testit "samba3-upgrade-dc-getdomainsid" $samba_net getdomainsid -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
 
@@ -90,7 +90,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb3.conf <<EOF
    domain logons = yes
 EOF
 
-testit "samba3-upgrade-testparm" $samba_tool domain classicupgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_3 --testparm=$testparm --use-ntvfs
+testit "samba3-upgrade-testparm" $PYTHON $samba_tool domain classicupgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_3 --testparm=$testparm --use-ntvfs
 testit "samba3-upgrade-testparm-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_3/etc/smb.conf
 testit "samba3-upgrade-testparm-getdomainsid" $samba_net getdomainsid -s $PREFIX/samba3-upgrade/s4_3/etc/smb.conf
 
