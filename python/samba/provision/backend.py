@@ -382,7 +382,7 @@ class OpenLDAPBackend(LDAPBackend):
             base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
         index_config = ""
         for i in range(0, len(res)):
-            index_attr = res[i]["lDAPDisplayName"][0]
+            index_attr = str(res[i]["lDAPDisplayName"][0])
             if index_attr == "objectGUID":
                 index_attr = "entryUUID"
 
@@ -745,7 +745,7 @@ class FDSBackend(LDAPBackend):
             base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
 
         for i in range(0, len(res)):
-            attr = res[i]["lDAPDisplayName"][0]
+            attr = str(res[i]["lDAPDisplayName"][0])
 
             if attr == "objectGUID":
                 attr = "nsUniqueId"
