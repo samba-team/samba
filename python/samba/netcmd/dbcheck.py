@@ -41,7 +41,6 @@ class cmd_dbcheck(Command):
 
     def process_yes(option, opt, value, parser):
         assert value is None
-        done = 0
         rargs = parser.rargs
         if rargs:
             arg = rargs[0]
