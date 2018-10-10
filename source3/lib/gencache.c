@@ -31,8 +31,6 @@
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
 
-#define CACHE_DATA_FMT	"%12u/"
-
 static struct tdb_wrap *cache;
 static struct tdb_wrap *cache_notrans;
 
@@ -269,8 +267,6 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 {
 	TDB_DATA key;
 	int ret;
-	fstring hdr;
-	int hdr_len;
 	time_t last_stabilize;
 	static int writecount;
 	TDB_DATA dbufs[2];
@@ -297,13 +293,8 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 		return true;
 	}
 
-	hdr_len = fstr_sprintf(hdr, CACHE_DATA_FMT, (int)timeout);
-
-	if (hdr_len == -1) {
-		return false;
-	}
-
-	dbufs[0] = (TDB_DATA) { .dptr = (uint8_t *)hdr, .dsize = hdr_len };
+	dbufs[0] = (TDB_DATA) { .dptr = (uint8_t *)&timeout,
+				.dsize = sizeof(time_t) };
 	dbufs[1] = (TDB_DATA) { .dptr = blob.data, .dsize = blob.length };
 
 	DEBUG(10, ("Adding cache entry with key=[%s] and timeout="
@@ -408,32 +399,16 @@ bool gencache_del(const char *keystr)
 
 static bool gencache_pull_timeout(TDB_DATA data, time_t *pres, DATA_BLOB *payload)
 {
-	time_t res;
-	char *slash = NULL;
-	char *endptr;
-
-	if (data.dptr == NULL) {
-		return false;
-	}
-	slash = memchr(data.dptr, '/', data.dsize);
-	if (slash == NULL) {
-		return false;
-	}
-
-	res = strtol((char *)data.dptr, &endptr, 10);
-
-	if ((endptr == NULL) || (*endptr != '/')) {
-		DBG_WARNING("Invalid gencache data format\n");
+	if ((data.dptr == NULL) || (data.dsize < sizeof(time_t))) {
 		return false;
 	}
 	if (pres != NULL) {
-		*pres = res;
+		memcpy(pres, data.dptr, sizeof(time_t));
 	}
 	if (payload != NULL) {
-		endptr += 1;
 		*payload = (DATA_BLOB) {
-			.data = discard_const_p(uint8_t, endptr),
-			.length = data.dsize - PTR_DIFF(endptr, data.dptr),
+			.data = data.dptr + sizeof(time_t),
+			.length = data.dsize - sizeof(time_t),
 		};
 	}
 	return true;
