@@ -26,7 +26,6 @@ from __future__ import print_function
 from __future__ import division
 import samba.getopt as options
 import ldb
-import string
 import os
 import sys
 import ctypes
@@ -3879,7 +3878,6 @@ This command expunges tombstones from the database."""
     def run(self, *ncs, **kwargs):
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")
-        versionpts = kwargs.get("versionopts")
         H = kwargs.get("H")
         current_time_string = kwargs.get("current_time")
         tombstone_lifetime = kwargs.get("tombstone_lifetime")
@@ -4135,7 +4133,6 @@ class cmd_domain_schema_upgrade(Command):
         updates_allowed_overriden = False
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")
-        versionpts = kwargs.get("versionopts")
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         H = kwargs.get("H")
@@ -4280,7 +4277,6 @@ class cmd_domain_functional_prep(Command):
         updates_allowed_overriden = False
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")
-        versionpts = kwargs.get("versionopts")
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         H = kwargs.get("H")
