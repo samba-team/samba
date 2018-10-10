@@ -1,0 +1,24 @@
+from waflib import Options
+
+gnutls_min_required_version = "3.2.0"
+
+gnutls_required_version = gnutls_min_required_version
+
+#
+# If we build with MIT Kerberos we need at least GnuTLS 3.4.7 for the backupkey
+# protocol.
+#
+if Options.options.with_system_mitkrb5 and conf.env.AD_DC_BUILD_IS_ENABLED:
+    gnutls_required_version = "3.4.7"
+    conf.DEFINE('HAVE_GNUTLS_3_4_7', 1)
+
+conf.CHECK_CFG(package='gnutls',
+               args=('"gnutls >= %s" --cflags --libs' % gnutls_required_version),
+                     msg='Checking for GnuTLS >= %s' % gnutls_required_version,
+                     mandatory=True)
+
+# Define gnutls as a system library
+conf.SET_TARGET_TYPE('gnutls', 'SYSLIB')
+
+conf.DEFINE('HAVE_GNUTLS3', 1)
+conf.DEFINE('ENABLE_GNUTLS', 1)

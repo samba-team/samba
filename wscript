@@ -251,6 +251,8 @@ def configure(conf):
     if not conf.CONFIG_GET('KRB5_VENDOR'):
         conf.PROCESS_SEPARATE_RULE('embedded_heimdal')
 
+    conf.PROCESS_SEPARATE_RULE('system_gnutls')
+
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/dsdb/samdb/ldb_modules')
     conf.RECURSE('source4/ntvfs/sysdep')
