@@ -23,7 +23,7 @@ from samba.ntacls import setntacl, getntacl, getdosinfo
 from samba import Ldb
 from samba.ndr import ndr_unpack, ndr_print
 from samba.samdb import SamDB
-from samba.samba3 import param as s3param, passdb, smbd
+from samba.samba3 import param as s3param, passdb
 from samba import provision
 from samba.auth_util import system_session_unix
 import os
