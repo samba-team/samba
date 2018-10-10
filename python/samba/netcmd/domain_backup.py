@@ -635,6 +635,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         for res_msg in res:
             # dnsRoot can be multi-valued, so only look for the old realm
             for dns_root in res_msg["dnsRoot"]:
+                dns_root = str(dns_root)
                 dn = res_msg.dn
                 if old_realm in dns_root:
                     new_dns_root = re.sub('%s$' % old_realm, new_realm,
