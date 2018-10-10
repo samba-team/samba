@@ -18,7 +18,6 @@
 
 import optparse
 import samba
-from samba import getopt as options
 from samba import colour
 from samba.logger import get_samba_logger
 from ldb import LdbError
