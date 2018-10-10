@@ -661,6 +661,7 @@ int ctdb_event_script_run(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_ERR,
 		      ("Refusing to run event '%s' while in recovery\n",
 		       ctdb_eventscript_call_names[event]));
+		return -1;
 	}
 
 	state = talloc_zero(mem_ctx, struct ctdb_event_script_run_state);
