@@ -2792,7 +2792,7 @@ class LdbResultTests(LdbBaseTest):
             # and commit
             try:
                 child_ldb.transaction_commit()
-            except LdbError as err:
+            except ldb.LdbError as err:
                 # We print this here to see what went wrong in the child
                 print(err)
                 os._exit(1)
@@ -2863,7 +2863,7 @@ class LdbResultTests(LdbBaseTest):
             # and commit
             try:
                 child_ldb.transaction_commit()
-            except LdbError as err:
+            except ldb.LdbError as err:
                 # We print this here to see what went wrong in the child
                 print(err)
                 os._exit(1)
