@@ -255,7 +255,8 @@ class SiteCoverageTests(samba.tests.TestCase):
 
         self.assertEqual([], to_cover)
 
-    def test_three_site_links_different_costs(self):
+    def test_three_site_links_duplicate_costs(self):
+        # two of the links have the same cost; the other is higher
         self.samdb.transaction_start()
         site1, name1 = self._add_site(self.prefix + "ABCD")
         site2, name2 = self._add_site(self.prefix + "BCDE")
