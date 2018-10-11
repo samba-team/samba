@@ -31,7 +31,6 @@ from samba.samdb import SamDB
 from samba.compat import get_string
 from samba import dsdb
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL
-import os
 
 
 def get_schema_descriptor(domain_sid, name_map={}):
