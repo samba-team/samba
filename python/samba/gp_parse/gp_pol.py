@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import codecs
 import base64
 
 from xml.etree.ElementTree import Element, SubElement
