@@ -11,6 +11,7 @@ sys.path.insert(0, "bin/python")
 import samba
 
 from samba.tests.subunitrun import SubunitOptions, TestProgram
+from samba.compat import get_string
 
 import samba.getopt as options
 from samba.join import DCJoinContext
@@ -325,7 +326,7 @@ displayName: test_changed"""
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s)" % self.get_user_dn("test_modify_user1"))
-        self.assertEqual(res[0]["displayName"][0], "test_changed")
+        self.assertEqual(str(res[0]["displayName"][0]), "test_changed")
         # Second test object -- Group
         print("Testing modify on Group object")
         self.ldb_admin.newgroup("test_modify_group1",
@@ -338,7 +339,7 @@ replace: displayName
 displayName: test_changed"""
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % str("CN=test_modify_group1,CN=Users," + self.base_dn))
-        self.assertEqual(res[0]["displayName"][0], "test_changed")
+        self.assertEqual(str(res[0]["displayName"][0]), "test_changed")
         # Third test object -- Organizational Unit
         print("Testing modify on OU object")
         #delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
@@ -351,7 +352,7 @@ replace: displayName
 displayName: test_changed"""
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % str("OU=test_modify_ou1," + self.base_dn))
-        self.assertEqual(res[0]["displayName"][0], "test_changed")
+        self.assertEqual(str(res[0]["displayName"][0]), "test_changed")
 
     def test_modify_u2(self):
         """6 Modify two attributes as you have DS_WRITE_PROPERTY granted only for one of them"""
@@ -371,7 +372,7 @@ displayName: test_changed"""
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s)" %
                                     self.get_user_dn("test_modify_user1"))
-        self.assertEqual(res[0]["displayName"][0], "test_changed")
+        self.assertEqual(str(res[0]["displayName"][0]), "test_changed")
         # Modify on attribute you do not have rights for granted
         ldif = """
 dn: """ + self.get_user_dn("test_modify_user1") + """
@@ -400,7 +401,7 @@ displayName: test_changed"""
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s)" %
                                     str("CN=test_modify_group1,CN=Users," + self.base_dn))
-        self.assertEqual(res[0]["displayName"][0], "test_changed")
+        self.assertEqual(str(res[0]["displayName"][0]), "test_changed")
         # Modify on attribute you do not have rights for granted
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
@@ -444,7 +445,7 @@ displayName: test_changed"""
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s)" % str("OU=test_modify_ou1,"
                                                                               + self.base_dn))
-        self.assertEqual(res[0]["displayName"][0], "test_changed")
+        self.assertEqual(str(res[0]["displayName"][0]), "test_changed")
         # Modify on attribute you do not have rights for granted
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
@@ -540,7 +541,7 @@ adminDescription: blah blah blah"""
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                     % self.get_user_dn(self.user_with_wp), attrs=["adminDescription"])
-        self.assertEqual(res[0]["adminDescription"][0], "blah blah blah")
+        self.assertEqual(str(res[0]["adminDescription"][0]), "blah blah blah")
 
     def test_modify_u5(self):
         """12 test self membership"""
@@ -566,7 +567,7 @@ Member: """ + self.get_user_dn(self.user_with_sm)
         self.ldb_user2.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
-        self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_sm))
+        self.assertEqual(str(res[0]["Member"][0]), self.get_user_dn(self.user_with_sm))
 # but not other users
         ldif = """
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
@@ -616,7 +617,7 @@ Member: """ + self.get_user_dn(self.user_with_wp)
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
-        self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_wp))
+        self.assertEqual(str(res[0]["Member"][0]), self.get_user_dn(self.user_with_wp))
         ldif = """
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
 changetype: modify
@@ -630,7 +631,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
-        self.assertEqual(res[0]["Member"][0], "CN=test_modify_user2,CN=Users," + self.base_dn)
+        self.assertEqual(str(res[0]["Member"][0]), "CN=test_modify_user2,CN=Users," + self.base_dn)
 
     def test_modify_anonymous(self):
         """Test add operation with anonymous user"""
@@ -1822,7 +1823,7 @@ class AclUndeleteTests(AclTests):
         del self.ldb_user
 
     def GUID_string(self, guid):
-        return ldb.schema_format_value("objectGUID", guid)
+        return get_string(ldb.schema_format_value("objectGUID", guid))
 
     def create_delete_user(self, new_user):
         self.ldb_admin.newuser(new_user, self.user_pass)
