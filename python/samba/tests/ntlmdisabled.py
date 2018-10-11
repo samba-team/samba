@@ -24,7 +24,6 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from samba import NTSTATUSError, ntstatus
 import ctypes
 
-from samba import credentials
 from samba.dcerpc import srvsvc, samr, lsa
 
 """

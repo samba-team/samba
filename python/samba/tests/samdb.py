@@ -19,7 +19,6 @@
 
 import logging
 import os
-import uuid
 import shutil
 
 from samba.auth import system_session
