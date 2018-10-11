@@ -324,13 +324,8 @@ static void eventd_dead_handler(struct tevent_context *ev,
 				struct tevent_fd *fde, uint16_t flags,
 				void *private_data)
 {
-	struct eventd_context *ectx = talloc_get_type_abort(
-		private_data, struct eventd_context);
-
-	DEBUG(DEBUG_ERR, ("Eventd went away\n"));
-
-	TALLOC_FREE(ectx->eventd_fde);
-	ectx->eventd_pid = -1;
+	D_ERR("Eventd went away - exiting\n");
+	exit(1);
 }
 
 void ctdb_stop_eventd(struct ctdb_context *ctdb)
