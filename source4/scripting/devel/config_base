@@ -26,7 +26,7 @@ config_dir  = prefix + "/etc"
 config_file = config_dir + "/smb.conf"
 
 if not os.path.isdir(config_dir):
-    os.makedirs(config_dir, mode=0755)
+    os.makedirs(config_dir, mode=0o755)
 if not os.path.isfile(config_file):
     open(config_file, mode='w').close()
 
