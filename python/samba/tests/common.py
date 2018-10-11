@@ -20,7 +20,7 @@
 import samba
 import os
 import samba.tests
-from samba.common import *
+from samba.common import normalise_int32, dsdb_Dn
 from samba.samdb import SamDB
 
 
