@@ -24,7 +24,6 @@ from samba.samdb import SamDB
 from samba import gensec, Ldb, drs_utils, arcfour_encrypt, string_to_byte_array
 import ldb
 import samba
-import sys
 import uuid
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs, dnsserver, dnsp
@@ -41,10 +40,9 @@ from samba import read_and_sub_file
 from samba import werror
 from base64 import b64encode
 from samba import WERRORError, NTSTATUSError
-from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord
 from samba import sd_utils
+from samba.dnsserver import ARecord, AAAARecord, CNameRecord
 import logging
-import talloc
 import random
 import time
 import re
@@ -1083,7 +1081,6 @@ class DCJoinContext(object):
         """
 
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
-        record_type = dnsp.DNS_TYPE_A
         select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA |\
             dnsserver.DNS_RPC_VIEW_NO_CHILDREN
 
