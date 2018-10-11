@@ -15,9 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import errno
 from samba import gpo, tests
 from samba.gpclass import register_gp_extension, list_gp_extensions, \
-    unregister_gp_extension, gp_log, GPOStorage
+    unregister_gp_extension, GPOStorage
 from samba.param import LoadParm
 from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
     check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
