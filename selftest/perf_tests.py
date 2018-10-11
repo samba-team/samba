@@ -12,7 +12,8 @@
 # three separated by newlines. All other lines in the output are considered
 # comments.
 
-from selftesthelpers import *
+import os
+from selftesthelpers import source4dir, bindir, python, plantestsuite_loadlist
 
 samba4srcdir = source4dir()
 samba4bindir = bindir()
