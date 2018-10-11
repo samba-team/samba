@@ -34,8 +34,10 @@
 #include "includes.h"
 #include "./lib.h"
 #include "ldb.h"
-#include "../lib/crypto/sha256.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1
@@ -351,8 +353,8 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, struct conv_option
         char *c, *s;
         int n;
 
-	SHA256_CTX sha256_context;
-	uint8_t digest[SHA256_DIGEST_LENGTH];
+	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+	int rc;
 
 	struct GUID guid;
 
@@ -410,9 +412,13 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, struct conv_option
 		MSG_ADD_STRING("governsID", s);
 	}
 
-	samba_SHA256_Init(&sha256_context);
-	samba_SHA256_Update(&sha256_context, (uint8_t*)s, strlen(s));
-	samba_SHA256_Final(digest, &sha256_context);
+	rc = gnutls_hash_fast(GNUTLS_DIG_SHA256,
+			      s,
+			      strlen(s),
+			      digest);
+	if (rc < 0) {
+		goto failed;
+	}
 
 	memcpy(&guid, digest, sizeof(struct GUID));
 
