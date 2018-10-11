@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+from __future__ import print_function
 import optparse
 import os.path
 import subprocess
@@ -23,10 +23,10 @@ for l in p.stdout:
     durations[name] = float(duration)
 
 if opts.limit:
-    print "Top %d tests by run time:" % opts.limit
+    print("Top %d tests by run time:" % opts.limit)
 
 for i, (name, length) in enumerate(sorted(
     durations.items(), cmp=lambda (k1,v1), (k2, v2): cmp(v1, v2), reverse=True)):
     if opts.limit and i == opts.limit:
         break
-    print "%d: %s -> %ds" % (i+1, name, length)
+    print("%d: %s -> %ds" % (i+1, name, length))
