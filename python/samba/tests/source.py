@@ -158,7 +158,6 @@ class TestSource(TestCase):
     def _iter_source_files_lines(self):
         for fname, text in get_source_file_contents():
             lines = text.splitlines(True)
-            last_line_no = len(lines) - 1
             for line_no, line in enumerate(lines):
                 yield fname, line_no, line
 
