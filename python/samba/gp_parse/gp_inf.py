@@ -186,15 +186,6 @@ class GptTmplInfParser(GPParser):
             # print line
             self.param_list.append(parameters)
 
-        def from_xml(self, section):
-            for param in section.findall('Parameter'):
-                key = param.find('Key').text
-                value = param.find('Value').text
-                if value is None:
-                    value = ''
-
-                self.param_list.append((key, value))
-
         def write_section(self, header, fp):
             if len(self.param_list) ==  0:
                 return
