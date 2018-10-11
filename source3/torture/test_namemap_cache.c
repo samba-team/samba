@@ -266,7 +266,5 @@ bool run_local_namemap_cache1(int dummy)
 		return false;
 	}
 
-	gencache_stabilize();
-
 	return true;
 }

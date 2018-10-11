@@ -237,7 +237,6 @@ static void exit_server_common(enum server_exit_reason how,
 		if (am_parent) {
 			pidfile_unlink(lp_pid_directory(), "smbd");
 		}
-		gencache_stabilize();
 	}
 
 	exit(0);

@@ -1107,8 +1107,6 @@ static struct functable net_func[] = {
 
 	DEBUG(2,("return code = %d\n", rc));
 
-	gencache_stabilize();
-
 	libnetapi_free(c->netapi_ctx);
 
 	poptFreeContext(pc);

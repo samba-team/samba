@@ -70,8 +70,6 @@ static void terminate(struct messaging_context *msg)
 	/* If there was an async dns child - kill it. */
 	kill_async_dns_child();
 
-	gencache_stabilize();
-
 	pidfile_unlink(lp_pid_directory(), "nmbd");
 
 	exit(0);

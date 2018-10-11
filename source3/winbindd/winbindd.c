@@ -208,8 +208,6 @@ static void terminate(bool is_parent)
 
 	idmap_close();
 
-	gencache_stabilize();
-
 	netlogon_creds_cli_close_global_db();
 
 #if 0

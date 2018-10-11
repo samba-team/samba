@@ -347,24 +347,6 @@ static int net_cache_flush(struct net_context *c, int argc, const char **argv)
 	return 0;
 }
 
-static int net_cache_stabilize(struct net_context *c, int argc,
-			       const char **argv)
-{
-	if (c->display_usage) {
-		d_printf(  "%s\n"
-			   "net cache stabilize\n"
-			   "    %s\n",
-			 _("Usage:"),
-			 _("Move transient cache content to stable storage"));
-		return 0;
-	}
-
-	if (!gencache_stabilize()) {
-		return -1;
-	}
-	return 0;
-}
-
 static int netsamlog_cache_for_all_cb(const char *sid_str,
 				      time_t when_cached,
 				      struct netr_SamInfo3 *info3,
@@ -654,14 +636,6 @@ int net_cache(struct net_context *c, int argc, const char **argv)
 			N_("Delete all cache entries"),
 			N_("net cache flush\n"
 			   "  Delete all cache entries")
-		},
-		{
-			"stabilize",
-			net_cache_stabilize,
-			NET_TRANSPORT_LOCAL,
-			N_("Move transient cache content to stable storage"),
-			N_("net cache stabilize\n"
-			   "  Move transient cache content to stable storage")
 		},
 		{
 			"samlogon",

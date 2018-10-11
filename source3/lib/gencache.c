@@ -33,7 +33,6 @@
 #define DBGC_CLASS DBGC_TDB
 
 static struct tdb_wrap *cache;
-static struct tdb_wrap *cache_notrans;
 
 /**
  * @file gencache.c
@@ -72,7 +71,7 @@ static bool gencache_init(void)
 
 	hash_size = lp_parm_int(-1, "gencache", "hash_size", 10000);
 
-	cache_fname = cache_path(talloc_tos(), "gencache.tdb");
+	cache_fname = lock_path(talloc_tos(), "gencache.tdb");
 	if (cache_fname == NULL) {
 		return false;
 	}
@@ -80,175 +79,19 @@ static bool gencache_init(void)
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
 	cache = tdb_wrap_open(NULL, cache_fname, hash_size,
-			      TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
+			      TDB_INCOMPATIBLE_HASH|
+			      TDB_NOSYNC|
+			      TDB_MUTEX_LOCKING,
 			      open_flags, 0644);
-
-	if (!cache && (errno == EACCES)) {
-		open_flags = O_RDONLY;
-		cache = tdb_wrap_open(NULL, cache_fname, hash_size,
-				      TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
-				      open_flags, 0644);
-		if (cache) {
-			DEBUG(5, ("gencache_init: Opening cache file %s read-only.\n", cache_fname));
-		}
-	}
-	TALLOC_FREE(cache_fname);
-
-	if (!cache) {
-		DEBUG(5, ("Attempt to open gencache.tdb has failed.\n"));
-		return false;
-	}
-
-	cache_fname = lock_path(talloc_tos(), "gencache_notrans.tdb");
-	if (cache_fname == NULL) {
-		TALLOC_FREE(cache);
-		return false;
-	}
-
-	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
-
-	cache_notrans = tdb_wrap_open(NULL, cache_fname, hash_size,
-				      TDB_CLEAR_IF_FIRST|
-				      TDB_INCOMPATIBLE_HASH|
-				      TDB_NOSYNC|
-				      TDB_MUTEX_LOCKING,
-				      open_flags, 0644);
-	if (cache_notrans == NULL) {
+	if (cache == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
 			  strerror(errno)));
 		TALLOC_FREE(cache_fname);
-		TALLOC_FREE(cache);
 		return false;
 	}
 	TALLOC_FREE(cache_fname);
 
 	return true;
-}
-
-static TDB_DATA last_stabilize_key(void)
-{
-	const char key[] = "@LAST_STABILIZED";
-
-	return (TDB_DATA) {
-		.dptr = discard_const_p(uint8_t, key),
-		.dsize = sizeof(key),
-	};
-}
-
-struct gencache_have_val_state {
-	time_t new_timeout;
-	const DATA_BLOB *data;
-	bool gotit;
-};
-
-static void gencache_have_val_parser(const struct gencache_timeout *old_timeout,
-				     DATA_BLOB data,
-				     void *private_data)
-{
-	struct gencache_have_val_state *state =
-		(struct gencache_have_val_state *)private_data;
-	time_t now = time(NULL);
-	int cache_time_left, new_time_left, additional_time;
-
-	/*
-	 * Excuse the many variables, but these time calculations are
-	 * confusing to me. We do not want to write to gencache with a
-	 * possibly expensive transaction if we are about to write the same
-	 * value, just extending the remaining timeout by less than 10%.
-	 */
-
-	cache_time_left = old_timeout->timeout - now;
-	if (cache_time_left <= 0) {
-		/*
-		 * timed out, write new value
-		 */
-		return;
-	}
-
-	new_time_left = state->new_timeout - now;
-	if (new_time_left <= 0) {
-		/*
-		 * Huh -- no new timeout?? Write it.
-		 */
-		return;
-	}
-
-	if (new_time_left < cache_time_left) {
-		/*
-		 * Someone wants to shorten the timeout. Let it happen.
-		 */
-		return;
-	}
-
-	/*
-	 * By how much does the new timeout extend the remaining cache time?
-	 */
-	additional_time = new_time_left - cache_time_left;
-
-	if (additional_time * 10 < 0) {
-		/*
-		 * Integer overflow. We extend by so much that we have to write it.
-		 */
-		return;
-	}
-
-	/*
-	 * The comparison below is essentially equivalent to
-	 *
-	 *    new_time_left > cache_time_left * 1.10
-	 *
-	 * but without floating point calculations.
-	 */
-
-	if (additional_time * 10 > cache_time_left) {
-		/*
-		 * We extend the cache timeout by more than 10%. Do it.
-		 */
-		return;
-	}
-
-	/*
-	 * Now the more expensive data compare.
-	 */
-	if (data_blob_cmp(state->data, &data) != 0) {
-		/*
-		 * Write a new value. Certainly do it.
-		 */
-		return;
-	}
-
-	/*
-	 * Extending the timeout by less than 10% for the same cache value is
-	 * not worth the trouble writing a value into gencache under a
-	 * possibly expensive transaction.
-	 */
-	state->gotit = true;
-}
-
-static bool gencache_have_val(const char *keystr, const DATA_BLOB *data,
-			      time_t timeout)
-{
-	struct gencache_have_val_state state;
-
-	state.new_timeout = timeout;
-	state.data = data;
-	state.gotit = false;
-
-	if (!gencache_parse(keystr, gencache_have_val_parser, &state)) {
-		return false;
-	}
-	return state.gotit;
-}
-
-static int last_stabilize_parser(TDB_DATA key, TDB_DATA data,
-				 void *private_data)
-{
-	time_t *last_stabilize = private_data;
-
-	if ((data.dsize != 0) && (data.dptr[data.dsize-1] == '\0')) {
-		*last_stabilize = atoi((char *)data.dptr);
-	}
-	return 0;
 }
 
 /**
@@ -268,8 +111,6 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 {
 	TDB_DATA key;
 	int ret;
-	time_t last_stabilize;
-	static int writecount;
 	TDB_DATA dbufs[3];
 	uint32_t crc;
 
@@ -279,20 +120,8 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 
 	key = string_term_tdb_data(keystr);
 
-	ret = tdb_data_cmp(key, last_stabilize_key());
-	if (ret == 0) {
-		DEBUG(10, ("Can't store %s as a key\n", keystr));
-		return false;
-	}
-
 	if (!gencache_init()) {
 		return false;
-	}
-
-	if ((timeout != 0) && gencache_have_val(keystr, &blob, timeout)) {
-		DEBUG(10, ("Did not store value for %s, we already got it\n",
-			   keystr));
-		return true;
 	}
 
 	dbufs[0] = (TDB_DATA) { .dptr = (uint8_t *)&timeout,
@@ -313,51 +142,9 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	ret = tdb_storev(cache_notrans->tdb, key, dbufs, ARRAY_SIZE(dbufs), 0);
-	if (ret != 0) {
-		return false;
-	}
+	ret = tdb_storev(cache->tdb, key, dbufs, ARRAY_SIZE(dbufs), 0);
 
-	/*
-	 * Every 100 writes within a single process, stabilize the cache with
-	 * a transaction. This is done to prevent a single transaction to
-	 * become huge and chew lots of memory.
-	 */
-	writecount += 1;
-	if (writecount > lp_parm_int(-1, "gencache", "stabilize_count", 100)) {
-		gencache_stabilize();
-		writecount = 0;
-		goto done;
-	}
-
-	/*
-	 * Every 5 minutes, call gencache_stabilize() to not let grow
-	 * gencache_notrans.tdb too large.
-	 */
-
-	last_stabilize = 0;
-
-	tdb_parse_record(cache_notrans->tdb, last_stabilize_key(),
-			 last_stabilize_parser, &last_stabilize);
-
-	if ((last_stabilize
-	     + lp_parm_int(-1, "gencache", "stabilize_interval", 300))
-	    < time(NULL)) {
-		gencache_stabilize();
-	}
-
-done:
 	return ret == 0;
-}
-
-static void gencache_del_parser(const struct gencache_timeout *t,
-				DATA_BLOB blob,
-				void *private_data)
-{
-	if (t->timeout != 0) {
-		bool *exists = private_data;
-		*exists = true;
-	}
 }
 
 /**
@@ -372,8 +159,6 @@ static void gencache_del_parser(const struct gencache_timeout *t,
 bool gencache_del(const char *keystr)
 {
 	TDB_DATA key = string_term_tdb_data(keystr);
-	bool exists = false;
-	bool result = false;
 	int ret;
 
 	if (keystr == NULL) {
@@ -386,25 +171,9 @@ bool gencache_del(const char *keystr)
 
 	DEBUG(10, ("Deleting cache entry (key=[%s])\n", keystr));
 
-	ret = tdb_chainlock(cache_notrans->tdb, key);
-	if (ret == -1) {
-		return false;
-	}
+	ret = tdb_delete(cache->tdb, key);
 
-	gencache_parse(keystr, gencache_del_parser, &exists);
-
-	if (exists) {
-		/*
-		 * We delete an element by setting its timeout to
-		 * 0. This way we don't have to do a transaction on
-		 * gencache.tdb every time we delete an element.
-		 */
-		result = gencache_set(keystr, "", 0);
-	}
-
-	tdb_chainunlock(cache_notrans->tdb, key);
-
-	return result;
+	return (ret != -1);
 }
 
 static bool gencache_pull_timeout(TDB_DATA key,
@@ -449,7 +218,6 @@ struct gencache_parse_state {
 		       DATA_BLOB blob,
 		       void *private_data);
 	void *private_data;
-	bool copy_to_notrans;
 };
 
 static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
@@ -465,10 +233,6 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 	}
 	state = (struct gencache_parse_state *)private_data;
 	state->parser(&t, payload, state->private_data);
-
-	if (state->copy_to_notrans) {
-		tdb_store(cache_notrans->tdb, key, data, 0);
-	}
 
 	return 0;
 }
@@ -486,43 +250,18 @@ bool gencache_parse(const char *keystr,
 	if (keystr == NULL) {
 		return false;
 	}
-	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
-		return false;
-	}
 	if (!gencache_init()) {
 		return false;
 	}
 
 	state.parser = parser;
 	state.private_data = private_data;
-	state.copy_to_notrans = false;
 
-	ret = tdb_chainlock(cache_notrans->tdb, key);
-	if (ret != 0) {
-		return false;
-	}
-
-	ret = tdb_parse_record(cache_notrans->tdb, key,
+	ret = tdb_parse_record(cache->tdb, key,
 			       gencache_parse_fn, &state);
 	if (ret == 0) {
-		tdb_chainunlock(cache_notrans->tdb, key);
 		return true;
 	}
-
-	state.copy_to_notrans = true;
-
-	ret = tdb_parse_record(cache->tdb, key, gencache_parse_fn, &state);
-
-	if ((ret == -1) && (tdb_error(cache->tdb) == TDB_ERR_NOEXIST)) {
-		/*
-		 * The record does not exist. Set a delete-marker in
-		 * gencache_notrans, so that we don't have to look at
-		 * the fcntl-based cache again.
-		 */
-		gencache_set(keystr, "", 0);
-	}
-
-	tdb_chainunlock(cache_notrans->tdb, key);
 
 	return (ret == 0);
 }
@@ -617,138 +356,6 @@ fail:
 	return false;
 } 
 
-struct stabilize_state {
-	bool written;
-};
-static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
-			void *priv);
-
-/**
- * Stabilize gencache
- *
- * Migrate the clear-if-first gencache data to the stable,
- * transaction-based gencache.tdb
- */
-
-bool gencache_stabilize(void)
-{
-	struct stabilize_state state;
-	int res;
-	char *now;
-
-	if (!gencache_init()) {
-		return false;
-	}
-
-	res = tdb_transaction_start_nonblock(cache->tdb);
-	if (res != 0) {
-		if (tdb_error(cache->tdb) == TDB_ERR_NOLOCK)
-		{
-			/*
-			 * Someone else already does the stabilize,
-			 * this does not have to be done twice
-			 */
-			return true;
-		}
-
-		DEBUG(10, ("Could not start transaction on gencache.tdb: "
-			   "%s\n", tdb_errorstr(cache->tdb)));
-		return false;
-	}
-
-	res = tdb_lockall_nonblock(cache_notrans->tdb);
-	if (res != 0) {
-		tdb_transaction_cancel(cache->tdb);
-		DEBUG(10, ("Could not get allrecord lock on "
-			   "gencache_notrans.tdb: %s\n",
-			   tdb_errorstr(cache_notrans->tdb)));
-		return false;
-	}
-
-	state.written = false;
-
-	res = tdb_traverse(cache_notrans->tdb, stabilize_fn, &state);
-	if (res < 0) {
-		tdb_unlockall(cache_notrans->tdb);
-		tdb_transaction_cancel(cache->tdb);
-		return false;
-	}
-
-	if (!state.written) {
-		tdb_unlockall(cache_notrans->tdb);
-		tdb_transaction_cancel(cache->tdb);
-		return true;
-	}
-
-	res = tdb_transaction_commit(cache->tdb);
-	if (res != 0) {
-		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr(cache->tdb)));
-		tdb_unlockall(cache_notrans->tdb);
-		return false;
-	}
-
-	res = tdb_wipe_all(cache_notrans->tdb);
-	if (res < 0) {
-		DBG_DEBUG("tdb_wipe_all on gencache_notrans.tdb failed: %s\n",
-			  tdb_errorstr(cache_notrans->tdb));
-	}
-
-	now = talloc_asprintf(talloc_tos(), "%d", (int)time(NULL));
-	if (now != NULL) {
-		tdb_store(cache_notrans->tdb, last_stabilize_key(),
-			  string_term_tdb_data(now), 0);
-		TALLOC_FREE(now);
-	}
-
-	res = tdb_unlockall(cache_notrans->tdb);
-	if (res != 0) {
-		DEBUG(10, ("tdb_unlockall on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr(cache->tdb)));
-		return false;
-	}
-
-	return true;
-}
-
-static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
-			void *priv)
-{
-	struct stabilize_state *state = (struct stabilize_state *)priv;
-	int res;
-	time_t timeout;
-
-	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
-		return 0;
-	}
-
-	if (!gencache_pull_timeout(key, val, &timeout, NULL)) {
-		DEBUG(10, ("Ignoring invalid entry\n"));
-		return 0;
-	}
-	if ((timeout < time(NULL)) || (val.dsize == 0)) {
-		res = tdb_delete(cache->tdb, key);
-		if (res == 0) {
-			state->written = true;
-		} else if (tdb_error(cache->tdb) == TDB_ERR_NOEXIST) {
-			res = 0;
-		}
-	} else {
-		res = tdb_store(cache->tdb, key, val, 0);
-		if (res == 0) {
-			state->written = true;
-		}
-	}
-
-	if (res != 0) {
-		DEBUG(10, ("Transfer to gencache.tdb failed: %s\n",
-			   tdb_errorstr(cache->tdb)));
-		return -1;
-	}
-
-	return 0;
-}
-
 /**
  * Get existing entry from the cache file.
  *
@@ -816,7 +423,6 @@ struct gencache_iterate_blobs_state {
 		   time_t timeout, void *private_data);
 	const char *pattern;
 	void *private_data;
-	bool in_persistent;
 };
 
 static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
@@ -828,13 +434,6 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 	char *free_key = NULL;
 	time_t timeout;
 	DATA_BLOB payload;
-
-	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
-		return 0;
-	}
-	if (state->in_persistent && tdb_exists(cache_notrans->tdb, key)) {
-		return 0;
-	}
 
 	if (key.dptr[key.dsize-1] == '\0') {
 		keystr = (char *)key.dptr;
@@ -887,10 +486,6 @@ void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
 	state.pattern = pattern;
 	state.private_data = private_data;
 
-	state.in_persistent = false;
-	tdb_traverse(cache_notrans->tdb, gencache_iterate_blobs_fn, &state);
-
-	state.in_persistent = true;
 	tdb_traverse(cache->tdb, gencache_iterate_blobs_fn, &state);
 }
 
