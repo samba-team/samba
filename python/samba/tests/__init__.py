@@ -20,22 +20,20 @@
 
 import os
 import tempfile
+import warnings
 import ldb
 import samba
 from samba import param
 from samba import credentials
 from samba.credentials import Credentials
 from samba import gensec
-import socket
-import struct
 import subprocess
 import sys
-import tempfile
 import unittest
 import re
 import samba.auth
 import samba.dcerpc.base
-from samba.compat import PY3, text_type
+from samba.compat import text_type
 from samba.compat import string_types
 from random import randint
 from random import SystemRandom
