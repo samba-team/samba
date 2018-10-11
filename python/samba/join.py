@@ -259,7 +259,7 @@ class DCJoinContext(object):
         ctx.del_noerror(res[0].dn, recursive=True)
 
         if "msDS-Krbtgtlink" in res[0]:
-            new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
+            ctx.new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
             ctx.del_noerror(ctx.new_krbtgt_dn)
 
         res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
