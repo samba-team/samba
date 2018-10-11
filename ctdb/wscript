@@ -1051,6 +1051,7 @@ def build(bld):
         'complex',
         'ctdb_eventd',
         'cunit',
+        'etc-ctdb',
         'eventd',
         'eventscripts',
         'onnode',
