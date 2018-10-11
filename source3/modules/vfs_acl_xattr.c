@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "librpc/gen_ndr/xattr.h"
-#include "../lib/crypto/sha256.h"
 #include "auth.h"
 #include "vfs_acl_common.h"
 
