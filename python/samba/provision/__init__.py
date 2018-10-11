@@ -40,7 +40,6 @@ import logging
 import time
 import uuid
 import socket
-import string
 import tempfile
 import samba.dsdb
 

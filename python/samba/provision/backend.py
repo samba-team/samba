@@ -26,18 +26,15 @@
 """Functions for setting up a Samba configuration (LDB and LDAP backends)."""
 
 from samba.compat import urllib_quote
-from base64 import b64encode
 import errno
 import ldb
 import os
 import sys
-import uuid
 import time
 import shutil
 import subprocess
-import urllib
 
-from ldb import SCOPE_BASE, SCOPE_ONELEVEL, LdbError, timestring
+from ldb import SCOPE_BASE, SCOPE_ONELEVEL, LdbError
 
 from samba import Ldb, read_and_sub_file, setup_file
 from samba.credentials import Credentials, DONT_USE_KERBEROS
