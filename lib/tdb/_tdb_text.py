@@ -4,7 +4,6 @@
 # Published under the GNU LGPLv3 or later
 
 import sys
-import functools
 
 import tdb
 
