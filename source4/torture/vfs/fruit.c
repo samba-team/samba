@@ -3082,6 +3082,68 @@ done:
 	return ret;
 }
 
+#if 0
+static bool check_stream_list_handle(struct smb2_tree *tree,
+				     struct torture_context *tctx,
+				     struct smb2_handle h,
+				     int num_exp,
+				     const char **exp,
+				     bool is_dir)
+{
+	bool ret = true;
+	union smb_fileinfo finfo;
+	NTSTATUS status;
+	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
+	char **exp_sort;
+	struct stream_struct *stream_sort;
+
+	torture_assert_goto(tctx, tmp_ctx != NULL, ret, done,
+			    "talloc_new failed\n");
+
+	finfo = (union smb_fileinfo) {
+		.stream_info.level = RAW_FILEINFO_STREAM_INFORMATION,
+		.stream_info.in.file.handle = h,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"get stream info\n");
+
+	torture_assert_int_equal_goto(tctx, finfo.stream_info.out.num_streams,
+				      num_exp, ret, done, "stream count\n");
+
+	if (num_exp == 0) {
+		TALLOC_FREE(tmp_ctx);
+		goto done;
+	}
+
+	exp_sort = talloc_memdup(tmp_ctx, exp, num_exp * sizeof(*exp));
+	torture_assert_goto(tctx, exp_sort != NULL, ret, done, __location__);
+
+	TYPESAFE_QSORT(exp_sort, num_exp, qsort_string);
+
+	stream_sort = talloc_memdup(tmp_ctx, finfo.stream_info.out.streams,
+				    finfo.stream_info.out.num_streams *
+				    sizeof(*stream_sort));
+	torture_assert_goto(tctx, stream_sort != NULL, ret, done, __location__);
+
+	TYPESAFE_QSORT(stream_sort, finfo.stream_info.out.num_streams, qsort_stream);
+
+	for (i=0; i<num_exp; i++) {
+		torture_comment(tctx, "i[%d] exp[%s] got[%s]\n",
+				i, exp_sort[i], stream_sort[i].stream_name.s);
+		torture_assert_str_equal_goto(tctx, stream_sort[i].stream_name.s,
+					      exp_sort[i], ret, done,
+					      "stream name\n");
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+#endif
+
 /*
   test stream names
 */
