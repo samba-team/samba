@@ -24,7 +24,6 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 import ldb
 import shutil
-import os
 
 
 class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):

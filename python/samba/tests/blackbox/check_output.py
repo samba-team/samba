@@ -17,7 +17,6 @@
 Blackbox tests for blackboxtest check output methods.
 """
 
-import time
 import signal
 from samba.tests import BlackboxTestCase
 
