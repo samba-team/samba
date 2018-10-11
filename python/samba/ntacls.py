@@ -32,7 +32,6 @@ from samba.samba3 import param as s3param
 from samba.dcerpc import security, xattr, idmap
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.samba3 import smbd
-from samba.auth import admin_session
 from samba import smb
 
 # don't include volumes
