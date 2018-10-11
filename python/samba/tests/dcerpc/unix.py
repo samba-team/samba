@@ -20,7 +20,7 @@
 
 from samba.dcerpc import unixinfo
 from samba.tests import RpcInterfaceTestCase
-
+from samba.compat import text_type
 
 class UnixinfoTests(RpcInterfaceTestCase):
 
@@ -32,7 +32,7 @@ class UnixinfoTests(RpcInterfaceTestCase):
         infos = self.conn.GetPWUid(range(512))
         self.assertEquals(512, len(infos))
         self.assertEquals("/bin/false", infos[0].shell)
-        self.assertTrue(isinstance(infos[0].homedir, txt_type))
+        self.assertTrue(isinstance(infos[0].homedir, text_type))
 
     def test_gidtosid(self):
         self.conn.GidToSid(1000)
