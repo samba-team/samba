@@ -34,7 +34,6 @@ import drs_base
 from drs_base import AbstractLink
 
 import samba.tests
-import random
 from samba import werror, WERRORError
 
 import ldb

@@ -16,7 +16,6 @@ import samba.getopt as options
 from samba.auth import system_session
 import ldb
 from samba.samdb import SamDB
-from samba.dcerpc import misc
 
 from samba.dcerpc import drsuapi, misc, drsblobs
 from samba.drs_utils import drs_DsBind
