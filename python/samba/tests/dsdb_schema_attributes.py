@@ -23,15 +23,12 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python" $SUBUNITRUN dsdb_schema_attributes
 #
 
-import sys
 import time
 import random
 
 import samba.tests
 import ldb
 from ldb import SCOPE_BASE, LdbError
-
-import samba.tests
 
 
 class SchemaAttributesTestCase(samba.tests.TestCase):
