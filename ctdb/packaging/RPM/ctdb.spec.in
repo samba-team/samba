@@ -270,6 +270,7 @@ test suite for ctdb
 %{_libexecdir}/%{name}/tests/*
 %{_bindir}/ctdb_run_tests
 %{_bindir}/ctdb_run_cluster_tests
+%{_bindir}/ctdb_local_daemons
 %doc tests/README
 
 %if %with_pcp_pmda
