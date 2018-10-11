@@ -224,7 +224,7 @@ class OUCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, str(obj.dn),
                                      "object '%s' not found" % obj.dn)
 
-    def test_list(self):
+    def test_list_full_dn(self):
         (result, out, err) = self.runsubcmd("ou", "list",
                                             "--full-dn")
         self.assertCmdSuccess(result, out, err,
