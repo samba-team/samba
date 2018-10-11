@@ -18,7 +18,12 @@
 # three separated by newlines. All other lines in the output are considered
 # comments.
 
-from selftesthelpers import *
+import os
+from selftesthelpers import bindir, srcdir, python
+from selftesthelpers import planpythontestsuite, samba4srcdir
+from selftesthelpers import plantestsuite, bbdir
+from selftesthelpers import configuration, valgrindify
+from selftesthelpers import skiptestsuite
 
 try:
     config_h = os.environ["CONFIG_H"]
