@@ -23,17 +23,19 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "../lib/crypto/crypto.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 /*
   sign an outgoing message
  */
 NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_key)
 {
-	struct HMACSHA256Context m;
-	uint8_t res[32];
+	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
 	uint64_t session_id;
 	size_t hdr_offset;
+	int rc;
 
 	if (buf->size < NBT_HDR_SIZE + SMB2_HDR_SIGNATURE + 16) {
 		/* can't sign non-SMB2 messages */
@@ -59,13 +61,19 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 
 	SIVAL(buf->hdr, SMB2_HDR_FLAGS, IVAL(buf->hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
-	ZERO_STRUCT(m);
-	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
-	hmac_sha256_update(buf->hdr, buf->size-hdr_offset, &m);
-	hmac_sha256_final(res, &m);
+	rc = gnutls_hmac_fast(GNUTLS_MAC_SHA256,
+			      session_key.data,
+			      MIN(session_key.length, 16),
+			      buf->hdr,
+			      buf->size - hdr_offset,
+			      digest);
+	if (rc < 0) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	DEBUG(5,("signed SMB2 message of size %u\n", (unsigned)buf->size - NBT_HDR_SIZE));
 
-	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, res, 16);
+	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, digest, 16);
 
 	return NT_STATUS_OK;	
 }
@@ -76,10 +84,10 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session_key)
 {
 	uint64_t session_id;
-	struct HMACSHA256Context m;
-	uint8_t res[SHA256_DIGEST_LENGTH];
+	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
 	uint8_t sig[16];
 	size_t hdr_offset;
+	int rc;
 
 	if (buf->size < NBT_HDR_SIZE + SMB2_HDR_SIGNATURE + 16) {
 		/* can't check non-SMB2 messages */
@@ -104,20 +112,27 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 
 	memset(buf->hdr + SMB2_HDR_SIGNATURE, 0, 16);
 
-	ZERO_STRUCT(m);
-	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
-	hmac_sha256_update(buf->hdr, buf->size-hdr_offset, &m);
-	hmac_sha256_final(res, &m);
+	rc = gnutls_hmac_fast(GNUTLS_MAC_SHA256,
+			      session_key.data,
+			      MIN(session_key.length, 16),
+			      buf->hdr,
+			      buf->size - hdr_offset,
+			      digest);
+	if (rc < 0) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
-	memcpy(buf->hdr+SMB2_HDR_SIGNATURE, sig, 16);
+	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, digest, 16);
 
-	if (memcmp_const_time(res, sig, 16) != 0) {
+	if (memcmp_const_time(digest, sig, 16) != 0) {
 		DEBUG(0,("Bad SMB2 signature for message of size %u\n", 
 			 (unsigned)buf->size-NBT_HDR_SIZE));
 		dump_data(0, sig, 16);
-		dump_data(0, res, 16);
+		dump_data(0, digest, 16);
+		ZERO_ARRAY(digest);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+	ZERO_ARRAY(digest);
 
 	return NT_STATUS_OK;	
 }
