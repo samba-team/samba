@@ -234,7 +234,8 @@ class UserTests(samba.tests.TestCase):
                 self.ldb.search(pattern % i,
                                 scope=SCOPE_BASE,
                                 attrs=['cn'])
-            except LdbError as (num, msg):
+            except LdbError as e:
+                (num, msg) = e
                 if num != ERR_NO_SUCH_OBJECT:
                     raise
 

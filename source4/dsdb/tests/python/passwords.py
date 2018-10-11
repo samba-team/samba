@@ -1088,7 +1088,8 @@ delete: userPassword
 add: userPassword
 userPassword: thatsAcomplPASS1
 """)
-        except LdbError, (num, msg):
+        except LdbError as e:
+            (num, msg) = e
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         else:
             self.fail()
@@ -1104,7 +1105,8 @@ delete: clearTextPassword
 add: clearTextPassword
 clearTextPassword: thatsAcomplPASS2
 """)
-        except LdbError, (num, msg):
+        except LdbError as e:
+            (num, msg) = e
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
                             num == ERR_NO_SUCH_ATTRIBUTE)  # for Windows
         else:
@@ -1121,7 +1123,8 @@ delete: unicodePwd
 add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).decode('utf8') + """
 """)
-        except LdbError, (num, msg):
+        except LdbError as e:
+            (num, msg) = e
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         else:
             self.fail()
