@@ -154,9 +154,9 @@ class Samba3SamTestCase(MapBaseTestCase):
         """Looking up by non-mapped attribute"""
         msg = self.ldb.search(expression="(cn=Administrator)")
         self.assertEquals(len(msg), 1)
-        self.assertEquals(msg[0]["cn"], "Administrator")
+        self.assertEquals(str(msg[0]["cn"]), "Administrator")
 
-    def test_search_non_mapped(self):
+    def test_search_mapped(self):
         """Looking up by mapped attribute"""
         msg = self.ldb.search(expression="(name=Backup Operators)")
         self.assertEquals(len(msg), 1)
