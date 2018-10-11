@@ -23,7 +23,14 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../selftest"))
 import selftesthelpers
-from selftesthelpers import *
+from selftesthelpers import bindir, srcdir, binpath, python
+from selftesthelpers import configuration, plantestsuite
+from selftesthelpers import planpythontestsuite, planperltestsuite
+from selftesthelpers import plantestsuite_loadlist, extra_python
+from selftesthelpers import skiptestsuite, source4dir, valgrindify
+from selftesthelpers import smbtorture4_options, smbtorture4_testsuites
+from selftesthelpers import smbtorture4, ntlm_auth3, samba3srcdir
+
 
 print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
 
