@@ -21,8 +21,7 @@
 
 import samba
 import samba.tests
-from samba.kcc.graph import *
-
+from samba.kcc.graph import total_schedule, convert_schedule_to_repltimes
 
 def ntdsconn_schedule(times):
     if times is None:
