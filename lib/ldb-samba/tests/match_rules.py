@@ -3,17 +3,13 @@
 import optparse
 import sys
 import os
-import unittest
 import samba
 import samba.getopt as options
 
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 
-from samba.tests import delete_force
-from samba.dcerpc import security, misc
 from samba.samdb import SamDB
 from samba.auth import system_session
-from samba.ndr import ndr_unpack
 from ldb import Message, MessageElement, Dn, LdbError
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, SCOPE_ONELEVEL
