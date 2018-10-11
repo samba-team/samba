@@ -22,12 +22,9 @@
 from samba import auth
 from samba import WERRORError, werror
 import samba.tests
-import time
-import json
 import os
 from samba.credentials import Credentials
 from samba.dcerpc import netlogon
-from samba.tests import delete_force
 from samba.dcerpc.misc import GUID
 
 
