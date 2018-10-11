@@ -5,7 +5,6 @@
 import unittest
 import subprocess
 import sys
-import re
 import gc
 
 import talloc
