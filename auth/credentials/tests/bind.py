@@ -7,7 +7,6 @@ import optparse
 import sys
 import base64
 import copy
-import time
 
 sys.path.insert(0, "bin/python")
 import samba
