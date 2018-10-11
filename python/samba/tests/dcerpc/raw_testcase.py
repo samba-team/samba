@@ -18,7 +18,6 @@
 
 import sys
 import socket
-import struct
 import samba.dcerpc.dcerpc
 import samba.dcerpc.base
 import samba.dcerpc.epmapper

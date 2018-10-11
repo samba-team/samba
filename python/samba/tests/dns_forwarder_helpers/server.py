@@ -19,12 +19,10 @@
 # Based on the EchoServer example from python docs
 from __future__ import print_function
 import SocketServer
-import time
 import sys
 from threading import Timer
 from samba.dcerpc import dns
 import samba.ndr as ndr
-import random
 import re
 
 VERBOSE = False

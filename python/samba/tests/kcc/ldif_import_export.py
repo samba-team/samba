@@ -22,8 +22,6 @@
 import samba
 import os
 import time
-import shutil
-import sys
 import subprocess
 import logging
 import samba.tests

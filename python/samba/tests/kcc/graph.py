@@ -23,8 +23,6 @@ import samba
 import samba.tests
 from samba.kcc.graph import *
 
-import itertools
-
 
 def ntdsconn_schedule(times):
     if times is None:
