@@ -268,8 +268,6 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.unlink(passwd_file_name)
 
     def test_parse_file_4(self):
-        realm = "realm.example.com"
-        domain = "domain"
         password = "password"
         username = "username"
 
@@ -293,8 +291,6 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.unlink(passwd_file_name)
 
     def test_parse_file_5(self):
-        realm = "realm.example.com"
-        domain = "domain"
         password = "password"
         username = "username"
 
