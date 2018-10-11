@@ -23,7 +23,6 @@ import samba
 import samba.tests
 
 import os
-import re
 import subprocess
 import xml.etree.ElementTree as ET
 
@@ -183,7 +182,6 @@ class SmbDotConfTests(TestCase):
             program = [os.environ["PYTHON"]] + program
 
         failset = set()
-        count = 0
 
         for tuples in self.defaults:
             param, default, context, param_type = tuples
@@ -225,7 +223,6 @@ class SmbDotConfTests(TestCase):
             program = [os.environ["PYTHON"]] + program
 
         failset = set()
-        count = 0
 
         for tuples in self.defaults:
             param, default, context, param_type = tuples
@@ -282,7 +279,6 @@ class SmbDotConfTests(TestCase):
                               'enum': '', 'boolean-auto': '', 'char': 'b', 'list': 'd, e, f'}
 
         failset = set()
-        count = 0
 
         for tuples in self.defaults_all:
             param, default, context, param_type = tuples
