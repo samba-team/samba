@@ -38,15 +38,6 @@ class LsaStringTests(TestCase):
         s = lsa.String(CONTENT)
         self.assertEqual(CONTENT, s.string)
 
-        # These should be zero, are set by ndr_pack and ndr_unpack
-        self.assertEqual(0, s.size)
-        self.assertEqual(0, s.length)
-
-    def test_string_constructor(self):
-        CONTENT = "The content string"
-        s = lsa.String(CONTENT)
-        self.assertEqual(CONTENT, s.string)
-
         # These should be zero
         self.assertEqual(0, s.size)
         self.assertEqual(0, s.length)
