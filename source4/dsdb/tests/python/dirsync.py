@@ -31,7 +31,7 @@ import base64
 from ldb import LdbError, SCOPE_BASE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE
-from samba.dcerpc import security, misc, drsblobs, security
+from samba.dcerpc import security, misc, drsblobs
 from samba.ndr import ndr_unpack, ndr_pack
 
 from samba.auth import system_session
