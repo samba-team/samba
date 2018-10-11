@@ -815,7 +815,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
 
         # assert that the record isn't spuriously tombstoned
         self.assertTrue('dNSTombstoned' not in records[0] or
-                        str(record['dNSTombstoned']) == 'FALSE')
+                        str(records[0]['dNSTombstoned']) == 'FALSE')
 
     def test_dns_wildcards(self):
         """
