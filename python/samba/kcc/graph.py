@@ -23,6 +23,7 @@ import itertools
 import heapq
 
 from samba.kcc.graph_utils import write_dot_file, verify_and_dot, verify_graph
+from samba.kcc.kcc_utils import KCCError
 from samba.ndr import ndr_pack
 from samba.dcerpc import misc
 
