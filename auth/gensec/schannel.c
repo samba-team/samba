@@ -36,6 +36,9 @@
 #include "lib/crypto/crypto.h"
 #include "libds/common/roles.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
@@ -223,11 +226,16 @@ static void netsec_do_sign(struct schannel_state *state,
 			   uint8_t *checksum)
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		struct HMACSHA256Context ctx;
+		gnutls_hmac_hd_t hmac_hnd = NULL;
+		int rc;
 
-		hmac_sha256_init(state->creds->session_key,
-				 sizeof(state->creds->session_key),
-				 &ctx);
+		rc = gnutls_hmac_init(&hmac_hnd,
+				      GNUTLS_MAC_SHA256,
+				      state->creds->session_key,
+				      sizeof(state->creds->session_key));
+		if (rc < 0) {
+			return;
+		}
 
 		if (confounder) {
 			SSVAL(header, 0, NL_SIGN_HMAC_SHA256);
@@ -235,20 +243,36 @@ static void netsec_do_sign(struct schannel_state *state,
 			SSVAL(header, 4, 0xFFFF);
 			SSVAL(header, 6, 0x0000);
 
-			hmac_sha256_update(header, 8, &ctx);
-			hmac_sha256_update(confounder, 8, &ctx);
+			rc = gnutls_hmac(hmac_hnd, header, 8);
+			if (rc < 0) {
+				gnutls_hmac_deinit(hmac_hnd, NULL);
+				return;
+			}
+			rc = gnutls_hmac(hmac_hnd, confounder, 8);
+			if (rc < 0) {
+				gnutls_hmac_deinit(hmac_hnd, NULL);
+				return;
+			}
 		} else {
 			SSVAL(header, 0, NL_SIGN_HMAC_SHA256);
 			SSVAL(header, 2, NL_SEAL_NONE);
 			SSVAL(header, 4, 0xFFFF);
 			SSVAL(header, 6, 0x0000);
 
-			hmac_sha256_update(header, 8, &ctx);
+			rc = gnutls_hmac(hmac_hnd, header, 8);
+			if (rc < 0) {
+				gnutls_hmac_deinit(hmac_hnd, NULL);
+				return;
+			}
 		}
 
-		hmac_sha256_update(data, length, &ctx);
+		rc = gnutls_hmac(hmac_hnd, data, length);
+		if (rc < 0) {
+			gnutls_hmac_deinit(hmac_hnd, NULL);
+			return;
+		}
 
-		hmac_sha256_final(checksum, &ctx);
+		gnutls_hmac_deinit(hmac_hnd, checksum);
 	} else {
 		uint8_t packet_digest[16];
 		static const uint8_t zeros[4];
