@@ -468,7 +468,7 @@ class DsdbTests(TestCase):
         try:
             self.samdb.modify(msg)
             if not allow_reference:
-                sel.fail("No exception should get %s" % msg_exp)
+                self.fail("No exception should get %s" % msg_exp)
         except ldb.LdbError as e:
             if allow_reference:
                 self.fail("Should have not raised an exception: %s" % e)
@@ -743,6 +743,6 @@ class DsdbFullScanTests(TestCase):
                                credentials=self.creds,
                                lp=self.lp,
                                options=["disable_full_db_scan_for_self_test:1"])
-        except LdbError as err:
+        except ldb.LdbError as err:
             estr = err.args[1]
             self.fail("sam.ldb required a full scan to start up")
