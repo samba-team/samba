@@ -156,7 +156,7 @@ def rename_subnet(samdb, configDn, subnet_name, new_name):
     except LdbError as e2:
         (enum, estr) = e2.args
         if enum == ldb.ERR_NO_SUCH_OBJECT:
-            raise SubnetNotFound('Subnet %s does not exist' % subnet)
+            raise SubnetNotFound('Subnet %s does not exist' % dnsubnet)
         elif enum == ldb.ERR_ENTRY_ALREADY_EXISTS:
             raise SubnetAlreadyExists('A subnet with the CIDR %s already exists'
                                       % new_name)
