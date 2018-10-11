@@ -76,6 +76,8 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 					vector[i].iov_len);
 		}
 		aes_cmac_128_final(&ctx, res);
+
+		ZERO_ARRAY(key);
 	} else {
 		struct HMACSHA256Context m;
 		uint8_t digest[SHA256_DIGEST_LENGTH];
@@ -149,6 +151,8 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 					vector[i].iov_len);
 		}
 		aes_cmac_128_final(&ctx, res);
+
+		ZERO_ARRAY(key);
 	} else {
 		struct HMACSHA256Context m;
 		uint8_t digest[SHA256_DIGEST_LENGTH];
