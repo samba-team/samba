@@ -45,7 +45,6 @@ def copytree_with_xattrs(src, dst):
     names = os.listdir(src)
 
     os.makedirs(dst)
-    errors = []
     for name in names:
         srcname = os.path.join(src, name)
         dstname = os.path.join(dst, name)
