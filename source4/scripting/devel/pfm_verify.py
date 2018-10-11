@@ -162,7 +162,6 @@ if __name__ == "__main__":
     creds = credopts.get_credentials(lp)
 
     if len(args) != 1:
-        import os
         if "DC_SERVER" not in os.environ.keys():
             parser.error("You must supply a server")
         args.append(os.environ["DC_SERVER"])
