@@ -26,7 +26,7 @@ import os
 import struct
 import tdb
 
-import samba.samba3.passdb
+from samba.samba3 import passdb
 from samba.samba3 import param as s3param
 from samba.compat import get_bytes
 
