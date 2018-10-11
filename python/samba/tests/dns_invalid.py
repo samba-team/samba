@@ -15,17 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import sys
-import struct
-import random
-import socket
-import samba.ndr as ndr
-from samba import credentials, param
-from samba.dcerpc import dns, dnsp, dnsserver
-from samba.netcmd.dns import TXTRecord, dns_record_match, data_to_dns_record
+from samba import credentials
+from samba.dcerpc import dns
 from samba.tests.subunitrun import SubunitOptions, TestProgram
-from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest
 import samba.getopt as options
 import optparse

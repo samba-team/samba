@@ -18,7 +18,6 @@
 from __future__ import print_function
 import os
 import sys
-import struct
 import random
 import socket
 import samba

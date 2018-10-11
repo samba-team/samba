@@ -36,7 +36,6 @@ from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest
 import samba.getopt as options
 import optparse
-import samba.dcerpc.dnsp
 
 
 parser = optparse.OptionParser("dns.py <server name> <server ip> [options]")
