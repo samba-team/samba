@@ -17,8 +17,6 @@
 
 import samba
 import os
-import random
-import sys
 from samba import netbios
 
 
