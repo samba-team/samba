@@ -229,15 +229,15 @@ def offline_remove_server(samdb, logger,
                         scope=ldb.SCOPE_BASE,
                         expression="(objectClass=server)")
     msg = msgs[0]
-    dc_name = str(msgs[0]["cn"][0])
+    dc_name = str(msg["cn"][0])
 
     try:
-        computer_dn = ldb.Dn(samdb, msgs[0]["serverReference"][0].decode('utf8'))
+        computer_dn = ldb.Dn(samdb, msg["serverReference"][0].decode('utf8'))
     except KeyError:
         computer_dn = None
 
     try:
-        dnsHostName = str(msgs[0]["dnsHostName"][0])
+        dnsHostName = str(msg["dnsHostName"][0])
     except KeyError:
         dnsHostName = None
 
@@ -267,8 +267,8 @@ def offline_remove_server(samdb, logger,
             logger.info("Removing computer account: %s (and any child objects)" % computer_dn)
             samdb.delete(computer_dn, ["tree_delete:0"])
 
-        if "dnsHostName" in msgs[0]:
-            dnsHostName = str(msgs[0]["dnsHostName"][0])
+        if "dnsHostName" in msg:
+            dnsHostName = str(msg["dnsHostName"][0])
 
     if remove_dns_account:
         res = samdb.search(expression="(&(objectclass=user)(cn=dns-%s)(servicePrincipalName=DNS/%s))" %
