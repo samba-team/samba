@@ -37,7 +37,7 @@ from samba.provision import (provision_paths_from_lp,
                              provision, ProvisioningError,
                              secretsdb_self_join)
 from samba.provision.common import FILL_FULL
-from samba.dcerpc import xattr, drsblobs, security
+from samba.dcerpc import drsblobs
 from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
