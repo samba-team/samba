@@ -14,7 +14,7 @@ import re
 sys.path.insert(0, "bin/python")
 import samba
 from samba.tests.subunitrun import SubunitOptions, TestProgram
-
+from samba.compat import cmp_fn
 import samba.getopt as options
 
 from samba.auth import system_session
@@ -286,10 +286,10 @@ class BaseSortTests(samba.tests.TestCase):
             return locale.strcoll(a[0], b[0])
 
         def cmp_binary(a, b):
-            return cmp(a[0], b[0])
+            return cmp_fn(a[0], b[0])
 
         def cmp_numeric(a, b):
-            return cmp(int(a[0]), int(b[0]))
+            return cmp_fn(int(a[0]), int(b[0]))
 
         # For testing simplicity, the attributes in here need to be
         # unique for each user. Otherwise there are multiple possible
