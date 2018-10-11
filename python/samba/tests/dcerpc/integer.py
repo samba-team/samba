@@ -68,7 +68,13 @@ class IntegerTests(samba.tests.TestCase):
 
     def test_long_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
-        s.timezone = 5
+        # here we force python2 to convert its 32/64 bit python int into
+        # an arbitrarily long python long, then reduce the number back
+        # down to something that would fit in an int anyway. In a pure
+        # python2 world, you could achieve the same thing by writing
+        #    s.timezone = 5L
+        # but that is a syntax error in py3.
+        s.timezone = (5 << 65) >> 65
         self.assertEquals(s.timezone, 5)
 
     def test_larger_long_int_into_int32(self):
