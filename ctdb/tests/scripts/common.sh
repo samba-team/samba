@@ -95,6 +95,12 @@ setup_ctdb_base ()
 		cp -pr "${CTDB_SCRIPTS_BASE}/${_i}" "${CTDB_BASE}/"
 	done
 
+	mkdir -p "${CTDB_BASE}/events/legacy"
+
+	if [ -z "$TEST_SUBDIR" ] ; then
+		return
+	fi
+
 	for _i in "${TEST_SUBDIR}/etc-ctdb/"* ; do
 		# No/empty etc-ctdb directory
 		[ -e "$_i" ] || break
