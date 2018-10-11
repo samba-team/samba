@@ -422,7 +422,7 @@ class UserTests(samba.tests.TestCase):
         lines = ["dn: CN=g%d,%s" % (g, self.ou_groups),
                  "objectclass: group"]
 
-        for i in xrange(self.state.next_user_id):
+        for i in range(self.state.next_user_id):
             if random.random() <= link_chance:
                 lines.append("member: cn=u%d,%s" % (i, self.ou_users))
                 self.state.active_links.add((i, g))
