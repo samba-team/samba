@@ -21,7 +21,7 @@
 """
 
 from samba import check_password_quality
-from samba.tests import TestCase, TestCaseInTempDir
+from samba.tests import TestCase
 
 
 class PasswordQualityTests(TestCase):

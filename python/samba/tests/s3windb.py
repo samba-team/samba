@@ -18,7 +18,7 @@
 """Tests for samba.samba3."""
 
 from samba.samba3 import WinsDatabase
-from samba.tests import TestCase, TestCaseInTempDir
+from samba.tests import TestCase
 import os
 
 

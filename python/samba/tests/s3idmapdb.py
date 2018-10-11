@@ -18,8 +18,7 @@
 """Tests for samba.samba3."""
 
 from samba.samba3 import IdmapDatabase
-from samba.tests import TestCase, TestCaseInTempDir
-from samba.dcerpc.security import dom_sid
+from samba.tests import TestCase
 import os
 
 for p in ["../../../../../testdata/samba3", "../../../../testdata/samba3"]:

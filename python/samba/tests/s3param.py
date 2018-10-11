@@ -18,7 +18,7 @@
 """Tests for samba.samba3.param"""
 
 from samba.samba3 import param as s3param
-from samba.tests import TestCase, TestCaseInTempDir
+from samba.tests import TestCaseInTempDir
 import os
 
 
