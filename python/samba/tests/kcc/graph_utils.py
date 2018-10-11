@@ -21,7 +21,13 @@
 
 import samba
 import samba.tests
-from samba.kcc.graph_utils import *
+from samba.kcc.graph_utils import GraphError
+from samba.kcc.graph_utils import (verify_graph_complete,
+                                   verify_graph_connected,
+                                   verify_graph_connected_under_edge_failures,
+                                   verify_graph_forest,
+                                   verify_graph_connected_under_vertex_failures,
+                                   verify_graph_no_lonely_vertices)
 
 import itertools
 

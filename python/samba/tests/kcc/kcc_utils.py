@@ -20,7 +20,8 @@
 """Tests for samba.kcc.kcc_utils"""
 import samba
 import samba.tests
-from samba.kcc.kcc_utils import *
+from samba.kcc.kcc_utils import new_connection_schedule, drsblobs
+from samba.kcc.kcc_utils import uncovered_sites_to_cover
 from samba.credentials import Credentials
 from samba.auth import system_session
 from samba.samdb import SamDB
