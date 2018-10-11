@@ -3053,6 +3053,7 @@ static bool check_stream_list(struct smb2_tree *tree,
 	create.in.desired_access = SEC_FILE_ALL;
 	create.in.create_options = is_dir ? NTCREATEX_OPTIONS_DIRECTORY : 0;
 	create.in.file_attributes = is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
 	status = smb2_create(tree, tmp_ctx, &create);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
 	h = create.out.file.handle;
