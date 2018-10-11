@@ -30,6 +30,8 @@ from samba import gensec, get_debug_level
 from samba.emulate import traffic
 import samba.getopt as options
 from samba.logger import get_samba_logger
+from samba.samdb import SamDB
+from samba.auth import system_session
 
 
 def print_err(*args, **kwargs):
@@ -306,8 +308,16 @@ def main():
                          opts.number_of_groups)))
         sys.exit(1)
 
+    # Get an LDB connection.
     try:
-        ldb = traffic.openLdb(host, creds, lp)
+        # if we're only adding users, then it's OK to pass a sam.ldb filepath
+        # as the host, which creates the users much faster. In all other cases
+        # we should be connecting to a remote DC
+        if opts.generate_users_only and os.path.isfile(host):
+            ldb = SamDB(url="ldb://{0}".format(host),
+                        session_info=system_session(), lp=lp)
+        else:
+            ldb = traffic.openLdb(host, creds, lp)
     except:
         logger.error(("\nInitial LDAP connection failed! Did you supply "
                       "a DNS host name and the correct credentials?"))
