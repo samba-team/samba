@@ -825,7 +825,6 @@ def email_failure(status, failed_task, failed_stage, failed_tag, errstr,
                   elapsed_time, log_base=None, add_log_tail=True):
     '''send an email to options.email about the failure'''
     elapsed_minutes = elapsed_time / 60.0
-    user = os.getenv("USER")
     if log_base is None:
         log_base = gitroot
     text = '''
@@ -889,7 +888,6 @@ The last 50 lines of log messages:
 
 def email_success(elapsed_time, log_base=None):
     '''send an email to options.email about a successful build'''
-    user = os.getenv("USER")
     if log_base is None:
         log_base = gitroot
     text = '''
