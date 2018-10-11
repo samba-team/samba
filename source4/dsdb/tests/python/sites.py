@@ -219,7 +219,7 @@ class SimpleSubnetTests(SitesBaseTests):
                              ("subnet rename by non-admin failed "
                               "in the wrong way: %s" % e))
         else:
-            self.fail("subnet rename by non-admin succeeded: %s" % e)
+            self.fail("subnet rename by non-admin succeeded")
 
         ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
                               expression='(&(objectclass=subnet)(cn=%s))' % cidr)
@@ -241,7 +241,7 @@ class SimpleSubnetTests(SitesBaseTests):
                              ("subnet delete by non-admin failed "
                               "in the wrong way: %s" % e))
         else:
-            self.fail("subnet delete by non-admin succeeded: %s" % e)
+            self.fail("subnet delete by non-admin succeeded:")
 
         ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
                               expression='(&(objectclass=subnet)(cn=%s))' % cidr)
