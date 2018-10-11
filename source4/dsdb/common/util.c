@@ -4439,6 +4439,14 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 }
 
 /*
+   returns true if a control with the specified "oid" exists
+*/
+bool dsdb_request_has_control(struct ldb_request *req, const char *oid)
+{
+	return (ldb_request_get_control(req, oid) != NULL);
+}
+
+/*
   an add with a set of controls
 */
 int dsdb_add(struct ldb_context *ldb, const struct ldb_message *message,

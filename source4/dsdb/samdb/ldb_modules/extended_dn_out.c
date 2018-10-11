@@ -474,8 +474,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	}
 
 	have_reveal_control =
-		ldb_request_get_control(req,
-					LDB_CONTROL_REVEAL_INTERNALS) != NULL;
+		dsdb_request_has_control(req, LDB_CONTROL_REVEAL_INTERNALS);
 
 	/* 
 	 * Shortcut for repl_meta_data.  We asked for the data
