@@ -2449,7 +2449,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 	max_num_values = old_num_values + el->num_values;
 	if (max_num_values < old_num_values) {
 		DEBUG(0, ("we seem to have overflow in replmd_modify_la_add. "
-			  "old values: %u, new values: %u, sum: %u",
+			  "old values: %u, new values: %u, sum: %u\n",
 			  old_num_values, el->num_values, max_num_values));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
