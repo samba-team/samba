@@ -189,6 +189,16 @@ def drs_get_rodc_partial_attribute_set(samdb):
     return partial_attribute_set
 
 
+def drs_copy_highwater_mark(hwm, new_hwm):
+    """
+    Copies the highwater mark by value, rather than by object reference. (This
+    avoids lingering talloc references to old GetNCChanges reply messages).
+    """
+    hwm.tmp_highest_usn = new_hwm.tmp_highest_usn
+    hwm.reserved_usn = new_hwm.reserved_usn
+    hwm.highest_usn = new_hwm.highest_usn
+
+
 class drs_Replicate(object):
     '''DRS replication calls'''
 
@@ -353,7 +363,9 @@ class drs_Replicate(object):
 
             if ctr.more_data == 0:
                 break
-            req.highwatermark = ctr.new_highwatermark
+
+            # update the request's HWM so we get the next chunk
+            drs_copy_highwater_mark(req.highwatermark, ctr.new_highwatermark)
 
         return (num_objects, num_links)
 
