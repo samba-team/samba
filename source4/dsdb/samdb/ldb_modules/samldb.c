@@ -3770,9 +3770,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(ac->msg, "member");
 	if (el != NULL) {
-		ret = samldb_member_check(ac);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+		struct ldb_control *fix_link_sid_ctrl = NULL;
+
+		fix_link_sid_ctrl = ldb_request_get_control(ac->req,
+					DSDB_CONTROL_DBCHECK_FIX_LINK_DN_SID);
+		if (fix_link_sid_ctrl == NULL) {
+			ret = samldb_member_check(ac);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 	}
 
