@@ -88,6 +88,7 @@ struct libnet_vampire_cb_state {
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *event_ctx;
 	unsigned total_objects;
+	unsigned total_links;
 	char *last_partition;
 	const char *server_dn_str;
 };
@@ -689,10 +690,12 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 	/* we want to show a count per partition */
 	if (!s->last_partition || strcmp(s->last_partition, c->partition->nc.dn) != 0) {
 		s->total_objects = 0;
+		s->total_links = 0;
 		talloc_free(s->last_partition);
 		s->last_partition = talloc_strdup(s, c->partition->nc.dn);
 	}
 	s->total_objects += object_count;
+	s->total_links += linked_attributes_count;
 
 	partition_dn = ldb_dn_new(s_dsa, s->ldb, c->partition->nc.dn);
 	if (partition_dn == NULL) {
@@ -705,7 +708,7 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		if (nc_object_count) {
 			DEBUG(0,("Exop on[%s] objects[%u/%u] linked_values[%u/%u]\n",
 				c->partition->nc.dn, s->total_objects, nc_object_count,
-				linked_attributes_count, nc_linked_attributes_count));
+				s->total_links, nc_linked_attributes_count));
 		} else {
 			DEBUG(0,("Exop on[%s] objects[%u] linked_values[%u]\n",
 			c->partition->nc.dn, s->total_objects, linked_attributes_count));
@@ -721,10 +724,10 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		if (nc_object_count) {
 			DEBUG(0,("Partition[%s] objects[%u/%u] linked_values[%u/%u]\n",
 				c->partition->nc.dn, s->total_objects, nc_object_count,
-				linked_attributes_count, nc_linked_attributes_count));
+				s->total_links, nc_linked_attributes_count));
 		} else {
 			DEBUG(0,("Partition[%s] objects[%u] linked_values[%u]\n",
-			c->partition->nc.dn, s->total_objects, linked_attributes_count));
+			c->partition->nc.dn, s->total_objects, s->total_links));
 		}
 		nc_root = partition_dn;
 	}
