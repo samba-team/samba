@@ -131,6 +131,113 @@ check_expected_after_duplicate_links() {
     fi
 }
 
+missing_link_sid_corruption() {
+    # Step1: add user "missingsidu1"
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/missing_link_sid_corruption1.ldif
+    cat > $ldif <<EOF
+dn: CN=missingsidu1,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: missingsidu1
+objectGUID: 0da8f25e-d110-11e8-80b7-3c970ec68461
+objectSid: S-1-5-21-4177067393-1453636373-93818738-771
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --relax $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    # Step2: add user "missingsidu2"
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/missing_link_sid_corruption2.ldif
+    cat > $ldif <<EOF
+dn: CN=missingsidu2,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: missingsidu2
+objectGUID: 66eb8f52-d110-11e8-ab9b-3c970ec68461
+objectSid: S-1-5-21-4177067393-1453636373-93818738-772
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --relax $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    # Step3: add group "missingsidg3" and add users as members
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/missing_link_sid_corruption3.ldif
+    cat > $ldif <<EOF
+dn: CN=missingsidg3,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: group
+samaccountname: missingsidg3
+objectGUID: fd992424-d114-11e8-bb36-3c970ec68461
+objectSid: S-1-5-21-4177067393-1453636373-93818738-773
+member: CN=missingsidu1,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=missingsidu2,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --relax $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    # Step4: remove one user again, so that we have one deleted link
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/missing_link_sid_corruption4.ldif
+    cat > $ldif <<EOF
+dn: CN=missingsidg3,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+delete: member
+member: CN=missingsidu1,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --relax $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    #
+    # Step5: remove the SIDS from the links
+    #
+    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=missingsidg3,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' -s base --reveal --extended-dn --show-binary member)
+    DN=$(echo "${LDIF1}" | grep '^dn: ')
+    MSG=$(echo "${LDIF1}" | grep -v '^dn: ' | grep -v '^#' | grep -v '^$')
+    ldif=$PREFIX_ABS/${RELEASE}/missing_link_sid_corruption5.ldif
+    {
+	echo "${DN}"
+	echo "changetype: modify"
+	echo "replace: member"
+	#echo "${MSG}"
+	echo "${MSG}" | sed \
+		-e 's!<SID=S-1-5-21-4177067393-1453636373-93818738-771>;!!g' \
+		-e 's!<SID=S-1-5-21-4177067393-1453636373-93818738-772>;!!g' \
+		-e 's!RMD_ADDTIME=[1-9][0-9]*!RMD_ADDTIME=123456789000000000!g' \
+		-e 's!RMD_CHANGETIME=[1-9][0-9]*!RMD_CHANGETIME=123456789000000000!g' \
+		| cat
+    } > $ldif
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    return 0
+}
+
+dbcheck_missing_link_sid_corruption() {
+    dbcheck "-missing-link-sid-corruption" "1" ""
+    return $?
+}
+
 forward_link_corruption() {
     #
     # Step1: add a duplicate forward link from
@@ -344,6 +451,9 @@ if [ -d $release_dir ]; then
     testit "dangling_one_way_link" dangling_one_way_link
     testit "dbcheck_one_way" dbcheck_one_way
     testit "dbcheck_clean2" dbcheck_clean
+    testit "missing_link_sid_corruption" missing_link_sid_corruption
+    testit "dbcheck_missing_link_sid_corruption" dbcheck_missing_link_sid_corruption
+    testit "missing_link_sid_clean" dbcheck_clean
     testit "dangling_one_way_dn" dangling_one_way_dn
     testit "deleted_one_way_dn" deleted_one_way_dn
     testit "dbcheck_clean3" dbcheck_clean
