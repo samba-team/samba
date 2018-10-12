@@ -60,6 +60,7 @@ class dbcheck(object):
         self.fix_all_string_dn_component_mismatch = False
         self.fix_all_GUID_dn_component_mismatch = False
         self.fix_all_SID_dn_component_mismatch = False
+        self.fix_all_SID_dn_component_missing = False
         self.fix_all_old_dn_string_component_mismatch = False
         self.fix_all_metadata = False
         self.fix_time_metadata = False
@@ -679,6 +680,38 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix incorrect DN %s on attribute %s" % (mismatch_type, attrname)):
             self.report("Fixed incorrect DN %s on attribute %s" % (mismatch_type, attrname))
 
+    def err_dn_component_missing_target_sid(self, dn, attrname, val, dsdb_dn, target_sid_blob):
+        """handle a DN string being incorrect"""
+        self.report("ERROR: missing DN SID component for %s in object %s - %s" % (attrname, dn, val))
+
+        if len(dsdb_dn.prefix) != 0:
+            self.report("Not fixing missing DN SID on DN+BINARY or DN+STRING")
+            return
+
+        correct_dn = ldb.Dn(self.samdb, dsdb_dn.dn.extended_str())
+        correct_dn.set_extended_component("SID", target_sid_blob)
+
+        if not self.confirm_all('Change DN to %s?' % correct_dn.extended_str(),
+                                'fix_all_SID_dn_component_missing'):
+            self.report("Not fixing missing DN SID component")
+            return
+
+        target_guid_blob = correct_dn.get_extended_component("GUID")
+        guid_sid_dn = ldb.Dn(self.samdb, "")
+        guid_sid_dn.set_extended_component("GUID", target_guid_blob)
+        guid_sid_dn.set_extended_component("SID", target_sid_blob)
+
+        m = ldb.Message()
+        m.dn = dn
+        m['new_value'] = ldb.MessageElement(guid_sid_dn.extended_str(), ldb.FLAG_MOD_ADD, attrname)
+        controls = [
+            "show_recycled:1",
+            "local_oid:%s:1" % dsdb.DSDB_CONTROL_DBCHECK_FIX_LINK_DN_SID
+        ]
+        if self.do_modify(m, controls,
+                          "Failed to ADD missing DN SID on attribute %s" % (attrname)):
+            self.report("Fixed missing DN SID on attribute %s" % (attrname))
+
     def err_unknown_attribute(self, obj, attrname):
         '''handle an unknown attribute error'''
         self.report("ERROR: unknown attribute '%s' in %s" % (attrname, obj.dn))
@@ -1294,7 +1327,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                                       res[0].dn, "GUID")
                 continue
 
-            if res[0].dn.get_extended_component("SID") != dsdb_dn.dn.get_extended_component("SID"):
+            target_sid = res[0].dn.get_extended_component("SID")
+            link_sid = dsdb_dn.dn.get_extended_component("SID")
+            if link_sid is None and target_sid is not None:
+                error_count += 1
+                self.err_dn_component_missing_target_sid(obj.dn, attrname, val,
+                                                         dsdb_dn, target_sid)
+                continue
+            if link_sid != target_sid:
                 error_count += 1
                 self.err_dn_component_target_mismatch(obj.dn, attrname, val, dsdb_dn,
                                                       res[0].dn, "SID")
