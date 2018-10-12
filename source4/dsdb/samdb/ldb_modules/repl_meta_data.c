@@ -3120,8 +3120,9 @@ static int replmd_modify_la_replace(struct ldb_module *module,
  */
 static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 					       struct replmd_private *replmd_private,
+					       struct replmd_replicated_request *ac,
 					       struct ldb_message *msg,
-					       uint64_t seq_num, time_t t,
+					       time_t t,
 					       struct ldb_request *parent)
 {
 	struct ldb_result *res;
@@ -3129,8 +3130,6 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *old_msg;
-
-	const struct dsdb_schema *schema;
 
 	if (dsdb_functional_level(ldb) == DS_DOMAIN_FUNCTION_2000) {
 		/*
@@ -3165,10 +3164,6 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	schema = dsdb_get_schema(ldb, res);
-	if (!schema) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	old_msg = res->msgs[0];
 
@@ -3177,7 +3172,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 		struct ldb_message_element *old_el, *new_el;
 		unsigned int mod_type = LDB_FLAG_MOD_TYPE(el->flags);
 		const struct dsdb_attribute *schema_attr
-			= dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 		if (!schema_attr) {
 			ldb_asprintf_errstring(ldb,
 					       "%s: attribute %s is not a valid attribute in schema",
@@ -3213,22 +3208,22 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 		switch (mod_type) {
 		case LDB_FLAG_MOD_REPLACE:
 			ret = replmd_modify_la_replace(module, replmd_private,
-						       schema, msg, el, old_el,
-						       schema_attr, seq_num, t,
+						       ac->schema, msg, el, old_el,
+						       schema_attr, ac->seq_num, t,
 						       old_msg->dn,
 						       parent);
 			break;
 		case LDB_FLAG_MOD_DELETE:
 			ret = replmd_modify_la_delete(module, replmd_private,
-						      schema, msg, el, old_el,
-						      schema_attr, seq_num, t,
+						      ac->schema, msg, el, old_el,
+						      schema_attr, ac->seq_num, t,
 						      old_msg->dn,
 						      parent);
 			break;
 		case LDB_FLAG_MOD_ADD:
 			ret = replmd_modify_la_add(module, replmd_private,
-						   schema, msg, el, old_el,
-						   schema_attr, seq_num, t,
+						   ac->schema, msg, el, old_el,
+						   schema_attr, ac->seq_num, t,
 						   old_msg->dn,
 						   parent);
 			break;
@@ -3500,7 +3495,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ret = replmd_modify_handle_linked_attribs(module, replmd_private,
-						  msg, ac->seq_num, t, req);
+						  ac, msg, t, req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
