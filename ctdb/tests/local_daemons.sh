@@ -350,6 +350,46 @@ local_daemons_stop ()
 	onnode -p "$_nodes" "${VALGRIND:-} ${CTDB:-ctdb} shutdown"
 }
 
+local_daemons_onnode_usage ()
+{
+	cat >&2 <<EOF
+usage: $0 <directory> onnode <nodes> <command>...
+
+<nodes> can be  "all", a node number or any specification supported by onnode
+EOF
+
+	exit 1
+}
+
+local_daemons_onnode ()
+{
+	if [ $# -lt 2 ] || [ "$1" = "-h" ] ; then
+		local_daemons_onnode_usage
+	fi
+
+	_nodes="$1"
+	shift
+
+	onnode_common
+
+	onnode "$_nodes" "$@"
+}
+
+local_daemons_print_socket ()
+{
+	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+		local_daemons_generic_usage "print-socket"
+	fi
+
+	_nodes="$1"
+	shift
+
+	onnode_common
+
+	_path="${CTDB_SCRIPTS_HELPER_BINDIR}/ctdb-path"
+	onnode -q "$_nodes" "${VALGRIND:-} ${_path} socket ctdbd"
+}
+
 usage ()
 {
 	cat <<EOF
@@ -359,6 +399,8 @@ Commands:
   setup          Set up daemon configuration according to given options
   start          Start specified daemon(s)
   stop           Stop specified daemon(s)
+  onnode         Run a command in the environment of specified daemon(s)
+  print-socket   Print the Unix domain socket used by specified daemon(s)
 
 All commands use <directory> for daemon configuration
 
@@ -381,5 +423,7 @@ setup) local_daemons_setup "$@" ;;
 ssh) local_daemons_ssh "$@" ;; # Internal, not shown by usage()
 start) local_daemons_start "$@" ;;
 stop) local_daemons_stop "$@" ;;
+onnode) local_daemons_onnode "$@" ;;
+print-socket) local_daemons_print_socket "$@" ;;
 *) usage ;;
 esac
