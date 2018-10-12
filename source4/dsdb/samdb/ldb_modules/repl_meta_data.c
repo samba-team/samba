@@ -2402,12 +2402,11 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
  */
 static int replmd_modify_la_add(struct ldb_module *module,
 				struct replmd_private *replmd_private,
-				const struct dsdb_schema *schema,
+				struct replmd_replicated_request *ac,
 				struct ldb_message *msg,
 				struct ldb_message_element *el,
 				struct ldb_message_element *old_el,
 				const struct dsdb_attribute *schema_attr,
-				uint64_t seq_num,
 				time_t t,
 				struct ldb_dn *msg_dn,
 				struct ldb_request *parent)
@@ -2420,16 +2419,9 @@ static int replmd_modify_la_add(struct ldb_module *module,
 	unsigned old_num_values = old_el ? old_el->num_values : 0;
 	unsigned num_values = 0;
 	unsigned max_num_values;
-	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	NTTIME now;
 	unix_to_nt_time(&now, t);
-
-	invocation_id = samdb_ntds_invocation_id(ldb);
-	if (!invocation_id) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	/* get the DNs to be added, fully parsed.
 	 *
@@ -2526,15 +2518,16 @@ static int replmd_modify_la_add(struct ldb_module *module,
 			ret = replmd_update_la_val(new_values, exact->v,
 						   dns[i].dsdb_dn,
 						   exact->dsdb_dn,
-						   invocation_id, seq_num,
-						   seq_num, now, false);
+						   &ac->our_invocation_id,
+						   ac->seq_num, ac->seq_num,
+						   now, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
 			}
 
 			ret = replmd_add_backlink(module, replmd_private,
-						  schema,
+						  ac->schema,
 						  msg_dn,
 						  &dns[i].guid, 
 						  true,
@@ -2576,14 +2569,14 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		}
 
 		ret = replmd_add_backlink(module, replmd_private,
-					  schema, msg_dn,
+					  ac->schema, msg_dn,
 					  &dns[i].guid,
 					  true, schema_attr,
 					  parent);
 		/* Make the new linked attribute ldb_val. */
 		ret = replmd_build_la_val(new_values, &new_values[num_values],
-					  dns[i].dsdb_dn, invocation_id,
-					  seq_num, now);
+					  dns[i].dsdb_dn, &ac->our_invocation_id,
+					  ac->seq_num, now);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -3222,8 +3215,8 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			break;
 		case LDB_FLAG_MOD_ADD:
 			ret = replmd_modify_la_add(module, replmd_private,
-						   ac->schema, msg, el, old_el,
-						   schema_attr, ac->seq_num, t,
+						   ac, msg, el, old_el,
+						   schema_attr, t,
 						   old_msg->dn,
 						   parent);
 			break;
