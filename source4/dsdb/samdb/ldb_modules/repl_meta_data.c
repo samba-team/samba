@@ -112,6 +112,8 @@ struct replmd_replicated_request {
 	bool is_urgent;
 
 	bool isDeleted;
+
+	bool fix_link_sid;
 };
 
 static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar);
@@ -2485,6 +2487,109 @@ static int replmd_modify_la_add(struct ldb_module *module,
 			return err;
 		}
 
+		if (ac->fix_link_sid) {
+			char *fixed_dnstring = NULL;
+			struct dom_sid tmp_sid = { 0, };
+			DATA_BLOB sid_blob = data_blob_null;
+			enum ndr_err_code ndr_err;
+			NTSTATUS status;
+			int num;
+
+			if (exact == NULL) {
+				talloc_free(tmp_ctx);
+				return ldb_operr(ldb);
+			}
+
+			if (dns[i].dsdb_dn->dn_format != DSDB_NORMAL_DN) {
+				talloc_free(tmp_ctx);
+				return ldb_operr(ldb);
+			}
+
+			/*
+			 * Only "<GUID=...><SID=...>" is allowed.
+			 *
+			 * We get the GUID to just to find the old
+			 * value and the SID in order to add it
+			 * to the found value.
+			 */
+
+			num = ldb_dn_get_comp_num(dns[i].dsdb_dn->dn);
+			if (num != 0) {
+				talloc_free(tmp_ctx);
+				return ldb_operr(ldb);
+			}
+
+			num = ldb_dn_get_extended_comp_num(dns[i].dsdb_dn->dn);
+			if (num != 2) {
+				talloc_free(tmp_ctx);
+				return ldb_operr(ldb);
+			}
+
+			status = dsdb_get_extended_dn_sid(exact->dsdb_dn->dn,
+							  &tmp_sid, "SID");
+			if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				/* this is what we expect */
+			} else if (NT_STATUS_IS_OK(status)) {
+				struct GUID_txt_buf guid_str;
+				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+						       "i[%u] SID NOT MISSING... Attribute %s already "
+						       "exists for target GUID %s, SID %s, DN: %s",
+						       i, el->name,
+						       GUID_buf_string(&exact->guid,
+								       &guid_str),
+						       dom_sid_string(tmp_ctx, &tmp_sid),
+						       dsdb_dn_get_extended_linearized(tmp_ctx,
+							       exact->dsdb_dn, 1));
+				talloc_free(tmp_ctx);
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			} else {
+				talloc_free(tmp_ctx);
+				return ldb_operr(ldb);
+			}
+
+			status = dsdb_get_extended_dn_sid(dns[i].dsdb_dn->dn,
+							  &tmp_sid, "SID");
+			if (!NT_STATUS_IS_OK(status)) {
+				struct GUID_txt_buf guid_str;
+				ldb_asprintf_errstring(ldb,
+						       "NO SID PROVIDED... Attribute %s already "
+						       "exists for target GUID %s",
+						       el->name,
+						       GUID_buf_string(&exact->guid,
+								       &guid_str));
+				talloc_free(tmp_ctx);
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
+
+			ndr_err = ndr_push_struct_blob(&sid_blob, tmp_ctx, &tmp_sid,
+						       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				talloc_free(tmp_ctx);
+				return ldb_operr(ldb);
+			}
+
+			ret = ldb_dn_set_extended_component(exact->dsdb_dn->dn, "SID", &sid_blob);
+			data_blob_free(&sid_blob);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+
+			fixed_dnstring = dsdb_dn_get_extended_linearized(
+					new_values, exact->dsdb_dn, 1);
+			if (fixed_dnstring == NULL) {
+				talloc_free(tmp_ctx);
+				return ldb_operr(ldb);
+			}
+
+			/*
+			 * We just replace the existing value...
+			 */
+			*exact->v = data_blob_string_const(fixed_dnstring);
+
+			continue;
+		}
+
 		if (exact != NULL) {
 			/*
 			 * We are trying to add one that exists, which is only
@@ -3310,6 +3415,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control *sd_propagation_control;
 	struct ldb_control *fix_links_control = NULL;
 	struct ldb_control *fix_dn_name_control = NULL;
+	struct ldb_control *fix_dn_sid_control = NULL;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
@@ -3455,6 +3561,44 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	fix_dn_sid_control = ldb_request_get_control(req,
+					DSDB_CONTROL_DBCHECK_FIX_LINK_DN_SID);
+	if (fix_dn_sid_control != NULL) {
+		const struct dsdb_attribute *sa = NULL;
+
+		if (msg->num_elements != 1) {
+			talloc_free(ac);
+			return ldb_module_operr(module);
+		}
+
+		if (msg->elements[0].flags != LDB_FLAG_MOD_ADD) {
+			talloc_free(ac);
+			return ldb_module_operr(module);
+		}
+
+		if (msg->elements[0].num_values != 1) {
+			talloc_free(ac);
+			return ldb_module_operr(module);
+		}
+
+		sa = dsdb_attribute_by_lDAPDisplayName(ac->schema,
+				msg->elements[0].name);
+		if (sa == NULL) {
+			talloc_free(ac);
+			return ldb_module_operr(module);
+		}
+
+		if (sa->dn_format != DSDB_NORMAL_DN) {
+			talloc_free(ac);
+			return ldb_module_operr(module);
+		}
+
+		fix_dn_sid_control->critical = false;
+		ac->fix_link_sid = true;
+
+		goto handle_linked_attribs;
+	}
+
 	ldb_msg_remove_attr(msg, "whenChanged");
 	ldb_msg_remove_attr(msg, "uSNChanged");
 
@@ -3475,6 +3619,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+ handle_linked_attribs:
 	ret = replmd_modify_handle_linked_attribs(module, replmd_private,
 						  ac, msg, t, req);
 	if (ret != LDB_SUCCESS) {
