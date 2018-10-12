@@ -102,8 +102,12 @@ echo_nth ()
 {
     local n="$1" ; shift
 
-    shift "$n"
-    local node="$1"
+    # Note that this is 0-based
+    local node=""
+    if [ "$n" -le $# ] ; then
+	    shift "$n"
+	    node="$1"
+    fi
 
     if [ -n "$node" -a "$node" != "#DEAD" ] ; then
 	echo "$node"
