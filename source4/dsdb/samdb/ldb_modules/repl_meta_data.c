@@ -2615,12 +2615,11 @@ static int replmd_modify_la_add(struct ldb_module *module,
  */
 static int replmd_modify_la_delete(struct ldb_module *module,
 				   struct replmd_private *replmd_private,
-				   const struct dsdb_schema *schema,
+				   struct replmd_replicated_request *ac,
 				   struct ldb_message *msg,
 				   struct ldb_message_element *el,
 				   struct ldb_message_element *old_el,
 				   const struct dsdb_attribute *schema_attr,
-				   uint64_t seq_num,
 				   time_t t,
 				   struct ldb_dn *msg_dn,
 				   struct ldb_request *parent)
@@ -2634,15 +2633,9 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 	bool vanish_links = false;
 	unsigned int num_to_delete = el->num_values;
 	uint32_t rmd_flags;
-	const struct GUID *invocation_id;
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
-
-	invocation_id = samdb_ntds_invocation_id(ldb);
-	if (!invocation_id) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	if (old_el == NULL || old_el->num_values == 0) {
 		/* there is nothing to delete... */
@@ -2707,7 +2700,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 				}
 			}
 			ret = replmd_add_backlink(module, replmd_private,
-						  schema, msg_dn, &p->guid,
+						  ac->schema, msg_dn, &p->guid,
 						  false, schema_attr,
 						  parent);
 			if (ret != LDB_SUCCESS) {
@@ -2725,8 +2718,9 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 
 			ret = replmd_update_la_val(old_el->values, p->v,
 						   p->dsdb_dn, p->dsdb_dn,
-						   invocation_id, seq_num,
-						   seq_num, now, true);
+						   &ac->our_invocation_id,
+						   ac->seq_num, ac->seq_num,
+						   now, true);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -2788,7 +2782,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			/* remove the backlink */
 			ret = replmd_add_backlink(module,
 						  replmd_private,
-						  schema, 
+						  ac->schema,
 						  msg_dn,
 						  &p->guid,
 						  false, schema_attr,
@@ -2822,14 +2816,15 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 
 		ret = replmd_update_la_val(old_el->values, exact->v,
 					   exact->dsdb_dn, exact->dsdb_dn,
-					   invocation_id, seq_num, seq_num,
+					   &ac->our_invocation_id,
+					   ac->seq_num, ac->seq_num,
 					   now, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
 		ret = replmd_add_backlink(module, replmd_private,
-					  schema, msg_dn,
+					  ac->schema, msg_dn,
 					  &p->guid,
 					  false, schema_attr,
 					  parent);
@@ -3208,8 +3203,8 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			break;
 		case LDB_FLAG_MOD_DELETE:
 			ret = replmd_modify_la_delete(module, replmd_private,
-						      ac->schema, msg, el, old_el,
-						      schema_attr, ac->seq_num, t,
+						      ac, msg, el, old_el,
+						      schema_attr, t,
 						      old_msg->dn,
 						      parent);
 			break;
