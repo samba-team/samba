@@ -63,9 +63,6 @@ class SambaOptions(optparse.OptionGroup):
         self._configfile = arg
 
     def _set_debuglevel(self, option, opt_str, arg, parser):
-        if arg < 0:
-            raise optparse.OptionValueError("invalid %s option value: %s" %
-                                            (opt_str, arg))
         self._lp.set('debug level', arg)
         parser.values.debuglevel = arg
 
