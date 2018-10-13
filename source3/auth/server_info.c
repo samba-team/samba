@@ -503,7 +503,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	struct netr_SamInfo3 *info3;
 	const struct dom_sid *user_sid;
 	const struct dom_sid *group_sid;
-	struct dom_sid domain_sid;
+	struct dom_sid domain_sid = {0};
 	struct dom_sid *group_sids;
 	uint32_t num_group_sids = 0;
 	const char *tmp;
@@ -522,8 +522,6 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	if (!info3) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ZERO_STRUCT(domain_sid);
 
 	status = SamInfo3_handle_sids(pdb_get_username(samu),
 				user_sid,
