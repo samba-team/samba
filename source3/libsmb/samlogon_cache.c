@@ -209,7 +209,8 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, &r,
 				       (ndr_push_flags_fn_t)ndr_push_netsamlogoncache_entry);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("netsamlogon_cache_store: failed to push entry to cache\n"));
+		DBG_WARNING("failed to push entry to cache: %s\n",
+			    ndr_errstr(ndr_err));
 		goto fail;
 	}
 
