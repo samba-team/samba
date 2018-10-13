@@ -134,15 +134,13 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	int ret;
 
 	if (!info3) {
-		TALLOC_FREE(tmp_ctx);
-		return false;
+		goto fail;
 	}
 
 	if (!netsamlogon_cache_init()) {
 		DEBUG(0,("netsamlogon_cache_store: cannot open %s for write!\n",
 			NETSAMLOGON_TDB));
-		TALLOC_FREE(tmp_ctx);
-		return false;
+		goto fail;
 	}
 
 	/*
@@ -158,8 +156,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	if ((ret == -1) && (tdb_error(netsamlogon_tdb) != TDB_ERR_EXISTS)) {
 		DBG_WARNING("Could not store domain marker for %s: %s\n",
 			    keystr, tdb_errorstr(netsamlogon_tdb));
-		TALLOC_FREE(tmp_ctx);
-		return false;
+		goto fail;
 	}
 
 	sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid);
@@ -207,8 +204,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 				       (ndr_push_flags_fn_t)ndr_push_netsamlogoncache_entry);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("netsamlogon_cache_store: failed to push entry to cache\n"));
-		TALLOC_FREE(tmp_ctx);
-		return false;
+		goto fail;
 	}
 
 	data.dsize = blob.length;
@@ -218,8 +214,8 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 		result = true;
 	}
 
+fail:
 	TALLOC_FREE(tmp_ctx);
-
 	return result;
 }
 
