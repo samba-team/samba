@@ -179,6 +179,9 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 
 		if (full_name != NULL) {
 			info3->base.full_name.string = talloc_strdup(info3, full_name);
+			if (info3->base.full_name.string == NULL) {
+				goto fail;
+			}
 		}
 	}
 
@@ -187,6 +190,9 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 
 	if (!info3->base.account_name.string) {
 		info3->base.account_name.string = talloc_strdup(info3, username);
+		if (info3->base.account_name.string == NULL) {
+			goto fail;
+		}
 	}
 
 	r.timestamp = time(NULL);
