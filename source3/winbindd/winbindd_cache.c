@@ -1749,7 +1749,7 @@ static void wcache_name_to_sid_fn(const struct dom_sid *sid,
 
 	*state->sid = *sid;
 	*state->type = type;
-	state->found = (state->offline || (timeout < time(NULL)));
+	state->found = (state->offline || (timeout > time(NULL)));
 }
 
 static NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
@@ -1884,7 +1884,7 @@ static void wcache_sid_to_name_fn(const char *domain, const char *name,
 		return;
 	}
 	*state->type = type;
-	state->found = (state->offline || (timeout < time(NULL)));
+	state->found = (state->offline || (timeout > time(NULL)));
 }
 
 static NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
