@@ -194,7 +194,8 @@ struct idmap_cache_xid2sid_state {
 	bool ret;
 };
 
-static void idmap_cache_xid2sid_parser(time_t timeout, DATA_BLOB blob,
+static void idmap_cache_xid2sid_parser(const struct gencache_timeout *timeout,
+				       DATA_BLOB blob,
 				       void *private_data)
 {
 	struct idmap_cache_xid2sid_state *state =
@@ -217,7 +218,7 @@ static void idmap_cache_xid2sid_parser(time_t timeout, DATA_BLOB blob,
 		state->ret = string_to_sid(state->sid, value);
 	}
 	if (state->ret) {
-		*state->expired = (timeout <= time(NULL));
+		*state->expired = gencache_timeout_expired(timeout);
 	}
 }
 

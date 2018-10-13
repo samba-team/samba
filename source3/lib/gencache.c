@@ -42,6 +42,14 @@ static struct tdb_wrap *cache_notrans;
  *
  **/
 
+struct gencache_timeout {
+	time_t timeout;
+};
+
+bool gencache_timeout_expired(const struct gencache_timeout *t)
+{
+	return t->timeout <= time(NULL);
+}
 
 /**
  * Cache initialisation function. Opens cache tdb file or creates
@@ -131,7 +139,8 @@ struct gencache_have_val_state {
 	bool gotit;
 };
 
-static void gencache_have_val_parser(time_t old_timeout, DATA_BLOB data,
+static void gencache_have_val_parser(const struct gencache_timeout *old_timeout,
+				     DATA_BLOB data,
 				     void *private_data)
 {
 	struct gencache_have_val_state *state =
@@ -146,7 +155,7 @@ static void gencache_have_val_parser(time_t old_timeout, DATA_BLOB data,
 	 * value, just extending the remaining timeout by less than 10%.
 	 */
 
-	cache_time_left = old_timeout - now;
+	cache_time_left = old_timeout->timeout - now;
 	if (cache_time_left <= 0) {
 		/*
 		 * timed out, write new value
@@ -338,10 +347,11 @@ done:
 	return ret == 0;
 }
 
-static void gencache_del_parser(time_t timeout, DATA_BLOB blob,
+static void gencache_del_parser(const struct gencache_timeout *t,
+				DATA_BLOB blob,
 				void *private_data)
 {
-	if (timeout != 0) {
+	if (t->timeout != 0) {
 		bool *exists = private_data;
 		*exists = true;
 	}
@@ -419,7 +429,9 @@ static bool gencache_pull_timeout(uint8_t *val, time_t *pres, char **payload)
 }
 
 struct gencache_parse_state {
-	void (*parser)(time_t timeout, DATA_BLOB blob, void *private_data);
+	void (*parser)(const struct gencache_timeout *timeout,
+		       DATA_BLOB blob,
+		       void *private_data);
 	void *private_data;
 	bool copy_to_notrans;
 };
@@ -428,21 +440,21 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	struct gencache_parse_state *state;
 	DATA_BLOB blob;
-	time_t t;
+	struct gencache_timeout t;
 	char *payload;
 	bool ret;
 
 	if (data.dptr == NULL) {
 		return -1;
 	}
-	ret = gencache_pull_timeout(data.dptr, &t, &payload);
+	ret = gencache_pull_timeout(data.dptr, &t.timeout, &payload);
 	if (!ret) {
 		return -1;
 	}
 	state = (struct gencache_parse_state *)private_data;
 	blob = data_blob_const(
 		payload, data.dsize - PTR_DIFF(payload, data.dptr));
-	state->parser(t, blob, state->private_data);
+	state->parser(&t, blob, state->private_data);
 
 	if (state->copy_to_notrans) {
 		tdb_store(cache_notrans->tdb, key, data, 0);
@@ -452,7 +464,8 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 }
 
 bool gencache_parse(const char *keystr,
-		    void (*parser)(time_t timeout, DATA_BLOB blob,
+		    void (*parser)(const struct gencache_timeout *timeout,
+				   DATA_BLOB blob,
 				   void *private_data),
 		    void *private_data)
 {
@@ -511,17 +524,18 @@ struct gencache_get_data_blob_state {
 	bool result;
 };
 
-static void gencache_get_data_blob_parser(time_t timeout, DATA_BLOB blob,
+static void gencache_get_data_blob_parser(const struct gencache_timeout *t,
+					  DATA_BLOB blob,
 					  void *private_data)
 {
 	struct gencache_get_data_blob_state *state =
 		(struct gencache_get_data_blob_state *)private_data;
 
-	if (timeout == 0) {
+	if (t->timeout == 0) {
 		state->result = false;
 		return;
 	}
-	state->timeout = timeout;
+	state->timeout = t->timeout;
 
 	if (state->blob == NULL) {
 		state->result = true;

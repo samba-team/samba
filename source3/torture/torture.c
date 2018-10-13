@@ -10238,7 +10238,9 @@ static bool run_local_base64(int dummy)
 	return ret;
 }
 
-static void parse_fn(time_t timeout, DATA_BLOB blob, void *private_data)
+static void parse_fn(const struct gencache_timeout *t,
+		     DATA_BLOB blob,
+		     void *private_data)
 {
 	return;
 }

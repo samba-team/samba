@@ -32,8 +32,17 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout);
 bool gencache_del(const char *keystr);
 bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
 		  time_t *ptimeout);
+
+/*
+ * This might look like overkill, but namemap_cache.c shows it's
+ * necessary :-)
+ */
+struct gencache_timeout;
+bool gencache_timeout_expired(const struct gencache_timeout *t);
+
 bool gencache_parse(const char *keystr,
-		    void (*parser)(time_t timeout, DATA_BLOB blob,
+		    void (*parser)(const struct gencache_timeout *timeout,
+				   DATA_BLOB blob,
 				   void *private_data),
 		    void *private_data);
 bool gencache_get_data_blob(const char *keystr, TALLOC_CTX *mem_ctx,

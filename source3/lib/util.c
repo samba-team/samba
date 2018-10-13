@@ -1242,12 +1242,14 @@ struct ra_parser_state {
 	enum remote_arch_types ra;
 };
 
-static void ra_parser(time_t timeout, DATA_BLOB blob, void *priv_data)
+static void ra_parser(const struct gencache_timeout *t,
+		      DATA_BLOB blob,
+		      void *priv_data)
 {
 	struct ra_parser_state *state = (struct ra_parser_state *)priv_data;
 	const char *ra_str = NULL;
 
-	if (timeout <= time(NULL)) {
+	if (gencache_timeout_expired(t)) {
 		return;
 	}
 

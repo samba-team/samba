@@ -94,8 +94,10 @@ struct namemap_cache_find_sid_state {
 	bool ok;
 };
 
-static void namemap_cache_find_sid_parser(time_t timeout, DATA_BLOB blob,
-					  void *private_data)
+static void namemap_cache_find_sid_parser(
+	const struct gencache_timeout *timeout,
+	DATA_BLOB blob,
+	void *private_data)
 {
 	struct namemap_cache_find_sid_state *state = private_data;
 	const char *strv = (const char *)blob.data;
@@ -132,7 +134,7 @@ static void namemap_cache_find_sid_parser(time_t timeout, DATA_BLOB blob,
 	state->fn(domain,
 		  name,
 		  (enum lsa_SidType)type,
-		  timeout <= time(NULL),
+		  gencache_timeout_expired(timeout),
 		  state->private_data);
 
 	state->ok = true;
@@ -241,8 +243,10 @@ struct namemap_cache_find_name_state {
 	bool ok;
 };
 
-static void namemap_cache_find_name_parser(time_t timeout, DATA_BLOB blob,
-					   void *private_data)
+static void namemap_cache_find_name_parser(
+	const struct gencache_timeout *timeout,
+	DATA_BLOB blob,
+	void *private_data)
 {
 	struct namemap_cache_find_name_state *state = private_data;
 	const char *strv = (const char *)blob.data;
@@ -284,7 +288,7 @@ static void namemap_cache_find_name_parser(time_t timeout, DATA_BLOB blob,
 
 	state->fn(&sid,
 		  (enum lsa_SidType)type,
-		  timeout <= time(NULL),
+		  gencache_timeout_expired(timeout),
 		  state->private_data);
 
 	state->ok = true;
