@@ -85,8 +85,10 @@ fail:
 }
 
 struct namemap_cache_find_sid_state {
-	void (*fn)(const char *domain, const char *name,
-		   enum lsa_SidType type, time_t timeout,
+	void (*fn)(const char *domain,
+		   const char *name,
+		   enum lsa_SidType type,
+		   bool expired,
 		   void *private_data);
 	void *private_data;
 	bool ok;
@@ -127,15 +129,20 @@ static void namemap_cache_find_sid_parser(time_t timeout, DATA_BLOB blob,
 		return;
 	}
 
-	state->fn(domain, name, (enum lsa_SidType)type, timeout,
+	state->fn(domain,
+		  name,
+		  (enum lsa_SidType)type,
+		  timeout <= time(NULL),
 		  state->private_data);
 
 	state->ok = true;
 }
 
 bool namemap_cache_find_sid(const struct dom_sid *sid,
-			    void (*fn)(const char *domain, const char *name,
-				       enum lsa_SidType type, time_t timeout,
+			    void (*fn)(const char *domain,
+				       const char *name,
+				       enum lsa_SidType type,
+				       bool expired,
 				       void *private_data),
 			    void *private_data)
 {
@@ -227,7 +234,8 @@ fail:
 
 struct namemap_cache_find_name_state {
 	void (*fn)(const struct dom_sid *sid,
-		   enum lsa_SidType type, time_t timeout,
+		   enum lsa_SidType type,
+		   bool expired,
 		   void *private_data);
 	void *private_data;
 	bool ok;
@@ -274,14 +282,19 @@ static void namemap_cache_find_name_parser(time_t timeout, DATA_BLOB blob,
 		return;
 	}
 
-	state->fn(&sid, (enum lsa_SidType)type, timeout, state->private_data);
+	state->fn(&sid,
+		  (enum lsa_SidType)type,
+		  timeout <= time(NULL),
+		  state->private_data);
 
 	state->ok = true;
 }
 
-bool namemap_cache_find_name(const char *domain, const char *name,
+bool namemap_cache_find_name(const char *domain,
+			     const char *name,
 			     void (*fn)(const struct dom_sid *sid,
-					enum lsa_SidType type, time_t timeout,
+					enum lsa_SidType type,
+					bool expired,
 					void *private_data),
 			     void *private_data)
 {

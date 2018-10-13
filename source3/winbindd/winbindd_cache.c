@@ -1742,14 +1742,15 @@ struct wcache_name_to_sid_state {
 };
 
 static void wcache_name_to_sid_fn(const struct dom_sid *sid,
-				  enum lsa_SidType type, time_t timeout,
+				  enum lsa_SidType type,
+				  bool expired,
 				  void *private_data)
 {
 	struct wcache_name_to_sid_state *state = private_data;
 
 	*state->sid = *sid;
 	*state->type = type;
-	state->found = (state->offline || (timeout > time(NULL)));
+	state->found = (!expired || state->offline);
 }
 
 static NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
@@ -1869,8 +1870,10 @@ struct wcache_sid_to_name_state {
 	bool found;
 };
 
-static void wcache_sid_to_name_fn(const char *domain, const char *name,
-				  enum lsa_SidType type, time_t timeout,
+static void wcache_sid_to_name_fn(const char *domain,
+				  const char *name,
+				  enum lsa_SidType type,
+				  bool expired,
 				  void *private_data)
 {
 	struct wcache_sid_to_name_state *state = private_data;
@@ -1884,7 +1887,7 @@ static void wcache_sid_to_name_fn(const char *domain, const char *name,
 		return;
 	}
 	*state->type = type;
-	state->found = (state->offline || (timeout > time(NULL)));
+	state->found = (!expired || state->offline);
 }
 
 static NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,

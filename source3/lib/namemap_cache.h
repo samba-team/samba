@@ -32,13 +32,17 @@ bool namemap_cache_set_name2sid(const char *domain, const char *name,
 				enum lsa_SidType type,
 				time_t timeout);
 bool namemap_cache_find_sid(const struct dom_sid *sid,
-			    void (*fn)(const char *domain, const char *name,
-				       enum lsa_SidType type, time_t timeout,
+			    void (*fn)(const char *domain,
+				       const char *name,
+				       enum lsa_SidType type,
+				       bool expired,
 				       void *private_data),
 			    void *private_data);
-bool namemap_cache_find_name(const char *domain, const char *name,
+bool namemap_cache_find_name(const char *domain,
+			     const char *name,
 			     void (*fn)(const struct dom_sid *sid,
-					enum lsa_SidType type, time_t timeout,
+					enum lsa_SidType type,
+					bool expired,
 					void *private_data),
 			     void *private_data);
 
