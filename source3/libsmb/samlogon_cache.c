@@ -134,12 +134,14 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	int ret;
 
 	if (!info3) {
+		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
 
 	if (!netsamlogon_cache_init()) {
 		DEBUG(0,("netsamlogon_cache_store: cannot open %s for write!\n",
 			NETSAMLOGON_TDB));
+		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
 
