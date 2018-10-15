@@ -1842,11 +1842,12 @@ class GroupAssignments(object):
     def generate_user_distribution(self, n):
         """Probability distribution of a user belonging to a group.
         """
-        # Assign a weighted probability to each user. Probability decreases
-        # as the user-ID increases
+        # Assign a weighted probability to each user. Use the Pareto
+        # Distribution so that some users are in a lot of groups, and the
+        # bulk of users are in only a few groups
         weights = []
         for x in range(1, n + 1):
-            p = 1 / (x + 0.001)
+            p = random.paretovariate(1.0)
             weights.append(p)
 
         # convert the weights to a cumulative distribution between 0.0 and 1.0
