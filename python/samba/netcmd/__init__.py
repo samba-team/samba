@@ -247,7 +247,7 @@ class SuperCommand(Command):
             subcommand = '--help'
 
         epilog = "\nAvailable subcommands:\n"
-        subcmds = self.subcommands.keys()
+        subcmds = list(self.subcommands.keys())
         subcmds.sort()
         max_length = max([len(c) for c in subcmds])
         for cmd_name in subcmds:
