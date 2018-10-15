@@ -6,6 +6,7 @@
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/registry/util_reg.h"
 #include "torture/rpc/iremotewinspool_common.h"
+#include "lib/printer_driver/printer_driver.h"
 
 struct spoolss_UserLevel1 test_get_client_info(struct torture_context *tctx,
 						      enum client_os_version os,
@@ -197,4 +198,38 @@ bool test_AsyncGetPrinterData_args(struct torture_context *tctx,
 						  value_name,
 						  NULL,
 						  type_p, data_p, needed_p);
+}
+
+/* Parse a driver inf file */
+bool parse_inf_driver(struct torture_context *tctx,
+		      const char *driver_name,
+		      const char *abs_inf_path,
+		      const char *driver_arch,
+		      const char *core_driver_inf,
+		      struct spoolss_AddDriverInfo8 **_parsed_dinfo)
+{
+	struct spoolss_AddDriverInfo8 *drv_info;
+	const char *source_disk_name = NULL;
+	NTSTATUS status;
+	bool ok = true;
+
+	drv_info = talloc_zero(tctx, struct spoolss_AddDriverInfo8);
+	torture_assert_not_null_goto(tctx, drv_info, ok, done, "Cannot allocate memory");
+
+	status = driver_inf_parse(tctx,
+				  core_driver_inf,
+				  abs_inf_path,
+				  driver_arch,
+				  driver_name,
+				  drv_info,
+				  &source_disk_name);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DRIVER_INTERNAL_ERROR)) {
+		torture_comment(tctx, "--- Verify the correct torture option:driver_name is provided\n");
+	}
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "Failed to parse driver inf\n");
+
+	*_parsed_dinfo = drv_info;
+done:
+	return ok;
 }

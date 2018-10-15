@@ -72,3 +72,10 @@ bool test_AsyncGetPrinterData_args(struct torture_context *tctx,
 					  enum winreg_Type *type_p,
 					  uint8_t **data_p,
 					  uint32_t *needed_p);
+
+bool parse_inf_driver(struct torture_context *tctx,
+		      const char *driver_name,
+		      const char *abs_inf_path,
+		      const char *driver_arch,
+		      const char *core_driver_inf,
+		      struct spoolss_AddDriverInfo8 **_parsed_dinfo);
