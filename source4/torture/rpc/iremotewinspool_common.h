@@ -21,10 +21,26 @@
 
 #include "torture/rpc/torture_rpc.h"
 
+struct test_driver_info {
+	struct smbcli_state *cli;
+	struct spoolss_AddDriverInfo8 *info;
+	const char *local_driver_path;
+	size_t driver_path_len;
+	char *server_name;
+	char *share_name;
+	char *print_upload_guid_dir;
+	const char *inf_file;
+	const char *uploaded_inf_path;
+	const char *driver_name;
+	const char *driver_arch;
+	const char *core_driver_inf;
+};
+
 struct test_iremotewinspool_context {
 	struct GUID object_uuid;
 	struct dcerpc_pipe *iremotewinspool_pipe;
 	struct policy_handle server_handle;
+	struct test_driver_info *dinfo;
 	const char *environment;
 };
 
