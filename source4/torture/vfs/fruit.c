@@ -2306,6 +2306,7 @@ static bool test_aapl(struct torture_context *tctx,
 	uint32_t aapl_reply_bitmap;
 	uint32_t aapl_server_caps;
 	uint32_t aapl_vol_caps;
+	uint32_t expected_vol_caps = 0;
 	char *model;
 	struct smb2_find f;
 	unsigned int count;
@@ -2424,8 +2425,11 @@ static bool test_aapl(struct torture_context *tctx,
 		goto done;
 	}
 
+	if (is_osx_server) {
+		expected_vol_caps = 5;
+	}
 	aapl_vol_caps = BVAL(aapl->data.data, 24);
-	if (aapl_vol_caps != 0) {
+	if (aapl_vol_caps != expected_vol_caps) {
 		/* this will fail on a case insensitive fs ... */
 		torture_result(tctx, TORTURE_FAIL,
 				"(%s) unexpected vol_caps: %d",
