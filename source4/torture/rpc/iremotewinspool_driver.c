@@ -275,6 +275,61 @@ done:
 	return ok;
 }
 
+/* Uninstall the previously installed print driver */
+static bool test_uninstall_printer_driver(struct torture_context *tctx,
+					  struct test_iremotewinspool_context *ctx)
+{
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct winspool_AsyncDeletePrinterDriverEx r;
+	bool ok = true;
+	NTSTATUS status;
+
+	r.in.pName = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	r.in.pDriverName = talloc_strdup(tctx, ctx->dinfo->driver_name);
+	torture_assert_not_null_goto(tctx, r.in.pDriverName, ok, done, "Cannot allocate memory");
+
+	r.in.pEnvironment = SPOOLSS_ARCHITECTURE_x64;
+
+	r.in.dwDeleteFlag = 0;
+	r.in.dwVersionNum = 0;
+
+	status = dcerpc_winspool_AsyncDeletePrinterDriverEx_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncDeletePrinterDriverEx failed");
+
+	torture_assert_werr_ok(tctx, r.out.result, "AsyncDeletePrinterDriverEx failed");
+done:
+
+	return ok;
+}
+
+/* Remove the leftover print driver package files from the driver store */
+static bool test_remove_driver_package(struct torture_context *tctx,
+				       struct test_iremotewinspool_context *ctx)
+{
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct winspool_AsyncDeletePrinterDriverPackage r;
+	bool ok = true;
+	NTSTATUS status;
+
+	r.in.pszServer = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	torture_assert_not_null_goto(tctx, r.in.pszServer, ok, done, "Cannot allocate memory");
+
+	r.in.pszInfPath = ctx->dinfo->uploaded_inf_path;
+
+	r.in.pszEnvironment = SPOOLSS_ARCHITECTURE_x64;
+
+	status = dcerpc_winspool_AsyncDeletePrinterDriverPackage_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncDeletePrinterPackage failed");
+
+	torture_assert_hresult_ok(tctx, r.out.result, "AsyncDeletePrinterDriverPackage failed");
+done:
+
+	return ok;
+}
+
 static bool test_winreg_iremotewinspool_openhklm(struct torture_context *tctx,
 						 struct dcerpc_binding_handle *winreg_bh,
 						 struct policy_handle *_hklm_handle)
@@ -574,6 +629,9 @@ static bool torture_rpc_iremotewinspool_drv_teardown_common(struct torture_conte
 {
 	smbcli_deltree(t->dinfo->cli->tree, t->dinfo->print_upload_guid_dir);
 	smb_raw_exit(t->dinfo->cli->session);
+
+	test_uninstall_printer_driver(tctx, t);
+	test_remove_driver_package(tctx, t);
 
 	test_AsyncClosePrinter_byhandle(tctx, t, t->iremotewinspool_pipe, &t->server_handle);
 
