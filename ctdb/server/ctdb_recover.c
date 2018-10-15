@@ -969,6 +969,7 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 
 	/* use a non-blocking lock */
 	if (tdb_chainlock_nonblock(ctdb_db->ltdb->tdb, key) != 0) {
+		DBG_INFO("Failed to get non-blocking chain lock\n");
 		return -1;
 	}
 
@@ -1024,6 +1025,7 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 
 	if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) != 0) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		DBG_INFO("Failed to get non-blocking freelist lock\n");
 		free(data2.dptr);
 		return -1;
 	}
