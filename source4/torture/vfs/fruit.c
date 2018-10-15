@@ -4179,6 +4179,8 @@ static bool test_rename_and_read_rsrc(struct torture_context *tctx,
 	const char *fname_renamed = "test_rename_openfile_renamed";
 	const char *data = "1234567890";
 	union smb_setfileinfo sinfo;
+	bool server_is_macos = torture_setting_bool(tctx, "osx", false);
+	NTSTATUS expected_status;
 
 	ret = enable_aapl(tctx, tree);
 	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
@@ -4229,13 +4231,24 @@ static bool test_rename_and_read_rsrc(struct torture_context *tctx,
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = fname_renamed;
 
+	if (server_is_macos) {
+		expected_status = NT_STATUS_SHARING_VIOLATION;
+	} else {
+		expected_status = NT_STATUS_ACCESS_DENIED;
+	}
+
 	status = smb2_setinfo_file(tree, &sinfo);
 	torture_assert_ntstatus_equal_goto(
-		tctx, status, NT_STATUS_ACCESS_DENIED, ret, done,
+		tctx, status, expected_status, ret, done,
 		"smb2_setinfo_file failed");
 
-	smb2_util_close(tree, h1);
 	smb2_util_close(tree, h2);
+
+	status = smb2_util_write(tree, h1, "foo", 0, 3);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	smb2_util_close(tree, h1);
 
 done:
 	smb2_util_unlink(tree, fname);
