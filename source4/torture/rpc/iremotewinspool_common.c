@@ -8,6 +8,18 @@
 #include "torture/rpc/iremotewinspool_common.h"
 #include "lib/printer_driver/printer_driver.h"
 
+void init_winreg_String(struct winreg_String *name, const char *s)
+{
+	name->name = s;
+	if (s != NULL) {
+		name->name_len = 2 * (strlen_m(s) + 1);
+		name->name_size = name->name_len;
+	} else {
+		name->name_len = 0;
+		name->name_size = 0;
+	}
+}
+
 struct spoolss_UserLevel1 test_get_client_info(struct torture_context *tctx,
 						      enum client_os_version os,
 						      enum spoolss_MajorVersion major_number,

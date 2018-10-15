@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_winspool.h"
 #include "librpc/gen_ndr/ndr_winspool_c.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/registry/util_reg.h"
 #include "torture/rpc/iremotewinspool_common.h"
@@ -269,6 +270,158 @@ static bool test_get_misc_driver_info(struct torture_context *tctx,
 
 	*_abs_inf_path = abs_inf_path;
 	*_driver_path_len = driver_path_len;
+done:
+
+	return ok;
+}
+
+static bool test_winreg_iremotewinspool_openhklm(struct torture_context *tctx,
+						 struct dcerpc_binding_handle *winreg_bh,
+						 struct policy_handle *_hklm_handle)
+{
+	struct winreg_OpenHKLM r;
+	NTSTATUS status;
+	bool ok = true;
+
+	r.in.system_name = NULL;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = _hklm_handle;
+
+	status = dcerpc_winreg_OpenHKLM_r(winreg_bh, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "Failed to Open HKLM");
+
+	torture_assert_werr_ok(tctx, r.out.result, "Failed to Open HKLM");
+done:
+
+	return ok;
+}
+
+static bool test_winreg_iremotewinspool_openkey(struct torture_context *tctx,
+						struct dcerpc_binding_handle *winreg_bh,
+						struct policy_handle *hklm_handle,
+						const char *keyname,
+						struct policy_handle *_key_handle)
+{
+	struct winreg_OpenKey r;
+	NTSTATUS status;
+	bool ok = true;
+
+	r.in.parent_handle = hklm_handle;
+	init_winreg_String(&r.in.keyname, keyname);
+	r.in.options = REG_OPTION_NON_VOLATILE;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = _key_handle;
+
+	status = dcerpc_winreg_OpenKey_r(winreg_bh, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "OpenKey failed");
+
+	torture_assert_werr_ok(tctx, r.out.result, "OpenKey failed");
+done:
+
+	return ok;
+}
+
+static bool test_winreg_iremotewinspool_queryvalue(struct torture_context *tctx,
+						   struct dcerpc_binding_handle *b,
+						   struct policy_handle *key_handle,
+						   const char *value_name,
+						   const char **_valuestr)
+{
+	struct winreg_QueryValue r;
+	enum winreg_Type type = REG_NONE;
+	struct winreg_String valuename;
+	DATA_BLOB blob;
+	const char *str;
+	uint32_t data_size = 0;
+	uint32_t data_length = 0;
+	uint8_t *data = NULL;
+	NTSTATUS status;
+	bool ok = true;
+
+	init_winreg_String(&valuename, value_name);
+
+	data = talloc_zero_array(tctx, uint8_t, 0);
+
+	r.in.handle = key_handle;
+	r.in.value_name = &valuename;
+	r.in.type = &type;
+	r.in.data_size = &data_size;
+	r.in.data_length = &data_length;
+	r.in.data = data;
+
+	r.out.type = &type;
+	r.out.data = data;
+	r.out.data_size = &data_size;
+	r.out.data_length = &data_length;
+
+	status = dcerpc_winreg_QueryValue_r(b, tctx, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "winreg_QueryValue failure");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r), "QueryValue failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		*r.in.data_size = *r.out.data_size;
+		data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
+		r.in.data = data;
+		r.out.data = data;
+		status = dcerpc_winreg_QueryValue_r(b, tctx, &r);
+		torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "QueryValue failed");
+	}
+	torture_assert_werr_ok(tctx, r.out.result, "QueryValue failed");
+
+	torture_assert_int_equal_goto(tctx, *r.out.type, REG_SZ, ok, done, "unexpected type");
+	blob = data_blob(r.out.data, *r.out.data_size);
+	str = reg_val_data_string(tctx, REG_SZ, blob);
+
+	*_valuestr = str;
+done:
+
+	return ok;
+}
+
+/* Validate the installed driver subkey exists, and the InfPath
+ * value matches the pszDestInfPath from test_UploadPrinterDriverPackage */
+static bool test_winreg_validate_driver(struct torture_context *tctx,
+					struct dcerpc_pipe *winreg_pipe,
+					struct test_driver_info *dinfo)
+{
+	struct policy_handle hklm_handle;
+	struct policy_handle key_handle;
+	char *driver_key = NULL;
+	const char *val_name = NULL;
+	const char *val_str = NULL;
+	bool ok = true;
+
+	struct dcerpc_binding_handle *winreg_bh;
+	struct spoolss_AddDriverInfo8 *parsed_dinfo;
+
+	winreg_bh = winreg_pipe->binding_handle;
+	parsed_dinfo = dinfo->info;
+
+	/* OpenHKLM */
+	ok = test_winreg_iremotewinspool_openhklm(tctx, winreg_bh, &hklm_handle);
+	torture_assert_goto(tctx, ok, ok, done, "Failed to perform winreg OpenHKLM");
+
+	/* Open registry subkey for the installed print driver */
+	driver_key = talloc_asprintf(tctx, "%s\\Environments\\%s\\Drivers\\Version-%d\\%s",
+				     REG_DRIVER_CONTROL_KEY,
+				     parsed_dinfo->architecture,
+				     parsed_dinfo->version,
+				     parsed_dinfo->driver_name);
+	torture_assert_not_null_goto(tctx, driver_key, ok, done, "Cannot allocate driver_key string");
+	ok = test_winreg_iremotewinspool_openkey(tctx, winreg_bh, &hklm_handle,
+						 driver_key,
+						 &key_handle);
+	torture_assert_goto(tctx, ok, ok, done, "Failed to perform winreg OpenKey");
+
+	/* Read infpath value and validate this matches what was uploaded */
+	val_name = "InfPath";
+	ok = test_winreg_iremotewinspool_queryvalue(tctx, winreg_bh, &key_handle, val_name,
+						    &val_str);
+	torture_assert_goto(tctx, ok, ok, done, "QueryValue failed");
+
+	torture_assert_casestr_equal(tctx, val_str,
+				 dinfo->uploaded_inf_path,
+				 "InfPath does not match uploaded inf");
 done:
 
 	return ok;
@@ -576,6 +729,34 @@ done:
 	return ok;
 }
 
+/* Check the registry to validate the print driver installed successfully */
+static bool test_ValidatePrinterDriverInstalled(struct torture_context *tctx,
+						 void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *winreg_pipe = NULL;
+	NTSTATUS status;
+	bool ok = true;
+
+	/* winreg is not available over ncacn_ip_tcp */
+	status = torture_rpc_connection_transport(tctx, &winreg_pipe, &ndr_table_winreg, NCACN_NP, 0, 0);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PIPE_NOT_AVAILABLE)) {
+		/* retry */
+		status = torture_rpc_connection_transport(tctx, &winreg_pipe, &ndr_table_winreg, NCACN_NP, 0, 0);
+	}
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "Failed to connect to winreg");
+
+	ok = test_winreg_validate_driver(tctx, winreg_pipe, ctx->dinfo);
+	torture_assert_goto(tctx, ok, ok, done, "Failed to validate driver with winreg");
+
+done:
+	TALLOC_FREE(winreg_pipe);
+
+	return ok;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool_driver");
@@ -588,6 +769,7 @@ struct torture_suite *torture_rpc_iremotewinspool_drv(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "CopyDriverFiles", test_CopyDriverFiles);
 	torture_tcase_add_simple_test(tcase, "UploadPrinterDriverPackage", test_UploadPrinterDriverPackage);
 	torture_tcase_add_simple_test(tcase, "InstallPrinterDriverFromPackage", test_InstallPrinterDriverFromPackage);
+	torture_tcase_add_simple_test(tcase, "ValidatePrinterDriverInstalled", test_ValidatePrinterDriverInstalled);
 
 	return suite;
 }

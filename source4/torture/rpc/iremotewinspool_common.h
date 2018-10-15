@@ -21,6 +21,8 @@
 
 #include "torture/rpc/torture_rpc.h"
 
+#define REG_DRIVER_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
+
 struct test_driver_info {
 	struct smbcli_state *cli;
 	struct spoolss_AddDriverInfo8 *info;
@@ -56,6 +58,8 @@ enum client_os_version
 	WIN_10,
 	WIN_SERVER_2016
 };
+
+void init_winreg_String(struct winreg_String *name, const char *s);
 
 struct spoolss_UserLevel1 test_get_client_info(struct torture_context *tctx,
 						      enum client_os_version os,
