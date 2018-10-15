@@ -3132,6 +3132,9 @@ static bool test_stream_names(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smb2_util_close(tree, h);
 
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret, ret, done, "torture_setup_file");
+
 	torture_comment(tctx, "(%s) testing stream names\n", __location__);
 	ZERO_STRUCT(create);
 	create.in.desired_access = SEC_FILE_WRITE_DATA;
@@ -3146,6 +3149,11 @@ static bool test_stream_names(struct torture_context *tctx,
 
 	status = smb2_create(tree, mem_ctx, &create);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_write(tree, create.out.file.handle, "foo", 0, 3);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
 	smb2_util_close(tree, create.out.file.handle);
 
 	ret = check_stream_list(tree, tctx, fname, 2, streams, false);
