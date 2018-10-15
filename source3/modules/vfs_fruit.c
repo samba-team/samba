@@ -5736,10 +5736,6 @@ static int fruit_ftruncate_rsrc_xattr(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      off_t offset)
 {
-	if (offset == 0) {
-		return SMB_VFS_FREMOVEXATTR(fsp, AFPRESOURCE_EA_NETATALK);
-	}
-
 #ifdef HAVE_ATTROPEN
 	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 #endif
@@ -5787,10 +5783,6 @@ static int fruit_ftruncate_rsrc_stream(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       off_t offset)
 {
-	if (offset == 0) {
-		return SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
-	}
-
 	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 }
 
