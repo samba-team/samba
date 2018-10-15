@@ -131,6 +131,12 @@ static const char* get_key_directory(TALLOC_CTX *ctx, struct ldb_context *ldb)
 	if (strncmp("tdb://", sam_ldb_path, 6) == 0) {
 		sam_ldb_path += 6;
 	}
+	else if (strncmp("ldb://", sam_ldb_path, 6) == 0) {
+		sam_ldb_path += 6;
+	}
+	else if (strncmp("mdb://", sam_ldb_path, 6) == 0) {
+		sam_ldb_path += 6;
+	}
 	private_dir = talloc_strdup(ctx, sam_ldb_path);
 	if (private_dir == NULL) {
 		ldb_set_errstring(ldb,
