@@ -1186,12 +1186,28 @@ for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
             'renamedc', 'offlinebackupdc', 'labdc']:
     plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local", ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
 
+#
+# Tests to verify bug 13653 https://bugzilla.samba.org/show_bug.cgi?id=13653
+# ad_dc has an lmdb backend, ad_dc_ntvfs has a tdb backend.
+#
+planoldpythontestsuite("ad_dc_ntvfs:local",
+                       "samba.tests.blackbox.bug13653",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'],
+                       environ={'TEST_ENV': 'ad_dc_ntvfs'},
+                       py3_compatible=True)
+planoldpythontestsuite("ad_dc:local",
+                       "samba.tests.blackbox.bug13653",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'],
+                       environ={'TEST_ENV': 'ad_dc'},
+                       py3_compatible=True)
 # cmocka tests not requiring a specific environment
 #
 plantestsuite("samba4.dsdb.samdb.ldb_modules.unique_object_sids", "none",
               [os.path.join(bindir(), "test_unique_object_sids")])
-plantestsuite("samba4.dsdb.samdb.ldb_modules.encrypted_secrets", "none",
-              [os.path.join(bindir(), "test_encrypted_secrets")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.encrypted_secrets.tdb", "none",
+              [os.path.join(bindir(), "test_encrypted_secrets_tdb")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.encrypted_secrets.mdb", "none",
+              [os.path.join(bindir(), "test_encrypted_secrets_mdb")])
 plantestsuite("lib.audit_logging.audit_logging", "none",
               [os.path.join(bindir(), "audit_logging_test")])
 plantestsuite("lib.audit_logging.audit_logging.errors", "none",

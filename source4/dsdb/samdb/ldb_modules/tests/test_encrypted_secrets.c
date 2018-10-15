@@ -27,7 +27,6 @@ int ldb_encrypted_secrets_module_init(const char *version);
 #define TEST_ENCRYPTED_SECRETS
 #include "../encrypted_secrets.c"
 
-#define TEST_BE "tdb"
 struct ldbtest_ctx {
 	struct tevent_context *ev;
 	struct ldb_context *ldb;
