@@ -199,7 +199,7 @@ class GPFDeploy1IniParser(GPIniParser):
     def custom_entities(self, root, global_entities):
         entities = []
         fdeploy_sids = root.findall('.//Section[@fdeploy_SID]')
-        fdeploy_sids.sort()
+        fdeploy_sids.sort(key = lambda x: x.tag)
 
         for sid in fdeploy_sids:
             old_attrib = sid.attrib['fdeploy_SID']
