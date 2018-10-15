@@ -2045,34 +2045,8 @@ static bool test_rfork_create_ro(struct torture_context *tctx,
 	}
 
 	torture_comment(tctx, "(%s) Try opening read-only with "
-			"open_if create disposition, should return ENOENT\n",
+			"open_if create disposition, should work\n",
 			__location__);
-
-	ZERO_STRUCT(create);
-	create.in.fname = rfork;
-	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
-	create.in.desired_access = SEC_FILE_READ_DATA | SEC_STD_READ_CONTROL;
-	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
-	create.in.share_access = FILE_SHARE_READ | FILE_SHARE_DELETE;
-	status = smb2_create(tree, mem_ctx, &(create));
-	torture_assert_ntstatus_equal_goto(tctx, status,
-					NT_STATUS_OBJECT_NAME_NOT_FOUND,
-					ret, done, "smb2_create failed\n");
-
-	torture_comment(tctx, "(%s) Now write something to the "
-			"rsrc stream, then the same open should succeed\n",
-			__location__);
-
-	ret = write_stream(tree, __location__, tctx, mem_ctx,
-			   fname, AFPRESOURCE_STREAM_NAME,
-			   0, 3, "foo");
-	torture_assert_goto(tctx, ret == true, ret, done,
-			"write_stream failed\n");
-
-	ret = check_stream(tree, __location__, tctx, mem_ctx,
-			   fname, AFPRESOURCE_STREAM,
-			   0, 3, 0, 3, "foo");
-	torture_assert_goto(tctx, ret == true, ret, done, "check_stream");
 
 	ZERO_STRUCT(create);
 	create.in.fname = rfork;
