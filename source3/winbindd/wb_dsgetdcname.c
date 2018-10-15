@@ -196,6 +196,7 @@ static void dcinfo_parser(const struct gencache_timeout *timeout,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DBG_ERR("ndr_pull_struct_blob failed\n");
 		state->status = ndr_map_error2ntstatus(ndr_err);
+		TALLOC_FREE(state->dcinfo);
 		return;
 	}
 
