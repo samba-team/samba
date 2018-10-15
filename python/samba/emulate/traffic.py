@@ -52,6 +52,7 @@ from samba import gensec
 from samba import sd_utils
 from samba.compat import get_string
 from samba.logger import get_samba_logger
+import bisect
 
 SLEEP_OVERHEAD = 3e-4
 
@@ -1824,34 +1825,57 @@ class GroupAssignments(object):
                                               users_added,
                                               group_memberships)
 
+    def cumulative_distribution(self, weights):
+        # make sure the probabilities conform to a cumulative distribution
+        # spread between 0.0 and 1.0. Dividing by the weighted total gives each
+        # probability a proportional share of 1.0. Higher probabilities get a
+        # bigger share, so are more likely to be picked. We use the cumulative
+        # value, so we can use random.random() as a simple index into the list
+        dist = []
+        total = sum(weights)
+        cumulative = 0.0
+        for probability in weights:
+            cumulative += probability
+            dist.append(cumulative / total)
+        return dist
+
     def generate_user_distribution(self, n):
         """Probability distribution of a user belonging to a group.
         """
-        self.user_dist = []
+        # Assign a weighted probability to each user. Probability decreases
+        # as the user-ID increases
+        weights = []
         for x in range(1, n + 1):
             p = 1 / (x + 0.001)
-            self.user_dist.append(p)
+            weights.append(p)
 
-        self.num_users = n
+        # convert the weights to a cumulative distribution between 0.0 and 1.0
+        self.user_dist = self.cumulative_distribution(weights)
 
     def generate_group_distribution(self, n):
         """Probability distribution of a group containing a user."""
-        self.group_dist = []
+
+        # Assign a weighted probability to each user. Probability decreases
+        # as the group-ID increases
+        weights = []
         for x in range(1, n + 1):
             p = 1 / (x**1.3)
-            self.group_dist.append(p)
+            weights.append(p)
 
-        self.num_groups = n
+        # convert the weights to a cumulative distribution between 0.0 and 1.0
+        self.group_dist = self.cumulative_distribution(weights)
 
     def generate_random_membership(self):
         """Returns a randomly generated user-group membership"""
-        while True:
-            user        = random.randint(0, self.num_users - 1)
-            group       = random.randint(0, self.num_groups - 1)
-            probability = self.group_dist[group] * self.user_dist[user]
 
-            if random.random() < probability * 10000:
-                return user, group
+        # the list items are cumulative distribution values between 0.0 and
+        # 1.0, which makes random() a handy way to index the list to get a
+        # weighted random user/group. (Here the user/group returned are
+        # zero-based array indexes)
+        user = bisect.bisect(self.user_dist, random.random())
+        group = bisect.bisect(self.group_dist, random.random())
+
+        return user, group
 
     def assign_groups(self, number_of_groups, groups_added,
                       number_of_users, users_added, group_memberships):
