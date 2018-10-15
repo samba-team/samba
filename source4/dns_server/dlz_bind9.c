@@ -618,6 +618,9 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	char *errstring = NULL;
 
 	if (dlz_bind9_state != NULL) {
+		dlz_bind9_state->log(ISC_LOG_ERROR,
+				     "samba_dlz: dlz_create ignored, #refs=%d",
+				     dlz_bind9_state_ref_count);
 		*dbdata = dlz_bind9_state;
 		dlz_bind9_state_ref_count++;
 		return ISC_R_SUCCESS;
@@ -743,6 +746,10 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	return ISC_R_SUCCESS;
 
 failed:
+	state->log(ISC_LOG_INFO,
+		   "samba_dlz: FAILED dlz_create call result=%d #refs=%d",
+		   result,
+		   dlz_bind9_state_ref_count);
 	talloc_free(state);
 	return result;
 }
@@ -753,13 +760,17 @@ failed:
 _PUBLIC_ void dlz_destroy(void *dbdata)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
-	state->log(ISC_LOG_INFO, "samba_dlz: shutting down");
 
 	dlz_bind9_state_ref_count--;
 	if (dlz_bind9_state_ref_count == 0) {
+		state->log(ISC_LOG_INFO, "samba_dlz: shutting down");
 		talloc_unlink(state, state->samdb);
 		talloc_free(state);
 		dlz_bind9_state = NULL;
+	} else {
+		state->log(ISC_LOG_INFO,
+			   "samba_dlz: dlz_destroy called. %d refs remaining.",
+			   dlz_bind9_state_ref_count);
 	}
 }
 
