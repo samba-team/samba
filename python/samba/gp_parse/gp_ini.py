@@ -21,9 +21,9 @@ import codecs
 import collections
 import re
 
-from ConfigParser import ConfigParser
 from xml.etree.ElementTree import Element, SubElement
-from StringIO import StringIO
+from samba.compat import ConfigParser
+from samba.compat import StringIO
 
 from samba.gp_parse import GPParser, ENTITY_USER_ID
 
@@ -70,7 +70,7 @@ class GPIniParser(GPParser):
         return section_name
 
     def write_xml(self, filename):
-        with file(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             root = Element('IniFile')
 
             for sec_ini in self.ini_conf.sections():
