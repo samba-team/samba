@@ -566,6 +566,11 @@ tasks = {
         ("samba-install", "make install"),
         ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd"),
 
+        ("test",
+         make_test(cmd='make test',
+                   include_envs=["clusteredmember"])
+        ),
+
         # clean up:
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ("clean", "make clean"),
