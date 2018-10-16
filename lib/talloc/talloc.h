@@ -1893,6 +1893,13 @@ void talloc_set_log_fn(void (*log_fn)(const char *message));
  */
 void talloc_set_log_stderr(void);
 
+#ifndef _DEPRECATED_
+#ifdef HAVE___ATTRIBUTE__
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
+#endif
+#endif
 /**
  * @brief Set a max memory limit for the current context hierarchy
  *	  This affects all children of this context and constrain any
@@ -1907,10 +1914,13 @@ void talloc_set_log_stderr(void);
  *	  move causes the new parent to exceed its limits. However
  *	  any further allocation on that hierarchy will then fail.
  *
+ * @warning talloc memlimit functionality is deprecated. Please
+ *	    consider using cgroup memory limits instead.
+ *
  * @param[in]	ctx		The talloc context to set the limit on
  * @param[in]	max_size	The (new) max_size
  */
-int talloc_set_memlimit(const void *ctx, size_t max_size);
+int talloc_set_memlimit(const void *ctx, size_t max_size) _DEPRECATED_;
 
 /* @} ******************************************************************/
 
