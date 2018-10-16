@@ -37,15 +37,19 @@ import samba.auth
 import samba.dcerpc.base
 from samba.compat import PY3, text_type
 from random import randint
-if not PY3:
-    # Py2 only
-    try:
-        from samba.samdb import SamDB
-    except ImportError:
-        SamDB = lambda *x: None
-    import samba.ndr
-    import samba.dcerpc.dcerpc
-    import samba.dcerpc.epmapper
+from random import SystemRandom
+import string
+try:
+    from samba.samdb import SamDB
+except ImportError:
+    # We are built without samdb support,
+    # imitate it so that connect_samdb() can recover
+    def SamDB(*args, **kwargs):
+        return None
+
+import samba.ndr
+import samba.dcerpc.dcerpc
+import samba.dcerpc.epmapper
 
 try:
     from unittest import SkipTest
@@ -386,6 +390,17 @@ class BlackboxTestCase(TestCaseInTempDir):
         if retcode:
             raise BlackboxProcessError(retcode, line, stdoutdata, stderrdata)
         return stdoutdata
+
+    # Generate a random password that can be safely  passed on the command line
+    # i.e. it does not contain any shell meta characters.
+    def random_password(self, count=32):
+        password = SystemRandom().choice(string.ascii_uppercase)
+        password += SystemRandom().choice(string.digits)
+        password += SystemRandom().choice(string.ascii_lowercase)
+        password += ''.join(SystemRandom().choice(string.ascii_uppercase +
+                    string.ascii_lowercase +
+                    string.digits) for x in range(count - 3))
+        return password
 
 
 def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,

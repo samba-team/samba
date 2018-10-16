@@ -29,23 +29,8 @@ from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 from samba import dsdb
 import re
-import random
-import string
 
 USER_NAME = "CryptSHATestUser"
-# Create a random 32 character password, containing only letters and
-# digits to avoid issues when used on the command line.
-# Ensuring the password includes at least:
-#   1 upper case letter
-#   1 lower case letter
-#   1 digit.
-#
-USER_PASS = (''.join(random.choice(string.ascii_uppercase +
-                                   string.ascii_lowercase +
-                                   string.digits) for _ in range(29)) +
-             random.choice(string.ascii_uppercase) +
-             random.choice(string.ascii_lowercase) +
-             random.choice(string.digits))
 HASH_OPTION = "password hash userPassword schemes"
 
 # Get the value of an attribute from the output string
@@ -83,10 +68,11 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
             credentials=self.creds,
             lp=self.lp)
 
+        password = self.random_password()
         self.runsubcmd("user",
                        "create",
                        USER_NAME,
-                       USER_PASS)
+                       password)
 
     def tearDown(self):
         super(UserCmdCryptShaTestCase, self).tearDown()
