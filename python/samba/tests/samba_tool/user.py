@@ -196,7 +196,7 @@ class UserCmdTestCase(SambaToolCmdTest):
 
     def test_setpassword(self):
         for user in self.users:
-            newpasswd = self.randomPass()
+            newpasswd = self.random_password(16)
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
                                                 "--newpassword=%s" % newpasswd,
@@ -238,7 +238,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                              "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
 
         for user in self.users:
-            newpasswd = self.randomPass()
+            newpasswd = self.random_password(16)
             creds = credentials.Credentials()
             creds.set_anonymous()
             creds.set_password(newpasswd)
@@ -300,7 +300,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                  "getpassword virtualSSHA: out[%s]" % out)
 
         for user in self.users:
-            newpasswd = self.randomPass()
+            newpasswd = self.random_password(16)
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
                                                 "--newpassword=%s" % newpasswd,
@@ -508,7 +508,7 @@ sAMAccountName: %s
         """create a user with random attribute values, you can specify base attributes"""
         user = {
             "name": self.randomName(),
-            "password": self.randomPass(),
+            "password": self.random_password(16),
             "surname": self.randomName(),
             "given-name": self.randomName(),
             "job-title": self.randomName(),
