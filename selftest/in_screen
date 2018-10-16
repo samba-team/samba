@@ -10,18 +10,10 @@ if [ "$osname" = "Linux" ]; then
 	vars=$(mktemp)
 else
 	vars=$(mktemp -t tmpsmb)
-	function seq() {
-		dpt=$1
-		end=$2
-		while [ $dpt -le $end ]; do
-			echo "$dpt"
-			dpt=$(( $dpt + 1))
-		done
-	}
 fi
 
 [ -r $basedir/$SERVERNAME.pid ] && {
-    for i in $(seq 2 100); do
+    for i in {2..100}; do
 	if [ ! -r "$basedir/${SERVERNAME}-$i.pid" ]; then
 	    SERVERNAME="${SERVERNAME}-$i"
 	    break
