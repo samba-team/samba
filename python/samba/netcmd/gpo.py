@@ -61,6 +61,7 @@ from samba.gp_parse.gp_ini import (
 from samba.gp_parse.gp_csv import GPAuditCsvParser
 from samba.gp_parse.gp_inf import GptTmplInfParser
 from samba.gp_parse.gp_aas import GPAasParser
+from samba import param
 
 
 def attr_default(msg, attrname, default):
@@ -1593,6 +1594,76 @@ class cmd_aclcheck(GPOCommand):
             if (fs_sd.as_sddl(domain_sid) != expected_fs_sddl):
                 raise CommandError("Invalid GPO ACL %s on path (%s), should be %s" % (fs_sd.as_sddl(domain_sid), sharepath, expected_fs_sddl))
 
+class cmd_admxload(Command):
+    """Loads samba admx files to sysvol"""
+
+    synopsis = "%prog [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+        Option("--admx-dir", help="Directory where admx templates are stored",
+                type=str, default=os.path.join(param.data_dir(), 'samba/admx'))
+    ]
+
+    def run(self, H=None, sambaopts=None, credopts=None, versionopts=None,
+            admx_dir=None):
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds,
+                              sign=True)
+
+        smb_dir = '\\'.join([self.lp.get('realm').lower(),
+                             'Policies', 'PolicyDefinitions'])
+        try:
+            conn.mkdir(smb_dir)
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            elif e.args[0] != 0xC0000035: # STATUS_OBJECT_NAME_COLLISION
+                raise
+
+        for dirname, dirs, files in os.walk(admx_dir):
+            for fname in files:
+                path_in_admx = dirname.replace(admx_dir, '')
+                full_path = os.path.join(dirname, fname)
+                sub_dir = '\\'.join([smb_dir, path_in_admx]).replace('/', '\\')
+                smb_path = '\\'.join([sub_dir, fname])
+                try:
+                    conn.mkdir(sub_dir)
+                except NTSTATUSError as e:
+                    if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                        raise CommandError("The authenticated user does "
+                                           "not have sufficient privileges")
+                    elif e.args[0] != 0xC0000035: # STATUS_OBJECT_NAME_COLLISION
+                        raise
+                with open(full_path, 'rb') as f:
+                    try:
+                        conn.savefile(smb_path, f.read())
+                    except NTSTATUSError as e:
+                        if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                            raise CommandError("The authenticated user does "
+                                               "not have sufficient privileges")
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""
@@ -1613,3 +1684,4 @@ class cmd_gpo(SuperCommand):
     subcommands["aclcheck"] = cmd_aclcheck()
     subcommands["backup"] = cmd_backup()
     subcommands["restore"] = cmd_restore()
+    subcommands["admxload"] = cmd_admxload()
