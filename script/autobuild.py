@@ -55,6 +55,7 @@ builddirs = {
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "samba-buildpy3-only": ".",
+    "samba-purepy3-none-env": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -407,9 +408,21 @@ tasks = {
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "PYTHON='python3' make clean", "text/plain")],
 
+    "samba-purepy3-none-env": [
+                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "PYTHON='python3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                      ("make", "PYTHON='python3' make -j", "text/plain"),
+                      ("test", "PYTHON='python3' make test "
+                       "FAIL_IMMEDIATELY=1 "
+                       "TESTS='${PY3_ONLY}"
+                       "--include-env=none'",
+                       "text/plain")],
+
     # these are useful for debugging autobuild
     'pass': [("pass", 'echo passing && /bin/true', "text/plain")],
     'fail': [("fail", 'echo failing && /bin/false', "text/plain")]
+
+
 }
 
 
