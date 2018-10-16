@@ -1815,14 +1815,46 @@ def generate_users_and_groups(ldb, instance_id, password,
 class GroupAssignments(object):
     def __init__(self, number_of_groups, groups_added, number_of_users,
                  users_added, group_memberships):
+
+        self.generate_group_distribution(number_of_groups)
+        self.generate_user_distribution(number_of_users)
         self.assignments = self.assign_groups(number_of_groups,
                                               groups_added,
                                               number_of_users,
                                               users_added,
                                               group_memberships)
 
-    def assign_groups(self, number_of_groups, groups_added, number_of_users,
-                      users_added, group_memberships):
+    def generate_user_distribution(self, n):
+        """Probability distribution of a user belonging to a group.
+        """
+        self.user_dist = []
+        for x in range(1, n + 1):
+            p = 1 / (x + 0.001)
+            self.user_dist.append(p)
+
+        self.num_users = n
+
+    def generate_group_distribution(self, n):
+        """Probability distribution of a group containing a user."""
+        self.group_dist = []
+        for x in range(1, n + 1):
+            p = 1 / (x**1.3)
+            self.group_dist.append(p)
+
+        self.num_groups = n
+
+    def generate_random_membership(self):
+        """Returns a randomly generated user-group membership"""
+        while True:
+            user        = random.randint(0, self.num_users - 1)
+            group       = random.randint(0, self.num_groups - 1)
+            probability = self.group_dist[group] * self.user_dist[user]
+
+            if random.random() < probability * 10000:
+                return user, group
+
+    def assign_groups(self, number_of_groups, groups_added,
+                      number_of_users, users_added, group_memberships):
         """Allocate users to groups.
 
         The intention is to have a few users that belong to most groups, while
@@ -1832,29 +1864,9 @@ class GroupAssignments(object):
         few users.
         """
 
-        def generate_user_distribution(n):
-            """Probability distribution of a user belonging to a group.
-            """
-            dist = []
-            for x in range(1, n + 1):
-                p = 1 / (x + 0.001)
-                dist.append(p)
-            return dist
-
-        def generate_group_distribution(n):
-            """Probability distribution of a group containing a user."""
-            dist = []
-            for x in range(1, n + 1):
-                p = 1 / (x**1.3)
-                dist.append(p)
-            return dist
-
         assignments = set()
         if group_memberships <= 0:
             return assignments
-
-        group_dist = generate_group_distribution(number_of_groups)
-        user_dist  = generate_user_distribution(number_of_users)
 
         # Calculate the number of group menberships required
         group_memberships = math.ceil(
@@ -1864,12 +1876,9 @@ class GroupAssignments(object):
         existing_users  = number_of_users  - users_added  - 1
         existing_groups = number_of_groups - groups_added - 1
         while len(assignments) < group_memberships:
-            user        = random.randint(0, number_of_users - 1)
-            group       = random.randint(0, number_of_groups - 1)
-            probability = group_dist[group] * user_dist[user]
+            user, group = self.generate_random_membership()
 
-            if ((random.random() < probability * 10000) and
-               (group > existing_groups or user > existing_users)):
+            if group > existing_groups or user > existing_users:
                 # the + 1 converts the array index to the corresponding
                 # group or user number
                 assignments.add(((user + 1), (group + 1)))
