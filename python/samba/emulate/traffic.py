@@ -1892,7 +1892,7 @@ def add_users_to_groups(db, instance_id, assignments):
         db.modify(m)
         end = time.time()
         duration = end - start
-        print("%f\t0\tadd\tuser\t%f\tTrue\t" % (end, duration))
+        LOGGER.info("%f\t0\tadd\tuser\t%f\tTrue\t" % (end, duration))
 
 
 def generate_stats(statsdir, timing_file):
