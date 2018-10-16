@@ -1818,7 +1818,7 @@ class GroupAssignments(object):
                  users_added, group_memberships):
 
         self.generate_group_distribution(number_of_groups)
-        self.generate_user_distribution(number_of_users)
+        self.generate_user_distribution(number_of_users, group_memberships)
         self.assignments = self.assign_groups(number_of_groups,
                                               groups_added,
                                               number_of_users,
@@ -1839,15 +1839,27 @@ class GroupAssignments(object):
             dist.append(cumulative / total)
         return dist
 
-    def generate_user_distribution(self, n):
+    def generate_user_distribution(self, num_users, num_memberships):
         """Probability distribution of a user belonging to a group.
         """
         # Assign a weighted probability to each user. Use the Pareto
         # Distribution so that some users are in a lot of groups, and the
-        # bulk of users are in only a few groups
+        # bulk of users are in only a few groups. If we're assigning a large
+        # number of group memberships, use a higher shape. This means slightly
+        # fewer outlying users that are in large numbers of groups. The aim is
+        # to have no users belonging to more than ~500 groups.
+        if num_memberships > 5000000:
+            shape = 3.0
+        elif num_memberships > 2000000:
+            shape = 2.5
+        elif num_memberships > 300000:
+            shape = 2.25
+        else:
+            shape = 1.75
+
         weights = []
-        for x in range(1, n + 1):
-            p = random.paretovariate(1.0)
+        for x in range(1, num_users + 1):
+            p = random.paretovariate(shape)
             weights.append(p)
 
         # convert the weights to a cumulative distribution between 0.0 and 1.0
