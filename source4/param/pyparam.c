@@ -614,6 +614,11 @@ PyTypeObject PyLoadparmService = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+static PyObject *py_data_dir(PyObject *self)
+{
+        return PyUnicode_FromString(dyn_DATADIR);
+}
+
 static PyObject *py_default_path(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
 	return PyUnicode_FromString(lp_default_path());
@@ -640,6 +645,8 @@ static PyObject *py_sbin_dir(PyObject *self, PyObject *Py_UNUSED(ignored))
 }
 
 static PyMethodDef pyparam_methods[] = {
+	{ "data_dir", (PyCFunction)py_data_dir, METH_NOARGS,
+		"Returns the compiled in location of data directory." },
 	{ "default_path", (PyCFunction)py_default_path, METH_NOARGS,
 		"Returns the default smb.conf path." },
 	{ "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
