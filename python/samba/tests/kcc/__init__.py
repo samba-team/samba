@@ -62,7 +62,10 @@ class KCCTests(samba.tests.TestCase):
         my_kcc = kcc.KCC(unix_now, False, False, False, False)
         my_kcc.load_samdb("ldap://%s" % os.environ["SERVER"],
                           self.lp, self.creds)
-        dsas = my_kcc.list_dsas()
+        try:
+            dsas = my_kcc.list_dsas()
+        except kcc.KCCError as e:
+            self.fail("kcc.list_dsas failed with %s" % e)
         env = os.environ['TEST_ENV']
         for expected_dsa in ENV_DSAS[env]:
             self.assertIn(expected_dsa, dsas)
