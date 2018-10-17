@@ -394,7 +394,7 @@ static int eventd_client_write(struct eventd_context *ectx,
 						void *private_data),
 			       void *private_data)
 {
-	struct ctdb_event_header header;
+	struct ctdb_event_header header = { 0 };
 	struct eventd_client_state *state;
 	int ret;
 
