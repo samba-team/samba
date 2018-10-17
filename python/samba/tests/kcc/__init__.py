@@ -78,22 +78,13 @@ class KCCTests(samba.tests.TestCase):
         my_kcc = kcc.KCC(unix_now, readonly=True, verify=True,
                          debug=False, dot_file_dir=None)
 
-        #
-        # The following seems to raise
-        # samba.kcc.graph_utils.GraphError when something
-        # goes wrong.
-        #
-        # Typically failureException is exceptions.AssertionError
-        # by default, see pydoc unittest.TestCase
-        #
-        # As this is flapping under python3, we need to
-        # make sure it generates a failure instead of an error.
-        #
-        # We need to make sure samba.kcc.graph_utils.GraphError
-        # will generate a failure from here on.
-        #
-        self.failureException = samba.kcc.graph_utils.GraphError
-
-        my_kcc.run("ldap://%s" % os.environ["SERVER"],
-                   self.lp, self.creds,
-                   attempt_live_connections=False)
+        # As this is flapping with errors under python3, we catch
+        # exceptions and turn them into failures..
+        try:
+            my_kcc.run("ldap://%s" % os.environ["SERVER"],
+                       self.lp, self.creds,
+                       attempt_live_connections=False)
+        except (samba.kcc.graph_utils.GraphError, kcc.KCCError):
+            import traceback
+            traceback.print_exc()
+            self.fail()
