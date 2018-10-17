@@ -34,10 +34,12 @@
 #include "librpc/ndr/libndr.h"
 #include "libcli/smb/smb2_negotiate_context.h"
 #include "libcli/smb/smb2_signing.h"
-#include "lib/crypto/sha512.h"
 #include "lib/crypto/aes.h"
 #include "lib/crypto/aes_ccm_128.h"
 #include "lib/crypto/aes_gcm_128.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 struct smbXcli_conn;
 struct smbXcli_req;
@@ -4853,7 +4855,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	uint16_t hash_count;
 	uint16_t salt_length;
 	uint16_t hash_selected;
-	struct hc_sha512state sctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
 	struct smb2_negotiate_context *cipher = NULL;
 	struct iovec sent_iov[3];
 	static const struct smb2cli_req_expected_response expected[] = {
@@ -4862,6 +4864,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		.body_size = 0x41
 	}
 	};
+	int rc;
 
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
@@ -5086,23 +5089,73 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 	/* First we hash the request */
 	smb2cli_req_get_sent_iov(subreq, sent_iov);
-	samba_SHA512_Init(&sctx);
-	samba_SHA512_Update(&sctx, conn->smb2.preauth_sha512,
-		      sizeof(conn->smb2.preauth_sha512));
-	for (i = 0; i < 3; i++) {
-		samba_SHA512_Update(&sctx, sent_iov[i].iov_base, sent_iov[i].iov_len);
+
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA512);
+	if (rc < 0) {
+		tevent_req_nterror(req,
+				   NT_STATUS_NO_MEMORY);
+		return;
 	}
-	samba_SHA512_Final(conn->smb2.preauth_sha512, &sctx);
+
+	rc = gnutls_hash(hash_hnd,
+			 conn->smb2.preauth_sha512,
+			 sizeof(conn->smb2.preauth_sha512));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		tevent_req_nterror(req,
+				   NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+	for (i = 0; i < 3; i++) {
+		rc = gnutls_hash(hash_hnd,
+				 sent_iov[i].iov_base,
+				 sent_iov[i].iov_len);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			tevent_req_nterror(req,
+					   NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+	}
+
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		tevent_req_nterror(req,
+				   NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	/* This resets the hash state */
+	gnutls_hash_output(hash_hnd, conn->smb2.preauth_sha512);
 	TALLOC_FREE(subreq);
 
 	/* And now we hash the response */
-	samba_SHA512_Init(&sctx);
-	samba_SHA512_Update(&sctx, conn->smb2.preauth_sha512,
-		      sizeof(conn->smb2.preauth_sha512));
-	for (i = 0; i < 3; i++) {
-		samba_SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
+	rc = gnutls_hash(hash_hnd,
+			 conn->smb2.preauth_sha512,
+			 sizeof(conn->smb2.preauth_sha512));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		tevent_req_nterror(req,
+				   NT_STATUS_ACCESS_DENIED);
+		return;
 	}
-	samba_SHA512_Final(conn->smb2.preauth_sha512, &sctx);
+	for (i = 0; i < 3; i++) {
+		rc = gnutls_hash(hash_hnd,
+				 iov[i].iov_base,
+				 iov[i].iov_len);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			tevent_req_nterror(req,
+					   NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+	}
+	gnutls_hash_deinit(hash_hnd, conn->smb2.preauth_sha512);
+	if (rc < 0) {
+		tevent_req_nterror(req,
+				   NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
 
 	tevent_req_done(req);
 }
@@ -5831,8 +5884,9 @@ void smb2cli_session_require_signed_response(struct smbXcli_session *session,
 NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 					const struct iovec *iov)
 {
-	struct hc_sha512state sctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
 	size_t i;
+	int rc;
 
 	if (session->conn == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
@@ -5846,13 +5900,29 @@ NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 		return NT_STATUS_OK;
 	}
 
-	samba_SHA512_Init(&sctx);
-	samba_SHA512_Update(&sctx, session->smb2_channel.preauth_sha512,
-		      sizeof(session->smb2_channel.preauth_sha512));
-	for (i = 0; i < 3; i++) {
-		samba_SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
+	rc = gnutls_hash_init(&hash_hnd,
+			      GNUTLS_DIG_SHA512);
+	if (rc < 0) {
+		return NT_STATUS_NO_MEMORY;
 	}
-	samba_SHA512_Final(session->smb2_channel.preauth_sha512, &sctx);
+
+	rc = gnutls_hash(hash_hnd,
+			 session->smb2_channel.preauth_sha512,
+			 sizeof(session->smb2_channel.preauth_sha512));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	for (i = 0; i < 3; i++) {
+		rc = gnutls_hash(hash_hnd,
+				 iov[i].iov_base,
+				 iov[i].iov_len);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+	gnutls_hash_deinit(hash_hnd, session->smb2_channel.preauth_sha512);
 
 	return NT_STATUS_OK;
 }
