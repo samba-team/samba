@@ -2374,6 +2374,10 @@ static SMB_INO_T fruit_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 	SMB_INO_T result;
 	char *upper_sname;
 
+	DBG_DEBUG("fruit_inode called for %ju/%ju [%s]\n",
+		  (uintmax_t)sbuf->st_ex_dev,
+		  (uintmax_t)sbuf->st_ex_ino, sname);
+
 	upper_sname = talloc_strdup_upper(talloc_tos(), sname);
 	SMB_ASSERT(upper_sname != NULL);
 
@@ -2391,8 +2395,8 @@ static SMB_INO_T fruit_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 	/* Hopefully all the variation is in the lower 4 (or 8) bytes! */
 	memcpy(&result, hash, sizeof(result));
 
-	DEBUG(10, ("fruit_inode \"%s\": ino=0x%llu\n",
-		   sname, (unsigned long long)result));
+	DBG_DEBUG("fruit_inode \"%s\": ino=%ju\n",
+		  sname, (uintmax_t)result);
 
 	return result;
 }
@@ -4795,6 +4799,11 @@ static int fruit_stat_base(vfs_handle_struct *handle,
 		rc = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 	}
 	smb_fname->stream_name = tmp_stream_name;
+
+	DBG_DEBUG("fruit_stat_base [%s] dev [%ju] ino [%ju]\n",
+		  smb_fname->base_name,
+		  (uintmax_t)smb_fname->st.st_ex_dev,
+		  (uintmax_t)smb_fname->st.st_ex_ino);
 	return rc;
 }
 
