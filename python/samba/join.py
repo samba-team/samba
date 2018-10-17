@@ -1020,6 +1020,27 @@ class DCJoinContext(object):
         else:
             ctx.local_samdb.transaction_commit()
 
+        # A large replication may have caused our LDB connection to the
+        # remote DC to timeout, so check the connection is still alive
+        ctx.refresh_ldb_connection()
+
+    def refresh_ldb_connection(ctx):
+        try:
+            # query the rootDSE to check the connection
+            ctx.samdb.search(scope=ldb.SCOPE_BASE, attrs=[])
+        except ldb.LdbError as e:
+            (enum, estr) = e.args
+
+            # if the connection was disconnected, then reconnect
+            if (enum == ldb.ERR_OPERATIONS_ERROR and
+                'NT_STATUS_CONNECTION_DISCONNECTED' in estr):
+                ctx.logger.warning("LDB connection disconnected. Reconnecting")
+                ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
+                                  session_info=system_session(),
+                                  credentials=ctx.creds, lp=ctx.lp)
+            else:
+                raise DCJoinException(estr)
+
     def send_DsReplicaUpdateRefs(ctx, dn):
         r = drsuapi.DsReplicaUpdateRefsRequest1()
         r.naming_context = drsuapi.DsReplicaObjectIdentifier()
