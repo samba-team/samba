@@ -53,6 +53,7 @@ struct samr_guid_cache {
 
 enum samr_guid_cache_id {
 	SAMR_QUERY_DISPLAY_INFO_CACHE,
+	SAMR_ENUM_DOMAIN_GROUPS_CACHE,
 	SAMR_LAST_CACHE
 };
 

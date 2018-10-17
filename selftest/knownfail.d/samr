@@ -1,2 +1,0 @@
-^samba.tests.dcerpc.sam.samba.tests.dcerpc.sam.SamrTests.test_EnumDomainGroups\(ad_dc_ntvfs:local\)
-^samba.tests.dcerpc.sam.python3.samba.tests.dcerpc.sam.SamrTests.test_EnumDomainGroups\(ad_dc_ntvfs:local\)
