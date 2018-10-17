@@ -3675,8 +3675,8 @@ static bool test_afpinfo_all0(struct torture_context *tctx,
 	create.in.fname = fname;
 
 	status = smb2_create(tree, mem_ctx, &create);
-	torture_assert_goto(tctx, ret == true, ret, done,
-			    "smb2_create failed\n");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
 	baseh = create.out.file.handle;
 
 	ZERO_STRUCT(create);
@@ -3686,8 +3686,8 @@ static bool test_afpinfo_all0(struct torture_context *tctx,
 	create.in.fname = sname;
 
 	status = smb2_create(tree, mem_ctx, &create);
-	torture_assert_goto(tctx, ret == true, ret, done,
-			    "smb2_create failed\n");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
 	h1 = create.out.file.handle;
 
 	status = smb2_util_write(tree, h1, infobuf, 0, AFP_INFO_SIZE);
