@@ -167,7 +167,7 @@ int main(int argc, const char *argv[])
 	const char *ctdb_base;
 	struct conf_context *conf;
 	const char *logging_location;
-	const char *t;
+	const char *test_mode;
 	bool ok;
 
 	/*
@@ -238,6 +238,8 @@ int main(int argc, const char *argv[])
 	 * Logging setup/options
 	 */
 
+	test_mode = getenv("CTDB_TEST_MODE");
+
 	/* Log to stderr (ignoring configuration) when running as interactive */
 	if (interactive) {
 		logging_location = "file:";
@@ -246,7 +248,7 @@ int main(int argc, const char *argv[])
 		logging_location = logging_conf_location(conf);
 	}
 
-	if (strcmp(logging_location, "syslog") != 0) {
+	if (strcmp(logging_location, "syslog") != 0 && test_mode == NULL) {
 		/* This can help when CTDB logging is misconfigured */
 		syslog(LOG_DAEMON|LOG_NOTICE,
 		       "CTDB logging to location %s",
@@ -363,8 +365,7 @@ int main(int argc, const char *argv[])
 	 * Testing and debug options
 	 */
 
-	t = getenv("CTDB_TEST_MODE");
-	if (t != NULL) {
+	if (test_mode != NULL) {
 		ctdb->do_setsched = false;
 		ctdb->do_checkpublicip = false;
 		fast_start = true;
