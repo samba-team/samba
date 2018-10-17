@@ -4406,9 +4406,7 @@ static bool fruit_must_handle_aio_stream(struct fio *fio)
 		return false;
 	};
 
-	if ((fio->type == ADOUBLE_META) &&
-	    (fio->config->meta == FRUIT_META_NETATALK))
-	{
+	if (fio->type == ADOUBLE_META) {
 		return true;
 	}
 
