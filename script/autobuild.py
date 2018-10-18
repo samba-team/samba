@@ -47,7 +47,6 @@ builddirs = {
     "samba-libs-py3": ".",
     "samba-static": ".",
     "samba-none-env": ".",
-    "samba-none-env-py3": ".",
     "samba-ad-dc": ".",
     "samba-ad-dc-py3": ".",
     "samba-ad-dc-2": ".",
