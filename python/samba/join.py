@@ -1443,6 +1443,10 @@ class DCJoinContext(object):
                 print("Join failed - cleaning up")
             except IOError:
                 pass
+
+            # cleanup the failed join (checking we still have a live LDB
+            # connection to the remote DC first)
+            ctx.refresh_ldb_connection()
             ctx.cleanup_old_join()
             raise
 
