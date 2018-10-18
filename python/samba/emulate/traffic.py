@@ -1779,7 +1779,7 @@ def generate_users_and_groups(ldb, instance_id, password,
                               group_memberships):
     """Generate the required users and groups, allocating the users to
        those groups."""
-    assignments = []
+    memberships_added = 0
     groups_added  = 0
 
     create_ou(ldb, instance_id)
@@ -1793,13 +1793,14 @@ def generate_users_and_groups(ldb, instance_id, password,
 
     if group_memberships > 0:
         print("Assigning users to groups", file=sys.stderr)
-        assignments = assign_groups(number_of_groups,
-                                    groups_added,
-                                    number_of_users,
-                                    users_added,
-                                    group_memberships)
+        assignments = GroupAssignments(number_of_groups,
+                                       groups_added,
+                                       number_of_users,
+                                       users_added,
+                                       group_memberships)
         print("Adding users to groups", file=sys.stderr)
-        add_users_to_groups(ldb, instance_id, assignments)
+        add_users_to_groups(ldb, instance_id, assignments.assignments)
+        memberships_added = assignments.total()
 
     if (groups_added > 0 and users_added == 0 and
        number_of_groups != groups_added):
@@ -1807,67 +1808,76 @@ def generate_users_and_groups(ldb, instance_id, password,
               file=sys.stderr)
 
     print(("Added %d users, %d groups and %d group memberships" %
-           (users_added, groups_added, len(assignments))),
+           (users_added, groups_added, memberships_added)),
           file=sys.stderr)
 
 
-def assign_groups(number_of_groups,
-                  groups_added,
-                  number_of_users,
-                  users_added,
-                  group_memberships):
-    """Allocate users to groups.
+class GroupAssignments(object):
+    def __init__(self, number_of_groups, groups_added, number_of_users,
+                 users_added, group_memberships):
+        self.assignments = self.assign_groups(number_of_groups,
+                                              groups_added,
+                                              number_of_users,
+                                              users_added,
+                                              group_memberships)
 
-    The intention is to have a few users that belong to most groups, while
-    the majority of users belong to a few groups.
+    def assign_groups(self, number_of_groups, groups_added, number_of_users,
+                      users_added, group_memberships):
+        """Allocate users to groups.
 
-    A few groups will contain most users, with the remaining only having a
-    few users.
-    """
+        The intention is to have a few users that belong to most groups, while
+        the majority of users belong to a few groups.
 
-    def generate_user_distribution(n):
-        """Probability distribution of a user belonging to a group.
+        A few groups will contain most users, with the remaining only having a
+        few users.
         """
-        dist = []
-        for x in range(1, n + 1):
-            p = 1 / (x + 0.001)
-            dist.append(p)
-        return dist
 
-    def generate_group_distribution(n):
-        """Probability distribution of a group containing a user."""
-        dist = []
-        for x in range(1, n + 1):
-            p = 1 / (x**1.3)
-            dist.append(p)
-        return dist
+        def generate_user_distribution(n):
+            """Probability distribution of a user belonging to a group.
+            """
+            dist = []
+            for x in range(1, n + 1):
+                p = 1 / (x + 0.001)
+                dist.append(p)
+            return dist
 
-    assignments = set()
-    if group_memberships <= 0:
+        def generate_group_distribution(n):
+            """Probability distribution of a group containing a user."""
+            dist = []
+            for x in range(1, n + 1):
+                p = 1 / (x**1.3)
+                dist.append(p)
+            return dist
+
+        assignments = set()
+        if group_memberships <= 0:
+            return assignments
+
+        group_dist = generate_group_distribution(number_of_groups)
+        user_dist  = generate_user_distribution(number_of_users)
+
+        # Calculate the number of group menberships required
+        group_memberships = math.ceil(
+            float(group_memberships) *
+            (float(users_added) / float(number_of_users)))
+
+        existing_users  = number_of_users  - users_added  - 1
+        existing_groups = number_of_groups - groups_added - 1
+        while len(assignments) < group_memberships:
+            user        = random.randint(0, number_of_users - 1)
+            group       = random.randint(0, number_of_groups - 1)
+            probability = group_dist[group] * user_dist[user]
+
+            if ((random.random() < probability * 10000) and
+               (group > existing_groups or user > existing_users)):
+                # the + 1 converts the array index to the corresponding
+                # group or user number
+                assignments.add(((user + 1), (group + 1)))
+
         return assignments
 
-    group_dist = generate_group_distribution(number_of_groups)
-    user_dist  = generate_user_distribution(number_of_users)
-
-    # Calculate the number of group menberships required
-    group_memberships = math.ceil(
-        float(group_memberships) *
-        (float(users_added) / float(number_of_users)))
-
-    existing_users  = number_of_users  - users_added  - 1
-    existing_groups = number_of_groups - groups_added - 1
-    while len(assignments) < group_memberships:
-        user        = random.randint(0, number_of_users - 1)
-        group       = random.randint(0, number_of_groups - 1)
-        probability = group_dist[group] * user_dist[user]
-
-        if ((random.random() < probability * 10000) and
-           (group > existing_groups or user > existing_users)):
-            # the + 1 converts the array index to the corresponding
-            # group or user number
-            assignments.add(((user + 1), (group + 1)))
-
-    return assignments
+    def total(self):
+        return len(self.assignments)
 
 
 def add_users_to_groups(db, instance_id, assignments):
