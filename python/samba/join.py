@@ -112,9 +112,9 @@ class DCJoinContext(object):
             ctx.site = DEFAULTSITE
 
         try:
-            ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL, attrs=["dn"])
-        except ldb.LdbError as e4:
-            (enum, estr) = e4.args
+            ctx.samdb.search(scope=ldb.SCOPE_BASE, attrs=[])
+        except ldb.LdbError as e:
+            (enum, estr) = e.args
             raise DCJoinException(estr)
 
         ctx.base_dn = str(ctx.samdb.get_default_basedn())
