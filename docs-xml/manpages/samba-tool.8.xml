@@ -644,6 +644,11 @@
 	<para>Show group object and it's attributes.</para>
 </refsect3>
 
+<refsect3>
+	<title>group stats [options]</title>
+	<para>Show statistics for overall groups and group memberships.</para>
+</refsect3>
+
 <refsect2>
 	<title>ldapcmp <replaceable>URL1</replaceable> <replaceable>URL2</replaceable> <replaceable>domain|configuration|schema|dnsdomain|dnsforest</replaceable> [options] </title>
 	<para>Compare two LDAP databases.</para>

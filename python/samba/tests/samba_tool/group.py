@@ -208,3 +208,21 @@ class GroupCmdTestCase(SambaToolCmdTest):
             return grouplist[0]
         else:
             return None
+
+    def test_stats(self):
+        (result, out, err) = self.runsubcmd("group", "stats",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running stats")
+
+        # sanity-check the command reports 'total groups' correctly
+        search_filter = "(objectClass=group)"
+        grouplist = self.samdb.search(base=self.samdb.domain_dn(),
+                                      scope=ldb.SCOPE_SUBTREE,
+                                      expression=search_filter,
+                                      attrs=[])
+
+        total_groups = len(grouplist)
+        self.assertTrue("Total groups: {0}".format(total_groups) in out,
+                        "Total groups not reported correctly")

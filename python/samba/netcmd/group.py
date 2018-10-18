@@ -34,6 +34,7 @@ from samba.dsdb import (
     GTYPE_DISTRIBUTION_GLOBAL_GROUP,
     GTYPE_DISTRIBUTION_UNIVERSAL_GROUP,
 )
+from collections import defaultdict
 
 security_group = dict({"Builtin": GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
                        "Domain": GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
@@ -587,6 +588,102 @@ Example3 shows how to display a users objectGUID and member attributes.
             self.outf.write(user_ldif)
 
 
+class cmd_group_stats(Command):
+    """Summary statistics about group memberships."""
+
+    synopsis = "%prog [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+    ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    def num_in_range(self, range_min, range_max, group_freqs):
+        total_count = 0
+        for members, count in group_freqs.items():
+            if range_min <= members and members <= range_max:
+                total_count += count
+
+        return total_count
+
+    def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        domain_dn = samdb.domain_dn()
+        res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
+                           expression=("(objectClass=group)"),
+                           attrs=["samaccountname", "member"])
+
+        # first count up how many members each group has
+        group_assignments = {}
+        total_memberships = 0
+
+        for msg in res:
+            name = str(msg.get("samaccountname"))
+            memberships = len(msg.get("member", default=[]))
+            group_assignments[name] = memberships
+            total_memberships += memberships
+
+        self.outf.write("Group membership statistics*\n")
+        self.outf.write("-------------------------------------------------\n")
+        self.outf.write("Total groups: {0}\n".format(res.count))
+        self.outf.write("Total memberships: {0}\n".format(total_memberships))
+        average = float(total_memberships / res.count)
+        self.outf.write("Average members per group: %.2f\n" % average)
+        group_names = list(group_assignments.keys())
+        group_members = list(group_assignments.values())
+        # note that some builtin groups have no members, so this doesn't tell us much
+        idx = group_members.index(min(group_members))
+        self.outf.write("Min members: {0} ({1})\n".format(group_members[idx],
+                                                          group_names[idx]))
+        idx = group_members.index(max(group_members))
+        max_members = group_members[idx]
+        self.outf.write("Max members: {0} ({1})\n\n".format(max_members,
+                                                            group_names[idx]))
+
+        # convert this to the frequency of group membership, i.e. how many
+        # groups have 5 members, how many have 6 members, etc
+        group_freqs = defaultdict(int)
+        for group, count in group_assignments.items():
+            group_freqs[count] += 1
+
+        # now squash this down even further, so that we just display the number
+        # of groups that fall into one of the following membership bands
+        bands = [(0, 1), (2, 4), (5, 9), (10, 14), (15, 19), (20, 24), (25, 29),
+                 (30, 39), (40, 49), (50, 59), (60, 69), (70, 79), (80, 89),
+                 (90, 99), (100, 149), (150, 199), (200, 249), (250, 299),
+                 (300, 399), (400, 499), (500, 999), (1000, 1999),
+                 (2000, 2999), (3000, 3999), (4000, 4999), (5000, 9999),
+                 (10000, max_members)]
+
+        self.outf.write("Members        Number of Groups\n")
+        self.outf.write("-------------------------------------------------\n")
+
+        for band in bands:
+            band_start = band[0]
+            band_end = band[1]
+            if band_start > max_members:
+                break
+
+            num_groups = self.num_in_range(band_start, band_end, group_freqs)
+
+            if num_groups != 0:
+                band_str = "{0}-{1}".format(band_start, band_end)
+                self.outf.write("%13s  %u\n" % (band_str, num_groups))
+
+        self.outf.write("\n* Note this does not include nested group memberships\n")
+
+
 class cmd_group(SuperCommand):
     """Group management."""
 
@@ -599,3 +696,4 @@ class cmd_group(SuperCommand):
     subcommands["listmembers"] = cmd_group_list_members()
     subcommands["move"] = cmd_group_move()
     subcommands["show"] = cmd_group_show()
+    subcommands["stats"] = cmd_group_stats()
