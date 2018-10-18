@@ -1302,12 +1302,13 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 	for (i = 0; i < results; i++) {
-		struct dom_sid *sid;
+		struct dom_sid *objectsid;
+		uint32_t rid;
 		struct ldb_result *rec;
 		const uint32_t idx = *r->in.resume_handle + i;
 		int ret;
+		NTSTATUS status;
 		const char *name = NULL;
-
 		resume_handle++;
 		/*
 		 * Read an object from disk using the GUID as the key
@@ -1336,15 +1337,36 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 			clear_guid_cache(cache);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		sid = samdb_result_dom_sid(mem_ctx, rec->msgs[0], "objectSID");
-		if (sid == NULL) {
+
+		objectsid = samdb_result_dom_sid(mem_ctx,
+						 rec->msgs[0],
+						 "objectSID");
+		if (objectsid == NULL) {
 			char *guid_str =
 			    GUID_string(mem_ctx, &cache->entries[idx]);
 			DBG_WARNING("objectSID for GUID [%s] not found\n",
 				    guid_str);
 			continue;
 		}
-		entries[count].idx = sid->sub_auths[sid->num_auths - 1];
+		status = dom_sid_split_rid(NULL,
+					   objectsid,
+					   NULL,
+					   &rid);
+		if (!NT_STATUS_IS_OK(status)) {
+			struct dom_sid_buf sid_buf;
+			char *sid_str =
+				dom_sid_str_buf(objectsid,
+						&sid_buf);
+			struct GUID_txt_buf guid_buf;
+			char *guid_str =
+				GUID_buf_string(&cache->entries[idx],
+						&guid_buf);
+			DBG_WARNING("objectSID [%s] for GUID [%s] invalid\n",
+				    sid_str, guid_str);
+			continue;
+		}
+
+		entries[count].idx = rid;
 		name = ldb_msg_find_attr_as_string(
 		    rec->msgs[0], "sAMAccountName", "");
 		entries[count].name.string = talloc_strdup(entries, name);
