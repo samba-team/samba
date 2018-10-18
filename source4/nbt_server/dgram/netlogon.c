@@ -163,12 +163,14 @@ static NTSTATUS nbtd_netlogon_samlogon(
 		netlogon->req.logon.nt_version, nbtsrv->task->lp_ctx,
 		&response->data.samlogon, false);
 	if (!NT_STATUS_IS_OK(status)) {
-		char buf[DOM_SID_STR_BUFLEN];
-		dom_sid_string_buf(sid, buf, sizeof(buf));
+		struct dom_sid_buf buf;
 
 		DBG_NOTICE("NBT netlogon query failed domain=%s sid=%s "
-			   "version=%d - %s\n", dst_name->name, buf,
-			   netlogon->req.logon.nt_version, nt_errstr(status));
+			   "version=%d - %s\n",
+			   dst_name->name,
+			   dom_sid_str_buf(sid, &buf),
+			   netlogon->req.logon.nt_version,
+			   nt_errstr(status));
 		TALLOC_FREE(reply_mailslot);
 		TALLOC_FREE(response);
 		return status;
