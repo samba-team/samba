@@ -1230,7 +1230,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	int res, ret = -1;
 	struct tevent_fd *fde;
 
-	become_daemon(do_fork, !do_fork, !do_fork);
+	become_daemon(do_fork, !do_fork, false);
 
 	ignore_signal(SIGPIPE);
 	ignore_signal(SIGUSR1);
