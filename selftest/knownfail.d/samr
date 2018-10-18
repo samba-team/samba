@@ -1,2 +1,0 @@
-^samba.tests.dcerpc.sam.samba.tests.dcerpc.sam.SamrTests.test_EnumDomainUsers
-^samba.tests.dcerpc.sam.python3.samba.tests.dcerpc.sam.SamrTests.test_EnumDomainUsers

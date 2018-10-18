@@ -1516,12 +1516,18 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
-	int i, ldb_cnt;
-	uint32_t first, count;
+	uint32_t i;
+	uint32_t count;
+	uint32_t results;
+	uint32_t max_entries;
+	uint32_t remaining_entries;
+	uint32_t resume_handle;
 	struct samr_SamEntry *entries;
 	const char * const attrs[] = { "objectSid", "sAMAccountName",
 		"userAccountControl", NULL };
+	const char *const cache_attrs[] = {"objectSid", "objectGUID", NULL};
 	struct samr_SamArray *sam;
+	struct samr_guid_cache *cache = NULL;
 
 	*r->out.resume_handle = 0;
 	*r->out.sam = NULL;
@@ -1530,73 +1536,174 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
 	d_state = h->data;
+	cache = &d_state->guid_caches[SAMR_ENUM_DOMAIN_USERS_CACHE];
 
-	/* search for all domain users in this domain. This could possibly be
-	   cached and resumed on resume_key */
-	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
-				      d_state->domain_dn,
-				      &res, attrs,
-				      d_state->domain_sid,
-				      "(objectClass=user)");
-	if (ldb_cnt < 0) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	/* convert to SamEntry format */
-	entries = talloc_array(mem_ctx, struct samr_SamEntry, ldb_cnt);
-	if (!entries) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	count = 0;
-
-	for (i=0;i<ldb_cnt;i++) {
-		/* Check if a mask has been requested */
-		if (r->in.acct_flags
-		    && ((samdb_result_acct_flags(res[i], NULL) & r->in.acct_flags) == 0)) {
-			continue;
+	/*
+	 * If the resume_handle is zero, query the database and cache the
+	 * matching GUID's
+	 */
+	if (*r->in.resume_handle == 0) {
+		NTSTATUS status;
+		int ldb_cnt;
+		clear_guid_cache(cache);
+		/*
+		 * search for all domain users in this domain.
+		 */
+		ldb_cnt = samdb_search_domain(d_state->sam_ctx,
+					      mem_ctx,
+					      d_state->domain_dn,
+					      &res,
+					      cache_attrs,
+					      d_state->domain_sid,
+					      "(objectClass=user)");
+		if (ldb_cnt < 0) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		entries[count].idx = samdb_result_rid_from_sid(mem_ctx, res[i],
-							       "objectSid", 0);
-		entries[count].name.string = ldb_msg_find_attr_as_string(res[i],
-								 "sAMAccountName", "");
-		count += 1;
+		/*
+		 * Sort the results into RID order, while the spec states there
+		 * is no order, Windows appears to sort the results by RID and
+		 * so it is possible that there are clients that depend on
+		 * this ordering
+		 */
+		TYPESAFE_QSORT(res, ldb_cnt, compare_msgRid);
+
+		/*
+		 * cache the sorted GUID's
+		 */
+		status = load_guid_cache(cache, d_state, ldb_cnt, res);
+		TALLOC_FREE(res);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		cache->handle = 0;
 	}
 
-	/* sort the results by rid */
-	TYPESAFE_QSORT(entries, count, compare_SamEntry);
+	/*
+	 * If the resume handle is out of range we return an empty response
+	 * and invalidate the cache.
+	 *
+	 * From the specification:
+	 * Servers SHOULD validate that EnumerationContext is an expected
+	 * value for the server's implementation. Windows does NOT validate
+	 * the input, though the result of malformed information merely results
+	 * in inconsistent output to the client.
+	 */
+	if (*r->in.resume_handle >= cache->size) {
+		clear_guid_cache(cache);
+		sam = talloc(mem_ctx, struct samr_SamArray);
+		if (!sam) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		sam->entries = NULL;
+		sam->count = 0;
 
-	/* find the first entry to return */
-	for (first=0;
-	     first<count && entries[first].idx <= *r->in.resume_handle;
-	     first++) ;
-
-	/* return the rest, limit by max_size. Note that we
-	   use the w2k3 element size value of 54 */
-	*r->out.num_entries = count - first;
-	*r->out.num_entries = MIN(*r->out.num_entries,
-				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
-
-	sam = talloc(mem_ctx, struct samr_SamArray);
-	if (!sam) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	sam->entries = entries+first;
-	sam->count = *r->out.num_entries;
-
-	*r->out.sam = sam;
-
-	if (first == count) {
+		*r->out.sam = sam;
+		*r->out.resume_handle = 0;
 		return NT_STATUS_OK;
 	}
 
-	if (*r->out.num_entries < count - first) {
-		*r->out.resume_handle = entries[first+*r->out.num_entries-1].idx;
-		return STATUS_MORE_ENTRIES;
+	/*
+	 * Calculate the number of entries to return limit by max_size.
+	 * Note that we use the w2k3 element size value of 54
+	 */
+	max_entries = 1 + (r->in.max_size / SAMR_ENUM_USERS_MULTIPLIER);
+	remaining_entries = cache->size - *r->in.resume_handle;
+	results = MIN(remaining_entries, max_entries);
+
+	/*
+	 * Process the list of result GUID's.
+	 * Read the details of each object and populate the Entries
+	 * for the current level.
+	 */
+	count = 0;
+	resume_handle = *r->in.resume_handle;
+	entries = talloc_array(mem_ctx, struct samr_SamEntry, results);
+	if (entries == NULL) {
+		clear_guid_cache(cache);
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i = 0; i < results; i++) {
+		struct dom_sid *sid;
+		struct ldb_result *rec;
+		const uint32_t idx = *r->in.resume_handle + i;
+		int ret;
+		const char *name = NULL;
+
+		resume_handle++;
+		/*
+		 * Read an object from disk using the GUID as the key
+		 *
+		 * If the object can not be read, or it does not have a SID
+		 * it is ignored.
+		 *
+		 * As a consequence of this, if all the remaining GUID's
+		 * have been deleted an empty result will be returned.
+		 * i.e. even if the previous call returned a non zero
+		 * resume_handle it is possible for no results to be returned.
+		 *
+		 */
+		ret = dsdb_search_by_dn_guid(d_state->sam_ctx,
+					     mem_ctx,
+					     &rec,
+					     &cache->entries[idx],
+					     attrs,
+					     0);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			char *guid_str =
+			    GUID_string(mem_ctx, &cache->entries[idx]);
+			DBG_WARNING("GUID [%s] not found\n", guid_str);
+			continue;
+		} else if (ret != LDB_SUCCESS) {
+			clear_guid_cache(cache);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		sid = samdb_result_dom_sid(mem_ctx, rec->msgs[0], "objectSID");
+		if (sid == NULL) {
+			char *guid_str =
+			    GUID_string(mem_ctx, &cache->entries[idx]);
+			DBG_WARNING("objectSID for GUID [%s] not found\n",
+				    guid_str);
+			continue;
+		}
+		if (r->in.acct_flags &&
+		    ((samdb_result_acct_flags(rec->msgs[0], NULL) &
+		      r->in.acct_flags) == 0)) {
+			continue;
+		}
+		entries[count].idx = samdb_result_rid_from_sid(
+		    mem_ctx, rec->msgs[0], "objectSid", 0);
+		name = ldb_msg_find_attr_as_string(
+		    rec->msgs[0], "sAMAccountName", "");
+		entries[count].name.string = talloc_strdup(entries, name);
+		count++;
 	}
 
-	return NT_STATUS_OK;
+	sam = talloc(mem_ctx, struct samr_SamArray);
+	if (!sam) {
+		clear_guid_cache(cache);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sam->entries = entries;
+	sam->count = count;
+
+	*r->out.sam = sam;
+	*r->out.resume_handle = resume_handle;
+	*r->out.num_entries = count;
+
+	/*
+	 * Signal no more results by returning zero resume handle,
+	 * the cache is also cleared at this point
+	 */
+	if (*r->out.resume_handle >= cache->size) {
+		*r->out.resume_handle = 0;
+		clear_guid_cache(cache);
+		return NT_STATUS_OK;
+	}
+	/*
+	 * There are more results to be returned.
+	 */
+	return STATUS_MORE_ENTRIES;
 }
 
 
