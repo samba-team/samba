@@ -65,9 +65,8 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 
 	if (protocol >= PROTOCOL_SMB2_24) {
 		struct aes_cmac_128_context ctx;
-		uint8_t key[AES_BLOCK_SIZE];
+		uint8_t key[AES_BLOCK_SIZE] = {0};
 
-		ZERO_STRUCT(key);
 		memcpy(key, signing_key.data, MIN(signing_key.length, 16));
 
 		aes_cmac_128_init(&ctx, key);
@@ -137,9 +136,8 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 
 	if (protocol >= PROTOCOL_SMB2_24) {
 		struct aes_cmac_128_context ctx;
-		uint8_t key[AES_BLOCK_SIZE];
+		uint8_t key[AES_BLOCK_SIZE] = {0};
 
-		ZERO_STRUCT(key);
 		memcpy(key, signing_key.data, MIN(signing_key.length, 16));
 
 		aes_cmac_128_init(&ctx, key);
