@@ -463,9 +463,10 @@ static int net_cache_samlogon_show(struct net_context *c,
 	}
 
 	for (i = 0; i < num_user_sids; i++) {
-		char buf[DOM_SID_STR_BUFLEN];
-		dom_sid_string_buf(&user_sids[i], buf, sizeof(buf));
-		d_printf("SID %2" PRIu32 ": %s\n", i, buf);
+		struct dom_sid_buf buf;
+		d_printf("SID %2" PRIu32 ": %s\n",
+			 i,
+			 dom_sid_str_buf(&user_sids[i], &buf));
 	}
 
 	TALLOC_FREE(user_sids);
