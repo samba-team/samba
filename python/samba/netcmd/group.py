@@ -323,37 +323,41 @@ class cmd_group_list(Command):
 
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
+        attrs=["samaccountname"]
 
+        if verbose:
+            attrs += ["grouptype", "member"]
         domain_dn = samdb.domain_dn()
         res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=("(objectClass=group)"),
-                           attrs=["samaccountname", "grouptype"])
+                           attrs=attrs)
         if (len(res) == 0):
             return
 
         if verbose:
-            self.outf.write("Group Name                                  Group Type      Group Scope\n")
-            self.outf.write("-----------------------------------------------------------------------------\n")
+            self.outf.write("Group Name                                  Group Type      Group Scope  Members\n")
+            self.outf.write("--------------------------------------------------------------------------------\n")
 
             for msg in res:
                 self.outf.write("%-44s" % msg.get("samaccountname", idx=0))
                 hgtype = hex(int("%s" % msg["grouptype"]) & 0x00000000FFFFFFFF)
                 if (hgtype == hex(int(security_group.get("Builtin")))):
-                    self.outf.write("Security         Builtin\n")
+                    self.outf.write("Security         Builtin  ")
                 elif (hgtype == hex(int(security_group.get("Domain")))):
-                    self.outf.write("Security         Domain\n")
+                    self.outf.write("Security         Domain   ")
                 elif (hgtype == hex(int(security_group.get("Global")))):
-                    self.outf.write("Security         Global\n")
+                    self.outf.write("Security         Global   ")
                 elif (hgtype == hex(int(security_group.get("Universal")))):
-                    self.outf.write("Security         Universal\n")
+                    self.outf.write("Security         Universal")
                 elif (hgtype == hex(int(distribution_group.get("Global")))):
-                    self.outf.write("Distribution     Global\n")
+                    self.outf.write("Distribution     Global   ")
                 elif (hgtype == hex(int(distribution_group.get("Domain")))):
-                    self.outf.write("Distribution     Domain\n")
+                    self.outf.write("Distribution     Domain   ")
                 elif (hgtype == hex(int(distribution_group.get("Universal")))):
-                    self.outf.write("Distribution     Universal\n")
+                    self.outf.write("Distribution     Universal")
                 else:
-                    self.outf.write("\n")
+                    self.outf.write("                          ")
+                self.outf.write("   %u\n" % len(msg.get("member", default=[])))
         else:
             for msg in res:
                 self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
