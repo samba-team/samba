@@ -1071,13 +1071,12 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	sid_filter = talloc_strdup(mem_ctx, "");
 
 	for (i = 0; sid_filter && i < num_sids; i++) {
-		char sid_buf[DOM_SID_STR_BUFLEN] = {0,};
+		struct dom_sid_buf sid_buf;
 
-		dom_sid_string_buf(&sid_array[i], sid_buf, sizeof(sid_buf));
-
-		sid_filter = talloc_asprintf_append(sid_filter,
-						    "(msDS-PSOAppliesTo=<SID=%s>)",
-						    sid_buf);
+		sid_filter = talloc_asprintf_append(
+			sid_filter,
+			"(msDS-PSOAppliesTo=<SID=%s>)",
+			dom_sid_str_buf(&sid_array[i], &sid_buf));
 	}
 
 	if (sid_filter == NULL) {
