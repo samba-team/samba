@@ -578,14 +578,13 @@ static void log_authentication_event_human_readable(
 	local = tsocket_address_string(ui->local_host, frame);
 
 	if (NT_STATUS_IS_OK(status)) {
-		char sid_buf[DOM_SID_STR_BUFLEN];
+		struct dom_sid_buf sid_buf;
 
-		dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
 		logon_line = talloc_asprintf(frame,
 					     " became [%s]\\[%s] [%s].",
 					     log_escape(frame, domain_name),
 					     log_escape(frame, account_name),
-					     sid_buf);
+					     dom_sid_str_buf(sid, &sid_buf));
 	} else {
 		logon_line = talloc_asprintf(
 				frame,
