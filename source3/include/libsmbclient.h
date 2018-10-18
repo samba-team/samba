@@ -78,6 +78,7 @@ extern "C" {
 #include <sys/statvfs.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <time.h>
 #include <utime.h>
 
 #define SMBC_BASE_FD        10000 /* smallest file descriptor returned */
