@@ -313,7 +313,7 @@ static int ldb_ldif_write_trace(struct ldb_context *ldb,
 
 	for (i=0;i<msg->num_elements;i++) {
 		const struct ldb_schema_attribute *a;
-		size_t namelen = strlen(msg->elements[i].name);
+		size_t namelen;
 
 		if (msg->elements[i].name == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
@@ -322,6 +322,7 @@ static int ldb_ldif_write_trace(struct ldb_context *ldb,
 			return -1;
 		}
 
+		namelen = strlen(msg->elements[i].name);
 		a = ldb_schema_attribute_by_name(ldb, msg->elements[i].name);
 
 		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
