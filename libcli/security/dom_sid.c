@@ -488,3 +488,13 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 	talloc_set_name_const(result, result);
 	return result;
 }
+
+char *dom_sid_str_buf(const struct dom_sid *sid, struct dom_sid_buf *dst)
+{
+	int ret;
+	ret = dom_sid_string_buf(sid, dst->buf, sizeof(dst->buf));
+	if ((ret < 0) || (ret >= sizeof(dst->buf))) {
+		strlcpy(dst->buf, "(INVALID SID)", sizeof(dst->buf));
+	}
+	return dst->buf;
+}

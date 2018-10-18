@@ -103,6 +103,8 @@ bool dom_sid_is_valid_account_domain(const struct dom_sid *sid);
 int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen);
 char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 
+struct dom_sid_buf { char buf[DOM_SID_STR_BUFLEN]; };
+char *dom_sid_str_buf(const struct dom_sid *sid, struct dom_sid_buf *dst);
 
 const char *sid_type_lookup(uint32_t sid_type);
 const struct security_token *get_system_token(void);
