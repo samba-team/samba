@@ -51,9 +51,13 @@
 	<listitem>
 	  <para>
 	    Enable interactive mode.  This will make ctdbd run in the
-	    foreground and not detach from the terminal.  By default
-	    ctdbd will detach itself and run in the background as a
-	    daemon.
+	    foreground and not detach from the terminal.  In this mode
+	    ctdbd will log to stderr.
+	  </para>
+	  <para>
+	    By default ctdbd will detach itself and run in the
+	    background as a daemon, logging to the configured
+	    destination.
 	  </para>
 	</listitem>
       </varlistentry>

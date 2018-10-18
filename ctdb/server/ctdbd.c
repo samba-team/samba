@@ -157,7 +157,7 @@ int main(int argc, const char *argv[])
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0,
-		  "don't fork", NULL },
+		  "don't fork, log to stderr", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
