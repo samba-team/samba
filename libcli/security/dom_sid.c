@@ -20,7 +20,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/data_blob.h"
+#include "system/locale.h"
+#include "lib/util/debug.h"
 #include "librpc/gen_ndr/security.h"
 #include "dom_sid.h"
 
