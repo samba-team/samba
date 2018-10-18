@@ -49,6 +49,7 @@
 #include "passdb.h"
 #include "messages.h"
 #include "cmdline_contexts.h"
+#include "lib/gencache.h"
 
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"

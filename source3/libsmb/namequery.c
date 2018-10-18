@@ -30,6 +30,7 @@
 #include "libsmb/unexpected.h"
 #include "../libcli/nbt/libnbt.h"
 #include "libads/kerberos_proto.h"
+#include "lib/gencache.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;

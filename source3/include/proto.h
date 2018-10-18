@@ -80,8 +80,6 @@ int map_errno_from_nt_status(NTSTATUS status);
 
 struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf);
 
-#include "lib/gencache.h"
-
 /* The following definitions come from lib/interface.c  */
 
 bool ismyaddr(const struct sockaddr *ip);

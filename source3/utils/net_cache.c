@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "libcli/security/dom_sid.h"
 #include "lib/util/strv.h"
+#include "lib/gencache.h"
 
 /**
  * @file net_cache.c

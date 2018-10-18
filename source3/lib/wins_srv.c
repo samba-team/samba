@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/gencache.h"
 
 /*
   This is pretty much a complete rewrite of the earlier code. The main

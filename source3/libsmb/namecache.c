@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/gencache.h"
 
 #define NBTKEY_FMT  "NBT/%s#%02X"
 

@@ -36,6 +36,7 @@
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/util_process.h"
 #include "lib/dbwrap/dbwrap_ctdb.h"
+#include "lib/gencache.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>

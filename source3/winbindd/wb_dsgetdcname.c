@@ -21,6 +21,7 @@
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "lib/gencache.h"
 
 struct wb_dsgetdcname_state {
 	struct netr_DsRGetDCNameInfo *dcinfo;

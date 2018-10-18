@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/gencache.h"
 #include "system/filesys.h"
 #include "system/glob.h"
 #include "util_tdb.h"

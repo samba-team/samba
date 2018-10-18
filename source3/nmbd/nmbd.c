@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "../lib/util/pidfile.h"
 #include "util_cluster.h"
+#include "lib/gencache.h"
 
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;

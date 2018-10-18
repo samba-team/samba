@@ -25,6 +25,7 @@
 
 
 #include "includes.h"
+#include "lib/gencache.h"
 
 /**
  * @file

@@ -46,6 +46,7 @@
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "passdb.h"
 #include "lib/util/tevent_req_profile.h"
+#include "lib/gencache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

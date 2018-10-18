@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libads/sitename_cache.h"
+#include "lib/gencache.h"
 
 /****************************************************************************
  Store and fetch the AD client sitename.

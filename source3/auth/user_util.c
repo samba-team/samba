@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "auth.h"
+#include "lib/gencache.h"
 
 #ifdef HAVE_NETGROUP
 /* rpc/xdr.h uses TRUE and FALSE */

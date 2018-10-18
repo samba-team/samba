@@ -58,6 +58,7 @@
 #include "rpc_client/cli_winreg_spoolss.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "rpc_server/spoolss/srv_spoolss_handle.h"
+#include "lib/gencache.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \

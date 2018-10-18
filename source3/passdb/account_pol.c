@@ -26,6 +26,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "lib/privileges.h"
+#include "lib/gencache.h"
 
 static struct db_context *db;
 

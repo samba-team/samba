@@ -28,6 +28,7 @@
 #include "libads/cldap.h"
 #include "../lib/addns/dnsquery.h"
 #include "libsmb/clidgram.h"
+#include "lib/gencache.h"
 
 /* 15 minutes */
 #define DSGETDCNAME_CACHE_TTL	60*15

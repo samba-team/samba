@@ -21,6 +21,7 @@
 #include "torture/proto.h"
 #include "lib/namemap_cache.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/gencache.h"
 
 static const struct dom_sid domsid = {
 	1, 4, {0,0,0,0,0,5}, {21, 123, 456, 789}

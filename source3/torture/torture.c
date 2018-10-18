@@ -45,6 +45,7 @@
 #include "lib/util/base64.h"
 #include "lib/util/time.h"
 #include "lib/crypto/md5.h"
+#include "lib/gencache.h"
 
 extern char *optarg;
 extern int optind;

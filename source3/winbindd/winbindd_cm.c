@@ -84,6 +84,7 @@
 #include "rpc_server/rpc_ncacn_np.h"
 #include "auth/credentials/credentials.h"
 #include "lib/param/param.h"
+#include "lib/gencache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
