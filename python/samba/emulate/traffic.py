@@ -156,9 +156,18 @@ class FakePacketError(Exception):
 
 class Packet(object):
     """Details of a network packet"""
+    __slots__ = ('timestamp',
+                 'ip_protocol',
+                 'stream_number',
+                 'src',
+                 'dest',
+                 'protocol',
+                 'opcode',
+                 'desc',
+                 'extra',
+                 'endpoints')
     def __init__(self, timestamp, ip_protocol, stream_number, src, dest,
                  protocol, opcode, desc, extra):
-
         self.timestamp = timestamp
         self.ip_protocol = ip_protocol
         self.stream_number = stream_number
