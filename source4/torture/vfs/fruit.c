@@ -2111,6 +2111,11 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 		":com.apple.metadata" "\xef\x80\xa2" "_kMDItemUserTags:$DATA",
 		":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
 	};
+	bool is_osx = torture_setting_bool(tctx, "osx", false);
+
+	if (is_osx) {
+		torture_skip(tctx, "Test only works with Samba\n");
+	}
 
 	smb2_deltree(tree, BASEDIR);
 
@@ -2185,6 +2190,11 @@ static bool test_adouble_conversion_wo_xattr(struct torture_context *tctx,
 	union smb_search_data *d;
 	const char *data = "This resource fork intentionally left blank";
 	size_t datalen = strlen(data);
+	bool is_osx = torture_setting_bool(tctx, "osx", false);
+
+	if (is_osx) {
+		torture_skip(tctx, "Test only works with Samba\n");
+	}
 
 	smb2_deltree(tree, BASEDIR);
 
@@ -4742,6 +4752,11 @@ static bool test_nfs_aces(struct torture_context *tctx,
 	struct security_descriptor *psd = NULL;
 	NTSTATUS status;
 	bool ret = true;
+	bool is_osx = torture_setting_bool(tctx, "osx", false);
+
+	if (is_osx) {
+		torture_skip(tctx, "Test only works with Samba\n");
+	}
 
 	ret = enable_aapl(tctx, tree);
 	torture_assert(tctx, ret == true, "enable_aapl failed");
