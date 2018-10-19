@@ -1014,10 +1014,6 @@ static bool ad_convert_xattr(struct adouble *ad,
 		return true;
 	}
 
-	if (ad->adx_header.adx_num_attrs == 0) {
-		return true;
-	}
-
 	if (string_replace_cmaps == NULL) {
 		const char **mappings = NULL;
 
