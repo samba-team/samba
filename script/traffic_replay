@@ -359,7 +359,7 @@ def main():
 
         exit(0)
 
-    traffic.replay(traffic.seq_to_conversations(conversations),
+    traffic.replay(conversations,
                    host,
                    lp=lp,
                    creds=creds,
