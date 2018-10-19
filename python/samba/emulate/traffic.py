@@ -860,11 +860,14 @@ class Conversation(object):
             self.packets.append(p)
 
     def add_short_packet(self, timestamp, protocol, opcode, extra,
-                         client=True):
+                         client=True, skip_unused_packets=True):
         """Create a packet from a timestamp, and 'protocol:opcode' pair, and a
         (possibly empty) list of extra data. If client is True, assume
         this packet is from the client to the server.
         """
+        if skip_unused_packets and not is_a_real_packet(protocol, opcode):
+            return
+
         src, dest = self.guess_client_server()
         if not client:
             src, dest = dest, src
