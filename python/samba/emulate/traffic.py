@@ -25,7 +25,6 @@ import json
 import math
 import sys
 import signal
-import itertools
 
 from collections import OrderedDict, Counter, defaultdict, namedtuple
 from samba.emulate import traffic_packets
@@ -366,7 +365,6 @@ class ReplayContext(object):
         self.last_netlogon_bad        = False
         self.last_samlogon_bad        = False
         self.generate_ldap_search_tables()
-        self.next_conversation_id = itertools.count()
 
     def generate_ldap_search_tables(self):
         session = system_session()
@@ -789,14 +787,16 @@ class SamrContext(object):
 
 class Conversation(object):
     """Details of a converation between a simulated client and a server."""
-    conversation_id = None
-
-    def __init__(self, start_time=None, endpoints=None):
+    def __init__(self, start_time=None, endpoints=None, seq=(),
+                 conversation_id=None):
         self.start_time = start_time
         self.endpoints = endpoints
         self.packets = []
         self.msg = random_colour_print(endpoints)
         self.client_balance = 0.0
+        self.conversation_id = conversation_id
+        for p in seq:
+            self.add_short_packet(*p)
 
     def __cmp__(self, other):
         if self.start_time is None:
@@ -1078,11 +1078,11 @@ def ingest_summaries(files, dns_mode='count'):
 
     print("gathering packets into conversations", file=sys.stderr)
     conversations = OrderedDict()
-    for p in packets:
+    for i, p in enumerate(packets):
         p.timestamp -= start_time
         c = conversations.get(p.endpoints)
         if c is None:
-            c = Conversation()
+            c = Conversation(conversation_id=(i + 2))
             conversations[p.endpoints] = c
         c.add_packet(p)
 
@@ -1236,7 +1236,7 @@ class TrafficModel(object):
                                hard_stop=None, replay_speed=1):
         """Construct a individual converation from the model."""
 
-        c = Conversation(timestamp, (server, client))
+        c = Conversation(timestamp, (server, client), conversation_id=client)
 
         key = (NON_PACKET,) * (self.n - 1)
 
