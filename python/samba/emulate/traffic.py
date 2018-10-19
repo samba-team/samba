@@ -1534,6 +1534,7 @@ def replay(conversation_seq,
            accounts=None,
            dns_rate=0,
            duration=None,
+           stop_on_any_error=False,
            **kwargs):
 
     context = ReplayContext(server=host,
@@ -1606,6 +1607,8 @@ def replay(conversation_seq,
                     print(("process %d finished conversation %d;"
                            " %d to go" %
                            (pid, c, len(children))), file=sys.stderr)
+                if stop_on_any_error and status != 0:
+                    break
 
     except Exception:
         print("EXCEPTION in parent", file=sys.stderr)
