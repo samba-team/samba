@@ -361,7 +361,7 @@ int main(int argc, const char **argv)
 		ret = 0;
 	}
 
-	if (getenv("CTDB_TEST_MODE") != NULL) {
+	if (t != NULL) {
 		talloc_report_full(e_state->mem_ctx, stderr);
 	}
 
