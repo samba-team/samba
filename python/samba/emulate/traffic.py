@@ -126,14 +126,26 @@ def debug_lineno(*args):
     sys.stderr.flush()
 
 
-def random_colour_print():
-    """Return a function that prints a randomly coloured line to stderr"""
-    n = 18 + random.randrange(214)
-    prefix = "\033[38;5;%dm" % n
+def random_colour_print(seeds):
+    """Return a function that prints a coloured line to stderr. The colour
+    of the line depends on a sort of hash of the integer arguments."""
+    if seeds:
+        s = 214
+        for x in seeds:
+            s += 17
+            s *= x
+            s %= 214
+        prefix = "\033[38;5;%dm" % (18 + s)
 
-    def p(*args):
-        for a in args:
-            print("%s%s\033[00m" % (prefix, a), file=sys.stderr)
+        def p(*args):
+            if DEBUG_LEVEL > 0:
+                for a in args:
+                    print("%s%s\033[00m" % (prefix, a), file=sys.stderr)
+    else:
+        def p(*args):
+            if DEBUG_LEVEL > 0:
+                for a in args:
+                    print(a, file=sys.stderr)
 
     return p
 
@@ -770,7 +782,7 @@ class Conversation(object):
         self.start_time = start_time
         self.endpoints = endpoints
         self.packets = []
-        self.msg = random_colour_print()
+        self.msg = random_colour_print(endpoints)
         self.client_balance = 0.0
 
     def __cmp__(self, other):
