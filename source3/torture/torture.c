@@ -9758,8 +9758,8 @@ https://bugzilla.samba.org/show_bug.cgi?id=7084
 static bool run_dir_createtime(int dummy)
 {
 	struct cli_state *cli;
-	const char *dname = "\\testdir";
-	const char *fname = "\\testdir\\testfile";
+	const char *dname = "\\testdir_createtime";
+	const char *fname = "\\testdir_createtime\\testfile";
 	NTSTATUS status;
 	struct timespec create_time;
 	struct timespec create_time1;
@@ -9826,9 +9826,9 @@ static bool run_dir_createtime(int dummy)
 static bool run_streamerror(int dummy)
 {
 	struct cli_state *cli;
-	const char *dname = "\\testdir";
+	const char *dname = "\\testdir_streamerror";
 	const char *streamname =
-		"testdir:{4c8cc155-6c1e-11d1-8e41-00c04fb9386d}:$DATA";
+		"testdir_streamerror:{4c8cc155-6c1e-11d1-8e41-00c04fb9386d}:$DATA";
 	NTSTATUS status;
 	time_t change_time, access_time, write_time;
 	off_t size;
@@ -9839,7 +9839,7 @@ static bool run_streamerror(int dummy)
 		return false;
 	}
 
-	cli_unlink(cli, "\\testdir\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_unlink(cli, "\\testdir_streamerror\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_rmdir(cli, dname);
 
 	status = cli_mkdir(cli, dname);
