@@ -31,7 +31,7 @@ info = logger.info
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-o', '--out', type=argparse.FileType('w'),
+    parser.add_argument('-o', '--out',
                         help="write model here")
     parser.add_argument('--dns-mode', choices=['inline', 'count'],
                         help='how to deal with DNS', default='count')
@@ -43,6 +43,13 @@ def main():
     if args.out is None:
         error("No output file was specified to write the model to.")
         error("Please specify a filename using the --out option.")
+        return 1
+
+    try:
+        outfile = open(args.out, 'w')
+    except IOError as e:
+        error("could not open %s" % args.out)
+        error(e)
         return 1
 
     if args.SUMMARY_FILE is sys.stdin:
