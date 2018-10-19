@@ -79,7 +79,7 @@ def main():
     model_group.add_option('-S', '--scale-traffic', type='float', default=1.0,
                            help='Increase the number of conversations by '
                            'this factor')
-    model_group.add_option('-D', '--duration', type='float', default=None,
+    model_group.add_option('-D', '--duration', type='float', default=60.0,
                            help=('Run model for this long (approx). '
                                  'Default 60s for models'))
     model_group.add_option('-r', '--replay-rate', type='float', default=1.0,
@@ -234,10 +234,6 @@ def main():
                               "(%s) is not writable" % opts.traffic_summary))
             sys.exit()
 
-    duration = opts.duration
-    if duration is None:
-        duration = 60.0
-
     # ingest the model
     if model_file:
         try:
@@ -255,7 +251,7 @@ def main():
                          "generate conversations"))
 
             conversations = model.generate_conversations(opts.scale_traffic,
-                                                         duration,
+                                                         opts.duration,
                                                          opts.replay_rate)
         except ValueError:
             logger.error(("Could not parse %s, which does not seem to be "
@@ -368,7 +364,7 @@ def main():
                    creds=creds,
                    accounts=accounts,
                    dns_rate=opts.dns_rate,
-                   duration=duration,
+                   duration=opts.duration,
                    badpassword_frequency=opts.badpassword_frequency,
                    prefer_kerberos=opts.prefer_kerberos,
                    statsdir=statsdir,
