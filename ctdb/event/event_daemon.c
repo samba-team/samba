@@ -354,7 +354,7 @@ int main(int argc, const char **argv)
 	ret = sock_daemon_run(e_state->ev,
 			      e_state->sockd,
 			      e_state->pidfile,
-			      (interactive == 1),
+			      false,
 			      false,
 			      options.pid);
 	if (ret == EINTR) {
