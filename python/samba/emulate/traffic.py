@@ -484,7 +484,7 @@ class ReplayContext(object):
                 random.random() < self.badpassword_frequency):
                 try:
                     f(bad)
-                except:
+                except Exception:
                     # Ignore any exceptions as the operation may fail
                     # as it's being performed with bad credentials
                     pass
@@ -2235,7 +2235,7 @@ def opcode_key(v):
     """Sort key for the operation code to ensure that it sorts numerically"""
     try:
         return "%03d" % int(v)
-    except:
+    except ValueError:
         return v
 
 
