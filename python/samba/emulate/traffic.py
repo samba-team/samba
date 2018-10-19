@@ -162,7 +162,7 @@ class Packet(object):
             self.endpoints = (self.dest, self.src)
 
     @classmethod
-    def from_line(self, line):
+    def from_line(cls, line):
         fields = line.rstrip('\n').split('\t')
         (timestamp,
          ip_protocol,
@@ -178,8 +178,8 @@ class Packet(object):
         src = int(src)
         dest = int(dest)
 
-        return Packet(timestamp, ip_protocol, stream_number, src, dest,
-                      protocol, opcode, desc, extra)
+        return cls(timestamp, ip_protocol, stream_number, src, dest,
+                   protocol, opcode, desc, extra)
 
     def as_summary(self, time_offset=0.0):
         """Format the packet as a traffic_summary line.
