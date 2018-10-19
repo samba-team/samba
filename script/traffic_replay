@@ -387,6 +387,15 @@ def main():
     if not opts.preserve_tempdir:
         logger.info("Removing temporary directory")
         shutil.rmtree(tempdir)
-
+    else:
+        # delete the empty directories anyway. There are thousands of
+        # them and they're EMPTY.
+        for d in os.listdir(tempdir):
+            if d.startswith('conversation-'):
+                path = os.path.join(tempdir, d)
+                try:
+                    os.rmdir(path)
+                except OSError as e:
+                    logger.info("not removing %s (%s)" % (path, e))
 
 main()
