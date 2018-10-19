@@ -27,7 +27,7 @@ import sys
 import signal
 import itertools
 
-from collections import OrderedDict, Counter, defaultdict
+from collections import OrderedDict, Counter, defaultdict, namedtuple
 from samba.emulate import traffic_packets
 from samba.samdb import SamDB
 import ldb
@@ -1590,14 +1590,15 @@ def create_ou(ldb, instance_id):
     return ou
 
 
-class ConversationAccounts(object):
-    """Details of the machine and user accounts associated with a conversation.
-    """
-    def __init__(self, netbios_name, machinepass, username, userpass):
-        self.netbios_name = netbios_name
-        self.machinepass  = machinepass
-        self.username     = username
-        self.userpass     = userpass
+# ConversationAccounts holds details of the machine and user accounts
+# associated with a conversation.
+#
+# We use a named tuple to reduce shared memory usage.
+ConversationAccounts = namedtuple('ConversationAccounts',
+                                  ('netbios_name',
+                                   'machinepass',
+                                   'username',
+                                   'userpass'))
 
 
 def generate_replay_accounts(ldb, instance_id, number, password):
