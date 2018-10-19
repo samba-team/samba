@@ -30,7 +30,6 @@ SERVER        = os.environ["SERVER"]
 PASSWORD      = os.environ["PASSWORD"]
 USER          = os.environ["USERNAME"]
 STD_OPTIONS   = "-U%s%%%s %s" % (USER, PASSWORD, SERVER)
-SUMMARY       = os.path.join(DATA_DIR, "traffic-sample-very-short.txt")
 EXPECTED_NAME = os.path.join(DATA_DIR, "traffic_replay.expected")
 
 
@@ -58,35 +57,9 @@ class TrafficLearnerTests(BlackboxTestCase):
            """
         options = ("--generate-users-only --number-of-users 20 "
                    "--number-of-groups 5 --average-groups-per-user 2")
-        command  = "%s %s %s %s %s" % (
-            SCRIPT, SUMMARY, options, FIXED, STD_OPTIONS)
+        command  = "%s %s %s %s" % (
+            SCRIPT, options, FIXED, STD_OPTIONS)
         self.check_run(command)
-
-    def test_summary_generation(self):
-        """Ensure a summary file is generated and the contents are correct"""
-
-        with temp_file(self.tempdir) as output:
-            options  = "--traffic-summary %s " % (output)
-            command  = "%s %s %s %s %s" % (
-                SCRIPT, SUMMARY, options, FIXED, STD_OPTIONS)
-            self.check_run(command)
-            expected = (open(EXPECTED_NAME).readlines())
-            actual = open(output).readlines()
-            self.assertEquals(expected, actual)
-
-    def test_summary_replay(self):
-        """Ensure a summary file can be replayed against a DC
-           """
-
-        command  = "%s %s %s %s" % (SCRIPT, SUMMARY, FIXED, STD_OPTIONS)
-        self.check_run(command)
-
-    def test_summary_replay_no_fixed(self):
-        """Ensure a summary file with no fixed password fails
-           """
-
-        command  = "%s %s %s" % (SCRIPT, SUMMARY, STD_OPTIONS)
-        self.check_exit_code(command, 1)
 
     def test_model_replay(self):
         """Ensure a model can be replayed against a DC
@@ -101,6 +74,5 @@ class TrafficLearnerTests(BlackboxTestCase):
            """
         options = ("--generate-users-only --number-of-users 20 "
                    "--number-of-groups 5 --average-groups-per-user 2")
-        summary  = "testdata/traffic-sample-very-short.txt"
-        command  = "%s %s %s %s" % (SCRIPT, summary, options, STD_OPTIONS)
+        command  = "%s %s %s" % (SCRIPT, options, STD_OPTIONS)
         self.check_exit_code(command, 1)
