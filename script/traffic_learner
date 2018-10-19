@@ -23,6 +23,10 @@ import argparse
 sys.path.insert(0, "bin/python")
 from samba.emulate import traffic
 
+from samba.logger import get_samba_logger
+logger = get_samba_logger(name=__name__, level=20)
+error = logger.error
+info = logger.info
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
@@ -37,12 +41,12 @@ def main():
     args = parser.parse_args()
 
     if args.out is None:
-        print("No output file was specified to write the model to.", file=sys.stdout)
-        print("Please specify a filename using the --out option.", file=sys.stdout)
+        error("No output file was specified to write the model to.")
+        error("Please specify a filename using the --out option.")
         return 1
 
     if args.SUMMARY_FILE is sys.stdin:
-        print("reading from STDIN...", file=sys.stderr)
+        info("reading from STDIN...")
 
     (conversations,
      interval,
@@ -51,7 +55,7 @@ def main():
                                             dns_mode=args.dns_mode)
 
     model = traffic.TrafficModel()
-    print("learning model", sys.stderr)
+    info("learning model")
     if args.dns_mode == 'count':
         model.learn(conversations, dns_counts)
     else:
