@@ -769,6 +769,16 @@ class ReplayContext(object):
         subsequent = netr_Authenticator()
         return (current, subsequent)
 
+    def write_stats(self, filename, **kwargs):
+        """Write arbitrary key/value pairs to a file in our stats directory in
+        order for them to be picked up later by another process working out
+        statistics."""
+        filename = os.path.join(self.statsdir, filename)
+        f = open(filename, 'w')
+        for k, v in kwargs.items():
+            print("%s: %s" % (k, v), file=f)
+        f.close()
+
 
 class SamrContext(object):
     """State/Context associated with a samr connection.
@@ -1570,6 +1580,9 @@ def replay(conversation_seq,
     LOGGER.info("Replaying traffic for %u conversations over %d seconds"
           % (len(conversation_seq), duration))
 
+    context.write_stats('intentions',
+                        Planned_conversations=len(conversation_seq),
+                        Planned_packets=sum(len(x) for x in conversation_seq))
 
     children = {}
     try:
@@ -1610,6 +1623,9 @@ def replay(conversation_seq,
         print("EXCEPTION in parent", file=sys.stderr)
         traceback.print_exc()
     finally:
+        context.write_stats('unfinished',
+                            Unfinished_conversations=len(children))
+
         for s in (15, 15, 9):
             print(("killing %d children with -%d" %
                    (len(children), s)), file=sys.stderr)
@@ -2118,10 +2134,8 @@ def generate_stats(statsdir, timing_file):
     successful = 0
     failed     = 0
     latencies  = {}
-    failures   = {}
-    unique_converations = set()
-    conversations = 0
-
+    failures   = Counter()
+    unique_conversations = set()
     if timing_file is not None:
         tw = timing_file.write
     else:
@@ -2129,6 +2143,17 @@ def generate_stats(statsdir, timing_file):
             pass
 
     tw("time\tconv\tprotocol\ttype\tduration\tsuccessful\terror\n")
+
+    float_values = {
+        'Maximum lag': 0,
+        'Start lag': 0,
+        'Max sleep miss': 0,
+    }
+    int_values = {
+        'Planned_conversations': 0,
+        'Planned_packets': 0,
+        'Unfinished_conversations': 0,
+    }
 
     for filename in os.listdir(statsdir):
         path = os.path.join(statsdir, filename)
@@ -2140,36 +2165,36 @@ def generate_stats(statsdir, timing_file):
                     protocol     = fields[2]
                     packet_type  = fields[3]
                     latency      = float(fields[4])
-                    first        = min(float(fields[0]) - latency, first)
-                    last         = max(float(fields[0]), last)
+                    t = float(fields[0])
+                    first        = min(t - latency, first)
+                    last         = max(t, last)
 
-                    if protocol not in latencies:
-                        latencies[protocol] = {}
-                    if packet_type not in latencies[protocol]:
-                        latencies[protocol][packet_type] = []
-
-                    latencies[protocol][packet_type].append(latency)
-
-                    if protocol not in failures:
-                        failures[protocol] = {}
-                    if packet_type not in failures[protocol]:
-                        failures[protocol][packet_type] = 0
-
+                    op = (protocol, packet_type)
+                    latencies.setdefault(op, []).append(latency)
                     if fields[5] == 'True':
                         successful += 1
                     else:
                         failed += 1
-                        failures[protocol][packet_type] += 1
+                        failures[op] += 1
 
-                    if conversation not in unique_converations:
-                        unique_converations.add(conversation)
-                        conversations += 1
+                    unique_conversations.add(conversation)
 
                     tw(line)
                 except (ValueError, IndexError):
-                    # not a valid line print and ignore
-                    print(line, file=sys.stderr)
-                    pass
+                    if ':' in line:
+                        k, v = line.split(':', 1)
+                        if k in float_values:
+                            float_values[k] = max(float(v),
+                                                  float_values[k])
+                        elif k in int_values:
+                            int_values[k] = max(int(v),
+                                                int_values[k])
+                        else:
+                            print(line, file=sys.stderr)
+                    else:
+                        # not a valid line print and ignore
+                        print(line, file=sys.stderr)
+
     duration = last - first
     if successful == 0:
         success_rate = 0
@@ -2180,30 +2205,44 @@ def generate_stats(statsdir, timing_file):
     else:
         failure_rate = failed / duration
 
+    conversations = len(unique_conversations)
+
     print("Total conversations:   %10d" % conversations)
     print("Successful operations: %10d (%.3f per second)"
           % (successful, success_rate))
     print("Failed operations:     %10d (%.3f per second)"
           % (failed, failure_rate))
 
+    for k, v in sorted(float_values.items()):
+        print("%-28s %f" % (k.replace('_', ' ') + ':', v))
+    for k, v in sorted(int_values.items()):
+        print("%-28s %d" % (k.replace('_', ' ') + ':', v))
+
     print("Protocol    Op Code  Description                               "
           " Count       Failed         Mean       Median          "
           "95%        Range          Max")
 
-    protocols = sorted(latencies.keys())
+    ops = {}
+    for proto, packet in latencies:
+        if proto not in ops:
+            ops[proto] = set()
+        ops[proto].add(packet)
+    protocols = sorted(ops.keys())
+
     for protocol in protocols:
-        packet_types = sorted(latencies[protocol], key=opcode_key)
+        packet_types = sorted(ops[protocol], key=opcode_key)
         for packet_type in packet_types:
-            values     = latencies[protocol][packet_type]
+            op = (protocol, packet_type)
+            values     = latencies[op]
             values     = sorted(values)
             count      = len(values)
-            failed     = failures[protocol][packet_type]
+            failed     = failures[op]
             mean       = sum(values) / count
             median     = calc_percentile(values, 0.50)
             percentile = calc_percentile(values, 0.95)
             rng        = values[-1] - values[0]
             maxv       = values[-1]
-            desc       = OP_DESCRIPTIONS.get((protocol, packet_type), '')
+            desc       = OP_DESCRIPTIONS.get(op, '')
             if sys.stdout.isatty:
                 print("%-12s   %4s  %-35s %12d %12d %12.6f "
                       "%12.6f %12.6f %12.6f %12.6f"
