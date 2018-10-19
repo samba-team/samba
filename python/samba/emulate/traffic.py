@@ -359,9 +359,8 @@ class ReplayContext(object):
                  statsdir=None,
                  ou=None,
                  base_dn=None,
-                 domain=None,
+                 domain=os.environ.get("DOMAIN"),
                  domain_sid=None):
-
         self.server                   = server
         self.netlogon_connection      = None
         self.creds                    = creds
@@ -458,11 +457,6 @@ class ReplayContext(object):
         self.lp.set("lock dir", self.tempdir)
         self.lp.set("state directory", self.tempdir)
         self.lp.set("tls verify peer", "no_check")
-
-        # If the domain was not specified, check for the environment
-        # variable.
-        if self.domain is None:
-            self.domain = os.environ["DOMAIN"]
 
         self.remoteAddress = "/root/ncalrpc_as_system"
         self.samlogon_dn   = ("cn=%s,%s" %
