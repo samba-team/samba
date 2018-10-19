@@ -8121,6 +8121,7 @@ static bool run_chain1(int dummy)
 	struct tevent_req *reqs[3], *smbreqs[3];
 	bool done = false;
 	const char *str = "foobar";
+	const char *fname = "\\test_chain";
 	NTSTATUS status;
 
 	printf("starting chain1 test\n");
@@ -8130,7 +8131,9 @@ static bool run_chain1(int dummy)
 
 	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
-	reqs[0] = cli_openx_create(talloc_tos(), evt, cli1, "\\test",
+	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	reqs[0] = cli_openx_create(talloc_tos(), evt, cli1, fname,
 				  O_CREAT|O_RDWR, 0, &smbreqs[0]);
 	if (reqs[0] == NULL) return false;
 	tevent_req_set_callback(reqs[0], chain1_open_completion, NULL);
