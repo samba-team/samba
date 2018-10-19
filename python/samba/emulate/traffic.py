@@ -2146,8 +2146,9 @@ def calc_percentile(values, percentile):
 
 
 def mk_masked_dir(*path):
-    """In a testenv we end up with 0777 diectories that look an alarming
+    """In a testenv we end up with 0777 directories that look an alarming
     green colour with ls. Use umask to avoid that."""
+    # py3 os.mkdir can do this
     d = os.path.join(*path)
     mask = os.umask(0o077)
     os.mkdir(d)
