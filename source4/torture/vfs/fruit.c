@@ -5282,6 +5282,11 @@ static bool test_stream_names_local(struct torture_context *tctx,
 
 	status = smb2_create(tree, mem_ctx, &create);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_write(tree, create.out.file.handle, "foo", 0, 3);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
 	smb2_util_close(tree, create.out.file.handle);
 
 	ret = torture_setup_local_xattr(tctx, "localdir", BASEDIR "/stream_names.txt",
