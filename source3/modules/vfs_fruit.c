@@ -4554,23 +4554,29 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	nwritten = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
-	if (nwritten != n) {
-		return -1;
-	}
+	if (ai_empty_finderinfo(ai)) {
+		ret = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, 0);
+		if (ret != 0) {
+			DBG_ERR("SMB_VFS_NEXT_FTRUNCATE on [%s] failed\n",
+				fsp_str_dbg(fsp));
+			return -1;
+		}
 
-	if (!ai_empty_finderinfo(ai)) {
-		return n;
-	}
-
-	ok = set_delete_on_close(
+		ok = set_delete_on_close(
 			fsp,
 			true,
 			handle->conn->session_info->security_token,
 			handle->conn->session_info->unix_token);
-	if (!ok) {
-		DBG_ERR("set_delete_on_close on [%s] failed\n",
-			fsp_str_dbg(fsp));
+		if (!ok) {
+			DBG_ERR("set_delete_on_close on [%s] failed\n",
+				fsp_str_dbg(fsp));
+			return -1;
+		}
+		return n;
+	}
+
+	nwritten = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+	if (nwritten != n) {
 		return -1;
 	}
 
