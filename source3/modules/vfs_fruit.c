@@ -5352,7 +5352,8 @@ static NTSTATUS delete_invalid_meta_stream(
 	const struct smb_filename *smb_fname,
 	TALLOC_CTX *mem_ctx,
 	unsigned int *pnum_streams,
-	struct stream_struct **pstreams)
+	struct stream_struct **pstreams,
+	off_t size)
 {
 	struct smb_filename *sname = NULL;
 	int ret;
@@ -5361,6 +5362,10 @@ static NTSTATUS delete_invalid_meta_stream(
 	ok = del_fruit_stream(mem_ctx, pnum_streams, pstreams, AFPINFO_STREAM);
 	if (!ok) {
 		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (size == 0) {
+		return NT_STATUS_OK;
 	}
 
 	sname = synthetic_smb_fname(talloc_tos(),
@@ -5416,8 +5421,12 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 		DBG_ERR("Removing invalid AFPINFO_STREAM size [%jd] from [%s]\n",
 			(intmax_t)stream[i].size, smb_fname_str_dbg(smb_fname));
 
-		return delete_invalid_meta_stream(handle, smb_fname, mem_ctx,
-						  pnum_streams, pstreams);
+		return delete_invalid_meta_stream(handle,
+						  smb_fname,
+						  mem_ctx,
+						  pnum_streams,
+						  pstreams,
+						  stream[i].size);
 	}
 
 	/*
