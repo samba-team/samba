@@ -5578,6 +5578,36 @@ static NTSTATUS fruit_streaminfo_rsrc(vfs_handle_struct *handle,
 	return status;
 }
 
+static void fruit_filter_empty_streams(unsigned int *pnum_streams,
+				       struct stream_struct **pstreams)
+{
+	unsigned num_streams = *pnum_streams;
+	struct stream_struct *streams = *pstreams;
+	unsigned i = 0;
+
+	if (!global_fruit_config.nego_aapl) {
+		return;
+	}
+
+	while (i < num_streams) {
+		struct smb_filename smb_fname = (struct smb_filename) {
+			.stream_name = streams[i].name,
+		};
+
+		if (is_ntfs_default_stream_smb_fname(&smb_fname)
+		    || streams[i].size > 0)
+		{
+			i++;
+			continue;
+		}
+
+		streams[i] = streams[num_streams - 1];
+		num_streams--;
+	}
+
+	*pnum_streams = num_streams;
+}
+
 static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 const struct smb_filename *smb_fname,
@@ -5598,6 +5628,8 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	fruit_filter_empty_streams(pnum_streams, pstreams);
 
 	status = fruit_streaminfo_meta(handle, fsp, smb_fname,
 				       mem_ctx, pnum_streams, pstreams);
@@ -5868,13 +5900,13 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	 * Cf the vfs_fruit torture tests in test_rfork_create().
 	 */
 	if (global_fruit_config.nego_aapl &&
-	    is_afpresource_stream(fsp->fsp_name) &&
-	    create_disposition == FILE_OPEN)
+	    create_disposition == FILE_OPEN &&
+	    smb_fname->st.st_ex_size == 0 &&
+	    is_ntfs_stream_smb_fname(smb_fname) &&
+	    !(is_ntfs_default_stream_smb_fname(smb_fname)))
 	{
-		if (fsp->fsp_name->st.st_ex_size == 0) {
-			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			goto fail;
-		}
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto fail;
 	}
 
 	if (is_ntfs_stream_smb_fname(smb_fname)
