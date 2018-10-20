@@ -5867,7 +5867,8 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	 *
 	 * Cf the vfs_fruit torture tests in test_rfork_create().
 	 */
-	if (is_afpresource_stream(fsp->fsp_name) &&
+	if (global_fruit_config.nego_aapl &&
+	    is_afpresource_stream(fsp->fsp_name) &&
 	    create_disposition == FILE_OPEN)
 	{
 		if (fsp->fsp_name->st.st_ex_size == 0) {
