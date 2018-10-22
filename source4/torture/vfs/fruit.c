@@ -1810,6 +1810,9 @@ static bool test_rfork_truncate(struct torture_context *tctx,
 	struct smb2_handle fh1, fh2, fh3;
 	union smb_setfileinfo sinfo;
 
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
 	smb2_util_unlink(tree, fname);
 
 	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
@@ -1927,6 +1930,9 @@ static bool test_rfork_create(struct torture_context *tctx,
 		"::$DATA"
 	};
 	union smb_fileinfo finfo;
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
 
 	smb2_util_unlink(tree, fname);
 
@@ -3935,6 +3941,9 @@ static bool test_setinfo_eof_resource(struct torture_context *tctx,
 
 	torture_assert_goto(tctx, mem_ctx != NULL, ret, done, "talloc_new");
 
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
 	torture_comment(tctx, "Set AFP_AfpResource EOF to 1 and 0\n");
 
 	smb2_deltree(tree, BASEDIR);
@@ -4900,6 +4909,9 @@ static bool test_setinfo_stream_eof(struct torture_context *tctx,
 
 	torture_assert_goto(tctx, mem_ctx != NULL, ret, done,
 			    "talloc_new failed\n");
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert(tctx, ret == true, "enable_aapl failed");
 
 	torture_comment(tctx, "Test setting EOF on a stream\n");
 
