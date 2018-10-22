@@ -3575,12 +3575,9 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 		goto exit;
 	}
 
-	/* Sanitize flags */
-	if (flags & O_WRONLY) {
-		/* We always need read access for the metadata header too */
-		flags &= ~O_WRONLY;
-		flags |= O_RDWR;
-	}
+	/* We always need read/write access for the metadata header too */
+	flags &= ~(O_RDONLY | O_WRONLY);
+	flags |= O_RDWR;
 
 	hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
 				   flags, mode);
@@ -3666,20 +3663,6 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
-
-	if (((flags & O_ACCMODE) == O_RDONLY)
-	    && (flags & O_CREAT)
-	    && !VALID_STAT(fsp->fsp_name->st))
-	{
-		/*
-		 * This means the stream doesn't exist. macOS SMB server fails
-		 * this with NT_STATUS_OBJECT_NAME_NOT_FOUND, so must we. Cf bug
-		 * 12565 and the test for this combination in
-		 * test_rfork_create().
-		 */
-		errno = ENOENT;
-		return -1;
-	}
 
 	switch (config->rsrc) {
 	case FRUIT_RSRC_STREAM:
