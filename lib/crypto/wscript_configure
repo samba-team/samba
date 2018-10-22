@@ -13,8 +13,6 @@ conf.CHECK_FUNCS_IN('CC_MD5_Init', '', headers='CommonCrypto/CommonDigest.h',
 
 if conf.CHECK_FUNCS('SHA1_Update'):
 	conf.DEFINE('SHA1_RENAME_NEEDED', 1)
-if conf.CHECK_FUNCS('SHA512_Update'):
-	conf.DEFINE('SHA512_RENAME_NEEDED', 1)
 
 #
 # --aes-accel=XXX selects accelerated AES crypto library to use, if any.
