@@ -3082,7 +3082,6 @@ done:
 	return ret;
 }
 
-#if 0
 static bool check_stream_list_handle(struct smb2_tree *tree,
 				     struct torture_context *tctx,
 				     struct smb2_handle h,
@@ -3142,7 +3141,6 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
-#endif
 
 /*
   test stream names
@@ -5261,6 +5259,616 @@ done:
 	return ret;
 }
 
+#define MAX_STREAMS 16
+
+struct tcase {
+	const char *name;
+	uint32_t access;
+	const char *write_data;
+	size_t write_size;
+	struct tcase_results {
+		size_t size;
+		NTSTATUS initial_status;
+		NTSTATUS final_status;
+		int num_streams_open_handle;
+		const char *streams_open_handle[MAX_STREAMS];
+		int num_streams_closed_handle;
+		const char *streams_closed_handle[MAX_STREAMS];
+	} create, write, overwrite, eof, doc;
+};
+
+typedef enum {T_CREATE, T_WRITE, T_OVERWRITE, T_EOF, T_DOC} subtcase_t;
+
+static bool test_empty_stream_do_checks(
+	struct torture_context *tctx,
+	struct smb2_tree *tree,
+	struct smb2_tree *tree2,
+	struct tcase *tcase,
+	TALLOC_CTX *mem_ctx,
+	struct smb2_handle baseh,
+	struct smb2_handle streamh,
+	subtcase_t subcase)
+{
+	bool ret = false;
+	NTSTATUS status;
+	struct smb2_handle h1;
+	union smb_fileinfo finfo;
+	struct tcase_results *tcase_results = NULL;
+
+	switch (subcase) {
+	case T_CREATE:
+		tcase_results = &tcase->create;
+		break;
+	case T_OVERWRITE:
+		tcase_results = &tcase->overwrite;
+		break;
+	case T_WRITE:
+		tcase_results = &tcase->write;
+		break;
+	case T_EOF:
+		tcase_results = &tcase->eof;
+		break;
+	case T_DOC:
+		tcase_results = &tcase->doc;
+		break;
+	}
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_STANDARD_INFORMATION,
+		.generic.in.file.handle = streamh,
+	};
+
+	/*
+	 * Test: check size, same client
+	 */
+
+	status = smb2_getinfo_file(tree, mem_ctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed\n");
+
+	torture_assert_int_equal_goto(tctx, finfo.standard_info.out.size,
+				      tcase_results->size,
+				      ret, done, "Wrong size\n");
+
+	/*
+	 * Test: open, same client
+	 */
+
+	status = torture_smb2_open(tree, tcase->name,
+				   SEC_FILE_READ_ATTRIBUTE, &h1);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   tcase_results->initial_status,
+					   ret, done,
+					   "smb2_create failed\n");
+	if (NT_STATUS_IS_OK(status)) {
+		status = smb2_util_close(tree, h1);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+	}
+
+	/*
+	 * Test: check streams, same client
+	 */
+
+	ret = check_stream_list_handle(tree, tctx, baseh,
+				       tcase_results->num_streams_open_handle,
+				       tcase_results->streams_open_handle,
+				       false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	/*
+	 * Test: open, different client
+	 */
+
+	status = torture_smb2_open(tree2, tcase->name,
+				   SEC_FILE_READ_ATTRIBUTE, &h1);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   tcase_results->initial_status,
+					   ret, done,
+					   "smb2_create failed\n");
+	if (NT_STATUS_IS_OK(status)) {
+		finfo = (union smb_fileinfo) {
+			.generic.level = RAW_FILEINFO_STANDARD_INFORMATION,
+			.generic.in.file.handle = h1,
+		};
+
+		/*
+		 * Test: check size, different client
+		 */
+
+		status = smb2_getinfo_file(tree2, mem_ctx, &finfo);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_getinfo_file failed\n");
+
+		torture_assert_int_equal_goto(tctx, finfo.standard_info.out.size,
+					      tcase_results->size,
+					      ret, done, "Wrong size\n");
+
+		/*
+		 * Test: check streams, different client
+		 */
+
+		ret = check_stream_list(tree2, tctx, BASEDIR "\\file",
+					tcase_results->num_streams_open_handle,
+					tcase_results->streams_open_handle,
+					false);
+		torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+		status = smb2_util_close(tree2, h1);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+	}
+
+	status = smb2_util_close(tree, streamh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+
+	/*
+	 * Test: open after close, same client
+	 */
+
+	status = torture_smb2_open(tree, tcase->name,
+				   SEC_FILE_READ_DATA, &h1);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   tcase_results->final_status,
+					   ret, done,
+					   "smb2_create failed\n");
+	if (NT_STATUS_IS_OK(status)) {
+		status = smb2_util_close(tree, h1);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+	}
+
+	/*
+	 * Test: open after close, different client
+	 */
+
+	status = torture_smb2_open(tree2, tcase->name,
+				   SEC_FILE_READ_DATA, &h1);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   tcase_results->final_status,
+					   ret, done,
+					   "smb2_create failed\n");
+	if (NT_STATUS_IS_OK(status)) {
+		status = smb2_util_close(tree2, h1);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+	}
+
+	/*
+	 * Test: check streams after close, same client
+	 */
+
+	ret = check_stream_list_handle(tree, tctx, baseh,
+				       tcase_results->num_streams_closed_handle,
+				       tcase_results->streams_closed_handle,
+				       false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	ret = true;
+
+done:
+	smb2_util_close(tree, streamh);
+	smb2_util_close(tree, baseh);
+	return ret;
+}
+
+static bool test_empty_stream_do_one(
+	struct torture_context *tctx,
+	struct smb2_tree *tree,
+	struct smb2_tree *tree2,
+	struct tcase *tcase)
+{
+	bool ret = false;
+	NTSTATUS status;
+	struct smb2_handle baseh;
+	struct smb2_handle streamh;
+	struct smb2_create create;
+	union smb_setfileinfo sfinfo;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+
+	torture_comment(tctx, "Testing stream [%s]\n", tcase->name);
+
+	torture_assert_goto(tctx, mem_ctx != NULL, ret, done, "talloc_new\n");
+
+	/*
+	 * Subtest: create
+	 */
+	torture_comment(tctx, "Subtest: T_CREATE\n");
+
+	status = smb2_util_unlink(tree, BASEDIR "\\file");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_unlink failed\n");
+
+	status = torture_smb2_testfile_access(tree, BASEDIR "\\file",
+					      &baseh, SEC_FILE_ALL);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	status = torture_smb2_testfile_access(tree, tcase->name, &streamh,
+					      tcase->access);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	ret = test_empty_stream_do_checks(tctx, tree, tree2, tcase,
+					  mem_ctx, baseh, streamh, T_CREATE);
+	torture_assert_goto(tctx, ret, ret, done, "test failed\n");
+
+	if (!(tcase->access & SEC_FILE_WRITE_DATA)) {
+		/*
+		 * All subsequent tests require write access
+		 */
+		ret = true;
+		goto done;
+	}
+
+	/*
+	 * Subtest: create and write
+	 */
+	torture_comment(tctx, "Subtest: T_WRITE\n");
+
+	status = smb2_util_unlink(tree, BASEDIR "\\file");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_unlink failed\n");
+
+	status = torture_smb2_testfile_access(tree, BASEDIR "\\file",
+					      &baseh, SEC_FILE_ALL);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	status = torture_smb2_testfile_access(tree, tcase->name, &streamh,
+					      tcase->access);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	status = smb2_util_write(tree, streamh, tcase->write_data, 0,
+				 tcase->write_size);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_open failed\n");
+
+	ret = test_empty_stream_do_checks(tctx, tree, tree2, tcase,
+					  mem_ctx, baseh, streamh, T_WRITE);
+	torture_assert_goto(tctx, ret, ret, done, "test failed\n");
+
+	/*
+	 * Subtest: overwrite
+	 */
+	torture_comment(tctx, "Subtest: T_OVERWRITE\n");
+
+	status = smb2_util_unlink(tree, BASEDIR "\\file");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_unlink failed\n");
+
+	status = torture_smb2_testfile_access(tree, BASEDIR "\\file",
+					      &baseh, SEC_FILE_ALL);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF,
+		.in.fname = tcase->name,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed\n");
+	streamh = create.out.file.handle;
+
+	ret = test_empty_stream_do_checks(tctx, tree, tree2, tcase,
+					  mem_ctx, baseh, streamh, T_OVERWRITE);
+	torture_assert_goto(tctx, ret, ret, done, "test failed\n");
+
+	/*
+	 * Subtest: setinfo EOF 0
+	 */
+	torture_comment(tctx, "Subtest: T_EOF\n");
+
+	status = smb2_util_unlink(tree, BASEDIR "\\file");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_unlink failed\n");
+
+	status = torture_smb2_testfile_access(tree, BASEDIR "\\file",
+					      &baseh, SEC_FILE_ALL);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	status = torture_smb2_testfile_access(tree, tcase->name, &streamh,
+					      tcase->access);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	status = smb2_util_write(tree, streamh, tcase->write_data, 0,
+				 tcase->write_size);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_open failed\n");
+
+	sfinfo = (union smb_setfileinfo) {
+		.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION,
+		.end_of_file_info.in.file.handle = streamh,
+		.end_of_file_info.in.size = 0,
+	};
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"set eof 0 failed\n");
+
+	ret = test_empty_stream_do_checks(tctx, tree, tree2, tcase,
+					  mem_ctx, baseh, streamh, T_EOF);
+	torture_assert_goto(tctx, ret, ret, done, "test failed\n");
+
+	/*
+	 * Subtest: delete-on-close
+	 */
+	torture_comment(tctx, "Subtest: T_DOC\n");
+
+	status = smb2_util_unlink(tree, BASEDIR "\\file");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_unlink failed\n");
+
+	status = torture_smb2_testfile_access(tree, BASEDIR "\\file",
+					      &baseh, SEC_FILE_ALL);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	status = torture_smb2_testfile_access(tree, tcase->name, &streamh,
+					      tcase->access);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile_access failed\n");
+
+	status = smb2_util_write(tree, streamh, tcase->write_data, 0,
+				 tcase->write_size);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_open failed\n");
+
+	sfinfo = (union smb_setfileinfo) {
+		.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFORMATION,
+		.disposition_info.in.file.handle = streamh,
+		.disposition_info.in.delete_on_close = true,
+	};
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"set eof 0 failed\n");
+
+	ret = test_empty_stream_do_checks(tctx, tree, tree2, tcase,
+					  mem_ctx, baseh, streamh,
+					  T_DOC);
+	torture_assert_goto(tctx, ret, ret, done, "test failed\n");
+
+	ret = true;
+
+done:
+	smb2_util_close(tree, baseh);
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+static bool test_empty_stream(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	struct smb2_tree *tree2 = NULL;
+	struct tcase *tcase = NULL;
+	const char *fname = BASEDIR "\\file";
+	struct smb2_handle h1;
+	bool ret = true;
+	NTSTATUS status;
+	AfpInfo ai = (AfpInfo) {
+		.afpi_Signature = AFP_Signature,
+		.afpi_Version = AFP_Version,
+		.afpi_BackupTime = AFP_BackupTime,
+		.afpi_FinderInfo = "FOO BAR ",
+	};
+	char *ai_blob = torture_afpinfo_pack(tctx, &ai);
+	struct tcase tcase_afpinfo_ro = (struct tcase) {
+		.name = BASEDIR "\\file" AFPINFO_STREAM,
+		.access = SEC_FILE_READ_DATA|SEC_FILE_READ_ATTRIBUTE,
+		.create.size = 60,
+		.create.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.num_streams_open_handle = 1,
+		.create.num_streams_closed_handle = 1,
+		.create.streams_open_handle = {"::$DATA"},
+		.create.streams_closed_handle = {"::$DATA"},
+	};
+	struct tcase tcase_afpinfo_rw = (struct tcase) {
+		.name = BASEDIR "\\file" AFPINFO_STREAM,
+		.access = SEC_FILE_READ_DATA|SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_DATA|SEC_STD_DELETE,
+		.write_data = ai_blob,
+		.write_size = AFP_INFO_SIZE,
+		.create.size = 60,
+		.create.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.num_streams_open_handle = 1,
+		.create.num_streams_closed_handle = 1,
+		.create.streams_open_handle = {"::$DATA"},
+		.create.streams_closed_handle = {"::$DATA"},
+		.write.size = 60,
+		.write.initial_status = NT_STATUS_OK,
+		.write.final_status = NT_STATUS_OK,
+		.write.num_streams_open_handle = 2,
+		.write.num_streams_closed_handle = 2,
+		.write.streams_open_handle = {"::$DATA", AFPINFO_STREAM},
+		.write.streams_closed_handle = {"::$DATA", AFPINFO_STREAM},
+		.overwrite.size = 60,
+		.overwrite.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.overwrite.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.overwrite.num_streams_open_handle = 1,
+		.overwrite.num_streams_closed_handle = 1,
+		.overwrite.streams_open_handle = {"::$DATA"},
+		.overwrite.streams_closed_handle = {"::$DATA"},
+		.eof.size = 60,
+		.eof.initial_status = NT_STATUS_OK,
+		.eof.final_status = NT_STATUS_OK,
+		.eof.num_streams_open_handle = 2,
+		.eof.num_streams_closed_handle = 2,
+		.eof.streams_open_handle = {"::$DATA", AFPINFO_STREAM},
+		.eof.streams_closed_handle = {"::$DATA", AFPINFO_STREAM},
+		.doc.size = 60,
+		.doc.initial_status = NT_STATUS_DELETE_PENDING,
+		.doc.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.doc.num_streams_open_handle = 2,
+		.doc.num_streams_closed_handle = 1,
+		.doc.streams_open_handle = {"::$DATA", AFPINFO_STREAM},
+		.doc.streams_closed_handle = {"::$DATA"},
+	};
+
+	struct tcase tcase_afpresource_ro = (struct tcase) {
+		.name = BASEDIR "\\file" AFPRESOURCE_STREAM,
+		.access = SEC_FILE_READ_DATA|SEC_FILE_READ_ATTRIBUTE,
+		.create.size = 0,
+		.create.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.num_streams_open_handle = 1,
+		.create.num_streams_closed_handle = 1,
+		.create.streams_open_handle = {"::$DATA"},
+		.create.streams_closed_handle = {"::$DATA"},
+	};
+	struct tcase tcase_afpresource_rw = (struct tcase) {
+		.name = BASEDIR "\\file" AFPRESOURCE_STREAM,
+		.access = SEC_FILE_READ_DATA|SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_DATA|SEC_STD_DELETE,
+		.write_data = "foo",
+		.write_size = 3,
+		.create.size = 0,
+		.create.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.num_streams_open_handle = 1,
+		.create.num_streams_closed_handle = 1,
+		.create.streams_open_handle = {"::$DATA"},
+		.create.streams_closed_handle = {"::$DATA"},
+		.write.size = 3,
+		.write.initial_status = NT_STATUS_OK,
+		.write.final_status = NT_STATUS_OK,
+		.write.num_streams_open_handle = 2,
+		.write.num_streams_closed_handle = 2,
+		.write.streams_open_handle = {"::$DATA", AFPRESOURCE_STREAM},
+		.write.streams_closed_handle = {"::$DATA", AFPRESOURCE_STREAM},
+		.overwrite.size = 0,
+		.overwrite.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.overwrite.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.overwrite.num_streams_open_handle = 1,
+		.overwrite.num_streams_closed_handle = 1,
+		.overwrite.streams_open_handle = {"::$DATA"},
+		.overwrite.streams_closed_handle = {"::$DATA"},
+		.eof.size = 0,
+		.eof.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.eof.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.eof.num_streams_open_handle = 1,
+		.eof.num_streams_closed_handle = 1,
+		.eof.streams_open_handle = {"::$DATA"},
+		.eof.streams_closed_handle = {"::$DATA"},
+		.doc.size = 3,
+		.doc.initial_status = NT_STATUS_DELETE_PENDING,
+		.doc.final_status = NT_STATUS_OK,
+		.doc.num_streams_open_handle = 2,
+		.doc.num_streams_closed_handle = 2,
+		.doc.streams_open_handle = {"::$DATA", AFPRESOURCE_STREAM},
+		.doc.streams_closed_handle = {"::$DATA", AFPRESOURCE_STREAM},
+	};
+
+	struct tcase tcase_foo_ro = (struct tcase) {
+		.name = BASEDIR "\\file:foo",
+		.access = SEC_FILE_READ_DATA|SEC_FILE_READ_ATTRIBUTE,
+		.write_data = "foo",
+		.write_size = 3,
+		.create.size = 0,
+		.create.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.num_streams_open_handle = 1,
+		.create.num_streams_closed_handle = 1,
+		.create.streams_open_handle = {"::$DATA"},
+		.create.streams_closed_handle = {"::$DATA"},
+	};
+
+	struct tcase tcase_foo_rw = (struct tcase) {
+		.name = BASEDIR "\\file:foo",
+		.access = SEC_FILE_READ_DATA|SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_DATA|SEC_STD_DELETE,
+		.write_data = "foo",
+		.write_size = 3,
+		.create.size = 0,
+		.create.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.create.num_streams_open_handle = 1,
+		.create.num_streams_closed_handle = 1,
+		.create.streams_open_handle = {"::$DATA"},
+		.create.streams_closed_handle = {"::$DATA"},
+		.write.size = 3,
+		.write.initial_status = NT_STATUS_OK,
+		.write.final_status = NT_STATUS_OK,
+		.write.num_streams_open_handle = 2,
+		.write.num_streams_closed_handle = 2,
+		.write.streams_open_handle = {"::$DATA", ":foo:$DATA"},
+		.write.streams_closed_handle = {"::$DATA", ":foo:$DATA"},
+		.overwrite.size = 0,
+		.overwrite.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.overwrite.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.overwrite.num_streams_open_handle = 1,
+		.overwrite.num_streams_closed_handle = 1,
+		.overwrite.streams_open_handle = {"::$DATA"},
+		.overwrite.streams_closed_handle = {"::$DATA"},
+		.eof.size = 0,
+		.eof.initial_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.eof.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.eof.num_streams_open_handle = 1,
+		.eof.num_streams_closed_handle = 1,
+		.eof.streams_open_handle = {"::$DATA"},
+		.eof.streams_closed_handle = {"::$DATA"},
+		.doc.size = 3,
+		.doc.initial_status = NT_STATUS_DELETE_PENDING,
+		.doc.final_status = NT_STATUS_OBJECT_NAME_NOT_FOUND,
+		.doc.num_streams_open_handle = 2,
+		.doc.num_streams_closed_handle = 1,
+		.doc.streams_open_handle = {"::$DATA", ":foo:$DATA"},
+		.doc.streams_closed_handle = {"::$DATA"},
+	};
+
+	struct tcase tcases[] = {
+		tcase_afpinfo_ro,
+		tcase_afpinfo_rw,
+		tcase_afpresource_ro,
+		tcase_afpresource_rw,
+		tcase_foo_ro,
+		tcase_foo_rw,
+		{NULL}
+	};
+
+	ret = torture_smb2_connection(tctx, &tree2);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_smb2_connection failed\n");
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert(tctx, ret == true, "enable_aapl failed\n");
+
+	ret = enable_aapl(tctx, tree2);
+	torture_assert(tctx, ret == true, "enable_aapl failed\n");
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree, h1);
+
+	for (tcase = &tcases[0]; tcase->name != NULL; tcase++) {
+		ret = torture_setup_file(tctx, tree, fname, false);
+		torture_assert_goto(tctx, ret == true, ret, done,
+				    "torture_setup_file failed\n");
+
+		ret = test_empty_stream_do_one(tctx, tree, tree2, tcase);
+		torture_assert_goto(tctx, ret == true, ret, done,
+				    "subtest failed\n");
+
+		status = smb2_util_unlink(tree, fname);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_unlink failed\n");
+	}
+
+done:
+	smb2_deltree(tree, BASEDIR);
+	TALLOC_FREE(tree2);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -5304,6 +5912,7 @@ struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 	torture_suite_add_1smb2_test(suite, "NFS ACE entries", test_nfs_aces);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion without embedded xattr", test_adouble_conversion_wo_xattr);
+	torture_suite_add_1smb2_test(suite, "empty_stream", test_empty_stream);
 
 	return suite;
 }
