@@ -27,12 +27,6 @@
 
 #include "tdb_private.h"
 
-/* 'right' merges can involve O(n^2) cost when combined with a
-   traverse, so they are disabled until we find a way to do them in
-   O(1) time
-*/
-#define USE_RIGHT_MERGES 0
-
 /* read a freelist record and check for simple errors */
 int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record *rec)
 {
@@ -60,30 +54,6 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 		return -1;
 	return 0;
 }
-
-
-#if USE_RIGHT_MERGES
-/* Remove an element from the freelist.  Must have alloc lock. */
-static int remove_from_freelist(struct tdb_context *tdb, tdb_off_t off, tdb_off_t next)
-{
-	tdb_off_t last_ptr, i;
-
-	/* read in the freelist top */
-	last_ptr = FREELIST_TOP;
-	while (tdb_ofs_read(tdb, last_ptr, &i) != -1 && i != 0) {
-		if (i == off) {
-			/* We've found it! */
-			return tdb_ofs_write(tdb, last_ptr, &next);
-		}
-		/* Follow chain (next offset is at start of record) */
-		last_ptr = i;
-	}
-	tdb->ecode = TDB_ERR_CORRUPT;
-	TDB_LOG((tdb, TDB_DEBUG_FATAL,"remove_from_freelist: not on list at off=%u\n", off));
-	return -1;
-}
-#endif
-
 
 /* update a record tailer (must hold allocation lock) */
 static int update_tailer(struct tdb_context *tdb, tdb_off_t offset,
@@ -317,33 +287,6 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed!\n"));
 		goto fail;
 	}
-
-#if USE_RIGHT_MERGES
-	/* Look right first (I'm an Australian, dammit) */
-	if (offset + sizeof(*rec) + rec->rec_len + sizeof(*rec) <= tdb->map_size) {
-		tdb_off_t right = offset + sizeof(*rec) + rec->rec_len;
-		struct tdb_record r;
-
-		if (tdb->methods->tdb_read(tdb, right, &r, sizeof(r), DOCONV()) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: right read failed at %u\n", right));
-			goto left;
-		}
-
-		/* If it's free, expand to include it. */
-		if (r.magic == TDB_FREE_MAGIC) {
-			if (remove_from_freelist(tdb, right, r.next) == -1) {
-				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: right free failed at %u\n", right));
-				goto left;
-			}
-			rec->rec_len += sizeof(r) + r.rec_len;
-			if (update_tailer(tdb, offset, rec) == -1) {
-				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
-				goto fail;
-			}
-		}
-	}
-left:
-#endif
 
 	ret = check_merge_with_left_record(tdb, offset, rec, NULL, NULL);
 	if (ret == -1) {
