@@ -4981,7 +4981,31 @@ static bool test_setinfo_stream_eof(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"set eof 0 failed\n");
 
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+		"Unexpected status\n");
+
 	smb2_util_close(tree, h1);
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+		"Unexpected status\n");
 
 	status = torture_smb2_testfile_access(tree, sname, &h1,
 					      SEC_FILE_WRITE_DATA);
@@ -5061,6 +5085,18 @@ static bool test_setinfo_stream_eof(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"set eof 0 failed\n");
 
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+		"Unexpected status\n");
+
 	smb2_util_close(tree, h1);
 
 	ZERO_STRUCT(create);
@@ -5120,6 +5156,31 @@ static bool test_setinfo_stream_eof(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"torture_smb2_testfile failed\n");
 	smb2_util_close(tree, h1);
+
+	torture_comment(tctx, "Writing to stream after setting EOF to 0\n");
+	status = torture_smb2_testfile_access(tree, sname, &h1,
+					      SEC_FILE_WRITE_DATA);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed\n");
+
+	status = smb2_util_write(tree, h1, "1234567890", 0, 10);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.in.file.handle = h1;
+	sfinfo.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfinfo.position_information.in.position = 0;
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"set eof 0 failed\n");
+
+	status = smb2_util_write(tree, h1, "1234567890", 0, 10);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
+	smb2_util_close(tree, h1);
+
 done:
 	smb2_util_unlink(tree, fname);
 	smb2_util_rmdir(tree, BASEDIR);
