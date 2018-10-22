@@ -199,7 +199,7 @@ static int merge_with_left_record(struct tdb_context *tdb,
  *   0 if left was not a free record
  *   1 if left was free and successfully merged.
  *
- * The currend record is handed in with pointer and fully read record.
+ * The current record is handed in with pointer and fully read record.
  *
  * The left record pointer and struct can be retrieved as result
  * in lp and lr;
