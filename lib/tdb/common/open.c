@@ -281,10 +281,10 @@ check_local_settings:
 
 	if (tdb_mutex_size(tdb) != header->mutex_size) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_mutex_open_ok[%s]: "
-			 "Mutex size changed from %u to %u\n.",
+			 "Mutex size changed from %"PRIu32" to %zu\n.",
 			 tdb->name,
-			 (unsigned int)header->mutex_size,
-			 (unsigned int)tdb_mutex_size(tdb)));
+			 header->mutex_size,
+			 tdb_mutex_size(tdb)));
 		return false;
 	}
 
