@@ -514,6 +514,9 @@ struct fio {
 
 	/* Denote stream type, meta or rsrc */
 	adouble_type_t type;
+
+	/* Whether the create created the stream */
+	bool created;
 };
 
 /*
@@ -5885,6 +5888,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct fruit_config_data *config = NULL;
 	files_struct *fsp = NULL;
+	struct fio *fio = NULL;
 
 	status = check_aapl(handle, req, in_context_blobs, out_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5933,6 +5937,11 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	{
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto fail;
+	}
+
+	fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	if (fio != NULL && pinfo != NULL && *pinfo == FILE_WAS_CREATED) {
+		fio->created = true;
 	}
 
 	if (is_ntfs_stream_smb_fname(smb_fname)
