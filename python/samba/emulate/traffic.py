@@ -1631,6 +1631,8 @@ def generate_traffic_accounts(ldb, instance_id, number, password):
             netbios_name = "STGM-%d-%d" % (instance_id, i)
             create_machine_account(ldb, instance_id, netbios_name, password)
             added += 1
+            if added % 50 == 0:
+                LOGGER.info("Created %u/%u machine accounts" % (added, number))
         except LdbError as e:
             (status, _) = e.args
             if status == 68:
@@ -1646,6 +1648,9 @@ def generate_traffic_accounts(ldb, instance_id, number, password):
             username = "STGU-%d-%d" % (instance_id, i)
             create_user_account(ldb, instance_id, username, password)
             added += 1
+            if added % 50 == 0:
+                LOGGER.info("Created %u/%u users" % (added, number))
+
         except LdbError as e:
             (status, _) = e.args
             if status == 68:
@@ -1664,7 +1669,6 @@ def create_machine_account(ldb, instance_id, netbios_name, machinepass):
     dn = "cn=%s,%s" % (netbios_name, ou)
     utf16pw = ('"%s"' % get_string(machinepass)).encode('utf-16-le')
 
-    start = time.time()
     ldb.add({
         "dn": dn,
         "objectclass": "computer",
@@ -1672,9 +1676,6 @@ def create_machine_account(ldb, instance_id, netbios_name, machinepass):
         "userAccountControl":
             str(UF_TRUSTED_FOR_DELEGATION | UF_SERVER_TRUST_ACCOUNT),
         "unicodePwd": utf16pw})
-    end = time.time()
-    duration = end - start
-    LOGGER.info("%f\t0\tcreate\tmachine\t%f\tTrue\t" % (end, duration))
 
 
 def create_user_account(ldb, instance_id, username, userpass):
@@ -1682,7 +1683,6 @@ def create_user_account(ldb, instance_id, username, userpass):
     ou = ou_name(ldb, instance_id)
     user_dn = "cn=%s,%s" % (username, ou)
     utf16pw = ('"%s"' % get_string(userpass)).encode('utf-16-le')
-    start = time.time()
     ldb.add({
         "dn": user_dn,
         "objectclass": "user",
@@ -1695,25 +1695,17 @@ def create_user_account(ldb, instance_id, username, userpass):
     sdutils = sd_utils.SDUtils(ldb)
     sdutils.dacl_add_ace(user_dn, "(A;;WP;;;PS)")
 
-    end = time.time()
-    duration = end - start
-    LOGGER.info("%f\t0\tcreate\tuser\t%f\tTrue\t" % (end, duration))
-
 
 def create_group(ldb, instance_id, name):
     """Create a group via ldap."""
 
     ou = ou_name(ldb, instance_id)
     dn = "cn=%s,%s" % (name, ou)
-    start = time.time()
     ldb.add({
         "dn": dn,
         "objectclass": "group",
         "sAMAccountName": name,
     })
-    end = time.time()
-    duration = end - start
-    LOGGER.info("%f\t0\tcreate\tgroup\t%f\tTrue\t" % (end, duration))
 
 
 def user_name(instance_id, i):
@@ -1739,6 +1731,8 @@ def generate_users(ldb, instance_id, number, password):
         if name not in existing_objects:
             create_user_account(ldb, instance_id, name, password)
             users += 1
+            if users % 50 == 0:
+                LOGGER.info("Created %u/%u users" % (users, number))
 
     return users
 
@@ -1757,6 +1751,8 @@ def generate_groups(ldb, instance_id, number):
         if name not in existing_objects:
             create_group(ldb, instance_id, name)
             groups += 1
+            if groups % 1000 == 0:
+                LOGGER.info("Created %u/%u groups" % (groups, number))
 
     return groups
 
@@ -1940,6 +1936,10 @@ class GroupAssignments(object):
 def add_users_to_groups(db, instance_id, assignments):
     """Takes the assignments of users to groups and applies them to the DB."""
 
+    total = assignments.total()
+    count = 0
+    added = 0
+
     for group in assignments.get_groups():
         users_in_group = assignments.users_in_group(group)
         if len(users_in_group) == 0:
@@ -1952,11 +1952,14 @@ def add_users_to_groups(db, instance_id, assignments):
             chunk_of_users = users_in_group[chunk:chunk + 1000]
             add_group_members(db, instance_id, group, chunk_of_users)
 
+            added += len(chunk_of_users)
+            count += 1
+            if count % 50 == 0:
+                LOGGER.info("Added %u/%u memberships" % (added, total))
 
 def add_group_members(db, instance_id, group, users_in_group):
     """Adds the given users to group specified."""
 
-    start = time.time()
     ou = ou_name(db, instance_id)
 
     def build_dn(name):
@@ -1972,9 +1975,6 @@ def add_group_members(db, instance_id, group, users_in_group):
         m[idx] = ldb.MessageElement(user_dn, ldb.FLAG_MOD_ADD, "member")
 
     db.modify(m)
-    end = time.time()
-    duration = end - start
-    LOGGER.info("%f\t0\tadd\tuser(s)\t%f\tTrue\t" % (end, duration))
 
 
 def generate_stats(statsdir, timing_file):
