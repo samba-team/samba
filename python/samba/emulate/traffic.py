@@ -1638,8 +1638,7 @@ def generate_traffic_accounts(ldb, instance_id, number, password):
             else:
                 raise
     if added > 0:
-        print("Added %d new machine accounts" % added,
-              file=sys.stderr)
+        LOGGER.info("Added %d new machine accounts" % added)
 
     added = 0
     for i in range(number, 0, -1):
@@ -1655,8 +1654,7 @@ def generate_traffic_accounts(ldb, instance_id, number, password):
                 raise
 
     if added > 0:
-        print("Added %d new user accounts" % added,
-              file=sys.stderr)
+        LOGGER.info("Added %d new user accounts" % added)
 
 
 def create_machine_account(ldb, instance_id, netbios_name, machinepass):
@@ -1785,32 +1783,30 @@ def generate_users_and_groups(ldb, instance_id, password,
 
     create_ou(ldb, instance_id)
 
-    print("Generating dummy user accounts", file=sys.stderr)
+    LOGGER.info("Generating dummy user accounts")
     users_added = generate_users(ldb, instance_id, number_of_users, password)
 
     if number_of_groups > 0:
-        print("Generating dummy groups", file=sys.stderr)
+        LOGGER.info("Generating dummy groups")
         groups_added = generate_groups(ldb, instance_id, number_of_groups)
 
     if group_memberships > 0:
-        print("Assigning users to groups", file=sys.stderr)
+        LOGGER.info("Assigning users to groups")
         assignments = GroupAssignments(number_of_groups,
                                        groups_added,
                                        number_of_users,
                                        users_added,
                                        group_memberships)
-        print("Adding users to groups", file=sys.stderr)
+        LOGGER.info("Adding users to groups")
         add_users_to_groups(ldb, instance_id, assignments)
         memberships_added = assignments.total()
 
     if (groups_added > 0 and users_added == 0 and
        number_of_groups != groups_added):
-        print("Warning: the added groups will contain no members",
-              file=sys.stderr)
+        LOGGER.warning("The added groups will contain no members")
 
-    print(("Added %d users, %d groups and %d group memberships" %
-           (users_added, groups_added, memberships_added)),
-          file=sys.stderr)
+    LOGGER.info("Added %d users, %d groups and %d group memberships" %
+                (users_added, groups_added, memberships_added))
 
 
 class GroupAssignments(object):
