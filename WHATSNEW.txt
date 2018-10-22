@@ -1,4 +1,69 @@
                    ==============================
+                   Release Notes for Samba 4.7.11
+                          October 23, 2018
+                   ==============================
+
+
+Please note that this will very likely be the last bugfix release of the Samba
+4.7 release series. There will be security fixes only beyond this point.
+
+
+Changes since 4.7.10:
+--------------------
+
+o  Paulo Alcantara <paulo@paulo.ac>
+   * BUG 13578: s3: util: Do not take over stderr when there is no log file.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13585: s3: smbd: Ensure get_real_filename() copes with empty pathnames.
+   * BUG 13633: s3: smbd: Prevent valgrind errors in smbtorture3 POSIX test.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13549:  Durable Reconnect fails because cookie.allow_reconnect is not
+     set redundant for SMB2.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13539: krb5-samba: Interdomain trust uses different salt principal.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13362: Fix possible memory leak in the Samba process.
+   * BUG 13441: vfs_fruit: Don't unlink the main file.
+   * BUG 13602: smbd: Fix a memleak in async search ask sharemode.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11517: Fix Samba GPO issue when Trust is enabled.
+   * BUG 13539: samba-tool: Add virtualKerberosSalt attribute to 'user
+     getpassword/syncpasswords'.
+   * BUG 13624: smb2_server: Set req->do_encryption = true earlier.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12851: s3:winbind: Fix regression.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.7.10
                            August 27, 2018
                    ==============================
@@ -100,8 +165,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.7.9
