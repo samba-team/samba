@@ -30,7 +30,9 @@
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "lib/util/iov_buf.h"
 #include "auth.h"
-#include "lib/crypto/sha512.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -3002,28 +3004,54 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 
 	if (req->preauth != NULL) {
-		struct hc_sha512state sctx;
-		int i;
+		gnutls_hash_hd_t hash_hnd = NULL;
+		size_t i;
+		int rc;
 
-		samba_SHA512_Init(&sctx);
-		samba_SHA512_Update(&sctx, req->preauth->sha512_value,
-				    sizeof(req->preauth->sha512_value));
+		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA512);
+		if (rc < 0) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		rc = gnutls_hash(hash_hnd,
+			    req->preauth->sha512_value,
+			    sizeof(req->preauth->sha512_value));
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		for (i = 1; i < req->in.vector_count; i++) {
-			samba_SHA512_Update(&sctx,
-					    req->in.vector[i].iov_base,
-					    req->in.vector[i].iov_len);
+			rc = gnutls_hash(hash_hnd,
+					 req->in.vector[i].iov_base,
+					 req->in.vector[i].iov_len);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 		}
-		samba_SHA512_Final(req->preauth->sha512_value, &sctx);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		gnutls_hash_output(hash_hnd, req->preauth->sha512_value);
 
-		samba_SHA512_Init(&sctx);
-		samba_SHA512_Update(&sctx, req->preauth->sha512_value,
-				    sizeof(req->preauth->sha512_value));
-		for (i = 1; i < req->out.vector_count; i++) {
-			samba_SHA512_Update(&sctx,
-					    req->out.vector[i].iov_base,
-					    req->out.vector[i].iov_len);
+		rc = gnutls_hash(hash_hnd,
+				 req->preauth->sha512_value,
+				 sizeof(req->preauth->sha512_value));
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
 		}
-		samba_SHA512_Final(req->preauth->sha512_value, &sctx);
+		for (i = 1; i < req->out.vector_count; i++) {
+			rc = gnutls_hash(hash_hnd,
+					 req->out.vector[i].iov_base,
+					 req->out.vector[i].iov_len);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+
+		gnutls_hash_deinit(hash_hnd, req->preauth->sha512_value);
 
 		req->preauth = NULL;
 	}
