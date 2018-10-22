@@ -1481,6 +1481,50 @@ class TestRPCRoundtrip(DNSTest):
     def tearDown(self):
         super(TestRPCRoundtrip, self).tearDown()
 
+    def rpc_update(self, fqn=None, data=None, wType=None, delete=False):
+        fqn = fqn or ("rpctestrec." + self.get_dns_domain())
+
+        rec = data_to_dns_record(wType, data)
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+
+        add_arg = add_rec_buf
+        del_arg = None
+        if delete:
+            add_arg = None
+            del_arg = add_rec_buf
+
+        self.rpc_conn.DnssrvUpdateRecord2(
+            dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+            0,
+            self.server_ip,
+            self.get_dns_domain(),
+            fqn,
+            add_arg,
+            del_arg)
+
+    def test_rpc_self_referencing_cname(self):
+        cname = "cnametest2_unqual_rec_loop"
+        cname_fqn = "%s.%s" % (cname, self.get_dns_domain())
+
+        try:
+            self.rpc_update(fqn=cname, data=cname_fqn,
+                            wType=dnsp.DNS_TYPE_CNAME, delete=True)
+        except WERRORError as e:
+            if e.args[0] != werror.WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST:
+                self.fail("RPC DNS gaven wrong error on pre-test cleanup "
+                          "for self referencing CNAME: %s" % e.args[0])
+
+        try:
+            self.rpc_update(fqn=cname, wType=dnsp.DNS_TYPE_CNAME, data=cname_fqn)
+        except WERRORError as e:
+            if e.args[0] != werror.WERR_DNS_ERROR_CNAME_LOOP:
+                self.fail("RPC DNS gaven wrong error on insertion of "
+                          "self referencing CNAME: %s" % e.args[0])
+            return
+
+        self.fail("RPC DNS allowed insertion of self referencing CNAME")
+
     def test_update_add_txt_rpc_to_dns(self):
         prefix, txt = 'rpctextrec', ['"This is a test"']
 

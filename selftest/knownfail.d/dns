@@ -13,6 +13,7 @@ samba.tests.dns.__main__.TestRPCRoundtrip.test_update_add_null_char_txt_record\(
 samba.tests.dns.__main__.TestRPCRoundtrip.test_update_add_null_padded_txt_record\(rodc:local\)
 samba.tests.dns.__main__.TestRPCRoundtrip.test_update_add_slash_txt_record\(rodc:local\)
 samba.tests.dns.__main__.TestRPCRoundtrip.test_update_add_two_txt_records\(rodc:local\)
+samba.tests.dns.__main__.TestRPCRoundtrip.test_rpc_self_referencing_cname\(rodc:local\)
 samba.tests.dns.__main__.TestDNSUpdates.test_delete_record\(vampire_dc:local\)
 samba.tests.dns.__main__.TestDNSUpdates.test_readd_record\(vampire_dc:local\)
 samba.tests.dns.__main__.TestDNSUpdates.test_update_add_mx_record\(vampire_dc:local\)

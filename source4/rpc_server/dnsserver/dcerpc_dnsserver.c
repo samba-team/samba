@@ -25,6 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_dnsserver.h"
+#include "dns_server/dnsserver_common.h"
 #include "dnsserver.h"
 
 #define DCESRV_INTERFACE_DNSSERVER_BIND(call, iface) \
@@ -1868,6 +1869,37 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 	return WERR_OK;
 }
 
+/*
+ * Check str1 + '.' + str2 = name, for example:
+ * ("dc0", "example.com", "dc0.example.com") = true
+ */
+static bool cname_self_reference(const char* node_name,
+				 const char* zone_name,
+				 struct DNS_RPC_NAME name) {
+	size_t node_len, zone_len;
+
+	if (node_name == NULL || zone_name == NULL) {
+		return false;
+	}
+
+	node_len = strlen(node_name);
+	zone_len = strlen(zone_name);
+
+	if (node_len == 0 ||
+	    zone_len == 0 ||
+	    (name.len != node_len + zone_len + 1)) {
+		return false;
+	}
+
+	if (strncmp(node_name, name.str, node_len) == 0 &&
+	    name.str[node_len] == '.' &&
+	    strncmp(zone_name, name.str + node_len + 1, zone_len) == 0) {
+		return true;
+	}
+
+	return false;
+}
+
 /* dnsserver update function */
 
 static WERROR dnsserver_update_record(struct dnsserver_state *dsstate,
@@ -1894,6 +1926,13 @@ static WERROR dnsserver_update_record(struct dnsserver_state *dsstate,
 		name = dns_split_node_name(tmp_ctx, node_name, z->name);
 	}
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(name, tmp_ctx);
+
+	/* CNAMEs can't point to themselves */
+	if (add_buf != NULL && add_buf->rec.wType == DNS_TYPE_CNAME) {
+		if (cname_self_reference(node_name, z->name, add_buf->rec.data.name)) {
+			return WERR_DNS_ERROR_CNAME_LOOP;
+		}
+	}
 
 	if (add_buf != NULL) {
 		if (del_buf == NULL) {
