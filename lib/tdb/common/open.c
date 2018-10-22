@@ -230,8 +230,6 @@ static bool check_header_hash(struct tdb_context *tdb,
 static bool tdb_mutex_open_ok(struct tdb_context *tdb,
 			      const struct tdb_header *header)
 {
-	int locked;
-
 	if (tdb->flags & TDB_NOLOCK) {
 		/*
 		 * We don't look at locks, so it does not matter to have a
@@ -239,37 +237,6 @@ static bool tdb_mutex_open_ok(struct tdb_context *tdb,
 		 */
 		return true;
 	}
-
-	locked = tdb_nest_lock(tdb, ACTIVE_LOCK, F_WRLCK,
-			       TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
-
-	if ((locked == -1) && (tdb->ecode == TDB_ERR_LOCK)) {
-		/*
-		 * CLEAR_IF_FIRST still active. The tdb was created on this
-		 * host, so we can assume the mutex implementation is
-		 * compatible. Important for tools like tdbdump on a still
-		 * open locking.tdb.
-		 */
-		goto check_local_settings;
-	}
-
-	/*
-	 * We got the CLEAR_IF_FIRST lock. That means the database was
-	 * potentially copied from somewhere else. The mutex implementation
-	 * might be incompatible.
-	 */
-
-	if (tdb_nest_unlock(tdb, ACTIVE_LOCK, F_WRLCK, false) == -1) {
-		/*
-		 * Should not happen
-		 */
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_mutex_open_ok: "
-			 "failed to release ACTIVE_LOCK on %s: %s\n",
-			 tdb->name, strerror(errno)));
-		return false;
-	}
-
-check_local_settings:
 
 	if (!(tdb->flags & TDB_MUTEX_LOCKING)) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_mutex_open_ok[%s]: "
@@ -415,14 +382,6 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		 * Here we catch bugs in the callers,
 		 * the runtime check for existing tdb's comes later.
 		 */
-
-		if (!(tdb->flags & TDB_CLEAR_IF_FIRST)) {
-			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
-				"invalid flags for %s - TDB_MUTEX_LOCKING "
-				"requires TDB_CLEAR_IF_FIRST\n", name));
-			errno = EINVAL;
-			goto fail;
-		}
 
 		if (tdb->flags & TDB_INTERNAL) {
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
@@ -632,6 +591,30 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		 * mutex locking.
 		 */
 		tdb->hdr_ofs = header.mutex_size;
+
+		if ((!(tdb_flags & TDB_CLEAR_IF_FIRST)) && (!tdb->read_only)) {
+			/*
+			 * Open an existing mutexed tdb, but without
+			 * CLEAR_IF_FIRST. We need to initialize the
+			 * mutex array and keep the CLEAR_IF_FIRST
+			 * lock locked.
+			 */
+			ret = tdb_nest_lock(tdb, ACTIVE_LOCK, F_WRLCK,
+					    TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
+			locked = (ret == 0);
+
+			if (locked) {
+				ret = tdb_mutex_init(tdb);
+				if (ret == -1) {
+					TDB_LOG((tdb,
+						 TDB_DEBUG_FATAL,
+						 "tdb_open_ex: tdb_mutex_init "
+						 "failed for ""%s: %s\n",
+						 name, strerror(errno)));
+					goto fail;
+				}
+			}
+		}
 	}
 
 	if ((header.magic1_hash == 0) && (header.magic2_hash == 0)) {
@@ -708,15 +691,19 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 			goto fail;
 		}
 
+
 	}
 
-	/* We always need to do this if the CLEAR_IF_FIRST flag is set, even if
-	   we didn't get the initial exclusive lock as we need to let all other
-	   users know we're using it. */
+	if (locked || (tdb_flags & TDB_CLEAR_IF_FIRST)) {
+		/*
+		 * We always need to do this if the CLEAR_IF_FIRST
+		 * flag is set, even if we didn't get the initial
+		 * exclusive lock as we need to let all other users
+		 * know we're using it.
+		 */
 
-	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
-		/* leave this lock in place to indicate it's in use */
-		if (tdb_nest_lock(tdb, ACTIVE_LOCK, F_RDLCK, TDB_LOCK_WAIT) == -1) {
+		ret = tdb_nest_lock(tdb, ACTIVE_LOCK, F_RDLCK, TDB_LOCK_WAIT);
+		if (ret == -1) {
 			goto fail;
 		}
 	}
@@ -932,7 +919,10 @@ fail:
    seek pointer from our parent and to re-establish locks */
 _PUBLIC_ int tdb_reopen(struct tdb_context *tdb)
 {
-	return tdb_reopen_internal(tdb, tdb->flags & TDB_CLEAR_IF_FIRST);
+	bool active_lock;
+	active_lock = (tdb->flags & (TDB_CLEAR_IF_FIRST|TDB_MUTEX_LOCKING));
+
+	return tdb_reopen_internal(tdb, active_lock);
 }
 
 /* reopen all tdb's */
@@ -941,7 +931,10 @@ _PUBLIC_ int tdb_reopen_all(int parent_longlived)
 	struct tdb_context *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
-		bool active_lock = (tdb->flags & TDB_CLEAR_IF_FIRST);
+		bool active_lock;
+
+		active_lock =
+			(tdb->flags & (TDB_CLEAR_IF_FIRST|TDB_MUTEX_LOCKING));
 
 		/*
 		 * If the parent is longlived (ie. a

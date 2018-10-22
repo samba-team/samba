@@ -112,13 +112,6 @@ int main(int argc, char *argv[])
 	data.dsize = strlen("world");
 	data.dptr = discard_const_p(uint8_t, "world");
 
-	tdb = tdb_open_ex("mutex-openflags2.tdb", 0,
-			  TDB_INCOMPATIBLE_HASH|
-			  TDB_MUTEX_LOCKING,
-			  O_RDWR|O_CREAT, 0755, &nolog_ctx, NULL);
-	ok((tdb == NULL) && (errno == EINVAL), "TDB_MUTEX_LOCKING without "
-	   "TDB_CLEAR_IF_FIRST should fail with EINVAL - %d", errno);
-
 	if (!runtime_support) {
 		tdb = tdb_open_ex("mutex-openflags2.tdb", 0,
 				  TDB_CLEAR_IF_FIRST|
