@@ -93,6 +93,19 @@ static int cull_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 	return 0;
 }
 
+static bool do_transaction(void)
+{
+#if TRANSACTION_PROB
+	if (mutex) {
+		return false;
+	}
+	if (random() % TRANSACTION_PROB == 0) {
+		return true;
+	}
+#endif
+	return false;
+}
+
 static void addrec_db(void)
 {
 	int klen, dlen;
@@ -118,16 +131,15 @@ static void addrec_db(void)
 	}
 #endif
 
-#if TRANSACTION_PROB
 	if (in_transaction == 0 &&
-	    (always_transaction || random() % TRANSACTION_PROB == 0)) {
+	    (always_transaction || do_transaction())) {
 		if (tdb_transaction_start(db) != 0) {
 			fatal("tdb_transaction_start failed");
 		}
 		in_transaction++;
 		goto next;
 	}
-	if (in_transaction && random() % TRANSACTION_PROB == 0) {
+	if (in_transaction && do_transaction()) {
 		if (random() % TRANSACTION_PREPARE_PROB == 0) {
 			if (tdb_transaction_prepare_commit(db) != 0) {
 				fatal("tdb_transaction_prepare_commit failed");
@@ -139,14 +151,13 @@ static void addrec_db(void)
 		in_transaction--;
 		goto next;
 	}
-	if (in_transaction && random() % TRANSACTION_PROB == 0) {
+	if (in_transaction && do_transaction()) {
 		if (tdb_transaction_cancel(db) != 0) {
 			fatal("tdb_transaction_cancel failed");
 		}
 		in_transaction--;
 		goto next;
 	}
-#endif
 
 #if DELETE_PROB
 	if (random() % DELETE_PROB == 0) {
