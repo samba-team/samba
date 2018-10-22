@@ -137,6 +137,7 @@ def main():
         parser.print_usage()
         return
 
+    lp = sambaopts.get_loadparm()
     debuglevel = get_debug_level()
     logger = get_samba_logger(name=__name__,
                               verbose=debuglevel > 3,
@@ -173,7 +174,6 @@ def main():
     if opts.random_seed:
         random.seed(opts.random_seed)
 
-    lp = sambaopts.get_loadparm()
     creds = credopts.get_credentials(lp)
     creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
