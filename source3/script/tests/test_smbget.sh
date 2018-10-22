@@ -37,15 +37,18 @@ create_test_data()
 
 remove_test_data()
 {
-	rm -rf dir1 dir2 testfile
 	pushd $WORKDIR
 	rm -rf dir1 dir2 testfile
 	popd
 }
 
+clear_download_area() {
+	rm -rf dir1 dir2 testfile
+}
+
 test_singlefile_guest()
 {
-	[ -e testfile ] && rm testfile
+	clear_download_area
 	echo "$SMBGET -v -a smb://$SERVER_IP/smbget/testfile"
 	$SMBGET -v -a smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
@@ -62,7 +65,7 @@ test_singlefile_guest()
 
 test_singlefile_U()
 {
-	[ -e testfile ] && rm testfile
+	clear_download_area
 	$SMBGET -v -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
@@ -78,7 +81,7 @@ test_singlefile_U()
 
 test_singlefile_smburl()
 {
-	[ -e testfile ] && rm testfile
+	clear_download_area
 	$SMBGET -w $DOMAIN smb://$USERNAME:$PASSWORD@$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
@@ -94,7 +97,7 @@ test_singlefile_smburl()
 
 test_singlefile_rcfile()
 {
-	[ -e testfile ] && rm testfile
+	clear_download_area
 	echo "user $USERNAME%$PASSWORD" > $TMPDIR/rcfile
 	$SMBGET -vn -f $TMPDIR/rcfile smb://$SERVER_IP/smbget/testfile
 	rc=$?
@@ -113,9 +116,7 @@ test_singlefile_rcfile()
 
 test_recursive_U()
 {
-	[ -e testfile ] && rm testfile
-	[ -d dir1 ] && rm -rf dir1
-	[ -d dir2 ] && rm -rf dir2
+	clear_download_area
 	$SMBGET -v -R -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
@@ -135,7 +136,7 @@ test_recursive_U()
 
 test_resume()
 {
-	[ -e testfile ] && rm testfile
+	clear_download_area
 	cp $WORKDIR/testfile .
 	truncate -s 1024 testfile
 	$SMBGET -v -r -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
@@ -155,6 +156,7 @@ test_resume()
 
 test_resume_modified()
 {
+	clear_download_area
 	dd if=/dev/urandom bs=1024 count=2 of=testfile
 	$SMBGET -v -r -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 1 ]; then
@@ -167,7 +169,7 @@ test_resume_modified()
 
 test_update()
 {
-	[ -e testfile ] && rm testfile
+	clear_download_area
 	$SMBGET -v -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
@@ -229,7 +231,9 @@ testit "resume download (modified file)" test_resume_modified \
 testit "update" test_update \
 	|| failed=`expr $failed + 1`
 
-popd
+clear_download_area
+
+popd # TMPDIR
 
 remove_test_data
 
