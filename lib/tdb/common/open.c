@@ -297,7 +297,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 				tdb_hash_func hash_fn)
 {
 	int orig_errno = errno;
-	struct tdb_header header;
+	struct tdb_header header = {{0}};
 	struct tdb_context *tdb;
 	struct stat st;
 	int rev = 0;
@@ -308,8 +308,6 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	const char *hash_alg;
 	uint32_t magic1, magic2;
 	int ret;
-
-	ZERO_STRUCT(header);
 
 	if (!(tdb = (struct tdb_context *)calloc(1, sizeof *tdb))) {
 		/* Can't log this */
