@@ -1737,6 +1737,22 @@ def generate_users(ldb, instance_id, number, password):
     return users
 
 
+def generate_machine_accounts(ldb, instance_id, number, password):
+    """Add machine accounts to the server"""
+    existing_objects = search_objectclass(ldb, objectclass='computer')
+    added = 0
+    for i in range(number, 0, -1):
+        name = "STGM-%d-%d$" % (instance_id, i)
+        if name not in existing_objects:
+            name = "STGM-%d-%d" % (instance_id, i)
+            create_machine_account(ldb, instance_id, name, password)
+            added += 1
+            if added % 50 == 0:
+                LOGGER.info("Created %u/%u machine accounts" % (added, number))
+
+    return added
+
+
 def group_name(instance_id, i):
     """Generate a group name from instance id."""
     return "STGG-%d-%d" % (instance_id, i)
@@ -1782,6 +1798,12 @@ def generate_users_and_groups(ldb, instance_id, password,
     LOGGER.info("Generating dummy user accounts")
     users_added = generate_users(ldb, instance_id, number_of_users, password)
 
+    # assume there will be some overhang with more computer accounts than users
+    computer_accounts = int(1.25 * number_of_users)
+    LOGGER.info("Generating dummy machine accounts")
+    computers_added = generate_machine_accounts(ldb, instance_id,
+                                                computer_accounts, password)
+
     if number_of_groups > 0:
         LOGGER.info("Generating dummy groups")
         groups_added = generate_groups(ldb, instance_id, number_of_groups)
@@ -1801,8 +1823,9 @@ def generate_users_and_groups(ldb, instance_id, password,
        number_of_groups != groups_added):
         LOGGER.warning("The added groups will contain no members")
 
-    LOGGER.info("Added %d users, %d groups and %d group memberships" %
-                (users_added, groups_added, memberships_added))
+    LOGGER.info("Added %d users (%d machines), %d groups and %d memberships" %
+                (users_added, computers_added, groups_added,
+                 memberships_added))
 
 
 class GroupAssignments(object):
