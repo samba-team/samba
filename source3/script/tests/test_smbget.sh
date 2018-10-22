@@ -134,6 +134,27 @@ test_recursive_U()
 	return 0
 }
 
+test_recursive_existing_dir()
+{
+	clear_download_area
+	mkdir dir1
+	$SMBGET -v -R -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+
+	cmp --silent $WORKDIR/testfile ./testfile && \
+	cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 && \
+	cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	return 0
+}
+
 test_resume()
 {
 	clear_download_area
@@ -220,6 +241,9 @@ testit "download single file with rcfile" test_singlefile_rcfile \
 	|| failed=`expr $failed + 1`
 
 testit "recursive download" test_recursive_U \
+	|| failed=`expr $failed + 1`
+
+testit "recursive download (existing target dir)" test_recursive_existing_dir \
 	|| failed=`expr $failed + 1`
 
 testit "resume download" test_resume \
