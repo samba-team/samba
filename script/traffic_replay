@@ -81,6 +81,9 @@ def main():
     model_group.add_option('-S', '--scale-traffic', type='float', default=1.0,
                            help='Increase the number of conversations by '
                            'this factor')
+    parser.add_option('--old-scale',
+                      action="store_true",
+                      help='emulate the old scale for traffic')
     model_group.add_option('-D', '--duration', type='float', default=60.0,
                            help=('Run model for this long (approx). '
                                  'Default 60s for models'))
@@ -244,6 +247,13 @@ def main():
             logger.exception(("the supplied traffic summary destination "
                               "(%s) is not writable" % opts.traffic_summary))
             sys.exit()
+
+    if opts.old_scale:
+        # we used to use a silly calculation based on the number
+        # of conversations; now we use the number of packets and
+        # scale traffic accurately. To roughly compare with older
+        # numbers you use --old-scale which approximates as follows:
+        opts.scale_traffic *= 0.55
 
     # ingest the model
     if model_file and not opts.generate_users_only:
