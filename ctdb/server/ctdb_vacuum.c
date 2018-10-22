@@ -1205,6 +1205,7 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_vacuum_child_context *child_ctx;
 	struct tevent_fd *fde;
+	bool full_vacuum_run = false;
 	int ret;
 
 	/* we don't vacuum if we are in recovery mode, or db frozen */
@@ -1247,7 +1248,11 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 		return;
 	}
 
-	if (vacuum_handle->fast_path_count > ctdb->tunable.vacuum_fast_path_count) {
+	if (vacuum_handle->fast_path_count >=
+	    ctdb->tunable.vacuum_fast_path_count) {
+		if (ctdb->tunable.vacuum_fast_path_count > 0) {
+			full_vacuum_run = true;
+		}
 		vacuum_handle->fast_path_count = 0;
 	}
 
@@ -1266,7 +1271,6 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 
 	if (child_ctx->child_pid == 0) {
 		char cc = 0;
-		bool full_vacuum_run = false;
 		close(child_ctx->fd[0]);
 
 		DEBUG(DEBUG_INFO,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
@@ -1276,11 +1280,6 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 			_exit(1);
 		}
 
-		if ((ctdb->tunable.vacuum_fast_path_count > 0) &&
-		    (vacuum_handle->fast_path_count == 0))
-		{
-			full_vacuum_run = true;
-		}
 		cc = ctdb_vacuum_and_repack_db(ctdb_db, full_vacuum_run);
 
 		sys_write(child_ctx->fd[1], &cc, 1);
