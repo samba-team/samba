@@ -84,6 +84,8 @@ def main():
     model_group.add_option('-D', '--duration', type='float', default=60.0,
                            help=('Run model for this long (approx). '
                                  'Default 60s for models'))
+    model_group.add_option('--latency-timeout', type='float', default=None,
+                           help=('Wait this long for last packet to finish'))
     model_group.add_option('-r', '--replay-rate', type='float', default=1.0,
                            help='Replay the traffic faster by this factor')
     model_group.add_option('--traffic-summary',
@@ -368,6 +370,7 @@ def main():
                    accounts=accounts,
                    dns_rate=opts.dns_rate,
                    duration=opts.duration,
+                   latency_timeout=opts.latency_timeout,
                    badpassword_frequency=opts.badpassword_frequency,
                    prefer_kerberos=opts.prefer_kerberos,
                    statsdir=statsdir,

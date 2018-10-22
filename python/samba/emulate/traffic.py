@@ -1534,6 +1534,7 @@ def replay(conversation_seq,
            accounts=None,
            dns_rate=0,
            duration=None,
+           latency_timeout=1.0,
            stop_on_any_error=False,
            **kwargs):
 
@@ -1559,7 +1560,7 @@ def replay(conversation_seq,
         # end slightly after the last packet of the last conversation
         # to start. Conversations other than the last could still be
         # going, but we don't care.
-        duration = conversation_seq[-1][-1][0] + 1.0
+        duration = conversation_seq[-1][-1][0] + latency_timeout
 
     print("We will start in %.1f seconds" % delay,
           file=sys.stderr)
