@@ -70,6 +70,8 @@ class TrafficLearnerTests(BlackboxTestCase):
 
         for i, opts in enumerate((["--random-seed=3"],
                                   ["--random-seed=4"],
+                                  ["--random-seed=3",
+                                   "--conversation-persistence=0.5"],
                                   )):
             with temp_file(self.tempdir) as output:
                 command = ([SCRIPT, MODEL,

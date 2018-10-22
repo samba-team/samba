@@ -88,6 +88,10 @@ def main():
                            help=('Wait this long for last packet to finish'))
     model_group.add_option('-r', '--replay-rate', type='float', default=1.0,
                            help='Replay the traffic faster by this factor')
+    model_group.add_option('--conversation-persistence', type='float',
+                           default=0.0,
+                           help=('chance (0 to 1) that a conversation waits '
+                                 'when it would have died'))
     model_group.add_option('--traffic-summary',
                            help=('Generate a traffic summary file and write '
                                  'it here (- for stdout)'))
@@ -262,7 +266,8 @@ def main():
             model.generate_conversation_sequences(
                 opts.scale_traffic,
                 opts.duration,
-                opts.replay_rate)
+                opts.replay_rate,
+                opts.conversation_persistence)
     else:
         conversations = []
 

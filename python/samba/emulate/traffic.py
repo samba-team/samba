@@ -1226,7 +1226,8 @@ class TrafficModel(object):
     def construct_conversation_sequence(self, timestamp=0.0,
                                         hard_stop=None,
                                         replay_speed=1,
-                                        ignore_before=0):
+                                        ignore_before=0,
+                                        persistence=0):
         """Construct an individual conversation packet sequence from the
         model.
         """
@@ -1238,7 +1239,15 @@ class TrafficModel(object):
         while True:
             p = random.choice(self.ngrams.get(key, (NON_PACKET,)))
             if p == NON_PACKET:
-                break
+                if timestamp < ignore_before:
+                    break
+                if random.random() > persistence:
+                    print("ending after %s (persistence %.1f)" % (key, persistence),
+                          file=sys.stderr)
+                    break
+
+                p = 'wait:%d' % random.randrange(5, 12)
+                print("trying %s instead of end" % p, file=sys.stderr)
 
             if p in self.query_details:
                 extra = random.choice(self.query_details[p])
@@ -1260,10 +1269,16 @@ class TrafficModel(object):
                     c.append((timestamp, protocol, opcode, extra))
 
             key = key[1:] + (p,)
+            if key[-2][:5] == 'wait:' and key[-1][:5] == 'wait:':
+                # two waits in a row can only be caused by "persistence"
+                # tricks, and will not result in any packets being found.
+                # Instead we pretend this is a fresh start.
+                key = (NON_PACKET,) * (self.n - 1)
 
         return c
 
-    def generate_conversation_sequences(self, scale, duration, replay_speed=1):
+    def generate_conversation_sequences(self, scale, duration, replay_speed=1,
+                                        persistence=0):
         """Generate a list of conversation descriptions from the model."""
 
         # We run the simulation for ten times as long as our desired
@@ -1280,7 +1295,8 @@ class TrafficModel(object):
             c = self.construct_conversation_sequence(start,
                                                      hard_stop=duration,
                                                      replay_speed=replay_speed,
-                                                     ignore_before=0)
+                                                     ignore_before=0,
+                                                     persistence=persistence)
             # will these "packets" generate actual traffic?
             # some (e.g. ldap unbind) will not generate anything
             # if the previous packets are not there, and if the
