@@ -190,7 +190,15 @@ static bool smb_download_dir(const char *base, const char *name, int resume)
 	while (*relname == '/') {
 		relname++;
 	}
-	mkdir(relname, 0755);
+
+	if (strlen(relname) > 0) {
+		int rc = mkdir(relname, 0755);
+		if (rc == -1 && errno != EEXIST) {
+			fprintf(stderr, "Can't create directory %s: %s\n",
+				relname, strerror(errno));
+			return false;
+		}
+	}
 
 	tmpname = SMB_STRDUP(name);
 
