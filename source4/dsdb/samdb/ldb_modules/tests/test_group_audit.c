@@ -91,6 +91,138 @@ void audit_log_human_text(
 	audit_log_hr_debug_level = debug_level;
 }
 
+#define MAX_EXPECTED_MESSAGES 16
+static struct json_object messages[MAX_EXPECTED_MESSAGES];
+static size_t messages_sent = 0;
+
+void audit_message_send(
+	struct imessaging_context *msg_ctx,
+	const char *server_name,
+	uint32_t message_type,
+	struct json_object *message)
+{
+	messages[messages_sent].root = json_deep_copy(message->root);
+	messages[messages_sent].error = message->error;
+	messages_sent++;
+}
+
+#define check_group_change_message(m, u, a)\
+	_check_group_change_message(m, u, a, __FILE__, __LINE__);
+/*
+ * declare the internal cmocka cm_print_error so that we can output messages
+ * in sub unit format
+ */
+void cm_print_error(const char * const format, ...);
+
+/*
+ * Validate a group change JSON audit message
+ *
+ * It should contain 3 elements.
+ * Have a type of "groupChange"
+ * Have a groupChange element
+ *
+ * The group change element should have 10 elements.
+ *
+ * There should be a user element matching the expected value
+ * There should be an action matching the expected value
+ */
+static void _check_group_change_message(
+	const int message,
+	const char *user,
+	const char *action,
+	const char *file,
+	const int line)
+{
+	struct json_object json;
+	json_t *audit = NULL;
+	json_t *v = NULL;
+	const char* value;
+	json = messages[message];
+
+	/*
+	 * Validate the root JSON element
+	 * check the number of elements
+	 */
+	if (json_object_size(json.root) != 3) {
+		cm_print_error(
+		    "Unexpected number of elements in root %zu != %d\n",
+		    json_object_size(json.root),
+		    3);
+		_fail(file, line);
+	}
+
+	/*
+	 * Check the type element
+	 */
+	v = json_object_get(json.root, "type");
+	if (v == NULL) {
+		cm_print_error( "No \"type\" element\n");
+		_fail(file, line);
+	}
+
+	value = json_string_value(v);
+	if (strncmp("groupChange", value, strlen("groupChange") != 0)) {
+		cm_print_error(
+		    "Unexpected type \"%s\" != \"groupChange\"\n",
+		    value);
+		_fail(file, line);
+	}
+
+
+	audit = json_object_get(json.root, "groupChange");
+	if (audit == NULL) {
+		cm_print_error("No groupChange element\n");
+		_fail(file, line);
+	}
+
+	/*
+	 * Validate the groupChange element
+	 */
+	if (json_object_size(audit) != 10) {
+		cm_print_error(
+		    "Unexpected number of elements in groupChange "
+		    "%zu != %d\n",
+		    json_object_size(audit),
+		    10);
+		_fail(file, line);
+	}
+	/*
+	 * Validate the user element
+	 */
+	v = json_object_get(audit, "user");
+	if (v == NULL) {
+		cm_print_error( "No user element\n");
+		_fail(file, line);
+	}
+
+	value = json_string_value(v);
+	if (strncmp(user, value, strlen(user) != 0)) {
+		cm_print_error(
+		    "Unexpected user name \"%s\" != \"%s\"\n",
+		    value,
+		    user);
+		_fail(file, line);
+	}
+
+	/*
+	 * Validate the action element
+	 */
+	v = json_object_get(audit, "action");
+	if (v == NULL) {
+		cm_print_error( "No action element\n");
+		_fail(file, line);
+	}
+
+	value = json_string_value(v);
+	if (strncmp(action, value, strlen(action) != 0)) {
+		print_error(
+		    "Unexpected action \"%s\" != \"%s\"\n",
+		    value,
+		    action);
+		_fail(file, line);
+	}
+}
+
 /*
  * Test helper to check ISO 8601 timestamps for validity
  */
@@ -593,17 +725,6 @@ static void audit_message_send_init(void) {
 	audit_message_send_message_type = 0;
 	audit_message_send_message = NULL;
 }
-void audit_message_send(
-	struct imessaging_context *msg_ctx,
-	const char *server_name,
-	uint32_t message_type,
-	struct json_object *message)
-{
-	audit_message_send_msg_ctx = msg_ctx;
-	audit_message_send_server_name = server_name;
-	audit_message_send_message_type = message_type;
-	audit_message_send_message = message;
-}
 
 static void test_audit_group_json(void **state)
 {
@@ -700,7 +821,121 @@ static void test_audit_group_json(void **state)
 
 	json_free(&json);
 	TALLOC_FREE(ctx);
+}
 
+static void setup_ldb(
+	TALLOC_CTX *ctx,
+	struct ldb_context **ldb,
+	struct ldb_module **module,
+	const char *ip,
+	const char *session,
+	const char *sid)
+{
+	struct tsocket_address *ts = NULL;
+	struct audit_context *context = NULL;
+
+	*ldb = ldb_init(ctx, NULL);
+	ldb_register_samba_handlers(*ldb);
+
+
+	*module = talloc_zero(ctx, struct ldb_module);
+	(*module)->ldb = *ldb;
+
+	context = talloc_zero(*module, struct audit_context);
+	context->send_events = true;
+	context->msg_ctx = (struct imessaging_context *) 0x01;
+
+	ldb_module_set_private(*module, context);
+
+	tsocket_address_inet_from_strings(ctx, "ip", "127.0.0.1", 0, &ts);
+	ldb_set_opaque(*ldb, "remoteAddress", ts);
+
+	add_session_data(ctx, *ldb, session, sid);
+}
+
+/*
+ * Test the removal of a user from a group.
+ *
+ * The new element contains one group member
+ * The old element contains two group member
+ *
+ * Expect to see the removed entry logged.
+ *
+ * This test confirms bug 13664
+ * https://bugzilla.samba.org/show_bug.cgi?id=13664
+ */
+static void test_log_membership_changes_removed(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message_element *new_el = NULL;
+	struct ldb_message_element *old_el = NULL;
+	int status = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the ldb_request
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Populate the new elements, containing one entry.
+	 * Indicating that one element has been removed
+	 */
+	new_el = talloc_zero(ctx, struct ldb_message_element);
+	new_el->num_values = 1;
+	new_el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	new_el->values[0] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+
+	/*
+	 * Populate the old elements, with two elements
+	 * The first is the same as the one in new elements.
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->num_values = 2;
+	old_el->values = talloc_zero_array(ctx, DATA_BLOB, 2);
+	old_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	old_el->values[1] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+
+	/*
+	 * call log_membership_changes
+	 */
+	messages_sent = 0;
+	log_membership_changes(module, req, new_el, old_el, status);
+
+	/*
+	 * Check the results
+	 */
+	assert_int_equal(1, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Removed");
+
+	/*
+	 * Clean up
+	 */
+	json_free(&messages[0]);
+	TALLOC_FREE(ctx);
 }
 
 static void test_place_holder(void **state)
@@ -726,7 +961,7 @@ int main(void) {
 		cmocka_unit_test(test_get_parsed_dns),
 		cmocka_unit_test(test_dn_compare),
 		cmocka_unit_test(test_get_primary_group_dn),
-
+		cmocka_unit_test(test_log_membership_changes_removed),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
