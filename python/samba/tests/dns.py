@@ -844,6 +844,28 @@ class TestComplexQueries(DNSTest):
         self.assertEquals(response.answers[1].name, name2)
         self.assertEquals(response.answers[1].rdata, name0)
 
+    def test_cname_loop(self):
+        cname1 = "cnamelooptestrec." + self.get_dns_domain()
+        cname2 = "cnamelooptestrec2." + self.get_dns_domain()
+        cname3 = "cnamelooptestrec3." + self.get_dns_domain()
+        self.make_dns_update(cname1, cname2, dnsp.DNS_TYPE_CNAME)
+        self.make_dns_update(cname2, cname3, dnsp.DNS_TYPE_CNAME)
+        self.make_dns_update(cname3, cname1, dnsp.DNS_TYPE_CNAME)
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        q = self.make_name_question(cname1,
+                                    dns.DNS_QTYPE_A,
+                                    dns.DNS_QCLASS_IN)
+        questions.append(q)
+        self.finish_name_packet(p, questions)
+
+        (response, response_packet) =\
+            self.dns_transaction_udp(p, host=self.server_ip)
+
+        max_recursion_depth = 20
+        self.assertEquals(len(response.answers), max_recursion_depth)
 
 class TestInvalidQueries(DNSTest):
     def setUp(self):
