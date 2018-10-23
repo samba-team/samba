@@ -75,6 +75,8 @@ struct replmd_private {
 	struct ldb_dn *schema_dn;
 	bool originating_updates;
 	bool sorted_links;
+	uint32_t total_links;
+	uint32_t num_processed;
 };
 
 struct la_entry {
@@ -6579,6 +6581,7 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		}
 
 		DLIST_ADD(replmd_private->la_list, la_entry);
+		replmd_private->total_links++;
 	}
 
 	return ret;
@@ -8150,6 +8153,10 @@ static int replmd_prepare_commit(struct ldb_module *module)
 	struct la_entry *la, *prev;
 	int ret;
 
+	if (replmd_private->la_list != NULL) {
+		DBG_NOTICE("Processing linked attributes\n");
+	}
+
 	/*
 	 * Walk the list of linked attributes from DRS replication.
 	 *
@@ -8165,6 +8172,12 @@ static int replmd_prepare_commit(struct ldb_module *module)
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
 			return ret;
+		}
+
+		if ((++replmd_private->num_processed % 8192) == 0) {
+			DBG_NOTICE("Processed %u/%u linked attributes\n",
+				   replmd_private->num_processed,
+				   replmd_private->total_links);
 		}
 	}
 
