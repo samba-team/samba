@@ -2578,10 +2578,10 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 	 * comparison */
 	if (!(orig_sid && target_sid && dom_sid_equal(orig_sid, target_sid))) {
 		talloc_free(mem_ctx);
-#ifdef KRB5_KDC_ERR_CLIENT_NAME_MISMATCH /* Heimdal */
-		return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
-#elif defined(KRB5KDC_ERR_CLIENT_NAME_MISMATCH) /* MIT */
+#if defined(KRB5KDC_ERR_CLIENT_NAME_MISMATCH) /* MIT */
 		return KRB5KDC_ERR_CLIENT_NAME_MISMATCH;
+#else /* Heimdal (where this is an enum) */
+		return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 #endif
 	}
 
