@@ -65,7 +65,7 @@ static const NTTIME DELETED_OBJECT_CONTAINER_CHANGE_TIME = 2650466015990000000UL
 
 struct replmd_private {
 	TALLOC_CTX *la_ctx;
-	struct la_entry *la_list;
+	struct la_group *la_list;
 	struct nc_entry {
 		struct nc_entry *prev, *next;
 		struct ldb_dn *dn;
@@ -77,6 +77,20 @@ struct replmd_private {
 	bool sorted_links;
 	uint32_t total_links;
 	uint32_t num_processed;
+};
+
+/*
+ * groups link attributes together by source-object and attribute-ID,
+ * to improve processing efficiency (i.e. for 'member' attribute, which
+ * could have 100s or 1000s of links).
+ * Note this grouping is best effort - the same source object could still
+ * correspond to several la_groups (a lot depends on the order DRS sends
+ * the links in). The groups currently don't span replication chunks (which
+ * caps the size to ~1500 links by default).
+ */
+struct la_group {
+	struct la_group *next, *prev;
+	struct la_entry *la_entries;
 };
 
 struct la_entry {
@@ -6531,6 +6545,21 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 }
 
 /**
+ * Returns true if we can group together processing this link attribute,
+ * i.e. it has the same source-object and attribute ID as other links
+ * already in the group
+ */
+static bool la_entry_matches_group(struct la_entry *la_entry,
+				   struct la_group *la_group)
+{
+	struct la_entry *prev = la_group->la_entries;
+
+	return (la_entry->la->attid == prev->la->attid &&
+		GUID_equal(&la_entry->la->identifier->guid,
+			   &prev->la->identifier->guid));
+}
+
+/**
  * Stores the linked attributes received in the replication chunk - these get
  * applied at the end of the transaction. We also check that each linked
  * attribute is valid, i.e. source and target objects are known.
@@ -6542,6 +6571,7 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 	struct ldb_module *module = ar->module;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+	struct la_group *la_group = NULL;
 	struct ldb_context *ldb;
 
 	ldb = ldb_module_get_ctx(module);
@@ -6580,7 +6610,19 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 			break;
 		}
 
-		DLIST_ADD(replmd_private->la_list, la_entry);
+		/* group the links together by source-object for efficiency */
+		if (la_group == NULL ||
+		    !la_entry_matches_group(la_entry, la_group)) {
+
+			la_group = talloc_zero(replmd_private->la_ctx,
+					       struct la_group);
+			if (la_group == NULL) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			DLIST_ADD(replmd_private->la_list, la_group);
+		}
+		DLIST_ADD(la_group->la_entries, la_entry);
 		replmd_private->total_links++;
 	}
 
@@ -8142,6 +8184,37 @@ static int replmd_start_transaction(struct ldb_module *module)
 	return ldb_next_start_trans(module);
 }
 
+/**
+ * Processes a group of linked attributes that apply to the same source-object
+ * and attribute-ID
+ */
+static int replmd_process_la_group(struct ldb_module *module,
+				   struct replmd_private *replmd_private,
+				   struct la_group *la_group)
+{
+	struct la_entry *la = NULL;
+	struct la_entry *prev = NULL;
+	int ret;
+
+	for (la = DLIST_TAIL(la_group->la_entries); la; la=prev) {
+		prev = DLIST_PREV(la);
+		DLIST_REMOVE(la_group->la_entries, la);
+		ret = replmd_process_linked_attribute(module, replmd_private,
+						      la, NULL);
+		if (ret != LDB_SUCCESS) {
+			replmd_txn_cleanup(replmd_private);
+			return ret;
+		}
+
+		if ((++replmd_private->num_processed % 8192) == 0) {
+			DBG_NOTICE("Processed %u/%u linked attributes\n",
+				   replmd_private->num_processed,
+				   replmd_private->total_links);
+		}
+	}
+	return LDB_SUCCESS;
+}
+
 /*
   on prepare commit we loop over our queued la_context structures and
   apply each of them
@@ -8150,7 +8223,7 @@ static int replmd_prepare_commit(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
-	struct la_entry *la, *prev;
+	struct la_group *la_group, *prev;
 	int ret;
 
 	if (replmd_private->la_list != NULL) {
@@ -8163,21 +8236,21 @@ static int replmd_prepare_commit(struct ldb_module *module)
 	 * We walk backwards, to do the first entry first, as we
 	 * added the entries with DLIST_ADD() which puts them at the
 	 * start of the list
+	 *
+	 * Links are grouped together so we process links for the same
+	 * source object in one go.
 	 */
-	for (la = DLIST_TAIL(replmd_private->la_list); la; la=prev) {
-		prev = DLIST_PREV(la);
-		DLIST_REMOVE(replmd_private->la_list, la);
-		ret = replmd_process_linked_attribute(module, replmd_private,
-						      la, NULL);
+	for (la_group = DLIST_TAIL(replmd_private->la_list);
+	     la_group != NULL;
+	     la_group = prev) {
+
+		prev = DLIST_PREV(la_group);
+		DLIST_REMOVE(replmd_private->la_list, la_group);
+		ret = replmd_process_la_group(module, replmd_private,
+					      la_group);
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
 			return ret;
-		}
-
-		if ((++replmd_private->num_processed % 8192) == 0) {
-			DBG_NOTICE("Processed %u/%u linked attributes\n",
-				   replmd_private->num_processed,
-				   replmd_private->total_links);
 		}
 	}
 
