@@ -205,6 +205,7 @@ static bool smb_download_dir(const char *base, const char *name, int resume)
 	while ((dirent = smbc_readdir(dirhandle))) {
 		char *newname;
 		if (!strcmp(dirent->name, ".") || !strcmp(dirent->name, "..")) {
+			ok = true;
 			continue;
 		}
 		if (asprintf(&newname, "%s/%s", tmpname, dirent->name) == -1) {

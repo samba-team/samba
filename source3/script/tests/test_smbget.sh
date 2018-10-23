@@ -43,7 +43,7 @@ remove_test_data()
 }
 
 clear_download_area() {
-	rm -rf dir1 dir2 testfile
+	rm -rf dir1 dir2 testfile dir001 dir004
 }
 
 test_singlefile_guest()
@@ -155,6 +155,39 @@ test_recursive_existing_dir()
 	return 0
 }
 
+
+test_recursive_with_empty() # see Bug 13199
+{
+	clear_download_area
+	# create some additional empty directories
+	mkdir -p $WORKDIR/dir001/dir002/dir003
+	mkdir -p $WORKDIR/dir004/dir005/dir006
+	$SMBGET -v -R -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	rc=$?
+	rm -rf $WORKDIR/dir001
+	rm -rf $WORKDIR/dir004
+	if [ $rc -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+
+	cmp --silent $WORKDIR/testfile ./testfile && \
+	cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 && \
+	cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	if [ ! -d dir001/dir002/dir003 ] || [ ! -d dir004/dir005/dir006 ]; then
+		echo 'ERROR: empty directories are not present'
+		return 1
+	fi
+
+	return 0
+}
+
+
 test_resume()
 {
 	clear_download_area
@@ -244,6 +277,9 @@ testit "recursive download" test_recursive_U \
 	|| failed=`expr $failed + 1`
 
 testit "recursive download (existing target dir)" test_recursive_existing_dir \
+	|| failed=`expr $failed + 1`
+
+testit "recursive download with empty directories" test_recursive_with_empty \
 	|| failed=`expr $failed + 1`
 
 testit "resume download" test_resume \
