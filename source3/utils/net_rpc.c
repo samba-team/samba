@@ -5426,9 +5426,9 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 			"allowedusers",
 			rpc_share_allowedusers,
 			NET_TRANSPORT_RPC,
-			N_("Modify allowed users"),
+			N_("List allowed users"),
 			N_("net rpc share allowedusers\n"
-			   "    Modify allowed users")
+			   "    List allowed users")
 		},
 		{
 			"migrate",
