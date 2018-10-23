@@ -31,7 +31,7 @@ static int in_transaction;
 static int error_count;
 static int always_transaction = 0;
 static int hash_size = 2;
-static int loopnum;
+static unsigned loopnum;
 static int count_pipe;
 static bool mutex = false;
 static struct tdb_logging_context log_ctx;
