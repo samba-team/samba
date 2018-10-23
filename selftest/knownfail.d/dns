@@ -45,3 +45,9 @@ samba.tests.dns.__main__.TestSimpleQueries.test_qtype_all_query\(rodc:local\)
 
 # The SOA override should not pass against the RODC, it must not overstamp
 samba.tests.dns.__main__.TestSimpleQueries.test_one_SOA_query\(rodc:local\)
+
+#
+# rodc and vampire_dc require signed dns updates, so the test setup
+# fails, but the test does run on fl2003dc
+^samba.tests.dns.__main__.TestComplexQueries.test_cname_loop\(rodc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_cname_loop\(vampire_dc:local\)
