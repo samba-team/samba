@@ -96,7 +96,6 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 
 		/* Iterate through chain */
 		while( tlock->off) {
-			tdb_off_t current;
 			if (tdb_rec_read(tdb, tlock->off, rec) == -1)
 				goto fail;
 
@@ -114,12 +113,7 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 				return tlock->off;
 			}
 
-			/* Try to clean dead ones from old traverses */
-			current = tlock->off;
 			tlock->off = rec->next;
-			if (!(tdb->read_only || tdb->traverse_read) &&
-			    tdb_do_delete(tdb, current, rec) != 0)
-				goto fail;
 		}
 		tdb_unlock(tdb, tlock->list, tlock->lock_rw);
 		want_next = 0;
