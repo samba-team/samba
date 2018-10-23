@@ -142,6 +142,18 @@ EOF
        fi
 }
 
+check_expected_userparameters() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-userParameters-after-dbcheck.ldif.tmp
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb userParameters=* -s sub -b DC=release-4-1-0rc3,DC=samba,DC=corp userParameters --sorted | grep -v \# > $tmpldif
+	diff $tmpldif $release_dir/expected-userParameters-after-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+    fi
+    return 0
+}
+
 reindex() {
        $PYTHON $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
@@ -406,6 +418,7 @@ if [ -d $release_dir ]; then
     testit "add_userparameters3" add_userparameters3
     testit_expect_failure "dbcheck2" dbcheck2
     testit "dbcheck_clean2" dbcheck_clean2
+    testit "check_expected_userparameters" check_expected_userparameters
     testit "rm_deleted_objects" rm_deleted_objects
     # We must re-index again because rm_deleted_objects went behind
     # the back of the main sam.ldb.
