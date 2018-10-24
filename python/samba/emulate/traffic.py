@@ -323,6 +323,24 @@ def is_a_real_packet(protocol, opcode):
     return True
 
 
+def is_a_traffic_generating_packet(protocol, opcode):
+    """Return true if a packet generates traffic in its own right. Some of
+    these will generate traffic in certain contexts (e.g. ldap unbind
+    after a bind) but not if the conversation consists only of these packets.
+    """
+    if protocol == 'wait':
+        return False
+
+    if (protocol, opcode) in (
+            ('kerberos', ''),
+            ('ldap', '2'),
+            ('dcerpc', '15'),
+            ('dcerpc', '16')):
+        return False
+
+    return is_a_real_packet(protocol, opcode)
+
+
 class ReplayContext(object):
     """State/Context for a conversation between an simulated client and a
        server. Some of the context is shared amongst all conversations
@@ -1254,6 +1272,16 @@ class TrafficModel(object):
                                                      hard_stop=duration,
                                                      replay_speed=replay_speed,
                                                      ignore_before=0)
+            # will these "packets" generate actual traffic?
+            # some (e.g. ldap unbind) will not generate anything
+            # if the previous packets are not there, and if the
+            # conversation only has those it wastes a process doing nothing.
+            for timestamp, protocol, opcode, extra in c:
+                if is_a_traffic_generating_packet(protocol, opcode):
+                    break
+            else:
+                continue
+
             conversations.append(c)
             n_packets += len(c)
 
