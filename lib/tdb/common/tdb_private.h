@@ -311,7 +311,6 @@ int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off);
 bool tdb_needs_recovery(struct tdb_context *tdb);
 int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec);
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec);
-int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct tdb_record *rec);
 unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len);
 int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		   tdb_off_t offset, tdb_len_t len,
@@ -323,7 +322,7 @@ tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t has
 tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 			struct tdb_record *r, tdb_len_t length,
 			tdb_off_t *p_last_ptr);
-int tdb_purge_dead(struct tdb_context *tdb, uint32_t hash);
+int tdb_trim_dead(struct tdb_context *tdb, uint32_t hash);
 void tdb_io_init(struct tdb_context *tdb);
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size);
 tdb_off_t tdb_expand_adjust(tdb_off_t map_size, tdb_off_t size, int page_size);
