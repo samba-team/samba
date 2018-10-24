@@ -945,6 +945,366 @@ static void test_log_membership_changes_removed(void **state)
 	TALLOC_FREE(ctx);
 }
 
+/* test log_membership_changes
+ *
+ * old contains 2 user dn's
+ * new contains 0 user dn's
+ *
+ * Expect to see both dn's logged as deleted.
+ */
+static void test_log_membership_changes_remove_all(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message_element *new_el = NULL;
+	struct ldb_message_element *old_el = NULL;
+	int status = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the ldb_request
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Populate the new elements, containing no entries.
+	 * Indicating that all elements have been removed
+	 */
+	new_el = talloc_zero(ctx, struct ldb_message_element);
+	new_el->num_values = 0;
+	new_el->values = NULL;
+
+	/*
+	 * Populate the old elements, with two elements
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->num_values = 2;
+	old_el->values = talloc_zero_array(ctx, DATA_BLOB, 2);
+	old_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	old_el->values[1] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+
+	/*
+	 * call log_membership_changes
+	 */
+	messages_sent = 0;
+	log_membership_changes( module, req, new_el, old_el, status);
+
+	/*
+	 * Check the results
+	 */
+	assert_int_equal(2, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Removed");
+
+	check_group_change_message(
+	    1,
+	    "CN=testuser131953,CN=Users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Removed");
+
+	/*
+	 * Clean up
+	 */
+	json_free(&messages[0]);
+	json_free(&messages[1]);
+	TALLOC_FREE(ctx);
+}
+
+/* test log_membership_changes
+ *
+ * Add an entry.
+ *
+ * Old entries contains a single user dn
+ * New entries contains 2 user dn's, one matching the dn in old entries
+ *
+ * Should see a single new entry logged.
+ */
+static void test_log_membership_changes_added(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message_element *new_el = NULL;
+	struct ldb_message_element *old_el = NULL;
+	int status = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the ldb_request
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Populate the old elements adding a single entry.
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->num_values = 1;
+	old_el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	old_el->values[0] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+
+	/*
+	 * Populate the new elements adding two entries. One matches the entry
+	 * in old elements. We expect to see the other element logged as Added
+	 */
+	new_el = talloc_zero(ctx, struct ldb_message_element);
+	new_el->num_values = 2;
+	new_el->values = talloc_zero_array(ctx, DATA_BLOB, 2);
+	new_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	new_el->values[1] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+
+	/*
+	 * call log_membership_changes
+	 */
+	messages_sent = 0;
+	log_membership_changes( module, req, new_el, old_el, status);
+
+	/*
+	 * Check the results
+	 */
+	assert_int_equal(1, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Added");
+
+	/*
+	 * Clean up
+	 */
+	json_free(&messages[0]);
+	TALLOC_FREE(ctx);
+}
+
+/*
+ * test log_membership_changes.
+ *
+ * Old entries is empty
+ * New entries contains 2 user dn's
+ *
+ * Expect to see log messages for two added users
+ */
+static void test_log_membership_changes_add_to_empty(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message_element *new_el = NULL;
+	struct ldb_message_element *old_el = NULL;
+	int status = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	/*
+	 * Set up the ldb and module structures
+	 */
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the request structure
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Build the element containing the old values
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->num_values = 0;
+	old_el->values = NULL;
+
+	/*
+	 * Build the element containing the new values
+	 */
+	new_el = talloc_zero(ctx, struct ldb_message_element);
+	new_el->num_values = 2;
+	new_el->values = talloc_zero_array(ctx, DATA_BLOB, 2);
+	new_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	new_el->values[1] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+
+	/*
+	 * Run log membership changes
+	 */
+	messages_sent = 0;
+	log_membership_changes( module, req, new_el, old_el, status);
+	assert_int_equal(2, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Added");
+
+	check_group_change_message(
+	    1,
+            "CN=testuser131953,CN=Users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Added");
+
+	json_free(&messages[0]);
+	json_free(&messages[1]);
+	TALLOC_FREE(ctx);
+}
+
+/* test log_membership_changes
+ *
+ * Test Replication Meta Data flag handling.
+ *
+ * 4 entries in old and new entries with their RMD_FLAGS set as below:
+ *    old   new
+ * 1)  0     0    Not logged
+ * 2)  1     1    Both deleted, no change not logged
+ * 3)  0     1    New tagged as deleted, log as deleted
+ * 4)  1     0    Has been undeleted, log as an add
+ *
+ * Should see a single new entry logged.
+ */
+static void test_log_membership_changes_rmd_flags(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message_element *new_el = NULL;
+	struct ldb_message_element *old_el = NULL;
+	int status = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the ldb_request
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Populate the old elements.
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->num_values = 4;
+	old_el->values = talloc_zero_array(ctx, DATA_BLOB, 4);
+	old_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"<RMD_FLAGS=0>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	old_el->values[1] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681c>;"
+		"<RMD_FLAGS=1>;"
+		"cn=grpadttstuser02,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	old_el->values[2] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681d>;"
+		"<RMD_FLAGS=0>;"
+		"cn=grpadttstuser03,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	old_el->values[3] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681e>;"
+		"<RMD_FLAGS=1>;"
+		"cn=grpadttstuser04,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+
+	/*
+	 * Populate the new elements.
+	 */
+	new_el = talloc_zero(ctx, struct ldb_message_element);
+	new_el->num_values = 4;
+	new_el->values = talloc_zero_array(ctx, DATA_BLOB, 4);
+	new_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"<RMD_FLAGS=0>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	new_el->values[1] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681c>;"
+		"<RMD_FLAGS=1>;"
+		"cn=grpadttstuser02,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	new_el->values[2] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681d>;"
+		"<RMD_FLAGS=1>;"
+		"cn=grpadttstuser03,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	new_el->values[3] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681e>;"
+		"<RMD_FLAGS=0>;"
+		"cn=grpadttstuser04,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+
+	/*
+	 * call log_membership_changes
+	 */
+	messages_sent = 0;
+	log_membership_changes( module, req, new_el, old_el, status);
+
+	/*
+	 * Check the results
+	 */
+	assert_int_equal(2, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "cn=grpadttstuser03,cn=users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Removed");
+	check_group_change_message(
+	    1,
+	    "cn=grpadttstuser04,cn=users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Added");
+
+	/*
+	 * Clean up
+	 */
+	json_free(&messages[0]);
+	json_free(&messages[1]);
+	TALLOC_FREE(ctx);
+}
+
 /*
  * Note: to run under valgrind us:
  *       valgrind --suppressions=test_group_audit.valgrind bin/test_group_audit
@@ -961,6 +1321,10 @@ int main(void) {
 		cmocka_unit_test(test_dn_compare),
 		cmocka_unit_test(test_get_primary_group_dn),
 		cmocka_unit_test(test_log_membership_changes_removed),
+		cmocka_unit_test(test_log_membership_changes_remove_all),
+		cmocka_unit_test(test_log_membership_changes_added),
+		cmocka_unit_test(test_log_membership_changes_add_to_empty),
+		cmocka_unit_test(test_log_membership_changes_rmd_flags),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
