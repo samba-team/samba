@@ -39,7 +39,7 @@ class ColoredFormatter(logging.Formatter):
 
 
 def get_samba_logger(
-        name='samba', stream=sys.stderr, use_color=True,
+        name='samba', stream=sys.stderr,
         level=None, verbose=False, quiet=False,
         fmt=('%(levelname)s %(asctime)s pid:%(process)d '
              '%(pathname)s #%(lineno)d: %(message)s'),
@@ -56,7 +56,10 @@ def get_samba_logger(
 
     logger.setLevel(level)
 
-    Formatter = use_color and ColoredFormatter or logging.Formatter
+    if (hasattr(stream, 'isatty') and stream.isatty()):
+        Formatter = ColoredFormatter
+    else:
+        Formatter = logging.Formatter
     formatter = Formatter(fmt=fmt, datefmt=datefmt)
 
     handler = logging.StreamHandler(stream=stream)
