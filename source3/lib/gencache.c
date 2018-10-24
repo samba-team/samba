@@ -28,6 +28,7 @@
 #include "util_tdb.h"
 #include "tdb_wrap/tdb_wrap.h"
 #include "zlib.h"
+#include "lib/util/strv.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
@@ -40,6 +41,11 @@ static struct tdb_wrap *cache;
  *        for use by various parts of the Samba code
  *
  **/
+
+static bool gencache_pull_timeout(TDB_DATA key,
+				  TDB_DATA data,
+				  time_t *pres,
+				  DATA_BLOB *payload);
 
 struct gencache_timeout {
 	time_t timeout;
@@ -94,6 +100,77 @@ static bool gencache_init(void)
 	return true;
 }
 
+/*
+ * Walk the hash chain for "key", deleting all expired entries for
+ * that hash chain
+ */
+struct gencache_prune_expired_state {
+	TALLOC_CTX *mem_ctx;
+	char *keys;
+};
+
+static int gencache_prune_expired_fn(struct tdb_context *tdb,
+				     TDB_DATA key,
+				     TDB_DATA data,
+				     void *private_data)
+{
+	struct gencache_prune_expired_state *state = private_data;
+	struct gencache_timeout t;
+	bool ok = false;
+	bool expired = false;
+
+	if ((key.dsize == 0) || (key.dptr[key.dsize-1] != '\0')) {
+		/* not a valid record, should never happen */
+		return 0;
+	}
+
+	ok = gencache_pull_timeout(key, data, &t.timeout, NULL);
+	if (ok) {
+		expired = gencache_timeout_expired(&t);
+	}
+
+	if (!ok || expired) {
+		/*
+		 * Ignore failure, this is "just" background cleanup
+		 */
+		strv_add(state->mem_ctx, &state->keys, (char *)key.dptr);
+	}
+
+	return 0;
+}
+
+static void gencache_prune_expired(struct tdb_context *tdb,
+				   TDB_DATA chain_key)
+{
+	struct gencache_prune_expired_state state = {
+		.mem_ctx = talloc_tos(),
+	};
+	char *keystr = NULL;
+	int ret;
+
+	ret = tdb_traverse_key_chain(
+		tdb, chain_key, gencache_prune_expired_fn, &state);
+	if (ret == -1) {
+		DBG_DEBUG("tdb_traverse_key_chain failed: %s\n",
+			  tdb_errorstr(tdb));
+		return;
+	}
+
+	while ((keystr = strv_next(state.keys, keystr)) != NULL) {
+		TDB_DATA key = string_term_tdb_data(keystr);
+
+		/*
+		 * We expect the hash chain of "chain_key" to be
+		 * locked. So between gencache_prune_expired_fn
+		 * figuring out "keystr" is expired and the
+		 * tdb_delete, nobody can have reset the timeout.
+		 */
+		tdb_delete(tdb, key);
+	}
+
+	TALLOC_FREE(state.keys);
+}
+
 /**
  * Set an entry in the cache file. If there's no such
  * one, then add it.
@@ -142,7 +219,18 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
+	ret = tdb_chainlock(cache->tdb, key);
+	if (ret == -1) {
+		DBG_WARNING("tdb_chainlock for key [%s] failed: %s\n",
+			    keystr, tdb_errorstr(cache->tdb));
+		return false;
+	}
+
+	gencache_prune_expired(cache->tdb, key);
+
 	ret = tdb_storev(cache->tdb, key, dbufs, ARRAY_SIZE(dbufs), 0);
+
+	tdb_chainunlock(cache->tdb, key);
 
 	if (ret == 0) {
 		return true;
