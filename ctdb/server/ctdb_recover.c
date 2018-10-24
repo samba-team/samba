@@ -956,12 +956,12 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 	data.dptr = &rec->data[rec->keylen];
 
 	if (ctdb_lmaster(ctdb, &key) == ctdb->pnn) {
-		DEBUG(DEBUG_INFO,(__location__ " Called delete on record where we are lmaster\n"));
+		DBG_INFO("Called delete on record where we are lmaster\n");
 		return -1;
 	}
 
 	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(DEBUG_ERR,(__location__ " Bad record size\n"));
+		DBG_ERR("Bad record size\n");
 		return -1;
 	}
 
@@ -982,10 +982,10 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 	if (data2.dsize < sizeof(struct ctdb_ltdb_header)) {
 		if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) == 0) {
 			if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
-				DEBUG(DEBUG_CRIT,(__location__ " Failed to delete corrupt record\n"));
+				DBG_ERR("Failed to delete corrupt record\n");
 			}
 			tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
-			DEBUG(DEBUG_CRIT,(__location__ " Deleted corrupt record\n"));
+			DBG_ERR("Deleted corrupt record\n");
 		}
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 		free(data2.dptr);
@@ -996,8 +996,9 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 
 	if (hdr2->rsn > hdr->rsn) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(DEBUG_INFO,(__location__ " Skipping record with rsn=%llu - called with rsn=%llu\n",
-			 (unsigned long long)hdr2->rsn, (unsigned long long)hdr->rsn));
+		DBG_INFO("Skipping record with rsn=%llu - called with rsn=%llu\n",
+			 (unsigned long long)hdr2->rsn,
+			 (unsigned long long)hdr->rsn);
 		free(data2.dptr);
 		return -1;
 	}
@@ -1005,20 +1006,20 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 	/* do not allow deleting record that have readonly flags set. */
 	if (hdr->flags & CTDB_REC_RO_FLAGS) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(DEBUG_INFO,(__location__ " Skipping record with readonly flags set\n"));
+		DBG_INFO("Skipping record with readonly flags set\n");
 		free(data2.dptr);
 		return -1;
 	}
 	if (hdr2->flags & CTDB_REC_RO_FLAGS) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(DEBUG_INFO,(__location__ " Skipping record with readonly flags set\n"));
+		DBG_INFO("Skipping record with readonly flags set locally\n");
 		free(data2.dptr);
 		return -1;
 	}
 
 	if (hdr2->dmaster == ctdb->pnn) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(DEBUG_INFO,(__location__ " Attempted delete record where we are the dmaster\n"));
+		DBG_INFO("Attempted delete record where we are the dmaster\n");
 		free(data2.dptr);
 		return -1;
 	}
@@ -1033,7 +1034,7 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 	if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
 		tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(DEBUG_INFO,(__location__ " Failed to delete record\n"));
+		DBG_INFO("Failed to delete record\n");
 		free(data2.dptr);
 		return -1;
 	}
