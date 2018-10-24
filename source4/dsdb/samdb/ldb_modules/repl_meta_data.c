@@ -7847,6 +7847,7 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
   process one linked attribute structure
  */
 static int replmd_process_linked_attribute(struct ldb_module *module,
+					   TALLOC_CTX *mem_ctx,
 					   struct replmd_private *replmd_private,
 					   struct la_entry *la_entry,
 					   struct ldb_request *parent)
@@ -7854,8 +7855,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
-	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, mem_ctx);
 	int ret;
 	const struct dsdb_attribute *attr;
 	struct dsdb_dn *dsdb_dn = NULL;
@@ -7876,11 +7876,10 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	 * get the attribute being modified and the search result for the
 	 * source object
 	 */
-	ret = replmd_get_la_entry_source(module, la_entry, tmp_ctx, &attr,
+	ret = replmd_get_la_entry_source(module, la_entry, mem_ctx, &attr,
 					 &msg);
 
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -7897,7 +7896,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	replmd_deletion_state(module, msg, &deletion_state, NULL);
 
 	if (deletion_state >= OBJECT_RECYCLED) {
-		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
 
@@ -7919,7 +7917,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	ldb_msg_remove_attr(msg, "isRecycled");
 
 	/* the value blob for the attribute holds the target object DN */
-	status = dsdb_dn_la_from_blob(ldb, attr, schema, tmp_ctx,
+	status = dsdb_dn_la_from_blob(ldb, attr, schema, mem_ctx,
 				      la->value.blob, &dsdb_dn);
 	if (!W_ERROR_IS_OK(status)) {
 		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
@@ -7934,7 +7932,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName, LDB_FLAG_MOD_REPLACE, &old_el);
 		if (ret != LDB_SUCCESS) {
 			ldb_module_oom(module);
-			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
@@ -7942,11 +7939,10 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	}
 
 	/* parse the existing links */
-	ret = get_parsed_dns_trusted(module, replmd_private, tmp_ctx, old_el, &pdn_list,
+	ret = get_parsed_dns_trusted(module, replmd_private, mem_ctx, old_el, &pdn_list,
 				     attr->syntax->ldap_oid, parent);
 
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -7954,7 +7950,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 					 true, &guid, &ignore_link);
 
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -7963,7 +7958,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	 * OK to ignore the linked attribute
 	 */
 	if (ignore_link) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -7976,22 +7970,19 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			     attr->syntax->ldap_oid,
 			     true);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
 	if (!replmd_link_update_is_newer(pdn, la)) {
 		DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
 			 old_el->name, ldb_dn_get_linearized(msg->dn),
-			 GUID_string(tmp_ctx, &la->meta_data.originating_invocation_id)));
-		talloc_free(tmp_ctx);
+			 GUID_string(mem_ctx, &la->meta_data.originating_invocation_id)));
 		return LDB_SUCCESS;
 	}
 
 	/* get a seq_num for this change */
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -8001,13 +7992,12 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	 */
 	if (active) {
 		ret = replmd_check_singleval_la_conflict(module, replmd_private,
-							 tmp_ctx, msg->dn, la,
+							 mem_ctx, msg->dn, la,
 							 dsdb_dn, pdn, pdn_list,
 							 old_el, schema, attr,
 							 seq_num,
 							 &add_as_inactive);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
 			return ret;
 		}
 	}
@@ -8023,7 +8013,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 						  &pdn->guid, false, attr,
 						  parent);
 			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
 				return ret;
 			}
 		}
@@ -8042,7 +8031,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			offset = old_el->num_values;
 		} else {
 			if (next->dsdb_dn == NULL) {
-				ret = really_parse_trusted_dn(tmp_ctx, ldb, next,
+				ret = really_parse_trusted_dn(mem_ctx, ldb, next,
 							      attr->syntax->ldap_oid);
 				if (ret != LDB_SUCCESS) {
 					return ret;
@@ -8050,7 +8039,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			}
 			offset = next - pdn_list;
 			if (offset > old_el->num_values) {
-				talloc_free(tmp_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
@@ -8074,14 +8062,13 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	}
 
 	/* set the link attribute's value to the info that was received */
-	ret = replmd_set_la_val(tmp_ctx, val_to_update, dsdb_dn, old_dsdb_dn,
+	ret = replmd_set_la_val(mem_ctx, val_to_update, dsdb_dn, old_dsdb_dn,
 				&la->meta_data.originating_invocation_id,
 				la->meta_data.originating_usn, seq_num,
 				la->meta_data.originating_change_time,
 				la->meta_data.version,
 				!active);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -8094,7 +8081,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 					       val_to_update);
 
 		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
 			return ret;
 		}
 
@@ -8107,7 +8093,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 					  &guid, true, attr,
 					  parent);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
 			return ret;
 		}
 	}
@@ -8116,27 +8101,23 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	   has changed */
 	ret = add_time_element(msg, "whenChanged", t);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		ldb_operr(ldb);
 		return ret;
 	}
 
 	ret = add_uint64_element(ldb, msg, "uSNChanged", seq_num);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		ldb_operr(ldb);
 		return ret;
 	}
 
 	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
 	if (old_el == NULL) {
-		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
 
 	ret = dsdb_check_single_valued_link(attr, old_el);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -8147,15 +8128,13 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
 			  ldb_ldif_message_redacted_string(ldb,
-							   tmp_ctx,
+							   mem_ctx,
 							   LDB_CHANGETYPE_MODIFY,
 							   msg));
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	talloc_free(tmp_ctx);
-
+	TALLOC_FREE(msg);
 	return ret;
 }
 
@@ -8207,11 +8186,13 @@ static int replmd_process_la_group(struct ldb_module *module,
 	struct la_entry *la = NULL;
 	struct la_entry *prev = NULL;
 	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(la_group);
 
 	for (la = DLIST_TAIL(la_group->la_entries); la; la=prev) {
 		prev = DLIST_PREV(la);
 		DLIST_REMOVE(la_group->la_entries, la);
-		ret = replmd_process_linked_attribute(module, replmd_private,
+		ret = replmd_process_linked_attribute(module, tmp_ctx,
+						      replmd_private,
 						      la, NULL);
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
@@ -8224,6 +8205,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 				   replmd_private->total_links);
 		}
 	}
+	TALLOC_FREE(tmp_ctx);
 	return LDB_SUCCESS;
 }
 
