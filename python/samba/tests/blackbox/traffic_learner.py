@@ -43,11 +43,8 @@ def temp_file(temp_dir):
 class TrafficLearnerTests(BlackboxTestCase):
 
     def test_no_output_file(self):
-        """Run the script with no output file specified"""
-        expected = (b"No output file was specified to write the model to.\n"
-                    b"Please specify a filename using the --out option.\n")
-        actual = self.check_output(LEARNER)
-        self.assertEquals(expected, actual)
+        """Run the script with no output file specified. Should fail."""
+        self.check_exit_code(LEARNER, 1)
 
     def test_model_generation(self):
         """Ensure a model is generated from a summary file and it is
