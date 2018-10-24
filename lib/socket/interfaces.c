@@ -363,12 +363,13 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
    above */
 int get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 {
-	struct iface_struct *ifaces;
+	struct iface_struct *ifaces = NULL;
 	int total, i, j;
 
 	total = _get_interfaces(mem_ctx, &ifaces);
 	/* If we have an error, no interface or just one we can leave */
 	if (total <= 1) {
+		*pifaces = ifaces;
 		return total;
 	}
 
