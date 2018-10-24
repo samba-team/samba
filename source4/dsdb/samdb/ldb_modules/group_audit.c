@@ -252,35 +252,36 @@ enum dn_compare_result {
 	GREATER_THAN
 };
 /*
- * @brief compare parsed_dns
+ * @brief compare parsed_dn, using GUID ordering
  *
- * Compare two parsed_dn structures, parsing the entries if necessary.
+ * Compare two parsed_dn structures, using GUID ordering.
  * To avoid the overhead of parsing the DN's this function does a binary
- * compare first. Only parsing the DN's they are not equal at a binary level.
+ * compare first. The DN's tre only parsed if they are not equal at a binary
+ * level.
  *
  * @param ctx talloc context that will own the parsed dsdb_dn
  * @param ldb ldb_context
- * @param old_val The old value
- * @param new_val The old value
+ * @param dn1 The first dn
+ * @param dn2 The second dn
  *
  * @return BINARY_EQUAL values are equal at a binary level
  *         EQUAL        DN's are equal but the meta data is different
- *         LESS_THAN    old value < new value
- *         GREATER_THAN old value > new value
+ *         LESS_THAN    dn1's GUID is less than dn2's GUID
+ *         GREATER_THAN dn1's GUID is greater than  dn2's GUID
  *
  */
 static enum dn_compare_result dn_compare(
 	TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb,
-	struct parsed_dn *old_val,
-	struct parsed_dn *new_val) {
+	struct parsed_dn *dn1,
+	struct parsed_dn *dn2) {
 
 	int res = 0;
 
 	/*
 	 * Do a binary compare first to avoid unnecessary parsing
 	 */
-	if (data_blob_cmp(new_val->v, old_val->v) == 0) {
+	if (data_blob_cmp(dn1->v, dn2->v) == 0) {
 		/*
 		 * Values are equal at a binary level so no need
 		 * for further processing
@@ -292,22 +293,22 @@ static enum dn_compare_result dn_compare(
 	 * do a GUID ordering compare. To do this we will need to ensure
 	 * that the dn's have been parsed.
 	 */
-	if (old_val->dsdb_dn == NULL) {
+	if (dn1->dsdb_dn == NULL) {
 		really_parse_trusted_dn(
 			mem_ctx,
 			ldb,
-			old_val,
+			dn1,
 			LDB_SYNTAX_DN);
 	}
-	if (new_val->dsdb_dn == NULL) {
+	if (dn2->dsdb_dn == NULL) {
 		really_parse_trusted_dn(
 			mem_ctx,
 			ldb,
-			new_val,
+			dn2,
 			LDB_SYNTAX_DN);
 	}
 
-	res = ndr_guid_compare(&new_val->guid, &old_val->guid);
+	res = ndr_guid_compare(&dn1->guid, &dn2->guid);
 	if (res < 0) {
 		return LESS_THAN;
 	} else if (res == 0) {

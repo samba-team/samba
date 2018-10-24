@@ -586,7 +586,7 @@ static void test_dn_compare(void **state)
 	b->v = &bb;
 
 	res = dn_compare(ctx, ldb, a, b);
-	assert_int_equal(GREATER_THAN, res);
+	assert_int_equal(LESS_THAN, res);
 	/*
 	 * DN's should have been parsed
 	 */
@@ -614,7 +614,7 @@ static void test_dn_compare(void **state)
 	b->v = &bb;
 
 	res = dn_compare(ctx, ldb, a, b);
-	assert_int_equal(LESS_THAN, res);
+	assert_int_equal(GREATER_THAN, res);
 	/*
 	 * DN's should have been parsed
 	 */
