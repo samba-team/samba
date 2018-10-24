@@ -7418,26 +7418,23 @@ static int replmd_check_target_exists(struct ldb_module *module,
 }
 
 /**
- * Extracts the key details about the source/target object for a
+ * Extracts the key details about the source object for a
  * linked-attribute entry.
  * This returns the following details:
  * @param ret_attr the schema details for the linked attribute
  * @param source_msg the search result for the source object
- * @param target_dsdb_dn the unpacked DN info for the target object
  */
-static int replmd_extract_la_entry_details(struct ldb_module *module,
-					   struct la_entry *la_entry,
-					   TALLOC_CTX *mem_ctx,
-					   const struct dsdb_attribute **ret_attr,
-					   struct ldb_message **source_msg,
-					   struct dsdb_dn **target_dsdb_dn)
+static int replmd_get_la_entry_source(struct ldb_module *module,
+				      struct la_entry *la_entry,
+				      TALLOC_CTX *mem_ctx,
+				      const struct dsdb_attribute **ret_attr,
+				      struct ldb_message **source_msg)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb, mem_ctx);
 	int ret;
 	const struct dsdb_attribute *attr;
-	WERROR status;
 	struct ldb_result *res;
 	const char *attrs[4];
 
@@ -7528,17 +7525,6 @@ linked_attributes[0]:
 	}
 
 	*source_msg = res->msgs[0];
-
-	/* the value blob for the attribute holds the target object DN */
-	status = dsdb_dn_la_from_blob(ldb, attr, schema, mem_ctx, la->value.blob, target_dsdb_dn);
-	if (!W_ERROR_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
-				       attr->lDAPDisplayName,
-				       ldb_dn_get_linearized(res->msgs[0]->dn),
-				       win_errstr(status));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	*ret_attr = attr;
 
 	return LDB_SUCCESS;
@@ -7548,19 +7534,23 @@ linked_attributes[0]:
  * Verifies the source and target objects are known for a linked attribute
  */
 static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
-					  struct la_entry *la)
+					  struct la_entry *la_entry)
 {
 	int ret = LDB_SUCCESS;
-	TALLOC_CTX *tmp_ctx = talloc_new(la);
+	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
 	struct ldb_module *module = ar->module;
 	struct ldb_message *src_msg;
 	const struct dsdb_attribute *attr;
-	struct dsdb_dn *tgt_dsdb_dn;
+	struct dsdb_dn *tgt_dsdb_dn = NULL;
 	struct GUID guid = GUID_zero();
 	bool dummy;
+	WERROR status;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
 
-	ret = replmd_extract_la_entry_details(module, la, tmp_ctx, &attr,
-					      &src_msg, &tgt_dsdb_dn);
+	ret = replmd_get_la_entry_source(module, la_entry, tmp_ctx, &attr,
+					 &src_msg);
 
 	/*
 	 * When we fail to find the source object, the error code we pass
@@ -7578,15 +7568,26 @@ static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 		return ret;
 	}
 
+	/* the value blob for the attribute holds the target object DN */
+	status = dsdb_dn_la_from_blob(ldb, attr, schema, tmp_ctx,
+				      la->value.blob, &tgt_dsdb_dn);
+	if (!W_ERROR_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
+				       attr->lDAPDisplayName,
+				       ldb_dn_get_linearized(src_msg->dn),
+				       win_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/*
 	 * We can skip the target object checks if we're only syncing critical
 	 * objects, or we know the target is up-to-date. If either case, we
 	 * still continue even if the target doesn't exist
 	 */
-	if ((la->dsdb_repl_flags & (DSDB_REPL_FLAG_OBJECT_SUBSET |
-				    DSDB_REPL_FLAG_TARGETS_UPTODATE)) == 0) {
+	if ((la_entry->dsdb_repl_flags & (DSDB_REPL_FLAG_OBJECT_SUBSET |
+					  DSDB_REPL_FLAG_TARGETS_UPTODATE)) == 0) {
 
-		ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
+		ret = replmd_check_target_exists(module, tgt_dsdb_dn, la_entry,
 						 src_msg->dn, false, &guid,
 						 &dummy);
 	}
@@ -7857,7 +7858,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
 	int ret;
 	const struct dsdb_attribute *attr;
-	struct dsdb_dn *dsdb_dn;
+	struct dsdb_dn *dsdb_dn = NULL;
 	uint64_t seq_num = 0;
 	struct ldb_message_element *old_el;
 	time_t t = time(NULL);
@@ -7869,13 +7870,14 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct dsdb_dn *old_dsdb_dn = NULL;
 	struct ldb_val *val_to_update = NULL;
 	bool add_as_inactive = false;
+	WERROR status;
 
 	/*
-	 * get the attribute being modified, the search result for the source object,
-	 * and the target object's DN details
+	 * get the attribute being modified and the search result for the
+	 * source object
 	 */
-	ret = replmd_extract_la_entry_details(module, la_entry, tmp_ctx, &attr,
-					      &msg, &dsdb_dn);
+	ret = replmd_get_la_entry_source(module, la_entry, tmp_ctx, &attr,
+					 &msg);
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -7913,9 +7915,19 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	 * This is becaue isDeleted is a Boolean, so FALSE is a
 	 * legitimate value (set by Samba's deletetest.py)
 	 */
-
 	ldb_msg_remove_attr(msg, "isDeleted");
 	ldb_msg_remove_attr(msg, "isRecycled");
+
+	/* the value blob for the attribute holds the target object DN */
+	status = dsdb_dn_la_from_blob(ldb, attr, schema, tmp_ctx,
+				      la->value.blob, &dsdb_dn);
+	if (!W_ERROR_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
+				       attr->lDAPDisplayName,
+				       ldb_dn_get_linearized(msg->dn),
+				       win_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
 	if (old_el == NULL) {
