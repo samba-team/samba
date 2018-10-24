@@ -23,16 +23,12 @@
 # best way to do that yet.
 #
 # -- mbp
-from samba.compat import PY3
-if PY3:
-    import unicodedata
-    KATAKANA_LETTER_A = unicodedata.lookup("KATAKANA LETTER A")
-else:
-    from unicodenames import KATAKANA_LETTER_A as KATAKANA_LETTER_A
-
-
+import unicodedata
 import samba.tests
 from samba import strcasecmp_m, strstr_m
+
+
+KATAKANA_LETTER_A = unicodedata.lookup("KATAKANA LETTER A")
 
 
 def signum(a):
