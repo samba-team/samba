@@ -413,6 +413,8 @@ class BlackboxTestCase(TestCaseInTempDir):
         stdoutdata, stderrdata = p.communicate()
         retcode = p.returncode
         if retcode != expected:
+            if msg is None:
+                msg = "expected return code %s; got %s" % (expected, retcode)
             raise BlackboxProcessError(retcode,
                                        line,
                                        stdoutdata,
