@@ -25,7 +25,7 @@ import tempfile
 import samba
 import tdb
 import samba.getopt as options
-from samba.samdb import SamDB
+from samba.samdb import SamDB, get_default_backend_store
 import ldb
 from samba import smb
 from samba.ntacls import backup_online, backup_restore, backup_offline
@@ -207,11 +207,15 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         Option("--targetdir", type=str,
                help="Directory to write the backup file to"),
         Option("--no-secrets", action="store_true", default=False,
-               help="Exclude secret values from the backup created")
+               help="Exclude secret values from the backup created"),
+        Option("--backend-store", type="choice", metavar="BACKENDSTORE",
+               choices=["tdb", "mdb"],
+               help="Specify the database backend to be used "
+               "(default is %s)" % get_default_backend_store()),
     ]
 
     def run(self, sambaopts=None, credopts=None, server=None, targetdir=None,
-            no_secrets=False):
+            no_secrets=False, backend_store=None):
         logger = self.get_logger()
         logger.setLevel(logging.DEBUG)
 
@@ -230,7 +234,8 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         include_secrets = not no_secrets
         ctx = join_clone(logger=logger, creds=creds, lp=lp,
                          include_secrets=include_secrets, server=server,
-                         dns_backend='SAMBA_INTERNAL', targetdir=tmpdir)
+                         dns_backend='SAMBA_INTERNAL', targetdir=tmpdir,
+                         backend_store=backend_store)
 
         # get the paths used for the clone, then drop the old samdb connection
         paths = ctx.paths
@@ -607,7 +612,11 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         Option("--keep-dns-realm", action="store_true", default=False,
                help="Retain the DNS entries for the old realm in the backup"),
         Option("--no-secrets", action="store_true", default=False,
-               help="Exclude secret values from the backup created")
+               help="Exclude secret values from the backup created"),
+        Option("--backend-store", type="choice", metavar="BACKENDSTORE",
+               choices=["tdb", "mdb"],
+               help="Specify the database backend to be used "
+               "(default is %s)" % get_default_backend_store()),
     ]
 
     takes_args = ["new_domain_name", "new_dns_realm"]
@@ -705,7 +714,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
 
     def run(self, new_domain_name, new_dns_realm, sambaopts=None,
             credopts=None, server=None, targetdir=None, keep_dns_realm=False,
-            no_secrets=False):
+            no_secrets=False, backend_store=None):
         logger = self.get_logger()
         logger.setLevel(logging.INFO)
 
@@ -737,7 +746,8 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
                                       creds=creds, lp=lp,
                                       include_secrets=include_secrets,
                                       dns_backend='SAMBA_INTERNAL',
-                                      server=server, targetdir=tmpdir)
+                                      server=server, targetdir=tmpdir,
+                                      backend_store=backend_store)
 
         # sanity-check we're not "renaming" the domain to the same values
         old_domain = ctx.domain_name

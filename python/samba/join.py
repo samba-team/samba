@@ -1539,11 +1539,12 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
 
 def join_clone(logger=None, server=None, creds=None, lp=None,
                targetdir=None, domain=None, include_secrets=False,
-               dns_backend="NONE"):
+               dns_backend="NONE", backend_store=None):
     """Creates a local clone of a remote DC."""
     ctx = DCCloneContext(logger, server, creds, lp, targetdir=targetdir,
                          domain=domain, dns_backend=dns_backend,
-                         include_secrets=include_secrets)
+                         include_secrets=include_secrets,
+                         backend_store=backend_store)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1616,10 +1617,11 @@ class DCCloneContext(DCJoinContext):
 
     def __init__(ctx, logger=None, server=None, creds=None, lp=None,
                  targetdir=None, domain=None, dns_backend=None,
-                 include_secrets=False):
+                 include_secrets=False, backend_store=None):
         super(DCCloneContext, ctx).__init__(logger, server, creds, lp,
                                             targetdir=targetdir, domain=domain,
-                                            dns_backend=dns_backend)
+                                            dns_backend=dns_backend,
+                                            backend_store=backend_store)
 
         # As we don't want to create or delete these DNs, we set them to None
         ctx.server_dn = None
@@ -1669,12 +1671,13 @@ class DCCloneAndRenameContext(DCCloneContext):
 
     def __init__(ctx, new_base_dn, new_domain_name, new_realm, logger=None,
                  server=None, creds=None, lp=None, targetdir=None, domain=None,
-                 dns_backend=None, include_secrets=True):
+                 dns_backend=None, include_secrets=True, backend_store=None):
         super(DCCloneAndRenameContext, ctx).__init__(logger, server, creds, lp,
                                                      targetdir=targetdir,
                                                      domain=domain,
                                                      dns_backend=dns_backend,
-                                                     include_secrets=include_secrets)
+                                                     include_secrets=include_secrets,
+                                                     backend_store=backend_store)
         # store the new DN (etc) that we want the cloned DB to use
         ctx.new_base_dn = new_base_dn
         ctx.new_domain_name = new_domain_name
@@ -1741,7 +1744,8 @@ class DCCloneAndRenameContext(DCCloneContext):
                             configdn=ctx.rename_dn(ctx.config_dn),
                             domain=ctx.new_domain_name, domainsid=ctx.domsid,
                             serverrole="active directory domain controller",
-                            dns_backend=ctx.dns_backend)
+                            dns_backend=ctx.dns_backend,
+                            backend_store=ctx.backend_store)
 
         print("Provision OK for renamed domain DN %s" % presult.domaindn)
         ctx.local_samdb = presult.samdb

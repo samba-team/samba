@@ -57,6 +57,12 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         self.backup_markers = ['sidForRestore', 'backupDate']
         self.restore_domain = os.environ["DOMAIN"]
         self.restore_realm = os.environ["REALM"]
+        self.backend = None
+
+    def use_backend(self, backend):
+        """Explicitly set the DB backend that the backup should use"""
+        self.backend = backend
+        self.base_cmd += ["--backend-store=" + backend]
 
     def assert_partitions_present(self, samdb):
         """Asserts all expected partitions are present in the backup samdb"""
@@ -278,6 +284,13 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         self.assertIsNone(res[0].get('repsFrom'))
         self.assertIsNone(res[0].get('repsTo'))
 
+        # check the DB is using the backend we supplied
+        if self.backend:
+            res = samdb.search(base="@PARTITION", scope=ldb.SCOPE_BASE,
+                               attrs=["backendStore"])
+            backend = str(res[0].get("backendStore"))
+            self.assertEqual(backend, self.backend)
+
         # check the restored DB has the expected partitions/DC/FSMO roles
         self.assert_partitions_present(samdb)
         self.assert_dcs_present(samdb, self.new_server, expected_count=1)
@@ -391,15 +404,19 @@ class DomainBackupOnline(DomainBackupBase):
         self._test_backup_untar()
 
     def test_backup_restore(self):
+        self.use_backend("tdb")
         self._test_backup_restore()
 
     def test_backup_restore_with_conf(self):
+        self.use_backend("mdb")
         self._test_backup_restore_with_conf()
 
     def test_backup_restore_no_secrets(self):
+        self.use_backend("tdb")
         self._test_backup_restore_no_secrets()
 
     def test_backup_restore_into_site(self):
+        self.use_backend("mdb")
         self._test_backup_restore_into_site()
 
 
@@ -422,15 +439,19 @@ class DomainBackupRename(DomainBackupBase):
         self._test_backup_untar()
 
     def test_backup_restore(self):
+        self.use_backend("mdb")
         self._test_backup_restore()
 
     def test_backup_restore_with_conf(self):
+        self.use_backend("tdb")
         self._test_backup_restore_with_conf()
 
     def test_backup_restore_no_secrets(self):
+        self.use_backend("mdb")
         self._test_backup_restore_no_secrets()
 
     def test_backup_restore_into_site(self):
+        self.use_backend("tdb")
         self._test_backup_restore_into_site()
 
     def test_backup_invalid_args(self):
