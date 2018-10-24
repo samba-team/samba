@@ -142,7 +142,7 @@ class OUCmdTestCase(SambaToolCmdTest):
 
         for ouobj in oulist:
             name = ouobj.get("name", idx=0)
-            found = self.assertMatch(out, name,
+            found = self.assertMatch(out, str(name),
                                      "ou '%s' not found" % name)
 
     def test_rename(self):
