@@ -7849,15 +7849,15 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 static int replmd_process_linked_attribute(struct ldb_module *module,
 					   TALLOC_CTX *mem_ctx,
 					   struct replmd_private *replmd_private,
+					   struct ldb_message *msg,
+					   const struct dsdb_attribute *attr,
 					   struct la_entry *la_entry,
 					   struct ldb_request *parent)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_message *msg;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb, mem_ctx);
 	int ret;
-	const struct dsdb_attribute *attr;
 	struct dsdb_dn *dsdb_dn = NULL;
 	uint64_t seq_num = 0;
 	struct ldb_message_element *old_el;
@@ -7866,55 +7866,10 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct GUID guid = GUID_zero();
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 	bool ignore_link;
-	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
 	struct dsdb_dn *old_dsdb_dn = NULL;
 	struct ldb_val *val_to_update = NULL;
 	bool add_as_inactive = false;
 	WERROR status;
-
-	/*
-	 * get the attribute being modified and the search result for the
-	 * source object
-	 */
-	ret = replmd_get_la_entry_source(module, la_entry, mem_ctx, &attr,
-					 &msg);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/*
-	 * Check for deleted objects per MS-DRSR 4.1.10.6.14
-	 * ProcessLinkValue, because link updates are not applied to
-	 * recycled and tombstone objects.  We don't have to delete
-	 * any existing link, that should have happened when the
-	 * object deletion was replicated or initiated.
-	 *
-	 * This needs isDeleted and isRecycled to be included as
-	 * attributes in the search and so in msg if set.
-	 */
-	replmd_deletion_state(module, msg, &deletion_state, NULL);
-
-	if (deletion_state >= OBJECT_RECYCLED) {
-		return LDB_SUCCESS;
-	}
-
-	/*
-	 * Now that we know the deletion_state, remove the extra
-	 * attributes added for that purpose.  We need to do this
-	 * otherwise in the case of isDeleted: FALSE the modify will
-	 * fail with:
-	 *
-	 * Failed to apply linked attribute change 'attribute 'isDeleted':
-	 * invalid modify flags on
-	 * 'CN=g1_1527570609273,CN=Users,DC=samba,DC=example,DC=com':
-	 * 0x0'
-	 *
-	 * This is becaue isDeleted is a Boolean, so FALSE is a
-	 * legitimate value (set by Samba's deletetest.py)
-	 */
-	ldb_msg_remove_attr(msg, "isDeleted");
-	ldb_msg_remove_attr(msg, "isRecycled");
 
 	/* the value blob for the attribute holds the target object DN */
 	status = dsdb_dn_la_from_blob(ldb, attr, schema, mem_ctx,
@@ -8099,6 +8054,8 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 
 	/* we only change whenChanged and uSNChanged if the seq_num
 	   has changed */
+	ldb_msg_remove_attr(msg, "whenChanged");
+	ldb_msg_remove_attr(msg, "uSNChanged");
 	ret = add_time_element(msg, "whenChanged", t);
 	if (ret != LDB_SUCCESS) {
 		ldb_operr(ldb);
@@ -8123,18 +8080,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 
 	old_el->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
 
-	ret = linked_attr_modify(module, msg, parent);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
-			  ldb_errstring(ldb),
-			  ldb_ldif_message_redacted_string(ldb,
-							   mem_ctx,
-							   LDB_CHANGETYPE_MODIFY,
-							   msg));
-		return ret;
-	}
-
-	TALLOC_FREE(msg);
 	return ret;
 }
 
@@ -8187,13 +8132,64 @@ static int replmd_process_la_group(struct ldb_module *module,
 	struct la_entry *prev = NULL;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(la_group);
+	struct la_entry *first_la = DLIST_TAIL(la_group->la_entries);
+	struct ldb_message *msg = NULL;
+	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const struct dsdb_attribute *attr = NULL;
 
+	/*
+	 * get the attribute being modified and the search result for the
+	 * source object
+	 */
+	ret = replmd_get_la_entry_source(module, first_la, tmp_ctx, &attr,
+					 &msg);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/*
+	 * Check for deleted objects per MS-DRSR 4.1.10.6.14
+	 * ProcessLinkValue, because link updates are not applied to
+	 * recycled and tombstone objects.  We don't have to delete
+	 * any existing link, that should have happened when the
+	 * object deletion was replicated or initiated.
+	 *
+	 * This needs isDeleted and isRecycled to be included as
+	 * attributes in the search and so in msg if set.
+	 */
+	replmd_deletion_state(module, msg, &deletion_state, NULL);
+
+	if (deletion_state >= OBJECT_RECYCLED) {
+		TALLOC_FREE(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	/*
+	 * Now that we know the deletion_state, remove the extra
+	 * attributes added for that purpose.  We need to do this
+	 * otherwise in the case of isDeleted: FALSE the modify will
+	 * fail with:
+	 *
+	 * Failed to apply linked attribute change 'attribute 'isDeleted':
+	 * invalid modify flags on
+	 * 'CN=g1_1527570609273,CN=Users,DC=samba,DC=example,DC=com':
+	 * 0x0'
+	 *
+	 * This is becaue isDeleted is a Boolean, so FALSE is a
+	 * legitimate value (set by Samba's deletetest.py)
+	 */
+	ldb_msg_remove_attr(msg, "isDeleted");
+	ldb_msg_remove_attr(msg, "isRecycled");
+
+	/* go through and process the link targets for this source object */
 	for (la = DLIST_TAIL(la_group->la_entries); la; la=prev) {
 		prev = DLIST_PREV(la);
 		DLIST_REMOVE(la_group->la_entries, la);
 		ret = replmd_process_linked_attribute(module, tmp_ctx,
 						      replmd_private,
-						      la, NULL);
+						      msg, attr, la, NULL);
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
 			return ret;
@@ -8205,6 +8201,21 @@ static int replmd_process_la_group(struct ldb_module *module,
 				   replmd_private->total_links);
 		}
 	}
+
+	/* apply the link changes to the source object */
+	ret = linked_attr_modify(module, msg, NULL);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  "Failed to apply linked attribute change '%s'\n%s\n",
+			  ldb_errstring(ldb),
+			  ldb_ldif_message_redacted_string(ldb,
+							   tmp_ctx,
+							   LDB_CHANGETYPE_MODIFY,
+							   msg));
+		TALLOC_FREE(tmp_ctx);
+		return ret;
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return LDB_SUCCESS;
 }
