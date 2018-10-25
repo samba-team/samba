@@ -632,16 +632,14 @@ _PUBLIC_ NTSTATUS authsam_update_user_info_dc(TALLOC_CTX *mem_ctx,
 	n = user_info_dc->num_sids;
 	for (i = 0; i < n; i++) {
 		struct dom_sid *sid = &user_info_dc->sids[i];
-		char sid_buf[DOM_SID_STR_BUFLEN] = {0,};
-		char dn_str[DOM_SID_STR_BUFLEN*2] = {0,};
+		struct dom_sid_buf sid_buf;
+		char dn_str[sizeof(sid_buf.buf)*2];
 		DATA_BLOB dn_blob = data_blob_null;
-		int len;
 
-		len = dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-		if ((len < 0) || (len+1 > sizeof(sid_buf))) {
-			return NT_STATUS_INVALID_SID;
-		}
-		snprintf(dn_str, sizeof(dn_str), "<SID=%s>", sid_buf);
+		snprintf(dn_str,
+			sizeof(dn_str),
+			"<SID=%s>",
+			dom_sid_str_buf(sid, &sid_buf));
 		dn_blob = data_blob_string_const(dn_str);
 
 		/*
