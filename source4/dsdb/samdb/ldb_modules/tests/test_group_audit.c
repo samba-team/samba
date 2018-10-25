@@ -199,10 +199,16 @@ static void _check_group_change_message(
 	}
 }
 
+#define check_timestamp(b, t)\
+	_check_timestamp(b, t, __FILE__, __LINE__);
 /*
  * Test helper to check ISO 8601 timestamps for validity
  */
-static void check_timestamp(time_t before, const char *timestamp)
+static void _check_timestamp(
+	time_t before,
+	const char *timestamp,
+	const char *file,
+	const int line)
 {
 	int rc;
 	int usec, tz;
@@ -238,10 +244,32 @@ static void check_timestamp(time_t before, const char *timestamp)
 	actual = mktime(&tm);
 
 	/*
-	 * The timestamp should be before <= actual <= after
+	 * The time stamp should be before <= actual <= after
 	 */
-	assert_true(difftime(actual, before) >= 0);
-	assert_true(difftime(after, actual) >= 0);
+	if (difftime(actual, before) < 0) {
+		char buffer[40];
+		strftime(buffer,
+			 sizeof(buffer)-1,
+			 "%Y-%m-%dT%T",
+			 localtime(&before));
+		cm_print_error(
+		    "time stamp \"%s\" is before start time \"%s\"\n",
+		    timestamp,
+		    buffer);
+		_fail(file, line);
+	}
+	if (difftime(after, actual) < 0) {
+		char buffer[40];
+		strftime(buffer,
+			 sizeof(buffer)-1,
+			 "%Y-%m-%dT%T",
+			 localtime(&after));
+		cm_print_error(
+		    "time stamp \"%s\" is after finish time \"%s\"\n",
+		    timestamp,
+		    buffer);
+		_fail(file, line);
+	}
 }
 
 /*
