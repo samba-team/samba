@@ -12,6 +12,7 @@ use POSIX;
 use SocketWrapper;
 use target::Samba;
 use target::Samba3;
+use Archive::Tar;
 
 sub new($$$$$) {
 	my ($classname, $bindir, $ldap, $srcdir, $server_maxtime) = @_;
@@ -2180,6 +2181,7 @@ sub check_env($$)
 	ad_dc_no_ntlm        => [],
 	ad_dc_ntvfs          => [],
 	backupfromdc         => [],
+	customdc             => [],
 
 	fl2008r2dc           => ["ad_dc"],
 	fl2003dc             => ["ad_dc"],
@@ -2996,6 +2998,104 @@ sub setup_labdc
 	    return undef;
 	}
 
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+# Inspects a backup *.tar.bz2 file and determines the realm/domain it contains
+sub get_backup_domain_realm
+{
+	my ($self, $backup_file) = @_;
+
+	print "Determining REALM/DOMAIN values in backup...\n";
+
+	# The backup will have the correct domain/realm values in the smb.conf.
+	# So we can work out the env variables the testenv should use based on
+	# that. Let's start by extracting the smb.conf
+	my $tar = Archive::Tar->new($backup_file);
+	my $tmpdir = File::Temp->newdir();
+	my $smbconf = "$tmpdir/smb.conf";
+
+	# note that the filepaths within the tar-file differ slightly for online
+	# and offline backups
+	if ($tar->contains_file("etc/smb.conf")) {
+		$tar->extract_file("etc/smb.conf", $smbconf);
+	} elsif ($tar->contains_file("./etc/smb.conf")) {
+		$tar->extract_file("./etc/smb.conf", $smbconf);
+	} else {
+		warn("Could not find smb.conf in $backup_file");
+		return undef, undef;
+	}
+
+	# now use testparm to read the values we're interested in
+	my $testparm = Samba::bindir_path($self, "testparm");
+	my $domain = `$testparm $smbconf -sl --parameter-name=WORKGROUP`;
+	my $realm = `$testparm $smbconf -sl --parameter-name=REALM`;
+	chomp $realm;
+	chomp $domain;
+	print "Backup-file REALM is $realm, DOMAIN is $domain\n";
+
+	return ($domain, $realm);
+}
+
+# This spins up a custom testenv that can be based on any backup-file you want.
+# This is just intended for manual testing (rather than automated test-cases)
+sub setup_customdc
+{
+	my ($self, $prefix) = @_;
+	print "Preparing CUSTOM RESTORE DC...\n";
+	my $dc_name = "customdc";
+	my $password = "locDCpass1";
+	my $backup_file = $ENV{'BACKUP_FILE'};
+
+	# user must specify a backup file to restore via an ENV variable, i.e.
+	# BACKUP_FILE=backup-blah.tar.bz2 SELFTEST_TESTENV=customdc make testenv
+	if (not defined($backup_file)) {
+		warn("Please specify BACKUP_FILE");
+		return undef;
+	}
+
+	# work out the correct domain/realm env values from the backup-file
+	my ($domain, $realm) = $self->get_backup_domain_realm($backup_file);
+
+	# create a placeholder directory and smb.conf, as well as the env vars.
+	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, $dc_name,
+						    $domain, $realm, $password);
+
+	# restore the specified backup file to populate the testenv
+	my $restore_dir = abs_path($prefix);
+	my $ret = $self->restore_backup_file($backup_file,
+					     "--newservername=$env->{SERVER}",
+					     $restore_dir, $env->{SERVERCONFFILE});
+	unless ($ret == 0) {
+		return undef;
+	}
+
+	# Change the admin password to the testenv default, just in case it's
+	# different, or in case this was a --no-secrets backup
+	my $samba_tool = Samba::bindir_path($self, "samba-tool");
+	my $cmd = "$samba_tool user setpassword $env->{USERNAME} ";
+	$cmd .= "--newpassword=$password -H $restore_dir/private/sam.ldb";
+
+	unless(system($cmd) == 0) {
+		warn("Failed to reset admin's password: \n$cmd");
+		return undef;
+	}
+
+	# re-create the testenv's krb5.conf (the restore may have overwritten it,
+	# if the backup-file was an offline backup)
+	Samba::mk_krb5_conf($ctx);
+
+	# start samba for the restored DC
+	if (not defined($self->check_or_start($env, "standard"))) {
+	    return undef;
+	}
+
+	# if this was a backup-rename, then we may need to setup namespaces
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
