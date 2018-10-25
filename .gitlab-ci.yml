@@ -105,3 +105,8 @@ build_samba_purepy3-none_env:
   <<: *shared_template
   script:
     - python3 script/autobuild.py samba-purepy3-none-env           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
+build_samba_purepy3-ad-dc-2:
+  <<: *shared_template
+  script:
+    - python3 script/autobuild.py samba-purepy3-ad-dc-2           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
