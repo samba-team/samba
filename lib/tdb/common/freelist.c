@@ -619,6 +619,12 @@ blocking_freelist_allocate:
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
 		return 0;
 	}
+	/*
+	 * Dead records can happen even if max_dead_records==0, they
+	 * are older than the max_dead_records concept: They happen if
+	 * tdb_delete happens concurrently with a traverse.
+	 */
+	tdb_purge_dead(tdb, hash);
 	ret = tdb_allocate_from_freelist(tdb, length, rec);
 	tdb_unlock(tdb, -1, F_WRLCK);
 	return ret;
