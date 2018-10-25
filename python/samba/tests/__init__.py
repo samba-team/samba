@@ -17,7 +17,7 @@
 #
 
 """Samba Python tests."""
-
+from __future__ import print_function
 import os
 import tempfile
 import warnings
@@ -37,6 +37,7 @@ from samba.compat import text_type
 from samba.compat import string_types
 from random import randint
 from random import SystemRandom
+from contextlib import contextmanager
 import string
 try:
     from samba.samdb import SamDB
@@ -298,6 +299,20 @@ class TestCaseInTempDir(TestCase):
         self.assertEquals([], os.listdir(self.tempdir))
         os.rmdir(self.tempdir)
         self.tempdir = None
+
+    @contextmanager
+    def mktemp(self):
+        """Yield a temporary filename in the tempdir."""
+        try:
+            fd, fn = tempfile.mkstemp(dir=self.tempdir)
+            yield fn
+        finally:
+            try:
+                os.close(fd)
+                os.unlink(fn)
+            except (OSError, IOError) as e:
+                print("could not remove temporary file: %s" % e,
+                      file=sys.stderr)
 
 
 def env_loadparm():
