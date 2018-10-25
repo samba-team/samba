@@ -162,7 +162,6 @@ class GptTmplInfParser(GPParser):
         # param_list = [[Name, Mode, ACL],]
         def parse(self, line):
             parameters = [None, None, None]
-            index = 0
             current_arg = 0
 
             while line != '':
@@ -324,7 +323,6 @@ class GptTmplInfParser(GPParser):
                 header_name = match.group(1)
                 if header_name in self.sections:
                     current_param_parser = self.sections[header_name]
-                    current_header_name = header_name
                     # print current_param_parser
                     continue
 
