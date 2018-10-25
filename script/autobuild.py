@@ -55,6 +55,7 @@ builddirs = {
     "samba-nopython": ".",
     "samba-buildpy3-only": ".",
     "samba-purepy3-none-env": ".",
+    "samba-purepy3-ad-dc-2": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -416,6 +417,23 @@ tasks = {
                        "TESTS='${PY3_ONLY}"
                        "--include-env=none'",
                        "text/plain")],
+    "samba-purepy3-ad-dc-2": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                        ("configure", "PYTHON='python3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "PYTHON='python3' make -j", "text/plain"),
+                        ("test", "PYTHON='python3' make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='${PY3_ONLY}"
+                         "--include-env=chgdcpass "
+                         "--include-env=vampire_2000_dc "
+                         "--include-env=fl2000dc "
+                         "--include-env=ad_dc_no_nss "
+                         "--include-env=backupfromdc "
+                         "--include-env=restoredc "
+                         "--include-env=renamedc "
+                         "--include-env=offlinebackupdc "
+                         "--include-env=labdc "
+                         "'",
+                         "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # these are useful for debugging autobuild
     'pass': [("pass", 'echo passing && /bin/true', "text/plain")],
