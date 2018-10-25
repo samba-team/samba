@@ -586,7 +586,7 @@ struct json_object dsdb_audit_attributes_json(
 	const struct ldb_message* message)
 {
 
-	int i, j;
+	unsigned int i, j;
 	struct json_object attributes = json_new_object();
 
 	if (json_is_invalid(&attributes)) {
