@@ -17,7 +17,6 @@
 
 """Blackbox tests for traffic_summary"""
 
-from contextlib import contextmanager
 import os
 import subprocess
 import tempfile
@@ -28,18 +27,6 @@ SCRIPT      = "script/traffic_summary.pl"
 DATA_DIR    = "python/samba/tests/blackbox/testdata"
 INPUT       = os.path.join(DATA_DIR, "traffic_summary.pdml")
 EXPECTED_FN = os.path.join(DATA_DIR, "traffic_summary.expected")
-
-
-@contextmanager
-def temp_file(temp_dir):
-    try:
-        tf   = tempfile.NamedTemporaryFile(dir=temp_dir)
-        name = tf.name
-        tf.close()
-        yield name
-    finally:
-        if os.path.exists(name):
-            os.remove(name)
 
 
 class TrafficSummaryTests(BlackboxTestCase):
@@ -57,8 +44,8 @@ class TrafficSummaryTests(BlackboxTestCase):
         if not self.check_twig():
             self.skipTest("Perl module XML::Twig is not installed")
 
-        with temp_file(self.tempdir) as output:
-            command  = "%s %s >%s" % (SCRIPT, INPUT, output)
+        with self.mktemp() as output:
+            command = "%s %s >%s" % (SCRIPT, INPUT, output)
             print(command)
             self.check_run(command)
             expected = open(EXPECTED_FN).readlines()

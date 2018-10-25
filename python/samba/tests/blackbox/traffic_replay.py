@@ -17,7 +17,6 @@
 
 """Blackbox tests for traffic_replay"""
 
-from contextlib import contextmanager
 import os
 import tempfile
 
@@ -32,18 +31,6 @@ USER          = os.environ["USERNAME"]
 CREDS         = "-U%s%%%s" % (USER, PASSWORD)
 MODEL         = os.path.join(DATA_DIR, "traffic-sample-very-short.model")
 EXPECTED_OUTPUT = os.path.join(DATA_DIR, "traffic_replay-%s.expected")
-
-
-@contextmanager
-def temp_file(temp_dir):
-    try:
-        tf   = tempfile.NamedTemporaryFile(dir=temp_dir)
-        name = tf.name
-        tf.close()
-        yield name
-    finally:
-        if os.path.exists(name):
-            os.remove(name)
 
 
 class TrafficLearnerTests(BlackboxTestCase):
@@ -76,7 +63,7 @@ class TrafficLearnerTests(BlackboxTestCase):
                                    "--old-scale",
                                    "--conversation-persistence=0.95"],
                                   )):
-            with temp_file(self.tempdir) as output:
+            with self.mktemp() as output:
                 command = ([SCRIPT, MODEL,
                             "--traffic-summary", output,
                             "-D1", "-S0.1"] +

@@ -17,7 +17,6 @@
 
 """Blackbox tests for traffic_leaner"""
 
-from contextlib import contextmanager
 import os
 import tempfile
 from samba.emulate import traffic
@@ -26,18 +25,6 @@ from samba.tests import BlackboxTestCase
 
 LEARNER  = "script/traffic_learner"
 DATA_DIR = "python/samba/tests/blackbox/testdata"
-
-
-@contextmanager
-def temp_file(temp_dir):
-    try:
-        tf   = tempfile.NamedTemporaryFile(dir=temp_dir)
-        name = tf.name
-        tf.close()
-        yield name
-    finally:
-        if os.path.exists(name):
-            os.remove(name)
 
 
 class TrafficLearnerTests(BlackboxTestCase):
@@ -50,9 +37,9 @@ class TrafficLearnerTests(BlackboxTestCase):
         """Ensure a model is generated from a summary file and it is
            correct"""
 
-        with temp_file(self.tempdir) as output:
-            summary  = os.path.join(DATA_DIR, "traffic-sample-very-short.txt")
-            command  = "%s %s --out %s" % (LEARNER, summary, output)
+        with self.mktemp() as output:
+            summary = os.path.join(DATA_DIR, "traffic-sample-very-short.txt")
+            command = "%s %s --out %s" % (LEARNER, summary, output)
             self.check_run(command)
 
             expected_fn = os.path.join(DATA_DIR, "traffic_learner.expected")
