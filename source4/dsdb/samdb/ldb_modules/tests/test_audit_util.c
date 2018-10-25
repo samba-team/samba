@@ -538,7 +538,7 @@ static void test_dsdb_audit_get_user_sid(void **state)
 	struct dom_sid sids[2];
 	const char * const SID0 = "S-1-5-21-2470180966-3899876309-2637894779";
 	const char * const SID1 = "S-1-5-21-4284042908-2889457889-3672286761";
-	char sid_buf[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf sid_buf;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -585,8 +585,8 @@ static void test_dsdb_audit_get_user_sid(void **state)
 	token->sids = sids;
 	sid = dsdb_audit_get_user_sid(module);
 	assert_non_null(sid);
-	dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-	assert_string_equal(SID0, sid_buf);
+	dom_sid_str_buf(sid, &sid_buf);
+	assert_string_equal(SID0, sid_buf.buf);
 
 	/*
 	 * Add a second SID, should still use the first SID
@@ -595,8 +595,8 @@ static void test_dsdb_audit_get_user_sid(void **state)
 	token->num_sids = 2;
 	sid = dsdb_audit_get_user_sid(module);
 	assert_non_null(sid);
-	dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-	assert_string_equal(SID0, sid_buf);
+	dom_sid_str_buf(sid, &sid_buf);
+	assert_string_equal(SID0, sid_buf.buf);
 
 
 	/*
@@ -619,7 +619,7 @@ static void test_dsdb_audit_get_actual_sid(void **state)
 	struct dom_sid sids[2];
 	const char * const SID0 = "S-1-5-21-2470180966-3899876309-2637894779";
 	const char * const SID1 = "S-1-5-21-4284042908-2889457889-3672286761";
-	char sid_buf[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf sid_buf;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -664,8 +664,8 @@ static void test_dsdb_audit_get_actual_sid(void **state)
 	token->sids = sids;
 	sid = dsdb_audit_get_actual_sid(ldb);
 	assert_non_null(sid);
-	dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-	assert_string_equal(SID0, sid_buf);
+	dom_sid_str_buf(sid, &sid_buf);
+	assert_string_equal(SID0, sid_buf.buf);
 
 	/*
 	 * Add a second SID, should still use the first SID
@@ -674,8 +674,8 @@ static void test_dsdb_audit_get_actual_sid(void **state)
 	token->num_sids = 2;
 	sid = dsdb_audit_get_actual_sid(ldb);
 	assert_non_null(sid);
-	dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-	assert_string_equal(SID0, sid_buf);
+	dom_sid_str_buf(sid, &sid_buf);
+	assert_string_equal(SID0, sid_buf.buf);
 
 
 	/*
