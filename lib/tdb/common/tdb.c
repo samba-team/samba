@@ -463,6 +463,11 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 	struct tdb_record rec;
 	int ret;
 
+	if (tdb->read_only || tdb->traverse_read) {
+		tdb->ecode = TDB_ERR_RDONLY;
+		return -1;
+	}
+
 	rec_ptr = tdb_find_lock_hash(tdb, key, hash, F_WRLCK, &rec);
 	if (rec_ptr == 0) {
 		return -1;
