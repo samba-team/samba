@@ -296,23 +296,69 @@ static void _check_timestamp(
 	}
 }
 
+#define check_version(v, m, n)\
+	_check_version(v, m, n, __FILE__, __LINE__);
 /*
  * Test helper to validate a version object.
  */
-static void check_version(struct json_t *version, int major, int minor)
+static void _check_version(
+	struct json_t *version,
+	int major,
+	int minor,
+	const char* file,
+	const int line)
 {
 	struct json_t *v = NULL;
+	int value;
 
-	assert_true(json_is_object(version));
-	assert_int_equal(2, json_object_size(version));
+	if (!json_is_object(version)) {
+		cm_print_error("version is not a JSON object\n");
+		_fail(file, line);
+	}
 
+	if (json_object_size(version) != 2) {
+		cm_print_error(
+		    "Unexpected number of elements in version %zu != %d\n",
+		    json_object_size(version),
+		    2);
+		_fail(file, line);
+	}
+
+	/*
+	 * Validate the major version number element
+	 */
 	v = json_object_get(version, "major");
-	assert_non_null(v);
-	assert_int_equal(major, json_integer_value(v));
+	if (v == NULL) {
+		cm_print_error( "No major element\n");
+		_fail(file, line);
+	}
 
+	value = json_integer_value(v);
+	if (value != major) {
+		print_error(
+		    "Unexpected major version number \"%d\" != \"%d\"\n",
+		    value,
+		    major);
+		_fail(file, line);
+	}
+
+	/*
+	 * Validate the minor version number element
+	 */
 	v = json_object_get(version, "minor");
-	assert_non_null(v);
-	assert_int_equal(minor, json_integer_value(v));
+	if (v == NULL) {
+		cm_print_error( "No minor element\n");
+		_fail(file, line);
+	}
+
+	value = json_integer_value(v);
+	if (value != minor) {
+		print_error(
+		    "Unexpected minor version number \"%d\" != \"%d\"\n",
+		    value,
+		    minor);
+		_fail(file, line);
+	}
 }
 
 /*
