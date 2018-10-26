@@ -92,7 +92,7 @@ class Command(object):
         self.outf = outf
         self.errf = errf
 
-    def usage(self, prog, *args):
+    def usage(self, prog=None):
         parser, _ = self._create_parser(prog)
         parser.print_usage()
 
@@ -129,7 +129,7 @@ class Command(object):
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback, file=self.errf)
 
-    def _create_parser(self, prog, epilog=None):
+    def _create_parser(self, prog=None, epilog=None):
         parser = optparse.OptionParser(
             usage=self.synopsis,
             description=self.full_description,
