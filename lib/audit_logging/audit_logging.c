@@ -826,14 +826,14 @@ int json_add_sid(struct json_object *object,
 			return ret;
 		}
 	} else {
-		char sid_buf[DOM_SID_STR_BUFLEN];
+		struct dom_sid_buf sid_buf;
 
-		dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-		ret = json_add_string(object, name, sid_buf);
+		ret = json_add_string(
+			object, name, dom_sid_str_buf(sid, &sid_buf));
 		if (ret != 0) {
 			DBG_ERR("Unable to add SID [%s] value [%s]\n",
 				name,
-				sid_buf);
+				sid_buf.buf);
 			return ret;
 		}
 	}
