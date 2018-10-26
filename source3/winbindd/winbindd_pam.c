@@ -251,13 +251,15 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 
 	{
 		struct dom_sid user_sid;
-		fstring sidstr;
+		struct dom_sid_buf sidstr;
 
 		sid_compose(&user_sid, info3->base.domain_sid,
 			    info3->base.rid);
-		sid_to_fstring(sidstr, &user_sid);
-		afsname = talloc_string_sub(mem_ctx, afsname,
-					    "%s", sidstr);
+		afsname = talloc_string_sub(
+			mem_ctx,
+			afsname,
+			"%s",
+			dom_sid_str_buf(&user_sid, &sidstr));
 	}
 
 	if (afsname == NULL) {
