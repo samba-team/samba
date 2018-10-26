@@ -138,8 +138,16 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 				      struct parsed_dn *dns, uint32_t count,
 				      struct ldb_message_element *el,
 				      const char *ldap_oid);
-static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
-					  struct la_entry *la);
+static int replmd_verify_link_target(struct replmd_replicated_request *ar,
+				     TALLOC_CTX *mem_ctx,
+				     struct la_entry *la_entry,
+				     struct ldb_message *src_msg,
+				     const struct dsdb_attribute *attr);
+static int replmd_get_la_entry_source(struct ldb_module *module,
+				      struct la_entry *la_entry,
+				      TALLOC_CTX *mem_ctx,
+				      const struct dsdb_attribute **ret_attr,
+				      struct ldb_message **source_msg);
 static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			     struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
 			     uint64_t usn, uint64_t local_usn, NTTIME nttime,
@@ -6573,6 +6581,9 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 	struct la_group *la_group = NULL;
 	struct ldb_context *ldb;
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct ldb_message *src_msg = NULL;
+	const struct dsdb_attribute *attr = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -6581,6 +6592,8 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 	/* save away the linked attributes for the end of the transaction */
 	for (i = 0; i < ar->objs->linked_attributes_count; i++) {
 		struct la_entry *la_entry;
+
+		tmp_ctx = talloc_new(ar);
 
 		if (replmd_private->la_ctx == NULL) {
 			replmd_private->la_ctx = talloc_new(replmd_private);
@@ -6604,8 +6617,26 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		talloc_steal(la_entry->la, la_entry->la->identifier);
 		talloc_steal(la_entry->la, la_entry->la->value.blob);
 
-		ret = replmd_verify_linked_attribute(ar, la_entry);
+		/* verify the source object exists for the link */
+		ret = replmd_get_la_entry_source(module, la_entry, tmp_ctx,
+						 &attr, &src_msg);
 
+		/*
+		 * When we fail to find the source object, the error
+		 * code we pass back here is really important. It flags
+		 * back to the callers to retry this request with
+		 * DRSUAPI_DRS_GET_ANC. This case should never happen
+		 * if we're replicating from a Samba DC, but it is
+		 * needed to talk to a Windows DC
+		 */
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			WERROR err = WERR_DS_DRA_MISSING_PARENT;
+			ret = replmd_replicated_request_werror(ar, err);
+			break;
+		}
+
+		ret = replmd_verify_link_target(ar, tmp_ctx, la_entry,
+						src_msg, attr);
 		if (ret != LDB_SUCCESS) {
 			break;
 		}
@@ -6624,6 +6655,7 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		}
 		DLIST_ADD(la_group->la_entries, la_entry);
 		replmd_private->total_links++;
+		TALLOC_FREE(tmp_ctx);
 	}
 
 	return ret;
@@ -7531,45 +7563,26 @@ linked_attributes[0]:
 }
 
 /**
- * Verifies the source and target objects are known for a linked attribute
+ * Verifies the target object is known for a linked attribute
  */
-static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
-					  struct la_entry *la_entry)
+static int replmd_verify_link_target(struct replmd_replicated_request *ar,
+				     TALLOC_CTX *mem_ctx,
+				     struct la_entry *la_entry,
+				     struct ldb_message *src_msg,
+				     const struct dsdb_attribute *attr)
 {
 	int ret = LDB_SUCCESS;
-	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
 	struct ldb_module *module = ar->module;
-	struct ldb_message *src_msg;
-	const struct dsdb_attribute *attr;
 	struct dsdb_dn *tgt_dsdb_dn = NULL;
 	struct GUID guid = GUID_zero();
 	bool dummy;
 	WERROR status;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
-
-	ret = replmd_get_la_entry_source(module, la_entry, tmp_ctx, &attr,
-					 &src_msg);
-
-	/*
-	 * When we fail to find the source object, the error code we pass
-	 * back here is really important. It flags back to the callers to
-	 * retry this request with DRSUAPI_DRS_GET_ANC. This case should
-	 * never happen if we're replicating from a Samba DC, but it is
-	 * needed to talk to a Windows DC
-	 */
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_MISSING_PARENT);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, mem_ctx);
 
 	/* the value blob for the attribute holds the target object DN */
-	status = dsdb_dn_la_from_blob(ldb, attr, schema, tmp_ctx,
+	status = dsdb_dn_la_from_blob(ldb, attr, schema, mem_ctx,
 				      la->value.blob, &tgt_dsdb_dn);
 	if (!W_ERROR_IS_OK(status)) {
 		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
@@ -7601,7 +7614,6 @@ static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 		ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_RECYCLED_TARGET);
 	}
 
-	talloc_free(tmp_ctx);
 	return ret;
 }
 
