@@ -34,7 +34,8 @@
 
 char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid)
 {
-	dom_sid_string_buf(sid, sidstr_out, sizeof(fstring));
+	struct dom_sid_buf buf;
+	fstrcpy(sidstr_out, dom_sid_str_buf(sid, &buf));
 	return sidstr_out;
 }
 
