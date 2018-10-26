@@ -180,7 +180,7 @@ static void disp_sec_ace_object(struct security_ace_object *object)
  ****************************************************************************/
 void display_sec_ace(struct security_ace *ace)
 {
-	char *sid_str;
+	struct dom_sid_buf sid_str;
 
 	printf("\tACE\n\t\ttype: ");
 	switch (ace->type) {
@@ -219,9 +219,7 @@ void display_sec_ace(struct security_ace *ace)
 	printf(" (%d) flags: 0x%02x ", ace->type, ace->flags);
 	display_sec_ace_flags(ace->flags);
 	display_sec_access(&ace->access_mask);
-	sid_str = dom_sid_string(NULL, &ace->trustee);
-	printf("\t\tSID: %s\n\n", sid_str);
-	talloc_free(sid_str);
+	printf("\t\tSID: %s\n\n", dom_sid_str_buf(&ace->trustee, &sid_str));
 
 	if (sec_ace_object(ace->type)) {
 		disp_sec_ace_object(&ace->object.object);
@@ -292,7 +290,7 @@ void display_acl_type(uint16_t type)
  ****************************************************************************/
 void display_sec_desc(struct security_descriptor *sec)
 {
-	char *sid_str;
+	struct dom_sid_buf sid_str;
 
 	if (!sec) {
 		printf("NULL\n");
@@ -313,14 +311,12 @@ void display_sec_desc(struct security_descriptor *sec)
 	}
 
 	if (sec->owner_sid) {
-		sid_str = dom_sid_string(NULL, sec->owner_sid);
-		printf("\tOwner SID:\t%s\n", sid_str);
-		talloc_free(sid_str);
+		printf("\tOwner SID:\t%s\n",
+		       dom_sid_str_buf(sec->owner_sid, &sid_str));
 	}
 
 	if (sec->group_sid) {
-		sid_str = dom_sid_string(NULL, sec->group_sid);
-		printf("\tGroup SID:\t%s\n", sid_str);
-		talloc_free(sid_str);
+		printf("\tGroup SID:\t%s\n",
+		       dom_sid_str_buf(sec->group_sid, &sid_str));
 	}
 }
