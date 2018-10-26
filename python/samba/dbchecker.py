@@ -1099,7 +1099,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             return (missing_forward_links, error_count)
 
         if forward_syntax != ldb.SYNTAX_DN:
-            self.report("Not checking for missing forward links for syntax: %s",
+            self.report("Not checking for missing forward links for syntax: %s" %
                         forward_syntax)
             return (missing_forward_links, error_count)
 
@@ -1971,7 +1971,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         target = self.samdb.get_dsServiceName()
 
         if self.samdb.am_rodc():
-            self.report('Not fixing %s for the RODC' % (attr, obj.dn))
+            self.report('Not fixing %s %s for the RODC' % (attr, obj.dn))
             return
 
         if not self.confirm_all('Add yourself to the replica locations for %s?'
