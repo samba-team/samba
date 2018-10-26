@@ -2244,7 +2244,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 elif len(obj[attrname][0]) % 2 != 0:
                     # This is a value that isn't even in length
                     error_count += 1
-                    self.err_odd_userParameters(obj, attrname, obj[attrname])
+                    self.err_odd_userParameters(obj, attrname)
                     continue
 
                 elif obj[attrname][0][1] == b'\x00'[0] and obj[attrname][0][2] == b'\x00'[0] and obj[attrname][0][3] == b'\x00'[0] and obj[attrname][0][4] != b'\x00'[0] and obj[attrname][0][5] == b'\x00'[0]:
