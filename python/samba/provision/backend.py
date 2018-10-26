@@ -818,5 +818,5 @@ class FDSBackend(LDAPBackend):
                          self.names.schemadn):
             m.dn = ldb.Dn(ldapi_db, dnstring)
             ldapi_db.modify(m)
-        return LDAPBackendResult(self.credentials, self.slapd_command_escaped,
+        return LDAPBackendResult(self.slapd_command_escaped,
                                  self.ldapdir)
