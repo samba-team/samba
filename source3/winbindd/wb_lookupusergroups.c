@@ -57,9 +57,9 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 
 	domain = find_domain_from_sid_noinit(&state->sid);
 	if (domain == NULL) {
-		char buf[DOM_SID_STR_BUFLEN];
-		dom_sid_string_buf(&state->sid, buf, sizeof(buf));
-		DEBUG(1,("could not find domain entry for sid %s\n", buf));
+		struct dom_sid_buf buf;
+		DBG_WARNING("could not find domain entry for sid %s\n",
+			    dom_sid_str_buf(&state->sid, &buf));
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 		return tevent_req_post(req, ev);
 	}
