@@ -27,6 +27,7 @@
 #include "passdb.h"
 #include "passdb/pdb_ldap_util.h"
 #include "passdb/pdb_ldap_schema.h"
+#include "libcli/security/dom_sid.h"
 
 /**********************************************************************
  Add the account-policies below the sambaDomain object to LDAP,
@@ -118,7 +119,7 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
                                     const char *domain_name)
 {
-	fstring sid_string;
+	struct dom_sid_buf sid_string;
 	fstring algorithmic_rid_base_string;
 	char *filter = NULL;
 	char *dn = NULL;
@@ -196,11 +197,10 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	/* If we don't have an entry, then ask secrets.tdb for what it thinks.
 	   It may choose to make it up */
 
-	sid_to_fstring(sid_string, get_global_sam_sid());
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			get_attr_key2string(dominfo_attr_list,
 					    LDAP_ATTR_DOM_SID),
-			sid_string);
+			dom_sid_str_buf(get_global_sam_sid(), &sid_string));
 
 	slprintf(algorithmic_rid_base_string,
 		 sizeof(algorithmic_rid_base_string) - 1, "%i",
