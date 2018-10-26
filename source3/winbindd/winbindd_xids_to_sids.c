@@ -113,17 +113,16 @@ NTSTATUS winbindd_xids_to_sids_recv(struct tevent_req *req,
 	}
 
 	for (i=0; i<state->num_xids; i++) {
-		char sidbuf[DOM_SID_STR_BUFLEN];
+		struct dom_sid_buf sid_buf;
+		const char *str = "-";
 
-		if (is_null_sid(&state->sids[i])) {
-			strlcpy(sidbuf, "-", sizeof(sidbuf));
-		} else {
-			dom_sid_string_buf(&state->sids[i],
-					   sidbuf, sizeof(sidbuf));
+		if (!is_null_sid(&state->sids[i])) {
+			dom_sid_str_buf(&state->sids[i], &sid_buf);
+			str = sid_buf.buf;
 		}
 
 		result = talloc_asprintf_append_buffer(
-			result, "%s\n", sidbuf);
+			result, "%s\n", str);
 		if (result == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
