@@ -2616,7 +2616,7 @@ class cmd_user_move(Command):
             full_new_parent_dn = samdb.normalize_dn_in_domain(new_parent_dn)
         except Exception as e:
             raise CommandError('Invalid new_parent_dn "%s": %s' %
-                               (new_parent_dn, e.message))
+                               (new_parent_dn, e))
 
         full_new_user_dn = ldb.Dn(samdb, str(user_dn))
         full_new_user_dn.remove_base_components(len(user_dn) - 1)
