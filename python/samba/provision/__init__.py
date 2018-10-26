@@ -614,7 +614,9 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if dnsdomain is None:
         dnsdomain = lp.get("realm")
         if dnsdomain is None or dnsdomain == "":
-            raise ProvisioningError("guess_names: 'realm' not specified in supplied %s!", lp.configfile)
+            raise ProvisioningError(
+                "guess_names: 'realm' not specified in supplied %s!" %
+                lp.configfile)
 
     dnsdomain = dnsdomain.lower()
 
