@@ -69,8 +69,8 @@ def remove_sysvol_references(samdb, logger, dc_name):
         # to add a base and add an arbitrary RDN.
         dn = ldb.Dn(samdb, s)
         if dn.add_base(samdb.get_default_basedn()) == False:
-            raise DemoteException("Failed constructing DN %s by adding base" %
-                                  (dn, samdb.get_default_basedn()))
+            raise DemoteException("Failed constructing DN %s by adding base %s"
+                                  % (dn, samdb.get_default_basedn()))
         if dn.add_child("CN=X") == False:
             raise DemoteException("Failed constructing DN %s by adding child "
                                   "CN=X (soon to be CN=%s)" % (dn, dc_name))
