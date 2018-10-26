@@ -110,9 +110,7 @@ class dsdb_Dn(object):
         dn1 = self
         dn2 = other
         guid1 = dn1.dn.get_extended_component("GUID")
-        guid1b = ndr_pack(misc.GUID(guid1))
         guid2 = dn2.dn.get_extended_component("GUID")
-        guid2b = ndr_pack(misc.GUID(guid2))
 
         v = cmp(guid1, guid2)
         if v != 0:
