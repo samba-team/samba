@@ -98,7 +98,7 @@ clear:
 
 void netsamlogon_clear_cached_user(const struct dom_sid *user_sid)
 {
-	char keystr[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf keystr;
 
 	if (!netsamlogon_cache_init()) {
 		DEBUG(0,("netsamlogon_clear_cached_user: cannot open "
@@ -108,11 +108,11 @@ void netsamlogon_clear_cached_user(const struct dom_sid *user_sid)
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	dom_sid_string_buf(user_sid, keystr, sizeof(keystr));
+	dom_sid_str_buf(user_sid, &keystr);
 
-	DEBUG(10,("netsamlogon_clear_cached_user: SID [%s]\n", keystr));
+	DBG_DEBUG("SID [%s]\n", keystr.buf);
 
-	tdb_delete_bystring(netsamlogon_tdb, keystr);
+	tdb_delete_bystring(netsamlogon_tdb, keystr.buf);
 }
 
 /***********************************************************************
@@ -124,7 +124,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 {
 	uint8_t dummy = 0;
 	TDB_DATA data = { .dptr = &dummy, .dsize = sizeof(dummy) };
-	char keystr[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf keystr;
 	bool result = false;
 	struct dom_sid	user_sid;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -149,22 +149,22 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	 * overwriting potentially other data. We're just interested
 	 * in the existence of that record.
 	 */
-	dom_sid_string_buf(info3->base.domain_sid, keystr, sizeof(keystr));
+	dom_sid_str_buf(info3->base.domain_sid, &keystr);
 
-	ret = tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_INSERT);
+	ret = tdb_store_bystring(netsamlogon_tdb, keystr.buf, data, TDB_INSERT);
 
 	if ((ret == -1) && (tdb_error(netsamlogon_tdb) != TDB_ERR_EXISTS)) {
 		DBG_WARNING("Could not store domain marker for %s: %s\n",
-			    keystr, tdb_errorstr(netsamlogon_tdb));
+			    keystr.buf, tdb_errorstr(netsamlogon_tdb));
 		goto fail;
 	}
 
 	sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid);
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	dom_sid_string_buf(&user_sid, keystr, sizeof(keystr));
+	dom_sid_str_buf(&user_sid, &keystr);
 
-	DEBUG(10,("netsamlogon_cache_store: SID [%s]\n", keystr));
+	DBG_DEBUG("SID [%s]\n", keystr.buf);
 
 	/* Prepare data */
 
@@ -217,7 +217,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	data.dsize = blob.length;
 	data.dptr = blob.data;
 
-	if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) == 0) {
+	if (tdb_store_bystring(netsamlogon_tdb, keystr.buf, data, TDB_REPLACE) == 0) {
 		result = true;
 	}
 
@@ -235,7 +235,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	TDB_DATA data;
-	char keystr[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf keystr;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netsamlogoncache_entry r;
@@ -247,9 +247,9 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	dom_sid_string_buf(user_sid, keystr, sizeof(keystr));
-	DEBUG(10,("netsamlogon_cache_get: SID [%s]\n", keystr));
-	data = tdb_fetch_bystring( netsamlogon_tdb, keystr );
+	dom_sid_str_buf(user_sid, &keystr);
+	DBG_DEBUG("SID [%s]\n", keystr.buf);
+	data = tdb_fetch_bystring( netsamlogon_tdb, keystr.buf );
 
 	if (!data.dptr) {
 		return NULL;
@@ -268,7 +268,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("netsamlogon_cache_get: failed to pull entry from cache\n"));
-		tdb_delete_bystring(netsamlogon_tdb, keystr);
+		tdb_delete_bystring(netsamlogon_tdb, keystr.buf);
 		TALLOC_FREE(info3);
 		goto done;
 	}
@@ -288,7 +288,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 
 bool netsamlogon_cache_have(const struct dom_sid *sid)
 {
-	char keystr[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf keystr;
 	bool ok;
 
 	if (!netsamlogon_cache_init()) {
@@ -296,9 +296,9 @@ bool netsamlogon_cache_have(const struct dom_sid *sid)
 		return false;
 	}
 
-	dom_sid_string_buf(sid, keystr, sizeof(keystr));
+	dom_sid_str_buf(sid, &keystr);
 
-	ok = tdb_exists(netsamlogon_tdb, string_term_tdb_data(keystr));
+	ok = tdb_exists(netsamlogon_tdb, string_term_tdb_data(keystr.buf));
 	return ok;
 }
 
