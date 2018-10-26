@@ -79,20 +79,45 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 				       const struct netr_Credential *server_challenge,
 				       const struct samr_Password *machine_password)
 {
-	uint8_t zero[4] = {0}, tmp[16];
-	HMACMD5Context ctx;
-	MD5_CTX md5;
+	uint8_t zero[4] = {0};
+	uint8_t tmp[gnutls_hash_get_len(GNUTLS_MAC_MD5)];
+	gnutls_hash_hd_t hash_hnd = NULL;
+	int rc;
 
 	ZERO_ARRAY(creds->session_key);
 
-	hmac_md5_init_rfc2104(machine_password->hash, sizeof(machine_password->hash), &ctx);
-	MD5Init(&md5);
-	MD5Update(&md5, zero, sizeof(zero));
-	MD5Update(&md5, client_challenge->data, 8);
-	MD5Update(&md5, server_challenge->data, 8);
-	MD5Final(tmp, &md5);
-	hmac_md5_update(tmp, sizeof(tmp), &ctx);
-	hmac_md5_final(creds->session_key, &ctx);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		return;
+	}
+
+	rc = gnutls_hash(hash_hnd, zero, sizeof(zero));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+	rc = gnutls_hash(hash_hnd, client_challenge->data, 8);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+	rc = gnutls_hash(hash_hnd, server_challenge->data, 8);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+
+	gnutls_hash_deinit(hash_hnd, tmp);
+
+	/* This doesn't require HMAC MD5 RFC2104 as the hash is only 16 bytes */
+	rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+			      machine_password->hash,
+			      sizeof(machine_password->hash),
+			      tmp,
+			      sizeof(tmp),
+			      creds->session_key);
+
+	ZERO_ARRAY(tmp);
 }
 
 /*
