@@ -1103,7 +1103,7 @@ class DCJoinContext(object):
 
         name_found = True
 
-        sd_helper = samba.sd_utils.SDUtils(ctx.samdb)
+        sd_helper = sd_utils.SDUtils(ctx.samdb)
 
         change_owner_sd = security.descriptor()
         change_owner_sd.owner_sid = ctx.new_dc_account_sid
