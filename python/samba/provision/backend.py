@@ -533,8 +533,9 @@ class OpenLDAPBackend(LDAPBackend):
             if self.ol_mmr_urls is None:
                 server_port_string = "ldap://0.0.0.0:%d" % self.ldap_backend_extra_port
             else:
-                server_port_string = "ldap://%s.%s:%d" (self.names.hostname,
-                                                        self.names.dnsdomain, self.ldap_backend_extra_port)
+                server_port_string = "ldap://%s.%s:%d" % (self.names.hostname,
+                                                          self.names.dnsdomain,
+                                                          self.ldap_backend_extra_port)
         else:
             server_port_string = ""
 
