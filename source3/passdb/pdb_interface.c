@@ -741,7 +741,7 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 {
 	struct dom_sid group_sid;
 	struct group *grp;
-	fstring tmp;
+	struct dom_sid_buf tmp;
 
 	grp = getgrnam(name);
 
@@ -769,8 +769,12 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 
 	sid_compose(&group_sid, get_global_sam_sid(), *rid);
 
-	return add_initial_entry(grp->gr_gid, sid_to_fstring(tmp, &group_sid),
-				 SID_NAME_DOM_GRP, name, NULL);
+	return add_initial_entry(
+		grp->gr_gid,
+		dom_sid_str_buf(&group_sid, &tmp),
+		SID_NAME_DOM_GRP,
+		name,
+		NULL);
 }
 
 NTSTATUS pdb_create_dom_group(TALLOC_CTX *mem_ctx, const char *name,
