@@ -77,7 +77,6 @@ from samba.ms_display_specifiers import read_ms_ldif
 from samba.ntacls import setntacl, getntacl, dsacl2fsacl
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.provision.backend import (
-    ExistingBackend,
     FDSBackend,
     LDBBackend,
     OpenLDAPBackend,
@@ -2237,13 +2236,6 @@ def provision(logger, session_info, smbconf=None,
         provision_backend = LDBBackend(backend_type, paths=paths,
                                        lp=lp,
                                        names=names, logger=logger)
-    elif backend_type == "existing":
-        # If support for this is ever added back, then the URI will need to be
-        # specified again
-        provision_backend = ExistingBackend(backend_type, paths=paths,
-                                            lp=lp,
-                                            names=names, logger=logger,
-                                            ldap_backend_forced_uri=ldap_backend_forced_uri)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type, paths=paths,
                                        lp=lp,

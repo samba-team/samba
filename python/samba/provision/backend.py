@@ -131,26 +131,6 @@ class LDBBackend(ProvisionBackend):
         pass
 
 
-class ExistingBackend(ProvisionBackend):
-
-    def __init__(self, backend_type, paths=None, lp=None,
-                 names=None, logger=None, ldapi_uri=None):
-
-        super(ExistingBackend, self).__init__(backend_type=backend_type,
-                                              paths=paths, lp=lp,
-                                              names=names, logger=logger,
-                                              ldap_backend_forced_uri=ldapi_uri)
-
-    def init(self):
-        # Check to see that this 'existing' LDAP backend in fact exists
-        ldapi_db = Ldb(self.ldapi_uri)
-        ldapi_db.search(base="", scope=SCOPE_BASE,
-                        expression="(objectClass=OpenLDAProotDSE)")
-
-        # For now, assume existing backends at least emulate OpenLDAP
-        self.ldap_backend_type = "openldap"
-
-
 class LDAPBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, lp=None,
