@@ -151,11 +151,11 @@ userAccountControl: %d
 """ % uac)
 
     def _reset_by_method(self, res, method):
-        if method is "ldap_userAccountControl":
+        if method == "ldap_userAccountControl":
             self._reset_ldap_userAccountControl(res)
-        elif method is "ldap_lockoutTime":
+        elif method == "ldap_lockoutTime":
             self._reset_ldap_lockoutTime(res)
-        elif method is "samr":
+        elif method == "samr":
             self._reset_samr(res)
         else:
             self.assertTrue(False, msg="Invalid reset method[%s]" % method)

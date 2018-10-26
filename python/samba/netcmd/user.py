@@ -325,7 +325,7 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
             smartcard_required=False):
 
         if smartcard_required:
-            if password is not None and password is not '':
+            if password is not None and password != '':
                 raise CommandError('It is not allowed to specify '
                                    '--newpassword '
                                    'together with --smartcard-required.')
@@ -340,7 +340,7 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
         while True:
             if smartcard_required:
                 break
-            if password is not None and password is not '':
+            if password is not None and password != '':
                 break
             password = getpass("New Password: ")
             passwordverify = getpass("Retype Password: ")
@@ -714,7 +714,7 @@ class cmd_user_password(Command):
 
         password = newpassword
         while True:
-            if password is not None and password is not '':
+            if password is not None and password != '':
                 break
             password = getpass("New Password: ")
             passwordverify = getpass("Retype Password: ")
@@ -798,7 +798,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         password = newpassword
 
         if smartcard_required:
-            if password is not None and password is not '':
+            if password is not None and password != '':
                 raise CommandError('It is not allowed to specify '
                                    '--newpassword '
                                    'together with --smartcard-required.')
@@ -817,7 +817,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         while True:
             if smartcard_required:
                 break
-            if password is not None and password is not '':
+            if password is not None and password != '':
                 break
             password = getpass("New Password: ")
             passwordverify = getpass("Retype Password: ")

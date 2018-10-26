@@ -2334,7 +2334,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
         def get_password(name):
             password = None
             while True:
-                if password is not None and password is not '':
+                if password is not None and password != '':
                     return password
                 password = getpass("New %s Password: " % name)
                 passwordverify = getpass("Retype %s Password: " % name)
@@ -2625,7 +2625,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 self.outf.write("Deleting local TDO.\n")
                 local_lsa.DeleteObject(local_tdo_handle)
                 local_tdo_handle = None
-            if current_request['location'] is "remote":
+            if current_request['location'] == "remote":
                 raise self.RemoteRuntimeError(self, error, "%s" % (
                                               current_request['name']))
             raise self.LocalRuntimeError(self, error, "%s" % (

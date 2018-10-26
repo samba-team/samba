@@ -380,7 +380,7 @@ member: %s
             displayname += ' %s' % surname
 
         cn = username
-        if useusernameascn is None and displayname is not "":
+        if useusernameascn is None and displayname != "":
             cn = displayname
 
         user_dn = "CN=%s,%s,%s" % (cn, (userou or "CN=Users"), self.domain_dn())
@@ -405,7 +405,7 @@ member: %s
         if givenname is not None:
             ldbmessage["givenName"] = givenname
 
-        if displayname is not "":
+        if displayname != "":
             ldbmessage["displayName"] = displayname
             ldbmessage["name"] = displayname
 

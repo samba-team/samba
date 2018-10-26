@@ -569,7 +569,7 @@ class OpenLDAPBackend(LDAPBackend):
 
         self.slapd_provision_command.extend([self.ldap_uri, "-d0"])
         uris = self.ldap_uri
-        if server_port_string is not "":
+        if server_port_string != "":
             uris = uris + " " + server_port_string
 
         self.slapd_command.append(uris)
