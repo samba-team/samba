@@ -534,13 +534,20 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 	if (LDB_CONTROL_CMP(control_strings, LDB_CONTROL_DIRSYNC_NAME) == 0) {
 		struct ldb_dirsync_control *control;
 		const char *p;
-		char cookie[1024];
+		char *cookie = NULL;
 		int crit, max_attrs, ret;
 		uint32_t flags;
 
-		cookie[0] = '\0';
+		cookie = talloc_zero_array(ctrl, char,
+					   strlen(control_strings) + 1);
+		if (cookie == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		p = &(control_strings[sizeof(LDB_CONTROL_DIRSYNC_NAME)]);
-		ret = sscanf(p, "%d:%u:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
+		ret = sscanf(p, "%d:%u:%d:%[^$]", &crit, &flags, &max_attrs, cookie);
 
 		if ((ret < 3) || (crit < 0) || (crit > 1) || (max_attrs < 0)) {
 			ldb_set_errstring(ldb,
@@ -582,17 +589,25 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control->cookie_len = 0;
 		}
 		ctrl->data = control;
+		TALLOC_FREE(cookie);
 
 		return ctrl;
 	}
 	if (LDB_CONTROL_CMP(control_strings, LDB_CONTROL_DIRSYNC_EX_NAME) == 0) {
 		struct ldb_dirsync_control *control;
 		const char *p;
-		char cookie[1024];
+		char *cookie = NULL;
 		int crit, max_attrs, ret;
 		uint32_t flags;
 
-		cookie[0] = '\0';
+		cookie = talloc_zero_array(ctrl, char,
+					   strlen(control_strings) + 1);
+		if (cookie == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		p = &(control_strings[sizeof(LDB_CONTROL_DIRSYNC_EX_NAME)]);
 		ret = sscanf(p, "%d:%u:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
 
@@ -637,6 +652,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control->cookie_len = 0;
 		}
 		ctrl->data = control;
+		TALLOC_FREE(cookie);
 
 		return ctrl;
 	}
