@@ -226,7 +226,8 @@ class dbcheck(object):
                 raise
             pass
 
-    def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
+    def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=None,
+                       attrs=None):
         '''perform a database check, returning the number of errors found'''
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
@@ -2021,14 +2022,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         raise KeyError
 
-    def check_object(self, dn, attrs=['*']):
+    def check_object(self, dn, attrs=None):
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
-
-        # If we modify the pass-by-reference attrs variable, then we get a
-        # replPropertyMetadata for every object that we check.
-        attrs = list(attrs)
+        if attrs is None:
+            attrs = ['*']
+        else:
+            # make a local copy to modify
+            attrs = list(attrs)
         if "dn" in map(str.lower, attrs):
             attrs.append("name")
         if "distinguishedname" in map(str.lower, attrs):
