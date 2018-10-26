@@ -133,15 +133,10 @@ static bool init_group_mapping(void)
 
 static char *group_mapping_key(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
-	char sidstr[DOM_SID_STR_BUFLEN];
-	int len;
+	struct dom_sid_buf sidstr;
 
-	len = dom_sid_string_buf(sid, sidstr, sizeof(sidstr));
-	if (len >= sizeof(sidstr)) {
-		return NULL;
-	}
-
-	return talloc_asprintf(mem_ctx, "%s%s", GROUP_PREFIX, sidstr);
+	return talloc_asprintf(
+		mem_ctx, "%s%s", GROUP_PREFIX, dom_sid_str_buf(sid, &sidstr));
 }
 
 /****************************************************************************
