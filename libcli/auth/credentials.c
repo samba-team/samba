@@ -76,13 +76,11 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 				       const struct netr_Credential *server_challenge,
 				       const struct samr_Password *machine_password)
 {
-	unsigned char zero[4], tmp[16];
+	uint8_t zero[4] = {0}, tmp[16];
 	HMACMD5Context ctx;
 	MD5_CTX md5;
 
 	ZERO_ARRAY(creds->session_key);
-
-	memset(zero, 0, sizeof(zero));
 
 	hmac_md5_init_rfc2104(machine_password->hash, sizeof(machine_password->hash), &ctx);
 	MD5Init(&md5);
