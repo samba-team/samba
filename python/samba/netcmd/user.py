@@ -2083,9 +2083,10 @@ samba-tool user syncpasswords --terminate \\
                         break
                     time.sleep(1)
                 if not got_exclusive:
-                    log_msg("update_pid(%r): failed to get exclusive lock[%s] - %s" %
+                    log_msg("update_pid(%r): failed to get exclusive lock[%s]" %
                             (pid, self.lockfile))
-                    raise CommandError("update_pid(%r): failed to get exclusive lock[%s] after 5 seconds" %
+                    raise CommandError("update_pid(%r): failed to get "
+                                       "exclusive lock[%s] after 5 seconds" %
                                        (pid, self.lockfile))
 
                 if pid is not None:
