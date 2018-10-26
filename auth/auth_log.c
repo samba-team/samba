@@ -689,7 +689,7 @@ static void log_successful_authz_event_human_readable(
 	const char *ts = NULL;       /* formatted current time      */
 	char *remote_str = NULL;     /* formatted remote host       */
 	char *local_str = NULL;      /* formatted local host        */
-	char sid_buf[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf sid_buf;
 
 	frame = talloc_stackframe();
 
@@ -698,10 +698,6 @@ static void log_successful_authz_event_human_readable(
 
 	remote_str = tsocket_address_string(remote, frame);
 	local_str = tsocket_address_string(local, frame);
-
-	dom_sid_string_buf(&session_info->security_token->sids[0],
-			   sid_buf,
-			   sizeof(sid_buf));
 
 	DEBUGC(DBGC_AUTH_AUDIT, debug_level,
 	       ("Successful AuthZ: [%s,%s] user [%s]\\[%s] [%s]"
@@ -712,7 +708,8 @@ static void log_successful_authz_event_human_readable(
 		auth_type,
 		log_escape(frame, session_info->info->domain_name),
 		log_escape(frame, session_info->info->account_name),
-		sid_buf,
+		dom_sid_str_buf(&session_info->security_token->sids[0],
+				&sid_buf),
 		ts,
 		remote_str,
 		local_str));
