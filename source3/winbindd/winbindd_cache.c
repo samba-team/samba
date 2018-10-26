@@ -854,8 +854,8 @@ static void centry_put_hash16(struct cache_entry *centry, const uint8_t val[16])
 
 static void centry_put_sid(struct cache_entry *centry, const struct dom_sid *sid)
 {
-	fstring sid_string;
-	centry_put_string(centry, sid_to_fstring(sid_string, sid));
+	struct dom_sid_buf sid_string;
+	centry_put_string(centry, dom_sid_str_buf(sid, &sid_string));
 }
 
 
