@@ -77,6 +77,8 @@ struct replmd_private {
 	bool sorted_links;
 	uint32_t total_links;
 	uint32_t num_processed;
+	bool recyclebin_enabled;
+	bool recyclebin_state_known;
 };
 
 /*
@@ -174,12 +176,35 @@ enum deletion_state {
 	OBJECT_REMOVED=5
 };
 
+static bool replmd_recyclebin_enabled(struct ldb_module *module)
+{
+	bool enabled = false;
+	struct replmd_private *replmd_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+				      struct replmd_private);
+
+	/*
+	 * only lookup the recycle-bin state once per replication, then cache
+	 * the result. This can save us 1000s of DB searches
+	 */
+	if (!replmd_private->recyclebin_state_known) {
+		int ret = dsdb_recyclebin_enabled(module, &enabled);
+		if (ret != LDB_SUCCESS) {
+			return false;
+		}
+
+		replmd_private->recyclebin_enabled = enabled;
+		replmd_private->recyclebin_state_known = true;
+	}
+
+	return replmd_private->recyclebin_enabled;
+}
+
 static void replmd_deletion_state(struct ldb_module *module,
 				  const struct ldb_message *msg,
 				  enum deletion_state *current_state,
 				  enum deletion_state *next_state)
 {
-	int ret;
 	bool enabled = false;
 
 	if (msg == NULL) {
@@ -190,10 +215,7 @@ static void replmd_deletion_state(struct ldb_module *module,
 		return;
 	}
 
-	ret = dsdb_recyclebin_enabled(module, &enabled);
-	if (ret != LDB_SUCCESS) {
-		enabled = false;
-	}
+	enabled = replmd_recyclebin_enabled(module);
 
 	if (ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")) {
 		if (!enabled) {
@@ -334,7 +356,7 @@ static void replmd_txn_cleanup(struct replmd_private *replmd_private)
 	talloc_free(replmd_private->la_ctx);
 	replmd_private->la_list = NULL;
 	replmd_private->la_ctx = NULL;
-
+	replmd_private->recyclebin_state_known = false;
 }
 
 
