@@ -429,7 +429,7 @@ bool dom_sid_is_valid_account_domain(const struct dom_sid *sid)
   string length. If it overflows, return the string length that would
   result (buflen needs to be +1 for the terminating 0).
 */
-int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen)
+static int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen)
 {
 	int i, ofs, ret;
 	uint64_t ia;
