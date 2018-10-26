@@ -31,8 +31,8 @@ bool namemap_cache_set_sid2name(const struct dom_sid *sid,
 				enum lsa_SidType type, time_t timeout)
 {
 	char typebuf[16];
-	char sidbuf[DOM_SID_STR_BUFLEN];
-	char keybuf[DOM_SID_STR_BUFLEN+10];
+	struct dom_sid_buf sidbuf;
+	char keybuf[sizeof(sidbuf.buf)+10];
 	char *val = NULL;
 	DATA_BLOB data;
 	int ret;
@@ -70,8 +70,8 @@ bool namemap_cache_set_sid2name(const struct dom_sid *sid,
 		goto fail;
 	}
 
-	dom_sid_string_buf(sid, sidbuf, sizeof(sidbuf));
-	snprintf(keybuf, sizeof(keybuf), "SID2NAME/%s", sidbuf);
+	dom_sid_str_buf(sid, &sidbuf);
+	snprintf(keybuf, sizeof(keybuf), "SID2NAME/%s", sidbuf.buf);
 
 	data = data_blob_const(val, talloc_get_size(val));
 
@@ -151,12 +151,12 @@ bool namemap_cache_find_sid(const struct dom_sid *sid,
 	struct namemap_cache_find_sid_state state = {
 		.fn = fn, .private_data = private_data
 	};
-	char sidbuf[DOM_SID_STR_BUFLEN];
-	char keybuf[DOM_SID_STR_BUFLEN+10];
+	struct dom_sid_buf sidbuf;
+	char keybuf[sizeof(sidbuf.buf)+10];
 	bool ok;
 
-	dom_sid_string_buf(sid, sidbuf, sizeof(sidbuf));
-	snprintf(keybuf, sizeof(keybuf), "SID2NAME/%s", sidbuf);
+	dom_sid_str_buf(sid, &sidbuf);
+	snprintf(keybuf, sizeof(keybuf), "SID2NAME/%s", sidbuf.buf);
 
 	ok = gencache_parse(keybuf, namemap_cache_find_sid_parser, &state);
 	if (!ok) {
@@ -179,7 +179,7 @@ bool namemap_cache_set_name2sid(const char *domain, const char *name,
 				time_t timeout)
 {
 	char typebuf[16];
-	char sidbuf[DOM_SID_STR_BUFLEN];
+	struct dom_sid_buf sidbuf = {{0}};
 	char *key;
 	char *key_upper;
 	char *val = NULL;
@@ -193,10 +193,8 @@ bool namemap_cache_set_name2sid(const char *domain, const char *name,
 	if (name == NULL) {
 		name = "";
 	}
-	if (type == SID_NAME_UNKNOWN) {
-		sidbuf[0] = '\0';
-	} else {
-		dom_sid_string_buf(sid, sidbuf, sizeof(sidbuf));
+	if (type != SID_NAME_UNKNOWN) {
+		dom_sid_str_buf(sid, &sidbuf);
 	}
 
 	snprintf(typebuf, sizeof(typebuf), "%d", (int)type);
@@ -212,7 +210,7 @@ bool namemap_cache_set_name2sid(const char *domain, const char *name,
 		goto fail;
 	}
 
-	ret = strv_add(key, &val, sidbuf);
+	ret = strv_add(key, &val, sidbuf.buf);
 	if (ret != 0) {
 		DBG_DEBUG("strv_add failed: %s\n", strerror(ret));
 		goto fail;
