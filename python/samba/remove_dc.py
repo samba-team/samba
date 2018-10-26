@@ -394,8 +394,8 @@ def remove_dc(samdb, logger, dc_name):
         except LdbError as e3:
             (enum, estr) = e3.args
             raise DemoteException("Failure checking if %s is an server "
-                                  "object in %s: "
-                                  % (dc_name, samdb.domain_dns_name()), estr)
+                                  "object in %s: %s"
+                                  % (dc_name, samdb.domain_dns_name(), estr))
 
         if (len(server_msgs) == 0):
             samdb.transaction_cancel()
@@ -418,8 +418,9 @@ def remove_dc(samdb, logger, dc_name):
             pass
         else:
             samdb.transaction_cancel()
-            raise DemoteException("Failure checking if %s is an NTDS DSA in %s: "
-                                  % (ntds_dn, samdb.domain_dns_name()), estr)
+            raise DemoteException(
+                "Failure checking if %s is an NTDS DSA in %s: %s" %
+                (ntds_dn, samdb.domain_dns_name(), estr))
 
     # If the NTDS Settings child DN wasn't found or wasnt an ntdsDSA
     # object, just remove the server object located above
