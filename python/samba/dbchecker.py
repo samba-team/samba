@@ -48,11 +48,11 @@ def dump_attr_values(vals):
     result = ""
     for value in vals:
         if len(result):
-           result = "," + result
+            result = "," + result
         try:
-           result = result + str(value)
-        except UnicodeDecode:
-           result = result + repr(value)
+            result = result + str(value)
+        except UnicodeDecodeError:
+            result = result + repr(value)
     return result
 
 class dbcheck(object):
