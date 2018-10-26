@@ -2867,6 +2867,7 @@ sub setup_renamedc
 	my $backupdir = File::Temp->newdir();
 	my $server_args = $self->get_backup_server_args($dcvars);
 	my $backup_args = "rename $env->{DOMAIN} $env->{REALM} $server_args";
+	$backup_args .= " --backend-store=tdb";
 	my $backup_file = $self->create_backup($env, $dcvars, $backupdir,
 					       $backup_args);
 	unless($backup_file) {
@@ -2963,7 +2964,7 @@ sub setup_labdc
 	my $backupdir = File::Temp->newdir();
 	my $server_args = $self->get_backup_server_args($dcvars);
 	my $backup_args = "rename $env->{DOMAIN} $env->{REALM} $server_args";
-	$backup_args .= " --no-secrets";
+	$backup_args .= " --no-secrets --backend-store=mdb";
 	my $backup_file = $self->create_backup($env, $dcvars, $backupdir,
 					       $backup_args);
 	unless($backup_file) {
