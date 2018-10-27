@@ -70,7 +70,7 @@ for db in dbs:
 
 samdb.transaction_commit()
 
-print "Re-opening with the full DB stack"
+print("Re-opening with the full DB stack")
 samdb = SamDB(url=url,
                           lp=lp_ctx)
 print "Re-triggering another re-index"

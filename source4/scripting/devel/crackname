@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     drs = drsuapi.drsuapi(binding_str, lp, creds)
     drs_handle = do_DsBind(drs)
-    print "DRS Handle: %s" % drs_handle
+    print("DRS Handle: %s" % drs_handle)
 
     req = drsuapi.DsNameRequest1()
     names = drsuapi.DsNameString()

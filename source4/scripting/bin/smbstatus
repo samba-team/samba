@@ -27,12 +27,14 @@ def show_sessions(conn):
     """show open sessions"""
 
     sessions = next(conn.smbsrv_information(irpc.SMBSRV_INFO_SESSIONS))
-    print "User                                  Client      Connected at"
-    print "-" * 79
+    print("User                                  Client      Connected at")
+    print("-" * 79)
     for session in sessions:
         fulluser = "%s/%s" % (session.account_name, session.domain_name)
-        print "%-30s %16s   %s" % (fulluser, session.client_ip, sys.httptime(session.connect_time))
-    print ""
+        print("%-30s %16s   %s" % (fulluser,
+                                   session.client_ip,
+                                   sys.httptime(session.connect_time)))
+    print()
 
 def show_tcons(open_connection):
     """show open tree connects"""

@@ -37,4 +37,4 @@ for v in vars:
 
 options = options.replace("${PREFIX}", prefix)
 
-print options
+print(options)

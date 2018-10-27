@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+from __future__ import print_function
 import optparse
 import os
 import sys
@@ -53,7 +53,7 @@ opts = parser.parse_args()[0]
 def message(text):
     """print a message if quiet is not set."""
     if not opts.quiet:
-        print text
+        print(text)
 
 if len(sys.argv) == 1:
     opts.interactive = True
@@ -77,7 +77,7 @@ def get_paths(targetdir=None,smbconf=None):
             smbconf = param.default_path()
 
     if not os.path.exists(smbconf):
-        print >>sys.stderr, "Unable to find smb.conf .. "+smbconf
+        print("Unable to find smb.conf .. "+smbconf, file=sys.stderr)
         parser.print_usage()
         sys.exit(1)
 
@@ -121,9 +121,11 @@ def rebuild_en_dn(credentials,session_info,paths):
                 sam_ldb.modify(m)
                 res3 = sam_ldb.search(expression="(&(distinguishedName=%s)(%s=*))"%(dn,att),scope=SCOPE_SUBTREE, attrs=[att],controls=["search_options:1:2"])
                 if( len(res3) == 0  or (len(res3[0][att])!= len(saveatt))):
-                    print >>sys.stderr, str(dn) + " has no attr " +att+ " or a wrong value"
+                    print(str(dn) + " has no attr " +att+ " or a wrong value",
+                          file=sys.stderr)
                     for satt in saveatt:
-                        print >>sys.stderr,str(att)+"    =    "+satt
+                        print("%s    =    %s" % (att, satt),
+                              file=sys.stderr)
                     sam_ldb.transaction_cancel()
     sam_ldb.transaction_commit()
 

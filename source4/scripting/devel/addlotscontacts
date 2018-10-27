@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
         ldbs.sam.add(msg)
 
-    print "Creating %d contacts" % num_contacts
+    print("Creating %d contacts" % num_contacts)
     count = 0
     increment = num_contacts / 10
     if increment > 5000:

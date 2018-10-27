@@ -50,4 +50,4 @@ msg["enableOptionalFeature"] = ldb.MessageElement(
      ldb.FLAG_MOD_ADD, "enableOptionalFeature")
 res = sam_ldb.modify(msg)
 
-print "Recycle Bin feature enabled"
+print("Recycle Bin feature enabled")

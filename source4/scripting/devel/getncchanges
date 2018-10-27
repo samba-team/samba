@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     drs = drsuapi.drsuapi(binding_str, lp, creds)
     drs_handle, supported_extensions = drs_DsBind(drs)
-    print "DRS Handle: %s" % drs_handle
+    print("DRS Handle: %s" % drs_handle)
 
     req8 = drsuapi.DsGetNCChangesRequest8()
 

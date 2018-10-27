@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 import samba.param as param, ldb, sys, getopt
 
 optlist, args = getopt.getopt(sys.argv[1:], "s:")
@@ -48,9 +47,9 @@ search = ("(&(objectclass=primaryDomain)(samaccountname=" +
 msg = secrets.search(expression=search, attrs=['secret'])
 
 if not msg:
-    print "Error:"
-    print "Password for host[%s] not found in path[%s]." % (netbios, path)
-    print "You may want to pass the smb.conf location via the -s option."
+    print("Error:")
+    print("Password for host[%s] not found in path[%s]." % (netbios, path))
+    print("You may want to pass the smb.conf location via the -s option.")
     exit(1)
 
 password=msg[0]['secret'][0]
