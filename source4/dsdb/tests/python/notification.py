@@ -67,7 +67,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 class LDAPNotificationTest(samba.tests.TestCase):
 
     def setUp(self):
-        super(samba.tests.TestCase, self).setUp()
+        super(LDAPNotificationTest, self).setUp()
         self.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb.domain_dn()
 
