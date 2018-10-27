@@ -37,8 +37,8 @@ def find_num_funcs(conn):
     for i in xrange(MAX_OPNUM):
         try:
             conn.request(i, "")
-        except RuntimeError, (num, msg):
-            if num == DCERPC_FAULT_OP_RNG_ERROR:
+        except RuntimeError as e:
+            if e.args[0] == DCERPC_FAULT_OP_RNG_ERROR:
                 return i
     raise Exception("More than %d functions" % MAX_OPNUM)
 
