@@ -33,9 +33,9 @@ from samba import Ldb, version, ntacls
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
 from samba.provision import (provision_paths_from_lp,
-                             getpolicypath, set_gpos_acl, create_gpo_struct,
+                             getpolicypath, create_gpo_struct,
                              provision, ProvisioningError,
-                             setsysvolacl, secretsdb_self_join)
+                             secretsdb_self_join)
 from samba.provision.common import FILL_FULL
 from samba.dcerpc import xattr, drsblobs, security
 from samba.dcerpc.misc import SEC_CHAN_BDC
