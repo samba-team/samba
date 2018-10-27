@@ -334,7 +334,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
             self.DS_BEHAVIOR = "ds_behavior_win2008"
 
     def tearDown(self):
-        super(DescriptorTests, self).tearDown()
+        super(OwnerGroupDescriptorTests, self).tearDown()
         self.deleteAll()
 
     def check_user_belongs(self, user_dn, groups=[]):
