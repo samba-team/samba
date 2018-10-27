@@ -4,6 +4,7 @@
 import os, sys, re, fnmatch, shlex, inspect
 from optparse import SUPPRESS_HELP
 from waflib import Build, Options, Utils, Task, Logs, Configure, Errors, Context
+from waflib import Scripting
 from waflib.TaskGen import feature, before, after
 from waflib.Configure import ConfigurationContext
 from waflib.Logs import debug

@@ -2,7 +2,7 @@
 
 import os, datetime, fnmatch
 from waflib import Scripting, Utils, Options, Logs, Errors
-from waflib import ConfigSet
+from waflib import ConfigSet, Context
 from samba_utils import LOCAL_CACHE, os_path_relpath
 
 def run_task(t, k):
