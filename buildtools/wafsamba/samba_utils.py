@@ -328,7 +328,7 @@ def RUN_COMMAND(cmd,
         return os.WEXITSTATUS(status)
     if os.WIFSIGNALED(status):
         return - os.WTERMSIG(status)
-    Logs.error("Unknown exit reason %d for command: %s" (status, cmd))
+    Logs.error("Unknown exit reason %d for command: %s" % (status, cmd))
     return -1
 
 
