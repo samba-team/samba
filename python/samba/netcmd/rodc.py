@@ -83,7 +83,6 @@ class cmd_rodc_preload(Command):
     def run(self, *accounts, **kwargs):
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")
-        versionpts = kwargs.get("versionopts")
         server = kwargs.get("server")
         accounts_file = kwargs.get("file")
         ignore_errors = kwargs.get("ignore_errors")
