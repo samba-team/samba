@@ -2,7 +2,7 @@
 # Copyright (C) 2008-2010 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2016 Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
 # Published under the GNU GPL, v3 or later
-
+from __future__ import print_function
 import optparse
 import os
 import signal
@@ -42,9 +42,9 @@ def main():
     f = open(fn, 'w')
     json_formatter(sys.stdin, f)
     f.close()
-    print
-    print "A JSON file summarising these tests performance found in:"
-    print " ", fn
+    print()
+    print("A JSON file summarising these tests performance found in:")
+    print(" ", fn)
 
 
 def handle_sigint(sig, stack):
