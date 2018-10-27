@@ -8,7 +8,7 @@
 
 from __future__ import print_function
 import sys
-import sre
+import re
 
 if len(sys.argv) != 2:
     print('Usage: depfilter.py NODE')
@@ -23,7 +23,7 @@ lines = sys.stdin.readlines()
 graph = {}
 
 for arc in lines[1:-1]:
-    match = sre.search('"(.*)" -> "(.*)"', arc)
+    match = re.search('"(.*)" -> "(.*)"', arc)
     n1, n2 = match.group(1), match.group(2)
     if n1 not in graph:
         graph[n1] = []
