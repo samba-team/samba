@@ -191,7 +191,7 @@ def fix_dn(dn):
 
 def write_ldif_one(o, attrs):
     """dump an object as ldif"""
-    print "dn: CN=%s,${SCHEMADN}" % o["cn"]
+    print("dn: CN=%s,${SCHEMADN}" % o["cn"])
     for a in attrs:
         if not o.has_key(a):
             continue

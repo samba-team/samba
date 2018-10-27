@@ -90,7 +90,7 @@ class DescrGetter:
         for line in ldif_entry:
             length = 79
             if len(line) <= length + 1:
-                print line
+                print(line)
             else:
                 for i in range(len(line) / length + 1):
                     if i == 0:

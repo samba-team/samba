@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 import sys
 import optparse
 sys.path.insert(0, "bin/python")
@@ -63,18 +62,17 @@ if res and len(res) == 1 and res[0]["dsServiceName"] != None:
     if res and len(res) == 1 and res[0]["invocationId"]:
         invocation = str(ndr_unpack(misc.GUID, res[0]["invocationId"][0]))   
     else:
-        print "Unable to find invocation ID"
+        print("Unable to find invocation ID")
         sys.exit(1)
 else:
-    print "Unable to find attribute dsServiceName in rootDSE"
+    print("Unable to find attribute dsServiceName in rootDSE")
     sys.exit(1)
 
 minobj = 5
 (hash_id, nb_obj) = findprovisionrange(samdb, basedn)
-print "Here is a list of changes that modified more than %d objects in 1 minute." % minobj
-print "Usually changes made by provision and upgradeprovision are those who affect a couple"\
-        " of hundred of objects or more"
-print "Total number of objects: %d" % nb_obj
-print 
+print("Here is a list of changes that modified more than %d objects in 1 minute." % minobj)
+print("Usually changes made by provision and upgradeprovision are those who affect a couple"
+      " of hundred of objects or more")
+print("Total number of objects: %d\n" % nb_obj)
 
 print_provision_ranges(hash_id, minobj, opts.storedir, str(paths.samdb), invocation)
