@@ -872,8 +872,10 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 			}
 		}
 		if (map == NULL) {
+			struct dom_sid_buf buf;
 			DBG_DEBUG("Got unexpected sid %s from object %s\n",
-				  sid_string_tos(&sid), dn);
+				  dom_sid_str_buf(&sid, &buf),
+				  dn);
 			continue;
 		}
 
