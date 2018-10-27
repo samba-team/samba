@@ -246,7 +246,7 @@ name: """ + object_name + """
         delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
     def test_subClassOf(self):
-        """ Testing usage of custom child schamaClass
+        """ Testing usage of custom child classSchema
         """
 
         class_name = "my-Class" + time.strftime("%s", time.gmtime())
