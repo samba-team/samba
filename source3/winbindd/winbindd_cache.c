@@ -2222,19 +2222,14 @@ static NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	char *sid_string;
+	struct dom_sid_buf sid_string;
 
 	if (cache->tdb == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	sid_string = sid_string_tos(user_sid);
-	if (sid_string == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	centry = wcache_fetch(cache, domain, "U/%s", sid_string);
-	TALLOC_FREE(sid_string);
+	centry = wcache_fetch(
+		cache, domain, "U/%s", dom_sid_str_buf(user_sid, &sid_string));
 	if (centry == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
@@ -2322,14 +2317,17 @@ static NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 	NTSTATUS status;
 	uint32_t i, num_sids;
 	struct dom_sid *sids;
-	fstring sid_string;
+	struct dom_sid_buf sid_string;
 
 	if (cache->tdb == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	centry = wcache_fetch(cache, domain, "UG/%s",
-			      sid_to_fstring(sid_string, user_sid));
+	centry = wcache_fetch(
+		cache,
+		domain,
+		"UG/%s",
+		dom_sid_str_buf(user_sid, &sid_string));
 	if (centry == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
@@ -2380,7 +2378,7 @@ NTSTATUS wb_cache_lookup_usergroups(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	unsigned int i;
-	fstring sid_string;
+	struct dom_sid_buf sid_string;
 	bool old_status;
 
 	old_status = domain->online;
@@ -2434,7 +2432,7 @@ NTSTATUS wb_cache_lookup_usergroups(struct winbindd_domain *domain,
 		centry_put_sid(centry, &(*user_gids)[i]);
 	}	
 
-	centry_end(centry, "UG/%s", sid_to_fstring(sid_string, user_sid));
+	centry_end(centry, "UG/%s", dom_sid_str_buf(user_sid, &sid_string));
 	centry_free(centry);
 
 skip_save:
@@ -2605,19 +2603,17 @@ static NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	unsigned int i;
-	char *sid_string;
+	struct dom_sid_buf sid_string;
 
 	if (cache->tdb == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	sid_string = sid_string_tos(group_sid);
-	if (sid_string == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	centry = wcache_fetch(cache, domain, "GM/%s", sid_string);
-	TALLOC_FREE(sid_string);
+	centry = wcache_fetch(
+		cache,
+		domain,
+		"GM/%s",
+		dom_sid_str_buf(group_sid, &sid_string));
 	if (centry == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
@@ -2671,7 +2667,7 @@ NTSTATUS wb_cache_lookup_groupmem(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	unsigned int i;
-	fstring sid_string;
+	struct dom_sid_buf sid_string;
 	bool old_status;
 
 	old_status = domain->online;
@@ -2727,7 +2723,9 @@ NTSTATUS wb_cache_lookup_groupmem(struct winbindd_domain *domain,
 		centry_put_string(centry, (*names)[i]);
 		centry_put_uint32(centry, (*name_types)[i]);
 	}	
-	centry_end(centry, "GM/%s", sid_to_fstring(sid_string, group_sid));
+	centry_end(centry,
+		   "GM/%s",
+		   dom_sid_str_buf(group_sid, &sid_string));
 	centry_free(centry);
 
 skip_save:
@@ -3015,7 +3013,8 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
 				const struct dom_sid *sid)
 {
-        fstring key_str, sid_string;
+        fstring key_str;
+	struct dom_sid_buf sid_string;
 	struct winbind_cache *cache;
 
 	/* don't clear cached U/SID and UG/SID entries when we want to logon
@@ -3035,12 +3034,12 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
         }
 
 	/* Clear U/SID cache entry */
-	fstr_sprintf(key_str, "U/%s", sid_to_fstring(sid_string, sid));
+	fstr_sprintf(key_str, "U/%s", dom_sid_str_buf(sid, &sid_string));
 	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
 	tdb_delete(cache->tdb, string_tdb_data(key_str));
 
 	/* Clear UG/SID cache entry */
-	fstr_sprintf(key_str, "UG/%s", sid_to_fstring(sid_string, sid));
+	fstr_sprintf(key_str, "UG/%s", dom_sid_str_buf(sid, &sid_string));
 	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
 	tdb_delete(cache->tdb, string_tdb_data(key_str));
 
@@ -4561,11 +4560,12 @@ bool wcache_tdc_add_domain( struct winbindd_domain *domain )
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
 	bool ret = false;
+	struct dom_sid_buf buf;
 
 	DEBUG(10,("wcache_tdc_add_domain: Adding domain %s (%s), SID %s, "
 		  "flags = 0x%x, attributes = 0x%x, type = 0x%x\n",
 		  domain->name, domain->alt_name, 
-		  sid_string_dbg(&domain->sid),
+		  dom_sid_str_buf(&domain->sid, &buf),
 		  domain->domain_flags,
 		  domain->domain_trust_attribs,
 		  domain->domain_type));	
