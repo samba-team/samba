@@ -136,20 +136,6 @@ class IntegerTests(samba.tests.TestCase):
             g.time_mid = -2
         self.assertRaises(OverflowError, assign)
 
-    def test_int_into_uint16(self):
-        g = misc.GUID()
-
-        def assign():
-            g.time_mid = 200000
-        self.assertRaises(OverflowError, assign)
-
-    def test_negative_int_into_uint16(self):
-        g = misc.GUID()
-
-        def assign():
-            g.time_mid = -2
-        self.assertRaises(OverflowError, assign)
-
     def test_enum_into_uint16(self):
         g = misc.GUID()
         g.time_mid = misc.SEC_CHAN_DOMAIN
