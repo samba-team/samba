@@ -254,7 +254,7 @@ def main():
                 duration = opts.duration
 
         except ValueError as e:
-            if not e.message.startswith('need more than'):
+            if not str(e).startswith('need more than'):
                 raise
 
             model = traffic.TrafficModel()
