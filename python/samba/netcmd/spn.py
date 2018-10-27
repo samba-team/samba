@@ -58,8 +58,6 @@ class cmd_spn_list(Command):
             scope=ldb.SCOPE_SUBTREE, attrs=["servicePrincipalName"])
         if len(res) > 0:
             spns = res[0].get("servicePrincipalName")
-            found = False
-            flag = ldb.FLAG_MOD_ADD
             if spns is not None:
                 self.outf.write(
                     "User %s has the following servicePrincipalName: \n" %
