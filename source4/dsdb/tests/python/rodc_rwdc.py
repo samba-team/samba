@@ -822,7 +822,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
             except ldb.LdbError as e:
                 (ecode, emsg) = e.args
                 self.fail("Failed to add %s to rwdc: ldb error: %s %s" %
-                          (ecode, emsg))
+                          (o, ecode, emsg))
 
             if cross_ncs:
                 self.force_replication(base=base)
