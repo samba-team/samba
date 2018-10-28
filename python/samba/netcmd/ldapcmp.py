@@ -751,9 +751,13 @@ class LDAPBundle(object):
         # It does not matter if they are in the same DC, in two DC in one domain or in two
         # different domains.
         if self.search_scope != SCOPE_BASE:
+
+            self_dns = [q.upper() for q in self.dn_list]
+            other_dns = [q.upper() for q in other.dn_list]
+
             title = "\n* DNs found only in %s:" % self.con.host
             for x in self.dn_list:
-                if not x.upper() in [q.upper() for q in other.dn_list]:
+                if not x.upper() in other_dns:
                     if title and not self.skip_missing_dn:
                         self.log(title)
                         title = None
@@ -764,7 +768,7 @@ class LDAPBundle(object):
             #
             title = "\n* DNs found only in %s:" % other.con.host
             for x in other.dn_list:
-                if not x.upper() in [q.upper() for q in self.dn_list]:
+                if not x.upper() in self_dns:
                     if title and not self.skip_missing_dn:
                         self.log(title)
                         title = None
