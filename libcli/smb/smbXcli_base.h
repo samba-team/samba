@@ -74,6 +74,7 @@ NTSTATUS smbXcli_conn_samba_suicide(struct smbXcli_conn *conn,
 
 void smbXcli_req_unset_pending(struct tevent_req *req);
 bool smbXcli_req_set_pending(struct tevent_req *req);
+struct timeval smbXcli_req_endtime(struct tevent_req *req);
 
 uint32_t smb1cli_conn_capabilities(struct smbXcli_conn *conn);
 uint32_t smb1cli_conn_max_xmit(struct smbXcli_conn *conn);
