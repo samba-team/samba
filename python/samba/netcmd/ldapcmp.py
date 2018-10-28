@@ -688,7 +688,7 @@ class LDAPObject(object):
         return res == ""
 
 
-class LDAPBundel(object):
+class LDAPBundle(object):
 
     def __init__(self, connection, context, dn_list=None, filter_list=None,
                  outf=sys.stdout, errf=sys.stderr):
@@ -713,7 +713,7 @@ class LDAPBundel(object):
             self.context = context.upper()
             self.dn_list = self.get_dn_list(context)
         else:
-            raise Exception("Unknown initialization data for LDAPBundel().")
+            raise Exception("Unknown initialization data for LDAPBundle().")
         counter = 0
         while counter < len(self.dn_list) and self.two_domains:
             # Use alias reference
@@ -988,9 +988,9 @@ class cmd_ldapcmp(Command):
             if not quiet:
                 self.outf.write("\n* Comparing [%s] context...\n" % context)
 
-            b1 = LDAPBundel(con1, context=context, filter_list=filter_list,
+            b1 = LDAPBundle(con1, context=context, filter_list=filter_list,
                             outf=self.outf, errf=self.errf)
-            b2 = LDAPBundel(con2, context=context, filter_list=filter_list,
+            b2 = LDAPBundle(con2, context=context, filter_list=filter_list,
                             outf=self.outf, errf=self.errf)
 
             if b1 == b2:
