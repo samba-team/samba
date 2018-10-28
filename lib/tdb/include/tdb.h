@@ -481,6 +481,73 @@ int tdb_traverse(struct tdb_context *tdb, tdb_traverse_func fn, void *private_da
 int tdb_traverse_read(struct tdb_context *tdb, tdb_traverse_func fn, void *private_data);
 
 /**
+ * @brief Traverse a single hash chain
+ *
+ * Traverse a single hash chain under a single lock operation. No
+ * database modification is possible in the callback.
+ *
+ * This exists for background cleanup of databases. In normal
+ * operations, traversing a complete database can be much too
+ * expensive. Databases can have many chains, which will all have to
+ * be looked at before tdb_traverse finishes. Also tdb_traverse does a
+ * lot of fcntl activity to protect against concurrent record deletes.
+ *
+ * With this you can walk a fraction of the whole tdb, collect the
+ * entries you want to prune, leave the traverse, and then modify or
+ * delete the records in a subsequent step.
+ *
+ * To walk the entire database, call this function tdb_hash_size()
+ * times, with 0<=chain<tdb_hash_size(tdb).
+ *
+ * @param[in]  tdb      The database to traverse.
+ *
+ * @param[in]  chain    The hash chain number to traverse.
+ *
+ * @param[in]  fn       The function to call on each entry.
+ *
+ * @param[in]  private_data The private data which should be passed to the
+ *                          traversing function.
+ *
+ * @return              The record count traversed, -1 on error.
+ */
+
+int tdb_traverse_chain(struct tdb_context *tdb,
+		       unsigned chain,
+		       tdb_traverse_func fn,
+		       void *private_data);
+
+/**
+ * @brief Traverse a single hash chain
+ *
+ * This is like tdb_traverse_chain(), but for all records that are in
+ * the same chain as the record corresponding to the key parameter.
+ *
+ * Use it for ongoing database maintenance under a lock. Whenever you
+ * are about to modify a database, you know which record you are going
+ * to write to. For that tdb_store(), an exclusive chainlock is taken
+ * behind the scenes. To utilize this exclusive lock for incremental
+ * database cleanup as well, tdb_chainlock() the key you are about to
+ * modify, then tdb_traverse_key_chain() to do the incremental
+ * maintenance, modify your record and tdb_chainunlock() the key
+ * again.
+ *
+ * @param[in]  tdb      The database to traverse.
+ *
+ * @param[in]  key      The record key to walk the chain for.
+ *
+ * @param[in]  fn       The function to call on each entry.
+ *
+ * @param[in]  private_data The private data which should be passed to the
+ *                          traversing function.
+ *
+ * @return              The record count traversed, -1 on error.
+ */
+
+int tdb_traverse_key_chain(struct tdb_context *tdb,
+			   TDB_DATA key,
+			   tdb_traverse_func fn,
+			   void *private_data);
+/**
  * @brief Check if an entry in the database exists.
  *
  * @note 1 is returned if the key is found and 0 is returned if not found this

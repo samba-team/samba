@@ -399,3 +399,113 @@ _PUBLIC_ TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA oldkey)
 	return key;
 }
 
+_PUBLIC_ int tdb_traverse_chain(struct tdb_context *tdb,
+				unsigned chain,
+				tdb_traverse_func fn,
+				void *private_data)
+{
+	tdb_off_t rec_ptr;
+	struct tdb_chainwalk_ctx chainwalk;
+	int count = 0;
+	int ret;
+
+	if (chain >= tdb->hash_size) {
+		tdb->ecode = TDB_ERR_EINVAL;
+		return -1;
+	}
+
+	if (tdb->traverse_read != 0) {
+		tdb->ecode = TDB_ERR_LOCK;
+		return -1;
+	}
+
+	ret = tdb_lock(tdb, chain, F_RDLCK);
+	if (ret == -1) {
+		return -1;
+	}
+
+	tdb->traverse_read += 1;
+
+	ret = tdb_ofs_read(tdb, TDB_HASH_TOP(chain), &rec_ptr);
+	if (ret == -1) {
+		goto fail;
+	}
+
+	tdb_chainwalk_init(&chainwalk, rec_ptr);
+
+	while (rec_ptr != 0) {
+		struct tdb_record rec;
+		bool ok;
+
+		ret = tdb_rec_read(tdb, rec_ptr, &rec);
+		if (ret == -1) {
+			goto fail;
+		}
+
+		if (!TDB_DEAD(&rec)) {
+			/* no overflow checks, tdb_rec_read checked it */
+			tdb_off_t key_ofs = rec_ptr + sizeof(rec);
+			size_t full_len = rec.key_len + rec.data_len;
+			uint8_t *buf = NULL;
+
+			TDB_DATA key = { .dsize = rec.key_len };
+			TDB_DATA data = { .dsize = rec.data_len };
+
+			if ((tdb->transaction == NULL) &&
+			    (tdb->map_ptr != NULL)) {
+				ret = tdb->methods->tdb_oob(
+					tdb, key_ofs, full_len, 0);
+				if (ret == -1) {
+					goto fail;
+				}
+				key.dptr = (uint8_t *)tdb->map_ptr + key_ofs;
+			} else {
+				buf = tdb_alloc_read(tdb, key_ofs, full_len);
+				if (buf == NULL) {
+					goto fail;
+				}
+				key.dptr = buf;
+			}
+			data.dptr = key.dptr + key.dsize;
+
+			ret = fn(tdb, key, data, private_data);
+			free(buf);
+
+			count += 1;
+
+			if (ret != 0) {
+				break;
+			}
+		}
+
+		rec_ptr = rec.next;
+
+		ok = tdb_chainwalk_check(tdb, &chainwalk, rec_ptr);
+		if (!ok) {
+			goto fail;
+		}
+	}
+	tdb->traverse_read -= 1;
+	tdb_unlock(tdb, chain, F_RDLCK);
+	return count;
+
+fail:
+	tdb->traverse_read -= 1;
+	tdb_unlock(tdb, chain, F_RDLCK);
+	return -1;
+}
+
+_PUBLIC_ int tdb_traverse_key_chain(struct tdb_context *tdb,
+				    TDB_DATA key,
+				    tdb_traverse_func fn,
+				    void *private_data)
+{
+	uint32_t hash, chain;
+	int ret;
+
+	hash = tdb->hash_fn(&key);
+	chain = BUCKET(hash);
+	ret = tdb_traverse_chain(tdb, chain, fn, private_data);
+
+	return ret;
+}
