@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include <tevent.h>
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
@@ -317,3 +318,118 @@ struct torture_suite *torture_smb2_read_init(TALLOC_CTX *ctx)
 	return suite;
 }
 
+static bool test_aio_cancel(struct torture_context *tctx,
+			    struct smb2_tree *tree)
+{
+	struct smb2_handle h;
+	uint8_t buf[64 * 1024];
+	struct smb2_read r;
+	struct smb2_request *req = NULL;
+	int rc;
+	NTSTATUS status;
+	bool ret = true;
+
+	ZERO_STRUCT(buf);
+
+	smb2_util_unlink(tree, FNAME);
+
+	status = torture_smb2_testfile(tree, FNAME, &h);
+	torture_assert_ntstatus_ok_goto(
+		tctx,
+		status,
+		ret,
+		done,
+		"torture_smb2_testfile failed\n");
+
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	torture_assert_ntstatus_ok_goto(
+		tctx,
+		status,
+		ret,
+		done,
+		"smb2_util_write failed\n");
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(
+		tctx,
+		status,
+		ret,
+		done,
+		"smb2_util_close failed\n");
+
+	status = torture_smb2_testfile_access(
+		tree, FNAME, &h, SEC_RIGHTS_FILE_ALL);
+	torture_assert_ntstatus_ok_goto(
+		tctx,
+		status,
+		ret,
+		done,
+		"torture_smb2_testfile_access failed\n");
+
+	r = (struct smb2_read) {
+		.in.file.handle = h,
+		.in.length      = 1,
+		.in.offset      = 0,
+		.in.min_count   = 1,
+	};
+
+	req = smb2_read_send(tree, &r);
+	torture_assert_goto(
+		tctx,
+		req != NULL,
+		ret,
+		done,
+		"smb2_read_send failed\n");
+
+	while (!req->cancel.can_cancel) {
+		rc = tevent_loop_once(tctx->ev);
+		torture_assert_goto(
+			tctx,
+			rc == 0,
+			ret,
+			done,
+			"tevent_loop_once failed\n");
+	}
+
+	status = smb2_cancel(req);
+	torture_assert_ntstatus_ok_goto(
+		tctx,
+		status,
+		ret,
+		done,
+		"smb2_cancel failed\n");
+
+	status = smb2_read_recv(req, tree, &r);
+	torture_assert_ntstatus_ok_goto(
+		tctx,
+		status,
+		ret,
+		done,
+		"smb2_read_recv failed\n");
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(
+		tctx,
+		status,
+		ret,
+		done,
+		"smb2_util_close failed\n");
+
+done:
+	smb2_util_unlink(tree, FNAME);
+	return ret;
+}
+
+/*
+ * aio testing against share with VFS module "delay_inject"
+ */
+struct torture_suite *torture_smb2_aio_delay_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(ctx, "aio_delay");
+
+	torture_suite_add_1smb2_test(suite, "aio_cancel", test_aio_cancel);
+
+	suite->description = talloc_strdup(suite, "SMB2 delayed aio tests");
+
+	return suite;
+}

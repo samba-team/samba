@@ -2225,6 +2225,12 @@ sub provision($$$$$$$$$)
 	kernel oplocks = no
 	posix locking = no
 	include = $libdir/delay_inject.conf
+
+[aio_delay_inject]
+	copy = tmp
+	vfs objects = delay_inject
+	delay_inject:pread_send = 2000
+	delay_inject:pwrite_send = 2000
 	";
 	close(CONF);
 
