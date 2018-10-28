@@ -905,7 +905,7 @@ class cmd_ldapcmp(Command):
                help="Compare nTSecurityDescriptor attibutes only"),
         Option("--sort-aces", dest="sort_aces", action="store_true", default=False,
                help="Sort ACEs before comparison of nTSecurityDescriptor attribute"),
-        Option("--view", dest="view", default="section",
+        Option("--view", dest="view", default="section", choices=["section", "collision"],
                help="Display mode for nTSecurityDescriptor results. Possible values: section or collision."),
         Option("--base", dest="base", default="",
                help="Pass search base that will build DN list for the first DC."),
@@ -964,8 +964,6 @@ class cmd_ldapcmp(Command):
             raise CommandError("You cannot set --verbose and --quiet together")
         if (not base and base2) or (base and not base2):
             raise CommandError("You need to specify both --base and --base2 at the same time")
-        if descriptor and view.upper() not in ["SECTION", "COLLISION"]:
-            raise CommandError("Invalid --view value. Choose from: section or collision")
 
         con1 = LDAPBase(URL1, creds, lp,
                         two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
