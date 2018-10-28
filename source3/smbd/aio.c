@@ -645,12 +645,16 @@ bool cancel_smb2_aio(struct smb_request *smbreq)
 	}
 
 	/*
-	 * We let the aio request run. Setting fsp to NULL has the
-	 * effect that the _done routines don't send anything out.
+	 * We let the aio request run and don't try to cancel it which means
+	 * processing of the SMB2 request must continue as normal, cf MS-SMB2
+	 * 3.3.5.16:
+	 *
+	 *   If the target request is not successfully canceled, processing of
+	 *   the target request MUST continue and no response is sent to the
+	 *   cancel request.
 	 */
 
-	aio_ex->fsp = NULL;
-	return true;
+	return false;
 }
 
 static void aio_pread_smb2_done(struct tevent_req *req);
