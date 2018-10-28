@@ -1585,10 +1585,8 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	state->smb1.iov_count = iov_count + 4;
 
 	if (timeout_msec > 0) {
-		struct timeval endtime;
-
-		endtime = timeval_current_ofs_msec(timeout_msec);
-		if (!tevent_req_set_endtime(req, ev, endtime)) {
+		state->endtime = timeval_current_ofs_msec(timeout_msec);
+		if (!tevent_req_set_endtime(req, ev, state->endtime)) {
 			return req;
 		}
 	}
@@ -3051,10 +3049,8 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	}
 
 	if (timeout_msec > 0) {
-		struct timeval endtime;
-
-		endtime = timeval_current_ofs_msec(timeout_msec);
-		if (!tevent_req_set_endtime(req, ev, endtime)) {
+		state->endtime = timeval_current_ofs_msec(timeout_msec);
+		if (!tevent_req_set_endtime(req, ev, state->endtime)) {
 			return req;
 		}
 	}
