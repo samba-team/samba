@@ -293,7 +293,24 @@ static void smb2_request_done(struct tevent_req *subreq)
 
 	req->status = smb2cli_req_recv(req->subreq, req, &req->recv_iov, NULL, 0);
 	if (NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
+		struct timeval endtime = smbXcli_req_endtime(subreq);
+		bool ok;
+
 		req->cancel.can_cancel = true;
+		if (timeval_is_zero(&endtime)) {
+			return;
+		}
+
+		ok = tevent_req_set_endtime(
+			subreq, req->transport->ev, endtime);
+		if (!ok) {
+			req->status = NT_STATUS_INTERNAL_ERROR;
+			req->state = SMB2_REQUEST_ERROR;
+			if (req->async.fn) {
+				req->async.fn(req);
+			}
+			return;
+		}
 		return;
 	}
 	TALLOC_FREE(req->subreq);
