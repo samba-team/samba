@@ -911,7 +911,7 @@ class cmd_ldapcmp(Command):
                help="Pass search base that will build DN list for the first DC."),
         Option("--base2", dest="base2", default="",
                help="Pass search base that will build DN list for the second DC. Used when --two or when compare two different DNs."),
-        Option("--scope", dest="scope", default="SUB",
+        Option("--scope", dest="scope", default="SUB", choices=["SUB", "ONE", "BASE"],
                help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
         Option("--filter", dest="filter", default="",
                help="List of comma separated attributes to ignore in the comparision"),
@@ -966,8 +966,6 @@ class cmd_ldapcmp(Command):
             raise CommandError("You need to specify both --base and --base2 at the same time")
         if descriptor and view.upper() not in ["SECTION", "COLLISION"]:
             raise CommandError("Invalid --view value. Choose from: section or collision")
-        if not scope.upper() in ["SUB", "ONE", "BASE"]:
-            raise CommandError("Invalid --scope value. Choose from: SUB, ONE, BASE")
 
         con1 = LDAPBase(URL1, creds, lp,
                         two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
