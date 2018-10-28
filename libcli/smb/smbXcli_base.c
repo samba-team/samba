@@ -227,6 +227,8 @@ struct smbXcli_req_state {
 
 	struct tevent_req *write_req;
 
+	struct timeval endtime;
+
 	struct {
 		/* Space for the header including the wct */
 		uint8_t hdr[HDR_VWV];
@@ -2890,6 +2892,14 @@ static void smb2cli_req_cancel_done(struct tevent_req *subreq)
 {
 	/* we do not care about the result */
 	TALLOC_FREE(subreq);
+}
+
+struct timeval smbXcli_req_endtime(struct tevent_req *req)
+{
+	struct smbXcli_req_state *state = tevent_req_data(
+		req, struct smbXcli_req_state);
+
+	return state->endtime;
 }
 
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
