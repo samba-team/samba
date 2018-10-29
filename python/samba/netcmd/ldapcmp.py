@@ -740,7 +740,7 @@ class LDAPBundle(object):
         self.size = len(self.dn_list)
         self.dn_list = sorted(self.dn_list)
 
-    def __eq__(self, other):
+    def diff(self, other):
         res = True
         if self.size != other.size:
             self.log("\n* DN lists have different size: %s != %s" % (self.size, other.size))
@@ -993,7 +993,7 @@ class cmd_ldapcmp(Command):
             b2 = LDAPBundle(con2, context=context, filter_list=filter_list,
                             outf=self.outf, errf=self.errf)
 
-            if b1 == b2:
+            if b1.diff(b2):
                 if not quiet:
                     self.outf.write("\n* Result for [%s]: SUCCESS\n" %
                                     context)
