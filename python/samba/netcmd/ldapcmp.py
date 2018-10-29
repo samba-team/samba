@@ -949,13 +949,13 @@ class cmd_ldapcmp(Command):
         con1 = LDAPBase(URL1, creds, lp,
                         two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
                         verbose=verbose, view=view, base=base, scope=scope,
-                        outf=self.outf, errf=self.errf)
+                        outf=self.outf, errf=self.errf, skip_missing_dn=skip_missing_dn)
         assert len(con1.base_dn) > 0
 
         con2 = LDAPBase(URL2, creds2, lp,
                         two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
                         verbose=verbose, view=view, base=base2, scope=scope,
-                        outf=self.outf, errf=self.errf)
+                        outf=self.outf, errf=self.errf, skip_missing_dn=skip_missing_dn)
         assert len(con2.base_dn) > 0
 
         filter_list = filter.split(",")

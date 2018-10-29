@@ -59,7 +59,7 @@ ldapcmp_with_orig() {
     IGNORE_ATTRS="$IGNORE_ATTRS,serverReferenceBL,msDS-IsDomainFor"
 
     LDAPCMP_CMD="$PYTHON $BINDIR/samba-tool ldapcmp"
-    $LDAPCMP_CMD $DB1_PATH $DB2_PATH --two --filter=$IGNORE_ATTRS $BASE_DN_OPTS
+    $LDAPCMP_CMD $DB1_PATH $DB2_PATH --two --skip-missing-dn --filter=$IGNORE_ATTRS $BASE_DN_OPTS
 }
 
 # check that the restored testenv DC basically matches the original
