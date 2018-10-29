@@ -1845,7 +1845,13 @@ int main(int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Winbindd reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}
-	initialize_password_db(true, server_event_context());
+
+	ok = initialize_password_db(true, server_event_context());
+	if (!ok) {
+		exit_daemon("Failed to initialize passdb backend! "
+			    "Check the 'passdb backend' variable in your "
+			    "smb.conf file.", EINVAL);
+	}
 
 	/*
 	 * Do not initialize the parent-child-pipe before becoming
