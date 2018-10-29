@@ -24,6 +24,9 @@
 #include "smb_common.h"
 #include "smb_signing.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 /* Used by the SMB signing functions. */
 
 struct smb_signing_state {
@@ -146,7 +149,8 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 {
 	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
 	uint8_t sequence_buf[8];
-	MD5_CTX md5_ctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
+	int rc;
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
@@ -160,28 +164,42 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 	SIVAL(sequence_buf, 0, seq_number);
 	SIVAL(sequence_buf, 4, 0);
 
-	/* Calculate the 16 byte MAC - but don't alter the data in the
-	   incoming packet.
+	/*
+	 * Calculate the 16 byte MAC - but don't alter the data in the
+	 * incoming packet.
+	 *
+	 * This makes for a bit of fussing about, but it's not too bad.
+	 */
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		return;
+	}
+	/* Initialise with the key. */
+	rc = gnutls_hash(hash_hnd, mac_key->data, mac_key->length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+	/* Copy in the first bit of the SMB header. */
+	rc = gnutls_hash(hash_hnd, hdr, HDR_SS_FIELD);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+	/* Copy in the sequence number, instead of the signature. */
+	rc = gnutls_hash(hash_hnd, sequence_buf, sizeof(sequence_buf));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+	/* Copy in the rest of the packet in, skipping the signature. */
+	rc = gnutls_hash(hash_hnd, hdr + offset_end_of_sig, len - offset_end_of_sig);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
 
-	   This makes for a bit of fussing about, but it's not too bad.
-	*/
-	MD5Init(&md5_ctx);
-
-	/* initialise with the key */
-	MD5Update(&md5_ctx, mac_key->data, mac_key->length);
-
-	/* copy in the first bit of the SMB header */
-	MD5Update(&md5_ctx, hdr, HDR_SS_FIELD);
-
-	/* copy in the sequence number, instead of the signature */
-	MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
-
-	/* copy in the rest of the packet in, skipping the signature */
-	MD5Update(&md5_ctx, hdr + offset_end_of_sig,
-		  len - (offset_end_of_sig));
-
-	/* calculate the MD5 sig */
-	MD5Final(calc_md5_mac, &md5_ctx);
+	gnutls_hash_deinit(hash_hnd, calc_md5_mac);
 }
 
 uint32_t smb_signing_next_seqnum(struct smb_signing_state *si, bool oneway)
