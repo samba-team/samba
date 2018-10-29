@@ -746,73 +746,55 @@ class LDAPBundle(object):
             self.log("\n* DN lists have different size: %s != %s" % (self.size, other.size))
             if not self.skip_missing_dn:
                 res = False
+
+        self_dns = set([q.upper() for q in self.dn_list])
+        other_dns = set([q.upper() for q in other.dn_list])
+
         #
         # This is the case where we want to explicitly compare two objects with different DNs.
         # It does not matter if they are in the same DC, in two DC in one domain or in two
         # different domains.
-        if self.search_scope != SCOPE_BASE:
+        if self.search_scope != SCOPE_BASE and not self.skip_missing_dn:
 
-            self_dns = [q.upper() for q in self.dn_list]
-            other_dns = [q.upper() for q in other.dn_list]
-
-            title = "\n* DNs found only in %s:" % self.con.host
-            for x in self.dn_list:
-                if not x.upper() in other_dns:
-                    if title and not self.skip_missing_dn:
-                        self.log(title)
-                        title = None
-                        res = False
+            self_only = self_dns - other_dns  # missing in other
+            if self_only:
+                res = False
+                self.log("\n* DNs found only in %s:" % self.con.host)
+                for x in self_only:
                     self.log(4 * " " + x)
-                    self.dn_list[self.dn_list.index(x)] = ""
-            self.dn_list = [x for x in self.dn_list if x]
-            #
-            title = "\n* DNs found only in %s:" % other.con.host
-            for x in other.dn_list:
-                if not x.upper() in self_dns:
-                    if title and not self.skip_missing_dn:
-                        self.log(title)
-                        title = None
-                        res = False
-                    self.log(4 * " " + x)
-                    other.dn_list[other.dn_list.index(x)] = ""
-            other.dn_list = [x for x in other.dn_list if x]
-            #
-            self.update_size()
-            other.update_size()
-            assert self.size == other.size
-            assert sorted([x.upper() for x in self.dn_list]) == sorted([x.upper() for x in other.dn_list])
-        self.log("\n* Objects to be compared: %s" % self.size)
 
-        index = 0
-        while index < self.size:
-            skip = False
+            other_only = other_dns - self_dns  # missing in self
+            if other_only:
+                res = False
+                self.log("\n* DNs found only in %s:" % other.con.host)
+                for x in other_only:
+                    self.log(4 * " " + x)
+
+        common_dns = self_dns & other_dns
+        self.log("\n* Objects to be compared: %d" % len(common_dns))
+
+        for dn in common_dns:
+
             try:
                 object1 = LDAPObject(connection=self.con,
-                                     dn=self.dn_list[index],
+                                     dn=dn,
                                      summary=self.summary,
                                      filter_list=self.filter_list,
                                      outf=self.outf, errf=self.errf)
             except LdbError as e:
-                (enum, estr) = e.args
-                if enum == ERR_NO_SUCH_OBJECT:
-                    self.log("\n!!! Object not found: %s" % self.dn_list[index])
-                    skip = True
-                raise
+                self.log("LdbError for dn %s: %s" % (dn, e))
+                continue
+
             try:
                 object2 = LDAPObject(connection=other.con,
-                                     dn=other.dn_list[index],
+                                     dn=dn,
                                      summary=other.summary,
                                      filter_list=self.filter_list,
                                      outf=self.outf, errf=self.errf)
-            except LdbError as e1:
-                (enum, estr) = e1.args
-                if enum == ERR_NO_SUCH_OBJECT:
-                    self.log("\n!!! Object not found: %s" % other.dn_list[index])
-                    skip = True
-                raise
-            if skip:
-                index += 1
+            except LdbError as e:
+                self.log("LdbError for dn %s: %s" % (dn, e))
                 continue
+
             if object1 == object2:
                 if self.con.verbose:
                     self.log("\nComparing:")
@@ -828,8 +810,7 @@ class LDAPBundle(object):
                 res = False
             self.summary = object1.summary
             other.summary = object2.summary
-            index += 1
-        #
+
         return res
 
     def get_dn_list(self, context):
