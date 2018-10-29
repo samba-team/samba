@@ -208,13 +208,15 @@ class LDAPBase(object):
         res = dict(res[0])
         # 'Dn' element is not iterable and we have it as 'distinguishedName'
         del res["dn"]
-        for key in list(res.keys()):
-            vals = list(res[key])
-            del res[key]
-            name = self.get_attribute_name(key)
-            res[name] = self.get_attribute_values(object_dn, key, vals)
 
-        return res
+        attributes = {}
+        for key, vals in res.items():
+            name = self.get_attribute_name(key)
+            # sort vals and return a list, help to compare
+            vals = sorted(vals)
+            attributes[name] = self.get_attribute_values(object_dn, key, vals)
+
+        return attributes
 
     def get_descriptor_sddl(self, object_dn):
         res = self.ldb.search(base=object_dn, scope=SCOPE_BASE, attrs=["nTSecurityDescriptor"])
