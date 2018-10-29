@@ -37,9 +37,6 @@ from samba.netcmd import (
     Option,
 )
 
-global summary
-summary = {}
-
 
 class LDAPBase(object):
 
@@ -848,9 +845,6 @@ class LDAPBundle(object):
             raise
         for x in res:
             dn_list.append(x["dn"].get_linearized())
-        #
-        global summary
-        #
         return dn_list
 
     def print_summary(self):
