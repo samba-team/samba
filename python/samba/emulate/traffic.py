@@ -45,7 +45,8 @@ from samba.auth import system_session
 from samba.dsdb import (
     UF_NORMAL_ACCOUNT,
     UF_SERVER_TRUST_ACCOUNT,
-    UF_TRUSTED_FOR_DELEGATION
+    UF_TRUSTED_FOR_DELEGATION,
+    UF_WORKSTATION_TRUST_ACCOUNT
 )
 from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba import gensec
@@ -1662,19 +1663,28 @@ def generate_traffic_accounts(ldb, instance_id, number, password):
         LOGGER.info("Added %d new user accounts" % added)
 
 
-def create_machine_account(ldb, instance_id, netbios_name, machinepass):
+def create_machine_account(ldb, instance_id, netbios_name, machinepass,
+                           traffic_account=True):
     """Create a machine account via ldap."""
 
     ou = ou_name(ldb, instance_id)
     dn = "cn=%s,%s" % (netbios_name, ou)
     utf16pw = ('"%s"' % get_string(machinepass)).encode('utf-16-le')
 
+    if traffic_account:
+        # we set these bits for the machine account otherwise the replayed
+        # traffic throws up NT_STATUS_NO_TRUST_SAM_ACCOUNT errors
+        account_controls = str(UF_TRUSTED_FOR_DELEGATION |
+                               UF_SERVER_TRUST_ACCOUNT)
+
+    else:
+        account_controls = str(UF_WORKSTATION_TRUST_ACCOUNT)
+
     ldb.add({
         "dn": dn,
         "objectclass": "computer",
         "sAMAccountName": "%s$" % netbios_name,
-        "userAccountControl":
-            str(UF_TRUSTED_FOR_DELEGATION | UF_SERVER_TRUST_ACCOUNT),
+        "userAccountControl": account_controls,
         "unicodePwd": utf16pw})
 
 
@@ -1745,7 +1755,8 @@ def generate_machine_accounts(ldb, instance_id, number, password):
         name = "STGM-%d-%d$" % (instance_id, i)
         if name not in existing_objects:
             name = "STGM-%d-%d" % (instance_id, i)
-            create_machine_account(ldb, instance_id, name, password)
+            create_machine_account(ldb, instance_id, name, password,
+                                   traffic_account=False)
             added += 1
             if added % 50 == 0:
                 LOGGER.info("Created %u/%u machine accounts" % (added, number))
