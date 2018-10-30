@@ -347,6 +347,8 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 
 	netsec_do_seq_num(state, checksum, checksum_length, seq_num);
 
+	ZERO_ARRAY(checksum);
+
 	ret = memcmp(seq_num, sig->data+8, 8);
 	if (ret != 0) {
 		dump_data_pw("calc seq num:", seq_num, 8);
