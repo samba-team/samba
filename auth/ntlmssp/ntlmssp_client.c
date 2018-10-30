@@ -25,7 +25,6 @@ struct auth_session_info;
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
@@ -35,6 +34,9 @@ struct auth_session_info;
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 #include "../auth/ntlmssp/ntlmssp_ndr.h"
 #include "../nsswitch/libwbclient/wbclient.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -248,7 +250,8 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	const NTTIME *server_timestamp = NULL;
 	uint8_t mic_buffer[NTLMSSP_MIC_SIZE] = { 0, };
 	DATA_BLOB mic_blob = data_blob_const(mic_buffer, sizeof(mic_buffer));
-	HMACMD5Context ctx;
+	gnutls_hmac_hd_t hmac_hnd = NULL;
+	int rc;
 
 	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
 	if (!mem_ctx) {
@@ -741,18 +744,48 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	 *
 	 * This matches a Windows client.
 	 */
-	hmac_md5_init_limK_to_64(session_key.data,
-				 session_key.length,
-				 &ctx);
-	hmac_md5_update(ntlmssp_state->negotiate_blob.data,
-			ntlmssp_state->negotiate_blob.length,
-			&ctx);
-	hmac_md5_update(in.data, in.length, &ctx);
-	hmac_md5_update(out->data, out->length, &ctx);
-	hmac_md5_final(mic_buffer, &ctx);
-	memcpy(out->data + NTLMSSP_MIC_OFFSET, mic_buffer, NTLMSSP_MIC_SIZE);
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_MD5,
+			 session_key.data,
+			 MIN(session_key.length, 64));
+	if (rc < 0) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+			nt_status = NT_STATUS_NTLM_BLOCKED;
+		}
+		goto done;
+	}
 
+	rc = gnutls_hmac(hmac_hnd,
+			 ntlmssp_state->negotiate_blob.data,
+			 ntlmssp_state->negotiate_blob.length);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		nt_status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+	rc = gnutls_hmac(hmac_hnd, in.data, in.length);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		nt_status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+	rc = gnutls_hmac(hmac_hnd, out->data, out->length);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		nt_status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	gnutls_hmac_deinit(hmac_hnd, mic_buffer);
+
+	memcpy(out->data + NTLMSSP_MIC_OFFSET, mic_buffer, NTLMSSP_MIC_SIZE);
+	ZERO_ARRAY(mic_buffer);
+
+	nt_status = NT_STATUS_OK;
 done:
+	ZERO_ARRAY_LEN(ntlmssp_state->negotiate_blob.data,
+		       ntlmssp_state->negotiate_blob.length);
 	data_blob_free(&ntlmssp_state->negotiate_blob);
 
 	ntlmssp_state->session_key = session_key;
@@ -776,7 +809,7 @@ done:
 	}
 
 	talloc_free(mem_ctx);
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
