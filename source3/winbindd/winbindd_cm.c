@@ -1166,7 +1166,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		  nt_errstr(result)));
 
 	/*
-	 * If we are not going to validiate the conneciton
+	 * If we are not going to validate the connection
 	 * with SMB signing, then allow us to fall back to
 	 * anonymous
 	 */
@@ -1219,7 +1219,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		  nt_errstr(result)));
 
 	/*
-	 * If we are not going to validiate the conneciton
+	 * If we are not going to validate the connection
 	 * with SMB signing, then allow us to fall back to
 	 * anonymous
 	 */
