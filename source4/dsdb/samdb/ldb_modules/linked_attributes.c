@@ -25,7 +25,23 @@
  *
  *  Component: ldb linked_attributes module
  *
- *  Description: Module to ensure linked attribute pairs remain in sync
+ *  Description: Module to ensure linked attribute pairs (i.e. forward-links
+ *  and backlinks) remain in sync.
+ *
+ *  Backlinks are 'plain' links (without extra metadata). When the link target
+ *  object is modified (e.g. renamed), we use the backlinks to keep the link
+ *  source object updated. Note there are some cases where we can't do this:
+ *    - one-way links, which don't have a corresponding backlink
+ *    - two-way deactivated links, i.e. when a user is removed from a group,
+ *      the forward 'member' link still exists (but is inactive), however, the
+ *      'memberOf' backlink is deleted.
+ *  In these cases, we can end up with a dangling forward link which is
+ *  incorrect (i.e. the target has been renamed or deleted). We have dbcheck
+ *  rules to detect and fix this, and cope otherwise by filtering at runtime
+ *  (i.e. in the extended_dn module).
+ *
+ *  See also repl_meta_data.c, which handles updating links for deleted
+ *  objects, as well as link changes received from another DC.
  *
  *  Author: Andrew Bartlett
  */
