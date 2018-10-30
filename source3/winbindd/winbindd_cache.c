@@ -1565,8 +1565,8 @@ do_fetch_cache:
 		smb_panic_fn("enum_dom_groups out of memory");
 	}
 	for (i=0; i<(*num_entries); i++) {
-		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
-		fstrcpy((*info)[i].acct_desc, centry_string(centry, mem_ctx));
+		(*info)[i].acct_name = centry_string(centry, (*info));
+		(*info)[i].acct_desc = centry_string(centry, (*info));
 		(*info)[i].rid = centry_uint32(centry);
 	}
 
@@ -1660,8 +1660,8 @@ do_fetch_cache:
 		smb_panic_fn("enum_dom_groups out of memory");
 	}
 	for (i=0; i<(*num_entries); i++) {
-		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
-		fstrcpy((*info)[i].acct_desc, centry_string(centry, mem_ctx));
+		(*info)[i].acct_name = centry_string(centry, (*info));
+		(*info)[i].acct_desc = centry_string(centry, (*info));
 		(*info)[i].rid = centry_uint32(centry);
 	}
 

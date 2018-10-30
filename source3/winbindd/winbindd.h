@@ -189,8 +189,8 @@ struct winbindd_domain {
 };
 
 struct wb_acct_info {
-	fstring acct_name; /* account name */
-	fstring acct_desc; /* account name */
+	const char *acct_name; /* account name */
+	const char *acct_desc; /* account name */
 	uint32_t rid; /* domain-relative RID */
 };
 

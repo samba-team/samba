@@ -500,8 +500,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		struct dom_sid sid;
 		uint32_t rid;
 
-		name = ads_pull_username(ads, mem_ctx, msg);
-		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
+		name = ads_pull_username(ads, (*info), msg);
+		gecos = ads_pull_string(ads, (*info), msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
 			continue;
@@ -512,8 +512,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 			continue;
 		}
 
-		fstrcpy((*info)[i].acct_name, name);
-		fstrcpy((*info)[i].acct_desc, gecos);
+		(*info)[i].acct_name = name;
+		(*info)[i].acct_desc = gecos;
 		(*info)[i].rid = rid;
 		i++;
 	}
