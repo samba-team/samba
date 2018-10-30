@@ -102,7 +102,6 @@ else:
     IPs = samba.interface_ips(lp, all_interfaces)
 
 nsupdate_cmd = lp.get('nsupdate command')
-
 dns_zone_scavenging = lp.get("dns zone scavenging")
 
 if len(IPs) == 0:
@@ -173,7 +172,7 @@ def get_krb5_rw_dns_server(creds, domain):
         gensec_client.set_target_hostname(target_hostname)
         gensec_client.want_feature(gensec.FEATURE_SEAL)
         gensec_client.start_mech_by_sasl_name("GSSAPI")
-        server_to_client = ""
+        server_to_client = b""
         try:
             (client_finished, client_to_server) = gensec_client.update(server_to_client)
             if opts.verbose:
