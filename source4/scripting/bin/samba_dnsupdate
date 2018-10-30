@@ -196,10 +196,10 @@ def get_credentials(lp):
     creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
     (tmp_fd, ccachename) = tempfile.mkstemp()
     try:
-        creds.get_named_ccache(lp, ccachename)
-
         if opts.use_file is not None:
             return
+
+        creds.get_named_ccache(lp, ccachename)
 
         # Now confirm we can get a ticket to the DNS server
         get_krb5_rw_dns_server(creds, sub_vars['DNSDOMAIN'] + '.')
