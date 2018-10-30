@@ -165,7 +165,7 @@ machine_dn = res[0]["dn"]
 old_spns = []
 if "servicePrincipalName" in res[0]:
     for s in res[0]["servicePrincipalName"]:
-        old_spns.append(s)
+        old_spns.append(str(s))
 
 if opts.verbose:
     print("Existing SPNs: %s" % old_spns)
