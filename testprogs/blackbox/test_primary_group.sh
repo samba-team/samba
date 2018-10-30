@@ -75,10 +75,14 @@ testit "delete '$testgroup'" $VALGRIND $PYTHON $BINDIR/samba-tool group delete "
 
 #
 # As we don't support phantom objects and virtual backlinks
-# the deletion of the user and group cause dangling links,
+# the deletion of the user prior to the group causes dangling links,
 # which are detected like this:
 #
 # WARNING: target DN is deleted for member in object
+#
+# Specifically, this happens because after the member link is
+# deactivated the memberOf is gone, and so there is no way to find the
+# now redundant forward link to clean it up.
 #
 testit_expect_failure "dbcheck run3" $VALGRIND $PYTHON $BINDIR/samba-tool dbcheck --attrs=member --fix --yes || failed=`expr $failed + 1`
 testit "dbcheck run4" $VALGRIND $PYTHON $BINDIR/samba-tool dbcheck --attrs=member || failed=`expr $failed + 1`
