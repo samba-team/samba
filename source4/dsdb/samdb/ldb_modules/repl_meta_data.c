@@ -4378,6 +4378,10 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	     - preserved if in above list, or is rDN
 	  - remove all linked attribs from this object
 	  - remove all links from other objects to this object
+	    (note we use the backlinks to do this, so we won't find one-way
+	     links that still point to this object, or deactivated two-way
+	     links, i.e. 'member' after the user has been removed from the
+	     group)
 	  - add lastKnownParent
 	  - update replPropertyMetaData?
 
@@ -4515,12 +4519,12 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 
 			if (sa->linkID & 1) {
 				/*
-				  we have a backlink in this object
-				  that needs to be removed. We're not
-				  allowed to remove it directly
-				  however, so we instead setup a
-				  modify to delete the corresponding
-				  forward link
+				 * we have a backlink in this object
+				 * that needs to be removed. We're not
+				 * allowed to remove it directly
+				 * however, so we instead setup a
+				 * modify to delete the corresponding
+				 * forward link
 				 */
 				ret = replmd_delete_remove_link(module, schema,
 								replmd_private,
@@ -7666,6 +7670,14 @@ static int replmd_delete_link_value(struct ldb_module *module,
 	/* if the existing link is active, remove its backlink */
 	if (is_active) {
 
+		/*
+		 * NOTE WELL: After this we will never (at runtime) be
+		 * able to find this forward link (for instant
+		 * removal) if/when the link target is deleted.
+		 *
+		 * We have dbcheck rules to cover this and cope otherwise
+		 * by filtering at runtime (i.e. in the extended_dn module).
+		 */
 		ret = replmd_add_backlink(module, replmd_private, schema,
 					  src_obj_dn, target_guid, false,
 					  attr, NULL);
