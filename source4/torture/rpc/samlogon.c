@@ -25,12 +25,14 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "../lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/torture_rpc.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define TEST_MACHINE_NAME "samlogontest"
 #define TEST_USER_NAME "samlogontestuser"
@@ -1103,17 +1105,17 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 	uint8_t session_nonce_hash[16];
 	uint8_t client_chall[8];
 
-	MD5_CTX md5_session_nonce_ctx;
-	HMACMD5Context hmac_ctx;
+	gnutls_hmac_hd_t hmac_hnd;
+	gnutls_hash_hd_t hash_hnd;
 
 	ZERO_STRUCT(user_session_key);
 	ZERO_STRUCT(lm_key);
 	generate_random_buffer(client_chall, 8);
 
-	MD5Init(&md5_session_nonce_ctx);
-	MD5Update(&md5_session_nonce_ctx, samlogon_state->chall.data, 8);
-	MD5Update(&md5_session_nonce_ctx, client_chall, 8);
-	MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
+	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	gnutls_hash(hash_hnd, samlogon_state->chall.data, 8);
+	gnutls_hash(hash_hnd, client_chall, 8);
+	gnutls_hash_deinit(hash_hnd, session_nonce_hash);
 
 	E_md4hash(samlogon_state->password, (uint8_t *)nt_hash);
 	lm_good = E_deshash(samlogon_state->password, (uint8_t *)lm_hash);
@@ -1125,10 +1127,13 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 	memcpy(lm_response.data, session_nonce_hash, 8);
 	memset(lm_response.data + 8, 0, 16);
 
-	hmac_md5_init_rfc2104(nt_key, 16, &hmac_ctx);
-	hmac_md5_update(samlogon_state->chall.data, 8, &hmac_ctx);
-	hmac_md5_update(client_chall, 8, &hmac_ctx);
-	hmac_md5_final(expected_user_session_key, &hmac_ctx);
+	gnutls_hmac_init(&hmac_hnd,
+			 GNUTLS_MAC_MD5,
+			 nt_key,
+			 16);
+	gnutls_hmac(hmac_hnd, samlogon_state->chall.data, 8);
+	gnutls_hmac(hmac_hnd, client_chall, 8);
+	gnutls_hmac_deinit(hmac_hnd, expected_user_session_key);
 
 	nt_status = check_samlogon(samlogon_state,
 				   BREAK_NONE,
