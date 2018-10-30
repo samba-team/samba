@@ -384,8 +384,9 @@ class BlackboxTestCase(TestCaseInTempDir):
         cmd = parts[0]
         exe = os.path.join(BINDIR, cmd)
         if os.path.exists(exe):
+            python_cmds = ["samba-tool", "samba_dnsupdate"]
             parts[0] = exe
-            if cmd =='samba-tool' and os.getenv("PYTHON", None):
+            if cmd in python_cmds and os.getenv("PYTHON", None):
                 parts.insert(0, os.environ["PYTHON"])
 
         if not isinstance(line, list):
