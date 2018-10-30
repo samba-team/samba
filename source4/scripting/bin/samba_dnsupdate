@@ -122,6 +122,7 @@ for i in IPs:
     else:
         IP4s.append(i)
 
+smb_conf = sambaopts.get_loadparm_path()
 
 if opts.verbose:
     print("IPs: %s" % IPs)
@@ -619,6 +620,9 @@ def call_samba_tool(d, op="add", zone=None):
 
     if d.type == "NS":
         args = [rpc_server_ip, zone, short_name, "NS", d.dest]
+
+    if smb_conf and args:
+        args += ["--configfile=" + smb_conf]
 
     global error_count
     try:
