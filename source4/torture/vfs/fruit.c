@@ -3232,14 +3232,11 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 		torture_assert_ntstatus_equal(torture, status,
 					      NT_STATUS_ACCESS_DENIED,
 					      "smb2_setinfo_file");
-
-		ZERO_STRUCT(cl.smb2);
-		cl.smb2.level = RAW_CLOSE_SMB2;
-		cl.smb2.in.file.handle = d1;
-		status = smb2_close(tree, &(cl.smb2));
-		torture_assert_ntstatus_ok(torture, status, "smb2_close");
-		ZERO_STRUCT(d1);
 	}
+
+	status = smb2_util_close(tree, d1);
+	torture_assert_ntstatus_ok(torture, status, "smb2_util_close\n");
+	ZERO_STRUCT(d1);
 
 	torture_comment(torture, "Enabling AAPL\n");
 
