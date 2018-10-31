@@ -750,14 +750,6 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 	DEBUG(10, ("pread_recv returned %d, err = %s\n", (int)nread,
 		   (nread == -1) ? strerror(vfs_aio_state.error) : "no error"));
 
-	if (fsp == NULL) {
-		DEBUG(3, ("%s: request cancelled (mid[%ju])\n",
-			  __func__, (uintmax_t)aio_ex->smbreq->mid));
-		TALLOC_FREE(aio_ex);
-		tevent_req_nterror(subreq, NT_STATUS_INTERNAL_ERROR);
-		return;
-	}
-
 	/* Common error or success code processing for async or sync
 	   read returns. */
 
@@ -912,14 +904,6 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 
 	DEBUG(10, ("pwrite_recv returned %d, err = %s\n", (int)nwritten,
 		   (nwritten == -1) ? strerror(err) : "no error"));
-
-	if (fsp == NULL) {
-		DEBUG(3, ("%s: request cancelled (mid[%ju])\n",
-			  __func__, (uintmax_t)aio_ex->smbreq->mid));
-		TALLOC_FREE(aio_ex);
-		tevent_req_nterror(subreq, NT_STATUS_INTERNAL_ERROR);
-		return;
-	}
 
 	mark_file_modified(fsp);
 
