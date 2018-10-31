@@ -293,6 +293,8 @@ _PUBLIC_ size_t gensec_max_update_size(struct gensec_security *gensec_security)
 
 static NTSTATUS gensec_verify_features(struct gensec_security *gensec_security)
 {
+	bool ok;
+
 	/*
 	 * gensec_want_feature(GENSEC_FEATURE_SIGN)
 	 * and
@@ -317,6 +319,20 @@ static NTSTATUS gensec_verify_features(struct gensec_security *gensec_security)
 				 "SIGN for SEAL\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
+	}
+
+	if (gensec_security->dcerpc_auth_level < DCERPC_AUTH_LEVEL_PACKET) {
+		return NT_STATUS_OK;
+	}
+
+	ok = gensec_have_feature(gensec_security,
+				 GENSEC_FEATURE_SIGN_PKT_HEADER);
+	if (!ok) {
+		DBG_ERR("backend [%s] does not support header signing! "
+			"auth_level[0x%x]\n",
+			gensec_security->ops->name,
+			gensec_security->dcerpc_auth_level);
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	return NT_STATUS_OK;
