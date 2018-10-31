@@ -168,6 +168,7 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower)
 void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v);
 uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob);
 void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v);
+uint16_t dcerpc_get_auth_length(const DATA_BLOB *blob);
 uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob);
 const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
 					      enum dcerpc_transport_t transport,

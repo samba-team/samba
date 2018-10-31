@@ -59,6 +59,15 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 	}
 }
 
+uint16_t dcerpc_get_auth_length(const DATA_BLOB *blob)
+{
+	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
+		return SVAL(blob->data, DCERPC_AUTH_LEN_OFFSET);
+	} else {
+		return RSVAL(blob->data, DCERPC_AUTH_LEN_OFFSET);
+	}
+}
+
 uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob)
 {
 	return blob->data[DCERPC_DREP_OFFSET];
