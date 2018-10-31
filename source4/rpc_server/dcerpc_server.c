@@ -2000,6 +2000,8 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	talloc_steal(call, blob.data);
 	call->pkt = *pkt;
 
+	call->auth_state = &dce_conn->auth_state;
+
 	talloc_set_destructor(call, dcesrv_call_dequeue);
 
 	if (call->conn->allow_bind) {

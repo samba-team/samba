@@ -88,6 +88,7 @@ struct data_blob_list_item {
 /* the state of an ongoing dcerpc call */
 struct dcesrv_call_state {
 	struct dcesrv_call_state *next, *prev;
+	struct dcesrv_auth *auth_state;
 	struct dcesrv_connection *conn;
 	struct dcesrv_connection_context *context;
 	struct ncacn_packet pkt;
