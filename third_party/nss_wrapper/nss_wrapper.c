@@ -1,8 +1,11 @@
 /*
- * Copyright (C) Stefan Metzmacher 2007 <metze@samba.org>
- * Copyright (C) Guenther Deschner 2009 <gd@samba.org>
- * Copyright (C) Andreas Schneider 2013 <asn@samba.org>
+ * BSD 3-Clause License
  *
+ * Copyright (c) 2007,      Stefan Metzmacher <metze@samba.org>
+ * Copyright (c) 2009,      Guenther Deschner <gd@samba.org>
+ * Copyright (c) 2014-2015, Michael Adam <obnox@samba.org>
+ * Copyright (c) 2015,      Robin Hack <hack.robin@gmail.com>
+ * Copyright (c) 2013-2018, Andreas Schneider <asn@samba.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -142,6 +145,12 @@ typedef nss_status_t NSS_STATUS;
 #define PRINTF_ATTRIBUTE(a,b)
 #endif /* HAVE_ATTRIBUTE_PRINTF_FORMAT */
 
+#ifdef HAVE_CONSTRUCTOR_ATTRIBUTE
+#define CONSTRUCTOR_ATTRIBUTE __attribute__ ((constructor))
+#else
+#define CONSTRUCTOR_ATTRIBUTE
+#endif /* HAVE_CONSTRUCTOR_ATTRIBUTE */
+
 #ifdef HAVE_DESTRUCTOR_ATTRIBUTE
 #define DESTRUCTOR_ATTRIBUTE __attribute__ ((destructor))
 #else
@@ -209,8 +218,11 @@ static pthread_mutex_t nwrap_sp_global_mutex = PTHREAD_MUTEX_INITIALIZER;
 	NWRAP_UNLOCK(nwrap_initialized); \
 } while (0);
 
+static void nwrap_init(void);
+
 static void nwrap_thread_prepare(void)
 {
+	nwrap_init();
 	NWRAP_LOCK_ALL;
 }
 
@@ -292,11 +304,13 @@ struct nwrap_libc_fns {
 	int (*_libc_getpwuid_r)(uid_t uid, struct passwd *pwd, char *buf, size_t buflen, struct passwd **result);
 	void (*_libc_setpwent)(void);
 	struct passwd *(*_libc_getpwent)(void);
-#ifdef HAVE_SOLARIS_GETPWENT_R
+#ifdef HAVE_GETPWENT_R
+#  ifdef HAVE_SOLARIS_GETPWENT_R
 	struct passwd *(*_libc_getpwent_r)(struct passwd *pwbuf, char *buf, size_t buflen);
-#else
+#  else /* HAVE_SOLARIS_GETPWENT_R */
 	int (*_libc_getpwent_r)(struct passwd *pwbuf, char *buf, size_t buflen, struct passwd **pwbufp);
-#endif
+#  endif /* HAVE_SOLARIS_GETPWENT_R */
+#endif /* HAVE_GETPWENT_R */
 	void (*_libc_endpwent)(void);
 	int (*_libc_initgroups)(const char *user, gid_t gid);
 	struct group *(*_libc_getgrnam)(const char *name);
@@ -305,11 +319,13 @@ struct nwrap_libc_fns {
 	int (*_libc_getgrgid_r)(gid_t gid, struct group *grp, char *buf, size_t buflen, struct group **result);
 	void (*_libc_setgrent)(void);
 	struct group *(*_libc_getgrent)(void);
-#ifdef HAVE_SOLARIS_GETGRENT_R
+#ifdef HAVE_GETGRENT_R
+#  ifdef HAVE_SOLARIS_GETGRENT_R
 	struct group *(*_libc_getgrent_r)(struct group *group, char *buf, size_t buflen);
-#else
+#  else /* HAVE_SOLARIS_GETGRENT_R */
 	int (*_libc_getgrent_r)(struct group *group, char *buf, size_t buflen, struct group **result);
-#endif
+#  endif /* HAVE_SOLARIS_GETGRENT_R */
+#endif /* HAVE_GETGRENT_R */
 	void (*_libc_endgrent)(void);
 	int (*_libc_getgrouplist)(const char *user, gid_t group, gid_t *groups, int *ngroups);
 
@@ -793,9 +809,9 @@ static struct nwrap_he nwrap_he_global;
  * NWRAP PROTOTYPES
  *********************************************************/
 
-static void nwrap_init(void);
 static bool nwrap_gr_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_gr_unload(struct nwrap_cache *nwrap);
+void nwrap_constructor(void) CONSTRUCTOR_ATTRIBUTE;
 void nwrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
 
 /*********************************************************
@@ -832,7 +848,15 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 	int i;
 
 #ifdef RTLD_DEEPBIND
-	flags |= RTLD_DEEPBIND;
+	const char *env = getenv("LD_PRELOAD");
+
+	/* Don't do a deepbind if we run with libasan */
+	if (env != NULL && strlen(env) < 1024) {
+		const char *p = strstr(env, "libasan.so");
+		if (p == NULL) {
+			flags |= RTLD_DEEPBIND;
+		}
+	}
 #endif
 
 	switch (lib) {
@@ -1066,7 +1090,8 @@ static struct passwd *libc_getpwent(void)
 	return nwrap_main_global->libc->fns->_libc_getpwent();
 }
 
-#ifdef HAVE_SOLARIS_GETPWENT_R
+#ifdef HAVE_GETPWENT_R
+#  ifdef HAVE_SOLARIS_GETPWENT_R
 static struct passwd *libc_getpwent_r(struct passwd *pwdst,
 				      char *buf,
 				      int buflen)
@@ -1077,7 +1102,7 @@ static struct passwd *libc_getpwent_r(struct passwd *pwdst,
 							      buf,
 							      buflen);
 }
-#else /* HAVE_SOLARIS_GETPWENT_R */
+#  else /* HAVE_SOLARIS_GETPWENT_R */
 static int libc_getpwent_r(struct passwd *pwdst,
 			   char *buf,
 			   size_t buflen,
@@ -1090,7 +1115,8 @@ static int libc_getpwent_r(struct passwd *pwdst,
 							      buflen,
 							      pwdstp);
 }
-#endif /* HAVE_SOLARIS_GETPWENT_R */
+#  endif /* HAVE_SOLARIS_GETPWENT_R */
+#endif /* HAVE_GETPWENT_R */
 
 static void libc_endpwent(void)
 {
@@ -1183,7 +1209,7 @@ static struct group *libc_getgrent(void)
 }
 
 #ifdef HAVE_GETGRENT_R
-#ifdef HAVE_SOLARIS_GETGRENT_R
+#  ifdef HAVE_SOLARIS_GETGRENT_R
 static struct group *libc_getgrent_r(struct group *group,
 				     char *buf,
 				     size_t buflen)
@@ -1194,7 +1220,7 @@ static struct group *libc_getgrent_r(struct group *group,
 							      buf,
 							      buflen);
 }
-#else /* !HAVE_SOLARIS_GETGRENT_R */
+#  else /* HAVE_SOLARIS_GETGRENT_R */
 static int libc_getgrent_r(struct group *group,
 			   char *buf,
 			   size_t buflen,
@@ -1207,7 +1233,7 @@ static int libc_getgrent_r(struct group *group,
 							      buflen,
 							      result);
 }
-#endif /* HAVE_SOLARIS_GETGRENT_R */
+#  endif /* HAVE_SOLARIS_GETGRENT_R */
 #endif /* HAVE_GETGRENT_R */
 
 static void libc_endgrent(void)
@@ -1488,19 +1514,17 @@ static bool nwrap_module_init(const char *name,
 
 static void nwrap_libc_init(struct nwrap_main *r)
 {
-	r->libc = malloc(sizeof(struct nwrap_libc));
+	r->libc = calloc(1, sizeof(struct nwrap_libc));
 	if (r->libc == NULL) {
 		printf("Failed to allocate memory for libc");
 		exit(-1);
 	}
-	ZERO_STRUCTP(r->libc);
 
-	r->libc->fns = malloc(sizeof(struct nwrap_libc_fns));
+	r->libc->fns = calloc(1, sizeof(struct nwrap_libc_fns));
 	if (r->libc->fns == NULL) {
 		printf("Failed to allocate memory for libc functions");
 		exit(-1);
 	}
-	ZERO_STRUCTP(r->libc->fns);
 }
 
 static void nwrap_backend_init(struct nwrap_main *r)
@@ -1541,6 +1565,7 @@ static void nwrap_init(void)
 	const char *env;
 	char *endptr;
 	size_t max_hostents_tmp;
+	int ok;
 
 	NWRAP_LOCK(nwrap_initialized);
 	if (nwrap_initialized) {
@@ -1561,10 +1586,6 @@ static void nwrap_init(void)
 
 	nwrap_initialized = true;
 
-	/* Initialize pthread_atfork handlers */
-	pthread_atfork(&nwrap_thread_prepare, &nwrap_thread_parent,
-		       &nwrap_thread_child);
-
 	env = getenv("NSS_WRAPPER_MAX_HOSTENTS");
 	if (env != NULL) {
 		max_hostents_tmp = (size_t)strtoul(env, &endptr, 10);
@@ -1584,10 +1605,11 @@ static void nwrap_init(void)
 	NWRAP_LOG(NWRAP_LOG_DEBUG,
 		  "Initializing hash table of size %lu items.",
 		  (unsigned long)max_hostents);
-	if (hcreate(max_hostents) == 0) {
+	ok = hcreate(max_hostents);
+	if (!ok) {
 		NWRAP_LOG(NWRAP_LOG_ERROR,
 			  "Failed to initialize hash table");
-		goto done;
+		exit(-1);
 	}
 
 	nwrap_main_global = &__nwrap_main_global;
@@ -1638,7 +1660,6 @@ static void nwrap_init(void)
 	nwrap_he_global.cache->parse_line = nwrap_he_parse_line;
 	nwrap_he_global.cache->unload = nwrap_he_unload;
 
-done:
 	/* We hold all locks here so we can use NWRAP_UNLOCK_ALL. */
 	NWRAP_UNLOCK_ALL;
 }
@@ -2624,7 +2645,9 @@ static bool nwrap_ed_inventarize_add_new(char *const h_name,
 
 	p = hsearch(e, ENTER);
 	if (p == NULL) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "Hash table is full!");
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "Hash table is full (%s)!",
+			  strerror(errno));
 		return false;
 	}
 
@@ -3832,9 +3855,7 @@ static int nwrap_module_getpwnam_r(struct nwrap_backend *b,
 {
 	int ret;
 
-	(void) b; /* unused */
-	(void) pwdst; /* unused */
-	(void) pwdstp; /* unused */
+	*pwdstp = NULL;
 
 	if (!b->fns->_nss_getpwnam_r) {
 		return NSS_STATUS_NOTFOUND;
@@ -3843,6 +3864,7 @@ static int nwrap_module_getpwnam_r(struct nwrap_backend *b,
 	ret = b->fns->_nss_getpwnam_r(name, pwdst, buf, buflen, &errno);
 	switch (ret) {
 	case NSS_STATUS_SUCCESS:
+		*pwdstp = pwdst;
 		return 0;
 	case NSS_STATUS_NOTFOUND:
 		if (errno != 0) {
@@ -3889,7 +3911,7 @@ static int nwrap_module_getpwuid_r(struct nwrap_backend *b,
 {
 	int ret;
 
-	(void) pwdstp; /* unused */
+	*pwdstp = NULL;
 
 	if (!b->fns->_nss_getpwuid_r) {
 		return ENOENT;
@@ -3898,6 +3920,7 @@ static int nwrap_module_getpwuid_r(struct nwrap_backend *b,
 	ret = b->fns->_nss_getpwuid_r(uid, pwdst, buf, buflen, &errno);
 	switch (ret) {
 	case NSS_STATUS_SUCCESS:
+		*pwdstp = pwdst;
 		return 0;
 	case NSS_STATUS_NOTFOUND:
 		if (errno != 0) {
@@ -3952,7 +3975,7 @@ static int nwrap_module_getpwent_r(struct nwrap_backend *b,
 {
 	int ret;
 
-	(void) pwdstp; /* unused */
+	*pwdstp = NULL;
 
 	if (!b->fns->_nss_getpwent_r) {
 		return ENOENT;
@@ -3961,6 +3984,7 @@ static int nwrap_module_getpwent_r(struct nwrap_backend *b,
 	ret = b->fns->_nss_getpwent_r(pwdst, buf, buflen, &errno);
 	switch (ret) {
 	case NSS_STATUS_SUCCESS:
+		*pwdstp = pwdst;
 		return 0;
 	case NSS_STATUS_NOTFOUND:
 		if (errno != 0) {
@@ -4045,7 +4069,7 @@ static int nwrap_module_getgrnam_r(struct nwrap_backend *b,
 {
 	int ret;
 
-	(void) grdstp; /* unused */
+	*grdstp = NULL;
 
 	if (!b->fns->_nss_getgrnam_r) {
 		return ENOENT;
@@ -4054,6 +4078,7 @@ static int nwrap_module_getgrnam_r(struct nwrap_backend *b,
 	ret = b->fns->_nss_getgrnam_r(name, grdst, buf, buflen, &errno);
 	switch (ret) {
 	case NSS_STATUS_SUCCESS:
+		*grdstp = grdst;
 		return 0;
 	case NSS_STATUS_NOTFOUND:
 		if (errno != 0) {
@@ -4116,7 +4141,7 @@ static int nwrap_module_getgrgid_r(struct nwrap_backend *b,
 {
 	int ret;
 
-	(void) grdstp; /* unused */
+	*grdstp = NULL;
 
 	if (!b->fns->_nss_getgrgid_r) {
 		return ENOENT;
@@ -4125,6 +4150,7 @@ static int nwrap_module_getgrgid_r(struct nwrap_backend *b,
 	ret = b->fns->_nss_getgrgid_r(gid, grdst, buf, buflen, &errno);
 	switch (ret) {
 	case NSS_STATUS_SUCCESS:
+		*grdstp = grdst;
 		return 0;
 	case NSS_STATUS_NOTFOUND:
 		if (errno != 0) {
@@ -4195,7 +4221,7 @@ static int nwrap_module_getgrent_r(struct nwrap_backend *b,
 {
 	int ret;
 
-	(void) grdstp; /* unused */
+	*grdstp = NULL;
 
 	if (!b->fns->_nss_getgrent_r) {
 		return ENOENT;
@@ -4204,6 +4230,7 @@ static int nwrap_module_getgrent_r(struct nwrap_backend *b,
 	ret = b->fns->_nss_getgrent_r(grdst, buf, buflen, &errno);
 	switch (ret) {
 	case NSS_STATUS_SUCCESS:
+		*grdstp = grdst;
 		return 0;
 	case NSS_STATUS_NOTFOUND:
 		if (errno != 0) {
@@ -4421,6 +4448,7 @@ struct passwd *getpwent(void)
  *   GETPWENT_R
  ***************************************************************************/
 
+#ifdef HAVE_GETPWENT_R
 static int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
 			    size_t buflen, struct passwd **pwdstp)
 {
@@ -4438,7 +4466,7 @@ static int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
 	return ENOENT;
 }
 
-#ifdef HAVE_SOLARIS_GETPWENT_R
+#  ifdef HAVE_SOLARIS_GETPWENT_R
 struct passwd *getpwent_r(struct passwd *pwdst, char *buf, int buflen)
 {
 	struct passwd *pwdstp = NULL;
@@ -4454,7 +4482,7 @@ struct passwd *getpwent_r(struct passwd *pwdst, char *buf, int buflen)
 
 	return pwdstp;
 }
-#else /* HAVE_SOLARIS_GETPWENT_R */
+#  else /* HAVE_SOLARIS_GETPWENT_R */
 int getpwent_r(struct passwd *pwdst, char *buf,
 	       size_t buflen, struct passwd **pwdstp)
 {
@@ -4464,7 +4492,8 @@ int getpwent_r(struct passwd *pwdst, char *buf,
 
 	return nwrap_getpwent_r(pwdst, buf, buflen, pwdstp);
 }
-#endif /* HAVE_SOLARIS_GETPWENT_R */
+#  endif /* HAVE_SOLARIS_GETPWENT_R */
+#endif /* HAVE_GETPWENT_R */
 
 /****************************************************************************
  *   ENDPWENT
@@ -4727,6 +4756,7 @@ struct group *getgrent(void)
  *   GETGRENT_R
  ***************************************************************************/
 
+#ifdef HAVE_GETGRENT_R
 static int nwrap_getgrent_r(struct group *grdst, char *buf,
 			    size_t buflen, struct group **grdstp)
 {
@@ -4744,7 +4774,7 @@ static int nwrap_getgrent_r(struct group *grdst, char *buf,
 	return ENOENT;
 }
 
-#ifdef HAVE_SOLARIS_GETGRENT_R
+#  ifdef HAVE_SOLARIS_GETGRENT_R
 struct group *getgrent_r(struct group *src, char *buf, int buflen)
 {
 	struct group *grdstp = NULL;
@@ -4761,7 +4791,7 @@ struct group *getgrent_r(struct group *src, char *buf, int buflen)
 
 	return grdstp;
 }
-#else /* HAVE_SOLARIS_GETGRENT_R */
+#  else /* HAVE_SOLARIS_GETGRENT_R */
 int getgrent_r(struct group *src, char *buf,
 	       size_t buflen, struct group **grdstp)
 {
@@ -4771,7 +4801,8 @@ int getgrent_r(struct group *src, char *buf,
 
 	return nwrap_getgrent_r(src, buf, buflen, grdstp);
 }
-#endif /* HAVE_SOLARIS_GETGRENT_R */
+#  endif /* HAVE_SOLARIS_GETGRENT_R */
+#endif /* HAVE_GETGRENT_R */
 
 /****************************************************************************
  *   ENDGRENT
@@ -5531,6 +5562,24 @@ int gethostname(char *name, size_t len)
 }
 
 /****************************
+ * CONSTRUCTOR
+ ***************************/
+void nwrap_constructor(void)
+{
+	/*
+	 * If we hold a lock and the application forks, then the child
+	 * is not able to unlock the mutex and we are in a deadlock.
+	 *
+	 * Setting these handlers should prevent such deadlocks.
+	 */
+	pthread_atfork(&nwrap_thread_prepare,
+		       &nwrap_thread_parent,
+		       &nwrap_thread_child);
+
+	/* Do not call nwrap_init() here. */
+}
+
+/****************************
  * DESTRUCTOR
  ***************************/
 
@@ -5547,28 +5596,32 @@ void nwrap_destructor(void)
 		struct nwrap_main *m = nwrap_main_global;
 
 		/* libc */
-		SAFE_FREE(m->libc->fns);
-		if (m->libc->handle != NULL) {
-			dlclose(m->libc->handle);
+		if (m->libc != NULL) {
+			SAFE_FREE(m->libc->fns);
+			if (m->libc->handle != NULL) {
+				dlclose(m->libc->handle);
+			}
+			if (m->libc->nsl_handle != NULL) {
+				dlclose(m->libc->nsl_handle);
+			}
+			if (m->libc->sock_handle != NULL) {
+				dlclose(m->libc->sock_handle);
+			}
+			SAFE_FREE(m->libc);
 		}
-		if (m->libc->nsl_handle != NULL) {
-			dlclose(m->libc->nsl_handle);
-		}
-		if (m->libc->sock_handle != NULL) {
-			dlclose(m->libc->sock_handle);
-		}
-		SAFE_FREE(m->libc);
 
 		/* backends */
-		for (i = 0; i < m->num_backends; i++) {
-			struct nwrap_backend *b = &(m->backends[i]);
+		if (m->backends != NULL) {
+			for (i = 0; i < m->num_backends; i++) {
+				struct nwrap_backend *b = &(m->backends[i]);
 
-			if (b->so_handle != NULL) {
-				dlclose(b->so_handle);
+				if (b->so_handle != NULL) {
+					dlclose(b->so_handle);
+				}
+				SAFE_FREE(b->fns);
 			}
-			SAFE_FREE(b->fns);
+			SAFE_FREE(m->backends);
 		}
-		SAFE_FREE(m->backends);
 	}
 
 	if (nwrap_pw_global.cache != NULL) {
