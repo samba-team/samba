@@ -73,6 +73,93 @@ uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob)
 	return blob->data[DCERPC_DREP_OFFSET];
 }
 
+static uint16_t dcerpc_get_auth_context_offset(const DATA_BLOB *blob)
+{
+	uint16_t frag_len = dcerpc_get_frag_length(blob);
+	uint16_t auth_len = dcerpc_get_auth_length(blob);
+	uint16_t min_offset;
+	uint16_t offset;
+
+	if (auth_len == 0) {
+		return 0;
+	}
+
+	if (frag_len > blob->length) {
+		return 0;
+	}
+
+	if (auth_len > frag_len) {
+		return 0;
+	}
+
+	min_offset = DCERPC_NCACN_PAYLOAD_OFFSET + DCERPC_AUTH_TRAILER_LENGTH;
+	offset = frag_len - auth_len;
+	if (offset < min_offset) {
+		return 0;
+	}
+	offset -= DCERPC_AUTH_TRAILER_LENGTH;
+
+	return offset;
+}
+
+uint8_t dcerpc_get_auth_type(const DATA_BLOB *blob)
+{
+	uint16_t offset;
+
+	offset = dcerpc_get_auth_context_offset(blob);
+	if (offset == 0) {
+		return 0;
+	}
+
+	/*
+	 * auth_typw is in the 1st byte
+	 * of the auth trailer
+	 */
+	offset += 0;
+
+	return blob->data[offset];
+}
+
+uint8_t dcerpc_get_auth_level(const DATA_BLOB *blob)
+{
+	uint16_t offset;
+
+	offset = dcerpc_get_auth_context_offset(blob);
+	if (offset == 0) {
+		return 0;
+	}
+
+	/*
+	 * auth_level is in 2nd byte
+	 * of the auth trailer
+	 */
+	offset += 1;
+
+	return blob->data[offset];
+}
+
+uint32_t dcerpc_get_auth_context_id(const DATA_BLOB *blob)
+{
+	uint16_t offset;
+
+	offset = dcerpc_get_auth_context_offset(blob);
+	if (offset == 0) {
+		return 0;
+	}
+
+	/*
+	 * auth_context_id is in the last 4 byte
+	 * of the auth trailer
+	 */
+	offset += 4;
+
+	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
+		return IVAL(blob->data, offset);
+	} else {
+		return RIVAL(blob->data, offset);
+	}
+}
+
 /**
 * @brief Decodes a ncacn_packet
 *
