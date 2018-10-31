@@ -1278,7 +1278,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
 
-	if (call->conn->auth_state.auth_finished) {
+	if (auth->auth_finished) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
 
@@ -1307,7 +1307,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 		 * In anycase we mark the connection as
 		 * invalid.
 		 */
-		call->conn->auth_state.auth_invalid = true;
+		auth->auth_invalid = true;
 		if (call->fault_code != 0) {
 			return dcesrv_fault_disconnect(call, call->fault_code);
 		}
@@ -1332,6 +1332,7 @@ static void dcesrv_auth3_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct dcesrv_call_state);
 	struct dcesrv_connection *conn = call->conn;
+	struct dcesrv_auth *auth = &call->conn->auth_state;
 	NTSTATUS status;
 
 	status = gensec_update_recv(subreq, call,
@@ -1347,7 +1348,7 @@ static void dcesrv_auth3_done(struct tevent_req *subreq)
 		 * In anycase we mark the connection as
 		 * invalid.
 		 */
-		call->conn->auth_state.auth_invalid = true;
+		auth->auth_invalid = true;
 		if (call->fault_code != 0) {
 			status = dcesrv_fault_disconnect(call, call->fault_code);
 			dcesrv_conn_auth_wait_finished(conn, status);
@@ -1690,9 +1691,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 
 	/* handle any authentication that is being requested */
 	if (!auth_ok) {
-		if (call->in_auth_info.auth_type !=
-		    call->conn->auth_state.auth_type)
-		{
+		if (call->in_auth_info.auth_type != auth->auth_type) {
 			return dcesrv_fault_disconnect(call,
 					DCERPC_FAULT_SEC_PKG_ERROR);
 		}
@@ -1783,7 +1782,8 @@ static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 static NTSTATUS dcesrv_check_verification_trailer(struct dcesrv_call_state *call)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	const uint32_t bitmask1 = call->conn->auth_state.client_hdr_signing ?
+	const struct dcesrv_auth *auth = &call->conn->auth_state;
+	const uint32_t bitmask1 = auth->client_hdr_signing ?
 		DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING : 0;
 	const struct dcerpc_sec_vt_pcontext pcontext = {
 		.abstract_syntax = call->context->iface->syntax_id,
@@ -1822,6 +1822,7 @@ done:
 static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 {
 	const struct dcesrv_endpoint *endpoint = call->conn->endpoint;
+	struct dcesrv_auth *auth = &call->conn->auth_state;
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct ndr_pull *pull;
@@ -1832,8 +1833,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* if authenticated, and the mech we use can't do async replies, don't use them... */
-	if (call->conn->auth_state.gensec_security && 
-	    !gensec_have_feature(call->conn->auth_state.gensec_security, GENSEC_FEATURE_ASYNC_REPLIES)) {
+	if (auth->gensec_security != NULL &&
+	    !gensec_have_feature(auth->gensec_security, GENSEC_FEATURE_ASYNC_REPLIES)) {
 		call->state_flags &= ~DCESRV_CALL_STATE_FLAG_MAY_ASYNC;
 	}
 
@@ -1842,7 +1843,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 					DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 	}
 
-	switch (call->conn->auth_state.auth_level) {
+	switch (auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
 	case DCERPC_AUTH_LEVEL_PACKET:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -1859,8 +1860,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 				  "to [%s] with auth[type=0x%x,level=0x%x] "
 				  "on [%s] from [%s]\n",
 				  __func__, call->context->iface->name,
-				  call->conn->auth_state.auth_type,
-				  call->conn->auth_state.auth_level,
+				  auth->auth_type,
+				  auth->auth_level,
 				  derpc_transport_string_by_transport(transport),
 				  addr));
 			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
@@ -1868,7 +1869,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		break;
 	}
 
-	if (call->conn->auth_state.auth_level < call->context->min_auth_level) {
+	if (auth->auth_level < call->context->min_auth_level) {
 		char *addr;
 
 		addr = tsocket_address_string(call->conn->remote_address, call);
@@ -1879,8 +1880,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			  __func__,
 			  call->context->min_auth_level,
 			  call->context->iface->name,
-			  call->conn->auth_state.auth_type,
-			  call->conn->auth_state.auth_level,
+			  auth->auth_type,
+			  auth->auth_level,
 			  derpc_transport_string_by_transport(transport),
 			  addr));
 		return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
@@ -3205,7 +3206,8 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
  */
 _PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_state *dce_call)
 {
-	return dce_call->conn->auth_state.session_info->credentials;
+	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	return auth->session_info->credentials;
 }
 
 /**
@@ -3213,8 +3215,9 @@ _PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_stat
  */
 _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
 {
+	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
 	enum security_user_level level;
-	level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
+	level = security_session_user_level(auth->session_info, NULL);
 	return level >= SECURITY_USER;
 }
 
@@ -3223,7 +3226,8 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
  */
 _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call)
 {
-	return dce_call->context->conn->auth_state.session_info->info->account_name;
+	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	return auth->session_info->info->account_name;
 }
 
 /**
@@ -3231,7 +3235,8 @@ _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call
  */
 _PUBLIC_ struct auth_session_info *dcesrv_call_session_info(struct dcesrv_call_state *dce_call)
 {
-	return dce_call->context->conn->auth_state.session_info;
+	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	return auth->session_info;
 }
 
 /**
