@@ -1944,24 +1944,41 @@ class GroupAssignments(object):
 def add_users_to_groups(db, instance_id, assignments):
     """Takes the assignments of users to groups and applies them to the DB."""
 
+    for group in assignments.get_groups():
+        users_in_group = assignments.users_in_group(group)
+        if len(users_in_group) == 0:
+            continue
+
+        # Split up the users into chunks, so we write no more than 1K at a
+        # time. (Minimizing the DB modifies is more efficient, but writing
+        # 10K+ users to a single group becomes inefficient memory-wise)
+        for chunk in range(0, len(users_in_group), 1000):
+            chunk_of_users = users_in_group[chunk:chunk + 1000]
+            add_group_members(db, instance_id, group, chunk_of_users)
+
+
+def add_group_members(db, instance_id, group, users_in_group):
+    """Adds the given users to group specified."""
+
+    start = time.time()
     ou = ou_name(db, instance_id)
 
     def build_dn(name):
         return("cn=%s,%s" % (name, ou))
 
-    for group in assignments.get_groups():
-        for user in assignments.users_in_group(group):
-            user_dn  = build_dn(user_name(instance_id, user))
-            group_dn = build_dn(group_name(instance_id, group))
+    group_dn = build_dn(group_name(instance_id, group))
+    m = ldb.Message()
+    m.dn = ldb.Dn(db, group_dn)
 
-            m = ldb.Message()
-            m.dn = ldb.Dn(db, group_dn)
-            m["member"] = ldb.MessageElement(user_dn, ldb.FLAG_MOD_ADD, "member")
-            start = time.time()
-            db.modify(m)
-            end = time.time()
-            duration = end - start
-            LOGGER.info("%f\t0\tadd\tuser\t%f\tTrue\t" % (end, duration))
+    for user in users_in_group:
+        user_dn = build_dn(user_name(instance_id, user))
+        idx = "member-" + str(user)
+        m[idx] = ldb.MessageElement(user_dn, ldb.FLAG_MOD_ADD, "member")
+
+    db.modify(m)
+    end = time.time()
+    duration = end - start
+    LOGGER.info("%f\t0\tadd\tuser(s)\t%f\tTrue\t" % (end, duration))
 
 
 def generate_stats(statsdir, timing_file):
