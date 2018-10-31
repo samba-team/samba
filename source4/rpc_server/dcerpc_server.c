@@ -499,7 +499,7 @@ static NTSTATUS dcesrv_local_fixed_session_key(struct dcesrv_auth *auth,
 _PUBLIC_ NTSTATUS dcesrv_auth_session_key(struct dcesrv_call_state *call,
 					  DATA_BLOB *session_key)
 {
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 
 	return dcesrv_session_info_session_key(auth, session_key);
 }
@@ -514,7 +514,7 @@ _PUBLIC_ NTSTATUS dcesrv_auth_session_key(struct dcesrv_call_state *call,
 _PUBLIC_ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
 					       DATA_BLOB *session_key)
 {
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	NTSTATUS status;
 
 	if (auth->session_key_fn == NULL) {
@@ -948,7 +948,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint16_t max_rep = 0;
 	const char *ep_prefix = "";
 	const char *endpoint = NULL;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	struct dcerpc_ack_ctx *ack_features = NULL;
 	struct tevent_req *subreq = NULL;
@@ -1270,7 +1270,7 @@ static void dcesrv_auth3_done(struct tevent_req *subreq);
 static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 {
 	struct dcesrv_connection *conn = call->conn;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 
@@ -1332,7 +1332,7 @@ static void dcesrv_auth3_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct dcesrv_call_state);
 	struct dcesrv_connection *conn = call->conn;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	NTSTATUS status;
 
 	status = gensec_update_recv(subreq, call,
@@ -1608,7 +1608,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	bool auth_ok = false;
 	struct ncacn_packet *pkt = &call->ack_pkt;
 	uint32_t extra_flags = 0;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	struct tevent_req *subreq = NULL;
 	size_t i;
@@ -1782,7 +1782,7 @@ static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 static NTSTATUS dcesrv_check_verification_trailer(struct dcesrv_call_state *call)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	const struct dcesrv_auth *auth = &call->conn->auth_state;
+	const struct dcesrv_auth *auth = call->auth_state;
 	const uint32_t bitmask1 = auth->client_hdr_signing ?
 		DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING : 0;
 	const struct dcerpc_sec_vt_pcontext pcontext = {
@@ -1822,7 +1822,7 @@ done:
 static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 {
 	const struct dcesrv_endpoint *endpoint = call->conn->endpoint;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct ndr_pull *pull;
@@ -3208,7 +3208,7 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
  */
 _PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_state *dce_call)
 {
-	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	struct dcesrv_auth *auth = dce_call->auth_state;
 	return auth->session_info->credentials;
 }
 
@@ -3217,7 +3217,7 @@ _PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_stat
  */
 _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
 {
-	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	struct dcesrv_auth *auth = dce_call->auth_state;
 	enum security_user_level level;
 	level = security_session_user_level(auth->session_info, NULL);
 	return level >= SECURITY_USER;
@@ -3228,7 +3228,7 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
  */
 _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call)
 {
-	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	struct dcesrv_auth *auth = dce_call->auth_state;
 	return auth->session_info->info->account_name;
 }
 
@@ -3237,7 +3237,7 @@ _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call
  */
 _PUBLIC_ struct auth_session_info *dcesrv_call_session_info(struct dcesrv_call_state *dce_call)
 {
-	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	struct dcesrv_auth *auth = dce_call->auth_state;
 	return auth->session_info;
 }
 
@@ -3248,7 +3248,7 @@ _PUBLIC_ void dcesrv_call_auth_info(struct dcesrv_call_state *dce_call,
 				    enum dcerpc_AuthType *auth_type,
 				    enum dcerpc_AuthLevel *auth_level)
 {
-	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+	struct dcesrv_auth *auth = dce_call->auth_state;
 
 	if (auth_type != NULL) {
 		*auth_type = auth->auth_type;
