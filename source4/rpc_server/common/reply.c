@@ -159,6 +159,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	DATA_BLOB stub;
 	uint32_t total_length, chunk_size;
 	struct dcesrv_connection_context *context = call->context;
+	struct dcesrv_auth *auth = &call->conn->auth_state;
 	size_t sig_size = 0;
 
 	/* call the reply function */
@@ -193,14 +194,13 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	   request header size */
 	chunk_size = call->conn->max_xmit_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (call->conn->auth_state.auth_finished &&
-	    call->conn->auth_state.gensec_security) {
+	if (auth->auth_finished && auth->gensec_security != NULL) {
 		size_t max_payload = chunk_size;
 
 		max_payload -= DCERPC_AUTH_TRAILER_LENGTH;
 		max_payload -= (max_payload % DCERPC_AUTH_PAD_ALIGNMENT);
 
-		sig_size = gensec_sig_size(call->conn->auth_state.gensec_security,
+		sig_size = gensec_sig_size(auth->gensec_security,
 					   max_payload);
 		if (sig_size) {
 			chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
