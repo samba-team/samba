@@ -3397,15 +3397,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * in the open file db having the wrong dev/ino key.
 		 */
 		fd_close(fsp);
-		DEBUG(1,("open_file_ntcreate: file %s - dev/ino mismatch. "
-			"Old (dev=0x%llu, ino =0x%llu). "
-			"New (dev=0x%llu, ino=0x%llu). Failing open "
-			" with NT_STATUS_ACCESS_DENIED.\n",
-			 smb_fname_str_dbg(smb_fname),
-			 (unsigned long long)saved_stat.st_ex_dev,
-			 (unsigned long long)saved_stat.st_ex_ino,
-			 (unsigned long long)smb_fname->st.st_ex_dev,
-			 (unsigned long long)smb_fname->st.st_ex_ino));
+		DBG_WARNING("file %s - dev/ino mismatch. "
+			    "Old (dev=%ju, ino=%ju). "
+			    "New (dev=%ju, ino=%ju). Failing open "
+			    "with NT_STATUS_ACCESS_DENIED.\n",
+			    smb_fname_str_dbg(smb_fname),
+			    (uintmax_t)saved_stat.st_ex_dev,
+			    (uintmax_t)saved_stat.st_ex_ino,
+			    (uintmax_t)smb_fname->st.st_ex_dev,
+			    (uintmax_t)smb_fname->st.st_ex_ino);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
