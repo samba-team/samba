@@ -42,7 +42,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	struct cli_credentials *server_credentials = NULL;
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
-	struct dcesrv_auth *auth = &dce_conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	bool want_header_signing = false;
 	NTSTATUS status;
 
@@ -244,7 +244,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	const char *pdu = "<unknown>";
 
 	switch (call->pkt.ptype) {
@@ -276,7 +276,7 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 	}
 
 	status = gensec_session_info(auth->gensec_security,
-				     dce_conn, // TODO
+				     dce_conn,
 				     &auth->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to establish session_info: %s\n",
@@ -306,7 +306,7 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 
 	dce_conn->allow_alter = true;
 	dce_conn->allow_auth3 = true;
@@ -342,7 +342,7 @@ NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct nca
 bool dcesrv_auth_prepare_auth3(struct dcesrv_call_state *call)
 {
 	struct ncacn_packet *pkt = &call->pkt;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	NTSTATUS status;
 
 	if (pkt->auth_length == 0) {
@@ -399,7 +399,7 @@ bool dcesrv_auth_prepare_auth3(struct dcesrv_call_state *call)
 bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 {
 	struct ncacn_packet *pkt = &call->pkt;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	NTSTATUS status;
 
 	/* on a pure interface change there is no auth blob */
@@ -453,7 +453,7 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 */
 NTSTATUS dcesrv_auth_prepare_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 
 	/* on a pure interface change there is no auth_info structure
 	   setup */
@@ -487,7 +487,7 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	const struct dcerpc_auth tmp_auth = {
 		.auth_type = auth->auth_type,
 		.auth_level = auth->auth_level,
@@ -546,7 +546,7 @@ bool dcesrv_auth_pkt_push(struct dcesrv_call_state *call,
 			  const DATA_BLOB *payload,
 			  const struct ncacn_packet *pkt)
 {
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	const struct dcerpc_auth tmp_auth = {
 		.auth_type = auth->auth_type,
 		.auth_level = auth->auth_level,
