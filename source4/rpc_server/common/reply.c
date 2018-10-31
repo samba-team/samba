@@ -159,7 +159,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	DATA_BLOB stub;
 	uint32_t total_length, chunk_size;
 	struct dcesrv_connection_context *context = call->context;
-	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct dcesrv_auth *auth = call->auth_state;
 	size_t sig_size = 0;
 
 	/* call the reply function */
