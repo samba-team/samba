@@ -1738,7 +1738,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix attribute %s" % sd_attr):
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
 
-    def err_wrong_default_sd(self, dn, sd, sd_old, diff):
+    def err_wrong_default_sd(self, dn, sd, diff):
         '''re-write the SD due to not matching the default (optional mode for fixing an incorrect provision)'''
         sd_attr = "nTSecurityDescriptor"
         sd_val = ndr_pack(sd)
@@ -2379,7 +2379,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                     diff = get_diff_sds(well_known_sd, current_sd, security.dom_sid(self.samdb.get_domain_sid()))
                     if diff != "":
-                        self.err_wrong_default_sd(dn, well_known_sd, current_sd, diff)
+                        self.err_wrong_default_sd(dn, well_known_sd, diff)
                         error_count += 1
                         continue
                 continue
