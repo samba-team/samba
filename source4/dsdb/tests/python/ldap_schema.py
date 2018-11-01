@@ -132,7 +132,7 @@ schemaUpdateNow: 1
         res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE,
                               attrs=["lDAPDisplayName", "schemaIDGUID", "msDS-IntID"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
+        self.assertEquals(str(res[0]["lDAPDisplayName"][0]), attr_ldap_display_name)
         self.assertTrue("schemaIDGUID" in res[0])
         if "msDS-IntId" in res[0]:
             msDS_IntId = int(res[0]["msDS-IntId"][0])
@@ -194,7 +194,7 @@ systemOnly: FALSE
         res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE,
                               attrs=["lDAPDisplayName", "defaultObjectCategory", "schemaIDGUID", "distinguishedName"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEquals(str(res[0]["lDAPDisplayName"][0]), class_ldap_display_name)
         self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
         self.assertTrue("schemaIDGUID" in res[0])
 
@@ -229,7 +229,7 @@ name: """ + object_name + """
         self.assertEquals(len(obj_res), 1)
         self.assertTrue("replPropertyMetaData" in obj_res[0])
         val = obj_res[0]["replPropertyMetaData"][0]
-        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
         obj = repl.ctr
 
         # Windows 2000 functional level won't have this.  It is too
@@ -274,7 +274,7 @@ systemOnly: FALSE
                               attrs=["lDAPDisplayName", "defaultObjectCategory",
                                      "schemaIDGUID", "distinguishedName"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEquals(str(res[0]["lDAPDisplayName"][0]), class_ldap_display_name)
         self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
         self.assertTrue("schemaIDGUID" in res[0])
 
@@ -1357,7 +1357,7 @@ systemOnly: FALSE
         res = self.ldb.search(attr_dn, scope=SCOPE_BASE,
                               attrs=["lDAPDisplayName", "msDS-IntId", "systemFlags"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_name)
+        self.assertEquals(str(res[0]["lDAPDisplayName"][0]), attr_ldap_name)
         if self.forest_level >= DS_DOMAIN_FUNCTION_2003:
             if self._is_schema_base_object(res[0]):
                 self.assertTrue("msDS-IntId" not in res[0])
@@ -1402,7 +1402,7 @@ systemOnly: FALSE
         res = self.ldb.search(attr_dn, scope=SCOPE_BASE,
                               attrs=["lDAPDisplayName", "msDS-IntId"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_name)
+        self.assertEquals(str(res[0]["lDAPDisplayName"][0]), attr_ldap_name)
         if self.forest_level >= DS_DOMAIN_FUNCTION_2003:
             if self._is_schema_base_object(res[0]):
                 self.assertTrue("msDS-IntId" not in res[0])
@@ -1457,7 +1457,7 @@ systemOnly: FALSE
 
         res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["msDS-IntId"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["msDS-IntId"][0], "-1993108831")
+        self.assertEquals(str(res[0]["msDS-IntId"][0]), "-1993108831")
 
         # add a new Class and update schema
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-2-")
@@ -1495,7 +1495,7 @@ systemOnly: FALSE
 
         res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["msDS-IntId"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["msDS-IntId"][0], "-1993108831")
+        self.assertEquals(str(res[0]["msDS-IntId"][0]), "-1993108831")
 
         # add the new Class and update schema
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-4-")
