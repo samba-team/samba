@@ -431,7 +431,7 @@ bool dom_sid_is_valid_account_domain(const struct dom_sid *sid)
 */
 int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen)
 {
-	int i, ofs;
+	int i, ofs, ret;
 	uint64_t ia;
 
 	if (!sid) {
@@ -445,18 +445,32 @@ int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen)
 		((uint64_t)sid->id_auth[1] << 32) +
 		((uint64_t)sid->id_auth[0] << 40);
 
-	ofs = snprintf(buf, buflen, "S-%hhu-", (unsigned char)sid->sid_rev_num);
-	if (ia >= UINT32_MAX) {
-		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "0x%llx",
-				(unsigned long long)ia);
-	} else {
-		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "%llu",
-				(unsigned long long)ia);
+	ret = snprintf(buf, buflen, "S-%"PRIu8"-", sid->sid_rev_num);
+	if (ret < 0) {
+		return ret;
 	}
+	ofs = ret;
+
+	if (ia >= UINT32_MAX) {
+		ret = snprintf(buf+ofs, MAX(buflen-ofs, 0), "0x%"PRIx64, ia);
+	} else {
+		ret = snprintf(buf+ofs, MAX(buflen-ofs, 0), "%"PRIu64, ia);
+	}
+	if (ret < 0) {
+		return ret;
+	}
+	ofs += ret;
 
 	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "-%u",
-				(unsigned int)sid->sub_auths[i]);
+		ret = snprintf(
+			buf+ofs,
+			MAX(buflen-ofs, 0),
+			"-%"PRIu32,
+			sid->sub_auths[i]);
+		if (ret < 0) {
+			return ret;
+		}
+		ofs += ret;
 	}
 	return ofs;
 }
@@ -472,7 +486,7 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 
 	len = dom_sid_string_buf(sid, buf, sizeof(buf));
 
-	if (len+1 > sizeof(buf)) {
+	if ((len < 0) || (len+1 > sizeof(buf))) {
 		return talloc_strdup(mem_ctx, "(SID ERR)");
 	}
 

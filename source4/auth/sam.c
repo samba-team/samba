@@ -638,7 +638,7 @@ _PUBLIC_ NTSTATUS authsam_update_user_info_dc(TALLOC_CTX *mem_ctx,
 		int len;
 
 		len = dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
-		if (len+1 > sizeof(sid_buf)) {
+		if ((len < 0) || (len+1 > sizeof(sid_buf))) {
 			return NT_STATUS_INVALID_SID;
 		}
 		snprintf(dn_str, sizeof(dn_str), "<SID=%s>", sid_buf);
