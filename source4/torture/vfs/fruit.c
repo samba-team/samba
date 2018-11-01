@@ -5461,7 +5461,7 @@ static bool test_empty_stream_do_one(
 {
 	bool ret = false;
 	NTSTATUS status;
-	struct smb2_handle baseh;
+	struct smb2_handle baseh = {{0}};
 	struct smb2_handle streamh;
 	struct smb2_create create;
 	union smb_setfileinfo sfinfo;
