@@ -115,7 +115,6 @@ def get_server_ref_from_samdb(samdb):
 
 
 class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
-    counter = itertools.count(1).next
 
     def _check_account_initial(self, dn):
         self.force_replication()
@@ -686,7 +685,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
 
 
 class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
-    counter = itertools.count(1).next
+    counter = itertools.count(1, 1)
 
     def force_replication(self, base=None):
         if base is None:
@@ -982,7 +981,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         self._test_add_modify_delete()
 
     def _new_user(self):
-        username = "u%sX%s" % (self.tag[:12], self.counter())
+        username = "u%sX%s" % (self.tag[:12], next(self.counter))
         password = 'password#1'
         dn = 'CN=%s,CN=Users,%s' % (username, self.base_dn)
         o = {
