@@ -2843,11 +2843,6 @@ sub setup_restoredc
 	    return undef;
 	}
 
-	my $upn_array = ["$env->{REALM}.upn"];
-	my $spn_array = ["$env->{REALM}.spn"];
-
-	$self->setup_namespaces($env, $upn_array, $spn_array);
-
 	return $env;
 }
 
@@ -2938,11 +2933,6 @@ sub setup_offlinebackupdc
 	if (not defined($self->check_or_start($env, "standard"))) {
 	    return undef;
 	}
-
-	my $upn_array = ["$env->{REALM}.upn"];
-	my $spn_array = ["$env->{REALM}.spn"];
-
-	$self->setup_namespaces($env, $upn_array, $spn_array);
 
 	return $env;
 }
