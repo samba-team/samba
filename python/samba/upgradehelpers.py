@@ -814,14 +814,15 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
                                                                obj["max"], id)
 
     if ldif != "":
-        file = tempfile.mktemp(dir=dest, prefix="usnprov", suffix=".ldif")
+        fd, file = tempfile.mkstemp(dir=dest, prefix="usnprov", suffix=".ldif")
         print()
         print("To track the USNs modified/created by provision and upgrade proivsion,")
         print(" the following ranges are proposed to be added to your provision sam.ldb: \n%s" % ldif)
         print("We recommend to review them, and if it's correct to integrate the following ldif: %s in your sam.ldb" % file)
         print("You can load this file like this: ldbadd -H %s %s\n" %(str(samdb_path), file))
         ldif = "dn: @PROVISION\nprovisionnerID: %s\n%s" % (invocationid, ldif)
-        open(file, 'w').write(ldif)
+        os.write(fd, ldif)
+        os.close(fd)
 
 
 def int64range2str(value):
