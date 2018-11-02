@@ -978,3 +978,74 @@ int rep_memset_s(void *dest, size_t destsz, int ch, size_t count)
 	return 0;
 }
 #endif /* HAVE_MEMSET_S */
+
+#ifndef HAVE_GETPROGNAME
+# ifndef _GNU_SOURCE
+# define PROGNAME_SIZE 32
+static char rep_progname[PROGNAME_SIZE];
+# endif /* _GNU_SOURCE */
+
+const char *rep_getprogname(void)
+{
+#ifdef _GNU_SOURCE
+	return program_invocation_short_name;
+#else /* _GNU_SOURCE */
+	FILE *fp = NULL;
+	char cmdline[4096] = {0};
+	char *p = NULL;
+	pid_t pid;
+	size_t nread;
+	int len;
+
+	if (rep_progname[0] != '\0') {
+		return rep_progname;
+	}
+
+	len = snprintf(rep_progname, sizeof(rep_progname), "%s", "<unknown>");
+	if (len <= 0) {
+		return "<unknown>";
+	}
+
+	pid = getpid();
+	if (pid <= 1 || pid == (pid_t)-1) {
+		return rep_progname;
+	}
+
+	len = snprintf(cmdline,
+		       sizeof(cmdline),
+		       "/proc/%u/cmdline",
+		       (unsigned int)pid);
+	if (len <= 0 || len == sizeof(cmdline)) {
+		return rep_progname;
+	}
+
+	fp = fopen(cmdline, "r");
+	if (fp == NULL) {
+		return rep_progname;
+	}
+
+	nread = fread(cmdline, 1, sizeof(cmdline) - 1, fp);
+	if (nread == 0) {
+		return rep_progname;
+	}
+
+	cmdline[nread] = '\0';
+
+	p = strrchr(cmdline, '/');
+	if (p != NULL) {
+		p++;
+	} else {
+		p = cmdline;
+	}
+
+	len = strlen(p);
+	if (len > PROGNAME_SIZE) {
+		p[PROGNAME_SIZE - 1] = '\0';
+	}
+
+	(void)snprintf(rep_progname, sizeof(rep_progname), "%s", p);
+
+	return rep_progname;
+#endif /* _GNU_SOURCE */
+}
+#endif /* HAVE_GETPROGNAME */

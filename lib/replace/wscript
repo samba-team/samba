@@ -426,6 +426,7 @@ def configure(conf):
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
     conf.CHECK_FUNCS('port_create')
+    conf.CHECK_FUNCS('getprogname')
 
     conf.SET_TARGET_TYPE('attr', 'EMPTY')
 

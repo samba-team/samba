@@ -933,6 +933,11 @@ void rep_setproctitle_init(int argc, char *argv[], char *envp[]);
 int rep_memset_s(void *dest, size_t destsz, int ch, size_t count);
 #endif
 
+#ifndef HAVE_GETPROGNAME
+#define getprogname rep_getprogname
+const char *rep_getprogname(void);
+#endif
+
 #ifndef FALL_THROUGH
 # ifdef HAVE_FALLTHROUGH_ATTRIBUTE
 #  define FALL_THROUGH __attribute__ ((fallthrough))
