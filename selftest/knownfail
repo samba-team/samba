@@ -356,3 +356,5 @@
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
 ^samba.tests.ntlmdisabled.python\(ktest\).python3.ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python3.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
+^samba3.smb2.delete-on-close-perms.READONLY\(nt4_dc\)
+^samba3.smb2.delete-on-close-perms.READONLY\(ad_dc\)
