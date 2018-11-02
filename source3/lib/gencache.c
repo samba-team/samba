@@ -144,7 +144,17 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 
 	ret = tdb_storev(cache->tdb, key, dbufs, ARRAY_SIZE(dbufs), 0);
 
-	return ret == 0;
+	if (ret == 0) {
+		return true;
+	}
+	if (tdb_error(cache->tdb) != TDB_ERR_CORRUPT) {
+		return false;
+	}
+
+	ret = tdb_wipe_all(cache->tdb);
+	SMB_ASSERT(ret == 0);
+
+	return false;
 }
 
 /**
@@ -173,7 +183,17 @@ bool gencache_del(const char *keystr)
 
 	ret = tdb_delete(cache->tdb, key);
 
-	return (ret != -1);
+	if (ret == 0) {
+		return true;
+	}
+	if (tdb_error(cache->tdb) != TDB_ERR_CORRUPT) {
+		return false;
+	}
+
+	ret = tdb_wipe_all(cache->tdb);
+	SMB_ASSERT(ret == 0);
+
+	return true;		/* We've deleted a bit more... */
 }
 
 static bool gencache_pull_timeout(TDB_DATA key,
@@ -218,20 +238,21 @@ struct gencache_parse_state {
 		       DATA_BLOB blob,
 		       void *private_data);
 	void *private_data;
+	bool format_error;
 };
 
 static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 {
-	struct gencache_parse_state *state;
+	struct gencache_parse_state *state = private_data;
 	struct gencache_timeout t;
 	DATA_BLOB payload;
 	bool ret;
 
 	ret = gencache_pull_timeout(key, data, &t.timeout, &payload);
 	if (!ret) {
-		return -1;
+		state->format_error = true;
+		return 0;
 	}
-	state = (struct gencache_parse_state *)private_data;
 	state->parser(&t, payload, state->private_data);
 
 	return 0;
@@ -243,7 +264,9 @@ bool gencache_parse(const char *keystr,
 				   void *private_data),
 		    void *private_data)
 {
-	struct gencache_parse_state state;
+	struct gencache_parse_state state = {
+		.parser = parser, .private_data = private_data
+	};
 	TDB_DATA key = string_term_tdb_data(keystr);
 	int ret;
 
@@ -254,16 +277,27 @@ bool gencache_parse(const char *keystr,
 		return false;
 	}
 
-	state.parser = parser;
-	state.private_data = private_data;
-
 	ret = tdb_parse_record(cache->tdb, key,
 			       gencache_parse_fn, &state);
-	if (ret == 0) {
-		return true;
+	if ((ret == -1) && (tdb_error(cache->tdb) == TDB_ERR_CORRUPT)) {
+		goto wipe;
 	}
+	if (ret == -1) {
+		return false;
+	}
+	if (state.format_error) {
+		ret = tdb_delete(cache->tdb, key);
+		if (ret == -1) {
+			goto wipe;
+		}
+		return false;
+	}
+	return true;
 
-	return (ret == 0);
+wipe:
+	ret = tdb_wipe_all(cache->tdb);
+	SMB_ASSERT(ret == 0);
+	return false;
 }
 
 struct gencache_get_data_blob_state {
@@ -475,6 +509,7 @@ void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
 			    void *private_data, const char *pattern)
 {
 	struct gencache_iterate_blobs_state state;
+	int ret;
 
 	if ((fn == NULL) || (pattern == NULL) || !gencache_init()) {
 		return;
@@ -486,7 +521,12 @@ void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
 	state.pattern = pattern;
 	state.private_data = private_data;
 
-	tdb_traverse(cache->tdb, gencache_iterate_blobs_fn, &state);
+	ret = tdb_traverse(cache->tdb, gencache_iterate_blobs_fn, &state);
+
+	if ((ret == -1) && (tdb_error(cache->tdb) == TDB_ERR_CORRUPT)) {
+		ret = tdb_wipe_all(cache->tdb);
+		SMB_ASSERT(ret == 0);
+	}
 }
 
 /**
