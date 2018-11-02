@@ -103,16 +103,13 @@ static bool gpo_sd_check_read_access_bits(uint32_t access_mask)
 static NTSTATUS gpo_sd_check_ace_denied_object(const struct security_ace *ace,
 					       const struct security_token *token)
 {
-	char *sid_str;
-
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
 	    security_token_has_sid(token, &ace->trustee)) {
-		sid_str = dom_sid_string(NULL, &ace->trustee);
+		struct dom_sid_buf sid_str;
 		DEBUG(10,("gpo_sd_check_ace_denied_object: "
 			"Access denied as of ace for %s\n",
-			sid_str));
-		talloc_free(sid_str);
+			dom_sid_str_buf(&ace->trustee, &sid_str)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -125,17 +122,13 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const struct security_ace *ace,
 static NTSTATUS gpo_sd_check_ace_allowed_object(const struct security_ace *ace,
 						const struct security_token *token)
 {
-	char *sid_str;
-
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
 	    security_token_has_sid(token, &ace->trustee)) {
-		sid_str = dom_sid_string(NULL, &ace->trustee);
+		struct dom_sid_buf sid_str;
 		DEBUG(10,("gpo_sd_check_ace_allowed_object: "
 			"Access granted as of ace for %s\n",
-			sid_str));
-		talloc_free(sid_str);
-
+			dom_sid_str_buf(&ace->trustee, &sid_str)));
 		return NT_STATUS_OK;
 	}
 
