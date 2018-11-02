@@ -564,6 +564,8 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 				     struct pwb_context **ctx_p)
 {
 	struct pwb_context *r = NULL;
+	const char *service = NULL;
+	char service_name[32] = {0};
 	int ctrl_code;
 
 #ifdef HAVE_GETTEXT
@@ -593,6 +595,12 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 		TALLOC_FREE(r);
 		return PAM_SYSTEM_ERR;
 	}
+
+	pam_get_item(pamh, PAM_SERVICE, (const void **)&service);
+
+	snprintf(service_name, sizeof(service_name), "PAM_WINBIND[%s]", service);
+
+	wbcSetClientProcessName(service_name);
 
 	*ctx_p = r;
 
