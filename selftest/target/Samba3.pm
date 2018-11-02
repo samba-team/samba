@@ -2256,6 +2256,10 @@ sub provision($$$$$$$$$)
 	vfs objects = delay_inject
 	delay_inject:pread_send = 2000
 	delay_inject:pwrite_send = 2000
+
+[delete_readonly]
+	path = $prefix_abs/share
+	delete readonly = yes
 	";
 	close(CONF);
 
