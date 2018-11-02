@@ -29,6 +29,12 @@ ctdb_test_exit ()
 
     trap - 0
 
+    # run_tests.sh pipes stdout into tee.  If the tee process is
+    # killed then any attempt to write to stdout (e.g. echo) will
+    # result in SIGPIPE, terminating the caller.  Ignore SIGPIPE to
+    # ensure that all clean-up is run.
+    trap '' PIPE
+
     # Avoid making a test fail from this point onwards.  The test is
     # now complete.
     set +e
