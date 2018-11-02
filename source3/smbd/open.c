@@ -3280,6 +3280,18 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		request_time = fsp->open_time;
 	}
 
+	if ((create_options & FILE_DELETE_ON_CLOSE) &&
+			(flags2 & O_CREAT) &&
+			!file_existed) {
+		/* Delete on close semantics for new files. */
+		status = can_set_delete_on_close(fsp,
+						new_dos_attributes);
+		if (!NT_STATUS_IS_OK(status)) {
+			fd_close(fsp);
+			return status;
+		}
+	}
+
 	/*
 	 * Ensure we pay attention to default ACLs on directories if required.
 	 */
@@ -3732,15 +3744,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	/* Handle strange delete on close create semantics. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
+		if (!new_file_created) {
+			status = can_set_delete_on_close(fsp,
+					 existing_dos_attributes);
 
-		status = can_set_delete_on_close(fsp, new_dos_attributes);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			/* Remember to delete the mode we just added. */
-			del_share_mode(lck, fsp);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return status;
+			if (!NT_STATUS_IS_OK(status)) {
+				/* Remember to delete the mode we just added. */
+				del_share_mode(lck, fsp);
+				TALLOC_FREE(lck);
+				fd_close(fsp);
+				return status;
+			}
 		}
 		/* Note that here we set the *inital* delete on close flag,
 		   not the regular one. The magic gets handled in close. */
