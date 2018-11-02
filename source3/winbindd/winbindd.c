@@ -708,6 +708,9 @@ static struct tevent_req *process_request_send(
 
 	/* Remember who asked us. */
 	cli_state->pid = cli_state->request->pid;
+	memcpy(cli_state->client_name,
+	       cli_state->request->client_name,
+	       sizeof(cli_state->client_name));
 
 	cli_state->cmd_name = "unknown request";
 	cli_state->recv_fn = NULL;
@@ -734,8 +737,11 @@ static struct tevent_req *process_request_send(
 		cli_state->cmd_name = atable->cmd_name;
 		cli_state->recv_fn = atable->recv_req;
 
-		DEBUG(10, ("process_request: Handling async request %d:%s\n",
-			   (int)cli_state->pid, cli_state->cmd_name));
+		DBG_DEBUG("process_request: "
+			  "Handling async request %s(%d):%s\n",
+			  cli_state->client_name,
+			  (int)cli_state->pid,
+			  cli_state->cmd_name);
 
 		subreq = atable->send_req(
 			state,
@@ -797,7 +803,8 @@ static void process_request_done(struct tevent_req *subreq)
 	status = cli_state->recv_fn(subreq, cli_state->response);
 	TALLOC_FREE(subreq);
 
-	DBG_DEBUG("[%d:%s]: %s\n",
+	DBG_DEBUG("[%s(%d):%s]: %s\n",
+		  cli_state->client_name,
 		  (int)cli_state->pid,
 		  cli_state->cmd_name,
 		  nt_errstr(status));
@@ -841,8 +848,10 @@ static void process_request_written(struct tevent_req *subreq)
 		return;
 	}
 
-	DBG_DEBUG("[%d:%s]: delivered response to client\n",
-		  (int)cli_state->pid, cli_state->cmd_name);
+	DBG_DEBUG("[%s(%d):%s]: delivered response to client\n",
+		  cli_state->client_name,
+		  (int)cli_state->pid,
+		  cli_state->cmd_name);
 
 	TALLOC_FREE(cli_state->mem_ctx);
 	cli_state->response = NULL;
