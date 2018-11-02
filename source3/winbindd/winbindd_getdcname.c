@@ -43,8 +43,10 @@ struct tevent_req *winbindd_getdcname_send(TALLOC_CTX *mem_ctx,
 
 	request->domain_name[sizeof(request->domain_name)-1] = '\0';
 
-	DEBUG(3, ("[%5lu]: getdcname for %s\n", (unsigned long)cli->pid,
-		  request->domain_name));
+	DBG_NOTICE("[%s (%u)] getdcname for %s\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   request->domain_name);
 
 	subreq = wb_dsgetdcname_send(state, ev, request->domain_name, NULL,
 				     NULL, 0);

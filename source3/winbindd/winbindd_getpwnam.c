@@ -55,7 +55,10 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.username[sizeof(request->data.username)-1]='\0';
 
-	DEBUG(3, ("getpwnam %s\n", request->data.username));
+	DBG_NOTICE("[%s (%u)] getpwnam %s\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   request->data.username);
 
 	domuser = request->data.username;
 

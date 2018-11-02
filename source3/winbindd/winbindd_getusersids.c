@@ -46,7 +46,10 @@ struct tevent_req *winbindd_getusersids_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.sid[sizeof(request->data.sid)-1]='\0';
 
-	DEBUG(3, ("getusersids %s\n", request->data.sid));
+	DBG_NOTICE("[%s (%u)] getusersids %s\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   request->data.sid);
 
 	if (!string_to_sid(&state->sid, request->data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",

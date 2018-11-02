@@ -59,7 +59,10 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.username[sizeof(request->data.username)-1]='\0';
 
-	DEBUG(3, ("getgroups %s\n", request->data.username));
+	DBG_NOTICE("[%s (%u)] getgroups %s\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   request->data.username);
 
 	domuser = request->data.username;
 

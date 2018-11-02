@@ -46,7 +46,10 @@ struct tevent_req *winbindd_getpwuid_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	DEBUG(3, ("getpwuid %d\n", (int)request->data.uid));
+	DBG_NOTICE("[%s (%u)] getpwuid %d\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   (int)request->data.uid);
 
 	state->xid = (struct unixid) {
 		.id = request->data.uid, .type = ID_TYPE_UID };

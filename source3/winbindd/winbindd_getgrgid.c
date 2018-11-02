@@ -49,7 +49,10 @@ struct tevent_req *winbindd_getgrgid_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	DEBUG(3, ("getgrgid %d\n", (int)request->data.gid));
+	DBG_NOTICE("[%s (%u)] getgrgid %d\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   (int)request->data.gid);
 
 	state->xid = (struct unixid) {
 		.id = request->data.uid, .type = ID_TYPE_GID };

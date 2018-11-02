@@ -54,7 +54,10 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.groupname[sizeof(request->data.groupname)-1]='\0';
 
-	DEBUG(3, ("getgrnam %s\n", request->data.groupname));
+	DBG_NOTICE("[%s (%u)] getgrnam %s\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   request->data.groupname);
 
 	nt_status = normalize_name_unmap(state, request->data.groupname, &tmp);
 	/* If we didn't map anything in the above call, just reset the

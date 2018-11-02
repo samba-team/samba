@@ -48,7 +48,9 @@ struct tevent_req *winbindd_getgrent_send(TALLOC_CTX *mem_ctx,
 	state->num_groups = 0;
 	state->cli = cli;
 
-	DEBUG(3, ("[%5lu]: getgrent\n", (unsigned long)cli->pid));
+	DBG_NOTICE("[%s (%u)] getgrent\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid);
 
 	if (cli->grent_state == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
