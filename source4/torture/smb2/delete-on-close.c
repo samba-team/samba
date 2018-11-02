@@ -580,6 +580,124 @@ static bool test_doc_find_and_set_doc(struct torture_context *tctx, struct smb2_
 	return true;
 }
 
+static bool test_doc_read_only(struct torture_context *tctx,
+			       struct smb2_tree *tree)
+{
+	struct smb2_handle dir_handle;
+	union smb_setfileinfo sfinfo = { };
+	struct smb2_create create = { };
+	struct smb2_close close = { };
+	NTSTATUS status, expected_status;
+	bool ret = true, delete_readonly;
+
+	/*
+	 * Allow testing of the Samba 'delete readonly' option.
+	 */
+	delete_readonly = torture_setting_bool(tctx, "delete_readonly", false);
+	expected_status = delete_readonly ?
+		NT_STATUS_OK : NT_STATUS_CANNOT_DELETE;
+
+	smb2_deltree(tree, DNAME);
+
+	status = torture_smb2_testdir(tree, DNAME, &dir_handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE directory failed\n");
+
+	create = (struct smb2_create) { };
+	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	create.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+		NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	create.in.file_attributes = FILE_ATTRIBUTE_READONLY;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE |
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_CREATE;
+	create.in.fname = FNAME;
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, expected_status, ret,
+					   done, "Unexpected status for CREATE "
+					   "of new file.\n");
+
+	if (delete_readonly) {
+		close.in.file.handle = create.out.file.handle;
+		status = smb2_close(tree, &close);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"CLOSE of READONLY file "
+						"failed.\n");
+	}
+
+	torture_comment(tctx, "Creating file with READ_ONLY attribute.\n");
+
+	create = (struct smb2_create) { };
+	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	create.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	create.in.file_attributes = FILE_ATTRIBUTE_READONLY;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE |
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_CREATE;
+	create.in.fname = FNAME;
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE of READONLY file failed.\n");
+
+	close.in.file.handle = create.out.file.handle;
+	status = smb2_close(tree, &close);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CLOSE of READONLY file failed.\n");
+
+	torture_comment(tctx, "Testing CREATE with DELETE_ON_CLOSE on "
+			"READ_ONLY attribute file.\n");
+
+	create = (struct smb2_create) { };
+	create.in.desired_access = SEC_RIGHTS_FILE_READ | SEC_STD_DELETE;
+	create.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	create.in.file_attributes = 0;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE |
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = FNAME;
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   expected_status, ret, done,
+					   "CREATE returned unexpected "
+					   "status.\n");
+
+	torture_comment(tctx, "Testing setting DELETE_ON_CLOSE disposition on "
+			" file with READONLY attribute.\n");
+
+	create = (struct smb2_create) { };
+	create.in.desired_access = SEC_RIGHTS_FILE_READ | SEC_STD_DELETE;;
+	create.in.create_options = 0;
+	create.in.file_attributes = 0;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE |
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = FNAME;
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Opening file failed.\n");
+
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.generic.in.file.handle = create.out.file.handle;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_equal(tctx, status, expected_status,
+				      "Set DELETE_ON_CLOSE disposition "
+				      "returned un expected status.\n");
+
+	status = smb2_util_close(tree, create.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CLOSE failed\n");
+
+done:
+	smb2_deltree(tree, DNAME);
+	return ret;
+}
+
 
 /*
  *  Extreme testing of Delete On Close and permissions
@@ -595,6 +713,7 @@ struct torture_suite *torture_smb2_doc_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "CREATE_IF", test_doc_create_if);
 	torture_suite_add_1smb2_test(suite, "CREATE_IF Existing", test_doc_create_if_exist);
 	torture_suite_add_1smb2_test(suite, "FIND_and_set_DOC", test_doc_find_and_set_doc);
+	torture_suite_add_1smb2_test(suite,  "READONLY", test_doc_read_only);
 
 	suite->description = talloc_strdup(suite, "SMB2-Delete-on-Close-Perms tests");
 
