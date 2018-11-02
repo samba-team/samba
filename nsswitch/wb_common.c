@@ -77,6 +77,15 @@ void winbindd_free_response(struct winbindd_response *response)
 		SAFE_FREE(response->extra_data.data);
 }
 
+void winbind_set_client_name(const char *name)
+{
+	if (name == NULL || strlen(name) == 0) {
+		return;
+	}
+
+	(void)snprintf(client_name, sizeof(client_name), "%s", name);
+}
+
 static const char *winbind_get_client_name(void)
 {
 	if (client_name[0] == '\0') {

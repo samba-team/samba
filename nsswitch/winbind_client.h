@@ -44,6 +44,8 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 					  struct winbindd_request *request,
 					  struct winbindd_response *response);
 
+void winbind_set_client_name(const char *name);
+
 #define winbind_env_set() \
 	(strcmp(getenv(WINBINDD_DONT_ENV)?getenv(WINBINDD_DONT_ENV):"0","1") == 0)
 

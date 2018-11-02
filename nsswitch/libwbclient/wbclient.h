@@ -76,9 +76,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.13: Added wbcCtxUnixIdsToSids and wbcUnixIdsToSids
  *  0.14: Added "authoritative" to wbcAuthErrorInfo
  *        Added WBC_SID_NAME_LABEL
+ *  0.15: Added wbcSetClientProcessName()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 14
+#define WBCLIENT_MINOR_VERSION 15
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -2050,5 +2051,18 @@ wbcErr wbcAddNamedBlob(size_t *num_blobs,
 		       uint32_t flags,
 		       uint8_t *data,
 		       size_t length);
+
+/**
+ * @brief Set the name of the process which call wbclient.
+ *
+ * By default wbclient will figure out the process name. This should just be
+ * used in special cases like pam modules or similar. Only alpha numeric
+ * chars in ASCII are allowed.
+ *
+ * This function should only be called once!
+ *
+ * @param[in]  name             The process name to set.
+ */
+void wbcSetClientProcessName(const char *name);
 
 #endif      /* _WBCLIENT_H */

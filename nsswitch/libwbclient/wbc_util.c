@@ -894,3 +894,8 @@ done:
 	wbcFreeMemory(blobs);
 	return wbc_status;
 }
+
+void wbcSetClientProcessName(const char *name)
+{
+	winbind_set_client_name(name);
+}
