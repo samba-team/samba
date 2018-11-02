@@ -402,6 +402,10 @@ static void wb_open_pipe_connect_nonpriv_done(struct tevent_req *subreq)
 	ZERO_STRUCT(state->wb_req);
 	state->wb_req.cmd = WINBINDD_INTERFACE_VERSION;
 	state->wb_req.pid = getpid();
+	(void)snprintf(state->wb_req.client_name,
+		       sizeof(state->wb_req.client_name),
+		       "%s",
+		       "TORTURE");
 
 	subreq = wb_simple_trans_send(state, state->ev, NULL,
 				      state->wb_ctx->fd, &state->wb_req);

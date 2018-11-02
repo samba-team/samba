@@ -31,6 +31,8 @@
 #include <pthread.h>
 #endif
 
+static char client_name[32];
+
 /* Global context */
 
 struct winbindd_context {
@@ -75,6 +77,23 @@ void winbindd_free_response(struct winbindd_response *response)
 		SAFE_FREE(response->extra_data.data);
 }
 
+static const char *winbind_get_client_name(void)
+{
+	if (client_name[0] == '\0') {
+		int len;
+
+		len = snprintf(client_name,
+			       sizeof(client_name),
+			       "%s",
+			       getprogname());
+		if (len <= 0) {
+			return "<unkonwn>";
+		}
+	}
+
+	return client_name;
+}
+
 /* Initialise a request structure */
 
 static void winbindd_init_request(struct winbindd_request *request,
@@ -85,6 +104,10 @@ static void winbindd_init_request(struct winbindd_request *request,
 	request->cmd = (enum winbindd_cmd)request_type;
 	request->pid = getpid();
 
+	(void)snprintf(request->client_name,
+		       sizeof(request->client_name),
+		       "%s",
+		       winbind_get_client_name());
 }
 
 /* Initialise a response structure */
