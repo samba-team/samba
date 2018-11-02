@@ -451,7 +451,7 @@ static bool enum_group_mapping(const struct dom_sid *domsid,
 static NTSTATUS one_alias_membership(const struct dom_sid *member,
 			       struct dom_sid **sids, size_t *num)
 {
-	fstring tmp;
+	struct dom_sid_buf tmp;
 	fstring key;
 	char *string_sid;
 	TDB_DATA dbuf;
@@ -460,7 +460,7 @@ static NTSTATUS one_alias_membership(const struct dom_sid *member,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX,
-		 sid_to_fstring(tmp, member));
+		 dom_sid_str_buf(member, &tmp));
 
 	status = dbwrap_fetch_bystring(db, frame, key, &dbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -532,7 +532,7 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 {
 	GROUP_MAP *map;
 	char *key;
-	fstring string_sid;
+	struct dom_sid_buf string_sid;
 	char *new_memberstring;
 	struct db_record *rec;
 	NTSTATUS status;
@@ -559,10 +559,8 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	if (is_aliasmem(alias, member))
 		return NT_STATUS_MEMBER_IN_ALIAS;
 
-	sid_to_fstring(string_sid, member);
-
 	key = talloc_asprintf(talloc_tos(), "%s%s", MEMBEROF_PREFIX,
-			      string_sid);
+			      dom_sid_str_buf(member, &string_sid));
 	if (key == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -583,13 +581,13 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 
 	value = dbwrap_record_get_value(rec);
 
-	sid_to_fstring(string_sid, alias);
+	dom_sid_str_buf(alias, &string_sid);
 
 	if (value.dptr != NULL) {
 		new_memberstring = talloc_asprintf(
-			key, "%s %s", (char *)(value.dptr), string_sid);
+			key, "%s %s", (char *)(value.dptr), string_sid.buf);
 	} else {
-		new_memberstring = talloc_strdup(key, string_sid);
+		new_memberstring = talloc_strdup(key, string_sid.buf);
 	}
 
 	if (new_memberstring == NULL) {
