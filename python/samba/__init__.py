@@ -376,7 +376,7 @@ def string_to_byte_array(string):
     blob = [0] * len(string)
 
     for i in range(len(string)):
-        blob[i] = ord(string[i])
+        blob[i] = string[i] if isinstance(string[i], int) else ord(string[i])
 
     return blob
 
