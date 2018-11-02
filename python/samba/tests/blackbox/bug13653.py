@@ -175,7 +175,7 @@ class Bug13653Tests(BlackboxTestCase):
         db_path = "%s/%s/%s/private/sam.ldb" % (scheme, self.prefix, self.env)
         try:
             command =\
-                "bin/samba-tool user create %s %s -H %s" % (
+                "samba-tool user create %s %s -H %s" % (
                     self.user, password, db_path)
             self.check_run(command)
             command =\

@@ -26,9 +26,9 @@ if [ "$CREATE_USER" = yes ]; then
     CREATE_USERNAME="$2"
     CREATE_PASSWORD="$3"
     shift 3
-    $samba_tool user create "$USERNAME" "$PASSWORD" -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
+    $PYTHON $samba_tool user create "$USERNAME" "$PASSWORD" -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
     # reset password policies beside of minimum password age of 0 days
-    $samba_tool domain passwordsettings set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
+    $PYTHON $samba_tool domain passwordsettings set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
 fi
 
 PAM_WRAPPER_PATH="$BINDIR/default/third_party/pam_wrapper"
@@ -69,9 +69,9 @@ exit_code=$?
 rm -rf $service_dir
 
 if [ "$CREATE_USER" = yes ]; then
-    $samba_tool user delete "$USERNAME" -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
+    $PYTHON $samba_tool user delete "$USERNAME" -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
     # reset password policies
-    $samba_tool domain passwordsettings set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
+    $PYTHON $samba_tool domain passwordsettings set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default -H "ldap://$CREATE_SERVER" -U "$CREATE_USERNAME%$CREATE_PASSWORD"
 fi
 
 exit $exit_code
