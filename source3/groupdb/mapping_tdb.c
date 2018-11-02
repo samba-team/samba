@@ -732,7 +732,7 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	bool found = False;
 	char *member_string;
 	char *key;
-	fstring sid_string;
+	struct dom_sid_buf sid_string;
 
 	if (dbwrap_transaction_start(db) != 0) {
 		DEBUG(0, ("transaction_start failed\n"));
@@ -763,9 +763,11 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 
 	num -= 1;
 
-	sid_to_fstring(sid_string, member);
-
-	key = talloc_asprintf(sids, "%s%s", MEMBEROF_PREFIX, sid_string);
+	key = talloc_asprintf(
+		sids,
+		"%s%s",
+		MEMBEROF_PREFIX,
+		dom_sid_str_buf(member, &sid_string));
 	if (key == NULL) {
 		TALLOC_FREE(sids);
 		status = NT_STATUS_NO_MEMORY;
@@ -786,10 +788,10 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 
 	for (i=0; i<num; i++) {
 
-		sid_to_fstring(sid_string, &sids[i]);
-
 		member_string = talloc_asprintf_append_buffer(
-			member_string, " %s", sid_string);
+			member_string,
+			" %s",
+			dom_sid_str_buf(&sids[i], &sid_string));
 
 		if (member_string == NULL) {
 			TALLOC_FREE(sids);
