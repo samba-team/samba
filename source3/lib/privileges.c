@@ -74,7 +74,8 @@ static uint64_t map_old_SE_PRIV(unsigned char *dptr)
 static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 {
 	struct db_context *db = get_account_pol_db();
-	fstring tmp, keystr;
+	struct dom_sid_buf tmp;
+	fstring keystr;
 	TDB_DATA data;
 	NTSTATUS status;
 
@@ -89,7 +90,7 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 
-	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, dom_sid_str_buf(sid, &tmp));
 
 	status = dbwrap_fetch_bystring(db, talloc_tos(), keystr, &data);
 
@@ -125,7 +126,8 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t mask )
 {
 	struct db_context *db = get_account_pol_db();
 	uint8_t privbuf[8];
-	fstring tmp, keystr;
+	struct dom_sid_buf tmp;
+	fstring keystr;
 	TDB_DATA data;
 
 	if ( !lp_enable_privileges() )
@@ -141,7 +143,7 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t mask )
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 
-	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, dom_sid_str_buf(sid, &tmp));
 
 	/* This writes the 64 bit bitmask out in little endian format */
 	SBVAL(privbuf,0,mask);
@@ -469,7 +471,8 @@ NTSTATUS privilege_create_account(const struct dom_sid *sid )
 NTSTATUS privilege_delete_account(const struct dom_sid *sid)
 {
 	struct db_context *db = get_account_pol_db();
-	fstring tmp, keystr;
+	struct dom_sid_buf tmp;
+	fstring keystr;
 
 	if (!lp_enable_privileges()) {
 		return NT_STATUS_OK;
@@ -485,7 +488,7 @@ NTSTATUS privilege_delete_account(const struct dom_sid *sid)
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 
-	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, dom_sid_str_buf(sid, &tmp));
 
 	return dbwrap_delete_bystring(db, keystr);
 }
