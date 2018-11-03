@@ -557,7 +557,7 @@ static bool tdb_alloc_dead(
 
 static void tdb_purge_dead(struct tdb_context *tdb, uint32_t hash)
 {
-	uint32_t max_dead_records = tdb->max_dead_records;
+	int max_dead_records = tdb->max_dead_records;
 
 	tdb->max_dead_records = 0;
 
