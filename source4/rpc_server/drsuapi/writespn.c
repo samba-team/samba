@@ -53,6 +53,8 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 	 * 1) they are on the clients own account object
 	 * 2) they are of the form SERVICE/dnshostname
 	 */
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct dom_sid *user_sid, *sid;
 	TALLOC_CTX *tmp_ctx = talloc_new(dce_call);
 	struct ldb_result *res;
@@ -82,7 +84,7 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 		return false;
 	}
 
-	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	user_sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 	sid = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSid");
 	if (sid == NULL) {
 		talloc_free(tmp_ctx);

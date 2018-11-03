@@ -336,6 +336,8 @@ failed:
 WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaUpdateRefs *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct dcesrv_handle *h;
 	struct drsuapi_bind_state *b_state;
 	struct drsuapi_DsReplicaUpdateRefsRequest1 *req;
@@ -353,7 +355,7 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	req = &r->in.req.req1;
 	werr = drs_security_access_check(b_state->sam_ctx,
 					 mem_ctx,
-					 dce_call->conn->auth_state.session_info->security_token,
+					 session_info->security_token,
 					 req->naming_context,
 					 GUID_DRS_MANAGE_TOPOLOGY);
 
@@ -361,16 +363,16 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 		return werr;
 	}
 
-	security_level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
+	security_level = security_session_user_level(session_info, NULL);
 	if (security_level < SECURITY_ADMINISTRATOR) {
 		/* check that they are using an DSA objectGUID that they own */
 		ret = dsdb_validate_dsa_guid(b_state->sam_ctx,
 		                             &req->dest_dsa_guid,
-		                             &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX]);
+		                             &session_info->security_token->sids[PRIMARY_USER_SID_INDEX]);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Refusing DsReplicaUpdateRefs for sid %s with GUID %s\n",
 				 dom_sid_string(mem_ctx,
-						&dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX]),
+						&session_info->security_token->sids[PRIMARY_USER_SID_INDEX]),
 				 GUID_string(mem_ctx, &req->dest_dsa_guid)));
 			return WERR_DS_DRA_ACCESS_DENIED;
 		}

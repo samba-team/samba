@@ -95,6 +95,8 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 				enum security_user_level minimum_level,
 				const struct dom_sid *domain_sid)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	enum security_user_level level;
 
 	if (lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
@@ -102,12 +104,12 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 		return WERR_OK;
 	}
 
-	level = security_session_user_level(dce_call->conn->auth_state.session_info, domain_sid);
+	level = security_session_user_level(session_info, domain_sid);
 	if (level < minimum_level) {
 		if (call) {
 			DEBUG(0,("%s refused for security token (level=%u)\n",
 				 call, (unsigned)level));
-			security_token_debug(DBGC_DRS_REPL, 2, dce_call->conn->auth_state.session_info->security_token);
+			security_token_debug(DBGC_DRS_REPL, 2, session_info->security_token);
 		}
 		return WERR_DS_DRA_ACCESS_DENIED;
 	}

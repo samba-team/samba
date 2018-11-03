@@ -2698,6 +2698,8 @@ static struct getncchanges_repl_chunk * getncchanges_chunk_new(TALLOC_CTX *mem_c
 WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct drsuapi_DsGetNCChanges *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot;
 	int ret;
 	uint32_t i, k;
@@ -2799,12 +2801,12 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
-	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	user_sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	/* all clients must have GUID_DRS_GET_CHANGES */
 	werr = drs_security_access_check_nc_root(sam_ctx,
 						 mem_ctx,
-						 dce_call->conn->auth_state.session_info->security_token,
+						 session_info->security_token,
 						 req10->naming_context,
 						 GUID_DRS_GET_CHANGES);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -2846,7 +2848,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (is_gc_pas_request) {
 		werr = drs_security_access_check_nc_root(sam_ctx,
 							 mem_ctx,
-							 dce_call->conn->auth_state.session_info->security_token,
+							 session_info->security_token,
 							 req10->naming_context,
 							 GUID_DRS_GET_FILTERED_ATTRIBUTES);
 		if (W_ERROR_IS_OK(werr)) {
@@ -2863,7 +2865,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (is_secret_request) {
 		werr = drs_security_access_check_nc_root(sam_ctx,
 							 mem_ctx,
-							 dce_call->conn->auth_state.session_info->security_token,
+							 session_info->security_token,
 							 req10->naming_context,
 							 GUID_DRS_GET_ALL_CHANGES);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -2879,7 +2881,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 allowed:
 	/* for non-administrator replications, check that they have
 	   given the correct source_dsa_invocation_id */
-	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
+	security_level = security_session_user_level(session_info,
 						     samdb_domain_sid(sam_ctx));
 	if (security_level == SECURITY_RO_DOMAIN_CONTROLLER) {
 		if (req10->replica_flags & DRSUAPI_DRS_WRIT_REP) {
