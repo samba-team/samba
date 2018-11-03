@@ -72,7 +72,8 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct dcesrv_forward_state *st;
 	struct dcerpc_binding_handle *binding_handle;
 	struct tevent_req *subreq;
-	struct security_token *token;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 
 	st = talloc(mem_ctx, struct dcesrv_forward_state);
 	if (st == NULL) {
@@ -105,8 +106,8 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	dcerpc_binding_handle_set_timeout(binding_handle, timeout);
 
 	/* add security token to the handle*/
-	token = dce_call->conn->auth_state.session_info->security_token;
-	irpc_binding_handle_add_security_token(binding_handle, token);
+	irpc_binding_handle_add_security_token(binding_handle,
+					       session_info->security_token);
 
 	/* forward the call */
 	subreq = dcerpc_binding_handle_call_send(st, dce_call->event_ctx,

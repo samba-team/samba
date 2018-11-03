@@ -206,10 +206,12 @@ struct ldb_context *dcesrv_samdb_connect_as_system(
 		dce_call->conn->remote_address,
 		0);
 	if (samdb) {
+		struct auth_session_info *session_info =
+			dcesrv_call_session_info(dce_call);
 		ldb_set_opaque(
 			samdb,
 			DSDB_NETWORK_SESSION_INFO,
-			dce_call->conn->auth_state.session_info);
+			session_info);
 	}
 	return samdb;
 }
