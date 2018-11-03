@@ -524,6 +524,8 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 					    struct bkrp_BackupKey *r,
 					    struct ldb_context *ldb_ctx)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct bkrp_client_side_wrapped uncrypt_request;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -659,7 +661,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 							   uncrypted_secretv2.payload_key,
 							   uncrypt_request.access_check,
 							   uncrypt_request.access_check_len,
-							   dce_call->conn->auth_state.session_info);
+							   session_info);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
@@ -702,7 +704,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 							   uncrypted_secretv3.payload_key,
 							   uncrypt_request.access_check,
 							   uncrypt_request.access_check_len,
-							   dce_call->conn->auth_state.session_info);
+							   session_info);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
@@ -1387,6 +1389,8 @@ static WERROR bkrp_do_retrieve_default_server_wrap_key(TALLOC_CTX *mem_ctx,
 static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					    struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	WERROR werr;
 	struct bkrp_server_side_wrapped decrypt_request;
 	DATA_BLOB sid_blob, encrypted_blob;
@@ -1524,7 +1528,7 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 		return WERR_INVALID_ACCESS;
 	}
 
-	caller_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	caller_sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	if (!dom_sid_equal(&rc4payload.sid, caller_sid)) {
 		return WERR_INVALID_ACCESS;
@@ -1577,6 +1581,8 @@ static WERROR bkrp_generic_decrypt_data(struct dcesrv_call_state *dce_call, TALL
 static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					    struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	DATA_BLOB sid_blob, encrypted_blob, server_wrapped_blob;
 	WERROR werr;
 	struct dom_sid *caller_sid;
@@ -1625,7 +1631,7 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 		}
 	}
 
-	caller_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	caller_sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	dump_data_pw("server_key: \n", server_key.key, sizeof(server_key.key));
 
