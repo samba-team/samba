@@ -3165,3 +3165,11 @@ _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call
 {
 	return dce_call->context->conn->auth_state.session_info->info->account_name;
 }
+
+/**
+ * retrieve session_info from a dce_call
+ */
+_PUBLIC_ struct auth_session_info *dcesrv_call_session_info(struct dcesrv_call_state *dce_call)
+{
+	return dce_call->context->conn->auth_state.session_info;
+}

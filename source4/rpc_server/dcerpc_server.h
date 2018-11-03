@@ -508,6 +508,11 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call);
  */
 _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call);
 
+/**
+ * retrieve session_info from a dce_call
+ */
+_PUBLIC_ struct auth_session_info *dcesrv_call_session_info(struct dcesrv_call_state *dce_call);
+
 _PUBLIC_ NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
 							  const struct dcesrv_interface *iface);
 _PUBLIC_ NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_call,
