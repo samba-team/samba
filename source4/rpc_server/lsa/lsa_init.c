@@ -50,7 +50,8 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
 				     uint32_t access_desired,
 				     struct lsa_policy_state **_state)
 {
-	struct auth_session_info *session_info = dce_call->conn->auth_state.session_info;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	enum security_user_level security_level;
 	struct lsa_policy_state *state;
 	struct ldb_result *dom_res;
@@ -73,7 +74,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
 	state->sam_ldb = samdb_connect(state,
 				       dce_call->event_ctx,
 				       dce_call->conn->dce_ctx->lp_ctx,
-				       dce_call->conn->auth_state.session_info,
+				       session_info,
 				       dce_call->conn->remote_address,
 				       0);
 	if (state->sam_ldb == NULL) {
