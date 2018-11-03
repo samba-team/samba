@@ -103,6 +103,8 @@ static void dnsserver_reload_zones(struct dnsserver_state *dsstate)
 
 static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_call)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct dnsserver_state *dsstate;
 	struct dnsserver_zone *zones, *z, *znext;
 	struct dnsserver_partition *partitions, *p;
@@ -123,7 +125,7 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 	dsstate->samdb = samdb_connect(dsstate,
 				       dce_call->event_ctx,
 				       dsstate->lp_ctx,
-				       dce_call->conn->auth_state.session_info,
+				       session_info,
 				       dce_call->conn->remote_address,
 				       0);
 	if (dsstate->samdb == NULL) {
