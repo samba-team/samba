@@ -43,6 +43,8 @@ struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
 					   uint8_t handle_type)
 {
 	struct dcesrv_connection_context *context = call->context;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(call);
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
 
@@ -51,7 +53,7 @@ struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
 	 */
 	SMB_ASSERT((context->iface->flags & DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED) == 0);
 
-	sid = &context->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	h = talloc_zero(context->conn->assoc_group, struct dcesrv_handle);
 	if (!h) {
@@ -86,6 +88,8 @@ struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
 					   uint8_t handle_type)
 {
 	struct dcesrv_connection_context *context = call->context;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(call);
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
 
@@ -94,7 +98,7 @@ struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
 	 */
 	SMB_ASSERT((context->iface->flags & DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED) == 0);
 
-	sid = &context->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	if (ndr_policy_handle_empty(p)) {
 		/* TODO: we should probably return a NULL handle here */
