@@ -39,6 +39,8 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 				     const char *share,
 				     struct ntvfs_context **_ntvfs)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	struct srvsvc_ntvfs_ctx	*c;
 	struct ntvfs_request *ntvfs_req;
@@ -113,7 +115,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	}
 
 	ntvfs_req = ntvfs_request_create(c->ntvfs, mem_ctx,
-					 dce_call->conn->auth_state.session_info,
+					 session_info,
 					 0, /* TODO: fill in PID */
 					 dce_call->time,
 					 NULL, NULL, 0);
