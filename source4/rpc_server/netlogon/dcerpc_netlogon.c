@@ -1572,6 +1572,8 @@ static NTSTATUS dcesrv_netr_AccountSync(struct dcesrv_call_state *dce_call, TALL
 static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetDcName *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const char * const attrs[] = { NULL };
 	struct ldb_context *sam_ctx;
 	struct ldb_message **res;
@@ -1601,7 +1603,7 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				dce_call->conn->dce_ctx->lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -1649,9 +1651,9 @@ static void dcesrv_netr_LogonControl_base_done(struct tevent_req *subreq);
 
 static WERROR dcesrv_netr_LogonControl_base_call(struct dcesrv_netr_LogonControl_base_state *state)
 {
-	struct dcesrv_connection *conn = state->dce_call->conn;
 	struct loadparm_context *lp_ctx = state->dce_call->conn->dce_ctx->lp_ctx;
-	struct auth_session_info *session_info = conn->auth_state.session_info;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(state->dce_call);
 	enum security_user_level security_level;
 	struct dcerpc_binding_handle *irpc_handle;
 	struct tevent_req *subreq;
@@ -2006,6 +2008,8 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetAnyDCName *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct netr_DomainTrustList *trusts;
 	struct ldb_context *sam_ctx;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
@@ -2022,7 +2026,7 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -2166,13 +2170,15 @@ static WERROR dcesrv_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state 
 static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct netr_DsRGetSiteName *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct ldb_context *sam_ctx;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -2903,6 +2909,8 @@ static void dcesrv_netr_DsRGetDCName_base_done(struct tevent_req *subreq);
 static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName_base_state *state)
 {
 	struct dcesrv_call_state *dce_call = state->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	TALLOC_CTX *mem_ctx = state->mem_ctx;
 	struct netr_DsRGetDCNameEx2 *r = &state->r;
 	struct ldb_context *sam_ctx;
@@ -2926,7 +2934,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	sam_ctx = samdb_connect(state,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -3383,6 +3391,8 @@ static WERROR dcesrv_netr_NetrEnumerateTrustedDomainsEx(struct dcesrv_call_state
 static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 						   struct netr_DsRAddressToSitenamesExW *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct ldb_context *sam_ctx;
 	struct netr_DsRAddressToSitenamesExWCtr *ctr;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
@@ -3401,7 +3411,7 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -3515,6 +3525,8 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesW(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DsrGetDcSiteCoverageW *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct ldb_context *sam_ctx;
 	struct DcSitesCtr *ctr;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
@@ -3522,7 +3534,7 @@ static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_ca
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -3650,6 +3662,8 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 						   TALLOC_CTX *mem_ctx,
 						   struct netr_DsrEnumerateDomainTrusts *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct netr_DomainTrustList *trusts;
 	struct ldb_context *sam_ctx;
 	int ret;
@@ -3694,7 +3708,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -3807,8 +3821,8 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 						       struct netr_DsRGetForestTrustInformation *r)
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	struct dcesrv_connection *conn = dce_call->conn;
-	struct auth_session_info *session_info = conn->auth_state.session_info;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	enum security_user_level security_level;
 	struct ldb_context *sam_ctx = NULL;
 	struct dcesrv_netr_DsRGetForestTrustInformation_state *state = NULL;
@@ -3831,7 +3845,7 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
@@ -3960,6 +3974,8 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 						      TALLOC_CTX *mem_ctx,
 						      struct netr_GetForestTrustInformation *r)
 {
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	struct ldb_context *sam_ctx = NULL;
@@ -3987,7 +4003,7 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 	sam_ctx = samdb_connect(mem_ctx,
 				dce_call->event_ctx,
 				lp_ctx,
-				dce_call->conn->auth_state.session_info,
+				session_info,
 				dce_call->conn->remote_address,
 				0);
 	if (sam_ctx == NULL) {
