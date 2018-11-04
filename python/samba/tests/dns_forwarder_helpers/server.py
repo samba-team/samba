@@ -76,7 +76,7 @@ class DnsHandler(SocketServer.BaseRequestHandler):
         debug("%s: %s wrote:" % (SERVER_ID, self.client_address[0]))
 
         global timeout
-        m = re.match('^timeout\s+([\d.]+)$', data.strip())
+        m = re.match(b'^timeout\s+([\d.]+)$', data.strip())
         if m:
             timeout = float(m.group(1))
             debug("timing out at %s" % timeout)

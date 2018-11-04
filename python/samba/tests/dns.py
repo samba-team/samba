@@ -988,7 +988,7 @@ class TestInvalidQueries(DNSTest):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
             s.connect((self.server_ip, 53))
-            s.send("", 0)
+            s.send(b"", 0)
         finally:
             if s is not None:
                 s.close()
@@ -1253,13 +1253,13 @@ class TestZones(DNSTest):
 
         def mod_ts(rec):
             self.assertTrue(rec.dwTimeStamp > 0)
-            rec.dwTimeStamp -= interval / 2
+            rec.dwTimeStamp -= interval // 2
         self.ldap_modify_dnsrecs(name, mod_ts)
         update_during_norefresh = self.dns_update_record(name, txt)
 
         def mod_ts(rec):
             self.assertTrue(rec.dwTimeStamp > 0)
-            rec.dwTimeStamp -= interval + interval / 2
+            rec.dwTimeStamp -= interval + interval // 2
         self.ldap_modify_dnsrecs(name, mod_ts)
         update_during_refresh = self.dns_update_record(name, txt)
         self.assertEqual(update_during_norefresh.dwTimeStamp,

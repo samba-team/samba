@@ -50,6 +50,7 @@ from samba.netcmd.dns import cmd_dns
 from samba import gensec
 from samba.kcc import kcc_utils
 from samba.compat import get_string
+from samba.compat import text_type
 import ldb
 
 samba.ensure_third_party_module("dns", "dnspython")
@@ -677,7 +678,7 @@ def rodc_dns_update(d, t, op):
     else:
         name.dns_register = False
     dns_names.names = [ name ]
-    site_name = sub_vars['SITE'].decode('utf-8')
+    site_name = text_type(sub_vars['SITE'])
 
     global error_count
 
