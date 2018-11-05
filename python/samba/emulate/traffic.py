@@ -1747,9 +1747,19 @@ def generate_users(ldb, instance_id, number, password):
     return users
 
 
-def machine_name(instance_id, i):
+def machine_name(instance_id, i, traffic_account=True):
     """Generate a machine account name from instance id."""
-    return "STGM-%d-%d" % (instance_id, i)
+    if traffic_account:
+        # traffic accounts correspond to a given user, and use different
+        # userAccountControl flags to ensure packets get processed correctly
+        # by the DC
+        return "STGM-%d-%d" % (instance_id, i)
+    else:
+        # Otherwise we're just generating computer accounts to simulate a
+        # semi-realistic network. These use the default computer
+        # userAccountControl flags, so we use a different account name so that
+        # we don't try to use them when generating packets
+        return "PC-%d-%d" % (instance_id, i)
 
 
 def generate_machine_accounts(ldb, instance_id, number, password,
@@ -1758,7 +1768,7 @@ def generate_machine_accounts(ldb, instance_id, number, password,
     existing_objects = search_objectclass(ldb, objectclass='computer')
     added = 0
     for i in range(number, 0, -1):
-        name = machine_name(instance_id, i)
+        name = machine_name(instance_id, i, traffic_account)
         if name + "$" not in existing_objects:
             create_machine_account(ldb, instance_id, name, password,
                                    traffic_account)
