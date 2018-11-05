@@ -271,7 +271,7 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         self.assertEqual(len(bkp_pd), 1)
         acn = bkp_pd[0].get('samAccountName')
         self.assertIsNotNone(acn)
-        self.assertEqual(acn[0].replace('$', ''), self.new_server)
+        self.assertEqual(str(acn[0]), self.new_server + '$')
         self.assertIsNotNone(bkp_pd[0].get('secret'))
 
         samdb = SamDB(url=paths.samdb, session_info=system_session(),
@@ -552,8 +552,9 @@ class DomainBackupRename(DomainBackupBase):
         self.assertEqual(len(res), 1,
                          "Failed to find renamed link source object")
         self.assertTrue(link_attr in res[0], "Missing link attribute")
-        self.assertTrue(new_target_dn in res[0][link_attr])
-        self.assertTrue(new_server_dn in res[0][link_attr])
+        link_values = [str(x) for x in res[0][link_attr]]
+        self.assertTrue(new_target_dn in link_values)
+        self.assertTrue(new_server_dn in link_values)
 
     # extra checks we run on the restored DB in the rename case
     def check_restored_database(self, lp, expect_secrets=True):
