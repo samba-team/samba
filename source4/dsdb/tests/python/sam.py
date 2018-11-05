@@ -16,6 +16,8 @@ import samba.getopt as options
 
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.auth import system_session
+from samba.compat import get_string
+from samba.compat import text_type
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
@@ -106,14 +108,16 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res1) == 1)
-        group_rid_1 = security.dom_sid(ldb.schema_format_value("objectSID",
-                                                               res1[0]["objectSID"][0])).split()[1]
+        obj_sid = get_string(ldb.schema_format_value("objectSID",
+                                                     res1[0]["objectSID"][0]))
+        group_rid_1 = security.dom_sid(obj_sid).split()[1]
 
         res1 = ldb.search("cn=ldaptestgroup2,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res1) == 1)
-        group_rid_2 = security.dom_sid(ldb.schema_format_value("objectSID",
-                                                               res1[0]["objectSID"][0])).split()[1]
+        obj_sid = get_string(ldb.schema_format_value("objectSID",
+                                                     res1[0]["objectSID"][0]))
+        group_rid_2 = security.dom_sid(obj_sid).split()[1]
 
         # Try to create a user with an invalid account name
         try:
@@ -197,7 +201,7 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_USERS)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -209,7 +213,7 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_USERS)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -225,8 +229,8 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0],
-                          str(DOMAIN_RID_DOMAIN_MEMBERS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]),
+                          DOMAIN_RID_DOMAIN_MEMBERS)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -239,7 +243,7 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DCS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_DCS)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -256,8 +260,8 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertTrue(res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_READONLY_DCS) or
-                        res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_DOMAIN_MEMBERS))
+        self.assertTrue(int(res1[0]["primaryGroupID"][0]) == DOMAIN_RID_READONLY_DCS or
+                        int(res1[0]["primaryGroupID"][0]) == DOMAIN_RID_DOMAIN_MEMBERS)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -278,7 +282,7 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_USERS)
 
         # unfortunately the INTERDOMAIN_TRUST_ACCOUNT case cannot be tested
         # since such accounts aren't directly creatable (ACCESS_DENIED)
@@ -292,7 +296,7 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_USERS)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -305,7 +309,7 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DOMAIN_MEMBERS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_DOMAIN_MEMBERS)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -318,7 +322,7 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DCS))
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_DCS)
 
         # Read-only DC accounts are only creatable by
         # UF_WORKSTATION_TRUST_ACCOUNT and work only on DCs >= 2008 (therefore
@@ -335,8 +339,8 @@ class SamTests(samba.tests.TestCase):
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
-        self.assertTrue(res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_READONLY_DCS) or
-                        res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_DOMAIN_MEMBERS))
+        self.assertTrue(int(res1[0]["primaryGroupID"][0]) == DOMAIN_RID_READONLY_DCS or
+                        int(res1[0]["primaryGroupID"][0]) == DOMAIN_RID_DOMAIN_MEMBERS)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -483,7 +487,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE, attrs=["member"])
         self.assertTrue(len(res1) == 1)
         self.assertTrue(len(res1[0]["member"]) == 1)
-        self.assertEquals(res1[0]["member"][0].lower(),
+        self.assertEquals(str(res1[0]["member"][0]).lower(),
                           ("cn=ldaptestuser,cn=users," + self.base_dn).lower())
 
         res1 = ldb.search("cn=ldaptestgroup2, cn=users," + self.base_dn,
@@ -561,7 +565,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE, attrs=["objectSid"])
         self.assertTrue(len(res1) == 1)
         sid_bin = res1[0]["objectSid"][0]
-        sid_str = ("<SID=" + ldb.schema_format_value("objectSid", sid_bin) + ">").upper()
+        sid_str = ("<SID=" + get_string(ldb.schema_format_value("objectSid", sid_bin)) + ">").upper()
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
@@ -825,7 +829,8 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(len(res1) == 1)
         primary_group_token = int(res1[0]["primaryGroupToken"][0])
 
-        rid = security.dom_sid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0])).split()[1]
+        obj_sid = get_string(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0]))
+        rid = security.dom_sid(obj_sid).split()[1]
         self.assertEquals(primary_group_token, rid)
 
         m = Message()
@@ -874,7 +879,8 @@ class SamTests(samba.tests.TestCase):
         domain_users_group_found = False
         users_group_found = False
         for sid in res[0]["tokenGroups"]:
-            rid = security.dom_sid(ldb.schema_format_value("objectSID", sid)).split()[1]
+            obj_sid = get_string(ldb.schema_format_value("objectSID", sid))
+            rid = security.dom_sid(obj_sid).split()[1]
             if rid == 513:
                 domain_users_group_found = True
             if rid == 545:
@@ -1740,7 +1746,7 @@ class SamTests(samba.tests.TestCase):
 
         username = "ldaptestuser"
         password = "thatsAcomplPASS2"
-        utf16pw = unicode('"' + password.encode('utf-8') + '"', 'utf-8').encode('utf-16-le')
+        utf16pw = text_type('"' + password + '"').encode('utf-16-le')
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -1754,7 +1760,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["sAMAccountName", "sAMAccountType", "userAccountControl", "pwdLastSet"])
         self.assertTrue(len(res1) == 1)
-        self.assertEqual(res1[0]["sAMAccountName"][0], username)
+        self.assertEqual(str(res1[0]["sAMAccountName"][0]), username)
         self.assertEqual(int(res1[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT)
         self.assertEqual(int(res1[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT)
         self.assertNotEqual(int(res1[0]["pwdLastSet"][0]), 0)
@@ -2947,7 +2953,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "FALSE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "FALSE")
 
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -2960,7 +2966,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "TRUE")
 
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -2973,7 +2979,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "TRUE")
 
         # Modification tests
 
@@ -2987,7 +2993,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "TRUE")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -2999,7 +3005,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "FALSE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "FALSE")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -3012,7 +3018,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "TRUE")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -3024,7 +3030,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "TRUE")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -3036,7 +3042,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "TRUE")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -3048,7 +3054,7 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "FALSE")
+        self.assertEquals(str(res1[0]["isCriticalSystemObject"][0]), "FALSE")
 
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -3089,12 +3095,12 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["dNSHostName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
+        self.assertEquals(str(res[0]["dNSHostName"][0]), "testname2.testdom")
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname.testdom")
 
         m = Message()
@@ -3106,7 +3112,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname.testdom")
 
         m = Message()
@@ -3118,7 +3124,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname2.testdom2")
 
         m = Message()
@@ -3130,7 +3136,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname2.testdom2")
 
         m = Message()
@@ -3142,7 +3148,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname2.testdom2")
 
         m = Message()
@@ -3163,7 +3169,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname3.testdom3")
 
         m = Message()
@@ -3178,7 +3184,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname2.testdom2")
 
         m = Message()
@@ -3234,12 +3240,12 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["sAMAccountName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["sAMAccountName"][0], "testname$")
+        self.assertEquals(str(res[0]["sAMAccountName"][0]), "testname$")
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname")
 
         m = Message()
@@ -3251,7 +3257,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname")
 
         m = Message()
@@ -3263,7 +3269,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname")
 
         m = Message()
@@ -3275,7 +3281,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/test$name")
 
         m = Message()
@@ -3287,7 +3293,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname2")
 
         m = Message()
@@ -3302,7 +3308,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname3")
 
         m = Message()
@@ -3317,7 +3323,7 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["servicePrincipalName"][0],
+        self.assertEquals(str(res[0]["servicePrincipalName"][0]),
                           "HOST/testname2")
 
         m = Message()
@@ -3359,12 +3365,12 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["dNSHostName", "sAMAccountName", "servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
-        self.assertEquals(res[0]["sAMAccountName"][0], "testname2$")
-        self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2" or
-                        res[0]["servicePrincipalName"][1] == "HOST/testname2")
-        self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2.testdom" or
-                        res[0]["servicePrincipalName"][1] == "HOST/testname2.testdom")
+        self.assertEquals(str(res[0]["dNSHostName"][0]), "testname2.testdom")
+        self.assertEquals(str(res[0]["sAMAccountName"][0]), "testname2$")
+        self.assertTrue(str(res[0]["servicePrincipalName"][0]) == "HOST/testname2" or
+                        str(res[0]["servicePrincipalName"][1]) == "HOST/testname2")
+        self.assertTrue(str(res[0]["servicePrincipalName"][0]) == "HOST/testname2.testdom" or
+                        str(res[0]["servicePrincipalName"][1]) == "HOST/testname2.testdom")
 
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -3387,11 +3393,11 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["dNSHostName", "sAMAccountName", "servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
-        self.assertEquals(res[0]["sAMAccountName"][0], "testname2$")
+        self.assertEquals(str(res[0]["dNSHostName"][0]), "testname2.testdom")
+        self.assertEquals(str(res[0]["sAMAccountName"][0]), "testname2$")
         self.assertTrue(len(res[0]["servicePrincipalName"]) == 2)
-        self.assertTrue("HOST/testname2" in res[0]["servicePrincipalName"])
-        self.assertTrue("HOST/testname2.testdom" in res[0]["servicePrincipalName"])
+        self.assertTrue("HOST/testname2" in [str(x) for x in res[0]["servicePrincipalName"]])
+        self.assertTrue("HOST/testname2.testdom" in [str(x) for x in res[0]["servicePrincipalName"]])
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -3413,12 +3419,12 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["dNSHostName", "sAMAccountName", "servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
-        self.assertEquals(res[0]["sAMAccountName"][0], "testname2$")
+        self.assertEquals(str(res[0]["dNSHostName"][0]), "testname2.testdom")
+        self.assertEquals(str(res[0]["sAMAccountName"][0]), "testname2$")
         self.assertTrue(len(res[0]["servicePrincipalName"]) == 3)
-        self.assertTrue("HOST/testname2" in res[0]["servicePrincipalName"])
-        self.assertTrue("HOST/testname3" in res[0]["servicePrincipalName"])
-        self.assertTrue("HOST/testname2.testdom" in res[0]["servicePrincipalName"])
+        self.assertTrue("HOST/testname2" in [str(x) for x in res[0]["servicePrincipalName"]])
+        self.assertTrue("HOST/testname3" in [str(x) for x in res[0]["servicePrincipalName"]])
+        self.assertTrue("HOST/testname2.testdom" in [str(x) for x in res[0]["servicePrincipalName"]])
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -3431,12 +3437,12 @@ class SamTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["dNSHostName", "sAMAccountName", "servicePrincipalName"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["dNSHostName"][0], "testname3.testdom")
-        self.assertEquals(res[0]["sAMAccountName"][0], "testname2$")
+        self.assertEquals(str(res[0]["dNSHostName"][0]), "testname3.testdom")
+        self.assertEquals(str(res[0]["sAMAccountName"][0]), "testname2$")
         self.assertTrue(len(res[0]["servicePrincipalName"]) == 3)
-        self.assertTrue("HOST/testname2" in res[0]["servicePrincipalName"])
-        self.assertTrue("HOST/testname3" in res[0]["servicePrincipalName"])
-        self.assertTrue("HOST/testname3.testdom" in res[0]["servicePrincipalName"])
+        self.assertTrue("HOST/testname2" in [str(x) for x in res[0]["servicePrincipalName"]])
+        self.assertTrue("HOST/testname3" in [str(x) for x in res[0]["servicePrincipalName"]])
+        self.assertTrue("HOST/testname3.testdom" in [str(x) for x in res[0]["servicePrincipalName"]])
 
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
@@ -3455,7 +3461,7 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res[0])
         self.assertTrue(len(res[0]["description"]) == 1)
-        self.assertEquals(res[0]["description"][0], "desc1")
+        self.assertEquals(str(res[0]["description"][0]), "desc1")
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
@@ -3469,10 +3475,10 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res[0])
         self.assertTrue(len(res[0]["description"]) == 2)
-        self.assertTrue(res[0]["description"][0] == "desc1" or
-                        res[0]["description"][1] == "desc1")
-        self.assertTrue(res[0]["description"][0] == "desc2" or
-                        res[0]["description"][1] == "desc2")
+        self.assertTrue(str(res[0]["description"][0]) == "desc1" or
+                        str(res[0]["description"][1]) == "desc1")
+        self.assertTrue(str(res[0]["description"][0]) == "desc2" or
+                        str(res[0]["description"][1]) == "desc2")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -3508,7 +3514,7 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res[0])
         self.assertTrue(len(res[0]["description"]) == 1)
-        self.assertEquals(res[0]["description"][0], "desc1")
+        self.assertEquals(str(res[0]["description"][0]), "desc1")
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
@@ -3528,7 +3534,7 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res[0])
         self.assertTrue(len(res[0]["description"]) == 1)
-        self.assertEquals(res[0]["description"][0], "desc1")
+        self.assertEquals(str(res[0]["description"][0]), "desc1")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -3595,7 +3601,7 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res[0])
         self.assertTrue(len(res[0]["description"]) == 1)
-        self.assertEquals(res[0]["description"][0], "desc1")
+        self.assertEquals(str(res[0]["description"][0]), "desc1")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -3608,7 +3614,7 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("description" in res[0])
         self.assertTrue(len(res[0]["description"]) == 1)
-        self.assertEquals(res[0]["description"][0], "desc2")
+        self.assertEquals(str(res[0]["description"][0]), "desc2")
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
