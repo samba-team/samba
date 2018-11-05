@@ -37,6 +37,7 @@ from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dcerpc.netlogon import NETLOGON_NEG_STRONG_KEYS
+from samba.compat import get_string
 
 
 class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
@@ -60,9 +61,7 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
         self.dn            = ("cn=%s,cn=users,%s" %
                               (self.netbios_name, self.base_dn))
 
-        utf16pw = unicode(
-            '"' + self.machinepass.encode('utf-8') + '"', 'utf-8'
-        ).encode('utf-16-le')
+        utf16pw = get_string('"' + self.machinepass + '"').encode('utf-16-le')
         self.ldb.add({
             "dn": self.dn,
             "objectclass": "computer",
