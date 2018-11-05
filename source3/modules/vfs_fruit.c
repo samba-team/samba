@@ -22,7 +22,6 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "lib/util/time.h"
-#include "../lib/crypto/md5.h"
 #include "system/shmem.h"
 #include "locking/proto.h"
 #include "smbd/globals.h"
@@ -34,6 +33,9 @@
 #include "lib/util/tevent_unix.h"
 #include "offload_token.h"
 #include "string_replace.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -2383,10 +2385,11 @@ static AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data)
  **/
 static SMB_INO_T fruit_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 {
-	MD5_CTX ctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
 	unsigned char hash[16];
-	SMB_INO_T result;
+	SMB_INO_T result = 0;
 	char *upper_sname;
+	int rc;
 
 	DBG_DEBUG("fruit_inode called for %ju/%ju [%s]\n",
 		  (uintmax_t)sbuf->st_ex_dev,
@@ -2395,22 +2398,42 @@ static SMB_INO_T fruit_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 	upper_sname = talloc_strdup_upper(talloc_tos(), sname);
 	SMB_ASSERT(upper_sname != NULL);
 
-	MD5Init(&ctx);
-	MD5Update(&ctx, (const unsigned char *)&(sbuf->st_ex_dev),
-		  sizeof(sbuf->st_ex_dev));
-	MD5Update(&ctx, (const unsigned char *)&(sbuf->st_ex_ino),
-		  sizeof(sbuf->st_ex_ino));
-	MD5Update(&ctx, (unsigned char *)upper_sname,
-		  talloc_get_size(upper_sname)-1);
-	MD5Final(hash, &ctx);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		goto out;
+	}
 
-	TALLOC_FREE(upper_sname);
+	rc = gnutls_hash(hash_hnd, &(sbuf->st_ex_dev), sizeof(sbuf->st_ex_dev));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd,
+			 &(sbuf->st_ex_ino),
+			 sizeof(sbuf->st_ex_ino));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd,
+			 upper_sname,
+			 talloc_get_size(upper_sname) - 1);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+
+	gnutls_hash_deinit(hash_hnd, hash);
 
 	/* Hopefully all the variation is in the lower 4 (or 8) bytes! */
 	memcpy(&result, hash, sizeof(result));
+	ZERO_ARRAY(hash);
 
 	DBG_DEBUG("fruit_inode \"%s\": ino=%ju\n",
 		  sname, (uintmax_t)result);
+
+out:
+	TALLOC_FREE(upper_sname);
 
 	return result;
 }
