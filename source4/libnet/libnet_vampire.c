@@ -781,6 +781,12 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		return status;
 	}
 
+	/* reset debug counters once we've finished replicating the partition */
+	if (!c->partition->more_data) {
+		s->total_objects = 0;
+		s->total_links = 0;
+	}
+
 	talloc_free(s_dsa);
 	talloc_free(objs);
 
