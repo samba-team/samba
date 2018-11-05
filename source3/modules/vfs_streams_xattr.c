@@ -24,9 +24,11 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "system/filesys.h"
-#include "../lib/crypto/md5.h"
 #include "lib/util/tevent_unix.h"
 #include "librpc/gen_ndr/ioctl.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -47,10 +49,11 @@ struct stream_io {
 
 static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 {
-	MD5_CTX ctx;
-        unsigned char hash[16];
-	SMB_INO_T result;
+	unsigned char hash[16];
+	gnutls_hash_hd_t hash_hnd = NULL;
+	SMB_INO_T result = 0;
 	char *upper_sname;
+	int rc;
 
 	DEBUG(10, ("stream_inode called for %lu/%lu [%s]\n",
 		   (unsigned long)sbuf->st_ex_dev,
@@ -59,21 +62,42 @@ static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 	upper_sname = talloc_strdup_upper(talloc_tos(), sname);
 	SMB_ASSERT(upper_sname != NULL);
 
-        MD5Init(&ctx);
-        MD5Update(&ctx, (const unsigned char *)&(sbuf->st_ex_dev),
-		  sizeof(sbuf->st_ex_dev));
-        MD5Update(&ctx, (const unsigned char *)&(sbuf->st_ex_ino),
-		  sizeof(sbuf->st_ex_ino));
-        MD5Update(&ctx, (unsigned char *)upper_sname,
-		  talloc_get_size(upper_sname)-1);
-        MD5Final(hash, &ctx);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		goto out;
+	}
 
-	TALLOC_FREE(upper_sname);
+	rc = gnutls_hash(hash_hnd, &(sbuf->st_ex_dev), sizeof(sbuf->st_ex_dev));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd,
+			 &(sbuf->st_ex_ino),
+			 sizeof(sbuf->st_ex_ino));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd,
+			 upper_sname,
+			 talloc_get_size(upper_sname) - 1);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+
+	gnutls_hash_deinit(hash_hnd, hash);
+
 
         /* Hopefully all the variation is in the lower 4 (or 8) bytes! */
 	memcpy(&result, hash, sizeof(result));
+	ZERO_ARRAY(hash);
 
 	DEBUG(10, ("stream_inode returns %lu\n", (unsigned long)result));
+
+out:
+	TALLOC_FREE(upper_sname);
 
 	return result;
 }
