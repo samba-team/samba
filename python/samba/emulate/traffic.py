@@ -1798,22 +1798,22 @@ def clean_up_accounts(ldb, instance_id):
 
 def generate_users_and_groups(ldb, instance_id, password,
                               number_of_users, number_of_groups,
-                              group_memberships):
+                              group_memberships, machine_accounts=0):
     """Generate the required users and groups, allocating the users to
        those groups."""
     memberships_added = 0
-    groups_added  = 0
+    groups_added = 0
+    computers_added = 0
 
     create_ou(ldb, instance_id)
 
     LOGGER.info("Generating dummy user accounts")
     users_added = generate_users(ldb, instance_id, number_of_users, password)
 
-    # assume there will be some overhang with more computer accounts than users
-    computer_accounts = int(1.25 * number_of_users)
-    LOGGER.info("Generating dummy machine accounts")
-    computers_added = generate_machine_accounts(ldb, instance_id,
-                                                computer_accounts, password)
+    if machine_accounts > 0:
+        LOGGER.info("Generating dummy machine accounts")
+        computers_added = generate_machine_accounts(ldb, instance_id,
+                                                    machine_accounts, password)
 
     if number_of_groups > 0:
         LOGGER.info("Generating dummy groups")

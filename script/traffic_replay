@@ -324,12 +324,16 @@ def main():
         sys.exit(1)
 
     if opts.generate_users_only:
+        # generate computer accounts for added realism. Assume there will be
+        # some overhang with more computer accounts than users
+        computer_accounts = int(1.25 * number_of_users)
         traffic.generate_users_and_groups(ldb,
                                           opts.instance_id,
                                           opts.fixed_password,
                                           opts.number_of_users,
                                           opts.number_of_groups,
-                                          opts.group_memberships)
+                                          opts.group_memberships,
+                                          machine_accounts=computer_accounts)
         sys.exit()
 
     tempdir = tempfile.mkdtemp(prefix="samba_tg_")
