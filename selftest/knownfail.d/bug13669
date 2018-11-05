@@ -1,4 +1,0 @@
-^samba4.dcerpc.dnsserver.dnsutils.test_dnsserver_init_zoneinfo_master_servers_empty
-^samba4.dcerpc.dnsserver.dnsutils.test_dnsserver_init_zoneinfo_master_servers
-^samba4.dcerpc.dnsserver.dnsutils.test_dnsserver_init_zoneinfo_scavenging_servers_empty
-^samba4.dcerpc.dnsserver.dnsutils.test_dnsserver_init_zoneinfo_scavenging_servers
