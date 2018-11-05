@@ -43,11 +43,13 @@
 #include "dsdb/samdb/ldb_modules/password_modules.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/crypto/md4.h"
-#include "lib/crypto/md5.h"
 #include "param/param.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 #include "auth/common_auth.h"
 #include "lib/messaging/messaging.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #ifdef ENABLE_GPGME
 #undef class
@@ -1307,6 +1309,7 @@ static int setup_primary_wdigest(struct setup_password_fields_io *io,
 		.realm	= &digest
 		},
 	};
+	int rc = LDB_ERR_OTHER;
 
 	/* prepare DATA_BLOB's used in the combinations array */
 	sAMAccountName		= data_blob_string_const(io->u.sAMAccountName);
@@ -1367,23 +1370,77 @@ static int setup_primary_wdigest(struct setup_password_fields_io *io,
 	}
 
 	for (i=0; i < ARRAY_SIZE(wdigest); i++) {
-		MD5_CTX md5;
-		MD5Init(&md5);
+		gnutls_hash_hd_t hash_hnd = NULL;
+
+		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+		if (rc < 0) {
+			rc = ldb_oom(ldb);
+			goto out;
+		}
+
 		if (wdigest[i].nt4dom) {
-			MD5Update(&md5, wdigest[i].nt4dom->data, wdigest[i].nt4dom->length);
-			MD5Update(&md5, backslash.data, backslash.length);
+			rc = gnutls_hash(hash_hnd,
+					  wdigest[i].nt4dom->data,
+					  wdigest[i].nt4dom->length);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				rc = LDB_ERR_UNWILLING_TO_PERFORM;
+				goto out;
+			}
+			rc = gnutls_hash(hash_hnd,
+					  backslash.data,
+					  backslash.length);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				rc = LDB_ERR_UNWILLING_TO_PERFORM;
+				goto out;
+			}
 		}
-		MD5Update(&md5, wdigest[i].user->data, wdigest[i].user->length);
-		MD5Update(&md5, delim.data, delim.length);
+		rc = gnutls_hash(hash_hnd,
+				 wdigest[i].user->data,
+				 wdigest[i].user->length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			rc = LDB_ERR_UNWILLING_TO_PERFORM;
+			goto out;
+		}
+		rc = gnutls_hash(hash_hnd, delim.data, delim.length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			rc = LDB_ERR_UNWILLING_TO_PERFORM;
+			goto out;
+		}
 		if (wdigest[i].realm) {
-			MD5Update(&md5, wdigest[i].realm->data, wdigest[i].realm->length);
+			rc = gnutls_hash(hash_hnd,
+					 wdigest[i].realm->data,
+					 wdigest[i].realm->length);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				rc = LDB_ERR_UNWILLING_TO_PERFORM;
+				goto out;
+			}
 		}
-		MD5Update(&md5, delim.data, delim.length);
-		MD5Update(&md5, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length);
-		MD5Final(pdb->hashes[i].hash, &md5);
+		rc = gnutls_hash(hash_hnd, delim.data, delim.length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			rc = LDB_ERR_UNWILLING_TO_PERFORM;
+			goto out;
+		}
+		rc = gnutls_hash(hash_hnd,
+				  io->n.cleartext_utf8->data,
+				  io->n.cleartext_utf8->length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			rc = LDB_ERR_UNWILLING_TO_PERFORM;
+			goto out;
+		}
+
+		gnutls_hash_deinit(hash_hnd, pdb->hashes[i].hash);
 	}
 
-	return LDB_SUCCESS;
+	rc = LDB_SUCCESS;
+out:
+	return rc;
 }
 
 #define SHA_SALT_PERMITTED_CHARS "abcdefghijklmnopqrstuvwxyz" \
