@@ -52,8 +52,10 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	request->data.auth.user[sizeof(request->data.auth.user)-1] = '\0';
 	request->data.auth.pass[sizeof(request->data.auth.pass)-1] = '\0';
 
-	DEBUG(3, ("[%5lu]: pam auth %s\n", (unsigned long)cli->pid,
-		  request->data.auth.user));
+	DBG_NOTICE("[%s (%u)]: pam auth %s\n",
+		   cli->client_name,
+		   (unsigned int)cli->pid,
+		   request->data.auth.user);
 
 	if (!check_request_flags(request->flags)) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
