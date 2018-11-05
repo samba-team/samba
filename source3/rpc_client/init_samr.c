@@ -19,9 +19,11 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../lib/crypto/md5.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_samr.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 /*************************************************************************
  inits a samr_CryptPasswordEx structure
@@ -33,26 +35,46 @@ void init_samr_CryptPasswordEx(const char *pwd,
 {
 	/* samr_CryptPasswordEx */
 
-	uchar pwbuf[532];
-	MD5_CTX md5_ctx;
+	uint8_t pwbuf[532];
+	gnutls_hash_hd_t hash_hnd = NULL;
 	uint8_t confounder[16];
 	DATA_BLOB confounded_session_key = data_blob(NULL, 16);
+	int rc;
 
 	encode_pw_buffer(pwbuf, pwd, STR_UNICODE);
 
 	generate_random_buffer((uint8_t *)confounder, 16);
 
-	MD5Init(&md5_ctx);
-	MD5Update(&md5_ctx, confounder, 16);
-	MD5Update(&md5_ctx, session_key->data,
-			    session_key->length);
-	MD5Final(confounded_session_key.data, &md5_ctx);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		goto out;
+	}
+
+	rc = gnutls_hash(hash_hnd, confounder, 16);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+
+	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
 
 	arcfour_crypt_blob(pwbuf, 516, &confounded_session_key);
+	ZERO_ARRAY_LEN(confounded_session_key.data,
+		       confounded_session_key.length);
+	data_blob_free(&confounded_session_key);
+
 	memcpy(&pwbuf[516], confounder, 16);
+	ZERO_ARRAY(confounder);
 
 	memcpy(pwd_buf->data, pwbuf, sizeof(pwbuf));
-	data_blob_free(&confounded_session_key);
+	ZERO_ARRAY(pwbuf);
+out:
+	return;
 }
 
 /*************************************************************************
