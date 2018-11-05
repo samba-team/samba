@@ -1,0 +1,68 @@
+Selftest target environments (testenvs)
+=======================================
+Samba's integration testing heavily relies on the automatic creation of a Samba
+network. This specialized test environment is generally referred to as a Samba
+'testenv'.
+
+A testenv involves starting the Samba server listening on a fake network, which
+is established using the socket_wrapper library from cwrap (https://cwrap.org).
+All testing is also done as a non-root user using the uid_wrapper library, also
+from cwrap.
+
+Samba's test framework uses many different types of testenv. Each testenv is
+customized to test a particular Samba feature or configuration. Using cwrap
+allows multiple different Samba servers to run at the same time, without
+interference.
+
+Some of the different testenvs are described in more detail below.
+
+Backup/restore testenvs
+-----------------------
+Several testenvs are created to test the domain backup/restore commands. These
+testenvs verify that we can backup and restore a domain's database, start
+Samba against it, and the restored database is actually functional. There are
+several different flavours of backups (to cover different use-cases), so there
+are separate testenvs for each one.
+
+- backupfromdc: A fairly plain AD DC used as the base to generate the
+    backup-files. These backup-files will then seed the domain database
+    for the separate testenvs below.
+    Backupfromdc's other unique feature is that it's the only testenv that gets
+    provisioned with a non-default site, i.e. Default-First-Site-Name doesn't
+    exist.
+- restoredc: tests the 'backup online' option. Online backups are similar to
+    doing a DC join.
+- offlinebackupdc: tests the 'backup offline' option. Offline backups capture
+    the raw DB files on disk (safely).
+- renamedc: tests the 'backup rename' option, where the domain and realm are
+    renamed.
+- labdc: one of the use-cases for the backup tool is to create a realistic
+    pre-production testbed, based off a production DC. This testenv simulates
+    that process. It uses the 'backup rename --no-secrets' option.
+
+customdc testenv
+----------------
+The customdc is a special testenv that's only used for manual testing, rather
+than the automated tests most testenvs are primarily used for.
+
+The customdc testenv also uses the backup/restore tool, however, it is quite
+special. Instead of the backup-file being automatically generated from a
+vanilla AD DC (i.e. backupfromdc), you can specify any backup-file you like.
+
+To run the testenv, you need to specify a 'BACKUP_FILE' shell variable, e.g.
+
+BACKUP_FILE=/tmp/samba-backup-50k-dc-0-mdb-50k-offline.tar.bz2 \
+    SELFTEST_TESTENV=customdc make testenv
+
+The main use-case for the customdc is testing changes against a large
+database. Adding users is very time-consuming, so it's much quicker to populate
+a domain with users once, take a backup, and then you can spin up a testenv
+based on the backup multiple times.
+
+Another use-case is that if you get a database that's corrupted or in a bad
+state, then you could save a backup and be able to easily get the database back
+into the bad state. This allows you to try different commands to diagnose/fix
+the issue, without fear of never seeing the problem again.
+
+You could even spin up a 'lab DC' inside a testenv, by taking a backup of a
+real network DC.
