@@ -1747,7 +1747,8 @@ def generate_users(ldb, instance_id, number, password):
     return users
 
 
-def generate_machine_accounts(ldb, instance_id, number, password):
+def generate_machine_accounts(ldb, instance_id, number, password,
+                              traffic_account=True):
     """Add machine accounts to the server"""
     existing_objects = search_objectclass(ldb, objectclass='computer')
     added = 0
@@ -1756,7 +1757,7 @@ def generate_machine_accounts(ldb, instance_id, number, password):
         if name not in existing_objects:
             name = "STGM-%d-%d" % (instance_id, i)
             create_machine_account(ldb, instance_id, name, password,
-                                   traffic_account=False)
+                                   traffic_account)
             added += 1
             if added % 50 == 0:
                 LOGGER.info("Created %u/%u machine accounts" % (added, number))
@@ -1798,7 +1799,8 @@ def clean_up_accounts(ldb, instance_id):
 
 def generate_users_and_groups(ldb, instance_id, password,
                               number_of_users, number_of_groups,
-                              group_memberships, machine_accounts=0):
+                              group_memberships, machine_accounts=0,
+                              traffic_accounts=True):
     """Generate the required users and groups, allocating the users to
        those groups."""
     memberships_added = 0
@@ -1813,7 +1815,8 @@ def generate_users_and_groups(ldb, instance_id, password,
     if machine_accounts > 0:
         LOGGER.info("Generating dummy machine accounts")
         computers_added = generate_machine_accounts(ldb, instance_id,
-                                                    machine_accounts, password)
+                                                    machine_accounts, password,
+                                                    traffic_accounts)
 
     if number_of_groups > 0:
         LOGGER.info("Generating dummy groups")

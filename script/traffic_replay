@@ -333,7 +333,8 @@ def main():
                                           opts.number_of_users,
                                           opts.number_of_groups,
                                           opts.group_memberships,
-                                          machine_accounts=computer_accounts)
+                                          machine_accounts=computer_accounts,
+                                          traffic_accounts=False)
         sys.exit()
 
     tempdir = tempfile.mkdtemp(prefix="samba_tg_")
@@ -344,7 +345,8 @@ def main():
                                       opts.fixed_password,
                                       number_of_users,
                                       opts.number_of_groups,
-                                      opts.group_memberships)
+                                      opts.group_memberships,
+                                      traffic_accounts=True)
 
     accounts = traffic.generate_replay_accounts(ldb,
                                                 opts.instance_id,
