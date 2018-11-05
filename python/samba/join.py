@@ -1031,7 +1031,8 @@ class DCJoinContext(object):
 
             # if the connection was disconnected, then reconnect
             if (enum == ldb.ERR_OPERATIONS_ERROR and
-                'NT_STATUS_CONNECTION_DISCONNECTED' in estr):
+                ('NT_STATUS_CONNECTION_DISCONNECTED' in estr or
+                 'NT_STATUS_CONNECTION_RESET' in estr)):
                 ctx.logger.warning("LDB connection disconnected. Reconnecting")
                 ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                                   session_info=system_session(),
