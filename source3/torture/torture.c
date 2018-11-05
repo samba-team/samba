@@ -44,8 +44,10 @@
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/base64.h"
 #include "lib/util/time.h"
-#include "lib/crypto/md5.h"
 #include "lib/gencache.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 extern char *optarg;
 extern int optind;
@@ -9466,7 +9468,6 @@ static bool run_cli_splice(int dummy)
 	uint16_t fnum2 = UINT16_MAX;
 	size_t file_size = 2*1024*1024;
 	size_t splice_size = 1*1024*1024 + 713;
-	MD5_CTX md5_ctx;
 	uint8_t digest1[16], digest2[16];
 	off_t written = 0;
 	size_t nread = 0;
@@ -9504,9 +9505,10 @@ static bool run_cli_splice(int dummy)
 	generate_random_buffer(buf, file_size);
 
 	/* MD5 the first 1MB + 713 bytes. */
-	MD5Init(&md5_ctx);
-	MD5Update(&md5_ctx, buf, splice_size);
-	MD5Final(digest1, &md5_ctx);
+	gnutls_hash_fast(GNUTLS_DIG_MD5,
+			 buf,
+			 splice_size,
+			 digest1);
 
 	status = cli_writeall(cli1,
 			      fnum1,
@@ -9563,9 +9565,10 @@ static bool run_cli_splice(int dummy)
 	}
 
 	/* MD5 the first 1MB + 713 bytes. */
-	MD5Init(&md5_ctx);
-	MD5Update(&md5_ctx, buf, splice_size);
-	MD5Final(digest2, &md5_ctx);
+	gnutls_hash_fast(GNUTLS_DIG_MD5,
+			 buf,
+			 splice_size,
+			 digest2);
 
 	/* Must be the same. */
 	if (memcmp(digest1, digest2, 16) != 0) {
