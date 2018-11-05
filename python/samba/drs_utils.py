@@ -221,13 +221,14 @@ class drs_Replicate(object):
         # If the error indicates we fail to resolve a target object for a
         # linked attribute, then we should retry the request with GET_TGT
         # (if we support it and haven't already tried that)
+        supports_ext = self.supports_ext
 
         # TODO fix up the below line when we next update werror_err_table.txt
         # and pull in the new error-code
         # return (error_code == werror.WERR_DS_DRA_RECYCLED_TARGET and
         return (error_code == 0x21bf and
-                (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0 and
-                self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10)
+                supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10 and
+                (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0)
 
     def process_chunk(self, level, ctr, schema, req_level, req, first_chunk):
         '''Processes a single chunk of received replication data'''
