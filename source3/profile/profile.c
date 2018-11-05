@@ -33,6 +33,9 @@
 #include <sys/resource.h>
 #endif
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 struct profile_stats *profile_p;
 struct smbprofile_global_state smbprofile_state;
 
@@ -122,8 +125,10 @@ static void reqprofile_message(struct messaging_context *msg_ctx,
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 {
 	unsigned char tmp[16] = {};
-	MD5_CTX md5;
+	gnutls_hash_hd_t hash_hnd = NULL;
 	char *db_name;
+	bool ok = false;
+	int rc;
 
 	if (smbprofile_state.internal.db != NULL) {
 		return true;
@@ -149,14 +154,16 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 				   reqprofile_message);
 	}
 
-	MD5Init(&md5);
-
-	MD5Update(&md5,
-		  (const uint8_t *)&smbprofile_state.stats.global,
-		  sizeof(smbprofile_state.stats.global));
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd,
+			 &smbprofile_state.stats.global,
+			 sizeof(smbprofile_state.stats.global));
 
 #define __UPDATE(str) do { \
-	MD5Update(&md5, (const uint8_t *)str, strlen(str)); \
+	rc |= gnutls_hash(hash_hnd, str, strlen(str)); \
 } while(0)
 #define SMBPROFILE_STATS_START
 #define SMBPROFILE_STATS_SECTION_START(name, display) do { \
@@ -198,8 +205,12 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 #undef SMBPROFILE_STATS_IOBYTES
 #undef SMBPROFILE_STATS_SECTION_END
 #undef SMBPROFILE_STATS_END
+	if (rc != 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
 
-	MD5Final(tmp, &md5);
+	gnutls_hash_deinit(hash_hnd, tmp);
 
 	profile_p = &smbprofile_state.stats.global;
 
@@ -207,8 +218,11 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	if (profile_p->magic == 0) {
 		profile_p->magic = BVAL(tmp, 8);
 	}
+	ZERO_ARRAY(tmp);
 
-	return True;
+	ok = true;
+out:
+	return ok;
 }
 
 void smbprofile_dump_setup(struct tevent_context *ev)
