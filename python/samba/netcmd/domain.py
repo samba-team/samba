@@ -3463,7 +3463,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
             for upn in add_upn:
                 for i, v in enumerate(update_upn_vals):
-                    if v.lower() == upn.lower():
+                    if str(v).lower() == upn.lower():
                         raise CommandError("Entry already present for "
                                            "value[%s] specified for "
                                            "--add-upn-suffix" % upn)
@@ -3473,7 +3473,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             for upn in delete_upn:
                 idx = None
                 for i, v in enumerate(update_upn_vals):
-                    if v.lower() != upn.lower():
+                    if str(v).lower() != upn.lower():
                         continue
                     idx = i
                     break
@@ -3485,7 +3485,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
             for spn in add_spn:
                 for i, v in enumerate(update_spn_vals):
-                    if v.lower() == spn.lower():
+                    if str(v).lower() == spn.lower():
                         raise CommandError("Entry already present for "
                                            "value[%s] specified for "
                                            "--add-spn-suffix" % spn)
@@ -3495,7 +3495,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             for spn in delete_spn:
                 idx = None
                 for i, v in enumerate(update_spn_vals):
-                    if v.lower() != spn.lower():
+                    if str(v).lower() != spn.lower():
                         continue
                     idx = i
                     break
