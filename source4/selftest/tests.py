@@ -1164,3 +1164,5 @@ plantestsuite("samba4.dsdb.samdb.ldb_modules.audit_util", "none",
                   [os.path.join(bindir(), "test_audit_util")])
 plantestsuite("samba4.dsdb.samdb.ldb_modules.audit_log", "none",
                   [os.path.join(bindir(), "test_audit_log")])
+plantestsuite("samba4.dcerpc.dnsserver.dnsutils", "none",
+              [os.path.join(bindir(), "test_rpc_dns_server_dnsutils")])
