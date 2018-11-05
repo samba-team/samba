@@ -16,6 +16,31 @@ interference.
 
 Some of the different testenvs are described in more detail below.
 
+'local' disambiguation
+----------------------
+You may notice some variation in the target testenv that test suites are run
+against, for example "ad_dc" and "ad_dc:local". The main difference is the
+":local" changes the smb.conf that the testenv uses. By default, the testenvs
+use the st/client/client.conf config-file, so that they simulate a client
+talking to the Samba server. However, some tests may want to simulate running
+a command on the Samba server itself. In these cases, the ":local" is used,
+which means the testenv uses the Samba server's smb.conf instead (i.e.
+st/ad_dc/etc/smb.conf).
+
+Note that several of the testenvs also use local in their name, e.g.
+'localvampiredc'. In particular, there's the 'localdc', which is the NetBIOS
+name of the DC in the 'ad_dc_ntvfs' testenv.
+
+Vampire DC
+----------
+Vampire DC gets its name for historic reasons. It's one of the few testenvs
+where 2 DCs are joined together, so it's used for a lot of DRS replication
+testing. Basically its main job is to 'suck' the database changes out of
+another DC (the 'ad_dc_ntfvs' DC).
+
+There's also a 'vampire_2000_dc' that joins the 'fl2000dc' DC, although that's
+not used very much.
+
 Backup/restore testenvs
 -----------------------
 Several testenvs are created to test the domain backup/restore commands. These
