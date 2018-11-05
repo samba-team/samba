@@ -892,7 +892,7 @@ userPassword: thatsAcomplPASS4
                               scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
-        self.assertEquals(res[0]["userPassword"][0], "myPassword")
+        self.assertEquals(str(res[0]["userPassword"][0]), "myPassword")
 
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -904,7 +904,7 @@ userPassword: thatsAcomplPASS4
                               scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
-        self.assertEquals(res[0]["userPassword"][0], "myPassword2")
+        self.assertEquals(str(res[0]["userPassword"][0]), "myPassword2")
 
         m = Message()
         m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -930,7 +930,7 @@ userPassword: thatsAcomplPASS4
                               scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
-        self.assertEquals(res[0]["userPassword"][0], "myPassword3")
+        self.assertEquals(str(res[0]["userPassword"][0]), "myPassword3")
 
         # Set the test "dSHeuristics" to deactivate "userPassword" pwd changes
         self.ldb.set_dsheuristics("000000002")
@@ -945,7 +945,7 @@ userPassword: thatsAcomplPASS4
                               scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
-        self.assertEquals(res[0]["userPassword"][0], "myPassword4")
+        self.assertEquals(str(res[0]["userPassword"][0]), "myPassword4")
 
         # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
         self.ldb.set_dsheuristics("000000001")
@@ -1042,7 +1042,7 @@ userPassword: thatsAcomplPASS4
         # userPassword can be read
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
-        self.assertEquals(res[0]["userPassword"][0], "thatsAcomplPASS2")
+        self.assertEquals(str(res[0]["userPassword"][0]), "thatsAcomplPASS2")
 
         # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
         self.ldb.set_dsheuristics("000000001")
@@ -1089,7 +1089,7 @@ add: userPassword
 userPassword: thatsAcomplPASS1
 """)
         except LdbError as e:
-            (num, msg) = e
+            (num, msg) = e.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         else:
             self.fail()
@@ -1106,7 +1106,7 @@ add: clearTextPassword
 clearTextPassword: thatsAcomplPASS2
 """)
         except LdbError as e:
-            (num, msg) = e
+            (num, msg) = e.args
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
                             num == ERR_NO_SUCH_ATTRIBUTE)  # for Windows
         else:
@@ -1124,7 +1124,7 @@ add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).decode('utf8') + """
 """)
         except LdbError as e:
-            (num, msg) = e
+            (num, msg) = e.args
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         else:
             self.fail()
