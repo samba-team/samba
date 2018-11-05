@@ -1606,8 +1606,8 @@ def generate_replay_accounts(ldb, instance_id, number, password):
     generate_traffic_accounts(ldb, instance_id, number, password)
     accounts = []
     for i in range(1, number + 1):
-        netbios_name = "STGM-%d-%d" % (instance_id, i)
-        username     = "STGU-%d-%d" % (instance_id, i)
+        netbios_name = machine_name(instance_id, i)
+        username = user_name(instance_id, i)
 
         account = ConversationAccounts(netbios_name, password, username,
                                        password)
@@ -1629,7 +1629,7 @@ def generate_traffic_accounts(ldb, instance_id, number, password):
     added = 0
     for i in range(number, 0, -1):
         try:
-            netbios_name = "STGM-%d-%d" % (instance_id, i)
+            netbios_name = machine_name(instance_id, i)
             create_machine_account(ldb, instance_id, netbios_name, password)
             added += 1
             if added % 50 == 0:
@@ -1646,7 +1646,7 @@ def generate_traffic_accounts(ldb, instance_id, number, password):
     added = 0
     for i in range(number, 0, -1):
         try:
-            username = "STGU-%d-%d" % (instance_id, i)
+            username = user_name(instance_id, i)
             create_user_account(ldb, instance_id, username, password)
             added += 1
             if added % 50 == 0:
@@ -1747,15 +1747,19 @@ def generate_users(ldb, instance_id, number, password):
     return users
 
 
+def machine_name(instance_id, i):
+    """Generate a machine account name from instance id."""
+    return "STGM-%d-%d" % (instance_id, i)
+
+
 def generate_machine_accounts(ldb, instance_id, number, password,
                               traffic_account=True):
     """Add machine accounts to the server"""
     existing_objects = search_objectclass(ldb, objectclass='computer')
     added = 0
     for i in range(number, 0, -1):
-        name = "STGM-%d-%d$" % (instance_id, i)
-        if name not in existing_objects:
-            name = "STGM-%d-%d" % (instance_id, i)
+        name = machine_name(instance_id, i)
+        if name + "$" not in existing_objects:
             create_machine_account(ldb, instance_id, name, password,
                                    traffic_account)
             added += 1
