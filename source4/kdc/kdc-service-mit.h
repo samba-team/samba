@@ -22,6 +22,6 @@
 #ifndef _KDC_SERVICE_MIT_H
 #define _KDC_SERVICE_MIT_H
 
-void mitkdc_task_init(struct task_server *task);
+NTSTATUS mitkdc_task_init(struct task_server *task);
 
 #endif /* _KDC_SERVICE_MIT_H */

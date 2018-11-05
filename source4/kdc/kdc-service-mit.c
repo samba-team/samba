@@ -134,7 +134,7 @@ out:
 /*
  * Startup a copy of the krb5kdc as a child daemon
  */
-void mitkdc_task_init(struct task_server *task)
+NTSTATUS mitkdc_task_init(struct task_server *task)
 {
 	struct tevent_req *subreq;
 	const char * const *kdc_cmd;
@@ -155,13 +155,13 @@ void mitkdc_task_init(struct task_server *task)
 				      "The KDC is not required in standalone "
 				      "server configuration, terminate!",
 				      false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task,
 				      "The KDC is not required in member "
 				      "server configuration",
 				      false);
-		return;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want to start the KDC */
 		break;
@@ -173,7 +173,7 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "KDC: no network interfaces configured",
 				      false);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	kdc_config = talloc_asprintf(task,
@@ -183,7 +183,7 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "KDC: no memory",
 				      false);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	setenv("KRB5_KDC_PROFILE", kdc_config, 0);
 	TALLOC_FREE(kdc_config);
@@ -208,7 +208,7 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "Failed to startup mitkdc task",
 				      true);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	tevent_req_set_callback(subreq, mitkdc_server_done, task);
@@ -227,7 +227,7 @@ void mitkdc_task_init(struct task_server *task)
 	kdc = talloc_zero(task, struct kdc_server);
 	if (kdc == NULL) {
 		task_server_terminate(task, "KDC: Out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_destructor(kdc, kdc_server_destroy);
 
@@ -236,7 +236,7 @@ void mitkdc_task_init(struct task_server *task)
 	kdc->base_ctx = talloc_zero(kdc, struct samba_kdc_base_context);
 	if (kdc->base_ctx == NULL) {
 		task_server_terminate(task, "KDC: Out of memory", true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	kdc->base_ctx->ev_ctx = task->event_ctx;
@@ -249,9 +249,9 @@ void mitkdc_task_init(struct task_server *task)
 				     &kdc->smb_krb5_context);
 	if (code != 0) {
 		task_server_terminate(task,
-				      "KDC: Unable to initialized krb5 context",
+				      "KDC: Unable to initialize krb5 context",
 				      true);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	code = kadm5_init_krb5_context(&kdc->smb_krb5_context->krb5_context);
@@ -259,7 +259,7 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "KDC: Unable to init kadm5 krb5_context",
 				      true);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	ZERO_STRUCT(config);
@@ -279,7 +279,7 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "KDC: Initialize kadm5",
 				      true);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	kdc->private_data = server_handle;
 
@@ -288,7 +288,7 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "KDC: Unable to KDB",
 				      true);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	kdc->keytab_name = talloc_asprintf(kdc, "KDB:");
@@ -296,7 +296,7 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "KDC: Out of memory",
 				      true);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	kdc->samdb = samdb_connect(kdc,
@@ -307,9 +307,9 @@ void mitkdc_task_init(struct task_server *task)
 				   0);
 	if (kdc->samdb == NULL) {
 		task_server_terminate(task,
-				      "KDC: Unable to connect to sambdb",
+				      "KDC: Unable to connect to samdb",
 				      true);
-		return;
+		return NT_STATUS_CONNECTION_INVALID;
 	}
 
 	status = startup_kpasswd_server(kdc,
@@ -320,9 +320,12 @@ void mitkdc_task_init(struct task_server *task)
 		task_server_terminate(task,
 				      "KDC: Unable to start kpasswd server",
 				      true);
+		return status;
 	}
 
 	DEBUG(5,("Started kpasswd service for kdc_server\n"));
+
+	return NT_STATUS_OK;
 }
 
 /*
