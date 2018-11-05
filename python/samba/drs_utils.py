@@ -25,7 +25,9 @@ from samba import werror
 from samba import WERRORError
 import samba
 import ldb
-from samba.dcerpc.drsuapi import DRSUAPI_ATTID_name
+from samba.dcerpc.drsuapi import (DRSUAPI_ATTID_name,
+                                  DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8,
+                                  DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10)
 import re
 
 
@@ -204,7 +206,7 @@ class drs_Replicate(object):
 
     def __init__(self, binding_string, lp, creds, samdb, invocation_id):
         self.drs = drsuapi.drsuapi(binding_string, lp, creds)
-        (self.drs_handle, self.supported_extensions) = drs_DsBind(self.drs)
+        (self.drs_handle, self.supports_ext) = drs_DsBind(self.drs)
         self.net = Net(creds=creds, lp=lp)
         self.samdb = samdb
         if not isinstance(invocation_id, misc.GUID):
@@ -225,7 +227,7 @@ class drs_Replicate(object):
         # return (error_code == werror.WERR_DS_DRA_RECYCLED_TARGET and
         return (error_code == 0x21bf and
                 (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0 and
-                self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10)
+                self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10)
 
     def process_chunk(self, level, ctr, schema, req_level, req, first_chunk):
         '''Processes a single chunk of received replication data'''
@@ -239,7 +241,7 @@ class drs_Replicate(object):
         '''replicate a single DN'''
 
         # setup for a GetNCChanges call
-        if self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10:
+        if self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10:
             req = drsuapi.DsGetNCChangesRequest10()
             req.more_flags = (more_flags | self.more_flags)
             req_level = 10
@@ -319,7 +321,7 @@ class drs_Replicate(object):
         if not schema and rodc:
             req.partial_attribute_set = drs_get_rodc_partial_attribute_set(self.samdb)
 
-        if not self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
+        if not self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
             req_level = 5
             req5 = drsuapi.DsGetNCChangesRequest5()
             for a in dir(req5):
