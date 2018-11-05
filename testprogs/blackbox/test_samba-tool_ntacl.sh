@@ -31,7 +31,7 @@ test_get_acl()
 	testfile="$1"
 	exptextedacl="$2"
 
-	retacl=$($samba_tool ntacl get "$testfile" --as-sddl) || return $?
+	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl) || return $?
 
 	test "$retacl" = "$exptextedacl"
 }
@@ -41,7 +41,7 @@ test_set_acl()
 	testfile="$1"
 	acl="$2"
 
-	$samba_tool ntacl set "$acl" "$testfile"
+	$PYTHON $samba_tool ntacl set "$acl" "$testfile"
 }
 
 # work around include error - s4-loadparm does not allow missing include files
