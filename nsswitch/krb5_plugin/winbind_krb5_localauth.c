@@ -52,6 +52,8 @@ static krb5_error_code winbind_init(krb5_context context,
 		return ENOMEM;
 	}
 
+	wbcSetClientProcessName("krb5_localauth_plugin");
+
 	*data = d;
 
 	return 0;
