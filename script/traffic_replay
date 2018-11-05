@@ -346,6 +346,7 @@ def main():
                                       number_of_users,
                                       opts.number_of_groups,
                                       opts.group_memberships,
+                                      machine_accounts=len(conversations),
                                       traffic_accounts=True)
 
     accounts = traffic.generate_replay_accounts(ldb,

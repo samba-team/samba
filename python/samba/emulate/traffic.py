@@ -1603,7 +1603,6 @@ class ConversationAccounts(object):
 def generate_replay_accounts(ldb, instance_id, number, password):
     """Generate a series of unique machine and user account names."""
 
-    generate_traffic_accounts(ldb, instance_id, number, password)
     accounts = []
     for i in range(1, number + 1):
         netbios_name = machine_name(instance_id, i)
@@ -1613,54 +1612,6 @@ def generate_replay_accounts(ldb, instance_id, number, password):
                                        password)
         accounts.append(account)
     return accounts
-
-
-def generate_traffic_accounts(ldb, instance_id, number, password):
-    """Create the specified number of user and machine accounts.
-
-    As accounts are not explicitly deleted between runs. This function starts
-    with the last account and iterates backwards stopping either when it
-    finds an already existing account or it has generated all the required
-    accounts.
-    """
-    print(("Generating machine and conversation accounts, "
-           "as required for %d conversations" % number),
-          file=sys.stderr)
-    added = 0
-    for i in range(number, 0, -1):
-        try:
-            netbios_name = machine_name(instance_id, i)
-            create_machine_account(ldb, instance_id, netbios_name, password)
-            added += 1
-            if added % 50 == 0:
-                LOGGER.info("Created %u/%u machine accounts" % (added, number))
-        except LdbError as e:
-            (status, _) = e.args
-            if status == 68:
-                break
-            else:
-                raise
-    if added > 0:
-        LOGGER.info("Added %d new machine accounts" % added)
-
-    added = 0
-    for i in range(number, 0, -1):
-        try:
-            username = user_name(instance_id, i)
-            create_user_account(ldb, instance_id, username, password)
-            added += 1
-            if added % 50 == 0:
-                LOGGER.info("Created %u/%u users" % (added, number))
-
-        except LdbError as e:
-            (status, _) = e.args
-            if status == 68:
-                break
-            else:
-                raise
-
-    if added > 0:
-        LOGGER.info("Added %d new user accounts" % added)
 
 
 def create_machine_account(ldb, instance_id, netbios_name, machinepass,
@@ -1813,7 +1764,7 @@ def clean_up_accounts(ldb, instance_id):
 
 def generate_users_and_groups(ldb, instance_id, password,
                               number_of_users, number_of_groups,
-                              group_memberships, machine_accounts=0,
+                              group_memberships, machine_accounts,
                               traffic_accounts=True):
     """Generate the required users and groups, allocating the users to
        those groups."""
@@ -1826,11 +1777,10 @@ def generate_users_and_groups(ldb, instance_id, password,
     LOGGER.info("Generating dummy user accounts")
     users_added = generate_users(ldb, instance_id, number_of_users, password)
 
-    if machine_accounts > 0:
-        LOGGER.info("Generating dummy machine accounts")
-        computers_added = generate_machine_accounts(ldb, instance_id,
-                                                    machine_accounts, password,
-                                                    traffic_accounts)
+    LOGGER.info("Generating dummy machine accounts")
+    computers_added = generate_machine_accounts(ldb, instance_id,
+                                                machine_accounts, password,
+                                                traffic_accounts)
 
     if number_of_groups > 0:
         LOGGER.info("Generating dummy groups")
