@@ -378,6 +378,7 @@ _nss_winbind_setpwent(void)
 		winbindd_free_response(&getpwent_response);
 	}
 
+	winbind_set_client_name("nss_winbind");
 	ret = winbindd_request_response(NULL, WINBINDD_SETPWENT, NULL, NULL);
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: setpwent returns %s (%d)\n", getpid(),
@@ -409,6 +410,7 @@ _nss_winbind_endpwent(void)
 		winbindd_free_response(&getpwent_response);
 	}
 
+	winbind_set_client_name("nss_winbind");
 	ret = winbindd_request_response(NULL, WINBINDD_ENDPWENT, NULL, NULL);
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: endpwent returns %s (%d)\n", getpid(),
@@ -458,6 +460,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 	request.data.num_entries = MAX_GETPWENT_USERS;
 
+	winbind_set_client_name("nss_winbind");
 	ret = winbindd_request_response(NULL, WINBINDD_GETPWENT, &request,
 			       &getpwent_response);
 
@@ -546,6 +549,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		request.data.uid = uid;
 
+		winbind_set_client_name("nss_winbind");
 		ret = winbindd_request_response(NULL, WINBINDD_GETPWUID, &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
@@ -622,6 +626,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 		request.data.username
 			[sizeof(request.data.username) - 1] = '\0';
 
+		winbind_set_client_name("nss_winbind");
 		ret = winbindd_request_response(NULL, WINBINDD_GETPWNAM, &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
@@ -693,6 +698,7 @@ _nss_winbind_setgrent(void)
 		winbindd_free_response(&getgrent_response);
 	}
 
+	winbind_set_client_name("nss_winbind");
 	ret = winbindd_request_response(NULL, WINBINDD_SETGRENT, NULL, NULL);
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: setgrent returns %s (%d)\n", getpid(),
@@ -725,6 +731,7 @@ _nss_winbind_endgrent(void)
 		winbindd_free_response(&getgrent_response);
 	}
 
+	winbind_set_client_name("nss_winbind");
 	ret = winbindd_request_response(NULL, WINBINDD_ENDGRENT, NULL, NULL);
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: endgrent returns %s (%d)\n", getpid(),
@@ -776,6 +783,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 
 	request.data.num_entries = MAX_GETGRENT_USERS;
 
+	winbind_set_client_name("nss_winbind");
 	ret = winbindd_request_response(NULL, cmd, &request,
 			       &getgrent_response);
 
@@ -895,6 +903,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		request.data.groupname
 			[sizeof(request.data.groupname) - 1] = '\0';
 
+		winbind_set_client_name("nss_winbind");
 		ret = winbindd_request_response(NULL, WINBINDD_GETGRNAM,
 						&request, &response);
 
@@ -974,6 +983,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 		request.data.gid = gid;
 
+		winbind_set_client_name("nss_winbind");
 		ret = winbindd_request_response(NULL, WINBINDD_GETGRGID,
 						&request, &response);
 
@@ -1048,6 +1058,7 @@ _nss_winbind_initgroups_dyn(const char *user, gid_t group, long int *start,
 	strncpy(request.data.username, user,
 		sizeof(request.data.username) - 1);
 
+	winbind_set_client_name("nss_winbind");
 	ret = winbindd_request_response(NULL, WINBINDD_GETGROUPS,
 					&request, &response);
 
