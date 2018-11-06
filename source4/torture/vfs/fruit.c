@@ -4502,6 +4502,341 @@ done:
 	return ret;
 }
 
+static bool test_writing_afpinfo(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	const char *fname = "filtest_invalid_afpinfo";
+	const char *sname = "filtest_invalid_afpinfo" AFPINFO_STREAM;
+	const char *streams_afpinfo[] = {
+		"::$DATA",
+		AFPINFO_STREAM
+	};
+	bool ret = true;
+	static AfpInfo *afpi = NULL;
+	char *buf = NULL;
+	char *afpi_buf = NULL;
+	char *zero_buf = NULL;
+	bool broken_osx = torture_setting_bool(tctx, "broken_osx_45759458", false);
+	off_t min_offset_for_2streams = 16;
+	int i;
+	NTSTATUS status;
+	struct test_sizes {
+		off_t offset;
+		size_t size;
+		bool expected_result;
+	} test_sizes[] = {
+		{ 0, 1, false},
+		{ 0, 2, false},
+		{ 0, 3, true},
+		{ 0, 4, true},
+		{ 0, 14, true},
+		{ 0, 15, true},
+		{ 0, 16, true},
+		{ 0, 24, true},
+		{ 0, 34, true},
+		{ 0, 44, true},
+		{ 0, 54, true},
+		{ 0, 55, true},
+		{ 0, 56, true},
+		{ 0, 57, true},
+		{ 0, 58, true},
+		{ 0, 59, true},
+		{ 0, 60, true},
+		{ 0, 61, true},
+		{ 0, 64, true},
+		{ 0, 1024, true},
+		{ 0, 10064, true},
+
+		{ 1, 1, false},
+		{ 1, 2, false},
+		{ 1, 3, false},
+		{ 1, 4, false},
+		{ 1, 14, false},
+		{ 1, 15, false},
+		{ 1, 16, false},
+		{ 1, 24, false},
+		{ 1, 34, false},
+		{ 1, 44, false},
+		{ 1, 54, false},
+		{ 1, 55, false},
+		{ 1, 56, false},
+		{ 1, 57, false},
+		{ 1, 58, false},
+		{ 1, 59, false},
+		{ 1, 60, true},
+		{ 1, 61, true},
+		{ 1, 1024, true},
+		{ 1, 10064, true},
+
+		{ 30, 1, false},
+		{ 30, 2, false},
+		{ 30, 3, false},
+		{ 30, 4, false},
+		{ 30, 14, false},
+		{ 30, 15, false},
+		{ 30, 16, false},
+		{ 30, 24, false},
+		{ 30, 34, false},
+		{ 30, 44, false},
+		{ 30, 54, false},
+		{ 30, 55, false},
+		{ 30, 56, false},
+		{ 30, 57, false},
+		{ 30, 58, false},
+		{ 30, 59, false},
+		{ 30, 60, true},
+		{ 30, 61, true},
+		{ 30, 1024, true},
+		{ 30, 10064, true},
+
+		{ 58, 1, false},
+		{ 58, 2, false},
+		{ 58, 3, false},
+		{ 58, 4, false},
+		{ 58, 14, false},
+		{ 58, 15, false},
+		{ 58, 16, false},
+		{ 58, 24, false},
+		{ 58, 34, false},
+		{ 58, 44, false},
+		{ 58, 54, false},
+		{ 58, 55, false},
+		{ 58, 56, false},
+		{ 58, 57, false},
+		{ 58, 58, false},
+		{ 58, 59, false},
+		{ 58, 60, true},
+		{ 58, 61, true},
+		{ 58, 1024, true},
+		{ 58, 10064, true},
+
+		{ 59, 1, false},
+		{ 59, 2, false},
+		{ 59, 3, false},
+		{ 59, 4, false},
+		{ 59, 14, false},
+		{ 59, 15, false},
+		{ 59, 16, false},
+		{ 59, 24, false},
+		{ 59, 34, false},
+		{ 59, 44, false},
+		{ 59, 54, false},
+		{ 59, 55, false},
+		{ 59, 56, false},
+		{ 59, 57, false},
+		{ 59, 58, false},
+		{ 59, 59, false},
+		{ 59, 60, true},
+		{ 59, 61, true},
+		{ 59, 1024, true},
+		{ 59, 10064, true},
+
+		{ 60, 1, false},
+		{ 60, 2, false},
+		{ 60, 3, false},
+		{ 60, 4, false},
+		{ 60, 14, false},
+		{ 60, 15, false},
+		{ 60, 16, false},
+		{ 60, 24, false},
+		{ 60, 34, false},
+		{ 60, 44, false},
+		{ 60, 54, false},
+		{ 60, 55, false},
+		{ 60, 56, false},
+		{ 60, 57, false},
+		{ 60, 58, false},
+		{ 60, 59, false},
+		{ 60, 60, true},
+		{ 60, 61, true},
+		{ 60, 1024, true},
+		{ 60, 10064, true},
+
+		{ 61, 1, false},
+		{ 61, 2, false},
+		{ 61, 3, false},
+		{ 61, 4, false},
+		{ 61, 14, false},
+		{ 61, 15, false},
+		{ 61, 16, false},
+		{ 61, 24, false},
+		{ 61, 34, false},
+		{ 61, 44, false},
+		{ 61, 54, false},
+		{ 61, 55, false},
+		{ 61, 56, false},
+		{ 61, 57, false},
+		{ 61, 58, false},
+		{ 61, 59, false},
+		{ 61, 60, true},
+		{ 61, 61, true},
+		{ 61, 1024, true},
+		{ 61, 10064, true},
+
+		{ 10000, 1, false},
+		{ 10000, 2, false},
+		{ 10000, 3, false},
+		{ 10000, 4, false},
+		{ 10000, 14, false},
+		{ 10000, 15, false},
+		{ 10000, 16, false},
+		{ 10000, 24, false},
+		{ 10000, 34, false},
+		{ 10000, 44, false},
+		{ 10000, 54, false},
+		{ 10000, 55, false},
+		{ 10000, 56, false},
+		{ 10000, 57, false},
+		{ 10000, 58, false},
+		{ 10000, 59, false},
+		{ 10000, 60, true},
+		{ 10000, 61, true},
+		{ 10000, 1024, true},
+		{ 10000, 10064, true},
+
+		{ -1, 0, false},
+	};
+
+	afpi = torture_afpinfo_new(tctx);
+	torture_assert_not_null_goto(tctx, afpi, ret, done,
+				     "torture_afpinfo_new failed\n");
+
+	memcpy(afpi->afpi_FinderInfo, "FOO BAR ", 8);
+
+	buf = torture_afpinfo_pack(afpi, afpi);
+	torture_assert_not_null_goto(tctx, buf, ret, done,
+				     "torture_afpinfo_pack failed\n");
+
+	afpi_buf = talloc_zero_array(tctx, char, 10064);
+	torture_assert_not_null_goto(tctx, afpi_buf, ret, done,
+				     "talloc_zero_array failed\n");
+	memcpy(afpi_buf, buf, 60);
+
+	zero_buf = talloc_zero_array(tctx, char, 10064);
+	torture_assert_not_null_goto(tctx, zero_buf, ret, done,
+				     "talloc_zero_array failed\n");
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_setup_file\n");
+
+	for (i = 0; test_sizes[i].offset != -1; i++) {
+		struct smb2_handle h;
+		struct smb2_create c;
+		int expected_num_streams;
+		size_t fi_check_size;
+
+		torture_comment(tctx,
+				"Test %d: offset=%zd size=%zu result=%s\n",
+				i,
+				test_sizes[i].offset,
+				test_sizes[i].size,
+				test_sizes[i].expected_result ? "true":"false");
+
+
+		c = (struct smb2_create) {
+			.in.desired_access = SEC_FILE_WRITE_DATA,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+			.in.fname = sname,
+		};
+
+		status = smb2_create(tree, tree, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create\n");
+		h = c.out.file.handle;
+
+		status = smb2_util_write(tree,
+					 h,
+					 zero_buf,
+					 test_sizes[i].offset,
+					 test_sizes[i].size);
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, NT_STATUS_INVALID_PARAMETER,
+			ret, done, "smb2_util_write\n");
+
+		status = smb2_util_write(tree,
+					 h,
+					 afpi_buf,
+					 test_sizes[i].offset,
+					 test_sizes[i].size);
+		smb2_util_close(tree, h);
+		if (test_sizes[i].expected_result == true) {
+			torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+							"smb2_util_write\n");
+		} else {
+			torture_assert_ntstatus_equal_goto(
+				tctx, status, NT_STATUS_INVALID_PARAMETER,
+				ret, done, "smb2_util_write\n");
+		}
+
+		if (broken_osx) {
+			/*
+			 * Currently macOS has a bug (Radar #45759458) where it
+			 * writes more bytes then requested from uninitialized
+			 * memory to the filesystem. That means it will likely
+			 * write data to FinderInfo so the stream is not empty
+			 * and thus listed when the number of streams is
+			 * queried.
+			 */
+			min_offset_for_2streams = 2;
+		}
+
+		if ((test_sizes[i].expected_result == true) &&
+		    (test_sizes[i].size > min_offset_for_2streams))
+		{
+			expected_num_streams = 2;
+		} else {
+			expected_num_streams = 1;
+		}
+
+		ret = check_stream_list(tree, tctx, fname,
+					expected_num_streams,
+					streams_afpinfo, false);
+		torture_assert_goto(tctx, ret == true, ret, done,
+				    "Bad streams\n");
+
+		if (test_sizes[i].expected_result == false) {
+			continue;
+		}
+
+		if (test_sizes[i].size <= 16) {
+			/*
+			 * FinderInfo with the "FOO BAR " string we wrote above
+			 * would start at offset 16. Check whether this test
+			 * wrote 1 byte or more.
+			 */
+			goto next;
+		}
+
+		fi_check_size = test_sizes[i].size - 16;
+		fi_check_size = MIN(fi_check_size, 8);
+
+		ret = check_stream(tree, __location__,
+				   tctx, tctx,
+				   fname, AFPINFO_STREAM,
+				   0, 60, 16, fi_check_size, "FOO BAR ");
+		torture_assert_goto(tctx, ret == true, ret, done,
+				    "Bad streams\n");
+
+next:
+		status = smb2_util_unlink(tree, sname);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			bool missing_ok;
+
+			missing_ok = test_sizes[i].expected_result == false;
+			missing_ok |= test_sizes[i].size <= 16;
+
+			torture_assert_goto(tctx, missing_ok,
+					    ret, done, "smb2_util_unlink\n");
+		}
+	}
+
+done:
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 static bool test_zero_file_id(struct torture_context *tctx,
 			      struct smb2_tree *tree)
 {
@@ -5913,6 +6248,7 @@ struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "NFS ACE entries", test_nfs_aces);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion without embedded xattr", test_adouble_conversion_wo_xattr);
 	torture_suite_add_1smb2_test(suite, "empty_stream", test_empty_stream);
+	torture_suite_add_1smb2_test(suite, "writing_afpinfo", test_writing_afpinfo);
 
 	return suite;
 }
