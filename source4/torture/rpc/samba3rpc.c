@@ -48,6 +48,9 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "libcli/smb/smbXcli_base.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 /*
  * open pipe and bind, given an IPC$ context
  */
@@ -871,7 +874,7 @@ static bool join3(struct torture_context *tctx,
 		DATA_BLOB session_key;
 		DATA_BLOB confounded_session_key = data_blob_talloc(
 			mem_ctx, NULL, 16);
-		MD5_CTX ctx;
+		gnutls_hash_hd_t hash_hnd;
 		uint8_t confounder[16];
 
 		ZERO_STRUCT(u_info);
@@ -898,10 +901,10 @@ static bool join3(struct torture_context *tctx,
 		}
 		generate_random_buffer((uint8_t *)confounder, 16);
 
-		MD5Init(&ctx);
-		MD5Update(&ctx, confounder, 16);
-		MD5Update(&ctx, session_key.data, session_key.length);
-		MD5Final(confounded_session_key.data, &ctx);
+		gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+		gnutls_hash(hash_hnd, confounder, 16);
+		gnutls_hash(hash_hnd, session_key.data, session_key.length);
+		gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
 
 		arcfour_crypt_blob(u_info.info25.password.data, 516,
 				   &confounded_session_key);
