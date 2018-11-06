@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+from __future__ import print_function
 import os
 import samba.getopt as options
 import ldb
@@ -939,7 +939,9 @@ class cmd_fetch(Command):
 
         # Copy GPT
         if tmpdir is None:
-            tmpdir = "/tmp"
+            tmpdir = tempfile.mkdtemp()
+            print("Using temporary directory %s (use --tmpdir to change)" % tmpdir,
+                  file=self.outf)
         if not os.path.isdir(tmpdir):
             raise CommandError("Temoprary directory '%s' does not exist" % tmpdir)
 
@@ -1017,7 +1019,9 @@ class cmd_backup(Command):
 
         # Copy GPT
         if tmpdir is None:
-            tmpdir = "/tmp"
+            tmpdir = tempfile.mkdtemp()
+            print("Using temporary directory %s (use --tmpdir to change)" % tmpdir,
+                  file=self.outf)
         if not os.path.isdir(tmpdir):
             raise CommandError("Temoprary directory '%s' does not exist" % tmpdir)
 
@@ -1168,7 +1172,9 @@ class cmd_create(Command):
 
         # Create GPT
         if tmpdir is None:
-            tmpdir = "/tmp"
+            tmpdir = tempfile.mkdtemp()
+            print("Using temporary directory %s (use --tmpdir to change)" % tmpdir,
+                  file=self.outf)
         if not os.path.isdir(tmpdir):
             raise CommandError("Temporary directory '%s' does not exist" % tmpdir)
         self.tmpdir = tmpdir
