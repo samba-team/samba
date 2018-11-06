@@ -51,15 +51,6 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-/* Those macros are only available in GnuTLS >= 3.6.4 */
-#ifndef GNUTLS_FIPS140_SET_LAX_MODE
-#define GNUTLS_FIPS140_SET_LAX_MODE()
-#endif
-
-#ifndef GNUTLS_FIPS140_SET_STRICT_MODE
-#define GNUTLS_FIPS140_SET_STRICT_MODE()
-#endif
-
 enum torture_samr_choice {
 	TORTURE_SAMR_PASSWORDS,
 	TORTURE_SAMR_PASSWORDS_PWDLASTSET,
@@ -812,14 +803,10 @@ static bool test_SetUserPassEx(struct dcerpc_pipe *p, struct torture_context *tc
 
 	generate_random_buffer((uint8_t *)confounder, 16);
 
-	GNUTLS_FIPS140_SET_LAX_MODE();
-
 	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	gnutls_hash(hash_hnd, confounder, 16);
 	gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	GNUTLS_FIPS140_SET_STRICT_MODE();
 
 	arcfour_crypt_blob(u.info26.password.data, 516, &confounded_session_key);
 	memcpy(&u.info26.password.data[516], confounder, 16);
@@ -909,14 +896,10 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 
 	generate_random_buffer((uint8_t *)confounder, 16);
 
-	GNUTLS_FIPS140_SET_LAX_MODE();
-
 	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	gnutls_hash(hash_hnd, confounder, 16);
 	gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	GNUTLS_FIPS140_SET_STRICT_MODE();
 
 	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
 	memcpy(&u.info25.password.data[516], confounder, 16);
@@ -1278,14 +1261,10 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 
 	generate_random_buffer((uint8_t *)confounder, 16);
 
-	GNUTLS_FIPS140_SET_LAX_MODE();
-
 	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	gnutls_hash(hash_hnd, confounder, 16);
 	gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	GNUTLS_FIPS140_SET_STRICT_MODE();
 
 	switch (level) {
 	case 18:
@@ -2698,14 +2677,10 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 
 	generate_random_buffer((uint8_t *)confounder, 16);
 
-	GNUTLS_FIPS140_SET_LAX_MODE();
-
 	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	gnutls_hash(hash_hnd, confounder, 16);
 	gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	GNUTLS_FIPS140_SET_STRICT_MODE();
 
 	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
 	memcpy(&u.info25.password.data[516], confounder, 16);
