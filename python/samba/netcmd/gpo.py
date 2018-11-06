@@ -61,16 +61,6 @@ from samba.gp_parse.gp_inf import GptTmplInfParser
 from samba.gp_parse.gp_aas import GPAasParser
 
 
-def samdb_connect(ctx):
-    '''make a ldap connection to the server'''
-    try:
-        ctx.samdb = SamDB(url=ctx.url,
-                          session_info=system_session(),
-                          credentials=ctx.creds, lp=ctx.lp)
-    except Exception as e:
-        raise CommandError("LDAP connection to %s failed " % ctx.url, e)
-
-
 def attr_default(msg, attrname, default):
     '''get an attribute from a ldap msg with a default'''
     if attrname in msg:
@@ -407,6 +397,15 @@ class GPOCommand(Command):
 
         return tmpdir, gpodir
 
+    def samdb_connect(self):
+        '''make a ldap connection to the server'''
+        try:
+            self.samdb = SamDB(url=self.url,
+                               session_info=system_session(),
+                               credentials=self.creds, lp=self.lp)
+        except Exception as e:
+            raise CommandError("LDAP connection to %s failed " % self.url, e)
+
 
 class cmd_listall(GPOCommand):
     """List all GPOs."""
@@ -431,7 +430,7 @@ class cmd_listall(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         msg = get_gpo_info(self.samdb, None)
 
@@ -469,7 +468,7 @@ class cmd_list(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         try:
             msg = self.samdb.search(expression='(&(|(samAccountName=%s)(samAccountName=%s$))(objectClass=User))' %
@@ -586,7 +585,7 @@ class cmd_show(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         try:
             msg = get_gpo_info(self.samdb, gpo)[0]
@@ -635,7 +634,7 @@ class cmd_getlink(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         try:
             msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
@@ -686,7 +685,7 @@ class cmd_setlink(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         gplink_options = 0
         if disabled:
@@ -772,7 +771,7 @@ class cmd_dellink(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         # Check if valid GPO
         try:
@@ -811,7 +810,7 @@ class cmd_listcontainers(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         msg = get_gpo_containers(self.samdb, gpo)
         if len(msg):
@@ -847,7 +846,7 @@ class cmd_getinheritance(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         try:
             msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
@@ -898,7 +897,7 @@ class cmd_setinheritance(GPOCommand):
 
         self.url = dc_url(self.lp, self.creds, H)
 
-        samdb_connect(self)
+        self.samdb_connect()
         try:
             msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
                                     expression="(objectClass=*)",
@@ -951,7 +950,7 @@ class cmd_fetch(GPOCommand):
             dc_hostname = netcmd_finddc(self.lp, self.creds)
             self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
-        samdb_connect(self)
+        self.samdb_connect()
         try:
             msg = get_gpo_info(self.samdb, gpo)[0]
         except Exception:
@@ -1020,7 +1019,7 @@ class cmd_backup(GPOCommand):
             dc_hostname = netcmd_finddc(self.lp, self.creds)
             self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
-        samdb_connect(self)
+        self.samdb_connect()
         try:
             msg = get_gpo_info(self.samdb, gpo)[0]
         except Exception:
@@ -1163,7 +1162,7 @@ class cmd_create(GPOCommand):
             dc_hostname = cldap_ret.pdc_dns_name
             self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         msg = get_gpo_info(self.samdb, displayname=displayname)
         if msg.count > 0:
@@ -1439,7 +1438,7 @@ class cmd_del(GPOCommand):
             dc_hostname = netcmd_finddc(self.lp, self.creds)
             self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         # Check if valid GPO
         try:
@@ -1515,7 +1514,7 @@ class cmd_aclcheck(GPOCommand):
             dc_hostname = netcmd_finddc(self.lp, self.creds)
             self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
-        samdb_connect(self)
+        self.samdb_connect()
 
         msg = get_gpo_info(self.samdb, None)
 
