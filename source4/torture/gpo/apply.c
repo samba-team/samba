@@ -27,6 +27,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "torture/gpo/proto.h"
 #include <unistd.h>
+#include "lib/util/samba_util.h"
+#include "util/tevent_ntstatus.h"
 
 struct torture_suite *gpo_apply_suite(TALLOC_CTX *ctx)
 {
@@ -40,22 +42,27 @@ struct torture_suite *gpo_apply_suite(TALLOC_CTX *ctx)
 	return suite;
 }
 
-static int exec_wait(char **cmd)
+static int exec_wait(struct torture_context *tctx, const char **gpo_update_cmd)
 {
-	int ret;
-	pid_t pid = fork();
-	switch (pid) {
-		case 0:
-			execv(cmd[0], &(cmd[1]));
-			ret = -1;
-			break;
-		case -1:
-			ret = errno;
-			break;
-		default:
-			if (waitpid(pid, &ret, 0) < 0)
-				ret = errno;
-			break;
+	NTSTATUS status;
+	int ret = 0;
+	struct tevent_req *req;
+
+	req = samba_runcmd_send(tctx,
+				tctx->ev,
+				timeval_current_ofs(100, 0),
+				2, 0,
+				gpo_update_cmd,
+				"gpo_reload_cmd", NULL);
+	if (req == NULL) {
+		return -1;
+	}
+
+	if (!tevent_req_poll_ntstatus(req, tctx->ev, &status)) {
+		return -1;
+	}
+	if (!samba_runcmd_recv(req, &ret) == 0) {
+		return -1;
 	}
 	return ret;
 }
@@ -95,8 +102,8 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 	};
 	FILE *fp = NULL;
 	const char **gpo_update_cmd;
-	char **gpo_unapply_cmd;
-	char **gpo_update_force_cmd;
+	const char **gpo_unapply_cmd;
+	const char **gpo_update_force_cmd;
 	int minpwdcases[] = { 0, 1, 998 };
 	int maxpwdcases[] = { 0, 1, 999 };
 	int pwdlencases[] = { 0, 1, 14 };
@@ -165,10 +172,10 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 		}
 
 		/* Run the gpo update command */
-		ret = exec_wait(discard_const_p(char *, gpo_update_cmd));
+		ret = exec_wait(tctx, gpo_update_cmd);
+
 		torture_assert(tctx, ret == 0,
 			       "Failed to execute the gpo update command");
-
 		ret = ldb_search(samdb, ctx, &result,
 				 ldb_get_default_basedn(samdb),
 				 LDB_SCOPE_BASE, attrs, NULL);
@@ -215,7 +222,7 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 	ret = ldb_modify(samdb, old_message);
 	torture_assert(tctx, ret == 0, "Failed to reset password settings.");
 
-	ret = exec_wait(discard_const_p(char *, gpo_update_cmd));
+	ret = exec_wait(tctx, gpo_update_cmd);
 	torture_assert(tctx, ret == 0,
 		       "Failed to execute the gpo update command");
 
@@ -270,7 +277,7 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 	}
 
 	/* Run gpupdate --force and verify settings are re-applied */
-	gpo_update_force_cmd = talloc_array(ctx, char*, gpo_update_len+2);
+	gpo_update_force_cmd = talloc_array(ctx, const char*, gpo_update_len+2);
 	for (i = 0; i < gpo_update_len; i++) {
 		gpo_update_force_cmd[i] = talloc_strdup(gpo_update_force_cmd,
 							gpo_update_cmd[i]);
@@ -278,7 +285,7 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 	gpo_update_force_cmd[i] = talloc_asprintf(gpo_update_force_cmd,
 						  "--force");
 	gpo_update_force_cmd[i+1] = NULL;
-	ret = exec_wait(gpo_update_force_cmd);
+	ret = exec_wait(tctx, gpo_update_force_cmd);
 	torture_assert(tctx, ret == 0,
 		       "Failed to execute the gpupdate --force command");
 
@@ -321,14 +328,14 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 		       "The pwdProperties were not applied");
 
 	/* Unapply the settings and verify they are removed */
-	gpo_unapply_cmd = talloc_array(ctx, char*, gpo_update_len+2);
+	gpo_unapply_cmd = talloc_array(ctx, const char*, gpo_update_len+2);
 	for (i = 0; i < gpo_update_len; i++) {
 		gpo_unapply_cmd[i] = talloc_strdup(gpo_unapply_cmd,
 						   gpo_update_cmd[i]);
 	}
 	gpo_unapply_cmd[i] = talloc_asprintf(gpo_unapply_cmd, "--unapply");
 	gpo_unapply_cmd[i+1] = NULL;
-	ret = exec_wait(gpo_unapply_cmd);
+	ret = exec_wait(tctx, gpo_unapply_cmd);
 	torture_assert(tctx, ret == 0,
 		       "Failed to execute the gpo unapply command");
 	ret = ldb_search(samdb, ctx, &result, ldb_get_default_basedn(samdb),
