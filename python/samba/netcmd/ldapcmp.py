@@ -565,8 +565,8 @@ class LDAPObject(object):
         else:
             raise Exception("Unknown --view option value.")
         #
-        self.screen_output = res[1][:-1]
-        other.screen_output = res[1][:-1]
+        self.screen_output = res[1]
+        other.screen_output = res[1]
         #
         return res[0]
 
@@ -681,8 +681,8 @@ class LDAPObject(object):
         other.summary["unique_attrs"] += other.unique_attrs
         other.summary["df_value_attrs"] += self.df_value_attrs  # they are the same
         #
-        self.screen_output = res[:-1]
-        other.screen_output = res[:-1]
+        self.screen_output = res
+        other.screen_output = res
         #
         return res == ""
 
