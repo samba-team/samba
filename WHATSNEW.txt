@@ -78,6 +78,17 @@ Using the default sequence the restart delays (in seconds) are:
 REMOVED FEATURES
 ================
 
+MIT Kerberos build of the AD DC
+-------------------------------
+
+While not removed, the MIT Kerberos build of the Samba AD DC is still
+considered experimental.  Because Samba will not issue security
+patches for this configuration, such builds now require the explicit
+configure option: --with-experimental-mit-ad-dc
+
+For further details see
+https://wiki.samba.org/index.php/Running_a_Samba_AD_DC_with_MIT_Kerberos_KDC
+
 samba_backup
 ------------
 
