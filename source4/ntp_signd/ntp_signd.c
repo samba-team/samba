@@ -37,9 +37,11 @@
 #include "libcli/ldap/ldap_ndr.h"
 #include <ldb.h>
 #include <ldb_errors.h>
-#include "../lib/crypto/md5.h"
 #include "system/network.h"
 #include "system/passwd.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 NTSTATUS server_service_ntp_signd_init(TALLOC_CTX *);
 
@@ -109,7 +111,7 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res;
 	const char *attrs[] = { "unicodePwd", "userAccountControl", "cn", NULL };
-	MD5_CTX ctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
 	struct samr_Password *nt_hash;
 	uint32_t user_account_control;
 	struct dom_sid_buf buf;
@@ -244,11 +246,32 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 	SIVAL(signed_reply.signed_packet.data, sign_request.packet_to_sign.length, sign_request.key_id);
 
 	/* Sign the NTP response with the unicodePwd */
-	MD5Init(&ctx);
-	MD5Update(&ctx, nt_hash->hash, sizeof(nt_hash->hash));
-	MD5Update(&ctx, sign_request.packet_to_sign.data, sign_request.packet_to_sign.length);
-	MD5Final(signed_reply.signed_packet.data + sign_request.packet_to_sign.length + 4, &ctx);
+	ret = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (ret < 0) {
+		if (ret == GNUTLS_E_UNWANTED_ALGORITHM) {
+			return NT_STATUS_HASH_NOT_SUPPORTED;
+		}
+		return NT_STATUS_NO_MEMORY;
+	}
 
+	ret = gnutls_hash(hash_hnd,
+			  nt_hash->hash,
+			  sizeof(nt_hash->hash));
+	if (ret < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	ret = gnutls_hash(hash_hnd,
+			  sign_request.packet_to_sign.data,
+			  sign_request.packet_to_sign.length);
+	if (ret < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	gnutls_hash_deinit(hash_hnd,
+			   signed_reply.signed_packet.data +
+			   sign_request.packet_to_sign.length + 4);
 
 	/* Place it into the packet for the wire */
 	ndr_err = ndr_push_struct_blob(output, mem_ctx, &signed_reply,
