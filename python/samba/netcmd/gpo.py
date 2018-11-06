@@ -371,7 +371,44 @@ def create_directory_hier(conn, remotedir):
             conn.mkdir(path)
 
 
-class cmd_listall(Command):
+class GPOCommand(Command):
+    def construct_tmpdir(self, tmpdir, gpo):
+        """Ensure that the temporary directory structure used in fetch,
+        backup, create, and restore is consistent.
+
+        If --tmpdir is used the named directory must be present, which may
+        contain a 'policy' subdirectory, but 'policy' must not itself have
+        a subdirectory with the gpo name. The policy and gpo directories
+        will be created.
+
+        If --tmpdir is not used, a temporary directory is securely created.
+        """
+        if tmpdir is None:
+            tmpdir = tempfile.mkdtemp()
+            print("Using temporary directory %s (use --tmpdir to change)" % tmpdir,
+                  file=self.outf)
+
+        if not os.path.isdir(tmpdir):
+            raise CommandError("Temporary directory '%s' does not exist" % tmpdir)
+
+        localdir = os.path.join(tmpdir, "policy")
+        if not os.path.isdir(localdir):
+            os.mkdir(localdir)
+
+        gpodir = os.path.join(localdir, gpo)
+        if os.path.isdir(gpodir):
+            raise CommandError(
+                "GPO directory '%s' already exists, refusing to overwrite" % gpodir)
+
+        try:
+            os.mkdir(gpodir)
+        except (IOError, OSError) as e:
+            raise CommandError("Error creating teporary GPO directory", e)
+
+        return tmpdir, gpodir
+
+
+class cmd_listall(GPOCommand):
     """List all GPOs."""
 
     synopsis = "%prog [options]"
@@ -408,7 +445,7 @@ class cmd_listall(Command):
             self.outf.write("\n")
 
 
-class cmd_list(Command):
+class cmd_list(GPOCommand):
     """List GPOs for an account."""
 
     synopsis = "%prog <username> [options]"
@@ -525,7 +562,7 @@ class cmd_list(Command):
             self.outf.write("    %s %s\n" % (g[0], g[1]))
 
 
-class cmd_show(Command):
+class cmd_show(GPOCommand):
     """Show information for a GPO."""
 
     synopsis = "%prog <gpo> [options]"
@@ -573,7 +610,7 @@ class cmd_show(Command):
         self.outf.write("\n")
 
 
-class cmd_getlink(Command):
+class cmd_getlink(GPOCommand):
     """List GPO Links for a container."""
 
     synopsis = "%prog <container_dn> [options]"
@@ -620,7 +657,7 @@ class cmd_getlink(Command):
             self.outf.write("No GPO(s) linked to DN=%s\n" % container_dn)
 
 
-class cmd_setlink(Command):
+class cmd_setlink(GPOCommand):
     """Add or update a GPO link to a container."""
 
     synopsis = "%prog <container_dn> <gpo> [options]"
@@ -710,7 +747,7 @@ class cmd_setlink(Command):
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
 
-class cmd_dellink(Command):
+class cmd_dellink(GPOCommand):
     """Delete GPO link from a container."""
 
     synopsis = "%prog <container_dn> <gpo> [options]"
@@ -749,7 +786,7 @@ class cmd_dellink(Command):
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
 
-class cmd_listcontainers(Command):
+class cmd_listcontainers(GPOCommand):
     """List all linked containers for a GPO."""
 
     synopsis = "%prog <gpo> [options]"
@@ -785,7 +822,7 @@ class cmd_listcontainers(Command):
             self.outf.write("No Containers using GPO %s\n" % gpo)
 
 
-class cmd_getinheritance(Command):
+class cmd_getinheritance(GPOCommand):
     """Get inheritance flag for a container."""
 
     synopsis = "%prog <container_dn> [options]"
@@ -829,7 +866,7 @@ class cmd_getinheritance(Command):
             self.outf.write("Container has GPO_INHERIT\n")
 
 
-class cmd_setinheritance(Command):
+class cmd_setinheritance(GPOCommand):
     """Set inheritance flag on a container."""
 
     synopsis = "%prog <container_dn> <block|inherit> [options]"
@@ -883,7 +920,7 @@ class cmd_setinheritance(Command):
             raise CommandError("Error setting inheritance state %s" % inherit_state, e)
 
 
-class cmd_fetch(Command):
+class cmd_fetch(GPOCommand):
     """Download a GPO."""
 
     synopsis = "%prog <gpo> [options]"
@@ -938,23 +975,8 @@ class cmd_fetch(Command):
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
 
         # Copy GPT
-        if tmpdir is None:
-            tmpdir = tempfile.mkdtemp()
-            print("Using temporary directory %s (use --tmpdir to change)" % tmpdir,
-                  file=self.outf)
-        if not os.path.isdir(tmpdir):
-            raise CommandError("Temoprary directory '%s' does not exist" % tmpdir)
-
-        localdir = os.path.join(tmpdir, "policy")
-        if not os.path.isdir(localdir):
-            os.mkdir(localdir)
-
-        gpodir = os.path.join(localdir, gpo)
-        if os.path.isdir(gpodir):
-            raise CommandError("GPO directory '%s' already exists, refusing to overwrite" % gpodir)
-
+        tmpdir, gpodir = self.construct_tmpdir(tmpdir, gpo)
         try:
-            os.mkdir(gpodir)
             copy_directory_remote_to_local(conn, sharepath, gpodir)
         except Exception as e:
             # FIXME: Catch more specific exception
@@ -962,7 +984,7 @@ class cmd_fetch(Command):
         self.outf.write('GPO copied to %s\n' % gpodir)
 
 
-class cmd_backup(Command):
+class cmd_backup(GPOCommand):
     """Backup a GPO."""
 
     synopsis = "%prog <gpo> [options]"
@@ -1018,23 +1040,9 @@ class cmd_backup(Command):
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
 
         # Copy GPT
-        if tmpdir is None:
-            tmpdir = tempfile.mkdtemp()
-            print("Using temporary directory %s (use --tmpdir to change)" % tmpdir,
-                  file=self.outf)
-        if not os.path.isdir(tmpdir):
-            raise CommandError("Temoprary directory '%s' does not exist" % tmpdir)
-
-        localdir = os.path.join(tmpdir, "policy")
-        if not os.path.isdir(localdir):
-            os.mkdir(localdir)
-
-        gpodir = os.path.join(localdir, gpo)
-        if os.path.isdir(gpodir):
-            raise CommandError("GPO directory '%s' already exists, refusing to overwrite" % gpodir)
+        tmpdir, gpodir = self.construct_tmpdir(tmpdir, gpo)
 
         try:
-            os.mkdir(gpodir)
             backup_directory_remote_to_local(conn, sharepath, gpodir)
         except Exception as e:
             # FIXME: Catch more specific exception
@@ -1113,7 +1121,7 @@ class cmd_backup(Command):
         return entities
 
 
-class cmd_create(Command):
+class cmd_create(GPOCommand):
     """Create an empty GPO."""
 
     synopsis = "%prog <displayname> [options]"
@@ -1171,25 +1179,10 @@ class cmd_create(Command):
         unc_path = "\\\\%s\\sysvol\\%s\\Policies\\%s" % (realm, realm, gpo)
 
         # Create GPT
-        if tmpdir is None:
-            tmpdir = tempfile.mkdtemp()
-            print("Using temporary directory %s (use --tmpdir to change)" % tmpdir,
-                  file=self.outf)
-        if not os.path.isdir(tmpdir):
-            raise CommandError("Temporary directory '%s' does not exist" % tmpdir)
-        self.tmpdir = tmpdir
-
-        localdir = os.path.join(tmpdir, "policy")
-        if not os.path.isdir(localdir):
-            os.mkdir(localdir)
-
-        gpodir = os.path.join(localdir, gpo)
+        self.tmpdir, gpodir = self.construct_tmpdir(tmpdir, gpo)
         self.gpodir = gpodir
-        if os.path.isdir(gpodir):
-            raise CommandError("GPO directory '%s' already exists, refusing to overwrite" % gpodir)
 
         try:
-            os.mkdir(gpodir)
             os.mkdir(os.path.join(gpodir, "Machine"))
             os.mkdir(os.path.join(gpodir, "User"))
             gpt_contents = "[General]\r\nVersion=0\r\n"
@@ -1415,7 +1408,7 @@ class cmd_restore(cmd_create):
             raise CommandError("Failed to restore: %s" % e)
 
 
-class cmd_del(Command):
+class cmd_del(GPOCommand):
     """Delete a GPO."""
 
     synopsis = "%prog <gpo> [options]"
@@ -1491,7 +1484,7 @@ class cmd_del(Command):
         self.outf.write("GPO %s deleted.\n" % gpo)
 
 
-class cmd_aclcheck(Command):
+class cmd_aclcheck(GPOCommand):
     """Check all GPOs have matching LDAP and DS ACLs."""
 
     synopsis = "%prog [options]"
