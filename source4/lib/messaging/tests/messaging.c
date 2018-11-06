@@ -28,7 +28,9 @@
 #include "torture/local/proto.h"
 #include "system/select.h"
 #include "system/filesys.h"
-#include "lib/crypto/md5.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 static uint32_t msg_pong;
 
@@ -213,7 +215,7 @@ static bool test_messaging_overflow(struct torture_context *tctx)
 }
 
 struct overflow_parent_child {
-	MD5_CTX md5ctx;
+	gnutls_hash_hd_t md5_hash_hnd;
 	bool done;
 };
 
@@ -230,7 +232,7 @@ static void overflow_md5_child_handler(struct imessaging_context *msg,
 		return;
 	}
 
-	MD5Update(&state->md5ctx, data->data, data->length);
+	gnutls_hash(state->md5_hash_hnd, data->data, data->length);
 }
 
 struct overflow_child_parent {
@@ -263,7 +265,7 @@ static bool test_messaging_overflow_check(struct torture_context *tctx)
 	char c = 0;
 	int up_pipe[2], down_pipe[2];
 	int i, ret, child_status;
-	MD5_CTX md5ctx;
+	gnutls_hash_hd_t hash_hnd;
 	uint8_t final[16];
 	struct overflow_child_parent child_msg = { .done = false };
 	NTSTATUS status;
@@ -285,7 +287,7 @@ static bool test_messaging_overflow_check(struct torture_context *tctx)
 		ret = tevent_re_initialise(tctx->ev);
 		torture_assert(tctx, ret == 0, "tevent_re_initialise failed");
 
-		MD5Init(&child_state.md5ctx);
+		gnutls_hash_init(&child_state.md5_hash_hnd, GNUTLS_DIG_MD5);
 
 		msg_ctx = imessaging_init(tctx, tctx->lp_ctx,
 					  cluster_id(getpid(), 0),
@@ -314,7 +316,7 @@ static bool test_messaging_overflow_check(struct torture_context *tctx)
 			tevent_loop_once(tctx->ev);
 		}
 
-		MD5Final(final, &child_state.md5ctx);
+		gnutls_hash_deinit(child_state.md5_hash_hnd, final);
 
 		status = imessaging_send(msg_ctx,
 					 cluster_id(getppid(), 0),
@@ -342,7 +344,7 @@ static bool test_messaging_overflow_check(struct torture_context *tctx)
 		       NT_STATUS_IS_OK(status),
 		       "imessaging_register failed");
 
-	MD5Init(&md5ctx);
+	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 
 	for (i=0; i<1000; i++) {
 		size_t len = ((random() % 100) + 1);
@@ -351,7 +353,7 @@ static bool test_messaging_overflow_check(struct torture_context *tctx)
 
 		generate_random_buffer(buf, len);
 
-		MD5Update(&md5ctx, buf, len);
+		gnutls_hash(hash_hnd, buf, len);
 
 		status = imessaging_send(msg_ctx, cluster_id(child, 0),
 					 MSG_TMP_BASE-1, &blob);
@@ -364,7 +366,7 @@ static bool test_messaging_overflow_check(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status,
 				   "imessaging_send failed");
 
-	MD5Final(final, &md5ctx);
+	gnutls_hash_deinit(hash_hnd, final);
 
 	do {
 		nwritten = write(down_pipe[1], &c, 1);
