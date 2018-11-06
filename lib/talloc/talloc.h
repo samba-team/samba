@@ -101,7 +101,15 @@ typedef void TALLOC_CTX;
 #endif
 #endif
 
+#ifndef _DEPRECATED_
+#ifdef HAVE___ATTRIBUTE__
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
+#endif
+#endif
 #ifdef DOXYGEN
+
 /**
  * @brief Create a new talloc context.
  *
@@ -1047,7 +1055,7 @@ int talloc_unlink(const void *context, void *ptr);
  *
  * @return              A talloc context, NULL on error.
  */
-void *talloc_autofree_context(void);
+void *talloc_autofree_context(void) _DEPRECATED_;
 
 /**
  * @brief Get the size of a talloc chunk.
@@ -1893,13 +1901,6 @@ void talloc_set_log_fn(void (*log_fn)(const char *message));
  */
 void talloc_set_log_stderr(void);
 
-#ifndef _DEPRECATED_
-#ifdef HAVE___ATTRIBUTE__
-#define _DEPRECATED_ __attribute__ ((deprecated))
-#else
-#define _DEPRECATED_
-#endif
-#endif
 /**
  * @brief Set a max memory limit for the current context hierarchy
  *	  This affects all children of this context and constrain any
