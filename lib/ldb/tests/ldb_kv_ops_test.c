@@ -192,8 +192,8 @@ static int parse(struct ldb_val key,
 {
 	struct ldb_val* read = private_data;
 
-	/* Yes, we essentially leak this.  That is OK */
-	read->data = talloc_size(talloc_autofree_context(),
+	/* Yes, we leak this.  That is OK */
+	read->data = talloc_size(NULL,
 				 data.length);
 	assert_non_null(read->data);
 
