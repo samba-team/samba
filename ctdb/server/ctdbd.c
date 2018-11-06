@@ -152,11 +152,12 @@ static struct ctdb_context *ctdb_init(struct tevent_context *ev)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb = NULL;
-	int interactive = 0;
+	int interactive_opt = 0;
+	bool interactive = false;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0,
+		{ "interactive", 'i', POPT_ARG_NONE, &interactive_opt, 0,
 		  "don't fork, log to stderr", NULL },
 		POPT_TABLEEND
 	};
@@ -223,6 +224,8 @@ int main(int argc, const char *argv[])
 			goto fail;
 		}
 	}
+
+	interactive = (interactive_opt != 0);
 
 	/*
 	 * Configuration file handling
@@ -372,7 +375,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* start the protocol running (as a child) */
-	return ctdb_start_daemon(ctdb, interactive?false:true);
+	return ctdb_start_daemon(ctdb, !interactive);
 
 fail:
 	talloc_free(ctdb);
