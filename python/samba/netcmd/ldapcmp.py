@@ -37,6 +37,8 @@ from samba.netcmd import (
     Option,
 )
 
+RE_RANGED_RESULT = re.compile("^([^;]+);range=(\d+)-(\d+|\*)$")
+
 
 class LDAPBase(object):
 
@@ -138,9 +140,7 @@ class LDAPBase(object):
             It resolved ranged results e.g. member;range=0-1499
         """
 
-        r = re.compile("^([^;]+);range=(\d+)-(\d+|\*)$")
-
-        m = r.match(key)
+        m = RE_RANGED_RESULT.match(key)
         if m is None:
             return key
 
@@ -151,9 +151,7 @@ class LDAPBase(object):
             It resolved ranged results e.g. member;range=0-1499
         """
 
-        r = re.compile("^([^;]+);range=(\d+)-(\d+|\*)$")
-
-        m = r.match(key)
+        m = RE_RANGED_RESULT.match(key)
         if m is None:
             # no range, just return the values
             return vals
@@ -175,7 +173,7 @@ class LDAPBase(object):
             fvals = None
 
             for key in res.keys():
-                m = r.match(key)
+                m = RE_RANGED_RESULT.match(key)
 
                 if m is None:
                     continue
