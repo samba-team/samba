@@ -105,17 +105,14 @@ class LDAPBase(object):
         res = self.ldb.search(base="OU=Domain Controllers,%s" % self.base_dn,
                               scope=SCOPE_SUBTREE, expression="(objectClass=computer)", attrs=["cn"])
         assert len(res) > 0
-        srv = []
-        for x in res:
-            srv.append(str(x["cn"][0]))
-        return srv
+        return [str(x["cn"][0]) for x in res]
 
     def find_netbios(self):
         res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn,
                               scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
         assert len(res) > 0
         for x in res:
-            if "nETBIOSName" in x.keys():
+            if "nETBIOSName" in x:
                 return x["nETBIOSName"][0]
 
     def object_exists(self, object_dn):
@@ -172,7 +169,7 @@ class LDAPBase(object):
             fm = None
             fvals = None
 
-            for key in res.keys():
+            for key in res:
                 m = RE_RANGED_RESULT.match(key)
 
                 if m is None:
@@ -342,10 +339,8 @@ class Descriptor(object):
         common_aces = []
         self_aces = []
         other_aces = []
-        self_dacl_list_fixed = []
-        other_dacl_list_fixed = []
-        [self_dacl_list_fixed.append(self.fix_sid(ace)) for ace in self.dacl_list]
-        [other_dacl_list_fixed.append(other.fix_sid(ace)) for ace in other.dacl_list]
+        self_dacl_list_fixed = [self.fix_sid(ace) for ace in self.dacl_list]
+        other_dacl_list_fixed = [other.fix_sid(ace) for ace in other.dacl_list]
         for ace in self_dacl_list_fixed:
             try:
                 other_dacl_list_fixed.index(ace)
@@ -589,7 +584,7 @@ class LDAPObject(object):
 
         missing_attrs = self_unique_attrs & other_unique_attrs
         title = 4 * " " + "Difference in attribute values:"
-        for x in self.attributes.keys():
+        for x in self.attributes:
             if x.upper() in self.ignore_attributes or x.upper() in missing_attrs:
                 continue
             if isinstance(self.attributes[x], list) and isinstance(other.attributes[x], list):
