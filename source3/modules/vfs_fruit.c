@@ -4524,6 +4524,12 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 	}
 
 	if (ai_empty_finderinfo(ai)) {
+		/*
+		 * Writing an all 0 blob to the metadata stream results in the
+		 * stream being removed on a macOS server. This ensures we
+		 * behave the same and it verified by the "delete AFP_AfpInfo by
+		 * writing all 0" test.
+		 */
 		ret = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, 0);
 		if (ret != 0) {
 			DBG_ERR("SMB_VFS_NEXT_FTRUNCATE on [%s] failed\n",
@@ -4596,6 +4602,12 @@ static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
 		return n;
 	}
 
+	/*
+	 * Writing an all 0 blob to the metadata stream results in the stream
+	 * being removed on a macOS server. This ensures we behave the same and
+	 * it verified by the "delete AFP_AfpInfo by writing all 0" test.
+	 */
+
 	ok = set_delete_on_close(
 		fsp,
 		true,
@@ -4617,13 +4629,6 @@ static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
 	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	ssize_t nwritten;
 
-	/*
-	 * Writing an all 0 blob to the metadata stream
-	 * results in the stream being removed on a macOS
-	 * server. This ensures we behave the same and it
-	 * verified by the "delete AFP_AfpInfo by writing all
-	 * 0" test.
-	 */
 	if (n != AFP_INFO_SIZE || offset != 0) {
 		DBG_ERR("unexpected offset=%jd or size=%jd\n",
 			(intmax_t)offset, (intmax_t)n);
