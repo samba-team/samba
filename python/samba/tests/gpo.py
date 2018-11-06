@@ -27,6 +27,7 @@ from tempfile import NamedTemporaryFile
 from samba.gp_sec_ext import gp_sec_ext
 import logging
 from samba.credentials import Credentials
+from samba.compat import get_bytes
 
 poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
 dspath = 'CN=Policies,CN=System,DC=addom,DC=samba,DC=example,DC=com'
@@ -62,7 +63,7 @@ def stage_file(path, data):
     if os.path.exists(path):
         os.rename(path, '%s.bak' % path)
     with NamedTemporaryFile(delete=False, dir=os.path.dirname(path)) as f:
-        f.write(data)
+        f.write(get_bytes(data))
         os.rename(f.name, path)
         os.chmod(path, 0o644)
     return True

@@ -23,6 +23,7 @@ sys.path.insert(0, "bin/python")
 from samba import NTSTATUSError
 from samba.compat import ConfigParser
 from samba.compat import StringIO
+from samba.compat import get_bytes
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree
 import re
@@ -258,24 +259,24 @@ class GPOStorage:
 
     def get_int(self, key):
         try:
-            return int(self.log.get(key))
+            return int(self.log.get(get_bytes(key)))
         except TypeError:
             return None
 
     def get(self, key):
-        return self.log.get(key)
+        return self.log.get(get_bytes(key))
 
     def get_gplog(self, user):
-        return gp_log(user, self, self.log.get(user))
+        return gp_log(user, self, self.log.get(get_bytes(user)))
 
     def store(self, key, val):
-        self.log.store(key, val)
+        self.log.store(get_bytes(key), get_bytes(val))
 
     def cancel(self):
         self.log.transaction_cancel()
 
     def delete(self, key):
-        self.log.delete(key)
+        self.log.delete(get_bytes(key))
 
     def commit(self):
         self.log.transaction_commit()
@@ -503,7 +504,7 @@ def parse_gpext_conf(smb_conf):
 
 def atomic_write_conf(lp, parser):
     ext_conf = lp.state_path('gpext.conf')
-    with NamedTemporaryFile(delete=False, dir=os.path.dirname(ext_conf)) as f:
+    with NamedTemporaryFile(mode="w+", delete=False, dir=os.path.dirname(ext_conf)) as f:
         parser.write(f)
         os.rename(f.name, ext_conf)
 
@@ -532,8 +533,8 @@ def register_gp_extension(guid, name, path,
         parser.add_section(guid)
     parser.set(guid, 'DllName', path)
     parser.set(guid, 'ProcessGroupPolicy', name)
-    parser.set(guid, 'NoMachinePolicy', 0 if machine else 1)
-    parser.set(guid, 'NoUserPolicy', 0 if user else 1)
+    parser.set(guid, 'NoMachinePolicy', "0" if machine else "1")
+    parser.set(guid, 'NoUserPolicy', "0" if user else "1")
 
     atomic_write_conf(lp, parser)
 

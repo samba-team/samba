@@ -18,6 +18,7 @@
 import os.path
 from samba.gpclass import gp_ext_setter, gp_inf_ext
 from samba.auth import system_session
+from samba.compat import get_string
 try:
     from ldb import LdbError
     from samba.samdb import SamDB
@@ -37,8 +38,8 @@ class inf_to_kdc_tdb(gp_ext_setter):
         self.logger.info('%s was changed from %s to %s' % (self.attribute,
                                                            old_val, val))
         if val is not None:
-            self.gp_db.gpostore.store(self.attribute, val)
-            self.gp_db.store(str(self), self.attribute, old_val)
+            self.gp_db.gpostore.store(self.attribute, get_string(val))
+            self.gp_db.store(str(self), self.attribute, get_string(old_val) if old_val else None)
         else:
             self.gp_db.gpostore.delete(self.attribute)
             self.gp_db.delete(str(self), self.attribute)
