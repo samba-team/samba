@@ -24,6 +24,8 @@
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/ndr_notify.h"
 #include "librpc/gen_ndr/ndr_file_id.h"
+#include "libcli/security/privileges.h"
+#include "libcli/security/security.h"
 
 struct notify_change_event {
 	struct timespec when;
@@ -597,6 +599,104 @@ void notify_fname(connection_struct *conn, uint32_t action, uint32_t filter,
 	notify_trigger(notify_ctx, action, filter, conn->connectpath, path);
 }
 
+static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
+{
+	uint32_t rights;
+	struct smb_filename fname;
+	char *filepath = NULL;
+	NTSTATUS status;
+	char *p = NULL;
+
+	/*
+	 * Assume we get filepath (relative to the share)
+	 * like this:
+	 *
+	 *  'dir1/dir2/dir3/file'
+	 *
+	 * We start with LIST and TRAVERSE on the
+	 * direct parent ('dir1/dir2/dir3')
+	 *
+	 * Then we switch to just TRAVERSE for
+	 * the rest: 'dir1/dir2', 'dir1', '.'
+	 *
+	 * For a file in the share root, we'll have
+	 *  'file'
+	 * and would just check '.' with LIST and TRAVERSE.
+	 *
+	 * It's important to always check '.' as the last step,
+	 * which means we check the permissions of the share root
+	 * directory.
+	 */
+
+	if (ISDOT(fsp->fsp_name->base_name)) {
+		filepath = talloc_strdup(talloc_tos(), name);
+	} else {
+		filepath = talloc_asprintf(talloc_tos(),
+			"%s/%s",
+			fsp->fsp_name->base_name,
+			name);
+	}
+	if (filepath == NULL) {
+		DBG_ERR("Memory allocation failed\n");
+		return false;
+	}
+
+	fname = (struct smb_filename) { .base_name = filepath };
+
+	rights = SEC_DIR_LIST|SEC_DIR_TRAVERSE;
+	p = strrchr_m(filepath, '/');
+	/*
+	 * Check each path component, exluding the share root.
+	 *
+	 * We could check all components including root using
+	 * a do { .. } while() loop, but IMHO the logic is clearer
+	 * having the share root check separately afterwards.
+	 */
+	while (p != NULL) {
+		*p = '\0';
+		status = smbd_check_access_rights(fsp->conn,
+						  fsp->conn->cwd_fsp,
+						  &fname,
+						  false,
+						  rights);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Access rights for %s/%s: %s\n",
+				  fsp->conn->connectpath,
+				  filepath,
+				  nt_errstr(status));
+			TALLOC_FREE(filepath);
+			return false;
+		}
+
+		rights = SEC_DIR_TRAVERSE;
+		p = strrchr_m(filepath, '/');
+	}
+
+	TALLOC_FREE(filepath);
+
+	/* Finally check share root. */
+	filepath = talloc_strdup(talloc_tos(), ".");
+	if (filepath == NULL) {
+		DBG_ERR("Memory allocation failed\n");
+		return false;
+	}
+	fname = (struct smb_filename) { .base_name = filepath };
+	status = smbd_check_access_rights(fsp->conn,
+					  fsp->conn->cwd_fsp,
+					  &fname,
+					  false,
+					  rights);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Access rights for %s/.: %s\n",
+			  fsp->conn->connectpath,
+			  nt_errstr(status));
+		TALLOC_FREE(filepath);
+		return false;
+	}
+	TALLOC_FREE(filepath);
+	return true;
+}
+
 static void notify_fsp(files_struct *fsp, struct timespec when,
 		       uint32_t action, const char *name)
 {
@@ -608,6 +708,35 @@ static void notify_fsp(files_struct *fsp, struct timespec when,
 		 * Nobody is waiting, don't queue
 		 */
 		return;
+	}
+
+	if (lp_honor_change_notify_privilege(SNUM(fsp->conn))) {
+		bool has_sec_change_notify_privilege;
+		bool expose = false;
+
+		has_sec_change_notify_privilege = security_token_has_privilege(
+			fsp->conn->session_info->security_token,
+			SEC_PRIV_CHANGE_NOTIFY);
+
+		if (has_sec_change_notify_privilege) {
+			expose = true;
+		} else {
+			bool ok;
+
+			ok = become_user_without_service_by_fsp(fsp);
+			if (ok) {
+				expose = user_can_stat_name_under_fsp(fsp, name);
+				unbecome_user_without_service();
+			}
+		}
+		DBG_DEBUG("has_sec_change_notify_privilege=%s "
+			  "expose=%s for %s notify %s\n",
+			  has_sec_change_notify_privilege ? "true" : "false",
+			  expose ? "true" : "false",
+			  fsp->fsp_name->base_name, name);
+		if (!expose) {
+			return;
+		}
 	}
 
 	/*

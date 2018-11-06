@@ -250,6 +250,7 @@ static const struct loadparm_service _sDefault =
 	.smbd_search_ask_sharemode = true,
 	.smbd_getinfo_ask_sharemode = true,
 	.spotlight_backend = SPOTLIGHT_BACKEND_NOINDEX,
+	.honor_change_notify_privilege = false,
 	.dummy = ""
 };
 

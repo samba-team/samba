@@ -1,0 +1,20 @@
+<samba:parameter name="honor change notify privilege"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  This option can be used to make use of the change notify privilege.
+	  By default notify results are not checked against the file system
+	  permissions.
+	</para>
+	<para>
+	  If "honor change notify privilege" is enabled, a user will only
+	  receive notify results, if he has change notify privilege or
+	  sufficient file system permissions. If a user has the change notify
+	  privilege, he will receive all requested notify results, even if the
+	  user does not have the permissions on the file system.
+	</para>
+</description>
+<value type="default">no</value>
+</samba:parameter>
