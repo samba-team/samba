@@ -4638,27 +4638,67 @@ static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
 {
 	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	ssize_t nwritten;
-
-	if (n != AFP_INFO_SIZE || offset != 0) {
-		DBG_ERR("unexpected offset=%jd or size=%jd\n",
-			(intmax_t)offset, (intmax_t)n);
-		return -1;
-	}
+	uint8_t buf[AFP_INFO_SIZE];
+	size_t to_write;
+	size_t to_copy;
+	int cmp;
 
 	if (fio == NULL) {
 		DBG_ERR("Failed to fetch fsp extension");
 		return -1;
 	}
 
+	if (n < 3) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (offset != 0 && n < 60) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	cmp = memcmp(data, "AFP", 3);
+	if (cmp != 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (n <= AFP_OFF_FinderInfo) {
+		/*
+		 * Nothing to do here really, just return
+		 */
+		return n;
+	}
+
+	offset = 0;
+
+	to_copy = n;
+	if (to_copy > AFP_INFO_SIZE) {
+		to_copy = AFP_INFO_SIZE;
+	}
+	memcpy(buf, data, to_copy);
+
+	to_write = n;
+	if (to_write != AFP_INFO_SIZE) {
+		to_write = AFP_INFO_SIZE;
+	}
+
 	switch (fio->config->meta) {
 	case FRUIT_META_STREAM:
-		nwritten = fruit_pwrite_meta_stream(handle, fsp, data,
-						    n, offset);
+		nwritten = fruit_pwrite_meta_stream(handle,
+						    fsp,
+						    buf,
+						    to_write,
+						    offset);
 		break;
 
 	case FRUIT_META_NETATALK:
-		nwritten = fruit_pwrite_meta_netatalk(handle, fsp, data,
-						      n, offset);
+		nwritten = fruit_pwrite_meta_netatalk(handle,
+						      fsp,
+						      buf,
+						      to_write,
+						      offset);
 		break;
 
 	default:
@@ -4666,7 +4706,14 @@ static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return nwritten;
+	if (nwritten != to_write) {
+		return -1;
+	}
+
+	/*
+	 * Return the requested amount, verified against macOS SMB server
+	 */
+	return n;
 }
 
 static ssize_t fruit_pwrite_rsrc_stream(vfs_handle_struct *handle,
