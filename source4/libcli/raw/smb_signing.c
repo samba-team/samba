@@ -24,6 +24,9 @@
 #include "libcli/raw/raw_proto.h"
 #include "../lib/crypto/crypto.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation
 ************************************************************/
@@ -81,7 +84,8 @@ bool signing_good(struct smb_signing_context *sign_info,
 void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num) 
 {
 	uint8_t calc_md5_mac[16];
-	MD5_CTX md5_ctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
+	int rc;
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
@@ -94,30 +98,44 @@ void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, u
 	mark_packet_signed(out);
 
 	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
-	MD5Init(&md5_ctx);
-        MD5Update(&md5_ctx, mac_key->data, mac_key->length);
-	MD5Update(&md5_ctx, 
-		  out->buffer + NBT_HDR_SIZE, 
-		  out->size - NBT_HDR_SIZE);
-	MD5Final(calc_md5_mac, &md5_ctx);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		return;
+	}
+
+	rc = gnutls_hash(hash_hnd, mac_key->data, mac_key->length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+	rc = gnutls_hash(hash_hnd,
+			 out->buffer + NBT_HDR_SIZE,
+			 out->size - NBT_HDR_SIZE);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		return;
+	}
+	gnutls_hash_deinit(hash_hnd, calc_md5_mac);
 
 	memcpy(&out->hdr[HDR_SS_FIELD], calc_md5_mac, 8);
 
 	DEBUG(5, ("sign_outgoing_message: SENT SIG (seq: %d): sent SMB signature of\n", 
 		  seq_num));
 	dump_data(5, calc_md5_mac, 8);
+	ZERO_ARRAY(calc_md5_mac);
 /*	req->out.hdr[HDR_SS_FIELD+2]=0; 
 	Uncomment this to test if the remote server actually verifies signitures...*/
 }
 
 bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac_key, unsigned int seq_num)
 {
-	bool good;
+	bool ok = false;
 	uint8_t calc_md5_mac[16];
 	uint8_t *server_sent_mac;
 	uint8_t sequence_buf[8];
-	MD5_CTX md5_ctx;
+	gnutls_hash_hd_t hash_hnd;
 	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
+	int rc;
 	int i;
 	const int sign_range = 0;
 
@@ -145,20 +163,45 @@ bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac
 	        server_sent_mac = &in->hdr[HDR_SS_FIELD];
 		
 		/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
-		MD5Init(&md5_ctx);
-		MD5Update(&md5_ctx, mac_key->data, 
-			  mac_key->length); 
-		MD5Update(&md5_ctx, in->hdr, HDR_SS_FIELD);
-		MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
-		
-		MD5Update(&md5_ctx, in->hdr + offset_end_of_sig, 
-			  in->size - NBT_HDR_SIZE - (offset_end_of_sig));
-		MD5Final(calc_md5_mac, &md5_ctx);
-		
-		good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
+		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+		if (rc < 0) {
+			ok = false;
+			goto out;
+		}
+
+		rc = gnutls_hash(hash_hnd, mac_key->data, mac_key->length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			ok = false;
+			goto out;
+		}
+		rc = gnutls_hash(hash_hnd, in->hdr, HDR_SS_FIELD);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			ok = false;
+			goto out;
+		}
+		rc = gnutls_hash(hash_hnd, sequence_buf, sizeof(sequence_buf));
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			ok = false;
+			goto out;
+		}
+		rc = gnutls_hash(hash_hnd,
+				 in->hdr + offset_end_of_sig,
+				 in->size - NBT_HDR_SIZE - (offset_end_of_sig));
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			ok = false;
+			goto out;
+		}
+
+		gnutls_hash_deinit(hash_hnd, calc_md5_mac);
+
+		ok = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 
 		if (i == 0) {
-			if (!good) {
+			if (!ok) {
 				DEBUG(5, ("check_signed_incoming_message: BAD SIG (seq: %d): wanted SMB signature of\n", seq_num + i));
 				dump_data(5, calc_md5_mac, 8);
 				
@@ -169,15 +212,17 @@ bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac
 				dump_data(5, server_sent_mac, 8);
 			}
 		}
+		ZERO_ARRAY(calc_md5_mac);
 
-		if (good) break;
+		if (ok) break;
 	}
 
-	if (good && i != 0) {
+	if (ok && i != 0) {
 		DEBUG(0,("SIGNING OFFSET %d (should be %d)\n", i, seq_num));
 	}
 
-	return good;
+out:
+	return ok;
 }
 
 /**
