@@ -26,13 +26,15 @@
 #include "lib/tsocket/tsocket.h"
 #include "libcli/util/tstream.h"
 #include "torture/rpc/torture_rpc.h"
-#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_ntp_signd.h"
 #include "param/param.h"
 #include "system/network.h"
 #include "torture/ntp/proto.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define TEST_MACHINE_NAME "ntpsigndtest"
 
@@ -79,7 +81,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	char *unix_address;
 	int sys_errno;
 
-	MD5_CTX ctx;
+	gnutls_hash_hd_t hash_hnd;
 	uint8_t sig[16];
 	enum ndr_err_code ndr_err;
 	bool ok;
@@ -269,11 +271,12 @@ static bool test_ntp_signd(struct torture_context *tctx,
 				 "Incorrect RID in reply");
 
 	/* Check computed signature */
-	MD5Init(&ctx);
-	MD5Update(&ctx, pwhash->hash, sizeof(pwhash->hash));
-	MD5Update(&ctx, sign_req.packet_to_sign.data,
-		  sign_req.packet_to_sign.length);
-	MD5Final(sig, &ctx);
+	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	gnutls_hash(hash_hnd, pwhash->hash, sizeof(pwhash->hash));
+	gnutls_hash(hash_hnd,
+		    sign_req.packet_to_sign.data,
+		    sign_req.packet_to_sign.length);
+	gnutls_hash_deinit(hash_hnd, sig);
 
 	torture_assert_mem_equal(tctx,
 				 &signed_reply.signed_packet.data[sign_req.packet_to_sign.length + 4],
