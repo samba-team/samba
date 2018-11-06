@@ -509,7 +509,7 @@ class LDAPObject(object):
             self.other_attributes = ["name", "DC", ]
             self.other_attributes = [x.upper() for x in self.other_attributes]
         #
-        self.ignore_attributes = [x.upper() for x in self.ignore_attributes]
+        self.ignore_attributes = set([x.upper() for x in self.ignore_attributes])
 
     def log(self, msg):
         """
@@ -572,33 +572,24 @@ class LDAPObject(object):
 
     def cmp_attrs(self, other):
         res = ""
-        self.unique_attrs = []
         self.df_value_attrs = []
-        other.unique_attrs = []
-        if self.attributes.keys() != other.attributes.keys():
-            #
-            title = 4 * " " + "Attributes found only in %s:" % self.con.host
-            for x in self.attributes.keys():
-                if x not in other.attributes.keys() and \
-                        not x.upper() in [q.upper() for q in other.ignore_attributes]:
-                    if title:
-                        res += title + "\n"
-                        title = None
-                    res += 8 * " " + x + "\n"
-                    self.unique_attrs.append(x)
-            #
-            title = 4 * " " + "Attributes found only in %s:" % other.con.host
-            for x in other.attributes.keys():
-                if x not in self.attributes.keys() and \
-                        not x.upper() in [q.upper() for q in self.ignore_attributes]:
-                    if title:
-                        res += title + "\n"
-                        title = None
-                    res += 8 * " " + x + "\n"
-                    other.unique_attrs.append(x)
-        #
-        missing_attrs = [x.upper() for x in self.unique_attrs]
-        missing_attrs += [x.upper() for x in other.unique_attrs]
+
+        self_attrs = set([attr.upper() for attr in self.attributes])
+        other_attrs = set([attr.upper() for attr in other.attributes])
+
+        self_unique_attrs = self_attrs - other_attrs - other.ignore_attributes
+        if self_unique_attrs:
+            res += 4 * " " + "Attributes found only in %s:" % self.con.host
+            for x in self_unique_attrs:
+                res += 8 * " " + x + "\n"
+
+        other_unique_attrs = other_attrs - self_attrs - self.ignore_attributes
+        if other_unique_attrs:
+            res += 4 * " " + "Attributes found only in %s:" % other.con.host
+            for x in other_unique_attrs:
+                res += 8 * " " + x + "\n"
+
+        missing_attrs = self_unique_attrs & other_unique_attrs
         title = 4 * " " + "Difference in attribute values:"
         for x in self.attributes.keys():
             if x.upper() in self.ignore_attributes or x.upper() in missing_attrs:
@@ -674,11 +665,11 @@ class LDAPObject(object):
                     res += 8 * " " + x + " => \n%s\n%s" % (self.attributes[x], other.attributes[x]) + "\n"
                 self.df_value_attrs.append(x)
         #
-        if self.unique_attrs + other.unique_attrs != []:
-            assert self.unique_attrs != other.unique_attrs
-        self.summary["unique_attrs"] += self.unique_attrs
+        if missing_attrs:
+            assert self_unique_attrs != other_unique_attrs
+        self.summary["unique_attrs"] += list(self_unique_attrs)
         self.summary["df_value_attrs"] += self.df_value_attrs
-        other.summary["unique_attrs"] += other.unique_attrs
+        other.summary["unique_attrs"] += list(other_unique_attrs)
         other.summary["df_value_attrs"] += self.df_value_attrs  # they are the same
         #
         self.screen_output = res
