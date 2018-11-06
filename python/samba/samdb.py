@@ -33,6 +33,7 @@ from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
 from samba.compat import text_type
+from samba.compat import binary_type
 from samba.dcerpc import security
 
 __docformat__ = "restructuredText"
@@ -920,7 +921,8 @@ schemaUpdateNow: 1
         return dn
 
     def set_minPwdAge(self, value):
-        value = str(value).encode('utf8')
+        if not isinstance(value, binary_type):
+            value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["minPwdAge"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "minPwdAge")
@@ -936,7 +938,8 @@ schemaUpdateNow: 1
             return int(res[0]["minPwdAge"][0])
 
     def set_maxPwdAge(self, value):
-        value = str(value).encode('utf8')
+        if not isinstance(value, binary_type):
+            value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["maxPwdAge"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "maxPwdAge")
@@ -952,7 +955,8 @@ schemaUpdateNow: 1
             return int(res[0]["maxPwdAge"][0])
 
     def set_minPwdLength(self, value):
-        value = str(value).encode('utf8')
+        if not isinstance(value, binary_type):
+            value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["minPwdLength"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "minPwdLength")
@@ -968,7 +972,8 @@ schemaUpdateNow: 1
             return int(res[0]["minPwdLength"][0])
 
     def set_pwdProperties(self, value):
-        value = str(value).encode('utf8')
+        if not isinstance(value, binary_type):
+            value = str(value).encode('utf8')
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
         m["pwdProperties"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "pwdProperties")
