@@ -24,6 +24,9 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 /*
  * do a password change using DCERPC/SAMR calls
  * 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation)
@@ -274,7 +277,8 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 	uint8_t confounder[16];	
-	MD5_CTX md5;
+	gnutls_hash_hd_t hash_hnd = NULL;
+	int rc;
 
 	if (r->samr_handle.in.info21) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -294,15 +298,36 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	}
 	
 	generate_random_buffer((uint8_t *)confounder, 16);
-	
-	MD5Init(&md5);
-	MD5Update(&md5, confounder, 16);
-	MD5Update(&md5, session_key.data, session_key.length);
-	MD5Final(confounded_session_key.data, &md5);
-	
+
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	rc = gnutls_hash(hash_hnd, confounder, 16);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
+
+	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
+
 	arcfour_crypt_blob(u_info.info26.password.data, 516, &confounded_session_key);
+	ZERO_ARRAY_LEN(confounded_session_key.data,
+		       confounded_session_key.length);
+	data_blob_free(&confounded_session_key);
+
 	memcpy(&u_info.info26.password.data[516], confounder, 16);
-	
+	ZERO_ARRAY(confounder);
+
 	sui.in.user_handle = r->samr_handle.in.user_handle;
 	sui.in.info = &u_info;
 	sui.in.level = 26;
@@ -319,6 +344,8 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 					  "SetUserInfo2 level 26 for [%s] failed: %s",
 					  r->samr_handle.in.account_name, nt_errstr(status));
 	}
+
+out:
 	return status;
 }
 
@@ -330,7 +357,8 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 	uint8_t confounder[16];	
-	MD5_CTX md5;
+	gnutls_hash_hd_t hash_hnd = NULL;
+	int rc;
 
 	if (!r->samr_handle.in.info21) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -352,13 +380,34 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 
 	generate_random_buffer((uint8_t *)confounder, 16);
 
-	MD5Init(&md5);
-	MD5Update(&md5, confounder, 16);
-	MD5Update(&md5, session_key.data, session_key.length);
-	MD5Final(confounded_session_key.data, &md5);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	rc = gnutls_hash(hash_hnd, confounder, 16);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
 
 	arcfour_crypt_blob(u_info.info25.password.data, 516, &confounded_session_key);
+	ZERO_ARRAY_LEN(confounded_session_key.data,
+		       confounded_session_key.length);
+	data_blob_free(&confounded_session_key);
+
 	memcpy(&u_info.info25.password.data[516], confounder, 16);
+	ZERO_ARRAY(confounder);
 
 	sui.in.user_handle = r->samr_handle.in.user_handle;
 	sui.in.info = &u_info;
@@ -375,6 +424,8 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 					  "SetUserInfo2 level 25 for [%s] failed: %s",
 					  r->samr_handle.in.account_name, nt_errstr(status));
 	}
+
+out:
 	return status;
 }
 
