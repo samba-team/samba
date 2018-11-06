@@ -84,7 +84,7 @@ if PY3:
     # alias
     import io
     StringIO = io.StringIO
-    def ConfigParser(defaults=None, dict_type=None, allow_no_value=None):
+    def ConfigParser(defaults=None, dict_type=dict, allow_no_value=False):
         from configparser import ConfigParser
         return ConfigParser(defaults, dict_type, allow_no_value, interpolation=None)
 else:
