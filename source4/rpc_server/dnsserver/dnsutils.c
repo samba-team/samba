@@ -25,6 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/socket/netif.h"
 #include "lib/util/util_net.h"
+#include "dnsserver_common.h"
 
 static struct DNS_ADDR_ARRAY *fill_dns_addr_array(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
@@ -208,47 +209,6 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	return serverinfo;
 }
 
-
-/*
- * Helper function to copy a dnsp_ip4_array struct to an IP4_ARRAY struct.
- * The new structure and it's data are allocated on the supplied talloc context
- */
-static struct IP4_ARRAY *copy_ip4_array(
-	TALLOC_CTX *ctx,
-	const char *name,
-	struct dnsp_ip4_array array) {
-
-	struct IP4_ARRAY *ip4_array = NULL;
-	unsigned int i;
-
-	ip4_array = talloc_zero(ctx, struct IP4_ARRAY);
-	if (ip4_array == NULL) {
-		DBG_ERR("Out of memory copying property [%s]\n",
-			name);
-		return NULL;
-	}
-
-	ip4_array->AddrCount = array.addrCount;
-	if (ip4_array->AddrCount == 0) {
-		return ip4_array;
-	}
-
-	ip4_array->AddrArray = talloc_array(ip4_array, uint32_t,
-					    ip4_array->AddrCount);
-	if (ip4_array->AddrArray == NULL) {
-		TALLOC_FREE(ip4_array);
-		DBG_ERR("Out of memory copying property [%s] values\n",
-			name);
-		return NULL;
-	}
-
-	for (i = 0; i < ip4_array->AddrCount; i++) {
-		ip4_array->AddrArray[i] = array.addr[i];
-	}
-
-	return ip4_array;
-}
-
 struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 						struct dnsserver_serverinfo *serverinfo)
 {
@@ -257,8 +217,7 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	const char *revzone = "in-addr.arpa";
 	const char *revzone6 = "ip6.arpa";
 	int len1, len2;
-	union dnsPropertyData *prop = NULL;
-	int i=0;
+	unsigned int i = 0;
 
 	zoneinfo = talloc_zero(zone, struct dnsserver_zoneinfo);
 	if (zoneinfo == NULL) {
@@ -326,62 +285,12 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	zoneinfo->dwLastXfrResult = 0;
 
 	for(i=0; i<zone->num_props; i++){
-		prop=&(zone->tmp_props[i].data);
-		switch (zone->tmp_props[i].id) {
-		case DSPROPERTY_ZONE_TYPE:
-			zoneinfo->dwZoneType =
-				prop->zone_type;
-			break;
-		case DSPROPERTY_ZONE_ALLOW_UPDATE:
-			zoneinfo->fAllowUpdate =
-				prop->allow_update_flag;
-			break;
-		case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
-			zoneinfo->dwNoRefreshInterval =
-				prop->norefresh_hours;
-			break;
-		case DSPROPERTY_ZONE_REFRESH_INTERVAL:
-			zoneinfo->dwRefreshInterval =
-				prop->refresh_hours;
-			break;
-		case DSPROPERTY_ZONE_AGING_STATE:
-			zoneinfo->fAging =
-				prop->aging_enabled;
-			break;
-		case DSPROPERTY_ZONE_SCAVENGING_SERVERS:
-			zoneinfo->aipScavengeServers =
-				copy_ip4_array(zoneinfo,
-					       "ZONE_SCAVENGING_SERVERS",
-					       prop->servers);
-			if (zoneinfo->aipScavengeServers == NULL) {
-				TALLOC_FREE(zoneinfo);
-				return NULL;
-			}
-			break;
-		case DSPROPERTY_ZONE_AGING_ENABLED_TIME:
-			zoneinfo->dwAvailForScavengeTime =
-				prop->next_scavenging_cycle_hours;
-			break;
-		case DSPROPERTY_ZONE_MASTER_SERVERS:
-			zoneinfo->aipLocalMasters =
-				copy_ip4_array(zoneinfo,
-					       "ZONE_MASTER_SERVERS",
-					       prop->master_servers);
-			if (zoneinfo->aipLocalMasters == NULL) {
-				TALLOC_FREE(zoneinfo);
-				return NULL;
-			}
-			break;
-		case DSPROPERTY_ZONE_EMPTY:
-		case DSPROPERTY_ZONE_SECURE_TIME:
-		case DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME:
-		case DSPROPERTY_ZONE_AUTO_NS_SERVERS:
-		case DSPROPERTY_ZONE_DCPROMO_CONVERT:
-		case DSPROPERTY_ZONE_SCAVENGING_SERVERS_DA:
-		case DSPROPERTY_ZONE_MASTER_SERVERS_DA:
-		case DSPROPERTY_ZONE_NS_SERVERS_DA:
-		case DSPROPERTY_ZONE_NODE_DBFLAGS:
-			break;
+		bool valid_property;
+		valid_property = dns_zoneinfo_load_zone_property(
+		    zoneinfo, &zone->tmp_props[i]);
+		if (!valid_property) {
+			TALLOC_FREE(zoneinfo);
+			return NULL;
 		}
 	}
 
