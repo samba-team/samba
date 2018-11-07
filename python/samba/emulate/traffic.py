@@ -1277,16 +1277,22 @@ class TrafficModel(object):
 
         return c
 
-    def generate_conversation_sequences(self, scale, duration, replay_speed=1,
+    def scale_to_packet_rate(self, scale):
+        rate_n, rate_t  = self.packet_rate
+        return scale * rate_n / rate_t
+
+    def packet_rate_to_scale(self, pps):
+        rate_n, rate_t  = self.packet_rate
+        return  pps * rate_t / rate_n
+
+    def generate_conversation_sequences(self, packet_rate, duration, replay_speed=1,
                                         persistence=0):
         """Generate a list of conversation descriptions from the model."""
 
         # We run the simulation for ten times as long as our desired
         # duration, and take the section at the end.
         lead_in = 9 * duration
-        rate_n, rate_t  = self.packet_rate
-        target_packets = int(duration * scale * rate_n / rate_t)
-
+        target_packets = int(packet_rate * duration)
         conversations = []
         n_packets = 0
 
@@ -1310,8 +1316,10 @@ class TrafficModel(object):
             conversations.append(c)
             n_packets += len(c)
 
-        print(("we have %d packets (target %d) in %d conversations at scale %f"
-               % (n_packets, target_packets, len(conversations), scale)),
+        scale = self.packet_rate_to_scale(packet_rate)
+        print(("we have %d packets (target %d) in %d conversations at %.1f/s "
+               "(scale %f)" % (n_packets, target_packets, len(conversations),
+                               packet_rate, scale)),
               file=sys.stderr)
         conversations.sort()  # sorts by first element == start time
         return conversations
