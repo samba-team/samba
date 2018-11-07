@@ -3908,15 +3908,17 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		}
 
 		if (signing_key) {
-			status = smb2_signing_check_pdu(*signing_key,
-							state->conn->protocol,
-							&cur[1], 3);
-			if (!NT_STATUS_IS_OK(status)) {
+			NTSTATUS signing_status;
+
+			signing_status = smb2_signing_check_pdu(*signing_key,
+								state->conn->protocol,
+								&cur[1], 3);
+			if (!NT_STATUS_IS_OK(signing_status)) {
 				/*
 				 * If the signing check fails, we disconnect
 				 * the connection.
 				 */
-				return status;
+				return signing_status;
 			}
 		}
 
