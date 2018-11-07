@@ -717,6 +717,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	struct event_tool_context *ctx;
 	int ret, result = 0;
+	int level;
 	bool ok;
 
 	mem_ctx = talloc_new(NULL);
@@ -738,10 +739,11 @@ int main(int argc, const char **argv)
 	}
 
 	setup_logging("ctdb-event", DEBUG_STDERR);
-	ok = debug_level_parse(event_data.debug, &DEBUGLEVEL);
+	ok = debug_level_parse(event_data.debug, &level);
 	if (!ok) {
-		DEBUGLEVEL = DEBUG_ERR;
+		level = DEBUG_ERR;
 	}
+	debuglevel_set(level);
 
 	ret = event_tool_run(ctx, &result);
 	if (ret != 0) {

@@ -674,6 +674,7 @@ int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 {
 	struct log_backend *backend = NULL;
 	char *option = NULL;
+	int level;
 	int ret;
 
 	setup_logging(app_name, DEBUG_STDERR);
@@ -681,9 +682,10 @@ int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 	if (debug_level == NULL) {
 		debug_level = getenv("CTDB_DEBUGLEVEL");
 	}
-	if (! debug_level_parse(debug_level, &DEBUGLEVEL)) {
+	if (! debug_level_parse(debug_level, &level)) {
 		return EINVAL;
 	}
+	debuglevel_set(level);
 
 	if (logging == NULL) {
 		logging = getenv("CTDB_LOGGING");

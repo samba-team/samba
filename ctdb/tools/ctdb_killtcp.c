@@ -330,16 +330,17 @@ int main(int argc, char **argv)
 	struct tevent_req *req;
 	int debug_level;
 	bool status;
+	bool ok;
 	int ret;
 
 	/* Set the debug level */
 	t = getenv("CTDB_DEBUGLEVEL");
 	if (t != NULL) {
-		if (debug_level_parse(t, &debug_level)) {
-			DEBUGLEVEL = debug_level;
-		} else {
-			DEBUGLEVEL = DEBUG_ERR;
+		ok = debug_level_parse(t, &debug_level);
+		if (!ok) {
+			debug_level = DEBUG_ERR;
 		}
+		debuglevel_set(debug_level);
 	}
 
 	if (argc != 2 && argc != 4) {

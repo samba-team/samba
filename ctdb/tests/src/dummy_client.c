@@ -104,7 +104,7 @@ int main(int argc, const char *argv[])
 	}
 
 	setup_logging("dummy_client", DEBUG_STDERR);
-	DEBUGLEVEL = log_level;
+	debuglevel_set(log_level);
 
 	if (options.sockpath == NULL) {
 		options.sockpath = path_socket(mem_ctx, "ctdbd");

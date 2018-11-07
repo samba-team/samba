@@ -23,6 +23,7 @@
 #include "version.h"
 #include "param/pyparam.h"
 #include "lib/socket/netif.h"
+#include "lib/util/debug.h"
 
 void init_glue(void);
 static PyObject *PyExc_NTSTATUSError;
@@ -161,13 +162,13 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 	unsigned level;
 	if (!PyArg_ParseTuple(args, "I", &level))
 		return NULL;
-	(DEBUGLEVEL) = level;
+	debuglevel_set(level);
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_get_debug_level(PyObject *self)
 {
-	return PyInt_FromLong(DEBUGLEVEL);
+	return PyInt_FromLong(debuglevel_get());
 }
 
 static PyObject *py_fault_setup(PyObject *self)

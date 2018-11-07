@@ -365,7 +365,7 @@ int main(int argc, const char **argv)
 	}
 
 	setup_logging("ctdb-path", DEBUG_STDERR);
-	DEBUGLEVEL = DEBUG_ERR;
+	debuglevel_set(DEBUG_ERR);
 
 	ret = path_tool_run(ctx, &result);
 	if (ret != 0) {

@@ -6188,6 +6188,7 @@ int main(int argc, const char *argv[])
 	int extra_argc;
 	const struct ctdb_cmd *cmd;
 	int loglevel;
+	bool ok;
 	int ret;
 
 	setlinebuf(stdout);
@@ -6246,11 +6247,11 @@ int main(int argc, const char *argv[])
 
 	/* Enable logging */
 	setup_logging("ctdb", DEBUG_STDERR);
-	if (debug_level_parse(options.debuglevelstr, &loglevel)) {
-		DEBUGLEVEL = loglevel;
-	} else {
-		DEBUGLEVEL = DEBUG_ERR;
+	ok = debug_level_parse(options.debuglevelstr, &loglevel);
+	if (!ok) {
+		loglevel = DEBUG_ERR;
 	}
+	debuglevel_set(loglevel);
 
 	signal(SIGALRM, alarm_handler);
 	alarm(options.maxruntime);

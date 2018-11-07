@@ -98,7 +98,7 @@ static bool verify_options_basic(struct test_options *opts)
 		return false;
 	}
 
-	DEBUGLEVEL = log_level;
+	debuglevel_set(log_level);
 
 	return true;
 }

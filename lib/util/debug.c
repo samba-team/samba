@@ -560,7 +560,17 @@ static const char *default_classname_table[] = {
 static int debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
 
 static size_t debug_num_classes = 0;
-int     *DEBUGLEVEL_CLASS = debug_class_list_initial;
+static int    *DEBUGLEVEL_CLASS = debug_class_list_initial;
+
+int debuglevel_get_class(size_t idx)
+{
+	return DEBUGLEVEL_CLASS[idx];
+}
+
+void debuglevel_set_class(size_t idx, int level)
+{
+	DEBUGLEVEL_CLASS[idx] = level;
+}
 
 
 /* -------------------------------------------------------------------------- **

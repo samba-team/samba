@@ -257,7 +257,7 @@ int main(int argc, const char *argv[])
 	if (! debug_level_parse(debuglevelstr, &loglevel)) {
                 loglevel = DEBUG_DEBUG;
         }
-	DEBUGLEVEL = loglevel;
+	debuglevel_set(loglevel);
 
 	if (argc < 2) {
 		usage();

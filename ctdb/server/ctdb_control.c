@@ -100,6 +100,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	uint32_t opcode = c->opcode;
 	uint64_t srvid = c->srvid;
 	uint32_t client_id = c->client_id;
+	static int level = DEBUG_ERR;
 
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
@@ -108,14 +109,20 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_SET_DEBUG: {
+		union {
+			uint8_t *ptr;
+			int32_t *level;
+		} debug;
 		CHECK_CONTROL_DATA_SIZE(sizeof(int32_t));
-		DEBUGLEVEL = *(int32_t *)indata.dptr;
+		debug.ptr = indata.dptr;
+		debuglevel_set(*debug.level);
 		return 0;
 	}
 
 	case CTDB_CONTROL_GET_DEBUG: {
 		CHECK_CONTROL_DATA_SIZE(0);
-		outdata->dptr = (uint8_t *)&(DEBUGLEVEL);
+		level = debuglevel_get();
+		outdata->dptr = (uint8_t *)&(level);
 		outdata->dsize = sizeof(DEBUGLEVEL);
 		return 0;
 	}
