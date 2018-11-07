@@ -557,10 +557,10 @@ static const char *default_classname_table[] = {
  * This is to allow reading of DEBUGLEVEL_CLASS before the debug
  * system has been initialized.
  */
-static const int debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
+static int debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
 
 static size_t debug_num_classes = 0;
-int     *DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
+int     *DEBUGLEVEL_CLASS = debug_class_list_initial;
 
 
 /* -------------------------------------------------------------------------- **
