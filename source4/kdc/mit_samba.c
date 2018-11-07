@@ -865,7 +865,7 @@ krb5_error_code encode_krb5_padata_sequence(krb5_pa_data *const *rep, krb5_data 
 static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 {
 	krb5_error_code ret = 0;
-	krb5_pa_data pa, *ppa = NULL;
+	krb5_pa_data pa, *ppa[2];
 	krb5_data *d = NULL;
 
 	if (!e_data)
@@ -886,9 +886,10 @@ static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 	SIVAL(pa.contents, 4, 0);
 	SIVAL(pa.contents, 8, 1);
 
-	ppa = &pa;
+	ppa[0] = &pa;
+	ppa[1] = NULL;
 
-	ret = encode_krb5_padata_sequence(&ppa, &d);
+	ret = encode_krb5_padata_sequence(ppa, &d);
 	free(pa.contents);
 	if (ret) {
 		return;
