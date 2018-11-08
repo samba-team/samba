@@ -79,7 +79,7 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 */
 _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 					  struct dcesrv_connection_context *context, 
-					  struct policy_handle *p,
+					  const struct policy_handle *p,
 					  uint8_t handle_type)
 {
 	struct dcesrv_handle *h;

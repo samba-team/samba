@@ -432,7 +432,7 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *contex
 
 struct dcesrv_handle *dcesrv_handle_fetch(
 					  struct dcesrv_connection_context *context, 
-					  struct policy_handle *p,
+					  const struct policy_handle *p,
 					  uint8_t handle_type);
 
 const struct tsocket_address *dcesrv_connection_get_local_address(struct dcesrv_connection *conn);
