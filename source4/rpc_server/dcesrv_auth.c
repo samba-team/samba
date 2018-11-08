@@ -40,6 +40,18 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	bool want_header_signing = false;
 	NTSTATUS status;
 
+	if (auth->auth_invalid) {
+		return false;
+	}
+
+	if (auth->auth_finished) {
+		return false;
+	}
+
+	if (auth->gensec_security != NULL) {
+		return false;
+	}
+
 	switch (call->in_auth_info.auth_level) {
 	case DCERPC_AUTH_LEVEL_CONNECT:
 	case DCERPC_AUTH_LEVEL_CALL:
