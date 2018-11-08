@@ -1073,6 +1073,8 @@ static bool test_session_expire1i(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
 				 "please use -k yes");
 
+	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+
 	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
@@ -1167,6 +1169,8 @@ static bool test_session_expire1i(struct torture_context *tctx,
 
 	ret = true;
 done:
+	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+
 	if (h1 != NULL) {
 		smb2_util_close(tree, *h1);
 	}
@@ -1235,6 +1239,8 @@ static bool test_session_expire2i(struct torture_context *tctx,
 
 	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
 				 "please use -k yes");
+
+	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 
 	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
 
@@ -1547,6 +1553,8 @@ static bool test_session_expire2i(struct torture_context *tctx,
 
 	ret = true;
 done:
+	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+
 	if (h1 != NULL) {
 		smb2_util_close(tree, *h1);
 	}
