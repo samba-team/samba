@@ -161,7 +161,8 @@ static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
 		METHOD_DATA m;
 		size_t len;
 		int i;
-		bool found = false;
+		bool found_enc_ts = false;
+		bool found_etype_info2 = false;
 			torture_assert(test_context->tctx,
 				       error.e_data != NULL,
 				       "No e-data returned");
@@ -174,27 +175,24 @@ static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
 						 rc, 0,
 						 "Got invalid method data");
 
-			/*
-			 * NOTE:
-			 *
-			 * Windows (eg Server 1709) only returns a
-			 * KRB5_PADATA_ETYPE_INFO2 in this situation.
-			 * This test should be fixed but care needs to
-			 * be taken not to reintroduce
-			 * https://bugzilla.samba.org/show_bug.cgi?id=11539
-			 */
 			torture_assert(test_context->tctx,
 				       m.len > 0,
 				       "No PA_DATA given");
 			for (i = 0; i < m.len; i++) {
 				if (m.val[i].padata_type == KRB5_PADATA_ENC_TIMESTAMP) {
-					found = true;
-					break;
+					found_enc_ts = true;
+				}
+				else if (m.val[i].padata_type == KRB5_PADATA_ETYPE_INFO2) {
+					found_etype_info2 = true;
 				}
 			}
 			torture_assert(test_context->tctx,
-				       found,
-				       "Encrypted timestamp not found");
+				       found_etype_info2,
+				       "PADATA_ETYPE_INFO2 not found");
+			if (expected_error != KRB5KDC_ERR_PREAUTH_FAILED)
+				torture_assert(test_context->tctx,
+					       found_enc_ts,
+					       "Encrypted timestamp not found");
 	}
 
 	free_KRB_ERROR(&error);
