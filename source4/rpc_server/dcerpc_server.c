@@ -551,6 +551,8 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(ep->ep_description);
 	struct dcesrv_connection *p;
 
 	if (!session_info) {
@@ -568,8 +570,6 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->dce_ctx = dce_ctx;
 	p->endpoint = ep;
 	p->packet_log_dir = lpcfg_lock_directory(dce_ctx->lp_ctx);
-	p->auth_state.session_info = session_info;
-	p->auth_state.session_key = dcesrv_generic_session_key;
 	p->event_ctx = event_ctx;
 	p->msg_ctx = msg_ctx;
 	p->server_id = server_id;
@@ -578,6 +578,23 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->max_recv_frag = 5840;
 	p->max_xmit_frag = 5840;
 	p->max_total_request_size = DCERPC_NCACN_REQUEST_DEFAULT_MAX_SIZE;
+
+	p->auth_state.session_info = session_info;
+	switch (transport) {
+	case NCACN_NP:
+		p->auth_state.session_key = dcesrv_inherited_session_key;
+		break;
+	case NCALRPC:
+	case NCACN_UNIX_STREAM:
+		p->auth_state.session_key = dcesrv_generic_session_key;
+		break;
+	default:
+		/*
+		 * All other's get a NULL pointer, which
+		 * results in NT_STATUS_NO_USER_SESSION_KEY
+		 */
+		break;
+	}
 
 	/*
 	 * For now we only support NDR32.
@@ -2712,7 +2729,6 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	}
 
 	if (transport == NCACN_NP) {
-		dcesrv_conn->auth_state.session_key = dcesrv_inherited_session_key;
 		dcesrv_conn->stream = talloc_move(dcesrv_conn,
 						  &srv_conn->tstream);
 	} else {
