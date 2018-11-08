@@ -293,7 +293,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	/*
 	 * allocate a bind handle
 	 */
-	handle = dcesrv_handle_new(dce_call->context, DRSUAPI_BIND_HANDLE);
+	handle = dcesrv_handle_create(dce_call, DRSUAPI_BIND_HANDLE);
 	W_ERROR_HAVE_NO_MEMORY(handle);
 	handle->data = talloc_steal(handle, b_state);
 
