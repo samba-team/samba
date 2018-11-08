@@ -643,6 +643,11 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 						 "dcesrv",
 						 "header signing",
 						 true);
+	p->max_auth_states = lpcfg_parm_ulong(dce_ctx->lp_ctx,
+					      NULL,
+					      "dcesrv",
+					      "max auth states",
+					      2049);
 
 	auth = dcesrv_auth_create(p);
 	if (auth == NULL) {
@@ -707,6 +712,8 @@ static void dcesrv_call_set_list(struct dcesrv_call_state *call,
 static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
 					 const char *reason)
 {
+	struct dcesrv_auth *a = NULL;
+
 	if (call->conn->terminate != NULL) {
 		return;
 	}
@@ -715,6 +722,10 @@ static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
 	call->conn->allow_alter = false;
 
 	call->conn->default_auth_state->auth_invalid = true;
+
+	for (a = call->conn->auth_states; a != NULL; a = a->next) {
+		a->auth_invalid = true;
+	}
 
 	call->terminate_reason = talloc_strdup(call, reason);
 	if (call->terminate_reason == NULL) {
@@ -1126,7 +1137,10 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		a->result = DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK;
 		a->reason.negotiate = 0;
 		if (features & DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING) {
-			/* not supported yet */
+			if (call->conn->max_auth_states != 0) {
+				a->reason.negotiate |=
+				DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING;
+			}
 		}
 		if (features & DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN) {
 			a->reason.negotiate |=
@@ -2018,6 +2032,10 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
 	struct dcesrv_call_state *existing = NULL;
+	size_t num_auth_ctx = 0;
+	enum dcerpc_AuthType auth_type = 0;
+	enum dcerpc_AuthLevel auth_level = 0;
+	uint32_t auth_context_id = 0;
 
 	call = talloc_zero(dce_conn, struct dcesrv_call_state);
 	if (!call) {
@@ -2036,7 +2054,73 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	talloc_steal(call, blob.data);
 	call->pkt = *pkt;
 
-	call->auth_state = dce_conn->default_auth_state;
+	if (dce_conn->max_auth_states == 0) {
+		call->auth_state = dce_conn->default_auth_state;
+	} else if (call->pkt.auth_length == 0) {
+		if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
+		    dce_conn->default_auth_level_connect != NULL)
+		{
+			call->auth_state = dce_conn->default_auth_level_connect;
+		} else {
+			call->auth_state = dce_conn->default_auth_state;
+		}
+	}
+
+	if (call->auth_state == NULL) {
+		struct dcesrv_auth *a = NULL;
+
+		auth_type = dcerpc_get_auth_type(&blob);
+		auth_level = dcerpc_get_auth_level(&blob);
+		auth_context_id = dcerpc_get_auth_context_id(&blob);
+
+		if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
+			dce_conn->default_auth_level_connect = NULL;
+			if (auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
+				dce_conn->got_explicit_auth_level_connect = true;
+			}
+		}
+
+		for (a = dce_conn->auth_states; a != NULL; a = a->next) {
+			num_auth_ctx++;
+
+			if (a->auth_type != auth_type) {
+				continue;
+			}
+			if (a->auth_finished && a->auth_level != auth_level) {
+				continue;
+			}
+			if (a->auth_context_id != auth_context_id) {
+				continue;
+			}
+
+			DLIST_PROMOTE(dce_conn->auth_states, a);
+			call->auth_state = a;
+			break;
+		}
+	}
+
+	if (call->auth_state == NULL) {
+		struct dcesrv_auth *a = NULL;
+
+		if (num_auth_ctx >= dce_conn->max_auth_states) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
+
+		a = dcesrv_auth_create(dce_conn);
+		if (a == NULL) {
+			talloc_free(call);
+			return NT_STATUS_NO_MEMORY;
+		}
+		DLIST_ADD(dce_conn->auth_states, a);
+		if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
+			/*
+			 * This can never be valid.
+			 */
+			a->auth_invalid = true;
+		}
+		call->auth_state = a;
+	}
 
 	talloc_set_destructor(call, dcesrv_call_dequeue);
 
@@ -2051,7 +2135,10 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	/* we have to check the signing here, before combining the
 	   pdus */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
-		if (!call->auth_state->auth_finished) {
+		dcesrv_default_auth_state_prepare_request(call);
+
+		if (call->auth_state->auth_started &&
+		    !call->auth_state->auth_finished) {
 			return dcesrv_fault_disconnect(call,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
@@ -2479,6 +2566,7 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
 {
 	struct dcesrv_context *dce_ctx = dce_conn->dce_ctx;
+	struct dcesrv_auth *a = NULL;
 	struct stream_connection *srv_conn;
 	srv_conn = talloc_get_type(dce_conn->transport.private_data,
 				   struct stream_connection);
@@ -2491,6 +2579,10 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	dce_conn->allow_alter = false;
 
 	dce_conn->default_auth_state->auth_invalid = true;
+
+	for (a = dce_conn->auth_states; a != NULL; a = a->next) {
+		a->auth_invalid = true;
+	}
 
 	if (dce_conn->pending_call_list == NULL) {
 		char *full_reason = talloc_asprintf(dce_conn, "dcesrv: %s", reason);

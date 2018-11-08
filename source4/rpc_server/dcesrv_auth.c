@@ -36,7 +36,7 @@ static NTSTATUS dcesrv_auth_negotiate_hdr_signing(struct dcesrv_call_state *call
 						  struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
-	struct dcesrv_auth *auth = call->auth_state;
+	struct dcesrv_auth *a = NULL;
 
 	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN)) {
 		return NT_STATUS_OK;
@@ -60,12 +60,20 @@ static NTSTATUS dcesrv_auth_negotiate_hdr_signing(struct dcesrv_call_state *call
 		pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
-	if (auth->gensec_security == NULL) {
-		return NT_STATUS_OK;
+	a = call->conn->default_auth_state;
+	if (a->gensec_security != NULL) {
+		gensec_want_feature(a->gensec_security,
+				    GENSEC_FEATURE_SIGN_PKT_HEADER);
 	}
 
-	gensec_want_feature(auth->gensec_security,
-			    GENSEC_FEATURE_SIGN_PKT_HEADER);
+	for (a = call->conn->auth_states; a != NULL; a = a->next) {
+		if (a->gensec_security == NULL) {
+			continue;
+		}
+
+		gensec_want_feature(a->gensec_security,
+				    GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -250,6 +258,68 @@ static void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
 				   auth_type,
 				   transport_protection,
 				   auth->session_info);
+
+	auth->auth_audited = true;
+}
+
+static void dcesrv_default_auth_state_finish_bind(struct dcesrv_call_state *call)
+{
+	SMB_ASSERT(call->pkt.ptype == DCERPC_PKT_BIND);
+
+	if (call->auth_state == call->conn->default_auth_state) {
+		return;
+	}
+
+	if (call->conn->default_auth_state->auth_started) {
+		return;
+	}
+
+	if (call->conn->default_auth_state->auth_invalid) {
+		return;
+	}
+
+	call->conn->default_auth_state->auth_type = DCERPC_AUTH_TYPE_NONE;
+	call->conn->default_auth_state->auth_level = DCERPC_AUTH_LEVEL_NONE;
+	call->conn->default_auth_state->auth_context_id = 0;
+	call->conn->default_auth_state->auth_started = true;
+	call->conn->default_auth_state->auth_finished = true;
+
+	/*
+	 *
+	 * We defer log_successful_dcesrv_authz_event()
+	 * to dcesrv_default_auth_state_prepare_request()
+	 *
+	 * As we don't want to trigger authz_events
+	 * just for alter_context requests without authentication
+	 */
+}
+
+void dcesrv_default_auth_state_prepare_request(struct dcesrv_call_state *call)
+{
+	struct dcesrv_connection *dce_conn = call->conn;
+	struct dcesrv_auth *auth = call->auth_state;
+
+	if (auth->auth_audited) {
+		return;
+	}
+
+	if (call->pkt.ptype != DCERPC_PKT_REQUEST) {
+		return;
+	}
+
+	if (auth != dce_conn->default_auth_state) {
+		return;
+	}
+
+	if (auth->auth_invalid) {
+		return;
+	}
+
+	if (!auth->auth_finished) {
+		return;
+	}
+
+	log_successful_dcesrv_authz_event(call);
 }
 
 /*
@@ -338,6 +408,12 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 	}
 	auth->auth_finished = true;
 
+	if (auth->auth_level == DCERPC_AUTH_LEVEL_CONNECT &&
+	    !call->conn->got_explicit_auth_level_connect)
+	{
+		call->conn->default_auth_level_connect = auth;
+	}
+
 	if (call->pkt.ptype != DCERPC_PKT_AUTH3) {
 		return NT_STATUS_OK;
 	}
@@ -367,6 +443,7 @@ NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct nca
 	}
 
 	dce_conn->allow_alter = true;
+	dcesrv_default_auth_state_finish_bind(call);
 
 	if (call->pkt.auth_length == 0) {
 		auth->auth_finished = true;
@@ -467,16 +544,23 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	/* We can't work without an existing gensec state */
-	if (auth->gensec_security == NULL) {
-		return false;
-	}
-
 	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.alter.auth_info,
 					  &call->in_auth_info, NULL, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		return false;
+	}
+
+	if (!auth->auth_started) {
+		bool ok;
+
+		ok = dcesrv_auth_prepare_gensec(call);
+		if (!ok) {
+			call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
+			return false;
+		}
+
+		return true;
 	}
 
 	if (call->in_auth_info.auth_type == DCERPC_AUTH_TYPE_NONE) {
@@ -551,6 +635,10 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 		.auth_context_id = auth->auth_context_id,
 	};
 	NTSTATUS status;
+
+	if (!auth->auth_started) {
+		return false;
+	}
 
 	if (!auth->auth_finished) {
 		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;

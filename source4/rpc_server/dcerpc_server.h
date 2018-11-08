@@ -197,6 +197,7 @@ struct dcesrv_handle {
 
 /* hold the authentication state information */
 struct dcesrv_auth {
+	struct dcesrv_auth *prev, *next;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
 	uint32_t auth_context_id;
@@ -205,6 +206,7 @@ struct dcesrv_auth {
 	NTSTATUS (*session_key_fn)(struct dcesrv_auth *, DATA_BLOB *session_key);
 	bool auth_started;
 	bool auth_finished;
+	bool auth_audited;
 	bool auth_invalid;
 };
 
@@ -288,6 +290,10 @@ struct dcesrv_connection {
 
 	/* the current authentication state */
 	struct dcesrv_auth *default_auth_state;
+	size_t max_auth_states;
+	struct dcesrv_auth *auth_states;
+	bool got_explicit_auth_level_connect;
+	struct dcesrv_auth *default_auth_level_connect;
 	bool client_hdr_signing;
 	bool support_hdr_signing;
 	bool negotiated_hdr_signing;
