@@ -541,7 +541,7 @@ _PUBLIC_ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
 /*
   connect to a dcerpc endpoint
 */
-_PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
+static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct auth_session_info *session_info,

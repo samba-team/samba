@@ -425,15 +425,6 @@ NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_serve
 NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, 
 				      struct loadparm_context *lp_ctx,
 				      const char **endpoint_servers, struct dcesrv_context **_dce_ctx);
-NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
-				 TALLOC_CTX *mem_ctx,
-				 const struct dcesrv_endpoint *ep,
-				 struct auth_session_info *session_info,
-				 struct tevent_context *event_ctx,
-				 struct imessaging_context *msg_ctx,
-				 struct server_id server_id,
-				 uint32_t state_flags,
-				 struct dcesrv_connection **_p);
 
 NTSTATUS dcesrv_reply(struct dcesrv_call_state *call);
 struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *context, 
