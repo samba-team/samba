@@ -33,7 +33,7 @@ from samba.auth import system_session
 from samba.join import DCJoinContext, join_clone, DCCloneAndRenameContext
 from samba.dcerpc.security import dom_sid
 from samba.netcmd import Option, CommandError
-from samba.dcerpc import misc, security
+from samba.dcerpc import misc, security, drsblobs
 from samba import Ldb
 from . fsmo import cmd_fsmo_seize
 from samba.provision import make_smbconf, DEFAULTSITE
@@ -51,6 +51,8 @@ from samba.mdb_util import mdb_copy
 import errno
 from subprocess import CalledProcessError
 from samba import sites
+from samba.dsdb import _dsdb_load_udv_v2
+from samba.ndr import ndr_pack
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.
@@ -417,6 +419,26 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
 
         return backup_type
 
+    def save_uptodate_vectors(self, samdb, partitions):
+        """Ensures the UTDV used by DRS is correct after an offline backup"""
+        for nc in partitions:
+            # load the replUpToDateVector we *should* have
+            utdv = _dsdb_load_udv_v2(samdb, nc)
+
+            # convert it to NDR format and write it into the DB
+            utdv_blob = drsblobs.replUpToDateVectorBlob()
+            utdv_blob.version = 2
+            utdv_blob.ctr.cursors = utdv
+            utdv_blob.ctr.count = len(utdv)
+            new_value = ndr_pack(utdv_blob)
+
+            m = ldb.Message()
+            m.dn = ldb.Dn(samdb, nc)
+            m["replUpToDateVector"] = ldb.MessageElement(new_value,
+                                                         ldb.FLAG_MOD_REPLACE,
+                                                         "replUpToDateVector")
+            samdb.modify(m)
+
     def run(self, sambaopts=None, credopts=None, backup_file=None,
             targetdir=None, newservername=None, host_ip=None, host_ip6=None,
             site=None):
@@ -471,13 +493,21 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
             site = self.create_default_site(samdb, logger)
             logger.info("Adding new DC to site '{0}'".format(site))
 
-        # Create account using the join_add_objects function in the join object
-        # We need namingContexts, account control flags, and the sid saved by
-        # the backup process.
+        # read the naming contexts out of the DB
         res = samdb.search(base="", scope=ldb.SCOPE_BASE,
                            attrs=['namingContexts'])
         ncs = [str(r) for r in res[0].get('namingContexts')]
 
+        # for offline backups we need to make sure the upToDateness info
+        # contains the invocation-ID and highest-USN of the DC we backed up.
+        # Otherwise replication propagation dampening won't correctly filter
+        # objects created by that DC
+        if backup_type == "offline":
+            self.save_uptodate_vectors(samdb, ncs)
+
+        # Create account using the join_add_objects function in the join object
+        # We need namingContexts, account control flags, and the sid saved by
+        # the backup process.
         creds = credopts.get_credentials(lp)
         ctx = DCJoinContext(logger, creds=creds, lp=lp, site=site,
                             forced_local_samdb=samdb,
