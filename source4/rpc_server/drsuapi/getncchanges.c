@@ -3069,7 +3069,7 @@ allowed:
 	ncRoot->guid = getnc_state->ncRoot_guid;
 
 	/* we need the session key for encrypting password attributes */
-	status = dcesrv_inherited_session_key(dce_call->conn, &session_key);
+	status = dcesrv_auth_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,(__location__ ": Failed to get session key\n"));
 		return WERR_DS_DRA_INTERNAL_ERROR;
