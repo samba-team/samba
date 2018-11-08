@@ -285,9 +285,6 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 	dce_conn->auth_state.auth_finished = true;
 	dce_conn->allow_request = true;
 
-	/* Now that we are authenticated, go back to the generic session key... */
-	dce_conn->auth_state.session_key = dcesrv_generic_session_key;
-
 	if (call->pkt.ptype != DCERPC_PKT_AUTH3) {
 		return NT_STATUS_OK;
 	}

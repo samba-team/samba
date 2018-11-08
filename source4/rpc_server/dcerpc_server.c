@@ -479,6 +479,10 @@ NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
 {
 	struct dcesrv_auth *auth = &p->auth_state;
 
+	if (auth->auth_type != DCERPC_AUTH_TYPE_NONE) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
 	return dcesrv_session_info_session_key(auth, session_key);
 }
 
