@@ -235,7 +235,7 @@ static NTSTATUS dcesrv_samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 
-	handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_CONNECT);
+	handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_CONNECT);
 	if (!handle) {
 		talloc_free(c_state);
 		return NT_STATUS_NO_MEMORY;
@@ -497,7 +497,7 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 		initialize_guid_cache(&d_state->guid_caches[i]);
 	}
 
-	h_domain = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_DOMAIN);
+	h_domain = dcesrv_handle_create(dce_call, SAMR_HANDLE_DOMAIN);
 	if (!h_domain) {
 		talloc_free(d_state);
 		return NT_STATUS_NO_MEMORY;
@@ -1105,7 +1105,7 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 	a_state->account_name = talloc_steal(a_state, groupname);
 
 	/* create the policy handle */
-	g_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_GROUP);
+	g_handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_GROUP);
 	if (!g_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1461,7 +1461,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	/* create the policy handle */
-	u_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_USER);
+	u_handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_USER);
 	if (!u_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1771,7 +1771,7 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 	a_state->account_name = talloc_steal(a_state, alias_name);
 
 	/* create the policy handle */
-	a_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_ALIAS);
+	a_handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_ALIAS);
 	if (a_handle == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -2162,7 +2162,7 @@ static NTSTATUS dcesrv_samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	/* create the policy handle */
-	g_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_GROUP);
+	g_handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_GROUP);
 	if (!g_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2622,7 +2622,7 @@ static NTSTATUS dcesrv_samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	/* create the policy handle */
-	g_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_ALIAS);
+	g_handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_ALIAS);
 	if (!g_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3005,7 +3005,7 @@ static NTSTATUS dcesrv_samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* create the policy handle */
-	u_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_USER);
+	u_handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_USER);
 	if (!u_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
