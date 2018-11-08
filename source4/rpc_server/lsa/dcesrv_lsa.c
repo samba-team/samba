@@ -778,7 +778,7 @@ static NTSTATUS dcesrv_lsa_CreateAccount(struct dcesrv_call_state *dce_call, TAL
 		 (unsigned)r->in.access_mask,
 		 (unsigned)astate->access_mask));
 
-	ah = dcesrv_handle_new(dce_call->context, LSA_HANDLE_ACCOUNT);
+	ah = dcesrv_handle_create(dce_call, LSA_HANDLE_ACCOUNT);
 	if (!ah) {
 		talloc_free(astate);
 		return NT_STATUS_NO_MEMORY;
@@ -1339,7 +1339,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 	TALLOC_FREE(server_ids);
 
-	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_TRUSTED_DOMAIN);
+	handle = dcesrv_handle_create(dce_call, LSA_HANDLE_TRUSTED_DOMAIN);
 	if (!handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1471,7 +1471,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomain_common(
 		}
 	}
 
-	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_TRUSTED_DOMAIN);
+	handle = dcesrv_handle_create(dce_call, LSA_HANDLE_TRUSTED_DOMAIN);
 	if (!handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2719,7 +2719,7 @@ static NTSTATUS dcesrv_lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLO
 		 (unsigned)r->in.access_mask,
 		 (unsigned)astate->access_mask));
 
-	ah = dcesrv_handle_new(dce_call->context, LSA_HANDLE_ACCOUNT);
+	ah = dcesrv_handle_create(dce_call, LSA_HANDLE_ACCOUNT);
 	if (!ah) {
 		talloc_free(astate);
 		return NT_STATUS_NO_MEMORY;
@@ -3324,7 +3324,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_SECRET);
+	handle = dcesrv_handle_create(dce_call, LSA_HANDLE_SECRET);
 	NT_STATUS_HAVE_NO_MEMORY(handle);
 
 	handle->data = talloc_steal(handle, secret_state);
@@ -3446,7 +3446,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 
 	secret_state->secret_dn = talloc_reference(secret_state, msgs[0]->dn);
 
-	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_SECRET);
+	handle = dcesrv_handle_create(dce_call, LSA_HANDLE_SECRET);
 	if (!handle) {
 		return NT_STATUS_NO_MEMORY;
 	}

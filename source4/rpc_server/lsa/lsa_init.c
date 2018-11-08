@@ -255,7 +255,7 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return status;
 	}
 
-	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_POLICY);
+	handle = dcesrv_handle_create(dce_call, LSA_HANDLE_POLICY);
 	if (!handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
