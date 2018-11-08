@@ -400,6 +400,23 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
 
         samdb.modify(m)
 
+    def get_backup_type(self, samdb):
+        res = samdb.search(base=ldb.Dn(samdb, "@SAMBA_DSDB"),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['backupRename', 'backupType'])
+
+        # note that the backupType marker won't exist on backups created on
+        # v4.9. However, we can still infer the type, as only rename and
+        # online backups are supported on v4.9
+        if 'backupType' in res[0]:
+            backup_type = str(res[0]['backupType'])
+        elif 'backupRename' in res[0]:
+            backup_type = "rename"
+        else:
+            backup_type = "online"
+
+        return backup_type
+
     def run(self, sambaopts=None, credopts=None, backup_file=None,
             targetdir=None, newservername=None, host_ip=None, host_ip6=None,
             site=None):
@@ -445,6 +462,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         private_dir = os.path.join(targetdir, 'private')
         samdb_path = os.path.join(private_dir, 'sam.ldb')
         samdb = SamDB(url=samdb_path, session_info=system_session(), lp=lp)
+        backup_type = self.get_backup_type(samdb)
 
         if site is None:
             # There's no great way to work out the correct site to add the
@@ -480,8 +498,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         # Get the SID saved by the backup process and create account
         res = samdb.search(base=ldb.Dn(samdb, "@SAMBA_DSDB"),
                            scope=ldb.SCOPE_BASE,
-                           attrs=['sidForRestore', 'backupRename'])
-        is_rename = True if 'backupRename' in res[0] else False
+                           attrs=['sidForRestore'])
         sid = res[0].get('sidForRestore')[0]
         logger.info('Creating account with SID: ' + str(sid))
         ctx.join_add_objects(specified_sid=dom_sid(str(sid)))
@@ -497,7 +514,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         # if we renamed the backed-up domain, then we need to add the DNS
         # objects for the new realm (we do this in the restore, now that we
         # know the new DC's IP address)
-        if is_rename:
+        if backup_type == "rename":
             self.register_dns_zone(logger, samdb, lp, ctx.ntds_guid,
                                    host_ip, host_ip6, site)
 
