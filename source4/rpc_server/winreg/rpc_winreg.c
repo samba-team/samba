@@ -62,7 +62,7 @@ static WERROR dcesrv_winreg_openhive(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	WERROR result;
 
-	h = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
+	h = dcesrv_handle_create(dce_call, HTYPE_REGKEY);
 	W_ERROR_HAVE_NO_MEMORY(h);
 
 	result = reg_get_predefined_key(ctx, hkey,
@@ -125,7 +125,7 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	key = h->data;
 
-	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
+	newh = dcesrv_handle_create(dce_call, HTYPE_REGKEY);
 
 	switch (security_session_user_level(session_info, NULL))
 	{
@@ -434,7 +434,7 @@ static WERROR dcesrv_winreg_OpenKey(struct dcesrv_call_state *dce_call,
 			newh = talloc_reference(dce_call->context, h);
 			result = WERR_OK;
 		} else {
-			newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
+			newh = dcesrv_handle_create(dce_call, HTYPE_REGKEY);
 			result = reg_open_key(newh, key, r->in.keyname.name,
 				(struct registry_key **)&newh->data);
 		}
