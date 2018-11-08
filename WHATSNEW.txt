@@ -1,4 +1,98 @@
                    =============================
+                   Release Notes for Samba 4.9.2
+                         November 08, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.9 release series.
+
+
+Changes since 4.9.1:
+--------------------
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13418: dsdb: Add comments explaining the limitations of our current
+     backlink behaviour.
+   * BUG 13621: Fix problems running domain backups (handling SMBv2, sites).
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13621: Fix problems running domain backups (handling SMBv2, sites).
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13465: testparm: Fix crashes with PANIC: Messaging not initialized on
+     SLES 12 SP3.
+   * BUG 13642: Make vfs_fruit able to cleanup AppleDouble files.
+   * BUG 13646: File saving issues with vfs_fruit on samba >= 4.8.5.
+   * BUG 13649: Enabling vfs_fruit looses FinderInfo.
+   * BUG 13667: Cancelling of SMB2 aio reads and writes returns wrong error
+     NT_STATUS_INTERNAL_ERROR.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13641: Fix CTDB recovery record resurrection from inactive nodes and
+     simplify vacuuming.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13465: examples: Fix the smb2mount build.
+   * BUG 13629: libtevent: Fix build due to missing open_memstream on Illiumos.
+   * BUG 13662: winbindd_cache: Fix timeout calculation for sid<->name cache.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13653: dsdb encrypted_secrets: Allow "ldb:// and "mdb://" in file path.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13418: Extended DN SID component missing for member after switching
+     group membership.
+   * BUG 13624: Return STATUS_SESSION_EXPIRED error encrypted, if the request
+     was encrypted.
+
+o  David Mulder <dmulder@suse.com>
+   * BUG 13621: python: Allow forced signing via smb.SMB().
+   * BUG 13665: lib:socket: If returning early, set ifaces.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13616: ldb: Bump ldb version to 1.4.3, Python: Ensure ldb.Dn can accept
+     utf8 encoded unicode.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13465: testparm: Fix crashes with PANIC: Messaging not initialized on
+     SLES 12 SP3.
+   * BUG 13673: smbd: Fix DELETE_ON_CLOSE behaviour on files with READ_ONLY
+     attribute.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13601: waf: Add -fstack-clash-protection.
+   * BUG 13668: winbind: Fix segfault if an invalid passdb backend is
+     configured.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13659: Fix bugs in CTDB event handling.
+   * BUG 13670: Misbehaving nodes are sometimes not banned.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.9.1
                          September 24, 2018
                    =============================
@@ -53,8 +147,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:                                        
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.9.0
