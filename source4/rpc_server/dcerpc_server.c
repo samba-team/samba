@@ -490,14 +490,6 @@ static NTSTATUS dcesrv_local_fixed_session_key(struct dcesrv_auth *auth,
 	return dcerpc_generic_session_key(NULL, session_key);
 }
 
-NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
-				      DATA_BLOB *session_key)
-{
-	struct dcesrv_auth *auth = &p->auth_state;
-
-	return dcesrv_remote_session_key(auth, session_key);
-}
-
 /*
  * Fetch the authentication session key if available.
  *
