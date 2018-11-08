@@ -632,7 +632,11 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	bool schannel_global_required = (schannel == true);
 
 	if (schannel_global_required) {
-		if (dce_call->conn->auth_state.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+		enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+
+		dcesrv_call_auth_info(dce_call, &auth_type, NULL);
+
+		if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 			DBG_ERR("[%s] is not using schannel\n",
 				computer_name);
 			return NT_STATUS_ACCESS_DENIED;
@@ -834,6 +838,8 @@ static WERROR dcesrv_netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TAL
 static NTSTATUS dcesrv_netr_LogonSamLogon_check(struct dcesrv_call_state *dce_call,
 						const struct netr_LogonSamLogonEx *r)
 {
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:
 	case NetlogonServiceInformation:
@@ -888,9 +894,11 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	dcesrv_call_auth_info(dce_call, NULL, &auth_level);
+
 	switch (r->in.validation_level) {
 	case NetlogonValidationSamInfo4: /* 6 */
-		if (dce_call->conn->auth_state.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
+		if (auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		break;
@@ -1278,6 +1286,7 @@ static void dcesrv_netr_LogonSamLogon_base_reply(
 static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct netr_LogonSamLogonEx *r)
 {
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	struct dcesrv_netr_LogonSamLogon_base_state *state;
 	NTSTATUS nt_status;
 
@@ -1315,7 +1324,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 		return nt_status;
 	}
 
-	if (dce_call->conn->auth_state.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
+
+	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
