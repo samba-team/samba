@@ -272,16 +272,3 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 	return NT_STATUS_OK;
 }
-
-NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *c,
-				    DATA_BLOB *session_key)
-{
-	enum dcerpc_transport_t transport =
-		dcerpc_binding_get_transport(c->endpoint->ep_description);
-
-	if (transport != NCALRPC && transport != NCACN_UNIX_STREAM) {
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	return dcerpc_generic_session_key(NULL, session_key);
-}

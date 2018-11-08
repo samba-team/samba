@@ -199,7 +199,7 @@ struct dcesrv_auth {
 	uint32_t auth_context_id;
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
-	NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
+	NTSTATUS (*session_key_fn)(struct dcesrv_auth *, DATA_BLOB *session_key);
 	bool client_hdr_signing;
 	bool hdr_signing;
 	bool auth_finished;

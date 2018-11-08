@@ -474,16 +474,28 @@ static NTSTATUS dcesrv_session_info_session_key(struct dcesrv_auth *auth,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
-				      DATA_BLOB *session_key)
+static NTSTATUS dcesrv_remote_session_key(struct dcesrv_auth *auth,
+					  DATA_BLOB *session_key)
 {
-	struct dcesrv_auth *auth = &p->auth_state;
-
 	if (auth->auth_type != DCERPC_AUTH_TYPE_NONE) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
 	return dcesrv_session_info_session_key(auth, session_key);
+}
+
+static NTSTATUS dcesrv_local_fixed_session_key(struct dcesrv_auth *auth,
+					       DATA_BLOB *session_key)
+{
+	return dcerpc_generic_session_key(NULL, session_key);
+}
+
+NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
+				      DATA_BLOB *session_key)
+{
+	struct dcesrv_auth *auth = &p->auth_state;
+
+	return dcesrv_remote_session_key(auth, session_key);
 }
 
 /*
@@ -511,11 +523,11 @@ _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 	struct dcesrv_auth *auth = &p->auth_state;
 	NTSTATUS status;
 
-	if (auth->session_key == NULL) {
+	if (auth->session_key_fn == NULL) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	status = auth->session_key(p, session_key);
+	status = auth->session_key_fn(auth, session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -582,11 +594,11 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->auth_state.session_info = session_info;
 	switch (transport) {
 	case NCACN_NP:
-		p->auth_state.session_key = dcesrv_inherited_session_key;
+		p->auth_state.session_key_fn = dcesrv_remote_session_key;
 		break;
 	case NCALRPC:
 	case NCACN_UNIX_STREAM:
-		p->auth_state.session_key = dcesrv_generic_session_key;
+		p->auth_state.session_key_fn = dcesrv_local_fixed_session_key;
 		break;
 	default:
 		/*
