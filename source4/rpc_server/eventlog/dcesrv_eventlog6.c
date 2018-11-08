@@ -83,12 +83,12 @@ static WERROR dcesrv_eventlog6_EvtRpcRegisterLogQuery(struct dcesrv_call_state *
 {
 	struct dcesrv_handle *handle;
 
-	handle = dcesrv_handle_new(dce_call->context, 0);
+	handle = dcesrv_handle_create(dce_call, 0);
 	W_ERROR_HAVE_NO_MEMORY(handle);
 
 	r->out.handle = &handle->wire_handle;
 
-	handle = dcesrv_handle_new(dce_call->context, 0);
+	handle = dcesrv_handle_create(dce_call, 0);
 	W_ERROR_HAVE_NO_MEMORY(handle);
 
 	r->out.opControl = &handle->wire_handle;
