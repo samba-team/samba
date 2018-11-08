@@ -620,38 +620,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
  * The reason we keep 2 copies is that they use different structures to
  * represent the auth_info and the decrpc pipes.
  */
-
-/*
- * If schannel is required for this call test that it actually is available.
- */
-static NTSTATUS schannel_check_required(const struct dcesrv_auth *auth_info,
-					const char *computer_name,
-					bool integrity, bool privacy)
-{
-
-	if (auth_info && auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		if (!privacy && !integrity) {
-			return NT_STATUS_OK;
-		}
-
-		if ((!privacy && integrity) &&
-		    auth_info->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-			return NT_STATUS_OK;
-		}
-
-		if ((privacy || integrity) &&
-		    auth_info->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-			return NT_STATUS_OK;
-		}
-	}
-
-	/* test didn't pass */
-	DEBUG(0, ("schannel_check_required: [%s] is not using schannel\n",
-		  computer_name));
-
-	return NT_STATUS_ACCESS_DENIED;
-}
-
 static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
 						    TALLOC_CTX *mem_ctx,
 						    const char *computer_name,
@@ -664,11 +632,10 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	bool schannel_global_required = (schannel == true);
 
 	if (schannel_global_required) {
-		nt_status = schannel_check_required(&dce_call->conn->auth_state,
-						    computer_name,
-						    true, false);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+		if (dce_call->conn->auth_state.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+			DBG_ERR("[%s] is not using schannel\n",
+				computer_name);
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
