@@ -545,7 +545,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	DATA_BLOB new_password;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
-	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("samr: failed to get session key: %s "
 			 "=> NT_STATUS_WRONG_PASSWORD\n",
@@ -587,7 +587,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	MD5_CTX ctx;
 
-	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("samr: failed to get session key: %s "
 			 "=> NT_STATUS_WRONG_PASSWORD\n",
@@ -639,7 +639,7 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 	DATA_BLOB in, out;
 	NTSTATUS nt_status = NT_STATUS_OK;
 
-	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_USER_SESSION_KEY)) {
 		DEBUG(3,("samr: failed to get session key: %s "
 			 "=> use a random session key\n",
