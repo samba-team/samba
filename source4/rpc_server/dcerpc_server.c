@@ -489,7 +489,14 @@ _PUBLIC_ NTSTATUS dcesrv_auth_session_key(struct dcesrv_call_state *call,
 _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 				  DATA_BLOB *session_key)
 {
-	NTSTATUS status = p->auth_state.session_key(p, session_key);
+	struct dcesrv_auth *auth = &p->auth_state;
+	NTSTATUS status;
+
+	if (auth->session_key == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	status = auth->session_key(p, session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
