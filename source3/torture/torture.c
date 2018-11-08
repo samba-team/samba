@@ -11878,6 +11878,7 @@ static struct {
 	{ "LOCAL-CANONICALIZE-PATH", run_local_canonicalize_path, 0 },
 	{ "LOCAL-NAMEMAP-CACHE1", run_local_namemap_cache1, 0 },
 	{ "qpathinfo-bufsize", run_qpathinfo_bufsize, 0 },
+	{ "hide-new-files-timeout", run_hidenewfiles, 0 },
 	{NULL, NULL, 0}};
 
 /****************************************************************************

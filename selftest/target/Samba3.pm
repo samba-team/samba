@@ -838,6 +838,10 @@ sub setup_simpleserver
 	path = $prefix_abs/share
 	vfs objects =
 	smb encrypt = desired
+
+[hidenewfiles]
+	path = $prefix_abs/share
+	hide new files timeout = 5
 ";
 
 	my $vars = $self->provision($path, "WORKGROUP",
