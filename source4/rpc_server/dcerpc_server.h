@@ -289,7 +289,7 @@ struct dcesrv_connection {
 	const struct tsocket_address *remote_address;
 
 	/* the current authentication state */
-	struct dcesrv_auth auth_state;
+	struct dcesrv_auth *default_auth_state;
 
 	/*
 	 * remember which pdu types are allowed

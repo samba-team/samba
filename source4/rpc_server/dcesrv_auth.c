@@ -122,7 +122,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	auth->auth_context_id = call->in_auth_info.auth_context_id;
 
 	server_credentials 
-		= cli_credentials_init(call);
+		= cli_credentials_init(auth);
 	if (!server_credentials) {
 		DEBUG(1, ("Failed to init server credentials\n"));
 		return false;
@@ -136,7 +136,8 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	status = samba_server_gensec_start(dce_conn, call->event_ctx, 
+	status = samba_server_gensec_start(auth,
+					   call->event_ctx,
 					   call->msg_ctx,
 					   call->conn->dce_ctx->lp_ctx,
 					   server_credentials,
@@ -276,7 +277,7 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 	}
 
 	status = gensec_session_info(auth->gensec_security,
-				     dce_conn,
+				     auth,
 				     &auth->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to establish session_info: %s\n",

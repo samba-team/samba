@@ -531,6 +531,37 @@ _PUBLIC_ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
 	return NT_STATUS_OK;
 }
 
+static struct dcesrv_auth *dcesrv_auth_create(struct dcesrv_connection *conn)
+{
+	const struct dcesrv_endpoint *ep = conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(ep->ep_description);
+	struct dcesrv_auth *auth = NULL;
+
+	auth = talloc_zero(conn, struct dcesrv_auth);
+	if (auth == NULL) {
+		return NULL;
+	}
+
+	switch (transport) {
+	case NCACN_NP:
+		auth->session_key_fn = dcesrv_remote_session_key;
+		break;
+	case NCALRPC:
+	case NCACN_UNIX_STREAM:
+		auth->session_key_fn = dcesrv_local_fixed_session_key;
+		break;
+	default:
+		/*
+		 * All other's get a NULL pointer, which
+		 * results in NT_STATUS_NO_USER_SESSION_KEY
+		 */
+		break;
+	}
+
+	return auth;
+}
+
 /*
   connect to a dcerpc endpoint
 */
@@ -544,8 +575,7 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
-	enum dcerpc_transport_t transport =
-		dcerpc_binding_get_transport(ep->ep_description);
+	struct dcesrv_auth *auth = NULL;
 	struct dcesrv_connection *p;
 
 	if (!session_info) {
@@ -554,11 +584,6 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	p = talloc_zero(mem_ctx, struct dcesrv_connection);
 	NT_STATUS_HAVE_NO_MEMORY(p);
-
-	if (!talloc_reference(p, session_info)) {
-		talloc_free(p);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	p->dce_ctx = dce_ctx;
 	p->endpoint = ep;
@@ -572,22 +597,19 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->max_xmit_frag = 5840;
 	p->max_total_request_size = DCERPC_NCACN_REQUEST_DEFAULT_MAX_SIZE;
 
-	p->auth_state.session_info = session_info;
-	switch (transport) {
-	case NCACN_NP:
-		p->auth_state.session_key_fn = dcesrv_remote_session_key;
-		break;
-	case NCALRPC:
-	case NCACN_UNIX_STREAM:
-		p->auth_state.session_key_fn = dcesrv_local_fixed_session_key;
-		break;
-	default:
-		/*
-		 * All other's get a NULL pointer, which
-		 * results in NT_STATUS_NO_USER_SESSION_KEY
-		 */
-		break;
+	auth = dcesrv_auth_create(p);
+	if (auth == NULL) {
+		talloc_free(p);
+		return NT_STATUS_NO_MEMORY;
 	}
+
+	auth->session_info = talloc_reference(auth, session_info);
+	if (auth->session_info == NULL) {
+		talloc_free(p);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	p->default_auth_state = auth;
 
 	/*
 	 * For now we only support NDR32.
@@ -2000,7 +2022,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	talloc_steal(call, blob.data);
 	call->pkt = *pkt;
 
-	call->auth_state = &dce_conn->auth_state;
+	call->auth_state = dce_conn->default_auth_state;
 
 	talloc_set_destructor(call, dcesrv_call_dequeue);
 
