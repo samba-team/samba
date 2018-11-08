@@ -161,20 +161,20 @@ struct dcesrv_call_state {
 * created and fetch using the dcesrv_handle_* functions.
 *
 * Use
-* dcesrv_handle_new(struct dcesrv_connection \*, uint8 handle_type)
+* dcesrv_handle_create(struct dcesrv_call_state \*, uint8 handle_type)
 * to obtain a new handle of the specified type. Handle types are
 * unique within each pipe.
 *
 * The handle can later be fetched again using:
 *
-* struct dcesrv_handle *dcesrv_handle_fetch(
-*         struct dcesrv_connection *dce_conn,
+* struct dcesrv_handle *dcesrv_handle_lookup(
+*         struct dcesrv_call_state *dce_call,
 *         struct policy_handle *p,
 *         uint8 handle_type)
 *
 * and destroyed by:
 *
-* 	dcesrv_handle_destroy(struct dcesrv_handle *).
+* 	TALLOC_FREE(struct dcesrv_handle *).
 *
 * User data should be stored in the 'data' member of the dcesrv_handle
 * struct.
@@ -481,7 +481,7 @@ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
    invalid handle or retval if the handle is of the
    wrong type */
 #define DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, retval) do { \
-	(h) = dcesrv_handle_fetch(dce_call->context, (inhandle), DCESRV_HANDLE_ANY); \
+	(h) = dcesrv_handle_lookup(dce_call, (inhandle), DCESRV_HANDLE_ANY); \
 	DCESRV_CHECK_HANDLE(h); \
 	if ((t) != DCESRV_HANDLE_ANY && (h)->wire_handle.handle_type != (t)) { \
 		return retval; \
@@ -491,7 +491,7 @@ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
 /* this checks for a valid policy handle and gives a dcerpc fault 
    if its the wrong type of handle */
 #define DCESRV_PULL_HANDLE_FAULT(h, inhandle, t) do { \
-	(h) = dcesrv_handle_fetch(dce_call->context, (inhandle), t); \
+	(h) = dcesrv_handle_lookup(dce_call, (inhandle), t); \
 	DCESRV_CHECK_HANDLE(h); \
 } while (0)
 
