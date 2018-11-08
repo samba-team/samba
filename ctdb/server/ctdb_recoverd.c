@@ -915,20 +915,19 @@ static void take_reclock_handler(char status,
 	s->locked = (status == '0') ;
 }
 
-static bool ctdb_recovery_lock(struct ctdb_recoverd *rec);
+static void force_election(struct ctdb_recoverd *rec,
+			   uint32_t pnn,
+			   struct ctdb_node_map_old *nodemap);
 
 static void lost_reclock_handler(void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type_abort(
 		private_data, struct ctdb_recoverd);
 
-	DEBUG(DEBUG_ERR,
-	      ("Recovery lock helper terminated unexpectedly - "
-	       "trying to retake recovery lock\n"));
+	D_ERR("Recovery lock helper terminated, triggering an election\n");
 	TALLOC_FREE(rec->recovery_lock_handle);
-	if (! ctdb_recovery_lock(rec)) {
-		DEBUG(DEBUG_ERR, ("Failed to take recovery lock\n"));
-	}
+
+	force_election(rec, ctdb_get_pnn(rec->ctdb), rec->nodemap);
 }
 
 static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
