@@ -73,6 +73,13 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 	return h;
 }
 
+_PUBLIC_
+struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
+					   uint8_t handle_type)
+{
+	return dcesrv_handle_new(call->context, handle_type);
+}
+
 /**
   find an internal handle given a wire handle. If the wire handle is NULL then
   allocate a new handle
@@ -121,4 +128,12 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 	}
 
 	return NULL;
+}
+
+_PUBLIC_
+struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
+					   const struct policy_handle *p,
+					   uint8_t handle_type)
+{
+	return dcesrv_handle_fetch(call->context, p, handle_type);
 }

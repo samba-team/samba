@@ -429,11 +429,16 @@ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 NTSTATUS dcesrv_reply(struct dcesrv_call_state *call);
 struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *context, 
 					uint8_t handle_type);
+struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
+					   uint8_t handle_type);
 
 struct dcesrv_handle *dcesrv_handle_fetch(
 					  struct dcesrv_connection_context *context, 
 					  const struct policy_handle *p,
 					  uint8_t handle_type);
+struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
+					   const struct policy_handle *p,
+					   uint8_t handle_type);
 
 const struct tsocket_address *dcesrv_connection_get_local_address(struct dcesrv_connection *conn);
 const struct tsocket_address *dcesrv_connection_get_remote_address(struct dcesrv_connection *conn);
