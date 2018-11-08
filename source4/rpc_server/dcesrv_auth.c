@@ -32,66 +32,13 @@
 #include "param/param.h"
 #include "librpc/rpc/rpc_common.h"
 
-/*
-  parse any auth information from a dcerpc bind request
-  return false if we can't handle the auth request for some 
-  reason (in which case we send a bind_nak)
-*/
-bool dcesrv_auth_bind(struct dcesrv_call_state *call)
+static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 {
 	struct cli_credentials *server_credentials = NULL;
-	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
 	bool want_header_signing = false;
 	NTSTATUS status;
-
-	if (pkt->auth_length == 0) {
-		enum dcerpc_transport_t transport =
-			dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
-		const char *auth_type = derpc_transport_string_by_transport(transport);
-		const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
-		if (transport == NCACN_NP) {
-			transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
-		}
-		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
-		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
-		auth->auth_context_id = 0;
-
-		/*
-		 * Log the authorization to this RPC interface.  This
-		 * covered ncacn_np pass-through auth, and anonymous
-		 * DCE/RPC (eg epmapper, netlogon etc)
-		 */
-		log_successful_authz_event(call->conn->msg_ctx,
-					   call->conn->dce_ctx->lp_ctx,
-					   call->conn->remote_address,
-					   call->conn->local_address,
-					   "DCE/RPC",
-					   auth_type,
-					   transport_protection,
-					   auth->session_info);
-
-		return true;
-	}
-
-	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.bind.auth_info,
-					  &call->in_auth_info,
-					  NULL, true);
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * Setting DCERPC_AUTH_LEVEL_NONE,
-		 * gives the caller the reject_reason
-		 * as auth_context_id.
-		 *
-		 * Note: DCERPC_AUTH_LEVEL_NONE == 1
-		 */
-		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
-		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
-		auth->auth_context_id =
-			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED;
-		return false;
-	}
 
 	switch (call->in_auth_info.auth_level) {
 	case DCERPC_AUTH_LEVEL_CONNECT:
@@ -240,6 +187,67 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	}
 
 	return true;
+}
+
+/*
+  parse any auth information from a dcerpc bind request
+  return false if we can't handle the auth request for some
+  reason (in which case we send a bind_nak)
+*/
+bool dcesrv_auth_bind(struct dcesrv_call_state *call)
+{
+	struct ncacn_packet *pkt = &call->pkt;
+	struct dcesrv_auth *auth = call->auth_state;
+	NTSTATUS status;
+
+	if (pkt->auth_length == 0) {
+		enum dcerpc_transport_t transport =
+			dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
+		const char *auth_type = derpc_transport_string_by_transport(transport);
+		const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+		if (transport == NCACN_NP) {
+			transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
+		}
+		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+		auth->auth_context_id = 0;
+
+		/*
+		 * Log the authorization to this RPC interface.  This
+		 * covered ncacn_np pass-through auth, and anonymous
+		 * DCE/RPC (eg epmapper, netlogon etc)
+		 */
+		log_successful_authz_event(call->conn->msg_ctx,
+					   call->conn->dce_ctx->lp_ctx,
+					   call->conn->remote_address,
+					   call->conn->local_address,
+					   "DCE/RPC",
+					   auth_type,
+					   transport_protection,
+					   auth->session_info);
+
+		return true;
+	}
+
+	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.bind.auth_info,
+					  &call->in_auth_info,
+					  NULL, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Setting DCERPC_AUTH_LEVEL_NONE,
+		 * gives the caller the reject_reason
+		 * as auth_context_id.
+		 *
+		 * Note: DCERPC_AUTH_LEVEL_NONE == 1
+		 */
+		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+		auth->auth_context_id =
+			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED;
+		return false;
+	}
+
+	return dcesrv_auth_prepare_gensec(call);
 }
 
 NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
