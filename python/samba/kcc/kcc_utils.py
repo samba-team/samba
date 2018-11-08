@@ -669,7 +669,7 @@ class DirectoryServiceAgent(object):
         if "options" in msg:
             self.options = int(msg["options"][0])
 
-        if "msDS-isRODC" in msg and msg["msDS-isRODC"][0] == "TRUE":
+        if "msDS-isRODC" in msg and str(msg["msDS-isRODC"][0]) == "TRUE":
             self.dsa_is_ro = True
         else:
             self.dsa_is_ro = False
@@ -972,7 +972,7 @@ class NTDSConnection(object):
             self.options = int(msg["options"][0])
 
         if "enabledConnection" in msg:
-            if msg["enabledConnection"][0].upper().lstrip().rstrip() == "TRUE":
+            if str(msg["enabledConnection"][0]).upper().lstrip().rstrip() == "TRUE":
                 self.enabled = True
 
         if "systemFlags" in msg:
@@ -1353,7 +1353,7 @@ class Partition(NamingContext):
                 continue
 
             if k == "Enabled":
-                if msg[k][0].upper().lstrip().rstrip() == "TRUE":
+                if str(msg[k][0]).upper().lstrip().rstrip() == "TRUE":
                     self.enabled = True
                 else:
                     self.enabled = False
