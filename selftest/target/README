@@ -16,6 +16,16 @@ interference.
 
 Some of the different testenvs are described in more detail below.
 
+Important notes if adding a new testenv
+---------------------------------------
+- When adding a new testenv, in the Perl code it is recommended to always
+explicitly specify the --configfile option in the samba-tool command, i.e. add
+"env->{CONFIGURATION}" to the samba-tool command. Otherwise, the samba-tool
+can try to load smb.conf from the default install location (i.e.
+/usr/local/samba/etc/smb.conf). Loading a host-specific smb.conf that's outside
+of the testenv is obviously not ideal and something we want to avoid in a
+reliable test framework.
+
 'local' disambiguation
 ----------------------
 You may notice some variation in the target testenv that test suites are run
