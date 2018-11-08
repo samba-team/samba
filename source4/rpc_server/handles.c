@@ -38,9 +38,11 @@ static int dcesrv_handle_destructor(struct dcesrv_handle *h)
 /*
   allocate a new rpc handle
 */
-_PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *context, 
-						 uint8_t handle_type)
+_PUBLIC_
+struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
+					   uint8_t handle_type)
 {
+	struct dcesrv_connection_context *context = call->context;
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
 
@@ -73,22 +75,17 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 	return h;
 }
 
-_PUBLIC_
-struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
-					   uint8_t handle_type)
-{
-	return dcesrv_handle_new(call->context, handle_type);
-}
-
 /**
   find an internal handle given a wire handle. If the wire handle is NULL then
   allocate a new handle
 */
-_PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
-					  struct dcesrv_connection_context *context, 
-					  const struct policy_handle *p,
-					  uint8_t handle_type)
+
+_PUBLIC_
+struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
+					   const struct policy_handle *p,
+					   uint8_t handle_type)
 {
+	struct dcesrv_connection_context *context = call->context;
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
 
@@ -101,7 +98,7 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 
 	if (ndr_policy_handle_empty(p)) {
 		/* TODO: we should probably return a NULL handle here */
-		return dcesrv_handle_new(context, handle_type);
+		return dcesrv_handle_create(call, handle_type);
 	}
 
 	for (h=context->conn->assoc_group->handles; h; h=h->next) {
@@ -128,12 +125,4 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 	}
 
 	return NULL;
-}
-
-_PUBLIC_
-struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
-					   const struct policy_handle *p,
-					   uint8_t handle_type)
-{
-	return dcesrv_handle_fetch(call->context, p, handle_type);
 }
