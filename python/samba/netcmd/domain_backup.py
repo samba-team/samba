@@ -261,6 +261,7 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         time_str = get_timestamp()
         add_backup_marker(samdb, "backupDate", time_str)
         add_backup_marker(samdb, "sidForRestore", new_sid)
+        add_backup_marker(samdb, "backupType", "online")
 
         # ensure the admin user always has a password set (same as provision)
         if no_secrets:
@@ -379,6 +380,25 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
             sites.create_site(samdb, samdb.get_config_basedn(), sitename)
 
         return sitename
+
+    def remove_backup_markers(self, samdb):
+        """Remove DB markers added by the backup process"""
+
+        # check what markers we need to remove (this may vary)
+        markers = ['sidForRestore', 'backupRename', 'backupDate', 'backupType']
+        res = samdb.search(base=ldb.Dn(samdb, "@SAMBA_DSDB"),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=markers)
+
+        # remove any markers that exist in the DB
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, "@SAMBA_DSDB")
+
+        for attr in markers:
+            if attr in res[0]:
+                m[attr] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, attr)
+
+        samdb.modify(m)
 
     def run(self, sambaopts=None, credopts=None, backup_file=None,
             targetdir=None, newservername=None, host_ip=None, host_ip6=None,
@@ -553,16 +573,7 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         self.fix_old_dc_references(samdb)
 
         # Remove DB markers added by the backup process
-        m = ldb.Message()
-        m.dn = ldb.Dn(samdb, "@SAMBA_DSDB")
-        m["backupDate"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
-                                             "backupDate")
-        m["sidForRestore"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
-                                                "sidForRestore")
-        if is_rename:
-            m["backupRename"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
-                                                   "backupRename")
-        samdb.modify(m)
+        self.remove_backup_markers(samdb)
 
         logger.info("Backup file successfully restored to %s" % targetdir)
         logger.info("Please check the smb.conf settings are correct before "
@@ -790,6 +801,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         add_backup_marker(samdb, "backupDate", time_str)
         add_backup_marker(samdb, "sidForRestore", new_sid)
         add_backup_marker(samdb, "backupRename", old_realm)
+        add_backup_marker(samdb, "backupType", "rename")
 
         # fix up the DNS objects that are using the old dnsRoot value
         self.update_dns_root(logger, samdb, old_realm, delete_old_dns)
@@ -992,6 +1004,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         time_str = get_timestamp()
         add_backup_marker(samdb, "backupDate", time_str)
         add_backup_marker(samdb, "sidForRestore", sid)
+        add_backup_marker(samdb, "backupType", "offline")
 
         # Now handle all the LDB and TDB files that are not linked to
         # anything else.  Use transactions for LDBs.
