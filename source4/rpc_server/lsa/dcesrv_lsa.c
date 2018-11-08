@@ -859,7 +859,7 @@ static NTSTATUS get_trustdom_auth_blob(struct dcesrv_call_state *dce_call,
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
 
-	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -3494,7 +3494,7 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3671,7 +3671,7 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 	}
 	msg = res[0];
 
-	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
