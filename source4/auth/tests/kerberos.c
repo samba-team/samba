@@ -51,6 +51,7 @@ static void internal_obsolete_keytab_test(int num_principals, int num_kvnos,
 
 	code = krb5_kt_start_seq_get(krb5_ctx, keytab, &cursor);
 	assert_int_equal(code, 0);
+#ifdef SAMBA4_USES_HEIMDAL
 	for (i=0; i<num_principals; i++) {
 		expect_princ_name[4] = (char)i+48;
 		for (j=0; j<num_kvnos; j++) {
@@ -59,6 +60,18 @@ static void internal_obsolete_keytab_test(int num_principals, int num_kvnos,
 						  &kt_entry, &cursor);
 			assert_int_equal(code, 0);
 			assert_int_equal(kt_entry.vno, j+1);
+#else
+	/* MIT - For MEMORY type keytabs, krb5_kt_add_entry() adds an
+	 * entry to the beginning of the keytab table, not the end */
+	for (i=num_principals-1; i>=0; i--) {
+		expect_princ_name[4] = (char)i+48;
+		for (j=num_kvnos; j>0; j--) {
+			char *unparsed_name;
+			code = krb5_kt_next_entry(krb5_ctx, keytab,
+						  &kt_entry, &cursor);
+			assert_int_equal(code, 0);
+			assert_int_equal(kt_entry.vno, j);
+#endif
 			krb5_unparse_name(krb5_ctx, kt_entry.principal,
 					  &unparsed_name);
 			assert_string_equal(expect_princ_name, unparsed_name);
@@ -72,7 +85,11 @@ static void internal_obsolete_keytab_test(int num_principals, int num_kvnos,
 
 	code = krb5_kt_start_seq_get(krb5_ctx, keytab, &cursor);
 	assert_int_equal(code, 0);
+#ifdef SAMBA4_USES_HEIMDAL
 	for (i=0; i<num_principals; i++) {
+#else /* MIT - reverse iterate through entries */
+	for (i=num_principals-1; i>=0; i--) {
+#endif
 		char *unparsed_name;
 		expect_princ_name[4] = (char)i+48;
 		code = krb5_kt_next_entry(krb5_ctx, keytab, &kt_entry, &cursor);
