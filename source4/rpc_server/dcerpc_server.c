@@ -459,14 +459,27 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcesrv_session_info_session_key(struct dcesrv_auth *auth,
+						DATA_BLOB *session_key)
+{
+	if (auth->session_info == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (auth->session_info->session_key.length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*session_key = auth->session_info->session_key;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
 				      DATA_BLOB *session_key)
 {
-	if (p->auth_state.session_info->session_key.length) {
-		*session_key = p->auth_state.session_info->session_key;
-		return NT_STATUS_OK;
-	}
-	return NT_STATUS_NO_USER_SESSION_KEY;
+	struct dcesrv_auth *auth = &p->auth_state;
+
+	return dcesrv_session_info_session_key(auth, session_key);
 }
 
 /*
@@ -478,7 +491,9 @@ NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
 _PUBLIC_ NTSTATUS dcesrv_auth_session_key(struct dcesrv_call_state *call,
 					  DATA_BLOB *session_key)
 {
-	return dcesrv_inherited_session_key(call->conn, session_key);
+	struct dcesrv_auth *auth = &call->conn->auth_state;
+
+	return dcesrv_session_info_session_key(auth, session_key);
 }
 
 /*
