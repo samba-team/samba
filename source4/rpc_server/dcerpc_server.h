@@ -438,8 +438,6 @@ struct dcesrv_handle *dcesrv_handle_fetch(
 const struct tsocket_address *dcesrv_connection_get_local_address(struct dcesrv_connection *conn);
 const struct tsocket_address *dcesrv_connection_get_remote_address(struct dcesrv_connection *conn);
 
-NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p, DATA_BLOB *session_key);
-
 /*
  * Fetch the authentication session key if available.
  *

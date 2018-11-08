@@ -505,14 +505,16 @@ _PUBLIC_ NTSTATUS dcesrv_auth_session_key(struct dcesrv_call_state *call,
 }
 
 /*
-  fetch the user session key - may be default (above) or the SMB session key
-
-  The key is always truncated to 16 bytes 
+ * Fetch the transport session key if available.
+ * Typically this is the SMB session key
+ * or a fixed key for local transports.
+ *
+ * The key is always truncated to 16 bytes.
 */
-_PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
-				  DATA_BLOB *session_key)
+_PUBLIC_ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
+					       DATA_BLOB *session_key)
 {
-	struct dcesrv_auth *auth = &p->auth_state;
+	struct dcesrv_auth *auth = &call->conn->auth_state;
 	NTSTATUS status;
 
 	if (auth->session_key_fn == NULL) {
@@ -527,19 +529,6 @@ _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 	session_key->length = MIN(session_key->length, 16);
 
 	return NT_STATUS_OK;
-}
-
-/*
- * Fetch the transport session key if available.
- * Typically this is the SMB session key
- * or a fixed key for local transports.
- *
- * The key is always truncated to 16 bytes.
-*/
-_PUBLIC_ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
-					       DATA_BLOB *session_key)
-{
-	return dcesrv_fetch_session_key(call->conn, session_key);
 }
 
 /*
