@@ -2670,6 +2670,7 @@ sub get_backup_server_args
 	my $server = $dcvars->{DC_SERVER_IP};
 	my $server_args = "--server=$server ";
 	$server_args .= "-U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+	$server_args .= " $dcvars->{CONFIGURATION}";
 
 	return $server_args;
 }
@@ -2980,10 +2981,11 @@ sub setup_labdc
 	my $samba_tool = Samba::bindir_path($self, "samba-tool");
 	my $cmd = "$samba_tool user setpassword $env->{USERNAME} ";
 	$cmd .= "--newpassword=$env->{PASSWORD} -H $restore_dir/private/sam.ldb";
+	$cmd .= " $env->{CONFIGURATION}";
 
 	unless(system($cmd) == 0) {
 		warn("Failed to reset admin's password: \n$cmd");
-		return -1;
+		return undef;
 	}
 
 	# start samba for the restored DC
@@ -3073,6 +3075,7 @@ sub setup_customdc
 	my $samba_tool = Samba::bindir_path($self, "samba-tool");
 	my $cmd = "$samba_tool user setpassword $env->{USERNAME} ";
 	$cmd .= "--newpassword=$password -H $restore_dir/private/sam.ldb";
+	$cmd .= " $env->{CONFIGURATION}";
 
 	unless(system($cmd) == 0) {
 		warn("Failed to reset admin's password: \n$cmd");
