@@ -3233,3 +3233,20 @@ _PUBLIC_ struct auth_session_info *dcesrv_call_session_info(struct dcesrv_call_s
 {
 	return dce_call->context->conn->auth_state.session_info;
 }
+
+/**
+ * retrieve auth type/level from a dce_call
+ */
+_PUBLIC_ void dcesrv_call_auth_info(struct dcesrv_call_state *dce_call,
+				    enum dcerpc_AuthType *auth_type,
+				    enum dcerpc_AuthLevel *auth_level)
+{
+	struct dcesrv_auth *auth = &dce_call->conn->auth_state;
+
+	if (auth_type != NULL) {
+		*auth_type = auth->auth_type;
+	}
+	if (auth_level != NULL) {
+		*auth_level = auth->auth_level;
+	}
+}

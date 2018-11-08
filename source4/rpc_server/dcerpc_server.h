@@ -519,6 +519,13 @@ _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call
  */
 _PUBLIC_ struct auth_session_info *dcesrv_call_session_info(struct dcesrv_call_state *dce_call);
 
+/**
+ * retrieve auth type/level from a dce_call
+ */
+_PUBLIC_ void dcesrv_call_auth_info(struct dcesrv_call_state *dce_call,
+				    enum dcerpc_AuthType *auth_type,
+				    enum dcerpc_AuthLevel *auth_level);
+
 _PUBLIC_ NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
 							  const struct dcesrv_interface *iface);
 _PUBLIC_ NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_call,
