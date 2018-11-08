@@ -47,7 +47,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	const char *binding = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
-	bool must_free_credentials = true;
+	bool must_free_credentials = false;
 	bool machine_account;
 	struct dcerpc_binding		*b;
 	struct composite_context	*pipe_conn_req;
@@ -78,12 +78,15 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
+	credentials = dcesrv_call_credentials(dce_call);
+
 	if (user && pass) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using specified account\n"));
 		credentials = cli_credentials_init(priv);
 		if (!credentials) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		must_free_credentials = true;
 		cli_credentials_set_conf(credentials, dce_call->conn->dce_ctx->lp_ctx);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 		if (domain) {
@@ -93,6 +96,10 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	} else if (machine_account) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using machine account\n"));
 		credentials = cli_credentials_init(priv);
+		if (!credentials) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		must_free_credentials = true;
 		cli_credentials_set_conf(credentials, dce_call->conn->dce_ctx->lp_ctx);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
@@ -101,10 +108,8 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-	} else if (dce_call->conn->auth_state.session_info->credentials) {
+	} else if (credentials != NULL) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using delegated credentials\n"));
-		credentials = dce_call->conn->auth_state.session_info->credentials;
-		must_free_credentials = false;
 	} else {
 		DEBUG(1,("dcerpc_remote: RPC Proxy: You must supply binding, user and password or have delegated credentials\n"));
 		return NT_STATUS_INVALID_PARAMETER;
