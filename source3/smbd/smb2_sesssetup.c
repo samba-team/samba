@@ -525,6 +525,10 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 
 	reload_services(smb2req->sconn, conn_snum_used, true);
 
+	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
+		smb2req->do_signing = true;
+	}
+
 	session->status = NT_STATUS_OK;
 	TALLOC_FREE(session->global->auth_session_info);
 	session->global->auth_session_info = talloc_move(session->global,
@@ -550,10 +554,6 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	}
 
 	conn_clear_vuid_caches(xconn->client->sconn, session->compat->vuid);
-
-	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
-		smb2req->do_signing = true;
-	}
 
 	*out_session_id = session->global->session_wire_id;
 
