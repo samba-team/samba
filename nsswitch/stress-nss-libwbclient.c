@@ -118,7 +118,13 @@ int main(int argc, char *argv[])
 
 	state.username = argv[1];
 	state.timeout = time(NULL) + RUNTIME;
-	pthread_mutex_init(&state.lock, NULL);
+	rc = pthread_mutex_init(&state.lock, NULL);
+	if (rc != 0) {
+		fprintf(stderr,
+			"pthread_mutex_init failed: %s\n",
+			strerror(rc));
+		exit(1);
+	}
 	state.fail = false;
 	state.nss_loop_count = 0;
 	state.wbc_loop_count = 0;
