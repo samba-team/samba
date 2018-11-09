@@ -568,7 +568,10 @@ static int fake_acl_process_chmod(SMB_ACL_T *pp_the_acl,
 		}
 		switch (tagtype) {
 			case SMB_ACL_USER_OBJ:
-				map_acl_perms_to_permset(umode, &permset);
+				ret = map_acl_perms_to_permset(umode, &permset);
+				if (ret == -1) {
+					return -1;
+				}
 				break;
 			case SMB_ACL_USER:
 				puid = (uid_t *)sys_acl_get_qualifier(entry);
@@ -578,18 +581,27 @@ static int fake_acl_process_chmod(SMB_ACL_T *pp_the_acl,
 				if (owner != *puid) {
 					break;
 				}
-				map_acl_perms_to_permset(umode, &permset);
+				ret = map_acl_perms_to_permset(umode, &permset);
+				if (ret == -1) {
+					return -1;
+				}
 				break;
 			case SMB_ACL_GROUP_OBJ:
 			case SMB_ACL_GROUP:
 				/* Ignore all group entries. */
 				break;
 			case SMB_ACL_MASK:
-				map_acl_perms_to_permset(mmode, &permset);
+				ret = map_acl_perms_to_permset(mmode, &permset);
+				if (ret == -1) {
+					return -1;
+				}
 				got_mask = true;
 				break;
 			case SMB_ACL_OTHER:
-				map_acl_perms_to_permset(omode, &permset);
+				ret = map_acl_perms_to_permset(omode, &permset);
+				if (ret == -1) {
+					return -1;
+				}
 				break;
 			default:
 				errno = EINVAL;
@@ -614,7 +626,10 @@ static int fake_acl_process_chmod(SMB_ACL_T *pp_the_acl,
 		if (ret == -1) {
 			return -1;
 		}
-		map_acl_perms_to_permset(mmode, &mask_permset);
+		ret = map_acl_perms_to_permset(mmode, &mask_permset);
+		if (ret == -1) {
+			return -1;
+		}
 		ret = sys_acl_set_permset(mask_entry, mask_permset);
 		if (ret == -1) {
 			return -1;
