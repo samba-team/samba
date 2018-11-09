@@ -6568,6 +6568,43 @@ static bool la_entry_matches_group(struct la_entry *la_entry,
 }
 
 /**
+ * Creates a new la_entry to store replication info for a single
+ * linked attribute.
+ */
+static struct la_entry *
+create_la_entry(struct replmd_private *replmd_private,
+		struct drsuapi_DsReplicaLinkedAttribute *la,
+		uint32_t dsdb_repl_flags)
+{
+	struct la_entry *la_entry;
+
+	if (replmd_private->la_ctx == NULL) {
+		replmd_private->la_ctx = talloc_new(replmd_private);
+	}
+	la_entry = talloc(replmd_private->la_ctx, struct la_entry);
+	if (la_entry == NULL) {
+		return NULL;
+	}
+	la_entry->la = talloc(la_entry,
+			      struct drsuapi_DsReplicaLinkedAttribute);
+	if (la_entry->la == NULL) {
+		talloc_free(la_entry);
+		return NULL;
+	}
+	*la_entry->la = *la;
+	la_entry->dsdb_repl_flags = dsdb_repl_flags;
+
+	/*
+	 * we need to steal the non-scalars so they stay
+	 * around until the end of the transaction
+	 */
+	talloc_steal(la_entry->la, la_entry->la->identifier);
+	talloc_steal(la_entry->la, la_entry->la->value.blob);
+
+	return la_entry;
+}
+
+/**
  * Stores the linked attributes received in the replication chunk - these get
  * applied at the end of the transaction. We also check that each linked
  * attribute is valid, i.e. source and target objects are known.
@@ -6594,27 +6631,14 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		struct la_entry *la_entry;
 		bool new_srcobj;
 
-		if (replmd_private->la_ctx == NULL) {
-			replmd_private->la_ctx = talloc_new(replmd_private);
-		}
-		la_entry = talloc(replmd_private->la_ctx, struct la_entry);
+		/* create an entry to store the received link attribute info */
+		la_entry = create_la_entry(replmd_private,
+					   &ar->objs->linked_attributes[i],
+					   ar->objs->dsdb_repl_flags);
 		if (la_entry == NULL) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		la_entry->la = talloc(la_entry, struct drsuapi_DsReplicaLinkedAttribute);
-		if (la_entry->la == NULL) {
-			talloc_free(la_entry);
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		*la_entry->la = ar->objs->linked_attributes[i];
-		la_entry->dsdb_repl_flags = ar->objs->dsdb_repl_flags;
-
-		/* we need to steal the non-scalars so they stay
-		   around until the end of the transaction */
-		talloc_steal(la_entry->la, la_entry->la->identifier);
-		talloc_steal(la_entry->la, la_entry->la->value.blob);
 
 		/*
 		 * check if we're still dealing with the same source object
