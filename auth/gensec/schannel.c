@@ -33,7 +33,7 @@
 #include "librpc/gen_ndr/dcerpc.h"
 #include "param/param.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
-#include "lib/crypto/crypto.h"
+#include "lib/crypto/aes.h"
 #include "libds/common/roles.h"
 
 #include "lib/crypto/gnutls_helpers.h"
@@ -158,7 +158,12 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 		aes_cfb8_encrypt(seq_num, seq_num, 8, &key, iv, AES_ENCRYPT);
 	} else {
 		static const uint8_t zeros[4];
-		uint8_t sequence_key[16];
+		uint8_t _sequence_key[16];
+		gnutls_cipher_hd_t cipher_hnd;
+		gnutls_datum_t sequence_key = {
+			.data = _sequence_key,
+			.size = sizeof(_sequence_key),
+		};
 		uint8_t digest1[16];
 		int rc;
 
@@ -177,16 +182,30 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 				      sizeof(digest1),
 				      checksum,
 				      checksum_length,
-				      sequence_key);
+				      _sequence_key);
 		if (rc < 0) {
 			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		ZERO_ARRAY(digest1);
 
-		arcfour_crypt(seq_num, sequence_key, 8);
+		rc = gnutls_cipher_init(&cipher_hnd,
+					GNUTLS_CIPHER_ARCFOUR_128,
+					&sequence_key,
+					NULL);
+		if (rc < 0) {
+			ZERO_ARRAY(_sequence_key);
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
 
-		ZERO_ARRAY(sequence_key);
+		rc = gnutls_cipher_encrypt(cipher_hnd,
+					   seq_num,
+					   8);
+		gnutls_cipher_deinit(cipher_hnd);
+		ZERO_ARRAY(_sequence_key);
+		if (rc < 0) {
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
 	}
 
 	state->seq_num++;
