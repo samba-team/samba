@@ -1047,6 +1047,7 @@ done:
 
 
 static bool test_session_expire1i(struct torture_context *tctx,
+				  bool force_signing,
 				  bool force_encryption)
 {
 	NTSTATUS status;
@@ -1078,7 +1079,9 @@ static bool test_session_expire1i(struct torture_context *tctx,
 	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
-	options.signing = SMB_SIGNING_REQUIRED;
+	if (force_signing) {
+		options.signing = SMB_SIGNING_REQUIRED;
+	}
 
 	status = smb2_connect(tctx,
 			      host,
@@ -1191,12 +1194,14 @@ done:
 static bool test_session_expire1s(struct torture_context *tctx)
 {
 	return test_session_expire1i(tctx,
+				     true,   /* force_signing */
 				     false); /* force_encryption */
 }
 
 static bool test_session_expire1e(struct torture_context *tctx)
 {
 	return test_session_expire1i(tctx,
+				     true,   /* force_signing */
 				     true); /* force_encryption */
 }
 
