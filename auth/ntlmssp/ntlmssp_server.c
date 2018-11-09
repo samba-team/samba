@@ -1033,12 +1033,32 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 			ntlmssp_state->session_key = session_key;
 			talloc_steal(ntlmssp_state, session_key.data);
 		} else {
+			gnutls_cipher_hd_t cipher_hnd;
+			gnutls_datum_t enc_session_key = {
+				.data = session_key.data,
+				.size = session_key.length,
+			};
+			int rc;
+
 			dump_data_pw("KEY_EXCH session key (enc):\n",
 				     state->encrypted_session_key.data,
 				     state->encrypted_session_key.length);
-			arcfour_crypt(state->encrypted_session_key.data,
-				      session_key.data,
-				      state->encrypted_session_key.length);
+
+			rc = gnutls_cipher_init(&cipher_hnd,
+						GNUTLS_CIPHER_ARCFOUR_128,
+						&enc_session_key,
+						NULL);
+			if (rc < 0) {
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
+			}
+			rc = gnutls_cipher_encrypt(cipher_hnd,
+						   state->encrypted_session_key.data,
+						   state->encrypted_session_key.length);
+			gnutls_cipher_deinit(cipher_hnd);
+			if (rc < 0) {
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
+			}
+
 			ntlmssp_state->session_key = data_blob_talloc(ntlmssp_state,
 								      state->encrypted_session_key.data,
 								      state->encrypted_session_key.length);
