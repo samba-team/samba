@@ -31,9 +31,11 @@
 #include "libcli/auth/libcli_auth.h"
 #include "lib/param/param.h"
 #include "lib/util/samba_util.h"
-#include "lib/crypto/arcfour.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/popt_common.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define WBC_ERROR_EQUAL(x,y) (x == y)
 
@@ -808,10 +810,16 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 	struct samr_Password old_nt_hash_enc;
 	struct samr_Password old_lanman_hash_enc;
 
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+
 	uint8_t old_nt_hash[16];
 	uint8_t old_lanman_hash[16];
 	uint8_t new_nt_hash[16];
 	uint8_t new_lanman_hash[16];
+	gnutls_datum_t old_nt_key = {
+		.data = old_nt_hash,
+		.size = sizeof(old_nt_hash),
+	};
 
 	struct wbcChangePasswordParams params;
 
@@ -835,7 +843,16 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 		   would reduce the effective password length to 14) */
 
 		encode_pw_buffer(new_lm_password.data, newpass, STR_UNICODE);
-		arcfour_crypt(new_lm_password.data, old_nt_hash, 516);
+
+		gnutls_cipher_init(&cipher_hnd,
+				   GNUTLS_CIPHER_ARCFOUR_128,
+				   &old_nt_key,
+				   NULL);
+		gnutls_cipher_encrypt(cipher_hnd,
+				      new_lm_password.data,
+				      516);
+		gnutls_cipher_deinit(cipher_hnd);
+
 		E_old_pw_hash(new_nt_hash, old_lanman_hash,
 			      old_lanman_hash_enc.hash);
 
@@ -854,7 +871,15 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 
 	encode_pw_buffer(new_nt_password.data, newpass, STR_UNICODE);
 
-	arcfour_crypt(new_nt_password.data, old_nt_hash, 516);
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &old_nt_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd,
+			      new_nt_password.data,
+			      516);
+	gnutls_cipher_deinit(cipher_hnd);
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
 
 	params.old_password.response.old_nt_hash_enc_length =
