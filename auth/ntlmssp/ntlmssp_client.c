@@ -690,17 +690,43 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 		/* Make up a new session key */
 		uint8_t client_session_key[16];
+		gnutls_cipher_hd_t cipher_hnd;
+		gnutls_datum_t enc_session_key = {
+			.data = session_key.data,
+			.size = session_key.length,
+		};
+
 		generate_secret_buffer(client_session_key, sizeof(client_session_key));
 
 		/* Encrypt the new session key with the old one */
 		encrypted_session_key = data_blob_talloc(ntlmssp_state,
 							 client_session_key, sizeof(client_session_key));
 		dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, encrypted_session_key.length);
-		arcfour_crypt(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
+
+		rc = gnutls_cipher_init(&cipher_hnd,
+					GNUTLS_CIPHER_ARCFOUR_128,
+					&enc_session_key,
+					NULL);
+		if (rc < 0) {
+			nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
+			ZERO_ARRAY(client_session_key);
+			goto done;
+		}
+		rc = gnutls_cipher_encrypt(cipher_hnd,
+					   encrypted_session_key.data,
+					   encrypted_session_key.length);
+		gnutls_cipher_deinit(cipher_hnd);
+		if (rc < 0) {
+			nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
+			ZERO_ARRAY(client_session_key);
+			goto done;
+		}
+
 		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 
 		/* Mark the new session key as the 'real' session key */
 		session_key = data_blob_talloc(mem_ctx, client_session_key, sizeof(client_session_key));
+		ZERO_ARRAY(client_session_key);
 	}
 
 	/* this generates the actual auth packet */
