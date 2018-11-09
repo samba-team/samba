@@ -149,7 +149,14 @@ int main(int argc, char *argv[])
 
 	/* wait for query threads to terminate */
 	for (n = 0; n < 2; n++) {
-		pthread_join(threads[n], NULL);
+		rc = pthread_join(threads[n], NULL);
+		if (rc != 0) {
+			fprintf(stderr,
+				"joining query thread %i failed: %s\n",
+				n,
+				strerror(rc));
+			exit(1);
+		}
 	}
 
 	fprintf(state.fail ? stderr: stdout,
