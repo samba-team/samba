@@ -1530,24 +1530,7 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
 		}
 	}
 
-	ret |= ((perms & UNIX_X_OTH ) ? S_IXOTH : 0);
-	ret |= ((perms & UNIX_W_OTH ) ? S_IWOTH : 0);
-	ret |= ((perms & UNIX_R_OTH ) ? S_IROTH : 0);
-	ret |= ((perms & UNIX_X_GRP ) ? S_IXGRP : 0);
-	ret |= ((perms & UNIX_W_GRP ) ? S_IWGRP : 0);
-	ret |= ((perms & UNIX_R_GRP ) ? S_IRGRP : 0);
-	ret |= ((perms & UNIX_X_USR ) ? S_IXUSR : 0);
-	ret |= ((perms & UNIX_W_USR ) ? S_IWUSR : 0);
-	ret |= ((perms & UNIX_R_USR ) ? S_IRUSR : 0);
-#ifdef S_ISVTX
-	ret |= ((perms & UNIX_STICKY ) ? S_ISVTX : 0);
-#endif
-#ifdef S_ISGID
-	ret |= ((perms & UNIX_SET_GID ) ? S_ISGID : 0);
-#endif
-#ifdef S_ISUID
-	ret |= ((perms & UNIX_SET_UID ) ? S_ISUID : 0);
-#endif
+	ret = wire_perms_to_unix(perms);
 
 	if (ptype == PERM_NEW_FILE) {
 		/*
