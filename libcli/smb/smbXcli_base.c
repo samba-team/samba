@@ -161,6 +161,7 @@ struct smb2cli_session {
 	uint64_t nonce_low;
 	uint16_t channel_sequence;
 	bool replay_active;
+	bool require_signed_response;
 };
 
 struct smbXcli_session {
@@ -5715,6 +5716,12 @@ void smb2cli_session_start_replay(struct smbXcli_session *session)
 void smb2cli_session_stop_replay(struct smbXcli_session *session)
 {
 	session->smb2->replay_active = false;
+}
+
+void smb2cli_session_require_signed_response(struct smbXcli_session *session,
+					     bool require_signed_response)
+{
+	session->smb2->require_signed_response = require_signed_response;
 }
 
 NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
