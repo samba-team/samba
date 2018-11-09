@@ -1191,6 +1191,13 @@ done:
 	return ret;
 }
 
+static bool test_session_expire1n(struct torture_context *tctx)
+{
+	return test_session_expire1i(tctx,
+				     false,   /* force_signing */
+				     false); /* force_encryption */
+}
+
 static bool test_session_expire1s(struct torture_context *tctx)
 {
 	return test_session_expire1i(tctx,
@@ -1742,6 +1749,7 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reauth4", test_session_reauth4);
 	torture_suite_add_1smb2_test(suite, "reauth5", test_session_reauth5);
 	torture_suite_add_1smb2_test(suite, "reauth6", test_session_reauth6);
+	torture_suite_add_simple_test(suite, "expire1n", test_session_expire1n);
 	torture_suite_add_simple_test(suite, "expire1s", test_session_expire1s);
 	torture_suite_add_simple_test(suite, "expire1e", test_session_expire1e);
 	torture_suite_add_simple_test(suite, "expire2s", test_session_expire2s);
