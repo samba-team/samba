@@ -6592,8 +6592,7 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 	/* save away the linked attributes for the end of the transaction */
 	for (i = 0; i < ar->objs->linked_attributes_count; i++) {
 		struct la_entry *la_entry;
-
-		tmp_ctx = talloc_new(ar);
+		bool new_srcobj;
 
 		if (replmd_private->la_ctx == NULL) {
 			replmd_private->la_ctx = talloc_new(replmd_private);
@@ -6617,22 +6616,42 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		talloc_steal(la_entry->la, la_entry->la->identifier);
 		talloc_steal(la_entry->la, la_entry->la->value.blob);
 
-		/* verify the source object exists for the link */
-		ret = replmd_get_la_entry_source(module, la_entry, tmp_ctx,
-						 &attr, &src_msg);
-
 		/*
-		 * When we fail to find the source object, the error
-		 * code we pass back here is really important. It flags
-		 * back to the callers to retry this request with
-		 * DRSUAPI_DRS_GET_ANC. This case should never happen
-		 * if we're replicating from a Samba DC, but it is
-		 * needed to talk to a Windows DC
+		 * check if we're still dealing with the same source object
+		 * as the last link
 		 */
-		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			WERROR err = WERR_DS_DRA_MISSING_PARENT;
-			ret = replmd_replicated_request_werror(ar, err);
-			break;
+		new_srcobj = (la_group == NULL ||
+			      !la_entry_matches_group(la_entry, la_group));
+
+		if (new_srcobj) {
+
+			/* get a new mem_ctx to lookup the source object */
+			TALLOC_FREE(tmp_ctx);
+			tmp_ctx = talloc_new(ar);
+			if (tmp_ctx == NULL) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			/* verify the link source exists */
+			ret = replmd_get_la_entry_source(module, la_entry,
+							 tmp_ctx, &attr,
+							 &src_msg);
+
+			/*
+			 * When we fail to find the source object, the error
+			 * code we pass back here is really important. It flags
+			 * back to the callers to retry this request with
+			 * DRSUAPI_DRS_GET_ANC. This case should never happen
+			 * if we're replicating from a Samba DC, but it is
+			 * needed to talk to a Windows DC
+			 */
+			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+				WERROR err = WERR_DS_DRA_MISSING_PARENT;
+				ret = replmd_replicated_request_werror(ar,
+								       err);
+				break;
+			}
 		}
 
 		ret = replmd_verify_link_target(ar, tmp_ctx, la_entry,
@@ -6642,9 +6661,7 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		}
 
 		/* group the links together by source-object for efficiency */
-		if (la_group == NULL ||
-		    !la_entry_matches_group(la_entry, la_group)) {
-
+		if (new_srcobj) {
 			la_group = talloc_zero(replmd_private->la_ctx,
 					       struct la_group);
 			if (la_group == NULL) {
@@ -6655,9 +6672,9 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		}
 		DLIST_ADD(la_group->la_entries, la_entry);
 		replmd_private->total_links++;
-		TALLOC_FREE(tmp_ctx);
 	}
 
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
