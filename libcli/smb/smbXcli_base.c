@@ -290,6 +290,7 @@ struct smbXcli_req_state {
 		uint64_t encryption_session_id;
 
 		bool signing_skipped;
+		bool require_signed_response;
 		bool notify_async;
 		bool got_async;
 		uint16_t cancel_flags;
@@ -2963,6 +2964,8 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 
 		state->smb2.should_sign = session->smb2->should_sign;
 		state->smb2.should_encrypt = session->smb2->should_encrypt;
+		state->smb2.require_signed_response =
+			session->smb2->require_signed_response;
 
 		if (cmd == SMB2_OP_SESSSETUP &&
 		    session->smb2_channel.signing_key.length == 0 &&
