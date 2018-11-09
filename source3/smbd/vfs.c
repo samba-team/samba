@@ -787,7 +787,6 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 {
 	int ret;
-	int saved_errno = 0;
 	struct smb_filename *old_cwd = conn->cwd_fname;
 
 	if (!LastDir) {
@@ -825,7 +824,7 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 		 * Return to original directory
 		 * and return -1.
 		 */
-		saved_errno = errno;
+		int saved_errno = errno;
 
 		if (old_cwd == NULL) {
 			/*
@@ -860,9 +859,6 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	DEBUG(4,("vfs_ChDir got %s\n", conn->cwd_fname->base_name));
 
 	TALLOC_FREE(old_cwd);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
 	return ret;
 }
 
