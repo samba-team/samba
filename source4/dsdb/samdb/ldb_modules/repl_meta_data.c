@@ -141,7 +141,7 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 static int replmd_verify_link_target(struct replmd_replicated_request *ar,
 				     TALLOC_CTX *mem_ctx,
 				     struct la_entry *la_entry,
-				     struct ldb_message *src_msg,
+				     struct ldb_dn *src_dn,
 				     const struct dsdb_attribute *attr);
 static int replmd_get_la_entry_source(struct ldb_module *module,
 				      struct la_entry *la_entry,
@@ -6655,7 +6655,7 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 		}
 
 		ret = replmd_verify_link_target(ar, tmp_ctx, la_entry,
-						src_msg, attr);
+						src_msg->dn, attr);
 		if (ret != LDB_SUCCESS) {
 			break;
 		}
@@ -7585,7 +7585,7 @@ linked_attributes[0]:
 static int replmd_verify_link_target(struct replmd_replicated_request *ar,
 				     TALLOC_CTX *mem_ctx,
 				     struct la_entry *la_entry,
-				     struct ldb_message *src_msg,
+				     struct ldb_dn *src_dn,
 				     const struct dsdb_attribute *attr)
 {
 	int ret = LDB_SUCCESS;
@@ -7604,7 +7604,7 @@ static int replmd_verify_link_target(struct replmd_replicated_request *ar,
 	if (!W_ERROR_IS_OK(status)) {
 		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
 				       attr->lDAPDisplayName,
-				       ldb_dn_get_linearized(src_msg->dn),
+				       ldb_dn_get_linearized(src_dn),
 				       win_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -7618,8 +7618,7 @@ static int replmd_verify_link_target(struct replmd_replicated_request *ar,
 					  DSDB_REPL_FLAG_TARGETS_UPTODATE)) == 0) {
 
 		ret = replmd_check_target_exists(module, tgt_dsdb_dn, la_entry,
-						 src_msg->dn, false, &guid,
-						 &dummy);
+						 src_dn, false, &guid, &dummy);
 	}
 
 	/*
