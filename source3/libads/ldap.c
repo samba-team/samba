@@ -2264,12 +2264,12 @@ static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 	int i;
 	for (i=0; values[i]; i++) {
 		struct dom_sid sid;
-		fstring tmp;
+		struct dom_sid_buf tmp;
 		if (!sid_parse((const uint8_t *)values[i]->bv_val,
 			       values[i]->bv_len, &sid)) {
 			return;
 		}
-		printf("%s: %s\n", field, sid_to_fstring(tmp, &sid));
+		printf("%s: %s\n", field, dom_sid_str_buf(&sid, &tmp));
 	}
 }
 
