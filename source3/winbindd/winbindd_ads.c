@@ -718,7 +718,7 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	const char *attrs[] = {"memberOf", NULL};
 	uint32_t num_groups = 0;
 	struct dom_sid *group_sids = NULL;
-	int i;
+	size_t i;
 	char **strings = NULL;
 	size_t num_strings = 0, num_sids = 0;
 
@@ -1080,7 +1080,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *sidbinstr;
 	char **members = NULL;
-	int i;
+	size_t i;
 	size_t num_members = 0;
 	ads_control args;
 	struct dom_sid *sid_mem_nocache = NULL;
@@ -1390,7 +1390,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 {
 	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr;
-	int			i;
+	uint32_t		i;
 	uint32_t		flags;
 	struct rpc_pipe_client *cli;
 	int ret_count;
