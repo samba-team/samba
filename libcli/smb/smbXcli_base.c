@@ -3753,12 +3753,6 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		}
 		last_session = session;
 
-		if (state->smb2.should_sign) {
-			if (!(flags & SMB2_HDR_FLAG_SIGNED)) {
-				return NT_STATUS_ACCESS_DENIED;
-			}
-		}
-
 		if (flags & SMB2_HDR_FLAG_SIGNED) {
 			uint64_t uid = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
@@ -3804,6 +3798,12 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 				 * with the channel signing key.
 				 */
 				signing_key = NULL;
+			}
+		}
+
+		if (state->smb2.should_sign) {
+			if (!(flags & SMB2_HDR_FLAG_SIGNED)) {
+				return NT_STATUS_ACCESS_DENIED;
 			}
 		}
 
