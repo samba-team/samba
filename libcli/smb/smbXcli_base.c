@@ -3799,12 +3799,27 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 				 */
 				signing_key = NULL;
 			}
+
+			if (!NT_STATUS_IS_OK(status)) {
+				/*
+				 * Only check the signature of the last response
+				 * of a successfull session auth. This matches
+				 * Windows behaviour for NTLM auth and reauth.
+				 */
+				state->smb2.require_signed_response = false;
+			}
 		}
 
-		if (state->smb2.should_sign) {
+		if (state->smb2.should_sign ||
+		    state->smb2.require_signed_response)
+		{
 			if (!(flags & SMB2_HDR_FLAG_SIGNED)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
+		}
+
+		if (signing_key == NULL && state->smb2.require_signed_response) {
+			signing_key = &session->smb2_channel.signing_key;
 		}
 
 		if (cur[0].iov_len == SMB2_TF_HDR_SIZE) {
