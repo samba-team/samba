@@ -7938,6 +7938,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 					   const struct dsdb_attribute *attr,
 					   struct la_entry *la_entry,
 					   struct ldb_request *parent,
+					   struct ldb_message_element *old_el,
 					   replmd_link_changed *change)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
@@ -7946,7 +7947,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	int ret;
 	struct dsdb_dn *dsdb_dn = NULL;
 	uint64_t seq_num = 0;
-	struct ldb_message_element *old_el;
 	struct parsed_dn *pdn_list, *pdn, *next;
 	struct GUID guid = GUID_zero();
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
@@ -7967,17 +7967,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 				       ldb_dn_get_linearized(msg->dn),
 				       win_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
-	if (old_el == NULL) {
-		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName, LDB_FLAG_MOD_REPLACE, &old_el);
-		if (ret != LDB_SUCCESS) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	} else {
-		old_el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	/* parse the existing links */
@@ -8205,6 +8194,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *attr = NULL;
+	struct ldb_message_element *old_el = NULL;
 	replmd_link_changed change_type;
 	uint32_t num_changes = 0;
 	time_t t;
@@ -8255,6 +8245,18 @@ static int replmd_process_la_group(struct ldb_module *module,
 	ldb_msg_remove_attr(msg, "isDeleted");
 	ldb_msg_remove_attr(msg, "isRecycled");
 
+	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
+	if (old_el == NULL) {
+		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName,
+					LDB_FLAG_MOD_REPLACE, &old_el);
+		if (ret != LDB_SUCCESS) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	} else {
+		old_el->flags = LDB_FLAG_MOD_REPLACE;
+	}
+
 	/* go through and process the link targets for this source object */
 	for (la = DLIST_TAIL(la_group->la_entries); la; la=prev) {
 		prev = DLIST_PREV(la);
@@ -8262,7 +8264,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 		ret = replmd_process_linked_attribute(module, tmp_ctx,
 						      replmd_private,
 						      msg, attr, la, NULL,
-						      &change_type);
+						      old_el, &change_type);
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
 			return ret;
