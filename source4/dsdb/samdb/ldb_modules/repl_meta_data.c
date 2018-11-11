@@ -8228,6 +8228,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *attr = NULL;
 	replmd_link_changed change_type;
+	uint32_t num_changes = 0;
 
 	/*
 	 * get the attribute being modified and the search result for the
@@ -8287,11 +8288,24 @@ static int replmd_process_la_group(struct ldb_module *module,
 			return ret;
 		}
 
+		if (change_type != LINK_CHANGE_NONE) {
+			num_changes++;
+		}
+
 		if ((++replmd_private->num_processed % 8192) == 0) {
 			DBG_NOTICE("Processed %u/%u linked attributes\n",
 				   replmd_private->num_processed,
 				   replmd_private->total_links);
 		}
+	}
+
+	/*
+	 * it's possible we're already up-to-date and so don't need to modify
+	 * the object at all (e.g. doing a 'drs replicate --full-sync')
+	 */
+	if (num_changes == 0) {
+		TALLOC_FREE(tmp_ctx);
+		return LDB_SUCCESS;
 	}
 
 	/* apply the link changes to the source object */
