@@ -8141,11 +8141,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		}
 	}
 
-	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
-	if (old_el == NULL) {
-		return ldb_operr(ldb);
-	}
-
 	ret = dsdb_check_single_valued_link(attr, old_el);
 	if (ret != LDB_SUCCESS) {
 		return ret;
