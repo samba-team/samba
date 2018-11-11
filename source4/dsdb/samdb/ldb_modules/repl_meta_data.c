@@ -7947,7 +7947,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct dsdb_dn *dsdb_dn = NULL;
 	uint64_t seq_num = 0;
 	struct ldb_message_element *old_el;
-	time_t t = time(NULL);
 	struct parsed_dn *pdn_list, *pdn, *next;
 	struct GUID guid = GUID_zero();
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
@@ -8142,22 +8141,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		}
 	}
 
-	/* we only change whenChanged and uSNChanged if the seq_num
-	   has changed */
-	ldb_msg_remove_attr(msg, "whenChanged");
-	ldb_msg_remove_attr(msg, "uSNChanged");
-	ret = add_time_element(msg, "whenChanged", t);
-	if (ret != LDB_SUCCESS) {
-		ldb_operr(ldb);
-		return ret;
-	}
-
-	ret = add_uint64_element(ldb, msg, "uSNChanged", seq_num);
-	if (ret != LDB_SUCCESS) {
-		ldb_operr(ldb);
-		return ret;
-	}
-
 	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
 	if (old_el == NULL) {
 		return ldb_operr(ldb);
@@ -8229,6 +8212,8 @@ static int replmd_process_la_group(struct ldb_module *module,
 	const struct dsdb_attribute *attr = NULL;
 	replmd_link_changed change_type;
 	uint32_t num_changes = 0;
+	time_t t;
+	uint64_t seq_num = 0;
 
 	/*
 	 * get the attribute being modified and the search result for the
@@ -8306,6 +8291,26 @@ static int replmd_process_la_group(struct ldb_module *module,
 	if (num_changes == 0) {
 		TALLOC_FREE(tmp_ctx);
 		return LDB_SUCCESS;
+	}
+
+	/* update whenChanged/uSNChanged as the object has changed */
+	t = time(NULL);
+	ret = ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ,
+				  &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = add_time_element(msg, "whenChanged", t);
+	if (ret != LDB_SUCCESS) {
+		ldb_operr(ldb);
+		return ret;
+	}
+
+	ret = add_uint64_element(ldb, msg, "uSNChanged", seq_num);
+	if (ret != LDB_SUCCESS) {
+		ldb_operr(ldb);
+		return ret;
 	}
 
 	/* apply the link changes to the source object */
