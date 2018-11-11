@@ -134,6 +134,17 @@ struct replmd_replicated_request {
 	bool fix_link_sid;
 };
 
+/*
+ * the result of replmd_process_linked_attribute(): either there was no change
+ * (update was ignored), a new link was added (either inactive or active), or
+ * an existing link was modified (active/inactive status may have changed).
+ */
+typedef enum {
+	LINK_CHANGE_NONE,
+	LINK_CHANGE_ADDED,
+	LINK_CHANGE_MODIFIED,
+} replmd_link_changed;
+
 static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar);
 static int replmd_delete_internals(struct ldb_module *module, struct ldb_request *req, bool re_delete);
 static int replmd_check_upgrade_links(struct ldb_context *ldb,
@@ -7926,7 +7937,8 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 					   struct ldb_message *msg,
 					   const struct dsdb_attribute *attr,
 					   struct la_entry *la_entry,
-					   struct ldb_request *parent)
+					   struct ldb_request *parent,
+					   replmd_link_changed *change)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -7944,6 +7956,8 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct ldb_val *val_to_update = NULL;
 	bool add_as_inactive = false;
 	WERROR status;
+
+	*change = LINK_CHANGE_NONE;
 
 	/* the value blob for the attribute holds the target object DN */
 	status = dsdb_dn_la_from_blob(ldb, attr, schema, mem_ctx,
@@ -8048,6 +8062,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 
 		val_to_update = pdn->v;
 		old_dsdb_dn = pdn->dsdb_dn;
+		*change = LINK_CHANGE_MODIFIED;
 
 	} else {
 		unsigned offset;
@@ -8088,6 +8103,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 
 		val_to_update = &old_el->values[offset];
 		old_dsdb_dn = NULL;
+		*change = LINK_CHANGE_ADDED;
 	}
 
 	/* set the link attribute's value to the info that was received */
@@ -8211,6 +8227,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *attr = NULL;
+	replmd_link_changed change_type;
 
 	/*
 	 * get the attribute being modified and the search result for the
@@ -8263,7 +8280,8 @@ static int replmd_process_la_group(struct ldb_module *module,
 		DLIST_REMOVE(la_group->la_entries, la);
 		ret = replmd_process_linked_attribute(module, tmp_ctx,
 						      replmd_private,
-						      msg, attr, la, NULL);
+						      msg, attr, la, NULL,
+						      &change_type);
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
 			return ret;
