@@ -7939,6 +7939,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 					   struct la_entry *la_entry,
 					   struct ldb_request *parent,
 					   struct ldb_message_element *old_el,
+					   struct parsed_dn *pdn_list,
 					   replmd_link_changed *change)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
@@ -7947,7 +7948,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	int ret;
 	struct dsdb_dn *dsdb_dn = NULL;
 	uint64_t seq_num = 0;
-	struct parsed_dn *pdn_list, *pdn, *next;
+	struct parsed_dn *pdn, *next;
 	struct GUID guid = GUID_zero();
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 	bool ignore_link;
@@ -7967,14 +7968,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 				       ldb_dn_get_linearized(msg->dn),
 				       win_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* parse the existing links */
-	ret = get_parsed_dns_trusted(module, replmd_private, mem_ctx, old_el, &pdn_list,
-				     attr->syntax->ldap_oid, parent);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
 	}
 
 	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, msg->dn,
@@ -8195,6 +8188,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *attr = NULL;
 	struct ldb_message_element *old_el = NULL;
+	struct parsed_dn *pdn_list = NULL;
 	replmd_link_changed change_type;
 	uint32_t num_changes = 0;
 	time_t t;
@@ -8261,13 +8255,35 @@ static int replmd_process_la_group(struct ldb_module *module,
 	for (la = DLIST_TAIL(la_group->la_entries); la; la=prev) {
 		prev = DLIST_PREV(la);
 		DLIST_REMOVE(la_group->la_entries, la);
+
+		/* parse the existing links */
+		if (pdn_list == NULL) {
+			ret = get_parsed_dns_trusted(module, replmd_private,
+						     tmp_ctx, old_el,
+						     &pdn_list,
+						     attr->syntax->ldap_oid,
+						     NULL);
+
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
 		ret = replmd_process_linked_attribute(module, tmp_ctx,
 						      replmd_private,
 						      msg, attr, la, NULL,
-						      old_el, &change_type);
+						      old_el, pdn_list,
+						      &change_type);
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
 			return ret;
+		}
+
+		/*
+		 * Adding a link reallocs memory, and so invalidates all the
+		 * pointers in pdn_list. Reparse the PDNs on the next loop
+		 */
+		if (change_type == LINK_CHANGE_ADDED) {
+			TALLOC_FREE(pdn_list);
 		}
 
 		if (change_type != LINK_CHANGE_NONE) {
