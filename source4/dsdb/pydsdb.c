@@ -1276,7 +1276,7 @@ static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *ar
 	length = PyList_GET_SIZE(py_list_dn);
 
 	for (i = 0; i < length; i++) {
-		char *part_str = PyStr_AsString(PyList_GetItem(py_list_dn, i));
+		const char *part_str = PyStr_AsString(PyList_GetItem(py_list_dn, i));
 		struct ldb_dn *p;
 		struct dsdb_ldb_dn_list_node *node;
 
