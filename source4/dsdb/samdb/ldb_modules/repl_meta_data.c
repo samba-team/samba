@@ -6807,9 +6807,18 @@ static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *a
 {
 	struct ldb_dn *deleted_objects_dn;
 	struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
-	int ret = dsdb_get_deleted_objects_dn(ldb_module_get_ctx(ar->module), msg, msg->dn,
-					      &deleted_objects_dn);
-	if (ar->isDeleted && (ret != LDB_SUCCESS || ldb_dn_compare(msg->dn, deleted_objects_dn) != 0)) {
+	int ret;
+
+	if (!ar->isDeleted) {
+
+		/* not a deleted object, so nothing to do */
+		ar->index_current++;
+		return replmd_replicated_apply_next(ar);
+	}
+
+	ret = dsdb_get_deleted_objects_dn(ldb_module_get_ctx(ar->module), msg,
+					  msg->dn, &deleted_objects_dn);
+	if (ret != LDB_SUCCESS || ldb_dn_compare(msg->dn, deleted_objects_dn) != 0) {
 		/*
 		 * Do a delete here again, so that if there is
 		 * anything local that conflicts with this
