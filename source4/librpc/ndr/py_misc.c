@@ -104,10 +104,12 @@ static int py_GUID_init(PyObject *self, PyObject *args, PyObject *kwargs)
 
 		if (!IsPy3Bytes(str)) {
 			guid_val.data =
-				(uint8_t *)PyStr_AsUTF8AndSize(str,
-							       &_size);
+				discard_const_p(uint8_t,
+						PyStr_AsUTF8AndSize(str, &_size));
 		} else {
-			guid_val.data = (uint8_t *)PyBytes_AsString(str);
+			guid_val.data =
+				discard_const_p(uint8_t,
+						PyBytes_AsString(str));
 			_size = PyBytes_Size(str);
 		}
 		guid_val.length = _size;
