@@ -1073,6 +1073,115 @@ class VLVTests(samba.tests.TestCase):
                        controls=[sort_control,
                                  "vlv:0:1:1:1:0:%s" % vlv_cookies[-1]])
 
+    # Run a vlv search and return important fields of the response control
+    def vlv_search(self, attr, expr, cookie="", after_count=0, offset=1):
+        sort_ctrl = "server_sort:1:0:%s" % attr
+        ctrl = "vlv:1:0:%d:%d:0" % (after_count, offset)
+        if cookie:
+            ctrl += ":" + cookie
+
+        res = self.ldb.search(self.ou,
+                              expression=expr,
+                              scope=ldb.SCOPE_ONELEVEL,
+                              attrs=[attr],
+                              controls=[ctrl, sort_ctrl])
+        results = [str(x[attr][0]) for x in res]
+
+        ctrls = [str(c) for c in res.controls if
+                 str(c).startswith('vlv')]
+        self.assertEqual(len(ctrls), 1)
+
+        spl = ctrls[0].rsplit(':')
+        cookie = ""
+        if len(spl) == 6:
+            cookie = spl[-1]
+
+        return results, cookie
+
+    def test_vlv_modify_during_view(self):
+        attr = 'roomNumber'
+        expr = "(objectclass=user)"
+
+        # Start new search
+        full_results, cookie = self.vlv_search(attr, expr,
+                                               after_count=len(self.users))
+
+        # Edit a user
+        edit_index = len(self.users)//2
+        edit_attr = full_results[edit_index]
+        users_with_attr = [u for u in self.users if u[attr] == edit_attr]
+        self.assertEqual(len(users_with_attr), 1)
+        edit_user = users_with_attr[0]
+
+        # Put z at the front of the val so it comes last in ordering
+        edit_val = "z_" + edit_user[attr]
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb, edit_user['dn'])
+        m[attr] = ldb.MessageElement(edit_val, ldb.FLAG_MOD_REPLACE, attr)
+        self.ldb.modify(m)
+
+        results, cookie = self.vlv_search(attr, expr, cookie=cookie,
+                                          after_count=len(self.users))
+
+        # Make expected_results by copying and editing full_results
+        expected_results = full_results[:]
+        expected_results[edit_index] = edit_val
+        self.assertEqual(results, expected_results)
+
+    # Test changing the search expression in a request on an initialised view
+    # Expected failure on samba, passes on windows
+    def test_vlv_change_search_expr(self):
+        attr = 'roomNumber'
+        expr = "(objectclass=user)"
+
+        # Start new search
+        full_results, cookie = self.vlv_search(attr, expr,
+                                               after_count=len(self.users))
+
+        middle_index = len(full_results)//2
+        # Search that excludes the old value but includes the new one
+        expr = "%s>=%s" % (attr, full_results[middle_index])
+        results, cookie = self.vlv_search(attr, expr, cookie=cookie,
+                                          after_count=len(self.users))
+        self.assertEqual(results, full_results[middle_index:])
+
+    # Check you can't add a value to a vlv view
+    def test_vlv_add_during_view(self):
+        attr = 'roomNumber'
+        expr = "(objectclass=user)"
+
+        # Start new search
+        full_results, cookie = self.vlv_search(attr, expr,
+                                               after_count=len(self.users))
+
+        # Add a user at the end of the sort order
+        add_val = "z_addedval"
+        user = {'cn': add_val, "objectclass": "user", attr: add_val}
+        user['dn'] = "cn=%s,%s" % (user['cn'], self.ou)
+        self.ldb.add(user)
+
+        results, cookie = self.vlv_search(attr, expr, cookie=cookie,
+                                          after_count=len(self.users)+1)
+        self.assertEqual(results, full_results)
+
+    def test_vlv_delete_during_view(self):
+        attr = 'roomNumber'
+        expr = "(objectclass=user)"
+
+        # Start new search
+        full_results, cookie = self.vlv_search(attr, expr,
+                                               after_count=len(self.users))
+
+        # Delete one of the users
+        del_index = len(self.users)//2
+        del_user = self.users[del_index]
+        self.ldb.delete(del_user['dn'])
+
+        results, cookie = self.vlv_search(attr, expr, cookie=cookie,
+                                          after_count=len(self.users))
+        expected_results = [r for r in full_results if r != del_user[attr]]
+        self.assertEqual(results, expected_results)
 
 if "://" not in host:
     if os.path.isfile(host):
