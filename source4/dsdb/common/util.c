@@ -5400,12 +5400,12 @@ static int64_t get_lockout_observation_window(struct ldb_message *domain_msg,
 					      struct ldb_message *pso_msg)
 {
 	if (pso_msg != NULL) {
-		return ldb_msg_find_attr_as_int(pso_msg,
-						"msDS-LockoutObservationWindow",
-						 0);
+		return ldb_msg_find_attr_as_int64(pso_msg,
+						  "msDS-LockoutObservationWindow",
+						   0);
 	} else {
-		return ldb_msg_find_attr_as_int(domain_msg,
-						"lockOutObservationWindow", 0);
+		return ldb_msg_find_attr_as_int64(domain_msg,
+						  "lockOutObservationWindow", 0);
 	}
 }
 
