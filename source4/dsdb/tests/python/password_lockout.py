@@ -1415,6 +1415,36 @@ userPassword: """ + userpass + """
         self._testing_add_user(lockout4ntlm_creds,
                                lockOutObservationWindow=self.lockout_observation_window)
 
+class PasswordTestsWithDefaults(PasswordTests):
+    def setUp(self):
+        # The tests in this class do not sleep, so we can use the default
+        # timeout windows here
+        self.account_lockout_duration = 30 * 60
+        self.lockout_observation_window = 30 * 60
+        super(PasswordTestsWithDefaults, self).setUp()
+
+    # sanity-check that user lockout works with the default settings (we just
+    # check the user is locked out - we don't wait for the lockout to expire)
+    def test_login_lockout_krb5(self):
+        self._test_login_lockout(self.lockout1krb5_creds,
+                                 wait_lockout_duration=False)
+
+    def test_login_lockout_ntlm(self):
+        self._test_login_lockout(self.lockout1ntlm_creds,
+                                 wait_lockout_duration=False)
+
+    # Repeat the login lockout tests using PSOs
+    def test_pso_login_lockout_krb5(self):
+        """Check the PSO lockout settings get applied to the user correctly"""
+        self.use_pso_lockout_settings(self.lockout1krb5_creds)
+        self._test_login_lockout(self.lockout1krb5_creds,
+                                 wait_lockout_duration=False)
+
+    def test_pso_login_lockout_ntlm(self):
+        """Check the PSO lockout settings get applied to the user correctly"""
+        self.use_pso_lockout_settings(self.lockout1ntlm_creds)
+        self._test_login_lockout(self.lockout1ntlm_creds,
+                                 wait_lockout_duration=False)
 
 host_url = "ldap://%s" % host
 

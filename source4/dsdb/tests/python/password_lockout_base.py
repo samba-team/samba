@@ -365,7 +365,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
     def tearDown(self):
         super(BasePasswordTestCase, self).tearDown()
 
-    def _test_login_lockout(self, creds):
+    def _test_login_lockout(self, creds, wait_lockout_duration=True):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -562,6 +562,10 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                   lockoutTime=lockoutTime,
                                   userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
+
+        # if we're just checking the user gets locked out, we can stop here
+        if not wait_lockout_duration:
+            return
 
         # wait for the lockout to end
         time.sleep(self.account_lockout_duration + 1)
