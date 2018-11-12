@@ -91,6 +91,8 @@ static PyTypeObject PyLdbBytesType;
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 #define PyInt_FromLong PyLong_FromLong
 
+#define PYARG_STR_UNI "es"
+
 static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 {
 	PyObject* result = NULL;
@@ -108,6 +110,8 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 #define PyStr_FromFormatV PyString_FromFormatV
 #define PyStr_AsUTF8 PyString_AsString
 #define PyLdbBytes_FromStringAndSize PyString_FromStringAndSize
+
+#define PYARG_STR_UNI "et"
 
 const char *PyStr_AsUTF8AndSize(PyObject *pystr, Py_ssize_t *sizeptr);
 const char *
@@ -901,7 +905,7 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 	PyLdbDnObject *py_ret = NULL;
 	const char * const kwnames[] = { "ldb", "dn", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oes",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O"PYARG_STR_UNI,
 					 discard_const_p(char *, kwnames),
 					 &py_ldb, "utf8", &str))
 		goto out;
