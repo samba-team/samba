@@ -85,7 +85,7 @@ const char *debug_level_to_string(int log_level)
 {
 	int i;
 
-	for (i=0; ARRAY_SIZE(log_string_map); i++) {
+	for (i=0; i < ARRAY_SIZE(log_string_map); i++) {
 		if (log_string_map[i].log_level == log_level) {
 			return log_string_map[i].log_string;
 		}
