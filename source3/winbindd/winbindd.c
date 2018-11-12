@@ -1057,7 +1057,8 @@ static void winbind_client_processed(struct tevent_req *req)
 		DBG_ERR("request took %u.%.6u seconds\n",
 			(unsigned)diff.tv_sec, (unsigned)diff.tv_usec);
 
-		str = tevent_req_profile_string(profile, talloc_tos(), 0, depth);
+		str = tevent_req_profile_string(
+			talloc_tos(), profile, 0, depth);
 		if (str != NULL) {
 			/* No "\n", already contained in "str" */
 			DEBUGADD(0, ("%s", str));
