@@ -327,15 +327,6 @@ def build(bld):
                                 public_headers_install=not private_library)
         t.env.LDB_VERSION = VERSION
 
-
-        bld.SAMBA_MODULE('ldb_paged_results',
-                         'modules/paged_results.c',
-                         init_function='ldb_paged_results_init',
-                         module_init_name='ldb_init_module',
-                         internal_module=False,
-                         deps='ldb',
-                         subsystem='ldb')
-
         bld.SAMBA_MODULE('ldb_asq',
                          'modules/asq.c',
                          init_function='ldb_asq_init',
