@@ -59,7 +59,7 @@ else:
     planpythontestsuite("none", "subunit.tests.test_suite")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.blackbox.check_output", py3_compatible=True)
-planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
+planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'], py3_compatible=True)
 planpythontestsuite("none", "samba.tests.credentials", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.registry", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth", py3_compatible=True)
