@@ -36,7 +36,15 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 	struct smb2_handle *handles,  dir_handle = { };
 	size_t max_handles;
 
-	max_handles = torture_setting_int(tctx, "maxopenfiles", 0x11000);
+	/*
+	 * We limited this to 65520 as socket_wrapper has a limit of
+	 * 65535 (0xfff0) open sockets.
+	 *
+	 * It could be increased by setting the following env variable:
+	 *
+	 * SOCKET_WRAPPER_MAX_SOCKETS=100000
+	 */
+	max_handles = torture_setting_int(tctx, "maxopenfiles", 65520);
 
 	if (!torture_smb2_connection(tctx, &tree)) {
 		return false;
