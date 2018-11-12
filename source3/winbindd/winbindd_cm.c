@@ -2149,7 +2149,7 @@ static bool connection_ok(struct winbindd_domain *domain)
 		return False;
 	}
 
-	if (domain->online == False) {
+	if (!domain->online) {
 		DEBUG(3, ("connection_ok: Domain %s is offline\n", domain->name));
 		return False;
 	}
