@@ -89,14 +89,19 @@ void winbind_set_client_name(const char *name)
 static const char *winbind_get_client_name(void)
 {
 	if (client_name[0] == '\0') {
+		const char *progname = getprogname();
 		int len;
+
+		if (progname == NULL) {
+			progname = "<unknown>";
+		}
 
 		len = snprintf(client_name,
 			       sizeof(client_name),
 			       "%s",
-			       getprogname());
+			       progname);
 		if (len <= 0) {
-			return "<unkonwn>";
+			return progname;
 		}
 	}
 
