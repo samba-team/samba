@@ -474,7 +474,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 		       const char *guid_name,
 		       struct GROUP_POLICY_OBJECT *gpo)
 {
-	ADS_STATUS status;
+	ADS_STATUS status = ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	LDAPMessage *res = NULL;
 	char *dn;
 	const char *filter;
