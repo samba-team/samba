@@ -58,7 +58,9 @@ _PUBLIC_ void ndr_print_bkrp_BackupKey(struct ndr_print *ndr, const char *name, 
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		union bkrp_data_in_blob inblob;
+		union bkrp_data_in_blob inblob = {
+			.empty._empty_ = '\0',
+		};
 		DATA_BLOB blob;
 		uint32_t level;
 		enum ndr_err_code ndr_err;
