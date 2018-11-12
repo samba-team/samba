@@ -996,6 +996,7 @@ const char *rep_getprogname(void)
 	pid_t pid;
 	size_t nread;
 	int len;
+	int rc;
 
 	if (rep_progname[0] != '\0') {
 		return rep_progname;
@@ -1003,12 +1004,12 @@ const char *rep_getprogname(void)
 
 	len = snprintf(rep_progname, sizeof(rep_progname), "%s", "<unknown>");
 	if (len <= 0) {
-		return "<unknown>";
+		return NULL;
 	}
 
 	pid = getpid();
 	if (pid <= 1 || pid == (pid_t)-1) {
-		return rep_progname;
+		return NULL;
 	}
 
 	len = snprintf(cmdline,
@@ -1016,17 +1017,23 @@ const char *rep_getprogname(void)
 		       "/proc/%u/cmdline",
 		       (unsigned int)pid);
 	if (len <= 0 || len == sizeof(cmdline)) {
-		return rep_progname;
+		return NULL;
 	}
 
 	fp = fopen(cmdline, "r");
 	if (fp == NULL) {
-		return rep_progname;
+		return NULL;
 	}
 
 	nread = fread(cmdline, 1, sizeof(cmdline) - 1, fp);
+
+	rc = fclose(fp);
+	if (rc != 0) {
+		return NULL;
+	}
+
 	if (nread == 0) {
-		return rep_progname;
+		return NULL;
 	}
 
 	cmdline[nread] = '\0';
