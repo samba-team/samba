@@ -607,6 +607,7 @@ def configure(conf):
 
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True,
                         headers='readline.h readline/readline.h readline/history.h')
+    conf.CHECK_VARIABLE('program_invocation_short_name', headers='errno.h')
 
     conf.CHECK_DECLS('snprintf vsnprintf asprintf vasprintf')
 

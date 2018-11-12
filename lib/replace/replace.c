@@ -980,16 +980,16 @@ int rep_memset_s(void *dest, size_t destsz, int ch, size_t count)
 #endif /* HAVE_MEMSET_S */
 
 #ifndef HAVE_GETPROGNAME
-# ifndef _GNU_SOURCE
+# ifndef HAVE_PROGRAM_INVOCATION_SHORT_NAME
 # define PROGNAME_SIZE 32
 static char rep_progname[PROGNAME_SIZE];
-# endif /* _GNU_SOURCE */
+# endif /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
 
 const char *rep_getprogname(void)
 {
-#ifdef _GNU_SOURCE
+#ifdef HAVE_PROGRAM_INVOCATION_SHORT_NAME
 	return program_invocation_short_name;
-#else /* _GNU_SOURCE */
+#else /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
 	FILE *fp = NULL;
 	char cmdline[4096] = {0};
 	char *p = NULL;
@@ -1053,6 +1053,6 @@ const char *rep_getprogname(void)
 	(void)snprintf(rep_progname, sizeof(rep_progname), "%s", p);
 
 	return rep_progname;
-#endif /* _GNU_SOURCE */
+#endif /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
 }
 #endif /* HAVE_GETPROGNAME */
