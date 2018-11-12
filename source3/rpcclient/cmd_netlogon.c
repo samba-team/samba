@@ -216,7 +216,7 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	WERROR werr = WERR_OK;
 	uint32_t flags = DS_RETURN_DNS_NAME;
 	const char *server_name = cli->desthost;
-	const char *domain_name;
+	const char *domain_name = NULL;
 	struct GUID domain_guid = GUID_zero();
 	struct GUID site_guid = GUID_zero();
 	struct netr_DsRGetDCNameInfo *info = NULL;
