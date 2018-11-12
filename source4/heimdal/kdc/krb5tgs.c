@@ -1946,12 +1946,29 @@ server_lookup:
 		goto out;
 	    }
 
-	    ret = krb5_verify_checksum(context,
-				       crypto,
-				       KRB5_KU_OTHER_CKSUM,
-				       datack.data,
-				       datack.length,
-				       &self.cksum);
+	    /* Allow HMAC_MD5 checksum with any key type */
+	    if (self.cksum.cksumtype == CKSUMTYPE_HMAC_MD5) {
+		unsigned char csdata[16];
+		Checksum cs;
+
+		cs.checksum.length = sizeof(csdata);
+		cs.checksum.data = &csdata;
+
+		ret = _krb5_HMAC_MD5_checksum(context, &crypto->key,
+					      datack.data, datack.length,
+					      KRB5_KU_OTHER_CKSUM, &cs);
+		if (ret == 0 &&
+		    krb5_data_ct_cmp(&cs.checksum, &self.cksum.checksum) != 0)
+		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	    }
+	    else {
+		ret = krb5_verify_checksum(context,
+					   crypto,
+					   KRB5_KU_OTHER_CKSUM,
+					   datack.data,
+					   datack.length,
+					   &self.cksum);
+	    }
 	    krb5_data_free(&datack);
 	    krb5_crypto_destroy(context, crypto);
 	    if (ret) {
