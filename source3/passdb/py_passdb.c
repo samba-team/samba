@@ -3081,10 +3081,10 @@ static PyObject *py_pdb_set_trusted_domain(PyObject *self, PyObject *args)
 	}
 
 	py_tmp = PyDict_GetItemString(py_td_info, "domain_name");
-	td_info.domain_name = PyStr_AsString(py_tmp);
+	td_info.domain_name = discard_const_p(char, PyStr_AsString(py_tmp));
 
 	py_tmp = PyDict_GetItemString(py_td_info, "netbios_name");
-	td_info.netbios_name = PyStr_AsString(py_tmp);
+	td_info.netbios_name = discard_const_p(char, PyStr_AsString(py_tmp));
 
 	py_tmp = PyDict_GetItemString(py_td_info, "security_identifier");
 	td_info.security_identifier = *pytalloc_get_type(py_tmp, struct dom_sid);
