@@ -89,7 +89,7 @@ def SAMBA_PIDL(bld, pname, source,
     # prime the list of nodes we are dependent on with the cached pidl sources
     t.allnodes = pidl_src_nodes
 
-    t.env.PIDL_LAUNCH_DIR = bld.srcnode.path_from(bld.bldnode.parent)
+    t.env.PIDL_LAUNCH_DIR = bld.srcnode.path_from(bld.bldnode)
     pnode = bld.srcnode.find_resource('pidl/pidl')
     t.env.PIDL = pnode.path_from(bld.srcnode)
     t.env.OPTIONS = TO_LIST(options)

@@ -41,13 +41,6 @@ for y in (Build.BuildContext, Build.CleanContext, Build.InstallContext, Build.Un
     class tmp(y):
         variant = 'default'
 
-def pre_build(self):
-    self.cwdx = self.bldnode.parent
-    self.cwd = self.cwdx.abspath()
-    return Build.BuildContext.old_pre_build(self)
-Build.BuildContext.old_pre_build = Build.BuildContext.pre_build
-Build.BuildContext.pre_build = pre_build
-
 def abspath(self, env=None):
     if env and hasattr(self, 'children'):
         return self.get_bld().abspath()
