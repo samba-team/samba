@@ -598,7 +598,6 @@ def build(bld):
         Logs.error('bld.path %s is not a child of %s' % (curdir, srcdir))
         raise Errors.WafError('''The top source directory has moved. Please run distclean and reconfigure''')
 
-    bld.CHECK_MAKEFLAGS()
     bld.SETUP_BUILD_GROUPS()
     bld.ENFORCE_GROUP_ORDERING()
     bld.CHECK_PROJECT_RULES()

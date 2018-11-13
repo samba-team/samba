@@ -440,14 +440,14 @@ Options.OptionsContext.RECURSE = RECURSE
 Build.BuildContext.RECURSE = RECURSE
 
 
-def CHECK_MAKEFLAGS(bld):
+def CHECK_MAKEFLAGS(options):
     '''check for MAKEFLAGS environment variable in case we are being
     called from a Makefile try to honor a few make command line flags'''
     if not 'WAF_MAKE' in os.environ:
         return
     makeflags = os.environ.get('MAKEFLAGS')
     if makeflags is None:
-        return
+        makeflags = ""
     jobs_set = False
     jobs = None
     # we need to use shlex.split to cope with the escaping of spaces
@@ -455,7 +455,7 @@ def CHECK_MAKEFLAGS(bld):
     for opt in shlex.split(makeflags):
         # options can come either as -x or as x
         if opt[0:2] == 'V=':
-            Options.options.verbose = Logs.verbose = int(opt[2:])
+            options.verbose = Logs.verbose = int(opt[2:])
             if Logs.verbose > 0:
                 Logs.zones = ['runner']
             if Logs.verbose > 2:
@@ -469,26 +469,35 @@ def CHECK_MAKEFLAGS(bld):
             # this is also how "make test TESTS=testpattern" works, and
             # "make VERBOSE=1" as well as things like "make SYMBOLCHECK=1"
             loc = opt.find('=')
-            setattr(Options.options, opt[0:loc], opt[loc+1:])
+            setattr(options, opt[0:loc], opt[loc+1:])
         elif opt[0] != '-':
             for v in opt:
                 if re.search(r'j[0-9]*$', v):
                     jobs_set = True
                     jobs = opt.strip('j')
                 elif v == 'k':
-                    Options.options.keep = True
+                    options.keep = True
         elif re.search(r'-j[0-9]*$', opt):
             jobs_set = True
             jobs = opt.strip('-j')
         elif opt == '-k':
-            Options.options.keep = True
+            options.keep = True
     if not jobs_set:
         # default to one job
-        Options.options.jobs = 1
+        options.jobs = 1
     elif jobs_set and jobs:
-        Options.options.jobs = int(jobs)
+        options.jobs = int(jobs)
 
-Build.BuildContext.CHECK_MAKEFLAGS = CHECK_MAKEFLAGS
+waflib_options_parse_cmd_args = Options.OptionsContext.parse_cmd_args
+def wafsamba_options_parse_cmd_args(self, _args=None, cwd=None, allow_unknown=False):
+    (options, commands, envvars) = \
+        waflib_options_parse_cmd_args(self,
+                                      _args=_args,
+                                      cwd=cwd,
+                                      allow_unknown=allow_unknown)
+    CHECK_MAKEFLAGS(options)
+    return options, commands, envvars
+Options.OptionsContext.parse_cmd_args = wafsamba_options_parse_cmd_args
 
 option_groups = {}
 
