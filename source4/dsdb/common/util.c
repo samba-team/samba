@@ -56,6 +56,9 @@
  */
 #include "dsdb/samdb/ldb_modules/util.h"
 
+/* default is 30 minutes: -1e7 * 30 * 60 */
+#define DEFAULT_OBSERVATION_WINDOW              -18000000000
+
 /*
   search the sam for the specified attributes in a specific domain, filter on
   objectSid being in domain_sid.
@@ -5363,7 +5366,7 @@ int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
 		lockOutObservationWindow =
 			ldb_msg_find_attr_as_int64(res->msgs[0],
 						   "msDS-LockoutObservationWindow",
-						    0);
+						    DEFAULT_OBSERVATION_WINDOW);
 		talloc_free(res);
 	} else {
 
@@ -5402,10 +5405,11 @@ static int64_t get_lockout_observation_window(struct ldb_message *domain_msg,
 	if (pso_msg != NULL) {
 		return ldb_msg_find_attr_as_int64(pso_msg,
 						  "msDS-LockoutObservationWindow",
-						   0);
+						   DEFAULT_OBSERVATION_WINDOW);
 	} else {
 		return ldb_msg_find_attr_as_int64(domain_msg,
-						  "lockOutObservationWindow", 0);
+						  "lockOutObservationWindow",
+						   DEFAULT_OBSERVATION_WINDOW);
 	}
 }
 
