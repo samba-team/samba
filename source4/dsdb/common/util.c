@@ -5361,9 +5361,9 @@ int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
 
 	if (res != NULL) {
 		lockOutObservationWindow =
-			ldb_msg_find_attr_as_int(res->msgs[0],
-						 "msDS-LockoutObservationWindow",
-						  0);
+			ldb_msg_find_attr_as_int64(res->msgs[0],
+						   "msDS-LockoutObservationWindow",
+						    0);
 		talloc_free(res);
 	} else {
 
