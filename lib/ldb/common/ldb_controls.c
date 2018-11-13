@@ -520,6 +520,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 							   control->ctxid_len);
 			if (control->contextId == NULL) {
 				ldb_oom(ldb);
+				talloc_free(ctrl);
 				return NULL;
 			}
 		} else {
@@ -568,6 +569,11 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_DIRSYNC_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_dirsync_control);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
 		control->flags = flags;
 		control->max_attributes = max_attrs;
 		if (*cookie) {
@@ -582,6 +588,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
 			if (control->cookie == NULL) {
 				ldb_oom(ldb);
+				talloc_free(ctrl);
 				return NULL;
 			}
 		} else {
@@ -630,6 +637,11 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_DIRSYNC_EX_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_dirsync_control);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
 		control->flags = flags;
 		control->max_attributes = max_attrs;
 		if (*cookie) {
@@ -645,6 +657,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
 			if (control->cookie == NULL) {
 				ldb_oom(ldb);
+				talloc_free(ctrl);
 				return NULL;
 			}
 		} else {
@@ -678,6 +691,11 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_ASQ_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_asq_control);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
 		control->request = 1;
 		control->source_attribute = talloc_strdup(control, attr);
 		control->src_attr_len = strlen(attr);
@@ -709,6 +727,11 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control = NULL;
 		} else {
 			control = talloc(ctrl, struct ldb_extended_dn_control);
+			if (control == NULL) {
+				ldb_oom(ldb);
+				talloc_free(ctrl);
+				return NULL;
+			}
 			control->type = type;
 		}
 
@@ -739,6 +762,12 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_SD_FLAGS_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_sd_flags_control);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		control->secinfo_flags = secinfo_flags;
 		ctrl->data = control;
 
@@ -765,6 +794,12 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_SEARCH_OPTIONS_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_search_options_control);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		control->search_options = search_options;
 		ctrl->data = control;
 
@@ -881,6 +916,12 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_PAGED_RESULTS_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_paged_control);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		control->size = size;
 		if (cookie[0] != '\0') {
 			int len = ldb_base64_decode(cookie);
@@ -895,6 +936,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control->cookie = talloc_memdup(control, cookie, control->cookie_len);
 			if (control->cookie == NULL) {
 				ldb_oom(ldb);
+				talloc_free(ctrl);
 				return NULL;
 			}
 		} else {
@@ -928,12 +970,36 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_SERVER_SORT_OID;
 		ctrl->critical = crit;
 		control = talloc_array(ctrl, struct ldb_server_sort_control *, 2);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		control[0] = talloc(control, struct ldb_server_sort_control);
+		if (control[0] == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		control[0]->attributeName = talloc_strdup(control, attr);
-		if (rule[0])
+		if (control[0]->attributeName == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
+		if (rule[0]) {
 			control[0]->orderingRule = talloc_strdup(control, rule);
-		else
+			if (control[0]->orderingRule == NULL) {
+				ldb_oom(ldb);
+				talloc_free(ctrl);
+				return NULL;
+			}
+		} else {
 			control[0]->orderingRule = NULL;
+		}
 		control[0]->reverse = rev;
 		control[1] = NULL;
 		ctrl->data = control;
@@ -1195,7 +1261,19 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->oid = LDB_CONTROL_VERIFY_NAME_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_verify_name_control);
+		if (control == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		control->gc = talloc_strdup(control, gc);
+		if (control->gc == NULL) {
+			ldb_oom(ldb);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
 		control->gc_len = strlen(gc);
 		control->flags = flags;
 		ctrl->data = control;
