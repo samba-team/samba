@@ -1,0 +1,2 @@
+^samba3.smb2.session krb5.expire_disconnect\(ad_dc\)
+^samba3.smb2.session krb5.expire_disconnect\(ad_member\)
