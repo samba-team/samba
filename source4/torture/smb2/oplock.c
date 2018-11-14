@@ -4956,12 +4956,14 @@ static bool wait_for_child_oplock(struct torture_context *tctx,
 		char c;
 		/* Parent. */
 		TALLOC_FREE(name);
+		close(fds[1]);
 		ret = sys_read(fds[0], &c, 1);
 		torture_assert(tctx, ret == 1, "read failed");
 		return true;
 	}
 
 	/* Child process. */
+	close(fds[0]);
 	ret = do_child_process(fds[1], name);
 	_exit(ret);
 	/* Notreached. */
