@@ -1733,6 +1733,82 @@ done:
 	return ret;
 }
 
+static bool test_twrp_write(struct torture_context *tctx, struct smb2_tree *tree)
+{
+	struct smb2_create io;
+	struct smb2_handle h1 = {{0}};
+	NTSTATUS status;
+	bool ret = true;
+	char *p = NULL;
+	struct tm tm;
+	time_t t;
+	uint64_t nttime;
+	const char *file = NULL;
+	const char *snapshot = NULL;
+
+	file = torture_setting_string(tctx, "twrp_file", NULL);
+	if (file == NULL) {
+		torture_skip(tctx, "missing 'twrp_file' option\n");
+	}
+
+	snapshot = torture_setting_string(tctx, "twrp_snapshot", NULL);
+	if (snapshot == NULL) {
+		torture_skip(tctx, "missing 'twrp_snapshot' option\n");
+	}
+
+	torture_comment(tctx, "Testing timewarp (%s) (%s)\n", file, snapshot);
+
+	setenv("TZ", "GMT", 1);
+	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
+	torture_assert_goto(tctx, p != NULL, ret, done, "strptime\n");
+	torture_assert_goto(tctx, *p == '\0', ret, done, "strptime\n");
+
+	t = mktime(&tm);
+	unix_to_nt_time(&nttime, t);
+
+	io = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.fname = file,
+		.in.query_maximal_access = true,
+		.in.timewarp = nttime,
+	};
+
+	status = smb2_create(tree, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+	smb2_util_close(tree, io.out.file.handle);
+
+	ret = io.out.maximal_access & (SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA);
+	torture_assert_goto(tctx, ret, ret, done, "Bad access\n");
+
+	io = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.fname = file,
+		.in.timewarp = nttime,
+	};
+
+	status = smb2_create(tree, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+	h1 = io.out.file.handle;
+
+	status = smb2_util_write(tree, h1, "123", 0, 3);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_MEDIA_WRITE_PROTECTED,
+					   ret, done, "smb2_create\n");
+
+	smb2_util_close(tree, h1);
+
+done:
+	return ret;
+}
+
 /*
    basic testing of SMB2 read
 */
@@ -1755,6 +1831,17 @@ struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "dir-alloc-size", test_dir_alloc_size);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
+
+	return suite;
+}
+
+struct torture_suite *torture_smb2_twrp_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(ctx, "twrp");
+
+	torture_suite_add_1smb2_test(suite, "write", test_twrp_write);
+
+	suite->description = talloc_strdup(suite, "SMB2-TWRP tests");
 
 	return suite;
 }
