@@ -113,6 +113,8 @@ static void _check_group_change_message(
 	json_t *audit = NULL;
 	json_t *v = NULL;
 	const char* value;
+	int cmp;
+
 	json = messages[message];
 
 	/*
@@ -137,7 +139,8 @@ static void _check_group_change_message(
 	}
 
 	value = json_string_value(v);
-	if (strncmp("groupChange", value, strlen("groupChange") != 0)) {
+	cmp = strcmp("groupChange", value);
+	if (cmp != 0) {
 		cm_print_error(
 		    "Unexpected type \"%s\" != \"groupChange\"\n",
 		    value);
@@ -172,7 +175,8 @@ static void _check_group_change_message(
 	}
 
 	value = json_string_value(v);
-	if (strncmp(user, value, strlen(user) != 0)) {
+	cmp = strcmp(user, value);
+	if (cmp != 0) {
 		cm_print_error(
 		    "Unexpected user name \"%s\" != \"%s\"\n",
 		    value,
@@ -190,7 +194,8 @@ static void _check_group_change_message(
 	}
 
 	value = json_string_value(v);
-	if (strncmp(action, value, strlen(action) != 0)) {
+	cmp = strcmp(action, value);
+	if (cmp != 0) {
 		print_error(
 		    "Unexpected action \"%s\" != \"%s\"\n",
 		    value,
