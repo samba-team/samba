@@ -3942,6 +3942,7 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 		struct dom_sid *objectsid;
 		struct ldb_result *rec;
 		const uint32_t idx = r->in.start_idx + i;
+		uint32_t rid;
 
 		/*
 		 * Read an object from disk using the GUID as the key
@@ -3984,6 +3985,24 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 				    guid_str);
 			continue;
 		}
+		status = dom_sid_split_rid(NULL,
+					   objectsid,
+					   NULL,
+					   &rid);
+		if (!NT_STATUS_IS_OK(status)) {
+			struct dom_sid_buf sid_buf;
+			char *sid_str =
+				dom_sid_str_buf(objectsid,
+						&sid_buf);
+			struct GUID_txt_buf guid_buf;
+			char *guid_str =
+				GUID_buf_string(&cache->entries[idx],
+						&guid_buf);
+			DBG_WARNING("objectSID [%s] for GUID [%s] invalid\n",
+				    sid_str,
+				    guid_str);
+			continue;
+		}
 
 		/*
 		 * Populate the result structure for the current object
@@ -3992,8 +4011,8 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 		case 1:
 
 			entriesGeneral[count].idx = idx + 1;
-			entriesGeneral[count].rid =
-			    objectsid->sub_auths[objectsid->num_auths - 1];
+			entriesGeneral[count].rid = rid;
+
 			entriesGeneral[count].acct_flags =
 			    samdb_result_acct_flags(rec->msgs[0], NULL);
 			entriesGeneral[count].account_name.string =
@@ -4008,8 +4027,7 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			break;
 		case 2:
 			entriesFull[count].idx = idx + 1;
-			entriesFull[count].rid =
-			    objectsid->sub_auths[objectsid->num_auths - 1];
+			entriesFull[count].rid = rid;
 
 			/*
 			 * No idea why we need to or in ACB_NORMAL here,
@@ -4027,8 +4045,8 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			break;
 		case 3:
 			entriesFullGroup[count].idx = idx + 1;
-			entriesFullGroup[count].rid =
-			    objectsid->sub_auths[objectsid->num_auths - 1];
+			entriesFullGroup[count].rid = rid;
+
 			/*
 			 * We get a "7" here for groups
 			 */
