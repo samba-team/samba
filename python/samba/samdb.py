@@ -34,6 +34,7 @@ from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
 from samba.compat import text_type
 from samba.compat import binary_type
+from samba.compat import get_bytes
 from samba.dcerpc import security
 
 __docformat__ = "restructuredText"
@@ -303,14 +304,13 @@ changetype: modify
                 if len(targetmember) != 1:
                     raise Exception('Unable to find "%s". Operation cancelled.' % member)
                 targetmember_dn = targetmember[0].dn.extended_str(1)
-
-                if add_members_operation is True and (targetgroup[0].get('member') is None or str(targetmember_dn) not in targetgroup[0]['member']):
+                if add_members_operation is True and (targetgroup[0].get('member') is None or get_bytes(targetmember_dn) not in [str(x) for x in targetgroup[0]['member']]):
                     modified = True
                     addtargettogroup += """add: member
 member: %s
 """ % (str(targetmember_dn))
 
-                elif add_members_operation is False and (targetgroup[0].get('member') is not None and targetmember_dn in targetgroup[0]['member']):
+                elif add_members_operation is False and (targetgroup[0].get('member') is not None and get_bytes(targetmember_dn) in targetgroup[0]['member']):
                     modified = True
                     addtargettogroup += """delete: member
 member: %s
