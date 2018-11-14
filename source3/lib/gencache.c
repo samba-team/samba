@@ -130,10 +130,16 @@ static int gencache_prune_expired_fn(struct tdb_context *tdb,
 	}
 
 	if (!ok || expired) {
-		/*
-		 * Ignore failure, this is "just" background cleanup
-		 */
-		strv_add(state->mem_ctx, &state->keys, (char *)key.dptr);
+		int ret;
+
+		ret = strv_add(state->mem_ctx, &state->keys, (char *)key.dptr);
+		if (ret != 0) {
+			/*
+			 * Exit the loop. It's unlikely that it will
+			 * succeed next time.
+			 */
+			return -1;
+		}
 	}
 
 	return 0;
