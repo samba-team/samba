@@ -61,9 +61,21 @@ wait_until 60 onnode $test_node test -s "$debug_output"
 
 echo "Checking output of hung script debugging..."
 try_command_on_node -v $test_node cat "$debug_output"
+hung_script_output="$out"
+
+# Can we actually read kernel stacks
+if try_command_on_node $test_node "cat /proc/$$/stack >/dev/null 2>&1" ; then
+	stackpat='
+---- Stack trace of interesting process [0-9]*\\[sleep\\] ----
+[<[0-9a-f]*>] .*sleep+.*
+'
+else
+	stackpat=''
+fi
 
 while IFS="" read pattern ; do
-    if grep -- "^${pattern}\$" <<<"$out" >/dev/null ; then
+    [ -n "$pattern" ] || continue
+    if grep -- "^${pattern}\$" <<<"$hung_script_output" >/dev/null ; then
 	printf 'GOOD: output contains "%s"\n' "$pattern"
     else
 	printf 'BAD: output does not contain "%s"\n' "$pattern"
@@ -75,8 +87,7 @@ done <<EOF
 pstree -p -a .*:
 00\\\\.test\\\\.script,.*
  *\`-sleep,.*
----- Stack trace of interesting process [0-9]*\\\\[sleep\\\\] ----
-[<[0-9a-f]*>] .*sleep+.*
+${stackpat}
 ---- ctdb scriptstatus monitor: ----
 00\\.test *TIMEDOUT.*
  *OUTPUT: Sleeping for [0-9]* seconds\\\\.\\\\.\\\\.
