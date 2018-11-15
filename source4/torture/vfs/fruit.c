@@ -4727,9 +4727,9 @@ static bool test_writing_afpinfo(struct torture_context *tctx,
 		size_t fi_check_size;
 
 		torture_comment(tctx,
-				"Test %d: offset=%zd size=%zu result=%s\n",
+				"Test %d: offset=%jd size=%zu result=%s\n",
 				i,
-				test_sizes[i].offset,
+				(intmax_t)test_sizes[i].offset,
 				test_sizes[i].size,
 				test_sizes[i].expected_result ? "true":"false");
 
