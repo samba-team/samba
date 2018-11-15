@@ -35,6 +35,7 @@ from samba.auth import system_session
 from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
+from samba.compat import text_type
 
 
 class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
@@ -58,9 +59,7 @@ class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
         self.dn            = ("cn=%s,cn=users,%s" %
                               (self.netbios_name, self.base_dn))
 
-        utf16pw = unicode(
-            '"' + self.machinepass.encode('utf-8') + '"', 'utf-8'
-        ).encode('utf-16-le')
+        utf16pw = text_type('"' + self.machinepass + '"').encode('utf-16-le')
         self.ldb.add({
             "dn": self.dn,
             "objectclass": "computer",
