@@ -76,7 +76,7 @@ def SAMBA_PIDL(bld, pname, source,
         else:
             cc = 'CC="%s"' % bld.CONFIG_GET("CC")
 
-    t = bld(rule='cd .. && %s %s ${PERL} "${PIDL}" --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- "${SRC[0].abspath(env)}"' % (cpp, cc),
+    t = bld(rule='cd ${PIDL_LAUNCH_DIR} && %s %s ${PERL} ${PIDL} --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- "${IDLSRC}"' % (cpp, cc),
             ext_out    = '.c',
             before     = 'c',
             update_outputs = True,
@@ -89,9 +89,13 @@ def SAMBA_PIDL(bld, pname, source,
     # prime the list of nodes we are dependent on with the cached pidl sources
     t.allnodes = pidl_src_nodes
 
-    t.env.PIDL = os.path.join(bld.srcnode.abspath(), 'pidl/pidl')
+    t.env.PIDL_LAUNCH_DIR = bld.srcnode.path_from(bld.bldnode.parent)
+    pnode = bld.srcnode.find_resource('pidl/pidl')
+    t.env.PIDL = pnode.path_from(bld.srcnode)
     t.env.OPTIONS = TO_LIST(options)
-    t.env.OUTPUTDIR = bld.bldnode.parent.name + '/default/' + bld.path.find_dir(output_dir).path_from(bld.srcnode)
+    snode = t.path.find_resource(source[0])
+    t.env.IDLSRC = snode.path_from(bld.srcnode)
+    t.env.OUTPUTDIR = bld.bldnode.path_from(bld.srcnode) + '/' + bld.path.find_dir(output_dir).path_from(bld.srcnode)
 
     if generate_tables and table_header_idx is not None:
         pidl_headers = LOCAL_CACHE(bld, 'PIDL_HEADERS')
