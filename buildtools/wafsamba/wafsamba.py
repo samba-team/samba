@@ -33,10 +33,6 @@ import pkgconfig
 import configure_file
 import samba_waf18
 
-# some systems have broken threading in python
-if os.environ.get('WAF_NOTHREADS') == '1':
-    import nothreads
-
 LIB_PATH="shared"
 
 os.environ['PYTHONUNBUFFERED'] = '1'

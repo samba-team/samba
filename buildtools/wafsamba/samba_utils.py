@@ -496,6 +496,24 @@ def wafsamba_options_parse_cmd_args(self, _args=None, cwd=None, allow_unknown=Fa
                                       cwd=cwd,
                                       allow_unknown=allow_unknown)
     CHECK_MAKEFLAGS(options)
+    if options.jobs == 1:
+        #
+        # waflib.Runner.Parallel processes jobs inline if the possible number
+        # of jobs is just 1. But (at least in waf <= 2.0.12) it still calls
+        # create a waflib.Runner.Spawner() which creates a single
+        # waflib.Runner.Consumer() thread that tries to process jobs from the
+        # queue.
+        #
+        # This has strange effects, which are not noticed typically,
+        # but at least on AIX python has broken threading and fails
+        # in random ways.
+        #
+        # So we just add a dummy Spawner class.
+        class NoOpSpawner(object):
+            def __init__(self, master):
+                return
+        from waflib import Runner
+        Runner.Spawner = NoOpSpawner
     return options, commands, envvars
 Options.OptionsContext.parse_cmd_args = wafsamba_options_parse_cmd_args
 
