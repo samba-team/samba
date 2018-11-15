@@ -2153,17 +2153,16 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 			DEBUG(0, ("check_password_complexity: check password script took too long!\n"));
 			TALLOC_FREE(password_script);
 			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
-		} else {
-			DEBUG(5,("check_password_complexity: check password script (%s) "
-				 "returned [%d]\n", password_script, check_ret));
+		}
+		DEBUG(5,("check_password_complexity: check password script (%s) "
+			 "returned [%d]\n", password_script, check_ret));
 
-			if (check_ret != 0) {
-				DEBUG(1,("check_password_complexity: "
-					 "check password script said new password is not good "
-					 "enough!\n"));
-				TALLOC_FREE(password_script);
-				return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
-			}
+		if (check_ret != 0) {
+			DEBUG(1,("check_password_complexity: "
+				 "check password script said new password is not good "
+				 "enough!\n"));
+			TALLOC_FREE(password_script);
+			return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 		}
 
 		TALLOC_FREE(password_script);
