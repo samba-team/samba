@@ -1651,8 +1651,10 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 					     attrs,
 					     0);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			struct GUID_txt_buf guid_buf;
 			char *guid_str =
-			    GUID_string(mem_ctx, &cache->entries[idx]);
+				GUID_buf_string(&cache->entries[idx],
+						&guid_buf);
 			DBG_WARNING("GUID [%s] not found\n", guid_str);
 			continue;
 		} else if (ret != LDB_SUCCESS) {
@@ -1663,8 +1665,10 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 						 rec->msgs[0],
 						 "objectSID");
 		if (objectsid == NULL) {
+			struct GUID_txt_buf guid_buf;
 			char *guid_str =
-			    GUID_string(mem_ctx, &cache->entries[idx]);
+				GUID_buf_string(&cache->entries[idx],
+						&guid_buf);
 			DBG_WARNING("objectSID for GUID [%s] not found\n",
 				    guid_str);
 			continue;
