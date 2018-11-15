@@ -45,9 +45,32 @@ netlogon prefork
 DCERPC now supports pre-forked NETLOGON processes. The netlogon processes are
 pre-forked when the prefork process model is selected for samba.
 
+Offline domain backups
+----------------------
+
+The 'samba-tool domain backup' command has been extended with a new 'offline'
+option. This safely creates a backup of the local DC's database directly from
+disk. The main benefits of an offline backup are it's quicker, it stores more
+database details (for forensic purposes), and the samba process does not have
+to be running when the backup is made. Refer to the samba-tool help for more
+details on using this command.
+
+Group membership statistics
+---------------------------
+
+A new 'samba-tool group stats' command has been added. This provides summary
+information about how the users are spread across groups in your domain.
+The 'samba-tool group list --verbose' command has also been updated to include
+the number of users in each group.
+
 REMOVED FEATURES
 ================
 
+samba_backup
+------------
+
+The samba_backup script has been removed. This has now been replaced by the
+'samba-tool domain backup offline' command.
 
 smb.conf changes
 ================
