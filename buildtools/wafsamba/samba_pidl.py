@@ -121,6 +121,7 @@ Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 @before('exec_rule')
 def collect(self):
     pidl_headers = LOCAL_CACHE(self.bld, 'PIDL_HEADERS')
+    # The first source is tables.pl itself
     self.source = Utils.to_list(self.source)
     for (name, hd) in pidl_headers.items():
         y = self.bld.get_tgen_by_name(name)
@@ -136,7 +137,7 @@ def SAMBA_PIDL_TABLES(bld, name, target):
     bld.SET_BUILD_GROUP('main')
     t = bld(
             features = 'collect',
-            rule     = '${PERL} ${SRC} --output ${TGT} | sed "s|default/||" > ${TGT}',
+            rule     = '${PERL} ${SRC} > ${TGT}',
             ext_out  = '.c',
             before   = 'c',
             update_outputs = True,
