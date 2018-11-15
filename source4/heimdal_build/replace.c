@@ -92,11 +92,3 @@ void setprogname(const char *argv0)
 }
 
 #endif /* HAVE_SETPROGNAME */
-
-#ifndef HAVE_GETPROGNAME
-/* We don't want to use a getprogname reimplementation */
-const char *getprogname(void)
-{
-	return "";
-}
-#endif /* HAVE_GETPROGNAME */
