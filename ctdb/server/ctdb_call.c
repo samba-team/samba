@@ -1092,7 +1092,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	tmp_count = c->hopcount;
 	bucket = 0;
 	while (tmp_count) {
-		tmp_count >>= 2;
+		tmp_count >>= 1;
 		bucket++;
 	}
 	if (bucket >= MAX_COUNT_BUCKETS) {

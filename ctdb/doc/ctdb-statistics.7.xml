@@ -436,8 +436,10 @@ Statistics collected since  : (000 01:49:20) Fri Sep 12 11:43:12 2014
       <title>hop_count_buckets</title>
       <para>
 	Distribution of migration requests based on hop counts values.
-	Buckets are 1, &lt; 4, &lt; 8, &lt; 16, &lt; 32, &lt; 64, &lt;
-	128, &lt; 256, &lt; 512, &ge; 512.
+	Buckets are 0, &lt;&nbsp;2, &lt;&nbsp;4, &lt;&nbsp;8,
+	&lt;&nbsp;16, &lt;&nbsp;32, &lt;&nbsp;64, &lt;&nbsp;128,
+	&lt;&nbsp;256, &lt;&nbsp;512, &lt;&nbsp;1024, &lt;&nbsp;2048,
+	&lt;&nbsp;4096, &lt;&nbsp;8192, &lt;&nbsp;16384, &ge;&nbsp;16384.
       </para>
     </refsect2>
 
@@ -595,8 +597,10 @@ DB Statistics: notify_index.tdb
       <title>hop_count_buckets</title>
       <para>
 	Distribution of migration requests based on hop counts values.
-	Buckets are 1, &lt; 4, &lt; 8, &lt; 16, &lt; 32, &lt; 64, &lt;
-	128, &lt; 256, &lt; 512, &ge; 512.
+	Buckets are 0, &lt;&nbsp;2, &lt;&nbsp;4, &lt;&nbsp;8,
+	&lt;&nbsp;16, &lt;&nbsp;32, &lt;&nbsp;64, &lt;&nbsp;128,
+	&lt;&nbsp;256, &lt;&nbsp;512, &lt;&nbsp;1024, &lt;&nbsp;2048,
+	&lt;&nbsp;4096, &lt;&nbsp;8192, &lt;&nbsp;16384, &ge;&nbsp;16384.
       </para>
     </refsect2>
 
