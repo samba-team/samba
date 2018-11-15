@@ -11,7 +11,6 @@ use strict;
 use Getopt::Long;
 use File::Basename;
 
-my $opt_output = 'librpc/gen_ndr/tables.c';
 my $opt_help  = 0;
 
 
@@ -32,7 +31,6 @@ sub ShowHelp()
 # main program
 GetOptions (
 	    'help|h|?' => \$opt_help, 
-	    'output=s' => \$opt_output,
 	    );
 
 if ($opt_help) {
