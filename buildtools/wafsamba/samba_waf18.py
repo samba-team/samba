@@ -44,7 +44,6 @@ for y in (Build.BuildContext, Build.CleanContext, Build.InstallContext, Build.Un
 def pre_build(self):
     self.cwdx = self.bldnode.parent
     self.cwd = self.cwdx.abspath()
-    self.bdir = self.bldnode.abspath()
     return Build.BuildContext.old_pre_build(self)
 Build.BuildContext.old_pre_build = Build.BuildContext.pre_build
 Build.BuildContext.pre_build = pre_build
