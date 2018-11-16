@@ -589,7 +589,7 @@ static NTSTATUS process_driver_section_printprocessor(struct gp_inifile_context 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = gp_inifile_getstring(ctx, key, &s);
+	status = gp_inifile_getstring_ext(ctx, key, &s);
 	if (NT_STATUS_IS_OK(status)) {
 		s = get_string_unquote(s);
 
