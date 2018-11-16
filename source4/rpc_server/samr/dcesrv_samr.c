@@ -4530,10 +4530,11 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call,
 	struct samr_QueryDomainInfo r1;
 	NTSTATUS status;
 
-	ZERO_STRUCT(r1.out);
-	r1.in.domain_handle = r->in.domain_handle;
-	r1.in.level  = r->in.level;
-	r1.out.info  = r->out.info;
+	r1 = (struct samr_QueryDomainInfo) {
+		.in.domain_handle = r->in.domain_handle,
+		.in.level  = r->in.level,
+		.out.info  = r->out.info,
+	};
 
 	status = dcesrv_samr_QueryDomainInfo(dce_call, mem_ctx, &r1);
 
@@ -4573,14 +4574,16 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call
 	struct samr_QueryDisplayInfo q;
 	NTSTATUS result;
 
-	q.in.domain_handle = r->in.domain_handle;
-	q.in.level = r->in.level;
-	q.in.start_idx = r->in.start_idx;
-	q.in.max_entries = r->in.max_entries;
-	q.in.buf_size = r->in.buf_size;
-	q.out.total_size = r->out.total_size;
-	q.out.returned_size = r->out.returned_size;
-	q.out.info = r->out.info;
+	q = (struct samr_QueryDisplayInfo) {
+		.in.domain_handle = r->in.domain_handle,
+		.in.level = r->in.level,
+		.in.start_idx = r->in.start_idx,
+		.in.max_entries = r->in.max_entries,
+		.in.buf_size = r->in.buf_size,
+		.out.total_size = r->out.total_size,
+		.out.returned_size = r->out.returned_size,
+		.out.info = r->out.info,
+	};
 
 	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
 
@@ -4607,14 +4610,16 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call
 	struct samr_QueryDisplayInfo q;
 	NTSTATUS result;
 
-	q.in.domain_handle = r->in.domain_handle;
-	q.in.level = r->in.level;
-	q.in.start_idx = r->in.start_idx;
-	q.in.max_entries = r->in.max_entries;
-	q.in.buf_size = r->in.buf_size;
-	q.out.total_size = r->out.total_size;
-	q.out.returned_size = r->out.returned_size;
-	q.out.info = r->out.info;
+	q = (struct samr_QueryDisplayInfo) {
+		.in.domain_handle = r->in.domain_handle,
+		.in.level = r->in.level,
+		.in.start_idx = r->in.start_idx,
+		.in.max_entries = r->in.max_entries,
+		.in.buf_size = r->in.buf_size,
+		.out.total_size = r->out.total_size,
+		.out.returned_size = r->out.returned_size,
+		.out.info = r->out.info,
+	};
 
 	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
 
@@ -4705,9 +4710,11 @@ static NTSTATUS dcesrv_samr_Connect2(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct samr_Connect c;
 
-	c.in.system_name = NULL;
-	c.in.access_mask = r->in.access_mask;
-	c.out.connect_handle = r->out.connect_handle;
+	c = (struct samr_Connect) {
+		.in.system_name = NULL,
+		.in.access_mask = r->in.access_mask,
+		.out.connect_handle = r->out.connect_handle,
+	};
 
 	return dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 }
@@ -4723,9 +4730,11 @@ static NTSTATUS dcesrv_samr_SetUserInfo2(struct dcesrv_call_state *dce_call, TAL
 {
 	struct samr_SetUserInfo r2;
 
-	r2.in.user_handle = r->in.user_handle;
-	r2.in.level = r->in.level;
-	r2.in.info = r->in.info;
+	r2 = (struct samr_SetUserInfo) {
+		.in.user_handle = r->in.user_handle,
+		.in.level = r->in.level,
+		.in.info = r->in.info,
+	};
 
 	return dcesrv_samr_SetUserInfo(dce_call, mem_ctx, &r2);
 }
@@ -4760,9 +4769,11 @@ static NTSTATUS dcesrv_samr_Connect3(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct samr_Connect c;
 
-	c.in.system_name = NULL;
-	c.in.access_mask = r->in.access_mask;
-	c.out.connect_handle = r->out.connect_handle;
+	c = (struct samr_Connect) {
+		.in.system_name = NULL,
+		.in.access_mask = r->in.access_mask,
+		.out.connect_handle = r->out.connect_handle,
+	};
 
 	return dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 }
@@ -4776,9 +4787,11 @@ static NTSTATUS dcesrv_samr_Connect4(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct samr_Connect c;
 
-	c.in.system_name = NULL;
-	c.in.access_mask = r->in.access_mask;
-	c.out.connect_handle = r->out.connect_handle;
+	c = (struct samr_Connect) {
+		.in.system_name = NULL,
+		.in.access_mask = r->in.access_mask,
+		.out.connect_handle = r->out.connect_handle,
+	};
 
 	return dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 }
@@ -4793,9 +4806,11 @@ static NTSTATUS dcesrv_samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_
 	struct samr_Connect c;
 	NTSTATUS status;
 
-	c.in.system_name = NULL;
-	c.in.access_mask = r->in.access_mask;
-	c.out.connect_handle = r->out.connect_handle;
+	c = (struct samr_Connect) {
+		.in.system_name = NULL,
+		.in.access_mask = r->in.access_mask,
+		.out.connect_handle = r->out.connect_handle,
+	};
 
 	status = dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 
@@ -4868,8 +4883,11 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 
 	(*r->out.rep) = talloc_zero(mem_ctx, union samr_ValidatePasswordRep);
 
-	r2.in.domain_name = NULL;
-	r2.out.info = &pwInfo;
+	r2 = (struct samr_GetDomPwInfo) {
+		.in.domain_name = NULL,
+		.out.info = &pwInfo,
+	};
+
 	status = dcesrv_samr_GetDomPwInfo(dce_call, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
