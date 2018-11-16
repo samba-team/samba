@@ -1027,9 +1027,11 @@ static NTSTATUS setup_driver_by_name(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->print_processor = talloc_strdup(mem_ctx, "winprint");
 	if (r->print_processor == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		r->print_processor = talloc_strdup(mem_ctx, "winprint");
+		if (r->print_processor == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	status = gp_inifile_getstring(ctx, "Version:Signature", &s);
