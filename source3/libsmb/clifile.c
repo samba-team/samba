@@ -5491,6 +5491,7 @@ NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
 ****************************************************************************/
 
 struct cli_notify_state {
+	struct tevent_req *subreq;
 	uint8_t setup[8];
 	uint32_t num_changes;
 	struct notify_change *changes;
@@ -5498,6 +5499,7 @@ struct cli_notify_state {
 
 static void cli_notify_done(struct tevent_req *subreq);
 static void cli_notify_done_smb2(struct tevent_req *subreq);
+static bool cli_notify_cancel(struct tevent_req *req);
 
 struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
@@ -5505,7 +5507,7 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 				   uint32_t buffer_size,
 				   uint32_t completion_filter, bool recursive)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct cli_notify_state *state;
 	unsigned old_timeout;
 
@@ -5515,7 +5517,12 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		subreq = cli_smb2_notify_send(
+		/*
+		 * Notifies should not time out
+		 */
+		old_timeout = cli_set_timeout(cli, 0);
+
+		state->subreq = cli_smb2_notify_send(
 			state,
 			ev,
 			cli,
@@ -5523,11 +5530,15 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 			buffer_size,
 			completion_filter,
 			recursive);
-		if (tevent_req_nomem(subreq, req)) {
+
+		cli_set_timeout(cli, old_timeout);
+
+		if (tevent_req_nomem(state->subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, cli_notify_done_smb2, req);
-		return req;
+		tevent_req_set_callback(
+			state->subreq, cli_notify_done_smb2, req);
+		goto done;
 	}
 
 	SIVAL(state->setup, 0, completion_filter);
@@ -5539,7 +5550,7 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 	 */
 	old_timeout = cli_set_timeout(cli, 0);
 
-	subreq = cli_trans_send(
+	state->subreq = cli_trans_send(
 		state,			/* mem ctx. */
 		ev,			/* event ctx. */
 		cli,			/* cli_state. */
@@ -5561,11 +5572,23 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 
 	cli_set_timeout(cli, old_timeout);
 
-	if (tevent_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(state->subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_notify_done, req);
+	tevent_req_set_callback(state->subreq, cli_notify_done, req);
+done:
+	tevent_req_set_cancel_fn(req, cli_notify_cancel);
 	return req;
+}
+
+static bool cli_notify_cancel(struct tevent_req *req)
+{
+	struct cli_notify_state *state = tevent_req_data(
+		req, struct cli_notify_state);
+	bool ok;
+
+	ok = tevent_req_cancel(state->subreq);
+	return ok;
 }
 
 static void cli_notify_done(struct tevent_req *subreq)
@@ -5582,6 +5605,7 @@ static void cli_notify_done(struct tevent_req *subreq)
 	status = cli_trans_recv(subreq, talloc_tos(), &flags2, NULL, 0, NULL,
 				&params, 0, &num_params, NULL, 0, NULL);
 	TALLOC_FREE(subreq);
+	state->subreq = NULL;
 	if (tevent_req_nterror(req, status)) {
 		DEBUG(10, ("cli_trans_recv returned %s\n", nt_errstr(status)));
 		return;
