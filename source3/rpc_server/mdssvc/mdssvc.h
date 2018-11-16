@@ -158,7 +158,6 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 extern bool mds_dispatch(struct mds_ctx *query_ctx,
 			 struct mdssvc_blob *request_blob,
 			 struct mdssvc_blob *response_blob);
-extern char *mds_dalloc_dump(DALLOC_CTX *dd, int nestinglevel);
 bool mds_add_result(struct sl_query *slq, const char *path);
 
 #endif /* _MDSSVC_H */

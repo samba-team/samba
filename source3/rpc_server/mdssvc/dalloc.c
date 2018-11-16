@@ -18,6 +18,10 @@
 #include "replace.h"
 #include <talloc.h>
 #include "dalloc.h"
+#include "marshalling.h"
+#include "lib/util/charset/charset.h"
+#include "lib/util/talloc_stack.h"
+#include "system/time.h"
 
 /**
  * Dynamic Datastore
@@ -229,4 +233,171 @@ int dalloc_stradd(DALLOC_CTX *d, const char *string)
 	}
 
 	return 0;
+}
+
+static char *tab_level(TALLOC_CTX *mem_ctx, int level)
+{
+	int i;
+	char *string = talloc_array(mem_ctx, char, level + 1);
+
+	for (i = 0; i < level; i++) {
+		string[i] = '\t';
+	}
+
+	string[i] = '\0';
+	return string;
+}
+
+char *dalloc_dump(DALLOC_CTX *dd, int nestinglevel)
+{
+	const char *type;
+	int n, result;
+	uint64_t i;
+	sl_bool_t bl;
+	sl_time_t t;
+	struct tm *tm;
+	char datestring[256];
+	sl_cnids_t cnids;
+	char *logstring, *nested_logstring;
+	char *tab_string1, *tab_string2;
+	void *p;
+	bool ok;
+	char *utf8string;
+	size_t utf8len;
+
+	tab_string1 = tab_level(dd, nestinglevel);
+	if (tab_string1 == NULL) {
+		return NULL;
+	}
+	tab_string2 = tab_level(dd, nestinglevel + 1);
+	if (tab_string2 == NULL) {
+		return NULL;
+	}
+
+	logstring = talloc_asprintf(dd,
+				    "%s%s(#%lu): {\n",
+				    tab_string1,
+				    talloc_get_name(dd),
+				    dalloc_size(dd));
+	if (logstring == NULL) {
+		return NULL;
+	}
+
+	for (n = 0; n < dalloc_size(dd); n++) {
+		type = dalloc_get_name(dd, n);
+		if (type == NULL) {
+			return NULL;
+		}
+		p = dalloc_get_object(dd, n);
+		if (p == NULL) {
+			return NULL;
+		}
+		if (strcmp(type, "DALLOC_CTX") == 0
+		    || strcmp(type, "sl_array_t") == 0
+		    || strcmp(type, "sl_filemeta_t") == 0
+		    || strcmp(type, "sl_dict_t") == 0) {
+			nested_logstring = dalloc_dump(p, nestinglevel + 1);
+			if (nested_logstring == NULL) {
+				return NULL;
+			}
+			logstring = talloc_strdup_append(logstring,
+							 nested_logstring);
+		} else if (strcmp(type, "uint64_t") == 0) {
+			memcpy(&i, p, sizeof(uint64_t));
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%suint64_t: 0x%04jx\n",
+				tab_string2, (uintmax_t)i);
+		} else if (strcmp(type, "char *") == 0) {
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%sstring: %s\n",
+				tab_string2,
+				(char *)p);
+		} else if (strcmp(type, "smb_ucs2_t *") == 0) {
+			ok = convert_string_talloc(talloc_tos(),
+						   CH_UTF16LE,
+						   CH_UTF8,
+						   p,
+						   talloc_get_size(p),
+						   &utf8string,
+						   &utf8len);
+			if (!ok) {
+				return NULL;
+			}
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%sUTF16-string: %s\n",
+				tab_string2,
+				utf8string);
+			TALLOC_FREE(utf8string);
+		} else if (strcmp(type, "sl_bool_t") == 0) {
+			memcpy(&bl, p, sizeof(sl_bool_t));
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%sbool: %s\n",
+				tab_string2,
+				bl ? "true" : "false");
+		} else if (strcmp(type, "sl_nil_t") == 0) {
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%snil\n",
+				tab_string2);
+		} else if (strcmp(type, "sl_time_t") == 0) {
+			memcpy(&t, p, sizeof(sl_time_t));
+			tm = localtime(&t.tv_sec);
+			if (tm == NULL) {
+				return NULL;
+			}
+			result = strftime(datestring,
+					 sizeof(datestring),
+					 "%Y-%m-%d %H:%M:%S", tm);
+			if (result == 0) {
+				return NULL;
+			}
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%ssl_time_t: %s.%06lu\n",
+				tab_string2,
+				datestring,
+				(unsigned long)t.tv_usec);
+		} else if (strcmp(type, "sl_cnids_t") == 0) {
+			memcpy(&cnids, p, sizeof(sl_cnids_t));
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%sCNIDs: unkn1: 0x%" PRIx16 ", unkn2: 0x%" PRIx32 "\n",
+				tab_string2,
+				cnids.ca_unkn1,
+				cnids.ca_context);
+			if (logstring == NULL) {
+				return NULL;
+			}
+			if (cnids.ca_cnids) {
+				nested_logstring = dalloc_dump(
+					cnids.ca_cnids,
+					nestinglevel + 2);
+				if (!nested_logstring) {
+					return NULL;
+				}
+				logstring = talloc_strdup_append(logstring,
+								 nested_logstring);
+			}
+		} else {
+			logstring = talloc_asprintf_append(
+				logstring,
+				"%stype: %s\n",
+				tab_string2,
+				type);
+		}
+		if (logstring == NULL) {
+			return NULL;
+		}
+	}
+	logstring = talloc_asprintf_append(logstring,
+					   "%s}\n",
+					   tab_string1);
+	if (logstring == NULL) {
+		return NULL;
+	}
+	return logstring;
 }

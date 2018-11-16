@@ -160,4 +160,6 @@ extern int dalloc_stradd(DALLOC_CTX *d, const char *string);
 extern void *_dalloc_new(TALLOC_CTX *mem_ctx, const char *type);
 extern int _dalloc_add_talloc_chunk(DALLOC_CTX *d, void *obj, const char *type, size_t size);
 
+extern char *dalloc_dump(DALLOC_CTX *dd, int nestinglevel);
+
 #endif  /* DALLOC_H */
