@@ -25,28 +25,16 @@
 
 struct cli_trans_state {
 	struct cli_state *cli;
-	struct tevent_req *req;
-	struct cli_trans_state **ptr;
+	uint16_t recv_flags2;
+	uint16_t *setup;
+	uint8_t num_setup;
+	uint8_t *param;
+	uint32_t num_param;
+	uint8_t *data;
+	uint32_t num_data;
 };
 
-static int cli_trans_state_destructor(struct cli_trans_state *state)
-{
-	talloc_set_destructor(state->ptr, NULL);
-	talloc_free(state->ptr);
-	return 0;
-}
-
-static int cli_trans_state_ptr_destructor(struct cli_trans_state **ptr)
-{
-	struct cli_trans_state *state = *ptr;
-	void *parent = talloc_parent(state);
-
-	talloc_set_destructor(state, NULL);
-
-	talloc_reparent(state, parent, state->req);
-	talloc_free(state);
-	return 0;
-}
+static void cli_trans_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
@@ -56,45 +44,57 @@ struct tevent_req *cli_trans_send(
 	uint8_t *param, uint32_t num_param, uint32_t max_param,
 	uint8_t *data, uint32_t num_data, uint32_t max_data)
 {
+	struct tevent_req *req, *subreq;
 	struct cli_trans_state *state;
 	uint8_t additional_flags = 0;
 	uint8_t clear_flags = 0;
 	uint16_t clear_flags2 = 0;
 
-	state = talloc_zero(mem_ctx, struct cli_trans_state);
-	if (state == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct cli_trans_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->cli = cli;
-	state->ptr = talloc(state, struct cli_trans_state *);
-	if (state->ptr == NULL) {
-		talloc_free(state);
-		return NULL;
+
+	subreq = smb1cli_trans_send(state, ev,
+				    cli->conn, cmd,
+				    additional_flags, clear_flags,
+				    additional_flags2, clear_flags2,
+				    cli->timeout,
+				    cli->smb1.pid,
+				    cli->smb1.tcon,
+				    cli->smb1.session,
+				    pipe_name, fid, function, flags,
+				    setup, num_setup, max_setup,
+				    param, num_param, max_param,
+				    data, num_data, max_data);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	*state->ptr = state;
+	tevent_req_set_callback(subreq, cli_trans_done, req);
+	return req;
+}
 
-	state->req = smb1cli_trans_send(state, ev,
-					cli->conn, cmd,
-					additional_flags, clear_flags,
-					additional_flags2, clear_flags2,
-					cli->timeout,
-					cli->smb1.pid,
-					cli->smb1.tcon,
-					cli->smb1.session,
-					pipe_name, fid, function, flags,
-					setup, num_setup, max_setup,
-					param, num_param, max_param,
-					data, num_data, max_data);
-	if (state->req == NULL) {
-		talloc_free(state);
-		return NULL;
+static void cli_trans_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_trans_state *state = tevent_req_data(
+		req, struct cli_trans_state);
+	NTSTATUS status;
+
+	status = smb1cli_trans_recv(
+		subreq,
+		state,
+		&state->recv_flags2,
+		&state->setup, 0, &state->num_setup,
+		&state->param, 0, &state->num_param,
+		&state->data, 0, &state->num_data);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
-
-	talloc_reparent(state, state->req, state->ptr);
-	talloc_set_destructor(state, cli_trans_state_destructor);
-	talloc_set_destructor(state->ptr, cli_trans_state_ptr_destructor);
-
-	return state->req;
+	tevent_req_done(req);
 }
 
 NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
@@ -106,24 +106,40 @@ NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			uint8_t **data, uint32_t min_data,
 			uint32_t *num_data)
 {
-	NTSTATUS status;
-	void *parent = talloc_parent(req);
-	struct cli_trans_state *state =
-		talloc_get_type(parent,
-		struct cli_trans_state);
+	struct cli_trans_state *state = tevent_req_data(
+		req, struct cli_trans_state);
+	NTSTATUS status = NT_STATUS_OK;
 	bool map_dos_errors = true;
 
-	status = smb1cli_trans_recv(req, mem_ctx, recv_flags2,
-				    setup, min_setup, num_setup,
-				    param, min_param, num_param,
-				    data, min_data, num_data);
-
-	if (state) {
-		map_dos_errors = state->cli->map_dos_errors;
-		state->cli->raw_status = status;
-		talloc_free(state->ptr);
-		state = NULL;
+	if (tevent_req_is_nterror(req, &status)) {
+		goto map_error;
 	}
+
+	if ((state->num_setup < min_setup) ||
+	    (state->num_param < min_param) ||
+	    (state->num_data < min_data)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (recv_flags2 != NULL) {
+		*recv_flags2 = state->recv_flags2;
+	}
+	if (setup != NULL) {
+		*setup = talloc_move(mem_ctx, &state->setup);
+		*num_setup = state->num_setup;
+	}
+	if (param != NULL) {
+		*param = talloc_move(mem_ctx, &state->param);
+		*num_param = state->num_param;
+	}
+	if (data != NULL) {
+		*data = talloc_move(mem_ctx, &state->data);
+		*num_data = state->num_data;
+	}
+
+map_error:
+	map_dos_errors = state->cli->map_dos_errors;
+	state->cli->raw_status = status;
 
 	if (NT_STATUS_IS_DOS(status) && map_dos_errors) {
 		uint8_t eclass = NT_STATUS_DOS_CLASS(status);
@@ -152,42 +168,44 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
 		   uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata)
 {
-	NTSTATUS status;
-	uint8_t additional_flags = 0;
-	uint8_t clear_flags = 0;
-	uint16_t additional_flags2 = 0;
-	uint16_t clear_flags2 = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	status = smb1cli_trans(mem_ctx,
-			       cli->conn, trans_cmd,
-			       additional_flags, clear_flags,
-			       additional_flags2, clear_flags2,
-			       cli->timeout,
-			       cli->smb1.pid,
-			       cli->smb1.tcon,
-			       cli->smb1.session,
-			       pipe_name, fid, function, flags,
-			       setup, num_setup, max_setup,
-			       param, num_param, max_param,
-			       data, num_data, max_data,
-			       recv_flags2,
-			       rsetup, min_rsetup, num_rsetup,
-			       rparam, min_rparam, num_rparam,
-			       rdata, min_rdata, num_rdata);
-
-	cli->raw_status = status;
-
-	if (NT_STATUS_IS_DOS(status) && cli->map_dos_errors) {
-		uint8_t eclass = NT_STATUS_DOS_CLASS(status);
-		uint16_t ecode = NT_STATUS_DOS_CODE(status);
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
-		 * TODO: is it really a good idea to do a mapping here?
-		 *
-		 * The old cli_pull_error() also does it, so I do not change
-		 * the behavior yet.
+		 * Can't use sync call while an async call is in flight
 		 */
-		status = dos_to_ntstatus(eclass, ecode);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_trans_send(
+		frame,		/* mem_ctx */
+		ev,		/* ev */
+		cli,		/* cli */
+		0,		/* additional_flags2 */
+		trans_cmd,	/* cmd */
+		pipe_name, fid, function, flags,
+		setup, num_setup, max_setup,
+		param, num_param, max_param,
+		data, num_data, max_data);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_trans_recv(
+		req, mem_ctx, recv_flags2,
+		rsetup, min_rsetup, num_rsetup,
+		rparam, min_rparam, num_rparam,
+		rdata, min_rdata, num_rdata);
+fail:
+	TALLOC_FREE(frame);
 	return status;
 }
