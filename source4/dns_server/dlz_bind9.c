@@ -1059,8 +1059,9 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	const char *attrs[] = { "dnsRecord", NULL };
-	int ret = LDB_SUCCESS, i, j;
-	struct ldb_dn *dn;
+	int ret = LDB_ERR_NO_SUCH_OBJECT;
+	size_t i, j;
+	struct ldb_dn *dn = NULL;
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
 	struct ldb_val zone_name_val = data_blob_string_const(zone);
@@ -1113,7 +1114,7 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 			break;
 		}
 	}
-	if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS || dn == NULL) {
 		talloc_free(tmp_ctx);
 		return ISC_R_NOTFOUND;
 	}
