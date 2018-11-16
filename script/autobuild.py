@@ -56,6 +56,7 @@ builddirs = {
     "samba-buildpy3-only": ".",
     "samba-purepy3-none-env": ".",
     "samba-purepy3-ad-dc-2": ".",
+    "samba-purepy3-ad-dc": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -434,6 +435,20 @@ tasks = {
                          "'",
                          "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-purepy3-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "PYTHON='python3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                      ("make", "PYTHON='python3' make -j", "text/plain"),
+                      ("test", "PYTHON='python3' make test FAIL_IMMEDIATELY=1 "
+                       "TESTS='${PY3_ONLY}"
+                       "--include-env=ad_dc "
+                       "--include-env=fl2003dc "
+                       "--include-env=fl2008r2dc "
+                       "--include-env=ad_member "
+                       "--include-env=ad_member_idmap_rid "
+                       "--include-env=ad_member_idmap_ad'", "text/plain"),
+                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+
 
     # these are useful for debugging autobuild
     'pass': [("pass", 'echo passing && /bin/true', "text/plain")],
