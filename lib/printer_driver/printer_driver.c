@@ -939,6 +939,15 @@ static NTSTATUS process_source_disk_name(struct gp_inifile_context *ctx,
 		return status;
 	}
 
+	if (keys == NULL && values == NULL) {
+		key = "SourceDisksNames";
+
+		status = gp_inifile_enum_section(ctx, key, &num_keys, &keys, &values);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
 	for (i = 0; i < num_keys; i++) {
 
 		/*
