@@ -977,6 +977,10 @@ sub setup_fileserver
 	comment = inherit only unix owner
 	inherit owner = unix only
 	acl_xattr:ignore system acls = yes
+[homes]
+	comment = Home directories
+	browseable = No
+	read only = No
 ";
 
 	my $vars = $self->provision($path, "WORKGROUP",
