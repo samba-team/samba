@@ -36,6 +36,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "messages.h"
 #include "cmdline_contexts.h"
+#include "../librpc/gen_ndr/ndr_samr.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -219,11 +220,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 
 	fprintf(stderr, "could not obtain sid from server\n");
 
-	if (!NT_STATUS_IS_OK(result)) {
-		fprintf(stderr, "error: %s\n", nt_errstr(result));
-	}
-
-	exit(1);
+	return;
 }
 
 /* List the available commands on a given pipe */
@@ -858,6 +855,12 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	WERROR wresult;
 
 	TALLOC_CTX *mem_ctx;
+
+	if (cmd_entry->table == &ndr_table_samr &&
+	    !dom_sid_is_valid_account_domain(&domain_sid))
+	{
+		return NT_STATUS_INVALID_DOMAIN_STATE;
+	}
 
 	/* Create mem_ctx */
 
