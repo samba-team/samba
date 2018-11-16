@@ -265,8 +265,8 @@ static NET_API_STATUS test_netusergetgroups(const char *hostname,
 	uint8_t *buffer = NULL;
 	int i;
 
-	struct GROUP_USERS_INFO_0 *i0;
-	struct GROUP_USERS_INFO_1 *i1;
+	struct GROUP_USERS_INFO_0 *i0 = NULL;
+	struct GROUP_USERS_INFO_1 *i1 = NULL;
 
 	printf("testing NetUserGetGroups level %d\n", level);
 

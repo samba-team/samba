@@ -39,9 +39,9 @@ static NET_API_STATUS test_netquerydisplayinformation(const char *hostname,
 	uint32_t idx = 0;
 	int i;
 
-	struct NET_DISPLAY_USER *user;
-	struct NET_DISPLAY_GROUP *group;
-	struct NET_DISPLAY_MACHINE *machine;
+	struct NET_DISPLAY_USER *user = NULL;
+	struct NET_DISPLAY_GROUP *group = NULL;
+	struct NET_DISPLAY_MACHINE *machine = NULL;
 
 	printf("testing NetQueryDisplayInformation level %d\n", level);
 
