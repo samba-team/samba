@@ -25,6 +25,7 @@
 
 struct cli_trans_state {
 	struct cli_state *cli;
+	struct tevent_req *subreq;
 	uint16_t recv_flags2;
 	uint16_t *setup;
 	uint8_t num_setup;
@@ -35,6 +36,7 @@ struct cli_trans_state {
 };
 
 static void cli_trans_done(struct tevent_req *subreq);
+static bool cli_trans_cancel(struct tevent_req *req);
 
 struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
@@ -44,7 +46,7 @@ struct tevent_req *cli_trans_send(
 	uint8_t *param, uint32_t num_param, uint32_t max_param,
 	uint8_t *data, uint32_t num_data, uint32_t max_data)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct cli_trans_state *state;
 	uint8_t additional_flags = 0;
 	uint8_t clear_flags = 0;
@@ -56,23 +58,34 @@ struct tevent_req *cli_trans_send(
 	}
 	state->cli = cli;
 
-	subreq = smb1cli_trans_send(state, ev,
-				    cli->conn, cmd,
-				    additional_flags, clear_flags,
-				    additional_flags2, clear_flags2,
-				    cli->timeout,
-				    cli->smb1.pid,
-				    cli->smb1.tcon,
-				    cli->smb1.session,
-				    pipe_name, fid, function, flags,
-				    setup, num_setup, max_setup,
-				    param, num_param, max_param,
-				    data, num_data, max_data);
-	if (tevent_req_nomem(subreq, req)) {
+	state->subreq = smb1cli_trans_send(state, ev,
+					   cli->conn, cmd,
+					   additional_flags, clear_flags,
+					   additional_flags2, clear_flags2,
+					   cli->timeout,
+					   cli->smb1.pid,
+					   cli->smb1.tcon,
+					   cli->smb1.session,
+					   pipe_name, fid, function, flags,
+					   setup, num_setup, max_setup,
+					   param, num_param, max_param,
+					   data, num_data, max_data);
+	if (tevent_req_nomem(state->subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_trans_done, req);
+	tevent_req_set_callback(state->subreq, cli_trans_done, req);
+	tevent_req_set_cancel_fn(req, cli_trans_cancel);
 	return req;
+}
+
+static bool cli_trans_cancel(struct tevent_req *req)
+{
+	struct cli_trans_state *state = tevent_req_data(
+		req, struct cli_trans_state);
+	bool ok;
+
+	ok = tevent_req_cancel(state->subreq);
+	return ok;
 }
 
 static void cli_trans_done(struct tevent_req *subreq)
