@@ -62,10 +62,10 @@ knownfail() {
 
 
 # Create new testing account
-testit "user add" $samba_tool user create --given-name="rfc2307" --surname="Tester" --initial="UT" rfc2307_test_user testp@ssw0Rd $@
+testit "user add" $PYTHON $samba_tool user create --given-name="rfc2307" --surname="Tester" --initial="UT" rfc2307_test_user testp@ssw0Rd $@
 
 #test creation of six different groups
-testit "group add" $samba_tool group add $CONFIG --group-scope='Domain' --group-type='Security' rfc2307_test_group $@
+testit "group add" $PYTHON $samba_tool group add $CONFIG --group-scope='Domain' --group-type='Security' rfc2307_test_group $@
 
 # Create new testing group
 
@@ -180,7 +180,7 @@ else
 	echo "success: wbinfo -Y check for sane mapping"
 fi
 
-testit "group delete" $samba_tool group delete rfc2307_test_group $@
-testit "user delete" $samba_tool user delete rfc2307_test_user $@
+testit "group delete" $PYTHON $samba_tool group delete rfc2307_test_group $@
+testit "user delete" $PYTHON $samba_tool user delete rfc2307_test_user $@
 
 exit $failed
