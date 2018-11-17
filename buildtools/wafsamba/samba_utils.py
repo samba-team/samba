@@ -17,7 +17,9 @@ LIB_PATH="shared"
 
 # sigh, python octal constants are a mess
 MODE_644 = int('644', 8)
+MODE_744 = int('744', 8)
 MODE_755 = int('755', 8)
+MODE_777 = int('777', 8)
 
 def conf(f):
     # override in order to propagate the argument "mandatory"
