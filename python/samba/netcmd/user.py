@@ -2104,7 +2104,8 @@ samba-tool user syncpasswords --terminate \\
             assert res_controls[0].oid == "1.2.840.113556.1.4.841"
             res_controls[0].critical = True
             self.dirsync_controls = [str(res_controls[0]), "extended_dn:1:0"]
-            log_msg("dirsyncControls: %r\n" % self.dirsync_controls)
+            # This cookie can be extremely long
+            # log_msg("dirsyncControls: %r\n" % self.dirsync_controls)
 
             modify_ldif =  "dn: %s\n" % (self.cache_dn)
             modify_ldif += "changetype: modify\n"
