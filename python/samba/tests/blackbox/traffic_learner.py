@@ -20,6 +20,7 @@
 from contextlib import contextmanager
 import os
 import tempfile
+from samba.emulate import traffic
 
 from samba.tests import BlackboxTestCase
 
@@ -56,7 +57,25 @@ class TrafficLearnerTests(BlackboxTestCase):
             summary  = os.path.join(DATA_DIR, "traffic-sample-very-short.txt")
             command  = "%s %s --out %s" % (LEARNER, summary, output)
             self.check_run(command)
+
             expected_fn = os.path.join(DATA_DIR, "traffic_learner.expected")
-            expected = open(expected_fn).readlines()
-            actual = open(output).readlines()
-            self.assertEquals(expected, actual)
+            expected = traffic.TrafficModel()
+            f=open(expected_fn)
+            expected.load(f)
+            f.close()
+
+            f=open(output)
+            actual = traffic.TrafficModel()
+            actual.load(f)
+            f.close()
+
+            actual_ngrams = {k: sorted(v) for k, v in actual.ngrams.items()}
+            expected_ngrams = {k: sorted(v) for k, v in expected.ngrams.items()}
+
+            self.assertEquals(expected_ngrams, actual_ngrams)
+
+            actual_details = {k: sorted(v) for k, v in actual.query_details.items()}
+            expected_details = {k: sorted(v) for k, v in expected.query_details.items()}
+            self.assertEquals(expected_details, actual_details)
+            self.assertEquals(expected.cumulative_duration, actual.cumulative_duration)
+            self.assertEquals(expected.conversation_rate, actual.conversation_rate)
