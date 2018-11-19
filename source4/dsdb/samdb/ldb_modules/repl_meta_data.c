@@ -7939,13 +7939,11 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 
 /**
  * Processes one linked attribute received via replication.
- * @param msg the source object for the link. For optimization, the same msg
- * can be used across multiple calls to replmd_process_linked_attribute().
- * @note this function should not add or remove any msg attributes (it should
- * only add/modify values for the linked attribute being processed). Otherwise
- * msg->elements is realloc'd and old_el/pdn_list pointers will be invalidated
+ * @param src_dn the DN of the source object for the link
  * @param attr schema info for the linked attribute
  * @param la_entry the linked attribute info received via DRS
+ * @param element_ctx mem context for msg->element[] (when adding a new value
+ * we need to realloc old_el->values)
  * @param old_el the corresponding msg->element[] for the linked attribute
  * @param pdn_list a (binary-searchable) parsed DN array for the existing link
  * values in the msg. E.g. for a group, this is the existing members.
@@ -7956,11 +7954,12 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 static int replmd_process_linked_attribute(struct ldb_module *module,
 					   TALLOC_CTX *mem_ctx,
 					   struct replmd_private *replmd_private,
-					   struct ldb_message *msg,
+					   struct ldb_dn *src_dn,
 					   const struct dsdb_attribute *attr,
 					   struct la_entry *la_entry,
 					   struct ldb_request *parent,
 					   struct ldb_message_element *old_el,
+					   TALLOC_CTX *element_ctx,
 					   struct parsed_dn *pdn_list,
 					   replmd_link_changed *change)
 {
@@ -7987,12 +7986,12 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	if (!W_ERROR_IS_OK(status)) {
 		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
 				       attr->lDAPDisplayName,
-				       ldb_dn_get_linearized(msg->dn),
+				       ldb_dn_get_linearized(src_dn),
 				       win_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, msg->dn,
+	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, src_dn,
 					 true, &guid, &ignore_link);
 
 	if (ret != LDB_SUCCESS) {
@@ -8021,7 +8020,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 
 	if (!replmd_link_update_is_newer(pdn, la)) {
 		DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
-			 old_el->name, ldb_dn_get_linearized(msg->dn),
+			 old_el->name, ldb_dn_get_linearized(src_dn),
 			 GUID_string(mem_ctx, &la->meta_data.originating_invocation_id)));
 		return LDB_SUCCESS;
 	}
@@ -8038,7 +8037,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	 */
 	if (active) {
 		ret = replmd_check_singleval_la_conflict(module, replmd_private,
-							 mem_ctx, msg->dn, la,
+							 mem_ctx, src_dn, la,
 							 dsdb_dn, pdn, pdn_list,
 							 old_el, schema, attr,
 							 seq_num,
@@ -8055,7 +8054,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			/* remove the existing backlink */
 			ret = replmd_add_backlink(module, replmd_private,
 						  schema, 
-						  msg->dn,
+						  src_dn,
 						  &pdn->guid, false, attr,
 						  parent);
 			if (ret != LDB_SUCCESS) {
@@ -8090,7 +8089,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			}
 		}
 
-		old_el->values = talloc_realloc(msg->elements, old_el->values,
+		old_el->values = talloc_realloc(element_ctx, old_el->values,
 						struct ldb_val, old_el->num_values+1);
 		if (!old_el->values) {
 			ldb_module_oom(module);
@@ -8124,7 +8123,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 
 		/* Set the new link as inactive/deleted to avoid conflicts */
 		ret = replmd_delete_link_value(module, replmd_private, old_el,
-					       msg->dn, schema, attr, seq_num,
+					       src_dn, schema, attr, seq_num,
 					       false, &guid, dsdb_dn,
 					       val_to_update);
 
@@ -8137,7 +8136,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		/* if the new link is active, then add the new backlink */
 		ret = replmd_add_backlink(module, replmd_private,
 					  schema,
-					  msg->dn,
+					  src_dn,
 					  &guid, true, attr,
 					  parent);
 		if (ret != LDB_SUCCESS) {
@@ -8281,7 +8280,12 @@ static int replmd_process_la_group(struct ldb_module *module,
 
 	/*
 	 * go through and process the link target value(s) for this particular
-	 * source object and attribute
+	 * source object and attribute. For optimization, the same msg is used
+	 * across multiple calls to replmd_process_linked_attribute().
+	 * Note that we should not add or remove any msg attributes inside the
+	 * loop (we should only add/modify *values* for the attribute being
+	 * processed). Otherwise msg->elements is realloc'd and old_el/pdn_list
+	 * pointers will be invalidated
 	 */
 	for (la = DLIST_TAIL(la_group->la_entries); la; la=prev) {
 		prev = DLIST_PREV(la);
@@ -8304,9 +8308,9 @@ static int replmd_process_la_group(struct ldb_module *module,
 		}
 		ret = replmd_process_linked_attribute(module, tmp_ctx,
 						      replmd_private,
-						      msg, attr, la, NULL,
-						      old_el, pdn_list,
-						      &change_type);
+						      msg->dn, attr, la, NULL,
+						      msg->elements, old_el,
+						      pdn_list, &change_type);
 		if (ret != LDB_SUCCESS) {
 			replmd_txn_cleanup(replmd_private);
 			return ret;
