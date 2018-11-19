@@ -384,11 +384,16 @@ class BlackboxTestCase(TestCaseInTempDir):
             parts = line.split(" ", 1)
         cmd = parts[0]
         exe = os.path.join(BINDIR, cmd)
+
+        python_cmds = ["samba-tool",
+            "samba_dnsupdate",
+            "script/traffic_replay",
+            "script/traffic_learner"]
+
         if os.path.exists(exe):
-            python_cmds = ["samba-tool", "samba_dnsupdate", "script/traffic_replay"]
             parts[0] = exe
-            if cmd in python_cmds and os.getenv("PYTHON", None):
-                parts.insert(0, os.environ["PYTHON"])
+        if cmd in python_cmds and os.getenv("PYTHON", None):
+            parts.insert(0, os.environ["PYTHON"])
 
         if not isinstance(line, list):
             line = " ".join(parts)
