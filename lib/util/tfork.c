@@ -58,6 +58,18 @@
  *   +----------+
  */
 
+#ifdef HAVE_VALGRIND_HELGRIND_H
+#include <valgrind/helgrind.h>
+#endif
+#ifndef ANNOTATE_BENIGN_RACE_SIZED
+#define ANNOTATE_BENIGN_RACE_SIZED(obj, size, description)
+#endif
+
+#define TFORK_ANNOTATE_BENIGN_RACE(obj)					\
+	ANNOTATE_BENIGN_RACE_SIZED(					\
+		(obj), sizeof(*(obj)),					\
+		"no race, serialized by tfork_[un]install_sigchld_handler");
+
 /*
  * The resulting (private) state per tfork_create() call, returned as a opaque
  * handle to the caller.
@@ -222,6 +234,14 @@ static void tfork_atfork_child(void)
 	assert(ret == 0);
 
 	/*
+	 * There's no data race on the cond variable from the signal state, we
+	 * are writing here, but there are no readers yet. Some data race
+	 * detection tools report a race, but the readers are in the parent
+	 * process.
+	 */
+	TFORK_ANNOTATE_BENIGN_RACE(&signal_state.cond);
+
+	/*
 	 * There's no way to destroy a condition variable if there are waiters,
 	 * pthread_cond_destroy() will return EBUSY. Just zero out memory and
 	 * then initialize again. This is not backed by POSIX but should be ok.
@@ -266,6 +286,13 @@ static void tfork_global_initialize(void)
 
 	ret = pthread_cond_init(&signal_state.cond, NULL);
 	assert(ret == 0);
+
+	/*
+	 * In a threaded process there's no data race on t->waiter_pid as
+	 * we're serializing globally via tfork_acquire_sighandling() and
+	 * tfork_release_sighandling().
+	 */
+	TFORK_ANNOTATE_BENIGN_RACE(&signal_state.pid);
 #endif
 
 	signal_state.available = true;
@@ -495,6 +522,13 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 	}
 	if (pid != 0) {
 		/* The caller */
+
+		/*
+		 * In a threaded process there's no data race on
+		 * state->waiter_pid as we're serializing globally via
+		 * tfork_acquire_sighandling() and tfork_release_sighandling().
+		 */
+		TFORK_ANNOTATE_BENIGN_RACE(&state->waiter_pid);
 
 		state->waiter_pid = pid;
 
@@ -756,6 +790,13 @@ struct tfork *tfork_create(void)
 		t->worker_pid = 0;
 		return t;
 	}
+
+	/*
+	 * In a threaded process there's no data race on t->waiter_pid as
+	 * we're serializing globally via tfork_acquire_sighandling() and
+	 * tfork_release_sighandling().
+	 */
+	TFORK_ANNOTATE_BENIGN_RACE(&t->waiter_pid);
 
 	t->waiter_pid = pid;
 	t->worker_pid = state->worker_pid;
