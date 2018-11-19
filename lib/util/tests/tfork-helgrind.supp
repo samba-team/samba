@@ -1,0 +1,32 @@
+{
+   tfork_atexit_unknown1
+   Helgrind:Misc
+   fun:mutex_destroy_WRK
+   fun:pthread_mutex_destroy
+   obj:/usr/lib64/libp11-kit.so.0.3.0
+   fun:_dl_fini
+   fun:__run_exit_handlers
+   fun:exit
+   fun:(below main)
+}
+
+{
+   tfork_atexit_unknown2
+   Helgrind:Misc
+   fun:mutex_destroy_WRK
+   fun:pthread_mutex_destroy
+   fun:_dl_fini
+   fun:__run_exit_handlers
+   fun:exit
+   fun:(below main)
+}
+{
+   tfork_pthread_get_specific
+   Helgrind:Race
+   fun:tfork_global_get
+   fun:tfork_create
+   fun:tfork_thread
+   fun:mythread_wrapper
+   fun:start_thread
+   fun:clone
+}
