@@ -165,7 +165,7 @@ class SimpleSubnetTests(SitesBaseTests):
 
         sites = ret[0]['siteObject']
         self.assertEqual(len(sites), 1)
-        self.assertEqual(sites[0],
+        self.assertEqual(str(sites[0]),
                          'CN=testsite2,CN=Sites,%s' % self.ldb.get_config_basedn())
 
         self.assertRaises(subnets.SubnetAlreadyExists,
