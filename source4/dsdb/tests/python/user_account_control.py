@@ -98,7 +98,7 @@ class UserAccountControlTests(samba.tests.TestCase):
             "dn": dn,
             "objectclass": "computer"}
         if others is not None:
-            msg_dict = dict(msg_dict.items() + others.items())
+            msg_dict = dict(list(msg_dict.items()) + list(others.items()))
 
         msg = ldb.Message.from_dict(self.samdb, msg_dict)
         msg["sAMAccountName"] = samaccountname
