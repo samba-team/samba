@@ -340,7 +340,7 @@ def configure(conf):
                 Logs.info("  %s: no" % (m))
 
 def gen_ctdb_version(task):
-    fp = file(task.outputs[0].bldpath(task.env), 'w')
+    fp = open(task.outputs[0].bldpath(task.env), 'w')
     fp.write('/* This file is auto-generated from waf */\n')
     fp.write('#include "version.h"\n')
     fp.write('\n')
@@ -786,7 +786,8 @@ def build(bld):
 
     def SUBDIR_MODE(path, trim_path=None):
         pd = {'trim_path': trim_path, 'file_list': []}
-        os.path.walk(path, SUBDIR_MODE_callback, pd)
+        for dirname, _subdirs, fnames in os.walk(path):
+            SUBDIR_MODE_callback(pd, dirname, fnames)
         return pd['file_list']
 
     event_script_subdirs = [
