@@ -325,7 +325,7 @@ delete: otherLoginWorkstations
                               attrs=["lDAPDisplayName"],
                               controls=["paged_results:1:2500"])
         for msg in res:
-            va = msg["lDAPDisplayName"][0]
+            va = str(msg["lDAPDisplayName"][0])
             if va in valid_attrs:
                 continue
 
