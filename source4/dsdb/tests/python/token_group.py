@@ -149,7 +149,7 @@ class StaticTokenTest(samba.tests.TestCase):
 
         client_finished = False
         server_finished = False
-        server_to_client = ""
+        server_to_client = b""
 
         # Run the actual call loop.
         while client_finished == False and server_finished == False:
@@ -382,7 +382,7 @@ class DynamicTokenTest(samba.tests.TestCase):
 
         client_finished = False
         server_finished = False
-        server_to_client = ""
+        server_to_client = b""
 
         # Run the actual call loop.
         while client_finished == False and server_finished == False:
