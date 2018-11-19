@@ -430,8 +430,8 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("cn=u1,%s" % self.ou_users).lower())
 
-        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0])
-        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0])
+        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0]).decode('utf8')
+        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0]).decode('utf8')
 
         res1 = self.ldb.search(self.ou_groups,
                                scope=SCOPE_SUBTREE,
@@ -493,8 +493,8 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("cn=u2,%s" % self.ou_users).lower())
 
-        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0])
-        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0])
+        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0]).decode('utf8')
+        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0]).decode('utf8')
 
         res1 = self.ldb.search(self.ou_groups,
                                scope=SCOPE_SUBTREE,
@@ -552,8 +552,8 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("cn=u3,%s" % self.ou_users).lower())
 
-        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0])
-        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0])
+        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0]).decode('utf8')
+        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0]).decode('utf8')
 
         res1 = self.ldb.search(self.ou_groups,
                                scope=SCOPE_SUBTREE,
@@ -607,8 +607,8 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 1)
         self.assertEqual(str(res1[0].dn).lower(), ("cn=u4,%s" % self.ou_users).lower())
 
-        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0])
-        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0])
+        sid = self.ldb.schema_format_value("objectSid", res1[0]["objectSid"][0]).decode('utf8')
+        guid = self.ldb.schema_format_value("objectGUID", res1[0]['objectGUID'][0]).decode('utf8')
 
         res1 = self.ldb.search(self.ou_groups,
                                scope=SCOPE_SUBTREE,
@@ -767,15 +767,15 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 0)
 
     def test_nul_text(self):
-        self.assertRaises(TypeError,
+        self.assertRaises((ValueError,TypeError),
                           lambda: self.ldb.search("cn=g4,%s" % self.ou_groups,
                                                   scope=SCOPE_BASE,
                                                   expression="\00member:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users))
-        self.assertRaises(TypeError,
+        self.assertRaises((ValueError,TypeError),
                           lambda: self.ldb.search("cn=g4,%s" % self.ou_groups,
                                                   scope=SCOPE_BASE,
                                                   expression="member:1.2.840\00.113556.1.4.1941:=cn=u1,%s" % self.ou_users))
-        self.assertRaises(TypeError,
+        self.assertRaises((ValueError,TypeError),
                           lambda: self.ldb.search("cn=g4,%s" % self.ou_groups,
                                                   scope=SCOPE_BASE,
                                                   expression="member:1.2.840.113556.1.4.1941:=cn=u1\00,%s" % self.ou_users))
