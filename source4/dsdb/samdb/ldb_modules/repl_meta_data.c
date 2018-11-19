@@ -7937,8 +7937,21 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
-/*
-  process one linked attribute structure
+/**
+ * Processes one linked attribute received via replication.
+ * @param msg the source object for the link. For optimization, the same msg
+ * can be used across multiple calls to replmd_process_linked_attribute().
+ * @note this function should not add or remove any msg attributes (it should
+ * only add/modify values for the linked attribute being processed). Otherwise
+ * msg->elements is realloc'd and old_el/pdn_list pointers will be invalidated
+ * @param attr schema info for the linked attribute
+ * @param la_entry the linked attribute info received via DRS
+ * @param old_el the corresponding msg->element[] for the linked attribute
+ * @param pdn_list a (binary-searchable) parsed DN array for the existing link
+ * values in the msg. E.g. for a group, this is the existing members.
+ * @param change what got modified: either nothing, an existing link value was
+ * modified, or a new link value was added.
+ * @returns LDB_SUCCESS if OK, an error otherwise
  */
 static int replmd_process_linked_attribute(struct ldb_module *module,
 					   TALLOC_CTX *mem_ctx,
@@ -8181,7 +8194,7 @@ static int replmd_start_transaction(struct ldb_module *module)
 
 /**
  * Processes a group of linked attributes that apply to the same source-object
- * and attribute-ID
+ * and attribute-ID (and were received in the same replication chunk).
  */
 static int replmd_process_la_group(struct ldb_module *module,
 				   struct replmd_private *replmd_private,
@@ -8190,7 +8203,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 	struct la_entry *la = NULL;
 	struct la_entry *prev = NULL;
 	int ret;
-	TALLOC_CTX *tmp_ctx = talloc_new(la_group);
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct la_entry *first_la = DLIST_TAIL(la_group->la_entries);
 	struct ldb_message *msg = NULL;
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
@@ -8202,6 +8215,11 @@ static int replmd_process_la_group(struct ldb_module *module,
 	uint32_t num_changes = 0;
 	time_t t;
 	uint64_t seq_num = 0;
+
+	tmp_ctx = talloc_new(la_group);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	/*
 	 * get the attribute being modified and the search result for the
@@ -8248,6 +8266,7 @@ static int replmd_process_la_group(struct ldb_module *module,
 	ldb_msg_remove_attr(msg, "isDeleted");
 	ldb_msg_remove_attr(msg, "isRecycled");
 
+	/* get the msg->element[] for the link attribute being processed */
 	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
 	if (old_el == NULL) {
 		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName,
@@ -8260,12 +8279,18 @@ static int replmd_process_la_group(struct ldb_module *module,
 		old_el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	/* go through and process the link targets for this source object */
+	/*
+	 * go through and process the link target value(s) for this particular
+	 * source object and attribute
+	 */
 	for (la = DLIST_TAIL(la_group->la_entries); la; la=prev) {
 		prev = DLIST_PREV(la);
 		DLIST_REMOVE(la_group->la_entries, la);
 
-		/* parse the existing links */
+		/*
+		 * parse the existing links (this can be costly for a large
+		 * group, so we try to minimize the times we do it)
+		 */
 		if (pdn_list == NULL) {
 			ret = get_parsed_dns_trusted(module, replmd_private,
 						     tmp_ctx, old_el,
@@ -8314,6 +8339,13 @@ static int replmd_process_la_group(struct ldb_module *module,
 		TALLOC_FREE(tmp_ctx);
 		return LDB_SUCCESS;
 	}
+
+	/*
+	 * Note that adding the whenChanged/etc attributes below will realloc
+	 * msg->elements, invalidating the existing element/parsed-DN pointers
+	 */
+	old_el = NULL;
+	TALLOC_FREE(pdn_list);
 
 	/* update whenChanged/uSNChanged as the object has changed */
 	t = time(NULL);
