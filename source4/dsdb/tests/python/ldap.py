@@ -52,6 +52,7 @@ from samba.dsdb import (UF_NORMAL_ACCOUNT,
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security, lsa
 from samba.tests import delete_force
+from samba.compat import get_string
 
 parser = optparse.OptionParser("ldap.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -204,7 +205,7 @@ class BasicTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["systemFlags"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["systemFlags"][0], "0")
+        self.assertEquals(str(res[0]["systemFlags"][0]), "0")
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -223,7 +224,7 @@ class BasicTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["objectClass"])
         self.assertTrue(len(res) == 1)
-        self.assertTrue("top" in res[0]["objectClass"])
+        self.assertTrue(b"top" in res[0]["objectClass"])
 
         # The top-most structural class cannot be deleted since there are
         # attributes of it in use
@@ -474,8 +475,8 @@ class BasicTests(samba.tests.TestCase):
         res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["objectClass"])
         self.assertTrue(len(res) == 1)
-        self.assertEquals(res[0]["objectClass"][0], "top")
-        self.assertEquals(res[0]["objectClass"][len(res[0]["objectClass"]) - 1], "user")
+        self.assertEquals(str(res[0]["objectClass"][0]), "top")
+        self.assertEquals(str(res[0]["objectClass"][len(res[0]["objectClass"]) - 1]), "user")
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
@@ -567,7 +568,7 @@ class BasicTests(samba.tests.TestCase):
                               attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("isCriticalSystemObject" in res[0])
-        self.assertEquals(res[0]["isCriticalSystemObject"][0], "TRUE")
+        self.assertEquals(str(res[0]["isCriticalSystemObject"][0]), "TRUE")
 
     def test_invalid_parent(self):
         """Test adding an object with invalid parent"""
@@ -1137,7 +1138,7 @@ class BasicTests(samba.tests.TestCase):
                          scope=SCOPE_BASE, attrs=["distinguishedName"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("distinguishedName" in res[0])
-        self.assertTrue(Dn(ldb, res[0]["distinguishedName"][0])
+        self.assertTrue(Dn(ldb, str(res[0]["distinguishedName"][0]))
                         == Dn(ldb, "cn=ldaptestgroup, cn=users," + self.base_dn))
 
         # The "dn" shortcut isn't supported
@@ -1276,7 +1277,7 @@ class BasicTests(samba.tests.TestCase):
                          scope=SCOPE_BASE, attrs=["name"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("name" in res[0])
-        self.assertTrue(res[0]["name"][0] == "ldaptestgroup")
+        self.assertTrue(str(res[0]["name"][0]) == "ldaptestgroup")
 
         # Modify
 
@@ -1630,7 +1631,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
                 break
         self.assertTrue(has_another_attribute)
         self.assertTrue(len(res1[0]["samaccountname"]) == 1)
-        self.assertEquals(res1[0]["samaccountname"][0], "parentguidtest")
+        self.assertEquals(str(res1[0]["samaccountname"][0]), "parentguidtest")
 
         # Testing parentGUID behaviour on rename\
 
@@ -1816,7 +1817,7 @@ delete: description
 
         self.assertTrue(res1.count > 0)
 
-        self.assertEquals(res1[0]["groupType"][0], "-2147483643")
+        self.assertEquals(str(res1[0]["groupType"][0]), "-2147483643")
 
     def test_linked_attributes(self):
         """This tests the linked attribute behaviour"""
@@ -1931,7 +1932,7 @@ delete: description
 
         res = self.ldb.search(base=self.base_dn, scope=SCOPE_BASE, attrs=["subSchemaSubEntry"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["subSchemaSubEntry"][0], "CN=Aggregate," + self.schema_dn)
+        self.assertEquals(str(res[0]["subSchemaSubEntry"][0]), "CN=Aggregate," + self.schema_dn)
 
         res = self.ldb.search(base=self.base_dn, scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
@@ -1996,16 +1997,16 @@ delete: description
         self.assertEquals(len(res), 1, "Found only %d for (&(cn=ldaptestcomputer3)(objectClass=user))" % len(res))
 
         self.assertEquals(str(res[0].dn), ("CN=ldaptestcomputer3,CN=Computers," + self.base_dn))
-        self.assertEquals(res[0]["cn"][0], "ldaptestcomputer3")
-        self.assertEquals(res[0]["name"][0], "ldaptestcomputer3")
-        self.assertEquals(res[0]["objectClass"][0], "top")
-        self.assertEquals(res[0]["objectClass"][1], "person")
-        self.assertEquals(res[0]["objectClass"][2], "organizationalPerson")
-        self.assertEquals(res[0]["objectClass"][3], "user")
-        self.assertEquals(res[0]["objectClass"][4], "computer")
+        self.assertEquals(str(res[0]["cn"][0]), "ldaptestcomputer3")
+        self.assertEquals(str(res[0]["name"][0]), "ldaptestcomputer3")
+        self.assertEquals(str(res[0]["objectClass"][0]), "top")
+        self.assertEquals(str(res[0]["objectClass"][1]), "person")
+        self.assertEquals(str(res[0]["objectClass"][2]), "organizationalPerson")
+        self.assertEquals(str(res[0]["objectClass"][3]), "user")
+        self.assertEquals(str(res[0]["objectClass"][4]), "computer")
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-        self.assertEquals(res[0]["objectCategory"][0], ("CN=Computer,%s" % ldb.get_schema_basedn()))
+        self.assertEquals(str(res[0]["objectCategory"][0]), ("CN=Computer,%s" % ldb.get_schema_basedn()))
         self.assertEquals(int(res[0]["primaryGroupID"][0]), 513)
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT)
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)
@@ -2156,7 +2157,7 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(len(res), 1, "Could not find (&(anr==ldap)(objectClass=user)). Found only %d for (&(anr=ldap)(objectClass=user))" % len(res))
 
         self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
-        self.assertEquals(res[0]["cn"][0], "ldaptestuser")
+        self.assertEquals(str(res[0]["cn"][0]), "ldaptestuser")
         self.assertEquals(str(res[0]["name"]), "ldaptestuser")
 
         # Testing ldb.search for (&(anr=testy)(objectClass=user))
@@ -2228,7 +2229,7 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(len(res_user), 1, "Could not find (&(cn=ldaptestUSer2)(objectClass=user))")
 
         # Check rename works with extended/alternate DN forms
-        ldb.rename("<SID=" + ldb.schema_format_value("objectSID", res_user[0]["objectSID"][0]) + ">", "cn=ldaptestUSER3,cn=users," + self.base_dn)
+        ldb.rename("<SID=" + get_string(ldb.schema_format_value("objectSID", res_user[0]["objectSID"][0])) + ">", "cn=ldaptestUSER3,cn=users," + self.base_dn)
 
         # Testing ldb.search for (&(cn=ldaptestuser3)(objectClass=user))
         res = ldb.search(expression="(&(cn=ldaptestuser3)(objectClass=user))")
@@ -2376,7 +2377,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestuser4)(objectClass=user)) under cn=ldaptestcontainer2," + self.base_dn)
 
         self.assertEquals(str(res[0].dn), ("CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn))
-        self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
+        self.assertEquals(str(res[0]["memberOf"][0]).upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
 
         time.sleep(4)
 
@@ -2438,13 +2439,13 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestuser")
         self.assertEquals(str(res[0]["name"]), "ldaptestuser")
-        self.assertEquals(set(res[0]["objectClass"]), set(["top", "person", "organizationalPerson", "user"]))
+        self.assertEquals(set(res[0]["objectClass"]), set([b"top", b"person", b"organizationalPerson", b"user"]))
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertEquals(str(res[0]["objectCategory"]), ("CN=Person,%s" % ldb.get_schema_basedn()))
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT)
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)
-        self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
+        self.assertEquals(str(res[0]["memberOf"][0]).upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
         self.assertEquals(len(res[0]["memberOf"]), 1)
 
         # Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,%s))" % ldb.get_schema_basedn()
@@ -2483,14 +2484,14 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestcomputer,CN=Computers," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestcomputer")
         self.assertEquals(str(res[0]["name"]), "ldaptestcomputer")
-        self.assertEquals(set(res[0]["objectClass"]), set(["top", "person", "organizationalPerson", "user", "computer"]))
+        self.assertEquals(set(res[0]["objectClass"]), set([b"top", b"person", b"organizationalPerson", b"user", b"computer"]))
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertEquals(str(res[0]["objectCategory"]), ("CN=Computer,%s" % ldb.get_schema_basedn()))
         self.assertEquals(int(res[0]["primaryGroupID"][0]), 513)
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT)
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)
-        self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
+        self.assertEquals(str(res[0]["memberOf"][0]).upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
         self.assertEquals(len(res[0]["memberOf"]), 1)
 
         # Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,%s))" % ldb.get_schema_basedn()
@@ -2537,7 +2538,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
 
         self.assertEquals(res[0].dn, res6[0].dn)
 
-        ldb.delete("<GUID=" + ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0]) + ">")
+        ldb.delete("<GUID=" + get_string(ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0])) + ">")
 
         # Testing ldb.search for (&(cn=ldaptest2computer)(objectClass=user))"
         res = ldb.search(expression="(&(cn=ldaptest2computer)(objectClass=user))")
@@ -2546,14 +2547,14 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), "CN=ldaptest2computer,CN=Computers," + self.base_dn)
         self.assertEquals(str(res[0]["cn"]), "ldaptest2computer")
         self.assertEquals(str(res[0]["name"]), "ldaptest2computer")
-        self.assertEquals(list(res[0]["objectClass"]), ["top", "person", "organizationalPerson", "user", "computer"])
+        self.assertEquals(list(res[0]["objectClass"]), [b"top", b"person", b"organizationalPerson", b"user", b"computer"])
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-        self.assertEquals(res[0]["objectCategory"][0], "CN=Computer,%s" % ldb.get_schema_basedn())
+        self.assertEquals(str(res[0]["objectCategory"][0]), "CN=Computer,%s" % ldb.get_schema_basedn())
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_WORKSTATION_TRUST)
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_WORKSTATION_TRUST_ACCOUNT)
 
-        ldb.delete("<SID=" + ldb.schema_format_value("objectSID", res[0]["objectSID"][0]) + ">")
+        ldb.delete("<SID=" + get_string(ldb.schema_format_value("objectSID", res[0]["objectSID"][0])) + ">")
 
         attrs = ["cn", "name", "objectClass", "objectGUID", "objectSID", "whenCreated", "nTSecurityDescriptor", "memberOf", "allowedAttributes", "allowedAttributesEffective"]
         # Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))"
@@ -2563,14 +2564,14 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(str(res_user[0].dn), ("CN=ldaptestuser2,CN=Users," + self.base_dn))
         self.assertEquals(str(res_user[0]["cn"]), "ldaptestuser2")
         self.assertEquals(str(res_user[0]["name"]), "ldaptestuser2")
-        self.assertEquals(list(res_user[0]["objectClass"]), ["top", "person", "organizationalPerson", "user"])
+        self.assertEquals(list(res_user[0]["objectClass"]), [b"top", b"person", b"organizationalPerson", b"user"])
         self.assertTrue("objectSid" in res_user[0])
         self.assertTrue("objectGUID" in res_user[0])
         self.assertTrue("whenCreated" in res_user[0])
         self.assertTrue("nTSecurityDescriptor" in res_user[0])
         self.assertTrue("allowedAttributes" in res_user[0])
         self.assertTrue("allowedAttributesEffective" in res_user[0])
-        self.assertEquals(res_user[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
+        self.assertEquals(str(res_user[0]["memberOf"][0]).upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
 
         ldaptestuser2_sid = res_user[0]["objectSid"][0]
         ldaptestuser2_guid = res_user[0]["objectGUID"][0]
@@ -2583,7 +2584,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestgroup2")
         self.assertEquals(str(res[0]["name"]), "ldaptestgroup2")
-        self.assertEquals(list(res[0]["objectClass"]), ["top", "group"])
+        self.assertEquals(list(res[0]["objectClass"]), [b"top", b"group"])
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("objectSid" in res[0])
         self.assertTrue("whenCreated" in res[0])
@@ -2592,7 +2593,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertTrue("allowedAttributesEffective" in res[0])
         memberUP = []
         for m in res[0]["member"]:
-            memberUP.append(m.upper())
+            memberUP.append(str(m).upper())
         self.assertTrue(("CN=ldaptestuser2,CN=Users," + self.base_dn).upper() in memberUP)
 
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs, controls=["extended_dn:1:1"])
@@ -2601,10 +2602,10 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         print(res[0]["member"])
         memberUP = []
         for m in res[0]["member"]:
-            memberUP.append(m.upper())
-        print(("<GUID=" + ldb.schema_format_value("objectGUID", ldaptestuser2_guid) + ">;<SID=" + ldb.schema_format_value("objectSid", ldaptestuser2_sid) + ">;CN=ldaptestuser2,CN=Users," + self.base_dn).upper())
+            memberUP.append(str(m).upper())
+        print(("<GUID=" + get_string(ldb.schema_format_value("objectGUID", ldaptestuser2_guid)) + ">;<SID=" + get_string(ldb.schema_format_value("objectSid", ldaptestuser2_sid)) + ">;CN=ldaptestuser2,CN=Users," + self.base_dn).upper())
 
-        self.assertTrue(("<GUID=" + ldb.schema_format_value("objectGUID", ldaptestuser2_guid) + ">;<SID=" + ldb.schema_format_value("objectSid", ldaptestuser2_sid) + ">;CN=ldaptestuser2,CN=Users," + self.base_dn).upper() in memberUP)
+        self.assertTrue(("<GUID=" + get_string(ldb.schema_format_value("objectGUID", ldaptestuser2_guid)) + ">;<SID=" + get_string(ldb.schema_format_value("objectSid", ldaptestuser2_sid)) + ">;CN=ldaptestuser2,CN=Users," + self.base_dn).upper() in memberUP)
 
         # Quicktest for linked attributes"
         ldb.modify_ldif("""
@@ -2616,14 +2617,14 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
 
         ldb.modify_ldif("""
-dn: <GUID=""" + ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0]) + """>
+dn: <GUID=""" + get_string(ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0])) + """>
 changetype: modify
 replace: member
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
 
         ldb.modify_ldif("""
-dn: <SID=""" + ldb.schema_format_value("objectSid", res[0]["objectSid"][0]) + """>
+dn: <SID=""" + get_string(ldb.schema_format_value("objectSid", res[0]["objectSid"][0])) + """>
 changetype: modify
 delete: member
 """)
@@ -2632,7 +2633,7 @@ delete: member
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
 changetype: modify
 add: member
-member: <GUID=""" + ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0]) + """>
+member: <GUID=""" + get_string(ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0])) + """>
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
 
@@ -2646,7 +2647,7 @@ replace: member
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
 changetype: modify
 add: member
-member: <SID=""" + ldb.schema_format_value("objectSid", res_user[0]["objectSid"][0]) + """>
+member: <SID=""" + get_string(ldb.schema_format_value("objectSid", res_user[0]["objectSid"][0])) + """>
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
 
@@ -2661,7 +2662,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))")
 
         self.assertEquals(str(res[0].dn), ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
-        self.assertEquals(res[0]["member"][0], ("CN=ldaptestuser2,CN=Users," + self.base_dn))
+        self.assertEquals(str(res[0]["member"][0]), ("CN=ldaptestuser2,CN=Users," + self.base_dn))
         self.assertEquals(len(res[0]["member"]), 1)
 
         ldb.delete(("CN=ldaptestuser2,CN=Users," + self.base_dn))
@@ -2685,7 +2686,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestutf8user èùéìòà,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestutf8user èùéìòà")
         self.assertEquals(str(res[0]["name"]), "ldaptestutf8user èùéìòà")
-        self.assertEquals(list(res[0]["objectClass"]), ["top", "person", "organizationalPerson", "user"])
+        self.assertEquals(list(res[0]["objectClass"]), [b"top", b"person", b"organizationalPerson", b"user"])
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
 
@@ -2749,7 +2750,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
                          scope=SCOPE_BASE, attrs=["objectClass"])
         self.assertEquals(len(res), 1)
 
-        self.assertEquals(list(res[0]["objectClass"]), ["top", "domain", "domainDNS"])
+        self.assertEquals(list(res[0]["objectClass"]), [b"top", b"domain", b"domainDNS"])
 
     #  check enumeration
 
@@ -3095,7 +3096,7 @@ nTSecurityDescriptor:: """ + desc_base64
                     self.ldb.set_dsheuristics(dshstr + "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
             # apart from the above, all char values are accepted
             self.ldb.set_dsheuristics("123ABC-+!1asdfg@#^")
-            self.assertEquals(self.ldb.get_dsheuristics(), "123ABC-+!1asdfg@#^")
+            self.assertEquals(self.ldb.get_dsheuristics(), b"123ABC-+!1asdfg@#^")
         finally:
             # restore old value
             self.ldb.set_dsheuristics(dsheuristics)
@@ -3161,7 +3162,7 @@ nTSecurityDescriptor:: """ + desc_base64
             self.assertTrue(len(res) == 1)
             self.assertTrue("msTSExpireDate" in res[0])
             self.assertTrue(len(res[0]["msTSExpireDate"]) == 1)
-            self.assertEquals(res[0]["msTSExpireDate"][0], v_get)
+            self.assertEquals(str(res[0]["msTSExpireDate"][0]), v_get)
 
 
 class BaseDnTests(samba.tests.TestCase):
@@ -3213,12 +3214,12 @@ class BaseDnTests(samba.tests.TestCase):
                               attrs=["dsServiceName", "serverName"])
         self.assertEquals(len(res), 1)
 
-        self.assertTrue("CN=Servers" in res[0]["dsServiceName"][0])
-        self.assertTrue("CN=Sites" in res[0]["dsServiceName"][0])
-        self.assertTrue("CN=NTDS Settings" in res[0]["dsServiceName"][0])
-        self.assertTrue("CN=Servers" in res[0]["serverName"][0])
-        self.assertTrue("CN=Sites" in res[0]["serverName"][0])
-        self.assertFalse("CN=NTDS Settings" in res[0]["serverName"][0])
+        self.assertTrue("CN=Servers" in str(res[0]["dsServiceName"][0]))
+        self.assertTrue("CN=Sites" in str(res[0]["dsServiceName"][0]))
+        self.assertTrue("CN=NTDS Settings" in str(res[0]["dsServiceName"][0]))
+        self.assertTrue("CN=Servers" in str(res[0]["serverName"][0]))
+        self.assertTrue("CN=Sites" in str(res[0]["serverName"][0]))
+        self.assertFalse("CN=NTDS Settings" in str(res[0]["serverName"][0]))
 
     def test_functionality(self):
         """Testing the server paths in rootDSE"""
@@ -3272,9 +3273,9 @@ class BaseDnTests(samba.tests.TestCase):
         self.assertTrue("ldapServiceName" in res[0])
         self.assertTrue("dnsHostName" in res[0])
 
-        (hostname, _, dns_domainname) = res[0]["dnsHostName"][0].partition(".")
+        (hostname, _, dns_domainname) = str(res[0]["dnsHostName"][0]).partition(".")
 
-        given = res[0]["ldapServiceName"][0]
+        given = str(res[0]["ldapServiceName"][0])
         expected = "%s:%s$@%s" % (dns_domainname.lower(), hostname.lower(), dns_domainname.upper())
         self.assertEquals(given, expected)
 
