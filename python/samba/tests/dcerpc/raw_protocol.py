@@ -4382,7 +4382,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                    alter_fault=alter_fault)
         if ack is None:
             return None
-        return auth_context["gensec"]
+        return auth_context
 
     def _test_spnego_level_bind_nak(self, auth_level,
                                     reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM):
@@ -4407,15 +4407,16 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
         auth_context_id = 2
 
-        g = self._test_spnego_bind_auth_level(auth_level=auth_level,
+        auth_context = self._test_spnego_bind_auth_level(auth_level=auth_level,
                                               auth_context_id=auth_context_id,
                                               ctx=ctx1,
                                               g_auth_level=g_auth_level,
                                               alter_fault=alter_fault)
-
         if request_fault is None:
             return
 
+        self.assertIsNotNone(auth_context)
+        g = auth_context["gensec"]
         self.assertIsNotNone(g)
 
         stub_bin = b'\x00' * 17
@@ -4582,9 +4583,12 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
         auth_context_id = 2
 
-        g = self._test_spnego_bind_auth_level(auth_level=auth_level,
+        auth_context = self._test_spnego_bind_auth_level(auth_level=auth_level,
                                               auth_context_id=auth_context_id,
                                               ctx=ctx1)
+        self.assertIsNotNone(auth_context)
+        g = auth_context["gensec"]
+        self.assertIsNotNone(g)
 
         stub_bin = b'\x00' * 0
         mod_len = len(stub_bin) % dcerpc.DCERPC_AUTH_PAD_ALIGNMENT
