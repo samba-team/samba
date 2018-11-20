@@ -1,8 +1,9 @@
 # see https://docs.gitlab.com/ce/ci/yaml/README.html for all available options
 
-image: registry.gitlab.com/samba-team/samba:latest
 
 variables:
+  SAMBA_BUILD_IMAGES_PROJECT: samba-team/samba
+  SAMBA_BUILD: latest
   GIT_STRATEGY: fetch
   GIT_DEPTH: "3"
 
@@ -18,6 +19,7 @@ after_script:
   - tar -xf logs.tar.gz system-info.txt -O
 
 .shared_template: &shared_template
+  image: $CI_REGISTRY/$SAMBA_BUILD_IMAGES_PROJECT:$SAMBA_BUILD
   stage: build
   tags:
     - docker
