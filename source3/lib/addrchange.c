@@ -20,7 +20,7 @@
 #include "lib/addrchange.h"
 #include "../lib/util/tevent_ntstatus.h"
 
-#if HAVE_LINUX_RTNETLINK_H
+#ifdef HAVE_LINUX_RTNETLINK_H
 
 #include "asm/types.h"
 #include "linux/netlink.h"
