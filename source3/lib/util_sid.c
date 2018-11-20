@@ -75,7 +75,7 @@ char *sid_string_tos(const struct dom_sid *sid)
 
 bool sid_linearize(uint8_t *outbuf, size_t len, const struct dom_sid *sid)
 {
-	size_t i;
+	int8_t i;
 
 	if (len < ndr_size_dom_sid(sid, 0))
 		return False;
@@ -132,7 +132,7 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 	struct dom_sid sid;
 	struct dom_sid *sid_array = NULL;
 	uint32_t num_sids = 0;
-	int i;
+	uint32_t i;
 
 	if (include_user_group_rid) {
 		if (!sid_compose(&sid, info3->base.domain_sid, info3->base.rid)) {
