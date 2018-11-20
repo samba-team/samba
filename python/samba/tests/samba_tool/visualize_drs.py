@@ -49,6 +49,10 @@ PARTITION_NAMES = [
     "DNSFOREST",
 ]
 
+def adjust_cmd_for_py_version(parts):
+    if os.getenv("PYTHON", None):
+        parts.insert(0, os.environ["PYTHON"])
+    return parts
 
 def set_auto_replication(dc, allow):
     credstring = '-U%s%%%s' % (os.environ["USERNAME"], os.environ["PASSWORD"])
@@ -56,21 +60,21 @@ def set_auto_replication(dc, allow):
 
     for opt in ['DISABLE_INBOUND_REPL',
                 'DISABLE_OUTBOUND_REPL']:
-        cmd = ['bin/samba-tool',
+        cmd = adjust_cmd_for_py_version(['bin/samba-tool',
                'drs', 'options',
                credstring, dc,
-               "--dsa-option=%s%s" % (on_or_off, opt)]
+               "--dsa-option=%s%s" % (on_or_off, opt)])
 
         subprocess.check_call(cmd)
 
 
 def force_replication(src, dest, base):
     credstring = '-U%s%%%s' % (os.environ["USERNAME"], os.environ["PASSWORD"])
-    cmd = ['bin/samba-tool',
+    cmd = adjust_cmd_for_py_version(['bin/samba-tool',
            'drs', 'replicate',
            dest, src, base,
            credstring,
-           '--sync-forced']
+           '--sync-forced'])
 
     subprocess.check_call(cmd)
 

@@ -176,11 +176,11 @@ def get_utdv_summary(distances, filters=None):
         maximum = values[-1]
         length = len(values)
         if length % 2 == 0:
-            index = length/2 - 1
+            index = length//2 - 1
             median = (values[index] + values[index+1])/2.0
             median = round(median, 1)  # keep only 1 decimal digit like 2.5
         else:
-            index = (length - 1)/2
+            index = (length - 1)//2
             median = values[index]
             median = float(median)  # ensure median is always a float like 1.0
         # if value not exist, that's a failure
