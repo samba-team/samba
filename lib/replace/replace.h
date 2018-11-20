@@ -832,10 +832,6 @@ typedef unsigned long long ptrdiff_t ;
  */
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 
-#if MMAP_BLACKLIST
-#undef HAVE_MMAP
-#endif
-
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
 #endif

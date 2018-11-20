@@ -362,13 +362,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #endif
 #define FALSE __ERROR__XX__DONT_USE_FALSE
 
-/* If we have blacklisted mmap() try to avoid using it accidentally by
-   undefining the HAVE_MMAP symbol. */
-
-#ifdef MMAP_BLACKLIST
-#undef HAVE_MMAP
-#endif
-
 void dump_core(void) _NORETURN_;
 void exit_server(const char *const reason) _NORETURN_;
 void exit_server_cleanly(const char *const reason) _NORETURN_;

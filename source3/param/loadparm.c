@@ -712,11 +712,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = true;
 	Globals.lock_spin_time = WINDOWS_MINIMUM_LOCK_TIMEOUT_MS; /* msec. */
-#ifdef MMAP_BLACKLIST
-	Globals.use_mmap = false;
-#else
 	Globals.use_mmap = true;
-#endif
 	Globals.unicode = true;
 	Globals.unix_extensions = true;
 	Globals.reset_on_zero_vc = false;
