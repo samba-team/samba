@@ -1,0 +1,22 @@
+tfork tests
+===========
+
+To run the tfork torture testsuite under valgrind with the helgrind or drd
+thread checkers, run valgrind with the --suppress option passing a suppressions
+file.
+
+For helgrind:
+
+$ valgrind \
+  --trace-children=yes \
+  --tool=helgrind \
+  --suppressions=lib/util/tests/tfork-helgrind.supp \
+  ./bin/smbtorture ncalrpc:localhost local.tfork.tfork_threads
+
+For drd:
+
+$ valgrind \
+  --trace-children=yes \
+  --tool=drd \
+  --suppressions=lib/util/tests/tfork-drd.supp \
+  ./bin/smbtorture ncalrpc:localhost local.tfork.tfork_threads
