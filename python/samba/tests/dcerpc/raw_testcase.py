@@ -106,8 +106,12 @@ class RawDCERPCTest(TestCase):
     def get_user_creds(self):
         c = Credentials()
         c.guess()
+        domain = samba.tests.env_get_var_value('DOMAIN')
+        realm = samba.tests.env_get_var_value('REALM')
         username = samba.tests.env_get_var_value('USERNAME')
         password = samba.tests.env_get_var_value('PASSWORD')
+        c.set_domain(domain)
+        c.set_realm(realm)
         c.set_username(username)
         c.set_password(password)
         return c
