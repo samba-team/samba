@@ -1330,10 +1330,9 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 					     0);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("GUID [%s] not found\n", guid_str);
+			DBG_WARNING(
+			    "GUID [%s] not found\n",
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		} else if (ret != LDB_SUCCESS) {
 			clear_guid_cache(cache);
@@ -1345,11 +1344,9 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 						 "objectSID");
 		if (objectsid == NULL) {
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("objectSID for GUID [%s] not found\n",
-				    guid_str);
+			DBG_WARNING(
+			    "objectSID for GUID [%s] not found\n",
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		}
 		status = dom_sid_split_rid(NULL,
@@ -1358,15 +1355,11 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 					   &rid);
 		if (!NT_STATUS_IS_OK(status)) {
 			struct dom_sid_buf sid_buf;
-			char *sid_str =
-				dom_sid_str_buf(objectsid,
-						&sid_buf);
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("objectSID [%s] for GUID [%s] invalid\n",
-				    sid_str, guid_str);
+			DBG_WARNING(
+			    "objectSID [%s] for GUID [%s] invalid\n",
+			    dom_sid_str_buf(objectsid, &sid_buf),
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		}
 
@@ -1652,10 +1645,9 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 					     0);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("GUID [%s] not found\n", guid_str);
+			DBG_WARNING(
+			    "GUID [%s] not found\n",
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		} else if (ret != LDB_SUCCESS) {
 			clear_guid_cache(cache);
@@ -1666,11 +1658,9 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 						 "objectSID");
 		if (objectsid == NULL) {
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("objectSID for GUID [%s] not found\n",
-				    guid_str);
+			DBG_WARNING(
+			    "objectSID for GUID [%s] not found\n",
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		}
 		if (r->in.acct_flags &&
@@ -1684,16 +1674,11 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 					   &rid);
 		if (!NT_STATUS_IS_OK(status)) {
 			struct dom_sid_buf sid_buf;
-			char *sid_str =
-				dom_sid_str_buf(objectsid,
-						&sid_buf);
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("objectSID [%s] for GUID [%s] invalid\n",
-				    sid_str,
-				    guid_str);
+			DBG_WARNING(
+			    "objectSID [%s] for GUID [%s] invalid\n",
+			    dom_sid_str_buf(objectsid, &sid_buf),
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		}
 
@@ -4296,11 +4281,9 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 						 "objectSID");
 		if (objectsid == NULL) {
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("objectSID for GUID [%s] not found\n",
-				    guid_str);
+			DBG_WARNING(
+			    "objectSID for GUID [%s] not found\n",
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		}
 		status = dom_sid_split_rid(NULL,
@@ -4309,16 +4292,11 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 					   &rid);
 		if (!NT_STATUS_IS_OK(status)) {
 			struct dom_sid_buf sid_buf;
-			char *sid_str =
-				dom_sid_str_buf(objectsid,
-						&sid_buf);
 			struct GUID_txt_buf guid_buf;
-			char *guid_str =
-				GUID_buf_string(&cache->entries[idx],
-						&guid_buf);
-			DBG_WARNING("objectSID [%s] for GUID [%s] invalid\n",
-				    sid_str,
-				    guid_str);
+			DBG_WARNING(
+			    "objectSID [%s] for GUID [%s] invalid\n",
+			    dom_sid_str_buf(objectsid, &sid_buf),
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 			continue;
 		}
 
