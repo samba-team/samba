@@ -272,6 +272,7 @@ char *rep_strndup(const char *s, size_t n);
 size_t rep_strnlen(const char *s, size_t n);
 #endif
 
+#if defined(HAVE_DECL_ENVIRON)
 #if !HAVE_DECL_ENVIRON
 #ifdef __APPLE__
 #include <crt_externs.h>
@@ -280,6 +281,7 @@ size_t rep_strnlen(const char *s, size_t n);
 extern char **environ;
 #endif
 #endif
+#endif /* defined(HAVE_DECL_ENVIRON) */
 
 #ifndef HAVE_SETENV
 #define setenv rep_setenv
