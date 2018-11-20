@@ -46,7 +46,7 @@ from samba.uptodateness import (
     get_utdv_summary,
     get_kcc_and_dsas,
 )
-
+from samba.compat import get_string
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
@@ -278,10 +278,10 @@ class cmd_drs_showrepl(Command):
 
         dsa_details = {
             "options": int(attr_default(ntds[0], "options", 0)),
-            "objectGUID": self.samdb.schema_format_value(
-                "objectGUID", ntds[0]["objectGUID"][0]),
-            "invocationId": self.samdb.schema_format_value(
-                "objectGUID", ntds[0]["invocationId"][0])
+            "objectGUID": get_string(self.samdb.schema_format_value(
+                "objectGUID", ntds[0]["objectGUID"][0])),
+            "invocationId": get_string(self.samdb.schema_format_value(
+                "objectGUID", ntds[0]["invocationId"][0]))
         }
 
         conn = self.samdb.search(base=ntds_dn, expression="(objectClass=nTDSConnection)")
@@ -290,13 +290,13 @@ class cmd_drs_showrepl(Command):
 
         conn_details = []
         for c in conn:
-            c_rdn, sep, c_server_dn = c['fromServer'][0].partition(',')
+            c_rdn, sep, c_server_dn = str(c['fromServer'][0]).partition(',')
             d = {
                 'name': str(c['name']),
-                'remote DN': c['fromServer'][0],
+                'remote DN': str(c['fromServer'][0]),
                 'options': int(attr_default(c, 'options', 0)),
-                'enabled': (attr_default(c, 'enabledConnection',
-                                         'TRUE').upper() == 'TRUE')
+                'enabled': (get_string(attr_default(c, 'enabledConnection',
+                                         'TRUE')).upper() == 'TRUE')
             }
 
             conn_details.append(d)
@@ -304,7 +304,7 @@ class cmd_drs_showrepl(Command):
                 c_server_res = self.samdb.search(base=c_server_dn,
                                                  scope=ldb.SCOPE_BASE,
                                                  attrs=["dnsHostName"])
-                d['dns name'] = c_server_res[0]["dnsHostName"][0]
+                d['dns name'] = str(c_server_res[0]["dnsHostName"][0])
             except ldb.LdbError as e:
                 (errno, _) = e.args
                 if errno == ldb.ERR_NO_SUCH_OBJECT:
