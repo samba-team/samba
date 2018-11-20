@@ -4366,12 +4366,12 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNone(rep)
         self.assertNotConnected()
 
-    def _test_spnego_bind_auth_level(self, auth_level, auth_context_id, ctx,
-                                     g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
-                                     alter_fault=None):
+    def _test_auth_bind_auth_level(self, auth_type, auth_level, auth_context_id, ctx,
+                                   g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                   alter_fault=None):
         creds = self.get_user_creds()
         auth_context = self.get_auth_context_creds(creds=creds,
-                                                   auth_type=dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
+                                                   auth_type=auth_type,
                                                    auth_level=auth_level,
                                                    auth_context_id=auth_context_id,
                                                    g_auth_level=g_auth_level)
@@ -4407,7 +4407,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
         auth_context_id = 2
 
-        auth_context = self._test_spnego_bind_auth_level(auth_level=auth_level,
+        auth_context = self._test_auth_bind_auth_level(auth_type=auth_type,
+                                              auth_level=auth_level,
                                               auth_context_id=auth_context_id,
                                               ctx=ctx1,
                                               g_auth_level=g_auth_level,
@@ -4583,7 +4584,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
         auth_context_id = 2
 
-        auth_context = self._test_spnego_bind_auth_level(auth_level=auth_level,
+        auth_context = self._test_auth_bind_auth_level(auth_type=auth_type,
+                                              auth_level=auth_level,
                                               auth_context_id=auth_context_id,
                                               ctx=ctx1)
         self.assertIsNotNone(auth_context)
