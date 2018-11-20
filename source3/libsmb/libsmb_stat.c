@@ -412,7 +412,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                         /* ... then provide it */
                         st->f_bsize =
                                 (unsigned long) bytes_per_sector;
-#if HAVE_FRSIZE
+#ifdef HAVE_FRSIZE
                         st->f_frsize =
                                 (unsigned long) sectors_per_allocation_unit;
 #endif
@@ -459,7 +459,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                                 (fsfilcnt_t) total_file_nodes;
                         st->f_ffree =
                                 (fsfilcnt_t) free_file_nodes;
-#if HAVE_FSID_INT
+#ifdef HAVE_FSID_INT
                         st->f_fsid =
                                 (unsigned long) fs_identifier;
 #endif
@@ -489,9 +489,9 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                 flags |= SMBC_VFS_FEATURE_DFS;
         }
 
-#if HAVE_STATVFS_F_FLAG
+#if defined(HAVE_STATVFS_F_FLAG)
         st->f_flag = flags;
-#elif HAVE_STATVFS_F_FLAGS
+#elif defined(HAVE_STATVFS_F_FLAGS)
         st->f_flags = flags;
 #endif
 

@@ -88,7 +88,7 @@ struct py_cli_state {
 	struct py_tevent_cond *oplock_cond;
 };
 
-#if HAVE_PTHREAD
+#ifdef HAVE_PTHREAD
 
 #include <pthread.h>
 
