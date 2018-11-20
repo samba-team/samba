@@ -703,7 +703,7 @@ def SAMBA_CONFIG_H(conf, path=None):
                                     mandatory=False,
                                     msg='Checking if compiler accepts %s' % (stack_protect_flag))
         if flag_supported:
-            conf.ADD_CFLAGS('-Wp,-D_FORTIFY_SOURCE=2 %s' % (stack_protect_flag))
+            conf.ADD_CFLAGS('%s' % (stack_protect_flag))
             break
 
     flag_supported = conf.check(fragment='''
