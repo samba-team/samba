@@ -26,7 +26,7 @@
 
 #if defined(HAVE_KRB5) && defined(HAVE_KRB5_LOCATE_PLUGIN_H)
 
-#if HAVE_COM_ERR_H
+#ifdef HAVE_COM_ERR_H
 #include <com_err.h>
 #endif
 

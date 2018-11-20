@@ -22,7 +22,7 @@
 #include "replace.h"
 #include <krb5/localauth_plugin.h>
 #include <wbclient.h>
-#if HAVE_COM_ERR_H
+#ifdef HAVE_COM_ERR_H
 #include <com_err.h>
 #endif
 
