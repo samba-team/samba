@@ -181,7 +181,7 @@ static void msg_inject_fault(struct messaging_context *msg,
 		return;
 	}
 
-#if HAVE_STRSIGNAL
+#ifdef HAVE_STRSIGNAL
 	DEBUG(0, ("Process %s requested injection of signal %d (%s)\n",
 		  server_id_str_buf(src, &tmp), sig, strsignal(sig)));
 #else
@@ -1218,7 +1218,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		char *sock_tok;
 		const char *sock_ptr;
 
-#if HAVE_IPV6
+#ifdef HAVE_IPV6
 		sock_addr = "::,0.0.0.0";
 #else
 		sock_addr = "0.0.0.0";
@@ -1843,7 +1843,7 @@ extern void build_options(bool screen);
 		become_daemon(Fork, no_process_group, log_stdout);
 	}
 
-#if HAVE_SETPGID
+#ifdef HAVE_SETPGID
 	/*
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
