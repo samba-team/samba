@@ -27,7 +27,7 @@
 #include "smbd/smbd.h"
 #include "nfs4_acls.h"
 
-#if HAVE_FREEBSD_SUNACL_H
+#ifdef HAVE_FREEBSD_SUNACL_H
 #include "sunacl.h"
 #endif
 

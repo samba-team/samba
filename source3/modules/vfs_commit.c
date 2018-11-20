@@ -86,9 +86,9 @@ static int commit_do(
 		("%s: flushing %lu dirty bytes\n",
 		 MODULE, (unsigned long)c->dbytes));
 
-#if HAVE_FDATASYNC
+#if defined(HAVE_FDATASYNC)
         result = fdatasync(fd);
-#elif HAVE_FSYNC
+#elif defined(HAVE_FSYNC)
         result = fsync(fd);
 #else
 	DEBUG(0, ("%s: WARNING: no commit support on this platform\n",

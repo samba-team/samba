@@ -109,7 +109,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#if HAVE_STDLIB_H
+#ifdef HAVE_STDLIB_H
 # include <stdlib.h> /* for `free'; used by Bison 1.27 */
 #endif
 
@@ -2535,7 +2535,7 @@ get_date (const char *p, const time_t *now)
   pc.local_zones_seen = 0;
   pc.zones_seen = 0;
 
-#if HAVE_STRUCT_TM_TM_ZONE
+#ifdef HAVE_STRUCT_TM_TM_ZONE
   pc.local_time_zone_table[0].name = tmp->tm_zone;
   pc.local_time_zone_table[0].type = tLOCAL_ZONE;
   pc.local_time_zone_table[0].value = tmp->tm_isdst;
@@ -2563,7 +2563,7 @@ get_date (const char *p, const time_t *now)
       }
   }
 #else
-#if HAVE_TZNAME
+#ifdef HAVE_TZNAME
   {
 # ifndef tzname
     extern char *tzname[];
