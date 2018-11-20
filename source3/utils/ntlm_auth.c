@@ -49,7 +49,7 @@
 #include "lib/util/base64.h"
 #include "cmdline_contexts.h"
 
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"
 #endif
 

@@ -37,15 +37,15 @@
 #include "serverid.h"
 #include "cmdline_contexts.h"
 
-#if HAVE_LIBUNWIND_H
+#ifdef HAVE_LIBUNWIND_H
 #include <libunwind.h>
 #endif
 
-#if HAVE_LIBUNWIND_PTRACE_H
+#ifdef HAVE_LIBUNWIND_PTRACE_H
 #include <libunwind-ptrace.h>
 #endif
 
-#if HAVE_SYS_PTRACE_H
+#ifdef HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
 #endif
 
