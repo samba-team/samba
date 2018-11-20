@@ -6847,6 +6847,9 @@ static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *a
 	struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
 	int ret;
 	bool apply_isDeleted;
+	struct ldb_request *del_req = NULL;
+	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	apply_isDeleted = replmd_should_apply_isDeleted(ar, msg);
 
@@ -6855,67 +6858,63 @@ static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *a
 		/* nothing to do */
 		ar->index_current++;
 		return replmd_replicated_apply_next(ar);
+	}
 
-	} else {
-		/*
-		 * Do a delete here again, so that if there is
-		 * anything local that conflicts with this
-		 * object being deleted, it is removed.  This
-		 * includes links.  See MS-DRSR 4.1.10.6.9
-		 * UpdateObject.
-		 *
-		 * If the object is already deleted, and there
-		 * is no more work required, it doesn't do
-		 * anything.
-		 */
+	/*
+	 * Do a delete here again, so that if there is
+	 * anything local that conflicts with this
+	 * object being deleted, it is removed.  This
+	 * includes links.  See MS-DRSR 4.1.10.6.9
+	 * UpdateObject.
+	 *
+	 * If the object is already deleted, and there
+	 * is no more work required, it doesn't do
+	 * anything.
+	 */
 
-		/* This has been updated to point to the DN we eventually did the modify on */
+	/* This has been updated to point to the DN we eventually did the modify on */
 
-		struct ldb_request *del_req;
-		struct ldb_result *res;
+	tmp_ctx = talloc_new(ar);
+	if (!tmp_ctx) {
+		ret = ldb_oom(ldb_module_get_ctx(ar->module));
+		return ret;
+	}
 
-		TALLOC_CTX *tmp_ctx = talloc_new(ar);
-		if (!tmp_ctx) {
-			ret = ldb_oom(ldb_module_get_ctx(ar->module));
-			return ret;
-		}
-
-		res = talloc_zero(tmp_ctx, struct ldb_result);
-		if (!res) {
-			ret = ldb_oom(ldb_module_get_ctx(ar->module));
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-
-		/* Build a delete request, which hopefully will artually turn into nothing */
-		ret = ldb_build_del_req(&del_req, ldb_module_get_ctx(ar->module), tmp_ctx,
-					msg->dn,
-					NULL,
-					res,
-					ldb_modify_default_callback,
-					ar->req);
-		LDB_REQ_SET_LOCATION(del_req);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-
-		/*
-		 * This is the guts of the call, call back
-		 * into our delete code, but setting the
-		 * re_delete flag so we delete anything that
-		 * shouldn't be there on a deleted or recycled
-		 * object
-		 */
-		ret = replmd_delete_internals(ar->module, del_req, true);
-		if (ret == LDB_SUCCESS) {
-			ret = ldb_wait(del_req->handle, LDB_WAIT_ALL);
-		}
-
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		ret = ldb_oom(ldb_module_get_ctx(ar->module));
 		talloc_free(tmp_ctx);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+		return ret;
+	}
+
+	/* Build a delete request, which hopefully will artually turn into nothing */
+	ret = ldb_build_del_req(&del_req, ldb_module_get_ctx(ar->module), tmp_ctx,
+				msg->dn,
+				NULL,
+				res,
+				ldb_modify_default_callback,
+				ar->req);
+	LDB_REQ_SET_LOCATION(del_req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * This is the guts of the call, call back
+	 * into our delete code, but setting the
+	 * re_delete flag so we delete anything that
+	 * shouldn't be there on a deleted or recycled
+	 * object
+	 */
+	ret = replmd_delete_internals(ar->module, del_req, true);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(del_req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	ar->index_current++;
