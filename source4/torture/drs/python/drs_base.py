@@ -384,14 +384,14 @@ class DrsBaseTestCase(SambaToolCmdTest):
         """
         Check that a ctr6 matches the specified parameters.
         """
-        self.assertEqual(ctr6.object_count, len(expected_dns))
+        ctr6_dns = self._get_ctr6_dn_list(ctr6)
+        self.assertEqual(ctr6.object_count, len(expected_dns),
+                         "Received unexpected objects (%s)" % ctr6_dns)
         self.assertEqual(ctr6.linked_attributes_count, len(expected_links))
         self.assertEqual(ctr6.more_data, more_data)
         self.assertEqual(ctr6.nc_object_count, nc_object_count)
         self.assertEqual(ctr6.nc_linked_attributes_count, nc_linked_attributes_count)
         self.assertEqual(ctr6.drs_error[0], drs_error)
-
-        ctr6_dns = self._get_ctr6_dn_list(ctr6)
 
         i = 0
         for dn in expected_dns:
