@@ -957,7 +957,7 @@ static bool open_sockets(bool isdaemon, int port)
 		become_daemon(Fork, no_process_group, log_stdout);
 	}
 
-#if HAVE_SETPGID
+#ifdef HAVE_SETPGID
 	/*
 	 * If we're interactive we want to set our own process group for 
 	 * signal management.
