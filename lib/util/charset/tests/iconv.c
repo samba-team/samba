@@ -30,7 +30,7 @@
 #include "torture/local/proto.h"
 #include "talloc.h"
 
-#if HAVE_NATIVE_ICONV
+#ifdef HAVE_NATIVE_ICONV
 
 static bool iconv_untestable(struct torture_context *tctx)
 {
