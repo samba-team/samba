@@ -73,7 +73,7 @@ static struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 }
 #endif
 
-#if HAVE_IFACE_IFCONF
+#ifdef HAVE_IFACE_IFCONF
 
 /* this works for Linux 2.2, Solaris 2.5, SunOS4, HPUX 10.20, OSF1
    V4.0, Ultrix 4.4, SCO Unix 3.2, IRIX 6.4 and FreeBSD 3.2.

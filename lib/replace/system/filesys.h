@@ -115,16 +115,16 @@
 #define VXFS_QUOTA
 #endif
 
-#if HAVE_SYS_ATTRIBUTES_H
+#if defined(HAVE_SYS_ATTRIBUTES_H)
 #include <sys/attributes.h>
-#elif HAVE_ATTR_ATTRIBUTES_H
+#elif defined(HAVE_ATTR_ATTRIBUTES_H)
 #include <attr/attributes.h>
 #endif
 
 /* mutually exclusive (SuSE 8.2) */
-#if HAVE_ATTR_XATTR_H
+#if defined(HAVE_ATTR_XATTR_H)
 #include <attr/xattr.h>
-#elif HAVE_SYS_XATTR_H
+#elif defined(HAVE_SYS_XATTR_H)
 #include <sys/xattr.h>
 #endif
 

@@ -39,11 +39,11 @@
 #include <gssapi.h>
 #endif
 
-#if HAVE_GSSAPI_GSSAPI_KRB5_H
+#ifdef HAVE_GSSAPI_GSSAPI_KRB5_H
 #include <gssapi/gssapi_krb5.h>
 #endif
 
-#if HAVE_GSSAPI_GSSAPI_SPNEGO_H
+#ifdef HAVE_GSSAPI_GSSAPI_SPNEGO_H
 #include <gssapi/gssapi_spnego.h>
 #elif HAVE_GSSAPI_SPNEGO_H
 #include <gssapi_spnego.h>
