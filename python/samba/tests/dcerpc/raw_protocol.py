@@ -4368,13 +4368,15 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
     def _test_auth_bind_auth_level(self, auth_type, auth_level, auth_context_id, ctx,
                                    g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                   hdr_signing=False,
                                    alter_fault=None):
         creds = self.get_user_creds()
         auth_context = self.get_auth_context_creds(creds=creds,
                                                    auth_type=auth_type,
                                                    auth_level=auth_level,
                                                    auth_context_id=auth_context_id,
-                                                   g_auth_level=g_auth_level)
+                                                   g_auth_level=g_auth_level,
+                                                   hdr_signing=hdr_signing)
         if auth_context is None:
             return None
         ack = self.do_generic_bind(ctx=ctx,
@@ -4586,6 +4588,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_context = self._test_auth_bind_auth_level(auth_type=auth_type,
                                               auth_level=auth_level,
                                               auth_context_id=auth_context_id,
+                                              hdr_signing=hdr_sign,
                                               ctx=ctx1)
         self.assertIsNotNone(auth_context)
         g = auth_context["gensec"]
@@ -4844,9 +4847,21 @@ class TestDCERPC_BIND(RawDCERPCTest):
         return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
                                                           dcerpc.DCERPC_AUTH_LEVEL_PACKET)
 
+    def test_spnego_hdr_signing_packet(self):
+        # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
+        # DCERPC_AUTH_LEVEL_INTEGRITY
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_PACKET,
+                                                          hdr_sign=True)
+
     def test_spnego_signing_integrity(self):
         return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
                                                           dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
+
+    def test_spnego_hdr_signing_integrity(self):
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                                          hdr_sign=True)
 
     def test_assoc_group_fail1(self):
         abstract = samba.dcerpc.mgmt.abstract_syntax()
