@@ -4570,7 +4570,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
                                             g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY)
 
-    def _test_spnego_signing_auth_level_request(self, auth_level):
+    def _test_auth_signing_auth_level_request(self, auth_type, auth_level, hdr_sign=False):
         ndr32 = base.transfer_syntax_ndr()
 
         tsf1_list = [ndr32]
@@ -4581,7 +4581,6 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
         auth_context_id = 2
 
         auth_context = self._test_auth_bind_auth_level(auth_type=auth_type,
@@ -4842,10 +4841,12 @@ class TestDCERPC_BIND(RawDCERPCTest):
     def test_spnego_signing_packet(self):
         # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
         # DCERPC_AUTH_LEVEL_INTEGRITY
-        return self._test_spnego_signing_auth_level_request(dcerpc.DCERPC_AUTH_LEVEL_PACKET)
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_PACKET)
 
     def test_spnego_signing_integrity(self):
-        return self._test_spnego_signing_auth_level_request(dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
 
     def test_assoc_group_fail1(self):
         abstract = samba.dcerpc.mgmt.abstract_syntax()
