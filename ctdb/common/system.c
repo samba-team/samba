@@ -33,11 +33,11 @@
 #include "common/logging.h"
 #include "common/system.h"
 
-#if HAVE_SCHED_H
+#ifdef HAVE_SCHED_H
 #include <sched.h>
 #endif
 
-#if HAVE_PROCINFO_H
+#ifdef HAVE_PROCINFO_H
 #include <procinfo.h>
 #endif
 
@@ -49,7 +49,7 @@
 bool set_scheduler(void)
 {
 #ifdef _AIX_
-#if HAVE_THREAD_SETSCHED
+#ifdef HAVE_THREAD_SETSCHED
 	struct thrdentry64 te;
 	tid64_t ti;
 
@@ -68,7 +68,7 @@ bool set_scheduler(void)
 	}
 #endif
 #else /* no AIX */
-#if HAVE_SCHED_SETSCHEDULER
+#ifdef HAVE_SCHED_SETSCHEDULER
 	struct sched_param p;
 
 	p.sched_priority = 1;
@@ -92,7 +92,7 @@ bool set_scheduler(void)
 void reset_scheduler(void)
 {
 #ifdef _AIX_
-#if HAVE_THREAD_SETSCHED
+#ifdef HAVE_THREAD_SETSCHED
 	struct thrdentry64 te;
 	tid64_t ti;
 
@@ -105,7 +105,7 @@ void reset_scheduler(void)
 	}
 #endif
 #else /* no AIX */
-#if HAVE_SCHED_SETSCHEDULER
+#ifdef HAVE_SCHED_SETSCHEDULER
 	struct sched_param p;
 
 	p.sched_priority = 0;
