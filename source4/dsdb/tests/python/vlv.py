@@ -18,6 +18,8 @@ import samba.getopt as options
 from samba.auth import system_session
 import ldb
 from samba.samdb import SamDB
+from samba.compat import get_bytes
+from samba.compat import get_string
 
 import time
 
@@ -68,11 +70,11 @@ def encode_vlv_control(critical=1,
 
     if offset is not None:
         m = "%d:%d" % (offset, n)
-    elif ':' in gte or '\x00' in gte:
-        gte = base64.b64encode(gte).decode('utf8')
+    elif b':' in gte or b'\x00' in gte:
+        gte = get_string(base64.b64encode(gte))
         m = "base64>=%s" % gte
     else:
-        m = ">=%s" % gte
+        m = ">=%s" % get_string(gte)
 
     if cookie is None:
         return s + m
@@ -207,9 +209,9 @@ class VLVTests(samba.tests.TestCase):
                               controls=[sort_control,
                                         vlv_search])
         if include_cn:
-            full_results = [(x[attr][0], x['cn'][0]) for x in res]
+            full_results = [(str(x[attr][0]), str(x['cn'][0])) for x in res]
         else:
-            full_results = [x[attr][0].lower() for x in res]
+            full_results = [str(x[attr][0]).lower() for x in res]
         controls = res.controls
         return full_results, controls, sort_control
 
@@ -264,7 +266,7 @@ class VLVTests(samba.tests.TestCase):
                 'zzzz',
             ]
             if expected_order:
-                gte_keys.append(expected_order[len(expected_order) // 2] + ' tail')
+                gte_keys.append(expected_order[len(expected_order) // 2] + b' tail')
 
         else:
             # "numeric" means positive integers
@@ -461,7 +463,7 @@ class VLVTests(samba.tests.TestCase):
                             cookie = None
                         vlv_search = encode_vlv_control(before=before,
                                                         after=after,
-                                                        gte=gte,
+                                                        gte=get_bytes(gte),
                                                         cookie=cookie)
 
                         res = self.ldb.search(self.ou,
@@ -516,8 +518,8 @@ class VLVTests(samba.tests.TestCase):
             expected_order = full_results
             random.seed(1)
 
-            for before in range(0, 3) + [6, 11, 19]:
-                for after in range(0, 3) + [6, 11, 19]:
+            for before in list(range(0, 3)) + [6, 11, 19]:
+                for after in list(range(0, 3)) + [6, 11, 19]:
                     start = max(before - 1, 1)
                     end = max(start + 4, original_n - after + 2)
                     for offset in range(start, end):
@@ -550,7 +552,7 @@ class VLVTests(samba.tests.TestCase):
 
                         for x in expected_order[begin_offset:]:
                             if x is not None:
-                                expected_results.append(x[0])
+                                expected_results.append(get_bytes(x[0]))
                                 if (len(expected_results) ==
                                     real_before + real_after + 1):
                                     break
@@ -708,7 +710,7 @@ class VLVTests(samba.tests.TestCase):
                                       (offset, denominator, e))
                                 continue
 
-                            results = [x[attr][0].lower() for x in res]
+                            results = [str(x[attr][0]).lower() for x in res]
 
                             if denominator == 0:
                                 denominator = n_users
@@ -948,7 +950,7 @@ class VLVTests(samba.tests.TestCase):
                             cookie = None
                         vlv_search = encode_vlv_control(before=before,
                                                         after=after,
-                                                        gte=gte,
+                                                        gte=get_bytes(gte),
                                                         cookie=cookie)
 
                         res = self.ldb.search(self.ou,
@@ -986,7 +988,7 @@ class VLVTests(samba.tests.TestCase):
                     for gte in gte_tests:
                         vlv_search = encode_vlv_control(before=before,
                                                         after=after,
-                                                        gte=gte)
+                                                        gte=get_bytes(gte))
 
                         res = self.ldb.search(self.ou,
                                               scope=ldb.SCOPE_ONELEVEL,
