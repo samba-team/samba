@@ -4863,6 +4863,50 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                                           dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
                                                           hdr_sign=True)
 
+    def test_ntlm_signing_packet(self):
+        # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
+        # DCERPC_AUTH_LEVEL_INTEGRITY
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_NTLMSSP,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_PACKET)
+
+    def test_ntlm_hdr_signing_packet(self):
+        # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
+        # DCERPC_AUTH_LEVEL_INTEGRITY
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_NTLMSSP,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_PACKET,
+                                                          hdr_sign=True)
+
+    def test_ntlm_signing_integrity(self):
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_NTLMSSP,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
+
+    def test_ntlm_hdr_signing_integrity(self):
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_NTLMSSP,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                                          hdr_sign=True)
+
+    def test_krb5_signing_packet(self):
+        # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
+        # DCERPC_AUTH_LEVEL_INTEGRITY
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_KRB5,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_PACKET)
+
+    def test_krb5_hdr_signing_packet(self):
+        # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
+        # DCERPC_AUTH_LEVEL_INTEGRITY
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_KRB5,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_PACKET,
+                                                          hdr_sign=True)
+
+    def test_krb5_signing_integrity(self):
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_KRB5,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
+
+    def test_krb5_hdr_signing_integrity(self):
+        return self._test_auth_signing_auth_level_request(dcerpc.DCERPC_AUTH_TYPE_KRB5,
+                                                          dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                                          hdr_sign=True)
+
     def test_assoc_group_fail1(self):
         abstract = samba.dcerpc.mgmt.abstract_syntax()
         transfer = base.transfer_syntax_ndr()
