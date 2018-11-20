@@ -564,6 +564,13 @@ static bool test_init_driver_info(struct torture_context *tctx,
 			      drv_info->core_driver_inf, &drv_info->info);
 	torture_assert_goto(tctx, ok, ok, done, "Failed to parse inf driver");
 
+	/* Ensure that we are trying to install the correct device class:
+	 * https://docs.microsoft.com/en-us/windows-hardware/drivers/install/system-defined-device-setup-classes-available-to-vendors
+	 */
+	if (!(drv_info->info->printer_driver_attributes & PRINTER_DRIVER_CLASS)) {
+				ok = false;
+				torture_fail_goto(tctx, done, "Inf file Class value must be Printer");
+	}
 done:
 	return ok;
 
