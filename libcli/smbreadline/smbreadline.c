@@ -47,7 +47,7 @@
 
 static bool smb_rl_done;
 
-#if HAVE_LIBREADLINE
+#ifdef HAVE_LIBREADLINE
 /*
  * MacOS/X does not have rl_done in readline.h, but
  * readline.so has it
@@ -58,7 +58,7 @@ extern int rl_done;
 void smb_readline_done(void)
 {
 	smb_rl_done = true;
-#if HAVE_LIBREADLINE
+#ifdef HAVE_LIBREADLINE
 	rl_done = 1;
 #endif
 }
@@ -122,7 +122,7 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 		return smb_readline_replacement(NULL, callback, completion_fn);
 	}
 
-#if HAVE_LIBREADLINE
+#ifdef HAVE_LIBREADLINE
 
 	/* Aargh!  Readline does bizzare things with the terminal width
 	that mucks up expect(1).  Set CLI_NO_READLINE in the environment
@@ -145,7 +145,7 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 		rl_basic_word_break_characters = " \t\n";
 	}
 
-#if HAVE_DECL_RL_EVENT_HOOK
+#ifdef HAVE_DECL_RL_EVENT_HOOK
 	if (callback)
 		rl_event_hook = (rl_hook_func_t *)callback;
 #endif
