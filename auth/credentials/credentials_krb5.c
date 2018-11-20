@@ -270,14 +270,14 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	realm = smb_krb5_principal_get_realm(ccache->smb_krb5_context->krb5_context,
-					     princ);
+	realm = smb_krb5_principal_get_realm(
+		cred, ccache->smb_krb5_context->krb5_context, princ);
 	krb5_free_principal(ccache->smb_krb5_context->krb5_context, princ);
 	if (realm == NULL) {
 		return ENOMEM;
 	}
 	ok = cli_credentials_set_realm(cred, realm, obtained);
-	SAFE_FREE(realm);
+	TALLOC_FREE(realm);
 	if (!ok) {
 		return ENOMEM;
 	}

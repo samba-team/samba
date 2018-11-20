@@ -272,8 +272,8 @@ fetch_referral_principal:
 		 * We just redo the lookup in the database with the referral
 		 * principal and return success.
 		 */
-		dest_realm = smb_krb5_principal_get_realm(ctx->context,
-							  sentry.entry.principal);
+		dest_realm = smb_krb5_principal_get_realm(
+			ctx, ctx->context, sentry.entry.principal);
 		sdb_free_entry(&sentry);
 		if (dest_realm == NULL) {
 			ret = KRB5_KDB_NOENTRY;
@@ -286,7 +286,7 @@ fetch_referral_principal:
 					      KRB5_TGS_NAME,
 					      dest_realm,
 					      NULL);
-		SAFE_FREE(dest_realm);
+		TALLOC_FREE(dest_realm);
 		if (ret != 0) {
 			goto done;
 		}

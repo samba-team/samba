@@ -143,7 +143,8 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 		return KRB5_KPASSWD_HARDERROR;
 	}
 
-	target_realm = smb_krb5_principal_get_realm(context, target_principal);
+	target_realm = smb_krb5_principal_get_realm(
+		mem_ctx, context, target_principal);
 	code = krb5_unparse_name_flags(context,
 				       target_principal,
 				       KRB5_PRINCIPAL_UNPARSE_NO_REALM,
@@ -157,7 +158,7 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 	if ((target_name != NULL && target_realm == NULL) ||
 	    (target_name == NULL && target_realm != NULL)) {
 		krb5_free_principal(context, target_principal);
-		SAFE_FREE(target_realm);
+		TALLOC_FREE(target_realm);
 		SAFE_FREE(target_name);
 
 		ok = kpasswd_make_error_reply(mem_ctx,
@@ -174,11 +175,11 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 	}
 
 	if (target_name != NULL && target_realm != NULL) {
-		SAFE_FREE(target_realm);
+		TALLOC_FREE(target_realm);
 		SAFE_FREE(target_name);
 	} else {
 		krb5_free_principal(context, target_principal);
-		SAFE_FREE(target_realm);
+		TALLOC_FREE(target_realm);
 		SAFE_FREE(target_name);
 
 		return kpasswd_change_password(kdc,

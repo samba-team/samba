@@ -298,7 +298,8 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
 					   uint32_t *sig_type,
 					   DATA_BLOB *sig_blob);
 
-char *smb_krb5_principal_get_realm(krb5_context context,
+char *smb_krb5_principal_get_realm(TALLOC_CTX *mem_ctx,
+				   krb5_context context,
 				   krb5_const_principal principal);
 
 void smb_krb5_principal_set_type(krb5_context context,

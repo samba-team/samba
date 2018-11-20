@@ -57,7 +57,6 @@ static WERROR dns_domain_from_principal(TALLOC_CTX *mem_ctx, struct smb_krb5_con
 	krb5_error_code ret;
 	krb5_principal principal;
 	/* perhaps it's a principal with a realm, so return the right 'domain only' response */
-	char *realm;
 	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
 				    KRB5_PRINCIPAL_PARSE_REQUIRE_REALM, &principal);
 	if (ret) {
@@ -65,11 +64,9 @@ static WERROR dns_domain_from_principal(TALLOC_CTX *mem_ctx, struct smb_krb5_con
 		return WERR_OK;
 	}
 
-	realm = smb_krb5_principal_get_realm(smb_krb5_context->krb5_context, principal);
-
-	info1->dns_domain_name	= talloc_strdup(mem_ctx, realm);
+	info1->dns_domain_name = smb_krb5_principal_get_realm(
+		mem_ctx, smb_krb5_context->krb5_context, principal);
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
-	free(realm);
 
 	W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
 
@@ -290,8 +287,8 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	realm = smb_krb5_principal_get_realm(smb_krb5_context->krb5_context,
-					     principal);
+	realm = smb_krb5_principal_get_realm(
+		mem_ctx, smb_krb5_context->krb5_context, principal);
 
 	ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 			     samdb_partitions_dn(sam_ctx, mem_ctx),
@@ -302,7 +299,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			     ldb_binary_encode_string(mem_ctx, realm),
 			     LDB_OID_COMPARATOR_AND,
 			     SYSTEM_FLAG_CR_NTDS_DOMAIN);
-	free(realm);
+	TALLOC_FREE(realm);
 
 	if (ldb_ret != LDB_SUCCESS) {
 		DEBUG(2, ("DsCrackNameUPN domain ref search failed: %s\n", ldb_errstring(sam_ctx)));

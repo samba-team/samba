@@ -2780,24 +2780,25 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
 /**
  * @brief Get realm of a principal
  *
+ * @param[in] mem_ctx   The talloc ctx to put the result on
+ *
  * @param[in] context   The library context
  *
  * @param[in] principal The principal to get the realm from.
  *
- * @return An allocated string with the realm or NULL if an error occurred.
- *
- * The caller must free the realm string with free() if not needed anymore.
+ * @return A talloced string with the realm or NULL if an error occurred.
  */
-char *smb_krb5_principal_get_realm(krb5_context context,
+char *smb_krb5_principal_get_realm(TALLOC_CTX *mem_ctx,
+				   krb5_context context,
 				   krb5_const_principal principal)
 {
 #ifdef HAVE_KRB5_PRINCIPAL_GET_REALM /* Heimdal */
-	return strdup(discard_const_p(char, krb5_principal_get_realm(context, principal)));
+	return talloc_strdup(mem_ctx,
+			     krb5_principal_get_realm(context, principal));
 #elif defined(krb5_princ_realm) /* MIT */
-	krb5_data *realm;
-	realm = discard_const_p(krb5_data,
-				krb5_princ_realm(context, principal));
-	return strndup(realm->data, realm->length);
+	const krb5_data *realm;
+	realm = krb5_princ_realm(context, principal);
+	return talloc_strndup(mem_ctx, realm->data, realm->length);
 #else
 #error UNKNOWN_GET_PRINC_REALM_FUNCTIONS
 #endif
