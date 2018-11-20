@@ -6799,26 +6799,64 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 }
 
 /*
+ * Returns true if we need to do extra processing to handle deleted object
+ * changes received via replication
+ */
+static bool replmd_should_apply_isDeleted(struct replmd_replicated_request *ar,
+					  struct ldb_message *msg)
+{
+	struct ldb_dn *deleted_objects_dn;
+	int ret;
+
+	if (!ar->isDeleted) {
+
+		/* not a deleted object, so don't set isDeleted */
+		return false;
+	}
+
+	ret = dsdb_get_deleted_objects_dn(ldb_module_get_ctx(ar->module),
+					  msg, msg->dn,
+					  &deleted_objects_dn);
+
+	/*
+	 * if the Deleted Object container lookup failed, then just apply
+	 * isDeleted (note that it doesn't exist for the Schema partition)
+	 */
+	if (ret != LDB_SUCCESS) {
+		return true;
+	}
+
+	/*
+	 * the Deleted Objects container has isDeleted set but is not entirely
+	 * a deleted object, so DON'T re-apply isDeleted to it
+	 */
+	if (ldb_dn_compare(msg->dn, deleted_objects_dn) == 0) {
+		return false;
+	}
+
+	return true;
+}
+
+/*
  * This is essentially a wrapper for replmd_replicated_apply_next()
  *
  * This is needed to ensure that both codepaths call this handler.
  */
 static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *ar)
 {
-	struct ldb_dn *deleted_objects_dn;
 	struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
 	int ret;
+	bool apply_isDeleted;
 
-	if (!ar->isDeleted) {
+	apply_isDeleted = replmd_should_apply_isDeleted(ar, msg);
 
-		/* not a deleted object, so nothing to do */
+	if (!apply_isDeleted) {
+
+		/* nothing to do */
 		ar->index_current++;
 		return replmd_replicated_apply_next(ar);
-	}
 
-	ret = dsdb_get_deleted_objects_dn(ldb_module_get_ctx(ar->module), msg,
-					  msg->dn, &deleted_objects_dn);
-	if (ret != LDB_SUCCESS || ldb_dn_compare(msg->dn, deleted_objects_dn) != 0) {
+	} else {
 		/*
 		 * Do a delete here again, so that if there is
 		 * anything local that conflicts with this
