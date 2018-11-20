@@ -48,7 +48,7 @@
 	DATA_BLOB tmp_blob = data_blob(NULL, 0);
 	struct PAC_SIGNATURE_DATA *kdc_checksum = NULL;
 	struct PAC_SIGNATURE_DATA *srv_checksum = NULL;
-	int i;
+	uint32_t i;
 
 	/* First, just get the keytypes filled in (and lengths right, eventually) */
 	for (i=0; i < pac_data->num_buffers; i++) {
