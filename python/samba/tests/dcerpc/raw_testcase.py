@@ -133,12 +133,20 @@ class RawDCERPCTest(TestCase):
         g.want_feature(gensec.FEATURE_DCE_STYLE)
         g.start_mech_by_authtype(auth_type, g_auth_level)
 
+        if auth_type == dcerpc.DCERPC_AUTH_TYPE_KRB5:
+            expect_3legs = True
+        elif auth_type == dcerpc.DCERPC_AUTH_TYPE_NTLMSSP:
+            expect_3legs = True
+        else:
+            expect_3legs = False
+
         auth_context = {}
         auth_context["auth_type"] = auth_type
         auth_context["auth_level"] = auth_level
         auth_context["auth_context_id"] = auth_context_id
         auth_context["g_auth_level"] = g_auth_level
         auth_context["gensec"] = g
+        auth_context["expect_3legs"] = expect_3legs
 
         return auth_context
 
@@ -150,6 +158,8 @@ class RawDCERPCTest(TestCase):
         ctx_list = [ctx]
 
         if auth_context is not None:
+            expect_3legs = auth_context["expect_3legs"]
+
             from_server = b""
             (finished, to_server) = auth_context["gensec"].update(from_server)
             self.assertFalse(finished)
@@ -215,7 +225,10 @@ class RawDCERPCTest(TestCase):
 
         from_server = a.credentials
         (finished, to_server) = auth_context["gensec"].update(from_server)
-        self.assertFalse(finished)
+        if expect_3legs:
+            self.assertTrue(finished)
+        else:
+            self.assertFalse(finished)
 
         auth_info = self.generate_auth(auth_type=auth_context["auth_type"],
                                        auth_level=auth_context["auth_level"],
@@ -253,11 +266,17 @@ class RawDCERPCTest(TestCase):
         self.assertEquals(rep.u.ctx_list[0].reason,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ctx.transfer_syntaxes[0])
-        self.assertNotEquals(rep.auth_length, 0)
-        self.assertGreater(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
+        if finished:
+            self.assertEquals(rep.auth_length, 0)
+        else:
+            self.assertNotEquals(rep.auth_length, 0)
+        self.assertGreaterEqual(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
         self.assertEquals(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
 
         a = self.parse_auth(rep.u.auth_info, auth_context=auth_context)
+
+        if finished:
+            return ack
 
         from_server = a.credentials
         (finished, to_server) = auth_context["gensec"].update(from_server)
