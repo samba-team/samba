@@ -96,7 +96,7 @@ static int tdb_ftruncate(struct tdb_context *tdb, off_t length)
 	return ret;
 }
 
-#if HAVE_POSIX_FALLOCATE
+#ifdef HAVE_POSIX_FALLOCATE
 static int tdb_posix_fallocate(struct tdb_context *tdb, off_t offset,
 			       off_t len)
 {
@@ -413,7 +413,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		return -1;
 	}
 
-#if HAVE_POSIX_FALLOCATE
+#ifdef HAVE_POSIX_FALLOCATE
 	ret = tdb_posix_fallocate(tdb, size, addition);
 	if (ret == 0) {
 		return 0;
