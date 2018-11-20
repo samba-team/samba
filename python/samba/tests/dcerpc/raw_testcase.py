@@ -425,6 +425,7 @@ class RawDCERPCTest(TestCase):
                 stub_out = rep_data[0:-rep_auth_info.auth_pad_length]
             else:
                 stub_out = rep.u.stub_and_verifier
+            self.assertEqual(len(stub_out), rep.u.alloc_hint)
 
             if hexdump:
                 sys.stderr.write("stub_out: %d\n%s" % (len(stub_out), self.hexdump(stub_out)))
