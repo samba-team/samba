@@ -384,9 +384,20 @@ class DrsBaseTestCase(SambaToolCmdTest):
         """
         Check that a ctr6 matches the specified parameters.
         """
-        ctr6_dns = self._get_ctr6_dn_list(ctr6)
-        self.assertEqual(ctr6.object_count, len(expected_dns),
+        ctr6_raw_dns = self._get_ctr6_dn_list(ctr6)
+
+        # filter out changes to the RID Set objects, as these can happen
+        # intermittently and mess up the test assertions
+        ctr6_dns = []
+        for dn in ctr6_raw_dns:
+            if "CN=RID Set," in dn or "CN=RID Manager$," in dn:
+                print("Removing {0} from GetNCChanges reply".format(dn))
+            else:
+                ctr6_dns.append(dn)
+
+        self.assertEqual(len(ctr6_dns), len(expected_dns),
                          "Received unexpected objects (%s)" % ctr6_dns)
+        self.assertEqual(ctr6.object_count, len(ctr6_raw_dns))
         self.assertEqual(ctr6.linked_attributes_count, len(expected_links))
         self.assertEqual(ctr6.more_data, more_data)
         self.assertEqual(ctr6.nc_object_count, nc_object_count)
