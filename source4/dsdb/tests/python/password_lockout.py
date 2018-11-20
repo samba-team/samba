@@ -678,7 +678,7 @@ userPassword: thatsAcomplPASS2XYZ
                                     oldpassword="bad-password")
                 self.fail("Invalid SAMR change_password accepted")
             except NTSTATUSError as e:
-                enum = ctypes.c_uint32(e[0]).value
+                enum = ctypes.c_uint32(e.args[0]).value
                 self.assertEquals(enum, ntstatus.NT_STATUS_WRONG_PASSWORD)
 
             # check the status of the account is updated after each bad attempt
@@ -712,7 +712,7 @@ userPassword: thatsAcomplPASS2XYZ
                                     oldpassword=password)
                 self.fail("Invalid SAMR change_password accepted")
             except NTSTATUSError as e:
-                enum = ctypes.c_uint32(e[0]).value
+                enum = ctypes.c_uint32(e.args[0]).value
                 self.assertEquals(enum, ntstatus.NT_STATUS_ACCOUNT_LOCKED_OUT)
 
             res = self._check_account(userdn,
