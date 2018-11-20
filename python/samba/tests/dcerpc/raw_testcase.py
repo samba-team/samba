@@ -401,27 +401,7 @@ class RawDCERPCTest(TestCase):
             self.assertEquals(rep.u.context_id, req.u.context_id & 0xff)
             self.assertEquals(rep.u.cancel_count, 0)
             self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
-            if sig_size != 0:
-
-                ofs_stub = samba.dcerpc.dcerpc.DCERPC_REQUEST_LENGTH
-                ofs_sig = rep.frag_length - rep.auth_length
-                ofs_trailer = ofs_sig - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH
-                rep_data = rep_blob[ofs_stub:ofs_trailer]
-                rep_whole = rep_blob[0:ofs_sig]
-                rep_sig = rep_blob[ofs_sig:]
-                rep_auth_info_blob = rep_blob[ofs_trailer:]
-
-                rep_auth_info = self.parse_auth(rep_auth_info_blob,
-                                                auth_context=auth_context,
-                                                stub_len=len(rep_data))
-                self.assertEquals(rep_auth_info.credentials, rep_sig)
-
-                if auth_context["auth_level"] >= samba.dcerpc.dcerpc.DCERPC_AUTH_LEVEL_PACKET:
-                    auth_context["gensec"].check_packet(rep_data, rep_whole, rep_sig)
-
-                stub_out = rep_data[0:-rep_auth_info.auth_pad_length]
-            else:
-                stub_out = rep.u.stub_and_verifier
+            stub_out = self.check_response_auth(rep, rep_blob, auth_context)
             self.assertEqual(len(stub_out), rep.u.alloc_hint)
 
             if hexdump:
