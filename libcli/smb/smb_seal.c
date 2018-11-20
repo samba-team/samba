@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "smb_common.h"
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 #include "lib/krb5_wrap/krb5_samba.h"
 #endif
 #include "auth/gensec/gensec.h"
