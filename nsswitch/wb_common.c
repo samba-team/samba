@@ -27,7 +27,7 @@
 #include "system/select.h"
 #include "winbind_client.h"
 
-#if HAVE_PTHREAD_H
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
 
@@ -41,7 +41,7 @@ struct winbindd_context {
 	pid_t our_pid;		/* calling process pid */
 };
 
-#if HAVE_PTHREAD
+#ifdef HAVE_PTHREAD
 static pthread_mutex_t wb_global_ctx_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -53,7 +53,7 @@ static struct winbindd_context *get_wb_global_ctx(void)
 		.our_pid = 0
 	};
 
-#if HAVE_PTHREAD
+#ifdef HAVE_PTHREAD
 	pthread_mutex_lock(&wb_global_ctx_mutex);
 #endif
 	return &wb_global_ctx;
@@ -61,7 +61,7 @@ static struct winbindd_context *get_wb_global_ctx(void)
 
 static void put_wb_global_ctx(void)
 {
-#if HAVE_PTHREAD
+#ifdef HAVE_PTHREAD
 	pthread_mutex_unlock(&wb_global_ctx_mutex);
 #endif
 	return;
@@ -149,7 +149,7 @@ static void winbind_close_sock(struct winbindd_context *ctx)
 
 /* Destructor for global context to ensure fd is closed */
 
-#if HAVE_DESTRUCTOR_ATTRIBUTE
+#ifdef HAVE_DESTRUCTOR_ATTRIBUTE
 __attribute__((destructor))
 #endif
 static void winbind_destructor(void)
