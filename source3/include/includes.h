@@ -76,7 +76,7 @@
 #undef HAVE_LDAP
 #endif
 
-#if HAVE_SYS_ATTRIBUTES_H
+#ifdef HAVE_SYS_ATTRIBUTES_H
 #include <sys/attributes.h>
 #endif
 
@@ -92,17 +92,17 @@
 #include <sys/uio.h>
 #endif
 
-#if HAVE_LANGINFO_H
+#ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
 #endif
 
-#if HAVE_NETGROUP_H
+#ifdef HAVE_NETGROUP_H
 #include <netgroup.h>
 #endif
 
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
-#if HAVE_VALGRIND_MEMCHECK_H
+#ifdef HAVE_VALGRIND_MEMCHECK_H
         /* memcheck.h includes valgrind.h */
 #include <valgrind/memcheck.h>
 #elif HAVE_VALGRIND_H
