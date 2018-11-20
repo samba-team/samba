@@ -20,8 +20,14 @@ variables:
         sudo mkswap /samba-swap;
         sudo swapon /samba-swap;
       fi
-  after_script:
-    - tar -xf logs.tar.gz system-info.txt -O
+  artifacts:
+    expire_in: 1 week
+    when: on_failure
+    paths:
+      - "*.stdout"
+      - "*.stderr"
+      - system-info.txt
+      - /tmp/samba-testbase/*/*/bin/config.log
 
 build_samba_none_env:
   <<: *shared_template
