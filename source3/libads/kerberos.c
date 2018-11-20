@@ -60,7 +60,7 @@ kerb_prompter(krb5_context ctx, void *data,
 		 * version have looping detection and return with a proper error code.
 		 */
 
-#if HAVE_KRB5_PROMPT_TYPE /* Heimdal */
+#if defined(HAVE_KRB5_PROMPT_TYPE) /* Heimdal */
 		 if (prompts[0].type == KRB5_PROMPT_TYPE_NEW_PASSWORD &&
 		     prompts[1].type == KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN) {
 			/*

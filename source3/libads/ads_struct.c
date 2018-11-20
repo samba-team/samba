@@ -184,7 +184,7 @@ void ads_destroy(ADS_STRUCT **ads)
 		bool is_mine;
 
 		is_mine = (*ads)->is_mine;
-#if HAVE_LDAP
+#ifdef HAVE_LDAP
 		ads_disconnect(*ads);
 #endif
 		SAFE_FREE((*ads)->server.realm);
