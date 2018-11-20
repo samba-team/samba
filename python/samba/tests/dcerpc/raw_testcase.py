@@ -123,7 +123,8 @@ class RawDCERPCTest(TestCase):
 
     def get_auth_context_creds(self, creds, auth_type, auth_level,
                                auth_context_id,
-                               g_auth_level=None):
+                               g_auth_level=None,
+                               hdr_signing=False):
 
         if g_auth_level is None:
             g_auth_level = auth_level
@@ -146,6 +147,7 @@ class RawDCERPCTest(TestCase):
         auth_context["auth_context_id"] = auth_context_id
         auth_context["g_auth_level"] = g_auth_level
         auth_context["gensec"] = g
+        auth_context["hdr_signing"] = hdr_signing
         auth_context["expect_3legs"] = expect_3legs
 
         return auth_context
@@ -158,6 +160,9 @@ class RawDCERPCTest(TestCase):
         ctx_list = [ctx]
 
         if auth_context is not None:
+            if auth_context['hdr_signing']:
+                pfc_flags |= dcerpc.DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN
+
             expect_3legs = auth_context["expect_3legs"]
 
             from_server = b""
@@ -227,6 +232,8 @@ class RawDCERPCTest(TestCase):
         (finished, to_server) = auth_context["gensec"].update(from_server)
         if expect_3legs:
             self.assertTrue(finished)
+            if auth_context['hdr_signing']:
+                auth_context["gensec"].want_feature(gensec.FEATURE_SIGN_PKT_HEADER)
         else:
             self.assertFalse(finished)
 
@@ -281,6 +288,8 @@ class RawDCERPCTest(TestCase):
         from_server = a.credentials
         (finished, to_server) = auth_context["gensec"].update(from_server)
         self.assertTrue(finished)
+        if auth_context['hdr_signing']:
+            auth_context["gensec"].want_feature(gensec.FEATURE_SIGN_PKT_HEADER)
 
         return ack
 
