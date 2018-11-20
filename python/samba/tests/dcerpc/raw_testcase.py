@@ -18,7 +18,7 @@
 
 import sys
 import socket
-import samba.dcerpc.dcerpc
+import samba.dcerpc.dcerpc as dcerpc
 import samba.dcerpc.base
 import samba.dcerpc.epmapper
 import samba.tests
@@ -207,7 +207,7 @@ class RawDCERPCTest(TestCase):
         self.assertGreater(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
         self.assertEquals(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
 
-        a = self.parse_auth(rep.u.auth_info)
+        a = self.parse_auth(rep.u.auth_info, auth_context=auth_context)
 
         from_server = a.credentials
         (finished, to_server) = auth_context["gensec"].update(from_server)
@@ -253,7 +253,7 @@ class RawDCERPCTest(TestCase):
         self.assertGreater(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
         self.assertEquals(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
 
-        a = self.parse_auth(rep.u.auth_info)
+        a = self.parse_auth(rep.u.auth_info, auth_context=auth_context)
 
         from_server = a.credentials
         (finished, to_server) = auth_context["gensec"].update(from_server)
@@ -411,12 +411,9 @@ class RawDCERPCTest(TestCase):
                 rep_sig = rep_blob[ofs_sig:]
                 rep_auth_info_blob = rep_blob[ofs_trailer:]
 
-                rep_auth_info = self.parse_auth(rep_auth_info_blob)
-                self.assertEquals(rep_auth_info.auth_type, auth_context["auth_type"])
-                self.assertEquals(rep_auth_info.auth_level, auth_context["auth_level"])
-                self.assertLessEqual(rep_auth_info.auth_pad_length, len(rep_data))
-                self.assertEquals(rep_auth_info.auth_reserved, 0)
-                self.assertEquals(rep_auth_info.auth_context_id, auth_context["auth_context_id"])
+                rep_auth_info = self.parse_auth(rep_auth_info_blob,
+                                                auth_context=auth_context,
+                                                stub_len=len(rep_data))
                 self.assertEquals(rep_auth_info.credentials, rep_sig)
 
                 if auth_context["auth_level"] >= samba.dcerpc.dcerpc.DCERPC_AUTH_LEVEL_PACKET:
@@ -622,7 +619,8 @@ class RawDCERPCTest(TestCase):
 
         return ai
 
-    def parse_auth(self, auth_info, ndr_print=None, hexdump=None):
+    def parse_auth(self, auth_info, ndr_print=None, hexdump=None,
+                   auth_context=None, stub_len=0):
         if ndr_print is None:
             ndr_print = self.do_ndr_print
         if hexdump is None:
@@ -636,6 +634,15 @@ class RawDCERPCTest(TestCase):
         a = ndr_unpack(samba.dcerpc.dcerpc.auth, auth_info, allow_remaining=True)
         if ndr_print:
             sys.stderr.write("parse_auth: %s" % samba.ndr.ndr_print(a))
+
+        if auth_context is not None:
+            self.assertEquals(a.auth_type, auth_context["auth_type"])
+            self.assertEquals(a.auth_level, auth_context["auth_level"])
+            self.assertEquals(a.auth_reserved, 0)
+            self.assertEquals(a.auth_context_id, auth_context["auth_context_id"])
+
+            self.assertLessEqual(a.auth_pad_length, dcerpc.DCERPC_AUTH_PAD_ALIGNMENT)
+            self.assertLessEqual(a.auth_pad_length, stub_len)
 
         return a
 
