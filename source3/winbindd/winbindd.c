@@ -1832,7 +1832,7 @@ int main(int argc, const char **argv)
 
 	pidfile_create(lp_pid_directory(), "winbindd");
 
-#if HAVE_SETPGID
+#ifdef HAVE_SETPGID
 	/*
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
