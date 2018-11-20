@@ -1,0 +1,14 @@
+{
+   tfork_pthread_cond_init
+   drd:CondErr
+   fun:pthread_cond_init_intercept
+   fun:pthread_cond_init@*
+   fun:tfork_atfork_child
+   fun:fork
+   fun:tfork_start_waiter_and_worker
+   fun:tfork_create
+   fun:tfork_thread
+   fun:vgDrd_thread_wrapper
+   fun:start_thread
+   fun:clone
+}
