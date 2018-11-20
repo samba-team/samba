@@ -61,7 +61,7 @@ uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status, krb5_context ctx,
 {
 	uint32_t major_status = 0;
 
-#if HAVE_GSS_ACQUIRE_CRED_FROM
+#ifdef HAVE_GSS_ACQUIRE_CRED_FROM
 	uint32_t minor = 0;
 	gss_key_value_element_desc ccache_element = {
 		.key = "ccache",
