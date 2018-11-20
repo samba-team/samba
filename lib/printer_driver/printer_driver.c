@@ -1034,6 +1034,13 @@ static NTSTATUS setup_driver_by_name(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	status = gp_inifile_getstring_ext(ctx, "Version:Class", &s);
+	if (NT_STATUS_IS_OK(status)) {
+		if (strequal(s, "Printer")) {
+			r->printer_driver_attributes |= PRINTER_DRIVER_CLASS;
+		}
+	}
+
 	status = gp_inifile_getstring(ctx, "Version:Signature", &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
