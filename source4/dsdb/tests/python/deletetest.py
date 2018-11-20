@@ -20,6 +20,7 @@ from ldb import ERR_UNWILLING_TO_PERFORM, ERR_OPERATIONS_ERROR
 from samba.samdb import SamDB
 from samba.tests import delete_force
 from samba import dsdb
+from samba.compat import get_string
 
 parser = optparse.OptionParser("deletetest.py [options] <host|file>")
 sambaopts = options.SambaOptions(parser)
@@ -45,7 +46,7 @@ creds = credopts.get_credentials(lp)
 class BaseDeleteTests(samba.tests.TestCase):
 
     def GUID_string(self, guid):
-        return self.ldb.schema_format_value("objectGUID", guid)
+        return get_string(self.ldb.schema_format_value("objectGUID", guid))
 
     def setUp(self):
         super(BaseDeleteTests, self).setUp()
@@ -84,7 +85,7 @@ class BasicDeleteTests(BaseDeleteTests):
     def del_attr_values(self, delObj):
         print("Checking attributes for %s" % delObj["dn"])
 
-        self.assertEquals(delObj["isDeleted"][0], "TRUE")
+        self.assertEquals(str(delObj["isDeleted"][0]), "TRUE")
         self.assertTrue(not("objectCategory" in delObj))
         self.assertTrue(not("sAMAccountType" in delObj))
 
@@ -110,9 +111,9 @@ class BasicDeleteTests(BaseDeleteTests):
         name2 = delObj["name"][0]
         dn_rdn = delObj.dn.get_rdn_value()
         guid = liveObj["objectGUID"][0]
-        self.assertEquals(rdn2, rdn + "\nDEL:" + self.GUID_string(guid))
-        self.assertEquals(name2, rdn + "\nDEL:" + self.GUID_string(guid))
-        self.assertEquals(name2, dn_rdn)
+        self.assertEquals(str(rdn2), ("%s\nDEL:%s" % (rdn, self.GUID_string(guid))))
+        self.assertEquals(str(name2), ("%s\nDEL:%s" % (rdn, self.GUID_string(guid))))
+        self.assertEquals(str(name2), dn_rdn)
 
     def delete_deleted(self, ldb, dn):
         print("Testing the deletion of the already deleted dn %s" % dn)
@@ -193,7 +194,7 @@ class BasicDeleteTests(BaseDeleteTests):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         res = self.ldb.search(self.base_dn, attrs=["rIDSetReferences"],
-                              expression="(&(objectClass=computer)(dNSHostName=" + res[0]["dNSHostName"][0] + "))")
+                              expression="(&(objectClass=computer)(dNSHostName=" + str(res[0]["dNSHostName"][0]) + "))")
         self.assertEquals(len(res), 1)
 
         # Deletes failing since DC's rIDSet object is protected
