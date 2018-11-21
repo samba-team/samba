@@ -304,6 +304,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 		if (rc) {
 			DEBUG(1,("krb5_gethost_realm failed (%s)\n",
 				 error_message(rc)));
+			krb5_free_context(ctx);
 			return -1;
 		}
 		realm = (const char *) *realms;
@@ -312,6 +313,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 	status = get_kdc_list(realm, NULL, &kdcs, &num_kdcs);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("get_kdc_list failed (%s)\n", nt_errstr(status)));
+		krb5_free_context(ctx);
 		return -1;
 	}
 
@@ -323,6 +325,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 		d_printf("%s:%u\n", addr, kdcs[i].port);
 	}
 
+	krb5_free_context(ctx);
 	return 0;
 #endif
 	DEBUG(1, ("No kerberos support\n"));
