@@ -354,14 +354,15 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 			TALLOC_FREE(ccc);
 			return ret;
 		}
-
-		cred->ccache = ccc;
-		cred->ccache_obtained = obtained;
-		talloc_steal(cred, ccc);
-
-		cli_credentials_invalidate_client_gss_creds(cred, cred->ccache_obtained);
-		return 0;
 	}
+
+	cred->ccache = ccc;
+	cred->ccache_obtained = obtained;
+	talloc_steal(cred, ccc);
+
+	cli_credentials_invalidate_client_gss_creds(
+		cred, cred->ccache_obtained);
+
 	return 0;
 }
 
