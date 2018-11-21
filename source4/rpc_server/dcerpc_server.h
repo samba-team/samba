@@ -364,9 +364,6 @@ struct dcesrv_assoc_group {
 
 	/* the negotiated bind time features */
 	uint16_t bind_time_features;
-
-	/* Remote association group ID (if proxied) */
-	uint32_t proxied_id;
 };
 
 /* server-wide context information for the dcerpc server */
