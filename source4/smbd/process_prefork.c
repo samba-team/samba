@@ -22,7 +22,16 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+/*
+ * The pre-fork process model distributes the server workload amongst several
+ * designated worker threads (e.g. 'prefork-worker-ldap-0',
+ * 'prefork-worker-ldap-1', etc). The number of worker threads is controlled
+ * by the 'prefork children' conf setting. The worker threads are controlled
+ * by a prefork master process (e.g. 'prefork-master-ldap'). The prefork master
+ * doesn't handle the server workload (i.e. processing messages) itself, but is
+ * responsible for restarting workers if they exit unexpectedly. The top-level
+ * samba process is responsible for restarting the master process if it exits.
+ */
 #include "includes.h"
 #include <unistd.h>
 
@@ -181,8 +190,10 @@ static void irpc_cleanup(
 }
 
 /*
-  handle EOF on the parent-to-all-children pipe in the child
-*/
+ * handle EOF on the parent-to-all-children pipe in the child, i.e.
+ * the parent has died and its end of the pipe has been closed.
+ * The child handles this by exiting as well.
+ */
 static void prefork_pipe_handler(struct tevent_context *event_ctx,
 		                 struct tevent_fd *fde, uint16_t flags,
 				 void *private_data)
@@ -209,7 +220,7 @@ static void prefork_pipe_handler(struct tevent_context *event_ctx,
 
 
 /*
- * called to create a new server task
+ * Called by the top-level samba process to create a new prefork master process
  */
 static void prefork_fork_master(
     struct tevent_context *ev,
@@ -354,6 +365,13 @@ static void prefork_fork_master(
 	}
 	DBG_NOTICE("Forking %d %s worker processes\n",
 		   num_children, service_name);
+
+	/*
+	 * the prefork master creates its own control pipe, so the prefork
+	 * workers can detect if the master exits (in which case an EOF gets
+	 * written). (Whereas from_parent_fd is the control pipe from the
+	 * top-level process that the prefork master listens on)
+	 */
 	{
 		int ret;
 		ret = pipe(control_pipe);
@@ -386,8 +404,11 @@ static void prefork_fork_master(
 	/* We need to keep ev2 until we're finished for the messaging to work */
 	TALLOC_FREE(ev2);
 	exit(0);
-
 }
+
+/*
+ * Restarts a child process if it exits unexpectedly
+ */
 static void prefork_restart(struct tevent_context *ev,
 			    struct restart_context *rc)
 {
@@ -396,6 +417,11 @@ static void prefork_restart(struct tevent_context *ev,
 	unsigned restart_delay = rc->restart_delay;
 	unsigned default_value = 0;
 
+	/*
+	 * If the child process is constantly exiting, then restarting it can
+	 * consume a lot of resources. In which case, we want to backoff a bit
+	 * before respawning it
+	 */
 	default_value = lpcfg_prefork_backoff_increment(rc->lp_ctx);
 	backoff = lpcfg_parm_int(rc->lp_ctx,
 				 NULL,
@@ -447,6 +473,7 @@ static void prefork_restart(struct tevent_context *ev,
 				    &pd);
 	}
 }
+
 /*
   handle EOF on the child pipe in the parent, so we know when a
   process terminates without using SIGCHLD or waiting on all possible pids.
@@ -585,6 +612,9 @@ static void setup_handlers(
 	}
 }
 
+/*
+ * Called by the prefork master to create a new prefork worker process
+ */
 static void prefork_fork_worker(struct task_server *task,
 				struct tevent_context *ev,
 				struct tevent_context *ev2,
@@ -609,6 +639,10 @@ static void prefork_fork_worker(struct task_server *task,
 		int fd = tfork_event_fd(w);
 		struct restart_context *rc = NULL;
 
+		/*
+		 * we're the parent (prefork master), so store enough info to
+		 * restart the worker/child if it exits unexpectedly
+		 */
 		rc = talloc_zero(ev, struct restart_context);
 		if (rc == NULL) {
 			smb_panic("OOM allocating restart context\n");
@@ -637,8 +671,15 @@ static void prefork_fork_worker(struct task_server *task,
 		}
 		tevent_fd_set_auto_close(fde);
 	} else {
+
+		/*
+		 * we're the child (prefork-worker). We never write to the
+		 * control pipe, but listen on the read end in case our parent
+		 * (the pre-fork master) exits
+		 */
 		close(control_pipe[1]);
 		setup_handlers(ev2, lp_ctx, control_pipe[0]);
+
 		/*
 		 * tfork uses malloc
 		 */
