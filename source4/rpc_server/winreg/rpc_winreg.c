@@ -29,41 +29,28 @@
 
 enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 
-static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call,
-				   const struct dcesrv_interface *iface)
-{
-	struct auth_session_info *session_info =
-		dcesrv_call_session_info(dce_call);
-	struct registry_context *ctx;
-	WERROR err;
-
-	err = reg_open_samba(dce_call->context,
-			     &ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
-			     session_info,
-			     NULL);
-
-	if (!W_ERROR_IS_OK(err)) {
-		DEBUG(0, ("Error opening registry: %s\n", win_errstr(err)));
-		return werror_to_ntstatus(err);
-	}
-
-	dce_call->context->private_data = ctx;
-
-	return NT_STATUS_OK;
-}
-
-#define DCESRV_INTERFACE_WINREG_BIND dcerpc_winreg_bind
-
 static WERROR dcesrv_winreg_openhive(struct dcesrv_call_state *dce_call,
 				     TALLOC_CTX *mem_ctx, uint32_t hkey,
 				     struct policy_handle **outh)
 {
-	struct registry_context *ctx = dce_call->context->private_data;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
+	struct registry_context *ctx = NULL;
 	struct dcesrv_handle *h;
 	WERROR result;
 
 	h = dcesrv_handle_create(dce_call, HTYPE_REGKEY);
 	W_ERROR_HAVE_NO_MEMORY(h);
+
+	result = reg_open_samba(h, &ctx,
+				dce_call->event_ctx,
+				dce_call->conn->dce_ctx->lp_ctx,
+				session_info,
+				NULL);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("Error opening registry: %s\n", win_errstr(result)));
+		return result;
+	}
 
 	result = reg_get_predefined_key(ctx, hkey,
 				       (struct registry_key **)&h->data);
