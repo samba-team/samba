@@ -17,6 +17,7 @@ from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.compat import cmp_fn
 from samba.compat import cmp_to_key_fn
 from samba.compat import text_type
+from samba.compat import PY3
 import samba.getopt as options
 
 from samba.auth import system_session
@@ -58,7 +59,7 @@ def norm(x):
 # drastically different ways. The order here is what you get from
 # Windows2012R2.
 FIENDISH_TESTS = [' ', ' e', '\t-\t', '\n\t\t', '!@#!@#!', '¼', '¹', '1',
-                  '1/4', '1⁄4', '1\xe2\x81\x845', '3', 'abc', 'fo\x00od',
+                  '1/4', '1⁄4', '1\xe2\x81\x845', '3', 'abc',
 
                   # Here we also had '\x00food', but that seems to sort
                   # non-deterministically on Windows vis-a-vis 'fo\x00od'.
@@ -67,7 +68,8 @@ FIENDISH_TESTS = [' ', ' e', '\t-\t', '\n\t\t', '!@#!@#!', '¼', '¹', '1',
                   'ｓorttest', 'sorttēst11,', 'śorttest2', 'śoRttest2',
                   'ś-o-r-t-t-e-s-t-2', 'soRTTēst2,', 'ṡorttest4', 'ṡorttesT4',
                   'sörttest-5', 'sÖrttest-5', 'so-rttest7,', '桑巴']
-
+if not PY3:
+    FIENDISH_TESTS.append('fo\x00od')
 
 class BaseSortTests(samba.tests.TestCase):
     avoid_tricky_sort = False
@@ -80,7 +82,6 @@ class BaseSortTests(samba.tests.TestCase):
             'cn': name,
             "objectclass": "user",
             'givenName': "abcdefghijklmnopqrstuvwxyz"[i % 26],
-            "roomNumber": "%sb\x00c" % (n - i),
             "carLicense": "后来经",
             "employeeNumber": "%s%sx" % (abs(i * (99 - i)), '\n' * (i & 255)),
             "accountExpires": "%s" % (10 ** 9 + 1000000 * i),
@@ -92,6 +93,9 @@ class BaseSortTests(samba.tests.TestCase):
             "comment": "Favourite colour is %d" % (n % (i + 1)),
         }
 
+        if not PY3:
+            user.update({"roomNumber": "%sb\x00c" % (n - i)})
+
         if self.avoid_tricky_sort:
             # We are not even going to try passing tests that assume
             # some kind of Unicode awareness.
@@ -102,14 +106,9 @@ class BaseSortTests(samba.tests.TestCase):
             fiendish_index = i % len(FIENDISH_TESTS)
             user.update({
                 # Sort doesn't look past a NUL byte.
-                "photo": "\x00%d" % (n - i),
                 "audio": "%sn octet string %s%s ♫♬\x00lalala" % ('Aa'[i & 1],
                                                                  chr(i & 255),
                                                                  i),
-                "displayNamePrintable": "%d\x00%c" % (i, i & 255),
-                "adminDisplayName": "%d\x00b" % (n - i),
-                "title": "%d%sb" % (n - i, '\x00' * i),
-
                 # Names that vary only in case. Windows returns
                 # equivalent addresses in the order they were put
                 # in ('a st', 'A st',...). We don't check that.
@@ -118,6 +117,13 @@ class BaseSortTests(samba.tests.TestCase):
                 "streetAddress": FIENDISH_TESTS[fiendish_index],
                 "postalAddress": FIENDISH_TESTS[-fiendish_index],
             })
+
+            if not PY3:
+                user.update({
+                    "photo": "\x00%d" % (n - i),
+                    "displayNamePrintable": "%d\x00%c" % (i, i & 255),
+                    "adminDisplayName": "%d\x00b" % (n - i),
+                    "title": "%d%sb" % (n - i, '\x00' * i)})
 
         if attrs is not None:
             user.update(attrs)
