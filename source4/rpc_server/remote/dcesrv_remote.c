@@ -54,8 +54,6 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	struct composite_context	*pipe_conn_req;
 	uint32_t flags = 0;
 
-	machine_account = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "use_machine_account", false);
-
 	priv = talloc(dce_call->conn, struct dcesrv_remote_private);
 	if (!priv) {
 		return NT_STATUS_NO_MEMORY;	
@@ -76,6 +74,12 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	user = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "user");
 	pass = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "password");
 	domain = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dceprc_remote", "domain");
+
+	machine_account = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx,
+					  NULL,
+					  "dcerpc_remote",
+					  "use_machine_account",
+					  false);
 
 	credentials = dcesrv_call_credentials(dce_call);
 
