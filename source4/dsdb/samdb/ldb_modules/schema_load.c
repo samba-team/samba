@@ -552,26 +552,35 @@ static int schema_load_extended(struct ldb_module *module, struct ldb_request *r
 	struct dsdb_schema *schema;
 	int ret;
 
-	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) != 0) {
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_LOAD) == 0) {
+
+		ret = dsdb_schema_from_db(module, req, 0, &schema);
+		if (ret == LDB_SUCCESS) {
+			return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+		}
+		return ret;
+
+	} else if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) == 0) {
+		/* Force a refresh */
+		schema = dsdb_get_schema(ldb, NULL);
+
+		ret = dsdb_schema_set_indices_and_attributes(ldb,
+							     schema,
+							     SCHEMA_WRITE);
+
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "Failed to write new "
+					       "@INDEXLIST and @ATTRIBUTES "
+					       "records for updated schema: %s",
+					       ldb_errstring(ldb));
+			return ret;
+		}
+
+		return ldb_next_request(module, req);
+	} else {
+		/* Pass to next module, the partition one should finish the chain */
 		return ldb_next_request(module, req);
 	}
-	/* Force a refresh */
-	schema = dsdb_get_schema(ldb, NULL);
-
-	ret = dsdb_schema_set_indices_and_attributes(ldb,
-						     schema,
-						     SCHEMA_WRITE);
-
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "Failed to write new "
-				       "@INDEXLIST and @ATTRIBUTES "
-				       "records for updated schema: %s",
-				       ldb_errstring(ldb));
-		return ret;
-	}
-	
-	/* Pass to next module, the partition one should finish the chain */
-	return ldb_next_request(module, req);
 }
 
 static int schema_read_lock(struct ldb_module *module)

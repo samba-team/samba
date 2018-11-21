@@ -914,8 +914,10 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 	}
 	talloc_free(ext_res);
 
-	/* Save our updated prefixMap */
+	/* Save our updated prefixMap and check the schema is good. */
 	if (working_schema) {
+		struct ldb_result *ext_res_2;
+
 		werr = dsdb_write_prefixes_from_schema_to_ldb(working_schema,
 							      ldb,
 							      working_schema);
@@ -924,13 +926,42 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 			if (used_global_schema) { 
 				dsdb_set_global_schema(ldb);
 			} else if (cur_schema ) {
-				dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
+				dsdb_reference_schema(ldb,
+						      cur_schema,
+						      SCHEMA_MEMORY_ONLY);
 			}
 			DEBUG(0,("Failed to save updated prefixMap: %s\n",
 				 win_errstr(werr)));
 			ldb_transaction_cancel(ldb);
 			TALLOC_FREE(tmp_ctx);
 			return werr;
+		}
+
+		/*
+		 * Use dsdb_schema_from_db through dsdb extended to check we
+		 * can load the schema currently sitting in the transaction.
+		 * We need this check because someone might have written to
+		 * the schema or prefixMap before we started the transaction,
+		 * which may have caused corruption.
+		 */
+		ret = ldb_extended(ldb, DSDB_EXTENDED_SCHEMA_LOAD,
+				   NULL, &ext_res_2);
+
+		if (ret != LDB_SUCCESS) {
+			if (used_global_schema) {
+				dsdb_set_global_schema(ldb);
+			} else if (cur_schema) {
+				dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
+			}
+			DEBUG(0,("Corrupt schema write attempt detected, "
+				 "aborting schema modification operation.\n"
+				 "This probably happened due to bad timing of "
+				 "another schema edit: %s (%s)\n",
+				 ldb_errstring(ldb),
+				 ldb_strerror(ret)));
+			ldb_transaction_cancel(ldb);
+			TALLOC_FREE(tmp_ctx);
+			return WERR_FOOBAR;
 		}
 	}
 
