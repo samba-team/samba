@@ -1956,7 +1956,7 @@ krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
 /**
  * @brief Simulate a kinit by putting the tgt in the given credential cache.
  *
- * This function uses a keyblock rather than needingthe original password.
+ * This function uses a keyblock rather than needing the original password.
  *
  * @param[in]  ctx      The library context
  *
