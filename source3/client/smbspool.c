@@ -523,6 +523,7 @@ static bool kerberos_ccache_is_valid(void) {
 
 	ccache_name = krb5_cc_default_name(ctx);
 	if (ccache_name == NULL) {
+		krb5_free_context(ctx);
 		return false;
 	}
 
