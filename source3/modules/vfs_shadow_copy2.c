@@ -1354,21 +1354,63 @@ static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			      SMB_STRUCT_STAT *sbuf)
 {
 	time_t timestamp = 0;
+	struct smb_filename *orig_smb_fname = NULL;
+	struct smb_filename vss_smb_fname;
+	struct smb_filename *orig_base_smb_fname = NULL;
+	struct smb_filename vss_base_smb_fname;
+	char *stripped = NULL;
+	int saved_errno = 0;
+	bool ok;
 	int ret;
 
-	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	if (ret == -1) {
-		return ret;
-	}
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
+	ok = shadow_copy2_strip_snapshot(talloc_tos(), handle,
 					 fsp->fsp_name->base_name,
-					 &timestamp, NULL)) {
-		return 0;
+					 &timestamp, &stripped);
+	if (!ok) {
+		return -1;
 	}
-	if (timestamp != 0) {
+
+	if (timestamp == 0) {
+		TALLOC_FREE(stripped);
+		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	}
+
+	vss_smb_fname = *fsp->fsp_name;
+	vss_smb_fname.base_name = shadow_copy2_convert(talloc_tos(),
+						       handle,
+						       stripped,
+						       timestamp);
+	TALLOC_FREE(stripped);
+	if (vss_smb_fname.base_name == NULL) {
+		return -1;
+	}
+
+	orig_smb_fname = fsp->fsp_name;
+	fsp->fsp_name = &vss_smb_fname;
+
+	if (fsp->base_fsp != NULL) {
+		vss_base_smb_fname = *fsp->base_fsp->fsp_name;
+		vss_base_smb_fname.base_name = vss_smb_fname.base_name;
+		orig_base_smb_fname = fsp->base_fsp->fsp_name;
+		fsp->base_fsp->fsp_name = &vss_base_smb_fname;
+	}
+
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	fsp->fsp_name = orig_smb_fname;
+	if (fsp->base_fsp != NULL) {
+		fsp->base_fsp->fsp_name = orig_base_smb_fname;
+	}
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+
+	if (ret == 0) {
 		convert_sbuf(handle, fsp->fsp_name->base_name, sbuf);
 	}
-	return 0;
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
 }
 
 static int shadow_copy2_open(vfs_handle_struct *handle,
