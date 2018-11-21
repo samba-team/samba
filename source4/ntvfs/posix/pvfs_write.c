@@ -124,7 +124,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 					wr->writex.in.count,
 					wr->writex.in.offset);
 	} else {
-#if HAVE_LINUX_AIO
+#ifdef HAVE_LINUX_AIO
 		/* possibly try an aio write */
 		if ((req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC) &&
 		    (pvfs->flags & PVFS_FLAG_LINUX_AIO)) {

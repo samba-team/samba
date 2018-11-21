@@ -92,7 +92,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 							PVFS_SEARCH_INACTIVITY,
 							PVFS_SEARCH_INACTIVITY_DEFAULT);
 
-#if HAVE_XATTR_SUPPORT
+#ifdef HAVE_XATTR_SUPPORT
 	if (share_bool_option(scfg, PVFS_XATTR, PVFS_XATTR_DEFAULT))
 		pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
 #endif

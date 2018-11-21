@@ -76,7 +76,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		ret = pvfs_stream_read(pvfs, f->handle, 
 				       rd->readx.out.data, maxcnt, rd->readx.in.offset);
 	} else {
-#if HAVE_LINUX_AIO
+#ifdef HAVE_LINUX_AIO
 		/* possibly try an aio read */
 		if ((req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC) &&
 		    (pvfs->flags & PVFS_FLAG_LINUX_AIO)) {
