@@ -453,6 +453,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	if (kvno == -1) {
 		/* -1 indicates a failure */
 		DEBUG(1, (__location__ ": Error determining the kvno.\n"));
+		ret = -1;
 		goto out;
 	}
 
@@ -473,6 +474,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	if (!ADS_ERR_OK(aderr)) {
 		DEBUG(1, (__location__ ": Error while clearing service "
 			  "principal listings in LDAP.\n"));
+		ret = -1;
 		goto out;
 	}
 
