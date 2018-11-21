@@ -1,0 +1,2 @@
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_krb5_hdr_sign_delayed1
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_krb5_hdr_sign_delayed2
