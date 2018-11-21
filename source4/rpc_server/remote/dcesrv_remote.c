@@ -180,6 +180,19 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	return NT_STATUS_OK;	
 }
 
+static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
+				   struct dcesrv_remote_private **_priv)
+{
+	void *ptr = NULL;
+	struct dcesrv_remote_private *priv = NULL;
+
+	ptr = dce_call->context->private_data;
+	priv = talloc_get_type_abort(ptr, struct dcesrv_remote_private);
+
+	*_priv = priv;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
 	enum ndr_err_code ndr_err;
@@ -227,13 +240,18 @@ static void remote_op_dispatch_done(struct tevent_req *subreq);
 
 static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
-	struct dcesrv_remote_private *priv = talloc_get_type_abort(dce_call->context->private_data,
-								   struct dcesrv_remote_private);
+	struct dcesrv_remote_private *priv = NULL;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	const struct ndr_interface_call *call;
 	const char *name;
 	struct tevent_req *subreq;
+	NTSTATUS status;
+
+	status = remote_get_private(dce_call, &priv);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	name = table->calls[opnum].name;
 	call = &table->calls[opnum];
