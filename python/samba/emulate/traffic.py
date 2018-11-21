@@ -1442,7 +1442,12 @@ def flushing_signal_handler(signal, frame):
 
 def replay_seq_in_fork(cs, start, context, account, client_id, server_id=1):
     """Fork a new process and replay the conversation sequence."""
-    endpoints = (server_id, client_id)
+    # We will need to reseed the random number generator or all the
+    # clients will end up using the same sequence of random
+    # numbers. random.randint() is mixed in so the initial seed will
+    # have an effect here.
+    seed = client_id * 1000 + random.randint(0, 999)
+
     # flush our buffers so messages won't be written by both sides
     sys.stdout.flush()
     sys.stderr.flush()
@@ -1453,8 +1458,9 @@ def replay_seq_in_fork(cs, start, context, account, client_id, server_id=1):
     # we must never return, or we'll end up running parts of the
     # parent's clean-up code. So we work in a try...finally, and
     # try to print any exceptions.
-
     try:
+        random.seed(seed)
+        endpoints = (server_id, client_id)
         status = 0
         t = cs[0][0]
         c = Conversation(t, endpoints, seq=cs, conversation_id=client_id)
