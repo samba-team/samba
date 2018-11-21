@@ -30,6 +30,12 @@
 
 NTSTATUS dcerpc_server_remote_init(TALLOC_CTX *ctx);
 
+#define DCESRV_REMOTE_ASSOC_MAGIC 0x782f50c4
+struct dcesrv_remote_assoc {
+	uint32_t assoc_group_id;
+};
+
+#define DCESRV_REMOTE_PRIVATE_MAGIC 0x7eceafa6
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
 };
@@ -41,7 +47,6 @@ static NTSTATUS remote_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
 {
-	dce_call->context->private_data = NULL;
 	return NT_STATUS_OK;
 }
 
@@ -50,8 +55,8 @@ static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
 {
 	const struct ndr_interface_table *table =
 		(const struct ndr_interface_table *)dce_call->context->iface->private_data;
-	void *ptr = NULL;
 	struct dcesrv_remote_private *priv = NULL;
+	struct dcesrv_remote_assoc *assoc = NULL;
 	const char *binding = NULL;
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
@@ -63,10 +68,10 @@ static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
 	uint32_t flags = 0;
 	NTSTATUS status;
 
-	ptr = dce_call->context->private_data;
-	if (ptr != NULL) {
-		priv = talloc_get_type_abort(ptr, struct dcesrv_remote_private);
-
+	priv = dcesrv_iface_state_find_conn(dce_call,
+					    DCESRV_REMOTE_PRIVATE_MAGIC,
+					    struct dcesrv_remote_private);
+	if (priv != NULL) {
 		*_priv = priv;
 		return NT_STATUS_OK;
 	}
@@ -74,6 +79,16 @@ static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
 	priv = talloc_zero(dce_call, struct dcesrv_remote_private);
 	if (priv == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	assoc = dcesrv_iface_state_find_assoc(dce_call,
+					DCESRV_REMOTE_ASSOC_MAGIC,
+					struct dcesrv_remote_assoc);
+	if (assoc == NULL) {
+		assoc = talloc_zero(dce_call, struct dcesrv_remote_assoc);
+		if (assoc == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	binding = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx,
@@ -152,9 +167,9 @@ static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
 	}
 
 	/* If we already have a remote association group ID, then use that */
-	if (dce_call->conn->assoc_group->proxied_id != 0) {
+	if (assoc->assoc_group_id != 0) {
 		status = dcerpc_binding_set_assoc_group_id(b,
-			dce_call->conn->assoc_group->proxied_id);
+			assoc->assoc_group_id);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("dcerpc_binding_set_assoc_group_id() - %s'\n",
 				  nt_errstr(status)));
@@ -201,17 +216,27 @@ static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	if (dce_call->conn->assoc_group->proxied_id == 0) {
-		dce_call->conn->assoc_group->proxied_id =
+	if (assoc->assoc_group_id == 0) {
+		assoc->assoc_group_id =
 			dcerpc_binding_get_assoc_group_id(priv->c_pipe->binding);
+		if (assoc->assoc_group_id == 0) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+
+		status = dcesrv_iface_state_store_assoc(dce_call,
+						DCESRV_REMOTE_ASSOC_MAGIC,
+						assoc);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
+	status = dcesrv_iface_state_store_conn(dce_call,
+					DCESRV_REMOTE_PRIVATE_MAGIC,
+					priv);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	dce_call->context->private_data = priv;
-	talloc_reparent(dce_call, dce_call->conn, priv);
 
 	*_priv = priv;
 	return NT_STATUS_OK;
