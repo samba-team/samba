@@ -186,9 +186,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                         dcerpc.DCERPC_PFC_FLAG_FIRST |
                                         dcerpc.DCERPC_PFC_FLAG_LAST)
 
-    # TODO: doesn't announce DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN
-    # without authentication
-    def _test_no_auth_request_bind_pfc_HDR_SIGNING(self):
+    def test_no_auth_request_bind_pfc_HDR_SIGNING(self):
         return self._test_no_auth_request_bind_pfc_flags(
                                         req_pfc_flags=0 |
                                         dcerpc.DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
@@ -285,9 +283,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                         dcerpc.DCERPC_PFC_FLAG_FIRST |
                                         dcerpc.DCERPC_PFC_FLAG_LAST)
 
-    # TODO: doesn't announce DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN
-    # without authentication
-    def _test_no_auth_request_alter_pfc_HDR_SIGNING(self):
+    def test_no_auth_request_alter_pfc_HDR_SIGNING(self):
         return self._test_no_auth_request_alter_pfc_flags(
                                         req_pfc_flags=0 |
                                         dcerpc.DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
@@ -342,9 +338,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                         dcerpc.DCERPC_PFC_FLAG_FIRST |
                                         dcerpc.DCERPC_PFC_FLAG_LAST)
 
-    # TODO: doesn't announce DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN
-    # without authentication
-    def _test_no_auth_request_alter_pfc_ff(self):
+    def test_no_auth_request_alter_pfc_ff(self):
         return self._test_no_auth_request_alter_pfc_flags(
                                         req_pfc_flags=0 |
                                         0xff |
