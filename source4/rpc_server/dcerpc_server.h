@@ -310,9 +310,6 @@ struct dcesrv_connection {
 	 */
 	const struct ndr_syntax_id *preferred_transfer;
 
-	/* the negotiated bind time features */
-	uint16_t bind_time_features;
-
 	/*
 	 * This is used to block the connection during
 	 * pending authentication.
@@ -358,6 +355,9 @@ struct dcesrv_assoc_group {
 
 	/* parent context */
 	struct dcesrv_context *dce_ctx;
+
+	/* the negotiated bind time features */
+	uint16_t bind_time_features;
 
 	/* Remote association group ID (if proxied) */
 	uint32_t proxied_id;

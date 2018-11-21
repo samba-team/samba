@@ -1107,7 +1107,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 				DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN;
 		}
 
-		call->conn->bind_time_features = a->reason.negotiate;
+		call->conn->assoc_group->bind_time_features = a->reason.negotiate;
 	}
 
 	/*
