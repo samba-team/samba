@@ -45,7 +45,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	const struct ndr_interface_table *table =
 		(const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	struct dcesrv_remote_private *priv;
-	const char *binding = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
+	const char *binding = NULL;
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
 	bool must_free_credentials = false;
@@ -64,7 +64,11 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	priv->c_pipe = NULL;
 	dce_call->context->private_data = priv;
 
-	if (!binding) {
+	binding = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx,
+				    NULL,
+				    "dcerpc_remote",
+				    "binding");
+	if (binding == NULL) {
 		DEBUG(0,("You must specify a DCE/RPC binding string\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
