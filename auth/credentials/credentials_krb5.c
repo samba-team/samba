@@ -896,11 +896,25 @@ static int cli_credentials_shallow_ccache(struct cli_credentials *cred)
 	const struct ccache_container *old_ccc = NULL;
 	struct ccache_container *ccc = NULL;
 	char *ccache_name = NULL;
+	krb5_principal princ;
 
 	old_ccc = cred->ccache;
 	if (old_ccc == NULL) {
 		return 0;
 	}
+
+	ret = krb5_cc_get_principal(
+		old_ccc->smb_krb5_context->krb5_context,
+		old_ccc->ccache,
+		&princ);
+	if (ret != 0) {
+		/*
+		 * This is an empty ccache. No point in copying anything.
+		 */
+		cred->ccache = NULL;
+		return 0;
+	}
+	krb5_free_principal(old_ccc->smb_krb5_context->krb5_context, princ);
 
 	ccc = talloc(cred, struct ccache_container);
 	if (ccc == NULL) {
