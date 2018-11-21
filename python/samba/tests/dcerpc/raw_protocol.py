@@ -29,10 +29,14 @@ import samba.dcerpc.misc as misc
 import samba.dcerpc.epmapper
 import samba.dcerpc.mgmt
 import samba.dcerpc.netlogon
+import samba.dcerpc.lsa
 import struct
 from samba import gensec
 from samba.tests.dcerpc.raw_testcase import RawDCERPCTest
 from samba.compat import binary_type
+from samba.ntstatus import (
+    NT_STATUS_SUCCESS
+)
 
 global_ndr_print = False
 global_hexdump = False
@@ -1437,6 +1441,41 @@ class TestDCERPC_BIND(RawDCERPCTest):
         btf1 = base.bind_time_features_syntax(features1)
 
         features2 = dcerpc.DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING
+        btf2 = base.bind_time_features_syntax(features2)
+
+        zero_syntax = misc.ndr_syntax_id()
+        ndr64 = base.transfer_syntax_ndr64()
+
+        tsf1_list = [btf1, btf2, zero_syntax]
+        ctx1 = dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = ndr64
+        ctx1.transfer_syntaxes = tsf1_list
+
+        req = self.generate_bind(call_id=0, ctx_list=[ctx1])
+        self.send_pdu(req)
+        rep = self.recv_pdu()
+        self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
+                        auth_length=0)
+        self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+        self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
+        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertEquals(rep.u.secondary_address_size, 4)
+        self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
+        self.assertPadding(rep.u._pad1, 2)
+        self.assertEquals(rep.u.num_results, 1)
+        self.assertEquals(rep.u.ctx_list[0].result,
+                          dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
+        self.assertEquals(rep.u.ctx_list[0].reason, features1)
+        self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
+        self.assertEquals(rep.u.auth_info, b'\0' * 0)
+
+    def test_no_auth_bind_time_sec_ctx_ignore_additional(self):
+        features1 = dcerpc.DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING
+        btf1 = base.bind_time_features_syntax(features1)
+
+        features2 = dcerpc.DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN
         btf2 = base.bind_time_features_syntax(features2)
 
         zero_syntax = misc.ndr_syntax_id()
@@ -5248,6 +5287,934 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNone(rep)
         self.assertNotConnected()
         return
+
+    def _test_lsa_multi_auth_connect1(self, smb_creds,
+                                      account_name0, authority_name0):
+        creds1 = self.get_anon_creds()
+        account_name1 = "ANONYMOUS LOGON"
+        authority_name1 = "NT AUTHORITY"
+        auth_type1 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level1 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id1 = 1
+
+        creds2 = self.get_user_creds()
+        account_name2 = creds2.get_username()
+        authority_name2 = creds2.get_domain()
+        auth_type2 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level2 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id2 = 2
+
+        abstract = samba.dcerpc.lsa.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsarpc',
+                                secondary_address='\\pipe\\lsass',
+                                transport_creds=smb_creds)
+        self.assertIsConnected()
+
+        tsf1_list = [transfer]
+        ctx1 = samba.dcerpc.dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = abstract
+        ctx1.transfer_syntaxes = tsf1_list
+
+        auth_context1 = self.get_auth_context_creds(creds=creds1,
+                                                    auth_type=auth_type1,
+                                                    auth_level=auth_level1,
+                                                    auth_context_id=auth_context_id1,
+                                                    hdr_signing=False)
+        auth_context2 = self.get_auth_context_creds(creds=creds2,
+                                                    auth_type=auth_type2,
+                                                    auth_level=auth_level2,
+                                                    auth_context_id=auth_context_id2,
+                                                    hdr_signing=False)
+
+        get_user_name = samba.dcerpc.lsa.GetUserName()
+        get_user_name.in_system_name = self.target_hostname
+        get_user_name.in_account_name = None
+        get_user_name.in_authority_name = base.ndr_pointer(None)
+
+        ack1 = self.do_generic_bind(call_id=0,
+                                    ctx=ctx1,
+                                    auth_context=auth_context1)
+
+        #
+        # With just one explicit auth context and that
+        # uses AUTH_LEVEL_CONNECT context.
+        #
+        # We always get that by default instead of the one default one
+        # inherited from the transport
+        #
+        self.do_single_request(call_id=1, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=2, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        ack2 = self.do_generic_bind(call_id=3,
+                                    ctx=ctx1,
+                                    auth_context=auth_context2,
+                                    assoc_group_id = ack1.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # Now we have two explicit auth contexts
+        #
+        # If we don't specify one of them we get the default one
+        # inherited from the transport
+        #
+        self.do_single_request(call_id=4, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        self.do_single_request(call_id=5, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=6, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context2)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
+
+        self.do_single_request(call_id=7, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        return
+
+    def test_lsa_multi_auth_connect1u(self):
+        smb_auth_creds = self.get_user_creds()
+        account_name0 = smb_auth_creds.get_username()
+        authority_name0 = smb_auth_creds.get_domain()
+        return self._test_lsa_multi_auth_connect1(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def test_lsa_multi_auth_connect1a(self):
+        smb_auth_creds = self.get_anon_creds()
+        account_name0 = "ANONYMOUS LOGON"
+        authority_name0 = "NT AUTHORITY"
+        return self._test_lsa_multi_auth_connect1(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def _test_lsa_multi_auth_connect2(self, smb_creds,
+                                      account_name0, authority_name0):
+        creds1 = self.get_anon_creds()
+        account_name1 = "ANONYMOUS LOGON"
+        authority_name1 = "NT AUTHORITY"
+        auth_type1 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level1 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id1 = 1
+
+        creds2 = self.get_user_creds()
+        account_name2 = creds2.get_username()
+        authority_name2 = creds2.get_domain()
+        auth_type2 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level2 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id2 = 2
+
+        abstract = samba.dcerpc.lsa.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsarpc',
+                                secondary_address='\\pipe\\lsass',
+                                transport_creds=smb_creds)
+        self.assertIsConnected()
+
+        tsf1_list = [transfer]
+        ctx1 = samba.dcerpc.dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = abstract
+        ctx1.transfer_syntaxes = tsf1_list
+
+        auth_context1 = self.get_auth_context_creds(creds=creds1,
+                                                    auth_type=auth_type1,
+                                                    auth_level=auth_level1,
+                                                    auth_context_id=auth_context_id1,
+                                                    hdr_signing=False)
+        auth_context2 = self.get_auth_context_creds(creds=creds2,
+                                                    auth_type=auth_type2,
+                                                    auth_level=auth_level2,
+                                                    auth_context_id=auth_context_id2,
+                                                    hdr_signing=False)
+
+        get_user_name = samba.dcerpc.lsa.GetUserName()
+        get_user_name.in_system_name = self.target_hostname
+        get_user_name.in_account_name = None
+        get_user_name.in_authority_name = base.ndr_pointer(None)
+
+        ack0 = self.do_generic_bind(call_id=0, ctx=ctx1)
+
+        #
+        # We use the default auth context
+        # inherited from the transport
+        #
+        self.do_single_request(call_id=1, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        ack1 = self.do_generic_bind(call_id=2,
+                                    ctx=ctx1,
+                                    auth_context=auth_context1,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # With just one explicit auth context and that
+        # uses AUTH_LEVEL_CONNECT context.
+        #
+        # We always get that by default instead of the one default one
+        # inherited from the transport
+        #
+        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=4, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        ack2 = self.do_generic_bind(call_id=5,
+                                    ctx=ctx1,
+                                    auth_context=auth_context2,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # Now we have two explicit auth contexts
+        #
+        # If we don't specify one of them we get the default one
+        # inherited from the transport (again)
+        #
+        self.do_single_request(call_id=6, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        self.do_single_request(call_id=7, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=8, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context2)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
+
+        self.do_single_request(call_id=9, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        return
+
+    def test_lsa_multi_auth_connect2u(self):
+        smb_auth_creds = self.get_user_creds()
+        account_name0 = smb_auth_creds.get_username()
+        authority_name0 = smb_auth_creds.get_domain()
+        return self._test_lsa_multi_auth_connect2(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def test_lsa_multi_auth_connect2a(self):
+        smb_auth_creds = self.get_anon_creds()
+        account_name0 = "ANONYMOUS LOGON"
+        authority_name0 = "NT AUTHORITY"
+        return self._test_lsa_multi_auth_connect2(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def _test_lsa_multi_auth_connect3(self, smb_creds,
+                                      account_name0, authority_name0):
+        creds1 = self.get_anon_creds()
+        account_name1 = "ANONYMOUS LOGON"
+        authority_name1 = "NT AUTHORITY"
+        auth_type1 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level1 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id1 = 1
+
+        creds2 = self.get_user_creds()
+        account_name2 = creds2.get_username()
+        authority_name2 = creds2.get_domain()
+        auth_type2 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level2 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id2 = 2
+
+        abstract = samba.dcerpc.lsa.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsarpc',
+                                secondary_address='\\pipe\\lsass',
+                                transport_creds=smb_creds)
+        self.assertIsConnected()
+
+        tsf1_list = [transfer]
+        ctx1 = samba.dcerpc.dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = abstract
+        ctx1.transfer_syntaxes = tsf1_list
+
+        auth_context1 = self.get_auth_context_creds(creds=creds1,
+                                                    auth_type=auth_type1,
+                                                    auth_level=auth_level1,
+                                                    auth_context_id=auth_context_id1,
+                                                    hdr_signing=False)
+        auth_context2 = self.get_auth_context_creds(creds=creds2,
+                                                    auth_type=auth_type2,
+                                                    auth_level=auth_level2,
+                                                    auth_context_id=auth_context_id2,
+                                                    hdr_signing=False)
+
+        get_user_name = samba.dcerpc.lsa.GetUserName()
+        get_user_name.in_system_name = self.target_hostname
+        get_user_name.in_account_name = None
+        get_user_name.in_authority_name = base.ndr_pointer(None)
+
+        ack0 = self.do_generic_bind(call_id=0, ctx=ctx1)
+
+        #
+        # We use the default auth context
+        # inherited from the transport
+        #
+        self.do_single_request(call_id=1, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        ack1 = self.do_generic_bind(call_id=2,
+                                    ctx=ctx1,
+                                    auth_context=auth_context1,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # With just one explicit auth context and that
+        # uses AUTH_LEVEL_CONNECT context.
+        #
+        # We always get that by default instead of the one default one
+        # inherited from the transport
+        #
+        # Until an explicit usage resets that mode
+        #
+        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=4, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=5, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=6, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        ack2 = self.do_generic_bind(call_id=7,
+                                    ctx=ctx1,
+                                    auth_context=auth_context2,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+        #
+        # A new auth context won't change that mode again.
+        #
+        self.do_single_request(call_id=8, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        self.do_single_request(call_id=9, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=10, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context2)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
+
+        self.do_single_request(call_id=11, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        return
+
+    def test_lsa_multi_auth_connect3u(self):
+        smb_auth_creds = self.get_user_creds()
+        account_name0 = smb_auth_creds.get_username()
+        authority_name0 = smb_auth_creds.get_domain()
+        return self._test_lsa_multi_auth_connect3(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def test_lsa_multi_auth_connect3a(self):
+        smb_auth_creds = self.get_anon_creds()
+        account_name0 = "ANONYMOUS LOGON"
+        authority_name0 = "NT AUTHORITY"
+        return self._test_lsa_multi_auth_connect3(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def _test_lsa_multi_auth_connect4(self, smb_creds,
+                                      account_name0, authority_name0):
+        creds1 = self.get_anon_creds()
+        account_name1 = "ANONYMOUS LOGON"
+        authority_name1 = "NT AUTHORITY"
+        auth_type1 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level1 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id1 = 1
+
+        creds2 = self.get_user_creds()
+        account_name2 = creds2.get_username()
+        authority_name2 = creds2.get_domain()
+        auth_type2 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level2 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id2 = 2
+
+        creds3 = self.get_anon_creds()
+        account_name3 = "ANONYMOUS LOGON"
+        authority_name3 = "NT AUTHORITY"
+        auth_type3 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level3 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id3 = 3
+
+        creds4 = self.get_user_creds()
+        account_name4 = creds4.get_username()
+        authority_name4 = creds4.get_domain()
+        auth_type4 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level4 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id4 = 4
+
+        abstract = samba.dcerpc.lsa.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsarpc',
+                                secondary_address='\\pipe\\lsass',
+                                transport_creds=smb_creds)
+        self.assertIsConnected()
+
+        tsf1_list = [transfer]
+        ctx1 = samba.dcerpc.dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = abstract
+        ctx1.transfer_syntaxes = tsf1_list
+
+        auth_context1 = self.get_auth_context_creds(creds=creds1,
+                                                    auth_type=auth_type1,
+                                                    auth_level=auth_level1,
+                                                    auth_context_id=auth_context_id1,
+                                                    hdr_signing=False)
+        auth_context2 = self.get_auth_context_creds(creds=creds2,
+                                                    auth_type=auth_type2,
+                                                    auth_level=auth_level2,
+                                                    auth_context_id=auth_context_id2,
+                                                    hdr_signing=False)
+        auth_context3 = self.get_auth_context_creds(creds=creds3,
+                                                    auth_type=auth_type3,
+                                                    auth_level=auth_level3,
+                                                    auth_context_id=auth_context_id3,
+                                                    hdr_signing=False)
+        auth_context4 = self.get_auth_context_creds(creds=creds4,
+                                                    auth_type=auth_type4,
+                                                    auth_level=auth_level4,
+                                                    auth_context_id=auth_context_id4,
+                                                    hdr_signing=False)
+
+        get_user_name = samba.dcerpc.lsa.GetUserName()
+        get_user_name.in_system_name = self.target_hostname
+        get_user_name.in_account_name = None
+        get_user_name.in_authority_name = base.ndr_pointer(None)
+
+        ack0 = self.do_generic_bind(call_id=0, ctx=ctx1)
+
+        #
+        # We use the default auth context
+        # inherited from the transport
+        #
+        self.do_single_request(call_id=1, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        ack1 = self.do_generic_bind(call_id=2,
+                                    ctx=ctx1,
+                                    auth_context=auth_context1,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # With just one explicit auth context and that
+        # uses AUTH_LEVEL_CONNECT context.
+        #
+        # We always get that by default instead of the one default one
+        # inherited from the transport
+        #
+        # Until a new explicit context resets the mode
+        #
+        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=4, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        ack2 = self.do_generic_bind(call_id=5,
+                                    ctx=ctx1,
+                                    auth_context=auth_context2,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # A new auth context with LEVEL_CONNECT resets the default.
+        #
+        self.do_single_request(call_id=6, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
+
+        self.do_single_request(call_id=7, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
+
+        ack3 = self.do_generic_bind(call_id=8,
+                                    ctx=ctx1,
+                                    auth_context=auth_context3,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # A new auth context with LEVEL_CONNECT resets the default.
+        #
+        self.do_single_request(call_id=9, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
+
+        self.do_single_request(call_id=10, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
+
+        ack4 = self.do_generic_bind(call_id=11,
+                                    ctx=ctx1,
+                                    auth_context=auth_context4,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # A new auth context with LEVEL_CONNECT resets the default.
+        #
+        self.do_single_request(call_id=12, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name4)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name4)
+
+        self.do_single_request(call_id=13, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name4)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name4)
+
+        #
+        # Only the explicit usage of any context reset that mode
+        #
+        self.do_single_request(call_id=14, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=15, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        self.do_single_request(call_id=16, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=17, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context2)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
+
+        self.do_single_request(call_id=18, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context3)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
+
+        self.do_single_request(call_id=19, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context4)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name4)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name4)
+
+        self.do_single_request(call_id=20, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        return
+
+    def test_lsa_multi_auth_connect4u(self):
+        smb_auth_creds = self.get_user_creds()
+        account_name0 = smb_auth_creds.get_username()
+        authority_name0 = smb_auth_creds.get_domain()
+        return self._test_lsa_multi_auth_connect4(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def test_lsa_multi_auth_connect4a(self):
+        smb_auth_creds = self.get_anon_creds()
+        account_name0 = "ANONYMOUS LOGON"
+        authority_name0 = "NT AUTHORITY"
+        return self._test_lsa_multi_auth_connect4(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def _test_lsa_multi_auth_sign_connect1(self, smb_creds,
+                                           account_name0, authority_name0):
+
+        creds1 = self.get_user_creds()
+        account_name1 = creds1.get_username()
+        authority_name1 = creds1.get_domain()
+        auth_type1 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level1 = dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY
+        auth_context_id1 = 1
+
+        creds2 = self.get_user_creds()
+        account_name2 = creds2.get_username()
+        authority_name2 = creds2.get_domain()
+        auth_type2 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level2 = dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY
+        auth_context_id2 = 2
+
+        creds3 = self.get_anon_creds()
+        account_name3 = "ANONYMOUS LOGON"
+        authority_name3 = "NT AUTHORITY"
+        auth_type3 = dcerpc.DCERPC_AUTH_TYPE_NTLMSSP
+        auth_level3 = dcerpc.DCERPC_AUTH_LEVEL_CONNECT
+        auth_context_id3 = 3
+
+        abstract = samba.dcerpc.lsa.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsarpc',
+                                secondary_address='\\pipe\\lsass',
+                                transport_creds=smb_creds)
+        self.assertIsConnected()
+
+        tsf1_list = [transfer]
+        ctx1 = samba.dcerpc.dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = abstract
+        ctx1.transfer_syntaxes = tsf1_list
+
+        auth_context1 = self.get_auth_context_creds(creds=creds1,
+                                                    auth_type=auth_type1,
+                                                    auth_level=auth_level1,
+                                                    auth_context_id=auth_context_id1,
+                                                    hdr_signing=False)
+        auth_context2 = self.get_auth_context_creds(creds=creds2,
+                                                    auth_type=auth_type2,
+                                                    auth_level=auth_level2,
+                                                    auth_context_id=auth_context_id2,
+                                                    hdr_signing=False)
+        auth_context3 = self.get_auth_context_creds(creds=creds3,
+                                                    auth_type=auth_type3,
+                                                    auth_level=auth_level3,
+                                                    auth_context_id=auth_context_id3,
+                                                    hdr_signing=False)
+
+        get_user_name = samba.dcerpc.lsa.GetUserName()
+        get_user_name.in_system_name = self.target_hostname
+        get_user_name.in_account_name = None
+        get_user_name.in_authority_name = base.ndr_pointer(None)
+
+        ack1 = self.do_generic_bind(call_id=0,
+                                    ctx=ctx1,
+                                    auth_context=auth_context1)
+
+        #
+        # With just one explicit auth context and that
+        # *not* uses AUTH_LEVEL_CONNECT context.
+        #
+        # We don't get the by default (auth_context1)
+        #
+        self.do_single_request(call_id=1, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        self.do_single_request(call_id=2, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        ack2 = self.do_generic_bind(call_id=4,
+                                    ctx=ctx1,
+                                    auth_context=auth_context2,
+                                    assoc_group_id = ack1.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # With just two explicit auth context and
+        # *none* uses AUTH_LEVEL_CONNECT context.
+        #
+        # We don't get auth_context1 or auth_context2 by default
+        #
+        self.do_single_request(call_id=5, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        self.do_single_request(call_id=6, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=7, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context2)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
+
+        self.do_single_request(call_id=8, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        ack3 = self.do_generic_bind(call_id=9,
+                                    ctx=ctx1,
+                                    auth_context=auth_context3,
+                                    assoc_group_id = ack1.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        #
+        # Now we have tree explicit auth contexts,
+        # but just one with AUTH_LEVEL_CONNECT
+        #
+        # If we don't specify one of them we get
+        # that one auth_level_connect context.
+        #
+        # Until an explicit usage of any auth context reset that mode.
+        #
+        self.do_single_request(call_id=10, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
+
+        self.do_single_request(call_id=11, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
+
+        self.do_single_request(call_id=12, ctx=ctx1, io=get_user_name,
+                               auth_context=auth_context1)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
+
+        self.do_single_request(call_id=13, ctx=ctx1, io=get_user_name)
+        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+        self.assertEqualsStrLower(get_user_name.out_account_name, account_name0)
+        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name0)
+
+        return
+
+    def test_lsa_multi_auth_sign_connect1u(self):
+        smb_auth_creds = self.get_user_creds()
+        account_name0 = smb_auth_creds.get_username()
+        authority_name0 = smb_auth_creds.get_domain()
+        return self._test_lsa_multi_auth_sign_connect1(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+    def test_lsa_multi_auth_sign_connect1a(self):
+        smb_auth_creds = self.get_anon_creds()
+        account_name0 = "ANONYMOUS LOGON"
+        authority_name0 = "NT AUTHORITY"
+        return self._test_lsa_multi_auth_sign_connect1(smb_auth_creds,
+                                                  account_name0,
+                                                  authority_name0)
+
+    def test_spnego_multiple_auth_hdr_signing(self):
+        auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
+        auth_level1 = dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY
+        auth_context_id1=1
+        auth_level2 = dcerpc.DCERPC_AUTH_LEVEL_PACKET
+        auth_context_id2=2
+
+        creds = self.get_user_creds()
+
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        tsf1_list = [transfer]
+        ctx = samba.dcerpc.dcerpc.ctx_list()
+        ctx.context_id = 1
+        ctx.num_transfer_syntaxes = len(tsf1_list)
+        ctx.abstract_syntax = abstract
+        ctx.transfer_syntaxes = tsf1_list
+
+        auth_context1 = self.get_auth_context_creds(creds=creds,
+                                                    auth_type=auth_type,
+                                                    auth_level=auth_level1,
+                                                    auth_context_id=auth_context_id1,
+                                                    hdr_signing=False)
+        auth_context2 = self.get_auth_context_creds(creds=creds,
+                                                    auth_type=auth_type,
+                                                    auth_level=auth_level2,
+                                                    auth_context_id=auth_context_id2,
+                                                    hdr_signing=False)
+
+        ack0 = self.do_generic_bind(call_id=1, ctx=ctx)
+
+        ack1 = self.do_generic_bind(call_id=2,
+                                    ctx=ctx,
+                                    auth_context=auth_context1,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+        ack2 = self.do_generic_bind(call_id=3,
+                                    ctx=ctx,
+                                    auth_context=auth_context2,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        inq_if_ids = samba.dcerpc.mgmt.inq_if_ids()
+        self.do_single_request(call_id=4, ctx=ctx, io=inq_if_ids)
+        self.do_single_request(call_id=5, ctx=ctx, io=inq_if_ids,
+                               auth_context=auth_context1)
+        self.do_single_request(call_id=6, ctx=ctx, io=inq_if_ids,
+                               auth_context=auth_context2)
+
+        ack3 = self.do_generic_bind(call_id=7, ctx=ctx,
+                                    pfc_flags=dcerpc.DCERPC_PFC_FLAG_FIRST |
+                                    dcerpc.DCERPC_PFC_FLAG_LAST |
+                                    dcerpc.DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN,
+                                    assoc_group_id = ack0.u.assoc_group_id,
+                                    start_with_alter=True)
+
+        self.assertFalse(auth_context1['hdr_signing'])
+        auth_context1['hdr_signing'] = True
+        auth_context1["gensec"].want_feature(gensec.FEATURE_SIGN_PKT_HEADER)
+
+        self.do_single_request(call_id=8, ctx=ctx, io=inq_if_ids)
+        self.do_single_request(call_id=9, ctx=ctx, io=inq_if_ids,
+                               auth_context=auth_context1)
+        self.do_single_request(call_id=10, ctx=ctx, io=inq_if_ids,
+                               auth_context=auth_context2,
+                               fault_status=dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
+
+        # wait for a disconnect
+        rep = self.recv_pdu()
+        self.assertIsNone(rep)
+        self.assertNotConnected()
+
+    def test_multiple_auth_limit(self):
+        creds = self.get_user_creds()
+
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        tsf1_list = [transfer]
+        ctx = samba.dcerpc.dcerpc.ctx_list()
+        ctx.context_id = 1
+        ctx.num_transfer_syntaxes = len(tsf1_list)
+        ctx.abstract_syntax = abstract
+        ctx.transfer_syntaxes = tsf1_list
+
+        ack0 = self.do_generic_bind(call_id=0, ctx=ctx)
+
+        is_server_listening = samba.dcerpc.mgmt.is_server_listening()
+
+        max_num_auth_str = samba.tests.env_get_var_value('MAX_NUM_AUTH', allow_missing=True)
+        if max_num_auth_str is not None:
+            max_num_auth = int(max_num_auth_str)
+        else:
+            max_num_auth = 2049
+
+        for i in range(1, max_num_auth+2):
+            auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
+            auth_level = dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY
+            auth_context_id = i
+
+            auth_context = self.get_auth_context_creds(creds=creds,
+                                                       auth_type=auth_type,
+                                                       auth_level=auth_level,
+                                                       auth_context_id=auth_context_id,
+                                                       hdr_signing=False)
+
+            alter_fault = None
+            if i > max_num_auth:
+                alter_fault = dcerpc.DCERPC_NCA_S_PROTO_ERROR
+
+            ack = self.do_generic_bind(call_id=auth_context_id,
+                                       ctx=ctx,
+                                       auth_context=auth_context,
+                                       assoc_group_id = ack0.u.assoc_group_id,
+                                       alter_fault=alter_fault,
+                                       start_with_alter=True,
+                                       )
+            if alter_fault is not None:
+                break
+
+
+            self.do_single_request(call_id=auth_context_id,
+                                   ctx=ctx, io=is_server_listening,
+                                   auth_context=auth_context)
+
+        # wait for a disconnect
+        rep = self.recv_pdu()
+        self.assertIsNone(rep)
+        self.assertNotConnected()
+        return
+
 
 if __name__ == "__main__":
     global_ndr_print = True

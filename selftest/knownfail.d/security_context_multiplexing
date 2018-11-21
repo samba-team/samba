@@ -1,0 +1,4 @@
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_lsa_multi_auth.*
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_spnego_multiple_auth_hdr_signing
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_multiple_auth_limit
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_no_auth_bind_time_sec_ctx_ignore_additional
