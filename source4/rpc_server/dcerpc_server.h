@@ -268,9 +268,6 @@ struct dcesrv_connection {
 	/* the server_id that will be used for this connection */
 	struct server_id server_id;
 
-	/* the transport level session key */
-	DATA_BLOB transport_session_key;
-
 	/* is this connection pending termination?  If so, why? */
 	const char *terminate;
 
