@@ -619,7 +619,7 @@ _PUBLIC_ const struct socket_ops *socket_getops_byname(const char *family, enum 
 		return socket_ipv4_ops(type);
 	}
 
-#if HAVE_IPV6
+#ifdef HAVE_IPV6
 	if (strcmp("ipv6", family) == 0) {
 		return socket_ipv6_ops(type);
 	}

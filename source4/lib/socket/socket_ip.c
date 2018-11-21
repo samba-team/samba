@@ -557,7 +557,7 @@ _PUBLIC_ const struct socket_ops *socket_ipv4_ops(enum socket_type type)
 	return &ipv4_ops;
 }
 
-#if HAVE_IPV6
+#ifdef HAVE_IPV6
 
 static struct in6_addr interpret_addr6(const char *name)
 {

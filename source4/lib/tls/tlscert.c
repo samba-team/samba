@@ -103,7 +103,7 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	TLSCHECK(gnutls_x509_crt_set_key_usage(cacrt, GNUTLS_KEY_KEY_CERT_SIGN | GNUTLS_KEY_CRL_SIGN));
 	TLSCHECK(gnutls_x509_crt_set_version(cacrt, 3));
 	TLSCHECK(gnutls_x509_crt_get_key_id(cacrt, 0, keyid, &keyidsize));
-#if HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID
+#ifdef HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID
 	TLSCHECK(gnutls_x509_crt_set_subject_key_id(cacrt, keyid, keyidsize));
 #endif
 	TLSCHECK(gnutls_x509_crt_sign2(cacrt, cacrt, cakey,
@@ -130,7 +130,7 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 #endif
 	TLSCHECK(gnutls_x509_crt_set_version(crt, 3));
 	TLSCHECK(gnutls_x509_crt_get_key_id(crt, 0, keyid, &keyidsize));
-#if HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID
+#ifdef HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID
 	TLSCHECK(gnutls_x509_crt_set_subject_key_id(crt, keyid, keyidsize));
 #endif
 	TLSCHECK(gnutls_x509_crt_sign2(crt, crt, key,
