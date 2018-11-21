@@ -15,6 +15,8 @@ sys.path.insert(0, "bin/python")
 import samba
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.compat import cmp_fn
+from samba.compat import cmp_to_key_fn
+from samba.compat import text_type
 import samba.getopt as options
 
 from samba.auth import system_session
@@ -47,8 +49,9 @@ creds = credopts.get_credentials(lp)
 
 
 def norm(x):
-    x = x.decode('utf-8')
-    return normalize('NFKC', x).upper().encode('utf-8')
+    if not isinstance(x, text_type):
+        x = x.decode('utf8')
+    return normalize('NFKC', x).upper()
 
 
 # Python, Windows, and Samba all sort the following sequence in
@@ -171,7 +174,7 @@ class BaseSortTests(samba.tests.TestCase):
         for k in self.locale_sorted_keys:
             # Using key=locale.strxfrm fails on \x00
             forward = sorted((norm(x[k]) for x in self.users),
-                             cmp=locale.strcoll)
+                             key=cmp_to_key_fn(locale.strcoll))
             reverse = list(reversed(forward))
             self.expected_results[k] = (forward, reverse)
 
@@ -228,7 +231,7 @@ class BaseSortTests(samba.tests.TestCase):
                     print("expected", expected_order)
                     print("recieved", received_order)
                     print("unnormalised:", [x[attr][0] for x in res])
-                    print("unnormalised: «%s»" % '»  «'.join(x[attr][0]
+                    print("unnormalised: «%s»" % '»  «'.join(str(x[attr][0])
                                                              for x in res))
                 self.assertEquals(expected_order, received_order)
 
@@ -242,7 +245,7 @@ class BaseSortTests(samba.tests.TestCase):
 
                 self.assertEqual(len(res), len(self.users))
                 expected_order = self.expected_results_binary[attr][rev]
-                received_order = [x[attr][0] for x in res]
+                received_order = [str(x[attr][0]) for x in res]
                 if expected_order != received_order:
                     print(attr)
                     print(expected_order)
@@ -275,7 +278,7 @@ class BaseSortTests(samba.tests.TestCase):
                         print("expected: ", expected_order)
                         print("recieved: ", received_order)
                         print("unnormalised:", [x[attr][0] for x in res])
-                        print("unnormalised: «%s»" % '»  «'.join(x[attr][0]
+                        print("unnormalised: «%s»" % '»  «'.join(str(x[attr][0])
                                                                  for x in res))
 
                     self.assertEquals(expected_order, received_order)
@@ -298,13 +301,13 @@ class BaseSortTests(samba.tests.TestCase):
                           "employeeNumber": cmp_locale,
                           "accountExpires": cmp_numeric,
                           "msTSExpireDate4": cmp_binary}
-        attrs = sort_functions.keys()
+        attrs = list(sort_functions.keys())
         attr_pairs = zip(attrs, attrs[1:] + attrs[:1])
 
         for sort_attr, result_attr in attr_pairs:
             forward = sorted(((norm(x[sort_attr]), norm(x[result_attr]))
                              for x in self.users),
-                             cmp=sort_functions[sort_attr])
+                             key=cmp_to_key_fn(sort_functions[sort_attr]))
             reverse = list(reversed(forward))
 
             for rev in (0, 1):
@@ -324,7 +327,7 @@ class BaseSortTests(samba.tests.TestCase):
                     print("expected", expected_order)
                     print("recieved", received_order)
                     print("unnormalised:", [x[result_attr][0] for x in res])
-                    print("unnormalised: «%s»" % '»  «'.join(x[result_attr][0]
+                    print("unnormalised: «%s»" % '»  «'.join(str(x[result_attr][0])
                                                              for x in res))
                     print("pairs:", pairs)
                     # There are bugs in Windows that we don't want (or
