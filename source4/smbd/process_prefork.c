@@ -121,7 +121,7 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 				int signum, int count, void *siginfo,
 				void *private_data)
 {
-#if HAVE_GETPGRP
+#ifdef HAVE_GETPGRP
 	if (getpgrp() == getpid()) {
 		/*
 		 * We're the process group leader, send
