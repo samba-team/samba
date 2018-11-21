@@ -189,6 +189,7 @@ struct dcesrv_handle {
 	struct dcesrv_assoc_group *assoc_group;
 	struct policy_handle wire_handle;
 	struct dom_sid *sid;
+	enum dcerpc_AuthLevel min_auth_level;
 	const struct dcesrv_interface *iface;
 	void *data;
 };

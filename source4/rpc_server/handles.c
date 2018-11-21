@@ -65,6 +65,7 @@ struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
 		talloc_free(h);
 		return NULL;
 	}
+	h->min_auth_level = call->auth_state->auth_level;
 	h->assoc_group = context->conn->assoc_group;
 	h->iface = context->iface;
 	h->wire_handle.handle_type = handle_type;
@@ -118,6 +119,12 @@ struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
 				DEBUG(0,(__location__ ": Attempt to use invalid sid %s - %s\n",
 					 dom_sid_string(context, h->sid),
 					 dom_sid_string(context, sid)));
+				return NULL;
+			}
+			if (call->auth_state->auth_level < h->min_auth_level) {
+				DEBUG(0,(__location__ ": Attempt to use invalid auth_level %u < %u\n",
+					 call->auth_state->auth_level,
+					 h->min_auth_level));
 				return NULL;
 			}
 			if (h->iface != context->iface) {
