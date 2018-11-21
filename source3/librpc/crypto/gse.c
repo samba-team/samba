@@ -236,6 +236,10 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 
 err_out:
+	if (gse_ctx->k5ctx) {
+		krb5_free_context(gse_ctx->k5ctx);
+	}
+
 	TALLOC_FREE(gse_ctx);
 	return status;
 }
