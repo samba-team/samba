@@ -2982,7 +2982,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         req = self.generate_auth3(call_id=0,
                                   auth_info=auth_info)
         self.send_pdu(req)
-        rep = self.recv_pdu()
+        rep = self.recv_pdu(timeout=0.01)
         self.assertIsNone(rep)
         self.assertIsConnected()
 
@@ -4231,6 +4231,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
         req = self.generate_auth3(call_id=0,
                                   auth_info=auth_info)
         self.send_pdu(req)
+        rep = self.recv_pdu(timeout=0.01)
+        self.assertIsNone(rep)
         self.assertIsConnected()
 
         # And now try a request without auth_info
