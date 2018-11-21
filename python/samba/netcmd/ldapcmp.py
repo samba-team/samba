@@ -743,14 +743,14 @@ class LDAPBundle(object):
             if self_only:
                 res = False
                 self.log("\n* DNs found only in %s:" % self.con.host)
-                for x in self_only:
+                for x in sorted(self_only):
                     self.log(4 * " " + x)
 
             other_only = other_dns - self_dns  # missing in self
             if other_only:
                 res = False
                 self.log("\n* DNs found only in %s:" % other.con.host)
-                for x in other_only:
+                for x in sorted(other_only):
                     self.log(4 * " " + x)
 
         common_dns = self_dns & other_dns
