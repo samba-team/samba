@@ -45,7 +45,8 @@ static NTSTATUS remote_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
+static NTSTATUS remote_op_bind(struct dcesrv_connection_context *context,
+			       const struct dcesrv_interface *iface)
 {
 	return NT_STATUS_OK;
 }

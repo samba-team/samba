@@ -45,8 +45,8 @@
 #include "rpc_server/common/sid_helper.h"
 #include "lib/util/util_str_escape.h"
 
-#define DCESRV_INTERFACE_NETLOGON_BIND(call, iface) \
-       dcesrv_interface_netlogon_bind(call, iface)
+#define DCESRV_INTERFACE_NETLOGON_BIND(context, iface) \
+       dcesrv_interface_netlogon_bind(context, iface)
 
 /*
  * This #define allows the netlogon interface to accept invalid
@@ -57,10 +57,9 @@
  */
 #define DCESRV_INTERFACE_NETLOGON_FLAGS DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED
 
-static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_call_state *dce_call,
+static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context *context,
 					       const struct dcesrv_interface *iface)
 {
-	struct dcesrv_connection_context *context = dce_call->context;
 	return dcesrv_interface_bind_reject_connect(context, iface);
 }
 

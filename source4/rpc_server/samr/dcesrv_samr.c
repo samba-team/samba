@@ -41,12 +41,11 @@
 #include "lib/util/tsort.h"
 #include "libds/common/flag_mapping.h"
 
-#define DCESRV_INTERFACE_SAMR_BIND(call, iface) \
-       dcesrv_interface_samr_bind(call, iface)
-static NTSTATUS dcesrv_interface_samr_bind(struct dcesrv_call_state *dce_call,
+#define DCESRV_INTERFACE_SAMR_BIND(context, iface) \
+       dcesrv_interface_samr_bind(context, iface)
+static NTSTATUS dcesrv_interface_samr_bind(struct dcesrv_connection_context *context,
 					     const struct dcesrv_interface *iface)
 {
-	struct dcesrv_connection_context *context = dce_call->context;
 	return dcesrv_interface_bind_reject_connect(context, iface);
 }
 

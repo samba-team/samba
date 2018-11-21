@@ -24,8 +24,8 @@
 #include "rpc_server/dcerpc_server_proto.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
 
-#define DCESRV_INTERFACE_MGMT_BIND(call, iface) \
-       dcesrv_interface_mgmt_bind(call, iface)
+#define DCESRV_INTERFACE_MGMT_BIND(context, iface) \
+       dcesrv_interface_mgmt_bind(context, iface)
 /*
  * This #define allows the mgmt interface to accept invalid
  * association groups, because association groups are to coordinate
@@ -36,10 +36,9 @@
 
 #define DCESRV_INTERFACE_MGMT_FLAGS DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED
 
-static NTSTATUS dcesrv_interface_mgmt_bind(struct dcesrv_call_state *dce_call,
+static NTSTATUS dcesrv_interface_mgmt_bind(struct dcesrv_connection_context *context,
 					     const struct dcesrv_interface *iface)
 {
-	struct dcesrv_connection_context *context = dce_call->context;
 	return dcesrv_interface_bind_allow_connect(context, iface);
 }
 

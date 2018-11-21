@@ -42,12 +42,11 @@
 #include <gnutls/crypto.h>
 #include <gnutls/abstract.h>
 
-#define DCESRV_INTERFACE_BACKUPKEY_BIND(call, iface) \
-	dcesrv_interface_backupkey_bind(call, iface)
-static NTSTATUS dcesrv_interface_backupkey_bind(struct dcesrv_call_state *dce_call,
+#define DCESRV_INTERFACE_BACKUPKEY_BIND(context, iface) \
+	dcesrv_interface_backupkey_bind(context, iface)
+static NTSTATUS dcesrv_interface_backupkey_bind(struct dcesrv_connection_context *context,
 						const struct dcesrv_interface *iface)
 {
-	struct dcesrv_connection_context *context = dce_call->context;
 	return dcesrv_interface_bind_require_privacy(context, iface);
 }
 

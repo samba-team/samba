@@ -35,12 +35,11 @@
 #include "lib/messaging/irpc.h"
 #include "libds/common/roles.h"
 
-#define DCESRV_INTERFACE_LSARPC_BIND(call, iface) \
-       dcesrv_interface_lsarpc_bind(call, iface)
-static NTSTATUS dcesrv_interface_lsarpc_bind(struct dcesrv_call_state *dce_call,
+#define DCESRV_INTERFACE_LSARPC_BIND(context, iface) \
+       dcesrv_interface_lsarpc_bind(context, iface)
+static NTSTATUS dcesrv_interface_lsarpc_bind(struct dcesrv_connection_context *context,
 					     const struct dcesrv_interface *iface)
 {
-	struct dcesrv_connection_context *context = dce_call->context;
 	return dcesrv_interface_bind_reject_connect(context, iface);
 }
 

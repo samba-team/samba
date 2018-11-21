@@ -26,12 +26,11 @@
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "lib/events/events.h"
 
-#define DCESRV_INTERFACE_RPCECHO_BIND(call, iface) \
-       dcesrv_interface_rpcecho_bind(call, iface)
-static NTSTATUS dcesrv_interface_rpcecho_bind(struct dcesrv_call_state *dce_call,
+#define DCESRV_INTERFACE_RPCECHO_BIND(context, iface) \
+       dcesrv_interface_rpcecho_bind(context, iface)
+static NTSTATUS dcesrv_interface_rpcecho_bind(struct dcesrv_connection_context *context,
 					      const struct dcesrv_interface *iface)
 {
-	struct dcesrv_connection_context *context = dce_call->context;
 	return dcesrv_interface_bind_allow_connect(context, iface);
 }
 

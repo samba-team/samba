@@ -45,7 +45,7 @@ struct dcesrv_interface {
 	struct ndr_syntax_id syntax_id;
 
 	/* this function is called when the client binds to this interface  */
-	NTSTATUS (*bind)(struct dcesrv_call_state *, const struct dcesrv_interface *, uint32_t if_version);
+	NTSTATUS (*bind)(struct dcesrv_connection_context *, const struct dcesrv_interface *);
 
 	/* this function is called when the client disconnects the endpoint */
 	void (*unbind)(struct dcesrv_connection_context *, const struct dcesrv_interface *);

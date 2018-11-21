@@ -28,12 +28,11 @@
 #include "dns_server/dnsserver_common.h"
 #include "dnsserver.h"
 
-#define DCESRV_INTERFACE_DNSSERVER_BIND(call, iface) \
-	dcesrv_interface_dnsserver_bind(call, iface)
-static NTSTATUS dcesrv_interface_dnsserver_bind(struct dcesrv_call_state *dce_call,
+#define DCESRV_INTERFACE_DNSSERVER_BIND(context, iface) \
+	dcesrv_interface_dnsserver_bind(context, iface)
+static NTSTATUS dcesrv_interface_dnsserver_bind(struct dcesrv_connection_context *context,
 					        const struct dcesrv_interface *iface)
 {
-	struct dcesrv_connection_context *context = dce_call->context;
 	return dcesrv_interface_bind_require_integrity(context, iface);
 }
 
