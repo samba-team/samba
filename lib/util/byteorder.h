@@ -118,9 +118,9 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 {
 	__asm__ ("stwbrx %1,0,%2" : "=m" (*addr) : "r" (val), "r" (addr));
 }
-#define HAVE_ASM_BYTEORDER 1
+#define USE_ASM_BYTEORDER 1
 #else
-#define HAVE_ASM_BYTEORDER 0
+#define USE_ASM_BYTEORDER 0
 #endif
 
 #define CVAL(buf,pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
@@ -128,7 +128,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define PVAL(buf,pos) (CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL_NC(buf,pos) = (val))
 
-#if HAVE_ASM_BYTEORDER
+#if USE_ASM_BYTEORDER
 
 #define  _PTRPOS(buf,pos) (((const uint8_t *)(buf))+(pos))
 #define SVAL(buf,pos) ld_le16((const uint16_t *)_PTRPOS(buf,pos))
@@ -140,7 +140,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define SSVALS(buf,pos,val) SSVAL((buf),(pos),((int16_t)(val)))
 #define SIVALS(buf,pos,val) SIVAL((buf),(pos),((int32_t)(val)))
 
-#else /* not HAVE_ASM_BYTEORDER */
+#else /* not USE_ASM_BYTEORDER */
 
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 #define IVAL(buf,pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
@@ -153,7 +153,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16_t)(val)))
 #define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32_t)(val)))
 
-#endif /* not HAVE_ASM_BYTEORDER */
+#endif /* not USE_ASM_BYTEORDER */
 
 /* 64 bit macros */
 #define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
