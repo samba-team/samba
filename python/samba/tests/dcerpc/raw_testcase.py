@@ -282,7 +282,10 @@ class RawDCERPCTest(TestCase):
                         samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                         assoc_group_id=0, call_id=0,
                         nak_reason=None, alter_fault=None,
-                        start_with_alter=False):
+                        start_with_alter=False,
+                        pfc_flags_2nd=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                        samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
+                        use_auth3=False):
         ctx_list = [ctx]
 
         if auth_context is not None:
@@ -392,14 +395,25 @@ class RawDCERPCTest(TestCase):
             if auth_context['hdr_signing']:
                 auth_context["gensec"].want_feature(gensec.FEATURE_SIGN_PKT_HEADER)
         else:
+            self.assertFalse(use_auth3)
             self.assertFalse(finished)
 
         auth_info = self.generate_auth(auth_type=auth_context["auth_type"],
                                        auth_level=auth_context["auth_level"],
                                        auth_context_id=auth_context["auth_context_id"],
                                        auth_blob=to_server)
+        if use_auth3:
+            req = self.generate_auth3(call_id=call_id,
+                                      pfc_flags=pfc_flags_2nd,
+                                      auth_info=auth_info)
+            self.send_pdu(req)
+            rep = self.recv_pdu(timeout=0.01)
+            self.assertIsNone(rep)
+            self.assertIsConnected()
+            return ack
         req = self.generate_alter(call_id=call_id,
                                   ctx_list=ctx_list,
+                                  pfc_flags=pfc_flags_2nd,
                                   assoc_group_id=0xffffffff - assoc_group_id,
                                   auth_info=auth_info)
         self.send_pdu(req)
@@ -417,7 +431,8 @@ class RawDCERPCTest(TestCase):
             self.assertEquals(rep.u.reserved, 0)
             self.assertEquals(len(rep.u.error_and_verifier), 0)
             return None
-        self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id)
+        self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
+                        pfc_flags=req.pfc_flags)
         self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertEquals(rep.u.assoc_group_id, assoc_group_id)
