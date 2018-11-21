@@ -119,7 +119,7 @@ void torture_shell(struct torture_context *tctx)
 		if (cline == NULL)
 			return;
 
-#if HAVE_ADD_HISTORY
+#ifdef HAVE_ADD_HISTORY
 		add_history(cline);
 #endif
 

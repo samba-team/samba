@@ -34,7 +34,7 @@
 #include "param/param.h"
 #include "lib/util/samba_modules.h"
 
-#if HAVE_READLINE_HISTORY_H
+#ifdef HAVE_READLINE_HISTORY_H
 #include <readline/history.h>
 #endif
 

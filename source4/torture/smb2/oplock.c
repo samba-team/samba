@@ -4792,7 +4792,7 @@ done:
 	return ret;
 }
 
-#if HAVE_KERNEL_OPLOCKS_LINUX
+#ifdef HAVE_KERNEL_OPLOCKS_LINUX
 
 #ifndef F_SETLEASE
 #define F_SETLEASE      1024
