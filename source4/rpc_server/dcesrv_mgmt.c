@@ -39,7 +39,8 @@
 static NTSTATUS dcesrv_interface_mgmt_bind(struct dcesrv_call_state *dce_call,
 					     const struct dcesrv_interface *iface)
 {
-	return dcesrv_interface_bind_allow_connect(dce_call, iface);
+	struct dcesrv_connection_context *context = dce_call->context;
+	return dcesrv_interface_bind_allow_connect(context, iface);
 }
 
 /* 

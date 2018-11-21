@@ -60,7 +60,8 @@
 static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_call_state *dce_call,
 					       const struct dcesrv_interface *iface)
 {
-	return dcesrv_interface_bind_reject_connect(dce_call, iface);
+	struct dcesrv_connection_context *context = dce_call->context;
+	return dcesrv_interface_bind_reject_connect(context, iface);
 }
 
 #define NETLOGON_SERVER_PIPE_STATE_MAGIC 0x4f555358

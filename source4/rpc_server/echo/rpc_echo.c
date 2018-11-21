@@ -31,7 +31,8 @@
 static NTSTATUS dcesrv_interface_rpcecho_bind(struct dcesrv_call_state *dce_call,
 					      const struct dcesrv_interface *iface)
 {
-	return dcesrv_interface_bind_allow_connect(dce_call, iface);
+	struct dcesrv_connection_context *context = dce_call->context;
+	return dcesrv_interface_bind_allow_connect(context, iface);
 }
 
 static NTSTATUS dcesrv_echo_AddOne(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)

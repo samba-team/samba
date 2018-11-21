@@ -47,7 +47,8 @@
 static NTSTATUS dcesrv_interface_backupkey_bind(struct dcesrv_call_state *dce_call,
 						const struct dcesrv_interface *iface)
 {
-	return dcesrv_interface_bind_require_privacy(dce_call, iface);
+	struct dcesrv_connection_context *context = dce_call->context;
+	return dcesrv_interface_bind_require_privacy(context, iface);
 }
 
 static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,

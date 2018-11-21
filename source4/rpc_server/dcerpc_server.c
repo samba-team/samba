@@ -781,44 +781,31 @@ static void dcesrv_prepare_context_auth(struct dcesrv_call_state *dce_call)
 					context->allow_connect);
 }
 
-NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
+NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_connection_context *context,
 						 const struct dcesrv_interface *iface)
 {
-	if (dce_call->context == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	/*
 	 * For connection oriented DCERPC DCERPC_AUTH_LEVEL_PACKET (4)
 	 * has the same behavior as DCERPC_AUTH_LEVEL_INTEGRITY (5).
 	 */
-	dce_call->context->min_auth_level = DCERPC_AUTH_LEVEL_PACKET;
+	context->min_auth_level = DCERPC_AUTH_LEVEL_PACKET;
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_call,
+NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_connection_context *context,
 					       const struct dcesrv_interface *iface)
 {
-	if (dce_call->context == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	dce_call->context->min_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	context->min_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_call_state *dce_call,
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_connection_context *context,
 						       const struct dcesrv_interface *iface)
 {
-	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	const struct dcesrv_endpoint *endpoint = dce_call->conn->endpoint;
+	struct loadparm_context *lp_ctx = context->conn->dce_ctx->lp_ctx;
+	const struct dcesrv_endpoint *endpoint = context->conn->endpoint;
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(endpoint->ep_description);
-	struct dcesrv_connection_context *context = dce_call->context;
-
-	if (context == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	if (transport == NCALRPC) {
 		context->allow_connect = true;
@@ -837,18 +824,13 @@ _PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_call_state 
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *dce_call,
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_connection_context *context,
 						      const struct dcesrv_interface *iface)
 {
-	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	const struct dcesrv_endpoint *endpoint = dce_call->conn->endpoint;
+	struct loadparm_context *lp_ctx = context->conn->dce_ctx->lp_ctx;
+	const struct dcesrv_endpoint *endpoint = context->conn->endpoint;
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(endpoint->ep_description);
-	struct dcesrv_connection_context *context = dce_call->context;
-
-	if (context == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	if (transport == NCALRPC) {
 		context->allow_connect = true;

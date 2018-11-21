@@ -527,13 +527,13 @@ _PUBLIC_ void dcesrv_call_auth_info(struct dcesrv_call_state *dce_call,
 				    enum dcerpc_AuthType *auth_type,
 				    enum dcerpc_AuthLevel *auth_level);
 
-_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_connection_context *context,
 							  const struct dcesrv_interface *iface);
-_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_call,
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_connection_context *context,
 						        const struct dcesrv_interface *iface);
-_PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_call_state *dce_call,
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_connection_context *context,
 						       const struct dcesrv_interface *iface);
-_PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *dce_call,
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_connection_context *context,
 						      const struct dcesrv_interface *iface);
 
 _PUBLIC_ NTSTATUS _dcesrv_iface_state_store_assoc(
