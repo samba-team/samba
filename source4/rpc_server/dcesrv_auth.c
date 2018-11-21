@@ -32,12 +32,49 @@
 #include "param/param.h"
 #include "librpc/rpc/rpc_common.h"
 
+static NTSTATUS dcesrv_auth_negotiate_hdr_signing(struct dcesrv_call_state *call,
+						  struct ncacn_packet *pkt)
+{
+	struct dcesrv_connection *dce_conn = call->conn;
+	struct dcesrv_auth *auth = call->auth_state;
+
+	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN)) {
+		return NT_STATUS_OK;
+	}
+
+	if (dce_conn->client_hdr_signing) {
+		if (dce_conn->negotiated_hdr_signing && pkt != NULL) {
+			pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
+		}
+		return NT_STATUS_OK;
+	}
+
+	dce_conn->client_hdr_signing = true;
+	dce_conn->negotiated_hdr_signing = dce_conn->support_hdr_signing;
+
+	if (!dce_conn->negotiated_hdr_signing) {
+		return NT_STATUS_OK;
+	}
+
+	if (pkt != NULL) {
+		pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
+	}
+
+	if (auth->gensec_security == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	gensec_want_feature(auth->gensec_security,
+			    GENSEC_FEATURE_SIGN_PKT_HEADER);
+
+	return NT_STATUS_OK;
+}
+
 static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 {
 	struct cli_credentials *server_credentials = NULL;
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
-	bool want_header_signing = false;
 	NTSTATUS status;
 
 	if (auth->auth_started) {
@@ -180,28 +217,9 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
-		auth->client_hdr_signing = true;
-		want_header_signing = true;
-	}
-
-	if (want_header_signing) {
-		want_header_signing = gensec_have_feature(auth->gensec_security,
-						GENSEC_FEATURE_SIGN_PKT_HEADER);
-	}
-
-	if (want_header_signing) {
-		want_header_signing = lpcfg_parm_bool(dce_conn->dce_ctx->lp_ctx,
-						      NULL,
-						      "dcesrv",
-						      "header signing",
-						      true);
-	}
-
-	if (want_header_signing) {
+	if (dce_conn->negotiated_hdr_signing) {
 		gensec_want_feature(auth->gensec_security,
 				    GENSEC_FEATURE_SIGN_PKT_HEADER);
-		auth->hdr_signing = true;
 	}
 
 	return true;
@@ -341,6 +359,12 @@ NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct nca
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
+	NTSTATUS status;
+
+	status = dcesrv_auth_negotiate_hdr_signing(call, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	dce_conn->allow_alter = true;
 
@@ -352,10 +376,6 @@ NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct nca
 	/* We can't work without an existing gensec state */
 	if (auth->gensec_security == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	if (auth->hdr_signing) {
-		pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
 	call->_out_auth_info = (struct dcerpc_auth) {
@@ -486,6 +506,12 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 NTSTATUS dcesrv_auth_prepare_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
 	struct dcesrv_auth *auth = call->auth_state;
+	NTSTATUS status;
+
+	status = dcesrv_auth_negotiate_hdr_signing(call, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* on a pure interface change there is no auth_info structure
 	   setup */

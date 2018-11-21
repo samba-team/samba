@@ -203,8 +203,6 @@ struct dcesrv_auth {
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
 	NTSTATUS (*session_key_fn)(struct dcesrv_auth *, DATA_BLOB *session_key);
-	bool client_hdr_signing;
-	bool hdr_signing;
 	bool auth_started;
 	bool auth_finished;
 	bool auth_invalid;
@@ -290,6 +288,9 @@ struct dcesrv_connection {
 
 	/* the current authentication state */
 	struct dcesrv_auth *default_auth_state;
+	bool client_hdr_signing;
+	bool support_hdr_signing;
+	bool negotiated_hdr_signing;
 
 	/*
 	 * remember which pdu types are allowed

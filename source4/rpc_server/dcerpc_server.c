@@ -599,6 +599,12 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->max_xmit_frag = 5840;
 	p->max_total_request_size = DCERPC_NCACN_REQUEST_DEFAULT_MAX_SIZE;
 
+	p->support_hdr_signing = lpcfg_parm_bool(dce_ctx->lp_ctx,
+						 NULL,
+						 "dcesrv",
+						 "header signing",
+						 true);
+
 	auth = dcesrv_auth_create(p);
 	if (auth == NULL) {
 		talloc_free(p);
@@ -1787,8 +1793,7 @@ static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 static NTSTATUS dcesrv_check_verification_trailer(struct dcesrv_call_state *call)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	const struct dcesrv_auth *auth = call->auth_state;
-	const uint32_t bitmask1 = auth->client_hdr_signing ?
+	const uint32_t bitmask1 = call->conn->client_hdr_signing ?
 		DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING : 0;
 	const struct dcerpc_sec_vt_pcontext pcontext = {
 		.abstract_syntax = call->context->iface->syntax_id,
