@@ -42,7 +42,8 @@ static NTSTATUS remote_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
 {
         NTSTATUS status;
-	const struct ndr_interface_table *table;
+	const struct ndr_interface_table *table =
+		(const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	struct dcesrv_remote_private *priv;
 	const char *binding = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
@@ -71,12 +72,6 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	user = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "user");
 	pass = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "password");
 	domain = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dceprc_remote", "domain");
-
-	table = ndr_table_by_syntax(&iface->syntax_id);
-	if (!table) {
-		dce_call->fault_code = DCERPC_NCA_S_UNKNOWN_IF;
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
 
 	credentials = dcesrv_call_credentials(dce_call);
 
@@ -133,7 +128,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		}
 	}
 
-	status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
+	status = dcerpc_binding_set_abstract_syntax(b, &table->syntax_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("dcerpc_binding_set_abstract_syntax() - %s'\n",
 			  nt_errstr(status)));
