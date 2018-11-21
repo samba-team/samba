@@ -351,6 +351,7 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 
 		if (ret) {
 			(*error_string) = error_message(ret);
+			TALLOC_FREE(ccc);
 			return ret;
 		}
 
