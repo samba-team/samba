@@ -76,14 +76,11 @@ static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap
 				SIVAL(buf, 0, d);
 			break;
 		case 'P': /* null-terminated string */
-			s = va_arg(ap,char *);
-			w = strlen(s);
-			len = w + 1;
-			if (bufsize && bufsize >= len)
-				memcpy(buf, s, len);
-			break;
 		case 'f': /* null-terminated string */
 			s = va_arg(ap,char *);
+			if (s == NULL) {
+				smb_panic("Invalid argument");
+			}
 			w = strlen(s);
 			len = w + 1;
 			if (bufsize && bufsize >= len)
@@ -95,7 +92,9 @@ static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap
 			len = 4+i;
 			if (bufsize && bufsize >= len) {
 				SIVAL(buf, 0, i);
-				memcpy(buf+4, s, i);
+				if (s != NULL) {
+					memcpy(buf+4, s, i);
+				}
 			}
 			break;
 		default:
