@@ -2046,10 +2046,14 @@ sub provision_chgdcpass($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING CHGDCPASS...\n";
-	my $extra_provision_options = ["--use-ntvfs"];
 	# This environment disallows the use of this password
 	# (and also removes the default AD complexity checks)
 	my $unacceptable_password = "widk3Dsle32jxdBdskldsk55klASKQ";
+	my $extra_smb_conf = "
+	check password script = sed -e '/$unacceptable_password/{;q1}; /$unacceptable_password/!{q0}'
+	allow dcerpc auth level connect:lsarpc = yes
+";
+	my $extra_provision_options = ["--use-ntvfs"];
 	push (@{$extra_provision_options}, "--dns-backend=BIND9_DLZ");
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -2060,7 +2064,7 @@ sub provision_chgdcpass($$)
 				   "chgDCpass1",
 				   undef,
 				   undef,
-				   "check password script = sed -e '/$unacceptable_password/{;q1}; /$unacceptable_password/!{q0}'\n",
+				   $extra_smb_conf,
 				   "",
 				   $extra_provision_options);
 	unless (defined $ret) {
