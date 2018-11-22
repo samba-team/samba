@@ -53,6 +53,9 @@ smbclient4 = binpath('smbclient4')
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
+# alias to highlight what tests we want to run against a DC with SMBv1 disabled
+smbv1_disabled_testenv = "restoredc"
+
 # Simple tests for LDAP and CLDAP
 for auth_type in ['', '-k no', '-k yes']:
     for auth_level in ['--option=clientldapsaslwrapping=plain', '--sign', '--encrypt']:
@@ -779,9 +782,11 @@ planoldpythontestsuite("fl2003dc:local",
 planoldpythontestsuite("ad_dc",
                        "samba.tests.password_hash_ldap",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc:local",
-                       "samba.tests.domain_backup",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+
+for env in ["ad_dc", smbv1_disabled_testenv]:
+    planoldpythontestsuite(env + ":local", "samba.tests.domain_backup",
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+
 planoldpythontestsuite("none",
                        "samba.tests.domain_backup_offline")
 # Encrypted secrets
