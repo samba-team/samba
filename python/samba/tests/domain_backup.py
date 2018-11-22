@@ -479,14 +479,17 @@ class DomainBackupRename(DomainBackupBase):
         """Checks that rename commands with invalid args are rejected"""
 
         # try a "rename" using the same realm as the DC currently has
-        self.base_cmd = ["domain", "backup", "rename", self.restore_domain,
-                         os.environ["REALM"]]
-        self.assertRaises(BlackboxProcessError, self.create_backup)
+        rename_cmd = "samba-tool domain backup rename "
+        bad_cmd = "{cmd} {domain} {realm}".format(cmd=rename_cmd,
+                                                  domain=self.restore_domain,
+                                                  realm=os.environ["REALM"])
+        self.assertRaises(BlackboxProcessError, self.check_output, bad_cmd)
 
         # try a "rename" using the same domain as the DC currently has
-        self.base_cmd = ["domain", "backup", "rename", os.environ["DOMAIN"],
-                         self.restore_realm]
-        self.assertRaises(BlackboxProcessError, self.create_backup)
+        bad_cmd = "{cmd} {domain} {realm}".format(cmd=rename_cmd,
+                                                  domain=os.environ["DOMAIN"],
+                                                  realm=self.restore_realm)
+        self.assertRaises(BlackboxProcessError, self.check_output, bad_cmd)
 
     def add_link(self, attr, source, target):
         m = ldb.Message()
