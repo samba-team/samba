@@ -156,7 +156,8 @@ class RawDCERPCTest(TestCase):
                         pfc_flags=samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                         samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST,
                         assoc_group_id=0, call_id=0,
-                        nak_reason=None, alter_fault=None):
+                        nak_reason=None, alter_fault=None,
+                        start_with_alter=False):
         ctx_list = [ctx]
 
         if auth_context is not None:
@@ -176,41 +177,71 @@ class RawDCERPCTest(TestCase):
         else:
             auth_info = b""
 
-        req = self.generate_bind(call_id=call_id,
-                                 pfc_flags=pfc_flags,
-                                 ctx_list=ctx_list,
-                                 assoc_group_id=assoc_group_id,
-                                 auth_info=auth_info)
-        self.send_pdu(req)
-        rep = self.recv_pdu()
-        if nak_reason is not None:
-            self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
-                            auth_length=0)
-            self.assertEquals(rep.u.reject_reason, nak_reason)
-            self.assertEquals(rep.u.num_versions, 1)
-            self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
-            self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-            self.assertPadding(rep.u._pad, 3)
-            return
-        self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
-                        pfc_flags=pfc_flags)
-        self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
-        self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
-        if assoc_group_id != 0:
+        if start_with_alter:
+            req = self.generate_alter(call_id=call_id,
+                                      pfc_flags=pfc_flags,
+                                      ctx_list=ctx_list,
+                                      assoc_group_id=0xffffffff - assoc_group_id,
+                                      auth_info=auth_info)
+            self.send_pdu(req)
+            rep = self.recv_pdu()
+            if alter_fault is not None:
+                self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_FAULT, req.call_id,
+                                pfc_flags=req.pfc_flags |
+                                samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
+                                auth_length=0)
+                self.assertNotEquals(rep.u.alloc_hint, 0)
+                self.assertEquals(rep.u.context_id, 0)
+                self.assertEquals(rep.u.cancel_count, 0)
+                self.assertEquals(rep.u.flags, 0)
+                self.assertEquals(rep.u.status, alter_fault)
+                self.assertEquals(rep.u.reserved, 0)
+                self.assertEquals(len(rep.u.error_and_verifier), 0)
+                return None
+            self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
+                            pfc_flags=req.pfc_flags)
+            self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+            self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
             self.assertEquals(rep.u.assoc_group_id, assoc_group_id)
+            self.assertEquals(rep.u.secondary_address_size, 0)
+            self.assertEquals(rep.u.secondary_address, '')
+            self.assertPadding(rep.u._pad1, 2)
         else:
-            self.assertNotEquals(rep.u.assoc_group_id, 0)
-            assoc_group_id = rep.u.assoc_group_id
-        port_str = "%d" % self.tcp_port
-        port_len = len(port_str) + 1
-        mod_len = (2 + port_len) % 4
-        if mod_len != 0:
-            port_pad = 4 - mod_len
-        else:
-            port_pad = 0
-        self.assertEquals(rep.u.secondary_address_size, port_len)
-        self.assertEquals(rep.u.secondary_address, port_str)
-        self.assertPadding(rep.u._pad1, port_pad)
+            req = self.generate_bind(call_id=call_id,
+                                     pfc_flags=pfc_flags,
+                                     ctx_list=ctx_list,
+                                     assoc_group_id=assoc_group_id,
+                                     auth_info=auth_info)
+            self.send_pdu(req)
+            rep = self.recv_pdu()
+            if nak_reason is not None:
+                self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
+                                auth_length=0)
+                self.assertEquals(rep.u.reject_reason, nak_reason)
+                self.assertEquals(rep.u.num_versions, 1)
+                self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
+                self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
+                self.assertPadding(rep.u._pad, 3)
+                return
+            self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
+                            pfc_flags=pfc_flags)
+            self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+            self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
+            if assoc_group_id != 0:
+                self.assertEquals(rep.u.assoc_group_id, assoc_group_id)
+            else:
+                self.assertNotEquals(rep.u.assoc_group_id, 0)
+                assoc_group_id = rep.u.assoc_group_id
+            port_str = "%d" % self.tcp_port
+            port_len = len(port_str) + 1
+            mod_len = (2 + port_len) % 4
+            if mod_len != 0:
+                port_pad = 4 - mod_len
+            else:
+                port_pad = 0
+            self.assertEquals(rep.u.secondary_address_size, port_len)
+            self.assertEquals(rep.u.secondary_address, port_str)
+            self.assertPadding(rep.u._pad1, port_pad)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
