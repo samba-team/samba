@@ -201,6 +201,33 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	return true;
 }
 
+static void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
+{
+	struct dcesrv_auth *auth = call->auth_state;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
+	const char *auth_type = derpc_transport_string_by_transport(transport);
+	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+
+	if (transport == NCACN_NP) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
+	}
+
+	/*
+	 * Log the authorization to this RPC interface.  This
+	 * covered ncacn_np pass-through auth, and anonymous
+	 * DCE/RPC (eg epmapper, netlogon etc)
+	 */
+	log_successful_authz_event(call->conn->msg_ctx,
+				   call->conn->dce_ctx->lp_ctx,
+				   call->conn->remote_address,
+				   call->conn->local_address,
+				   "DCE/RPC",
+				   auth_type,
+				   transport_protection,
+				   auth->session_info);
+}
+
 /*
   parse any auth information from a dcerpc bind request
   return false if we can't handle the auth request for some
@@ -213,30 +240,11 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (pkt->auth_length == 0) {
-		enum dcerpc_transport_t transport =
-			dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
-		const char *auth_type = derpc_transport_string_by_transport(transport);
-		const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
-		if (transport == NCACN_NP) {
-			transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
-		}
 		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
 		auth->auth_context_id = 0;
 
-		/*
-		 * Log the authorization to this RPC interface.  This
-		 * covered ncacn_np pass-through auth, and anonymous
-		 * DCE/RPC (eg epmapper, netlogon etc)
-		 */
-		log_successful_authz_event(call->conn->msg_ctx,
-					   call->conn->dce_ctx->lp_ctx,
-					   call->conn->remote_address,
-					   call->conn->local_address,
-					   "DCE/RPC",
-					   auth_type,
-					   transport_protection,
-					   auth->session_info);
+		log_successful_dcesrv_authz_event(call);
 
 		return true;
 	}
