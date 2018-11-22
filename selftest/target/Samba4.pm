@@ -2816,7 +2816,8 @@ sub restore_backup_file
 # (without actually doing a 'domain join')
 sub prepare_dc_testenv
 {
-	my ($self, $prefix, $dcname, $domain, $realm, $password) = @_;
+	my ($self, $prefix, $dcname, $domain, $realm,
+		$password, $conf_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
 					       $dcname,
@@ -2837,6 +2838,7 @@ sub prepare_dc_testenv
 	push(@{$ctx->{directories}}, "$ctx->{share}");
 
 	$ctx->{smb_conf_extra_options} = "
+	$conf_options
 	max xmit = 32K
 	server max protocol = SMB2
 
@@ -2879,10 +2881,16 @@ sub setup_restoredc
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing RESTORE DC...\n";
 
+	# we arbitrarily designate the restored DC as having SMBv1 disabled
+	my $extra_conf = "
+	server min protocol = SMB2
+	client min protocol = SMB2";
+
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "restoredc",
 						    $dcvars->{DOMAIN},
 						    $dcvars->{REALM},
-						    $dcvars->{PASSWORD});
+						    $dcvars->{PASSWORD},
+						    $extra_conf);
 
 	# create a backup of the 'backupfromdc'
 	my $backupdir = File::Temp->newdir();
@@ -2923,7 +2931,7 @@ sub setup_renamedc
 	my $realm = "renamedom.samba.example.com";
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "renamedc",
 						    "RENAMEDOMAIN", $realm,
-						    $dcvars->{PASSWORD});
+						    $dcvars->{PASSWORD}, "");
 
 	# create a backup of the 'backupfromdc' which renames the domain
 	my $backupdir = File::Temp->newdir();
@@ -2970,7 +2978,7 @@ sub setup_offlinebackupdc
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "offlinebackupdc",
 						    $dcvars->{DOMAIN},
 						    $dcvars->{REALM},
-						    $dcvars->{PASSWORD});
+						    $dcvars->{PASSWORD}, "");
 
 	# create an offline backup of the 'backupfromdc' target
 	my $backupdir = File::Temp->newdir();
@@ -3014,7 +3022,7 @@ sub setup_labdc
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "labdc",
 						    "LABDOMAIN",
 						    "labdom.samba.example.com",
-						    $dcvars->{PASSWORD});
+						    $dcvars->{PASSWORD}, "");
 
 	# create a backup of the 'backupfromdc' which renames the domain and uses
 	# the --no-secrets option to scrub any sensitive info
@@ -3120,7 +3128,7 @@ sub setup_customdc
 
 	# create a placeholder directory and smb.conf, as well as the env vars.
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, $dc_name,
-						    $domain, $realm, $password);
+						    $domain, $realm, $password, "");
 
 	# restore the specified backup file to populate the testenv
 	my $restore_dir = abs_path($prefix);

@@ -67,6 +67,7 @@ are separate testenvs for each one.
     exist.
 - restoredc: tests the 'backup online' option. Online backups are similar to
     doing a DC join.
+    Restoredc's other unique feature is that is has SMBv1 disabled.
 - offlinebackupdc: tests the 'backup offline' option. Offline backups capture
     the raw DB files on disk (safely).
 - renamedc: tests the 'backup rename' option, where the domain and realm are
