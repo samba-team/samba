@@ -771,6 +771,22 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 					NULL);
 }
 
+static bool shadow_copy2_strip_snapshot_converted(TALLOC_CTX *mem_ctx,
+					struct vfs_handle_struct *handle,
+					const char *orig_name,
+					time_t *ptimestamp,
+					char **pstripped,
+					bool *is_converted)
+{
+	return shadow_copy2_strip_snapshot_internal(mem_ctx,
+					handle,
+					orig_name,
+					ptimestamp,
+					pstripped,
+					NULL,
+					is_converted);
+}
+
 static char *shadow_copy2_find_mount_point(TALLOC_CTX *mem_ctx,
 					   vfs_handle_struct *handle)
 {
