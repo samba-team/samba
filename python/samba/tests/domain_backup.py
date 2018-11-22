@@ -18,9 +18,8 @@ from samba import provision, param
 import tarfile
 import os
 import shutil
-from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba.tests import (TestCaseInTempDir, env_loadparm, create_test_ou,
-                         BlackboxProcessError)
+from samba.tests import (env_loadparm, create_test_ou, BlackboxProcessError,
+                         BlackboxTestCase, connect_samdb)
 import ldb
 from samba.samdb import SamDB
 from samba.auth import system_session
@@ -39,8 +38,14 @@ def get_prim_dom(secrets_path, lp):
                               scope=ldb.SCOPE_SUBTREE,
                               expression="(objectClass=kerberosSecret)")
 
-
-class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
+# The backup tests require that a completely clean LoadParm object gets used
+# for the restore. Otherwise the same global LP gets re-used, and the LP
+# settings can bleed from one test case to another.
+# To do this, these tests should use check_output(), which executes the command
+# in a separate process (as opposed to runcmd(), runsubcmd()).
+# So although this is a samba-tool test, we don't inherit from SambaToolCmdTest
+# so that we never inadvertently use .runcmd() by accident.
+class DomainBackupBase(BlackboxTestCase):
 
     def setUp(self):
         super(DomainBackupBase, self).setUp()
@@ -50,8 +55,7 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
                                        os.environ["DC_PASSWORD"])
 
         # LDB connection to the original server being backed up
-        self.ldb = self.getSamDB("-H", "ldap://%s" % server,
-                                 self.user_auth)
+        self.ldb = connect_samdb("ldap://%s" % server)
         self.new_server = "BACKUPSERV"
         self.server = server.upper()
         self.base_cmd = None
@@ -368,13 +372,10 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
     def run_cmd(self, args):
         """Executes a samba-tool backup/restore command"""
 
-        # we use check_output() here to execute the command because we want the
-        # command run in a separate process. This means a completely clean
-        # LoadParm object gets used for the restore (otherwise the global LP
-        # settings can bleed from one test case to another).
         cmd = " ".join(args)
         print("Executing: samba-tool %s" % cmd)
         try:
+            # note: it's important we run the cmd in a separate process here
             out = self.check_output("samba-tool " + cmd)
         except BlackboxProcessError as e:
             # if the command failed, it may have left behind temporary files.

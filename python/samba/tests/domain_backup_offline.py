@@ -19,11 +19,17 @@ import tarfile
 import os
 import shutil
 import tempfile
-from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba.tests import TestCaseInTempDir
+from samba.tests import BlackboxTestCase
 from samba.netcmd import CommandError
 
-class DomainBackupOfflineCmp(SambaToolCmdTest, TestCaseInTempDir):
+# The backup tests require that a completely clean LoadParm object gets used
+# for the restore. Otherwise the same global LP gets re-used, and the LP
+# settings can bleed from one test case to another.
+# To do this, these tests should use check_output(), which executes the command
+# in a separate process (as opposed to runcmd(), runsubcmd()).
+# So although this is a samba-tool test, we don't inherit from SambaToolCmdTest
+# so that we never inadvertently use .runcmd() by accident.
+class DomainBackupOfflineCmp(BlackboxTestCase):
 
     def test_domain_backup_offline_untar_tdb(self):
         self.untar_testcase('tdb')
