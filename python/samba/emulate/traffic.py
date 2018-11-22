@@ -2243,31 +2243,18 @@ def generate_stats(statsdir, timing_file):
             rng        = values[-1] - values[0]
             maxv       = values[-1]
             desc       = OP_DESCRIPTIONS.get(op, '')
-            if sys.stdout.isatty:
-                print("%-12s   %4s  %-35s %12d %12d %12.6f "
-                      "%12.6f %12.6f %12.6f %12.6f"
-                      % (protocol,
-                         packet_type,
-                         desc,
-                         count,
-                         failed,
-                         mean,
-                         median,
-                         percentile,
-                         rng,
-                         maxv))
-            else:
-                print("%s\t%s\t%s\t%d\t%d\t%f\t%f\t%f\t%f\t%f"
-                      % (protocol,
-                         packet_type,
-                         desc,
-                         count,
-                         failed,
-                         mean,
-                         median,
-                         percentile,
-                         rng,
-                         maxv))
+            print("%-12s   %4s  %-35s %12d %12d %12.6f "
+                  "%12.6f %12.6f %12.6f %12.6f"
+                  % (protocol,
+                     packet_type,
+                     desc,
+                     count,
+                     failed,
+                     mean,
+                     median,
+                     percentile,
+                     rng,
+                     maxv))
 
 
 def opcode_key(v):
