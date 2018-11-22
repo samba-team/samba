@@ -58,6 +58,8 @@ class RawDCERPCTest(TestCase):
             raise
         finally:
             pass
+        self.max_xmit_frag = 5840
+        self.max_recv_frag = 5840
 
     def setUp(self):
         super(RawDCERPCTest, self).setUp()
@@ -830,12 +832,17 @@ class RawDCERPCTest(TestCase):
     def generate_bind(self, call_id,
                       pfc_flags=(samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                                  samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST),
-                      max_xmit_frag=5840,
-                      max_recv_frag=5840,
+                      max_xmit_frag=None,
+                      max_recv_frag=None,
                       assoc_group_id=0,
                       ctx_list=[],
                       auth_info=b"",
                       ndr_print=None, hexdump=None):
+
+        if max_xmit_frag is None:
+            max_xmit_frag=self.max_xmit_frag
+        if max_recv_frag is None:
+            max_recv_frag=self.max_recv_frag
 
         b = samba.dcerpc.dcerpc.bind()
         b.max_xmit_frag = max_xmit_frag
@@ -856,12 +863,17 @@ class RawDCERPCTest(TestCase):
     def generate_alter(self, call_id,
                        pfc_flags=(samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                                   samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST),
-                       max_xmit_frag=5840,
-                       max_recv_frag=5840,
+                       max_xmit_frag=None,
+                       max_recv_frag=None,
                        assoc_group_id=0,
                        ctx_list=[],
                        auth_info=b"",
                        ndr_print=None, hexdump=None):
+
+        if max_xmit_frag is None:
+            max_xmit_frag=self.max_xmit_frag
+        if max_recv_frag is None:
+            max_recv_frag=self.max_recv_frag
 
         a = samba.dcerpc.dcerpc.bind()
         a.max_xmit_frag = max_xmit_frag
