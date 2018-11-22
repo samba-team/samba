@@ -587,7 +587,8 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 					const char *orig_name,
 					time_t *ptimestamp,
 					char **pstripped,
-					char **psnappath)
+					char **psnappath,
+					bool *_already_converted)
 {
 	struct tm tm;
 	time_t timestamp = 0;
@@ -607,6 +608,10 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 				return false);
 
 	DEBUG(10, (__location__ ": enter path '%s'\n", name));
+
+	if (_already_converted != NULL) {
+		*_already_converted = false;
+	}
 
 	abs_path = make_path_absolute(mem_ctx, priv, name);
 	if (abs_path == NULL) {
@@ -630,6 +635,9 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (already_converted) {
+		if (_already_converted != NULL) {
+			*_already_converted = true;
+		}
 		goto out;
 	}
 
@@ -759,6 +767,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 					orig_name,
 					ptimestamp,
 					pstripped,
+					NULL,
 					NULL);
 }
 
@@ -1119,12 +1128,14 @@ static int shadow_copy2_rename(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
 					 smb_fname_src->base_name,
-					 &timestamp_src, NULL, &snappath_src)) {
+					 &timestamp_src, NULL, &snappath_src,
+					 NULL)) {
 		return -1;
 	}
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
 					 smb_fname_dst->base_name,
-					 &timestamp_dst, NULL, &snappath_dst)) {
+					 &timestamp_dst, NULL, &snappath_dst,
+					 NULL)) {
 		return -1;
 	}
 	if (timestamp_src != 0) {
@@ -1163,7 +1174,8 @@ static int shadow_copy2_symlink(vfs_handle_struct *handle,
 				link_contents,
 				&timestamp_old,
 				NULL,
-				&snappath_old)) {
+				&snappath_old,
+				NULL)) {
 		return -1;
 	}
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
@@ -1171,7 +1183,8 @@ static int shadow_copy2_symlink(vfs_handle_struct *handle,
 				new_smb_fname->base_name,
 				&timestamp_new,
 				NULL,
-				&snappath_new)) {
+				&snappath_new,
+				NULL)) {
 		return -1;
 	}
 	if ((timestamp_old != 0) || (timestamp_new != 0)) {
@@ -1202,7 +1215,8 @@ static int shadow_copy2_link(vfs_handle_struct *handle,
 				old_smb_fname->base_name,
 				&timestamp_old,
 				NULL,
-				&snappath_old)) {
+				&snappath_old,
+				NULL)) {
 		return -1;
 	}
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
@@ -1210,7 +1224,8 @@ static int shadow_copy2_link(vfs_handle_struct *handle,
 				new_smb_fname->base_name,
 				&timestamp_new,
 				NULL,
-				&snappath_new)) {
+				&snappath_new,
+				NULL)) {
 		return -1;
 	}
 	if ((timestamp_old != 0) || (timestamp_new != 0)) {
@@ -1566,7 +1581,8 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 					smb_fname->base_name,
 					&timestamp,
 					&stripped,
-					&snappath)) {
+					&snappath,
+					NULL)) {
 		return -1;
 	}
 	if (stripped != NULL) {
