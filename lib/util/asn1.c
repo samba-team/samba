@@ -953,21 +953,24 @@ bool asn1_read_ContextSimple(struct asn1_data *data, TALLOC_CTX *mem_ctx, uint8_
 bool asn1_read_implicit_Integer(struct asn1_data *data, int *i)
 {
 	uint8_t b;
+	uint32_t x = 0;
 	bool first_byte = true;
+
 	*i = 0;
 
 	while (!data->has_error && asn1_tag_remaining(data)>0) {
 		if (!asn1_read_uint8(data, &b)) return false;
 		if (first_byte) {
 			if (b & 0x80) {
-				/* Number is negative.
-				   Set i to -1 for sign extend. */
-				*i = -1;
+				/* Number is negative. */
+				x = (uint32_t)-1;
 			}
 			first_byte = false;
 		}
-		*i = (*i << 8) + b;
+		x = (x << 8) + b;
 	}
+	*i = (int)x;
+
 	return !data->has_error;
 }
 
