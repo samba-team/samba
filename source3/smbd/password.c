@@ -129,6 +129,13 @@ int register_homes_share(const char *username)
 		return -1;
 	}
 
+	if (strequal(pwd->pw_dir, "/")) {
+		DBG_NOTICE("Invalid home directory defined for user '%s'\n",
+			   username);
+		TALLOC_FREE(pwd);
+		return -1;
+	}
+
 	DEBUG(3, ("Adding homes service for user '%s' using home directory: "
 		  "'%s'\n", username, pwd->pw_dir));
 

@@ -149,7 +149,11 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 		DEBUG(3,("checking for home directory %s gave %s\n",*p_service_out,
 			phome_dir?phome_dir:"(NULL)"));
 
-		iService = add_home_service(*p_service_out,*p_service_out /* 'username' */, phome_dir);
+		if (!strequal(phome_dir, "/")) {
+			iService = add_home_service(*p_service_out,
+						    *p_service_out, /* username */
+						    phome_dir);
+		}
 	}
 
 	/* If we still don't have a service, attempt to add it as a printer. */
