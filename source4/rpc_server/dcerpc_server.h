@@ -297,7 +297,6 @@ struct dcesrv_connection {
 	 */
 	bool allow_bind;
 	bool allow_alter;
-	bool allow_request;
 
 	/* the association group the connection belongs to */
 	struct dcesrv_assoc_group *assoc_group;

@@ -666,7 +666,6 @@ static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
 
 	call->conn->allow_bind = false;
 	call->conn->allow_alter = false;
-	call->conn->allow_request = false;
 
 	call->conn->default_auth_state->auth_invalid = true;
 
@@ -1851,7 +1850,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	struct ndr_pull *pull;
 	NTSTATUS status;
 
-	if (!call->conn->allow_request) {
+	if (!auth->auth_finished) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
 
@@ -2038,7 +2037,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	/* we have to check the signing here, before combining the
 	   pdus */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
-		if (!call->conn->allow_request) {
+		if (!call->auth_state->auth_finished) {
 			return dcesrv_fault_disconnect(call,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
@@ -2476,7 +2475,6 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 
 	dce_conn->allow_bind = false;
 	dce_conn->allow_alter = false;
-	dce_conn->allow_request = false;
 
 	dce_conn->default_auth_state->auth_invalid = true;
 

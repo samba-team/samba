@@ -279,7 +279,6 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 
 NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 {
-	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
 	const char *pdu = "<unknown>";
 
@@ -320,7 +319,6 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 		return status;
 	}
 	auth->auth_finished = true;
-	dce_conn->allow_request = true;
 
 	if (call->pkt.ptype != DCERPC_PKT_AUTH3) {
 		return NT_STATUS_OK;
@@ -348,7 +346,6 @@ NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct nca
 
 	if (call->pkt.auth_length == 0) {
 		auth->auth_finished = true;
-		dce_conn->allow_request = true;
 		return NT_STATUS_OK;
 	}
 
@@ -521,7 +518,6 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 			  DATA_BLOB *payload_and_verifier)
 {
 	struct ncacn_packet *pkt = &call->pkt;
-	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
 	const struct dcerpc_auth tmp_auth = {
 		.auth_type = auth->auth_type,
@@ -530,7 +526,7 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 	};
 	NTSTATUS status;
 
-	if (!dce_conn->allow_request) {
+	if (!auth->auth_finished) {
 		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		return false;
 	}
