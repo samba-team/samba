@@ -225,7 +225,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 		for (; (indic_bit % 32) != 0; indic_bit++)
 			indic |= 0 << (32 - ((indic_bit % 32) + 1));
 
-		*(uint32_t *)&compressed[compressed_pos] = 0;
+		SIVAL(compressed, compressed_pos, 0);
 		SIVAL(indic_pos, 0, indic);
 		compressed_pos += sizeof(uint32_t);
 	}
