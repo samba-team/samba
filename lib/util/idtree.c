@@ -50,9 +50,9 @@
 #define MAX_LEVEL (MAX_ID_SHIFT + IDR_BITS - 1) / IDR_BITS
 #define IDR_FREE_MAX MAX_LEVEL + MAX_LEVEL
 
-#define set_bit(bit, v) (v) |= (1<<(bit))
-#define clear_bit(bit, v) (v) &= ~(1<<(bit))
-#define test_bit(bit, v) ((v) & (1<<(bit)))
+#define set_bit(bit, v) (v) |= (1U<<(bit))
+#define clear_bit(bit, v) (v) &= ~(1U<<(bit))
+#define test_bit(bit, v) ((v) & (1U<<(bit)))
 
 struct idr_layer {
 	uint32_t		 bitmap;
