@@ -112,8 +112,10 @@ static void copy64(uint32_t *M, const uint8_t *in)
 	int i;
 
 	for (i=0;i<16;i++)
-		M[i] = (in[i*4+3]<<24) | (in[i*4+2]<<16) |
-			(in[i*4+1]<<8) | (in[i*4+0]<<0);
+		M[i] = ((uint32_t)in[i*4+3] << 24) |
+			((uint32_t)in[i*4+2] << 16) |
+			((uint32_t)in[i*4+1] << 8) |
+			((uint32_t)in[i*4+0] << 0);
 }
 
 static void copy4(uint8_t *out, uint32_t x)
