@@ -2413,9 +2413,14 @@ _PUBLIC_ void *_talloc_zero(const void *ctx, size_t size, const char *name)
 */
 _PUBLIC_ void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name)
 {
-	void *newp = _talloc_named_const(t, size, name);
+	void *newp = NULL;
 
-	if (likely(newp)) {
+	if (likely(size > 0) && unlikely(p == NULL)) {
+		return NULL;
+	}
+
+	newp = _talloc_named_const(t, size, name);
+	if (likely(newp != NULL) && likely(size > 0)) {
 		memcpy(newp, p, size);
 	}
 
