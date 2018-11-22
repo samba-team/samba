@@ -25,6 +25,7 @@ import json
 import math
 import sys
 import signal
+from errno import ECHILD, ESRCH
 
 from collections import OrderedDict, Counter, defaultdict, namedtuple
 from samba.emulate import traffic_packets
@@ -1617,7 +1618,7 @@ def replay(conversation_seq,
                 try:
                     os.kill(pid, s)
                 except OSError as e:
-                    if e.errno != 3:  # don't fail if it has already died
+                    if e.errno != ESRCH:  # don't fail if it has already died
                         raise
             time.sleep(0.5)
             end = time.time() + 1
@@ -1625,7 +1626,7 @@ def replay(conversation_seq,
                 try:
                     pid, status = os.waitpid(-1, os.WNOHANG)
                 except OSError as e:
-                    if e.errno != 10:
+                    if e.errno != ECHILD:
                         raise
                 if pid != 0:
                     c = children.pop(pid, None)
