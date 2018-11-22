@@ -40,6 +40,12 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	bool want_header_signing = false;
 	NTSTATUS status;
 
+	if (auth->auth_started) {
+		return false;
+	}
+
+	auth->auth_started = true;
+
 	if (auth->auth_invalid) {
 		return false;
 	}
@@ -243,6 +249,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
 		auth->auth_context_id = 0;
+		auth->auth_started = true;
 
 		log_successful_dcesrv_authz_event(call);
 
@@ -338,7 +345,6 @@ NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct nca
 	struct dcesrv_auth *auth = call->auth_state;
 
 	dce_conn->allow_alter = true;
-	dce_conn->allow_auth3 = true;
 
 	if (call->pkt.auth_length == 0) {
 		auth->auth_finished = true;

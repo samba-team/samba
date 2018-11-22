@@ -666,7 +666,6 @@ static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
 
 	call->conn->allow_bind = false;
 	call->conn->allow_alter = false;
-	call->conn->allow_auth3 = false;
 	call->conn->allow_request = false;
 
 	call->conn->default_auth_state->auth_invalid = true;
@@ -1298,7 +1297,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 
-	if (!call->conn->allow_auth3) {
+	if (!auth->auth_started) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
 
@@ -2476,7 +2475,6 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	dce_conn->wait_private = NULL;
 
 	dce_conn->allow_bind = false;
-	dce_conn->allow_auth3 = false;
 	dce_conn->allow_alter = false;
 	dce_conn->allow_request = false;
 

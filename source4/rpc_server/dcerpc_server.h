@@ -203,6 +203,7 @@ struct dcesrv_auth {
 	NTSTATUS (*session_key_fn)(struct dcesrv_auth *, DATA_BLOB *session_key);
 	bool client_hdr_signing;
 	bool hdr_signing;
+	bool auth_started;
 	bool auth_finished;
 	bool auth_invalid;
 };
@@ -295,7 +296,6 @@ struct dcesrv_connection {
 	 * remember which pdu types are allowed
 	 */
 	bool allow_bind;
-	bool allow_auth3;
 	bool allow_alter;
 	bool allow_request;
 
