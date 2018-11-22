@@ -70,7 +70,7 @@ const ACE4_SYNCHRONIZE          = 0x00100000;
 
 typedef u_int acemask4;
 
-struct nfsace4 {
+struct nfsace4i {
         acetype4        type;
         aceflag4        flag;
         aceiflag4       iflag;
@@ -88,7 +88,7 @@ const ACL4_DEFAULTED            = 0x00000004;
 
 typedef u_int aclflag4;
 
-struct nfsacl41 {
+struct nfsacl41i {
         aclflag4        na41_flag;
-        nfsace4         na41_aces<>;
+        nfsace4i        na41_aces<>;
 };
