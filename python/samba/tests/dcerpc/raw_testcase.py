@@ -60,6 +60,7 @@ class RawDCERPCTest(TestCase):
             pass
         self.max_xmit_frag = 5840
         self.max_recv_frag = 5840
+        self.secondary_address = "%d" % self.tcp_port
 
     def setUp(self):
         super(RawDCERPCTest, self).setUp()
@@ -234,16 +235,17 @@ class RawDCERPCTest(TestCase):
             else:
                 self.assertNotEquals(rep.u.assoc_group_id, 0)
                 assoc_group_id = rep.u.assoc_group_id
-            port_str = "%d" % self.tcp_port
-            port_len = len(port_str) + 1
-            mod_len = (2 + port_len) % 4
+            sda_str = self.secondary_address
+            sda_len = len(sda_str) + 1
+            mod_len = (2 + sda_len) % 4
             if mod_len != 0:
-                port_pad = 4 - mod_len
+                sda_pad = 4 - mod_len
             else:
-                port_pad = 0
-            self.assertEquals(rep.u.secondary_address_size, port_len)
-            self.assertEquals(rep.u.secondary_address, port_str)
-            self.assertPadding(rep.u._pad1, port_pad)
+                sda_pad = 0
+            self.assertEquals(rep.u.secondary_address_size, sda_len)
+            self.assertEquals(rep.u.secondary_address, sda_str)
+            self.assertPadding(rep.u._pad1, sda_pad)
+
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
