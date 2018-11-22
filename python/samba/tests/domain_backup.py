@@ -360,6 +360,11 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
                             not in owner.extended_str(),
                             "%s found as FSMO %s role owner" % (server, role))
 
+    def cleanup_tempdir(self):
+        for filename in os.listdir(self.tempdir):
+            filepath = os.path.join(self.tempdir, filename)
+            shutil.rmtree(filepath)
+
     def run_cmd(self, args):
         """Executes a samba-tool backup/restore command"""
 
@@ -369,7 +374,14 @@ class DomainBackupBase(SambaToolCmdTest, TestCaseInTempDir):
         # settings can bleed from one test case to another).
         cmd = " ".join(args)
         print("Executing: samba-tool %s" % cmd)
-        out = self.check_output("samba-tool " + cmd)
+        try:
+            out = self.check_output("samba-tool " + cmd)
+        except BlackboxProcessError as e:
+            # if the command failed, it may have left behind temporary files.
+            # We're going to fail the test, but first cleanup any temp files so
+            # that we skip the TestCaseInTempDir._remove_tempdir() assertions
+            self.cleanup_tempdir()
+            self.fail("Error calling samba-tool: %s" % e)
         print(out)
 
     def create_backup(self, extra_args=None):
