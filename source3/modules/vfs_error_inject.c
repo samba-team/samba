@@ -28,6 +28,7 @@ struct unix_error_map {
 	int error;
 } unix_error_map_array[] = {
 	{	"ESTALE",	ESTALE	},
+	{	"EBADF",	EBADF	},
 };
 
 static int find_unix_error_from_string(const char *err_str)
