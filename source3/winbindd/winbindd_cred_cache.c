@@ -26,6 +26,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "smb_krb5.h"
 #include "libads/kerberos_proto.h"
+#include "libads/krb5_errs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

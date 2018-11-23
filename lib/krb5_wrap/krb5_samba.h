@@ -188,9 +188,6 @@ krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *cli
 krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr,
 						  const char *netbios_name);
 krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr);
-NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
-krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
-
 krb5_enctype smb_krb5_kt_get_enctype_from_entry(krb5_keytab_entry *kt_entry);
 
 krb5_error_code smb_krb5_enctype_to_string(krb5_context context,

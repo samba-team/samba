@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "smb_krb5.h"
 
+#include "krb5_errs.h"
+
 #ifdef HAVE_KRB5
 
 static const struct {

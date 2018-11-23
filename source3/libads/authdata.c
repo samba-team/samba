@@ -32,6 +32,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "../libcli/auth/spnego.h"
+#include "krb5_errs.h"
 
 #ifdef HAVE_KRB5
 
