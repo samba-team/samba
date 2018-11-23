@@ -117,7 +117,7 @@ NTSTATUS winbindd_lookuprids_recv(struct tevent_req *req,
 		req, struct winbindd_lookuprids_state);
 	NTSTATUS status;
 	char *result;
-	int i;
+	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("Lookuprids failed: %s\n",nt_errstr(status)));

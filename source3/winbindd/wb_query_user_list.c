@@ -93,7 +93,7 @@ static void wb_query_user_list_done(struct tevent_req *subreq)
 	struct wb_query_user_list_state *state = tevent_req_data(
 		req, struct wb_query_user_list_state);
 	NTSTATUS status, result;
-	int i;
+	uint32_t i;
 
 	status = dcerpc_wbint_LookupRids_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);

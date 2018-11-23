@@ -120,7 +120,7 @@ interface winbind
     } wbint_Principal;
 
     typedef [public] struct {
-	int num_principals;
+	uint32 num_principals;
 	[size_is(num_principals)] wbint_Principal principals[];
     } wbint_Principals;
 
