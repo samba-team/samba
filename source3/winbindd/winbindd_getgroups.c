@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "passdb/lookup_sid.h" /* only for LOOKUP_NAME_NO_NSS flag */
+#include "libcli/security/dom_sid.h"
 
 struct winbindd_getgroups_state {
 	struct tevent_context *ev;
@@ -204,6 +205,8 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 		}
 
 		if (!include_gid) {
+			struct dom_sid_buf sidbuf;
+
 			if (debug_missing == NULL) {
 				continue;
 			}
@@ -214,7 +217,7 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 				   "This might be a security problem when ACLs "
 				   "contain DENY ACEs!\n",
 				   (unsigned)xids[i].id,
-				   sid_string_tos(&state->sids[i]),
+				   dom_sid_str_buf(&state->sids[i], &sidbuf),
 				   debug_missing));
 			continue;
 		}
