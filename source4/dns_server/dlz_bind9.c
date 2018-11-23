@@ -912,6 +912,7 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 	return ISC_R_SUCCESS;
 }
 
+
 /*
   lookup one record
  */
@@ -929,16 +930,38 @@ _PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
 	return dlz_lookup_types(state, zone, name, lookup, NULL);
 }
 
-
 /*
   see if a zone transfer is allowed
  */
 _PUBLIC_ isc_result_t dlz_allowzonexfr(void *dbdata, const char *name, const char *client)
 {
-	/* just say yes for all our zones for now */
 	struct dlz_bind9_data *state = talloc_get_type(
 		dbdata, struct dlz_bind9_data);
-	return b9_find_zone_dn(state, name, NULL, NULL);
+	isc_result_t ret ;
+	const char **authorized_clients ;
+	unsigned int i ;
+
+	/* check that the zone is known */
+	ret = b9_find_zone_dn(state, name, NULL, NULL);
+	if (ret == ISC_R_SUCCESS) {
+		authorized_clients = lpcfg_dns_zone_transfer_clients(state->lp) ;
+		if (authorized_clients) {
+			state->log(ISC_LOG_INFO, "samba_dlz: checking if client is authorized for zone transfer") ;
+			
+			/* if the option is not set, default is to accept all transfers
+			   if the option is set, default is to accept only the selected IPs */
+			ret = ISC_R_NOPERM ;
+			for (i = 0; authorized_clients && authorized_clients[i] ; i++) {
+				state->log(ISC_LOG_INFO, "samba_dlz: comparing to %s", authorized_clients[i]) ;
+				if (strcmp(authorized_clients[i], client) == 0) {
+					state->log(ISC_LOG_INFO, "samba_dlz: accepting IP %s", client) ;
+					ret = ISC_R_SUCCESS ;
+					break ;
+				}
+			}
+		}
+	}
+	return ret ;
 }
 
 /*
