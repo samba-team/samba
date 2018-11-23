@@ -50,6 +50,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	struct cli_credentials *credentials;
 	bool must_free_credentials = false;
 	bool machine_account;
+	bool allow_anonymous;
 	struct dcerpc_binding		*b;
 	struct composite_context	*pipe_conn_req;
 	uint32_t flags = 0;
@@ -79,6 +80,11 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 					  NULL,
 					  "dcerpc_remote",
 					  "use_machine_account",
+					  false);
+	allow_anonymous = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx,
+					  NULL,
+					  "dcerpc_remote",
+					  "allow_anonymous_fallback",
 					  false);
 
 	credentials = dcesrv_call_credentials(dce_call);
@@ -113,6 +119,13 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		}
 	} else if (credentials != NULL) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using delegated credentials\n"));
+	} else if (allow_anonymous) {
+		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using anonymous\n"));
+		credentials = cli_credentials_init_anon(priv);
+		if (!credentials) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		must_free_credentials = true;
 	} else {
 		DEBUG(1,("dcerpc_remote: RPC Proxy: You must supply binding, user and password or have delegated credentials\n"));
 		return NT_STATUS_INVALID_PARAMETER;
