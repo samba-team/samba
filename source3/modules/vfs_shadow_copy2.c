@@ -36,6 +36,8 @@
 #include "include/ntioctl.h"
 #include "util_tdb.h"
 #include "lib/util_path.h"
+#include "libcli/security/security.h"
+#include "lib/util/tevent_unix.h"
 
 struct shadow_copy2_config {
 	char *gmt_format;
@@ -1376,15 +1378,27 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	char *tmp;
+	bool is_converted = false;
 	int saved_errno = 0;
 	int ret;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
+	if (!shadow_copy2_strip_snapshot_converted(talloc_tos(), handle,
 					 smb_fname->base_name,
-					 &timestamp, &stripped)) {
+					 &timestamp, &stripped,
+					 &is_converted)) {
 		return -1;
 	}
 	if (timestamp == 0) {
+		if (is_converted) {
+			/*
+			 * Just pave over the user requested mode and use
+			 * O_RDONLY. Later attempts by the client to write on
+			 * the handle will fail in the pwrite() syscall with
+			 * EINVAL which we carefully map to EROFS. In sum, this
+			 * matches Windows behaviour.
+			 */
+			flags = O_RDONLY;
+		}
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
@@ -1397,6 +1411,14 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 		smb_fname->base_name = tmp;
 		return -1;
 	}
+
+	/*
+	 * Just pave over the user requested mode and use O_RDONLY. Later
+	 * attempts by the client to write on the handle will fail in the
+	 * pwrite() syscall with EINVAL which we carefully map to EROFS. In sum,
+	 * this matches Windows behaviour.
+	 */
+	flags = O_RDONLY;
 
 	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	if (ret == -1) {
@@ -2887,6 +2909,101 @@ static int shadow_copy2_get_quota(vfs_handle_struct *handle,
 	return ret;
 }
 
+static ssize_t shadow_copy2_pwrite(vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   const void *data,
+				   size_t n,
+				   off_t offset)
+{
+	ssize_t nwritten;
+
+	nwritten = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+	if (nwritten == -1) {
+		if (errno == EBADF && fsp->can_write) {
+			errno = EROFS;
+		}
+	}
+
+	return nwritten;
+}
+
+struct shadow_copy2_pwrite_state {
+	vfs_handle_struct *handle;
+	files_struct *fsp;
+	ssize_t ret;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void shadow_copy2_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *shadow_copy2_pwrite_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp,
+	const void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct shadow_copy2_pwrite_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct shadow_copy2_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->handle = handle;
+	state->fsp = fsp;
+
+	subreq = SMB_VFS_NEXT_PWRITE_SEND(state,
+					  ev,
+					  handle,
+					  fsp,
+					  data,
+					  n,
+					  offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, shadow_copy2_pwrite_done, req);
+
+	return req;
+}
+
+static void shadow_copy2_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct shadow_copy2_pwrite_state *state = tevent_req_data(
+		req, struct shadow_copy2_pwrite_state);
+
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+	if (state->ret == -1) {
+		tevent_req_error(req, state->vfs_aio_state.error);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static ssize_t shadow_copy2_pwrite_recv(struct tevent_req *req,
+					  struct vfs_aio_state *vfs_aio_state)
+{
+	struct shadow_copy2_pwrite_state *state = tevent_req_data(
+		req, struct shadow_copy2_pwrite_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		if ((vfs_aio_state->error == EBADF) &&
+		    state->fsp->can_write)
+		{
+			vfs_aio_state->error = EROFS;
+			errno = EROFS;
+		}
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->ret;
+}
+
 static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				const char *service, const char *user)
 {
@@ -3251,6 +3368,9 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.setxattr_fn = shadow_copy2_setxattr,
 	.chflags_fn = shadow_copy2_chflags,
 	.get_real_filename_fn = shadow_copy2_get_real_filename,
+	.pwrite_fn = shadow_copy2_pwrite,
+	.pwrite_send_fn = shadow_copy2_pwrite_send,
+	.pwrite_recv_fn = shadow_copy2_pwrite_recv,
 	.connectpath_fn = shadow_copy2_connectpath,
 };
 
