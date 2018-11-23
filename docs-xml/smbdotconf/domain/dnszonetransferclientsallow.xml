@@ -1,0 +1,26 @@
+<samba:parameter name="dns zone transfer clients allow"
+                 context="G"
+                 type="cmdlist"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option specifies the list IPs authorized to ask for dns zone
+	    transfer from bind DLZ module.
+	</para>
+
+	<para>The IP list is comma and space separated and specified in the same
+	    syntax as used in <smbconfoption name="hosts allow"/>, specifically
+	    including IP address, IP prefixes and IP address masks.
+	</para>
+
+	<para>As this is a DNS server option, hostnames are naturally not permitted.
+	</para>
+
+	<para>The default behaviour is to deny any request.
+              A request will be authorized only if the emitting client is identified
+              in this list, and not in <smbconfoption name="dns zone transfer clients deny"/>
+	</para>
+</description>
+
+<value type="default"></value>
+<value type="example">192.168.0.1</value>
+</samba:parameter>

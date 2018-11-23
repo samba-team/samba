@@ -1200,6 +1200,76 @@ cancel_version:
 	return ret;
 }
 
+/*
+ * Test zone transfer requests restrictions
+ *
+ * 1: test that zone transfer is denied by default
+ * 2: with an authorized list of IPs set in smb.conf, test that zone transfer
+ *    is accepted only for selected IPs.
+ */
+static bool test_dlz_bind9_allowzonexfr(struct torture_context *tctx)
+{
+	void *dbdata;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		NULL
+	};
+	isc_result_t ret;
+	dns_dlzdb_t *dlzdb = NULL;
+	bool ok;
+
+	tctx_static = tctx;
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
+						  "log", dlz_bind9_log_wrapper,
+						  "writeable_zone", dlz_bind9_writeable_zone_hook,
+						  "putrr", dlz_bind9_putrr_hook,
+						  "putnamedrr", dlz_bind9_putnamedrr_hook,
+						  NULL),
+				 ISC_R_SUCCESS,
+				 "Failed to create samba_dlz");
+
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dlzdb, dbdata),
+						     ISC_R_SUCCESS,
+				             "Failed to configure samba_dlz");
+
+    /* Ask for zone transfer with no specific config => expect denied */
+    ret = dlz_allowzonexfr(dbdata, lpcfg_dnsdomain(tctx->lp_ctx), "127.0.0.1");
+    torture_assert_int_equal(tctx, ret, ISC_R_NOPERM,
+                            "Zone transfer accepted with default settings");
+
+    /* Ask for zone transfer with authorizations set */
+    ok = lpcfg_set_option(tctx->lp_ctx, "dns zone transfer clients allow=127.0.0.1,1234:5678::1,192.168.0.");
+    torture_assert(tctx, ok, "Failed to set dns zone transfer clients allow option.");
+
+    ok = lpcfg_set_option(tctx->lp_ctx, "dns zone transfer clients deny=192.168.0.2");
+    torture_assert(tctx, ok, "Failed to set dns zone transfer clients deny option.");
+
+    ret = dlz_allowzonexfr(dbdata, lpcfg_dnsdomain(tctx->lp_ctx), "127.0.0.1");
+    torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+                            "Zone transfer refused for authorized IPv4 address");
+
+    ret = dlz_allowzonexfr(dbdata, lpcfg_dnsdomain(tctx->lp_ctx), "1234:5678::1");
+    torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+                             "Zone transfer refused for authorized IPv6 address.");
+
+    ret = dlz_allowzonexfr(dbdata, lpcfg_dnsdomain(tctx->lp_ctx), "10.0.0.1");
+    torture_assert_int_equal(tctx, ret, ISC_R_NOPERM,
+                            "Zone transfer accepted for unauthorized IP");
+
+    ret = dlz_allowzonexfr(dbdata, lpcfg_dnsdomain(tctx->lp_ctx), "192.168.0.1");
+    torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+                             "Zone transfer refused for address in authorized IPv4 subnet.");
+
+    ret = dlz_allowzonexfr(dbdata, lpcfg_dnsdomain(tctx->lp_ctx), "192.168.0.2");
+    torture_assert_int_equal(tctx, ret, ISC_R_NOPERM,
+                            "Zone transfer allowed for denied client.");
+
+    dlz_destroy(dbdata);
+    return true;
+}
+
 static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dlz_bind9");
@@ -1221,6 +1291,7 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "lookup", test_dlz_bind9_lookup);
 	torture_suite_add_simple_test(suite, "zonedump", test_dlz_bind9_zonedump);
 	torture_suite_add_simple_test(suite, "update01", test_dlz_bind9_update01);
+	torture_suite_add_simple_test(suite, "allowzonexfr", test_dlz_bind9_allowzonexfr);
 	return suite;
 }
 

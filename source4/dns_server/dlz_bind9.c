@@ -40,6 +40,7 @@
 #include "dlz_minimal.h"
 #include "dnsserver_common.h"
 #include "lib/util/smb_strtox.h"
+#include "lib/util/access.h"
 
 #undef strcasecmp
 
@@ -1085,10 +1086,60 @@ _PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
  */
 _PUBLIC_ isc_result_t dlz_allowzonexfr(void *dbdata, const char *name, const char *client)
 {
-	/* just say yes for all our zones for now */
 	struct dlz_bind9_data *state = talloc_get_type(
 		dbdata, struct dlz_bind9_data);
-	return b9_find_zone_dn(state, name, NULL, NULL);
+	isc_result_t ret;
+	const char **authorized_clients, **denied_clients;
+	const char *cname="";
+
+	/* check that the zone is known */
+	ret = b9_find_zone_dn(state, name, NULL, NULL);
+	if (ret != ISC_R_SUCCESS) {
+		return ret;
+	}
+
+	/* default is to deny all transfers */
+
+	authorized_clients = lpcfg_dns_zone_transfer_clients_allow(state->lp);
+	denied_clients = lpcfg_dns_zone_transfer_clients_deny(state->lp);
+
+	/* The logic of allow_access() when both allow and deny lists are given
+	 * does not match our expectation here: it would allow clients thar are
+	 * neither allowed nor denied.
+	 * Here, we want to deny clients by default.
+	 * Using the allow_access() function is still useful as it takes care of
+	 * parsing IP adresses and subnets in a consistent way with other options
+	 * from smb.conf.
+	 *
+	 * We will then check the deny list first, then the allow list, so that
+	 * we accept only clients that are explicitely allowed AND not explicitely
+	 * denied.
+	 */
+	if ((authorized_clients == NULL) && (denied_clients == NULL)) {
+		/* No "allow" or "deny" lists given. Deny by default. */
+		return ISC_R_NOPERM;
+	}
+
+	if (denied_clients != NULL) {
+		bool ok = allow_access(denied_clients, NULL, cname, client);
+		if (!ok) {
+			/* client on deny list. Deny. */
+			return ISC_R_NOPERM;
+		}
+	}
+
+	if (authorized_clients != NULL) {
+		bool ok = allow_access(NULL, authorized_clients, cname, client);
+		if (ok) {
+			/*
+			 * client is not on deny list and is on allow list.
+			 * This is the only place we should return "allow".
+			 */
+			return ISC_R_SUCCESS;
+		}
+	}
+	/* We shouldn't get here, but deny by default. */
+	return ISC_R_NOPERM;
 }
 
 /*
