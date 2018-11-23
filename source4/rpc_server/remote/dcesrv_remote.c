@@ -179,9 +179,13 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return status;
 	}
 
-	flags = dcerpc_binding_get_flags(priv->c_pipe->binding);
-	if (!(flags & DCERPC_CONCURRENT_MULTIPLEX)) {
-		dce_call->state_flags &= ~DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
+	if (dce_call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) {
+		flags = dcerpc_binding_get_flags(priv->c_pipe->binding);
+		if (!(flags & DCERPC_CONCURRENT_MULTIPLEX)) {
+			DEBUG(1,("dcerpc_remote: RPC Proxy: "
+				 "Remote server doesn't support MPX\n"));
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 	}
 
 	if (dce_call->conn->assoc_group->proxied_id == 0) {
