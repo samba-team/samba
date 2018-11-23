@@ -1809,6 +1809,92 @@ done:
 	return ret;
 }
 
+static bool test_twrp_stream(struct torture_context *tctx,
+			     struct smb2_tree *tree)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+	bool ret = true;
+	char *p = NULL;
+	struct tm tm;
+	time_t t;
+	uint64_t nttime;
+	const char *file = NULL;
+	const char *stream = NULL;
+	const char *snapshot = NULL;
+	int stream_size;
+	char *path = NULL;
+	uint8_t *buf = NULL;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_read r;
+
+	file = torture_setting_string(tctx, "twrp_file", NULL);
+	if (file == NULL) {
+		torture_skip(tctx, "missing 'twrp_file' option\n");
+	}
+
+	stream = torture_setting_string(tctx, "twrp_stream", NULL);
+	if (stream == NULL) {
+		torture_skip(tctx, "missing 'twrp_stream' option\n");
+	}
+
+	snapshot = torture_setting_string(tctx, "twrp_snapshot", NULL);
+	if (snapshot == NULL) {
+		torture_skip(tctx, "missing 'twrp_snapshot' option\n");
+	}
+
+	stream_size = torture_setting_int(tctx, "twrp_stream_size", 0);
+	if (stream_size == 0) {
+		torture_skip(tctx, "missing 'twrp_stream_size' option\n");
+	}
+
+	torture_comment(tctx, "Testing timewarp on stream (%s) (%s)\n",
+			file, snapshot);
+
+	path = talloc_asprintf(tree, "%s:%s", file, stream);
+	torture_assert_not_null_goto(tctx, path, ret, done, "path\n");
+
+	buf = talloc_zero_array(tree, uint8_t, stream_size);
+	torture_assert_not_null_goto(tctx, buf, ret, done, "buf\n");
+
+	setenv("TZ", "GMT", 1);
+	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
+	torture_assert_goto(tctx, p != NULL, ret, done, "strptime\n");
+	torture_assert_goto(tctx, *p == '\0', ret, done, "strptime\n");
+
+	t = mktime(&tm);
+	unix_to_nt_time(&nttime, t);
+
+	io = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.fname = path,
+		.in.timewarp = nttime,
+	};
+
+	status = smb2_create(tree, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+	h1 = io.out.file.handle;
+
+	r = (struct smb2_read) {
+		.in.file.handle = h1,
+		.in.length = stream_size,
+		.in.offset = 0,
+	};
+
+	status = smb2_read(tree, tree, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+
+	smb2_util_close(tree, h1);
+
+done:
+	return ret;
+}
+
 /*
    basic testing of SMB2 read
 */
@@ -1840,6 +1926,7 @@ struct torture_suite *torture_smb2_twrp_init(TALLOC_CTX *ctx)
 	struct torture_suite *suite = torture_suite_create(ctx, "twrp");
 
 	torture_suite_add_1smb2_test(suite, "write", test_twrp_write);
+	torture_suite_add_1smb2_test(suite, "stream", test_twrp_stream);
 
 	suite->description = talloc_strdup(suite, "SMB2-TWRP tests");
 
