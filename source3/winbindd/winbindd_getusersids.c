@@ -104,13 +104,11 @@ NTSTATUS winbindd_getusersids_recv(struct tevent_req *req,
 	}
 
 	for (i=0; i<state->num_sids; i++) {
-		char *str = sid_string_tos(&state->sids[i]);
-		if (str == NULL) {
-			TALLOC_FREE(result);
-			return NT_STATUS_NO_MEMORY;
-		}
-		result = talloc_asprintf_append_buffer(result, "%s\n", str);
-		TALLOC_FREE(str);
+		struct dom_sid_buf sidbuf;
+		result = talloc_asprintf_append_buffer(
+			result,
+			"%s\n",
+			dom_sid_str_buf(&state->sids[i], &sidbuf));
 		if (result == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
