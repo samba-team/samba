@@ -1213,6 +1213,7 @@ sub provision_rpc_proxy($$$)
 	dcerpc_remote:binding = ncacn_ip_tcp:$dcvars->{SERVER}
 	dcerpc endpoint servers = epmapper, remote
 	dcerpc_remote:interfaces = rpcecho
+	dcerpc_remote:allow_anonymous_fallback = yes
 
 [cifs_to_dc]
 	path = /tmp/_ignore_cifs_to_dc_/_none_
