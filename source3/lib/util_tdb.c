@@ -41,7 +41,7 @@ static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap
 	uint32_t d;
 	int i;
 	void *p;
-	int len;
+	int len = 0;
 	char *s;
 	char c;
 	uint8_t *buf0 = buf;
