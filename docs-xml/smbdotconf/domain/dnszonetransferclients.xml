@@ -1,0 +1,19 @@
+<samba:parameter name="dns zone transfer clients"
+                 context="G"
+                 type="cmdlist"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option specifies the list IPs authorized to ask for dns zone
+	    transfer.
+	</para>
+
+	<para>The content is a comma-separated list of IP addresses.
+	</para>
+
+	<para>Default is "none", meaning no transfer will be authorized.
+	</para>
+</description>
+
+<value type="default">none</value>
+<value type="example">192.168.0.1</value>
+</samba:parameter>
