@@ -22,6 +22,7 @@
 #include "libads/ldap_schema.h"
 #include "../libcli/security/secace.h"
 #include "../librpc/ndr/libndr.h"
+#include "libcli/security/dom_sid.h"
 
 /* for ADS */
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff
@@ -139,6 +140,7 @@ static void ads_disp_sec_ace_object(ADS_STRUCT *ads,
 static void ads_disp_ace(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_ace *sec_ace)
 {
 	const char *access_type = "UNKNOWN";
+	struct dom_sid_buf sidbuf;
 
 	if (!sec_ace_object(sec_ace->type)) {
 		printf("------- ACE (type: 0x%02x, flags: 0x%02x, size: 0x%02x, mask: 0x%x)\n", 
@@ -169,8 +171,9 @@ static void ads_disp_ace(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_a
 		access_type = "AUDIT OBJECT";
 	}
 
-	printf("access SID:  %s\naccess type: %s\n", 
-               sid_string_talloc(mem_ctx, &sec_ace->trustee), access_type);
+	printf("access SID:  %s\naccess type: %s\n",
+	       dom_sid_str_buf(&sec_ace->trustee, &sidbuf),
+	       access_type);
 
 	if (sec_ace_object(sec_ace->type)) {
 		ads_disp_sec_ace_object(ads, mem_ctx, &sec_ace->object.object);
