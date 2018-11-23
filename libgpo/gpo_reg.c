@@ -348,7 +348,7 @@ static WERROR gp_reg_store_groupmembership(TALLOC_CTX *mem_ctx,
 {
 	struct registry_key *key = NULL;
 	WERROR werr;
-	int i = 0;
+	uint32_t i = 0;
 	const char *valname = NULL;
 	const char *path = NULL;
 	const char *val = NULL;
