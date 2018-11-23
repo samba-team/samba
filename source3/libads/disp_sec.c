@@ -199,7 +199,7 @@ static void ads_disp_acl(struct security_acl *sec_acl, const char *type)
 /* display SD */
 void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descriptor *sd)
 {
-	int i;
+	uint32_t i;
 	char *tmp_path = NULL;
 
 	if (!sd) {
