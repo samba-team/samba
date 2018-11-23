@@ -251,13 +251,16 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 
 static bool wb_lookupsids_bulk(const struct dom_sid *sid)
 {
+	struct dom_sid_buf sidbuf;
+
 	if (sid->num_auths != 5) {
 		/*
 		 * Only do "S-1-5-21-x-y-z-rid" domains via bulk
 		 * lookup
 		 */
-		DEBUG(10, ("No bulk setup for SID %s with %d subauths\n",
-			   sid_string_dbg(sid), sid->num_auths));
+		DBG_DEBUG("No bulk setup for SID %s with %"PRIi8" subauths\n",
+			  dom_sid_str_buf(sid, &sidbuf),
+			  sid->num_auths);
 		return false;
 	}
 
@@ -265,7 +268,8 @@ static bool wb_lookupsids_bulk(const struct dom_sid *sid)
 		/*
 		 * Passdb lookup via lookuprids
 		 */
-		DEBUG(10, ("%s is in our domain\n", sid_string_tos(sid)));
+		DBG_DEBUG("%s is in our domain\n",
+			  dom_sid_str_buf(sid, &sidbuf));
 		return true;
 	}
 
