@@ -86,8 +86,6 @@ def SAMBA_PIDL(bld, pname, source,
             name       = name,
             samba_type = 'PIDL')
 
-    # prime the list of nodes we are dependent on with the cached pidl sources
-    t.allnodes = pidl_src_nodes
 
     t.env.PIDL_LAUNCH_DIR = bld.srcnode.path_from(bld.bldnode)
     pnode = bld.srcnode.find_resource('pidl/pidl')
@@ -96,6 +94,8 @@ def SAMBA_PIDL(bld, pname, source,
     snode = t.path.find_resource(source[0])
     t.env.IDLSRC = snode.path_from(bld.srcnode)
     t.env.OUTPUTDIR = bld.bldnode.path_from(bld.srcnode) + '/' + bld.path.find_dir(output_dir).path_from(bld.srcnode)
+
+    bld.add_manual_dependency(snode, pidl_src_nodes)
 
     if generate_tables and table_header_idx is not None:
         pidl_headers = LOCAL_CACHE(bld, 'PIDL_HEADERS')
