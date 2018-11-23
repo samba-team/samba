@@ -26,6 +26,7 @@
 #include "registry/reg_api_util.h"
 #include "registry/reg_init_basic.h"
 #include "../libcli/security/security.h"
+#include "libcli/security/dom_sid.h"
 #include "../libcli/registry/util_reg.h"
 
 
@@ -306,12 +307,17 @@ static const char *gp_reg_groupmembership_path(TALLOC_CTX *mem_ctx,
 					       const struct dom_sid *sid,
 					       uint32_t flags)
 {
+	struct dom_sid_buf sidbuf;
+
 	if (flags & GPO_LIST_FLAG_MACHINE) {
 		return "GroupMembership";
 	}
 
-	return talloc_asprintf(mem_ctx, "%s\\%s", sid_string_tos(sid),
-			       "GroupMembership");
+	return talloc_asprintf(
+		mem_ctx,
+		"%s\\%s",
+		dom_sid_str_buf(sid, &sidbuf),
+		"GroupMembership");
 }
 
 /****************************************************************
@@ -435,11 +441,17 @@ static const char *gp_req_state_path(TALLOC_CTX *mem_ctx,
 				     const struct dom_sid *sid,
 				     uint32_t flags)
 {
+	struct dom_sid_buf sidbuf;
+
 	if (flags & GPO_LIST_FLAG_MACHINE) {
 		return GPO_REG_STATE_MACHINE;
 	}
 
-	return talloc_asprintf(mem_ctx, "%s\\%s", "State", sid_string_tos(sid));
+	return talloc_asprintf(
+		mem_ctx,
+		"%s\\%s",
+		"State",
+		dom_sid_str_buf(sid, &sidbuf));
 }
 
 /****************************************************************
