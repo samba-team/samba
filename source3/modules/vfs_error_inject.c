@@ -88,8 +88,26 @@ static int vfs_error_inject_chdir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_CHDIR(handle, smb_fname);
 }
 
+static ssize_t vfs_error_inject_pwrite(vfs_handle_struct *handle,
+				       files_struct *fsp,
+				       const void *data,
+				       size_t n,
+				       off_t offset)
+{
+	int error;
+
+	error = inject_unix_error("pwrite", handle);
+	if (error != 0) {
+		errno = error;
+		return -1;
+	}
+
+	return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+}
+
 static struct vfs_fn_pointers vfs_error_inject_fns = {
 	.chdir_fn = vfs_error_inject_chdir,
+	.pwrite_fn = vfs_error_inject_pwrite,
 };
 
 static_decl_vfs;
