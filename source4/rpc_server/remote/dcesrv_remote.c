@@ -262,8 +262,14 @@ static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 static void remote_op_dispatch_done(struct tevent_req *subreq);
 
+struct dcesrv_remote_call {
+	struct dcesrv_call_state *dce_call;
+	struct dcesrv_remote_private *priv;
+};
+
 static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
+	struct dcesrv_remote_call *rcall = NULL;
 	struct dcesrv_remote_private *priv = NULL;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
@@ -281,6 +287,13 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 		return status;
 	}
 
+	rcall = talloc_zero(dce_call, struct dcesrv_remote_call);
+	if (rcall == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	rcall->dce_call = dce_call;
+	rcall->priv = priv;
+
 	if (priv->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);		
 	}
@@ -288,7 +301,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	priv->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
 	/* we didn't use the return code of this function as we only check the last_fault_code */
-	subreq = dcerpc_binding_handle_call_send(dce_call, dce_call->event_ctx,
+	subreq = dcerpc_binding_handle_call_send(rcall, dce_call->event_ctx,
 						 priv->c_pipe->binding_handle,
 						 NULL, table,
 						 opnum, mem_ctx, r);
@@ -296,7 +309,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 		DEBUG(0,("dcesrv_remote: call[%s] dcerpc_binding_handle_call_send() failed!\n", name));
 		return NT_STATUS_NO_MEMORY;
 	}
-	tevent_req_set_callback(subreq, remote_op_dispatch_done, dce_call);
+	tevent_req_set_callback(subreq, remote_op_dispatch_done, rcall);
 
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	return NT_STATUS_OK;
@@ -304,10 +317,11 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 static void remote_op_dispatch_done(struct tevent_req *subreq)
 {
-	struct dcesrv_call_state *dce_call = tevent_req_callback_data(subreq,
-					     struct dcesrv_call_state);
-	struct dcesrv_remote_private *priv = talloc_get_type_abort(dce_call->context->private_data,
-								   struct dcesrv_remote_private);
+	struct dcesrv_remote_call *rcall =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_remote_call);
+	struct dcesrv_call_state *dce_call = rcall->dce_call;
+	struct dcesrv_remote_private *priv = rcall->priv;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	const struct ndr_interface_call *call;
