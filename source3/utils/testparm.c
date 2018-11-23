@@ -666,11 +666,11 @@ static void do_per_share_checks(int s)
 
 	smb_init_locale();
 	/*
-	 * Set the default debug level to 2.
+	 * Set the default debug level to 1.
 	 * Allow it to be overridden by the command line,
 	 * not by smb.conf.
 	 */
-	lp_set_cmdline("log level", "2");
+	lp_set_cmdline("log level", "1");
 
 	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
