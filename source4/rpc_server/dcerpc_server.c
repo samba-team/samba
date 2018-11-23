@@ -500,7 +500,7 @@ _PUBLIC_ NTSTATUS dcesrv_auth_session_key(struct dcesrv_call_state *call,
 					  DATA_BLOB *session_key)
 {
 	struct dcesrv_auth *auth = call->auth_state;
-
+	SMB_ASSERT(auth->auth_finished);
 	return dcesrv_session_info_session_key(auth, session_key);
 }
 
@@ -516,6 +516,8 @@ _PUBLIC_ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
 {
 	struct dcesrv_auth *auth = call->auth_state;
 	NTSTATUS status;
+
+	SMB_ASSERT(auth->auth_finished);
 
 	if (auth->session_key_fn == NULL) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -3212,6 +3214,7 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
 _PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_state *dce_call)
 {
 	struct dcesrv_auth *auth = dce_call->auth_state;
+	SMB_ASSERT(auth->auth_finished);
 	return auth->session_info->credentials;
 }
 
@@ -3222,6 +3225,7 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
 {
 	struct dcesrv_auth *auth = dce_call->auth_state;
 	enum security_user_level level;
+	SMB_ASSERT(auth->auth_finished);
 	level = security_session_user_level(auth->session_info, NULL);
 	return level >= SECURITY_USER;
 }
@@ -3232,6 +3236,7 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
 _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call)
 {
 	struct dcesrv_auth *auth = dce_call->auth_state;
+	SMB_ASSERT(auth->auth_finished);
 	return auth->session_info->info->account_name;
 }
 
@@ -3241,6 +3246,7 @@ _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call
 _PUBLIC_ struct auth_session_info *dcesrv_call_session_info(struct dcesrv_call_state *dce_call)
 {
 	struct dcesrv_auth *auth = dce_call->auth_state;
+	SMB_ASSERT(auth->auth_finished);
 	return auth->session_info;
 }
 
@@ -3252,6 +3258,8 @@ _PUBLIC_ void dcesrv_call_auth_info(struct dcesrv_call_state *dce_call,
 				    enum dcerpc_AuthLevel *auth_level)
 {
 	struct dcesrv_auth *auth = dce_call->auth_state;
+
+	SMB_ASSERT(auth->auth_finished);
 
 	if (auth_type != NULL) {
 		*auth_type = auth->auth_type;
