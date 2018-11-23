@@ -2158,6 +2158,15 @@ sub provision($$$$$$$$$)
 	vfs objects = shadow_copy2
 	shadow:mountpoint = $shadow_mntdir
 	wide links = yes
+
+[shadow_write]
+	path = $shadow_tstdir
+	comment = previous versions snapshots under mount point
+	vfs objects = shadow_copy2 error_inject
+	aio write size = 0
+	error_inject:pwrite = EBADF
+	shadow:mountpoint = $shadow_tstdir
+
 [dfq]
 	path = $shrdir/dfree
 	vfs objects = acl_xattr fake_acls xattr_tdb fake_dfq
