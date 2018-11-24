@@ -1591,6 +1591,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				bool *ppath_contains_wcard,
 				struct smb_filename **pp_smb_fname)
 {
+	const char *name = NULL;
 	NTSTATUS status;
 
 	*pp_smb_fname = NULL;
@@ -1641,7 +1642,9 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 	}
 
-	status = unix_convert(ctx, conn, name_in, pp_smb_fname, ucf_flags);
+	name = name_in;
+
+	status = unix_convert(ctx, conn, name, pp_smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert_internal: unix_convert failed "
 			"for name %s with %s\n",
