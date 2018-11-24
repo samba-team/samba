@@ -5570,6 +5570,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 				new_base_name,
 				ucf_flags,
 				NULL,
+				NULL,
 				smb_fname_out);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;

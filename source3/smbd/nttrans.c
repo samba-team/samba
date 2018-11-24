@@ -543,6 +543,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				fname,
 				ucf_flags,
 				NULL,
+				NULL,
 				&smb_fname);
 
 	TALLOC_FREE(case_state);
@@ -1115,6 +1116,7 @@ static void call_nt_transact_create(connection_struct *conn,
 				fname,
 				ucf_flags,
 				NULL,
+				NULL,
 				&smb_fname);
 
 	TALLOC_FREE(case_state);
@@ -1636,6 +1638,7 @@ void reply_ntrename(struct smb_request *req)
 				  oldname,
 				  ucf_flags_src,
 				  NULL,
+				  NULL,
 				  &smb_fname_old);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,
@@ -1652,6 +1655,7 @@ void reply_ntrename(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				  newname,
 				  ucf_flags_dst,
+				  NULL,
 				  &dest_has_wcard,
 				  &smb_fname_new);
 	if (!NT_STATUS_IS_OK(status)) {
