@@ -476,6 +476,8 @@ struct smbd_smb2_create_state {
 	ssize_t lease_len;
 	bool need_replay_cache;
 	struct smbXsrv_open *op;
+	time_t twrp_time;
+	time_t *twrp_timep;
 
 	struct smb2_create_blob *dhnc;
 	struct smb2_create_blob *dh2c;
@@ -891,7 +893,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				  smb1req->conn,
 				  state->fname,
 				  ucf_flags,
-				  NULL,
+				  state->twrp_timep,
 				  NULL, /* ppath_contains_wcards */
 				  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1179,9 +1181,6 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 
 	if (state->twrp != NULL) {
 		NTTIME nttime;
-		time_t t;
-		struct tm *tm;
-		char *tmpname = state->fname;
 
 		if (state->twrp->data.length != 8) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -1189,27 +1188,9 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 		}
 
 		nttime = BVAL(state->twrp->data.data, 0);
-		t = nt_time_to_unix(nttime);
-		tm = gmtime(&t);
+		state->twrp_time = nt_time_to_unix(nttime);
+		state->twrp_timep = &state->twrp_time;
 
-		state->fname = talloc_asprintf(
-			state,
-			"%s\\@GMT-%04u.%02u.%02u-%02u.%02u.%02u",
-			state->fname,
-			tm->tm_year + 1900,
-			tm->tm_mon + 1,
-			tm->tm_mday,
-			tm->tm_hour,
-			tm->tm_min,
-			tm->tm_sec);
-		if (tevent_req_nomem(state->fname, req)) {
-			return;
-		}
-		TALLOC_FREE(tmpname);
-		/*
-		 * Tell filename_create_ucf_flags() this
-		 * is an @GMT path.
-		 */
 		smb1req->flags2 |= FLAGS2_REPARSE_PATH;
 	}
 
