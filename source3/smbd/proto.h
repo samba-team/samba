@@ -353,6 +353,7 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			const char *name_in,
 			uint32_t ucf_flags,
+			time_t *twrp,
 			bool *ppath_contains_wcard,
 			struct smb_filename **pp_smb_fname);
 NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,

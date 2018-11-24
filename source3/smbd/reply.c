@@ -1306,6 +1306,7 @@ void reply_checkpath(struct smb_request *req)
 				name,
 				ucf_flags,
 				NULL,
+				NULL,
 				&smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1403,6 +1404,7 @@ void reply_getatr(struct smb_request *req)
 				conn,
 				fname,
 				ucf_flags,
+				NULL,
 				NULL,
 				&smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1506,6 +1508,7 @@ void reply_setatr(struct smb_request *req)
 				conn,
 				fname,
 				ucf_flags,
+				NULL,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1804,6 +1807,7 @@ void reply_search(struct smb_request *req)
 		nt_status = filename_convert(ctx, conn,
 					     path,
 					     ucf_flags,
+					     NULL,
 					     &mask_contains_wcard,
 					     &smb_fname);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2147,6 +2151,7 @@ void reply_open(struct smb_request *req)
 				fname,
 				ucf_flags,
 				NULL,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2318,6 +2323,7 @@ void reply_open_and_X(struct smb_request *req)
 				conn,
 				fname,
 				ucf_flags,
+				NULL,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2563,6 +2569,7 @@ void reply_mknew(struct smb_request *req)
 				fname,
 				ucf_flags,
 				NULL,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2698,6 +2705,7 @@ void reply_ctemp(struct smb_request *req)
 		status = filename_convert(ctx, conn,
 				fname,
 				ucf_flags,
+				NULL,
 				NULL,
 				&smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3237,6 +3245,7 @@ void reply_unlink(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				  name,
 				  ucf_flags,
+				  NULL,
 				  &path_contains_wcard,
 				  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6169,6 +6178,7 @@ void reply_mkdir(struct smb_request *req)
 				 directory,
 				 ucf_flags,
 				 NULL,
+				 NULL,
 				 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6238,6 +6248,7 @@ void reply_rmdir(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				 directory,
 				 ucf_flags,
+				 NULL,
 				 NULL,
 				 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -7361,6 +7372,7 @@ void reply_mv(struct smb_request *req)
 				  conn,
 				  name,
 				  src_ucf_flags,
+				  NULL,
 				  &src_has_wcard,
 				  &smb_fname_src);
 
@@ -7378,6 +7390,7 @@ void reply_mv(struct smb_request *req)
 				  conn,
 				  newname,
 				  dst_ucf_flags,
+				  NULL,
 				  &dest_has_wcard,
 				  &smb_fname_dst);
 
@@ -7671,6 +7684,7 @@ void reply_copy(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				  fname_src,
 				  ucf_flags_src,
+				  NULL,
 				  &source_has_wild,
 				  &smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -7686,6 +7700,7 @@ void reply_copy(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				  fname_dst,
 				  ucf_flags_dst,
+				  NULL,
 				  &dest_has_wild,
 				  &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
