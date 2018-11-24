@@ -17,5 +17,5 @@ JOBS=1
 export JOBS
 
 cd . || exit 1
-$WAF configure "$@" || exit 1
+${PYTHON:=python3} $WAF configure "$@" || exit 1
 cd $PREVPATH
