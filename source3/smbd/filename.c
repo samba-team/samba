@@ -1555,6 +1555,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  *			UCF_ALWAYS_ALLOW_WCARD_LCOMP will be OR'd in if
  *			p_cont_wcard != NULL and is true and
  *			UCF_COND_ALLOW_WCARD_LCOMP.
+ * @param twrp		Optional VSS time
  * @param p_cont_wcard	If not NULL, will be set to true if the dfs path
  *			resolution detects a wildcard.
  * @param pp_smb_fname	The final converted name will be allocated if the
@@ -1568,10 +1569,12 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				struct smb_request *smbreq,
 				const char *name_in,
 				uint32_t ucf_flags,
+				time_t *twrp,
 				bool *ppath_contains_wcard,
 				struct smb_filename **pp_smb_fname)
 {
 	const char *name = NULL;
+	char *twrp_name = NULL;
 	NTSTATUS status;
 
 	*pp_smb_fname = NULL;
@@ -1623,6 +1626,25 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	}
 
 	name = name_in;
+	if (twrp != NULL) {
+		struct tm *tm = NULL;
+
+		tm = gmtime(twrp);
+		twrp_name = talloc_asprintf(
+			ctx,
+			"@GMT-%04u.%02u.%02u-%02u.%02u.%02u/%s",
+			tm->tm_year + 1900,
+			tm->tm_mon + 1,
+			tm->tm_mday,
+			tm->tm_hour,
+			tm->tm_min,
+			tm->tm_sec,
+			name);
+		if (twrp_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		name = twrp_name;
+	}
 
 	status = unix_convert(ctx, conn, name, pp_smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1630,8 +1652,10 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 			"for name %s with %s\n",
 			name_in,
 			nt_errstr(status) ));
+		TALLOC_FREE(twrp_name);
 		return status;
 	}
+	TALLOC_FREE(twrp_name);
 
 	if ((ucf_flags & UCF_UNIX_NAME_LOOKUP) &&
 			VALID_STAT((*pp_smb_fname)->st) &&
@@ -1674,6 +1698,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 					NULL,
 					name_in,
 					ucf_flags,
+					NULL,
 					ppath_contains_wcard,
 					pp_smb_fname);
 }
@@ -1696,6 +1721,7 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
 					smbreq,
 					name_in,
 					ucf_flags,
+					NULL,
 					ppath_contains_wcard,
 					pp_smb_fname);
 }
