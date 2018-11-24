@@ -62,8 +62,11 @@ void security_token_debug(int dbg_class, int dbg_lev, const struct security_toke
 	DEBUGC(dbg_class, dbg_lev, ("Security token SIDs (%lu):\n",
 				       (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++) {
-		DEBUGADDC(dbg_class, dbg_lev, ("  SID[%3lu]: %s\n", (unsigned long)i,
-			   dom_sid_string(mem_ctx, &token->sids[i])));
+		struct dom_sid_buf sidbuf;
+		DEBUGADDC(dbg_class,
+			  dbg_lev,
+			  ("  SID[%3lu]: %s\n", (unsigned long)i,
+			   dom_sid_str_buf(&token->sids[i], &sidbuf)));
 	}
 
 	security_token_debug_privileges(dbg_class, dbg_lev, token);
