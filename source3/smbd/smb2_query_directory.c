@@ -400,6 +400,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 				conn,
 				fullpath,
 				ucf_flags,
+				NULL,
 				&wcard_has_wild,
 				&smb_fname);
 

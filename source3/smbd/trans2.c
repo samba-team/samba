@@ -1296,6 +1296,7 @@ static void call_trans2open(connection_struct *conn,
 				fname,
 				ucf_flags,
 				NULL,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2737,6 +2738,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 		ntstatus = filename_convert(talloc_tos(), conn,
 				    directory,
 				    ucf_flags,
+				    NULL,
 				    &mask_contains_wcard,
 				    &smb_dname);
 	}
@@ -5850,6 +5852,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 					fname,
 					ucf_flags,
 					NULL,
+					NULL,
 					&smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6686,6 +6689,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				oldname,
 				ucf_flags,
 				NULL,
+				NULL,
 				&smb_fname_old);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6760,6 +6764,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 				conn,
 				newname,
 				ucf_flags,
+				NULL,
 				NULL,
 				&smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6870,6 +6875,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				conn,
 				newname,
 				ucf_flags,
+				NULL,
 				NULL,
 				&smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -8831,6 +8837,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 					 fname,
 					 ucf_flags,
 					 NULL,
+					 NULL,
 					 &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -8979,6 +8986,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 				conn,
 				directory,
 				ucf_flags,
+				NULL,
 				NULL,
 				&smb_dname);
 

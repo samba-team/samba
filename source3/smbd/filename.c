@@ -1690,6 +1690,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				const char *name_in,
 				uint32_t ucf_flags,
+				time_t *twrp,
 				bool *ppath_contains_wcard,
 				struct smb_filename **pp_smb_fname)
 {
@@ -1698,7 +1699,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 					NULL,
 					name_in,
 					ucf_flags,
-					NULL,
+					twrp,
 					ppath_contains_wcard,
 					pp_smb_fname);
 }
