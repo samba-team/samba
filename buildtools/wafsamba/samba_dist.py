@@ -97,7 +97,7 @@ def add_tarfile(tar, fname, abspath, basedir):
     tinfo.gid   = 0
     tinfo.uname = 'root'
     tinfo.gname = 'root'
-    fh = open(abspath)
+    fh = open(abspath, "rb")
     tar.addfile(tinfo, fileobj=fh)
     fh.close()
 
@@ -119,7 +119,7 @@ def vcs_dir_contents(path):
         repo = os.path.dirname(repo)
     if repo == "/":
         raise Exception("unsupported or no vcs for %s" % path)
-    return Utils.cmd_output(ls_files_cmd, cwd=cwd, env=env).split('\n')
+    return Utils.cmd_output(ls_files_cmd, cwd=cwd, env=env).decode('utf8').split('\n')
 
 
 def dist(appname='', version=''):
