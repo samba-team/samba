@@ -140,17 +140,13 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i < info3->sidcount; i++) {
-		char *sid;
+		struct dom_sid_buf sidbuf;
 
-		sid = dom_sid_string(frame, info3->sids[i].sid);
-		if (sid == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-
-		ex = talloc_asprintf_append_buffer(ex, "%s:0x%08X\n",
-						   sid,
-						   info3->sids[i].attributes);
+		ex = talloc_asprintf_append_buffer(
+			ex,
+			"%s:0x%08X\n",
+			dom_sid_str_buf(info3->sids[i].sid, &sidbuf),
+			info3->sids[i].attributes);
 		if (ex == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
