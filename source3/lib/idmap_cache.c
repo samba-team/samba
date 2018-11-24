@@ -414,6 +414,7 @@ bool idmap_cache_del_sid(const struct dom_sid *sid)
 	bool ret = true;
 	bool expired;
 	struct unixid id;
+	struct dom_sid_buf sidbuf;
 	const char *sid_key;
 
 	if (!idmap_cache_find_sid2unixid(sid, &id, &expired)) {
@@ -438,7 +439,7 @@ bool idmap_cache_del_sid(const struct dom_sid *sid)
 		}
 	}
 
-	sid_key = key_sid2xid_str(mem_ctx, dom_sid_string(mem_ctx, sid));
+	sid_key = key_sid2xid_str(mem_ctx, dom_sid_str_buf(sid, &sidbuf));
 	if (sid_key == NULL) {
 		return false;
 	}
