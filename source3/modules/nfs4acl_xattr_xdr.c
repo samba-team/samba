@@ -39,6 +39,7 @@
 #include <rpc/xdr.h>
 #include "nfs41acl.h"
 #include "nfs4acl_xattr_xdr.h"
+#include "nfs4acl_xattr_util.h"
 
 static unsigned nfs4acli_get_naces(nfsacl41i *nacl)
 {
@@ -120,23 +121,6 @@ static nfsacl41i *nfs4acli_alloc(TALLOC_CTX *mem_ctx, unsigned naces)
 static nfsace4i *nfs4acli_get_ace(nfsacl41i *nacl, size_t n)
 {
 	return &nacl->na41_aces.na41_aces_val[n];
-}
-
-static unsigned smb4acl_to_nfs4acl_flags(uint16_t smb4acl_flags)
-{
-	unsigned nfs4acl_flags = 0;
-
-	if (smb4acl_flags & SEC_DESC_DACL_AUTO_INHERITED) {
-		nfs4acl_flags |= ACL4_AUTO_INHERIT;
-	}
-	if (smb4acl_flags & SEC_DESC_DACL_PROTECTED) {
-		nfs4acl_flags |= ACL4_PROTECTED;
-	}
-	if (smb4acl_flags & SEC_DESC_DACL_DEFAULTED) {
-		nfs4acl_flags |= ACL4_DEFAULTED;
-	}
-
-	return nfs4acl_flags;
 }
 
 static bool smb4acl_to_nfs4acli(vfs_handle_struct *handle,
@@ -253,23 +237,6 @@ NTSTATUS nfs4acl_smb4acl_to_xdr_blob(vfs_handle_struct *handle,
 
 	*_blob = blob;
 	return NT_STATUS_OK;
-}
-
-static uint16_t nfs4acl_to_smb4acl_flags(unsigned nfsacl41_flags)
-{
-	uint16_t smb4acl_flags = SEC_DESC_SELF_RELATIVE;
-
-	if (nfsacl41_flags & ACL4_AUTO_INHERIT) {
-		smb4acl_flags |= SEC_DESC_DACL_AUTO_INHERITED;
-	}
-	if (nfsacl41_flags & ACL4_PROTECTED) {
-		smb4acl_flags |= SEC_DESC_DACL_PROTECTED;
-	}
-	if (nfsacl41_flags & ACL4_DEFAULTED) {
-		smb4acl_flags |= SEC_DESC_DACL_DEFAULTED;
-	}
-
-	return smb4acl_flags;
 }
 
 static NTSTATUS nfs4acl_xdr_blob_to_nfs4acli(struct vfs_handle_struct *handle,
