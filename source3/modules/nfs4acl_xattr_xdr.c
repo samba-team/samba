@@ -40,31 +40,31 @@
 #include "nfs41acl.h"
 #include "nfs4acl_xattr_xdr.h"
 
-static unsigned nfs4acl_get_naces(nfsacl41i *nacl)
+static unsigned nfs4acli_get_naces(nfsacl41i *nacl)
 {
 	return nacl->na41_aces.na41_aces_len;
 }
 
-static void nfs4acl_set_naces(nfsacl41i *nacl, unsigned naces)
+static void nfs4acli_set_naces(nfsacl41i *nacl, unsigned naces)
 {
 	nacl->na41_aces.na41_aces_len = naces;
 }
 
-static unsigned nfs4acl_get_flags(nfsacl41i *nacl)
+static unsigned nfs4acli_get_flags(nfsacl41i *nacl)
 {
 	return nacl->na41_flag;
 }
 
-static void nfs4acl_set_flags(nfsacl41i *nacl, unsigned flags)
+static void nfs4acli_set_flags(nfsacl41i *nacl, unsigned flags)
 {
 	nacl->na41_flag = flags;
 }
 
-static size_t nfs4acl_get_xdrblob_size(nfsacl41i *nacl)
+static size_t nfs4acli_get_xdrblob_size(nfsacl41i *nacl)
 {
 	size_t acl_size;
 	size_t aces_size;
-	unsigned naces = nfs4acl_get_naces(nacl);
+	unsigned naces = nfs4acli_get_naces(nacl);
 
 	acl_size = sizeof(aclflag4) + sizeof(unsigned);
 
@@ -82,7 +82,7 @@ static size_t nfs4acl_get_xdrblob_size(nfsacl41i *nacl)
 	return acl_size;
 }
 
-static size_t nfs4acl_get_xdrblob_naces(size_t _blobsize)
+static size_t nfs4acli_get_xdrblob_naces(size_t _blobsize)
 {
 	size_t blobsize = _blobsize;
 
@@ -94,7 +94,7 @@ static size_t nfs4acl_get_xdrblob_naces(size_t _blobsize)
 	return (blobsize / sizeof(struct nfsace4i));
 }
 
-static nfsacl41i *nfs4acl_alloc(TALLOC_CTX *mem_ctx, unsigned naces)
+static nfsacl41i *nfs4acli_alloc(TALLOC_CTX *mem_ctx, unsigned naces)
 {
 	size_t acl_size = sizeof(nfsacl41i) + (naces * sizeof(struct nfsace4i));
 	nfsacl41i *nacl = NULL;
@@ -110,14 +110,14 @@ static nfsacl41i *nfs4acl_alloc(TALLOC_CTX *mem_ctx, unsigned naces)
 		return NULL;
 	}
 
-	nfs4acl_set_naces(nacl, naces);
+	nfs4acli_set_naces(nacl, naces);
 	nacl->na41_aces.na41_aces_val =
 		(nfsace4i *)((char *)nacl + sizeof(nfsacl41i));
 
 	return nacl;
 }
 
-static nfsace4i *nfs4acl_get_ace(nfsacl41i *nacl, size_t n)
+static nfsace4i *nfs4acli_get_ace(nfsacl41i *nacl, size_t n)
 {
 	return &nacl->na41_aces.na41_aces_val[n];
 }
@@ -139,10 +139,10 @@ static unsigned smb4acl_to_nfs4acl_flags(uint16_t smb4acl_flags)
 	return nfs4acl_flags;
 }
 
-static bool smb4acl_to_nfs4acl(vfs_handle_struct *handle,
-			       TALLOC_CTX *mem_ctx,
-			       struct SMB4ACL_T *smb4acl,
-			       nfsacl41i **_nacl)
+static bool smb4acl_to_nfs4acli(vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct SMB4ACL_T *smb4acl,
+				nfsacl41i **_nacl)
 {
 	struct nfs4acl_config *config = NULL;
 	struct SMB4ACE_T *smb4ace = NULL;
@@ -156,20 +156,20 @@ static bool smb4acl_to_nfs4acl(vfs_handle_struct *handle,
 				return false);
 
 	smb4naces = smb_get_naces(smb4acl);
-	nacl = nfs4acl_alloc(mem_ctx, smb4naces);
-	nfs4acl_set_naces(nacl, 0);
+	nacl = nfs4acli_alloc(mem_ctx, smb4naces);
+	nfs4acli_set_naces(nacl, 0);
 
 	if (config->nfs_version > ACL4_XATTR_VERSION_40) {
 		smb4acl_flags = smbacl4_get_controlflags(smb4acl);
 		nacl_flags = smb4acl_to_nfs4acl_flags(smb4acl_flags);
-		nfs4acl_set_flags(nacl, nacl_flags);
+		nfs4acli_set_flags(nacl, nacl_flags);
 	}
 
 	smb4ace = smb_first_ace4(smb4acl);
 	while (smb4ace != NULL) {
 		SMB_ACE4PROP_T *ace4prop = smb_get_ace4(smb4ace);
-		size_t nace_count = nfs4acl_get_naces(nacl);
-		nfsace4i *nace = nfs4acl_get_ace(nacl, nace_count);
+		size_t nace_count = nfs4acli_get_naces(nacl);
+		nfsace4i *nace = nfs4acli_get_ace(nacl, nace_count);
 
 		nace->type = ace4prop->aceType;
 		nace->flag = ace4prop->aceFlags;
@@ -206,7 +206,7 @@ static bool smb4acl_to_nfs4acl(vfs_handle_struct *handle,
 		}
 
 		nace_count++;
-		nfs4acl_set_naces(nacl, nace_count);
+		nfs4acli_set_naces(nacl, nace_count);
 		smb4ace = smb_next_ace4(smb4ace);
 	}
 
@@ -225,13 +225,13 @@ NTSTATUS nfs4acl_smb4acl_to_xdr_blob(vfs_handle_struct *handle,
 	DATA_BLOB blob;
 	bool ok;
 
-	ok = smb4acl_to_nfs4acl(handle, talloc_tos(), smb4acl, &nacl);
+	ok = smb4acl_to_nfs4acli(handle, talloc_tos(), smb4acl, &nacl);
 	if (!ok) {
 		DBG_ERR("smb4acl_to_nfs4acl failed\n");
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	aclblobsize = nfs4acl_get_xdrblob_size(nacl);
+	aclblobsize = nfs4acli_get_xdrblob_size(nacl);
 	if (aclblobsize == 0) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -272,10 +272,10 @@ static uint16_t nfs4acl_to_smb4acl_flags(unsigned nfsacl41_flags)
 	return smb4acl_flags;
 }
 
-static NTSTATUS nfs4acl_xdr_blob_to_nfs4acl(struct vfs_handle_struct *handle,
-					    TALLOC_CTX *mem_ctx,
-					    DATA_BLOB *blob,
-					    nfsacl41i **_nacl)
+static NTSTATUS nfs4acl_xdr_blob_to_nfs4acli(struct vfs_handle_struct *handle,
+					     TALLOC_CTX *mem_ctx,
+					     DATA_BLOB *blob,
+					     nfsacl41i **_nacl)
 {
 	struct nfs4acl_config *config = NULL;
 	nfsacl41i *nacl = NULL;
@@ -287,8 +287,8 @@ static NTSTATUS nfs4acl_xdr_blob_to_nfs4acl(struct vfs_handle_struct *handle,
 				struct nfs4acl_config,
 				return NT_STATUS_INTERNAL_ERROR);
 
-	naces = nfs4acl_get_xdrblob_naces(blob->length);
-	nacl = nfs4acl_alloc(mem_ctx, naces);
+	naces = nfs4acli_get_xdrblob_naces(blob->length);
+	nacl = nfs4acli_alloc(mem_ctx, naces);
 
 	xdrmem_create(&xdr, (char *)blob->data, blob->length, XDR_DECODE);
 
@@ -306,16 +306,16 @@ static NTSTATUS nfs4acl_xdr_blob_to_nfs4acl(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS nfs4acl_to_smb4acl(struct vfs_handle_struct *handle,
-				   TALLOC_CTX *mem_ctx,
-				   nfsacl41i *nacl,
-				   struct SMB4ACL_T **_smb4acl)
+static NTSTATUS nfs4acli_to_smb4acl(struct vfs_handle_struct *handle,
+				    TALLOC_CTX *mem_ctx,
+				    nfsacl41i *nacl,
+				    struct SMB4ACL_T **_smb4acl)
 {
 	struct nfs4acl_config *config = NULL;
 	struct SMB4ACL_T *smb4acl = NULL;
 	unsigned nfsacl41_flag = 0;
 	uint16_t smb4acl_flags = 0;
-	unsigned naces = nfs4acl_get_naces(nacl);
+	unsigned naces = nfs4acli_get_naces(nacl);
 	int i;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -328,7 +328,7 @@ static NTSTATUS nfs4acl_to_smb4acl(struct vfs_handle_struct *handle,
 	}
 
 	if (config->nfs_version > ACL4_XATTR_VERSION_40) {
-		nfsacl41_flag = nfs4acl_get_flags(nacl);
+		nfsacl41_flag = nfs4acli_get_flags(nacl);
 		smb4acl_flags = nfs4acl_to_smb4acl_flags(nfsacl41_flag);
 		smbacl4_set_controlflags(smb4acl, smb4acl_flags);
 	}
@@ -336,7 +336,7 @@ static NTSTATUS nfs4acl_to_smb4acl(struct vfs_handle_struct *handle,
 	DBG_DEBUG("flags [%x] nace [%u]\n", smb4acl_flags, naces);
 
 	for (i = 0; i < naces; i++) {
-		nfsace4i *nace = nfs4acl_get_ace(nacl, i);
+		nfsace4i *nace = nfs4acli_get_ace(nacl, i);
 		SMB_ACE4PROP_T smbace = { 0 };
 
 		DBG_DEBUG("type [%d] iflag [%x] flag [%x] mask [%x] who [%d]\n",
@@ -396,12 +396,12 @@ NTSTATUS nfs4acl_xdr_blob_to_smb4(struct vfs_handle_struct *handle,
 				struct nfs4acl_config,
 				return NT_STATUS_INTERNAL_ERROR);
 
-	status = nfs4acl_xdr_blob_to_nfs4acl(handle, talloc_tos(), blob, &nacl);
+	status = nfs4acl_xdr_blob_to_nfs4acli(handle, talloc_tos(), blob, &nacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = nfs4acl_to_smb4acl(handle, mem_ctx, nacl, &smb4acl);
+	status = nfs4acli_to_smb4acl(handle, mem_ctx, nacl, &smb4acl);
 	TALLOC_FREE(nacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
