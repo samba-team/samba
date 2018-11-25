@@ -121,7 +121,7 @@ class cross_Popen(Utils.subprocess.Popen):
                                stdout=Utils.subprocess.PIPE,
                                stderr=Utils.subprocess.PIPE)
                 ce_out, ce_err = p.communicate()
-                ans = (p.returncode, ce_out)
+                ans = (p.returncode, ce_out.decode('utf8'))
                 add_answer(ca_file, msg, ans)
             else:
                 args = newargs
