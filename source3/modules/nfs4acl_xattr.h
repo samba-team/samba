@@ -19,6 +19,8 @@
 #ifndef __NFS4ACL_XATTR_H__
 #define __NFS4ACL_XATTR_H__
 
+#define NFS4ACL_XDR_MAX_ACES 8192
+
 enum nfs4acl_encoding {NFS4ACL_ENCODING_NDR, NFS4ACL_ENCODING_XDR};
 
 struct nfs4acl_config {

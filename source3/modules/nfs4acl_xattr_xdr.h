@@ -20,7 +20,6 @@
 #define __NFS4ACL_XATTR_XDR_H__
 
 #define NFS4ACL_XDR_XATTR_NAME "security.nfs4acl_xdr"
-#define NFS4ACL_XDR_MAX_ACES 8192
 
 NTSTATUS nfs4acl_xdr_blob_to_smb4(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
