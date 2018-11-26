@@ -237,11 +237,11 @@ def configure(conf):
 
     if Options.options.with_system_heimdalkrb5:
         if Options.options.with_system_mitkrb5:
-            raise Utils.WafError('--with-system-heimdalkrb5 conflicts with ' +
-                                 '--with-system-mitkrb5')
+            raise Errors.WafError('--with-system-heimdalkrb5 conflicts with ' +
+                                  '--with-system-mitkrb5')
         if not Options.options.without_ad_dc:
-            raise Utils.WafError('--with-system-heimdalkrb5 requires ' +
-                                 '--without-ad-dc')
+            raise Errors.WafError('--with-system-heimdalkrb5 requires ' +
+                                  '--without-ad-dc')
         conf.env.SYSTEM_LIBS += ('heimdal', 'asn1', 'com_err', 'roken',
                                  'hx509', 'wind', 'gssapi', 'hcrypto',
                                  'krb5', 'heimbase', 'asn1_compile',

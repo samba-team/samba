@@ -3,7 +3,7 @@
 import os
 import sys
 import samba_git
-from waflib import Options, Utils
+from waflib import Options, Errors
 
 # work out what python external libraries we need to install
 external_pkgs = {
@@ -29,12 +29,12 @@ def find_third_party_module(conf, module, package):
             __import__(module)
         except ImportError:
             if samba_git.has_submodules(conf.srcnode.abspath()):
-                raise Utils.WafError("""\
+                raise Errors.WafError("""\
 Unable to find Python module '%s'. Please install the system package or check \
 out the relevant submodule by running 'git submodule update --init'.
 """ % module)
             else:
-                raise Utils.WafError("""\
+                raise Errors.WafError("""\
 Unable to find Python module '%s'. Please install the system package or place a copy in
 %s.
 """ % (module, package))
