@@ -412,8 +412,13 @@ class RawDCERPCTest(TestCase):
                 self.assertEquals(len(rep.u.error_and_verifier), 0)
                 return
 
+            expected_auth_length = 0
+            if auth_context is not None and \
+               auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PACKET:
+                expected_auth_length = req.auth_length
+
             self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
-                            auth_length=req.auth_length)
+                            auth_length=expected_auth_length)
             self.assertNotEquals(rep.u.alloc_hint, 0)
             self.assertEquals(rep.u.context_id, req.u.context_id & 0xff)
             self.assertEquals(rep.u.cancel_count, 0)
@@ -650,6 +655,12 @@ class RawDCERPCTest(TestCase):
             self.assertEquals(rep.auth_length, 0)
             return rep.u.stub_and_verifier
 
+        if auth_context["auth_level"] == dcerpc.DCERPC_AUTH_LEVEL_CONNECT:
+            self.assertEquals(rep.auth_length, 0)
+            return rep.u.stub_and_verifier
+
+        self.assertGreater(rep.auth_length, 0)
+
         ofs_stub = dcerpc.DCERPC_REQUEST_LENGTH
         ofs_sig = rep.frag_length - rep.auth_length
         ofs_trailer = ofs_sig - dcerpc.DCERPC_AUTH_TRAILER_LENGTH
@@ -768,6 +779,10 @@ class RawDCERPCTest(TestCase):
             self.assertTrue(False)
         elif auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PACKET:
             req_sig = auth_context["gensec"].sign_packet(req_data, req_whole)
+        elif auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_CONNECT:
+            self.assertEquals(auth_context["auth_type"],
+                              dcerpc.DCERPC_AUTH_TYPE_NTLMSSP)
+            req_sig = b"\x01" +b"\x00" *15
         else:
             return req
         self.assertEquals(len(req_sig), req.auth_length)
