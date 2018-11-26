@@ -21,7 +21,10 @@
 
 #define NFS4ACL_XDR_MAX_ACES 8192
 
-enum nfs4acl_encoding {NFS4ACL_ENCODING_NDR, NFS4ACL_ENCODING_XDR};
+enum nfs4acl_encoding {
+	NFS4ACL_ENCODING_NDR,
+	NFS4ACL_ENCODING_XDR,
+};
 
 struct nfs4acl_config {
 	unsigned nfs_version;
