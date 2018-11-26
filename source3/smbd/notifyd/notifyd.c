@@ -469,8 +469,8 @@ static bool notifyd_apply_rec_change(
 				       notifyd_sys_callback, msg_ctx,
 				       &instance->sys_watch);
 		if (ret != 0) {
-			DEBUG(1, ("%s: inotify_watch returned %s\n",
-				  __func__, strerror(errno)));
+			DBG_WARNING("sys_notify_watch for [%s] returned %s\n",
+				    path, strerror(errno));
 		}
 	}
 
