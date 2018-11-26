@@ -1158,3 +1158,6 @@ class RawDCERPCTest(TestCase):
             return
         zero_pad = b'\0' * length
         self.assertEquals(pad, zero_pad)
+
+    def assertEqualsStrLower(self, s1, s2):
+        self.assertEquals(str(s1).lower(), str(s2).lower())
