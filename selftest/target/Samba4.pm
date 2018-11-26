@@ -966,8 +966,6 @@ sub provision($$$$$$$$$$)
 
 	if (defined($extra_provision_options)) {
 		push (@{$ctx->{provision_options}}, @{$extra_provision_options});
-	} else {
-		push (@{$ctx->{provision_options}}, "--use-ntvfs");
 	}
 
 	$ctx->{share} = "$ctx->{prefix_abs}/share";
@@ -1133,6 +1131,7 @@ rpc_server:tcpip = no
 	if ($more_conf) {
 		$extra_smb_conf = $extra_smb_conf . $more_conf . "\n";
 	}
+	my $extra_provision_options = ["--use-ntvfs"];
 	my $ret = $self->provision($prefix,
 				   "member server",
 				   $hostname,
@@ -1142,7 +1141,8 @@ rpc_server:tcpip = no
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
 				   $dcvars->{SERVER_IPV6},
-				   $extra_smb_conf, "", undef);
+				   $extra_smb_conf, "",
+				   $extra_provision_options);
 	unless ($ret) {
 		return undef;
 	}
@@ -1210,6 +1210,7 @@ sub provision_rpc_proxy($$$)
 
 ";
 
+	my $extra_provision_options = ["--use-ntvfs"];
 	my $ret = $self->provision($prefix,
 				   "member server",
 				   "localrpcproxy",
@@ -1219,7 +1220,8 @@ sub provision_rpc_proxy($$$)
 				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
 				   $dcvars->{SERVER_IPV6},
-				   $extra_smbconf_options, "", undef);
+				   $extra_smbconf_options, "",
+				   $extra_provision_options);
 	unless ($ret) {
 		return undef;
 	}
@@ -1570,6 +1572,7 @@ sub provision_ad_dc_ntvfs($$)
 	dsdb group change notification = true
 	server schannel = auto
 	";
+	my $extra_provision_options = ["--use-ntvfs"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
@@ -1581,7 +1584,7 @@ sub provision_ad_dc_ntvfs($$)
 				   undef,
 				   $extra_conf_options,
 				   "",
-				   undef);
+				   $extra_provision_options);
 	unless ($ret) {
 		return undef;
 	}
@@ -1611,7 +1614,7 @@ sub provision_fl2000dc($$)
 	spnego:simulate_w2k=yes
 	ntlmssp_server:force_old_spnego=yes
 ";
-	my $extra_provision_options = undef;
+	my $extra_provision_options = ["--use-ntvfs"];
 	# This environment uses plain text secrets
 	# i.e. secret attributes are not encrypted on disk.
 	# This allows testing of the --plaintext-secrets option for
@@ -1658,6 +1661,7 @@ sub provision_fl2003dc($$$)
 	my $extra_conf_options = "allow dns updates = nonsecure and secure
 	dcesrv:header signing = no
 	dns forwarder = 127.0.0.$swiface1 127.0.0.$swiface2";
+	my $extra_provision_options = ["--use-ntvfs"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc6",
@@ -1669,7 +1673,7 @@ sub provision_fl2003dc($$$)
 				   undef,
 				   $extra_conf_options,
 				   "",
-				   undef);
+				   $extra_provision_options);
 	unless (defined $ret) {
 		return undef;
 	}
@@ -1713,6 +1717,7 @@ sub provision_fl2008r2dc($$$)
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...\n";
         my $extra_conf_options = "ldap server require strong auth = no";
+	my $extra_provision_options = ["--use-ntvfs"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
@@ -1724,7 +1729,7 @@ sub provision_fl2008r2dc($$$)
 				   undef,
 				   $extra_conf_options,
 				   "",
-				   undef);
+				   $extra_provision_options);
 	unless (defined $ret) {
 		return undef;
 	}
