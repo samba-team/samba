@@ -1813,11 +1813,9 @@ class GroupAssignments(object):
         self.count = 0
         self.generate_group_distribution(number_of_groups)
         self.generate_user_distribution(number_of_users, group_memberships)
-        self.assignments = self.assign_groups(number_of_groups,
-                                              groups_added,
-                                              number_of_users,
-                                              users_added,
-                                              group_memberships)
+        self.assignments = defaultdict(list)
+        self.assign_groups(number_of_groups, groups_added, number_of_users,
+                           users_added, group_memberships)
 
     def cumulative_distribution(self, weights):
         # make sure the probabilities conform to a cumulative distribution
@@ -1890,6 +1888,14 @@ class GroupAssignments(object):
     def get_groups(self):
         return self.assignments.keys()
 
+    def add_assignment(self, user, group):
+        # the assignments are stored in a dictionary where key=group,
+        # value=list-of-users-in-group (indexing by group-ID allows us to
+        # optimize for DB membership writes)
+        if user not in self.assignments[group]:
+            self.assignments[group].append(user)
+            self.count += 1
+
     def assign_groups(self, number_of_groups, groups_added,
                       number_of_users, users_added, group_memberships):
         """Allocate users to groups.
@@ -1901,9 +1907,8 @@ class GroupAssignments(object):
         few users.
         """
 
-        assignments = set()
         if group_memberships <= 0:
-            return {}
+            return
 
         # Calculate the number of group menberships required
         group_memberships = math.ceil(
@@ -1912,23 +1917,13 @@ class GroupAssignments(object):
 
         existing_users  = number_of_users  - users_added  - 1
         existing_groups = number_of_groups - groups_added - 1
-        while len(assignments) < group_memberships:
+        while self.total() < group_memberships:
             user, group = self.generate_random_membership()
 
             if group > existing_groups or user > existing_users:
                 # the + 1 converts the array index to the corresponding
                 # group or user number
-                assignments.add(((user + 1), (group + 1)))
-
-        # convert the set into a dictionary, where key=group, value=list-of-
-        # users-in-group (indexing by group-ID allows us to optimize for
-        # DB membership writes)
-        assignment_dict = defaultdict(list)
-        for (user, group) in assignments:
-            assignment_dict[group].append(user)
-            self.count += 1
-
-        return assignment_dict
+                self.add_assignment(user + 1, group + 1)
 
     def total(self):
         return self.count
