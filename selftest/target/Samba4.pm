@@ -592,6 +592,16 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 	return $ctx;
 }
 
+sub has_option
+{
+	my ($self, $keyword, @options_list) = @_;
+
+	# convert the options-list to a hash-map for easy keyword lookup
+	my %options_dict = map { $_ => 1 } @options_list;
+
+	return exists $options_dict{$keyword};
+}
+
 #
 # Step1 creates the basic configuration
 #
@@ -616,6 +626,13 @@ sub provision_raw_step1($$)
 	my $crlfile = "$ctx->{tlsdir}/crl.pem";
 	$crlfile = "" unless -e ${crlfile};
 
+	# work out which file server to use. Default to source3 smbd (s3fs),
+	# unless the source4 NTVFS (smb) file server has been specified
+	my $services = "-smb +s3fs";
+	if ($self->has_option("--use-ntvfs", @{$ctx->{provision_options}})) {
+		$services = "+smb -s3fs";
+	}
+
 	print CONFFILE "
 [global]
 	netbios name = $ctx->{netbiosname}
@@ -639,7 +656,7 @@ sub provision_raw_step1($$)
 	panic action = $RealBin/gdb_backtrace \%d
 	wins support = yes
 	server role = $ctx->{server_role}
-	server services = +echo +smb -s3fs
+	server services = +echo $services
         dcerpc endpoint servers = +winreg +srvsvc
 	notify:inotify = false
 	ldb:nosync = true
@@ -1901,7 +1918,6 @@ sub provision_ad_dc($$$$$$)
 	$password_hash_gpg_key_ids = "" unless defined($config_h->{HAVE_GPGME});
 
 	my $extra_smbconf_options = "
-        server services = -smb +s3fs
         xattr_tdb:file = $prefix_abs/statedir/xattr.tdb
 
 	dbwrap_tdb_mutexes:* = yes
