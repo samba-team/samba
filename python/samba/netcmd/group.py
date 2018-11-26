@@ -358,7 +358,8 @@ class cmd_group_list(Command):
                     self.outf.write("Distribution     Universal")
                 else:
                     self.outf.write("                          ")
-                self.outf.write("   %u\n" % len(msg.get("member", default=[])))
+                num_members = len(msg.get("member", default=[]))
+                self.outf.write("    %6u\n" % num_members)
         else:
             for msg in res:
                 self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
@@ -630,39 +631,45 @@ class cmd_group_stats(Command):
 
         for msg in res:
             name = str(msg.get("samaccountname"))
-            memberships = len(msg.get("member", default=[]))
-            group_assignments[name] = memberships
-            total_memberships += memberships
+            num_members = len(msg.get("member", default=[]))
+            group_assignments[name] = num_members
+            total_memberships += num_members
 
+        num_groups = res.count
         self.outf.write("Group membership statistics*\n")
         self.outf.write("-------------------------------------------------\n")
-        self.outf.write("Total groups: {0}\n".format(res.count))
+        self.outf.write("Total groups: {0}\n".format(num_groups))
         self.outf.write("Total memberships: {0}\n".format(total_memberships))
-        average = float(total_memberships / res.count)
+        average = total_memberships / float(num_groups)
         self.outf.write("Average members per group: %.2f\n" % average)
+
+        # find the max and median memberships (note that some default groups
+        # always have zero members, so displaying the min is not very helpful)
         group_names = list(group_assignments.keys())
         group_members = list(group_assignments.values())
-        # note that some builtin groups have no members, so this doesn't tell us much
-        idx = group_members.index(min(group_members))
-        self.outf.write("Min members: {0} ({1})\n".format(group_members[idx],
-                                                          group_names[idx]))
         idx = group_members.index(max(group_members))
         max_members = group_members[idx]
-        self.outf.write("Max members: {0} ({1})\n\n".format(max_members,
-                                                            group_names[idx]))
+        self.outf.write("Max members: {0} ({1})\n".format(max_members,
+                                                          group_names[idx]))
+        group_members.sort()
+        midpoint = num_groups // 2
+        median = group_members[midpoint]
+        if num_groups % 2 == 0:
+            median = (median + group_members[midpoint - 1]) / 2
+        self.outf.write("Median members per group: {0}\n\n".format(median))
 
         # convert this to the frequency of group membership, i.e. how many
         # groups have 5 members, how many have 6 members, etc
         group_freqs = defaultdict(int)
-        for group, count in group_assignments.items():
-            group_freqs[count] += 1
+        for group, num_members in group_assignments.items():
+            group_freqs[num_members] += 1
 
         # now squash this down even further, so that we just display the number
         # of groups that fall into one of the following membership bands
-        bands = [(0, 1), (2, 4), (5, 9), (10, 14), (15, 19), (20, 24), (25, 29),
-                 (30, 39), (40, 49), (50, 59), (60, 69), (70, 79), (80, 89),
-                 (90, 99), (100, 149), (150, 199), (200, 249), (250, 299),
-                 (300, 399), (400, 499), (500, 999), (1000, 1999),
+        bands = [(0, 1), (2, 4), (5, 9), (10, 14), (15, 19), (20, 24),
+                 (25, 29), (30, 39), (40, 49), (50, 59), (60, 69), (70, 79),
+                 (80, 89), (90, 99), (100, 149), (150, 199), (200, 249),
+                 (250, 299), (300, 399), (400, 499), (500, 999), (1000, 1999),
                  (2000, 2999), (3000, 3999), (4000, 4999), (5000, 9999),
                  (10000, max_members)]
 
