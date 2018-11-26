@@ -4837,7 +4837,6 @@ static bool test_GetUserName(struct dcerpc_binding_handle *b,
 			     struct torture_context *tctx)
 {
 	struct lsa_GetUserName r;
-	bool ret = true;
 	struct lsa_String *authority_name_p = NULL;
 	struct lsa_String *account_name_p = NULL;
 
@@ -4850,11 +4849,11 @@ static bool test_GetUserName(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_GetUserName_r(b, tctx, &r),
 		"GetUserName failed");
-
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "GetUserName failed - %s\n", nt_errstr(r.out.result));
-		ret = false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"GetUserName result failed");
+	torture_assert_not_null(tctx, r.out.account_name, "r.out.account_name");
+	torture_assert_not_null(tctx, *r.out.account_name, "*r.out.account_name");
+	torture_assert(tctx, r.out.authority_name == NULL, "r.out.authority_name");
 
 	account_name_p = NULL;
 	r.in.account_name	= &account_name_p;
@@ -4863,13 +4862,14 @@ static bool test_GetUserName(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_GetUserName_r(b, tctx, &r),
 		"GetUserName failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"GetUserName result failed");
+	torture_assert_not_null(tctx, r.out.account_name, "r.out.account_name");
+	torture_assert_not_null(tctx, *r.out.account_name, "*r.out.account_name");
+	torture_assert_not_null(tctx, r.out.authority_name, "r.out.authority_name");
+	torture_assert_not_null(tctx, *r.out.authority_name, "*r.out.authority_name");
 
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "GetUserName failed - %s\n", nt_errstr(r.out.result));
-		ret = false;
-	}
-
-	return ret;
+	return true;
 }
 
 static bool test_GetUserName_fail(struct dcerpc_binding_handle *b,
