@@ -2029,7 +2029,7 @@ sub provision_chgdcpass($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING CHGDCPASS...\n";
-	my $extra_provision_options = undef;
+	my $extra_provision_options = ["--use-ntvfs"];
 	# This environment disallows the use of this password
 	# (and also removes the default AD complexity checks)
 	my $unacceptable_password = "widk3Dsle32jxdBdskldsk55klASKQ";
