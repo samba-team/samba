@@ -112,6 +112,8 @@ def main():
     user_gen_group.add_option('--group-memberships', type='int', default=0,
                               help='Total memberships to assign across all '
                               'test users and all groups')
+    user_gen_group.add_option('--max-members', type='int', default=None,
+                              help='Max users to add to any one group')
     parser.add_option_group(user_gen_group)
 
     sambaopts = options.SambaOptions(parser)
@@ -333,6 +335,7 @@ def main():
                                           opts.number_of_users,
                                           opts.number_of_groups,
                                           opts.group_memberships,
+                                          opts.max_members,
                                           machine_accounts=computer_accounts,
                                           traffic_accounts=False)
         sys.exit()
@@ -346,6 +349,7 @@ def main():
                                       number_of_users,
                                       opts.number_of_groups,
                                       opts.group_memberships,
+                                      opts.max_members,
                                       machine_accounts=len(conversations),
                                       traffic_accounts=True)
 

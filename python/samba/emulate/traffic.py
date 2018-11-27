@@ -1764,8 +1764,8 @@ def clean_up_accounts(ldb, instance_id):
 
 def generate_users_and_groups(ldb, instance_id, password,
                               number_of_users, number_of_groups,
-                              group_memberships, machine_accounts,
-                              traffic_accounts=True):
+                              group_memberships, max_members,
+                              machine_accounts, traffic_accounts=True):
     """Generate the required users and groups, allocating the users to
        those groups."""
     memberships_added = 0
@@ -1792,7 +1792,8 @@ def generate_users_and_groups(ldb, instance_id, password,
                                        groups_added,
                                        number_of_users,
                                        users_added,
-                                       group_memberships)
+                                       group_memberships,
+                                       max_members)
         LOGGER.info("Adding users to groups")
         add_users_to_groups(ldb, instance_id, assignments)
         memberships_added = assignments.total()
@@ -1808,11 +1809,12 @@ def generate_users_and_groups(ldb, instance_id, password,
 
 class GroupAssignments(object):
     def __init__(self, number_of_groups, groups_added, number_of_users,
-                 users_added, group_memberships):
+                 users_added, group_memberships, max_members):
 
         self.count = 0
         self.generate_group_distribution(number_of_groups)
         self.generate_user_distribution(number_of_users, group_memberships)
+        self.max_members = max_members
         self.assignments = defaultdict(list)
         self.assign_groups(number_of_groups, groups_added, number_of_users,
                            users_added, group_memberships)
@@ -1825,6 +1827,9 @@ class GroupAssignments(object):
         # value, so we can use random.random() as a simple index into the list
         dist = []
         total = sum(weights)
+        if total == 0:
+            return None
+
         cumulative = 0.0
         for probability in weights:
             cumulative += probability
@@ -1868,6 +1873,7 @@ class GroupAssignments(object):
             weights.append(p)
 
         # convert the weights to a cumulative distribution between 0.0 and 1.0
+        self.group_weights = weights
         self.group_dist = self.cumulative_distribution(weights)
 
     def generate_random_membership(self):
@@ -1888,6 +1894,18 @@ class GroupAssignments(object):
     def get_groups(self):
         return self.assignments.keys()
 
+    def cap_group_membership(self, group, max_members):
+        """Prevent the group's membership from exceeding the max specified"""
+        num_members = len(self.assignments[group])
+        if num_members >= max_members:
+            LOGGER.info("Group {0} has {1} members".format(group, num_members))
+
+            # remove this group and then recalculate the cumulative
+            # distribution, so this group is no longer selected
+            self.group_weights[group - 1] = 0
+            new_dist = self.cumulative_distribution(self.group_weights)
+            self.group_dist = new_dist
+
     def add_assignment(self, user, group):
         # the assignments are stored in a dictionary where key=group,
         # value=list-of-users-in-group (indexing by group-ID allows us to
@@ -1895,6 +1913,10 @@ class GroupAssignments(object):
         if user not in self.assignments[group]:
             self.assignments[group].append(user)
             self.count += 1
+
+        # check if there'a cap on how big the groups can grow
+        if self.max_members:
+            self.cap_group_membership(group, self.max_members)
 
     def assign_groups(self, number_of_groups, groups_added,
                       number_of_users, users_added, group_memberships):
@@ -1914,6 +1936,10 @@ class GroupAssignments(object):
         group_memberships = math.ceil(
             float(group_memberships) *
             (float(users_added) / float(number_of_users)))
+
+        if self.max_members:
+            group_memberships = min(group_memberships,
+                                    self.max_members * number_of_groups)
 
         existing_users  = number_of_users  - users_added  - 1
         existing_groups = number_of_groups - groups_added - 1
