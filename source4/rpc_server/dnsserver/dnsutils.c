@@ -25,6 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/socket/netif.h"
 #include "lib/util/util_net.h"
+#include "dnsserver_common.h"
 
 static struct DNS_ADDR_ARRAY *fill_dns_addr_array(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
@@ -208,7 +209,6 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	return serverinfo;
 }
 
-
 struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 						struct dnsserver_serverinfo *serverinfo)
 {
@@ -217,8 +217,7 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	const char *revzone = "in-addr.arpa";
 	const char *revzone6 = "ip6.arpa";
 	int len1, len2;
-	union dnsPropertyData *prop = NULL;
-	int i=0;
+	unsigned int i = 0;
 
 	zoneinfo = talloc_zero(zone, struct dnsserver_zoneinfo);
 	if (zoneinfo == NULL) {
@@ -286,54 +285,12 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	zoneinfo->dwLastXfrResult = 0;
 
 	for(i=0; i<zone->num_props; i++){
-		prop=&(zone->tmp_props[i].data);
-		switch (zone->tmp_props[i].id) {
-		case DSPROPERTY_ZONE_TYPE:
-			zoneinfo->dwZoneType =
-				prop->zone_type;
-			break;
-		case DSPROPERTY_ZONE_ALLOW_UPDATE:
-			zoneinfo->fAllowUpdate =
-				prop->allow_update_flag;
-			break;
-		case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
-			zoneinfo->dwNoRefreshInterval =
-				prop->norefresh_hours;
-			break;
-		case DSPROPERTY_ZONE_REFRESH_INTERVAL:
-			zoneinfo->dwRefreshInterval =
-				prop->refresh_hours;
-			break;
-		case DSPROPERTY_ZONE_AGING_STATE:
-			zoneinfo->fAging =
-				prop->aging_enabled;
-			break;
-		case DSPROPERTY_ZONE_SCAVENGING_SERVERS:
-			zoneinfo->aipScavengeServers->AddrCount =
-				prop->servers.addrCount;
-			zoneinfo->aipScavengeServers->AddrArray =
-				prop->servers.addr;
-			break;
-		case DSPROPERTY_ZONE_AGING_ENABLED_TIME:
-			zoneinfo->dwAvailForScavengeTime =
-				prop->next_scavenging_cycle_hours;
-			break;
-		case DSPROPERTY_ZONE_MASTER_SERVERS:
-			zoneinfo->aipLocalMasters->AddrCount =
-				prop->master_servers.addrCount;
-			zoneinfo->aipLocalMasters->AddrArray =
-				prop->master_servers.addr;
-			break;
-		case DSPROPERTY_ZONE_EMPTY:
-		case DSPROPERTY_ZONE_SECURE_TIME:
-		case DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME:
-		case DSPROPERTY_ZONE_AUTO_NS_SERVERS:
-		case DSPROPERTY_ZONE_DCPROMO_CONVERT:
-		case DSPROPERTY_ZONE_SCAVENGING_SERVERS_DA:
-		case DSPROPERTY_ZONE_MASTER_SERVERS_DA:
-		case DSPROPERTY_ZONE_NS_SERVERS_DA:
-		case DSPROPERTY_ZONE_NODE_DBFLAGS:
-			break;
+		bool valid_property;
+		valid_property = dns_zoneinfo_load_zone_property(
+		    zoneinfo, &zone->tmp_props[i]);
+		if (!valid_property) {
+			TALLOC_FREE(zoneinfo);
+			return NULL;
 		}
 	}
 

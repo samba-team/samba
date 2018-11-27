@@ -40,6 +40,7 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
+#define MAX_Q_RECURSION_DEPTH 20
 
 struct forwarder_string {
 	const char *forwarder;
@@ -418,6 +419,11 @@ static struct tevent_req *handle_dnsrpcrec_send(
 	}
 	state->answers = answers;
 	state->nsrecs = nsrecs;
+
+	if (talloc_array_length(*answers) >= MAX_Q_RECURSION_DEPTH) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
 	resolve_cname = ((rec->wType == DNS_TYPE_CNAME) &&
 			 ((question->question_type == DNS_QTYPE_A) ||

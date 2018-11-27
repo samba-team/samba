@@ -56,6 +56,14 @@ def set_options(opt):
                    help='build Samba with system MIT Kerberos. ' +
                         'You may specify list of paths where Kerberos is installed (e.g. /usr/local /usr/kerberos) to search krb5-config',
                    action='callback', callback=system_mitkrb5_callback, dest='with_system_mitkrb5', default=False)
+
+    opt.add_option('--with-experimental-mit-ad-dc',
+                   help='Enable the experimental MIT Kerberos-backed AD DC.  ' +
+                   'Note that security patches are not issued for this configuration',
+                   action='store_true',
+                   dest='with_experimental_mit_ad_dc',
+                   default=False)
+
     opt.add_option('--with-system-mitkdc',
                    help=('Specify the path to the krb5kdc binary from MIT Kerberos'),
                    type="string",
@@ -210,7 +218,16 @@ def configure(conf):
         conf.DEFINE('AD_DC_BUILD_IS_ENABLED', 1)
 
     if Options.options.with_system_mitkrb5:
+        if not Options.options.with_experimental_mit_ad_dc and \
+           not Options.options.without_ad_dc:
+            raise Utils.WafError('The MIT Kerberos build of Samba as an AD DC ' +
+                                 'is experimental. Therefore '
+                                 '--with-system-mitkrb5 requires either ' +
+                                 '--with-experimental-mit-ad-dc or ' +
+                                 '--without-ad-dc')
+
         conf.PROCESS_SEPARATE_RULE('system_mitkrb5')
+
     if not (Options.options.without_ad_dc or Options.options.with_system_mitkrb5):
         conf.DEFINE('AD_DC_BUILD_IS_ENABLED', 1)
 

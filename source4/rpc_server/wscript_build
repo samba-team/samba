@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('DCERPC_SHARE',
 	source='common/share_info.c',
 	autoproto='common/share.h',
-	deps='ldb',
+	deps='ldb share',
 	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER'),
 	)
 
@@ -163,7 +163,7 @@ bld.SAMBA_MODULE('dcerpc_dnsserver',
     source='dnsserver/dcerpc_dnsserver.c dnsserver/dnsutils.c dnsserver/dnsdata.c dnsserver/dnsdb.c',
     subsystem='dcerpc_server',
     init_function='dcerpc_server_dnsserver_init',
-    deps='DCERPC_COMMON dnsserver_common'
+    deps='DCERPC_COMMON dnsserver_common netif'
     )
 
 
@@ -176,3 +176,16 @@ bld.SAMBA_MODULE('service_dcerpc',
 	deps='dcerpc_server'
 	)
 
+if bld.CONFIG_GET('ENABLE_SELFTEST'):
+    bld.SAMBA_BINARY(
+        'test_rpc_dns_server_dnsutils',
+        source='tests/rpc_dns_server_dnsutils_test.c',
+        deps='''
+            dnsserver_common
+            DCERPC_COMMON
+            cmocka
+            talloc
+        ''',
+        install=False,
+        enabled=bld.AD_DC_BUILD_IS_ENABLED()
+    )

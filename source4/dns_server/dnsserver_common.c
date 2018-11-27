@@ -742,6 +742,94 @@ bool dns_name_is_static(struct dnsp_DnssrvRpcRecord *records,
 	return false;
 }
 
+/*
+ * Helper function to copy a dnsp_ip4_array struct to an IP4_ARRAY struct.
+ * The new structure and it's data are allocated on the supplied talloc context
+ */
+static struct IP4_ARRAY *copy_ip4_array(TALLOC_CTX *ctx,
+					const char *name,
+					struct dnsp_ip4_array array)
+{
+
+	struct IP4_ARRAY *ip4_array = NULL;
+	unsigned int i;
+
+	ip4_array = talloc_zero(ctx, struct IP4_ARRAY);
+	if (ip4_array == NULL) {
+		DBG_ERR("Out of memory copying property [%s]\n", name);
+		return NULL;
+	}
+
+	ip4_array->AddrCount = array.addrCount;
+	if (ip4_array->AddrCount == 0) {
+		return ip4_array;
+	}
+
+	ip4_array->AddrArray =
+	    talloc_array(ip4_array, uint32_t, ip4_array->AddrCount);
+	if (ip4_array->AddrArray == NULL) {
+		TALLOC_FREE(ip4_array);
+		DBG_ERR("Out of memory copying property [%s] values\n", name);
+		return NULL;
+	}
+
+	for (i = 0; i < ip4_array->AddrCount; i++) {
+		ip4_array->AddrArray[i] = array.addr[i];
+	}
+
+	return ip4_array;
+}
+
+bool dns_zoneinfo_load_zone_property(struct dnsserver_zoneinfo *zoneinfo,
+				     struct dnsp_DnsProperty *prop)
+{
+	switch (prop->id) {
+	case DSPROPERTY_ZONE_TYPE:
+		zoneinfo->dwZoneType = prop->data.zone_type;
+		break;
+	case DSPROPERTY_ZONE_ALLOW_UPDATE:
+		zoneinfo->fAllowUpdate = prop->data.allow_update_flag;
+		break;
+	case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
+		zoneinfo->dwNoRefreshInterval = prop->data.norefresh_hours;
+		break;
+	case DSPROPERTY_ZONE_REFRESH_INTERVAL:
+		zoneinfo->dwRefreshInterval = prop->data.refresh_hours;
+		break;
+	case DSPROPERTY_ZONE_AGING_STATE:
+		zoneinfo->fAging = prop->data.aging_enabled;
+		break;
+	case DSPROPERTY_ZONE_SCAVENGING_SERVERS:
+		zoneinfo->aipScavengeServers = copy_ip4_array(
+		    zoneinfo, "ZONE_SCAVENGING_SERVERS", prop->data.servers);
+		if (zoneinfo->aipScavengeServers == NULL) {
+			return false;
+		}
+		break;
+	case DSPROPERTY_ZONE_AGING_ENABLED_TIME:
+		zoneinfo->dwAvailForScavengeTime =
+		    prop->data.next_scavenging_cycle_hours;
+		break;
+	case DSPROPERTY_ZONE_MASTER_SERVERS:
+		zoneinfo->aipLocalMasters = copy_ip4_array(
+		    zoneinfo, "ZONE_MASTER_SERVERS", prop->data.master_servers);
+		if (zoneinfo->aipLocalMasters == NULL) {
+			return false;
+		}
+		break;
+	case DSPROPERTY_ZONE_EMPTY:
+	case DSPROPERTY_ZONE_SECURE_TIME:
+	case DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME:
+	case DSPROPERTY_ZONE_AUTO_NS_SERVERS:
+	case DSPROPERTY_ZONE_DCPROMO_CONVERT:
+	case DSPROPERTY_ZONE_SCAVENGING_SERVERS_DA:
+	case DSPROPERTY_ZONE_MASTER_SERVERS_DA:
+	case DSPROPERTY_ZONE_NS_SERVERS_DA:
+	case DSPROPERTY_ZONE_NODE_DBFLAGS:
+		break;
+	}
+	return true;
+}
 WERROR dns_get_zone_properties(struct ldb_context *samdb,
 			       TALLOC_CTX *mem_ctx,
 			       struct ldb_dn *zone_dn,
@@ -774,6 +862,7 @@ WERROR dns_get_zone_properties(struct ldb_context *samdb,
 	}
 
 	for (i = 0; i < element->num_values; i++) {
+		bool valid_property;
 		prop = talloc_zero(mem_ctx, struct dnsp_DnsProperty);
 		if (prop == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
@@ -787,42 +876,10 @@ WERROR dns_get_zone_properties(struct ldb_context *samdb,
 			return DNS_ERR(SERVER_FAILURE);
 		}
 
-		switch (prop->id) {
-		case DSPROPERTY_ZONE_AGING_STATE:
-			zoneinfo->fAging = prop->data.aging_enabled;
-			break;
-		case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
-			zoneinfo->dwNoRefreshInterval =
-			    prop->data.norefresh_hours;
-			break;
-		case DSPROPERTY_ZONE_REFRESH_INTERVAL:
-			zoneinfo->dwRefreshInterval = prop->data.refresh_hours;
-			break;
-		case DSPROPERTY_ZONE_ALLOW_UPDATE:
-			zoneinfo->fAllowUpdate = prop->data.allow_update_flag;
-			break;
-		case DSPROPERTY_ZONE_AGING_ENABLED_TIME:
-			zoneinfo->dwAvailForScavengeTime =
-			    prop->data.next_scavenging_cycle_hours;
-			break;
-		case DSPROPERTY_ZONE_SCAVENGING_SERVERS:
-			zoneinfo->aipScavengeServers->AddrCount =
-			    prop->data.servers.addrCount;
-			zoneinfo->aipScavengeServers->AddrArray =
-			    prop->data.servers.addr;
-			break;
-		case DSPROPERTY_ZONE_EMPTY:
-		case DSPROPERTY_ZONE_TYPE:
-		case DSPROPERTY_ZONE_SECURE_TIME:
-		case DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME:
-		case DSPROPERTY_ZONE_MASTER_SERVERS:
-		case DSPROPERTY_ZONE_AUTO_NS_SERVERS:
-		case DSPROPERTY_ZONE_DCPROMO_CONVERT:
-		case DSPROPERTY_ZONE_SCAVENGING_SERVERS_DA:
-		case DSPROPERTY_ZONE_MASTER_SERVERS_DA:
-		case DSPROPERTY_ZONE_NS_SERVERS_DA:
-		case DSPROPERTY_ZONE_NODE_DBFLAGS:
-			break;
+		valid_property =
+		    dns_zoneinfo_load_zone_property(zoneinfo, prop);
+		if (!valid_property) {
+			return DNS_ERR(SERVER_FAILURE);
 		}
 	}
 
