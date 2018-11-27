@@ -125,6 +125,24 @@ else
 	echo "success: wbinfo -n check for sane mapping"
 fi
 
+echo "test: wbinfo -n NT Authority/Authenticated Users"
+$wbinfo -n "NT Authority/Authenticated Users"
+if [ $? -ne 0 ] ; then
+    echo "failure: wbinfo -n NT Authority/Authenticated Users"
+    failed=`expr $failed + 1`
+else
+    echo "success: wbinfo -n NT Authority/Authenticated Users"
+fi
+
+echo "test: wbinfo --group-info NT Authority/Authenticated Users"
+$wbinfo --group-info "NT Authority/Authenticated Users"
+if [ $? -ne 0 ] ; then
+    echo "failure: wbinfo --group-info NT Authority/Authenticated Users"
+    failed=`expr $failed + 1`
+else
+    echo "success: wbinfo --group-info NT Authority/Authenticated Users"
+fi
+
 testit "wbinfo -U against $TARGET" $wbinfo -U 30000 || failed=`expr $failed + 1`
 
 echo "test: wbinfo -U check for sane mapping"
