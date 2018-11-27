@@ -602,7 +602,7 @@ NTSTATUS libnet_DomainOpenLsa_recv(struct composite_context *c, struct libnet_co
 /**
  * Sends a request to open a domain in desired service
  *
- * @param ctx initalised libnet context
+ * @param ctx initialised libnet context
  * @param io arguments and results of the call
  * @param monitor pointer to monitor function that is passed monitor message
  */
@@ -1188,7 +1188,7 @@ static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_lis
 /**
  * Sends a request to list domains on given host
  *
- * @param ctx initalised libnet context
+ * @param ctx initialised libnet context
  * @param mem_ctx memory context
  * @param io arguments and results of the call
  * @param monitor pointer to monitor function that is passed monitor messages

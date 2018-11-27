@@ -237,7 +237,7 @@ const struct dom_sid *pdb_get_group_sid(struct samu *sampass)
 }
 
 /**
- * Get flags showing what is initalised in the struct samu
+ * Get flags showing what is initialised in the struct samu
  * @param sampass the struct samu in question
  * @return the flags indicating the members initialised in the struct.
  **/
@@ -419,7 +419,7 @@ bool pdb_set_logon_divs(struct samu *sampass, uint16_t hours, enum pdb_value_sta
 }
 
 /**
- * Set flags showing what is initalised in the struct samu
+ * Set flags showing what is initialised in the struct samu
  * @param sampass the struct samu in question
  * @param flag The *new* flag to be set.  Old flags preserved
  *             this flag is only added.  

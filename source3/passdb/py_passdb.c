@@ -3542,7 +3542,7 @@ static PyObject *py_pdb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	/* Initalize list of methods */
+	/* Initialize list of methods */
 	status = make_pdb_method_name(&methods, url);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_Format(py_pdb_error, "Cannot load backend methods for '%s' backend (%d,%s)",
@@ -3727,7 +3727,7 @@ static PyMethodDef py_passdb_methods[] = {
 		Return domain SID from secrets database." },
 	{ "reload_static_pdb", py_reload_static_pdb, METH_NOARGS,
 		"reload_static_pdb() -> None\n\n \
-		Re-initalise the static pdb used internally.  Needed if 'passdb backend' is changed." },
+		Re-initialise the static pdb used internally.  Needed if 'passdb backend' is changed." },
 	{ NULL },
 };
 

@@ -2163,7 +2163,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     # (objectClass).
                     if list_attid_from_md[0] != 0:
                         error_count += 1
-                        self.report("ERROR: Not fixing incorrect inital attributeID in '%s' on '%s', it should be objectClass" %
+                        self.report("ERROR: Not fixing incorrect initial attributeID in '%s' on '%s', it should be objectClass" %
                                     (attrname, str(dn)))
 
                 got_repl_property_meta_data = True

@@ -104,8 +104,8 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *namespace,
 	}
 
 	/*
-	 * We inject the inital NEGOTIATE message our caller used
-	 * in order to get the state machine into the correct possition.
+	 * We inject the initial NEGOTIATE message our caller used
+	 * in order to get the state machine into the correct position.
 	 */
 	reply = data_blob_null;
 	status = gensec_update(auth_generic_state->gensec_security,

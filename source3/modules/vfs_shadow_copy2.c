@@ -333,7 +333,7 @@ static ssize_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
  * snapshot at the given timestamp of the input path.
  *
  * In the case of a parallel snapdir (specified with an
- * absolute path), this is the inital portion of the
+ * absolute path), this is the initial portion of the
  * local path of any snapshot file. The complete path is
  * obtained by appending the portion of the file's path
  * below the share root's mountpoint.

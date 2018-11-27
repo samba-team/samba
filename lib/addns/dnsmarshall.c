@@ -35,7 +35,7 @@ struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
 	result->error = ERROR_DNS_SUCCESS;
 	
 	/*
-	 * Small inital size to excercise the realloc code
+	 * Small initial size to exercise the realloc code
 	 */
 	result->size = 2;
 

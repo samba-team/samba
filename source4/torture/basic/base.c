@@ -1523,7 +1523,7 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 }
 
 /*
- * This is a test to excercise some weird Samba3 error paths.
+ * This is a test to exercise some weird Samba3 error paths.
  */
 
 static bool torture_samba3_errorpaths(struct torture_context *tctx)

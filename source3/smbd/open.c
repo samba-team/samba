@@ -3756,7 +3756,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				return status;
 			}
 		}
-		/* Note that here we set the *inital* delete on close flag,
+		/* Note that here we set the *initial* delete on close flag,
 		   not the regular one. The magic gets handled in close. */
 		fsp->initial_delete_on_close = True;
 	}
@@ -4292,7 +4292,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 
 		if (NT_STATUS_IS_OK(status)) {
-			/* Note that here we set the *inital* delete on close flag,
+			/* Note that here we set the *initial* delete on close flag,
 			   not the regular one. The magic gets handled in close. */
 			fsp->initial_delete_on_close = True;
 		}

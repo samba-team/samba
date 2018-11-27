@@ -185,7 +185,7 @@ done:
 	}
 
 	/*
-	 * Check this after the modules have be initalised so we
+	 * Check this after the modules have be initialised so we
 	 * can actually read the backend DB.
 	 */
 	data->userPassword_support

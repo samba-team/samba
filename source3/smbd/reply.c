@@ -6930,7 +6930,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			status = can_set_delete_on_close(fsp, 0);
 
 			if (NT_STATUS_IS_OK(status)) {
-				/* Note that here we set the *inital* delete on close flag,
+				/* Note that here we set the *initial* delete on close flag,
 				 * not the regular one. The magic gets handled in close. */
 				fsp->initial_delete_on_close = True;
 			}

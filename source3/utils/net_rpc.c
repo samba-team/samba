@@ -58,8 +58,8 @@ static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask);
  * @brief RPC based subcommands for the 'net' utility.
  *
  * This file should contain much of the functionality that used to
- * be found in rpcclient, execpt that the commands should change
- * less often, and the fucntionality should be sane (the user is not
+ * be found in rpcclient, except that the commands should change
+ * less often, and the functionality should be sane (the user is not
  * expected to know a rid/sid before they conduct an operation etc.)
  *
  * @todo Perhaps eventually these should be split out into a number
@@ -256,7 +256,7 @@ fail:
 }
 
 /**
- * Force a change of the trust acccount password.
+ * Force a change of the trust account password.
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through.
@@ -305,7 +305,7 @@ static NTSTATUS rpc_changetrustpw_internals(struct net_context *c,
 }
 
 /**
- * Force a change of the trust acccount password.
+ * Force a change of the trust account password.
  *
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
@@ -336,7 +336,7 @@ int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv)
  * the message to be displayed when oldjoin was explicitly
  * requested, but not when it was implied by "net rpc join".
  *
- * This uses 'machinename' as the inital password, and changes it.
+ * This uses 'machinename' as the initial password, and changes it.
  *
  * The password should be created with 'server manager' or equiv first.
  *
@@ -375,7 +375,7 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 	}
 
 	/*
-	   check what type of join - if the user want's to join as
+	   check what type of join - if the user wants to join as
 	   a BDC, the server must agree that we are a BDC.
 	*/
 	if (argc >= 0) {
@@ -568,7 +568,7 @@ static int net_rpc_join_newstyle(struct net_context *c, int argc, const char **a
 	}
 
 	/*
-	   check what type of join - if the user want's to join as
+	   check what type of join - if the user wants to join as
 	   a BDC, the server must agree that we are a BDC.
 	*/
 	if (argc >= 0) {

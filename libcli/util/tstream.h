@@ -51,7 +51,7 @@ typedef NTSTATUS tstream_read_pdu_blob_full_fn_t(void *private_data,
  *
  * @param[in] stream		The stream to read data from.
  *
- * @param[in] inital_read_size	The initial byte count that is needed to workout
+ * @param[in] initial_read_size	The initial byte count that is needed to workout
  *				the full pdu size.
  *
  * @param[in] full_fn		The callback function that will report the size
@@ -69,7 +69,7 @@ typedef NTSTATUS tstream_read_pdu_blob_full_fn_t(void *private_data,
 struct tevent_req *tstream_read_pdu_blob_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct tstream_context *stream,
-				size_t inital_read_size,
+				size_t initial_read_size,
 				tstream_read_pdu_blob_full_fn_t *full_fn,
 				void *full_private);
 /**

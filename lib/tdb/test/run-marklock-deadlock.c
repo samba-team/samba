@@ -171,7 +171,7 @@ static int do_tests(const char *name, int tdb_flags)
 	 * mutex patches, the freelist was already blocked here by the
 	 * allrecord child, which was waiting for the chainlock child to give
 	 * up its chainlock. Make sure that we don't run into this
-	 * deadlock. To excercise the deadlock, just comment out the "ok"
+	 * deadlock. To exercise the deadlock, just comment out the "ok"
 	 * line.
 	 *
 	 * The freelist lock/mutex is independent from the allrecord lock/mutex.

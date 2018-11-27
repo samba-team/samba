@@ -293,13 +293,13 @@ int main(int argc, const char **argv)
 
 	ret = event_config_init(e_state, &e_state->config);
 	if (ret != 0) {
-		D_ERR("Failed to initalize event config\n");
+		D_ERR("Failed to initialize event config\n");
 		goto fail;
 	}
 
 	e_state->ev = tevent_context_init(e_state->mem_ctx);
 	if (e_state->ev == NULL) {
-		D_ERR("Failed to initalize tevent\n");
+		D_ERR("Failed to initialize tevent\n");
 		ret = 1;
 		goto fail;
 	}
