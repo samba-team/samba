@@ -1526,8 +1526,9 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 	}
 
 	if (strequal(domain_name, "BUILTIN") ||
-	    strequal(domain_name, get_global_sam_name()))
+	    strequal(domain_name, get_global_sam_name())) {
 		return find_domain_from_name_noinit(domain_name);
+	}
 
 	if (IS_DC) {
 		struct winbindd_domain *domain = NULL;
