@@ -1,0 +1,2 @@
+^samba.blackbox.wbinfo\(.*\).wbinfo -n NT Authority/Authenticated Users\(.*\)
+^samba.blackbox.wbinfo\(.*\).wbinfo --group-info NT Authority/Authenticated Users\(.*\)
