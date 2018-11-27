@@ -191,9 +191,11 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 			len = strnlen((const char *)buf, bufsize) + 1;
 			if (bufsize < len)
 				goto no_space;
-			*ps = SMB_STRDUP((const char *)buf);
-			if (*ps == NULL) {
-				goto no_space;
+			if (ps != NULL) {
+				*ps = SMB_STRDUP((const char *)buf);
+				if (*ps == NULL) {
+					goto no_space;
+				}
 			}
 			break;
 		case 'f': /* null-terminated string */
@@ -201,7 +203,9 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 			len = strnlen((const char *)buf, bufsize) + 1;
 			if (bufsize < len || len > sizeof(fstring))
 				goto no_space;
-			memcpy(s, buf, len);
+			if (s != NULL) {
+				memcpy(s, buf, len);
+			}
 			break;
 		case 'B': /* fixed-length string */
 			i = va_arg(ap, uint32_t *);
@@ -220,10 +224,12 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 			}
 			if (bufsize < len)
 				goto no_space;
-			*b = (char *)SMB_MALLOC(*i);
-			if (! *b)
-				goto no_space;
-			memcpy(*b, buf+4, *i);
+			if (b != NULL) {
+				*b = (char *)SMB_MALLOC(*i);
+				if (! *b)
+					goto no_space;
+				memcpy(*b, buf+4, *i);
+			}
 			break;
 		default:
 			DEBUG(0,("Unknown tdb_unpack format %c in %s\n",
