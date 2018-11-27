@@ -75,9 +75,17 @@ testit "STEP1 kinit with pkinit (name specified) " $samba4kinit $enctype --reque
 testit "STEP1 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
 test_smbclient "STEP1 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
+testit_expect_failure "STEP1 kinit with pkinit (wrong name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER not$USERNAME@$REALM || failed=`expr $failed + 1`
+
+testit_expect_failure "STEP1 kinit with pkinit (wrong name specified 2) " $samba4kinit $enctype --request-pac --renewable $PKUSER $SERVER@$REALM || failed=`expr $failed + 1`
+
 testit "STEP1 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP1 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
 test_smbclient "STEP1 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit_expect_failure "STEP1 kinit with pkinit (wrong enterprise name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise not$USERNAME@$REALM || failed=`expr $failed + 1`
+
+testit_expect_failure "STEP1 kinit with pkinit (wrong enterprise name specified 2) " $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $SERVER$@$REALM || failed=`expr $failed + 1`
 
 testit "STEP1 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
 testit "STEP1 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
