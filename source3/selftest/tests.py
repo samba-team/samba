@@ -706,6 +706,11 @@ plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
                '$SERVER', 'tmp', '$DC_USERNAME', '$DC_PASSWORD'])
 
+plantestsuite("samba3.blackbox.net_rpc_share_allowedusers", "nt4_dc",
+              [os.path.join(samba3srcdir, "script/tests/test_net_rpc_share_allowedusers.sh"),
+               "$SERVER", "$USERNAME", "$PASSWORD", "$PREFIX/net_rpc_share_allowedusers",
+               configuration])
+
 plantestsuite("samba3.blackbox.net_dom_join_fail_dc", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_net_dom_join_fail_dc.sh"),
                "$USERNAME", "$PASSWORD", "$SERVER", "$PREFIX/net_dom_join_fail_dc",
