@@ -481,7 +481,8 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_set_cleanup_fn(req, open_socket_out_cleanup);
 
-	if (!tevent_req_set_endtime(
+	if ((timeout != 0) &&
+	    !tevent_req_set_endtime(
 		    req, ev, timeval_current_ofs_msec(timeout))) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
