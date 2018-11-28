@@ -74,6 +74,7 @@ NTSTATUS dom_sid_lookup_predefined_sid(const struct dom_sid *sid,
 				       enum lsa_SidType *type,
 				       const struct dom_sid **authority_sid,
 				       const char **authority_name);
+bool dom_sid_lookup_is_predefined_domain(const char *domain);
 
 int dom_sid_compare_auth(const struct dom_sid *sid1,
 			 const struct dom_sid *sid2);
