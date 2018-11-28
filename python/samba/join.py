@@ -946,7 +946,7 @@ class DCJoinContext(object):
                 repl_creds.guess(ctx.lp)
                 repl_creds.set_kerberos_state(DONT_USE_KERBEROS)
                 repl_creds.set_username(ctx.samname)
-                repl_creds.set_password(ctx.acct_pass.encode('utf-8'))
+                repl_creds.set_password(ctx.acct_pass)
             else:
                 repl_creds = ctx.creds
 
