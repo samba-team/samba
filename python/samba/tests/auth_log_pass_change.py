@@ -89,7 +89,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         net = Net(creds, lp, server=self.server_ip)
         password = "newPassword!!42"
 
-        net.change_password(newpassword=password.encode('utf-8'),
+        net.change_password(newpassword=password,
                             username=USER_NAME,
                             oldpassword=USER_PASS)
 
@@ -117,7 +117,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         exception_thrown = False
         try:
-            net.change_password(newpassword=password.encode('utf-8'),
+            net.change_password(newpassword=password,
                                 oldpassword=USER_PASS,
                                 username=USER_NAME)
         except Exception:
@@ -148,7 +148,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         exception_thrown = False
         try:
-            net.change_password(newpassword=password.encode('utf-8'),
+            net.change_password(newpassword=password,
                                 oldpassword=USER_PASS,
                                 username="badUser")
         except Exception:
@@ -179,7 +179,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         exception_thrown = False
         try:
-            net.change_password(newpassword=password.encode('utf-8'),
+            net.change_password(newpassword=password,
                                 oldpassword="badPassword",
                                 username=USER_NAME)
         except Exception:

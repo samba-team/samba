@@ -662,7 +662,7 @@ userPassword: thatsAcomplPASS2XYZ
 
         # prove we can change the user password (using the correct password)
         new_password = "thatsAcomplPASS2"
-        net.change_password(newpassword=new_password.encode('utf-8'),
+        net.change_password(newpassword=new_password,
                             username=username,
                             oldpassword=creds.get_password())
         creds.set_password(new_password)
@@ -673,7 +673,7 @@ userPassword: thatsAcomplPASS2XYZ
             badPwdCount = i + 1
             try:
                 print("Trying bad password, attempt #%u" % badPwdCount)
-                net.change_password(newpassword=new_password.encode('utf-8'),
+                net.change_password(newpassword=new_password,
                                     username=creds.get_username(),
                                     oldpassword="bad-password")
                 self.fail("Invalid SAMR change_password accepted")
@@ -707,7 +707,7 @@ userPassword: thatsAcomplPASS2XYZ
         for password in (creds.get_password(), "bad-password"):
             try:
                 print("Trying password %s" % password)
-                net.change_password(newpassword=new_password.encode('utf-8'),
+                net.change_password(newpassword=new_password,
                                     username=creds.get_username(),
                                     oldpassword=password)
                 self.fail("Invalid SAMR change_password accepted")
@@ -740,7 +740,7 @@ userPassword: thatsAcomplPASS2XYZ
                                   msDSUserAccountControlComputed=0)
 
         # check we can change the user password successfully now
-        net.change_password(newpassword=new_password.encode('utf-8'),
+        net.change_password(newpassword=new_password,
                             username=username,
                             oldpassword=creds.get_password())
         creds.set_password(new_password)

@@ -735,7 +735,7 @@ class DCJoinContext(object):
                     pass
                 ctx.net.set_password(account_name=ctx.samname,
                                      domain_name=ctx.domain_name,
-                                     newpassword=ctx.acct_pass.encode('utf-8'))
+                                     newpassword=ctx.acct_pass)
 
             res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE,
                                    attrs=["msDS-KeyVersionNumber",

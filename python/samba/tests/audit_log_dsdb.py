@@ -132,7 +132,7 @@ class AuditLogDsdbTests(AuditLogTestBase):
         net = Net(creds, lp, server=self.server)
         password = "newPassword!!42"
 
-        net.change_password(newpassword=password.encode('utf-8'),
+        net.change_password(newpassword=password,
                             username=USER_NAME,
                             oldpassword=USER_PASS)
 
@@ -175,7 +175,7 @@ class AuditLogDsdbTests(AuditLogTestBase):
         password = "newPassword!!42"
         domain = lp.get("workgroup")
 
-        net.set_password(newpassword=password.encode('utf-8'),
+        net.set_password(newpassword=password,
                          account_name=USER_NAME,
                          domain_name=domain)
         messages = self.waitForMessages(1, net, dn=dn)
