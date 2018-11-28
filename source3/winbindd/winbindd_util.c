@@ -108,15 +108,6 @@ static bool is_internal_domain(const struct dom_sid *sid)
 	return (sid_check_is_our_sam(sid) || sid_check_is_builtin(sid));
 }
 
-static bool is_in_internal_domain(const struct dom_sid *sid)
-{
-	if (sid == NULL)
-		return False;
-
-	return (sid_check_is_in_our_sam(sid) || sid_check_is_in_builtin(sid));
-}
-
-
 /* Add a trusted domain to our list of domains.
    If the domain already exists in the list,
    return it and don't re-initialize.  */
@@ -1475,20 +1466,18 @@ struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
 	     sid_check_is_unix_groups(sid) ||
 	     sid_check_is_in_unix_users(sid) ||
 	     sid_check_is_unix_users(sid) ||
-	     sid_check_is_wellknown_domain(sid, NULL) ||
-	     sid_check_is_in_wellknown_domain(sid) )
+	     sid_check_is_our_sam(sid) ||
+             sid_check_is_in_our_sam(sid) )
 	{
 		return find_domain_from_sid(get_global_sam_sid());
 	}
 
-	/*
-	 * On member servers the internal domains are different: These are part
-	 * of the local SAM.
-	 */
-
-	if (is_internal_domain(sid) || is_in_internal_domain(sid)) {
-		DEBUG(10, ("calling find_domain_from_sid\n"));
-		return find_domain_from_sid(sid);
+	if ( sid_check_is_builtin(sid) ||
+	     sid_check_is_in_builtin(sid) ||
+	     sid_check_is_wellknown_domain(sid, NULL) ||
+	     sid_check_is_in_wellknown_domain(sid) )
+	{
+		return find_domain_from_sid(&global_sid_Builtin);
 	}
 
 	if (IS_DC) {
