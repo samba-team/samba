@@ -18,7 +18,7 @@
 #
 # Based on the EchoServer example from python docs
 from __future__ import print_function
-import SocketServer
+from samba.compat import SocketServer
 import sys
 from threading import Timer
 from samba.dcerpc import dns
