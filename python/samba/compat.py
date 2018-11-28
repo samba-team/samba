@@ -73,6 +73,7 @@ if PY3:
     from urllib.parse import urljoin as urllib_join
     from urllib.request import urlopen as urllib_urlopen
     from functools import cmp_to_key as cmp_to_key_fn
+    import socketserver as SocketServer
 
     # compat types
     integer_types = int,
@@ -151,6 +152,7 @@ else:
     from urllib import quote as urllib_quote
     from urllib import urlopen as urllib_urlopen
     from urlparse import urljoin as urllib_join
+    import SocketServer as SocketServer
 
     # compat types
     integer_types = (int, long)
