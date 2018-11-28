@@ -879,6 +879,39 @@ NTSTATUS dom_sid_lookup_predefined_name(const char *name,
 	return NT_STATUS_NONE_MAPPED;
 }
 
+bool dom_sid_lookup_is_predefined_domain(const char *domain)
+{
+	size_t di;
+	bool match;
+
+	if (domain == NULL) {
+		domain = "";
+	}
+
+	match = strequal(domain, "");
+	if (match) {
+		/*
+		 * Strange, but that's what W2012R2 does.
+		 */
+		domain = "BUILTIN";
+	}
+
+	for (di = 0; di < ARRAY_SIZE(predefined_domains); di++) {
+		const struct predefined_domain_mapping *d =
+			&predefined_domains[di];
+		int cmp;
+
+		cmp = strcasecmp(d->domain, domain);
+		if (cmp != 0) {
+			continue;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
 NTSTATUS dom_sid_lookup_predefined_sid(const struct dom_sid *sid,
 				       const char **name,
 				       enum lsa_SidType *type,
