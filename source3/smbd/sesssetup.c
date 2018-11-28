@@ -482,7 +482,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 struct shutdown_state {
 	const char *ip;
-	size_t ip_len;
+	size_t ip_length;
 	struct messaging_context *msg_ctx;
 };
 
@@ -517,10 +517,10 @@ static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 	}
 	addr_len = port_colon - addr;
 
-	if ((addr_len != state->ip_len) ||
-	    (strncmp(addr, state->ip, state->ip_len) != 0)) {
+	if ((addr_len != state->ip_length) ||
+	    (strncmp(addr, state->ip, state->ip_length) != 0)) {
 		DEBUG(10, ("%s (%zu) does not match %s (%zu)\n",
-			   state->ip, state->ip_len, addr, addr_len));
+			   state->ip, state->ip_length, addr, addr_len));
 		return 0;
 	}
 
@@ -554,7 +554,7 @@ static void setup_new_vc_session(struct smbd_server_connection *sconn)
 		if (port_colon == NULL) {
 			return;
 		}
-		state.ip_len = port_colon - addr;
+		state.ip_length = port_colon - addr;
 		state.msg_ctx = sconn->msg_ctx;
 		smbXsrv_session_global_traverse(shutdown_other_smbds, &state);
 		TALLOC_FREE(addr);
