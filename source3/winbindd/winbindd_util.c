@@ -1504,6 +1504,8 @@ struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
 
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 {
+	bool predefined;
+
 	if ( strequal(domain_name, unix_users_domain_name() ) ||
 	     strequal(domain_name, unix_groups_domain_name() ) )
 	{
@@ -1517,6 +1519,11 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 	if (strequal(domain_name, "BUILTIN") ||
 	    strequal(domain_name, get_global_sam_name())) {
 		return find_domain_from_name_noinit(domain_name);
+	}
+
+	predefined = dom_sid_lookup_is_predefined_domain(domain_name);
+	if (predefined) {
+		return find_domain_from_name_noinit(builtin_domain_name());
 	}
 
 	if (IS_DC) {
