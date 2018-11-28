@@ -388,7 +388,8 @@ static struct tevent_req *handle_authoritative_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct dns_server *dns, const char *forwarder,
 	struct dns_name_question *question,
-	struct dns_res_rec **answers, struct dns_res_rec **nsrecs);
+	struct dns_res_rec **answers, struct dns_res_rec **nsrecs,
+	size_t cname_depth);
 static WERROR handle_authoritative_recv(struct tevent_req *req);
 
 struct handle_dnsrpcrec_state {
@@ -404,7 +405,8 @@ static struct tevent_req *handle_dnsrpcrec_send(
 	struct dns_server *dns, const char *forwarder,
 	const struct dns_name_question *question,
 	struct dnsp_DnssrvRpcRecord *rec,
-	struct dns_res_rec **answers, struct dns_res_rec **nsrecs)
+	struct dns_res_rec **answers, struct dns_res_rec **nsrecs,
+	size_t cname_depth)
 {
 	struct tevent_req *req, *subreq;
 	struct handle_dnsrpcrec_state *state;
@@ -420,7 +422,7 @@ static struct tevent_req *handle_dnsrpcrec_send(
 	state->answers = answers;
 	state->nsrecs = nsrecs;
 
-	if (talloc_array_length(*answers) >= MAX_Q_RECURSION_DEPTH) {
+	if (cname_depth >= MAX_Q_RECURSION_DEPTH) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -465,7 +467,8 @@ static struct tevent_req *handle_dnsrpcrec_send(
 	if (dns_authoritative_for_zone(dns, new_q->name)) {
 		subreq = handle_authoritative_send(
 			state, ev, dns, forwarder, new_q,
-			state->answers, state->nsrecs);
+			state->answers, state->nsrecs,
+			cname_depth + 1);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -549,6 +552,8 @@ struct handle_authoritative_state {
 
 	struct dns_res_rec **answers;
 	struct dns_res_rec **nsrecs;
+
+	size_t cname_depth;
 };
 
 static void handle_authoritative_done(struct tevent_req *subreq);
@@ -557,7 +562,8 @@ static struct tevent_req *handle_authoritative_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct dns_server *dns, const char *forwarder,
 	struct dns_name_question *question,
-	struct dns_res_rec **answers, struct dns_res_rec **nsrecs)
+	struct dns_res_rec **answers, struct dns_res_rec **nsrecs,
+	size_t cname_depth)
 {
 	struct tevent_req *req, *subreq;
 	struct handle_authoritative_state *state;
@@ -575,6 +581,7 @@ static struct tevent_req *handle_authoritative_send(
 	state->forwarder = forwarder;
 	state->answers = answers;
 	state->nsrecs = nsrecs;
+	state->cname_depth = cname_depth;
 
 	werr = dns_name2dn(dns, state, question->name, &dn);
 	if (tevent_req_werror(req, werr)) {
@@ -595,7 +602,8 @@ static struct tevent_req *handle_authoritative_send(
 	subreq = handle_dnsrpcrec_send(
 		state, state->ev, state->dns, state->forwarder,
 		state->question, &state->recs[state->recs_done],
-		state->answers, state->nsrecs);
+		state->answers, state->nsrecs,
+		state->cname_depth);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -627,7 +635,8 @@ static void handle_authoritative_done(struct tevent_req *subreq)
 	subreq = handle_dnsrpcrec_send(
 		state, state->ev, state->dns, state->forwarder,
 		state->question, &state->recs[state->recs_done],
-		state->answers, state->nsrecs);
+		state->answers, state->nsrecs,
+		state->cname_depth);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1000,7 +1009,8 @@ struct tevent_req *dns_server_process_query_send(
 
 		subreq = handle_authoritative_send(
 			state, ev, dns, (forwarders == NULL ? NULL : forwarders[0]),
-			&in->questions[0], &state->answers, &state->nsrecs);
+			&in->questions[0], &state->answers, &state->nsrecs,
+			0); /* cname_depth */
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -1102,7 +1112,8 @@ static void dns_server_process_query_got_auth(struct tevent_req *subreq)
 		subreq = handle_authoritative_send(state, state->ev, state->dns,
 						   state->forwarders->forwarder,
 						   state->question, &state->answers,
-						   &state->nsrecs);
+						   &state->nsrecs,
+						   0); /* cname_depth */
 
 		if (tevent_req_nomem(subreq, req)) {
 			return;
