@@ -97,7 +97,7 @@ class AuthLogTestBase(samba.tests.TestCase):
                 return []
 
         self.connection = None
-        return filter(isRemote, self.context["messages"])
+        return list(filter(isRemote, self.context["messages"]))
 
     # Discard any previously queued messages.
     def discardMessages(self):

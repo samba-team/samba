@@ -70,7 +70,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         # Turn "[foo,bar]" into a list ("foo", "bar") to test
         # lambda x: x removes anything that evaluates to False,
         # including empty strings, so we handle "" as well
-        binding_list = filter(lambda x: x, re.compile('[\[,\]]').split(binding))
+        binding_list = list(filter(lambda x: x, re.compile('[\[,\]]').split(binding)))
 
         # Handle explicit smb2, smb1 or auto negotiation
         if "smb2" in binding_list:

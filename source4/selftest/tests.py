@@ -76,7 +76,7 @@ try:
     lines = f.readlines()
     config_hash = dict((x[0], ' '.join(x[1:]))
                        for x in map(lambda line: line.strip().split(' ')[1:],
-                                    filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines)))
+                                    list(filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines))))
 finally:
     f.close()
 
@@ -177,7 +177,7 @@ all_rpc_tests = ncalrpc_tests + ncacn_np_tests + ncacn_ip_tcp_tests + slow_ncacn
 
 # Make sure all tests get run
 rpc_tests = smbtorture4_testsuites("rpc.")
-auto_rpc_tests = filter(lambda t: t not in all_rpc_tests, rpc_tests)
+auto_rpc_tests = list(filter(lambda t: t not in all_rpc_tests, rpc_tests))
 
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
     for transport in ["ncalrpc", "ncacn_np", "ncacn_ip_tcp"]:
@@ -230,7 +230,7 @@ for t in smbtorture4_testsuites("dfs."):
     plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
 # Tests for the NET API (net.api.become.dc tested below against all the roles)
-net_tests = filter(lambda x: "net.api.become.dc" not in x, smbtorture4_testsuites("net."))
+net_tests = list(filter(lambda x: "net.api.become.dc" not in x, smbtorture4_testsuites("net.")))
 for t in net_tests:
     plansmbtorture4testsuite(t, "ad_dc_ntvfs", '$SERVER[%s] -U$USERNAME%%$PASSWORD -W$DOMAIN' % validate)
 
