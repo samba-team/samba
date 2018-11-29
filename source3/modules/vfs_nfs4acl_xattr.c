@@ -448,6 +448,9 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 	if (NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;
 	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		return status;
+	}
 
 	/*
 	 * We got access denied. If we're already root, or we didn't
