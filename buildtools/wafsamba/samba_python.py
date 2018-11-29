@@ -1,6 +1,6 @@
 # waf build tool for building IDL files with pidl
 
-import os
+import os, sys
 from waflib import Build, Logs, Utils, Configure, Errors
 from waflib.Configure import conf
 
@@ -28,6 +28,8 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
         interpreters.append(conf.env['PYTHON'])
         conf.setenv('default')
 
+    if not os.getenv('PYTHON', None):
+        conf.env['PYTHON'] = sys.executable
     conf.find_program('python', var='PYTHON', mandatory=mandatory)
     conf.load('python')
     path_python = conf.find_program('python')
