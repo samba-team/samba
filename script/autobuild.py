@@ -36,21 +36,21 @@ cleanup_list = []
 builddirs = {
     "ctdb": "ctdb",
     "samba": ".",
-    "samba-py3": ".",
+    "samba-py2": ".",
     "samba-nt4": ".",
-    "samba-nt4-py3": ".",
+    "samba-nt4-py2": ".",
     "samba-fileserver": ".",
     "samba-xc": ".",
     "samba-o3": ".",
     "samba-ctdb": ".",
     "samba-libs": ".",
-    "samba-libs-py3": ".",
+    "samba-libs-py2": ".",
     "samba-static": ".",
     "samba-none-env": ".",
     "samba-ad-dc": ".",
-    "samba-ad-dc-py3": ".",
+    "samba-ad-dc-py2": ".",
     "samba-ad-dc-2": ".",
-    "samba-ad-dc-2-py3": ".",
+    "samba-ad-dc-2-py2": ".",
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "samba-buildpy2-only": ".",
@@ -81,7 +81,7 @@ samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bu
 if os.environ.get("AUTOBUILD_NO_EXTRA_PYTHON", "0") == "1":
     extra_python = ""
 else:
-    extra_python = "--extra-python=/usr/bin/python3"
+    extra_python = "--extra-python=/usr/bin/python2"
 
 tasks = {
     "ctdb": [("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -481,7 +481,7 @@ class builder(object):
         if self.py3:
             self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
             # The trailing space is important
-            self.cmd = self.cmd.replace("${PY3_ONLY}", "python3 ")
+            self.cmd = self.cmd.replace("${PY3_ONLY}", "python2 ")
         else:
             self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "")
             self.cmd = self.cmd.replace("${PY3_ONLY}", "")
@@ -518,7 +518,7 @@ class buildlist(object):
             os.environ['AUTOBUILD_RANDOM_SLEEP_OVERRIDE'] = '1'
 
         for n in tasknames:
-            if n not in tasks and n.endswith("-py3"):
+            if n not in tasks and n.endswith("-py2"):
                 b = builder(n,
                             tasks[n[:-4]],
                             cp=n is not "pidl",
