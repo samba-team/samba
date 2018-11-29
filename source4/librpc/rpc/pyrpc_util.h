@@ -64,4 +64,7 @@ PyObject *pyrpc_import_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
 void *pyrpc_export_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
 			 PyObject *in, const char *typename);
 
+PyObject *py_dcerpc_ndr_pointer_deref(PyTypeObject *type, PyObject *obj);
+PyObject *py_dcerpc_ndr_pointer_wrap(PyTypeObject *type, PyObject *obj);
+
 #endif /* __PYRPC_UTIL_H__ */

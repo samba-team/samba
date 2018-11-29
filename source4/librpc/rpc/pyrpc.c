@@ -33,6 +33,8 @@ void initbase(void);
 
 static PyTypeObject dcerpc_InterfaceType;
 
+static PyTypeObject *BaseObject_Type;
+
 static PyTypeObject *ndr_syntax_id_Type;
 
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
@@ -430,6 +432,88 @@ static PyTypeObject py_bind_time_features_syntax_SyntaxType = {
 	.tp_new = py_bind_time_features_syntax_new,
 };
 
+struct py_dcerpc_ndr_pointer {
+	PyObject *value;
+};
+
+static void py_dcerpc_ndr_pointer_dealloc(PyObject* self)
+{
+	struct py_dcerpc_ndr_pointer *obj =
+		pytalloc_get_type(self, struct py_dcerpc_ndr_pointer);
+
+	Py_DECREF(obj->value);
+	obj->value = NULL;
+
+	self->ob_type->tp_free(self);
+}
+
+static PyObject *py_dcerpc_ndr_pointer_get_value(PyObject *self, void *closure)
+{
+	struct py_dcerpc_ndr_pointer *obj =
+		pytalloc_get_type(self, struct py_dcerpc_ndr_pointer);
+
+	Py_INCREF(obj->value);
+	return obj->value;
+}
+
+static int py_dcerpc_ndr_pointer_set_value(PyObject *self, PyObject *value, void *closure)
+{
+	struct py_dcerpc_ndr_pointer *obj =
+		pytalloc_get_type(self, struct py_dcerpc_ndr_pointer);
+
+	Py_DECREF(obj->value);
+	obj->value = value;
+	Py_INCREF(obj->value);
+	return 0;
+}
+
+static PyGetSetDef py_dcerpc_ndr_pointer_getsetters[] = {
+	{ discard_const_p(char, "value"),
+	  py_dcerpc_ndr_pointer_get_value,
+	  py_dcerpc_ndr_pointer_set_value,
+	  discard_const_p(char, "the value store by the pointer") },
+	{ NULL }
+};
+
+static PyObject *py_dcerpc_ndr_pointer_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	PyObject *ret = NULL;
+	struct py_dcerpc_ndr_pointer *obj = NULL;
+	const char *kwnames[] = { "value", NULL };
+	PyObject *value = NULL;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "O:value",
+					 discard_const_p(char *, kwnames),
+					 &value);
+	if (!ok) {
+		return NULL;
+	}
+
+	ret = pytalloc_new(struct py_dcerpc_ndr_pointer, type);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	obj = pytalloc_get_type(ret, struct py_dcerpc_ndr_pointer);
+	*obj = (struct py_dcerpc_ndr_pointer) {
+		.value = value,
+	};
+
+	Py_INCREF(obj->value);
+	return ret;
+}
+
+static PyTypeObject py_dcerpc_ndr_pointer_type = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "base.ndr_pointer",
+	.tp_dealloc = py_dcerpc_ndr_pointer_dealloc,
+	.tp_getset = py_dcerpc_ndr_pointer_getsetters,
+	.tp_doc = "ndr_pointer(value)\n",
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_new = py_dcerpc_ndr_pointer_new,
+};
+
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     .m_name = "base",
@@ -440,7 +524,16 @@ static struct PyModuleDef moduledef = {
 MODULE_INIT_FUNC(base)
 {
 	PyObject *m;
+	PyObject *dep_talloc;
 	PyObject *dep_samba_dcerpc_misc;
+
+	dep_talloc = PyImport_ImportModule("talloc");
+	if (dep_talloc == NULL)
+		return NULL;
+
+	BaseObject_Type = (PyTypeObject *)PyObject_GetAttrString(dep_talloc, "BaseObject");
+	if (BaseObject_Type == NULL)
+		return NULL;
 
 	dep_samba_dcerpc_misc = PyImport_ImportModule("samba.dcerpc.misc");
 	if (dep_samba_dcerpc_misc == NULL)
@@ -457,6 +550,9 @@ MODULE_INIT_FUNC(base)
 	py_bind_time_features_syntax_SyntaxType.tp_base = ndr_syntax_id_Type;
 	py_bind_time_features_syntax_SyntaxType.tp_basicsize = pytalloc_BaseObject_size();
 
+	py_dcerpc_ndr_pointer_type.tp_base = BaseObject_Type;
+	py_dcerpc_ndr_pointer_type.tp_basicsize = pytalloc_BaseObject_size();
+
 	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
 		return NULL;
 
@@ -465,6 +561,9 @@ MODULE_INIT_FUNC(base)
 	if (PyType_Ready(&py_transfer_syntax_ndr64_SyntaxType) < 0)
 		return NULL;
 	if (PyType_Ready(&py_bind_time_features_syntax_SyntaxType) < 0)
+		return NULL;
+
+	if (PyType_Ready(&py_dcerpc_ndr_pointer_type) < 0)
 		return NULL;
 
 	m = PyModule_Create(&moduledef);
@@ -480,5 +579,7 @@ MODULE_INIT_FUNC(base)
 	PyModule_AddObject(m, "transfer_syntax_ndr64", (PyObject *)(void *)&py_transfer_syntax_ndr64_SyntaxType);
 	Py_INCREF((PyObject *)(void *)&py_bind_time_features_syntax_SyntaxType);
 	PyModule_AddObject(m, "bind_time_features_syntax", (PyObject *)(void *)&py_bind_time_features_syntax_SyntaxType);
+	Py_INCREF((PyObject *)(void *)&py_dcerpc_ndr_pointer_type);
+	PyModule_AddObject(m, "ndr_pointer", (PyObject *)(void *)&py_dcerpc_ndr_pointer_type);
 	return m;
 }
