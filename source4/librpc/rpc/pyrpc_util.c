@@ -334,7 +334,7 @@ PyObject *py_dcerpc_syntax_init_helper(PyTypeObject *type, PyObject *args, PyObj
 		return NULL;
 	}
 
-	obj = (struct ndr_syntax_id *)pytalloc_get_ptr(ret);
+	obj = pytalloc_get_type(ret, struct ndr_syntax_id);
 	*obj = *syntax;
 
 	return ret;
