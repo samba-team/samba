@@ -613,7 +613,8 @@ def configure(conf):
 
     conf.CHECK_DECLS('errno', headers='errno.h', reverse=True)
     conf.CHECK_DECLS('EWOULDBLOCK', headers='errno.h')
-    conf.CHECK_DECLS('environ getgrent_r getpwent_r', reverse=True, headers='pwd.h grp.h')
+    conf.CHECK_DECLS('environ', reverse=True, headers='unistd.h')
+    conf.CHECK_DECLS('getgrent_r getpwent_r', reverse=True, headers='pwd.h grp.h')
     conf.CHECK_DECLS('pread pwrite setenv setresgid setresuid', reverse=True)
 
     if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):

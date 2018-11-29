@@ -162,6 +162,10 @@
 #include <bsd/unistd.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -272,16 +276,14 @@ char *rep_strndup(const char *s, size_t n);
 size_t rep_strnlen(const char *s, size_t n);
 #endif
 
-#if defined(HAVE_DECL_ENVIRON)
-#if !HAVE_DECL_ENVIRON
-#ifdef __APPLE__
-#include <crt_externs.h>
-#define environ (*_NSGetEnviron())
-#else
+#if !defined(HAVE_DECL_ENVIRON)
+# ifdef __APPLE__
+#   include <crt_externs.h>
+#   define environ (*_NSGetEnviron())
+# else /* __APPLE__ */
 extern char **environ;
-#endif
-#endif
-#endif /* defined(HAVE_DECL_ENVIRON) */
+# endif /* __APPLE */
+#endif /* !defined(HAVE_DECL_ENVIRON) */
 
 #ifndef HAVE_SETENV
 #define setenv rep_setenv
