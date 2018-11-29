@@ -53,7 +53,7 @@ builddirs = {
     "samba-ad-dc-2-py3": ".",
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
-    "samba-buildpy3-only": ".",
+    "samba-buildpy2-only": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -399,12 +399,12 @@ tasks = {
         ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
         ("clean", "make clean", "text/plain")],
 
-    "samba-buildpy3-only": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                   ("configure", "PYTHON='python3' ./configure.developer --with-selftest-prefix=./bin/ab " + samba_configure_params, "text/plain"),
-                   ("make", "PYTHON='python3' make -j", "text/plain"),
-                   ("install", "PYTHON='python3' make install", "text/plain"),
+    "samba-buildpy2-only": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                   ("configure", "PYTHON='python' ./configure.developer --with-selftest-prefix=./bin/ab " + samba_configure_params, "text/plain"),
+                   ("make", "PYTHON='python' make -j", "text/plain"),
+                   ("install", "PYTHON='python' make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                   ("clean", "PYTHON='python3' make clean", "text/plain")],
+                   ("clean", "PYTHON='python' make clean", "text/plain")],
 
 
     # these are useful for debugging autobuild
