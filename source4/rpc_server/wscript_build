@@ -182,7 +182,7 @@ if bld.CONFIG_GET('ENABLE_SELFTEST'):
         source='tests/rpc_dns_server_dnsutils_test.c',
         deps='''
             dnsserver_common
-            DCERPC_COMMON
+            dcerpc_server
             cmocka
             talloc
         ''',
