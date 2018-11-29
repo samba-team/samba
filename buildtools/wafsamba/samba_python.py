@@ -5,7 +5,7 @@ from waflib import Build, Logs, Utils, Configure, Errors
 from waflib.Configure import conf
 
 @conf
-def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
+def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,6,0)):
     # enable tool to build python extensions
     if conf.env.HAVE_PYTHON_H:
         conf.check_python_version(version)
@@ -21,9 +21,10 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
         conf.find_program('python', var='PYTHON', mandatory=True)
         conf.load('python')
         try:
-            conf.check_python_version((3, 3, 0))
+            conf.check_python_version(version)
         except Exception:
-            Logs.warn('extra-python needs to be Python 3.3 or later')
+            Logs.warn('extra-python needs to be Python %s.%s.%s or later' %
+                      (version[0], version[1], version[2]))
             raise
         interpreters.append(conf.env['PYTHON'])
         conf.setenv('default')
