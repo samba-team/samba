@@ -1902,6 +1902,9 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 	$recurse = $recurse + 1;
 
 	if ($l->{TYPE} eq "POINTER") {
+		my $need_deindent = 0;
+		my $need_deref = 0;
+
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->pidl("if ($py_var == Py_None) {");
 			$self->indent;
@@ -1909,10 +1912,13 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 			$self->deindent;
 			$self->pidl("} else {");
 			$self->indent;
+			$need_deindent = 1;
+			if ($nl->{TYPE} eq "POINTER") {
+				$need_deref = 1;
+			}
 		}
-		# if we want to handle more than one level of pointer in python interfaces
-		# then this is where we would need to allocate it
-		if ($l->{POINTER_TYPE} eq "ref") {
+
+		if ($l->{POINTER_TYPE} eq "ref" or $need_deref == 1) {
 			$self->pidl("$var_name = talloc_ptrtype($mem_ctx, $var_name);");
 			$self->pidl("if ($var_name == NULL) {");
 			$self->indent;
@@ -1932,11 +1938,15 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 		} else {
 			$self->pidl("$var_name = NULL;");
 		}
+		if ($need_deref == 1) {
+			my $ndr_pointer_typename = $self->import_type_variable("samba.dcerpc.base", "ndr_pointer");
+			$self->pidl("$py_var = py_dcerpc_ndr_pointer_deref($ndr_pointer_typename, $py_var);");
+		}
 		unless ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
 			$var_name = get_value_of($var_name);
 		}
 		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, $var_name, $fail, $recurse);
-		if ($l->{POINTER_TYPE} ne "ref") {
+		if ($need_deindent == 1) {
 			$self->deindent;
 			$self->pidl("}");
 		}
@@ -2138,6 +2148,10 @@ sub ConvertObjectToPythonLevel($$$$$$$)
 	}
 
 	if ($l->{TYPE} eq "POINTER") {
+		my $need_wrap = 0;
+		if ($l->{POINTER_TYPE} ne "ref" and $nl->{TYPE} eq "POINTER") {
+			$need_wrap = 1;
+		}
 		if ($l->{POINTER_TYPE} ne "ref") {
 			if ($recurse == 0) {
 				$self->pidl("if ($var_name == NULL) {");
@@ -2161,6 +2175,19 @@ sub ConvertObjectToPythonLevel($$$$$$$)
 		}
 		$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name2, $py_var, $fail, $recurse2);
 		if ($l->{POINTER_TYPE} ne "ref") {
+			$self->deindent;
+			$self->pidl("}");
+		}
+		if ($need_wrap) {
+			my $py_var_wrap = undef;
+			$need_wrap = 1;
+			$self->pidl("{");
+			$self->indent;
+			$py_var_wrap = "py_$e->{NAME}_level_$l->{LEVEL_INDEX}";
+			$self->pidl("PyObject *$py_var_wrap = $py_var;");
+			my $ndr_pointer_typename = $self->import_type_variable("samba.dcerpc.base", "ndr_pointer");
+			$self->pidl("$py_var = py_dcerpc_ndr_pointer_wrap($ndr_pointer_typename, $py_var_wrap);");
+			$self->pidl("Py_XDECREF($py_var_wrap);");
 			$self->deindent;
 			$self->pidl("}");
 		}
