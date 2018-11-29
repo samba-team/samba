@@ -27,63 +27,63 @@ build_samba_none_env:
   <<: *shared_template
   script:
     # this one takes about 1 hours to finish
-    - python script/autobuild.py samba-none-env    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-none-env    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_nopython:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-nopython   --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-nopython   --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_systemkrb5:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-systemkrb5 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-systemkrb5 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_xc:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-xc         --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-xc         --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_o3:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-o3         --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-o3         --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_ad_dc_2:
   <<: *shared_template
   script:
     # this one takes about 1 hours to finish
-    - python script/autobuild.py samba-ad-dc-2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-ad-dc-2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_libs:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-libs       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-libs       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_static:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-static     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-static     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_ctdb:
   <<: *shared_template
   script:
-    - python script/autobuild.py ctdb       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py ctdb       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_ctdb:
   <<: *shared_template
   script:
-    - python script/autobuild.py samba-ctdb             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py samba-ctdb             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_others:
   <<: *shared_template
   script:
-    - python script/autobuild.py ldb              --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py pidl             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py replace          --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py talloc           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py tdb              --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
-    - python script/autobuild.py tevent           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py ldb              --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py pidl             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py replace          --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py talloc           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py tdb              --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python3 script/autobuild.py tevent           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_buildpy3_only:
   <<: *shared_template
