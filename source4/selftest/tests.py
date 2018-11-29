@@ -687,7 +687,7 @@ planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.dnscmd", py3_comp
 planpythontestsuite("chgdcpass:local", "samba.tests.dcerpc.rpcecho", py3_compatible=True)
 
 planoldpythontestsuite("nt4_dc", "samba.tests.netbios", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("ad_dc:local", "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 
