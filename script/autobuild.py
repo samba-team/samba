@@ -54,11 +54,6 @@ builddirs = {
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "samba-buildpy3-only": ".",
-    "samba-purepy3-none-env": ".",
-    "samba-purepy3-ad-dc-2": ".",
-    "samba-purepy3-ad-dc": ".",
-    "samba-purepy3": ".",
-    "samba-purepy3-nt4": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -410,83 +405,6 @@ tasks = {
                    ("install", "PYTHON='python3' make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "PYTHON='python3' make clean", "text/plain")],
-
-    "samba-purepy3-none-env": [
-                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                      ("configure", "PYTHON='python3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                      ("make", "PYTHON='python3' make -j", "text/plain"),
-                      ("test", "PYTHON='python3' make test "
-                       "FAIL_IMMEDIATELY=1 "
-                       "TESTS='${PY3_ONLY}"
-                       "--include-env=none'",
-                       "text/plain")],
-    "samba-purepy3-ad-dc-2": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                        ("configure", "PYTHON='python3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "PYTHON='python3' make -j", "text/plain"),
-                        ("test", "PYTHON='python3' make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='${PY3_ONLY}"
-                         "--include-env=chgdcpass "
-                         "--include-env=vampire_2000_dc "
-                         "--include-env=fl2000dc "
-                         "--include-env=ad_dc_no_nss "
-                         "--include-env=backupfromdc "
-                         "--include-env=restoredc "
-                         "--include-env=renamedc "
-                         "--include-env=offlinebackupdc "
-                         "--include-env=labdc "
-                         "'",
-                         "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
-    "samba-purepy3-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                      ("configure", "PYTHON='python3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                      ("make", "PYTHON='python3' make -j", "text/plain"),
-                      ("test", "PYTHON='python3' make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='${PY3_ONLY}"
-                       "--include-env=ad_dc "
-                       "--include-env=fl2003dc "
-                       "--include-env=fl2008r2dc "
-                       "--include-env=ad_member "
-                       "--include-env=ad_member_idmap_rid "
-                       "--include-env=ad_member_idmap_ad'", "text/plain"),
-                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
-    "samba-purepy3" : [("configure", "PYTHON=python3 ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                ("make", "PYTHON=python3 make -j", "text/plain"),
-                ("test", "PYTHON=python3 make test FAIL_IMMEDIATELY=1 "
-                 "TESTS='${PY3_ONLY}"
-                 "--exclude-env=none "
-                 "--exclude-env=nt4_dc "
-                 "--exclude-env=nt4_member "
-                 "--exclude-env=ad_dc "
-                 "--exclude-env=ad_dc_no_nss "
-                 "--exclude-env=fl2003dc "
-                 "--exclude-env=fl2008r2dc "
-                 "--exclude-env=ad_member "
-                 "--exclude-env=ad_member_idmap_rid "
-                 "--exclude-env=ad_member_idmap_ad "
-                 "--exclude-env=chgdcpass "
-                 "--exclude-env=vampire_2000_dc "
-                 "--exclude-env=fl2000dc "
-                 "--exclude-env=fileserver "
-                 "--exclude-env=backupfromdc "
-                 "--exclude-env=restoredc "
-                 "--exclude-env=renamedc "
-                 "--exclude-env=offlinebackupdc "
-                 "--exclude-env=labdc "
-                 "'",
-                 "text/plain"),
-                ("install", "make install", "text/plain"),
-                ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                ("clean", "make clean", "text/plain")],
-"samba-purepy3-nt4": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                    ("configure", "PYTHON=python3 ./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                    ("make", "PYTHON=python3 make -j", "text/plain"),
-                    ("test", "PYTHON=python3 make test FAIL_IMMEDIATELY=1 "
-                     "TESTS='${PY3_ONLY}"
-                     "--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
-                    ("install", "PYTHON=python3 make install", "text/plain"),
-                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                    ("clean", "PYTHON=python3 make clean", "text/plain")],
-
 
 
     # these are useful for debugging autobuild
