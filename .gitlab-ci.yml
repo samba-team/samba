@@ -85,8 +85,8 @@ build_others:
     - python3 script/autobuild.py tdb              --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
     - python3 script/autobuild.py tevent           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-build_samba_buildpy3_only:
+build_samba_buildpy2_only:
   <<: *shared_template
   script:
-    - python3 script/autobuild.py samba-buildpy3-only             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - python script/autobuild.py samba-buildpy2-only             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
