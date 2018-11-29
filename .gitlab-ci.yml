@@ -60,11 +60,6 @@ build_samba_libs:
   script:
     - python script/autobuild.py samba-libs       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-build_samba_libs_py3:
-  <<: *shared_template
-  script:
-    - python script/autobuild.py samba-libs-py3   --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
-
 build_samba_static:
   <<: *shared_template
   script:

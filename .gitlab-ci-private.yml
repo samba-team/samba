@@ -14,12 +14,6 @@ build_samba:
     # this one takes about 4 hours to finish
     - python script/autobuild.py samba            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-build_samba_py3:
-  <<: *private_template
-  script:
-    # this one takes about 4 hours to finish
-    - python script/autobuild.py samba-py3        --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
-
 build_samba_fileserver:
   <<: *private_template
   script:
