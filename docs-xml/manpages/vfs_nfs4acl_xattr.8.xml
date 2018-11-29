@@ -45,11 +45,16 @@
     <variablelist>
 
       <varlistentry>
-	<term>nfs4acl_xattr:encoding = [ndr|xdr]</term>
+	<term>nfs4acl_xattr:encoding = [nfs|ndr|xdr]</term>
 	<listitem>
 	  <para>This parameter configures the marshaling format used in the ACL
 	  blob and the default extended attribute name used to store the blob.
 	  </para>
+
+	  <para>When set to <emphasis>nfs</emphasis> - fetch and store the NT
+	  ACL in NFS 4.0 or 4.1 compatible XDR encoding. By default this uses
+	  the extended attribute "system.nfs4_acl". This setting also
+	  disables <emphasis>validate_mode</emphasis>.</para>
 
 	  <para>When set to <emphasis>ndr (default)</emphasis> - store the NT
 	  ACL with POSIX draft NFSv4 compatible NDR encoding. By default this
@@ -103,6 +108,33 @@
 	  store the marshaled ACL.</para>
 	  <para>The default depends on the setting for
 	  <emphasis>nfs4acl_xattr:encoding</emphasis>.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>nfs4acl_xattr:nfs4_id_numeric = yes|no (default: no)</term>
+	<listitem>
+	  <para>This parameter tells the module how the NFS4 server encodes user
+	  and group identifiers on the network. With the default setting the
+	  module expects identifiers encoded as per the NFS4 RFC as
+	  user@domain.</para>
+	  <para>When set to <emphasis>yes</emphasis>, the module expects the
+	  identifiers as numeric string.</para>
+	  <para>The default for this options<emphasis>no</emphasis>.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>nfs4acl_xattr:validate_mode = yes|no</term>
+	<listitem>
+	  <para>This parameter configures whether the module enforces the POSIX
+	  mode is set to 0777 for directores and 0666 for files. If this
+	  constrained is not met, the xattr with the ACL blob is
+	  discarded.</para>
+	  <para>The default depends on the setting for
+	  <emphasis>nfs4acl_xattr:encoding</emphasis>: when set to
+	  <emphasis>nfs</emphasis> this setting is disabled by default,
+	  otherwise it is enabled.</para>
 	</listitem>
       </varlistentry>
 

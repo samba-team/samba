@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Ralph Boehme 2017
+ * Copyright (C) Ralph Boehme 2018
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,25 +16,19 @@
  *
  */
 
-#ifndef __NFS4ACL_XATTR_H__
-#define __NFS4ACL_XATTR_H__
+#ifndef __NFS4ACL_XATTR_NFS_H__
+#define __NFS4ACL_XATTR_NFS_H__
 
-#define NFS4ACL_XDR_MAX_ACES 8192
+#define NFS4ACL_NFS_XATTR_NAME "system.nfs4_acl"
 
-enum nfs4acl_encoding {
-	NFS4ACL_ENCODING_NDR,
-	NFS4ACL_ENCODING_XDR,
-	NFS4ACL_ENCODING_NFS
-};
+NTSTATUS nfs4acl_nfs_blob_to_smb4(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  DATA_BLOB *blob,
+				  struct SMB4ACL_T **_smb4acl);
 
-struct nfs4acl_config {
-	unsigned nfs_version;
-	enum nfs4acl_encoding encoding;
-	char *xattr_name;
-	struct smbacl4_vfs_params nfs4_params;
-	enum default_acl_style default_acl_style;
-	bool nfs4_id_numeric;
-	bool validate_mode;
-};
+NTSTATUS nfs4acl_smb4acl_to_nfs_blob(vfs_handle_struct *handle,
+				     TALLOC_CTX *mem_ctx,
+				     struct SMB4ACL_T *smbacl,
+				     DATA_BLOB *blob);
 
-#endif /* __NFS4ACL_XATTR_H__ */
+#endif /* __NFS4ACL_XATTR_NFS_H__ */

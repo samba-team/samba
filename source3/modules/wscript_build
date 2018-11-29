@@ -278,6 +278,7 @@ bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
                            vfs_nfs4acl_xattr.c
                            nfs4acl_xattr_ndr.c
                            nfs4acl_xattr_xdr.c
+                           nfs4acl_xattr_nfs.c
                            nfs4acl_xattr_util.c
                            ''',
                   deps='NFS4_ACLS sunacl NDR_NFS4ACL VFS_NFS4_XDR',
