@@ -3,36 +3,36 @@ server and Domain Controller for UNIX and other operating
 systems. Samba is maintained by the Samba Team, who support the
 original author, Andrew Tridgell.
 
->>>> Please read THE WHOLE of this file as it gives important information
->>>> about the configuration and use of Samba.
+**Please read THE WHOLE of this file as it gives important information
+about the configuration and use of Samba.**
 
 NOTE: Installation instructions may be found
       for the file/print server and domain member in:
       docs/htmldocs/Samba3-HOWTO/install.html
 
-      For the AD DC implementation a full HOWTO is provided at:
+For the AD DC implementation a full HOWTO is provided at:
       https://wiki.samba.org/index.php/Samba4/HOWTO
 
 This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
-called COPYING). 
+called COPYING).
 
 
 WHAT IS SMB/CIFS?
 =================
 
-This is a big question. 
+This is a big question.
 
 The very short answer is that it is the protocol by which a lot of
 PC-related machines share files and printers and other information
 such as lists of available files and printers. Operating systems that
-support this natively include Windows 9x, Windows NT (and derivatives), 
-OS/2, Mac OS X and Linux.  Add on packages that achieve the same 
-thing are available for DOS, Windows 3.1, VMS, Unix of all kinds, 
-MVS, and more.  Some Web Browsers can speak this protocol as well 
-(smb://).  Alternatives to SMB include Netware, NFS, Appletalk, 
-Banyan Vines, Decnet etc; many of these have advantages but none are 
-both public specifications and widely implemented in desktop machines 
+support this natively include Windows 9x, Windows NT (and derivatives),
+OS/2, Mac OS X and Linux.  Add on packages that achieve the same
+thing are available for DOS, Windows 3.1, VMS, Unix of all kinds,
+MVS, and more.  Some Web Browsers can speak this protocol as well
+(smb://).  Alternatives to SMB include Netware, NFS, Appletalk,
+Banyan Vines, Decnet etc; many of these have advantages but none are
+both public specifications and widely implemented in desktop machines
 by default.
 
 The Common Internet File system (CIFS) is what the new SMB initiative
@@ -46,7 +46,7 @@ WHY DO PEOPLE WANT TO USE SMB?
    with their Unix servers.
 
 2. Others want to integrate their Microsoft (etc) servers with Unix
-   servers. This is a different problem to integrating desktop 
+   servers. This is a different problem to integrating desktop
    clients.
 
 3. Others want to replace protocols like NFS, DecNet and Novell NCP,
@@ -59,11 +59,11 @@ WHAT CAN SAMBA DO?
 Please refer to the WHATSNEW.txt included with this README for
 a list of features in the latest Samba release.
 
-Here is a very short list of what samba includes, and what it does. 
-For many networks this can be simply summarized by "Samba provides 
+Here is a very short list of what samba includes, and what it does.
+For many networks this can be simply summarized by "Samba provides
 a complete replacement for Windows NT, Warp, NFS or Netware servers."
 
-- a SMB server, to provide Windows NT and LAN Manager-style file and print 
+- a SMB server, to provide Windows NT and LAN Manager-style file and print
   services to SMB clients such as Windows 95, Warp Server, smbfs and others.
 
 - a Windows Domain Controller (NT4 and AD) replacement.
@@ -71,7 +71,7 @@ a complete replacement for Windows NT, Warp, NFS or Netware servers."
 - a file/print server that can act as a member of a Windows NT 4.0
   or Active Directory domain.
 
-- a NetBIOS (rfc1001/1002) nameserver, which amongst other things gives 
+- a NetBIOS (rfc1001/1002) nameserver, which amongst other things gives
   browsing support. Samba can be the master browser on your LAN if you wish.
 
 - a ftp-like SMB client so you can access PC resources (disks and
@@ -87,8 +87,8 @@ https://www.samba.org/samba/, and browse the user survey.
 
 Related packages include:
 
-- cifsvfs, an advanced Linux-only filesystem allowing you to mount 
-  remote SMB filesystems from PCs on your Linux box. This is included 
+- cifsvfs, an advanced Linux-only filesystem allowing you to mount
+  remote SMB filesystems from PCs on your Linux box. This is included
   as standard with Linux 2.5 and later.
 
 - smbfs, the previous Linux-only filesystem allowing you to mount remote SMB
@@ -119,7 +119,7 @@ CONTRIBUTIONS
 2. If you want to contribute to the development of the software then
 please join the mailing list. The Samba team accepts patches
 (preferably in "diff -u" format, see https://www.samba.org/samba/devel/
-for more details) and are always glad to receive feedback or 
+for more details) and are always glad to receive feedback or
 suggestions to the address samba@lists.samba.org.  More information
 on the various Samba mailing lists can be found at https://lists.samba.org/.
 
@@ -149,7 +149,7 @@ A list of Samba documentation in languages other than English is
 available on the web page.
 
 If you would like to help with the documentation, please coordinate
-on the samba@samba.org mailing list.  See the next section for details 
+on the samba@samba.org mailing list.  See the next section for details
 on subscribing to samba mailing lists.
 
 
@@ -222,7 +222,7 @@ A Samba WWW site has been setup with lots of useful info. Connect to:
 
 https://www.samba.org/
 
-As well as general information and documentation, this also has searchable 
+As well as general information and documentation, this also has searchable
 archives of the mailing list and a user survey that shows who else is using
 this package.
 
