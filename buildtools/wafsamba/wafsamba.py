@@ -323,7 +323,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         t.link_name = link_name
 
     if pc_files is not None and not private_library:
-        if pyembed and bld.env['IS_EXTRA_PYTHON']:
+        if pyembed:
             bld.PKG_CONFIG_FILES(pc_files, vnum=vnum, extra_name=bld.env['PYTHON_SO_ABI_FLAG'])
         else:
             bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
