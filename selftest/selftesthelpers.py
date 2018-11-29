@@ -150,7 +150,8 @@ def planpythontestsuite(env, module, name=None, extra_path=None,
     if py3_compatible and extra_python is not None:
         # Plan one more test for Python 3 compatible module
         args[0] = extra_python
-        plantestsuite_loadlist(name + ".python3", env, pypath + args)
+        python_name = os.path.basename(extra_python)
+        plantestsuite_loadlist(name + "." + python_name, env, pypath + args)
 
 
 def get_env_torture_options():

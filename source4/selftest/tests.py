@@ -625,7 +625,8 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     plantestsuite_loadlist(name, env, args)
     if py3_compatible and extra_python is not None:
         args[args.index(subunitrun)] = subunitrun3
-        plantestsuite_loadlist(name + ".python3", env, args)
+        python_name = os.path.basename(extra_python)
+        plantestsuite_loadlist(name + "." + python_name, env, args)
 
 # Run complex search expressions test once for each database backend.
 # Right now ad_dc has mdb and ad_dc_ntvfs has tdb
