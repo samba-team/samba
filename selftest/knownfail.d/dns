@@ -71,7 +71,23 @@ samba.tests.dns.__main__.TestSimpleQueries.test_qtype_all_query\(rodc:local\)
 samba.tests.dns.__main__.TestSimpleQueries.test_one_SOA_query\(rodc:local\)
 
 #
-# rodc and vampire_dc require signed dns updates, so the test setup
-# fails, but the test does run on fl2003dc
+# rodc and vampire_dc require signed dns updates, so these tests' setups
+# fail, but they pass on fl2003dc
 ^samba.tests.dns.__main__.TestComplexQueries.test_cname_loop\(rodc:local\)
 ^samba.tests.dns.__main__.TestComplexQueries.test_cname_loop\(vampire_dc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_A\(rodc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_A\(vampire_dc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_AAAA\(rodc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_AAAA\(vampire_dc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_SRV\(rodc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_SRV\(vampire_dc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_cname_limit\(vampire_dc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_cname_limit\(rodc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_cname_any_query\(vampire_dc:local\)
+^samba.tests.dns.__main__.TestComplexQueries.test_cname_any_query\(rodc:local\)
+
+# These all fail until the next patch
+^samba.tests.dns.__main__.TestComplexQueries.test_cname_limit
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_SRV
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_AAAA
+^samba.tests.dns.__main__.TestComplexQueries.test_record_limit_A
