@@ -506,8 +506,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	 * handling in future.
 	 */
 	if (state->info_level != SMB_FIND_FILE_NAMES_INFO) {
-		state->ask_sharemode = lp_parm_bool(
-			SNUM(conn), "smbd", "search ask sharemode", true);
+		state->ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 
 		state->async_dosmode = lp_parm_bool(
                         SNUM(conn), "smbd", "async dosmode", false);
