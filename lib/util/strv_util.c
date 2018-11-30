@@ -17,10 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "replace.h"
+
 #include <string.h>
 #include <talloc.h>
 
-#include "replace.h"
 #include "strv.h"
 
 #include "strv_util.h"
