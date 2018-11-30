@@ -299,8 +299,28 @@ int main(int argc, const char *argv[])
 	 */
 
 	ctdb->db_directory = ctdb_config.dbdir_volatile;
+	ok = directory_exist(ctdb->db_directory);
+	if (! ok) {
+		D_ERR("Volatile database directory %s does not exist\n",
+		      ctdb->db_directory);
+		goto fail;
+	}
+
 	ctdb->db_directory_persistent = ctdb_config.dbdir_persistent;
+	ok = directory_exist(ctdb->db_directory_persistent);
+	if (! ok) {
+		D_ERR("Persistent database directory %s does not exist\n",
+		      ctdb->db_directory_persistent);
+		goto fail;
+	}
+
 	ctdb->db_directory_state = ctdb_config.dbdir_state;
+	ok = directory_exist(ctdb->db_directory_state);
+	if (! ok) {
+		D_ERR("State database directory %s does not exist\n",
+		      ctdb->db_directory_state);
+		goto fail;
+	}
 
 	if (ctdb_config.lock_debug_script != NULL) {
 		ret = setenv("CTDB_DEBUG_LOCKS",
