@@ -330,6 +330,9 @@
 ^samba.tests.dcerpc.dnsserver.python3.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.python3.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
 ^samba.tests.dcerpc.dnsserver.python3.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
+^samba.tests.dcerpc.dnsserver.python2.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
+^samba.tests.dcerpc.dnsserver.python2.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
+^samba.tests.dcerpc.dnsserver.python2.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
 ^samba3.smb2.credits.session_setup_credits_granted.*
 ^samba3.smb2.credits.single_req_credits_granted.*
 ^samba3.smb2.credits.skipped_mid.*
@@ -351,8 +354,12 @@
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ad_dc_no_ntlm\)
 ^samba.tests.ntlmdisabled.python\(ktest\).python3.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python3.ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ad_dc_no_ntlm\)
+^samba.tests.ntlmdisabled.python\(ktest\).python2.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ktest\)
+^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python2.ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ad_dc_no_ntlm\)
 # Disabling NTLM means you can't use samr to change the password
 ^samba.tests.ntlmdisabled.python\(ktest\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
 ^samba.tests.ntlmdisabled.python\(ktest\).python3.ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
+^samba.tests.ntlmdisabled.python\(ktest\).python2.ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python3.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
+^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python2.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
