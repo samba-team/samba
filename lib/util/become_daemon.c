@@ -73,14 +73,12 @@ void become_daemon(bool do_fork, bool no_session, bool log_stdout)
 			exit_daemon("Fork failed", errno);
 		}
 		if (newpid) {
-#if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-			sd_notifyf(0,
-				   "READY=0\nSTATUS=Starting process...\n"
-				   "MAINPID=%lu",
-				   (unsigned long) newpid);
-#endif /* HAVE_LIBSYSTEMD_DAEMON */
 			_exit(0);
 		}
+#if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
+	} else {
+		sd_notify(0, "STATUS=Starting process...");
+#endif
 	}
 
 	/* detach from the terminal */
@@ -120,7 +118,7 @@ void exit_daemon(const char *msg, int error)
 				  msg,
 				  error);
 #endif
-	DBG_ERR("STATUS=daemon failed to start: %s, error code %d\n",
+	DBG_ERR("daemon failed to start: %s, error code %d\n",
 		msg, error);
 	exit(1);
 }
@@ -134,7 +132,7 @@ void daemon_ready(const char *daemon)
 	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...",
 		   daemon);
 #endif
-	DBG_ERR("STATUS=daemon '%s' finished starting up and ready to serve "
+	DBG_ERR("daemon '%s' finished starting up and ready to serve "
 		"connections\n", daemon);
 }
 
@@ -144,7 +142,7 @@ void daemon_status(const char *daemon, const char *msg)
 		daemon = "Samba";
 	}
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	sd_notifyf(0, "\nSTATUS=%s: %s", daemon, msg);
+	sd_notifyf(0, "STATUS=%s: %s", daemon, msg);
 #endif
-	DBG_ERR("STATUS=daemon '%s' : %s\n", daemon, msg);
+	DBG_ERR("daemon '%s' : %s\n", daemon, msg);
 }
