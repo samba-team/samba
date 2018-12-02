@@ -103,9 +103,9 @@ Related packages include:
 CONTRIBUTIONS
 =============
 
-1. To contribute via GitHub
-  - fork the official Samba team repository on GitHub
-      * see https://github.com/samba-team/samba
+1. To contribute via GitLab
+  - fork the official Samba team repository on GitLab
+      * see https://gitlab.com/samba-team/samba
   - become familiar with the coding standards as described in README.Coding
   - make sure you read the Samba copyright policy
       * see https://www.samba.org/samba/devel/copyright-policy.html
@@ -113,8 +113,8 @@ CONTRIBUTIONS
   - make changes
   - when committing, be sure to add signed-off-by tags
       * see https://wiki.samba.org/index.php/CodeReview#commit_message_tags
-  - send a pull request for your branch through GitHub
-  - this will trigger an email to the samba-technical mailing list
+  - send a merge request for your branch through GitLab
+  - this will send an email to everyone registered on GitLab
   - discussion happens on the samba-technical mailing list as described below
   - more info on using Git for Samba development can be found on the Samba Wiki
       * see https://wiki.samba.org/index.php/Using_Git_for_Samba_Development
