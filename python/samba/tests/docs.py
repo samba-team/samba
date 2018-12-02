@@ -125,6 +125,7 @@ class SmbDotConfTests(TestCase):
         'include system krb5 conf',
         'rpc server dynamic port range',
         'mit kdc command',
+        'smbd max async dosmode',
     ])
 
     def setUp(self):
@@ -247,6 +248,7 @@ class SmbDotConfTests(TestCase):
             exceptions = set([
                 'printing',
                 'rpc server dynamic port range',
+                'smbd max async dosmode',
             ])
 
             if param in exceptions:

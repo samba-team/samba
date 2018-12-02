@@ -1,0 +1,12 @@
+<samba:parameter name="smbd max async dosmode"
+                 context="S"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  This parameter controls how many async operations to fetch the DOS
+	  attributes the fileserver will queue when doing directory listings.
+	</para>
+</description>
+<value type="default">aio max threads * 2</value>
+</samba:parameter>
