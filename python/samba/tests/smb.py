@@ -20,6 +20,8 @@ import os
 import random
 import sys
 from samba import smb
+from samba import NTSTATUSError
+from samba.ntstatus import NT_STATUS_OBJECT_NAME_NOT_FOUND
 
 PY3 = sys.version_info[0] == 3
 addom = 'addom.samba.example.com/'
@@ -57,13 +59,30 @@ class SMBTests(samba.tests.TestCase):
         self.assertIn('Policies', ls,
                       msg='"Policies" directory not found in sysvol')
 
+    def file_exists(self, filepath):
+        """Returns whether a regular file exists (by trying to open it)"""
+        try:
+            self.conn.loadfile(filepath)
+            exists = True;
+        except NTSTATUSError as err:
+            if err.args[0] == NT_STATUS_OBJECT_NAME_NOT_FOUND:
+                exists = False
+            else:
+                raise err
+        return exists
+
     def test_unlink(self):
         """
         The smb.unlink API should delete file
         """
+        # create the test file
+        self.assertFalse(self.file_exists(test_file))
         self.conn.savefile(test_file, binary_contents)
+        self.assertTrue(self.file_exists(test_file))
+
+        # delete it and check that it's gone
         self.conn.unlink(test_file)
-        self.assertFalse(self.conn.chkpath(test_file))
+        self.assertFalse(self.file_exists(test_file))
 
     def test_chkpath(self):
         """Tests .chkpath determines whether or not a directory exists"""
