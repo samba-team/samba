@@ -65,6 +65,26 @@ class SMBTests(samba.tests.TestCase):
         self.conn.unlink(test_file)
         self.assertFalse(self.conn.chkpath(test_file))
 
+    def test_chkpath(self):
+        """Tests .chkpath determines whether or not a directory exists"""
+
+        self.assertTrue(self.conn.chkpath(test_dir))
+
+        # should return False for a non-existent directory
+        bad_dir = self.make_sysvol_path(test_dir, 'dont_exist')
+        self.assertFalse(self.conn.chkpath(bad_dir))
+
+        # should return False for files (because they're not directories)
+        self.conn.savefile(test_file, binary_contents)
+        self.assertFalse(self.conn.chkpath(test_file))
+
+        # check correct result after creating and then deleting a new dir
+        new_dir = self.make_sysvol_path(test_dir, 'test-new')
+        self.conn.mkdir(new_dir)
+        self.assertTrue(self.conn.chkpath(new_dir))
+        self.conn.rmdir(new_dir)
+        self.assertFalse(self.conn.chkpath(new_dir))
+
     def test_save_load_text(self):
 
         self.conn.savefile(test_file, test_contents.encode('utf8'))
@@ -99,3 +119,7 @@ class SMBTests(samba.tests.TestCase):
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents, binary_contents,
                           msg='contents of test file did not match what was written')
+
+    def make_sysvol_path(self, dirpath, filename):
+        # return the dir + filename as a sysvol path
+        return os.path.join(dirpath, filename).replace('/', '\\')
