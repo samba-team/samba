@@ -521,12 +521,10 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 
 		max_threads = pthreadpool_tevent_max_threads(state->tp_chdir_safe);
 
-		state->max_async_dosmode_active = lp_parm_ulong(
-			SNUM(conn), "smbd", "max async dosmode",
-			max_threads * 2);
-
+		state->max_async_dosmode_active = lp_smbd_max_async_dosmode(
+							SNUM(conn));
 		if (state->max_async_dosmode_active == 0) {
-			state->max_async_dosmode_active = 1;
+			state->max_async_dosmode_active = max_threads * 2;
 		}
 	}
 
