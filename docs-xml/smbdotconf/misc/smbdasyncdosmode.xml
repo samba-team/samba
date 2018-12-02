@@ -1,0 +1,13 @@
+<samba:parameter name="smbd async dosmode"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  This parameter control whether the fileserver will use sync or async
+	  methods for fetching the DOS attributes when doing a directory listing. By default sync methods will be
+	  used.
+	</para>
+</description>
+<value type="default">no</value>
+</samba:parameter>
