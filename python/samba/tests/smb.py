@@ -23,6 +23,8 @@ from samba import smb
 from samba import NTSTATUSError
 from samba.ntstatus import (NT_STATUS_OBJECT_NAME_NOT_FOUND,
                             NT_STATUS_OBJECT_PATH_NOT_FOUND)
+from samba.samba3 import libsmb_samba_internal
+from samba.samba3 import param as s3param
 
 PY3 = sys.version_info[0] == 3
 addom = 'addom.samba.example.com/'
@@ -44,6 +46,13 @@ class SMBTests(samba.tests.TestCase):
                             "sysvol",
                             lp=self.get_loadparm(),
                             creds=creds)
+
+        # temporarily create a 2nd SMB connection for migrating the py-bindings
+        lp = s3param.get_context()
+        lp.load(os.getenv("SMB_CONF_PATH"))
+        self.smb_conn = libsmb_samba_internal.Conn(self.server, "sysvol",
+                                                   lp, creds)
+
         self.conn.mkdir(test_dir)
 
     def tearDown(self):
@@ -161,7 +170,7 @@ class SMBTests(samba.tests.TestCase):
         self.assertTrue(self.file_exists(test_file))
 
         # delete it and check that it's gone
-        self.conn.unlink(test_file)
+        self.smb_conn.unlink(test_file)
         self.assertFalse(self.file_exists(test_file))
 
     def test_chkpath(self):

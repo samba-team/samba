@@ -965,6 +965,46 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	return result;
 }
 
+/*
+ * Deletes a file
+ */
+static NTSTATUS unlink_file(struct py_cli_state *self, const char *filename)
+{
+	NTSTATUS status;
+	uint16_t attrs = (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	if (self->is_smb1) {
+		struct tevent_req *req = NULL;
+
+		req = cli_unlink_send(NULL, self->ev, self->cli, filename,
+				      attrs);
+		if (!py_tevent_req_wait_exc(self, req)) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		status = cli_unlink_recv(req);
+		TALLOC_FREE(req);
+	} else {
+		status = cli_unlink(self->cli, filename, attrs);
+	}
+
+	return status;
+}
+
+static PyObject *py_smb_unlink(struct py_cli_state *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *filename = NULL;
+
+	if (!PyArg_ParseTuple(args, "s:unlink", &filename)) {
+		return NULL;
+	}
+
+	status = unlink_file(self, filename);
+	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -987,6 +1027,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	  "List a directory" },
 	{ "get_oplock_break", (PyCFunction)py_cli_get_oplock_break,
 	  METH_VARARGS, "Wait for an oplock break" },
+	{ "unlink", (PyCFunction)py_smb_unlink,
+	  METH_VARARGS,
+	  "unlink(path) -> None\n\n \t\tDelete a file." },
 	{ NULL, NULL, 0, NULL }
 };
 
