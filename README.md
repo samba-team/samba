@@ -82,7 +82,7 @@ a complete replacement for Windows NT, Warp, NFS or Netware servers."
 - limited command-line tool that supports some of the NT administrative
   functionality, which can be used on Samba, NT workstation and NT server.
 
-For a much better overview have a look at the web site at
+For a much better overview have a look at the website at
 https://www.samba.org/samba/, and browse the user survey.
 
 Related packages include:
@@ -142,11 +142,11 @@ DOCUMENTATION
 
 There is quite a bit of documentation included with the package,
 including man pages, and lots of .html files with hints and useful
-info. This is also available from the web page. There is a growing
+info. This is also available from the webpage. There is a growing
 collection of information under docs/.
 
 A list of Samba documentation in languages other than English is
-available on the web page.
+available on the webpage.
 
 If you would like to help with the documentation, please coordinate
 on the samba@samba.org mailing list.  See the next section for details
@@ -215,8 +215,8 @@ A few tips when submitting to this or any mailing list.
 8. RTFM. Google. groups.google.com.
 
 
-WEB SITE
---------
+WEBSITE
+-------
 
 A Samba WWW site has been setup with lots of useful info. Connect to:
 
