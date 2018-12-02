@@ -221,11 +221,11 @@ A few tips when submitting to this or any mailing list.
 WEBSITE
 -------
 
-A Samba WWW site has been setup with lots of useful info. Connect to:
+A Samba website has been setup with lots of useful info. Connect to:
 
 https://www.samba.org/
 
 As well as general information and documentation, this also has searchable
-archives of the mailing list and a user survey that shows who else is using
-this package.
+archives of the mailing list and links to other useful resources such as
+the wiki.
 
