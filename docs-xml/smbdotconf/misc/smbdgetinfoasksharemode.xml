@@ -1,0 +1,14 @@
+<samba:parameter name="smbd getinfo ask sharemode"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  This parameter allows disabling fetching file write time from the open
+	  file handle database locking.tdb when a client requests file or
+	  directory metadata. It's a performance optimisation at the expense of
+	  protocol correctness.
+	</para>
+</description>
+<value type="default">yes</value>
+</samba:parameter>

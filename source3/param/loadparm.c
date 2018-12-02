@@ -247,6 +247,7 @@ static const struct loadparm_service _sDefault =
 	.check_parent_directory_delete_on_close = false,
 	.param_opt = NULL,
 	.smbd_search_ask_sharemode = true,
+	.smbd_getinfo_ask_sharemode = true,
 	.dummy = ""
 };
 
