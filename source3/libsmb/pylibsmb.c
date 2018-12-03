@@ -902,6 +902,8 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 			     PyObject *kwds)
 {
 	char *mask;
+	char *base_dir;
+	char *user_mask = NULL;
 	unsigned attribute =
 		FILE_ATTRIBUTE_DIRECTORY |
 		FILE_ATTRIBUTE_SYSTEM |
@@ -913,15 +915,23 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	size_t i, num_finfos;
 	PyObject *result;
 
-	const char *kwlist[] = {
-		"mask", "attribute", "info_level", NULL
-	};
+	const char *kwlist[] = { "directory", "mask", "attribs", NULL };
 
-	if (!ParseTupleAndKeywords(
-		    args, kwds, "s|II", kwlist,
-		    &mask, &attribute, &info_level)) {
+	if (!ParseTupleAndKeywords(args, kwds, "z|sH:list", kwlist,
+				   &base_dir, &user_mask, &attribute)) {
 		return NULL;
 	}
+
+	if (user_mask == NULL) {
+		mask = talloc_asprintf(NULL, "%s\\*", base_dir);
+	} else {
+		mask = talloc_asprintf(NULL, "%s\\%s", base_dir, user_mask);
+	}
+	if (mask == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	dos_format(mask);
 
 	req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
 			    info_level);
@@ -930,6 +940,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	}
 	status = cli_list_recv(req, NULL, &finfos, &num_finfos);
 	TALLOC_FREE(req);
+	TALLOC_FREE(mask);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
@@ -1124,9 +1135,12 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "delete_on_close", (PyCFunction)py_cli_delete_on_close,
 	  METH_VARARGS|METH_KEYWORDS,
 	  "Set/Reset the delete on close flag" },
-	{ "readdir", (PyCFunction)py_cli_list,
-	  METH_VARARGS|METH_KEYWORDS,
-	  "List a directory" },
+	{ "list", (PyCFunction)py_cli_list, METH_VARARGS|METH_KEYWORDS,
+	  "list(directory, mask='*', attribs=DEFAULT_ATTRS) -> "
+	  "directory contents as a dictionary\n"
+	  "\t\tDEFAULT_ATTRS: FILE_ATTRIBUTE_SYSTEM | "
+	  "FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_ARCHIVE\n\n"
+	  "\t\tList contents of a directory." },
 	{ "get_oplock_break", (PyCFunction)py_cli_get_oplock_break,
 	  METH_VARARGS, "Wait for an oplock break" },
 	{ "unlink", (PyCFunction)py_smb_unlink,
