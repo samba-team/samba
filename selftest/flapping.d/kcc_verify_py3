@@ -1,1 +1,2 @@
 samba.tests.kcc.python3.samba.tests.kcc.KCCTests
+samba.tests.kcc.python2.samba.tests.kcc.KCCTests
