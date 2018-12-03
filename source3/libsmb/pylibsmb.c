@@ -1071,6 +1071,42 @@ static PyObject *py_smb_mkdir(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+/*
+ * Checks existence of a directory
+ */
+static bool check_dir_path(struct py_cli_state *self, const char *path)
+{
+	NTSTATUS status;
+
+	if (self->is_smb1) {
+		struct tevent_req *req = NULL;
+
+		req = cli_chkpath_send(NULL, self->ev, self->cli, path);
+		if (!py_tevent_req_wait_exc(self, req)) {
+			return false;
+		}
+		status = cli_chkpath_recv(req);
+		TALLOC_FREE(req);
+	} else {
+		status = cli_chkpath(self->cli, path);
+	}
+
+	return NT_STATUS_IS_OK(status);
+}
+
+static PyObject *py_smb_chkpath(struct py_cli_state *self, PyObject *args)
+{
+	const char *path;
+	bool dir_exists;
+
+	if (!PyArg_ParseTuple(args, "s:chkpath", &path)) {
+		return NULL;
+	}
+
+	dir_exists = check_dir_path(self, path);
+	return PyBool_FromLong(dir_exists);
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -1100,6 +1136,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	  "mkdir(path) -> None\n\n \t\tCreate a directory." },
 	{ "rmdir", (PyCFunction)py_smb_rmdir, METH_VARARGS,
 	  "rmdir(path) -> None\n\n \t\tDelete a directory." },
+	{ "chkpath", (PyCFunction)py_smb_chkpath, METH_VARARGS,
+	  "chkpath(dir_path) -> True or False\n\n"
+	  "\t\tReturn true if directory exists, false otherwise." },
 	{ NULL, NULL, 0, NULL }
 };
 

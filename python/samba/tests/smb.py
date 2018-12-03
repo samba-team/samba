@@ -118,7 +118,7 @@ class SMBTests(samba.tests.TestCase):
 
         # sanity-check these dirs/files exist
         for subdir in dirpaths + empty_dirs:
-            self.assertTrue(self.conn.chkpath(subdir),
+            self.assertTrue(self.smb_conn.chkpath(subdir),
                             "Failed to create {0}".format(subdir))
         for path in filepaths:
             self.assertTrue(self.file_exists(path),
@@ -127,7 +127,7 @@ class SMBTests(samba.tests.TestCase):
         # try using deltree to remove a single empty directory
         path = empty_dirs.pop(0)
         self.conn.deltree(path)
-        self.assertFalse(self.conn.chkpath(path),
+        self.assertFalse(self.smb_conn.chkpath(path),
                          "Failed to delete {0}".format(path))
 
         # try using deltree to remove a single file
@@ -141,7 +141,7 @@ class SMBTests(samba.tests.TestCase):
 
         # now check that all the dirs/files are no longer there
         for subdir in dirpaths + empty_dirs:
-            self.assertFalse(self.conn.chkpath(subdir),
+            self.assertFalse(self.smb_conn.chkpath(subdir),
                              "Failed to delete {0}".format(subdir))
         for path in filepaths:
             self.assertFalse(self.file_exists(path),
@@ -176,22 +176,22 @@ class SMBTests(samba.tests.TestCase):
     def test_chkpath(self):
         """Tests .chkpath determines whether or not a directory exists"""
 
-        self.assertTrue(self.conn.chkpath(test_dir))
+        self.assertTrue(self.smb_conn.chkpath(test_dir))
 
         # should return False for a non-existent directory
         bad_dir = self.make_sysvol_path(test_dir, 'dont_exist')
-        self.assertFalse(self.conn.chkpath(bad_dir))
+        self.assertFalse(self.smb_conn.chkpath(bad_dir))
 
         # should return False for files (because they're not directories)
         self.conn.savefile(test_file, binary_contents)
-        self.assertFalse(self.conn.chkpath(test_file))
+        self.assertFalse(self.smb_conn.chkpath(test_file))
 
         # check correct result after creating and then deleting a new dir
         new_dir = self.make_sysvol_path(test_dir, 'test-new')
         self.smb_conn.mkdir(new_dir)
-        self.assertTrue(self.conn.chkpath(new_dir))
+        self.assertTrue(self.smb_conn.chkpath(new_dir))
         self.smb_conn.rmdir(new_dir)
-        self.assertFalse(self.conn.chkpath(new_dir))
+        self.assertFalse(self.smb_conn.chkpath(new_dir))
 
     def test_save_load_text(self):
 
