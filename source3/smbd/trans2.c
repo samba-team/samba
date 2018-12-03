@@ -5785,8 +5785,13 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
-			get_file_infos(fileid, fsp->name_hash, &delete_pending, &write_time_ts);
+			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+				fileid = vfs_file_id_from_sbuf(
+					conn, &smb_fname->st);
+				get_file_infos(fileid, fsp->name_hash,
+					       &delete_pending,
+					       &write_time_ts);
+			}
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -5798,8 +5803,13 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 					map_nt_error_from_unix(errno));
 				return;
 			}
-			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
-			get_file_infos(fileid, fsp->name_hash, &delete_pending, &write_time_ts);
+			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+				fileid = vfs_file_id_from_sbuf(
+					conn, &smb_fname->st);
+				get_file_infos(fileid, fsp->name_hash,
+					       &delete_pending,
+					       &write_time_ts);
+			}
 		}
 
 	} else {
@@ -5967,8 +5977,12 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
-		get_file_infos(fileid, name_hash, &delete_pending, &write_time_ts);
+		if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+			get_file_infos(fileid, name_hash, &delete_pending,
+				       &write_time_ts);
+		}
+
 		if (delete_pending) {
 			reply_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;

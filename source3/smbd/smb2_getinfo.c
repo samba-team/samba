@@ -353,10 +353,13 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 
-			fileid = vfs_file_id_from_sbuf(conn,
-						       &fsp->fsp_name->st);
-			get_file_infos(fileid, fsp->name_hash,
-				&delete_pending, &write_time_ts);
+			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+				fileid = vfs_file_id_from_sbuf(
+					conn, &fsp->fsp_name->st);
+				get_file_infos(fileid, fsp->name_hash,
+					       &delete_pending,
+					       &write_time_ts);
+			}
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -370,10 +373,13 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
 			}
-			fileid = vfs_file_id_from_sbuf(conn,
-						       &fsp->fsp_name->st);
-			get_file_infos(fileid, fsp->name_hash,
-				&delete_pending, &write_time_ts);
+			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+				fileid = vfs_file_id_from_sbuf(
+					conn, &fsp->fsp_name->st);
+				get_file_infos(fileid, fsp->name_hash,
+					       &delete_pending,
+					       &write_time_ts);
+			}
 		}
 
 		status = smbd_do_qfilepathinfo(conn, state,
