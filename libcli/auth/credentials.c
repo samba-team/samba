@@ -32,10 +32,9 @@ static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *cre
 {
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		AES_KEY key;
-		uint8_t iv[AES_BLOCK_SIZE];
+		uint8_t iv[AES_BLOCK_SIZE] = {0};
 
 		AES_set_encrypt_key(creds->session_key, 128, &key);
-		ZERO_STRUCT(iv);
 
 		aes_cfb8_encrypt(in->data, out->data, 8, &key, iv, AES_ENCRYPT);
 	} else {
@@ -62,7 +61,7 @@ static void netlogon_creds_init_64bit(struct netlogon_creds_CredentialState *cre
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	ZERO_STRUCT(creds->session_key);
+	ZERO_ARRAY(creds->session_key);
 
 	des_crypt128(creds->session_key, sum2, machine_password->hash);
 }
@@ -81,7 +80,7 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 	HMACMD5Context ctx;
 	MD5_CTX md5;
 
-	ZERO_STRUCT(creds->session_key);
+	ZERO_ARRAY(creds->session_key);
 
 	memset(zero, 0, sizeof(zero));
 
@@ -108,7 +107,7 @@ static void netlogon_creds_init_hmac_sha256(struct netlogon_creds_CredentialStat
 	struct HMACSHA256Context ctx;
 	uint8_t digest[SHA256_DIGEST_LENGTH];
 
-	ZERO_STRUCT(creds->session_key);
+	ZERO_ARRAY(creds->session_key);
 
 	hmac_sha256_init(machine_password->hash,
 			 sizeof(machine_password->hash),
@@ -228,10 +227,9 @@ void netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds, 
 void netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
 {
 	AES_KEY key;
-	uint8_t iv[AES_BLOCK_SIZE];
+	uint8_t iv[AES_BLOCK_SIZE] = {0};
 
 	AES_set_encrypt_key(creds->session_key, 128, &key);
-	ZERO_STRUCT(iv);
 
 	aes_cfb8_encrypt(data, data, len, &key, iv, AES_ENCRYPT);
 }
@@ -242,10 +240,9 @@ void netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds, ui
 void netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
 {
 	AES_KEY key;
-	uint8_t iv[AES_BLOCK_SIZE];
+	uint8_t iv[AES_BLOCK_SIZE] = {0};
 
 	AES_set_encrypt_key(creds->session_key, 128, &key);
-	ZERO_STRUCT(iv);
 
 	aes_cfb8_encrypt(data, data, len, &key, iv, AES_DECRYPT);
 }
