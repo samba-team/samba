@@ -422,6 +422,9 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	struct cli_credentials *cli_creds;
 	PyObject *py_multi_threaded = Py_False;
 	bool multi_threaded = false;
+	PyObject *py_sign = Py_False;
+	bool sign = false;
+	int signing_state = SMB_SIGNING_DEFAULT;
 	struct tevent_req *req;
 	bool ret;
 	/*
@@ -433,7 +436,8 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 
 	static const char *kwlist[] = {
-		"host", "share", "credentials", "multi_threaded", NULL
+		"host", "share", "credentials",
+		"multi_threaded", "sign", NULL
 	};
 
 	PyTypeObject *py_type_Credentials = get_pytype(
@@ -443,10 +447,11 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	ret = ParseTupleAndKeywords(
-		args, kwds, "ss|O!O", kwlist,
+		args, kwds, "ss|O!OO", kwlist,
 		&host, &share,
 		py_type_Credentials, &creds,
-		&py_multi_threaded);
+		&py_multi_threaded,
+		&py_sign);
 
 	Py_DECREF(py_type_Credentials);
 
@@ -455,6 +460,11 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	multi_threaded = PyObject_IsTrue(py_multi_threaded);
+	sign = PyObject_IsTrue(py_sign);
+
+	if (sign) {
+		signing_state = SMB_SIGNING_REQUIRED;
+	}
 
 	if (multi_threaded) {
 #ifdef HAVE_PTHREAD
@@ -482,7 +492,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 
 	req = cli_full_connection_creds_send(
 		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
-		cli_creds, flags, SMB_SIGNING_DEFAULT);
+		cli_creds, flags, signing_state);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return -1;
 	}
