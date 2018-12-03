@@ -145,7 +145,7 @@ A few tips when submitting to this or any mailing list.
 7. Give as much *relevant* information as possible such as Samba
    release number, OS, kernel version, etc...
 
-8. RTFM. Google. groups.google.com.
+8. RTFM. Google.
 
 
 WEBSITE
