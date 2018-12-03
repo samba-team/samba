@@ -1672,8 +1672,9 @@ sub provision($$$$$$$$$)
 	my ($uid_user2);
 	my ($uid_gooduser);
 	my ($uid_eviluser);
+	my ($uid_slashuser);
 
-	if ($unix_uid < 0xffff - 12) {
+	if ($unix_uid < 0xffff - 13) {
 		$max_uid = 0xffff;
 	} else {
 		$max_uid = $unix_uid;
@@ -1691,6 +1692,7 @@ sub provision($$$$$$$$$)
 	$uid_user2 = $max_uid - 10;
 	$uid_gooduser = $max_uid - 11;
 	$uid_eviluser = $max_uid - 12;
+	$uid_slashuser = $max_uid - 13;
 
 	if ($unix_gids[0] < 0xffff - 8) {
 		$max_gid = 0xffff;
@@ -2323,6 +2325,7 @@ user1:x:$uid_user1:$gid_nogroup:user1 gecos:$prefix_abs:/bin/false
 user2:x:$uid_user2:$gid_nogroup:user2 gecos:$prefix_abs:/bin/false
 gooduser:x:$uid_gooduser:$gid_domusers:gooduser gecos:$prefix_abs:/bin/false
 eviluser:x:$uid_eviluser:$gid_domusers:eviluser gecos::/bin/false
+slashuser:x:$uid_slashuser:$gid_domusers:slashuser gecos:/:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false
@@ -2401,6 +2404,7 @@ force_user:x:$gid_force_user:
 	createuser($self, "user2", $password, $conffile, \%createuser_env) || die("Unable to create user2");
 	createuser($self, "gooduser", $password, $conffile, \%createuser_env) || die("Unable to create gooduser");
 	createuser($self, "eviluser", $password, $conffile, \%createuser_env) || die("Unable to create eviluser");
+	createuser($self, "slashuser", $password, $conffile, \%createuser_env) || die("Unable to create slashuser");
 
 	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
 	print DNS_UPDATE_LIST "A $server. $server_ip\n";
