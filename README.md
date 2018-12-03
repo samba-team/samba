@@ -1,10 +1,17 @@
-This is the release version of Samba, the free SMB and CIFS client and
-server and Domain Controller for UNIX and other operating
-systems. Samba is maintained by the Samba Team, who support the
-original author, Andrew Tridgell.
+About Samba
+===========
 
-**Please read THE WHOLE of this file as it gives important information
-about the configuration and use of Samba.**
+Samba is the standard Windows interoperability suite of
+programs for Linux and Unix.
+Samba is Free Software licensed under the GNU General Public License and
+the Samba project is a member of the Software Freedom Conservancy.
+Since 1992, Samba has provided secure, stable and fast file and print services
+for all clients using the SMB/CIFS protocol, such as all versions of DOS
+and Windows, OS/2, Linux and many others.
+Samba is an important component to seamlessly integrate Linux/Unix Servers and
+Desktops into Active Directory environments. It can function both as a
+domain controller or as a regular domain member.
+
 
 NOTE: Installation instructions may be found
       for the file/print server and domain member in:
@@ -19,84 +26,6 @@ Community guidelines can be read at:
 This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
 called COPYING).
-
-
-WHAT IS SMB/CIFS?
-=================
-
-This is a big question.
-
-The very short answer is that it is the protocol by which a lot of
-PC-related machines share files and printers and other information
-such as lists of available files and printers. Operating systems that
-support this natively include Windows 9x, Windows NT (and derivatives),
-OS/2, Mac OS X and Linux.  Add on packages that achieve the same
-thing are available for DOS, Windows 3.1, VMS, Unix of all kinds,
-MVS, and more.  Some Web Browsers can speak this protocol as well
-(smb://).  Alternatives to SMB include Netware, NFS, Appletalk,
-Banyan Vines, Decnet etc; many of these have advantages but none are
-both public specifications and widely implemented in desktop machines
-by default.
-
-The Common Internet File system (CIFS) is what the new SMB initiative
-is called. For details watch https://www.samba.org/cifs/.
-
-
-WHY DO PEOPLE WANT TO USE SMB?
-==============================
-
-1. Many people want to integrate their Microsoft desktop clients
-   with their Unix servers.
-
-2. Others want to integrate their Microsoft (etc) servers with Unix
-   servers. This is a different problem to integrating desktop
-   clients.
-
-3. Others want to replace protocols like NFS, DecNet and Novell NCP,
-   especially when used with PCs.
-
-
-WHAT CAN SAMBA DO?
-==================
-
-Please refer to the WHATSNEW.txt included with this README for
-a list of features in the latest Samba release.
-
-Here is a very short list of what samba includes, and what it does.
-For many networks this can be simply summarized by "Samba provides
-a complete replacement for Windows NT, Warp, NFS or Netware servers."
-
-- a SMB server, to provide Windows NT and LAN Manager-style file and print
-  services to SMB clients such as Windows 95, Warp Server, smbfs and others.
-
-- a Windows Domain Controller (NT4 and AD) replacement.
-
-- a file/print server that can act as a member of a Windows NT 4.0
-  or Active Directory domain.
-
-- a NetBIOS (rfc1001/1002) nameserver, which amongst other things gives
-  browsing support. Samba can be the master browser on your LAN if you wish.
-
-- a ftp-like SMB client so you can access PC resources (disks and
-  printers) from UNIX, Netware, and other operating systems
-
-- a tar extension to the client for backing up PCs
-
-- limited command-line tool that supports some of the NT administrative
-  functionality, which can be used on Samba, NT workstation and NT server.
-
-For a much better overview have a look at the website at
-https://www.samba.org/samba/, and browse the user survey.
-
-Related packages include:
-
-- cifsvfs, an advanced Linux-only filesystem allowing you to mount
-  remote SMB filesystems from PCs on your Linux box. This is included
-  as standard with Linux 2.5 and later.
-
-- smbfs, the previous Linux-only filesystem allowing you to mount remote SMB
-  filesystems from PCs on your Linux box. This is included as standard with
-  Linux 2.0 and later.
 
 
 
@@ -136,6 +65,7 @@ who added it, then send them an email.
 Remember that free software of this kind lives or dies by the response
 we get. If no one tells us they like it then we'll probably move onto
 something else.
+
 
 MORE INFO
 =========
@@ -228,4 +158,3 @@ https://www.samba.org/
 As well as general information and documentation, this also has searchable
 archives of the mailing list and links to other useful resources such as
 the wiki.
-
