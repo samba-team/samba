@@ -53,7 +53,7 @@ class SMBTests(samba.tests.TestCase):
         self.smb_conn = libsmb_samba_internal.Conn(self.server, "sysvol",
                                                    lp, creds)
 
-        self.conn.mkdir(test_dir)
+        self.smb_conn.mkdir(test_dir)
 
     def tearDown(self):
         super(SMBTests, self).tearDown()
@@ -98,13 +98,13 @@ class SMBTests(samba.tests.TestCase):
         cur_dir = test_dir
         for subdir in ["subdir-X", "subdir-Y", "subdir-Z"]:
             path = self.make_sysvol_path(cur_dir, subdir)
-            self.conn.mkdir(path)
+            self.smb_conn.mkdir(path)
             dirpaths.append(path)
             cur_dir = path
 
             # create another empty dir just for kicks
             path = self.make_sysvol_path(cur_dir, "another")
-            self.conn.mkdir(path)
+            self.smb_conn.mkdir(path)
             empty_dirs.append(path)
 
         # create some files in these directories
@@ -188,9 +188,9 @@ class SMBTests(samba.tests.TestCase):
 
         # check correct result after creating and then deleting a new dir
         new_dir = self.make_sysvol_path(test_dir, 'test-new')
-        self.conn.mkdir(new_dir)
+        self.smb_conn.mkdir(new_dir)
         self.assertTrue(self.conn.chkpath(new_dir))
-        self.conn.rmdir(new_dir)
+        self.smb_conn.rmdir(new_dir)
         self.assertFalse(self.conn.chkpath(new_dir))
 
     def test_save_load_text(self):
