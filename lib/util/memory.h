@@ -51,21 +51,25 @@
  * Zero a structure.
  */
 #ifndef ZERO_STRUCT
-#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+#define ZERO_STRUCT(x) memset_s((char *)&(x), sizeof(x), 0, sizeof(x))
 #endif
 
 /**
  * Zero a structure given a pointer to the structure.
  */
 #ifndef ZERO_STRUCTP
-#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
+#define ZERO_STRUCTP(x) do { \
+	if ((x) != NULL) { \
+		memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x))); \
+	} \
+} while(0)
 #endif
 
 /**
  * Zero a structure given a pointer to the structure - no zero check.
  */
 #ifndef ZERO_STRUCTPN
-#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
+#define ZERO_STRUCTPN(x) memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x)))
 #endif
 
 /**
@@ -73,7 +77,7 @@
  * pointer.
  */
 #ifndef ZERO_ARRAY
-#define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
+#define ZERO_ARRAY(x) memset_s((char *)(x), sizeof(x), 0, sizeof(x))
 #endif
 
 /**
