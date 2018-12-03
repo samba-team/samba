@@ -526,6 +526,13 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		self->is_smb1 = true;
 	}
 
+	/*
+	 * Oplocks require a multi threaded connection
+	 */
+	if (self->thread_state == NULL) {
+		return 0;
+	}
+
 	self->oplock_waiter = cli_smb_oplock_break_waiter_send(
 		self->ev, self->ev, self->cli);
 	if (self->oplock_waiter == NULL) {
@@ -582,6 +589,13 @@ static PyObject *py_cli_get_oplock_break(struct py_cli_state *self,
 	size_t num_oplock_breaks;
 
 	if (!PyArg_ParseTuple(args, "")) {
+		return NULL;
+	}
+
+	if (self->thread_state == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"get_oplock_break() only possible on "
+				"a multi_threaded connection");
 		return NULL;
 	}
 
