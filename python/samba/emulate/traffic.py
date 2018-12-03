@@ -1233,7 +1233,7 @@ class TrafficModel(object):
         self.conversation_rate = d['conversation_rate']
 
     def construct_conversation(self, timestamp=0.0, client=2, server=1,
-                               hard_stop=None, packet_rate=1):
+                               hard_stop=None, replay_speed=1):
         """Construct a individual converation from the model."""
 
         c = Conversation(timestamp, (server, client))
@@ -1244,6 +1244,7 @@ class TrafficModel(object):
             p = random.choice(self.ngrams.get(key, NON_PACKET))
             if p == NON_PACKET:
                 break
+
             if p in self.query_details:
                 extra = random.choice(self.query_details[p])
             else:
@@ -1252,11 +1253,11 @@ class TrafficModel(object):
             protocol, opcode = p.split(':', 1)
             if protocol == 'wait':
                 log_wait_time = int(opcode) + random.random()
-                wait = math.exp(log_wait_time) / (WAIT_SCALE * packet_rate)
+                wait = math.exp(log_wait_time) / (WAIT_SCALE * replay_speed)
                 timestamp += wait
             else:
                 log_wait = random.uniform(*NO_WAIT_LOG_TIME_RANGE)
-                wait = math.exp(log_wait) / packet_rate
+                wait = math.exp(log_wait) / replay_speed
                 timestamp += wait
                 if hard_stop is not None and timestamp > hard_stop:
                     break
@@ -1266,7 +1267,7 @@ class TrafficModel(object):
 
         return c
 
-    def generate_conversations(self, rate, duration, packet_rate=1):
+    def generate_conversations(self, rate, duration, replay_speed=1):
         """Generate a list of conversations from the model."""
 
         # We run the simulation for at least ten times as long as our
@@ -1289,7 +1290,7 @@ class TrafficModel(object):
                                             client,
                                             server,
                                             hard_stop=(duration2 * 5),
-                                            packet_rate=packet_rate)
+                                            replay_speed=replay_speed)
 
             c.forget_packets_outside_window(start, end)
             c.renormalise_times(start)
