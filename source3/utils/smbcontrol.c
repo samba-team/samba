@@ -410,6 +410,43 @@ static bool do_inject_fault(struct tevent_context *ev_ctx,
 #endif /* DEVELOPER || ENABLE_SELFTEST */
 }
 
+static bool do_sleep(struct tevent_context *ev_ctx,
+		     struct messaging_context *msg_ctx,
+		     const struct server_id pid,
+		     const int argc, const char **argv)
+{
+	unsigned int seconds;
+	long input;
+	const long MAX_SLEEP = 60 * 60; /* One hour maximum sleep */
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: smbcontrol <dest> sleep seconds\n");
+		return False;
+	}
+
+#if !defined(DEVELOPER) && !defined(ENABLE_SELFTEST)
+	fprintf(stderr, "Sleep is only available in "
+		"developer and self test builds\n");
+	return False;
+#else /* DEVELOPER || ENABLE_SELFTEST */
+
+	input = atol(argv[1]);
+	if (input < 1 || input > MAX_SLEEP) {
+		fprintf(stderr,
+			"Invalid duration for sleep '%s'\n"
+			"It should be at least 1 second and no more than %ld\n",
+			argv[1],
+			MAX_SLEEP);
+		return False;
+	}
+	seconds = input;
+	return send_message(msg_ctx, pid,
+			    MSG_SMB_SLEEP,
+			    &seconds,
+			    sizeof(unsigned int));
+#endif /* DEVELOPER || ENABLE_SELFTEST */
+}
+
 /* Force a browser election */
 
 static bool do_election(struct tevent_context *ev_ctx,
@@ -1421,6 +1458,7 @@ static const struct {
 	  "Print number of smbd child processes" },
 	{ "msg-cleanup", do_msg_cleanup },
 	{ "noop", do_noop, "Do nothing" },
+	{ "sleep", do_sleep, "Cause the target process to sleep" },
 	{ NULL }
 };
 
