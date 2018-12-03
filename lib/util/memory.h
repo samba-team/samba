@@ -81,6 +81,11 @@
 #endif
 
 /**
+ * Zero a given len of an array
+ */
+#define ZERO_ARRAY_LEN(x, l) memset_s((char *)(x), (l), 0, (l))
+
+/**
  * Work out how many elements there are in a static array
  */
 #ifndef ARRAY_SIZE
