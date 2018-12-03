@@ -364,7 +364,7 @@ static int py_tevent_req_wait(struct tevent_context *ev,
 
 #endif
 
-static bool py_tevent_req_wait_exc(struct tevent_context *ev,
+static bool py_tevent_req_wait_exc(struct py_cli_state *self,
 				   struct tevent_req *req)
 {
 	int ret;
@@ -373,7 +373,7 @@ static bool py_tevent_req_wait_exc(struct tevent_context *ev,
 		PyErr_NoMemory();
 		return false;
 	}
-	ret = py_tevent_req_wait(ev, req);
+	ret = py_tevent_req_wait(self->ev, req);
 	if (ret != 0) {
 		TALLOC_FREE(req);
 		errno = ret;
@@ -453,7 +453,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	req = cli_full_connection_creds_send(
 		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
 		cli_creds, flags, SMB_SIGNING_DEFAULT);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return -1;
 	}
 	status = cli_full_connection_creds_recv(req, &self->cli);
@@ -612,7 +612,7 @@ static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 				DesiredAccess, FileAttributes, ShareAccess,
 				CreateDisposition, CreateOptions,
 				SecurityFlags);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
 	status = cli_ntcreate_recv(req, &fnum, NULL);
@@ -636,7 +636,7 @@ static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 	}
 
 	req = cli_close_send(NULL, self->ev, self->cli, fnum);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
 	status = cli_close_recv(req);
@@ -672,7 +672,7 @@ static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 
 	req = cli_write_andx_send(NULL, self->ev, self->cli, fnum, mode,
 				  (uint8_t *)buf, offset, buflen);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
 	status = cli_write_andx_recv(req, &written);
@@ -708,7 +708,7 @@ static PyObject *py_cli_read(struct py_cli_state *self, PyObject *args,
 
 	req = cli_read_andx_send(NULL, self->ev, self->cli, fnum,
 				 offset, size);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
 	status = cli_read_andx_recv(req, &buflen, &buf);
@@ -740,7 +740,7 @@ static PyObject *py_cli_ftruncate(struct py_cli_state *self, PyObject *args,
 	}
 
 	req = cli_ftruncate_send(NULL, self->ev, self->cli, fnum, size);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
 	status = cli_ftruncate_recv(req);
@@ -771,7 +771,7 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 
 	req = cli_nt_delete_on_close_send(NULL, self->ev, self->cli, fnum,
 					  flag);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
 	status = cli_nt_delete_on_close_recv(req);
@@ -812,7 +812,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 
 	req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
 			    info_level);
-	if (!py_tevent_req_wait_exc(self->ev, req)) {
+	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
 	status = cli_list_recv(req, NULL, &finfos, &num_finfos);
