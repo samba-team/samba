@@ -837,6 +837,11 @@ typedef unsigned long long ptrdiff_t ;
 #define ZERO_ARRAY(x) memset_s((char *)(x), sizeof(x), 0, sizeof(x))
 
 /**
+ * Zero a given len of an array
+ */
+#define ZERO_ARRAY_LEN(x, l) memset_s((char *)(x), (l), 0, (l))
+
+/**
  * Work out how many elements there are in a static array.
  */
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
