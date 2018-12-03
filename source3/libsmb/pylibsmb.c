@@ -81,6 +81,8 @@ struct py_cli_state {
 	PyObject_HEAD
 	struct cli_state *cli;
 	struct tevent_context *ev;
+	int (*req_wait_fn)(struct tevent_context *ev,
+			   struct tevent_req *req);
 	struct py_cli_thread *thread_state;
 
 	struct tevent_req *oplock_waiter;
@@ -194,7 +196,10 @@ static int py_cli_thread_destructor(struct py_cli_thread *t)
 	return 0;
 }
 
-static bool py_cli_state_setup_ev(struct py_cli_state *self)
+static int py_tevent_cond_req_wait(struct tevent_context *ev,
+				   struct tevent_req *req);
+
+static bool py_cli_state_setup_mt_ev(struct py_cli_state *self)
 {
 	struct py_cli_thread *t = NULL;
 	int ret;
@@ -205,6 +210,8 @@ static bool py_cli_state_setup_ev(struct py_cli_state *self)
 	}
 	samba_tevent_set_debug(self->ev, "pylibsmb_tevent_mt");
 	tevent_set_trace_callback(self->ev, py_cli_state_trace_callback, self);
+
+	self->req_wait_fn = py_tevent_cond_req_wait;
 
 	self->thread_state = talloc_zero(NULL, struct py_cli_thread);
 	if (self->thread_state == NULL) {
@@ -303,8 +310,8 @@ fail:
 	return result;
 }
 
-static int py_tevent_req_wait(struct tevent_context *ev,
-			      struct tevent_req *req)
+static int py_tevent_cond_req_wait(struct tevent_context *ev,
+				   struct tevent_req *req)
 {
 	struct py_tevent_cond cond;
 	tevent_req_set_callback(req, py_tevent_signalme, &cond);
@@ -334,7 +341,10 @@ static void py_tevent_signalme(struct tevent_req *req)
 	py_tevent_cond_signal(cond);
 }
 
-#else
+#endif
+
+static int py_tevent_req_wait(struct tevent_context *ev,
+			      struct tevent_req *req);
 
 static bool py_cli_state_setup_ev(struct py_cli_state *self)
 {
@@ -344,6 +354,8 @@ static bool py_cli_state_setup_ev(struct py_cli_state *self)
 	}
 
 	samba_tevent_set_debug(self->ev, "pylibsmb_tevent");
+
+	self->req_wait_fn = py_tevent_req_wait;
 
 	return true;
 }
@@ -362,8 +374,6 @@ static int py_tevent_req_wait(struct tevent_context *ev,
 	return 0;
 }
 
-#endif
-
 static bool py_tevent_req_wait_exc(struct py_cli_state *self,
 				   struct tevent_req *req)
 {
@@ -373,7 +383,7 @@ static bool py_tevent_req_wait_exc(struct py_cli_state *self,
 		PyErr_NoMemory();
 		return false;
 	}
-	ret = py_tevent_req_wait(self->ev, req);
+	ret = self->req_wait_fn(self->ev, req);
 	if (ret != 0) {
 		TALLOC_FREE(req);
 		errno = ret;
@@ -410,6 +420,8 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	char *host, *share;
 	PyObject *creds = NULL;
 	struct cli_credentials *cli_creds;
+	PyObject *py_multi_threaded = Py_False;
+	bool multi_threaded = false;
 	struct tevent_req *req;
 	bool ret;
 	/*
@@ -421,7 +433,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 
 	static const char *kwlist[] = {
-		"host", "share", "credentials", NULL
+		"host", "share", "credentials", "multi_threaded", NULL
 	};
 
 	PyTypeObject *py_type_Credentials = get_pytype(
@@ -431,8 +443,10 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	ret = ParseTupleAndKeywords(
-		args, kwds, "ss|O!", kwlist,
-		&host, &share, py_type_Credentials, &creds);
+		args, kwds, "ss|O!O", kwlist,
+		&host, &share,
+		py_type_Credentials, &creds,
+		&py_multi_threaded);
 
 	Py_DECREF(py_type_Credentials);
 
@@ -440,8 +454,24 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		return -1;
 	}
 
-	if (!py_cli_state_setup_ev(self)) {
+	multi_threaded = PyObject_IsTrue(py_multi_threaded);
+
+	if (multi_threaded) {
+#ifdef HAVE_PTHREAD
+		ret = py_cli_state_setup_mt_ev(self);
+		if (!ret) {
+			return -1;
+		}
+#else
+		PyErr_SetString(PyExc_RuntimeError,
+				"No PTHREAD support available");
 		return -1;
+#endif
+	} else {
+		ret = py_cli_state_setup_ev(self);
+		if (!ret) {
+			return -1;
+		}
 	}
 
 	if (creds == NULL) {
