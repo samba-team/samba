@@ -18,6 +18,7 @@
 """Blackbox tests for traffic_leaner"""
 
 import os
+import json
 import tempfile
 from samba.emulate import traffic
 
@@ -63,3 +64,8 @@ class TrafficLearnerTests(BlackboxTestCase):
             self.assertEquals(expected_details, actual_details)
             self.assertEquals(expected.cumulative_duration, actual.cumulative_duration)
             self.assertEquals(expected.packet_rate, actual.packet_rate)
+
+            with open(expected_fn) as f1, open(output) as f2:
+                expected_json = json.load(f1)
+                actual_json = json.load(f2)
+                self.assertEqual(expected_json, actual_json)
