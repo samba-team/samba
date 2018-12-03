@@ -808,23 +808,27 @@ typedef unsigned long long ptrdiff_t ;
 /**
  * Zero a structure.
  */
-#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+#define ZERO_STRUCT(x) memset_s((char *)&(x), sizeof(x), 0, sizeof(x))
 
 /**
  * Zero a structure given a pointer to the structure.
  */
-#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
+#define ZERO_STRUCTP(x) do { \
+	if ((x) != NULL) { \
+		memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x))); \
+	} \
+} while(0)
 
 /**
  * Zero a structure given a pointer to the structure - no zero check
  */
-#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
+#define ZERO_STRUCTPN(x) memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x)))
 
 /**
  * Zero an array - note that sizeof(array) must work - ie. it must not be a
  * pointer
  */
-#define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
+#define ZERO_ARRAY(x) memset_s((char *)(x), sizeof(x), 0, sizeof(x))
 
 /**
  * Work out how many elements there are in a static array.
