@@ -244,7 +244,12 @@ class SmbDotConfTests(TestCase):
         for tuples in self.defaults:
             param, default, context, param_type = tuples
 
-            if param in ['printing', 'rpc server dynamic port range']:
+            exceptions = set([
+                'printing',
+                'rpc server dynamic port range',
+            ])
+
+            if param in exceptions:
                 continue
 
             section = None
