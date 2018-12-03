@@ -113,7 +113,14 @@ smb.conf changes
                               between attempts.
   prefork maximum backoff     Maximum delay for process between 120 (seconds)
                               process restart attempts
-
+  smbd search ask sharemode   Name changed, old name was
+                              "smbd:search ask sharemode"
+  smbd async dosmode          Name changed, old name was
+                              "smbd:async dosmode"
+  smbd max async dosmode      Name changed, old name was
+                              "smbd:max async dosmode"
+  smbd getinfo ask sharemode  New: similar to "smbd search ask  yes
+                              sharemode" but for SMB getinfo
 
 KNOWN ISSUES
 ============
