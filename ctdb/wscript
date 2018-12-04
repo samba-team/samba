@@ -15,6 +15,7 @@ out = 'bin'
 from waflib import Options, Logs, Errors, Context
 import wafsamba
 from wafsamba import samba_dist, samba_utils
+from samba_utils import MODE_644, MODE_744, MODE_755, MODE_777
 
 if os.path.isfile('./VERSION'):
     vdir = '.'
@@ -736,14 +737,14 @@ def build(bld):
                         target='onnode',
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES('${BINDIR}', 'onnode',
-                      destname='onnode', chmod=0o755)
+                      destname='onnode', chmod=MODE_755)
 
     bld.SAMBA_GENERATOR('ctdb-diagnostics',
                         source='tools/ctdb_diagnostics',
                         target='ctdb_diagnostics',
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES('${BINDIR}', 'ctdb_diagnostics',
-                      destname='ctdb_diagnostics', chmod=0o755)
+                      destname='ctdb_diagnostics', chmod=MODE_755)
 
     if bld.env.etcd_reclock:
         bld.SAMBA_GENERATOR('ctdb-etcd-lock',
@@ -751,35 +752,35 @@ def build(bld):
                             target='ctdb_etcd_lock',
                             rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
         bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_etcd_lock',
-                          destname='ctdb_etcd_lock', chmod=0o744)
+                          destname='ctdb_etcd_lock', chmod=MODE_744)
 
     bld.SAMBA_GENERATOR('ctdb-natgw',
                         source='tools/ctdb_natgw',
                         target='ctdb_natgw',
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_natgw',
-                      destname='ctdb_natgw', chmod=0o755)
+                      destname='ctdb_natgw', chmod=MODE_755)
 
     bld.SAMBA_GENERATOR('ctdb-lvs',
                         source='tools/ctdb_lvs',
                         target='ctdb_lvs',
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_lvs',
-                      destname='ctdb_lvs', chmod=0o755)
+                      destname='ctdb_lvs', chmod=MODE_755)
 
     bld.SAMBA_GENERATOR('ctdbd-wrapper',
                         source='config/ctdbd_wrapper',
                         target='ctdbd_wrapper',
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES('${SBINDIR}', 'ctdbd_wrapper',
-                      destname='ctdbd_wrapper', chmod=0o755)
+                      destname='ctdbd_wrapper', chmod=MODE_755)
 
     def SUBDIR_MODE_callback(arg, dirname, fnames):
         for f in fnames:
             fl = os.path.join(dirname, f)
             if os.path.isdir(fl) or os.path.islink(fl):
                 continue
-            mode = os.lstat(fl).st_mode & 0o777
+            mode = os.lstat(fl).st_mode & MODE_777
             if arg['trim_path']:
                 fl = samba_utils.os_path_relpath(fl, arg['trim_path'])
             arg['file_list'].append([fl, mode])
@@ -852,7 +853,7 @@ def build(bld):
 
     for t in etc_scripts:
         bld.INSTALL_FILES(bld.env.CTDB_ETCDIR, 'config/%s' % t,
-                          destname=t, chmod=0o755)
+                          destname=t, chmod=MODE_755)
 
     bld.SAMBA_GENERATOR('ctdb-sudoers',
                         source='config/ctdb.sudoers',
@@ -1093,7 +1094,7 @@ def build(bld):
                         target='test_wrap',
                         rule='sed -e "%s" ${SRC} > ${TGT}' % sed_expr)
     bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR+"/scripts", 'test_wrap',
-                      destname='test_wrap', chmod=0o755)
+                      destname='test_wrap', chmod=MODE_755)
 
     bld.SAMBA_GENERATOR('ctdb-test-script-install-paths',
                         source='tests/scripts/script_install_paths.sh',
@@ -1101,7 +1102,7 @@ def build(bld):
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR+"/scripts",
                       'script_install_paths.sh',
-                      destname='script_install_paths.sh', chmod=0o644)
+                      destname='script_install_paths.sh', chmod=MODE_644)
 
     sed_expr1 = 's@^\(export %s\)=.*@\\1=%s@' % (
                     'CTDB_TEST_DIR', bld.env.CTDB_TEST_DATADIR)
@@ -1112,7 +1113,7 @@ def build(bld):
                         rule='sed -e "%s" -e "%s" ${SRC} > ${TGT}' % (
                              sed_expr1, sed_expr2))
     bld.INSTALL_FILES('${BINDIR}', 'ctdb_run_tests.sh',
-                      destname='ctdb_run_tests', chmod=0o755)
+                      destname='ctdb_run_tests', chmod=MODE_755)
     bld.symlink_as(os.path.join(bld.env.BINDIR, 'ctdb_run_cluster_tests'),
                    'ctdb_run_tests')
 
@@ -1122,7 +1123,7 @@ def build(bld):
                         rule='sed -e "%s" -e "%s" ${SRC} > ${TGT}' % (
                              sed_expr1, sed_expr2))
     bld.INSTALL_FILES('${BINDIR}', 'ctdb_local_daemons.sh',
-                      destname='ctdb_local_daemons', chmod=0o755)
+                      destname='ctdb_local_daemons', chmod=MODE_755)
 
 
 def testonly(ctx):
