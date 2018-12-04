@@ -897,6 +897,31 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 	Py_RETURN_NONE;
 }
 
+/*
+ * Helper to add directory listing entries to an overall Python list
+ */
+static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
+			    const char *mask, void *state)
+{
+	PyObject *result = (PyObject *)state;
+	PyObject *file = NULL;
+	int ret;
+
+	file = Py_BuildValue("{s:s,s:i}",
+			     "name", finfo->name,
+			     "mode", (int)finfo->mode);
+	if (file == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = PyList_Append(result, file);
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static PyObject *py_cli_list(struct py_cli_state *self,
 			     PyObject *args,
 			     PyObject *kwds)
@@ -953,21 +978,8 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	}
 
 	for (i=0; i<num_finfos; i++) {
-		struct file_info *finfo = &finfos[i];
-		PyObject *file;
-		int ret;
-
-		file = Py_BuildValue(
-			"{s:s,s:i}",
-			"name", finfo->name,
-			"mode", (int)finfo->mode);
-		if (file == NULL) {
-			Py_XDECREF(result);
-			return NULL;
-		}
-
-		ret = PyList_Append(result, file);
-		if (ret == -1) {
+		status = list_helper(base_dir, &finfos[i], user_mask, result);
+		if (!NT_STATUS_IS_OK(status)) {
 			Py_XDECREF(result);
 			return NULL;
 		}
