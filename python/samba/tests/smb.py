@@ -85,7 +85,7 @@ class SMBTests(samba.tests.TestCase):
 
         # each item in the listing is a has with expected keys
         expected_keys = ['attrib', 'mtime', 'name', 'short_name', 'size']
-        for item in self.conn.list(addom):
+        for item in self.smb_conn.list(addom):
             for key in expected_keys:
                 self.assertIn(key, item,
                               msg="Key '%s' not in listing '%s'" % (key, item))

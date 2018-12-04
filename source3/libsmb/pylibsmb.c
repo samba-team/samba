@@ -912,9 +912,18 @@ static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
 		return NT_STATUS_OK;
 	}
 
-	file = Py_BuildValue("{s:s,s:i}",
+	/*
+	 * Build a dictionary representing the file info.
+	 * Note: Windows does not always return short_name (so it may be None)
+	 */
+	file = Py_BuildValue("{s:s,s:i,s:s,s:O,s:l}",
 			     "name", finfo->name,
-			     "mode", (int)finfo->mode);
+			     "attrib", (int)finfo->mode,
+			     "short_name", finfo->short_name,
+			     "size", PyLong_FromUnsignedLongLong(finfo->size),
+			     "mtime",
+			     convert_timespec_to_time_t(finfo->mtime_ts));
+
 	if (file == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1184,7 +1193,12 @@ static PyMethodDef py_cli_state_methods[] = {
 	  "directory contents as a dictionary\n"
 	  "\t\tDEFAULT_ATTRS: FILE_ATTRIBUTE_SYSTEM | "
 	  "FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_ARCHIVE\n\n"
-	  "\t\tList contents of a directory." },
+	  "\t\tList contents of a directory. The keys are, \n"
+	  "\t\t\tname: Long name of the directory item\n"
+	  "\t\t\tshort_name: Short name of the directory item\n"
+	  "\t\t\tsize: File size in bytes\n"
+	  "\t\t\tattrib: Attributes\n"
+	  "\t\t\tmtime: Modification time\n" },
 	{ "get_oplock_break", (PyCFunction)py_cli_get_oplock_break,
 	  METH_VARARGS, "Wait for an oplock break" },
 	{ "unlink", (PyCFunction)py_smb_unlink,
