@@ -21,6 +21,7 @@
 #include <Python.h>
 #include "includes.h"
 #include "python/py3compat.h"
+#include "libcli/smb/smbXcli_base.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
 #include "system/select.h"
@@ -80,6 +81,7 @@ struct py_cli_oplock_break {
 struct py_cli_state {
 	PyObject_HEAD
 	struct cli_state *cli;
+	bool is_smb1;
 	struct tevent_context *ev;
 	int (*req_wait_fn)(struct tevent_context *ev,
 			   struct tevent_req *req);
@@ -403,6 +405,7 @@ static PyObject *py_cli_state_new(PyTypeObject *type, PyObject *args,
 		return NULL;
 	}
 	self->cli = NULL;
+	self->is_smb1 = false;
 	self->ev = NULL;
 	self->thread_state = NULL;
 	self->oplock_waiter = NULL;
@@ -517,6 +520,10 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		return -1;
+	}
+
+	if (smbXcli_conn_protocol(self->cli->conn) < PROTOCOL_SMB2_02) {
+		self->is_smb1 = true;
 	}
 
 	self->oplock_waiter = cli_smb_oplock_break_waiter_send(
