@@ -219,11 +219,11 @@ static void netsec_do_seal(struct schannel_state *state,
  Create a digest over the entire packet (including the data), and
  MD5 it with the session key.
  ********************************************************************/
-static void netsec_do_sign(struct schannel_state *state,
-			   const uint8_t *confounder,
-			   const uint8_t *data, size_t length,
-			   uint8_t header[8],
-			   uint8_t *checksum)
+static NTSTATUS netsec_do_sign(struct schannel_state *state,
+			       const uint8_t *confounder,
+			       const uint8_t *data, size_t length,
+			       uint8_t header[8],
+			       uint8_t *checksum)
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		gnutls_hmac_hd_t hmac_hnd = NULL;
@@ -234,7 +234,7 @@ static void netsec_do_sign(struct schannel_state *state,
 				      state->creds->session_key,
 				      sizeof(state->creds->session_key));
 		if (rc < 0) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		if (confounder) {
@@ -246,12 +246,12 @@ static void netsec_do_sign(struct schannel_state *state,
 			rc = gnutls_hmac(hmac_hnd, header, 8);
 			if (rc < 0) {
 				gnutls_hmac_deinit(hmac_hnd, NULL);
-				return;
+				return NT_STATUS_INTERNAL_ERROR;
 			}
 			rc = gnutls_hmac(hmac_hnd, confounder, 8);
 			if (rc < 0) {
 				gnutls_hmac_deinit(hmac_hnd, NULL);
-				return;
+				return NT_STATUS_INTERNAL_ERROR;
 			}
 		} else {
 			SSVAL(header, 0, NL_SIGN_HMAC_SHA256);
@@ -262,14 +262,14 @@ static void netsec_do_sign(struct schannel_state *state,
 			rc = gnutls_hmac(hmac_hnd, header, 8);
 			if (rc < 0) {
 				gnutls_hmac_deinit(hmac_hnd, NULL);
-				return;
+				return NT_STATUS_INTERNAL_ERROR;
 			}
 		}
 
 		rc = gnutls_hmac(hmac_hnd, data, length);
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		gnutls_hmac_deinit(hmac_hnd, checksum);
@@ -303,6 +303,8 @@ static void netsec_do_sign(struct schannel_state *state,
 			 packet_digest, sizeof(packet_digest),
 			 checksum);
 	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
@@ -322,6 +324,7 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 	int ret;
 	const uint8_t *sign_data = NULL;
 	size_t sign_length = 0;
+	NTSTATUS status;
 
 	netsec_offset_and_sizes(state,
 				do_unseal,
@@ -358,9 +361,16 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 		sign_length = length;
 	}
 
-	netsec_do_sign(state, confounder,
-		       sign_data, sign_length,
-		       header, checksum);
+	status = netsec_do_sign(state,
+				confounder,
+				sign_data,
+				sign_length,
+				header,
+				checksum);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netsec_do_sign failed: %s\n", nt_errstr(status));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	ret = memcmp(checksum, sig->data+16, checksum_length);
 	if (ret != 0) {
@@ -415,6 +425,7 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 	uint8_t seq_num[8];
 	const uint8_t *sign_data = NULL;
 	size_t sign_length = 0;
+	NTSTATUS status;
 
 	netsec_offset_and_sizes(state,
 				do_seal,
@@ -440,9 +451,16 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 		sign_length = length;
 	}
 
-	netsec_do_sign(state, confounder,
-		       sign_data, sign_length,
-		       header, checksum);
+	status = netsec_do_sign(state,
+				confounder,
+				sign_data,
+				sign_length,
+				header,
+				checksum);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netsec_do_sign failed: %s\n", nt_errstr(status));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if (do_seal) {
 		netsec_do_seal(state, seq_num,
