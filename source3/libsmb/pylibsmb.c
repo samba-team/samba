@@ -425,19 +425,16 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	PyObject *py_sign = Py_False;
 	bool sign = false;
 	int signing_state = SMB_SIGNING_DEFAULT;
+	PyObject *py_force_smb1 = Py_False;
+	bool force_smb1 = false;
 	struct tevent_req *req;
 	bool ret;
-	/*
-	 * For now we only support SMB1,
-	 * as most of the cli_*_send() function
-	 * don't support SMB2, it's only plugged
-	 * into the sync wrapper functions currently.
-	 */
-	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
+	int flags = 0;
 
 	static const char *kwlist[] = {
 		"host", "share", "credentials",
-		"multi_threaded", "sign", NULL
+		"multi_threaded", "sign", "force_smb1",
+		NULL
 	};
 
 	PyTypeObject *py_type_Credentials = get_pytype(
@@ -447,11 +444,12 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	ret = ParseTupleAndKeywords(
-		args, kwds, "ss|O!OO", kwlist,
+		args, kwds, "ss|O!OOO", kwlist,
 		&host, &share,
 		py_type_Credentials, &creds,
 		&py_multi_threaded,
-		&py_sign);
+		&py_sign,
+		&py_force_smb1);
 
 	Py_DECREF(py_type_Credentials);
 
@@ -461,9 +459,20 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 
 	multi_threaded = PyObject_IsTrue(py_multi_threaded);
 	sign = PyObject_IsTrue(py_sign);
+	force_smb1 = PyObject_IsTrue(py_force_smb1);
 
 	if (sign) {
 		signing_state = SMB_SIGNING_REQUIRED;
+	}
+
+	if (force_smb1) {
+		/*
+		 * As most of the cli_*_send() function
+		 * don't support SMB2 (it's only plugged
+		 * into the sync wrapper functions currently)
+		 * we have a way to force SMB1.
+		 */
+		flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 	}
 
 	if (multi_threaded) {
@@ -477,6 +486,12 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 				"No PTHREAD support available");
 		return -1;
 #endif
+		if (!force_smb1) {
+			PyErr_SetString(PyExc_RuntimeError,
+					"multi_threaded is only possible on "
+					"SMB1 connections");
+			return -1;
+		}
 	} else {
 		ret = py_cli_state_setup_ev(self);
 		if (!ret) {
