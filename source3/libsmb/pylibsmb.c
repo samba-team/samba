@@ -907,6 +907,11 @@ static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
 	PyObject *file = NULL;
 	int ret;
 
+	/* suppress '.' and '..' in the results we return */
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		return NT_STATUS_OK;
+	}
+
 	file = Py_BuildValue("{s:s,s:i}",
 			     "name", finfo->name,
 			     "mode", (int)finfo->mode);

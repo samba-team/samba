@@ -64,7 +64,7 @@ class SMBTests(samba.tests.TestCase):
 
     def test_list(self):
         # check a basic listing returns the items we expect
-        ls = [f['name'] for f in self.conn.list(addom)]
+        ls = [f['name'] for f in self.smb_conn.list(addom)]
         self.assertIn('scripts', ls,
                       msg='"scripts" directory not found in sysvol')
         self.assertIn('Policies', ls,
@@ -75,11 +75,11 @@ class SMBTests(samba.tests.TestCase):
                          msg='Current dir (.) found in directory listing')
 
         # using a '*' mask should be the same as using no mask
-        ls_wildcard = [f['name'] for f in self.conn.list(addom, "*")]
+        ls_wildcard = [f['name'] for f in self.smb_conn.list(addom, "*")]
         self.assertEqual(ls, ls_wildcard)
 
         # applying a mask should only return items that match that mask
-        ls_pol = [f['name'] for f in self.conn.list(addom, "Pol*")]
+        ls_pol = [f['name'] for f in self.smb_conn.list(addom, "Pol*")]
         expected = ["Policies"]
         self.assertEqual(ls_pol, expected)
 
