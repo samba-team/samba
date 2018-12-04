@@ -100,10 +100,10 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 
   this call is made after the netr_ServerReqChallenge call
 */
-static void netlogon_creds_init_hmac_sha256(struct netlogon_creds_CredentialState *creds,
-					    const struct netr_Credential *client_challenge,
-					    const struct netr_Credential *server_challenge,
-					    const struct samr_Password *machine_password)
+static NTSTATUS netlogon_creds_init_hmac_sha256(struct netlogon_creds_CredentialState *creds,
+						const struct netr_Credential *client_challenge,
+						const struct netr_Credential *server_challenge,
+						const struct samr_Password *machine_password)
 {
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
@@ -116,27 +116,29 @@ static void netlogon_creds_init_hmac_sha256(struct netlogon_creds_CredentialStat
 			      machine_password->hash,
 			      sizeof(machine_password->hash));
 	if (rc < 0) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	rc = gnutls_hmac(hmac_hnd,
 			 client_challenge->data,
 			 8);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	rc  = gnutls_hmac(hmac_hnd,
 			  server_challenge->data,
 			  8);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	gnutls_hmac_deinit(hmac_hnd, digest);
 
 	memcpy(creds->session_key, digest, sizeof(creds->session_key));
 
 	ZERO_ARRAY(digest);
+
+	return NT_STATUS_OK;
 }
 
 static void netlogon_creds_first_step(struct netlogon_creds_CredentialState *creds,
@@ -310,10 +312,16 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 	dump_data_pw("Machine Pass", machine_password->hash, sizeof(machine_password->hash));
 
 	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_init_hmac_sha256(creds,
-						client_challenge,
-						server_challenge,
-						machine_password);
+		NTSTATUS status;
+
+		status = netlogon_creds_init_hmac_sha256(creds,
+							 client_challenge,
+							 server_challenge,
+							 machine_password);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(creds);
+			return NULL;
+		}
 	} else if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		netlogon_creds_init_128bit(creds, client_challenge, server_challenge, machine_password);
 	} else {
@@ -463,10 +471,16 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	}
 
 	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_init_hmac_sha256(creds,
-						client_challenge,
-						server_challenge,
-						machine_password);
+		NTSTATUS status;
+
+		status = netlogon_creds_init_hmac_sha256(creds,
+							 client_challenge,
+							 server_challenge,
+							 machine_password);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(creds);
+			return NULL;
+		}
 	} else if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		netlogon_creds_init_128bit(creds, client_challenge, server_challenge,
 					   machine_password);
