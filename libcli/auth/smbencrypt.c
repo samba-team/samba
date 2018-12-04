@@ -211,7 +211,6 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 	smb_ucs2_t *domain;
 	size_t user_byte_len;
 	size_t domain_byte_len;
-	bool ret;
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	int rc;
 	bool ok = false;
@@ -235,15 +234,15 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		return false;
 	}
 
-	ret = push_ucs2_talloc(mem_ctx, &user, user_in, &user_byte_len );
-	if (!ret) {
+	ok = push_ucs2_talloc(mem_ctx, &user, user_in, &user_byte_len );
+	if (!ok) {
 		DEBUG(0, ("push_uss2_talloc() for user failed)\n"));
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	ret = push_ucs2_talloc(mem_ctx, &domain, domain_in, &domain_byte_len);
-	if (!ret) {
+	ok = push_ucs2_talloc(mem_ctx, &domain, domain_in, &domain_byte_len);
+	if (!ok) {
 		DEBUG(0, ("push_ucs2_talloc() for domain failed\n"));
 		talloc_free(mem_ctx);
 		return false;
