@@ -134,6 +134,13 @@ class SMBTests(samba.tests.TestCase):
         self.assertEquals(contents.decode('utf8'), test_contents,
                           msg='contents of test file did not match what was written')
 
+        # check we can overwrite the file with new contents
+        new_contents = 'wxyz' * 128
+        self.conn.savefile(test_file, new_contents.encode('utf8'))
+        contents = self.conn.loadfile(test_file)
+        self.assertEquals(contents.decode('utf8'), new_contents,
+                          msg='contents of test file did not match what was written')
+
     # with python2 this will save/load str type (with embedded nulls)
     # with python3 this will save/load bytes type
     def test_save_load_string_bytes(self):
