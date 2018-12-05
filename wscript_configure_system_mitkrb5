@@ -1,5 +1,5 @@
 import sys
-from waflib import Logs, Options
+from waflib import Logs, Options, Errors
 
 # Check for kerberos
 have_gssapi=False
@@ -56,24 +56,26 @@ if conf.env.KRB5_CONFIG:
 
     vendor = conf.cmd_and_log(conf.env.KRB5_CONFIG+['--vendor'])
     conf.env.KRB5_VENDOR = vendor.strip().lower()
-    if conf.env.KRB5_VENDOR != 'heimdal':
-        conf.define('USING_SYSTEM_KRB5', 1)
-        del conf.env.HEIMDAL_KRB5_CONFIG
-        krb5_conf_version = conf.cmd_and_log(conf.env.KRB5_CONFIG+['--version']).strip()
+    if conf.env.KRB5_VENDOR == 'heimdal':
+        raise Errors.WafError('--with-system-mitkrb5 cannot be used with system heimdal')
 
-        krb5_version = krb5_conf_version.split()[-1]
+    conf.define('USING_SYSTEM_KRB5', 1)
+    del conf.env.HEIMDAL_KRB5_CONFIG
+    krb5_conf_version = conf.cmd_and_log(conf.env.KRB5_CONFIG+['--version']).strip()
 
-        # drop '-prerelease' suffix
-        if krb5_version.find('-') > 0:
-            krb5_version = krb5_version.split("-")[0]
+    krb5_version = krb5_conf_version.split()[-1]
 
-        if parse_version(krb5_version) < parse_version(krb5_required_version):
-            Logs.error('ERROR: The MIT KRB5 build with Samba AD requires at least %s. %s has been found and cannot be used' % (krb5_required_version, krb5_version))
-            Logs.error('ERROR: If you want to just build Samba FS (File Server) use the option --without-ad-dc which requires version %s' % (krb5_min_required_version))
-            Logs.error('ERROR: You may try to build with embedded Heimdal Kerberos by not specifying --with-system-mitkrb5')
-            sys.exit(1)
-        else:
-            Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
+    # drop '-prerelease' suffix
+    if krb5_version.find('-') > 0:
+        krb5_version = krb5_version.split("-")[0]
+
+    if parse_version(krb5_version) < parse_version(krb5_required_version):
+        Logs.error('ERROR: The MIT KRB5 build with Samba AD requires at least %s. %s has been found and cannot be used' % (krb5_required_version, krb5_version))
+        Logs.error('ERROR: If you want to just build Samba FS (File Server) use the option --without-ad-dc which requires version %s' % (krb5_min_required_version))
+        Logs.error('ERROR: You may try to build with embedded Heimdal Kerberos by not specifying --with-system-mitkrb5')
+        sys.exit(1)
+    else:
+        Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
 
 conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
 conf.CHECK_FUNCS_IN('_et_list', 'com_err')
