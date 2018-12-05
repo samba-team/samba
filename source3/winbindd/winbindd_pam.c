@@ -2889,10 +2889,10 @@ static NTSTATUS extract_pac_vrfy_sigs(TALLOC_CTX *mem_ctx, DATA_BLOB pac_blob,
 	ZERO_STRUCT(entry);
 	ZERO_STRUCT(cursor);
 
-	k5ret = krb5_init_context(&krbctx);
+	k5ret = smb_krb5_init_context_common(&krbctx);
 	if (k5ret) {
-		DEBUG(1, ("Failed to initialize kerberos context: %s\n",
-			  error_message(k5ret)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(k5ret));
 		status = krb5_to_nt_status(k5ret);
 		goto out;
 	}
