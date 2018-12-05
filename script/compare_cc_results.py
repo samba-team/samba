@@ -33,8 +33,22 @@ for fname in sys.argv[1:]:
             continue
         if len(line.split('=', 1)) == 2:
             key = line.split('=', 1)[0].strip()
+            value = line.split('=', 1)[1].strip()
             if key in exceptions:
                 continue
+            # using waf with python 3.4 seems to randomly sort dict keys
+            # we can't modify the waf code but we can fake a dict value
+            # string representation as if it were sorted. python 3.6.5
+            # doesn't seem to suffer from this behaviour
+            if value.startswith('{'):
+                import ast
+                amap = ast.literal_eval(value)
+                fakeline = ""
+                for k in sorted(amap.keys()):
+                    if not len(fakeline) == 0:
+                        fakeline = fakeline + ", "
+                    fakeline = fakeline + '\'' + k + '\': \'' + amap[k] + '\''
+                line = key + ' = {' + fakeline + '}'
         lines.append(line)
     f.close()
     if base_fname:
