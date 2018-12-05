@@ -206,12 +206,10 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	gse_ctx->gss_want_flags |= add_gss_c_flags;
 
 	/* Initialize Kerberos Context */
-	initialize_krb5_error_table();
-
-	k5ret = krb5_init_context(&gse_ctx->k5ctx);
+	k5ret = smb_krb5_init_context_common(&gse_ctx->k5ctx);
 	if (k5ret) {
-		DEBUG(0, ("Failed to initialize kerberos context! (%s)\n",
-			  error_message(k5ret)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(k5ret));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
