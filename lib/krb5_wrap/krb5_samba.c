@@ -3571,6 +3571,45 @@ failed:
 	return retval;
 }
 
+#ifndef SAMBA4_USES_HEIMDAL /* MITKRB5 tracing callback */
+static void smb_krb5_trace_cb(krb5_context ctx,
+			      const krb5_trace_info *info,
+			      void *data)
+{
+	if (info != NULL) {
+		DBGC_DEBUG(DBGC_KERBEROS, "%s", info->message);
+	}
+}
+#endif
+
+krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context)
+{
+	krb5_error_code ret;
+	krb5_context krb5_ctx;
+
+	initialize_krb5_error_table();
+
+	ret = krb5_init_context(&krb5_ctx);
+	if (ret) {
+		DBG_ERR("Krb5 context initialization failed (%s)\n",
+			 error_message(ret));
+		return ret;
+	}
+
+	/* The MIT Kerberos build relies on using the system krb5.conf file.
+	 * If you really want to use another file please set KRB5_CONFIG
+	 * accordingly. */
+#ifndef SAMBA4_USES_HEIMDAL
+	ret = krb5_set_trace_callback(krb5_ctx, smb_krb5_trace_cb, NULL);
+	if (ret) {
+		DBG_ERR("Failed to set MIT kerberos trace callback! (%s)\n",
+			error_message(ret));
+	}
+#endif
+	*_krb5_context = krb5_ctx;
+	return 0;
+}
+
 #else /* HAVE_KRB5 */
 /* This saves a few linking headaches */
 int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,

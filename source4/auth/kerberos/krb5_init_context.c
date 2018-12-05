@@ -478,12 +478,8 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 #endif
 	krb5_context krb5_ctx;
 
-	initialize_krb5_error_table();
-
-	ret = krb5_init_context(&krb5_ctx);
+	ret = smb_krb5_init_context_common(&krb5_ctx);
 	if (ret) {
-		DEBUG(1,("krb5_init_context failed (%s)\n",
-			 error_message(ret)));
 		return ret;
 	}
 
