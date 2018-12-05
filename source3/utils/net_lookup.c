@@ -286,11 +286,10 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 	int i;
 	NTSTATUS status;
 
-	initialize_krb5_error_table();
-	rc = krb5_init_context(&ctx);
+	rc = smb_krb5_init_context_common(&ctx);
 	if (rc) {
-		DEBUG(1,("krb5_init_context failed (%s)\n",
-			 error_message(rc)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(rc));
 		return -1;
 	}
 
