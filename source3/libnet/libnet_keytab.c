@@ -74,11 +74,10 @@ krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(r, keytab_close);
 
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
-		DEBUG(1,("keytab_init: could not krb5_init_context: %s\n",
-			error_message(ret)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		return ret;
 	}
 
