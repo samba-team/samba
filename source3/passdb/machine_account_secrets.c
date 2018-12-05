@@ -1083,9 +1083,10 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		goto no_kerberos;
 	}
 
-	initialize_krb5_error_table();
-	krb5_ret = krb5_init_context(&krb5_ctx);
+	krb5_ret = smb_krb5_init_context_common(&krb5_ctx);
 	if (krb5_ret != 0) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(krb5_ret));
 		TALLOC_FREE(keys);
 		return krb5_ret;
 	}
