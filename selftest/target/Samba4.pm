@@ -2744,7 +2744,8 @@ sub setup_backupfromdc
 	my $provision_args = ["--site=Backup-Site"];
 
 	my $env = $self->provision_ad_dc($path, "backupfromdc", "BACKUPDOMAIN",
-					 "backupdom.samba.example.com", "",
+					 "backupdom.samba.example.com",
+					 "samba kcc command = /bin/true",
 					 $provision_args);
 	unless ($env) {
 		return undef;
@@ -2880,6 +2881,7 @@ sub prepare_dc_testenv
 	$conf_options
 	max xmit = 32K
 	server max protocol = SMB2
+	samba kcc command = /bin/true
 
 [sysvol]
 	path = $ctx->{statedir}/sysvol
