@@ -128,9 +128,12 @@ int kerberos_kinit_password_ext(const char *principal,
 
 	ZERO_STRUCT(my_creds);
 
-	initialize_krb5_error_table();
-	if ((code = krb5_init_context(&ctx)))
-		goto out;
+	code = smb_krb5_init_context_common(&ctx);
+	if (code != 0) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(code));
+		return code;
+	}
 
 	if (time_offset != 0) {
 		krb5_set_real_time(ctx, time(NULL) + time_offset, 0);
@@ -244,10 +247,10 @@ int ads_kdestroy(const char *cc_name)
 	krb5_context ctx = NULL;
 	krb5_ccache cc = NULL;
 
-	initialize_krb5_error_table();
-	if ((code = krb5_init_context (&ctx))) {
-		DEBUG(3, ("ads_kdestroy: kdb5_init_context failed: %s\n", 
-			error_message(code)));
+	code = smb_krb5_init_context_common(&ctx);
+	if (code != 0) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(code));
 		return code;
 	}
 

@@ -366,8 +366,10 @@ static ADS_STATUS ads_init_gssapi_cred(ADS_STRUCT *ads, gss_cred_id_t *cred)
 		return ADS_SUCCESS;
 	}
 
-	kerr = krb5_init_context(&kctx);
+	kerr = smb_krb5_init_context_common(&kctx);
 	if (kerr) {
+	    DBG_ERR("kerberos init context failed (%s)\n",
+		    error_message(kerr));
 		return ADS_ERROR_KRB5(kerr);
 	}
 

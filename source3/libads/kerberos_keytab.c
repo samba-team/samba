@@ -259,11 +259,10 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 	TALLOC_CTX *tmpctx = NULL;
 	int i;
 
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
-		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
-			  error_message(ret)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		return -1;
 	}
 
@@ -436,11 +435,10 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	krb5_kvno kvno;
 	ADS_STATUS aderr;
 
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
-		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
-			  error_message(ret)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		return ret;
 	}
 
@@ -570,11 +568,10 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	memset(princ_s, '\0', sizeof(princ_s));
 
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
-		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
-			  error_message(ret)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		goto done;
 	}
 
@@ -774,11 +771,10 @@ int ads_keytab_list(const char *keytab_name)
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(cursor);
 
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
-		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
-			  error_message(ret)));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		return ret;
 	}
 
