@@ -932,9 +932,10 @@ krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,
 	ZERO_STRUCT(creds);
 	ZERO_STRUCT(creds_in);
 
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		goto done;
 	}
 
@@ -2880,8 +2881,10 @@ char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 	krb5_error_code kerr;
 	krb5_context ctx = NULL;
 
-	initialize_krb5_error_table();
-	if (krb5_init_context(&ctx)) {
+	kerr = smb_krb5_init_context_common(&ctx);
+	if (kerr) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(kerr));
 		return NULL;
 	}
 
@@ -3502,11 +3505,10 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 		ENCTYPE_NULL};
 	bool ok;
 
-	initialize_krb5_error_table();
-	retval = krb5_init_context(&context);
+	retval = smb_krb5_init_context_common(&context);
 	if (retval != 0) {
-		DBG_WARNING("krb5_init_context failed (%s)\n",
-			    error_message(retval));
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(retval));
 		goto failed;
 	}
 
