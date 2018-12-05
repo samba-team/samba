@@ -327,8 +327,10 @@ static int samba_kdc_kdb_entry_destructor(struct samba_kdc_entry *p)
 		entry_ex->e_data = NULL;
 	}
 
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		return ret;
 	}
 

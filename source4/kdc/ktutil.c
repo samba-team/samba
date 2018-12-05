@@ -59,10 +59,10 @@ int main (int argc, char **argv)
 
 	keytab_name = argv[1];
 
-	initialize_krb5_error_table();
-
-	ret = krb5_init_context(&context);
+	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
 		smb_krb5_err(mem_ctx, context, 1, ret, "krb5_context");
 	}
 
