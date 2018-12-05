@@ -1,4 +1,105 @@
                    =============================
+                   Release Notes for Samba 4.8.8
+                         December 13, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.8 release series.
+
+Major bug fixes include:
+------------------------
+
+   o dns: Fix CNAME loop prevention using counter regression (bug #13600).
+
+
+Changes since 4.8.7:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13633: s3: smbd: Prevent valgrind errors in smbtorture3 POSIX test.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13418: dsdb: Add comments explaining the limitations of our current
+     backlink behaviour.
+   * BUG 13495: dbcheck: Use symbolic control name for
+     DSDB_CONTROL_DBCHECK_FIX_DUPLICATE_LINKS.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13495: dbchecker: Fixing up incorrect DNs wasn't working.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 9175: libcli/smb: Don't overwrite status code.
+   * BUG 12164: 'wbinfo --group-info' 'NT AUTHORITY\System' does not work.
+   * BUG 13175: Fix accessing ZFS snapshot directories over SMB.
+   * BUG 13642: vfs_fruit should be able to cleanup AppleDouble files.
+   * BUG 13465: testparm crashes with PANIC: Messaging not initialized on
+     SLES 12 SP3.
+   * BUG 13646: File saving issues with vfs_fruit on samba >= 4.8.5.
+   * BUG 13649: Enabling vfs_fruit looses FinderInfo.
+   * BUG 13661: Session setup reauth fails to sign response.
+   * BUG 13667: Cancelling of SMB2 aio reads and writes returns wrong error
+     NT_STATUS_INTERNAL_ERROR.
+   * BUG 13677: Fix copy with vfs_fruit if AFP_AfpInfo stream file
+     size > 60bytes.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 13571: CVE-2018-16853: Fix S4U2Self crash with MIT KDC build.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13641: Fix CTDB recovery record resurrection from inactive nodes and
+     simplify vacuuming.
+   * BUG 13659: Fix bugs in CTDB event handling.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13465: examples: Fix the smb2mount build.
+   * BUG 13662: winbindd_cache: Fix timeout calculation for sid<->name cache.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13418: Extended DN SID component missing for member after switching
+     group membership.
+   * BUG 13600: CVE-2018-14629 dns: Fix CNAME loop prevention using counter
+     regression.
+   * BUG 13624: STATUS_SESSION_EXPIRED error is returned unencrypted, if the
+     request was encrypted.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13465: testparm crashes with PANIC: Messaging not initialized on
+     SLES 12 SP3.
+   * BUG 13673: smbd: Fix DELETE_ON_CLOSE behaviour on files with READ_ONLY
+     attribute.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13571: CVE-2018-16853: Fix S4U2Self crash with MIT KDC build.
+   * BUG 13679: Fix a segfault in pyglue.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13670: ctdb-recovery: Ban a node that causes recovery failure.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.8.7
                          November 27, 2018
                    =============================
@@ -94,8 +195,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.8.6
