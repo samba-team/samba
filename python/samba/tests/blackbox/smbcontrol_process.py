@@ -20,6 +20,7 @@
 # tests.
 #
 from __future__ import print_function
+import time
 from samba.tests import BlackboxTestCase, BlackboxProcessError
 from samba.messaging import Messaging
 
@@ -83,3 +84,41 @@ class SmbcontrolProcessBlockboxTests(BlackboxTestCase):
             self.fail("Could ping rpc_server process")
         except BlackboxProcessError as e:
             pass
+
+    def test_sleep(self):
+        SLEEP = "sleep"  # smbcontrol sleep command
+        DURATION = 5     # duration to sleep server for
+        DELTA = 1        # permitted error for the sleep duration
+
+        pid = self.get_process("rpc_server")
+        #
+        # Ensure we can ping the process before getting it to sleep
+        #
+        try:
+            self.check_run("%s %s %s" % (COMMAND, pid, PING),
+                           msg="trying to ping rpc_server")
+        except BlackboxProcessError as e:
+            self.fail("Unable to ping rpc_server process")
+
+        #
+        # Now ask it to sleep
+        #
+        start = time.time()
+        try:
+            self.check_run("%s %s %s %s" % (COMMAND, pid, SLEEP, DURATION),
+                           msg="putting rpc_server to sleep for %d" % DURATION)
+        except BlackboxProcessError as e:
+            print(e)
+            self.fail("Failed to get rpc_server to sleep for %d" % DURATION)
+
+        #
+        # The process should be sleeping and not respond until it wakes
+        #
+        try:
+            self.check_run("%s %s %s" % (COMMAND, pid, PING),
+                           msg="trying to ping rpc_server")
+            end = time.time()
+            duration = end - start
+            self.assertGreater(duration + DELTA, DURATION)
+        except BlackboxProcessError as e:
+            self.fail("Unable to ping rpc_server process")
