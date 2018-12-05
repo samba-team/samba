@@ -150,7 +150,7 @@ class SMBTests(samba.tests.TestCase):
     def file_exists(self, filepath):
         """Returns whether a regular file exists (by trying to open it)"""
         try:
-            self.conn.loadfile(filepath)
+            self.smb_conn.loadfile(filepath)
             exists = True;
         except NTSTATUSError as err:
             if (err.args[0] == NT_STATUS_OBJECT_NAME_NOT_FOUND or
@@ -197,14 +197,14 @@ class SMBTests(samba.tests.TestCase):
 
         self.smb_conn.savefile(test_file, test_contents.encode('utf8'))
 
-        contents = self.conn.loadfile(test_file)
+        contents = self.smb_conn.loadfile(test_file)
         self.assertEquals(contents.decode('utf8'), test_contents,
                           msg='contents of test file did not match what was written')
 
         # check we can overwrite the file with new contents
         new_contents = 'wxyz' * 128
         self.smb_conn.savefile(test_file, new_contents.encode('utf8'))
-        contents = self.conn.loadfile(test_file)
+        contents = self.smb_conn.loadfile(test_file)
         self.assertEquals(contents.decode('utf8'), new_contents,
                           msg='contents of test file did not match what was written')
 
@@ -213,7 +213,7 @@ class SMBTests(samba.tests.TestCase):
     def test_save_load_string_bytes(self):
         self.smb_conn.savefile(test_file, test_literal_bytes_embed_nulls)
 
-        contents = self.conn.loadfile(test_file)
+        contents = self.smb_conn.loadfile(test_file)
         self.assertEquals(contents, test_literal_bytes_embed_nulls,
                           msg='contents of test file did not match what was written')
 
@@ -222,7 +222,7 @@ class SMBTests(samba.tests.TestCase):
         if PY3:
             self.smb_conn.savefile(test_file, utf_contents.encode('utf8'))
 
-            contents = self.conn.loadfile(test_file)
+            contents = self.smb_conn.loadfile(test_file)
             self.assertEquals(contents.decode('utf8'), utf_contents,
                               msg='contents of test file did not match what was written')
 
@@ -231,7 +231,7 @@ class SMBTests(samba.tests.TestCase):
     def test_save_binary_contents(self):
         self.smb_conn.savefile(test_file, binary_contents)
 
-        contents = self.conn.loadfile(test_file)
+        contents = self.smb_conn.loadfile(test_file)
         self.assertEquals(contents, binary_contents,
                           msg='contents of test file did not match what was written')
 

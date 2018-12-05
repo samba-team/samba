@@ -28,6 +28,7 @@
 #include "source4/libcli/util/pyerrors.h"
 #include "auth/credentials/pycredentials.h"
 #include "trans2.h"
+#include "libsmb/clirap.h"
 
 static PyTypeObject *get_pytype(const char *module, const char *type)
 {
@@ -863,6 +864,133 @@ static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 	return Py_BuildValue("K", (unsigned long long)written);
 }
 
+/*
+ * Returns the size of the given file
+ */
+static NTSTATUS py_smb_filesize(struct py_cli_state *self, uint16_t fnum,
+				off_t *size)
+{
+	NTSTATUS status;
+
+	if (self->is_smb1) {
+		uint8_t *rdata = NULL;
+		struct tevent_req *req = NULL;
+
+		req = cli_qfileinfo_send(NULL, self->ev, self->cli, fnum,
+					 SMB_QUERY_FILE_ALL_INFO, 68,
+					 CLI_BUFFER_SIZE);
+		if (!py_tevent_req_wait_exc(self, req)) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		status = cli_qfileinfo_recv(req, NULL, NULL, &rdata, NULL);
+		if (NT_STATUS_IS_OK(status)) {
+			*size = IVAL2_TO_SMB_BIG_UINT(rdata, 48);
+		}
+		TALLOC_FREE(req);
+		TALLOC_FREE(rdata);
+	} else {
+		status = cli_qfileinfo_basic(self->cli, fnum, NULL, size,
+					     NULL, NULL, NULL, NULL, NULL);
+	}
+	return status;
+}
+
+static NTSTATUS pull_helper(char *buf, size_t n, void *priv)
+{
+	char **dest_buf = (char **)priv;
+	memcpy(*dest_buf, buf, n);
+	*dest_buf += n;
+	return NT_STATUS_OK;
+}
+
+/*
+ * Loads the specified file's contents and returns it
+ */
+static PyObject *py_smb_loadfile(struct py_cli_state *self, PyObject *args,
+				 PyObject *kwargs)
+{
+	NTSTATUS status;
+	const char *filename = NULL;
+	struct tevent_req *req = NULL;
+	uint16_t fnum;
+	off_t size;
+	char *buf = NULL;
+	off_t nread = 0;
+	PyObject *result = NULL;
+
+	if (!PyArg_ParseTuple(args, "s:loadfile", &filename)) {
+		return NULL;
+	}
+
+	/* get a read file handle */
+	req = cli_ntcreate_send(NULL, self->ev, self->cli, filename, 0,
+				FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ, FILE_OPEN, 0,
+				SMB2_IMPERSONATION_IMPERSONATION, 0);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_ntcreate_recv(req, &fnum, NULL);
+	TALLOC_FREE(req);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	/* get a buffer to hold the file contents */
+	status = py_smb_filesize(self, fnum, &size);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	result = PyBytes_FromStringAndSize(NULL, size);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	/* read the file contents */
+	buf = PyBytes_AS_STRING(result);
+	req = cli_pull_send(NULL, self->ev, self->cli, fnum, 0, size,
+			    size, pull_helper, &buf);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		Py_XDECREF(result);
+		return NULL;
+	}
+	status = cli_pull_recv(req, &nread);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		Py_XDECREF(result);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	/* close the file handle */
+	req = cli_close_send(NULL, self->ev, self->cli, fnum);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		Py_XDECREF(result);
+		return NULL;
+	}
+	status = cli_close_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		Py_XDECREF(result);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	/* sanity-check we read the expected number of bytes */
+	if (nread > size) {
+		Py_XDECREF(result);
+		PyErr_Format(PyExc_IOError,
+			     "read invalid - got %zu requested %zu",
+			     nread, size);
+		return NULL;
+	}
+
+	if (nread < size) {
+		if (_PyBytes_Resize(&result, nread) < 0) {
+			return NULL;
+		}
+	}
+
+	return result;
+}
+
 static PyObject *py_cli_read(struct py_cli_state *self, PyObject *args,
 			     PyObject *kwds)
 {
@@ -1303,6 +1431,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "savefile", (PyCFunction)py_smb_savefile, METH_VARARGS,
 	  "savefile(path, str) -> None\n\n"
 	  "\t\tWrite " PY_DESC_PY3_BYTES " str to file." },
+	{ "loadfile", (PyCFunction)py_smb_loadfile, METH_VARARGS,
+	  "loadfile(path) -> file contents as a " PY_DESC_PY3_BYTES
+	  "\n\n\t\tRead contents of a file." },
 	{ NULL, NULL, 0, NULL }
 };
 
