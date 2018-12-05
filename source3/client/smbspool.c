@@ -28,6 +28,7 @@
 #include "system/kerberos.h"
 #include "libsmb/libsmb.h"
 #include "lib/param/param.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 
 /*
  * Starting with CUPS 1.3, Kerberos support is provided by cupsd including
@@ -516,8 +517,10 @@ static bool kerberos_ccache_is_valid(void) {
 	krb5_ccache ccache = NULL;
 	krb5_error_code code;
 
-	code = krb5_init_context(&ctx);
+	code = smb_krb5_init_context_common(&ctx);
 	if (code != 0) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(code));
 		return false;
 	}
 
