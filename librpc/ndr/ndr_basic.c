@@ -719,10 +719,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_trailer_align(struct ndr_pull *ndr, size_t s
 */
 _PUBLIC_ enum ndr_err_code ndr_push_bytes(struct ndr_push *ndr, const uint8_t *data, uint32_t n)
 {
-	if (n == 0) {
+	if (unlikely(n == 0)) {
 		return NDR_ERR_SUCCESS;
 	}
-	if (data == NULL) {
+	if (unlikely(data == NULL)) {
 		return NDR_ERR_INVALID_POINTER;
 	}
 	NDR_PUSH_NEED_BYTES(ndr, n);
@@ -1335,10 +1335,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flag
 	} else {
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, blob.length));
 	}
-	if (blob.length == 0) {
-		return NDR_ERR_SUCCESS;
-	}
-
 	NDR_CHECK(ndr_push_bytes(ndr, blob.data, blob.length));
 	return NDR_ERR_SUCCESS;
 }
