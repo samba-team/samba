@@ -20,14 +20,15 @@
 
 /* For structures internal to the NTLMSSP implementation that should not be exposed */
 
-#include "../lib/crypto/arcfour.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 struct auth_session_info;
 
 struct ntlmssp_crypt_direction {
 	uint32_t seq_num;
 	uint8_t sign_key[16];
-	struct arcfour_state seal_state;
+	gnutls_cipher_hd_t seal_state;
 };
 
 union ntlmssp_crypt_state {
