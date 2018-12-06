@@ -723,10 +723,7 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
 	union samr_DomainInfo *info = NULL;
-	fstring sid_str;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
-
-	sid_to_fstring(sid_str, domain_sid);
 
 	/* Get sam policy handle */
 	status = dcerpc_samr_Connect2(b, mem_ctx,
@@ -776,9 +773,12 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 	}
 	status = result;
 	if (NT_STATUS_IS_OK(result)) {
+		struct dom_sid_buf sid_str;
+
 		d_printf(_("Domain Name: %s\n"),
 			 info->general.domain_name.string);
-		d_printf(_("Domain SID: %s\n"), sid_str);
+		d_printf(_("Domain SID: %s\n"),
+			 dom_sid_str_buf(domain_sid, &sid_str));
 		d_printf(_("Sequence number: %llu\n"),
 			(unsigned long long)info->general.sequence_num);
 		d_printf(_("Num users: %u\n"), info->general.num_users);
@@ -838,11 +838,11 @@ static NTSTATUS rpc_getsid_internals(struct net_context *c,
 			int argc,
 			const char **argv)
 {
-	fstring sid_str;
+	struct dom_sid_buf sid_str;
 
-	sid_to_fstring(sid_str, domain_sid);
 	d_printf(_("Storing SID %s for Domain %s in secrets.tdb\n"),
-		 sid_str, domain_name);
+		 dom_sid_str_buf(domain_sid, &sid_str),
+		 domain_name);
 
 	if (!secrets_store_domain_sid(domain_name, domain_sid)) {
 		DEBUG(0,("Can't store domain SID\n"));
@@ -3050,9 +3050,6 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 	struct samr_Ids types;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
-	fstring sid_str;
-	sid_to_fstring(sid_str, domain_sid);
-
 	status = dcerpc_samr_OpenGroup(b, mem_ctx,
 				       domain_pol,
 				       MAXIMUM_ALLOWED_ACCESS,
@@ -3111,8 +3108,14 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 		for (i = 0; i < this_time; i++) {
 
 			if (c->opt_long_list_entries) {
-				printf("%s-%d %s\\%s %d\n", sid_str,
-				       group_rids[i], domain_name,
+				struct dom_sid sid;
+				struct dom_sid_buf sid_str;
+
+				sid_compose(&sid, domain_sid, group_rids[i]);
+
+				printf("%s %s\\%s %d\n",
+				       dom_sid_str_buf(&sid, &sid_str),
+				       domain_name,
 				       names.names[i].string,
 				       SID_NAME_USER);
 			} else {
@@ -3220,18 +3223,18 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 	}
 
 	for (i = 0; i < num_members; i++) {
-		fstring sid_str;
-		sid_to_fstring(sid_str, &alias_sids[i]);
+		struct dom_sid_buf sid_str;
+		dom_sid_str_buf(&alias_sids[i], &sid_str);
 
 		if (c->opt_long_list_entries) {
-			printf("%s %s\\%s %d\n", sid_str,
+			printf("%s %s\\%s %d\n", sid_str.buf,
 			       domains[i] ? domains[i] : _("*unknown*"),
 			       names[i] ? names[i] : _("*unknown*"), types[i]);
 		} else {
 			if (domains[i])
 				printf("%s\\%s\n", domains[i], names[i]);
 			else
-				printf("%s\n", sid_str);
+				printf("%s\n", sid_str.buf);
 		}
 	}
 
@@ -6753,22 +6756,18 @@ static NTSTATUS rpc_query_domain_sid(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	fstring str_sid;
-	if (!sid_to_fstring(str_sid, domain_sid)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	d_printf("%s\n", str_sid);
+	struct dom_sid_buf sid_str;
+	d_printf("%s\n", dom_sid_str_buf(domain_sid, &sid_str));
 	return NT_STATUS_OK;
 }
 
 static void print_trusted_domain(struct dom_sid *dom_sid, const char *trusted_dom_name)
 {
-	fstring ascii_sid;
+	struct dom_sid_buf sid_str;
 
-	/* convert sid into ascii string */
-	sid_to_fstring(ascii_sid, dom_sid);
-
-	d_printf("%-20s%s\n", trusted_dom_name, ascii_sid);
+	d_printf("%-20s%s\n",
+		 trusted_dom_name,
+		 dom_sid_str_buf(dom_sid, &sid_str));
 }
 
 static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
