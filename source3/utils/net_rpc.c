@@ -4849,8 +4849,9 @@ static bool is_alias_member(struct dom_sid *sid, struct full_alias *alias)
 	int i;
 
 	for (i=0; i<alias->num_members; i++) {
-		if (dom_sid_compare(sid, &alias->members[i]) == 0)
+		if (dom_sid_equal(sid, &alias->members[i])) {
 			return true;
+		}
 	}
 
 	return false;
