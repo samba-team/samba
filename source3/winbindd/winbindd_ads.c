@@ -381,10 +381,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		if (!dom_sid_in_domain(&domain->sid, &user_sid)) {
-			fstring sidstr, domstr;
+			struct dom_sid_buf sidstr, domstr;
 			DBG_WARNING("Got sid %s in domain %s\n",
-				    sid_to_fstring(sidstr, &user_sid),
-				    sid_to_fstring(domstr, &domain->sid));
+				    dom_sid_str_buf(&user_sid, &sidstr),
+				    dom_sid_str_buf(&domain->sid, &domstr));
 			continue;
 		}
 

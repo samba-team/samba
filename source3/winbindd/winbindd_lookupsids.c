@@ -106,12 +106,12 @@ NTSTATUS winbindd_lookupsids_recv(struct tevent_req *req,
 	}
 
 	for (i=0; i<state->domains->count; i++) {
-		fstring sid_str;
+		struct dom_sid_buf sid_str;
 
 		result = talloc_asprintf_append_buffer(
 			result, "%s %s\n",
-			sid_to_fstring(sid_str,
-				       state->domains->domains[i].sid),
+			dom_sid_str_buf(state->domains->domains[i].sid,
+					&sid_str),
 			state->domains->domains[i].name.string);
 		if (result == NULL) {
 			return NT_STATUS_NO_MEMORY;
