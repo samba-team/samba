@@ -63,7 +63,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 	NTSTATUS status;
 	struct dom_sid sid;
 	uint32_t rid;
-	fstring keystr;
+	struct dom_sid_buf keystr;
 	fstring dom_name;
 	TDB_DATA key;
 	TDB_DATA key2;
@@ -104,8 +104,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 
 	sid_compose(&sid, &domain->sid, rid);
 
-	sid_to_fstring(keystr, &sid);
-	key2 = string_term_tdb_data(keystr);
+	key2 = string_term_tdb_data(dom_sid_str_buf(&sid, &keystr));
 
 	value = dbwrap_record_get_value(rec);
 
