@@ -575,6 +575,7 @@ static void notifyd_rec_change(struct messaging_context *msg_ctx,
 	struct notify_rec_change_msg *msg;
 	size_t pathlen;
 	bool ok;
+	struct notify_instance instance;
 
 	DBG_DEBUG("Got %zu bytes from %s\n", data->length,
 		  server_id_str_buf(src, &idbuf));
@@ -585,8 +586,10 @@ static void notifyd_rec_change(struct messaging_context *msg_ctx,
 		return;
 	}
 
+	memcpy(&instance, &msg->instance, sizeof(instance)); /* avoid SIGBUS */
+
 	ok = notifyd_apply_rec_change(
-		&src, msg->path, pathlen, &msg->instance,
+		&src, msg->path, pathlen, &instance,
 		state->entries, state->sys_notify_watch, state->sys_notify_ctx,
 		state->msg_ctx);
 	if (!ok) {
@@ -1337,6 +1340,7 @@ static void notifyd_apply_reclog(struct notifyd_peer *peer,
 		struct notify_rec_change_msg *chg;
 		size_t pathlen;
 		bool ok;
+		struct notify_instance instance;
 
 		ok = notifyd_parse_rec_change(r->buf.data, r->buf.length,
 					      &chg, &pathlen);
@@ -1346,8 +1350,11 @@ static void notifyd_apply_reclog(struct notifyd_peer *peer,
 			goto fail;
 		}
 
+		/* avoid SIGBUS */
+		memcpy(&instance, &chg->instance, sizeof(instance));
+
 		ok = notifyd_apply_rec_change(&r->src, chg->path, pathlen,
-					      &chg->instance, peer->db,
+					      &instance, peer->db,
 					      state->sys_notify_watch,
 					      state->sys_notify_ctx,
 					      state->msg_ctx);
