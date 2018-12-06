@@ -99,7 +99,7 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 
 	/* it might be a file */
 	status = smbcli_unlink(tree, dname);
-	if (NT_STATUS_IS_OK(smbcli_unlink(tree, dname))) {
+	if (NT_STATUS_IS_OK(status)) {
 		return 1;
 	}
 	if (NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
