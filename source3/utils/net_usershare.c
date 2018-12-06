@@ -446,12 +446,14 @@ static int info_fn(struct file_list *fl, void *priv)
 			}
 
 		} else {
-			fstring sidstr;
-			sid_to_fstring(sidstr,
-				       &psd->dacl->aces[num_aces].trustee);
-			acl_str = talloc_asprintf_append(acl_str,
-						"%s",
-						sidstr);
+			struct dom_sid_buf sidstr;
+
+			acl_str = talloc_asprintf_append(
+				acl_str,
+				"%s",
+				dom_sid_str_buf(
+					&psd->dacl->aces[num_aces].trustee,
+					&sidstr));
 			if (!acl_str) {
 				return -1;
 			}
