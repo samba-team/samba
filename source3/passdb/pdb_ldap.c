@@ -361,12 +361,12 @@ static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state,
 {
 	char *filter = NULL;
 	int rc;
-	fstring sid_string;
+	struct dom_sid_buf sid_string;
 
 	filter = talloc_asprintf(talloc_tos(), "(&(%s=%s)%s)",
 		get_userattr_key2string(ldap_state->schema_ver,
 			LDAP_ATTR_USER_SID),
-		sid_to_fstring(sid_string, sid),
+		dom_sid_str_buf(sid, &sid_string),
 		get_objclass_filter(ldap_state->schema_ver));
 	if (!filter) {
 		return LDAP_NO_MEMORY;
@@ -1152,7 +1152,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 	/* only update the RID if we actually need to */
 	if (need_update(sampass, PDB_USERSID)) {
-		fstring sid_string;
+		struct dom_sid_buf sid_str;
 		const struct dom_sid *user_sid = pdb_get_user_sid(sampass);
 
 		switch ( ldap_state->schema_ver ) {
@@ -1162,7 +1162,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 						ldap_state->smbldap_state),
 					existing, mods,
 					get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
-					sid_to_fstring(sid_string, user_sid));
+					dom_sid_str_buf(user_sid, &sid_str));
 				break;
 
 			default:
@@ -1175,7 +1175,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	   'free' to hang off the unix primary group makes life easier */
 
 	if (need_update(sampass, PDB_GROUPSID)) {
-		fstring sid_string;
+		struct dom_sid_buf sid_str;
 		const struct dom_sid *group_sid = pdb_get_group_sid(sampass);
 
 		switch ( ldap_state->schema_ver ) {
@@ -1185,7 +1185,8 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 						ldap_state->smbldap_state),
 					existing, mods,
 					get_userattr_key2string(ldap_state->schema_ver, 
-					LDAP_ATTR_PRIMARY_GROUP_SID), sid_to_fstring(sid_string, group_sid));
+					LDAP_ATTR_PRIMARY_GROUP_SID),
+					dom_sid_str_buf(group_sid, &sid_str));
 				break;
 
 			default:
@@ -2548,12 +2549,12 @@ static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	char *filter = NULL;
 	NTSTATUS status;
-	fstring tmp;
+	struct dom_sid_buf tmp;
 
 	if (asprintf(&filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_GROUPMAP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID),
-		sid_to_fstring(tmp, &sid)) < 0) {
+		dom_sid_str_buf(&sid, &tmp)) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -3561,7 +3562,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 	LDAPMod **mods = NULL;
 	int rc;
 	enum lsa_SidType type = SID_NAME_USE_NONE;
-	fstring tmp;
+	struct dom_sid_buf tmp;
 
 	char *filter = NULL;
 
@@ -3581,7 +3582,8 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 
 	if (asprintf(&filter,
 		     "(&(objectClass=%s)(sambaSid=%s)(sambaGroupType=%d))",
-		     LDAP_OBJ_GROUPMAP, sid_to_fstring(tmp, alias),
+		     LDAP_OBJ_GROUPMAP,
+		     dom_sid_str_buf(alias, &tmp),
 		     type) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3631,7 +3633,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 	smbldap_set_mod(&mods, modop,
 			get_attr_key2string(groupmap_attr_list,
 					    LDAP_ATTR_SID_LIST),
-			sid_to_fstring(tmp, member));
+			dom_sid_str_buf(member, &tmp));
 
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 
@@ -3685,7 +3687,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	char *filter = NULL;
 	uint32_t num_members = 0;
 	enum lsa_SidType type = SID_NAME_USE_NONE;
-	fstring tmp;
+	struct dom_sid_buf tmp;
 
 	*pp_members = NULL;
 	*p_num_members = 0;
@@ -3706,7 +3708,8 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 
 	if (asprintf(&filter,
 		     "(&(objectClass=%s)(sambaSid=%s)(sambaGroupType=%d))",
-		     LDAP_OBJ_GROUPMAP, sid_to_fstring(tmp, alias),
+		     LDAP_OBJ_GROUPMAP,
+		     dom_sid_str_buf(alias, &tmp),
 		     type) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4825,7 +4828,7 @@ static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 	struct ldap_search_state *state;
-	fstring tmp;
+	struct dom_sid_buf tmp;
 
 	state = talloc(search, struct ldap_search_state);
 	if (state == NULL) {
@@ -4841,7 +4844,8 @@ static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 	state->filter =	talloc_asprintf(search, "(&(objectclass=%s)"
 					"(sambaGroupType=%d)(sambaSID=%s*))",
 					 LDAP_OBJ_GROUPMAP,
-					 type, sid_to_fstring(tmp, sid));
+					 type,
+					 dom_sid_str_buf(sid, &tmp));
 	state->attrs = talloc_attrs(search, "cn", "sambaSid",
 				    "displayName", "description",
 				    "sambaGroupType", NULL);
