@@ -21,7 +21,8 @@ import random
 import sys
 from samba import smb
 from samba import NTSTATUSError
-from samba.ntstatus import NT_STATUS_OBJECT_NAME_NOT_FOUND
+from samba.ntstatus import (NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                            NT_STATUS_OBJECT_PATH_NOT_FOUND)
 
 PY3 = sys.version_info[0] == 3
 addom = 'addom.samba.example.com/'
@@ -80,6 +81,62 @@ class SMBTests(samba.tests.TestCase):
                 self.assertIn(key, item,
                               msg="Key '%s' not in listing '%s'" % (key, item))
 
+    def test_deltree(self):
+        """The smb.deltree API should delete files and sub-dirs"""
+        # create some test sub-dirs
+        dirpaths = []
+        empty_dirs = []
+        cur_dir = test_dir
+        for subdir in ["subdir-X", "subdir-Y", "subdir-Z"]:
+            path = self.make_sysvol_path(cur_dir, subdir)
+            self.conn.mkdir(path)
+            dirpaths.append(path)
+            cur_dir = path
+
+            # create another empty dir just for kicks
+            path = self.make_sysvol_path(cur_dir, "another")
+            self.conn.mkdir(path)
+            empty_dirs.append(path)
+
+        # create some files in these directories
+        filepaths = []
+        for subdir in dirpaths:
+            for i in range(1, 4):
+                contents = "I'm file {0} in dir {1}!".format(i, subdir)
+                path = self.make_sysvol_path(subdir, "file-{0}.txt".format(i))
+                self.conn.savefile(path, test_contents.encode('utf8'))
+                filepaths.append(path)
+
+        # sanity-check these dirs/files exist
+        for subdir in dirpaths + empty_dirs:
+            self.assertTrue(self.conn.chkpath(subdir),
+                            "Failed to create {0}".format(subdir))
+        for path in filepaths:
+            self.assertTrue(self.file_exists(path),
+                            "Failed to create {0}".format(path))
+
+        # try using deltree to remove a single empty directory
+        path = empty_dirs.pop(0)
+        self.conn.deltree(path)
+        self.assertFalse(self.conn.chkpath(path),
+                         "Failed to delete {0}".format(path))
+
+        # try using deltree to remove a single file
+        path = filepaths.pop(0)
+        self.conn.deltree(path)
+        self.assertFalse(self.file_exists(path),
+                         "Failed to delete {0}".format(path))
+
+        # delete the top-level dir
+        self.conn.deltree(test_dir)
+
+        # now check that all the dirs/files are no longer there
+        for subdir in dirpaths + empty_dirs:
+            self.assertFalse(self.conn.chkpath(subdir),
+                             "Failed to delete {0}".format(subdir))
+        for path in filepaths:
+            self.assertFalse(self.file_exists(path),
+                             "Failed to delete {0}".format(path))
 
     def file_exists(self, filepath):
         """Returns whether a regular file exists (by trying to open it)"""
@@ -87,7 +144,8 @@ class SMBTests(samba.tests.TestCase):
             self.conn.loadfile(filepath)
             exists = True;
         except NTSTATUSError as err:
-            if err.args[0] == NT_STATUS_OBJECT_NAME_NOT_FOUND:
+            if (err.args[0] == NT_STATUS_OBJECT_NAME_NOT_FOUND or
+                err.args[0] == NT_STATUS_OBJECT_PATH_NOT_FOUND):
                 exists = False
             else:
                 raise err
