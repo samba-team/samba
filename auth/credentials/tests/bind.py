@@ -19,6 +19,13 @@ from ldb import SCOPE_BASE, SCOPE_SUBTREE
 from samba import gensec
 import samba.tests
 from samba.tests import delete_force
+from samba.credentials import Credentials
+
+def create_credential(lp, other):
+    c = Credentials()
+    c.guess(lp)
+    c.set_gensec_features(other.get_gensec_features())
+    return c
 
 parser = optparse.OptionParser("ldap [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -39,12 +46,12 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
-creds_machine = copy.deepcopy(creds)
-creds_user1 = copy.deepcopy(creds)
-creds_user2 = copy.deepcopy(creds)
-creds_user3 = copy.deepcopy(creds)
-creds_user4 = copy.deepcopy(creds)
 
+creds_machine = create_credential(lp, creds)
+creds_user1 = create_credential(lp, creds)
+creds_user2 = create_credential(lp, creds)
+creds_user3 = create_credential(lp, creds)
+creds_user4 = create_credential(lp, creds)
 
 class BindTests(samba.tests.TestCase):
 
