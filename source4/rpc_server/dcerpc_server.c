@@ -669,6 +669,8 @@ static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
 	call->conn->allow_auth3 = false;
 	call->conn->allow_request = false;
 
+	call->conn->default_auth_state->auth_invalid = true;
+
 	call->terminate_reason = talloc_strdup(call, reason);
 	if (call->terminate_reason == NULL) {
 		call->terminate_reason = __location__;
@@ -2477,6 +2479,8 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	dce_conn->allow_auth3 = false;
 	dce_conn->allow_alter = false;
 	dce_conn->allow_request = false;
+
+	dce_conn->default_auth_state->auth_invalid = true;
 
 	if (dce_conn->pending_call_list == NULL) {
 		char *full_reason = talloc_asprintf(dce_conn, "dcesrv: %s", reason);
