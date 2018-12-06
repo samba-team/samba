@@ -565,6 +565,7 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	struct vfs_open_how how = { .flags = 0, };
 	struct file_id file_id;
 	bool have_share_mode_entry = false;
+	uint32_t dosmode;
 	int ret;
 	bool ok;
 
@@ -733,7 +734,9 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 		goto fail;
 	}
 
-	(void)fdos_mode(fsp);
+	dosmode = fdos_mode(fsp);
+	fsp->fsp_flags.is_sparse = (dosmode & FILE_ATTRIBUTE_SPARSE);
+	fsp->fsp_flags.is_sparse |= e.flags & SHARE_ENTRY_FLAG_POSIX_OPEN;
 
 	ok = vfs_default_durable_reconnect_check_stat(&state->cookie.stat_info,
 						      fsp);
