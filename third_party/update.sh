@@ -8,11 +8,6 @@ THIRD_PARTY_DIR="`dirname $0`"
 # $THIRD_PARTY_DIR yet.
 WORKDIR="`mktemp -d`"
 
-echo "Updating dnspython..."
-git clone git://git.samba.org/third_party/dnspython "$WORKDIR/dnspython"
-rm -rf "$WORKDIR/dnspython/.git"
-rsync -avz --delete "$WORKDIR/dnspython/" "$THIRD_PARTY_DIR/dnspython/"
-
 echo "Updating pep8..."
 git clone git://git.samba.org/third_party/pep8 "$WORKDIR/pep8"
 rm -rf "$WORKDIR/pep8/.git"

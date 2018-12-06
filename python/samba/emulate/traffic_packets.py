@@ -36,7 +36,6 @@ from samba.ntstatus import (
     NT_STATUS_NO_SUCH_DOMAIN
 )
 import samba
-samba.ensure_third_party_module("dns", "dnspython")
 import dns.resolver
 
 

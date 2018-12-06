@@ -53,7 +53,6 @@ from samba.compat import get_string
 from samba.compat import text_type
 import ldb
 
-samba.ensure_third_party_module("dns", "dnspython")
 import dns.resolver
 import dns.exception
 
