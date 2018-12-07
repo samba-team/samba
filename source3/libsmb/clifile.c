@@ -1951,6 +1951,7 @@ static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
 					     uint32_t ShareAccess,
 					     uint32_t CreateDisposition,
 					     uint32_t CreateOptions,
+					     uint32_t ImpersonationLevel,
 					     uint8_t SecurityFlags)
 {
 	struct tevent_req *req, *subreq;
@@ -1985,7 +1986,7 @@ static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
 	SIVAL(vwv+17, 1, CreateDisposition);
 	SIVAL(vwv+19, 1, CreateOptions |
 		(cli->backup_intent ? FILE_OPEN_FOR_BACKUP_INTENT : 0));
-	SIVAL(vwv+21, 1, 0x02);	/* ImpersonationLevel */
+	SIVAL(vwv+21, 1, ImpersonationLevel);
 	SCVAL(vwv+23, 1, SecurityFlags);
 
 	bytes = talloc_array(state, uint8_t, 0);
@@ -2126,7 +2127,7 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 		subreq = cli_ntcreate1_send(
 			state, ev, cli, fname, create_flags, desired_access,
 			file_attributes, share_access, create_disposition,
-			create_options, security_flags);
+			create_options, impersonation_level, security_flags);
 	}
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
