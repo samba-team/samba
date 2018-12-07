@@ -275,7 +275,8 @@ class GetDCNameEx(samba.tests.TestCase):
                                                     flags=netlogon.DS_RETURN_DNS_NAME,
                                                     ex2=False)
         except WERRORError as e:
-            self.fail("Failed to succeed over winbind: " + str(e))
+            self.fail("get_dc_name (domain=%s,site=%s) over winbind failed: %s"
+                      % (self.trust_domain, site, e))
 
         self.assertTrue(response_trust is not None)
         self.assertEqual(response_trust.domain_name.lower(),
