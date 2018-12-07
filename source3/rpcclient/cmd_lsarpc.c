@@ -252,10 +252,12 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 	/* Print results */
 
 	for (i = 0; i < (argc - 1); i++) {
-		fstring sid_str;
-		sid_to_fstring(sid_str, &sids[i]);
-		printf("%s %s (%s: %d)\n", argv[i + 1], sid_str,
-		       sid_type_lookup(types[i]), types[i]);
+		struct dom_sid_buf sid_str;
+		printf("%s %s (%s: %d)\n",
+		       argv[i + 1],
+		       dom_sid_str_buf(&sids[i], &sid_str),
+		       sid_type_lookup(types[i]),
+		       types[i]);
 	}
 
 	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
@@ -305,10 +307,12 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 	/* Print results */
 
 	for (i = 0; i < (argc - 2); i++) {
-		fstring sid_str;
-		sid_to_fstring(sid_str, &sids[i]);
-		printf("%s %s (%s: %d)\n", argv[i + 2], sid_str,
-		       sid_type_lookup(types[i]), types[i]);
+		struct dom_sid_buf sid_str;
+		printf("%s %s (%s: %d)\n",
+		       argv[i + 2],
+		       dom_sid_str_buf(&sids[i], &sid_str),
+		       sid_type_lookup(types[i]),
+		       types[i]);
 	}
 
 	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
@@ -368,9 +372,10 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < sids.count; i++) {
-		fstring sid_str;
-		sid_to_fstring(sid_str, sids.sids[i].sid);
-		printf("%s %s (%s: %d)\n", argv[i+1], sid_str,
+		struct dom_sid_buf sid_str;
+		printf("%s %s (%s: %d)\n",
+		       argv[i+1],
+		       dom_sid_str_buf(sids.sids[i].sid, &sid_str),
 		       sid_type_lookup(sids.sids[i].sid_type),
 		       sids.sids[i].sid_type);
 	}
@@ -433,15 +438,15 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* Print results */
 
 	for (i = 0; i < (argc - 1); i++) {
-		fstring sid_str;
+		struct dom_sid_buf sid_str;
 
-		sid_to_fstring(sid_str, &sids[i]);
+		dom_sid_str_buf(&sids[i], &sid_str);
 		if (types[i] == SID_NAME_DOMAIN) {
-			printf("%s %s (%d)\n", sid_str,
+			printf("%s %s (%d)\n", sid_str.buf,
 			       domains[i] ? domains[i] : "*unknown*",
 			       types[i]);
 		} else {
-			printf("%s %s\\%s (%d)\n", sid_str,
+			printf("%s %s\\%s (%d)\n", sid_str.buf,
 			       domains[i] ? domains[i] : "*unknown*",
 			       names[i] ? names[i] : "*unknown*",
 			       types[i]);
@@ -525,15 +530,15 @@ static NTSTATUS cmd_lsa_lookup_sids_level(struct rpc_pipe_client *cli,
 	/* Print results */
 
 	for (i = 0; i < (argc - 2); i++) {
-		fstring sid_str;
+		struct dom_sid_buf sid_str;
 
-		sid_to_fstring(sid_str, &sids[i]);
+		dom_sid_str_buf(&sids[i], &sid_str);
 		if (types[i] == SID_NAME_DOMAIN) {
-			printf("%s %s (%d)\n", sid_str,
+			printf("%s %s (%d)\n", sid_str.buf,
 			       domains[i] ? domains[i] : "*unknown*",
 			       types[i]);
 		} else {
-			printf("%s %s\\%s (%d)\n", sid_str,
+			printf("%s %s\\%s (%d)\n", sid_str.buf,
 			       domains[i] ? domains[i] : "*unknown*",
 			       names[i] ? names[i] : "*unknown*",
 			       types[i]);
@@ -612,13 +617,13 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 	/* Print results */
 
 	for (i = 0; i < names.count; i++) {
-		fstring sid_str;
+		struct dom_sid_buf sid_str;
 
 		if (i >= sids.num_sids) {
 			break;
 		}
-		sid_to_fstring(sid_str, sids.sids[i].sid);
-		printf("%s %s (%d)\n", sid_str,
+		printf("%s %s (%d)\n",
+		       dom_sid_str_buf(sids.sids[i].sid, &sid_str),
 		       names.names[i].name.string,
 		       names.names[i].sid_type);
 	}
@@ -685,13 +690,13 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 		/* Print results: list of names and sids returned in this
 		 * response. */	 
 		for (i = 0; i < domain_list.count; i++) {
-			fstring sid_str;
+			struct dom_sid_buf sid_str;
 
-			sid_to_fstring(sid_str, domain_list.domains[i].sid);
 			printf("%s %s\n",
 				domain_list.domains[i].name.string ?
 				domain_list.domains[i].name.string : "*unknown*",
-				sid_str);
+				dom_sid_str_buf(domain_list.domains[i].sid,
+						&sid_str));
 		}
 	}
 
@@ -866,10 +871,10 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 	printf("found %d SIDs\n\n", sid_array.num_sids);
 
 	for (i = 0; i < sid_array.num_sids; i++) {
-		fstring sid_str;
+		struct dom_sid_buf sid_str;
 
-		sid_to_fstring(sid_str, sid_array.sids[i].sid);
-		printf("%s\n", sid_str);
+		printf("%s\n",
+		       dom_sid_str_buf(sid_array.sids[i].sid, &sid_str));
 	}
 
 	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);

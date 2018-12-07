@@ -1279,10 +1279,10 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < sid_array.num_sids; i++) {
-		fstring sid_str;
+		struct dom_sid_buf sid_str;
 
-		sid_to_fstring(sid_str, sid_array.sids[i].sid);
-		printf("\tsid:[%s]\n", sid_str);
+		printf("\tsid:[%s]\n",
+		       dom_sid_str_buf(sid_array.sids[i].sid, &sid_str));
 	}
 
 	dcerpc_samr_Close(b, mem_ctx, &alias_pol, &result);
@@ -2690,7 +2690,6 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
 	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
-	fstring sid_string;
 	struct lsa_String domain_name;
 	struct dom_sid *sid = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -2737,9 +2736,10 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
-		sid_to_fstring(sid_string, sid);
+		struct dom_sid_buf sid_str;
 		printf("SAMR_LOOKUP_DOMAIN: Domain Name: %s Domain SID: %s\n",
-		       argv[1], sid_string);
+		       argv[1],
+		       dom_sid_str_buf(sid, &sid_str));
 	}
 
 	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
