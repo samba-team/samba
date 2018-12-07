@@ -769,8 +769,8 @@ static PyObject *py_cli_read(struct py_cli_state *self, PyObject *args,
 	unsigned size;
 	struct tevent_req *req;
 	NTSTATUS status;
-	uint8_t *buf;
-	ssize_t buflen;
+	char *buf;
+	size_t received;
 	PyObject *result;
 
 	static const char *kwlist[] = {
@@ -782,20 +782,41 @@ static PyObject *py_cli_read(struct py_cli_state *self, PyObject *args,
 		return NULL;
 	}
 
-	req = cli_read_andx_send(NULL, self->ev, self->cli, fnum,
-				 offset, size);
-	if (!py_tevent_req_wait_exc(self, req)) {
+	result = PyBytes_FromStringAndSize(NULL, size);
+	if (result == NULL) {
 		return NULL;
 	}
-	status = cli_read_andx_recv(req, &buflen, &buf);
+	buf = PyBytes_AS_STRING(result);
+
+	req = cli_read_send(NULL, self->ev, self->cli, fnum,
+			    buf, offset, size);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		Py_XDECREF(result);
+		return NULL;
+	}
+	status = cli_read_recv(req, &received);
+	TALLOC_FREE(req);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(req);
+		Py_XDECREF(result);
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
-	result = PyBytes_FromStringAndSize((const char *)buf, buflen);
-	TALLOC_FREE(req);
+
+	if (received > size) {
+		Py_XDECREF(result);
+		PyErr_Format(PyExc_IOError,
+			     "read invalid - got %zu requested %u",
+			     received, size);
+		return NULL;
+	}
+
+	if (received < size) {
+		if (_PyBytes_Resize(&result, received) < 0) {
+			return NULL;
+		}
+	}
+
 	return result;
 }
 
