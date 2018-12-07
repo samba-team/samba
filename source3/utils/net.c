@@ -359,7 +359,7 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 {
         struct dom_sid sid;
 	const char *name;
-	fstring sid_str;
+	struct dom_sid_buf sid_str;
 
 	if (argc >= 1) {
 		name = argv[0];
@@ -390,8 +390,9 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));
 		return 1;
 	}
-	sid_to_fstring(sid_str, &sid);
-	d_printf(_("SID for domain %s is: %s\n"), name, sid_str);
+	d_printf(_("SID for domain %s is: %s\n"),
+		 name,
+		 dom_sid_str_buf(&sid, &sid_str));
 	return 0;
 }
 
@@ -440,7 +441,7 @@ static int net_setdomainsid(struct net_context *c, int argc, const char **argv)
 static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 {
 	struct dom_sid domain_sid;
-	fstring sid_str;
+	struct dom_sid_buf sid_str;
 
 	if (argc > 0) {
 		d_printf(_("Usage:"));
@@ -471,17 +472,18 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr, _("Could not fetch local SID\n"));
 			return 1;
 		}
-		sid_to_fstring(sid_str, &domain_sid);
 		d_printf(_("SID for local machine %s is: %s\n"),
-			 lp_netbios_name(), sid_str);
+			 lp_netbios_name(),
+			 dom_sid_str_buf(&domain_sid, &sid_str));
 	}
 	if (!secrets_fetch_domain_sid(c->opt_workgroup, &domain_sid)) {
 		d_fprintf(stderr, _("Could not fetch domain SID\n"));
 		return 1;
 	}
 
-	sid_to_fstring(sid_str, &domain_sid);
-	d_printf(_("SID for domain %s is: %s\n"), c->opt_workgroup, sid_str);
+	d_printf(_("SID for domain %s is: %s\n"),
+		 c->opt_workgroup,
+		 dom_sid_str_buf(&domain_sid, &sid_str));
 
 	return 0;
 }
