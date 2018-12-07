@@ -1482,7 +1482,7 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 	struct dom_sid group_sid;
 	uint32_t rid = 0;
 	struct dom_sid *dom_sid = NULL;
-	fstring sid_string;
+	struct dom_sid_buf sid_str;
 	GROUP_MAP *map;
 	bool insert = true;
 
@@ -1529,9 +1529,10 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 		goto done;
 	}
 
-	sid_to_fstring(sid_string, &group_sid);
 	DEBUG(0,("Creating alias[%s] - %s members[%u]\n",
-		  map->nt_name, sid_string, num_members));
+		 map->nt_name,
+		 dom_sid_str_buf(&group_sid, &sid_str),
+		 num_members));
 
 	status = dssync_insert_obj(pctx, pctx->aliases, obj);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1617,7 +1618,7 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 	NTSTATUS status;
 	struct group *grp = NULL;
 	struct dom_sid group_sid;
-	fstring sid_string;
+	struct dom_sid_buf sid_str;
 	GROUP_MAP *map;
 	bool insert = true;
 
@@ -1660,9 +1661,10 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 		goto done;
 	}
 
-	sid_to_fstring(sid_string, &group_sid);
 	DEBUG(0,("Creating group[%s] - %s members [%u]\n",
-		  map->nt_name, sid_string, num_members));
+		 map->nt_name,
+		 dom_sid_str_buf(&group_sid, &sid_str),
+		 num_members));
 
 	status = dssync_insert_obj(pctx, pctx->groups, obj);
 	if (!NT_STATUS_IS_OK(status)) {
