@@ -2102,6 +2102,7 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_ntcreate_state *state;
+	uint32_t impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate_state);
 	if (req == NULL) {
@@ -2116,7 +2117,8 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 		}
 
 		subreq = cli_smb2_create_fnum_send(
-			state, ev, cli, fname, create_flags, desired_access,
+			state, ev, cli, fname, create_flags,
+			impersonation_level, desired_access,
 			file_attributes, share_access, create_disposition,
 			create_options);
 	} else {

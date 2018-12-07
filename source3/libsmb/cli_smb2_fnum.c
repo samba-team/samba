@@ -171,6 +171,7 @@ struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
 					     struct cli_state *cli,
 					     const char *fname,
 					     uint32_t create_flags,
+					     uint32_t impersonation_level,
 					     uint32_t desired_access,
 					     uint32_t file_attributes,
 					     uint32_t share_access,
@@ -262,7 +263,7 @@ struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
 				     cli->smb2.tcon,
 				     fname,
 				     flags_to_smb2_oplock(create_flags),
-				     SMB2_IMPERSONATION_IMPERSONATION,
+				     impersonation_level,
 				     desired_access,
 				     file_attributes,
 				     share_access,
@@ -345,6 +346,7 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
+	uint32_t impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -359,6 +361,7 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 		goto fail;
 	}
 	req = cli_smb2_create_fnum_send(frame, ev, cli, fname, create_flags,
+					impersonation_level,
 					desired_access, file_attributes,
 					share_access, create_disposition,
 					create_options);

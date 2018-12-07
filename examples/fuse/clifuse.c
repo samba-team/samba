@@ -151,7 +151,8 @@ static void cli_ll_create(fuse_req_t freq, fuse_ino_t parent, const char *name,
 
 	req = cli_smb2_create_fnum_send(
 		state, mstate->ev, mstate->cli, state->path,
-		0, FILE_GENERIC_READ|FILE_GENERIC_WRITE, FILE_ATTRIBUTE_NORMAL,
+		0, SMB2_IMPERSONATION_IMPERSONATION,
+		FILE_GENERIC_READ|FILE_GENERIC_WRITE, FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_CREATE, FILE_NON_DIRECTORY_FILE);
 	if (req == NULL) {
@@ -836,7 +837,8 @@ static void cli_ll_open(fuse_req_t freq, fuse_ino_t ino,
 
 	req = cli_smb2_create_fnum_send(
 		state, mstate->ev, mstate->cli, istate->path,
-		0, acc, FILE_ATTRIBUTE_NORMAL,
+		0, SMB2_IMPERSONATION_IMPERSONATION,
+		acc, FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OPEN, FILE_NON_DIRECTORY_FILE);
 	if (req == NULL) {
