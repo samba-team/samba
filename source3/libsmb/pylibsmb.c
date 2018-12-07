@@ -741,7 +741,7 @@ static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 		"fnum", "buffer", "offset", "mode", NULL };
 
 	if (!ParseTupleAndKeywords(
-		    args, kwds, "Is#K|I", kwlist,
+		    args, kwds, "I" PYARG_BYTES_LEN "K|I", kwlist,
 		    &fnum, &buf, &buflen, &offset, &mode)) {
 		return NULL;
 	}
