@@ -675,13 +675,13 @@ static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 	static const char *kwlist[] = {
 		"Name", "CreateFlags", "DesiredAccess", "FileAttributes",
 		"ShareAccess", "CreateDisposition", "CreateOptions",
-		"SecurityFlags", NULL };
+		"ImpersonationLevel", "SecurityFlags", NULL };
 
 	if (!ParseTupleAndKeywords(
-		    args, kwds, "s|IIIIIII", kwlist,
+		    args, kwds, "s|IIIIIIII", kwlist,
 		    &fname, &CreateFlags, &DesiredAccess, &FileAttributes,
 		    &ShareAccess, &CreateDisposition, &CreateOptions,
-		    &SecurityFlags)) {
+		    &ImpersonationLevel, &SecurityFlags)) {
 		return NULL;
 	}
 
