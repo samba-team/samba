@@ -335,6 +335,7 @@ NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
 NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 			const char *fname,
 			uint32_t create_flags,
+			uint32_t impersonation_level,
 			uint32_t desired_access,
 			uint32_t file_attributes,
 			uint32_t share_access,
@@ -346,7 +347,6 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	uint32_t impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -644,6 +644,7 @@ NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dname)
 	status = cli_smb2_create_fnum(cli,
 			dname,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,	/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE, /* share_access */
@@ -682,6 +683,7 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
 	status = cli_smb2_create_fnum(cli,
 			dname,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			DELETE_ACCESS,		/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -700,6 +702,7 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
 		status = cli_smb2_create_fnum(cli,
 			dname,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			DELETE_ACCESS,		/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -748,6 +751,7 @@ NTSTATUS cli_smb2_unlink(struct cli_state *cli, const char *fname)
 	status = cli_smb2_create_fnum(cli,
 			fname,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			DELETE_ACCESS,		/* desired_access */
 			FILE_ATTRIBUTE_NORMAL, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -766,6 +770,7 @@ NTSTATUS cli_smb2_unlink(struct cli_state *cli, const char *fname)
 		status = cli_smb2_create_fnum(cli,
 			fname,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			DELETE_ACCESS,		/* desired_access */
 			FILE_ATTRIBUTE_NORMAL, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -943,6 +948,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 	status = cli_smb2_create_fnum(cli,
 			parent_dir,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			SEC_DIR_LIST|SEC_DIR_READ_ATTRIBUTE,/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE, /* share_access */
@@ -1119,6 +1125,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 	status = cli_smb2_create_fnum(cli,
 			name,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,	/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -1132,6 +1139,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 		status = cli_smb2_create_fnum(cli,
 			name,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,		/* desired_access */
 			0, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -1184,6 +1192,7 @@ NTSTATUS cli_smb2_chkpath(struct cli_state *cli,
 	status = cli_smb2_create_fnum(cli,
 			name,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,	/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -1229,6 +1238,7 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 	status = cli_smb2_create_fnum(cli,
 			name,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			desired_access,
 			0, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -1248,6 +1258,7 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 		status = cli_smb2_create_fnum(cli,
 			name,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			desired_access,
 			0, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -1262,6 +1273,7 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 		status = cli_smb2_create_fnum(cli,
 			name,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			desired_access,
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -1997,6 +2009,7 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, const char *path,
 	status = cli_smb2_create_fnum(cli,
 			path,
 			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,	/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
@@ -2106,6 +2119,7 @@ NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
 	/* First open the top level directory. */
 	status =
 	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
+				 SMB2_IMPERSONATION_IMPERSONATION,
 				 FILE_READ_ATTRIBUTES,     /* desired_access */
 				 FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 				 FILE_SHARE_READ | FILE_SHARE_WRITE |
@@ -2198,6 +2212,7 @@ NTSTATUS cli_smb2_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 	/* First open the top level directory. */
 	status =
 	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
+				 SMB2_IMPERSONATION_IMPERSONATION,
 				 FILE_READ_ATTRIBUTES,     /* desired_access */
 				 FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 				 FILE_SHARE_READ | FILE_SHARE_WRITE |
@@ -2283,6 +2298,7 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 	/* First open the top level directory. */
 	status =
 	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
+				 SMB2_IMPERSONATION_IMPERSONATION,
 				 FILE_READ_ATTRIBUTES,     /* desired_access */
 				 FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
 				 FILE_SHARE_READ | FILE_SHARE_WRITE |
