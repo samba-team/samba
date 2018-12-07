@@ -746,12 +746,12 @@ static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 		return NULL;
 	}
 
-	req = cli_write_andx_send(NULL, self->ev, self->cli, fnum, mode,
-				  (uint8_t *)buf, offset, buflen);
+	req = cli_write_send(NULL, self->ev, self->cli, fnum, mode,
+			     (uint8_t *)buf, offset, buflen);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
-	status = cli_write_andx_recv(req, &written);
+	status = cli_write_recv(req, &written);
 	TALLOC_FREE(req);
 
 	if (!NT_STATUS_IS_OK(status)) {
