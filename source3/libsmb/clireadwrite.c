@@ -1065,6 +1065,122 @@ NTSTATUS cli_write_andx_recv(struct tevent_req *req, size_t *pwritten)
 	return NT_STATUS_OK;
 }
 
+struct cli_write_state {
+	struct cli_state *cli;
+	size_t written;
+};
+
+static void cli_write_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_write_send(TALLOC_CTX *mem_ctx,
+				  struct tevent_context *ev,
+				  struct cli_state *cli, uint16_t fnum,
+				  uint16_t mode, const uint8_t *buf,
+				  off_t offset, size_t size)
+{
+	struct tevent_req *req = NULL;
+	struct cli_write_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_write_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		uint32_t max_size;
+		bool ok;
+
+		ok = smb2cli_conn_req_possible(state->cli->conn, &max_size);
+		if (!ok) {
+			tevent_req_nterror(
+				req,
+				NT_STATUS_INSUFFICIENT_RESOURCES);
+			return tevent_req_post(req, ev);
+		}
+
+		/*
+		 * downgrade depending on the available credits
+		 */
+		size = MIN(max_size, size);
+
+		subreq = cli_smb2_write_send(state,
+					     ev,
+					     cli,
+					     fnum,
+					     mode,
+					     buf,
+					     offset,
+					     size);
+	} else {
+		bool ok;
+
+		ok = smb1cli_conn_req_possible(state->cli->conn);
+		if (!ok) {
+			tevent_req_nterror(
+				req,
+				NT_STATUS_INSUFFICIENT_RESOURCES);
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = cli_write_andx_send(state,
+					     ev,
+					     cli,
+					     fnum,
+					     mode,
+					     buf,
+					     offset,
+					     size);
+	}
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_write_done, req);
+
+	return req;
+}
+
+static void cli_write_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct cli_write_state *state =
+		tevent_req_data(req,
+		struct cli_write_state);
+	NTSTATUS status;
+
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_write_recv(subreq, &state->written);
+	} else {
+		status = cli_write_andx_recv(subreq, &state->written);
+	}
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_write_recv(struct tevent_req *req, size_t *pwritten)
+{
+	struct cli_write_state *state =
+		tevent_req_data(req,
+		struct cli_write_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	if (pwritten != NULL) {
+		*pwritten = state->written;
+	}
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 struct cli_smb1_writeall_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
