@@ -43,7 +43,10 @@ if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
-host = args[0]
+host = os.getenv("SERVER", None)
+if not host:
+    print("Please specify the host with env variable SERVER")
+    sys.exit(1)
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
@@ -387,6 +390,3 @@ if "://" not in host:
         host = "tdb://%s" % host
     else:
         host = "ldap://%s" % host
-
-
-TestProgram(module=__name__, opts=subunitopts)
