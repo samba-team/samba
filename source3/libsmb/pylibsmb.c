@@ -794,7 +794,7 @@ static PyObject *py_cli_read(struct py_cli_state *self, PyObject *args,
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
-	result = Py_BuildValue("s#", (char *)buf, (int)buflen);
+	result = PyBytes_FromStringAndSize((const char *)buf, buflen);
 	TALLOC_FREE(req);
 	return result;
 }
