@@ -72,7 +72,8 @@ struct tevent_req *cli_symlink_send(TALLOC_CTX *mem_ctx,
 		FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES,
 		FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_CREATE,
 		FILE_OPEN_REPARSE_POINT|FILE_SYNCHRONOUS_IO_NONALERT|
-		FILE_NON_DIRECTORY_FILE, 0);
+		FILE_NON_DIRECTORY_FILE,
+		SMB2_IMPERSONATION_IMPERSONATION, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -274,7 +275,8 @@ struct tevent_req *cli_readlink_send(TALLOC_CTX *mem_ctx,
 	subreq = cli_ntcreate_send(
 		state, ev, cli, fname, 0, FILE_READ_ATTRIBUTES | FILE_READ_EA,
 		0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-		FILE_OPEN, FILE_OPEN_REPARSE_POINT, 0);
+		FILE_OPEN, FILE_OPEN_REPARSE_POINT,
+		SMB2_IMPERSONATION_IMPERSONATION, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

@@ -263,7 +263,8 @@ static struct tevent_req *nbench_cmd_send(TALLOC_CTX *mem_ctx,
 			state, ev, nb_state->cli, state->ft->cp.fname, flags,
 			desired_access, 0, share_mode,
 			state->ft->cp.cr_disposition,
-			state->ft->cp.cr_options, 0);
+			state->ft->cp.cr_options,
+			SMB2_IMPERSONATION_IMPERSONATION, 0);
 		break;
 	}
 	case NBENCH_CMD_CLOSE: {

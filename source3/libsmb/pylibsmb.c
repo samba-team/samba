@@ -666,6 +666,7 @@ static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 	unsigned ShareAccess = 0;
 	unsigned CreateDisposition = FILE_OPEN;
 	unsigned CreateOptions = 0;
+	unsigned ImpersonationLevel = SMB2_IMPERSONATION_IMPERSONATION;
 	unsigned SecurityFlags = 0;
 	uint16_t fnum;
 	struct tevent_req *req;
@@ -687,7 +688,7 @@ static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 	req = cli_ntcreate_send(NULL, self->ev, self->cli, fname, CreateFlags,
 				DesiredAccess, FileAttributes, ShareAccess,
 				CreateDisposition, CreateOptions,
-				SecurityFlags);
+				ImpersonationLevel, SecurityFlags);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}

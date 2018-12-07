@@ -8249,7 +8249,8 @@ static struct tevent_req *torture_createdel_send(TALLOC_CTX *mem_ctx,
 		FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OPEN_IF, FILE_DELETE_ON_CLOSE, 0);
+		FILE_OPEN_IF, FILE_DELETE_ON_CLOSE,
+		SMB2_IMPERSONATION_IMPERSONATION, 0);
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

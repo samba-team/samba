@@ -180,7 +180,8 @@ static struct tevent_req *chain3_send(TALLOC_CTX *mem_ctx,
 		GENERIC_READ_ACCESS|GENERIC_WRITE_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OVERWRITE_IF, 0, 0);
+		FILE_OVERWRITE_IF, 0,
+		SMB2_IMPERSONATION_IMPERSONATION, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

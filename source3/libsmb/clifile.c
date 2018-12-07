@@ -2099,11 +2099,11 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 				     uint32_t share_access,
 				     uint32_t create_disposition,
 				     uint32_t create_options,
+				     uint32_t impersonation_level,
 				     uint8_t security_flags)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_ntcreate_state *state;
-	uint32_t impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate_state);
 	if (req == NULL) {
@@ -2197,6 +2197,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
+	uint32_t ImpersonationLevel = SMB2_IMPERSONATION_IMPERSONATION;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -2215,7 +2216,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	req = cli_ntcreate_send(frame, ev, cli, fname, CreatFlags,
 				DesiredAccess, FileAttributes, ShareAccess,
 				CreateDisposition, CreateOptions,
-				SecurityFlags);
+				ImpersonationLevel, SecurityFlags);
 	if (req == NULL) {
 		goto fail;
 	}

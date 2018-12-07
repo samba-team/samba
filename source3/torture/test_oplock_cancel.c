@@ -48,7 +48,7 @@ static struct tevent_req *create_cancel_send(
 	subreq = cli_ntcreate_send(
 		mem_ctx, ev, cli, fname, 0, FILE_GENERIC_READ,
 		FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE,
-		FILE_OPEN_IF, 0, 0);
+		FILE_OPEN_IF, 0, SMB2_IMPERSONATION_IMPERSONATION, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

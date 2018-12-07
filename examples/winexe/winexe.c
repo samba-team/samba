@@ -872,6 +872,7 @@ static struct tevent_req *winexe_out_pipe_send(
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OPEN,	/* CreateDisposition */
 		0,		/* CreateOptions */
+		SMB2_IMPERSONATION_IMPERSONATION,
 		0);		/* SecurityFlags */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -1044,6 +1045,7 @@ static struct tevent_req *winexe_in_pipe_send(
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OPEN,	/* CreateDisposition */
 		0,		/* CreateOptions */
+		SMB2_IMPERSONATION_IMPERSONATION,
 		0);		/* SecurityFlags */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -1462,6 +1464,7 @@ static struct tevent_req *winexe_ctrl_send(
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OPEN,	/* CreateDisposition */
 		0,		/* CreateOptions */
+		SMB2_IMPERSONATION_IMPERSONATION,
 		0);		/* SecurityFlags */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

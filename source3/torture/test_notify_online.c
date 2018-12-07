@@ -61,7 +61,7 @@ static struct tevent_req *notify_online_send(
 		state, ev, cli, dname, EXTENDED_RESPONSE_REQUIRED,
 		SEC_FILE_READ_DATA, 0,
 		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-		FILE_OPEN, 0, 0);
+		FILE_OPEN, 0, SMB2_IMPERSONATION_IMPERSONATION, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -93,7 +93,8 @@ static void notify_online_opened_dir(struct tevent_req *subreq)
 		state, state->ev, state->cli, state->fname, 0,
 		GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OPEN, FILE_NON_DIRECTORY_FILE, 0);
+		FILE_OPEN, FILE_NON_DIRECTORY_FILE,
+		SMB2_IMPERSONATION_IMPERSONATION, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

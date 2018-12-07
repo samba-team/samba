@@ -397,6 +397,7 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 				     uint32_t ShareAccess,
 				     uint32_t CreateDisposition,
 				     uint32_t CreateOptions,
+				     uint32_t ImpersonationLevel,
 				     uint8_t SecurityFlags);
 NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
 			uint16_t *pfnum,
