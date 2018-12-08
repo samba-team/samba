@@ -6304,6 +6304,7 @@ static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 	LDAPMod **mods = NULL;
 	char *prev_pwd = NULL;
 	char *trusted_dn = NULL;
+	struct dom_sid_buf buf;
 	int rc;
 
 	DEBUG(10, ("ldapsam_set_trusteddom_pw called for domain %s\n", domain));
@@ -6322,7 +6323,7 @@ static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaDomainName",
 			 domain);
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaSID",
-			 sid_string_tos(sid));
+			 dom_sid_str_buf(sid, &buf));
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaPwdLastSet",
 			 talloc_asprintf(talloc_tos(), "%li", (long int)time(NULL)));
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods,
