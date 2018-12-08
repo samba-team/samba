@@ -540,8 +540,9 @@ static int dssync_passdb_traverse_gmembers(struct db_record *rec,
 	}
 
 	if (!pdb_getsampwsid(member, &member_sid)) {
+		struct dom_sid_buf buf;
 		DEBUG(1, ("Found bogus group member: (member_sid=%s group=%s)\n",
-			  sid_string_tos(&member_sid), grp->gr_name));
+			  dom_sid_str_buf(&member_sid, &buf), grp->gr_name));
 		TALLOC_FREE(member);
 		return -1;
 	}
