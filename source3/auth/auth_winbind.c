@@ -110,12 +110,6 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	}
 
 	if (wbc_status == WBC_ERR_WINBIND_NOT_AVAILABLE) {
-		struct auth_methods *auth_method =
-			(struct auth_methods *)my_private_data;
-
-		if ( auth_method )
-			return auth_method->auth(auth_context, auth_method->private_data, 
-				mem_ctx, user_info, server_info);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -163,16 +157,6 @@ static NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char 
 	}
 	result->name = "winbind";
 	result->auth = check_winbind_security;
-
-	if (param && *param) {
-		/* we load the 'fallback' module - if winbind isn't here, call this
-		   module */
-		auth_methods *priv;
-		if (!load_auth_module(auth_context, param, &priv)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		result->private_data = (void *)priv;
-	}
 
 	*auth_method = result;
 	return NT_STATUS_OK;
