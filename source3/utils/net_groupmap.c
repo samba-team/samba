@@ -68,12 +68,16 @@ static bool get_sid_from_input(struct dom_sid *sid, char *input)
 
 static void print_map_entry (const GROUP_MAP *map, bool long_list)
 {
+	struct dom_sid_buf buf;
+
 	if (!long_list)
 		d_printf("%s (%s) -> %s\n", map->nt_name,
-			 sid_string_tos(&map->sid), gidtoname(map->gid));
+			 dom_sid_str_buf(&map->sid, &buf),
+			 gidtoname(map->gid));
 	else {
 		d_printf("%s\n", map->nt_name);
-		d_printf(_("\tSID       : %s\n"), sid_string_tos(&map->sid));
+		d_printf(_("\tSID       : %s\n"),
+			 dom_sid_str_buf(&map->sid, &buf));
 		d_printf(_("\tUnix gid  : %u\n"), (unsigned int)map->gid);
 		d_printf(_("\tUnix group: %s\n"), gidtoname(map->gid));
 		d_printf(_("\tGroup type: %s\n"),
@@ -303,8 +307,9 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	/* Default is domain group. */
 	map->sid_name_use = SID_NAME_DOM_GRP;
 	if (pdb_getgrgid(map, gid)) {
+		struct dom_sid_buf buf;
 		d_printf(_("Unix group %s already mapped to SID %s\n"),
-			 unixgrp, sid_string_tos(&map->sid));
+			 unixgrp, dom_sid_str_buf(&map->sid, &buf));
 		TALLOC_FREE(map);
 		return -1;
 	}
@@ -767,9 +772,10 @@ static int net_groupmap_cleanup(struct net_context *c, int argc, const char **ar
 		if (!sid_check_is_in_our_sam(&maps[i]->sid) &&
 		    !sid_check_is_in_builtin(&maps[i]->sid))
 		{
+			struct dom_sid_buf buf;
 			printf(_("Deleting mapping for NT Group %s, sid %s\n"),
 				maps[i]->nt_name,
-				sid_string_tos(&maps[i]->sid));
+				dom_sid_str_buf(&maps[i]->sid, &buf));
 			pdb_delete_group_mapping_entry(maps[i]->sid);
 		}
 	}
@@ -850,7 +856,8 @@ static int net_groupmap_listmem(struct net_context *c, int argc, const char **ar
 	}
 
 	for (i = 0; i < num; i++) {
-		printf("%s\n", sid_string_tos(&(members[i])));
+		struct dom_sid_buf buf;
+		printf("%s\n", dom_sid_str_buf(&(members[i]), &buf));
 	}
 
 	TALLOC_FREE(members);
@@ -864,6 +871,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 {
 	uint32_t *alias_rids;
 	size_t i, num_alias_rids;
+	struct dom_sid_buf buf;
 
 	alias_rids = NULL;
 	num_alias_rids = 0;
@@ -872,14 +880,14 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 				     mem_ctx, domain_sid, member, 1,
 				     &alias_rids, &num_alias_rids))) {
 		d_fprintf(stderr, _("Could not list memberships for sid %s\n"),
-			 sid_string_tos(member));
+			  dom_sid_str_buf(member, &buf));
 		return false;
 	}
 
 	for (i = 0; i < num_alias_rids; i++) {
 		struct dom_sid alias;
 		sid_compose(&alias, domain_sid, alias_rids[i]);
-		printf("%s\n", sid_string_tos(&alias));
+		printf("%s\n", dom_sid_str_buf(&alias, &buf));
 	}
 
 	return true;

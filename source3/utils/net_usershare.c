@@ -818,6 +818,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 
 	for (i = 0; i < num_aces; i++) {
 		struct dom_sid sid;
+		struct dom_sid_buf buf;
 		const char *pcolon = strchr_m(pacl, ':');
 		const char *name;
 
@@ -881,7 +882,10 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			}
 		}
 		us_acl = talloc_asprintf_append(
-			us_acl, "%s:%c,", sid_string_tos(&sid), pcolon[1]);
+			us_acl,
+			"%s:%c,",
+			dom_sid_str_buf(&sid, &buf),
+			pcolon[1]);
 
 		/* Move to the next ACL entry. */
 		if (pcolon[2] == ',') {

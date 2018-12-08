@@ -337,6 +337,7 @@ static int net_lookup_name(struct net_context *c, int argc, const char **argv)
 {
 	const char *dom, *name;
 	struct dom_sid sid;
+	struct dom_sid_buf buf;
 	enum lsa_SidType type;
 
 	if (argc != 1) {
@@ -352,7 +353,7 @@ static int net_lookup_name(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("%s %d (%s) %s\\%s\n", sid_string_tos(&sid),
+	d_printf("%s %d (%s) %s\\%s\n", dom_sid_str_buf(&sid, &buf),
 		 type, sid_type_lookup(type), dom, name);
 	return 0;
 }
@@ -361,6 +362,7 @@ static int net_lookup_sid(struct net_context *c, int argc, const char **argv)
 {
 	const char *dom, *name;
 	struct dom_sid sid;
+	struct dom_sid_buf buf;
 	enum lsa_SidType type;
 
 	if (argc != 1) {
@@ -381,7 +383,7 @@ static int net_lookup_sid(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("%s %d (%s) %s\\%s\n", sid_string_tos(&sid),
+	d_printf("%s %d (%s) %s\\%s\n", dom_sid_str_buf(&sid, &buf),
 		 type, sid_type_lookup(type), dom, name);
 	return 0;
 }

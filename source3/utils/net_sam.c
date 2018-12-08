@@ -693,13 +693,15 @@ static int net_sam_rights_list(struct net_context *c, int argc,
 		for (i=0; i<num_sids; i++) {
 			const char *dom, *name;
 			enum lsa_SidType type;
+			struct dom_sid_buf buf;
 
 			if (lookup_sid(talloc_tos(), &sids[i], &dom, &name,
 				       &type)) {
 				d_printf("%s\\%s\n", dom, name);
 			}
 			else {
-				d_printf("%s\n", sid_string_tos(&sids[i]));
+				d_printf("%s\n",
+					 dom_sid_str_buf(&sids[i], &buf));
 			}
 		}
 		return 0;
@@ -871,6 +873,7 @@ static int net_sam_mapunixgroup(struct net_context *c, int argc, const char **ar
 	NTSTATUS status;
 	GROUP_MAP *map;
 	struct group *grp;
+	struct dom_sid_buf buf;
 
 	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "%s\n%s",
@@ -900,7 +903,7 @@ static int net_sam_mapunixgroup(struct net_context *c, int argc, const char **ar
 	}
 
 	d_printf(_("Mapped unix group %s to SID %s\n"), argv[0],
-		 sid_string_tos(&map->sid));
+		 dom_sid_str_buf(&map->sid, &buf));
 
 	TALLOC_FREE(map);
 	return 0;
@@ -1328,8 +1331,11 @@ static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 		d_printf(_("Deleted %s\\%s from %s\\%s\n"),
 			 memberdomain, membername, groupdomain, groupname);
 	} else {
+		struct dom_sid_buf buf;
 		d_printf(_("Deleted %s from %s\\%s\n"),
-			 sid_string_tos(&member), groupdomain, groupname);
+			 dom_sid_str_buf(&member, &buf),
+			 groupdomain,
+			 groupname);
 	}
 
 	return 0;
@@ -1406,7 +1412,9 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 		if (lookup_sid(talloc_tos(), &members[i], &dom, &name, NULL)) {
 			d_printf(" %s\\%s\n", dom, name);
 		} else {
-			d_printf(" %s\n", sid_string_tos(&members[i]));
+			struct dom_sid_buf buf;
+			d_printf(" %s\n",
+				 dom_sid_str_buf(&members[i], &buf));
 		}
 	}
 
@@ -1555,6 +1563,7 @@ static int net_sam_list(struct net_context *c, int argc, const char **argv)
 static int net_sam_show(struct net_context *c, int argc, const char **argv)
 {
 	struct dom_sid sid;
+	struct dom_sid_buf buf;
 	enum lsa_SidType type;
 	const char *dom, *name;
 
@@ -1572,7 +1581,7 @@ static int net_sam_show(struct net_context *c, int argc, const char **argv)
 	}
 
 	d_printf(_("%s\\%s is a %s with SID %s\n"), dom, name,
-		 sid_type_lookup(type), sid_string_tos(&sid));
+		 sid_type_lookup(type), dom_sid_str_buf(&sid, &buf));
 
 	return 0;
 }

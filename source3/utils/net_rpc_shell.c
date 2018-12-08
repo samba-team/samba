@@ -27,6 +27,7 @@
 #include "lib/netapi/netapi_net.h"
 #include "../libcli/smbreadline/smbreadline.h"
 #include "libsmb/libsmb.h"
+#include "libcli/security/dom_sid.h"
 
 static NTSTATUS rpc_sh_info(struct net_context *c,
 			    TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
@@ -219,6 +220,7 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
 	struct rpc_sh_ctx *ctx;
+	struct dom_sid_buf buf;
 
 	if (argc != 0 || c->display_usage) {
 		d_printf("%s\nnet rpc shell\n", _("Usage:"));
@@ -258,7 +260,7 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 	}
 
 	d_printf(_("Talking to domain %s (%s)\n"), ctx->domain_name,
-		 sid_string_tos(ctx->domain_sid));
+		 dom_sid_str_buf(ctx->domain_sid, &buf));
 
 	this_ctx = ctx;
 
