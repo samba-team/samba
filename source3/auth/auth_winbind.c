@@ -110,7 +110,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	}
 
 	if (wbc_status == WBC_ERR_WINBIND_NOT_AVAILABLE) {
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
