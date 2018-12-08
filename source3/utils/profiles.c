@@ -64,34 +64,40 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, struct dom_sid *s1,
 	struct security_acl *theacl;
 	int i;
 	bool update = False;
+	struct dom_sid_buf buf;
 
-	verbose_output("  Owner SID: %s\n", sid_string_tos(sd->owner_sid));
+	verbose_output("  Owner SID: %s\n",
+		       dom_sid_str_buf(sd->owner_sid, &buf));
 	if ( dom_sid_equal( sd->owner_sid, s1 ) ) {
 		sid_copy( sd->owner_sid, s2 );
 		update = True;
 		verbose_output("  New Owner SID: %s\n",
-			sid_string_tos(sd->owner_sid));
+			       dom_sid_str_buf(sd->owner_sid, &buf));
 
 	}
 
-	verbose_output("  Group SID: %s\n", sid_string_tos(sd->group_sid));
+	verbose_output("  Group SID: %s\n",
+		       dom_sid_str_buf(sd->group_sid, &buf));
 	if ( dom_sid_equal( sd->group_sid, s1 ) ) {
 		sid_copy( sd->group_sid, s2 );
 		update = True;
 		verbose_output("  New Group SID: %s\n",
-			sid_string_tos(sd->group_sid));
+			       dom_sid_str_buf(sd->group_sid, &buf));
 	}
 
 	theacl = sd->dacl;
 	verbose_output("  DACL: %d entries:\n", theacl->num_aces);
 	for ( i=0; i<theacl->num_aces; i++ ) {
 		verbose_output("    Trustee SID: %s\n",
-			sid_string_tos(&theacl->aces[i].trustee));
+			       dom_sid_str_buf(&theacl->aces[i].trustee,
+					       &buf));
 		if ( dom_sid_equal( &theacl->aces[i].trustee, s1 ) ) {
 			sid_copy( &theacl->aces[i].trustee, s2 );
 			update = True;
-			verbose_output("    New Trustee SID: %s\n",
-				sid_string_tos(&theacl->aces[i].trustee));
+			verbose_output(
+				"    New Trustee SID: %s\n",
+				dom_sid_str_buf(&theacl->aces[i].trustee,
+						&buf));
 		}
 	}
 
@@ -100,12 +106,15 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, struct dom_sid *s1,
 	verbose_output("  SACL: %d entries: \n", theacl->num_aces);
 	for ( i=0; i<theacl->num_aces; i++ ) {
 		verbose_output("    Trustee SID: %s\n",
-			sid_string_tos(&theacl->aces[i].trustee));
+			       dom_sid_str_buf(&theacl->aces[i].trustee,
+					       &buf));
 		if ( dom_sid_equal( &theacl->aces[i].trustee, s1 ) ) {
 			sid_copy( &theacl->aces[i].trustee, s2 );
 			update = True;
-			verbose_output("    New Trustee SID: %s\n",
-				sid_string_tos(&theacl->aces[i].trustee));
+			verbose_output(
+				"    New Trustee SID: %s\n",
+				dom_sid_str_buf(&theacl->aces[i].trustee,
+						&buf));
 		}
 	}
 #endif
