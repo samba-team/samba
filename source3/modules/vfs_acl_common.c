@@ -813,6 +813,7 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 {
 	NTSTATUS status;
 	const struct security_token *token = NULL;
+	struct dom_sid_buf buf;
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
@@ -840,7 +841,8 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	DBG_DEBUG("overriding chown on file %s for sid %s\n",
-		   fsp_str_dbg(fsp), sid_string_tos(psd->owner_sid));
+		  fsp_str_dbg(fsp),
+		  dom_sid_str_buf(psd->owner_sid, &buf));
 
 	/* Ok, we failed to chown and we have
 	   SEC_STD_WRITE_OWNER access - override. */

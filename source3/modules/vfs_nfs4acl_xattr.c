@@ -30,6 +30,7 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "libcli/security/security_token.h"
+#include "libcli/security/dom_sid.h"
 #include "nfs4_acls.h"
 #include "librpc/gen_ndr/ndr_nfs4acl.h"
 #include "nfs4acl_xattr.h"
@@ -372,6 +373,7 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 	mode_t expected_mode;
 	mode_t restored_mode;
 	bool chown_needed = false;
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 	int ret;
 
@@ -467,7 +469,8 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("overriding chown on file %s for sid %s\n",
-		  fsp_str_dbg(fsp), sid_string_tos(psd->owner_sid));
+		  fsp_str_dbg(fsp),
+		  dom_sid_str_buf(psd->owner_sid, &buf));
 
 	become_root();
 	status = smb_set_nt_acl_nfs4(handle,

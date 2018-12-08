@@ -814,10 +814,11 @@ static bool nt_to_afs_acl(const char *filename,
 			}
 
 			if (sidpts) {
+				struct dom_sid_buf buf;
 				/* Expect all users/groups in pts as SIDs */
 				name = talloc_strdup(
 					talloc_tos(),
-					sid_string_tos(&ace->trustee));
+					dom_sid_str_buf(&ace->trustee, &buf));
 				if (name == NULL) {
 					return false;
 				}
