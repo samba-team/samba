@@ -557,7 +557,7 @@ NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
-		methods = "sam_netlogon3 winbind:trustdomain";
+		methods = "sam_netlogon3 winbind";
 		break;
 
 	default:
