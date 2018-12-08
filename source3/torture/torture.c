@@ -10638,8 +10638,9 @@ static bool run_local_string_to_sid(int dummy) {
 		return false;
 	}
 	if (!dom_sid_equal(&sid, &global_sid_Builtin_Users)) {
+		struct dom_sid_buf buf;
 		printf("mis-parsed S-1-5-32-545 as %s\n",
-		       sid_string_tos(&sid));
+		       dom_sid_str_buf(&sid, &buf));
 		return false;
 	}
 	return true;
