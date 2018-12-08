@@ -469,7 +469,6 @@ bool is_setuid_root(void) ;
 char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid);
 char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 char *sid_string_dbg(const struct dom_sid *sid);
-char *sid_string_tos(const struct dom_sid *sid);
 bool sid_linearize(uint8_t *outbuf, size_t len, const struct dom_sid *sid);
 bool non_mappable_sid(struct dom_sid *sid);
 char *sid_binstring_hex_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);

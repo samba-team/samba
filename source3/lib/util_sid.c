@@ -61,15 +61,6 @@ char *sid_string_dbg(const struct dom_sid *sid)
 }
 
 /*****************************************************************
- Use with care!
-*****************************************************************/
-
-char *sid_string_tos(const struct dom_sid *sid)
-{
-	return sid_string_talloc(talloc_tos(), sid);
-}
-
-/*****************************************************************
  Write a sid out into on-the-wire format.
 *****************************************************************/  
 
