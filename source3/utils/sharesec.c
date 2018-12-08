@@ -222,8 +222,9 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		}
 
 		if (!found) {
+		    struct dom_sid_buf buf;
 		    printf("ACL for SID %s not found\n",
-			   sid_string_tos(&sd->dacl->aces[i].trustee));
+			   dom_sid_str_buf(&sd->dacl->aces[i].trustee, &buf));
 		}
 	    }
 
@@ -428,13 +429,14 @@ int main(int argc, const char *argv[])
 
 	if ( initialize_sid ) {
 		struct dom_sid *sid = get_global_sam_sid();
+		struct dom_sid_buf buf;
 
 		if ( !sid ) {
 			fprintf( stderr, "Failed to retrieve Machine SID!\n");
 			return 3;
 		}
 
-		printf ("%s\n", sid_string_tos( sid ) );
+		printf ("%s\n", dom_sid_str_buf(sid, &buf) );
 		return 0;
 	}
 
