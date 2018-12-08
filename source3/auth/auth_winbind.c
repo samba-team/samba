@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "auth.h"
+#include "passdb.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
 #undef DBGC_CLASS
@@ -110,7 +111,37 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	}
 
 	if (wbc_status == WBC_ERR_WINBIND_NOT_AVAILABLE) {
-		return NT_STATUS_NO_LOGON_SERVERS;
+		struct pdb_trusted_domain **domains = NULL;
+		uint32_t num_domains = 0;
+		NTSTATUS status;
+
+		if (lp_server_role() == ROLE_DOMAIN_MEMBER) {
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			DBG_ERR("winbindd not running - "
+				"but required as domain member: %s\n",
+				nt_errstr(status));
+			return status;
+		}
+
+		status = pdb_enum_trusted_domains(talloc_tos(), &num_domains, &domains);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("pdb_enum_trusted_domains() failed - %s\n",
+				nt_errstr(status));
+			return status;
+		}
+		TALLOC_FREE(domains);
+
+		if (num_domains == 0) {
+			DBG_DEBUG("winbindd not running - ignoring without "
+				  "trusted domains\n");
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+
+		status = NT_STATUS_NO_LOGON_SERVERS;
+		DBG_ERR("winbindd not running - "
+			"but required as DC with trusts: %s\n",
+			nt_errstr(status));
+		return status;
 	}
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
