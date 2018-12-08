@@ -268,14 +268,15 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 	if (verbosity) {
 		char temp[44];
 		const uint8_t *hours;
+		struct dom_sid_buf buf;
 
 		printf ("Unix username:        %s\n", pdb_get_username(sam_pwent));
 		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
 		printf ("Account Flags:        %s\n", pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent), NEW_PW_FORMAT_SPACE_PADDED_LEN));
 		printf ("User SID:             %s\n",
-			sid_string_tos(pdb_get_user_sid(sam_pwent)));
+			dom_sid_str_buf(pdb_get_user_sid(sam_pwent), &buf));
 		printf ("Primary Group SID:    %s\n",
-			sid_string_tos(pdb_get_group_sid(sam_pwent)));
+			dom_sid_str_buf(pdb_get_group_sid(sam_pwent), &buf));
 		printf ("Full Name:            %s\n", pdb_get_fullname(sam_pwent));
 		printf ("Home Directory:       %s\n", pdb_get_homedir(sam_pwent));
 		printf ("HomeDir Drive:        %s\n", pdb_get_dir_drive(sam_pwent));
