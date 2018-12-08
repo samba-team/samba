@@ -1019,10 +1019,11 @@ static NTSTATUS pdb_samba_dsdb_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
 {
 	char *filter;
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 
 	filter = talloc_asprintf(talloc_tos(),
 				 "(&(objectsid=%s)(objectclass=group))",
-				 sid_string_talloc(talloc_tos(), &sid));
+				 dom_sid_str_buf(&sid, &buf));
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

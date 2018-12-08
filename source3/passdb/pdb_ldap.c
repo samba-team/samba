@@ -2208,13 +2208,15 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 
 	} else if (ldap_state->schema_ver == SCHEMAVER_SAMBASAMACCOUNT) {
 
+		struct dom_sid_buf buf;
+
 		/* There might be a SID for this account already - say an idmap entry */
 
 		filter = talloc_asprintf(ctx,
 				"(&(%s=%s)(|(objectClass=%s)(objectClass=%s)))",
 				 get_userattr_key2string(ldap_state->schema_ver,
 					 LDAP_ATTR_USER_SID),
-				 sid_string_talloc(ctx, sid),
+				 dom_sid_str_buf(sid, &buf),
 				 LDAP_OBJ_IDMAP_ENTRY,
 				 LDAP_OBJ_SID_ENTRY);
 		if (!filter) {
@@ -2665,6 +2667,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	char **memberuid;
 	char *gidstr;
 	int rc, count;
+	struct dom_sid_buf buf;
 
 	*pp_member_rids = NULL;
 	*p_num_members = 0;
@@ -2675,7 +2678,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 				 "(sambaSID=%s))",
 				 LDAP_OBJ_POSIXGROUP,
 				 LDAP_OBJ_GROUPMAP,
-				 sid_string_talloc(mem_ctx, group));
+				 dom_sid_str_buf(group, &buf));
 	if (filter == NULL) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -3033,6 +3036,7 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 	const char *filter, *dn;
 	LDAPMessage *msg, *entry;
 	LDAPMod **mods;
+	struct dom_sid_buf buf;
 	int rc;
 
 	filter = talloc_asprintf(mem_ctx,
@@ -3068,7 +3072,7 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 			LDAP_OBJ_GROUPMAP);
 	smbldap_make_mod(smbldap_get_ldap(ldap_state->smbldap_state), entry,
 			 &mods, "sambaSid",
-			 sid_string_talloc(mem_ctx, &map->sid));
+			 dom_sid_str_buf(&map->sid, &buf));
 	smbldap_make_mod(smbldap_get_ldap(ldap_state->smbldap_state), entry,
 			 &mods, "sambaGroupType",
 			 talloc_asprintf(mem_ctx, "%d", map->sid_name_use));
@@ -3103,6 +3107,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	NTSTATUS result;
 
 	struct dom_sid sid;
+	struct dom_sid_buf buf;
 	struct unixid id;
 
 	int rc;
@@ -3114,7 +3119,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	}
 
 	filter = talloc_asprintf(mem_ctx, "(sambaSid=%s)",
-				 sid_string_talloc(mem_ctx, &map->sid));
+				 dom_sid_str_buf(&map->sid, &buf));
 	if (filter == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -3184,7 +3189,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	 * the best we can get out of LDAP. */
 
 	dn = talloc_asprintf(mem_ctx, "sambaSid=%s,%s",
-			     sid_string_talloc(mem_ctx, &map->sid),
+			     dom_sid_str_buf(&map->sid, &buf),
 			     lp_ldap_group_suffix(talloc_tos()));
 	if (dn == NULL) {
 		result = NT_STATUS_NO_MEMORY;
@@ -3199,7 +3204,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 			 &mods, "objectClass", LDAP_OBJ_GROUPMAP);
 	smbldap_make_mod(smbldap_get_ldap(ldap_state->smbldap_state), NULL,
 			 &mods, "sambaSid",
-			 sid_string_talloc(mem_ctx, &map->sid));
+			 dom_sid_str_buf(&map->sid, &buf));
 	smbldap_make_mod(smbldap_get_ldap(ldap_state->smbldap_state), NULL,
 			 &mods, "sambaGroupType",
 			 talloc_asprintf(mem_ctx, "%d", map->sid_name_use));
@@ -3243,6 +3248,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 	LDAPMod **mods = NULL;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
+	struct dom_sid_buf buf;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -3257,7 +3263,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 				 "(sambaSid=%s)(gidNumber=%u)"
 				 "(sambaGroupType=%d))",
 				 LDAP_OBJ_GROUPMAP,
-				 sid_string_talloc(mem_ctx, &map->sid),
+				 dom_sid_str_buf(&map->sid, &buf),
 				 (unsigned int)map->gid, map->sid_name_use);
 	if (filter == NULL) {
 		result = NT_STATUS_NO_MEMORY;
@@ -3331,6 +3337,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
 	char *filter;
+	struct dom_sid_buf buf;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -3340,7 +3347,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 
 	filter = talloc_asprintf(mem_ctx, "(&(objectClass=%s)(%s=%s))",
 				 LDAP_OBJ_GROUPMAP, LDAP_ATTRIBUTE_SID,
-				 sid_string_talloc(mem_ctx, &sid));
+				 dom_sid_str_buf(&sid, &buf));
 	if (filter == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -3832,11 +3839,12 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 				 "(&(objectclass=%s)(sambaGroupType=%d)(|",
 				 LDAP_OBJ_GROUPMAP, type);
 
-	for (i=0; i<num_members; i++)
+	for (i=0; i<num_members; i++) {
+		struct dom_sid_buf buf;
 		filter = talloc_asprintf(mem_ctx, "%s(sambaSIDList=%s)",
 					 filter,
-					 sid_string_talloc(mem_ctx,
-							   &members[i]));
+					 dom_sid_str_buf(&members[i], &buf));
+	}
 
 	filter = talloc_asprintf(mem_ctx, "%s))", filter);
 
@@ -4140,10 +4148,12 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 
 	for (i=0; i<num_rids; i++) {
 		struct dom_sid sid;
+		struct dom_sid_buf buf;
 		sid_compose(&sid, domain_sid, rids[i]);
 		allsids = talloc_asprintf_append_buffer(
-			allsids, "(sambaSid=%s)",
-			sid_string_talloc(mem_ctx, &sid));
+			allsids,
+			"(sambaSid=%s)",
+			dom_sid_str_buf(&sid, &buf));
 		if (allsids == NULL) {
 			goto done;
 		}
@@ -5017,6 +5027,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
 	char *filter;
+	struct dom_sid_buf buf;
 	const char *attrs[] = { "sambaGroupType", "gidNumber", "uidNumber",
 				NULL };
 	LDAPMessage *result = NULL;
@@ -5041,7 +5052,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 	filter = talloc_asprintf(mem_ctx,
 				 "(&(sambaSid=%s)"
 				 "(|(objectClass=%s)(objectClass=%s)))",
-				 sid_string_talloc(mem_ctx, sid),
+				 dom_sid_str_buf(sid, &buf),
 				 LDAP_OBJ_GROUPMAP, LDAP_OBJ_SAMBASAMACCOUNT);
 	if (filter == NULL) {
 		DEBUG(5, ("talloc_asprintf failed\n"));
@@ -5630,12 +5641,12 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	bool is_new_entry = False;
 	LDAPMod **mods = NULL;
 	char *filter;
-	char *groupsidstr;
 	char *groupname;
 	char *grouptype;
 	char *gidstr;
 	const char *dn = NULL;
 	struct dom_sid group_sid;
+	struct dom_sid_buf buf;
 	gid_t gid = -1;
 	int rc;
 
@@ -5702,17 +5713,18 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 
 	sid_compose(&group_sid, get_global_sam_sid(), *rid);
 
-	groupsidstr = talloc_strdup(tmp_ctx, sid_string_talloc(tmp_ctx,
-							       &group_sid));
 	grouptype = talloc_asprintf(tmp_ctx, "%d", SID_NAME_DOM_GRP);
 
-	if (!groupsidstr || !grouptype) {
+	if (!grouptype) {
 		DEBUG(0,("ldapsam_create_group: Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", groupsidstr);
+	smbldap_set_mod(&mods,
+			LDAP_MOD_ADD,
+			"sambaSid",
+			dom_sid_str_buf(&group_sid, &buf));
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", grouptype);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", name);
 
@@ -5785,6 +5797,7 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 	char *gidstr;
 	char *filter;
 	struct dom_sid group_sid;
+	struct dom_sid_buf buf;
 	int rc;
 
 	/* get the group sid */
@@ -5794,7 +5807,7 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 				 "(&(sambaSID=%s)"
 				 "(objectClass=%s)"
 				 "(objectClass=%s))",
-				 sid_string_talloc(tmp_ctx, &group_sid),
+				 dom_sid_str_buf(&group_sid, &buf),
 				 LDAP_OBJ_POSIXGROUP,
 				 LDAP_OBJ_GROUPMAP);
 	if (filter == NULL) {
@@ -5885,6 +5898,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 	const char *dn = NULL;
 	struct dom_sid group_sid;
 	struct dom_sid member_sid;
+	struct dom_sid_buf buf;
 	int rc;
 
 	switch (modop) {
@@ -5908,7 +5922,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 				 "(&(sambaSID=%s)"
 				 "(objectClass=%s)"
 				 "(objectClass=%s))",
-				 sid_string_talloc(tmp_ctx, &member_sid),
+				 dom_sid_str_buf(&member_sid, &buf),
 				 LDAP_OBJ_POSIXACCOUNT,
 				 LDAP_OBJ_SAMBASAMACCOUNT);
 	if (filter == NULL) {
@@ -5975,7 +5989,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 				 "(&(sambaSID=%s)"
 				 "(objectClass=%s)"
 				 "(objectClass=%s))",
-				 sid_string_talloc(tmp_ctx, &group_sid),
+				 dom_sid_str_buf(&group_sid, &buf),
 				 LDAP_OBJ_POSIXGROUP,
 				 LDAP_OBJ_GROUPMAP);
 
