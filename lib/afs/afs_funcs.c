@@ -228,6 +228,7 @@ bool afs_login(connection_struct *conn)
 	char *ticket_str = NULL;
 	const struct dom_sid *user_sid;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct dom_sid_buf buf;
 
 	struct ClearToken ct;
 
@@ -253,7 +254,7 @@ bool afs_login(connection_struct *conn)
 	afs_username = talloc_string_sub(talloc_tos(),
 					afs_username,
 					"%s",
-					sid_string_tos(user_sid));
+					dom_sid_str_buf(user_sid, &buf));
 	if (!afs_username) {
 		return false;
 	}
