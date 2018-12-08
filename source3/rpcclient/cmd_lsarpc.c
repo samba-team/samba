@@ -90,14 +90,16 @@ static void display_query_info_2(struct lsa_AuditEventsInfo *r)
 
 static void display_query_info_3(struct lsa_DomainInfo *r)
 {
+	struct dom_sid_buf buf;
 	d_printf("Domain Name: %s\n", r->name.string);
-	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
+	d_printf("Domain Sid: %s\n", dom_sid_str_buf(r->sid, &buf));
 }
 
 static void display_query_info_5(struct lsa_DomainInfo *r)
 {
+	struct dom_sid_buf buf;
 	d_printf("Domain Name: %s\n", r->name.string);
-	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
+	d_printf("Domain Sid: %s\n", dom_sid_str_buf(r->sid, &buf));
 }
 
 static void display_query_info_10(struct lsa_AuditFullSetInfo *r)
@@ -113,10 +115,11 @@ static void display_query_info_11(struct lsa_AuditFullQueryInfo *r)
 
 static void display_query_info_12(struct lsa_DnsDomainInfo *r)
 {
+	struct dom_sid_buf buf;
 	d_printf("Domain NetBios Name: %s\n", r->name.string);
 	d_printf("Domain DNS Name: %s\n", r->dns_domain.string);
 	d_printf("Domain Forest Name: %s\n", r->dns_forest.string);
-	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
+	d_printf("Domain Sid: %s\n", dom_sid_str_buf(r->sid, &buf));
 	d_printf("Domain GUID: %s\n", GUID_string(talloc_tos(),
 						      &r->domain_guid));
 }
@@ -1015,6 +1018,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 	struct policy_handle dom_pol;
 	NTSTATUS status, result;
 	struct dom_sid sid;
+	struct dom_sid_buf buf;
 	struct lsa_RightSet rights;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -1049,7 +1053,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 	}
 
 	printf("found %d privileges for SID %s\n", rights.count,
-	       sid_string_tos(&sid));
+	       dom_sid_str_buf(&sid, &buf));
 
 	for (i = 0; i < rights.count; i++) {
 		printf("\t%s\n", rights.names[i].string);
