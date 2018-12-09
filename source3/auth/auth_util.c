@@ -412,6 +412,7 @@ static NTSTATUS log_nt_token(struct security_token *token)
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *command;
 	char *group_sidstr;
+	struct dom_sid_buf buf;
 	size_t i;
 
 	if ((lp_log_nt_token_command(frame) == NULL) ||
@@ -424,12 +425,12 @@ static NTSTATUS log_nt_token(struct security_token *token)
 	for (i=1; i<token->num_sids; i++) {
 		group_sidstr = talloc_asprintf(
 			frame, "%s %s", group_sidstr,
-			sid_string_talloc(frame, &token->sids[i]));
+			dom_sid_str_buf(&token->sids[i], &buf));
 	}
 
 	command = talloc_string_sub(
 		frame, lp_log_nt_token_command(frame),
-		"%s", sid_string_talloc(frame, &token->sids[0]));
+		"%s", dom_sid_str_buf(&token->sids[0], &buf));
 	command = talloc_string_sub(frame, command, "%t", group_sidstr);
 
 	if (command == NULL) {
