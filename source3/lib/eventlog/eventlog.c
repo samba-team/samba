@@ -898,10 +898,12 @@ NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
 
 	/* t->sid_padding; */
 	if (e->UserSidLength > 0) {
-		const char *sid_str = NULL;
+		struct dom_sid_buf sid_str;
 		smb_ucs2_t *dummy = NULL;
-		sid_str = sid_string_talloc(mem_ctx, &e->UserSid);
-		t->sid_length = rpcstr_push_talloc(mem_ctx, &dummy, sid_str);
+		t->sid_length = rpcstr_push_talloc(
+			mem_ctx,
+			&dummy,
+			dom_sid_str_buf(&e->UserSid, &sid_str));
 		if (t->sid_length == -1) {
 			return NT_STATUS_NO_MEMORY;
 		}
