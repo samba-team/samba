@@ -5159,7 +5159,7 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	}
 
 	if (!string_to_sid(&user_sid, user_sid_string)) {
-		DEBUG(3, ("Error calling sid_string_talloc for sid '%s'\n",
+		DEBUG(3, ("Error calling string_to_sid for sid '%s'\n",
 			  user_sid_string));
 		goto done;
 	}
@@ -5226,7 +5226,7 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	}
 
 	if (!string_to_sid(&group_sid, group_sid_string)) {
-		DEBUG(3, ("Error calling sid_string_talloc for sid '%s'\n",
+		DEBUG(3, ("Error calling string_to_sid for sid '%s'\n",
 			  group_sid_string));
 		goto done;
 	}
