@@ -1257,6 +1257,13 @@ planoldpythontestsuite("preforkrestartdc:local",
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
                        name="samba.tests.prefork_restart",
                        py3_compatible=True)
+planoldpythontestsuite("preforkrestartdc:local",
+                       "samba.tests.blackbox.smbcontrol_process",
+                       extra_path=[
+                           os.path.join(srcdir(), 'python/samba/tests')],
+                       extra_args=['-U"$USERNAME%$PASSWORD"'],
+                       name="samba.tests.blackbox.smbcontrol_process",
+                       py3_compatible=True)
 planoldpythontestsuite("proclimitdc:local",
                        "samba.tests.process_limits",
                        extra_path=[

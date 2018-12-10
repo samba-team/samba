@@ -1,0 +1,2 @@
+^samba.tests.blackbox.smbcontrol_process.samba.tests.blackbox.smbcontrol_process.SmbcontrolProcessBlockboxTests.test_inject_fault\(preforkrestartdc:local\)
+^samba.tests.blackbox.smbcontrol_process.python3.samba.tests.blackbox.smbcontrol_process.SmbcontrolProcessBlockboxTests.test_inject_fault\(preforkrestartdc:local\)
