@@ -220,9 +220,6 @@ struct dcesrv_connection_context {
 	/* the ndr function table for the chosen interface */
 	const struct dcesrv_interface *iface;
 
-	/* private data for the interface implementation */
-	void *private_data;
-
 	/*
 	 * the minimum required auth level for this interface
 	 */

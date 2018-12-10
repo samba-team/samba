@@ -1517,7 +1517,6 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 	context->context_id = ctx->context_id;
 	context->iface = iface;
 	context->transfer_syntax = *selected_transfer;
-	context->private_data = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
 	talloc_set_destructor(context, dcesrv_connection_context_destructor);
