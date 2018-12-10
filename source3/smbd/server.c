@@ -193,6 +193,36 @@ static void msg_inject_fault(struct messaging_context *msg,
 }
 #endif /* DEVELOPER */
 
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
+/*
+ * Sleep for the specified number of seconds.
+ */
+static void msg_sleep(struct messaging_context *msg,
+		      void *private_data,
+		      uint32_t msg_type,
+		      struct server_id src,
+		      DATA_BLOB *data)
+{
+	unsigned int seconds;
+	struct server_id_buf tmp;
+
+	if (data->length != sizeof(seconds)) {
+		DBG_ERR("Process %s sent bogus sleep request\n",
+			server_id_str_buf(src, &tmp));
+		return;
+	}
+
+	seconds = *(unsigned int *)data->data;
+	DBG_ERR("Process %s request a sleep of %u seconds\n",
+		server_id_str_buf(src, &tmp),
+		seconds);
+	sleep(seconds);
+	DBG_ERR("Restarting after %u second sleep requested by process %s\n",
+		seconds,
+		server_id_str_buf(src, &tmp));
+}
+#endif /* DEVELOPER */
+
 static NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
 					   uint32_t msg_type, DATA_BLOB* data)
 {
@@ -1299,6 +1329,10 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 #ifdef DEVELOPER
 	messaging_register(msg_ctx, NULL, MSG_SMB_INJECT_FAULT,
 			   msg_inject_fault);
+#endif
+
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
+	messaging_register(msg_ctx, NULL, MSG_SMB_SLEEP, msg_sleep);
 #endif
 
 	if (lp_multicast_dns_register() && (dns_port != 0)) {
