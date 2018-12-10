@@ -201,6 +201,7 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descripto
 {
 	uint32_t i;
 	char *tmp_path = NULL;
+	struct dom_sid_buf buf;
 
 	if (!sd) {
 		return;
@@ -223,9 +224,9 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descripto
                sd->type);
 
 	printf("owner SID: %s\n", sd->owner_sid ? 
-		sid_string_talloc(mem_ctx, sd->owner_sid) : "(null)");
+	       dom_sid_str_buf(sd->owner_sid, &buf) : "(null)");
 	printf("group SID: %s\n", sd->group_sid ?
-		sid_string_talloc(mem_ctx, sd->group_sid) : "(null)");
+	       dom_sid_str_buf(sd->group_sid, &buf) : "(null)");
 
 	ads_disp_acl(sd->sacl, "system");
 	if (sd->sacl) {
