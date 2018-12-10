@@ -70,6 +70,34 @@ static void do_inject_fault(struct imessaging_context *msg,
 }
 
 /*
+ * Cause the current process to sleep for a specified number of seconds
+ */
+static void do_sleep(struct imessaging_context *msg,
+		     void *private_data,
+		     uint32_t msg_type,
+		     struct server_id src,
+		     DATA_BLOB *data)
+{
+	unsigned int seconds;
+	struct server_id_buf tmp;
+
+	if (data->length != sizeof(seconds)) {
+		DBG_ERR("Process %s sent bogus sleep request\n",
+			server_id_str_buf(src, &tmp));
+		return;
+	}
+
+	seconds = *(unsigned int *)data->data;
+	DBG_ERR("Process %s requested a sleep of %u seconds\n",
+		server_id_str_buf(src, &tmp),
+		seconds);
+	sleep(seconds);
+	DBG_ERR("Restarting after %u second sleep requested by process %s\n",
+		seconds,
+		server_id_str_buf(src, &tmp));
+}
+
+/*
  * Register the extra messaging handlers
  */
 NTSTATUS imessaging_register_extra_handlers(struct imessaging_context *msg)
@@ -78,6 +106,11 @@ NTSTATUS imessaging_register_extra_handlers(struct imessaging_context *msg)
 
 	status = imessaging_register(
 	    msg, NULL, MSG_SMB_INJECT_FAULT, do_inject_fault);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = imessaging_register(msg, NULL, MSG_SMB_SLEEP, do_sleep);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
