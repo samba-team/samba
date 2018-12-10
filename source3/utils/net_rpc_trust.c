@@ -155,6 +155,7 @@ static NTSTATUS get_domain_info(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct lsa_QueryInfoPolicy2 qr;
+	struct dom_sid_buf buf;
 
 	qr.in.handle = pol_hnd;
 	qr.in.level = LSA_POLICY_INFO_DNS;
@@ -186,7 +187,7 @@ static NTSTATUS get_domain_info(TALLOC_CTX *mem_ctx,
 
 	DEBUG(0, ("Got the following domain info [%s][%s][%s].\n",
 		  dom_data->domain_name, dom_data->dns_domain_name,
-		  sid_string_talloc(mem_ctx, dom_data->domsid)));
+		  dom_sid_str_buf(dom_data->domsid, &buf)));
 
 	return NT_STATUS_OK;
 }
