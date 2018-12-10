@@ -12,7 +12,7 @@ build_samba:
   <<: *private_template
   script:
     # this one takes about 4 hours to finish
-    - python3 script/autobuild.py samba            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - script/autobuild.py samba            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_py2:
   <<: *private_template
@@ -24,13 +24,13 @@ build_samba_fileserver:
   <<: *private_template
   script:
     # this one takes about 1 hours to finish
-    - python3 script/autobuild.py samba-fileserver --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - script/autobuild.py samba-fileserver --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 build_samba_ad_dc:
   <<: *private_template
   script:
     # this one takes about 1 hours to finish
-    - python3 script/autobuild.py samba-ad-dc     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - script/autobuild.py samba-ad-dc     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 
 build_samba_ad_dc_py2:
