@@ -380,11 +380,11 @@ static bool do_inject_fault(struct tevent_context *ev_ctx,
 		return False;
 	}
 
-#ifndef DEVELOPER
+#if !defined(DEVELOPER) && !defined(ENABLE_SELFTEST)
 	fprintf(stderr, "Fault injection is only available in "
-		"developer builds\n");
+		"developer and self test builds\n");
 	return False;
-#else /* DEVELOPER */
+#else /* DEVELOPER || ENABLE_SELFTEST */
 	{
 		int sig = 0;
 
@@ -407,7 +407,7 @@ static bool do_inject_fault(struct tevent_context *ev_ctx,
 		return send_message(msg_ctx, pid, MSG_SMB_INJECT_FAULT,
 				    &sig, sizeof(int));
 	}
-#endif /* DEVELOPER */
+#endif /* DEVELOPER || ENABLE_SELFTEST */
 }
 
 /* Force a browser election */

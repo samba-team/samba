@@ -34,3 +34,5 @@ struct imessaging_context {
 	struct timeval start_time;
 	void *msg_dgm_ref;
 };
+
+NTSTATUS imessaging_register_extra_handlers(struct imessaging_context *msg);

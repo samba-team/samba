@@ -464,6 +464,16 @@ static struct imessaging_context *imessaging_init_internal(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
+	/*
+	 * Register handlers for messages specific to developer and
+	 * self test builds
+	 */
+	status = imessaging_register_extra_handlers(msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+#endif /* defined(DEVELOPER) || defined(ENABLE_SELFTEST) */
 
 	DLIST_ADD(msg_ctxs, msg);
 
