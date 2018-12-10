@@ -418,7 +418,7 @@ def CHECK_COMMAND(conf, cmd, msg=None, define=None, on_target=True, boolean=Fals
     if on_target:
         cmd.extend(conf.SAMBA_CROSS_ARGS(msg=msg))
     try:
-        ret = Utils.cmd_output(cmd)
+        ret = Utils.cmd_output(cmd).decode('utf8')
     except:
         conf.COMPOUND_END(False)
         return False
