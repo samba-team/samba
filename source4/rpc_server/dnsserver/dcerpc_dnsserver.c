@@ -36,6 +36,7 @@ static NTSTATUS dcesrv_interface_dnsserver_bind(struct dcesrv_call_state *dce_ca
 	return dcesrv_interface_bind_require_integrity(dce_call, iface);
 }
 
+#define DNSSERVER_STATE_MAGIC 0xc9657ab4
 struct dnsserver_state {
 	struct loadparm_context *lp_ctx;
 	struct ldb_context *samdb;
@@ -108,13 +109,16 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 	struct dnsserver_state *dsstate;
 	struct dnsserver_zone *zones, *z, *znext;
 	struct dnsserver_partition *partitions, *p;
+	NTSTATUS status;
 
-	dsstate = talloc_get_type(dce_call->context->private_data, struct dnsserver_state);
+	dsstate = dcesrv_iface_state_find_conn(dce_call,
+					       DNSSERVER_STATE_MAGIC,
+					       struct dnsserver_state);
 	if (dsstate != NULL) {
 		return dsstate;
 	}
 
-	dsstate = talloc_zero(dce_call->context, struct dnsserver_state);
+	dsstate = talloc_zero(dce_call, struct dnsserver_state);
 	if (dsstate == NULL) {
 		return NULL;
 	}
@@ -173,7 +177,12 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 		}
 	}
 
-	dce_call->context->private_data = dsstate;
+	status = dcesrv_iface_state_store_conn(dce_call,
+					       DNSSERVER_STATE_MAGIC,
+					       dsstate);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
 
 	return dsstate;
 
