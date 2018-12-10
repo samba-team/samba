@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # run tests on all Samba subprojects and push to a git tree on success
 # Copyright Andrew Tridgell 2010
 # released under GNU GPL v3 or later
