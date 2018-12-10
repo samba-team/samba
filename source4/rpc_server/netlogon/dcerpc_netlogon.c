@@ -63,6 +63,7 @@ static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_call_state *dce_cal
 	return dcesrv_interface_bind_reject_connect(dce_call, iface);
 }
 
+#define NETLOGON_SERVER_PIPE_STATE_MAGIC 0x4f555358
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
 	struct netr_Credential server_challenge;
@@ -71,19 +72,21 @@ struct netlogon_server_pipe_state {
 static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {
-	struct netlogon_server_pipe_state *pipe_state =
-		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
+	struct netlogon_server_pipe_state *pipe_state = NULL;
 	NTSTATUS ntstatus;
 
 	ZERO_STRUCTP(r->out.return_credentials);
 
-	if (pipe_state) {
-		talloc_free(pipe_state);
-		dce_call->context->private_data = NULL;
-	}
+	pipe_state = dcesrv_iface_state_find_conn(dce_call,
+			NETLOGON_SERVER_PIPE_STATE_MAGIC,
+			struct netlogon_server_pipe_state);
+	TALLOC_FREE(pipe_state);
 
-	pipe_state = talloc(dce_call->context, struct netlogon_server_pipe_state);
-	NT_STATUS_HAVE_NO_MEMORY(pipe_state);
+	pipe_state = talloc_zero(dce_call,
+				 struct netlogon_server_pipe_state);
+	if (pipe_state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	pipe_state->client_challenge = *r->in.credentials;
 
@@ -92,13 +95,19 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 
 	*r->out.return_credentials = pipe_state->server_challenge;
 
-	dce_call->context->private_data = pipe_state;
+	ntstatus = dcesrv_iface_state_store_conn(dce_call,
+			NETLOGON_SERVER_PIPE_STATE_MAGIC,
+			pipe_state);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		return ntstatus;
+	}
 
 	ntstatus = schannel_save_challenge(dce_call->conn->dce_ctx->lp_ctx,
 					   &pipe_state->client_challenge,
 					   &pipe_state->server_challenge,
 					   r->in.computer_name);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
+		TALLOC_FREE(pipe_state);
 		return ntstatus;
 	}
 
@@ -117,8 +126,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	const char **trust_account_in_db,
 	struct dom_sid **sid)
 {
-	struct netlogon_server_pipe_state *pipe_state =
-		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
+	struct netlogon_server_pipe_state *pipe_state = NULL;
 	bool challenge_valid = false;
 	struct netlogon_server_pipe_state challenge;
 	struct netlogon_creds_CredentialState *creds;
@@ -142,9 +150,10 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
 
+	pipe_state = dcesrv_iface_state_find_conn(dce_call,
+			NETLOGON_SERVER_PIPE_STATE_MAGIC,
+			struct netlogon_server_pipe_state);
 	if (pipe_state != NULL) {
-		dce_call->context->private_data = NULL;
-
 		/*
 		 * If we had a challenge remembered on the connection
 		 * consider this for usage. This can't be cleanup
