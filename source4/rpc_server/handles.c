@@ -137,3 +137,226 @@ struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
 
 	return NULL;
 }
+
+struct dcesrv_iface_state {
+	struct dcesrv_iface_state *prev, *next;
+	struct dcesrv_assoc_group *assoc;
+	const struct dcesrv_interface *iface;
+	struct dom_sid owner;
+	const struct dcesrv_connection *conn;
+	const struct dcesrv_auth *auth;
+	const struct dcesrv_connection_context *pres;
+	uint64_t magic;
+	void *ptr;
+	const char *location;
+};
+
+static int dcesrv_iface_state_destructor(struct dcesrv_iface_state *istate)
+{
+	DLIST_REMOVE(istate->assoc->iface_states, istate);
+	return 0;
+}
+
+static void *dcesrv_iface_state_find(struct dcesrv_assoc_group *assoc,
+			const struct dcesrv_interface *iface,
+			const struct dom_sid *owner,
+			const struct dcesrv_connection *conn,
+			const struct dcesrv_auth *auth,
+			const struct dcesrv_connection_context *pres,
+			uint64_t magic,
+			const void *ptr)
+{
+	struct dcesrv_iface_state *cur = NULL;
+
+	for (cur = assoc->iface_states; cur != NULL; cur = cur->next) {
+		bool match;
+
+		SMB_ASSERT(cur->assoc == assoc);
+
+		if (cur->ptr == ptr) {
+			return cur->ptr;
+		}
+
+		if (cur->iface != iface) {
+			continue;
+		}
+
+		match = dom_sid_equal(&cur->owner, owner);
+		if (!match) {
+			continue;
+		}
+
+		if (cur->conn != conn) {
+			continue;
+		}
+
+		if (cur->auth != auth) {
+			continue;
+		}
+
+		if (cur->pres != pres) {
+			continue;
+		}
+
+		if (cur->magic != magic) {
+			continue;
+		}
+
+		return cur->ptr;
+	}
+
+	return NULL;
+}
+
+static NTSTATUS dcesrv_iface_state_store(struct dcesrv_assoc_group *assoc,
+				const struct dcesrv_interface *iface,
+				const struct dom_sid *owner,
+				const struct dcesrv_connection *conn,
+				const struct dcesrv_auth *auth,
+				const struct dcesrv_connection_context *pres,
+				uint64_t magic,
+				TALLOC_CTX *mem_ctx,
+				void *ptr,
+				const char *location)
+{
+	struct dcesrv_iface_state *istate = NULL;
+	void *optr = NULL;
+
+	optr = dcesrv_iface_state_find(assoc,
+				       iface,
+				       owner,
+				       conn,
+				       auth,
+				       pres,
+				       magic,
+				       ptr);
+	if (optr != NULL) {
+		return NT_STATUS_OBJECTID_EXISTS;
+	}
+
+	istate = talloc_zero(ptr, struct dcesrv_iface_state);
+	if (istate == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*istate = (struct dcesrv_iface_state) {
+		.assoc = assoc,
+		.iface = iface,
+		.owner = *owner,
+		.conn  = conn,
+		.auth  = auth,
+		.pres  = pres,
+		.magic = magic,
+		.location = location,
+	};
+
+	istate->ptr = talloc_steal(mem_ctx, ptr);
+
+	talloc_set_destructor(istate, dcesrv_iface_state_destructor);
+
+	DLIST_ADD_END(assoc->iface_states, istate);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS _dcesrv_iface_state_store_assoc(struct dcesrv_call_state *call,
+				uint64_t magic,
+				void *ptr,
+				const char *location)
+{
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(call);
+	const struct dom_sid *owner =
+		&session_info->security_token->sids[0];
+	NTSTATUS status;
+
+	status = dcesrv_iface_state_store(call->conn->assoc_group,
+					  call->context->iface,
+					  owner,
+					  NULL, /* conn */
+					  NULL, /* auth */
+					  NULL, /* pres */
+					  magic,
+					  call->conn->assoc_group, /* mem_ctx */
+					  ptr,
+					  location);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+void *_dcesrv_iface_state_find_assoc(struct dcesrv_call_state *call, uint64_t magic)
+{
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(call);
+	const struct dom_sid *owner =
+		&session_info->security_token->sids[0];
+	void *ptr = NULL;
+
+	ptr = dcesrv_iface_state_find(call->conn->assoc_group,
+				      call->context->iface,
+				      owner,
+				      NULL, /* conn */
+				      NULL, /* auth */
+				      NULL, /* pres */
+				      magic,
+				      NULL); /* ptr */
+	if (ptr == NULL) {
+		return NULL;
+	}
+
+	return ptr;
+}
+
+NTSTATUS _dcesrv_iface_state_store_conn(struct dcesrv_call_state *call,
+					uint64_t magic,
+					void *ptr,
+					const char *location)
+{
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(call);
+	const struct dom_sid *owner =
+		&session_info->security_token->sids[0];
+	NTSTATUS status;
+
+	status = dcesrv_iface_state_store(call->conn->assoc_group,
+					  call->context->iface,
+					  owner,
+					  call->conn,
+					  call->auth_state,
+					  call->context,
+					  magic,
+					  call->conn, /* mem_ctx */
+					  ptr,
+					  location);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+void *_dcesrv_iface_state_find_conn(struct dcesrv_call_state *call, uint64_t magic)
+{
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(call);
+	const struct dom_sid *owner =
+		&session_info->security_token->sids[0];
+	void *ptr = NULL;
+
+	ptr = dcesrv_iface_state_find(call->conn->assoc_group,
+				      call->context->iface,
+				      owner,
+				      call->conn,
+				      call->auth_state,
+				      call->context,
+				      magic,
+				      NULL); /* ptr */
+	if (ptr == NULL) {
+		return NULL;
+	}
+
+	return ptr;
+}

@@ -38,6 +38,7 @@ struct dcesrv_connection;
 struct dcesrv_call_state;
 struct dcesrv_auth;
 struct dcesrv_connection_context;
+struct dcesrv_iface_state;
 
 struct dcesrv_interface {
 	const char *name;
@@ -353,6 +354,11 @@ struct dcesrv_assoc_group {
 	/* list of handles in this association group */
 	struct dcesrv_handle *handles;
 
+	/*
+	 * list of iface states per assoc/conn
+	 */
+	struct dcesrv_iface_state *iface_states;
+
 	/* parent context */
 	struct dcesrv_context *dce_ctx;
 
@@ -535,5 +541,37 @@ _PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_call_state 
 						       const struct dcesrv_interface *iface);
 _PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *dce_call,
 						      const struct dcesrv_interface *iface);
+
+_PUBLIC_ NTSTATUS _dcesrv_iface_state_store_assoc(
+		struct dcesrv_call_state *call,
+		uint64_t magic,
+		void *ptr,
+		const char *location);
+#define dcesrv_iface_state_store_assoc(call, magic, ptr) \
+	_dcesrv_iface_state_store_assoc((call), (magic), (ptr), \
+					__location__)
+_PUBLIC_ void *_dcesrv_iface_state_find_assoc(
+		struct dcesrv_call_state *call,
+		uint64_t magic);
+#define dcesrv_iface_state_find_assoc(call, magic, _type) \
+	talloc_get_type( \
+		_dcesrv_iface_state_find_assoc((call), (magic)), \
+		_type)
+
+_PUBLIC_ NTSTATUS _dcesrv_iface_state_store_conn(
+		struct dcesrv_call_state *call,
+		uint64_t magic,
+		void *_pptr,
+		const char *location);
+#define dcesrv_iface_state_store_conn(call, magic, ptr) \
+	_dcesrv_iface_state_store_conn((call), (magic), (ptr), \
+					__location__)
+_PUBLIC_ void *_dcesrv_iface_state_find_conn(
+		struct dcesrv_call_state *call,
+		uint64_t magic);
+#define dcesrv_iface_state_find_conn(call, magic, _type) \
+	talloc_get_type( \
+		_dcesrv_iface_state_find_conn((call), (magic)), \
+		_type)
 
 #endif /* SAMBA_DCERPC_SERVER_H */
