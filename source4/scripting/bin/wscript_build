@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
     for script in ['samba-tool',

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Helper for determining USN ranges created of modified by provision and
 # upgradeprovision.
