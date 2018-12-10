@@ -741,6 +741,92 @@ static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+struct push_state {
+	char *data;
+	off_t nread;
+	off_t total_data;
+};
+
+/*
+ * cli_push() helper to write a chunk of data to a remote file
+ */
+static size_t push_data(uint8_t *buf, size_t n, void *priv)
+{
+	struct push_state *state = (struct push_state *)priv;
+	char *curr_ptr = NULL;
+	off_t remaining;
+	size_t copied_bytes;
+
+	if (state->nread >= state->total_data) {
+		return 0;
+	}
+
+	curr_ptr = state->data + state->nread;
+	remaining = state->total_data - state->nread;
+	copied_bytes = MIN(remaining, n);
+
+	memcpy(buf, curr_ptr, copied_bytes);
+	state->nread += copied_bytes;
+	return copied_bytes;
+}
+
+/*
+ * Writes a file with the contents specified
+ */
+static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args,
+				 PyObject *kwargs)
+{
+	uint16_t fnum;
+	const char *filename = NULL;
+	char *data = NULL;
+	Py_ssize_t size = 0;
+	NTSTATUS status;
+	struct tevent_req *req = NULL;
+	struct push_state state;
+
+	if (!PyArg_ParseTuple(args, "s"PYARG_BYTES_LEN":savefile", &filename,
+			      &data, &size)) {
+		return NULL;
+	}
+
+	/* create a new file handle for writing to */
+	req = cli_ntcreate_send(NULL, self->ev, self->cli, filename, 0,
+				FILE_WRITE_DATA, FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OVERWRITE_IF, FILE_NON_DIRECTORY_FILE,
+				SMB2_IMPERSONATION_IMPERSONATION, 0);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_ntcreate_recv(req, &fnum, NULL);
+	TALLOC_FREE(req);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	/* write the new file contents */
+	state.data = data;
+	state.nread = 0;
+	state.total_data = size;
+
+	req = cli_push_send(NULL, self->ev, self->cli, fnum, 0, 0, 0,
+			    push_data, &state);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_push_recv(req);
+	TALLOC_FREE(req);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	/* close the file handle */
+	req = cli_close_send(NULL, self->ev, self->cli, fnum);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_close_recv(req);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 			      PyObject *kwds)
 {
@@ -1214,6 +1300,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "chkpath", (PyCFunction)py_smb_chkpath, METH_VARARGS,
 	  "chkpath(dir_path) -> True or False\n\n"
 	  "\t\tReturn true if directory exists, false otherwise." },
+	{ "savefile", (PyCFunction)py_smb_savefile, METH_VARARGS,
+	  "savefile(path, str) -> None\n\n"
+	  "\t\tWrite " PY_DESC_PY3_BYTES " str to file." },
 	{ NULL, NULL, 0, NULL }
 };
 

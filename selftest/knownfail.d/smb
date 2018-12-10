@@ -1,2 +1,0 @@
-# currently savefile appends rather than overwriting
-samba.tests.smb.*samba.tests.smb.SMBTests.test_save_load_text\(ad_dc:local\)

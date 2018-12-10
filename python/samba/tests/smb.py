@@ -113,7 +113,7 @@ class SMBTests(samba.tests.TestCase):
             for i in range(1, 4):
                 contents = "I'm file {0} in dir {1}!".format(i, subdir)
                 path = self.make_sysvol_path(subdir, "file-{0}.txt".format(i))
-                self.conn.savefile(path, test_contents.encode('utf8'))
+                self.smb_conn.savefile(path, test_contents.encode('utf8'))
                 filepaths.append(path)
 
         # sanity-check these dirs/files exist
@@ -166,7 +166,7 @@ class SMBTests(samba.tests.TestCase):
         """
         # create the test file
         self.assertFalse(self.file_exists(test_file))
-        self.conn.savefile(test_file, binary_contents)
+        self.smb_conn.savefile(test_file, binary_contents)
         self.assertTrue(self.file_exists(test_file))
 
         # delete it and check that it's gone
@@ -183,7 +183,7 @@ class SMBTests(samba.tests.TestCase):
         self.assertFalse(self.smb_conn.chkpath(bad_dir))
 
         # should return False for files (because they're not directories)
-        self.conn.savefile(test_file, binary_contents)
+        self.smb_conn.savefile(test_file, binary_contents)
         self.assertFalse(self.smb_conn.chkpath(test_file))
 
         # check correct result after creating and then deleting a new dir
@@ -195,7 +195,7 @@ class SMBTests(samba.tests.TestCase):
 
     def test_save_load_text(self):
 
-        self.conn.savefile(test_file, test_contents.encode('utf8'))
+        self.smb_conn.savefile(test_file, test_contents.encode('utf8'))
 
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents.decode('utf8'), test_contents,
@@ -203,7 +203,7 @@ class SMBTests(samba.tests.TestCase):
 
         # check we can overwrite the file with new contents
         new_contents = 'wxyz' * 128
-        self.conn.savefile(test_file, new_contents.encode('utf8'))
+        self.smb_conn.savefile(test_file, new_contents.encode('utf8'))
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents.decode('utf8'), new_contents,
                           msg='contents of test file did not match what was written')
@@ -211,7 +211,7 @@ class SMBTests(samba.tests.TestCase):
     # with python2 this will save/load str type (with embedded nulls)
     # with python3 this will save/load bytes type
     def test_save_load_string_bytes(self):
-        self.conn.savefile(test_file, test_literal_bytes_embed_nulls)
+        self.smb_conn.savefile(test_file, test_literal_bytes_embed_nulls)
 
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents, test_literal_bytes_embed_nulls,
@@ -220,7 +220,7 @@ class SMBTests(samba.tests.TestCase):
     # python3 only this will save/load unicode
     def test_save_load_utfcontents(self):
         if PY3:
-            self.conn.savefile(test_file, utf_contents.encode('utf8'))
+            self.smb_conn.savefile(test_file, utf_contents.encode('utf8'))
 
             contents = self.conn.loadfile(test_file)
             self.assertEquals(contents.decode('utf8'), utf_contents,
@@ -229,7 +229,7 @@ class SMBTests(samba.tests.TestCase):
     # with python2 this will save/load str type
     # with python3 this will save/load bytes type
     def test_save_binary_contents(self):
-        self.conn.savefile(test_file, binary_contents)
+        self.smb_conn.savefile(test_file, binary_contents)
 
         contents = self.conn.loadfile(test_file)
         self.assertEquals(contents, binary_contents,
