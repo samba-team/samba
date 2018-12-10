@@ -40,24 +40,14 @@ char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid)
 }
 
 /*****************************************************************
- Essentially a renamed dom_sid_string from
- ../libcli/security/dom_sid.c with a panic if it didn't work.
-*****************************************************************/
-
-char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
-{
-	char *result = dom_sid_string(mem_ctx, sid);
-	SMB_ASSERT(result != NULL);
-	return result;
-}
-
-/*****************************************************************
  Useful function for debug lines.
 *****************************************************************/
 
 char *sid_string_dbg(const struct dom_sid *sid)
 {
-	return sid_string_talloc(talloc_tos(), sid);
+	char *result = dom_sid_string(talloc_tos(), sid);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /*****************************************************************
