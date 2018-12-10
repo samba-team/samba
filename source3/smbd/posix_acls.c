@@ -800,8 +800,9 @@ static canon_ace *dup_canon_ace( canon_ace *src_ace)
 
 static void print_canon_ace(canon_ace *pace, int num)
 {
+	struct dom_sid_buf buf;
 	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
-	dbgtext( "SID = %s ", sid_string_dbg(&pace->trustee));
+	dbgtext( "SID = %s ", dom_sid_str_buf(&pace->trustee, &buf));
 	if (pace->owner_type == UID_ACE) {
 		dbgtext( "uid %u ", (unsigned int)pace->unix_ug.id);
 	} else if (pace->owner_type == GID_ACE) {
@@ -1193,9 +1194,11 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 				 * reasonably */
 				*puser = get_current_uid(conn);
 			} else {
-				DEBUG(3,("unpack_nt_owners: unable to validate"
-					 " owner sid for %s\n",
-					 sid_string_dbg(psd->owner_sid)));
+				struct dom_sid_buf buf;
+				DBG_NOTICE("unable to validate"
+					   " owner sid for %s\n",
+					   dom_sid_str_buf(psd->owner_sid,
+							   &buf));
 				return NT_STATUS_INVALID_OWNER;
 			}
 		}
@@ -1990,12 +1993,14 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			struct unixid unixid;
 
 			if (!sids_to_unixids(&current_ace->trustee, 1, &unixid)) {
+				struct dom_sid_buf buf;
 				free_canon_ace_list(file_ace);
 				free_canon_ace_list(dir_ace);
 				TALLOC_FREE(current_ace);
-				DEBUG(0, ("create_canon_ace_lists: sids_to_unixids "
-					"failed for %s (allocation failure)\n",
-					sid_string_dbg(&current_ace->trustee)));
+				DBG_ERR("sids_to_unixids failed for %s "
+					"(allocation failure)\n",
+					dom_sid_str_buf(&current_ace->trustee,
+							&buf));
 				return false;
 			}
 
@@ -2080,31 +2085,37 @@ static bool create_canon_ace_lists(files_struct *fsp,
 					current_ace->type = SMB_ACL_GROUP;
 				}
 			} else {
+				struct dom_sid_buf buf;
 				/*
 				 * Silently ignore map failures in non-mappable SIDs (NT Authority, BUILTIN etc).
 				 */
 
 				if (non_mappable_sid(&psa->trustee)) {
-					DEBUG(10, ("create_canon_ace_lists: ignoring "
-						   "non-mappable SID %s\n",
-						   sid_string_dbg(&psa->trustee)));
+					DBG_DEBUG("ignoring "
+						  "non-mappable SID %s\n",
+						  dom_sid_str_buf(
+							  &psa->trustee,
+							  &buf));
 					TALLOC_FREE(current_ace);
 					continue;
 				}
 
 				if (lp_force_unknown_acl_user(SNUM(fsp->conn))) {
-					DEBUG(10, ("create_canon_ace_lists: ignoring "
-						"unknown or foreign SID %s\n",
-						sid_string_dbg(&psa->trustee)));
+					DBG_DEBUG("ignoring unknown or "
+						  "foreign SID %s\n",
+						  dom_sid_str_buf(
+							  &psa->trustee,
+							  &buf));
 					TALLOC_FREE(current_ace);
 					continue;
 				}
 
 				free_canon_ace_list(file_ace);
 				free_canon_ace_list(dir_ace);
-				DEBUG(0, ("create_canon_ace_lists: unable to map SID "
-					  "%s to uid or gid.\n",
-					  sid_string_dbg(&current_ace->trustee)));
+				DBG_ERR("unable to map SID %s to uid or "
+					"gid.\n",
+					dom_sid_str_buf(&current_ace->trustee,
+							&buf));
 				TALLOC_FREE(current_ace);
 				return false;
 			}

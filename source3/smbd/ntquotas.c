@@ -23,6 +23,7 @@
 #include "system/passwd.h"
 #include "passdb/lookup_sid.h"
 #include "libsmb/libsmb.h"
+#include "libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA
@@ -88,8 +89,9 @@ NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,
 	id.uid = -1;
 
 	if (psid && !sid_to_uid(psid, &id.uid)) {
+		struct dom_sid_buf buf;
 		DEBUG(0,("sid_to_uid: failed, SID[%s]\n",
-			 sid_string_dbg(psid)));
+			 dom_sid_str_buf(psid, &buf)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -148,8 +150,9 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid
 	D.ihardlimit = limit_blk2inodes(D.hardlimit);
 
 	if (psid && !sid_to_uid(psid, &id.uid)) {
+		struct dom_sid_buf buf;
 		DEBUG(0,("sid_to_uid: failed, SID[%s]\n",
-			 sid_string_dbg(psid)));
+			 dom_sid_str_buf(psid, &buf)));
 	}
 
 	ret = SMB_VFS_SET_QUOTA(fsp->conn, qtype, id, &D);
@@ -193,6 +196,7 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		SMB_NTQUOTA_STRUCT tmp_qt;
 		SMB_NTQUOTA_LIST *tmp_list_ent;
 		struct dom_sid	sid;
+		struct dom_sid_buf buf;
 		NTSTATUS status;
 
 		ZERO_STRUCT(tmp_qt);
@@ -213,13 +217,14 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		}
 		if (tmp_qt.softlim == 0 && tmp_qt.hardlim == 0) {
 			DEBUG(5,("no quota entry for sid[%s] path[%s]\n",
-				 sid_string_dbg(&sid),
+				 dom_sid_str_buf(&sid, &buf),
 				 fsp->conn->connectpath));
 			continue;
 		}
 
 		DEBUG(15,("quota entry for id[%s] path[%s]\n",
-			  sid_string_dbg(&sid), fsp->conn->connectpath));
+			  dom_sid_str_buf(&sid, &buf),
+			  fsp->conn->connectpath));
 
 		if ((tmp_list_ent=talloc_zero(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed\n"));

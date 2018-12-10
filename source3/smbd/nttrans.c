@@ -2472,10 +2472,11 @@ static enum ndr_err_code extract_sids_from_buf(TALLOC_CTX *mem_ctx,
 		*num = i;
 
 		for (iter = sid_list, i = 0; iter; iter = iter->next, i++) {
+			struct dom_sid_buf buf;
 			(*sids)[i] = iter->sid;
 			DBG_DEBUG("quota SID[%u] %s\n",
 				(unsigned int)i,
-				sid_string_dbg(&iter->sid));
+				dom_sid_str_buf(&iter->sid, &buf));
 		}
 	}
 	err = NDR_ERR_SUCCESS;
