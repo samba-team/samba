@@ -28,20 +28,14 @@
 int ConvertSidToStringSid(const struct domsid *sid,
 			  char **sid_string)
 {
-	char *ret;
+	struct dom_sid_buf buf;
 
 	if (!sid || !sid_string) {
 		return false;
 	}
 
-	ret = sid_string_talloc(NULL, (const struct dom_sid *)sid);
-	if (!ret) {
-		return false;
-	}
-
-	*sid_string = SMB_STRDUP(ret);
-
-	TALLOC_FREE(ret);
+	*sid_string = SMB_STRDUP(
+		dom_sid_str_buf((const struct dom_sid *)sid, &buf));
 
 	if (!*sid_string) {
 		return false;
