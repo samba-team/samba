@@ -351,7 +351,6 @@ static WERROR gp_reg_store_groupmembership(TALLOC_CTX *mem_ctx,
 	uint32_t i = 0;
 	const char *valname = NULL;
 	const char *path = NULL;
-	const char *val = NULL;
 	int count = 0;
 
 	path = gp_reg_groupmembership_path(mem_ctx, &token->sids[0],
@@ -365,13 +364,16 @@ static WERROR gp_reg_store_groupmembership(TALLOC_CTX *mem_ctx,
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	for (i=0; i<token->num_sids; i++) {
+		struct dom_sid_buf buf;
 
 		valname = talloc_asprintf(mem_ctx, "Group%d", count++);
 		W_ERROR_HAVE_NO_MEMORY(valname);
 
-		val = sid_string_talloc(mem_ctx, &token->sids[i]);
-		W_ERROR_HAVE_NO_MEMORY(val);
-		werr = gp_store_reg_val_sz(mem_ctx, key, valname, val);
+		werr = gp_store_reg_val_sz(
+			mem_ctx,
+			key,
+			valname,
+			dom_sid_str_buf(&token->sids[i], &buf));
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
