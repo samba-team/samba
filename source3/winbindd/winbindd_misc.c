@@ -230,6 +230,7 @@ bool winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 		bool is_online = true;		
 		struct winbindd_tdc_domain *d = NULL;
 		char *trust_type = NULL;
+		struct dom_sid_buf buf;
 
 		d = &dom_list[i];
 		domain = find_domain_from_name_noinit(d->domain_name);
@@ -247,7 +248,7 @@ bool winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 			"%s\\%s\\%s\\%s\\%s\\%s\\%s\\%s\n",
 			d->domain_name,
 			d->dns_name ? d->dns_name : "",
-			sid_string_talloc(state->mem_ctx, &d->sid),
+			dom_sid_str_buf(&d->sid, &buf),
 			trust_type,
 			trust_is_transitive(d) ? "Yes" : "No",
 			trust_is_inbound(d) ? "Yes" : "No",
@@ -300,6 +301,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	extra_data = talloc_strdup(state->mem_ctx, "");
 
 	for (i=0; i<trusts.count; i++) {
+		struct dom_sid_buf buf;
 
 		if (trusts.array[i].sid == NULL) {
 			continue;
@@ -311,7 +313,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 		extra_data = talloc_asprintf_append_buffer(
 		    extra_data, "%s\\%s\\%s\\%u\\%u\\%u\n",
 		    trusts.array[i].netbios_name, trusts.array[i].dns_name,
-		    sid_string_talloc(state->mem_ctx, trusts.array[i].sid),
+		    dom_sid_str_buf(trusts.array[i].sid, &buf),
 		    trusts.array[i].trust_flags,
 		    (uint32_t)trusts.array[i].trust_type,
 		    trusts.array[i].trust_attributes);
@@ -327,12 +329,13 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	}
 
 	if (state->request->data.list_all_domains && !have_own_domain) {
+		struct dom_sid_buf buf;
 		extra_data = talloc_asprintf_append_buffer(
 			extra_data, "%s\\%s\\%s\n", domain->name,
 			domain->alt_name != NULL ?
 				domain->alt_name :
 				domain->name,
-			sid_string_talloc(state->mem_ctx, &domain->sid));
+			dom_sid_str_buf(&domain->sid, &buf));
 	}
 
 	extra_data_len = strlen(extra_data);

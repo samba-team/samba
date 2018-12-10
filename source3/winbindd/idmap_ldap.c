@@ -510,7 +510,7 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 	LDAPMod **mods = NULL;
 	const char *type;
 	char *id_str;
-	char *sid;
+	struct dom_sid_buf sid;
 	char *dn;
 	int rc = -1;
 
@@ -545,12 +545,9 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 	id_str = talloc_asprintf(memctx, "%lu", (unsigned long)map->xid.id);
 	CHECK_ALLOC_DONE(id_str);
 
-	sid = talloc_strdup(memctx, sid_string_talloc(memctx, map->sid));
-	CHECK_ALLOC_DONE(sid);
-
 	dn = talloc_asprintf(memctx, "%s=%s,%s",
 			get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID),
-			sid,
+			dom_sid_str_buf(map->sid, &sid),
 			ctx->suffix);
 	CHECK_ALLOC_DONE(dn);
 
@@ -562,7 +559,7 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 
 	smbldap_make_mod(smbldap_get_ldap(ctx->smbldap_state), entry, &mods,
 			 get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID),
-			 sid);
+			 sid.buf);
 
 	if ( ! mods) {
 		DEBUG(2, ("ERROR: No mods?\n"));
@@ -574,7 +571,7 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SID_ENTRY);
 
-	DEBUG(10, ("Set DN %s (%s -> %s)\n", dn, sid, id_str));
+	DEBUG(10, ("Set DN %s (%s -> %s)\n", dn, sid.buf, id_str));
 
 	rc = smbldap_add(ctx->smbldap_state, dn, mods);
 	ldap_mods_free(mods, True);
@@ -584,7 +581,7 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 		ldap_get_option(smbldap_get_ldap(ctx->smbldap_state),
 				LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(0,("ldap_set_mapping_internals: Failed to add %s to %lu "
-			 "mapping [%s]\n", sid,
+			 "mapping [%s]\n", sid.buf,
 			 (unsigned long)map->xid.id, type));
 		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s (%s)\n",
 			ld_error ? ld_error : "(NULL)", ldap_err2string (rc)));
@@ -596,7 +593,7 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 	}
 
 	DEBUG(10,("ldap_set_mapping: Successfully created mapping from %s to "
-		  "%lu [%s]\n",	sid, (unsigned long)map->xid.id, type));
+		  "%lu [%s]\n",	sid.buf, (unsigned long)map->xid.id, type));
 
 	ret = NT_STATUS_OK;
 
@@ -877,12 +874,13 @@ static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom,
 	attr_list = get_attr_list(memctx, sidmap_attr_list);
 
 	if ( ! ids[1]) {
+		struct dom_sid_buf buf;
 		/* if we are requested just one mapping use the simple filter */
 
 		filter = talloc_asprintf(memctx, "(&(objectClass=%s)(%s=%s))",
 				LDAP_OBJ_IDMAP_ENTRY,
 				LDAP_ATTRIBUTE_SID,
-				sid_string_talloc(memctx, ids[0]->sid));
+				dom_sid_str_buf(ids[0]->sid, &buf));
 		CHECK_ALLOC_DONE(filter);
 		DEBUG(10, ("Filter: [%s]\n", filter));
 	} else {
@@ -905,10 +903,10 @@ again:
 
 		bidx = idx;
 		for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
+			struct dom_sid_buf buf;
 			filter = talloc_asprintf_append_buffer(filter, "(%s=%s)",
 					LDAP_ATTRIBUTE_SID,
-					sid_string_talloc(memctx,
-							  ids[idx]->sid));
+					dom_sid_str_buf(ids[idx]->sid, &buf));
 			CHECK_ALLOC_DONE(filter);
 		}
 		filter = talloc_asprintf_append_buffer(filter, "))");

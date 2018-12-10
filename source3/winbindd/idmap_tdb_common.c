@@ -221,7 +221,7 @@ NTSTATUS idmap_tdb_common_set_mapping(struct idmap_domain * dom,
 	struct idmap_tdb_common_context *ctx;
 	struct idmap_tdb_common_set_mapping_context state;
 	NTSTATUS ret;
-	char *ksidstr = NULL;
+	struct dom_sid_buf ksidstr;
 	char *kidstr = NULL;
 
 	if (!map || !map->sid) {
@@ -257,21 +257,13 @@ NTSTATUS idmap_tdb_common_set_mapping(struct idmap_domain * dom,
 		goto done;
 	}
 
-	ksidstr = sid_string_talloc(ctx, map->sid);
-	if (ksidstr == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	state.ksidstr = ksidstr;
+	state.ksidstr = dom_sid_str_buf(map->sid, &ksidstr);
 	state.kidstr = kidstr;
 
 	ret = dbwrap_trans_do(ctx->db, idmap_tdb_common_set_mapping_action,
 			      &state);
 
       done:
-	talloc_free(ksidstr);
 	talloc_free(kidstr);
 	return ret;
 }
@@ -455,7 +447,7 @@ NTSTATUS idmap_tdb_common_sid_to_unixid(struct idmap_domain * dom,
 {
 	NTSTATUS ret;
 	TDB_DATA data;
-	char *keystr;
+	struct dom_sid_buf keystr;
 	unsigned long rec_id = 0;
 	struct idmap_tdb_common_context *ctx;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -469,19 +461,14 @@ NTSTATUS idmap_tdb_common_sid_to_unixid(struct idmap_domain * dom,
 	    talloc_get_type_abort(dom->private_data,
 				  struct idmap_tdb_common_context);
 
-	keystr = sid_string_talloc(tmp_ctx, map->sid);
-	if (keystr == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	dom_sid_str_buf(map->sid, &keystr);
 
-	DEBUG(10, ("Fetching record %s\n", keystr));
+	DEBUG(10, ("Fetching record %s\n", keystr.buf));
 
 	/* Check if sid is present in database */
-	ret = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr, &data);
+	ret = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr.buf, &data);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(10, ("Record %s not found\n", keystr));
+		DEBUG(10, ("Record %s not found\n", keystr.buf));
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
@@ -492,7 +479,7 @@ NTSTATUS idmap_tdb_common_sid_to_unixid(struct idmap_domain * dom,
 		map->xid.id = rec_id;
 		map->xid.type = ID_TYPE_UID;
 		DEBUG(10,
-		      ("Found uid record %s -> %s \n", keystr,
+		      ("Found uid record %s -> %s \n", keystr.buf,
 		       (const char *)data.dptr));
 		ret = NT_STATUS_OK;
 
@@ -501,13 +488,13 @@ NTSTATUS idmap_tdb_common_sid_to_unixid(struct idmap_domain * dom,
 		map->xid.id = rec_id;
 		map->xid.type = ID_TYPE_GID;
 		DEBUG(10,
-		      ("Found gid record %s -> %s \n", keystr,
+		      ("Found gid record %s -> %s \n", keystr.buf,
 		       (const char *)data.dptr));
 		ret = NT_STATUS_OK;
 
 	} else {		/* Unknown record type ! */
 		DEBUG(2,
-		      ("Found INVALID record %s -> %s\n", keystr,
+		      ("Found INVALID record %s -> %s\n", keystr.buf,
 		       (const char *)data.dptr));
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;
