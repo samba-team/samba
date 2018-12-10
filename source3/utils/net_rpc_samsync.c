@@ -68,6 +68,7 @@ static NTSTATUS rpc_vampire_ds_internals(struct net_context *c,
 	struct dssync_context *ctx = NULL;
 
 	if (!dom_sid_equal(domain_sid, get_global_sam_sid())) {
+		struct dom_sid_buf buf1, buf2;
 		d_printf(_("Cannot import users from %s at this time, "
 			   "as the current domain:\n\t%s: %s\nconflicts "
 			   "with the remote domain\n\t%s: %s\n"
@@ -75,9 +76,9 @@ static NTSTATUS rpc_vampire_ds_internals(struct net_context *c,
 			   "workgroup=%s\n\n in your smb.conf?\n"),
 			 domain_name,
 			 get_global_sam_name(),
-			 sid_string_dbg(get_global_sam_sid()),
+			 dom_sid_str_buf(get_global_sam_sid(), &buf1),
 			 domain_name,
-			 sid_string_dbg(domain_sid),
+			 dom_sid_str_buf(domain_sid, &buf2),
 			 domain_name);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
