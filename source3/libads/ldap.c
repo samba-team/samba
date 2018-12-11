@@ -2799,8 +2799,9 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		ret = sid_parse((const uint8_t *)values[i]->bv_val,
 				values[i]->bv_len, &(*sids)[count]);
 		if (ret) {
-			DEBUG(10, ("pulling SID: %s\n",
-				   sid_string_dbg(&(*sids)[count])));
+			struct dom_sid_buf buf;
+			DBG_DEBUG("pulling SID: %s\n",
+				  dom_sid_str_buf(&(*sids)[count], &buf));
 			count++;
 		}
 	}
