@@ -46,7 +46,7 @@ class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
         result.append(opts)
         if option.help:
             help_text = self.expand_default(option)
-            if string.find(help_text, '\n') == -1:
+            if help_text.find('\n') == -1:
                 help_lines = textwrap.wrap(help_text, self.help_width)
             else:
                 help_lines = help_text.splitlines()
