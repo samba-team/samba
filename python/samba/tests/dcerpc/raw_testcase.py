@@ -171,8 +171,7 @@ class RawDCERPCTest(TestCase):
             self.assertEquals(rep.u.num_versions, 1)
             self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
             self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-            self.assertEquals(len(rep.u._pad), 3)
-            self.assertEquals(rep.u._pad, b'\0' * 3)
+            self.assertPadding(rep.u._pad, 3)
             return
         self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
                         pfc_flags=pfc_flags)
@@ -192,9 +191,7 @@ class RawDCERPCTest(TestCase):
             port_pad = 0
         self.assertEquals(rep.u.secondary_address_size, port_len)
         self.assertEquals(rep.u.secondary_address, port_str)
-        self.assertEquals(len(rep.u._pad1), port_pad)
-        # sometimes windows sends random bytes
-        # self.assertEquals(rep.u._pad1, '\0' * port_pad)
+        self.assertPadding(rep.u._pad1, port_pad)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -245,9 +242,7 @@ class RawDCERPCTest(TestCase):
         self.assertEquals(rep.u.assoc_group_id, assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
         self.assertEquals(rep.u.secondary_address, '')
-        self.assertEquals(len(rep.u._pad1), 2)
-        # sometimes windows sends random bytes
-        # self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
