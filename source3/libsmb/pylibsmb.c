@@ -922,53 +922,71 @@ static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
 	return NT_STATUS_OK;
 }
 
-static PyObject *py_cli_list(struct py_cli_state *self,
-			     PyObject *args,
-			     PyObject *kwds)
+static NTSTATUS do_listing(struct py_cli_state *self,
+			   const char *base_dir, const char *user_mask,
+			   uint16_t attribute,
+			   NTSTATUS (*callback_fn)(const char *,
+						   struct file_info *,
+						   const char *, void *),
+			   void *priv)
 {
-	char *mask;
-	char *base_dir;
-	char *user_mask = NULL;
-	unsigned attribute =
-		FILE_ATTRIBUTE_DIRECTORY |
-		FILE_ATTRIBUTE_SYSTEM |
-		FILE_ATTRIBUTE_HIDDEN;
+	char *mask = NULL;
 	unsigned info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
-	struct tevent_req *req;
-	NTSTATUS status;
-	struct file_info *finfos;
+	struct file_info *finfos = NULL;
 	size_t i, num_finfos;
-	PyObject *result;
-
-	const char *kwlist[] = { "directory", "mask", "attribs", NULL };
-
-	if (!ParseTupleAndKeywords(args, kwds, "z|sH:list", kwlist,
-				   &base_dir, &user_mask, &attribute)) {
-		return NULL;
-	}
+	NTSTATUS status;
+	struct tevent_req *req = NULL;
 
 	if (user_mask == NULL) {
 		mask = talloc_asprintf(NULL, "%s\\*", base_dir);
 	} else {
 		mask = talloc_asprintf(NULL, "%s\\%s", base_dir, user_mask);
 	}
+
 	if (mask == NULL) {
-		PyErr_NoMemory();
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	dos_format(mask);
 
 	req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
 			    info_level);
 	if (!py_tevent_req_wait_exc(self, req)) {
-		return NULL;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	status = cli_list_recv(req, NULL, &finfos, &num_finfos);
 	TALLOC_FREE(req);
 	TALLOC_FREE(mask);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetNTSTATUS(status);
+		return status;
+	}
+
+	for (i = 0; i < num_finfos; i++) {
+		status = callback_fn(base_dir, &finfos[i], user_mask,
+				     priv);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	return status;
+}
+
+static PyObject *py_cli_list(struct py_cli_state *self,
+			     PyObject *args,
+			     PyObject *kwds)
+{
+	char *base_dir;
+	char *user_mask = NULL;
+	unsigned attribute =
+		FILE_ATTRIBUTE_DIRECTORY |
+		FILE_ATTRIBUTE_SYSTEM |
+		FILE_ATTRIBUTE_HIDDEN;
+	NTSTATUS status;
+	PyObject *result;
+	const char *kwlist[] = { "directory", "mask", "attribs", NULL };
+
+	if (!ParseTupleAndKeywords(args, kwds, "z|sH:list", kwlist,
+				   &base_dir, &user_mask, &attribute)) {
 		return NULL;
 	}
 
@@ -977,12 +995,13 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 		return NULL;
 	}
 
-	for (i=0; i<num_finfos; i++) {
-		status = list_helper(base_dir, &finfos[i], user_mask, result);
-		if (!NT_STATUS_IS_OK(status)) {
-			Py_XDECREF(result);
-			return NULL;
-		}
+	status = do_listing(self, base_dir, user_mask, attribute,
+			    list_helper, result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		Py_XDECREF(result);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
 	}
 
 	return result;
