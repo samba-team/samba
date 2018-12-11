@@ -64,6 +64,8 @@ class RawDCERPCTest(TestCase):
         self.do_ndr_print = False
         self.do_hexdump = False
 
+        self.ignore_random_pad = samba.tests.env_get_var_value('IGNORE_RANDOM_PAD',
+                                                               allow_missing=True)
         self.host = samba.tests.env_get_var_value('SERVER')
         self.target_hostname = samba.tests.env_get_var_value('TARGET_HOSTNAME', allow_missing=True)
         if self.target_hostname is None:
@@ -87,6 +89,7 @@ class RawDCERPCTest(TestCase):
         c = RawDCERPCTest(methodName='noop')
         c.do_ndr_print = self.do_ndr_print
         c.do_hexdump = self.do_hexdump
+        c.ignore_random_pad = self.ignore_random_pad
 
         c.host = self.host
         c.target_hostname = self.target_hostname
@@ -868,3 +871,16 @@ class RawDCERPCTest(TestCase):
         self.assertEqual(s1.uuid, s2.uuid)
         self.assertEqual(s1.if_version, s2.if_version)
         return
+
+    def assertPadding(self, pad, length):
+        self.assertEquals(len(pad), length)
+        #
+        # sometimes windows sends random bytes
+        #
+        # we have IGNORE_RANDOM_PAD=1 to
+        # disable the check
+        #
+        if self.ignore_random_pad:
+            return
+        zero_pad = b'\0' * length
+        self.assertEquals(pad, zero_pad)
