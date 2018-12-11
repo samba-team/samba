@@ -175,7 +175,7 @@ static PyObject *py_creds_set_password(PyObject *self, PyObject *args)
 	enum credentials_obtained obt = CRED_SPECIFIED;
 	int _obt = obt;
 	PyObject *result = NULL;
-	if (!PyArg_ParseTuple(args, "es|i", "utf8", &newval, &_obt)) {
+	if (!PyArg_ParseTuple(args, PYARG_STR_UNI"|i", "utf8", &newval, &_obt)) {
 		return NULL;
 	}
 	obt = _obt;
