@@ -398,8 +398,9 @@ static int collect_map(struct db_record *rec, void *private_data)
 
 	if ((state->domsid != NULL) &&
 	    (dom_sid_compare_domain(state->domsid, &map->sid) != 0)) {
+		struct dom_sid_buf buf;
 		DEBUG(11,("enum_group_mapping: group %s is not in domain\n",
-			  sid_string_dbg(&map->sid)));
+			  dom_sid_str_buf(&map->sid, &buf)));
 		TALLOC_FREE(map);
 		return 0;
 	}

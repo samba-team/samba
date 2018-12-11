@@ -606,8 +606,9 @@ NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 
 	if ((map->sid_name_use != SID_NAME_ALIAS) &&
 	    (map->sid_name_use != SID_NAME_WKN_GRP)) {
+		struct dom_sid_buf buf;
 		DEBUG(2, ("%s is a %s, expected an alias\n",
-			  sid_string_dbg(sid),
+			  dom_sid_str_buf(sid, &buf),
 			  sid_type_lookup(map->sid_name_use)));
 		status = NT_STATUS_NO_SUCH_ALIAS;
 		goto done;
