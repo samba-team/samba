@@ -604,6 +604,9 @@ sub setup_ad_member_idmap_rid
 	idmap config * : range = 1000000-1999999
 	idmap config $dcvars->{DOMAIN} : backend = rid
 	idmap config $dcvars->{DOMAIN} : range = 2000000-2999999
+	# Prevent overridding the provisioned lib/krb5.conf which sets certain
+	# values required for tests to succeed
+	create krb5 conf = no
 ";
 
 	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
