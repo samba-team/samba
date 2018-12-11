@@ -4958,6 +4958,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                                   context_id=2, return_ack=True)
         self.assertNotEqual(ack2.u.assoc_group_id, ack1.u.assoc_group_id)
 
+        conn2._disconnect("End of Test")
         return
 
     def test_assoc_group_ok1(self):
@@ -4986,6 +4987,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
         self.do_single_request(call_id=1, ctx=ctx1, io=inq_if_ids)
         conn2.do_single_request(call_id=1, ctx=ctx2, io=inq_if_ids)
+        conn2._disconnect("End of Test")
         return
 
 
