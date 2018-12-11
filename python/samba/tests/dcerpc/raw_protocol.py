@@ -65,9 +65,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        # sometimes windows sends random bytes
-        # self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -110,9 +108,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        # sometimes windows sends random bytes
-        # self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -132,9 +128,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
         self.assertEquals(rep.u.secondary_address, "")
-        self.assertEquals(len(rep.u._pad1), 2)
-        # sometimes windows sends random bytes
-        # self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -372,8 +366,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-        self.assertEquals(len(rep.u._pad), 3)
-        self.assertEquals(rep.u._pad, b'\0' * 3)
+        self.assertPadding(rep.u._pad, 3)
 
     def test_invalid_auth_noctx(self):
         req = self.generate_bind(call_id=0)
@@ -387,8 +380,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-        self.assertEquals(len(rep.u._pad), 3)
-        self.assertEquals(rep.u._pad, b'\0' * 3)
+        self.assertPadding(rep.u._pad, 3)
 
     def test_no_auth_valid_valid_request(self):
         ndr32 = base.transfer_syntax_ndr()
@@ -410,8 +402,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -438,8 +429,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-        self.assertEquals(len(rep.u._pad), 3)
-        self.assertEquals(rep.u._pad, b'\0' * 3)
+        self.assertPadding(rep.u._pad, 3)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -458,8 +448,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-        self.assertEquals(len(rep.u._pad), 3)
-        self.assertEquals(rep.u._pad, b'\0' * 3)
+        self.assertPadding(rep.u._pad, 3)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -486,8 +475,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -539,8 +527,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -559,8 +546,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -609,8 +595,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
@@ -629,8 +614,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
@@ -667,8 +651,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
@@ -699,8 +682,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-        self.assertEquals(len(rep.u._pad), 3)
-        self.assertEquals(rep.u._pad, b'\0' * 3)
+        self.assertPadding(rep.u._pad, 3)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -729,8 +711,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -790,8 +771,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -852,8 +832,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -881,8 +860,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
@@ -930,8 +908,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
@@ -956,8 +933,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -995,8 +971,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1034,8 +1009,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1080,8 +1054,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1117,8 +1090,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1167,8 +1139,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1231,8 +1202,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1268,8 +1238,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 2)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1319,8 +1288,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
@@ -1356,8 +1324,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
@@ -1391,8 +1358,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION)
@@ -1434,8 +1400,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-        self.assertEquals(len(rep.u._pad), 3)
-        self.assertEquals(rep.u._pad, b'\0' * 3)
+        self.assertPadding(rep.u._pad, 3)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1465,8 +1430,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
@@ -1501,8 +1465,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
@@ -1557,8 +1520,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.num_versions, 1)
         self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
-        self.assertEquals(len(rep.u._pad), 3)
-        self.assertEquals(rep.u._pad, b'\0' * 3)
+        self.assertPadding(rep.u._pad, 3)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1626,8 +1588,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1715,8 +1676,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1746,8 +1706,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, rep_both)
         self.assertEquals(rep.u.assoc_group_id, rep.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -1875,8 +1834,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -2660,8 +2618,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -2692,9 +2649,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        # Windows sends garbage
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -2810,8 +2765,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -2842,9 +2796,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        # Windows sends garbage
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -2927,8 +2879,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         assoc_group_id = rep.u.assoc_group_id
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3010,8 +2961,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3100,8 +3050,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3130,9 +3079,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        # Windows sends garbage
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3261,8 +3208,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3291,9 +3237,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        # Windows sends garbage
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3417,8 +3361,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        self.assertEquals(rep.u._pad1, b'\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3502,8 +3445,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3589,8 +3531,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3670,8 +3611,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3758,8 +3698,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3846,8 +3785,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3944,8 +3882,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3989,9 +3926,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
         self.assertEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(len(rep.u._pad1), 2)
-        # Windows sends garbage
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -4161,8 +4096,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -4274,8 +4208,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -4392,8 +4325,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEquals(rep.u.secondary_address_size, 4)
         self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertEquals(len(rep.u._pad1), 2)
-        #self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertPadding(rep.u._pad1, 2)
         self.assertEquals(rep.u.num_results, 1)
         self.assertEquals(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
