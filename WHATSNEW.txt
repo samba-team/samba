@@ -84,6 +84,27 @@ parameter.  The default value of 0, indicates there is no limit.  The limit
 is applied individually to netlogon and ldap.  When the process limit is
 exceeded Samba drops new connections immediately.
 
+python3 support
+---------------
+
+The version of python which is now the default for samba is python3.
+'configure' & 'make' will execute using python3. It is possible to still
+specify an additional python version with '--extra-python'
+e.g. '--extra-python=/usr/bin/python2'. It should be noted that support for
+this option will be deprecated in a future release.
+
+What if I need to build with python2? To build with python2 you *must* set
+the 'PYTHON' environent variable to override the python3 default for both
+'configure' and 'make' steps.
+
+   'PYTHON=python2 ./configure.developer'
+&
+   'PYTHON=python2 make'
+
+Note: Support for python2 (with the exception of a build configured with
+      'PYTHON=python2 ./configure --disable-python' and built with
+      'PYTHON=python2 make' will be deprecated in the next release.
+
 REMOVED FEATURES
 ================
 
