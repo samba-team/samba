@@ -108,9 +108,10 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	 * the same index.
 	 */
 	for (i=0; i<state->num_sids; i++) {
+		struct dom_sid_buf buf;
 
 		DEBUG(10, ("SID %d: %s\n", (int)i,
-			   sid_string_dbg(&state->sids[i])));
+			   dom_sid_str_buf(&state->sids[i], &buf)));
 
 		if (wb_sids2xids_in_cache(&state->sids[i], &state->cached[i])) {
 			continue;

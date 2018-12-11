@@ -30,6 +30,7 @@
 #include "smbldap.h"
 #include "nsswitch/winbind_client.h"
 #include "lib/winbind_util.h"
+#include "libcli/security/dom_sid.h"
 
 /*
  * Config and connection info per domain.
@@ -454,6 +455,7 @@ static NTSTATUS idmap_rfc_2307_sids_to_names(TALLOC_CTX *mem_ctx,
 		enum lsa_SidType lsa_type;
 		struct id_map *id = ids[i];
 		struct idmap_rfc2307_map *map = &maps[i];
+		struct dom_sid_buf buf;
 		bool b;
 
 		/* by default calls to winbindd are disabled
@@ -465,7 +467,7 @@ static NTSTATUS idmap_rfc_2307_sids_to_names(TALLOC_CTX *mem_ctx,
 
 		if (!b) {
 			DEBUG(1, ("Lookup sid %s failed.\n",
-				  sid_string_dbg(ids[i]->sid)));
+				  dom_sid_str_buf(ids[i]->sid, &buf)));
 			continue;
 		}
 
@@ -491,7 +493,8 @@ static NTSTATUS idmap_rfc_2307_sids_to_names(TALLOC_CTX *mem_ctx,
 
 		default:
 			DEBUG(1, ("Unknown lsa type %d for sid %s\n",
-				  lsa_type, sid_string_dbg(id->sid)));
+				  lsa_type,
+				  dom_sid_str_buf(id->sid, &buf)));
 			id->status = ID_UNMAPPED;
 			continue;
 		}
