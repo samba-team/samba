@@ -27,13 +27,14 @@ from samba.samba3 import libsmb_samba_internal
 from samba.samba3 import param as s3param
 
 PY3 = sys.version_info[0] == 3
-addom = 'addom.samba.example.com/'
+realm = os.environ.get('REALM')
+domain_dir = realm.lower() + '/'
 test_contents = 'abcd' * 256
 utf_contents = u'Süßigkeiten Äpfel ' * 128
 test_literal_bytes_embed_nulls = b'\xff\xfe\x14\x61\x00\x00\x62\x63\x64' * 256
 binary_contents = b'\xff\xfe'
 binary_contents = binary_contents + "Hello cruel world of python3".encode('utf8') * 128
-test_dir = os.path.join(addom, 'testing_%d' % random.randint(0, 0xFFFF))
+test_dir = os.path.join(domain_dir, 'testing_%d' % random.randint(0, 0xFFFF))
 test_file = os.path.join(test_dir, 'testing').replace('/', '\\')
 
 
@@ -60,7 +61,7 @@ class SMBTests(samba.tests.TestCase):
 
     def test_list(self):
         # check a basic listing returns the items we expect
-        ls = [f['name'] for f in self.smb_conn.list(addom)]
+        ls = [f['name'] for f in self.smb_conn.list(domain_dir)]
         self.assertIn('scripts', ls,
                       msg='"scripts" directory not found in sysvol')
         self.assertIn('Policies', ls,
@@ -71,17 +72,17 @@ class SMBTests(samba.tests.TestCase):
                          msg='Current dir (.) found in directory listing')
 
         # using a '*' mask should be the same as using no mask
-        ls_wildcard = [f['name'] for f in self.smb_conn.list(addom, "*")]
+        ls_wildcard = [f['name'] for f in self.smb_conn.list(domain_dir, "*")]
         self.assertEqual(ls, ls_wildcard)
 
         # applying a mask should only return items that match that mask
-        ls_pol = [f['name'] for f in self.smb_conn.list(addom, "Pol*")]
+        ls_pol = [f['name'] for f in self.smb_conn.list(domain_dir, "Pol*")]
         expected = ["Policies"]
         self.assertEqual(ls_pol, expected)
 
         # each item in the listing is a has with expected keys
         expected_keys = ['attrib', 'mtime', 'name', 'short_name', 'size']
-        for item in self.smb_conn.list(addom):
+        for item in self.smb_conn.list(domain_dir):
             for key in expected_keys:
                 self.assertIn(key, item,
                               msg="Key '%s' not in listing '%s'" % (key, item))
