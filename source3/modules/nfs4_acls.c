@@ -317,6 +317,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		uint32_t mask;
 		struct dom_sid sid;
+		struct dom_sid_buf buf;
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
 		uint32_t win_ace_flags;
 
@@ -349,7 +350,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 			}
 		}
 		DEBUG(10, ("mapped %d to %s\n", ace->who.id,
-			   sid_string_dbg(&sid)));
+			   dom_sid_str_buf(&sid, &buf)));
 
 		if (!is_directory && params->map_full_control) {
 			/*
@@ -655,7 +656,10 @@ static bool smbacl4_fill_ace4(
 	SMB_ACE4PROP_T *ace_v4 /* output */
 )
 {
-	DEBUG(10, ("got ace for %s\n", sid_string_dbg(&ace_nt->trustee)));
+	struct dom_sid_buf buf;
+
+	DEBUG(10, ("got ace for %s\n",
+		   dom_sid_str_buf(&ace_nt->trustee, &buf)));
 
 	ZERO_STRUCTP(ace_v4);
 
@@ -738,7 +742,7 @@ static bool smbacl4_fill_ace4(
 			DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
 				  "convert %s to uid or gid\n",
 				  filename->base_name,
-				  sid_string_dbg(&ace_nt->trustee)));
+				  dom_sid_str_buf(&ace_nt->trustee, &buf)));
 			return false;
 		}
 	}
@@ -882,9 +886,11 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 		if (!smbacl4_fill_ace4(fsp->fsp_name, pparams,
 				       ownerUID, ownerGID,
 				       dacl->aces + i, &ace_v4)) {
+			struct dom_sid_buf buf;
 			DEBUG(3, ("Could not fill ace for file %s, SID %s\n",
 				  filename,
-				  sid_string_dbg(&((dacl->aces+i)->trustee))));
+				  dom_sid_str_buf(&((dacl->aces+i)->trustee),
+						  &buf)));
 			continue;
 		}
 

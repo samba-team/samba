@@ -1324,6 +1324,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 * but I have to check that --metze
 		 */
 		struct dom_sid sid;
+		struct dom_sid_buf buf;
 		uid_t uid;
 		size_t sid_len;
 
@@ -1343,11 +1344,12 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		if (!sid_parse(_in_data + 4, sid_len, &sid)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		DEBUGADD(10, ("for SID: %s\n", sid_string_dbg(&sid)));
+		DEBUGADD(10, ("for SID: %s\n",
+			      dom_sid_str_buf(&sid, &buf)));
 
 		if (!sid_to_uid(&sid, &uid)) {
 			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
-				 sid_string_dbg(&sid),
+				 dom_sid_str_buf(&sid, &buf),
 				 (unsigned long)sid_len));
 			uid = (-1);
 		}

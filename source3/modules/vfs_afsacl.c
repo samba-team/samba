@@ -761,8 +761,9 @@ static bool nt_to_afs_acl(const char *filename,
 		}
 
 		if (!mappable_sid(&ace->trustee)) {
+			struct dom_sid_buf buf;
 			DEBUG(10, ("Ignoring unmappable SID %s\n",
-				   sid_string_dbg(&ace->trustee)));
+				   dom_sid_str_buf(&ace->trustee, &buf)));
 			continue;
 		}
 
@@ -791,8 +792,9 @@ static bool nt_to_afs_acl(const char *filename,
 
 			if (!lookup_sid(talloc_tos(), &ace->trustee,
 					&dom_name, &name, &name_type)) {
+				struct dom_sid_buf buf;
 				DEBUG(1, ("AFSACL: Could not lookup SID %s on file %s\n",
-					  sid_string_dbg(&ace->trustee),
+					  dom_sid_str_buf(&ace->trustee, &buf),
 					  filename));
 				continue;
 			}
