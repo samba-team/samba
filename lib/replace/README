@@ -73,6 +73,7 @@ symlink
 realpath
 poll
 setproctitle
+memset_s
 
 Types:
 bool
