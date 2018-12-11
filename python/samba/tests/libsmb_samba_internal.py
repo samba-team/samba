@@ -60,7 +60,7 @@ class LibsmbTestCase(samba.tests.TestCase):
         creds.set_password(os.getenv("PASSWORD"))
 
         c = libsmb_samba_internal.Conn(os.getenv("SERVER_IP"), "tmp",
-                                       creds, multi_threaded=True,
+                                       lp, creds, multi_threaded=True,
                                        force_smb1=True)
 
         mythreads = []

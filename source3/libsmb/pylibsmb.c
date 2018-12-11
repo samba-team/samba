@@ -423,6 +423,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	char *host, *share;
 	PyObject *creds = NULL;
 	struct cli_credentials *cli_creds;
+	PyObject *py_lp = Py_None;
 	PyObject *py_multi_threaded = Py_False;
 	bool multi_threaded = false;
 	PyObject *py_sign = Py_False;
@@ -435,7 +436,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	int flags = 0;
 
 	static const char *kwlist[] = {
-		"host", "share", "credentials",
+		"host", "share", "lp", "credentials",
 		"multi_threaded", "sign", "force_smb1",
 		NULL
 	};
@@ -447,8 +448,8 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	ret = ParseTupleAndKeywords(
-		args, kwds, "ss|O!OOO", kwlist,
-		&host, &share,
+		args, kwds, "ssO|O!OOO", kwlist,
+		&host, &share, &py_lp,
 		py_type_Credentials, &creds,
 		&py_multi_threaded,
 		&py_sign,
