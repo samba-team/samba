@@ -930,6 +930,7 @@ os.environ['TMPDIR'] = test_tmpdir
 
 # get the top commit message, for emails
 top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
+top_commit_msg = top_commit_msg.decode('utf-8', 'backslashreplace')
 
 try:
     os.makedirs(testbase)
