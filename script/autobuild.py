@@ -608,10 +608,15 @@ class buildlist(object):
     def write_system_info(self):
         filename = 'system-info.txt'
         f = open(filename, 'w')
-        for cmd in ['uname -a', 'free', 'cat /proc/cpuinfo',
-                    'cc --version', 'df -m .', 'df -m %s' % testbase]:
+        for cmd in ['uname -a',
+                    'free',
+                    'cat /proc/cpuinfo',
+                    'cc --version',
+                    'df -m .',
+                    'df -m %s' % testbase]:
+            out = run_cmd(cmd, output=True, checkfail=False)
             print('### %s' % cmd, file=f)
-            print(run_cmd(cmd, output=True, checkfail=False), file=f)
+            print(out.decode('utf8', 'backslashreplace'), file=f)
             print(file=f)
         f.close()
         return filename
