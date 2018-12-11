@@ -60,7 +60,6 @@
 #define CHECK_CREATED(__io, __created, __attribute)			\
 	do {								\
 		CHECK_VAL((__io)->out.create_action, NTCREATEX_ACTION_ ## __created); \
-		CHECK_VAL((__io)->out.alloc_size, 0);			\
 		CHECK_VAL((__io)->out.size, 0);				\
 		CHECK_VAL((__io)->out.file_attr, (__attribute));	\
 		CHECK_VAL((__io)->out.reserved2, 0);			\

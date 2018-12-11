@@ -38,8 +38,6 @@
 		torture_assert_int_equal(tctx, (__io)->out.create_action,	\
 						NTCREATEX_ACTION_ ## __created,	\
 						"out.create_action incorrect");	\
-		torture_assert_int_equal(tctx, (__io)->out.alloc_size, 0,	\
-						"out.alloc_size incorrect");	\
 		torture_assert_int_equal(tctx, (__io)->out.size, 0,		\
 						"out.size incorrect");		\
 		torture_assert_int_equal(tctx, (__io)->out.file_attr,		\
