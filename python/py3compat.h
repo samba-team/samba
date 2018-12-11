@@ -118,6 +118,7 @@
 /* PyArg_ParseTuple/Py_BuildValue argument */
 
 #define PYARG_BYTES_LEN "y#"
+#define PYARG_STR_UNI "es"
 
 #else
 
@@ -179,6 +180,15 @@
 /* PyArg_ParseTuple/Py_BuildValue argument */
 
 #define PYARG_BYTES_LEN "s#"
+/*
+ * We want a format that will ensure unicode is encoded using the
+ * specified encoding 'utf8' (to obtain the char* array)
+ * In python3 we use "es" but in python2 the specifiying 'es' will
+ * result in the any incomming 'str' type being decoded first to ascii
+ * then encoded to the specified 'utf8' encoding. In order to avoid that
+ * we use format 'et' in python2 instead.
+ */
+#define PYARG_STR_UNI "et"
 
 /* Module init */
 
