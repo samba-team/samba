@@ -1497,6 +1497,8 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	TALLOC_CTX *mem_ctx;
 	bool ret = False;
 	uint32_t rid;
+	struct dom_sid_buf buf;
+
 	id->id = -1;
 
 	mem_ctx = talloc_new(NULL);
@@ -1529,13 +1531,14 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 					  "an object exists in the database, "
 					   "but it is neither a user nor a "
 					   "group (got type %d).\n",
-					  sid_string_dbg(sid), type));
+					  dom_sid_str_buf(sid, &buf),
+					  type));
 				ret = false;
 			}
 		} else {
 			DEBUG(5, ("SID %s belongs to our domain, but there is "
 				  "no corresponding object in the database.\n",
-				  sid_string_dbg(sid)));
+				  dom_sid_str_buf(sid, &buf)));
 		}
 		goto done;
 	}
@@ -1563,13 +1566,14 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 
 		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, map, *sid))) {
 			DEBUG(10, ("Could not find map for sid %s\n",
-				   sid_string_dbg(sid)));
+				   dom_sid_str_buf(sid, &buf)));
 			goto done;
 		}
 		if ((map->sid_name_use != SID_NAME_ALIAS) &&
 		    (map->sid_name_use != SID_NAME_WKN_GRP)) {
 			DEBUG(10, ("Map for sid %s is a %s, expected an "
-				   "alias\n", sid_string_dbg(sid),
+				   "alias\n",
+				   dom_sid_str_buf(sid, &buf),
 				   sid_type_lookup(map->sid_name_use)));
 			goto done;
 		}
@@ -1581,7 +1585,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	}
 
 	DEBUG(5, ("Sid %s is neither ours, a Unix SID, nor builtin\n",
-		  sid_string_dbg(sid)));
+		  dom_sid_str_buf(sid, &buf)));
 
  done:
 

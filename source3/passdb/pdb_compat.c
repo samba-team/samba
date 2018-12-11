@@ -52,6 +52,7 @@ uint32_t pdb_get_group_rid (struct samu *sampass)
 bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32_t rid, enum pdb_value_state flag)
 {
 	struct dom_sid u_sid;
+	struct dom_sid_buf buf;
 	const struct dom_sid *global_sam_sid;
 
 	if (!sampass)
@@ -70,7 +71,7 @@ bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32_t rid, enum pdb_val
 		return False;
 
 	DEBUG(10, ("pdb_set_user_sid_from_rid:\n\tsetting user sid %s from rid %d\n", 
-		    sid_string_dbg(&u_sid),rid));
+		   dom_sid_str_buf(&u_sid, &buf), rid));
 
 	return True;
 }
@@ -78,6 +79,7 @@ bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32_t rid, enum pdb_val
 bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32_t grid, enum pdb_value_state flag)
 {
 	struct dom_sid g_sid;
+	struct dom_sid_buf buf;
 	const struct dom_sid *global_sam_sid;
 
 	if (!sampass)
@@ -96,7 +98,7 @@ bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32_t grid, enum pdb_v
 		return False;
 
 	DEBUG(10, ("pdb_set_group_sid_from_rid:\n\tsetting group sid %s from rid %d\n", 
-		    sid_string_dbg(&g_sid), grid));
+		   dom_sid_str_buf(&g_sid, &buf), grid));
 
 	return True;
 }

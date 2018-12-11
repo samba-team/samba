@@ -486,13 +486,15 @@ bool pdb_set_init_flags(struct samu *sampass, enum pdb_elements element, enum pd
 
 bool pdb_set_user_sid(struct samu *sampass, const struct dom_sid *u_sid, enum pdb_value_state flag)
 {
+	struct dom_sid_buf buf;
+
 	if (!u_sid)
 		return False;
 
 	sid_copy(&sampass->user_sid, u_sid);
 
 	DEBUG(10, ("pdb_set_user_sid: setting user sid %s\n", 
-		    sid_string_dbg(&sampass->user_sid)));
+		   dom_sid_str_buf(&sampass->user_sid, &buf)));
 
 	return pdb_set_init_flags(sampass, PDB_USERSID, flag);
 }
@@ -532,6 +534,7 @@ bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum p
 {
 	gid_t gid;
 	struct dom_sid dug_sid;
+	struct dom_sid_buf buf;
 
 	if (!g_sid)
 		return False;
@@ -554,7 +557,7 @@ bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum p
 	}
 
 	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
-		   sid_string_dbg(sampass->group_sid)));
+		   dom_sid_str_buf(sampass->group_sid, &buf)));
 
 	return pdb_set_init_flags(sampass, PDB_GROUPSID, flag);
 }

@@ -75,9 +75,10 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 	}
 
 	if (pass.domain_sid.num_auths != 4) {
+		struct dom_sid_buf buf;
 		DEBUG(0, ("SID %s is not a domain sid, has %d "
 			  "auths instead of 4\n",
-			  sid_string_dbg(&pass.domain_sid),
+			  dom_sid_str_buf(&pass.domain_sid, &buf),
 			  pass.domain_sid.num_auths));
 		return 0;
 	}

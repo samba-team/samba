@@ -47,16 +47,20 @@ static NTSTATUS add_sid_to_builtin(const struct dom_sid *builtin_sid,
 	status = pdb_add_aliasmem(builtin_sid, dom_sid);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MEMBER_IN_ALIAS)) {
+		struct dom_sid_buf buf1, buf2;
 		DEBUG(5, ("add_sid_to_builtin %s is already a member of %s\n",
-			  sid_string_dbg(dom_sid),
-			  sid_string_dbg(builtin_sid)));
+			  dom_sid_str_buf(dom_sid, &buf1),
+			  dom_sid_str_buf(builtin_sid, &buf2)));
 		return NT_STATUS_OK;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		struct dom_sid_buf buf1, buf2;
 		DEBUG(4, ("add_sid_to_builtin %s could not be added to %s: "
-			  "%s\n", sid_string_dbg(dom_sid),
-			  sid_string_dbg(builtin_sid), nt_errstr(status)));
+			  "%s\n",
+			  dom_sid_str_buf(dom_sid, &buf1),
+			  dom_sid_str_buf(builtin_sid, &buf2),
+			  nt_errstr(status)));
 	}
 	return status;
 }
