@@ -17,7 +17,6 @@ from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.compat import cmp_fn
 from samba.compat import cmp_to_key_fn
 from samba.compat import text_type
-from samba.compat import PY3
 import samba.getopt as options
 
 from samba.auth import system_session
@@ -43,6 +42,11 @@ if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
+datadir = os.getenv("DATA_DIR", None)
+if not datadir:
+    print("Please specify the location of the sort expected results with env variable DATA_DIR")
+    sys.exit(1)
+
 host = os.getenv("SERVER", None)
 if not host:
     print("Please specify the host with env variable SERVER")
@@ -62,7 +66,7 @@ def norm(x):
 # drastically different ways. The order here is what you get from
 # Windows2012R2.
 FIENDISH_TESTS = [' ', ' e', '\t-\t', '\n\t\t', '!@#!@#!', '¼', '¹', '1',
-                  '1/4', '1⁄4', '1\xe2\x81\x845', '3', 'abc',
+                  '1/4', '1⁄4', '1\xe2\x81\x845', '3', 'abc', 'fo\x00od',
 
                   # Here we also had '\x00food', but that seems to sort
                   # non-deterministically on Windows vis-a-vis 'fo\x00od'.
@@ -71,8 +75,7 @@ FIENDISH_TESTS = [' ', ' e', '\t-\t', '\n\t\t', '!@#!@#!', '¼', '¹', '1',
                   'ｓorttest', 'sorttēst11,', 'śorttest2', 'śoRttest2',
                   'ś-o-r-t-t-e-s-t-2', 'soRTTēst2,', 'ṡorttest4', 'ṡorttesT4',
                   'sörttest-5', 'sÖrttest-5', 'so-rttest7,', '桑巴']
-if not PY3:
-    FIENDISH_TESTS.append('fo\x00od')
+
 
 class BaseSortTests(samba.tests.TestCase):
     avoid_tricky_sort = False
@@ -85,7 +88,10 @@ class BaseSortTests(samba.tests.TestCase):
             'cn': name,
             "objectclass": "user",
             'givenName': "abcdefghijklmnopqrstuvwxyz"[i % 26],
-            "carLicense": "后来经",
+            "roomNumber": "%sb\x00c" % (n - i),
+            # with python3 re.sub(r'[^\w,.]', repl, string) doesn't
+            # work as expected with unicode as value for carLicense
+            "carLicense": "XXXXXXXXX" if self.avoid_tricky_sort else "后来经",
             "employeeNumber": "%s%sx" % (abs(i * (99 - i)), '\n' * (i & 255)),
             "accountExpires": "%s" % (10 ** 9 + 1000000 * i),
             "msTSExpireDate4": "19%02d0101010000.0Z" % (i % 100),
@@ -95,9 +101,6 @@ class BaseSortTests(samba.tests.TestCase):
                                             '"@'[i & 1],),
             "comment": "Favourite colour is %d" % (n % (i + 1)),
         }
-
-        if not PY3:
-            user.update({"roomNumber": "%sb\x00c" % (n - i)})
 
         if self.avoid_tricky_sort:
             # We are not even going to try passing tests that assume
@@ -109,9 +112,14 @@ class BaseSortTests(samba.tests.TestCase):
             fiendish_index = i % len(FIENDISH_TESTS)
             user.update({
                 # Sort doesn't look past a NUL byte.
+                "photo": "\x00%d" % (n - i),
                 "audio": "%sn octet string %s%s ♫♬\x00lalala" % ('Aa'[i & 1],
                                                                  chr(i & 255),
                                                                  i),
+                "displayNamePrintable": "%d\x00%c" % (i, i & 255),
+                "adminDisplayName": "%d\x00b" % (n - i),
+                "title": "%d%sb" % (n - i, '\x00' * i),
+
                 # Names that vary only in case. Windows returns
                 # equivalent addresses in the order they were put
                 # in ('a st', 'A st',...). We don't check that.
@@ -120,13 +128,6 @@ class BaseSortTests(samba.tests.TestCase):
                 "streetAddress": FIENDISH_TESTS[fiendish_index],
                 "postalAddress": FIENDISH_TESTS[-fiendish_index],
             })
-
-            if not PY3:
-                user.update({
-                    "photo": "\x00%d" % (n - i),
-                    "displayNamePrintable": "%d\x00%c" % (i, i & 255),
-                    "adminDisplayName": "%d\x00b" % (n - i),
-                    "title": "%d%sb" % (n - i, '\x00' * i)})
 
         if attrs is not None:
             user.update(attrs)
@@ -180,44 +181,31 @@ class BaseSortTests(samba.tests.TestCase):
         self.expected_results = {}
         self.expected_results_binary = {}
 
-        for k in self.locale_sorted_keys:
-            # Using key=locale.strxfrm fails on \x00
-            forward = sorted((norm(x[k]) for x in self.users),
-                             key=cmp_to_key_fn(locale.strcoll))
-            reverse = list(reversed(forward))
-            self.expected_results[k] = (forward, reverse)
-
         for k in self.binary_sorted_keys:
             forward = sorted((x[k] for x in self.users))
             reverse = list(reversed(forward))
             self.expected_results_binary[k] = (forward, reverse)
-            self.expected_results[k] = (forward, reverse)
 
-        # Fix up some because Python gets it wrong, using Schwartzian tramsform
-        for k in ('adminDisplayName', 'title', 'streetAddress',
-                  'employeeNumber'):
-            if k in self.expected_results:
-                broken = self.expected_results[k][0]
-                tmp = [(x.replace('\x00', ''), x) for x in broken]
-                tmp.sort()
-                fixed = [x[1] for x in tmp]
-                self.expected_results[k] = (fixed, list(reversed(fixed)))
-        for k in ('streetAddress', 'postalAddress'):
-            if k in self.expected_results:
-                c = {}
-                for u in self.users:
-                    x = u[k]
-                    if x in c:
-                        c[x] += 1
-                        continue
-                    c[x] = 1
-                fixed = []
-                for x in FIENDISH_TESTS:
-                    fixed += [norm(x)] * c.get(x, 0)
+        # FYI: Expected result data was generated from the old
+        # code that was manually sorting (while executing with
+        # python2)
+        # The resulting data was injected into the data file with
+        # code similar to:
+        #
+        # for k in self.expected_results:
+        #     f.write("%s = %s\n" % (k,  repr(self.expected_results[k][0])))
 
-                rev = list(reversed(fixed))
-                self.expected_results[k] = (fixed, rev)
-
+        f = open(self.results_file, "r")
+        for line in f:
+            if len(line.split('=', 1)) == 2:
+                key = line.split('=', 1)[0].strip()
+                value = line.split('=', 1)[1].strip()
+                if value.startswith('['):
+                    import ast
+                    fwd_list = ast.literal_eval(value)
+                    rev_list = list(reversed(fwd_list))
+                    self.expected_results[key] = (fwd_list, rev_list)
+        f.close()
     def tearDown(self):
         super(BaseSortTests, self).tearDown()
         self.ldb.delete(self.ou, ['tree_delete:1'])
@@ -358,7 +346,7 @@ class BaseSortTests(samba.tests.TestCase):
 
 class SimpleSortTests(BaseSortTests):
     avoid_tricky_sort = True
-
+    results_file = os.path.join(datadir, "simplesort.expected")
     def test_server_sort_different_attr(self):
         self._test_server_sort_different_attr()
 
@@ -374,6 +362,7 @@ class SimpleSortTests(BaseSortTests):
 
 class UnicodeSortTests(BaseSortTests):
     avoid_tricky_sort = False
+    results_file = os.path.join(datadir, "unicodesort.expected")
 
     def test_server_sort_default(self):
         self._test_server_sort_default()
