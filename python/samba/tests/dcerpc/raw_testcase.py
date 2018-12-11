@@ -76,6 +76,10 @@ class RawDCERPCTest(TestCase):
 
         self.connect()
 
+    def tearDown(self):
+        self._disconnect("tearDown")
+        super(TestCase, self).tearDown()
+
     def noop(self):
         return
 
