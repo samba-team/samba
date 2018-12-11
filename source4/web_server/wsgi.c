@@ -143,7 +143,7 @@ static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *k
 	}
 
 	while ((item = PyIter_Next(seq))) {
-		char *str = NULL;
+		const char *str = NULL;
 		Py_ssize_t size = 0;
 		if (!IsPy3Bytes(item)) {
 			str = PyStr_AsUTF8AndSize(item, &size);
