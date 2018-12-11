@@ -161,7 +161,8 @@ static PyObject *py_net_change_password(py_net_Object *self, PyObject *args, PyO
 	const char *newpass = NULL;
 	const char *oldpass = NULL;
 	ZERO_STRUCT(r);
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "es|esss:change_password",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, PYARG_STR_UNI
+					 "|"PYARG_STR_UNI"ss:change_password",
 					 discard_const_p(char *, kwnames),
 					 "utf8",
 					 &newpass,
