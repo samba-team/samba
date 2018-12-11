@@ -987,9 +987,12 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 		status = callback_fn(base_dir, &finfos[i], user_mask,
 				     priv);
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(finfos);
 			return status;
 		}
 	}
+
+	TALLOC_FREE(finfos);
 	return status;
 }
 
