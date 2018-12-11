@@ -569,9 +569,10 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const struct dom_sid *domain_sid,
 			const char ***names, enum lsa_SidType **types)
 {
 	int i;
+	struct dom_sid_buf buf;
 
 	DEBUG(10, ("lookup_rids called for domain sid '%s'\n",
-		   sid_string_dbg(domain_sid)));
+		   dom_sid_str_buf(domain_sid, &buf)));
 
 	if (num_rids) {
 		*names = talloc_zero_array(mem_ctx, const char *, num_rids);
@@ -788,6 +789,7 @@ static bool lookup_as_domain(const struct dom_sid *sid, TALLOC_CTX *mem_ctx,
 
 static bool check_dom_sid_to_level(const struct dom_sid *sid, int level)
 {
+	struct dom_sid_buf buf;
 	int ret = false;
 
 	switch(level) {
@@ -810,7 +812,8 @@ static bool check_dom_sid_to_level(const struct dom_sid *sid, int level)
 
 	DEBUG(10, ("%s SID %s in level %d\n",
 		   ret ? "Accepting" : "Rejecting",
-		   sid_string_dbg(sid), level));
+		   dom_sid_str_buf(sid, &buf),
+		   level));
 	return ret;
 }
 
@@ -1055,10 +1058,12 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 {
 	struct lsa_dom_info *domain;
 	struct lsa_name_info *name;
+	struct dom_sid_buf buf;
 	TALLOC_CTX *tmp_ctx;
 	bool ret = false;
 
-	DEBUG(10, ("lookup_sid called for SID '%s'\n", sid_string_dbg(sid)));
+	DEBUG(10, ("lookup_sid called for SID '%s'\n",
+		   dom_sid_str_buf(sid, &buf)));
 
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));
@@ -1092,10 +1097,12 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 
  done:
 	if (ret) {
-		DEBUG(10, ("Sid %s -> %s\\%s(%d)\n", sid_string_dbg(sid),
+		DEBUG(10, ("Sid %s -> %s\\%s(%d)\n",
+			   dom_sid_str_buf(sid, &buf),
 			   domain->name, name->name, name->type));
 	} else {
-		DEBUG(10, ("failed to lookup sid %s\n", sid_string_dbg(sid)));
+		DEBUG(10, ("failed to lookup sid %s\n",
+			   dom_sid_str_buf(sid, &buf)));
 	}
 	TALLOC_FREE(tmp_ctx);
 	return ret;
@@ -1118,6 +1125,7 @@ static void legacy_uid_to_sid(struct dom_sid *psid, uid_t uid)
 {
 	bool ret;
 	struct unixid id;
+	struct dom_sid_buf buf;
 
 	ZERO_STRUCTP(psid);
 
@@ -1146,7 +1154,7 @@ static void legacy_uid_to_sid(struct dom_sid *psid, uid_t uid)
 
  done:
 	DEBUG(10,("LEGACY: uid %u -> sid %s\n", (unsigned int)uid,
-		  sid_string_dbg(psid)));
+		  dom_sid_str_buf(psid, &buf)));
 
 	return;
 }
@@ -1159,6 +1167,7 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 {
 	bool ret;
 	struct unixid id;
+	struct dom_sid_buf buf;
 
 	ZERO_STRUCTP(psid);
 
@@ -1187,7 +1196,7 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 
  done:
 	DEBUG(10,("LEGACY: gid %u -> sid %s\n", (unsigned int)gid,
-		  sid_string_dbg(psid)));
+		  dom_sid_str_buf(psid, &buf)));
 
 	return;
 }
@@ -1205,8 +1214,9 @@ static bool legacy_sid_to_unixid(const struct dom_sid *psid, struct unixid *id)
 	unbecome_root();
 
 	if (!ret) {
+		struct dom_sid_buf buf;
 		DEBUG(10,("LEGACY: mapping failed for sid %s\n",
-			  sid_string_dbg(psid)));
+			  dom_sid_str_buf(psid, &buf)));
 		return false;
 	}
 
@@ -1247,6 +1257,7 @@ void uid_to_sid(struct dom_sid *psid, uid_t uid)
 {
 	bool expired = true;
 	bool ret;
+	struct dom_sid_buf buf;
 	ZERO_STRUCTP(psid);
 
 	/* Check the winbindd cache directly. */
@@ -1283,7 +1294,7 @@ void uid_to_sid(struct dom_sid *psid, uid_t uid)
 	}
 
 	DEBUG(10,("uid %u -> sid %s\n", (unsigned int)uid,
-		  sid_string_dbg(psid)));
+		  dom_sid_str_buf(psid, &buf)));
 
 	return;
 }
@@ -1296,6 +1307,7 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 {
 	bool expired = true;
 	bool ret;
+	struct dom_sid_buf buf;
 	ZERO_STRUCTP(psid);
 
 	/* Check the winbindd cache directly. */
@@ -1332,7 +1344,7 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 	}
 
 	DEBUG(10,("gid %u -> sid %s\n", (unsigned int)gid,
-		  sid_string_dbg(psid)));
+		  dom_sid_str_buf(psid, &buf)));
 
 	return;
 }
@@ -1462,6 +1474,7 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 	bool expired = true;
 	bool ret;
 	uint32_t rid;
+	struct dom_sid_buf buf;
 
 	/* Optimize for the Unix Users Domain
 	 * as the conversion is straightforward */
@@ -1470,8 +1483,9 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 		*puid = uid;
 
 		/* return here, don't cache */
-		DEBUG(10,("sid %s -> uid %u\n", sid_string_dbg(psid),
-			(unsigned int)*puid ));
+		DEBUG(10,("sid %s -> uid %u\n",
+			  dom_sid_str_buf(psid, &buf),
+			  (unsigned int)*puid ));
 		return true;
 	}
 
@@ -1490,7 +1504,7 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_sid_to_uid(puid, psid)) {
 			DEBUG(5, ("winbind failed to find a uid for sid %s\n",
-				  sid_string_dbg(psid)));
+				  dom_sid_str_buf(psid, &buf)));
 			/* winbind failed. do legacy */
 			return legacy_sid_to_uid(psid, puid);
 		}
@@ -1499,7 +1513,8 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 	/* TODO: Here would be the place to allocate both a gid and a uid for
 	 * the SID in question */
 
-	DEBUG(10,("sid %s -> uid %u\n", sid_string_dbg(psid),
+	DEBUG(10,("sid %s -> uid %u\n",
+		  dom_sid_str_buf(psid, &buf),
 		(unsigned int)*puid ));
 
 	return true;
@@ -1515,6 +1530,7 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 	bool expired = true;
 	bool ret;
 	uint32_t rid;
+	struct dom_sid_buf buf;
 
 	/* Optimize for the Unix Groups Domain
 	 * as the conversion is straightforward */
@@ -1523,7 +1539,8 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 		*pgid = gid;
 
 		/* return here, don't cache */
-		DEBUG(10,("sid %s -> gid %u\n", sid_string_dbg(psid),
+		DEBUG(10,("sid %s -> gid %u\n",
+			  dom_sid_str_buf(psid, &buf),
 			(unsigned int)*pgid ));
 		return true;
 	}
@@ -1547,13 +1564,14 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 		if ( !winbind_sid_to_gid(pgid, psid) ) {
 
 			DEBUG(10,("winbind failed to find a gid for sid %s\n",
-				  sid_string_dbg(psid)));
+				  dom_sid_str_buf(psid, &buf)));
 			/* winbind failed. do legacy */
 			return legacy_sid_to_gid(psid, pgid);
 		}
 	}
 
-	DEBUG(10,("sid %s -> gid %u\n", sid_string_dbg(psid),
+	DEBUG(10,("sid %s -> gid %u\n",
+		  dom_sid_str_buf(psid, &buf),
 		  (unsigned int)*pgid ));
 
 	return true;
@@ -1654,9 +1672,11 @@ NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 	if (need_lookup_sid) {
 		enum lsa_SidType type = SID_NAME_UNKNOWN;
 		bool lookup_ret;
+		struct dom_sid_buf buf;
 
 		DEBUG(10, ("do lookup_sid(%s) for group of user %s\n",
-			   sid_string_dbg(group_sid), username));
+			   dom_sid_str_buf(group_sid, &buf),
+			   username));
 
 		/* Now check that it's actually a domain group and
 		 * not something else */
@@ -1669,7 +1689,8 @@ NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 
 		DEBUG(3, ("Primary group %s for user %s is"
 			  " a %s and not a domain group\n",
-			  sid_string_dbg(group_sid), username,
+			  dom_sid_str_buf(group_sid, &buf),
+			  username,
 			  sid_type_lookup(type)));
 	}
 
