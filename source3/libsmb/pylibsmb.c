@@ -933,9 +933,9 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 	char *mask = NULL;
 	unsigned info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
 	struct file_info *finfos = NULL;
-	size_t i, num_finfos;
+	size_t i;
+	size_t num_finfos = 0;
 	NTSTATUS status;
-	struct tevent_req *req = NULL;
 
 	if (user_mask == NULL) {
 		mask = talloc_asprintf(NULL, "%s\\*", base_dir);
@@ -948,19 +948,27 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 	}
 	dos_format(mask);
 
-	req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
-			    info_level);
-	if (!py_tevent_req_wait_exc(self, req)) {
-		return NT_STATUS_INTERNAL_ERROR;
+	if (self->is_smb1) {
+		struct tevent_req *req = NULL;
+
+		req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
+				    info_level);
+		if (!py_tevent_req_wait_exc(self, req)) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		status = cli_list_recv(req, NULL, &finfos, &num_finfos);
+		TALLOC_FREE(req);
+	} else {
+		status = cli_list(self->cli, mask, attribute, callback_fn,
+				  priv);
 	}
-	status = cli_list_recv(req, NULL, &finfos, &num_finfos);
-	TALLOC_FREE(req);
 	TALLOC_FREE(mask);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+	/* invoke the callback for the async results (SMBv1 connections) */
 	for (i = 0; i < num_finfos; i++) {
 		status = callback_fn(base_dir, &finfos[i], user_mask,
 				     priv);
