@@ -301,7 +301,9 @@ static PyObject *py_strcasecmp_m(PyObject *self, PyObject *args)
 	const char *s1 = NULL;
 	const char *s2 = NULL;
 	long cmp_result = 0;
-	if (!PyArg_ParseTuple(args, "eses", "utf8", &s1, "utf8", &s2)) {
+	if (!PyArg_ParseTuple(args, PYARG_STR_UNI
+			      PYARG_STR_UNI,
+			      "utf8", &s1, "utf8", &s2)) {
 		return NULL;
 	}
 
@@ -317,7 +319,9 @@ static PyObject *py_strstr_m(PyObject *self, PyObject *args)
 	const char *s2 = NULL;
 	char *strstr_ret = NULL;
 	PyObject *result = NULL;
-	if (!PyArg_ParseTuple(args, "eses", "utf8", &s1, "utf8", &s2))
+	if (!PyArg_ParseTuple(args, PYARG_STR_UNI
+			      PYARG_STR_UNI,
+			      "utf8", &s1, "utf8", &s2))
 		return NULL;
 
 	strstr_ret = strstr_m(s1, s2);
