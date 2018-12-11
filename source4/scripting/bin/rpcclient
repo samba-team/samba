@@ -278,11 +278,11 @@ if __name__ == '__main__':
         options.username = '%'
 
     domain = ''
-    if string.find(options.username, '\\') != -1:
+    if options.username.find('\\') != -1:
         domain, options.username = string.split(options.username, '\\')
 
     password = ''
-    if string.find(options.username, '%') != -1:
+    if options.username.find('%') != -1:
         options.username, password  = string.split(options.username, '%')
 
     username = options.username
