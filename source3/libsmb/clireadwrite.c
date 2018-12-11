@@ -1072,6 +1072,14 @@ struct cli_write_state {
 
 static void cli_write_done(struct tevent_req *subreq);
 
+/*
+ * Used to write to a file remotely.
+ * This is similar in functionality to cli_push_send(), except this is a more
+ * finer-grain API. For example, if the data we want to write exceeds the max
+ * write size of the underlying connection, then it's the caller's
+ * responsibility to handle this.
+ * For writing a small amount of data to file, this is a simpler API to use.
+ */
 struct tevent_req *cli_write_send(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
 				  struct cli_state *cli, uint16_t fnum,
@@ -1455,6 +1463,16 @@ static void cli_push_setup_chunks(struct tevent_req *req);
 static void cli_push_chunk_ship(struct cli_push_chunk *chunk);
 static void cli_push_chunk_done(struct tevent_req *subreq);
 
+/*
+ * Used to write to a file remotely.
+ * This is similar in functionality to cli_write_send(), except this API
+ * handles writing a large file by breaking the data into chunks (so we don't
+ * exceed the max write size of the underlying connection). To do this, the
+ * (*source) callback handles copying the underlying file data into a message
+ * buffer, one chunk at a time.
+ * This API is recommended when writing a potentially large amount of data,
+ * e.g. when copying a file (or doing a 'put').
+ */
 struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct cli_state *cli,
 				 uint16_t fnum, uint16_t mode,
