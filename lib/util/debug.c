@@ -161,6 +161,7 @@ static size_t debug_num_classes = 0;
 static struct debug_class *dbgc_config = debug_class_list_initial;
 
 static int current_msg_level = 0;
+static int current_msg_class = 0;
 
 #if defined(WITH_SYSLOG) || defined(HAVE_LIBSYSTEMD_JOURNAL) || defined(HAVE_LIBSYSTEMD)
 static int debug_level_to_priority(int level)
@@ -1400,6 +1401,9 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 
 	/* Set current_msg_level. */
 	current_msg_level = level;
+
+	/* Set current message class */
+	current_msg_class = cls;
 
 	/* Don't print a header if we're logging to stdout. */
 	if ( state.logtype != DEBUG_FILE ) {
