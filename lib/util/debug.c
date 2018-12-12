@@ -870,6 +870,7 @@ bool debug_parse_levels(const char *params_str)
 	/* Array is debug_num_classes long */
 	for (i = DBGC_ALL+1; i < debug_num_classes; i++) {
 		dbgc_config[i].loglevel = dbgc_config[DBGC_ALL].loglevel;
+		TALLOC_FREE(dbgc_config[i].logfile);
 	}
 
 	while (tok != NULL) {
