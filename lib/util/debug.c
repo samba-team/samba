@@ -86,21 +86,18 @@
 /* state variables for the debug system */
 static struct {
 	bool initialized;
-	int fd;   /* The log file handle */
 	enum debug_logtype logtype; /* The type of logging we are doing: eg stdout, file, stderr */
 	const char *prog_name;
 	bool reopening_logs;
 	bool schedule_reopen_logs;
 
 	struct debug_settings settings;
-	char *debugf;
 	debug_callback_fn callback;
 	void *callback_private;
 } state = {
 	.settings = {
 		.timestamp_logs = true
 	},
-	.fd = 2 /* stderr by default */
 };
 
 struct debug_class {
@@ -162,7 +159,9 @@ static const char *default_classname_table[] = {
  * This is to allow reading of dbgc_config before the debug
  * system has been initialized.
  */
-static struct debug_class debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
+static struct debug_class debug_class_list_initial[ARRAY_SIZE(default_classname_table)] = {
+	[DBGC_ALL] = (struct debug_class) { .fd = 2 },
+};
 
 static size_t debug_num_classes = 0;
 static struct debug_class *dbgc_config = debug_class_list_initial;
@@ -215,7 +214,7 @@ static void debug_file_log(int msg_level,
 	if (dbgc_config[current_msg_class].fd != -1) {
 		fd = dbgc_config[current_msg_class].fd;
 	} else {
-		fd = state.fd;
+		fd = dbgc_config[DBGC_ALL].fd;
 	}
 
 	do {
@@ -934,6 +933,7 @@ static void debug_init(void)
 	for (i = 0; i < ARRAY_SIZE(default_classname_table); i++) {
 		debug_add_class(default_classname_table[i]);
 	}
+	dbgc_config[DBGC_ALL].fd = 2;
 
 	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
 		debug_backends[i].log_level = -1;
@@ -1016,8 +1016,8 @@ void debug_set_logfile(const char *name)
 		/* this copes with calls when smb.conf is not loaded yet */
 		return;
 	}
-	TALLOC_FREE(state.debugf);
-	state.debugf = talloc_strdup(NULL, name);
+	TALLOC_FREE(dbgc_config[DBGC_ALL].logfile);
+	dbgc_config[DBGC_ALL].logfile = talloc_strdup(NULL, name);
 }
 
 static void debug_close_fd(int fd)
@@ -1101,6 +1101,7 @@ bool reopen_logs_internal(void)
 {
 	mode_t oldumask;
 	int new_fd = 0;
+	size_t i;
 	bool ok;
 
 	if (state.reopening_logs) {
@@ -1115,14 +1116,14 @@ bool reopen_logs_internal(void)
 		return true;
 	case DEBUG_STDOUT:
 	case DEBUG_DEFAULT_STDOUT:
-		debug_close_fd(state.fd);
-		state.fd = 1;
+		debug_close_fd(dbgc_config[DBGC_ALL].fd);
+		dbgc_config[DBGC_ALL].fd = 1;
 		return true;
 
 	case DEBUG_DEFAULT_STDERR:
 	case DEBUG_STDERR:
-		debug_close_fd(state.fd);
-		state.fd = 2;
+		debug_close_fd(dbgc_config[DBGC_ALL].fd);
+		dbgc_config[DBGC_ALL].fd = 2;
 		return true;
 
 	case DEBUG_FILE:
@@ -1131,13 +1132,19 @@ bool reopen_logs_internal(void)
 
 	oldumask = umask( 022 );
 
-	if (!state.debugf) {
+	for (i = DBGC_ALL; i < debug_num_classes; i++) {
+		if (dbgc_config[DBGC_ALL].logfile != NULL) {
+			break;
+		}
+	}
+	if (i == debug_num_classes) {
 		return false;
 	}
 
 	state.reopening_logs = true;
 
-	ok = reopen_one_log(&state.fd, state.debugf);
+	ok = reopen_one_log(&dbgc_config[DBGC_ALL].fd,
+			    dbgc_config[DBGC_ALL].logfile);
 
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
 	 * to fix problem where smbd's that generate less
@@ -1151,7 +1158,7 @@ bool reopen_logs_internal(void)
 	 * catch output into logs.
 	 */
 	if (new_fd != -1) {
-		if (dup2(state.fd, 2) == -1) {
+		if (dup2(dbgc_config[DBGC_ALL].fd, 2) == -1) {
 			/* Close stderr too, if dup2 can't point it -
 			   at the logfile.  There really isn't much
 			   that can be done on such a fundamental
@@ -1199,7 +1206,7 @@ bool need_to_check_log_size(void)
 		return false;
 	}
 
-	if (state.fd > 2) {
+	if (dbgc_config[DBGC_ALL].fd > 2) {
 		return true;
 	}
 
@@ -1268,9 +1275,7 @@ static void do_check_log_size(off_t maxlog)
 {
 	size_t i;
 
-	do_one_check_log_size(maxlog, &state.fd, state.debugf);
-
-	for (i = DBGC_ALL + 1; i < debug_num_classes; i++) {
+	for (i = DBGC_ALL; i < debug_num_classes; i++) {
 		if (dbgc_config[i].fd == -1) {
 			continue;
 		}
@@ -1318,10 +1323,11 @@ void check_log_size( void )
 	do_check_log_size(maxlog);
 
 	/*
-	 * Here's where we need to panic if state.fd == 0 or -1 (invalid values)
+	 * Here's where we need to panic if dbgc_config[DBGC_ALL].fd == 0 or -1
+	 * (invalid values)
 	 */
 
-	if (state.fd <= 0) {
+	if (dbgc_config[DBGC_ALL].fd <= 0) {
 		/* This code should only be reached in very strange
 		 * circumstances. If we merely fail to open the new log we
 		 * should stick with the old one. ergo this should only be
@@ -1332,9 +1338,10 @@ void check_log_size( void )
 		int fd = open( "/dev/console", O_WRONLY, 0);
 		if (fd != -1) {
 			smb_set_close_on_exec(fd);
-			state.fd = fd;
-			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
-					state.debugf ));
+			dbgc_config[DBGC_ALL].fd = fd;
+			DBG_ERR("check_log_size: open of debug file %s failed "
+				"- using console.\n",
+				dbgc_config[DBGC_ALL].logfile);
 		} else {
 			/*
 			 * We cannot continue without a debug file handle.
@@ -1364,10 +1371,12 @@ static void Debug1(const char *msg)
 	case DEBUG_STDERR:
 	case DEBUG_DEFAULT_STDOUT:
 	case DEBUG_DEFAULT_STDERR:
-		if (state.fd > 0) {
+		if (dbgc_config[DBGC_ALL].fd > 0) {
 			ssize_t ret;
 			do {
-				ret = write(state.fd, msg, strlen(msg));
+				ret = write(dbgc_config[DBGC_ALL].fd,
+					    msg,
+					    strlen(msg));
 			} while (ret == -1 && errno == EINTR);
 		}
 		break;
