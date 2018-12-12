@@ -69,29 +69,84 @@ static size_t iconv_swab  (void *,const char **, size_t *, char **, size_t *);
 
 static const struct charset_functions builtin_functions[] = {
 	/* windows is closest to UTF-16 */
-	{"UCS-2LE",  iconv_copy, iconv_copy},
-	{"UTF-16LE",  iconv_copy, iconv_copy},
-	{"UCS-2BE",  iconv_swab, iconv_swab},
-	{"UTF-16BE",  iconv_swab, iconv_swab},
+	{
+		.name = "UCS-2LE",
+		.pull = iconv_copy,
+		.push = iconv_copy
+	},
+	{
+		.name = "UTF-16LE",
+		.pull = iconv_copy,
+		.push = iconv_copy
+	},
+	{
+		.name = "UCS-2BE",
+		.pull = iconv_swab,
+		.push = iconv_swab
+	},
+	{
+		.name = "UTF-16BE",
+		.pull = iconv_swab,
+		.push = iconv_swab
+	},
 
 	/* we include the UTF-8 alias to cope with differing locale settings */
-	{"UTF8",   utf8_pull,  utf8_push},
-	{"UTF-8",   utf8_pull,  utf8_push},
+	{
+		.name = "UTF8",
+		.pull = utf8_pull,
+		.push = utf8_push
+	},
+	{
+		.name = "UTF-8",
+		.pull = utf8_pull,
+		.push = utf8_push
+	},
 
 	/* this handles the munging needed for String2Key */
-	{"UTF16_MUNGED",   utf16_munged_pull,  iconv_copy, true},
+	{
+		.name = "UTF16_MUNGED",
+		.pull = utf16_munged_pull,
+		.push = iconv_copy,
+		.samba_internal_charset = true
+	},
 
-	{"ASCII", ascii_pull, ascii_push},
-	{"646", ascii_pull, ascii_push},
-	{"ISO-8859-1", latin1_pull, latin1_push},
+	{
+		.name = "ASCII",
+		.pull = ascii_pull,
+		.push = ascii_push
+	},
+	{
+		.name = "646",
+		.pull = ascii_pull,
+		.push = ascii_push
+	},
+	{
+		.name = "ISO-8859-1",
+		.pull = latin1_pull,
+		.push = latin1_push
+	},
 #ifdef DEVELOPER
-	{"WEIRD", weird_pull, weird_push, true},
+	{
+		.name = "WEIRD",
+		.pull = weird_pull,
+		.push = weird_push,
+		.samba_internal_charset = true
+	},
 #endif
 #ifdef DARWINOS
-	{"MACOSXFS", macosxfs_encoding_pull, macosxfs_encoding_push, true},
+	{
+		.name = "MACOSXFS",
+		.pull = macosxfs_encoding_pull,
+		.push = macosxfs_encoding_push,
+		.samba_internal_charset = true
+	},
 #endif
-	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push, true}
-
+	{
+		.name = "UCS2-HEX",
+		.pull = ucs2hex_pull,
+		.push = ucs2hex_push,
+		.samba_internal_charset = true
+	}
 };
 
 #ifdef HAVE_NATIVE_ICONV
