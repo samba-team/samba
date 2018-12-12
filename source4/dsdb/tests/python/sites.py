@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Unit tests for sites manipulation in samba
 # Copyright (C) Matthieu Patou <mat@matws.net> 2011
