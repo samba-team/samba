@@ -30,6 +30,9 @@
 #include "trans2.h"
 #include "libsmb/clirap.h"
 
+#define LIST_ATTRIBUTE_MASK \
+	(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)
+
 static PyTypeObject *get_pytype(const char *module, const char *type)
 {
 	PyObject *mod;
@@ -1151,7 +1154,7 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 			   void *priv)
 {
 	char *mask = NULL;
-	unsigned info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+	unsigned int info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
 	struct file_info *finfos = NULL;
 	size_t i;
 	size_t num_finfos = 0;
@@ -1208,10 +1211,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 {
 	char *base_dir;
 	char *user_mask = NULL;
-	unsigned attribute =
-		FILE_ATTRIBUTE_DIRECTORY |
-		FILE_ATTRIBUTE_SYSTEM |
-		FILE_ATTRIBUTE_HIDDEN;
+	unsigned int attribute = LIST_ATTRIBUTE_MASK;
 	NTSTATUS status;
 	PyObject *result;
 	const char *kwlist[] = { "directory", "mask", "attribs", NULL };
