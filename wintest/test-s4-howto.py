@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''automated testing of the steps of the Samba4 HOWTO'''
 
