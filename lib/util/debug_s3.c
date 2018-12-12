@@ -34,6 +34,7 @@ bool reopen_logs(void)
 		struct debug_settings settings;
 
 		debug_set_logfile(lp_logfile(talloc_tos()));
+		debug_parse_levels(lp_log_level(talloc_tos()));
 
 		ZERO_STRUCT(settings);
 		settings.max_log_size = lp_max_log_size();
