@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Trivial reimplementation of tdbdump in Python
 
 from __future__ import print_function

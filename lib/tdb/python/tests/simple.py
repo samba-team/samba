@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Some simple tests for the Python bindings for TDB
 # Note that this tests the interface of the Python bindings
 # It does not test tdb itself.
