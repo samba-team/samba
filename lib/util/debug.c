@@ -1174,10 +1174,61 @@ bool need_to_check_log_size(void)
  Check to see if the log has grown to be too big.
  **************************************************************************/
 
+static void do_one_check_log_size(off_t maxlog, int *_fd, const char *logfile)
+{
+	char name[strlen(logfile) + 5];
+	struct stat st;
+	int fd = *_fd;
+	int ret;
+	bool ok;
+
+	if (maxlog == 0) {
+		return;
+	}
+
+	ret = fstat(fd, &st);
+	if (ret != 0) {
+		return;
+	}
+	if (st.st_size < maxlog ) {
+		return;
+	}
+
+	/* reopen_logs_internal() modifies *_fd */
+	(void)reopen_logs_internal();
+	fd = *_fd;
+
+	if (fd <= 2) {
+		return;
+	}
+	ret = fstat(fd, &st);
+	if (ret != 0) {
+		return;
+	}
+	if (st.st_size < maxlog) {
+		return;
+	}
+
+	snprintf(name, sizeof(name), "%s.old", logfile);
+
+	(void)rename(logfile, name);
+
+	ok = reopen_logs_internal();
+	if (ok) {
+		return;
+	}
+	/* We failed to reopen a log - continue using the old name. */
+	(void)rename(name, logfile);
+}
+
+static void do_check_log_size(off_t maxlog)
+{
+	do_one_check_log_size(maxlog, &state.fd, state.debugf);
+}
+
 void check_log_size( void )
 {
-	int         maxlog;
-	struct stat st;
+	off_t maxlog;
 
 	/*
 	 *  We need to be root to check/change log-file, skip this and let the main
@@ -1207,23 +1258,7 @@ void check_log_size( void )
 		(void)reopen_logs_internal();
 	}
 
-	if (maxlog && (fstat(state.fd, &st) == 0
-	    && st.st_size > maxlog )) {
-		(void)reopen_logs_internal();
-		if (state.fd > 2 && (fstat(state.fd, &st) == 0
-				     && st.st_size > maxlog)) {
-			char name[strlen(state.debugf) + 5];
-
-			snprintf(name, sizeof(name), "%s.old", state.debugf);
-
-			(void)rename(state.debugf, name);
-
-			if (!reopen_logs_internal()) {
-				/* We failed to reopen a log - continue using the old name. */
-				(void)rename(name, state.debugf);
-			}
-		}
-	}
+	do_check_log_size(maxlog);
 
 	/*
 	 * Here's where we need to panic if state.fd == 0 or -1 (invalid values)
