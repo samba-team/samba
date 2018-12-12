@@ -43,7 +43,7 @@ class smb_pipe_socket(object):
         lp3 = s3param.get_context()
         lp3.load(lp.configfile)
         self.smbconn = libsmb.Conn(target_hostname, 'IPC$', lp3,
-                                   credentials=creds, sign=True)
+                                   creds=creds, sign=True)
         self.smbfid = self.smbconn.create(pipename,
                                           DesiredAccess=0x12019f,
                                           ShareAccess=0x7,

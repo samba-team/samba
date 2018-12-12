@@ -440,7 +440,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	int flags = 0;
 
 	static const char *kwlist[] = {
-		"host", "share", "lp", "credentials",
+		"host", "share", "lp", "creds",
 		"multi_threaded", "sign", "force_smb1",
 		NULL
 	};
