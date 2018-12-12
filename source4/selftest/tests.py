@@ -421,7 +421,7 @@ for t in smbtorture4_testsuites("dlz_bind9."):
     # The dlz_bind9 tests needs to look at the DNS database
     plansmbtorture4testsuite(t, "chgdcpass:local", ["ncalrpc:$SERVER", '-U$USERNAME%$PASSWORD'])
 
-planpythontestsuite("nt4_dc", "samba.tests.libsmb_samba_internal", py3_compatible=True)
+planpythontestsuite("nt4_dc", "samba.tests.libsmb", py3_compatible=True)
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
