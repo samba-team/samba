@@ -58,6 +58,10 @@ struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (oacl->aces == NULL && oacl->num_aces > 0) {
+		return NULL;
+	}
+
 	nacl = talloc (mem_ctx, struct security_acl);
 	if (nacl == NULL) {
 		return NULL;
