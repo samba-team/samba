@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Unix SMB/CIFS implementation.
 # Copyright (C) Stefan Metzmacher 2014,2015
 #

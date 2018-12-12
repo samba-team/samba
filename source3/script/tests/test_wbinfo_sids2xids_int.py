@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import sys
 import os
 import subprocess
-from samba.compat import PY3
+from samba.compat import get_string
 
 
 if len(sys.argv) != 3:
@@ -22,7 +22,7 @@ def run(cmd):
     NOTE: subprocess api always return bytes, in both py2 and py3.
     """
     output = subprocess.check_output(cmd).strip()
-    return output.decode('utf-8') if PY3 else output
+    return get_string(output)
 
 
 def flush_cache(sids=[], uids=[], gids=[]):

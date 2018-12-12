@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Filter a subunit stream
 # Copyright (C) 2009-2011 Jelmer Vernooij <jelmer@samba.org>
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 ntlogon.py written by Timothy (rhacer) Grant
 
