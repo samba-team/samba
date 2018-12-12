@@ -57,6 +57,7 @@
 #include "lib/util/server_id_db.h"
 #include "lib/param/param.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/windows_event_ids.h"
 #include "lib/audit_logging/audit_logging.h"
 
 /*
@@ -119,6 +120,7 @@ static void log_authentication_event_json(
 	const char *account_name,
 	const char *unix_username,
 	struct dom_sid *sid,
+	enum event_id_type event_id,
 	int debug_level)
 {
 	struct json_object wrapper = json_empty_object;
@@ -131,6 +133,12 @@ static void log_authentication_event_json(
 		goto failure;
 	}
 	rc = json_add_version(&authentication, AUTH_MAJOR, AUTH_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&authentication,
+			  "eventId",
+			  event_id);
 	if (rc != 0) {
 		goto failure;
 	}
@@ -454,6 +462,7 @@ static void log_authentication_event_json(
 	const char *account_name,
 	const char *unix_username,
 	struct dom_sid *sid,
+	enum event_id_type event_id,
 	int debug_level)
 {
 	log_no_json(msg_ctx, lp_ctx);
@@ -631,9 +640,11 @@ void log_authentication_event(
 {
 	/* set the log level */
 	int debug_level = AUTH_FAILURE_LEVEL;
+	enum event_id_type event_id = EVT_ID_UNSUCCESSFUL_LOGON;
 
 	if (NT_STATUS_IS_OK(status)) {
 		debug_level = AUTH_SUCCESS_LEVEL;
+		event_id = EVT_ID_SUCCESSFUL_LOGON;
 		if (dom_sid_equal(sid, &global_sid_Anonymous)) {
 			debug_level = AUTH_ANONYMOUS_LEVEL;
 		}
@@ -659,6 +670,7 @@ void log_authentication_event(
 					      account_name,
 					      unix_username,
 					      sid,
+					      event_id,
 					      debug_level);
 	}
 }
