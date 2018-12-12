@@ -1726,7 +1726,7 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		$self->indent;
 		$self->pidl("long test_var;");
 		$self->pidl("test_var = PyInt_AsLong($cvar);");
-		$self->pidl("if (test_var < 0 || test_var > uint_max) {");
+		$self->pidl("if (test_var < 0 || (unsigned long long)test_var > uint_max) {");
 		$self->indent;
 		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s or %s within range 0 - %llu, got %ld\",\\");
 		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name, uint_max, test_var);");
