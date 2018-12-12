@@ -47,6 +47,10 @@ static NTSTATUS lsarpc__op_init_server(struct dcesrv_context *dce_ctx,
 				       const struct dcesrv_endpoint_server *ep_server);
 static const struct dcesrv_interface dcesrv_lsarpc_interface;
 
+#define NCACN_NP_PIPE_NETLOGON "ncacn_np:[\\pipe\\netlogon]"
+#define NCACN_NP_PIPE_LSASS "ncacn_np:[\\pipe\\lsass]"
+#define DCESRV_INTERFACE_LSARPC_NCACN_NP_SECONDARY_ENDPOINT NCACN_NP_PIPE_LSASS
+
 #define DCESRV_INTERFACE_LSARPC_INIT_SERVER	\
        dcesrv_interface_lsarpc_init_server
 static NTSTATUS dcesrv_interface_lsarpc_init_server(struct dcesrv_context *dce_ctx,
@@ -54,8 +58,8 @@ static NTSTATUS dcesrv_interface_lsarpc_init_server(struct dcesrv_context *dce_c
 {
 	if (lpcfg_lsa_over_netlogon(dce_ctx->lp_ctx)) {
 		NTSTATUS ret = dcesrv_interface_register(dce_ctx,
-						"ncacn_np:[\\pipe\\netlogon]",
-						NULL,
+						NCACN_NP_PIPE_NETLOGON,
+						NCACN_NP_PIPE_LSASS,
 						&dcesrv_lsarpc_interface, NULL);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1,("lsarpc_op_init_server: failed to register endpoint '\\pipe\\netlogon'\n"));
