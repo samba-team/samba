@@ -90,7 +90,7 @@ krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 	for (i = 0; i < (8 * sizeof(enctype_bitmap)); i++) {
-		uint32_t bit_value = (1 << i) & enctype_bitmap;
+		uint32_t bit_value = (1U << i) & enctype_bitmap;
 		if (bit_value & enctype_bitmap) {
 			(*enctypes)[j] = ms_suptype_to_ietf_enctype(bit_value);
 			if (!(*enctypes)[j]) {
