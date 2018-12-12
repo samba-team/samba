@@ -817,7 +817,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_ndr_print_in(PyObject *py_obj)");
+	$self->pidl("static PyObject *py_$name\_ndr_print_in(PyObject *py_obj, PyObject *py_obj2)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("return py_$name\_ndr_print(py_obj, \"$name\_in\", NDR_IN);");
@@ -825,7 +825,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_ndr_print_out(PyObject *py_obj)");
+	$self->pidl("static PyObject *py_$name\_ndr_print_out(PyObject *py_obj, PyObject *py_obj2)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("return py_$name\_ndr_print(py_obj, \"$name\_out\", NDR_OUT);");
