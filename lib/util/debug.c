@@ -1078,6 +1078,12 @@ static bool reopen_one_log(int *fd, const char *logfile)
 	int old_fd = *fd;
 	int new_fd;
 
+	if (logfile == NULL) {
+		debug_close_fd(old_fd);
+		*fd = -1;
+		return true;
+	}
+
 	new_fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, 0644);
 	if (new_fd == -1) {
 		log_overflow = true;
@@ -1143,8 +1149,13 @@ bool reopen_logs_internal(void)
 
 	state.reopening_logs = true;
 
-	ok = reopen_one_log(&dbgc_config[DBGC_ALL].fd,
-			    dbgc_config[DBGC_ALL].logfile);
+	for (i = DBGC_ALL; i < debug_num_classes; i++) {
+		ok = reopen_one_log(&dbgc_config[i].fd,
+				    dbgc_config[i].logfile);
+		if (!ok) {
+			break;
+		}
+	}
 
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
 	 * to fix problem where smbd's that generate less
