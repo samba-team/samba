@@ -28,9 +28,19 @@ static struct {
 	const char *to;
 	int len;
 } weird_table[] = {
-	{'q', "^q^", 3},
-	{'Q', "^Q^", 3},
-	{0, NULL}
+	{
+		.from = 'q',
+		.to   = "^q^",
+		.len  = 3,
+	},
+	{
+		.from = 'Q',
+		.to   = "^Q^",
+		.len  = 3,
+	},
+	{
+		.len = 0,
+	}
 };
 
 size_t weird_pull(void *cd, const char **inbuf, size_t *inbytesleft,
