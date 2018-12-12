@@ -58,7 +58,7 @@ class SMBTests(samba.tests.TestCase):
     def tearDown(self):
         super(SMBTests, self).tearDown()
         try:
-            self.conn.deltree(test_dir)
+            self.smb_conn.deltree(test_dir)
         except:
             pass
 
@@ -96,6 +96,7 @@ class SMBTests(samba.tests.TestCase):
         dirpaths = []
         empty_dirs = []
         cur_dir = test_dir
+
         for subdir in ["subdir-X", "subdir-Y", "subdir-Z"]:
             path = self.make_sysvol_path(cur_dir, subdir)
             self.smb_conn.mkdir(path)
@@ -126,18 +127,18 @@ class SMBTests(samba.tests.TestCase):
 
         # try using deltree to remove a single empty directory
         path = empty_dirs.pop(0)
-        self.conn.deltree(path)
+        self.smb_conn.deltree(path)
         self.assertFalse(self.smb_conn.chkpath(path),
                          "Failed to delete {0}".format(path))
 
         # try using deltree to remove a single file
         path = filepaths.pop(0)
-        self.conn.deltree(path)
+        self.smb_conn.deltree(path)
         self.assertFalse(self.file_exists(path),
                          "Failed to delete {0}".format(path))
 
         # delete the top-level dir
-        self.conn.deltree(test_dir)
+        self.smb_conn.deltree(test_dir)
 
         # now check that all the dirs/files are no longer there
         for subdir in dirpaths + empty_dirs:

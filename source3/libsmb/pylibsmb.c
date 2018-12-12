@@ -1380,6 +1380,98 @@ static PyObject *py_smb_chkpath(struct py_cli_state *self, PyObject *args)
 	return PyBool_FromLong(dir_exists);
 }
 
+struct deltree_state {
+	struct py_cli_state *self;
+	const char *full_dirpath;
+};
+
+static NTSTATUS delete_dir_tree(struct py_cli_state *self,
+				const char *dirpath);
+
+/*
+ * Deletes a single item in the directory tree. This could be either a file
+ * or a directory. This function gets invoked as a callback for every item in
+ * the given directory's listings.
+ */
+static NTSTATUS delete_tree_callback(const char *mntpoint,
+				     struct file_info *finfo,
+				     const char *mask, void *priv)
+{
+	char *filepath = NULL;
+	struct deltree_state *state = priv;
+	NTSTATUS status;
+
+	/* skip '.' or '..' directory listings */
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		return NT_STATUS_OK;
+	}
+
+	/* get the absolute filepath */
+	filepath = talloc_asprintf(NULL, "%s\\%s", state->full_dirpath,
+				   finfo->name);
+	if (filepath == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+
+		/* recursively delete the sub-directory and its contents */
+		status = delete_dir_tree(state->self, filepath);
+	} else {
+		status = unlink_file(state->self, filepath);
+	}
+
+	TALLOC_FREE(filepath);
+	return status;
+}
+
+/*
+ * Removes a directory and all its contents
+ */
+static NTSTATUS delete_dir_tree(struct py_cli_state *self,
+				const char *filepath)
+{
+	NTSTATUS status;
+	const char *mask = "*";
+	struct deltree_state state = { 0 };
+
+	/* go through the directory's contents, deleting each item */
+	state.self = self;
+	state.full_dirpath = filepath;
+	status = do_listing(self, filepath, mask, LIST_ATTRIBUTE_MASK,
+			    delete_tree_callback, &state);
+
+	/* remove the directory itself */
+	if (NT_STATUS_IS_OK(status)) {
+		status = remove_dir(self, filepath);
+	}
+	return status;
+}
+
+static PyObject *py_smb_deltree(struct py_cli_state *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *filepath = NULL;
+	bool dir_exists;
+
+	if (!PyArg_ParseTuple(args, "s:deltree", &filepath)) {
+		return NULL;
+	}
+
+	/* check whether we're removing a directory or a file */
+	dir_exists = check_dir_path(self, filepath);
+
+	if (dir_exists) {
+		status = delete_dir_tree(self, filepath);
+	} else {
+		status = unlink_file(self, filepath);
+	}
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -1426,6 +1518,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "loadfile", (PyCFunction)py_smb_loadfile, METH_VARARGS,
 	  "loadfile(path) -> file contents as a " PY_DESC_PY3_BYTES
 	  "\n\n\t\tRead contents of a file." },
+	{ "deltree", (PyCFunction)py_smb_deltree, METH_VARARGS,
+	  "deltree(path) -> None\n\n"
+	  "\t\tDelete a directory and all its contents." },
 	{ NULL, NULL, 0, NULL }
 };
 
