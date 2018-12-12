@@ -15,9 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Tests for samba.samba3.libsmb_samba_internal."""
+"""Tests for samba.samba3.libsmb."""
 
-from samba.samba3 import libsmb_samba_internal
+from samba.samba3 import libsmb
 from samba.dcerpc import security
 from samba.samba3 import param as s3param
 from samba import credentials
@@ -59,9 +59,9 @@ class LibsmbTestCase(samba.tests.TestCase):
         creds.set_username(os.getenv("USERNAME"))
         creds.set_password(os.getenv("PASSWORD"))
 
-        c = libsmb_samba_internal.Conn(os.getenv("SERVER_IP"), "tmp",
-                                       lp, creds, multi_threaded=True,
-                                       force_smb1=True)
+        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
+                        lp, creds, multi_threaded=True,
+                        force_smb1=True)
 
         mythreads = []
 

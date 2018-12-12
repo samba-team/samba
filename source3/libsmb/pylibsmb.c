@@ -1526,7 +1526,7 @@ static PyMethodDef py_cli_state_methods[] = {
 
 static PyTypeObject py_cli_state_type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	.tp_name = "libsmb_samba_internal.Conn",
+	.tp_name = "libsmb.Conn",
 	.tp_basicsize = sizeof(struct py_cli_state),
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_doc = "libsmb connection",
@@ -1540,17 +1540,17 @@ static PyMethodDef py_libsmb_methods[] = {
 	{ NULL },
 };
 
-void initlibsmb_samba_internal(void);
+void initlibsmb(void);
 
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "libsmb_samba_internal",
+    .m_name = "libsmb",
     .m_doc = "libsmb wrapper",
     .m_size = -1,
     .m_methods = py_libsmb_methods,
 };
 
-MODULE_INIT_FUNC(libsmb_samba_internal)
+MODULE_INIT_FUNC(libsmb)
 {
 	PyObject *m = NULL;
 

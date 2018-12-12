@@ -35,15 +35,15 @@ from samba.ntstatus import (
 )
 from samba import NTSTATUSError
 from samba.samba3 import param as s3param
-from samba.samba3 import libsmb_samba_internal
+from samba.samba3 import libsmb
 
 class smb_pipe_socket(object):
 
     def __init__(self, target_hostname, pipename, creds, impersonation_level, lp):
         lp3 = s3param.get_context()
         lp3.load(lp.configfile)
-        self.smbconn = libsmb_samba_internal.Conn(target_hostname, 'IPC$', lp3,
-                                                  credentials=creds, sign=True)
+        self.smbconn = libsmb.Conn(target_hostname, 'IPC$', lp3,
+                                   credentials=creds, sign=True)
         self.smbfid = self.smbconn.create(pipename,
                                           DesiredAccess=0x12019f,
                                           ShareAccess=0x7,

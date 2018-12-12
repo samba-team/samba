@@ -19,11 +19,10 @@ import samba
 import os
 import random
 import sys
-from samba import smb
 from samba import NTSTATUSError
 from samba.ntstatus import (NT_STATUS_OBJECT_NAME_NOT_FOUND,
                             NT_STATUS_OBJECT_PATH_NOT_FOUND)
-from samba.samba3 import libsmb_samba_internal
+from samba.samba3 import libsmb
 from samba.samba3 import param as s3param
 
 PY3 = sys.version_info[0] == 3
@@ -47,8 +46,7 @@ class SMBTests(samba.tests.TestCase):
         # create an SMB connection to the server
         lp = s3param.get_context()
         lp.load(os.getenv("SMB_CONF_PATH"))
-        self.smb_conn = libsmb_samba_internal.Conn(self.server, "sysvol",
-                                                   lp, creds)
+        self.smb_conn = libsmb.Conn(self.server, "sysvol", lp, creds)
 
         self.smb_conn.mkdir(test_dir)
 
