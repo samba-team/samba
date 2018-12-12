@@ -452,6 +452,12 @@ for env in bld.gen_python_environments():
                 cflags_end=gen_cflags
 		)
 
+	bld.SAMBA_PYTHON('dcerpc_windows_event_ids',
+		source='../../librpc/gen_ndr/py_windows_event_ids.c',
+		deps='%s %s' % (pytalloc_util, pyrpc_util),
+		realname='samba/dcerpc/windows_event_ids.so',
+                cflags_end=gen_cflags
+		)
 if bld.PYTHON_BUILD_IS_ENABLED():
 	for env in bld.gen_python_environments():
 		bld.SAMBA_SCRIPT('python_dcerpc_init',

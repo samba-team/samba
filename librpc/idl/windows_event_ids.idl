@@ -1,0 +1,27 @@
+/*
+   IDL constants for windows event codes.
+*/
+
+[
+  pointer_default(unique)
+]
+interface windows_events
+{
+
+	typedef [v1_enum,public] enum {
+		EVT_ID_SUCCESSFUL_LOGON		= 4624,
+		EVT_ID_UNSUCCESSFUL_LOGON	= 4625
+	} event_id_type;
+
+	typedef [v1_enum,public] enum {
+		EVT_LOGON_INTERACTIVE		=  2,
+		EVT_LOGON_NETWORK		=  3,
+		EVT_LOGON_BATCH			=  4,
+		EVT_LOGON_SERVICE		=  5,
+		EVT_LOGON_UNLOCK		=  7,
+		EVT_LOGON_NETWORK_CLEAR_TEXT	=  8,
+		EVT_LOGON_NEW_CREDENTIALS	=  9,
+		EVT_LOGON_REMOTE_INTERACTIVE	= 10,
+		EVT_LOGON_CACHED_INTERACTIVE	= 11
+	} event_logon_type;
+}

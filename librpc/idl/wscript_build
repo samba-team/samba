@@ -56,3 +56,8 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     'winbind.idl',
                     options='--header --ndr-parser --samba3-ndr-server --client --python',
                     output_dir='../gen_ndr')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    source='windows_event_ids.idl',
+                    options='--header --python --ndr-parser --client',
+                    output_dir='../gen_ndr')
