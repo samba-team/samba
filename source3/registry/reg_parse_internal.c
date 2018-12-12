@@ -307,7 +307,7 @@ static const struct {
 	{"UTF-16LE", CH_UTF16LE, 2, {0xFF, 0xFE}},
 	{"UTF-16BE", CH_UTF16BE, 2, {0xFE, 0xFF}},
 	{"UTF-32BE", CH_INVALID, 4, {0x00, 0x00, 0xFE, 0xFF}},
-	{NULL,       CH_INVALID, 0}
+	{ .name = NULL }
 };
 
 bool srprs_bom(const char** ptr, const char** name, charset_t* ctype)
