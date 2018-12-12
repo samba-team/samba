@@ -1043,6 +1043,27 @@ static void debug_callback_log(const char *msg, int msg_level)
  Fix from dgibson@linuxcare.com.
 **************************************************************************/
 
+static bool reopen_one_log(int *fd, const char *logfile)
+{
+	int old_fd = *fd;
+	int new_fd;
+
+	new_fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, 0644);
+	if (new_fd == -1) {
+		log_overflow = true;
+		DBG_ERR("Unable to open new log file '%s': %s\n",
+			logfile, strerror(errno));
+		log_overflow = false;
+		return false;
+	}
+
+	debug_close_fd(old_fd);
+	smb_set_close_on_exec(new_fd);
+	*fd = new_fd;
+
+	return true;
+}
+
 /**
   reopen the log file (usually called because the log file name might have changed)
 */
@@ -1050,8 +1071,7 @@ bool reopen_logs_internal(void)
 {
 	mode_t oldumask;
 	int new_fd = 0;
-	int old_fd = 0;
-	bool ret = true;
+	bool ok;
 
 	if (state.reopening_logs) {
 		return true;
@@ -1087,19 +1107,7 @@ bool reopen_logs_internal(void)
 
 	state.reopening_logs = true;
 
-	new_fd = open( state.debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
-
-	if (new_fd == -1) {
-		log_overflow = true;
-		DEBUG(0, ("Unable to open new log file '%s': %s\n", state.debugf, strerror(errno)));
-		log_overflow = false;
-		ret = false;
-	} else {
-		smb_set_close_on_exec(new_fd);
-		old_fd = state.fd;
-		state.fd = new_fd;
-		debug_close_fd(old_fd);
-	}
+	ok = reopen_one_log(&state.fd, state.debugf);
 
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
 	 * to fix problem where smbd's that generate less
@@ -1124,7 +1132,7 @@ bool reopen_logs_internal(void)
 
 	state.reopening_logs = false;
 
-	return ret;
+	return ok;
 }
 
 /**************************************************************************
