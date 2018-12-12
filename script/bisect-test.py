@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # use git bisect to work out what commit caused a test failure
 # Copyright Andrew Tridgell 2010
 # released under GNU GPL v3 or later
