@@ -4984,6 +4984,37 @@ class TestDCERPC_BIND(RawDCERPCTest):
         conn2._disconnect("End of Test")
         return
 
+    def test_assoc_group_ok2(self):
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsass',
+                                transport_creds=self.get_user_creds())
+        (ctx1, ack1) = self.prepare_presentation(abstract, transfer,
+                                                 context_id=1, return_ack=True)
+
+        conn2 = self.second_connection()
+        (ctx2, ack2) = conn2.prepare_presentation(abstract, transfer,
+                                                  assoc_group_id=ack1.u.assoc_group_id,
+                                                  context_id=2, return_ack=True)
+
+        inq_if_ids = samba.dcerpc.mgmt.inq_if_ids()
+        self.do_single_request(call_id=1, ctx=ctx1, io=inq_if_ids)
+        conn2.do_single_request(call_id=1, ctx=ctx2, io=inq_if_ids)
+
+        conn2.do_single_request(call_id=1, ctx=ctx1, io=inq_if_ids,
+                                fault_pfc_flags=(
+                                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST |
+                                    samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE),
+                                fault_status=dcerpc.DCERPC_NCA_S_UNKNOWN_IF,
+                                fault_context_id=0)
+
+        self.do_single_request(call_id=1, ctx=ctx1, io=inq_if_ids)
+        conn2.do_single_request(call_id=1, ctx=ctx2, io=inq_if_ids)
+        conn2._disconnect("End of Test")
+        return
+
     def _test_krb5_hdr_sign_delayed1(self, do_upgrade):
         auth_type = dcerpc.DCERPC_AUTH_TYPE_KRB5
         auth_level = dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY
