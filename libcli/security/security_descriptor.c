@@ -67,15 +67,20 @@ struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	*nacl = (struct security_acl) {
+		.revision = oacl->revision,
+		.size     = oacl->size,
+		.num_aces = oacl->num_aces,
+	};
+	if (nacl->num_aces == 0) {
+		return nacl;
+	}
+
 	nacl->aces = (struct security_ace *)talloc_memdup (nacl, oacl->aces, sizeof(struct security_ace) * oacl->num_aces);
-	if ((nacl->aces == NULL) && (oacl->num_aces > 0)) {
+	if (nacl->aces == NULL) {
 		goto failed;
 	}
 
-	nacl->revision = oacl->revision;
-	nacl->size = oacl->size;
-	nacl->num_aces = oacl->num_aces;
-	
 	return nacl;
 
  failed:
