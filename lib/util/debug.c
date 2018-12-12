@@ -103,6 +103,13 @@ static struct {
 	.fd = 2 /* stderr by default */
 };
 
+struct debug_class {
+	/*
+	 * The debug loglevel of the class.
+	 */
+	int loglevel;
+};
+
 static const char *default_classname_table[] = {
 	[DBGC_ALL] =			"all",
 	[DBGC_TDB] =			"tdb",
@@ -148,10 +155,10 @@ static const char *default_classname_table[] = {
  * This is to allow reading of dbgc_config before the debug
  * system has been initialized.
  */
-static int debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
+static struct debug_class debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
 
 static size_t debug_num_classes = 0;
-static int *dbgc_config = debug_class_list_initial;
+static struct debug_class *dbgc_config = debug_class_list_initial;
 
 static int current_msg_level = 0;
 
@@ -566,12 +573,12 @@ bool    override_logfile;
 
 int debuglevel_get_class(size_t idx)
 {
-	return dbgc_config[idx];
+	return dbgc_config[idx].loglevel;
 }
 
 void debuglevel_set_class(size_t idx, int level)
 {
-	dbgc_config[idx] = level;
+	dbgc_config[idx].loglevel = level;
 }
 
 
@@ -630,7 +637,8 @@ void gfree_debugsyms(void)
 
 	if ( dbgc_config != debug_class_list_initial ) {
 		TALLOC_FREE( dbgc_config );
-		dbgc_config = discard_const_p(int, debug_class_list_initial);
+		dbgc_config = discard_const_p(struct debug_class,
+						   debug_class_list_initial);
 	}
 
 	debug_num_classes = 0;
@@ -655,7 +663,7 @@ char *debug_list_class_names_and_levels(void)
 		buf = talloc_asprintf_append(buf,
 					     "%s:%d%s",
 					     classname_table[i],
-					     dbgc_config[i],
+					     dbgc_config[i].loglevel,
 					     i == (debug_num_classes - 1) ? "\n" : " ");
 		if (buf == NULL) {
 			return NULL;
@@ -688,7 +696,7 @@ static int debug_lookup_classname_int(const char* classname)
 int debug_add_class(const char *classname)
 {
 	int ndx;
-	int *new_class_list;
+	struct debug_class *new_class_list = NULL;
 	char **new_name_list;
 	int default_level;
 
@@ -712,16 +720,21 @@ int debug_add_class(const char *classname)
 		new_class_list = dbgc_config;
 	}
 
-	default_level = dbgc_config[DBGC_ALL];
+	default_level = dbgc_config[DBGC_ALL].loglevel;
 
-	new_class_list = talloc_realloc(NULL, new_class_list, int, ndx + 1);
+	new_class_list = talloc_realloc(NULL,
+					new_class_list,
+					struct debug_class,
+					ndx + 1);
 	if (new_class_list == NULL) {
 		return -1;
 	}
 
 	dbgc_config = new_class_list;
 
-	dbgc_config[ndx] = default_level;
+	dbgc_config[ndx] = (struct debug_class) {
+		.loglevel = default_level,
+	};
 
 	new_name_list = talloc_realloc(NULL, classname_table, char *, ndx + 1);
 	if (new_name_list == NULL) {
@@ -773,7 +786,7 @@ static void debug_dump_status(int level)
 		const char *classname = classname_table[q];
 		DEBUGADD(level, ("  %s: %d\n",
 				 classname,
-				 dbgc_config[q]));
+				 dbgc_config[q].loglevel));
 	}
 }
 
@@ -799,7 +812,7 @@ static bool debug_parse_param(char *param)
 		return false;
 	}
 
-	dbgc_config[ndx] = atoi(class_level);
+	dbgc_config[ndx].loglevel = atoi(class_level);
 
 	return true;
 }
@@ -831,15 +844,15 @@ bool debug_parse_levels(const char *params_str)
 	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL
 	 */
 	if (isdigit(tok[0])) {
-		dbgc_config[DBGC_ALL] = atoi(tok);
+		dbgc_config[DBGC_ALL].loglevel = atoi(tok);
 		tok = strtok_r(NULL, LIST_SEP, &saveptr);
 	} else {
-		dbgc_config[DBGC_ALL] = 0;
+		dbgc_config[DBGC_ALL].loglevel = 0;
 	}
 
 	/* Array is debug_num_classes long */
 	for (i = DBGC_ALL+1; i < debug_num_classes; i++) {
-		dbgc_config[i] = dbgc_config[DBGC_ALL];
+		dbgc_config[i].loglevel = dbgc_config[DBGC_ALL].loglevel;
 	}
 
 	while (tok != NULL) {
@@ -1411,7 +1424,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		goto full;
 	}
 
-	if (unlikely(dbgc_config[cls] >= 10)) {
+	if (unlikely(dbgc_config[cls].loglevel >= 10)) {
 		verbose = true;
 	}
 
