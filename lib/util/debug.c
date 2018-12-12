@@ -1187,17 +1187,30 @@ _PUBLIC_ void debug_schedule_reopen_logs(void)
 bool need_to_check_log_size(void)
 {
 	int maxlog;
+	size_t i;
 
 	if (debug_count < 100) {
 		return false;
 	}
 
 	maxlog = state.settings.max_log_size * 1024;
-	if (state.fd <= 2 || maxlog <= 0) {
+	if (maxlog <= 0) {
 		debug_count = 0;
 		return false;
 	}
-	return true;
+
+	if (state.fd > 2) {
+		return true;
+	}
+
+	for (i = DBGC_ALL + 1; i < debug_num_classes; i++) {
+		if (dbgc_config[i].fd != -1) {
+			return true;
+		}
+	}
+
+	debug_count = 0;
+	return false;
 }
 
 /**************************************************************************
