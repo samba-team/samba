@@ -284,12 +284,14 @@ static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_conne
 */
 _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ep_name,
+				   const char *ncacn_np_secondary_endpoint,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd)
 {
 	struct dcesrv_endpoint *ep;
 	struct dcesrv_if_list *ifl;
 	struct dcerpc_binding *binding;
+	struct dcerpc_binding *binding2 = NULL;
 	bool add_ep = false;
 	NTSTATUS status;
 	enum dcerpc_transport_t transport;
@@ -354,6 +356,22 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		}
 	}
 
+	if (transport == NCACN_NP && ncacn_np_secondary_endpoint != NULL) {
+		enum dcerpc_transport_t transport2;
+
+		status = dcerpc_parse_binding(dce_ctx,
+					      ncacn_np_secondary_endpoint,
+					      &binding2);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Trouble parsing 2nd binding string '%s'\n",
+				  ncacn_np_secondary_endpoint));
+			return status;
+		}
+
+		transport2 = dcerpc_binding_get_transport(binding2);
+		SMB_ASSERT(transport2 == transport);
+	}
+
 	/* see if the interface is already registered on the endpoint */
 	if (find_interface_by_binding(dce_ctx, binding, iface)!=NULL) {
 		DEBUG(0,("dcesrv_interface_register: interface '%s' already registered on endpoint '%s'\n",
@@ -395,6 +413,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		}
 		ZERO_STRUCTP(ep);
 		ep->ep_description = talloc_move(ep, &binding);
+		ep->ep_2nd_description = talloc_move(ep, &binding2);
 		add_ep = true;
 
 		/* add mgmt interface */
@@ -978,6 +997,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t extra_flags = 0;
 	uint16_t max_req = 0;
 	uint16_t max_rep = 0;
+	struct dcerpc_binding *ep_2nd_description = NULL;
 	const char *endpoint = NULL;
 	struct dcesrv_auth *auth = call->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
@@ -1187,8 +1207,13 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt->u.bind_ack.max_recv_frag = call->conn->max_recv_frag;
 	pkt->u.bind_ack.assoc_group_id = call->conn->assoc_group->id;
 
+	ep_2nd_description = call->conn->endpoint->ep_2nd_description;
+	if (ep_2nd_description == NULL) {
+		ep_2nd_description = call->conn->endpoint->ep_description;
+	}
+
 	endpoint = dcerpc_binding_get_string_option(
-				call->conn->endpoint->ep_description,
+				ep_2nd_description,
 				"endpoint");
 	if (endpoint == NULL) {
 		endpoint = "";

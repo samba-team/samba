@@ -247,7 +247,11 @@ static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const st
 		NTSTATUS ret;
 		const char *name = ndr_table_spoolss.endpoints->names[i];
 
-		ret = dcesrv_interface_register(dce_ctx, name, &notify_test_spoolss_interface, NULL);
+		ret = dcesrv_interface_register(dce_ctx,
+						name,
+						NULL,
+						&notify_test_spoolss_interface,
+						NULL);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1,("spoolss_op_init_server: failed to register endpoint '%s'\n",name));
 			return ret;

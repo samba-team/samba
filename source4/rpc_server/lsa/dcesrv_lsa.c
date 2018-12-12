@@ -55,6 +55,7 @@ static NTSTATUS dcesrv_interface_lsarpc_init_server(struct dcesrv_context *dce_c
 	if (lpcfg_lsa_over_netlogon(dce_ctx->lp_ctx)) {
 		NTSTATUS ret = dcesrv_interface_register(dce_ctx,
 						"ncacn_np:[\\pipe\\netlogon]",
+						NULL,
 						&dcesrv_lsarpc_interface, NULL);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1,("lsarpc_op_init_server: failed to register endpoint '\\pipe\\netlogon'\n"));

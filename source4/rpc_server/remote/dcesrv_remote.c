@@ -406,7 +406,7 @@ static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const 
 		NTSTATUS ret;
 		const char *name = table->endpoints->names[i];
 
-		ret = dcesrv_interface_register(dce_ctx, name, iface, NULL);
+		ret = dcesrv_interface_register(dce_ctx, name, NULL, iface, NULL);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1,("remote_op_init_server: failed to register endpoint '%s'\n",name));
 			return ret;

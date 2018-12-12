@@ -383,6 +383,8 @@ struct dcesrv_context {
 		struct dcesrv_endpoint *next, *prev;
 		/* the type and location of the endpoint */
 		struct dcerpc_binding *ep_description;
+		/* the secondary endpoint description for the BIND_ACK */
+		struct dcerpc_binding *ep_2nd_description;
 		/* the security descriptor for smb named pipes */
 		struct security_descriptor *sd;
 		/* the list of interfaces available on this endpoint */
@@ -424,6 +426,7 @@ struct model_ops;
 
 NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ep_name,
+				   const char *ncacn_np_secondary_endpoint,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd);
 NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server);
