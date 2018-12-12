@@ -264,7 +264,9 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 				tdb_hash_func hash_fn)
 {
 	int orig_errno = errno;
-	struct tdb_header header = {{0}};
+	struct tdb_header header = {
+		.version = 0,
+	};
 	struct tdb_context *tdb;
 	struct stat st;
 	int rev = 0;
