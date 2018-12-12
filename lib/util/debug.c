@@ -1266,7 +1266,21 @@ static void do_one_check_log_size(off_t maxlog, int *_fd, const char *logfile)
 
 static void do_check_log_size(off_t maxlog)
 {
+	size_t i;
+
 	do_one_check_log_size(maxlog, &state.fd, state.debugf);
+
+	for (i = DBGC_ALL + 1; i < debug_num_classes; i++) {
+		if (dbgc_config[i].fd == -1) {
+			continue;
+		}
+		if (dbgc_config[i].logfile == NULL) {
+			continue;
+		}
+		do_one_check_log_size(maxlog,
+				      &dbgc_config[i].fd,
+				      dbgc_config[i].logfile);
+	}
 }
 
 void check_log_size( void )
