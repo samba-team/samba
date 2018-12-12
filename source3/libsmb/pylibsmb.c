@@ -32,9 +32,15 @@
 #include "auth/credentials/pycredentials.h"
 #include "trans2.h"
 #include "libsmb/clirap.h"
+#include "librpc/rpc/pyrpc_util.h"
 
 #define LIST_ATTRIBUTE_MASK \
 	(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)
+
+#define SECINFO_DEFAULT_FLAGS \
+	(SECINFO_OWNER | SECINFO_GROUP | \
+	 SECINFO_DACL | SECINFO_PROTECTED_DACL | SECINFO_UNPROTECTED_DACL | \
+	 SECINFO_SACL | SECINFO_PROTECTED_SACL | SECINFO_UNPROTECTED_SACL)
 
 static PyTypeObject *get_pytype(const char *module, const char *type)
 {
@@ -1475,6 +1481,50 @@ static PyObject *py_smb_deltree(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+/*
+ * Read ACL on a given file/directory as a security descriptor object
+ */
+static PyObject *py_smb_getacl(struct py_cli_state *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *filename = NULL;
+	unsigned int sinfo = SECINFO_DEFAULT_FLAGS;
+	unsigned int access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	uint16_t fnum;
+	struct security_descriptor *sd = NULL;
+
+	/* there's no async version of cli_query_security_descriptor() */
+	if (self->thread_state != NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"get_acl() is not supported on "
+				"a multi_threaded connection");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "s|II:get_acl", &filename, &sinfo,
+			      &access_mask)) {
+		return NULL;
+	}
+
+	/* get a file handle with the desired access */
+	status = cli_ntcreate(self->cli, filename, 0, access_mask, 0,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE,
+			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	/* query the security descriptor for this file */
+	status = cli_query_security_descriptor(self->cli, fnum, sinfo,
+					       NULL, &sd);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	/* close the file handle and convert the SD to a python struct */
+	status = cli_close(self->cli, fnum);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	return py_return_ndr_struct("samba.dcerpc.security", "descriptor",
+				    sd, sd);
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -1524,6 +1574,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "deltree", (PyCFunction)py_smb_deltree, METH_VARARGS,
 	  "deltree(path) -> None\n\n"
 	  "\t\tDelete a directory and all its contents." },
+	{ "get_acl", (PyCFunction)py_smb_getacl, METH_VARARGS,
+	  "get_acl(path[, security_info=0]) -> security_descriptor object\n\n"
+	  "\t\tGet security descriptor for file." },
 	{ NULL, NULL, 0, NULL }
 };
 
