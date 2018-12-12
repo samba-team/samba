@@ -810,6 +810,7 @@ static void debug_dump_status(int level)
 static bool debug_parse_param(char *param)
 {
 	char *class_name;
+	char *class_file = NULL;
 	char *class_level;
 	char *saveptr = NULL;
 	int ndx;
@@ -819,10 +820,12 @@ static bool debug_parse_param(char *param)
 		return false;
 	}
 
-	class_level = strtok_r(NULL, "\0", &saveptr);
+	class_level = strtok_r(NULL, "@\0", &saveptr);
 	if (class_level == NULL) {
 		return false;
 	}
+
+	class_file = strtok_r(NULL, "\0", &saveptr);
 
 	ndx = debug_lookup_classname(class_name);
 	if (ndx == -1) {
@@ -831,6 +834,16 @@ static bool debug_parse_param(char *param)
 
 	dbgc_config[ndx].loglevel = atoi(class_level);
 
+	if (class_file == NULL) {
+		return true;
+	}
+
+	TALLOC_FREE(dbgc_config[ndx].logfile);
+
+	dbgc_config[ndx].logfile = talloc_strdup(NULL, class_file);
+	if (dbgc_config[ndx].logfile == NULL) {
+		return false;
+	}
 	return true;
 }
 
