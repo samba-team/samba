@@ -32,6 +32,7 @@ bool reopen_logs(void)
 {
 	if (lp_loaded()) {
 		struct debug_settings settings;
+
 		debug_set_logfile(lp_logfile(talloc_tos()));
 
 		ZERO_STRUCT(settings);
