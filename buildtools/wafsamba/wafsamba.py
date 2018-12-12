@@ -772,10 +772,10 @@ def copy_and_fix_python_path(task):
         replacement="""sys.path.insert(0, "%s")
 sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
 
-    if task.env["PYTHON"][0] == "/":
-        replacement_shebang = "#!%s\n" % task.env["PYTHON"]
+    if task.env["PYTHON"][0].startswith("/"):
+        replacement_shebang = "#!%s\n" % task.env["PYTHON"][0]
     else:
-        replacement_shebang = "#!/usr/bin/env %s\n" % task.env["PYTHON"]
+        replacement_shebang = "#!/usr/bin/env %s\n" % task.env["PYTHON"][0]
 
     installed_location=task.outputs[0].bldpath(task.env)
     source_file = open(task.inputs[0].srcpath(task.env))
@@ -783,7 +783,7 @@ sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
     lineno = 0
     for line in source_file:
         newline = line
-        if (lineno == 0 and task.env["PYTHON_SPECIFIED"] is True and
+        if (lineno == 0 and
                 line[:2] == "#!"):
             newline = replacement_shebang
         elif pattern in line:
