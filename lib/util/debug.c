@@ -692,15 +692,17 @@ int debug_add_class(const char *classname)
 	char **new_name_list;
 	int default_level;
 
-	if (!classname)
+	if (classname == NULL) {
 		return -1;
+	}
 
 	/* check the init has yet been called */
 	debug_init();
 
 	ndx = debug_lookup_classname_int(classname);
-	if (ndx >= 0)
+	if (ndx >= 0) {
 		return ndx;
+	}
 	ndx = debug_num_classes;
 
 	if (dbgc_config == debug_class_list_initial) {
@@ -713,20 +715,24 @@ int debug_add_class(const char *classname)
 	default_level = dbgc_config[DBGC_ALL];
 
 	new_class_list = talloc_realloc(NULL, new_class_list, int, ndx + 1);
-	if (!new_class_list)
+	if (new_class_list == NULL) {
 		return -1;
+	}
+
 	dbgc_config = new_class_list;
 
 	dbgc_config[ndx] = default_level;
 
 	new_name_list = talloc_realloc(NULL, classname_table, char *, ndx + 1);
-	if (!new_name_list)
+	if (new_name_list == NULL) {
 		return -1;
+	}
 	classname_table = new_name_list;
 
 	classname_table[ndx] = talloc_strdup(classname_table, classname);
-	if (! classname_table[ndx])
+	if (classname_table[ndx] == NULL) {
 		return -1;
+	}
 
 	debug_num_classes = ndx + 1;
 
@@ -1126,19 +1132,20 @@ _PUBLIC_ void debug_schedule_reopen_logs(void)
  Check to see if there is any need to check if the logfile has grown too big.
 **************************************************************************/
 
-bool need_to_check_log_size( void )
+bool need_to_check_log_size(void)
 {
 	int maxlog;
 
-	if( debug_count < 100)
-		return( false );
+	if (debug_count < 100) {
+		return false;
+	}
 
 	maxlog = state.settings.max_log_size * 1024;
-	if ( state.fd <=2 || maxlog <= 0 ) {
+	if (state.fd <= 2 || maxlog <= 0) {
 		debug_count = 0;
-		return(false);
+		return false;
 	}
-	return( true );
+	return true;
 }
 
 /**************************************************************************
@@ -1175,7 +1182,7 @@ void check_log_size( void )
 	maxlog = state.settings.max_log_size * 1024;
 
 	if (state.schedule_reopen_logs) {
-	    (void)reopen_logs_internal();
+		(void)reopen_logs_internal();
 	}
 
 	if (maxlog && (fstat(state.fd, &st) == 0
