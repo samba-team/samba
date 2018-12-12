@@ -65,18 +65,34 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_find(struct dcesrv_context 
 /*
   take a reference to an existing association group
  */
-static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(TALLOC_CTX *mem_ctx,
-							       struct dcesrv_context *dce_ctx,
+static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(struct dcesrv_connection *conn,
 							       uint32_t id)
 {
+	const struct dcesrv_endpoint *endpoint = conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct dcesrv_assoc_group *assoc_group;
 
-	assoc_group = dcesrv_assoc_group_find(dce_ctx, id);
+	assoc_group = dcesrv_assoc_group_find(conn->dce_ctx, id);
 	if (assoc_group == NULL) {
-		DEBUG(2,(__location__ ": Failed to find assoc_group 0x%08x\n", id));
+		DBG_NOTICE("Failed to find assoc_group 0x%08x\n", id);
 		return NULL;
 	}
-	return talloc_reference(mem_ctx, assoc_group);
+	if (assoc_group->transport != transport) {
+		const char *at =
+			derpc_transport_string_by_transport(
+				assoc_group->transport);
+		const char *ct =
+			derpc_transport_string_by_transport(
+				transport);
+
+		DBG_NOTICE("assoc_group 0x%08x (transport %s) "
+			   "is not available on transport %s",
+			   id, at, ct);
+		return NULL;
+	}
+
+	return talloc_reference(conn, assoc_group);
 }
 
 static int dcesrv_assoc_group_destructor(struct dcesrv_assoc_group *assoc_group)
@@ -93,13 +109,16 @@ static int dcesrv_assoc_group_destructor(struct dcesrv_assoc_group *assoc_group)
 /*
   allocate a new association group
  */
-static struct dcesrv_assoc_group *dcesrv_assoc_group_new(TALLOC_CTX *mem_ctx,
-							 struct dcesrv_context *dce_ctx)
+static struct dcesrv_assoc_group *dcesrv_assoc_group_new(struct dcesrv_connection *conn)
 {
+	struct dcesrv_context *dce_ctx = conn->dce_ctx;
+	const struct dcesrv_endpoint *endpoint = conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct dcesrv_assoc_group *assoc_group;
 	int id;
 
-	assoc_group = talloc_zero(mem_ctx, struct dcesrv_assoc_group);
+	assoc_group = talloc_zero(conn, struct dcesrv_assoc_group);
 	if (assoc_group == NULL) {
 		return NULL;
 	}
@@ -111,6 +130,7 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_new(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	assoc_group->transport = transport;
 	assoc_group->id = id;
 	assoc_group->dce_ctx = dce_ctx;
 
@@ -1003,11 +1023,9 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	 */
 	if (call->pkt.u.bind.assoc_group_id != 0) {
 		call->conn->assoc_group = dcesrv_assoc_group_reference(call->conn,
-								       call->conn->dce_ctx,
 								       call->pkt.u.bind.assoc_group_id);
 	} else {
-		call->conn->assoc_group = dcesrv_assoc_group_new(call->conn,
-								 call->conn->dce_ctx);
+		call->conn->assoc_group = dcesrv_assoc_group_new(call->conn);
 	}
 
 	/*
@@ -1033,8 +1051,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	if (call->conn->assoc_group == NULL &&
 	    !call->conn->endpoint->use_single_process) {
 		call->conn->assoc_group
-			= dcesrv_assoc_group_new(call->conn,
-						 call->conn->dce_ctx);
+			= dcesrv_assoc_group_new(call->conn);
 	}
 	if (call->conn->assoc_group == NULL) {
 		return dcesrv_bind_nak(call, 0);

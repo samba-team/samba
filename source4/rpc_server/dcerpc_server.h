@@ -348,7 +348,10 @@ struct dcesrv_endpoint_server {
 struct dcesrv_assoc_group {
 	/* the wire id */
 	uint32_t id;
-	
+
+	/* The transport this is valid on */
+	enum dcerpc_transport_t transport;
+
 	/* list of handles in this association group */
 	struct dcesrv_handle *handles;
 
