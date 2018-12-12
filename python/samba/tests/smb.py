@@ -42,12 +42,8 @@ class SMBTests(samba.tests.TestCase):
         super(SMBTests, self).setUp()
         self.server = os.environ["SERVER"]
         creds = self.insta_creds(template=self.get_credentials())
-        self.conn = smb.SMB(self.server,
-                            "sysvol",
-                            lp=self.get_loadparm(),
-                            creds=creds)
 
-        # temporarily create a 2nd SMB connection for migrating the py-bindings
+        # create an SMB connection to the server
         lp = s3param.get_context()
         lp.load(os.getenv("SMB_CONF_PATH"))
         self.smb_conn = libsmb_samba_internal.Conn(self.server, "sysvol",
