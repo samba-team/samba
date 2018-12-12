@@ -958,7 +958,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t extra_flags = 0;
 	uint16_t max_req = 0;
 	uint16_t max_rep = 0;
-	const char *ep_prefix = "";
 	const char *endpoint = NULL;
 	struct dcesrv_auth *auth = call->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
@@ -1178,22 +1177,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		endpoint = "";
 	}
 
-	if (strncasecmp(endpoint, "\\pipe\\", 6) == 0) {
-		/*
-		 * TODO: check if this is really needed
-		 *
-		 * Or if we should fix this in our idl files.
-		 */
-		ep_prefix = "\\PIPE\\";
-		endpoint += 6;
-	}
-
-	pkt->u.bind_ack.secondary_address = talloc_asprintf(call, "%s%s",
-							   ep_prefix,
-							   endpoint);
-	if (pkt->u.bind_ack.secondary_address == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	pkt->u.bind_ack.secondary_address = endpoint;
 	pkt->u.bind_ack.num_results = call->pkt.u.bind.num_contexts;
 	pkt->u.bind_ack.ctx_list = ack_ctx_list;
 	pkt->u.bind_ack.auth_info = data_blob_null;
