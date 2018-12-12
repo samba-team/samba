@@ -53,7 +53,7 @@ static const struct audit_category_tab {
 	{ LSA_AUDIT_CATEGORY_ACCOUNT_LOGON, 
 	 "LSA_AUDIT_CATEGORY_ACCOUNT_LOGON", 
 	 "ACCOUNT", "Account logon events" },
-	{ 0, NULL, NULL }
+	{ .category = 0 }
 };
 
 const char *audit_category_str(uint32_t category)
