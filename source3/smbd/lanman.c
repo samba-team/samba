@@ -5544,44 +5544,183 @@ static const struct {
 			int,int,char **,char **,int *,int *);
 	bool auth_user;		/* Deny anonymous access? */
 } api_commands[] = {
-	{"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum, True},
-	{"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo},
-	{"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd},
-	{"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum, True},
-	{"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo},
-	{"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum, True},
-	{"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers, True},
-	{"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum, True},
-	{"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo},
-	{"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups},
-	{"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo},
-	{"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum, True},
-	{"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo},
-	{"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl},
-	{"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl},
-	{"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate},
-	{"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo},
-	{"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel},
-	{"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel},
-	{"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel},
-	{"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum},
-	{"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo},
-	{"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
-	{"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
-	{"NetServerEnum2",	RAP_NetServerEnum2,	api_RNetServerEnum2}, /* anon OK */
-	{"NetServerEnum3",	RAP_NetServerEnum3,	api_RNetServerEnum3}, /* anon OK */
-	{"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
-	{"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
-	{"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo},
-	{"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum},
-	{"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum},
-	{"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum},
-	{"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword}, /* anon OK */
-	{NULL,		-1,	api_Unsupported}
-	/*  The following RAP calls are not implemented by Samba:
-
-	RAP_WFileEnum2 - anon not OK
-	*/
+	{
+		.name = "RNetShareEnum",
+		.id = RAP_WshareEnum,
+		.fn = api_RNetShareEnum,
+		.auth_user = true,
+	},
+	{
+		.name = "RNetShareGetInfo",
+		.id = RAP_WshareGetInfo,
+		.fn = api_RNetShareGetInfo
+	},
+	{
+		.name = "RNetShareAdd",
+		.id = RAP_WshareAdd,
+		.fn = api_RNetShareAdd
+	},
+	{
+		.name = "RNetSessionEnum",
+		.id = RAP_WsessionEnum,
+		.fn = api_RNetSessionEnum,
+		.auth_user = true,
+	},
+	{
+		.name = "RNetServerGetInfo",
+		.id = RAP_WserverGetInfo,
+		.fn = api_RNetServerGetInfo
+	},
+	{
+		.name = "RNetGroupEnum",
+		.id = RAP_WGroupEnum,
+		.fn = api_RNetGroupEnum, True
+	},
+	{
+		.name = "RNetGroupGetUsers",
+		.id = RAP_WGroupGetUsers,
+		.fn = api_RNetGroupGetUsers,
+		.auth_user = true},
+	{
+		.name = "RNetUserEnum",
+		.id = RAP_WUserEnum,
+		.fn = api_RNetUserEnum,
+		.auth_user = true,
+	},
+	{
+		.name = "RNetUserGetInfo",
+		.id = RAP_WUserGetInfo,
+		.fn = api_RNetUserGetInfo
+	},
+	{
+		.name = "NetUserGetGroups",
+		.id = RAP_WUserGetGroups,
+		.fn = api_NetUserGetGroups
+	},
+	{
+		.name = "NetWkstaGetInfo",
+		.id = RAP_WWkstaGetInfo,
+		.fn = api_NetWkstaGetInfo
+	},
+	{
+		.name = "DosPrintQEnum",
+		.id = RAP_WPrintQEnum,
+		.fn = api_DosPrintQEnum,
+		.auth_user = true,
+	},
+	{
+		.name = "DosPrintQGetInfo",
+		.id = RAP_WPrintQGetInfo,
+		.fn = api_DosPrintQGetInfo
+	},
+	{
+		.name = "WPrintQueuePause",
+		.id = RAP_WPrintQPause,
+		.fn = api_WPrintQueueCtrl
+	},
+	{
+		.name = "WPrintQueueResume",
+		.id = RAP_WPrintQContinue,
+		.fn = api_WPrintQueueCtrl
+	},
+	{
+		.name = "WPrintJobEnumerate",
+		.id = RAP_WPrintJobEnum,
+		.fn = api_WPrintJobEnumerate
+	},
+	{
+		.name = "WPrintJobGetInfo",
+		.id = RAP_WPrintJobGetInfo,
+		.fn = api_WPrintJobGetInfo
+	},
+	{
+		.name = "RDosPrintJobDel",
+		.id = RAP_WPrintJobDel,
+		.fn = api_RDosPrintJobDel
+	},
+	{
+		.name = "RDosPrintJobPause",
+		.id = RAP_WPrintJobPause,
+		.fn = api_RDosPrintJobDel
+	},
+	{
+		.name = "RDosPrintJobResume",
+		.id = RAP_WPrintJobContinue,
+		.fn = api_RDosPrintJobDel
+	},
+	{
+		.name = "WPrintDestEnum",
+		.id = RAP_WPrintDestEnum,
+		.fn = api_WPrintDestEnum
+	},
+	{
+		.name = "WPrintDestGetInfo",
+		.id = RAP_WPrintDestGetInfo,
+		.fn = api_WPrintDestGetInfo
+	},
+	{
+		.name = "NetRemoteTOD",
+		.id = RAP_NetRemoteTOD,
+		.fn = api_NetRemoteTOD
+	},
+	{
+		.name = "WPrintQueuePurge",
+		.id = RAP_WPrintQPurge,
+		.fn = api_WPrintQueueCtrl
+	},
+	{
+		.name = "NetServerEnum2",
+		.id = RAP_NetServerEnum2,
+		.fn = api_RNetServerEnum2
+	}, /* anon OK */
+	{
+		.name = "NetServerEnum3",
+		.id = RAP_NetServerEnum3,
+		.fn = api_RNetServerEnum3
+	}, /* anon OK */
+	{
+		.name = "WAccessGetUserPerms",
+		.id = RAP_WAccessGetUserPerms,
+		.fn = api_WAccessGetUserPerms
+	},
+	{
+		.name = "WWkstaUserLogon",
+		.id = RAP_WWkstaUserLogon,
+		.fn = api_WWkstaUserLogon
+	},
+	{
+		.name = "PrintJobInfo",
+		.id = RAP_WPrintJobSetInfo,
+		.fn = api_PrintJobInfo
+	},
+	{
+		.name = "WPrintDriverEnum",
+		.id = RAP_WPrintDriverEnum,
+		.fn = api_WPrintDriverEnum
+	},
+	{
+		.name = "WPrintQProcEnum",
+		.id = RAP_WPrintQProcessorEnum,
+		.fn = api_WPrintQProcEnum
+	},
+	{
+		.name = "WPrintPortEnum",
+		.id = RAP_WPrintPortEnum,
+		.fn = api_WPrintPortEnum
+	},
+	{
+		.name = "SamOEMChangePassword",
+		.id = RAP_SamOEMChgPasswordUser2_P,
+		.fn = api_SamOEMChangePassword
+	}, /* anon OK */
+	{
+		.name = NULL,
+		.id   = -1,
+		.fn   = api_Unsupported}
+	/*
+	 * The following RAP calls are not implemented by Samba:
+	 *   RAP_WFileEnum2 - anon not OK
+	 */
 };
 
 
