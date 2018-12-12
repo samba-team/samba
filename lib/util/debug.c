@@ -108,6 +108,13 @@ struct debug_class {
 	 * The debug loglevel of the class.
 	 */
 	int loglevel;
+
+	/*
+	 * An optional class specific logfile, may be NULL in which case the
+	 * "global" logfile is used and fd is -1.
+	 */
+	char *logfile;
+	int fd;
 };
 
 static const char *default_classname_table[] = {
@@ -201,10 +208,18 @@ static void debug_file_log(int msg_level,
 			   const char *msg, const char *msg_no_nl)
 {
 	ssize_t ret;
+	int fd;
 
 	check_log_size();
+
+	if (dbgc_config[current_msg_class].fd != -1) {
+		fd = dbgc_config[current_msg_class].fd;
+	} else {
+		fd = state.fd;
+	}
+
 	do {
-		ret = write(state.fd, msg, strlen(msg));
+		ret = write(fd, msg, strlen(msg));
 	} while (ret == -1 && errno == EINTR);
 }
 
@@ -735,6 +750,7 @@ int debug_add_class(const char *classname)
 
 	dbgc_config[ndx] = (struct debug_class) {
 		.loglevel = default_level,
+		.fd = -1,
 	};
 
 	new_name_list = talloc_realloc(NULL, classname_table, char *, ndx + 1);
