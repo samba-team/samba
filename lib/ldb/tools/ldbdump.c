@@ -157,7 +157,9 @@ static void emergency_walk(TDB_DATA key, TDB_DATA dbuf, void *keyname)
 static int dump_tdb(const char *fname, struct ldb_dn *dn, bool emergency)
 {
 	TDB_CONTEXT *tdb;
-	struct tdb_logging_context logfn = { log_stderr };
+	struct tdb_logging_context logfn = {
+		.log_fn = log_stderr,
+	};
 
 	tdb = tdb_open_ex(fname, 0, 0, O_RDONLY, 0, &logfn, NULL);
 	if (!tdb) {
