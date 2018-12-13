@@ -303,7 +303,7 @@ const struct ldb_map_objectclass samba3_objectclasses[] = {
 		.musts = { "sambaDomainName", "sambaSID", NULL },
 		.mays = { "sambaNextRid", "sambaNextGroupRid", "sambaNextUserRid", "sambaAlgorithmicRidBase", NULL },
 	},
-		{ NULL, NULL }
+	{ .local_name = NULL }
 };
 
 const struct ldb_map_attribute samba3_attributes[] =
