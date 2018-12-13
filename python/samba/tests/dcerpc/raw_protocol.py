@@ -4988,7 +4988,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
         abstract = samba.dcerpc.mgmt.abstract_syntax()
         transfer = base.transfer_syntax_ndr()
 
-        self.reconnect_smb_pipe(primary_address='\\pipe\\lsass',
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsarpc',
+                                secondary_address='\\pipe\\lsass',
                                 transport_creds=self.get_user_creds())
         (ctx1, ack1) = self.prepare_presentation(abstract, transfer,
                                                  context_id=1, return_ack=True)
@@ -5023,7 +5024,8 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                                  context_id=1, return_ack=True)
 
         # assoc groups are per transport
-        connF = self.second_connection(primary_address="\\pipe\\lsass",
+        connF = self.second_connection(primary_address="\\pipe\\lsarpc",
+                                       secondary_address="\\pipe\\lsass",
                                        transport_creds=self.get_user_creds())
         tsfF_list = [transfer]
         ctxF = samba.dcerpc.dcerpc.ctx_list()
