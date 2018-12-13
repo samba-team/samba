@@ -101,7 +101,9 @@ static int dump_tdb(const char *fname, const char *keyname, bool emergency)
 {
 	TDB_CONTEXT *tdb;
 	TDB_DATA key, value;
-	struct tdb_logging_context logfn = { log_stderr };
+	struct tdb_logging_context logfn = {
+		.log_fn = log_stderr,
+	};
 	int tdb_flags = TDB_DEFAULT;
 
 	/*
