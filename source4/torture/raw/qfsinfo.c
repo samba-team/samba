@@ -32,25 +32,68 @@ static struct {
 	NTSTATUS status;
 	union smb_fsinfo fsinfo;
 } levels[] = {
-	{"DSKATTR",               RAW_QFS_DSKATTR, },
-	{"ALLOCATION",            RAW_QFS_ALLOCATION, },
-	{"VOLUME",                RAW_QFS_VOLUME, },
-	{"VOLUME_INFO",           RAW_QFS_VOLUME_INFO, },
-	{"SIZE_INFO",             RAW_QFS_SIZE_INFO, },
-	{"DEVICE_INFO",           RAW_QFS_DEVICE_INFO, },
-	{"ATTRIBUTE_INFO",        RAW_QFS_ATTRIBUTE_INFO, },
-	{"UNIX_INFO",             RAW_QFS_UNIX_INFO, CAP_UNIX},
-	{"VOLUME_INFORMATION",    RAW_QFS_VOLUME_INFORMATION, },
-	{"SIZE_INFORMATION",      RAW_QFS_SIZE_INFORMATION, },
-	{"DEVICE_INFORMATION",    RAW_QFS_DEVICE_INFORMATION, },
-	{"ATTRIBUTE_INFORMATION", RAW_QFS_ATTRIBUTE_INFORMATION, },
-	{"QUOTA_INFORMATION",     RAW_QFS_QUOTA_INFORMATION, },
-	{"FULL_SIZE_INFORMATION", RAW_QFS_FULL_SIZE_INFORMATION, },
+	{
+		.name = "DSKATTR",
+		.level = RAW_QFS_DSKATTR,
+	},
+	{
+		.name = "ALLOCATION",
+		.level = RAW_QFS_ALLOCATION,
+	},
+	{
+		.name = "VOLUME",
+		.level = RAW_QFS_VOLUME,
+	},
+	{
+		.name = "VOLUME_INFO",
+		.level = RAW_QFS_VOLUME_INFO,
+	},
+	{
+		.name = "SIZE_INFO",
+		.level = RAW_QFS_SIZE_INFO,
+	},
+	{
+		.name = "DEVICE_INFO",
+		.level = RAW_QFS_DEVICE_INFO,
+	},
+	{
+		.name = "ATTRIBUTE_INFO",
+		.level = RAW_QFS_ATTRIBUTE_INFO,
+	},
+	{
+		.name = "UNIX_INFO",
+		.level = RAW_QFS_UNIX_INFO,
+		.capability_mask = CAP_UNIX,
+	},
+	{
+		.name = "VOLUME_INFORMATION",
+		.level = RAW_QFS_VOLUME_INFORMATION,
+	},
+	{
+		.name = "SIZE_INFORMATION",
+		.level = RAW_QFS_SIZE_INFORMATION,
+	},
+	{
+		.name = "DEVICE_INFORMATION",
+		.level = RAW_QFS_DEVICE_INFORMATION,
+	},
+	{
+		.name = "ATTRIBUTE_INFORMATION",
+		.level = RAW_QFS_ATTRIBUTE_INFORMATION,
+	},
+	{
+		.name = "QUOTA_INFORMATION",
+		.level = RAW_QFS_QUOTA_INFORMATION,
+	},
+	{
+		.name = "FULL_SIZE_INFORMATION",
+		.level = RAW_QFS_FULL_SIZE_INFORMATION,
+	},
 #if 0
 	/* w2k3 seems to no longer support this */
 	{"OBJECTID_INFORMATION",  RAW_QFS_OBJECTID_INFORMATION, },
 #endif
-	{ NULL, }
+	{ .name = NULL, },
 };
 
 
