@@ -329,9 +329,17 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	int s;
 	struct sockaddr_ll sall = {0};
-	struct ifreq if_hwaddr = {{{0}}};
+	struct ifreq if_hwaddr = {
+		.ifr_ifru = {
+			.ifru_flags = 0
+		},
+	};
 	uint8_t buffer[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
-	struct ifreq ifr = {{{0}}};
+	struct ifreq ifr = {
+		.ifr_ifru = {
+			.ifru_flags = 0
+		},
+	};
 	struct ether_addr *hwaddr = NULL;
 	struct ether_addr *ether_dhost = NULL;
 	size_t len = 0;
