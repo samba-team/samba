@@ -96,7 +96,7 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(4, ("get_privileges: No privileges assigned to SID "
-			  "[%s]\n", sid_string_dbg(sid)));
+			  "[%s]\n", tmp.buf));
 		return False;
 	}
 
@@ -106,7 +106,7 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 	} else {
 		if (data.dsize != sizeof( uint64_t ) ) {
 			DEBUG(3, ("get_privileges: Invalid privileges record assigned to SID "
-				  "[%s]\n", sid_string_dbg(sid)));
+				  "[%s]\n", tmp.buf));
 			return False;
 		}
 
