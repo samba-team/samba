@@ -464,10 +464,16 @@ static PyObject *py_lp_ctx_config_file(PyObject *self, void *closure)
 }
 
 static PyGetSetDef py_lp_ctx_getset[] = {
-	{ discard_const_p(char, "default_service"), (getter)py_lp_ctx_default_service, NULL, NULL },
-	{ discard_const_p(char, "configfile"), (getter)py_lp_ctx_config_file, NULL,
-	  discard_const_p(char, "Name of last config file that was loaded.") },
-	{ NULL }
+	{
+		.name = discard_const_p(char, "default_service"),
+		.get  = (getter)py_lp_ctx_default_service,
+	},
+	{
+		.name = discard_const_p(char, "configfile"),
+		.get  = (getter)py_lp_ctx_config_file,
+		.doc  = discard_const_p(char, "Name of last config file that was loaded.")
+	},
+	{ .name = NULL }
 };
 
 static PyObject *py_lp_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
