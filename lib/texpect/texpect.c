@@ -380,8 +380,20 @@ static int eval_parent(pid_t pid)
  */
 struct poptOption long_options[] = {
 	POPT_AUTOHELP
-	{"timeout", 't', POPT_ARG_INT,	&opt_timeout, 't'},
-	{"verbose", 'v', POPT_ARG_NONE,	&opt_verbose, 'v'},
+	{
+		.longName  = "timeout",
+		.shortName = 't',
+		.argInfo   = POPT_ARG_INT,
+		.arg       = &opt_timeout,
+		.val       = 't',
+	},
+	{
+		.longName  = "verbose",
+		.shortName = 'v',
+		.argInfo   = POPT_ARG_NONE,
+		.arg       = &opt_verbose,
+		.val       = 'v',
+	},
 	POPT_TABLEEND
 };
 
