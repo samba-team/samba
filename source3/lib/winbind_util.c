@@ -94,6 +94,7 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	enum wbcSidType type;
 	char *domain_name = NULL;
 	char *account_name = NULL;
+	struct dom_sid_buf buf;
 
 	memcpy(&dom_sid, sid, sizeof(dom_sid));
 
@@ -112,7 +113,7 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	*name_type = (enum lsa_SidType)type;
 
 	DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n",
-		   sid_string_dbg(sid), domain_name, account_name));
+		   dom_sid_str_buf(sid, &buf), domain_name, account_name));
 
 	wbcFreeMemory(domain_name);
 	wbcFreeMemory(account_name);

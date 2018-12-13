@@ -116,6 +116,7 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	struct dom_sid dom_sid;
 	uint32_t rid;
 	const struct rid_name_map *users = NULL;
+	struct dom_sid_buf buf;
 
 	sid_copy(&dom_sid, sid);
 	if (!sid_split_rid(&dom_sid, &rid)) {
@@ -133,7 +134,8 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	}
 
 	if (users == NULL) {
-		DEBUG(10, ("SID %s is no special sid\n", sid_string_dbg(sid)));
+		DEBUG(10, ("SID %s is no special sid\n",
+			   dom_sid_str_buf(sid, &buf)));
 		return False;
 	}
 
@@ -144,7 +146,8 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 		}
 	}
 
-	DEBUG(10, ("RID of special SID %s not found\n", sid_string_dbg(sid)));
+	DEBUG(10, ("RID of special SID %s not found\n",
+		   dom_sid_str_buf(sid, &buf)));
 
 	return False;
 }

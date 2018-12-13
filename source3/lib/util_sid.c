@@ -175,8 +175,9 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 		status = add_sid_to_array(mem_ctx, info3->sids[i].sid,
 				      &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
+			struct dom_sid_buf buf;
 			DEBUG(3, ("could not add SID to array: %s\n",
-				  sid_string_dbg(info3->sids[i].sid)));
+				  dom_sid_str_buf(info3->sids[i].sid, &buf)));
 			return status;
 		}
 	}

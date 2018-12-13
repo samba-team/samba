@@ -168,13 +168,16 @@ bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int sc
 	*privileges = 0;
 
 	for ( i=0; i<scount; i++ ) {
+		struct dom_sid_buf buf;
+
 		/* don't add unless we actually have a privilege assigned */
 
 		if ( !get_privileges( &slist[i], &mask ) )
 			continue;
 
 		DEBUG(5,("get_privileges_for_sids: sid = %s\nPrivilege "
-			 "set: 0x%llx\n", sid_string_dbg(&slist[i]),
+			 "set: 0x%llx\n",
+			 dom_sid_str_buf(&slist[i], &buf),
 			 (unsigned long long)mask));
 
 		*privileges |= mask;
@@ -341,6 +344,7 @@ NTSTATUS privilege_enum_sids(enum sec_privilege privilege, TALLOC_CTX *mem_ctx,
 static bool grant_privilege_bitmap(const struct dom_sid *sid, const uint64_t priv_mask)
 {
 	uint64_t old_mask, new_mask;
+	struct dom_sid_buf buf;
 
 	ZERO_STRUCT( old_mask );
 	ZERO_STRUCT( new_mask );
@@ -352,7 +356,7 @@ static bool grant_privilege_bitmap(const struct dom_sid *sid, const uint64_t pri
 
 	new_mask |= priv_mask;
 
-	DEBUG(10,("grant_privilege: %s\n", sid_string_dbg(sid)));
+	DEBUG(10,("grant_privilege: %s\n", dom_sid_str_buf(sid, &buf)));
 
 	DEBUGADD( 10, ("original privilege mask: 0x%llx\n", (unsigned long long)new_mask));
 
@@ -398,13 +402,14 @@ bool grant_privilege_set(const struct dom_sid *sid, struct lsa_PrivilegeSet *set
 static bool revoke_privilege_bitmap(const struct dom_sid *sid, const uint64_t priv_mask)
 {
 	uint64_t mask;
+	struct dom_sid_buf buf;
 
 	/* if the user has no privileges, then we can't revoke any */
 
 	if ( !get_privileges( sid, &mask ) )
 		return True;
 
-	DEBUG(10,("revoke_privilege: %s\n", sid_string_dbg(sid)));
+	DEBUG(10,("revoke_privilege: %s\n", dom_sid_str_buf(sid, &buf)));
 
 	DEBUGADD( 10, ("original privilege mask: 0x%llx\n", (unsigned long long)mask));
 
