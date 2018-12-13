@@ -501,7 +501,7 @@ int tstream_disconnect_recv(struct tevent_req *req,
  */
 bool tsocket_address_is_inet(const struct tsocket_address *addr, const char *fam);
 
-#if DOXYGEN
+#ifdef DOXYGEN
 /**
  * @brief Create a tsocket_address for ipv4 and ipv6 endpoint addresses.
  *
