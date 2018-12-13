@@ -4595,7 +4595,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                             request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
                                             response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
 
-    def test_spnego_packet_bind_sign_privacy(self):
+    def test_spnego_packet_bind_seal(self):
         # DCERPC_AUTH_LEVEL_PACKET is handled as alias of
         # DCERPC_AUTH_LEVEL_INTEGRITY
         return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_PACKET,
