@@ -486,9 +486,12 @@ static PyObject *py_imessaging_server_id(PyObject *obj, void *closure)
 }
 
 static PyGetSetDef py_imessaging_getset[] = {
-	{ discard_const_p(char, "server_id"), py_imessaging_server_id, NULL,
-	  discard_const_p(char, "local server id") },
-	{ NULL },
+	{
+		.name = discard_const_p(char, "server_id"),
+		.get  = py_imessaging_server_id,
+		.doc  = discard_const_p(char, "local server id")
+	},
+	{ .name = NULL },
 };
 
 
