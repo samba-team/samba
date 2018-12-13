@@ -29,8 +29,13 @@ import logging
 from samba.credentials import Credentials
 from samba.compat import get_bytes
 
-poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
-dspath = 'CN=Policies,CN=System,DC=addom,DC=samba,DC=example,DC=com'
+realm = os.environ.get('REALM')
+policies = realm + '/POLICIES'
+realm = realm.lower()
+poldir = r'\\{0}\sysvol\{0}\Policies'.format(realm)
+# the first part of the base DN varies by testenv. Work it out from the realm
+base_dn = 'DC={0},DC=samba,DC=example,DC=com'.format(realm.split('.')[0])
+dspath = 'CN=Policies,CN=System,' + base_dn
 gpt_data = '[General]\nVersion=%d'
 
 def days2rel_nttime(val):
@@ -79,6 +84,7 @@ class GPOTests(tests.TestCase):
     def setUp(self):
         super(GPOTests, self).setUp()
         self.server = os.environ["SERVER"]
+        self.dc_account = self.server.upper() + '$'
         self.lp = LoadParm()
         self.lp.load_default()
         self.creds = self.insta_creds(template=self.get_credentials())
@@ -112,7 +118,6 @@ class GPOTests(tests.TestCase):
     def test_gpt_version(self):
         global gpt_data
         local_path = self.lp.cache_path('gpo_cache')
-        policies = 'ADDOM.SAMBA.EXAMPLE.COM/POLICIES'
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         gpo_path = os.path.join(local_path, policies, guid)
         old_vers = gpo.gpo_get_sysvol_gpt_version(gpo_path)[1]
@@ -138,7 +143,7 @@ class GPOTests(tests.TestCase):
                         'GPO cache %s was not created' % cache)
 
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
-        gpt_ini = os.path.join(cache, 'ADDOM.SAMBA.EXAMPLE.COM/POLICIES',
+        gpt_ini = os.path.join(cache, policies,
                                guid, 'GPT.INI')
         self.assertTrue(os.path.exists(gpt_ini),
                         'GPT.INI was not cached for %s' % guid)
@@ -152,9 +157,9 @@ class GPOTests(tests.TestCase):
         self.assertEqual(check_safe_path('\\\\etc/\\passwd'), 'etc/passwd')
 
         # there should be no backslashes used to delineate paths
-        before = 'sysvol/addom.samba.example.com\\Policies/' \
+        before = 'sysvol/' + realm + '\\Policies/' \
             '{31B2F340-016D-11D2-945F-00C04FB984F9}\\GPT.INI'
-        after = 'addom.samba.example.com/Policies/' \
+        after = realm + '/Policies/' \
             '{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI'
         result = check_safe_path(before)
         self.assertEquals(result, after, 'check_safe_path() didn\'t'
@@ -201,7 +206,7 @@ class GPOTests(tests.TestCase):
         local_path = self.lp.get('path', 'sysvol')
         guids = ['{31B2F340-016D-11D2-945F-00C04FB984F9}',
                  '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
-        gpofile = '%s/addom.samba.example.com/Policies/%s/MACHINE/Microsoft/' \
+        gpofile = '%s/' + realm + '/Policies/%s/MACHINE/Microsoft/' \
                   'Windows NT/SecEdit/GptTmpl.inf'
         stage = '[System Access]\nMinimumPasswordAge = 998\n'
         cache_dir = self.lp.get('cache directory')
@@ -214,7 +219,7 @@ class GPOTests(tests.TestCase):
         ret = gpupdate_force(self.lp)
         self.assertEquals(ret, 0, 'gpupdate force failed')
 
-        gp_db = store.get_gplog('ADDC$')
+        gp_db = store.get_gplog(self.dc_account)
 
         applied_guids = gp_db.get_applied_guids()
         self.assertEquals(len(applied_guids), 2, 'The guids were not found')
@@ -240,7 +245,7 @@ class GPOTests(tests.TestCase):
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, self.creds)
         if ads.connect():
-            gpos = ads.get_gpo_list('ADDC$')
+            gpos = ads.get_gpo_list(self.dc_account)
         del_gpos = get_deleted_gpos_list(gp_db, gpos[:-1])
         self.assertEqual(len(del_gpos), 1, 'Returned delete gpos is incorrect')
         self.assertEqual(guids[-1], del_gpos[0][0],
@@ -261,7 +266,7 @@ class GPOTests(tests.TestCase):
         local_path = self.lp.cache_path('gpo_cache')
         guids = ['{31B2F340-016D-11D2-945F-00C04FB984F9}',
                  '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
-        gpofile = '%s/ADDOM.SAMBA.EXAMPLE.COM/POLICIES/%s/MACHINE/MICROSOFT/' \
+        gpofile = '%s/' + policies + '/%s/MACHINE/MICROSOFT/' \
                   'WINDOWS NT/SECEDIT/GPTTMPL.INF'
         logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
