@@ -33,38 +33,91 @@
 static struct test_options _values;
 
 static struct poptOption options_basic[] = {
-	{ "socket", 's', POPT_ARG_STRING, &_values.socket, 0,
-		"CTDB socket path", "filename" },
-	{ "timelimit", 't', POPT_ARG_INT, &_values.timelimit, 0,
-		"Time limit (in seconds)" },
-	{ "num-nodes", 'n', POPT_ARG_INT, &_values.num_nodes, 0,
-		"Number of cluster nodes" },
-	{ "debug", 'd', POPT_ARG_STRING, &_values.debugstr, 0,
-		"Debug level" },
-	{ "interactive", 'i', POPT_ARG_NONE, &_values.interactive, 0,
-		"Interactive output" },
-	{ NULL }
+	{
+		.longName   = "socket",
+		.shortName  = 's',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &_values.socket,
+		.descrip    = "CTDB socket path",
+		.argDescrip = "filename",
+	},
+	{
+		.longName   = "timelimit",
+		.shortName  = 't',
+		.argInfo    = POPT_ARG_INT,
+		.arg        = &_values.timelimit,
+		.descrip    = "Time limit (in seconds)",
+	},
+	{
+		.longName   = "num-nodes",
+		.shortName  = 'n',
+		.argInfo    = POPT_ARG_INT,
+		.arg        = &_values.num_nodes,
+		.descrip    = "Number of cluster nodes",
+	},
+	{
+		.longName   = "debug",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &_values.debugstr,
+		.descrip    = "Debug level",
+	},
+	{
+		.longName   = "interactive",
+		.shortName  = 'i',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &_values.interactive,
+		.val        = 0,
+		.descrip    = "Interactive output",
+	},
+	POPT_TABLEEND
 };
 
-#define TEST_OPTIONS_BASIC \
-	{ NULL, 0, POPT_ARG_INCLUDE_TABLE, options_basic, 0, \
-		"General options:", NULL },
+#define TEST_OPTIONS_BASIC                            \
+	{                                             \
+		.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+		.arg        = options_basic,          \
+		.descrip    = "General options:",     \
+	},
 
 static struct poptOption options_database[] = {
-	{ "database", 'D', POPT_ARG_STRING, &_values.dbname, 0,
-		"CTDB database name" },
-	{ "key", 'k', POPT_ARG_STRING, &_values.keystr, 0,
-		"Name of database key" },
-	{ "value", 'v', POPT_ARG_STRING, &_values.valuestr, 0,
-		"Value of database key" },
-	{ "dbtype", 'T', POPT_ARG_STRING, &_values.dbtype, 0,
-		"CTDB database type" },
-	{ NULL }
+	{
+		.longName   = "database",
+		.shortName  = 'D',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &_values.dbname,
+		.descrip    = "CTDB database name",
+	},
+	{
+		.longName   = "key",
+		.shortName  = 'k',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &_values.keystr,
+		.descrip    = "Name of database key",
+	},
+	{
+		.longName   = "value",
+		.shortName  = 'v',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &_values.valuestr,
+		.descrip    = "Value of database key",
+	},
+	{
+		.longName   = "dbtype",
+		.shortName  = 'T',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &_values.dbtype,
+		.descrip    = "CTDB database type",
+	},
+	POPT_TABLEEND
 };
 
-#define TEST_OPTIONS_DATABASE \
-	{ NULL, 0, POPT_ARG_INCLUDE_TABLE, options_database, 0, \
-		"Database options:", NULL },
+#define TEST_OPTIONS_DATABASE                         \
+	{                                             \
+		.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+		.arg        = options_database,       \
+		.descrip    = "Database options:",    \
+	},
 
 static void set_defaults_basic(struct test_options *opts)
 {
