@@ -105,7 +105,7 @@
 #ifdef HAVE_VALGRIND_MEMCHECK_H
         /* memcheck.h includes valgrind.h */
 #include <valgrind/memcheck.h>
-#elif HAVE_VALGRIND_H
+#elif defined(HAVE_VALGRIND_H)
 #include <valgrind.h>
 #endif
 
