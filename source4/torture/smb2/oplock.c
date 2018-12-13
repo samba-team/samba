@@ -4086,14 +4086,26 @@ static struct hold_oplock_info {
 	uint32_t share_access;
 	struct smb2_handle handle;
 } hold_info[] = {
-	{ BASEDIR "\\notshared_close", true,
-	  NTCREATEX_SHARE_ACCESS_NONE, },
-	{ BASEDIR "\\notshared_noclose", false,
-	  NTCREATEX_SHARE_ACCESS_NONE, },
-	{ BASEDIR "\\shared_close", true,
-	  NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, },
-	{ BASEDIR "\\shared_noclose", false,
-	  NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, },
+	{
+		.fname          = BASEDIR "\\notshared_close",
+		.close_on_break = true,
+		.share_access   = NTCREATEX_SHARE_ACCESS_NONE,
+	},
+	{
+		.fname          = BASEDIR "\\notshared_noclose",
+		.close_on_break = false,
+		.share_access   = NTCREATEX_SHARE_ACCESS_NONE,
+	},
+	{
+		.fname          = BASEDIR "\\shared_close",
+		.close_on_break = true,
+		.share_access   = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+	},
+	{
+		.fname          = BASEDIR "\\shared_noclose",
+		.close_on_break = false,
+		.share_access   = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+	},
 };
 
 static bool torture_oplock_handler_hold(struct smb2_transport *transport,
