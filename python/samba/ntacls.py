@@ -32,13 +32,13 @@ from samba.samba3 import param as s3param
 from samba.dcerpc import security, xattr, idmap
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.samba3 import smbd
-from samba import smb
+from samba.samba3 import libsmb
 
 # don't include volumes
-SMB_FILE_ATTRIBUTE_FLAGS = smb.FILE_ATTRIBUTE_SYSTEM | \
-                           smb.FILE_ATTRIBUTE_DIRECTORY | \
-                           smb.FILE_ATTRIBUTE_ARCHIVE | \
-                           smb.FILE_ATTRIBUTE_HIDDEN
+SMB_FILE_ATTRIBUTE_FLAGS = libsmb.FILE_ATTRIBUTE_SYSTEM | \
+                           libsmb.FILE_ATTRIBUTE_DIRECTORY | \
+                           libsmb.FILE_ATTRIBUTE_ARCHIVE | \
+                           libsmb.FILE_ATTRIBUTE_HIDDEN
 
 
 SECURITY_SECINFO_FLAGS = security.SECINFO_OWNER | \
@@ -348,7 +348,7 @@ class SMBHelper:
 
         attrib is from list method.
         """
-        return bool(attrib & smb.FILE_ATTRIBUTE_DIRECTORY)
+        return bool(attrib & libsmb.FILE_ATTRIBUTE_DIRECTORY)
 
     def join(self, root, name):
         """
