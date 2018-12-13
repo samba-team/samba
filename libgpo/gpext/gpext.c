@@ -44,25 +44,76 @@ struct gp_extension *gpext_get_gp_extension_list(void)
 /* see http://support.microsoft.com/kb/216358/en-us/ for more info */
 
 struct gp_extension_reg_table gpext_reg_vals[] = {
-	{ "DllName", REG_EXPAND_SZ },
-	{ "ProcessGroupPolicy", REG_SZ },
-	{ "NoMachinePolicy", REG_DWORD },
-	{ "NoUserPolicy", REG_DWORD },
-	{ "NoSlowLink", REG_DWORD },
-	{ "NoBackgroundPolicy", REG_DWORD },
-	{ "NoGPOListChanges", REG_DWORD },
-	{ "PerUserLocalSettings", REG_DWORD },
-	{ "RequiresSuccessfulRegistry", REG_DWORD },
-	{ "EnableAsynchronousProcessing", REG_DWORD },
-	{ "ExtensionDebugLevel", REG_DWORD },
+	{
+		.val  = "DllName",
+		.type = REG_EXPAND_SZ,
+	},
+	{
+		.val  = "ProcessGroupPolicy",
+		.type = REG_SZ,
+	},
+	{
+		.val  = "NoMachinePolicy",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "NoUserPolicy",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "NoSlowLink",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "NoBackgroundPolicy",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "NoGPOListChanges",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "PerUserLocalSettings",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "RequiresSuccessfulRegistry",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "EnableAsynchronousProcessing",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "ExtensionDebugLevel",
+		.type = REG_DWORD,
+	},
 	/* new */
-	{ "GenerateGroupPolicy", REG_SZ }, /* not supported on w2k */
-	{ "NotifyLinkTransition", REG_DWORD },
-	{ "ProcessGroupPolicyEx", REG_SZ }, /* not supported on w2k */
-	{ "ExtensionEventSource", REG_MULTI_SZ }, /* not supported on w2k */
-	{ "GenerateGroupPolicy", REG_SZ },
-	{ "MaxNoGPOListChangesInterval", REG_DWORD },
-	{ NULL, REG_NONE }
+	{
+		.val  = "GenerateGroupPolicy",    /* not supported on w2k */
+		.type = REG_SZ,
+	},
+	{
+		.val  = "NotifyLinkTransition",
+		.type = REG_DWORD,
+	},
+	{
+		.val  = "ProcessGroupPolicyEx",    /* not supported on w2k */
+		.type = REG_SZ,
+	},
+	{
+		.val  = "ExtensionEventSource",    /* not supported on w2k */
+		.type = REG_MULTI_SZ,
+	},
+	{
+		.val  = "GenerateGroupPolicy",
+		.type = REG_SZ,
+	},
+	{
+		.val  = "MaxNoGPOListChangesInterval",
+		.type = REG_DWORD,
+	},
+	{ .type = REG_NONE }
 };
 
 /****************************************************************
