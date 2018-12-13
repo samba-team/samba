@@ -36,7 +36,7 @@ static struct {
 	union smb_fileinfo finfo;
 	union smb_fileinfo dinfo;
 } file_levels[] = {
-#define LEVEL(x) #x, x
+#define LEVEL(x) .name = #x, .level = x
  { LEVEL(RAW_FILEINFO_BASIC_INFORMATION) },
  { LEVEL(RAW_FILEINFO_STANDARD_INFORMATION) },
  { LEVEL(RAW_FILEINFO_INTERNAL_INFORMATION) },
