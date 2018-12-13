@@ -27,7 +27,8 @@ import tdb
 import samba.getopt as options
 from samba.samdb import SamDB, get_default_backend_store
 import ldb
-from samba import smb
+from samba.samba3 import libsmb_samba_internal as libsmb
+from samba.samba3 import param as s3param
 from samba.ntacls import backup_online, backup_restore, backup_offline
 from samba.auth import system_session
 from samba.join import DCJoinContext, join_clone, DCCloneAndRenameContext
@@ -103,7 +104,10 @@ def get_sid_for_restore(samdb):
 
 def smb_sysvol_conn(server, lp, creds):
     """Returns an SMB connection to the sysvol share on the DC"""
-    return smb.SMB(server, "sysvol", lp=lp, creds=creds, sign=True)
+    # the SMB bindings rely on having a s3 loadparm
+    s3_lp = s3param.get_context()
+    s3_lp.load(lp.configfile)
+    return libsmb.Conn(server, "sysvol", lp=s3_lp, creds=creds, sign=True)
 
 
 def get_timestamp():
