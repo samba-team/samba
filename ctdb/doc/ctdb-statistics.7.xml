@@ -447,9 +447,10 @@ Statistics collected since  : (000 01:49:20) Fri Sep 12 11:43:12 2014
       <title>lock_buckets</title>
       <para>
 	Distribution of record lock requests based on time required to
-	obtain locks.  Buckets are &lt; 1ms, &lt; 10ms, &lt; 100ms,
-	&lt; 1s, &lt; 2s, &lt; 4s, &lt; 8s, &lt; 16s, &lt; 32s, &lt;
-	64s, &ge; 64s.
+	obtain locks.  Buckets are &lt;&nbsp;1ms, &lt;&nbsp;10ms,
+	&lt;&nbsp;100ms, &lt;&nbsp;1s, &lt;&nbsp;2s, &lt;&nbsp;4s,
+	&lt;&nbsp;8s, &lt;&nbsp;16s, &lt;&nbsp;32s, &lt;&nbsp;64s,
+	&ge;&nbsp;64s.
       </para>
     </refsect2>
 
@@ -608,9 +609,10 @@ DB Statistics: notify_index.tdb
       <title>lock_buckets</title>
       <para>
 	Distribution of record lock requests based on time required to
-	obtain locks.  Buckets are &lt; 1ms, &lt; 10ms, &lt; 100ms,
-	&lt; 1s, &lt; 2s, &lt; 4s, &lt; 8s, &lt; 16s, &lt; 32s, &lt;
-	64s, &ge; 64s.
+	obtain locks.  Buckets are &lt;&nbsp;1ms, &lt;&nbsp;10ms,
+	&lt;&nbsp;100ms, &lt;&nbsp;1s, &lt;&nbsp;2s, &lt;&nbsp;4s,
+	&lt;&nbsp;8s, &lt;&nbsp;16s, &lt;&nbsp;32s, &lt;&nbsp;64s,
+	&ge;&nbsp;64s.
       </para>
     </refsect2>
 
