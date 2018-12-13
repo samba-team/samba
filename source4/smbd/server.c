@@ -430,24 +430,59 @@ static int binary_smbd_main(const char *binary_name,
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON,
-		 "Become a daemon (default)", NULL },
-		{"foreground", 'F', POPT_ARG_NONE, NULL, OPT_FOREGROUND,
-		 "Run the daemon in foreground", NULL },
-		{"interactive",	'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE,
-		 "Run interactive (not a daemon)", NULL},
-		{"model", 'M', POPT_ARG_STRING,	NULL, OPT_PROCESS_MODEL,
-		 "Select process model", "MODEL"},
-		{"maximum-runtime",0, POPT_ARG_INT, &max_runtime, 0,
-		 "set maximum runtime of the server process, "
-			"till autotermination", "seconds"},
-		{"show-build", 'b', POPT_ARG_NONE, NULL, OPT_SHOW_BUILD,
-			"show build info", NULL },
-		{"no-process-group", '\0', POPT_ARG_NONE, NULL,
-		  OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
+		{
+			.longName   = "daemon",
+			.shortName  = 'D',
+			.argInfo    = POPT_ARG_NONE,
+			.val        = OPT_DAEMON,
+			.descrip    = "Become a daemon (default)",
+		},
+		{
+			.longName   = "foreground",
+			.shortName  = 'F',
+			.argInfo    = POPT_ARG_NONE,
+			.val        = OPT_FOREGROUND,
+			.descrip    = "Run the daemon in foreground",
+		},
+		{
+			.longName   = "interactive",
+			.shortName  = 'i',
+			.argInfo    = POPT_ARG_NONE,
+			.val        = OPT_INTERACTIVE,
+			.descrip    = "Run interactive (not a daemon)",
+		},
+		{
+			.longName   = "model",
+			.shortName  = 'M',
+			.argInfo    = POPT_ARG_STRING,
+			.val        = OPT_PROCESS_MODEL,
+			.descrip    = "Select process model",
+			.argDescrip = "MODEL",
+		},
+		{
+			.longName   = "maximum-runtime",
+			.argInfo    = POPT_ARG_INT,
+			.arg        = &max_runtime,
+			.descrip    = "set maximum runtime of the server process, "
+			              "till autotermination",
+			.argDescrip = "seconds"
+		},
+		{
+			.longName   = "show-build",
+			.shortName  = 'b',
+			.argInfo    = POPT_ARG_NONE,
+			.val        = OPT_SHOW_BUILD,
+			.descrip    = "show build info",
+		},
+		{
+			.longName   = "no-process-group",
+			.argInfo    = POPT_ARG_NONE,
+			.val        = OPT_NO_PROCESS_GROUP,
+			.descrip    = "Don't create a new process group",
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
-		{ NULL }
+		POPT_TABLEEND
 	};
 	struct server_state *state = NULL;
 	struct tevent_signal *se = NULL;
