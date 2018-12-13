@@ -29,7 +29,8 @@ import xml.etree.ElementTree as etree
 import re
 from samba.net import Net
 from samba.dcerpc import nbt
-from samba import smb
+from samba.samba3 import libsmb_samba_internal as libsmb
+from samba.samba3 import param as s3param
 import samba.gpo as gpo
 from samba.param import LoadParm
 from uuid import UUID
@@ -386,7 +387,7 @@ def cache_gpo_dir(conn, cache, sub_dir):
         if e.errno != errno.EEXIST:
             raise
     for fdata in conn.list(sub_dir):
-        if fdata['attrib'] & smb.FILE_ATTRIBUTE_DIRECTORY:
+        if fdata['attrib'] & libsmb.FILE_ATTRIBUTE_DIRECTORY:
             cache_gpo_dir(conn, cache, os.path.join(sub_dir, fdata['name']))
         else:
             local_name = fdata['name'].upper()
@@ -407,7 +408,10 @@ def check_safe_path(path):
 
 
 def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
-    conn = smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds, sign=True)
+    # the SMB bindings rely on having a s3 loadparm
+    s3_lp = s3param.get_context()
+    s3_lp.load(lp.configfile)
+    conn = libsmb.Conn(dc_hostname, 'sysvol', lp=s3_lp, creds=creds, sign=True)
     cache_path = lp.cache_path('gpo_cache')
     for gpo in gpos:
         if not gpo.file_sys_path:
