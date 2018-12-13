@@ -44,7 +44,7 @@ typedef nss_status_t NSS_STATUS;
 #define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
 #define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
 
-#elif HAVE_NSS_H
+#elif defined(HAVE_NSS_H)
 
 /*
  * Linux (glibc)
@@ -53,7 +53,7 @@ typedef nss_status_t NSS_STATUS;
 #include <nss.h>
 typedef enum nss_status NSS_STATUS;
 
-#elif HAVE_NS_API_H
+#elif defined(HAVE_NS_API_H)
 
 /*
  * SGI IRIX
