@@ -101,6 +101,11 @@ def get_sid_for_restore(samdb):
     return str(sid) + '-' + str(rid)
 
 
+def smb_sysvol_conn(server, lp, creds):
+    """Returns an SMB connection to the sysvol share on the DC"""
+    return smb.SMB(server, "sysvol", lp=lp, creds=creds, sign=True)
+
+
 def get_timestamp():
     return datetime.datetime.now().isoformat().replace(':', '-')
 
@@ -251,7 +256,7 @@ class cmd_domain_backup_online(samba.netcmd.Command):
 
         # Grab the remote DC's sysvol files and bundle them into a tar file
         sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
-        smb_conn = smb.SMB(server, "sysvol", lp=lp, creds=creds, sign=True)
+        smb_conn = smb_sysvol_conn(server, lp, creds)
         backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
 
         # remove the default sysvol files created by the clone (we want to
@@ -836,7 +841,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         # use the old realm) backed here, as well as default files generated
         # for the new realm as part of the clone/join.
         sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
-        smb_conn = smb.SMB(server, "sysvol", lp=lp, creds=creds, sign=True)
+        smb_conn = smb_sysvol_conn(server, lp, creds)
         backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
 
         # connect to the local DB (making sure we use the new/renamed config)
