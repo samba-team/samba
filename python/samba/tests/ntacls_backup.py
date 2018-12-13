@@ -19,7 +19,7 @@
 """Tests for samba ntacls backup"""
 import os
 
-from samba import smb
+from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import smbd
 from samba import samdb
 from samba import ntacls
@@ -60,7 +60,7 @@ class NtaclsBackupRestoreTests(TestCaseInTempDir):
                                                  self.dom_sid)
         self.lp = self.ntacls_helper.lp
 
-        self.smb_conn = smb.SMB(
+        self.smb_conn = libsmb.Conn(
             self.server, self.service, lp=self.lp, creds=self.creds)
 
         self.smb_helper = ntacls.SMBHelper(self.smb_conn, self.dom_sid)
