@@ -1139,7 +1139,6 @@ static void log_standard_operation(
 		struct json_object json;
 		json = operation_json(module, request, reply);
 		audit_log_json(
-			OPERATION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_AUDIT_JSON,
 			OPERATION_LOG_LVL);
@@ -1160,7 +1159,6 @@ static void log_standard_operation(
 			struct json_object json;
 			json = password_change_json(module, request, reply);
 			audit_log_json(
-				PASSWORD_JSON_TYPE,
 				&json,
 				DBGC_DSDB_PWD_AUDIT_JSON,
 				PASSWORD_LOG_LVL);
@@ -1221,7 +1219,6 @@ static void log_replicated_operation(
 		struct json_object json;
 		json = replicated_update_json(module, request, reply);
 		audit_log_json(
-			REPLICATION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_AUDIT_JSON,
 			REPLICATION_LOG_LVL);
@@ -1311,7 +1308,6 @@ static void log_transaction(
 			&audit_private->transaction_guid,
 			duration);
 		audit_log_json(
-			TRANSACTION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_TXN_AUDIT_JSON,
 			log_level);
@@ -1384,7 +1380,6 @@ static void log_commit_failure(
 			reason,
 			&audit_private->transaction_guid);
 		audit_log_json(
-			TRANSACTION_JSON_TYPE,
 			&json,
 			DBGC_DSDB_TXN_AUDIT_JSON,
 			log_level);

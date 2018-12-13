@@ -105,13 +105,11 @@ const struct json_object json_empty_object = {.valid = false, .root = NULL};
  *
  * Write the json object to the audit logs as a formatted string
  *
- * @param prefix Text to be printed at the start of the log line
  * @param message The content of the log line.
  * @param debub_class The debug class to log the message with.
  * @param debug_level The debug level to log the message with.
  */
-void audit_log_json(const char* prefix,
-		    struct json_object* message,
+void audit_log_json(struct json_object* message,
 		    int debug_class,
 		    int debug_level)
 {
@@ -126,13 +124,20 @@ void audit_log_json(const char* prefix,
 	ctx = talloc_new(NULL);
 	s = json_to_string(ctx, message);
 	if (s == NULL) {
-		DBG_ERR("json_to_string for (%s) returned NULL, "
-			"JSON audit message could not written\n",
-			prefix);
+		DBG_ERR("json_to_string returned NULL, "
+			"JSON audit message could not written\n");
 		TALLOC_FREE(ctx);
 		return;
 	}
-	DEBUGC(debug_class, debug_level, ("JSON %s: %s\n", prefix, s));
+	/*
+	 * This is very strange, but we call this routine to get a log
+	 * output without the header.  JSON logs all have timestamps
+	 * so this only makes parsing harder.
+	 *
+	 * We push out the raw JSON blob without a prefix, consumers
+	 * can find such lines by the leading {
+	 */
+	DEBUGADDC(debug_class, debug_level, ("%s\n", s));
 	TALLOC_FREE(ctx);
 }
 

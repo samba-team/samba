@@ -507,7 +507,6 @@ static void log_primary_group_change(
 			group,
 			status);
 		audit_log_json(
-			AUDIT_JSON_TYPE,
 			&json,
 			DBGC_DSDB_GROUP_AUDIT_JSON,
 			GROUP_LOG_LVL);
@@ -582,7 +581,6 @@ static void log_membership_change(
 			group,
 			status);
 		audit_log_json(
-			AUDIT_JSON_TYPE,
 			&json,
 			DBGC_DSDB_GROUP_AUDIT_JSON,
 			GROUP_LOG_LVL);

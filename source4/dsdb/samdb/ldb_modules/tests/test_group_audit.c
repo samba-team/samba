@@ -752,19 +752,16 @@ static void test_get_primary_group_dn(void **state)
 /*
  * Mocking for audit_log_json to capture the called parameters
  */
-const char *audit_log_json_prefix = NULL;
 struct json_object *audit_log_json_message = NULL;
 int audit_log_json_debug_class = 0;
 int audit_log_json_debug_level = 0;
 
 
 void audit_log_json(
-	const char* prefix,
 	struct json_object* message,
 	int debug_class,
 	int debug_level)
 {
-	audit_log_json_prefix = prefix;
 	audit_log_json_message = message;
 	audit_log_json_debug_class = debug_class;
 	audit_log_json_debug_level = debug_level;
