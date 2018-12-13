@@ -29,12 +29,9 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,6,0)):
         interpreters.append(conf.env['PYTHON'])
         conf.setenv('default')
 
-    if not os.getenv('PYTHON', None):
-        conf.env['PYTHON'] = 'python3'
-
-    conf.find_program('python', var='PYTHON', mandatory=mandatory)
+    conf.find_program('python3', var='PYTHON', mandatory=mandatory)
     conf.load('python')
-    path_python = conf.find_program('python')
+    path_python = conf.find_program('python3')
 
     conf.env.PYTHON_SPECIFIED = (conf.env.PYTHON != path_python)
     conf.check_python_version(version)
