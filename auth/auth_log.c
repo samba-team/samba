@@ -78,11 +78,10 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui);
 static void log_json(struct imessaging_context *msg_ctx,
 		     struct loadparm_context *lp_ctx,
 		     struct json_object *object,
-		     const char *type,
 		     int debug_class,
 		     int debug_level)
 {
-	audit_log_json(type, object, debug_class, debug_level);
+	audit_log_json(object, debug_class, debug_level);
 	if (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx)) {
 		audit_message_send(msg_ctx,
 				   AUTH_EVENT_NAME,
@@ -102,9 +101,8 @@ static void log_json(struct imessaging_context *msg_ctx,
  *  To process the resulting log lines from the commend line use jq to
  *  parse the json.
  *
- *  grep "JSON Authentication" log file |
- *  sed 's;^[^{]*;;' |
- * jq -rc  '"\(.timestamp)\t\(.Authentication.status)\t
+ *  grep "^  {" log file |
+ *  jq -rc '"\(.timestamp)\t\(.Authentication.status)\t
  *           \(.Authentication.clientDomain)\t
  *           \(.Authentication.clientAccount)
  *           \t\(.Authentication.workstation)
@@ -272,7 +270,6 @@ static void log_authentication_event_json(
 	log_json(msg_ctx,
 		 lp_ctx,
 		 &wrapper,
-		 AUTH_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
 		 debug_level);
 	json_free(&wrapper);
@@ -300,8 +297,7 @@ failure:
  *  To process the resulting log lines from the commend line use jq to
  *  parse the json.
  *
- *  grep "JSON Authentication" log_file |\
- *  sed "s;^[^{]*;;" |\
+ *  grep "^  {" log_file |\
  *  jq -rc '"\(.timestamp)\t
  *           \(.Authorization.domain)\t
  *           \(.Authorization.account)\t
@@ -409,7 +405,6 @@ static void log_successful_authz_event_json(
 	log_json(msg_ctx,
 		 lp_ctx,
 		 &wrapper,
-		 AUTHZ_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
 		 debug_level);
 	json_free(&wrapper);

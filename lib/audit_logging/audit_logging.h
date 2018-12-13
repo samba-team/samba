@@ -43,8 +43,7 @@ extern const struct json_object json_empty_object;
 
 #define JSON_ERROR -1
 
-void audit_log_json(const char *prefix,
-		    struct json_object *message,
+void audit_log_json(struct json_object *message,
 		    int debug_class,
 		    int debug_level);
 void audit_message_send(struct imessaging_context *msg_ctx,
