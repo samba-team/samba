@@ -105,7 +105,7 @@ typedef struct {
 
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
 #define KRB5_KT_KEY(k)		(&(k)->key)
-#elif HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
+#elif defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)  /* Heimdal */
 #define KRB5_KT_KEY(k)		(&(k)->keyblock)
 #else
 #error krb5_keytab_entry has no key or keyblock member
