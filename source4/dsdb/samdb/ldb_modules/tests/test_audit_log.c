@@ -828,10 +828,13 @@ static void test_password_change_json_empty(void **state)
 	audit = json_object_get(json.root, "passwordChange");
 	assert_non_null(audit);
 	assert_true(json_is_object(audit));
-	assert_int_equal(9, json_object_size(audit));
+	assert_int_equal(10, json_object_size(audit));
 
 	o = json_object_get(audit, "version");
 	assert_non_null(o);
+
+	v = json_object_get(audit, "eventId");
+	assert_non_null(v);
 
 	v = json_object_get(audit, "statusCode");
 	assert_non_null(v);
@@ -950,11 +953,16 @@ static void test_password_change_json(void **state)
 	audit = json_object_get(json.root, "passwordChange");
 	assert_non_null(audit);
 	assert_true(json_is_object(audit));
-	assert_int_equal(9, json_object_size(audit));
+	assert_int_equal(10, json_object_size(audit));
 
 	o = json_object_get(audit, "version");
 	assert_non_null(o);
 	check_version(o, PASSWORD_MAJOR,PASSWORD_MINOR);
+
+	v = json_object_get(audit, "eventId");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(EVT_ID_PASSWORD_RESET, json_integer_value(v));
 
 	v = json_object_get(audit, "statusCode");
 	assert_non_null(v);

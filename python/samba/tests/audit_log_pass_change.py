@@ -28,6 +28,11 @@ from samba.tests.audit_log_base import AuditLogTestBase
 from samba.tests import delete_force
 from samba.net import Net
 from ldb import ERR_INSUFFICIENT_ACCESS_RIGHTS
+from samba.dcerpc.windows_event_ids import (
+    EVT_ID_PASSWORD_CHANGE,
+    EVT_ID_PASSWORD_RESET
+)
+
 
 USER_NAME = "auditlogtestuser"
 USER_PASS = samba.generate_random_password(32, 32)
@@ -119,6 +124,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["passwordChange"]
+        self.assertEquals(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
         self.assertEquals("Change", audit["action"])
         self.assertEquals(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
@@ -147,6 +153,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
+        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEquals("Reset", audit["action"])
         self.assertEquals(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
@@ -187,6 +194,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
+        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEquals("Reset", audit["action"])
         self.assertEquals(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
@@ -223,6 +231,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
+        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEquals("Reset", audit["action"])
         self.assertEquals(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
@@ -256,6 +265,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
+        self.assertEquals(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
         self.assertEquals("Change", audit["action"])
         self.assertEquals(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
@@ -286,6 +296,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
+        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEquals("Reset", audit["action"])
         self.assertEquals(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
@@ -312,6 +323,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         # The first message should be the reset from the Setup code.
         #
         audit = messages[0]["passwordChange"]
+        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEquals("Reset", audit["action"])
         self.assertEquals(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],

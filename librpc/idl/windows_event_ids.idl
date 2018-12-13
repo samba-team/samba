@@ -10,7 +10,9 @@ interface windows_events
 
 	typedef [v1_enum,public] enum {
 		EVT_ID_SUCCESSFUL_LOGON		= 4624,
-		EVT_ID_UNSUCCESSFUL_LOGON	= 4625
+		EVT_ID_UNSUCCESSFUL_LOGON	= 4625,
+		EVT_ID_PASSWORD_CHANGE		= 4723,
+		EVT_ID_PASSWORD_RESET		= 4724
 	} event_id_type;
 
 	typedef [v1_enum,public] enum {
