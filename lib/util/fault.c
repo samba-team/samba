@@ -248,7 +248,7 @@ void log_stack_trace(void)
 libunwind_failed:
 	DEBUG(0, ("unable to produce a stack trace with libunwind\n"));
 
-#elif HAVE_BACKTRACE_SYMBOLS
+#elif defined(HAVE_BACKTRACE_SYMBOLS)
 	void *backtrace_stack[BACKTRACE_STACK_SIZE];
 	size_t backtrace_size;
 	char **backtrace_strings;
