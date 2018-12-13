@@ -360,6 +360,14 @@ def create_directory_hier(conn, remotedir):
         if not conn.chkpath(path):
             conn.mkdir(path)
 
+def smb_connection(dc_hostname, service, lp, creds, sign=False):
+    # SMB connect to DC
+    try:
+        conn = smb.SMB(dc_hostname, service, lp=lp, creds=creds, sign=sign)
+    except Exception:
+        raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
+    return conn
+
 
 class GPOCommand(Command):
     def construct_tmpdir(self, tmpdir, gpo):
@@ -964,14 +972,8 @@ class cmd_fetch(GPOCommand):
             raise CommandError("Invalid GPO path (%s)" % unc)
 
         # SMB connect to DC
-        try:
-            conn = smb.SMB(dc_hostname,
-                           service,
-                           lp=self.lp,
-                           creds=self.creds,
-                           sign=True)
-        except Exception:
-            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
+        conn = smb_connection(dc_hostname, service, lp=self.lp,
+                              creds=self.creds, sign=True)
 
         # Copy GPT
         tmpdir, gpodir = self.construct_tmpdir(tmpdir, gpo)
@@ -1033,10 +1035,8 @@ class cmd_backup(GPOCommand):
             raise CommandError("Invalid GPO path (%s)" % unc)
 
         # SMB connect to DC
-        try:
-            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
-        except Exception:
-            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
+        conn = smb_connection(dc_hostname, service, lp=self.lp,
+                              creds=self.creds)
 
         # Copy GPT
         tmpdir, gpodir = self.construct_tmpdir(tmpdir, gpo)
@@ -1192,10 +1192,8 @@ class cmd_create(GPOCommand):
         # Connect to DC over SMB
         [dom_name, service, sharepath] = parse_unc(unc_path)
         self.sharepath = sharepath
-        try:
-            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
-        except Exception as e:
-            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
+        conn = smb_connection(dc_hostname, service, lp=self.lp,
+                              creds=self.creds)
 
         self.conn = conn
 
@@ -1449,10 +1447,8 @@ class cmd_del(GPOCommand):
 
         # Connect to DC over SMB
         [dom_name, service, sharepath] = parse_unc(unc_path)
-        try:
-            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
-        except Exception as e:
-            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
+        conn = smb_connection(dc_hostname, service, lp=self.lp,
+                              creds=self.creds)
 
         self.samdb.transaction_start()
         try:
@@ -1527,10 +1523,8 @@ class cmd_aclcheck(GPOCommand):
                 raise CommandError("Invalid GPO path (%s)" % unc)
 
             # SMB connect to DC
-            try:
-                conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
-            except Exception:
-                raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
+            conn = smb_connection(dc_hostname, service, lp=self.lp,
+                                  creds=self.creds)
 
             fs_sd = conn.get_acl(sharepath, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL, security.SEC_FLAG_MAXIMUM_ALLOWED)
 
