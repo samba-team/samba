@@ -31,11 +31,11 @@
 
 #ifdef HAVE_GSSAPI_GSSAPI_EXT_H
 #include <gssapi/gssapi_ext.h>
-#elif HAVE_GSSAPI_GSSAPI_H
+#elif defined(HAVE_GSSAPI_GSSAPI_H)
 #include <gssapi/gssapi.h>
-#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
+#elif defined(HAVE_GSSAPI_GSSAPI_GENERIC_H)
 #include <gssapi/gssapi_generic.h>
-#elif HAVE_GSSAPI_H
+#elif defined(HAVE_GSSAPI_H)
 #include <gssapi.h>
 #endif
 
@@ -45,7 +45,7 @@
 
 #ifdef HAVE_GSSAPI_GSSAPI_SPNEGO_H
 #include <gssapi/gssapi_spnego.h>
-#elif HAVE_GSSAPI_SPNEGO_H
+#elif defined(HAVE_GSSAPI_SPNEGO_H)
 #include <gssapi_spnego.h>
 #endif
 
