@@ -717,126 +717,285 @@ static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 }
 
 static PyMethodDef py_creds_methods[] = {
-	{ "get_username", py_creds_get_username, METH_NOARGS,
-		"S.get_username() -> username\nObtain username." },
-	{ "set_username", py_creds_set_username, METH_VARARGS,
-		"S.set_username(name[, credentials.SPECIFIED]) -> None\n"
-		"Change username." },
-	{ "get_principal", py_creds_get_principal, METH_NOARGS,
-		"S.get_principal() -> user@realm\nObtain user principal." },
-	{ "set_principal", py_creds_set_principal, METH_VARARGS,
-		"S.set_principal(name[, credentials.SPECIFIED]) -> None\n"
-		"Change principal." },
-	{ "get_password", py_creds_get_password, METH_NOARGS,
-		"S.get_password() -> password\n"
-		"Obtain password." },
-	{ "get_ntlm_username_domain", py_creds_get_ntlm_username_domain, METH_NOARGS,
-		"S.get_ntlm_username_domain() -> (domain, username)\n"
-		"Obtain NTLM username and domain, split up either as (DOMAIN, user) or (\"\", \"user@realm\")." },
-	{ "get_ntlm_response", (PyCFunction)py_creds_get_ntlm_response, METH_VARARGS | METH_KEYWORDS,
-		"S.get_ntlm_response"
-	        "(flags, challenge[, target_info]) -> "
-	        "(flags, lm_response, nt_response, lm_session_key, nt_session_key)\n"
-		"Obtain LM or NTLM response." },
-	{ "set_password", py_creds_set_password, METH_VARARGS,
-		"S.set_password(password[, credentials.SPECIFIED]) -> None\n"
-		"Change password." },
-	{ "set_utf16_password", py_creds_set_utf16_password, METH_VARARGS,
-		"S.set_utf16_password(password[, credentials.SPECIFIED]) -> None\n"
-		"Change password." },
-	{ "get_old_password", py_creds_get_old_password, METH_NOARGS,
-		"S.get_old_password() -> password\n"
-		"Obtain old password." },
-	{ "set_old_password", py_creds_set_old_password, METH_VARARGS,
-		"S.set_old_password(password[, credentials.SPECIFIED]) -> None\n"
-		"Change old password." },
-	{ "set_old_utf16_password", py_creds_set_old_utf16_password, METH_VARARGS,
-		"S.set_old_utf16_password(password[, credentials.SPECIFIED]) -> None\n"
-		"Change old password." },
-	{ "get_domain", py_creds_get_domain, METH_NOARGS,
-		"S.get_domain() -> domain\n"
-		"Obtain domain name." },
-	{ "set_domain", py_creds_set_domain, METH_VARARGS,
-		"S.set_domain(domain[, credentials.SPECIFIED]) -> None\n"
-		"Change domain name." },
-	{ "get_realm", py_creds_get_realm, METH_NOARGS,
-		"S.get_realm() -> realm\n"
-		"Obtain realm name." },
-	{ "set_realm", py_creds_set_realm, METH_VARARGS,
-		"S.set_realm(realm[, credentials.SPECIFIED]) -> None\n"
-		"Change realm name." },
-	{ "get_bind_dn", py_creds_get_bind_dn, METH_NOARGS,
-		"S.get_bind_dn() -> bind dn\n"
-		"Obtain bind DN." },
-	{ "set_bind_dn", py_creds_set_bind_dn, METH_VARARGS,
-		"S.set_bind_dn(bind_dn) -> None\n"
-		"Change bind DN." },
-	{ "is_anonymous", py_creds_is_anonymous, METH_NOARGS,
-		NULL },
-	{ "set_anonymous", py_creds_set_anonymous, METH_NOARGS,
-        	"S.set_anonymous() -> None\n"
-		"Use anonymous credentials." },
-	{ "get_workstation", py_creds_get_workstation, METH_NOARGS,
-		NULL },
-	{ "set_workstation", py_creds_set_workstation, METH_VARARGS,
-		NULL },
-	{ "authentication_requested", py_creds_authentication_requested, METH_NOARGS,
-		NULL },
-	{ "wrong_password", py_creds_wrong_password, METH_NOARGS,
-		"S.wrong_password() -> bool\n"
-		"Indicate the returned password was incorrect." },
-	{ "set_cmdline_callbacks", py_creds_set_cmdline_callbacks, METH_NOARGS,
-		"S.set_cmdline_callbacks() -> bool\n"
-		"Use command-line to obtain credentials not explicitly set." },
-	{ "parse_string", py_creds_parse_string, METH_VARARGS,
-		"S.parse_string(text[, credentials.SPECIFIED]) -> None\n"
-		"Parse credentials string." },
-	{ "parse_file", py_creds_parse_file, METH_VARARGS,
-		"S.parse_file(filename[, credentials.SPECIFIED]) -> None\n"
-		"Parse credentials file." },
-	{ "set_password_will_be_nt_hash",
-		py_cli_credentials_set_password_will_be_nt_hash, METH_VARARGS,
-		"S.set_password_will_be_nt_hash(bool) -> None\n"
-		"Alters the behaviour of S.set_password() "
-		"to expect the NTHASH as hexstring." },
-	{ "get_nt_hash", py_creds_get_nt_hash, METH_NOARGS,
-		NULL },
-	{ "get_kerberos_state", py_creds_get_kerberos_state, METH_NOARGS,
-		NULL },
-	{ "set_kerberos_state", py_creds_set_kerberos_state, METH_VARARGS,
-		NULL },
-	{ "set_krb_forwardable", py_creds_set_krb_forwardable, METH_VARARGS,
-		NULL },
-	{ "guess", py_creds_guess, METH_VARARGS, NULL },
-	{ "set_machine_account", py_creds_set_machine_account, METH_VARARGS, NULL },
-	{ "get_named_ccache", py_creds_get_named_ccache, METH_VARARGS, NULL },
-	{ "set_named_ccache", py_creds_set_named_ccache, METH_VARARGS,
-		"S.set_named_ccache(krb5_ccache_name, obtained, lp) -> None\n"
-		"Set credentials to KRB5 Credentials Cache (by name)." },
-	{ "set_gensec_features", py_creds_set_gensec_features, METH_VARARGS, NULL },
-	{ "get_gensec_features", py_creds_get_gensec_features, METH_NOARGS, NULL },
-	{ "get_forced_sasl_mech", py_creds_get_forced_sasl_mech, METH_NOARGS,
-		"S.get_forced_sasl_mech() -> SASL mechanism\nObtain forced SASL mechanism." },
-	{ "set_forced_sasl_mech", py_creds_set_forced_sasl_mech, METH_VARARGS,
-		"S.set_forced_sasl_mech(name) -> None\n"
-		"Set forced SASL mechanism." },
-	{ "new_client_authenticator",
-		py_creds_new_client_authenticator,
-		METH_NOARGS,
-		"S.new_client_authenticator() -> Authenticator\n"
-		"Get a new client NETLOGON_AUTHENTICATOR"},
-	{ "set_secure_channel_type", py_creds_set_secure_channel_type,
-	  METH_VARARGS, NULL },
-	{ "get_secure_channel_type", py_creds_get_secure_channel_type,
-	  METH_VARARGS },
-	{ "encrypt_netr_crypt_password",
-		py_creds_encrypt_netr_crypt_password,
-		METH_VARARGS,
-		"S.encrypt_netr_crypt_password(password) -> NTSTATUS\n"
-		"Encrypt the supplied password using the session key and\n"
-		"the negotiated encryption algorithm in place\n"
-		"i.e. it overwrites the original data"},
-	{ NULL }
+	{
+		.ml_name  = "get_username",
+		.ml_meth  = py_creds_get_username,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_username() -> username\nObtain username.",
+	},
+	{
+		.ml_name  = "set_username",
+		.ml_meth  = py_creds_set_username,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_username(name[, credentials.SPECIFIED]) -> None\n"
+			    "Change username.",
+	},
+	{
+		.ml_name  = "get_principal",
+		.ml_meth  = py_creds_get_principal,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_principal() -> user@realm\nObtain user principal.",
+	},
+	{
+		.ml_name  = "set_principal",
+		.ml_meth  = py_creds_set_principal,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_principal(name[, credentials.SPECIFIED]) -> None\n"
+			    "Change principal.",
+	},
+	{
+		.ml_name  = "get_password",
+		.ml_meth  = py_creds_get_password,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_password() -> password\n"
+			    "Obtain password.",
+	},
+	{
+		.ml_name  = "get_ntlm_username_domain",
+		.ml_meth  = py_creds_get_ntlm_username_domain,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_ntlm_username_domain() -> (domain, username)\n"
+			    "Obtain NTLM username and domain, split up either as (DOMAIN, user) or (\"\", \"user@realm\").",
+	},
+	{
+		.ml_name  = "get_ntlm_response",
+		.ml_meth  = (PyCFunction)py_creds_get_ntlm_response,
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "S.get_ntlm_response"
+		            "(flags, challenge[, target_info]) -> "
+			    "(flags, lm_response, nt_response, lm_session_key, nt_session_key)\n"
+			    "Obtain LM or NTLM response.",
+	},
+	{
+		.ml_name  = "set_password",
+		.ml_meth  = py_creds_set_password,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_password(password[, credentials.SPECIFIED]) -> None\n"
+			    "Change password.",
+	},
+	{
+		.ml_name  = "set_utf16_password",
+		.ml_meth  = py_creds_set_utf16_password,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_utf16_password(password[, credentials.SPECIFIED]) -> None\n"
+			    "Change password.",
+	},
+	{
+		.ml_name  = "get_old_password",
+		.ml_meth  = py_creds_get_old_password,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_old_password() -> password\n"
+			    "Obtain old password.",
+	},
+	{
+		.ml_name  = "set_old_password",
+		.ml_meth  = py_creds_set_old_password,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_old_password(password[, credentials.SPECIFIED]) -> None\n"
+			    "Change old password.",
+	},
+	{
+		.ml_name  = "set_old_utf16_password",
+		.ml_meth  = py_creds_set_old_utf16_password,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_old_utf16_password(password[, credentials.SPECIFIED]) -> None\n"
+			    "Change old password.",
+	},
+	{
+		.ml_name  = "get_domain",
+		.ml_meth  = py_creds_get_domain,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_domain() -> domain\n"
+			    "Obtain domain name.",
+	},
+	{
+		.ml_name  = "set_domain",
+		.ml_meth  = py_creds_set_domain,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_domain(domain[, credentials.SPECIFIED]) -> None\n"
+			    "Change domain name.",
+	},
+	{
+		.ml_name  = "get_realm",
+		.ml_meth  = py_creds_get_realm,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_realm() -> realm\n"
+			    "Obtain realm name.",
+	},
+	{
+		.ml_name  = "set_realm",
+		.ml_meth  = py_creds_set_realm,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_realm(realm[, credentials.SPECIFIED]) -> None\n"
+			    "Change realm name.",
+	},
+	{
+		.ml_name  = "get_bind_dn",
+		.ml_meth  = py_creds_get_bind_dn,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_bind_dn() -> bind dn\n"
+			    "Obtain bind DN.",
+	},
+	{
+		.ml_name  = "set_bind_dn",
+		.ml_meth  = py_creds_set_bind_dn,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_bind_dn(bind_dn) -> None\n"
+			    "Change bind DN.",
+	},
+	{
+		.ml_name  = "is_anonymous",
+		.ml_meth  = py_creds_is_anonymous,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "set_anonymous",
+		.ml_meth  = py_creds_set_anonymous,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.set_anonymous() -> None\n"
+			    "Use anonymous credentials.",
+	},
+	{
+		.ml_name  = "get_workstation",
+		.ml_meth  = py_creds_get_workstation,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "set_workstation",
+		.ml_meth  = py_creds_set_workstation,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "authentication_requested",
+		.ml_meth  = py_creds_authentication_requested,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "wrong_password",
+		.ml_meth  = py_creds_wrong_password,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.wrong_password() -> bool\n"
+			    "Indicate the returned password was incorrect.",
+	},
+	{
+		.ml_name  = "set_cmdline_callbacks",
+		.ml_meth  = py_creds_set_cmdline_callbacks,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.set_cmdline_callbacks() -> bool\n"
+			    "Use command-line to obtain credentials not explicitly set.",
+	},
+	{
+		.ml_name  = "parse_string",
+		.ml_meth  = py_creds_parse_string,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.parse_string(text[, credentials.SPECIFIED]) -> None\n"
+			    "Parse credentials string.",
+	},
+	{
+		.ml_name  = "parse_file",
+		.ml_meth  = py_creds_parse_file,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.parse_file(filename[, credentials.SPECIFIED]) -> None\n"
+			    "Parse credentials file.",
+	},
+	{
+		.ml_name  = "set_password_will_be_nt_hash",
+		.ml_meth  = py_cli_credentials_set_password_will_be_nt_hash,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_password_will_be_nt_hash(bool) -> None\n"
+			    "Alters the behaviour of S.set_password() "
+			    "to expect the NTHASH as hexstring.",
+	},
+	{
+		.ml_name  = "get_nt_hash",
+		.ml_meth  = py_creds_get_nt_hash,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "get_kerberos_state",
+		.ml_meth  = py_creds_get_kerberos_state,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "set_kerberos_state",
+		.ml_meth  = py_creds_set_kerberos_state,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "set_krb_forwardable",
+		.ml_meth  = py_creds_set_krb_forwardable,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "guess",
+		.ml_meth  = py_creds_guess,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "set_machine_account",
+		.ml_meth  = py_creds_set_machine_account,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_named_ccache",
+		.ml_meth  = py_creds_get_named_ccache,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "set_named_ccache",
+		.ml_meth  = py_creds_set_named_ccache,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_named_ccache(krb5_ccache_name, obtained, lp) -> None\n"
+			    "Set credentials to KRB5 Credentials Cache (by name).",
+	},
+	{
+		.ml_name  = "set_gensec_features",
+		.ml_meth  = py_creds_set_gensec_features,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_gensec_features",
+		.ml_meth  = py_creds_get_gensec_features,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "get_forced_sasl_mech",
+		.ml_meth  = py_creds_get_forced_sasl_mech,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_forced_sasl_mech() -> SASL mechanism\nObtain forced SASL mechanism.",
+	},
+	{
+		.ml_name  = "set_forced_sasl_mech",
+		.ml_meth  = py_creds_set_forced_sasl_mech,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_forced_sasl_mech(name) -> None\n"
+			    "Set forced SASL mechanism.",
+	},
+	{
+		.ml_name  = "new_client_authenticator",
+		.ml_meth  = py_creds_new_client_authenticator,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.new_client_authenticator() -> Authenticator\n"
+			    "Get a new client NETLOGON_AUTHENTICATOR"},
+	{
+		.ml_name  = "set_secure_channel_type",
+		.ml_meth  = py_creds_set_secure_channel_type,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_secure_channel_type",
+		.ml_meth  = py_creds_get_secure_channel_type,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "encrypt_netr_crypt_password",
+		.ml_meth  = py_creds_encrypt_netr_crypt_password,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.encrypt_netr_crypt_password(password) -> NTSTATUS\n"
+			    "Encrypt the supplied password using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data"},
+	{ .ml_name = NULL }
 };
 
 static struct PyModuleDef moduledef = {
