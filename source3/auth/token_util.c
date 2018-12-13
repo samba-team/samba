@@ -430,9 +430,10 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	int i;
 	NTSTATUS status;
 	uint32_t session_info_flags = 0;
+	struct dom_sid_buf buf;
 
 	DEBUG(10, ("Create local NT token for %s\n",
-		   sid_string_dbg(user_sid)));
+		   dom_sid_str_buf(user_sid, &buf)));
 
 	if (!(result = talloc_zero(mem_ctx, struct security_token))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -554,8 +555,9 @@ static NTSTATUS add_local_groups(struct security_token *result,
 
 		pass = getpwuid_alloc(tmp_ctx, uid);
 		if (pass == NULL) {
+			struct dom_sid_buf buf;
 			DEBUG(1, ("SID %s -> getpwuid(%u) failed\n",
-				sid_string_dbg(&result->sids[0]),
+				dom_sid_str_buf(&result->sids[0], &buf),
 				(unsigned int)uid));
 		}
 	}
@@ -903,6 +905,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	uint32_t i;
 	uint32_t high, low;
 	bool range_ok;
+	struct dom_sid_buf buf;
 
 	if (sid_check_is_in_our_sam(user_sid)) {
 		bool ret;
@@ -922,7 +925,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		if (!ret) {
 			DEBUG(1, ("pdb_getsampwsid(%s) failed\n",
-				  sid_string_dbg(user_sid)));
+				  dom_sid_str_buf(user_sid, &buf)));
 			DEBUGADD(1, ("Fall back to unix user\n"));
 			goto unix_user;
 		}
@@ -932,7 +935,8 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 						    &pdb_num_group_sids);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(1, ("enum_group_memberships failed for %s: "
-				  "%s\n", sid_string_dbg(user_sid),
+				  "%s\n",
+				  dom_sid_str_buf(user_sid, &buf),
 				  nt_errstr(result)));
 			DEBUGADD(1, ("Fall back to unix uid lookup\n"));
 			goto unix_user;
@@ -995,7 +999,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		if (!sid_to_uid(user_sid, uid)) {
 			DEBUG(1, ("unix_user case, sid_to_uid for %s failed\n",
-				  sid_string_dbg(user_sid)));
+				  dom_sid_str_buf(user_sid, &buf)));
 			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
@@ -1050,7 +1054,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		/* We must always assign the *uid. */
 		if (!sid_to_uid(user_sid, uid)) {
 			DEBUG(1, ("winbindd case, sid_to_uid for %s failed\n",
-				  sid_string_dbg(user_sid)));
+				  dom_sid_str_buf(user_sid, &buf)));
 			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
@@ -1075,7 +1079,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		if (!sid_to_gid(&group_sids[0], &gids[0])) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",
-				  sid_string_dbg(&group_sids[0])));
+				  dom_sid_str_buf(&group_sids[0], &buf)));
 			goto done;
 		}
 

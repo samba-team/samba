@@ -607,9 +607,10 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 		if (ids[i].type != ID_TYPE_GID &&
 		    ids[i].type != ID_TYPE_BOTH) {
+			struct dom_sid_buf buf;
 			DEBUG(10, ("Could not convert SID %s to gid, "
 				   "ignoring it\n",
-				   sid_string_dbg(&t->sids[i])));
+				   dom_sid_str_buf(&t->sids[i], &buf)));
 			continue;
 		}
 		if (!add_gid_to_array_unique(session_info->unix_token,
@@ -1084,10 +1085,11 @@ NTSTATUS auth3_session_info_create(TALLOC_CTX *mem_ctx,
 		    ids[i].type != ID_TYPE_BOTH) {
 			struct security_token *nt_token =
 				session_info->security_token;
+			struct dom_sid_buf buf;
 
 			DEBUG(10, ("Could not convert SID %s to gid, "
 				   "ignoring it\n",
-				   sid_string_dbg(&nt_token->sids[i])));
+				   dom_sid_str_buf(&nt_token->sids[i], &buf)));
 			continue;
 		}
 

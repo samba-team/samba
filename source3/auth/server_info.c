@@ -310,13 +310,14 @@ static NTSTATUS merge_resource_sids(const struct PAC_LOGON_INFO *logon_info,
 		NTSTATUS status;
 		struct dom_sid new_sid;
 		uint32_t attributes = rg->groups.rids[i].attributes;
+		struct dom_sid_buf buf;
 
 		sid_compose(&new_sid,
 			    rg->domain_sid,
 			    rg->groups.rids[i].rid);
 
 		DEBUG(10, ("Adding SID %s to extra SIDS\n",
-			sid_string_dbg(&new_sid)));
+			   dom_sid_str_buf(&new_sid, &buf)));
 
 		status = append_netr_SidAttr(info3, &info3->sids,
 					&info3->sidcount,
@@ -324,7 +325,7 @@ static NTSTATUS merge_resource_sids(const struct PAC_LOGON_INFO *logon_info,
 					attributes);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("failed to append SID %s to extra SIDS: %s\n",
-				sid_string_dbg(&new_sid),
+				dom_sid_str_buf(&new_sid, &buf),
 				nt_errstr(status)));
 			return status;
 		}
@@ -431,6 +432,8 @@ static NTSTATUS SamInfo3_handle_sids(const char *username,
 			struct dom_sid *domain_sid,
 			struct extra_auth_info *extra)
 {
+	struct dom_sid_buf buf;
+
 	if (sid_check_is_in_unix_users(user_sid)) {
 		/* in info3 you can only set rids for the user and the
 		 * primary group, and the domain sid must be that of
@@ -445,7 +448,7 @@ static NTSTATUS SamInfo3_handle_sids(const char *username,
 
 		DEBUG(10, ("Unix User found. Rid marked as "
 			"special and sid (%s) saved as extra sid\n",
-			sid_string_dbg(user_sid)));
+			dom_sid_str_buf(user_sid, &buf)));
 	} else {
 		sid_copy(domain_sid, user_sid);
 		sid_split_rid(domain_sid, &info3->base.rid);
@@ -471,17 +474,18 @@ static NTSTATUS SamInfo3_handle_sids(const char *username,
 
 		DEBUG(10, ("Unix Group found. Rid marked as "
 			"special and sid (%s) saved as extra sid\n",
-			sid_string_dbg(group_sid)));
+			dom_sid_str_buf(group_sid, &buf)));
 	} else {
 		bool ok = sid_peek_check_rid(domain_sid, group_sid,
 					&info3->base.primary_gid);
 		if (!ok) {
+			struct dom_sid_buf buf2, buf3;
 			DEBUG(1, ("The primary group domain sid(%s) does not "
 				"match the domain sid(%s) for %s(%s)\n",
-				sid_string_dbg(group_sid),
-				sid_string_dbg(domain_sid),
+				dom_sid_str_buf(group_sid, &buf),
+				dom_sid_str_buf(domain_sid, &buf2),
 				username,
-				sid_string_dbg(user_sid)));
+				dom_sid_str_buf(user_sid, &buf3)));
 			return NT_STATUS_INVALID_SID;
 		}
 	}
@@ -751,12 +755,14 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	ok = sid_peek_check_rid(&domain_sid, &group_sid,
 				&info3->base.primary_gid);
 	if (!ok) {
+		struct dom_sid_buf buf1, buf2, buf3;
+
 		DEBUG(1, ("The primary group domain sid(%s) does not "
 			  "match the domain sid(%s) for %s(%s)\n",
-			  sid_string_dbg(&group_sid),
-			  sid_string_dbg(&domain_sid),
+			  dom_sid_str_buf(&group_sid, &buf1),
+			  dom_sid_str_buf(&domain_sid, &buf2),
 			  unix_username,
-			  sid_string_dbg(&user_sid)));
+			  dom_sid_str_buf(&user_sid, &buf3)));
 		status = NT_STATUS_INVALID_SID;
 		goto done;
 	}
