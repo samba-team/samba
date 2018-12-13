@@ -599,24 +599,40 @@ static PyObject *obj_get_text(PyTdbObject *self, void *closure)
 }
 
 static PyGetSetDef tdb_object_getsetters[] = {
-	{ discard_const_p(char, "hash_size"),
-	  (getter)obj_get_hash_size, NULL, NULL },
-	{ discard_const_p(char, "map_size"),
-	  (getter)obj_get_map_size, NULL, NULL },
-	{ discard_const_p(char, "freelist_size"),
-	  (getter)obj_get_freelist_size, NULL, NULL },
-	{ discard_const_p(char, "flags"),
-	  (getter)obj_get_flags, NULL, NULL },
-	{ discard_const_p(char, "max_dead"),
-	  NULL, (setter)obj_set_max_dead, NULL },
-	{ discard_const_p(char, "filename"),
-	  (getter)obj_get_filename, NULL,
-	  discard_const_p(char, "The filename of this TDB file.") },
-	{ discard_const_p(char, "seqnum"),
-	  (getter)obj_get_seqnum, NULL, NULL },
-	{ discard_const_p(char, "text"),
-	  (getter)obj_get_text, NULL, NULL },
-	{ NULL }
+	{
+		.name    = discard_const_p(char, "hash_size"),
+		.get     = (getter)obj_get_hash_size,
+	},
+	{
+		.name    = discard_const_p(char, "map_size"),
+		.get     = (getter)obj_get_map_size,
+	},
+	{
+		.name    = discard_const_p(char, "freelist_size"),
+		.get     = (getter)obj_get_freelist_size,
+	},
+	{
+		.name    = discard_const_p(char, "flags"),
+		.get     = (getter)obj_get_flags,
+	},
+	{
+		.name    = discard_const_p(char, "max_dead"),
+		.set     = (setter)obj_set_max_dead,
+	},
+	{
+		.name    = discard_const_p(char, "filename"),
+		.get     = (getter)obj_get_filename,
+		.doc     = discard_const_p(char, "The filename of this TDB file."),
+	},
+	{
+		.name    = discard_const_p(char, "seqnum"),
+		.get     = (getter)obj_get_seqnum,
+	},
+	{
+		.name    = discard_const_p(char, "text"),
+		.get     = (getter)obj_get_text,
+	},
+	{ .name = NULL }
 };
 
 static PyObject *tdb_object_repr(PyTdbObject *self)
