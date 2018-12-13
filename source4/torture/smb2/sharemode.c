@@ -34,14 +34,38 @@ struct hold_sharemode_info {
 	const char *filename;
 	struct smb2_handle handle;
 } hold_sharemode_table[] = {
-	{ "",	 BASEDIRHOLD "\\N"	},
-	{ "R",	 BASEDIRHOLD "\\R"	},
-	{ "W",	 BASEDIRHOLD "\\W"	},
-	{ "D",	 BASEDIRHOLD "\\D"	},
-	{ "RW",  BASEDIRHOLD "\\RW"	},
-	{ "RD",  BASEDIRHOLD "\\RD"	},
-	{ "WD",  BASEDIRHOLD "\\WD"	},
-	{ "RWD", BASEDIRHOLD "\\RWD"	},
+	{
+		.sharemode = "",
+		.filename  = BASEDIRHOLD "\\N",
+	},
+	{
+		.sharemode = "R",
+		.filename  = BASEDIRHOLD "\\R",
+	},
+	{
+		.sharemode = "W",
+		.filename  = BASEDIRHOLD "\\W",
+	},
+	{
+		.sharemode = "D",
+		.filename  = BASEDIRHOLD "\\D",
+	},
+	{
+		.sharemode = "RW",
+		.filename  = BASEDIRHOLD "\\RW",
+	},
+	{
+		.sharemode = "RD",
+		.filename  = BASEDIRHOLD "\\RD",
+	},
+	{
+		.sharemode = "WD",
+		.filename  = BASEDIRHOLD "\\WD",
+	},
+	{
+		.sharemode = "RWD",
+		.filename  = BASEDIRHOLD "\\RWD",
+	},
 };
 
 static void signal_handler(struct tevent_context *ev,
