@@ -32,7 +32,8 @@ from ldb import LdbError
 from samba.tests.password_test import PasswordCommon
 from samba.dcerpc.windows_event_ids import (
     EVT_ID_SUCCESSFUL_LOGON,
-    EVT_ID_UNSUCCESSFUL_LOGON
+    EVT_ID_UNSUCCESSFUL_LOGON,
+    EVT_LOGON_NETWORK
 )
 
 USER_NAME = "authlogtestuser"
@@ -87,7 +88,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "samr_ChangePasswordUser3") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_SUCCESSFUL_LOGON))
+                        EVT_ID_SUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials())
 
@@ -115,7 +118,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "samr_ChangePasswordUser3") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials())
 
@@ -148,7 +153,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "samr_ChangePasswordUser3") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials())
 
@@ -181,7 +188,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "samr_ChangePasswordUser3") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials())
 
@@ -218,7 +227,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "OemChangePasswordUser2") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         username = os.environ["USERNAME"]
         server = os.environ["SERVER"]
@@ -243,7 +254,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "LDAP Modify") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_SUCCESSFUL_LOGON))
+                        EVT_ID_SUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         new_password = samba.generate_random_password(32, 32)
         self.ldb.modify_ldif(
@@ -300,7 +313,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "LDAP Modify") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         new_password = samba.generate_random_password(32, 32)
         try:

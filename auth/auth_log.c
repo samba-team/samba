@@ -92,6 +92,31 @@ static void log_json(struct imessaging_context *msg_ctx,
 }
 
 /*
+ * Determine the Windows logon type for the current authorisation attempt.
+ *
+ * Currently Samba only supports
+ *
+ * 2 Interactive      A user logged on to this computer.
+ * 3 Network          A user or computer logged on to this computer from
+ *                    the network.
+ * 8 NetworkCleartext A user logged on to this computer from the network.
+ *                    The user's password was passed to the authentication
+ *                    package in its unhashed form.
+ *
+ */
+static enum event_logon_type get_logon_type(
+	const struct auth_usersupplied_info *ui)
+{
+	if ((ui->logon_parameters & MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED)
+	   || (ui->password_state == AUTH_PASSWORD_PLAIN)) {
+		return EVT_LOGON_NETWORK_CLEAR_TEXT;
+	} else if (ui->flags & USER_INFO_INTERACTIVE_LOGON) {
+		return EVT_LOGON_INTERACTIVE;
+	}
+	return EVT_LOGON_NETWORK;
+}
+
+/*
  * Write a machine parsable json formatted authentication log entry.
  *
  * IF removing or changing the format/meaning of a field please update the
@@ -139,6 +164,10 @@ static void log_authentication_event_json(
 	rc = json_add_int(&authentication,
 			  "eventId",
 			  event_id);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_int(&authentication, "logonType", get_logon_type(ui));
 	if (rc != 0) {
 		goto failure;
 	}

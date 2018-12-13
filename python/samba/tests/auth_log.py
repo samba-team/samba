@@ -30,7 +30,10 @@ from subprocess import call
 from ldb import LdbError
 from samba.dcerpc.windows_event_ids import (
     EVT_ID_SUCCESSFUL_LOGON,
-    EVT_ID_UNSUCCESSFUL_LOGON
+    EVT_ID_UNSUCCESSFUL_LOGON,
+    EVT_LOGON_NETWORK,
+    EVT_LOGON_INTERACTIVE,
+    EVT_LOGON_NETWORK_CLEAR_TEXT
 )
 import re
 
@@ -98,6 +101,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
         self._assert_ncacn_np_serviceDescription(binding,
                                                  msg["Authentication"]["serviceDescription"])
         self.assertEquals(authTypes[1],
@@ -129,6 +134,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                               msg["Authentication"]["authDescription"])
             self.assertEquals(
                 EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+            self.assertEquals(
+                EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def rpc_ncacn_np_krb5_check(
             self,
@@ -155,6 +162,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         # This this the TCP Authentication in response to the message too big
@@ -168,6 +177,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the third message it should be an Authorization
         msg = messages[2]
@@ -317,6 +328,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def rpc_ncacn_ip_tcp_krb5_check(self, messages, authTypes, service,
                                     binding, protection):
@@ -345,6 +358,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the third message it should be an Authentication
         msg = messages[2]
@@ -356,6 +371,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def test_rpc_ncacn_ip_tcp_ntlm_dns_sign(self):
         creds = self.insta_creds(template=self.get_credentials(),
@@ -461,6 +478,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertTrue(msg["Authentication"]["duration"] > 0)
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
@@ -473,6 +492,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertTrue(msg["Authentication"]["duration"] > 0)
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def test_ldap_ntlm(self):
 
@@ -500,6 +521,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertTrue(msg["Authentication"]["duration"] > 0)
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def test_ldap_simple_bind(self):
         def isLastExpectedMessage(msg):
@@ -531,6 +554,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
+        self.assertEquals(
+            EVT_LOGON_NETWORK_CLEAR_TEXT, msg["Authentication"]["logonType"])
 
     def test_ldap_simple_bind_bad_password(self):
         def isLastExpectedMessage(msg):
@@ -541,7 +566,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "simple bind") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK_CLEAR_TEXT))
 
         creds = self.insta_creds(template=self.get_credentials())
         creds.set_password("badPassword")
@@ -571,7 +598,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "simple bind") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK_CLEAR_TEXT))
 
         creds = self.insta_creds(template=self.get_credentials())
         creds.set_bind_dn("%s\\%s" % (creds.get_domain(), "badUser"))
@@ -599,7 +628,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "simple bind") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK_CLEAR_TEXT))
 
         creds = self.insta_creds(template=self.get_credentials())
         creds.set_bind_dn("%s\\%s" % (creds.get_domain(), "abdcef"))
@@ -693,6 +724,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
@@ -704,6 +737,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
     def test_smb_bad_password(self):
         def isLastExpectedMessage(msg):
@@ -743,7 +778,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["authDescription"] ==
                         "ENC-TS Pre-authentication") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials())
         creds.set_username("badUser")
@@ -795,6 +832,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["passwordType"])
         self.assertEquals(EVT_ID_UNSUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
@@ -811,6 +850,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["becameAccount"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
     def test_smb2_anonymous(self):
         def isLastExpectedMessage(msg):
@@ -844,6 +885,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["passwordType"])
         self.assertEquals(EVT_ID_UNSUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
@@ -860,6 +903,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["becameAccount"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
     def test_smb_no_krb_spnego(self):
         def isLastExpectedMessage(msg):
@@ -891,6 +936,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["passwordType"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
     def test_smb_no_krb_spnego_bad_password(self):
         def isLastExpectedMessage(msg):
@@ -901,7 +948,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["status"] ==
                         "NT_STATUS_WRONG_PASSWORD") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials(),
                                  kerberos_state=DONT_USE_KERBEROS)
@@ -931,7 +980,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["status"] ==
                         "NT_STATUS_NO_SUCH_USER") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials(),
                                  kerberos_state=DONT_USE_KERBEROS)
@@ -984,6 +1035,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["passwordType"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
     def test_smb_no_krb_no_spnego_no_ntlmv2_bad_password(self):
         def isLastExpectedMessage(msg):
@@ -994,7 +1047,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["status"] ==
                         "NT_STATUS_WRONG_PASSWORD") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials(),
                                  kerberos_state=DONT_USE_KERBEROS)
@@ -1026,7 +1081,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["status"] ==
                         "NT_STATUS_NO_SUCH_USER") and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials(),
                                  kerberos_state=DONT_USE_KERBEROS)
@@ -1063,7 +1120,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_SUCCESSFUL_LOGON))
+                        EVT_ID_SUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_INTERACTIVE))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]
@@ -1094,7 +1153,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_INTERACTIVE))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]
@@ -1125,7 +1186,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_INTERACTIVE))
 
         server   = os.environ["SERVER"]
         user     = "badUser"
@@ -1154,7 +1217,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_SUCCESSFUL_LOGON))
+                        EVT_ID_SUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]
@@ -1184,7 +1249,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]
@@ -1214,7 +1281,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = "badUser"
@@ -1244,7 +1313,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_SUCCESSFUL_LOGON))
+                        EVT_ID_SUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]
@@ -1276,7 +1347,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]
@@ -1308,7 +1381,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON))
+                        EVT_ID_UNSUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = "badUser"
@@ -1338,7 +1413,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_SUCCESSFUL_LOGON))
+                        EVT_ID_SUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]
@@ -1378,7 +1455,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["workstation"] ==
                         r"\\%s" % workstation) and
                     (msg["Authentication"]["eventId"] ==
-                        EVT_ID_SUCCESSFUL_LOGON))
+                        EVT_ID_SUCCESSFUL_LOGON) and
+                    (msg["Authentication"]["logonType"] ==
+                        EVT_LOGON_NETWORK))
 
         server   = os.environ["SERVER"]
         user     = os.environ["USERNAME"]

@@ -38,7 +38,10 @@ from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dcerpc.netlogon import NETLOGON_NEG_STRONG_KEYS
 from samba.compat import get_string
-from samba.dcerpc.windows_event_ids import EVT_ID_UNSUCCESSFUL_LOGON
+from samba.dcerpc.windows_event_ids import (
+    EVT_ID_UNSUCCESSFUL_LOGON,
+    EVT_LOGON_NETWORK
+)
 
 
 class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
@@ -84,7 +87,8 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
                 msg["Authentication"]["authDescription"] ==
                 "ServerAuthenticate" and
                 msg["Authentication"]["status"] == status and
-                msg["Authentication"]["eventId"] == event_id)
+                msg["Authentication"]["eventId"] == event_id and
+                msg["Authentication"]["logonType"] == EVT_LOGON_NETWORK)
 
         machine_creds = Credentials()
         machine_creds.guess(self.get_loadparm())
@@ -143,7 +147,9 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
                 msg["Authentication"]["authDescription"] ==
                 "ServerAuthenticate" and
                 msg["Authentication"]["passwordType"] == "DES" and
-                msg["Authentication"]["eventId"] == EVT_ID_UNSUCCESSFUL_LOGON)
+                msg["Authentication"]["eventId"] ==
+                    EVT_ID_UNSUCCESSFUL_LOGON and
+                msg["Authentication"]["logonType"] == EVT_LOGON_NETWORK)
 
         c = netlogon.netlogon("ncalrpc:[schannel]", self.get_loadparm())
         creds = netlogon.netr_Credential()
@@ -169,7 +175,9 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
                 msg["Authentication"]["authDescription"] ==
                 "ServerAuthenticate" and
                 msg["Authentication"]["passwordType"] == "HMAC-MD5" and
-                msg["Authentication"]["eventId"] == EVT_ID_UNSUCCESSFUL_LOGON)
+                (msg["Authentication"]["eventId"] ==
+                    EVT_ID_UNSUCCESSFUL_LOGON) and
+                msg["Authentication"]["logonType"] == EVT_LOGON_NETWORK)
 
         c = netlogon.netlogon("ncalrpc:[schannel]", self.get_loadparm())
         creds = netlogon.netr_Credential()

@@ -36,7 +36,10 @@ from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.compat import text_type
-from samba.dcerpc.windows_event_ids import EVT_ID_SUCCESSFUL_LOGON
+from samba.dcerpc.windows_event_ids import (
+    EVT_ID_SUCCESSFUL_LOGON,
+    EVT_LOGON_NETWORK
+)
 
 
 class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
@@ -129,6 +132,8 @@ class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["passwordType"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
     def test_netlogon(self):
         self._test_netlogon("SEAL", self.netlogon_check)

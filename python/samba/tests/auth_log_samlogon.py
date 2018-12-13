@@ -36,7 +36,10 @@ from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.compat import text_type
-from samba.dcerpc.windows_event_ids import EVT_ID_SUCCESSFUL_LOGON
+from samba.dcerpc.windows_event_ids import (
+    EVT_ID_SUCCESSFUL_LOGON,
+    EVT_LOGON_NETWORK
+)
 
 
 class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
@@ -72,7 +75,9 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
                 msg["Authentication"]["serviceDescription"]  == "SamLogon" and
                 msg["Authentication"]["authDescription"]     == "network" and
                 msg["Authentication"]["passwordType"]        == "NTLMv2" and
-                msg["Authentication"]["eventId"] == EVT_ID_SUCCESSFUL_LOGON)
+                (msg["Authentication"]["eventId"] ==
+                    EVT_ID_SUCCESSFUL_LOGON) and
+                (msg["Authentication"]["logonType"] == EVT_LOGON_NETWORK))
 
         if binding:
             binding = "[schannel,%s]" % binding

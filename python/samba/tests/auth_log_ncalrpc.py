@@ -23,7 +23,10 @@ from samba.credentials import DONT_USE_KERBEROS
 from samba.dcerpc.dcerpc import AS_SYSTEM_MAGIC_PATH_TOKEN
 from samba.dcerpc import samr
 import samba.tests.auth_log_base
-from samba.dcerpc.windows_event_ids import EVT_ID_SUCCESSFUL_LOGON
+from samba.dcerpc.windows_event_ids import (
+    EVT_ID_SUCCESSFUL_LOGON,
+    EVT_LOGON_NETWORK
+)
 
 
 class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
@@ -78,6 +81,8 @@ class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
                           msg["Authentication"]["authDescription"])
         self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
+        self.assertEquals(EVT_LOGON_NETWORK,
+                          msg["Authentication"]["logonType"])
 
     def test_ncalrpc_ntlm_dns_sign(self):
 
