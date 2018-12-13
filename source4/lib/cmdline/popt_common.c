@@ -203,33 +203,144 @@ static void popt_common_callback(poptContext con,
 }
 
 struct poptOption popt_common_connection4[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
-	{ "name-resolve", 'R', POPT_ARG_STRING, NULL, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
-	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use", "SOCKETOPTIONS" },
-	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
-	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
-	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
-	{ "realm", 0, POPT_ARG_STRING, NULL, 'r', "Set the realm name", "REALM" },
-	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
-	{ "maxprotocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set max protocol level", "MAXPROTOCOL" },
-	{ NULL }
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_common_callback,
+	},
+	{
+		.longName   = "name-resolve",
+		.shortName  = 'R',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'R',
+		.descrip    = "Use these name resolution services only",
+		.argDescrip = "NAME-RESOLVE-ORDER",
+	},
+	{
+		.longName   = "socket-options",
+		.shortName  = 'O',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'O',
+		.descrip    = "socket options to use",
+		.argDescrip = "SOCKETOPTIONS",
+	},
+	{
+		.longName   = "netbiosname",
+		.shortName  = 'n',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'n',
+		.descrip    = "Primary netbios name",
+		.argDescrip = "NETBIOSNAME",
+	},
+	{
+		.longName   = "signing",
+		.shortName  = 'S',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'S',
+		.descrip    = "Set the client signing state",
+		.argDescrip = "on|off|required",
+	},
+	{
+		.longName   = "workgroup",
+		.shortName  = 'W',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'W',
+		.descrip    = "Set the workgroup name",
+		.argDescrip = "WORKGROUP",
+	},
+	{
+		.longName   = "realm",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'r',
+		.descrip    = "Set the realm name",
+		.argDescrip = "REALM",
+	},
+	{
+		.longName   = "scope",
+		.shortName  = 'i',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'i',
+		.descrip    = "Use this Netbios scope",
+		.argDescrip = "SCOPE",
+	},
+	{
+		.longName   = "maxprotocol",
+		.shortName  = 'm',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'm',
+		.descrip    = "Set max protocol level",
+		.argDescrip = "MAXPROTOCOL",
+	},
+	POPT_TABLEEND
 };
 
 struct poptOption popt_common_samba4[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_samba_callback },
-	{ "debuglevel",   'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
-	{ "debug-stderr", 0, POPT_ARG_NONE, NULL, OPT_DEBUG_STDERR, "Send debug output to STDERR", NULL },
-	{ "configfile",   's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
-	{ "option",         0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
-	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },
-	{ "leak-report",     0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT, "enable talloc leak reporting on exit", NULL },	
-	{ "leak-report-full",0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT_FULL, "enable full talloc leak reporting on exit", NULL },
-	{ NULL }
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_samba_callback,
+	},
+	{
+		.longName   = "debuglevel",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'd',
+		.descrip    = "Set debug level",
+		.argDescrip = "DEBUGLEVEL",
+	},
+	{
+		.longName   = "debug-stderr",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_DEBUG_STDERR,
+		.descrip    = "Send debug output to STDERR",
+	},
+	{
+		.longName   = "configfile",
+		.shortName  = 's',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 's',
+		.descrip    = "Use alternative configuration file",
+		.argDescrip = "CONFIGFILE",
+	},
+	{
+		.longName   = "option",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_OPTION,
+		.descrip    = "Set smb.conf option from command line",
+		.argDescrip = "name=value",
+	},
+	{
+		.longName   = "log-basename",
+		.shortName  = 'l',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'l',
+		.descrip    = "Basename for log/debug files",
+		.argDescrip = "LOGFILEBASE",
+	},
+	{
+		.longName   = "leak-report",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_LEAK_REPORT,
+		.descrip    = "enable talloc leak reporting on exit",
+	},
+	{
+		.longName   = "leak-report-full",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_LEAK_REPORT_FULL,
+		.descrip    = "enable full talloc leak reporting on exit",
+	},
+	POPT_TABLEEND
 };
 
 struct poptOption popt_common_version4[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_version_callback },
-	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
-	{ NULL }
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_version_callback,
+	},
+	{
+		.longName   = "version",
+		.shortName  = 'V',
+		.argInfo    = POPT_ARG_NONE,
+		.val        = 'V',
+		.descrip    = "Print version",
+	},
+	POPT_TABLEEND
 };
-
