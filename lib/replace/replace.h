@@ -56,7 +56,7 @@
 #ifdef HAVE_INTTYPES_H
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-#elif HAVE_STDINT_H
+#elif defined(HAVE_STDINT_H)
 #include <stdint.h>
 /* force off HAVE_INTTYPES_H so that roken doesn't try to include both,
    which causes a warning storm on irix */
