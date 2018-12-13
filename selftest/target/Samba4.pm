@@ -3007,12 +3007,14 @@ sub prepare_dc_testenv
 	# add support for sysvol/netlogon/tmp shares
 	$ctx->{share} = "$ctx->{prefix_abs}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
+	push(@{$ctx->{directories}}, "$ctx->{share}/test1");
 
 	$ctx->{smb_conf_extra_options} = "
 	$conf_options
 	max xmit = 32K
 	server max protocol = SMB2
 	samba kcc command = /bin/true
+	xattr_tdb:file = $ctx->{statedir}/xattr.tdb
 
 [sysvol]
 	path = $ctx->{statedir}/sysvol
@@ -3029,6 +3031,12 @@ sub prepare_dc_testenv
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 50000
 
+[test1]
+	path = $ctx->{share}/test1
+	read only = no
+	posix:sharedelay = 100000
+	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
 ";
 
 	my $env = $self->provision_raw_step1($ctx);
