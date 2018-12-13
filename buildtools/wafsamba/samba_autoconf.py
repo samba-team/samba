@@ -731,6 +731,7 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.ADD_CFLAGS('-Wall', testflags=True)
         conf.ADD_CFLAGS('-Wshadow', testflags=True)
         conf.ADD_CFLAGS('-Wmissing-prototypes', testflags=True)
+        conf.ADD_CFLAGS('-Wmissing-field-initializers', testflags=True)
         conf.ADD_CFLAGS('-Wcast-align -Wcast-qual', testflags=True)
         conf.ADD_CFLAGS('-fno-common', testflags=True)
 
