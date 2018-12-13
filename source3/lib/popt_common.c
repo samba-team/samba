@@ -170,46 +170,148 @@ static void popt_common_callback(poptContext con,
 }
 
 struct poptOption popt_common_connection[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
-	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use",
-	  "SOCKETOPTIONS" },
-	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
-	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
-	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
-
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_common_callback,
+	},
+	{
+		.longName   = "socket-options",
+		.shortName  = 'O',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'O',
+		.descrip    = "socket options to use",
+		.argDescrip = "SOCKETOPTIONS",
+	},
+	{
+		.longName   = "netbiosname",
+		.shortName  = 'n',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'n',
+		.descrip    = "Primary netbios name",
+		.argDescrip = "NETBIOSNAME"
+	},
+	{
+		.longName   = "workgroup",
+		.shortName  = 'W',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'W',
+		.descrip    = "Set the workgroup name",
+		.argDescrip = "WORKGROUP"
+	},
+	{
+		.longName   = "scope",
+		.shortName  = 'i',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'i',
+		.descrip    = "Use this Netbios scope",
+		.argDescrip = "SCOPE"
+	},
 	POPT_TABLEEND
 };
 
 struct poptOption popt_common_samba[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_callback },
-	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
-	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternate configuration file", "CONFIGFILE" },
-	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Base name for log files", "LOGFILEBASE" },
-	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
-	{ "option",         0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_common_callback,
+	},
+	{
+		.longName   = "debuglevel",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'd',
+		.descrip    = "Set debug level",
+		.argDescrip = "DEBUGLEVEL",
+	},
+	{
+		.longName   = "configfile",
+		.shortName  = 's',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 's',
+		.descrip    = "Use alternate configuration file",
+		.argDescrip = "CONFIGFILE",
+	},
+	{
+		.longName   = "log-basename",
+		.shortName  = 'l',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'l',
+		.descrip    = "Base name for log files",
+		.argDescrip = "LOGFILEBASE",
+	},
+	{
+		.longName   = "version",
+		.shortName  = 'V',
+		.argInfo    = POPT_ARG_NONE,
+		.val        = 'V',
+		.descrip    = "Print version",
+	},
+	{
+		.longName   = "option",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_OPTION,
+		.descrip    = "Set smb.conf option from command line",
+		.argDescrip = "name=value",
+	},
 	POPT_TABLEEND
 };
 
 struct poptOption popt_common_configfile[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_callback },
-	{ "configfile", 0, POPT_ARG_STRING, NULL, 's', "Use alternate configuration file", "CONFIGFILE" },
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_common_callback,
+	},
+	{
+		.longName   = "configfile",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 's',
+		.descrip    = "Use alternate configuration file",
+		.argDescrip = "CONFIGFILE",
+	},
 	POPT_TABLEEND
 };
 
 struct poptOption popt_common_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_POST, (void *)popt_common_callback },
-	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_common_callback
+	},
+	{
+		.longName   = "version",
+		.shortName  = 'V',
+		.argInfo    = POPT_ARG_NONE,
+		.val        = 'V',
+		.descrip    = "Print version",
+	},
 	POPT_TABLEEND
 };
 
 struct poptOption popt_common_debuglevel[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
-	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_common_callback,
+	},
+	{
+		.longName   = "debuglevel",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'd',
+		.descrip    = "Set debug level",
+		.argDescrip = "DEBUGLEVEL",
+	},
 	POPT_TABLEEND
 };
 
 struct poptOption popt_common_option[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_POST, (void *)popt_common_callback },
-	{ "option",         0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_common_callback,
+	},
+	{
+		.longName   = "option",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_OPTION,
+		.descrip    = "Set smb.conf option from command line",
+		.argDescrip = "name=value",
+	},
 	POPT_TABLEEND
 };
