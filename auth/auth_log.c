@@ -41,7 +41,7 @@
  * increment the major version.
  */
 #define AUTH_MAJOR 1
-#define AUTH_MINOR 0
+#define AUTH_MINOR 1
 #define AUTHZ_MAJOR 1
 #define AUTHZ_MINOR 1
 
