@@ -580,7 +580,7 @@ char *sys_getwd(void)
 {
 #ifdef GETCWD_TAKES_NULL
 	return getcwd(NULL, 0);
-#elif HAVE_GETCWD
+#elif defined(HAVE_GETCWD)
 	char *wd = NULL, *s = NULL;
 	size_t allocated = PATH_MAX;
 
