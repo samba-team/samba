@@ -205,19 +205,38 @@ static int py_iface_set_timeout(PyObject *obj, PyObject *value, void *closure)
 }
 
 static PyGetSetDef dcerpc_interface_getsetters[] = {
-	{ discard_const_p(char, "server_name"), py_iface_server_name, NULL,
-	  discard_const_p(char, "name of the server, if connected over SMB") },
-	{ discard_const_p(char, "abstract_syntax"), py_iface_abstract_syntax, NULL, 
- 	  discard_const_p(char, "syntax id of the abstract syntax") },
-	{ discard_const_p(char, "transfer_syntax"), py_iface_transfer_syntax, NULL, 
- 	  discard_const_p(char, "syntax id of the transfersyntax") },
-	{ discard_const_p(char, "session_key"), py_iface_session_key, NULL,
-	  discard_const_p(char, "session key (as used for blob encryption on LSA and SAMR)") },
-	{ discard_const_p(char, "user_session_key"), py_iface_user_session_key, NULL,
-	  discard_const_p(char, "user_session key (as used for blob encryption on DRSUAPI)") },
-	{ discard_const_p(char, "request_timeout"), py_iface_get_timeout, py_iface_set_timeout,
-	  discard_const_p(char, "request timeout, in seconds") },
-	{ NULL }
+	{
+		.name = discard_const_p(char, "server_name"),
+		.get  = py_iface_server_name,
+		.doc  = discard_const_p(char, "name of the server, if connected over SMB"),
+	},
+	{
+		.name = discard_const_p(char, "abstract_syntax"),
+		.get  = py_iface_abstract_syntax,
+		.doc  = discard_const_p(char, "syntax id of the abstract syntax"),
+	},
+	{
+		.name = discard_const_p(char, "transfer_syntax"),
+		.get  = py_iface_transfer_syntax,
+		.doc  = discard_const_p(char, "syntax id of the transfersyntax"),
+	},
+	{
+		.name = discard_const_p(char, "session_key"),
+		.get  = py_iface_session_key,
+		.doc  = discard_const_p(char, "session key (as used for blob encryption on LSA and SAMR)"),
+	},
+	{
+		.name = discard_const_p(char, "user_session_key"),
+		.get  = py_iface_user_session_key,
+		.doc  = discard_const_p(char, "user_session key (as used for blob encryption on DRSUAPI)"),
+	},
+	{
+		.name = discard_const_p(char, "request_timeout"),
+		.get  = py_iface_get_timeout,
+		.set  = py_iface_set_timeout,
+		.doc  = discard_const_p(char, "request timeout,	in seconds"),
+	},
+	{ .name = NULL }
 };
 
 static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -468,11 +487,15 @@ static int py_dcerpc_ndr_pointer_set_value(PyObject *self, PyObject *value, void
 }
 
 static PyGetSetDef py_dcerpc_ndr_pointer_getsetters[] = {
-	{ discard_const_p(char, "value"),
-	  py_dcerpc_ndr_pointer_get_value,
-	  py_dcerpc_ndr_pointer_set_value,
-	  discard_const_p(char, "the value store by the pointer") },
-	{ NULL }
+	{
+		.name = discard_const_p(char, "value"),
+		.get  = py_dcerpc_ndr_pointer_get_value,
+		.set  = py_dcerpc_ndr_pointer_set_value,
+		.doc  = discard_const_p(char, "the value store by the pointer"),
+	},
+	{
+		.name = NULL,
+	},
 };
 
 static PyObject *py_dcerpc_ndr_pointer_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
