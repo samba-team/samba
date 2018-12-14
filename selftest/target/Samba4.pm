@@ -1678,6 +1678,7 @@ sub provision_fl2003dc($$$)
 	print "PROVISIONING DC WITH FOREST LEVEL 2003...\n";
 	my $extra_conf_options = "allow dns updates = nonsecure and secure
 	dcesrv:header signing = no
+	dcesrv:max auth states = 0
 	dns forwarder = 127.0.0.$swiface1 127.0.0.$swiface2";
 	my $extra_provision_options = ["--use-ntvfs"];
 	my $ret = $self->provision($prefix,
