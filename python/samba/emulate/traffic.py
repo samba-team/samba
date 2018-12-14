@@ -1293,9 +1293,8 @@ class TrafficModel(object):
 
         return c
 
-    def generate_conversations(self, scale, duration, replay_speed=1,
-                               server=1, client=2):
-        """Generate a list of conversations from the model."""
+    def generate_conversation_sequences(self, scale, duration, replay_speed=1):
+        """Generate a list of conversation descriptions from the model."""
 
         # We run the simulation for ten times as long as our desired
         # duration, and take the section at the end.
@@ -1319,7 +1318,7 @@ class TrafficModel(object):
                % (n_packets, target_packets, len(conversations), scale)),
               file=sys.stderr)
         conversations.sort()  # sorts by first element == start time
-        return seq_to_conversations(conversations)
+        return conversations
 
 
 def seq_to_conversations(seq, server=1, client=2):
