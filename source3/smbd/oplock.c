@@ -87,6 +87,32 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 	return NT_STATUS_OK;
 }
 
+static void release_fsp_kernel_oplock(files_struct *fsp)
+{
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+	bool use_kernel;
+
+	if (koplocks == NULL) {
+		return;
+	}
+	use_kernel = lp_kernel_oplocks(SNUM(fsp->conn));
+	if (!use_kernel) {
+		return;
+	}
+	if (fsp->oplock_type == NO_OPLOCK) {
+		return;
+	}
+	if (fsp->oplock_type == LEASE_OPLOCK) {
+		/*
+		 * For leases we don't touch kernel oplocks at all
+		 */
+		return;
+	}
+
+	koplocks->ops->release_oplock(koplocks, fsp, NO_OPLOCK);
+}
+
 /****************************************************************************
  Attempt to release an oplock on a file. Decrements oplock count.
 ****************************************************************************/
@@ -94,14 +120,8 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 static void release_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
-			(koplocks != NULL);
 
-	if ((fsp->oplock_type != NO_OPLOCK) &&
-	    use_kernel) {
-		koplocks->ops->release_oplock(koplocks, fsp, NO_OPLOCK);
-	}
+	release_fsp_kernel_oplock(fsp);
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
 		sconn->oplocks.level_II_open--;
