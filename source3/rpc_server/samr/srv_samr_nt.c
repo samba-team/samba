@@ -258,8 +258,10 @@ static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 
 static void free_samr_cache(DISP_INFO *disp_info)
 {
+	struct dom_sid_buf buf;
+
 	DEBUG(10, ("free_samr_cache: deleting cache for SID %s\n",
-		   sid_string_dbg(&disp_info->sid)));
+		   dom_sid_str_buf(&disp_info->sid, &buf)));
 
 	/* We need to become root here because the paged search might have to
 	 * tell the LDAP server we're not interested in the rest anymore. */
@@ -299,12 +301,15 @@ static void disp_info_cache_idle_timeout_handler(struct tevent_context *ev_ctx,
 
 static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromnow)
 {
+	struct dom_sid_buf buf;
+
 	/* Remove any pending timeout and update. */
 
 	TALLOC_FREE(disp_info->cache_timeout_event);
 
 	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for "
-		  "SID %s for %u seconds\n", sid_string_dbg(&disp_info->sid),
+		  "SID %s for %u seconds\n",
+		  dom_sid_str_buf(&disp_info->sid, &buf),
 		  (unsigned int)secs_fromnow ));
 
 	disp_info->cache_timeout_event = tevent_add_timer(
@@ -596,8 +601,9 @@ NTSTATUS _samr_SetSecurity(struct pipes_struct *p,
 	unbecome_root();
 
 	if (!ret) {
+		struct dom_sid_buf buf;
 		DEBUG(4, ("User %s not found\n",
-			  sid_string_dbg(&uinfo->sid)));
+			  dom_sid_str_buf(&uinfo->sid, &buf)));
 		TALLOC_FREE(sampass);
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -645,7 +651,9 @@ static bool check_change_pw_access(TALLOC_CTX *mem_ctx, struct dom_sid *user_sid
 	unbecome_root();
 
 	if (ret == False) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
+		struct dom_sid_buf buf;
+		DEBUG(4,("User %s not found\n",
+			 dom_sid_str_buf(user_sid, &buf)));
 		TALLOC_FREE(sampass);
 		return False;
 	}
@@ -675,6 +683,7 @@ NTSTATUS _samr_QuerySecurity(struct pipes_struct *p,
 	NTSTATUS status;
 	struct security_descriptor * psd = NULL;
 	size_t sd_size = 0;
+	struct dom_sid_buf buf;
 
 	(void)policy_handle_find(p, r->in.handle,
 				   SEC_STD_READ_CONTROL, NULL,
@@ -691,7 +700,8 @@ NTSTATUS _samr_QuerySecurity(struct pipes_struct *p,
 				   struct samr_domain_info, &status);
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("_samr_QuerySecurity: querying security on Domain "
-			 "with SID: %s\n", sid_string_dbg(&dinfo->sid)));
+			 "with SID: %s\n",
+			 dom_sid_str_buf(&dinfo->sid, &buf)));
 		/*
 		 * TODO: Builtin probably needs a different SD with restricted
 		 * write access
@@ -707,7 +717,7 @@ NTSTATUS _samr_QuerySecurity(struct pipes_struct *p,
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("_samr_QuerySecurity: querying security on user "
 			  "Object with SID: %s\n",
-			  sid_string_dbg(&uinfo->sid)));
+			  dom_sid_str_buf(&uinfo->sid, &buf)));
 		if (check_change_pw_access(p->mem_ctx, &uinfo->sid)) {
 			status = make_samr_object_sd(
 				p->mem_ctx, &psd, &sd_size,
@@ -732,7 +742,7 @@ NTSTATUS _samr_QuerySecurity(struct pipes_struct *p,
 		 */
 		DEBUG(10,("_samr_QuerySecurity: querying security on group "
 			  "Object with SID: %s\n",
-			  sid_string_dbg(&ginfo->sid)));
+			  dom_sid_str_buf(&ginfo->sid, &buf)));
 		status = make_samr_object_sd(
 			p->mem_ctx, &psd, &sd_size,
 			&usr_nopwchange_generic_mapping,
@@ -750,7 +760,7 @@ NTSTATUS _samr_QuerySecurity(struct pipes_struct *p,
 		 */
 		DEBUG(10,("_samr_QuerySecurity: querying security on alias "
 			  "Object with SID: %s\n",
-			  sid_string_dbg(&ainfo->sid)));
+			  dom_sid_str_buf(&ainfo->sid, &buf)));
 		status = make_samr_object_sd(
 			p->mem_ctx, &psd, &sd_size,
 			&usr_nopwchange_generic_mapping,
@@ -1045,6 +1055,7 @@ NTSTATUS _samr_EnumDomainAliases(struct pipes_struct *p,
 	uint32_t num_aliases = 0;
 	struct samr_SamArray *samr_array = NULL;
 	struct samr_SamEntry *samr_entries = NULL;
+	struct dom_sid_buf buf;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
 				   SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS, NULL,
@@ -1054,7 +1065,7 @@ NTSTATUS _samr_EnumDomainAliases(struct pipes_struct *p,
 	}
 
 	DEBUG(5,("_samr_EnumDomainAliases: sid %s\n",
-		 sid_string_dbg(&dinfo->sid)));
+		 dom_sid_str_buf(&dinfo->sid, &buf)));
 
 	samr_array = talloc_zero(p->mem_ctx, struct samr_SamArray);
 	if (!samr_array) {
@@ -1640,6 +1651,7 @@ NTSTATUS _samr_LookupNames(struct pipes_struct *p,
 	int num_rids = r->in.num_names;
 	struct samr_Ids rids, types;
 	uint32_t num_mapped = 0;
+	struct dom_sid_buf buf;
 
 	DEBUG(5,("_samr_LookupNames: %d\n", __LINE__));
 
@@ -1662,7 +1674,7 @@ NTSTATUS _samr_LookupNames(struct pipes_struct *p,
 	NT_STATUS_HAVE_NO_MEMORY(type);
 
 	DEBUG(5,("_samr_LookupNames: looking name on SID %s\n",
-		 sid_string_dbg(&dinfo->sid)));
+		 dom_sid_str_buf(&dinfo->sid, &buf)));
 
 	for (i = 0; i < num_rids; i++) {
 
@@ -2290,10 +2302,13 @@ static NTSTATUS get_user_info_1(TALLOC_CTX *mem_ctx,
 	unbecome_root();
 
 	if (!sid_peek_check_rid(domain_sid, sid_group, &primary_gid)) {
+		struct dom_sid_buf buf1, buf2;
+
 		DEBUG(0, ("get_user_info_1: User %s has Primary Group SID %s, \n"
 			  "which conflicts with the domain sid %s.  Failing operation.\n",
-			  pdb_get_username(pw), sid_string_dbg(sid_group),
-			  sid_string_dbg(domain_sid)));
+			  pdb_get_username(pw),
+			  dom_sid_str_buf(sid_group, &buf1),
+			  dom_sid_str_buf(domain_sid, &buf2)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2333,14 +2348,16 @@ static NTSTATUS get_user_info_3(TALLOC_CTX *mem_ctx,
 {
 	const struct dom_sid *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
+	struct dom_sid_buf buf1, buf2;
 
 	sid_user = pdb_get_user_sid(pw);
 
 	if (!sid_peek_check_rid(domain_sid, sid_user, &rid)) {
 		DEBUG(0, ("get_user_info_3: User %s has SID %s, \nwhich conflicts with "
 			  "the domain sid %s.  Failing operation.\n",
-			  pdb_get_username(pw), sid_string_dbg(sid_user),
-			  sid_string_dbg(domain_sid)));
+			  pdb_get_username(pw),
+			  dom_sid_str_buf(sid_user, &buf1),
+			  dom_sid_str_buf(domain_sid, &buf2)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2351,8 +2368,9 @@ static NTSTATUS get_user_info_3(TALLOC_CTX *mem_ctx,
 	if (!sid_peek_check_rid(domain_sid, sid_group, &primary_gid)) {
 		DEBUG(0, ("get_user_info_3: User %s has Primary Group SID %s, \n"
 			  "which conflicts with the domain sid %s.  Failing operation.\n",
-			  pdb_get_username(pw), sid_string_dbg(sid_group),
-			  sid_string_dbg(domain_sid)));
+			  pdb_get_username(pw),
+			  dom_sid_str_buf(sid_group, &buf1),
+			  dom_sid_str_buf(domain_sid, &buf2)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2404,14 +2422,16 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 {
 	const struct dom_sid *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
+	struct dom_sid_buf buf1, buf2;
 
 	sid_user = pdb_get_user_sid(pw);
 
 	if (!sid_peek_check_rid(domain_sid, sid_user, &rid)) {
 		DEBUG(0, ("get_user_info_5: User %s has SID %s, \nwhich conflicts with "
 			  "the domain sid %s.  Failing operation.\n",
-			  pdb_get_username(pw), sid_string_dbg(sid_user),
-			  sid_string_dbg(domain_sid)));
+			  pdb_get_username(pw),
+			  dom_sid_str_buf(sid_user, &buf1),
+			  dom_sid_str_buf(domain_sid, &buf2)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2422,8 +2442,9 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 	if (!sid_peek_check_rid(domain_sid, sid_group, &primary_gid)) {
 		DEBUG(0, ("get_user_info_5: User %s has Primary Group SID %s, \n"
 			  "which conflicts with the domain sid %s.  Failing operation.\n",
-			  pdb_get_username(pw), sid_string_dbg(sid_group),
-			  sid_string_dbg(domain_sid)));
+			  pdb_get_username(pw),
+			  dom_sid_str_buf(sid_group, &buf1),
+			  dom_sid_str_buf(domain_sid, &buf2)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2636,7 +2657,9 @@ static NTSTATUS get_user_info_18(struct pipes_struct *p,
 	ret = pdb_getsampwsid(smbpass, user_sid);
 
 	if (ret == False) {
-		DEBUG(4, ("User %s not found\n", sid_string_dbg(user_sid)));
+		struct dom_sid_buf buf;
+		DEBUG(4, ("User %s not found\n",
+			  dom_sid_str_buf(user_sid, &buf)));
 		TALLOC_FREE(smbpass);
 		return root_mode() ? NT_STATUS_NO_SUCH_USER : NT_STATUS_ACCESS_DENIED;
 	}
@@ -2722,6 +2745,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	struct lsa_BinaryString *parameters = NULL;
 	const char *munged_dial = NULL;
 	DATA_BLOB blob;
+	struct dom_sid_buf buf1, buf2;
 
 	ZERO_STRUCTP(r);
 
@@ -2730,8 +2754,9 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	if (!sid_peek_check_rid(domain_sid, sid_user, &rid)) {
 		DEBUG(0, ("get_user_info_21: User %s has SID %s, \nwhich conflicts with "
 			  "the domain sid %s.  Failing operation.\n",
-			  pdb_get_username(pw), sid_string_dbg(sid_user),
-			  sid_string_dbg(domain_sid)));
+			  pdb_get_username(pw),
+			  dom_sid_str_buf(sid_user, &buf1),
+			  dom_sid_str_buf(domain_sid, &buf2)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2742,8 +2767,9 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	if (!sid_peek_check_rid(domain_sid, sid_group, &primary_gid)) {
 		DEBUG(0, ("get_user_info_21: User %s has Primary Group SID %s, \n"
 			  "which conflicts with the domain sid %s.  Failing operation.\n",
-			  pdb_get_username(pw), sid_string_dbg(sid_group),
-			  sid_string_dbg(domain_sid)));
+			  pdb_get_username(pw),
+			  dom_sid_str_buf(sid_group, &buf1),
+			  dom_sid_str_buf(domain_sid, &buf2)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2833,6 +2859,7 @@ NTSTATUS _samr_QueryUserInfo(struct pipes_struct *p,
 	bool ret = false;
 	struct samu *pwd = NULL;
 	uint32_t acc_required, acc_granted;
+	struct dom_sid_buf buf;
 
 	switch (r->in.level) {
 	case 1: /* UserGeneralInformation */
@@ -2915,7 +2942,7 @@ NTSTATUS _samr_QueryUserInfo(struct pipes_struct *p,
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	DEBUG(5,("_samr_QueryUserInfo: sid:%s\n",
-		 sid_string_dbg(&uinfo->sid)));
+		 dom_sid_str_buf(&uinfo->sid, &buf)));
 
 	user_info = talloc_zero(p->mem_ctx, union samr_UserInfo);
 	if (!user_info) {
@@ -2933,7 +2960,8 @@ NTSTATUS _samr_QueryUserInfo(struct pipes_struct *p,
 	unbecome_root();
 
 	if (ret == false) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(&uinfo->sid)));
+		DEBUG(4,("User %s not found\n",
+			 dom_sid_str_buf(&uinfo->sid, &buf)));
 		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -3055,6 +3083,7 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 	bool ret;
 	NTSTATUS result;
 	bool success = False;
+	struct dom_sid_buf buf;
 
 	struct samr_RidWithAttributeArray *rids = NULL;
 
@@ -3097,7 +3126,7 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 
 	if (!ret) {
 		DEBUG(10, ("pdb_getsampwsid failed for %s\n",
-			   sid_string_dbg(&uinfo->sid)));
+			   dom_sid_str_buf(&uinfo->sid, &buf)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -3116,13 +3145,13 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("pdb_enum_group_memberships failed for %s\n",
-			   sid_string_dbg(&uinfo->sid)));
+			   dom_sid_str_buf(&uinfo->sid, &buf)));
 		return result;
 	}
 
 	if ( !success ) {
 		DEBUG(5, ("Group sid %s for user %s not in our domain\n",
-			  sid_string_dbg(pdb_get_group_sid(sam_pass)),
+			  dom_sid_str_buf(pdb_get_group_sid(sam_pass), &buf),
 			  pdb_get_username(sam_pass)));
 		TALLOC_FREE(sam_pass);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -3141,7 +3170,7 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 		if (!sid_peek_check_rid(get_global_sam_sid(),
 					&(sids[i]), &dom_gid.rid)) {
 			DEBUG(10, ("Found sid %s not in our domain\n",
-				   sid_string_dbg(&sids[i])));
+				   dom_sid_str_buf(&sids[i], &buf)));
 			continue;
 		}
 
@@ -3964,6 +3993,7 @@ NTSTATUS _samr_LookupDomain(struct pipes_struct *p,
 	NTSTATUS status;
 	const char *domain_name;
 	struct dom_sid *sid = NULL;
+	struct dom_sid_buf buf;
 
 	/* win9x user manager likes to use SAMR_ACCESS_ENUM_DOMAINS here.
 	   Reverted that change so we will work with RAS servers again */
@@ -3995,7 +4025,7 @@ NTSTATUS _samr_LookupDomain(struct pipes_struct *p,
 	}
 
 	DEBUG(2,("Returning domain sid for domain %s -> %s\n", domain_name,
-		 sid_string_dbg(sid)));
+		 dom_sid_str_buf(sid, &buf)));
 
 	*r->out.sid = sid;
 
@@ -4932,6 +4962,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	bool ret;
 	char *rhost;
 	DATA_BLOB session_key;
+	struct dom_sid_buf buf;
 
 	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
 
@@ -4994,7 +5025,8 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	}
 
 	DEBUG(5, ("_samr_SetUserInfo: sid:%s, level:%d\n",
-		  sid_string_dbg(&uinfo->sid), r->in.level));
+		  dom_sid_str_buf(&uinfo->sid, &buf),
+		  r->in.level));
 
 	if (info == NULL) {
 		DEBUG(5, ("_samr_SetUserInfo: NULL info level\n"));
@@ -5295,6 +5327,7 @@ NTSTATUS _samr_GetMembersInAlias(struct pipes_struct *p,
 	size_t num_sids = 0;
 	struct lsa_SidPtr *sids = NULL;
 	struct dom_sid *pdb_sids = NULL;
+	struct dom_sid_buf buf;
 
 	ainfo = policy_handle_find(p, r->in.alias_handle,
 				   SAMR_ALIAS_ACCESS_GET_MEMBERS, NULL,
@@ -5303,7 +5336,7 @@ NTSTATUS _samr_GetMembersInAlias(struct pipes_struct *p,
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ainfo->sid)));
+	DEBUG(10, ("sid is %s\n", dom_sid_str_buf(&ainfo->sid, &buf)));
 
 	become_root();
 	status = pdb_enum_aliasmem(&ainfo->sid, talloc_tos(), &pdb_sids,
@@ -5353,6 +5386,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 
 	NTSTATUS status;
 	struct samr_RidAttrArray *rids = NULL;
+	struct dom_sid_buf buf;
 
 	ginfo = policy_handle_find(p, r->in.group_handle,
 				   SAMR_GROUP_ACCESS_GET_MEMBERS, NULL,
@@ -5366,11 +5400,11 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ginfo->sid)));
+	DEBUG(10, ("sid is %s\n", dom_sid_str_buf(&ginfo->sid, &buf)));
 
 	if (!sid_check_is_in_our_sam(&ginfo->sid)) {
 		DEBUG(3, ("sid %s is not in our domain\n",
-			  sid_string_dbg(&ginfo->sid)));
+			  dom_sid_str_buf(&ginfo->sid, &buf)));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
@@ -5416,6 +5450,7 @@ NTSTATUS _samr_AddAliasMember(struct pipes_struct *p,
 			      struct samr_AddAliasMember *r)
 {
 	struct samr_alias_info *ainfo;
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 
 	ainfo = policy_handle_find(p, r->in.alias_handle,
@@ -5425,7 +5460,7 @@ NTSTATUS _samr_AddAliasMember(struct pipes_struct *p,
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ainfo->sid)));
+	DEBUG(10, ("sid is %s\n", dom_sid_str_buf(&ainfo->sid, &buf)));
 
 	/******** BEGIN SeAddUsers BLOCK *********/
 
@@ -5450,6 +5485,7 @@ NTSTATUS _samr_DeleteAliasMember(struct pipes_struct *p,
 				 struct samr_DeleteAliasMember *r)
 {
 	struct samr_alias_info *ainfo;
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 
 	ainfo = policy_handle_find(p, r->in.alias_handle,
@@ -5460,7 +5496,7 @@ NTSTATUS _samr_DeleteAliasMember(struct pipes_struct *p,
 	}
 
 	DEBUG(10, ("_samr_del_aliasmem:sid is %s\n",
-		   sid_string_dbg(&ainfo->sid)));
+		   dom_sid_str_buf(&ainfo->sid, &buf)));
 
 	/******** BEGIN SeAddUsers BLOCK *********/
 
@@ -5485,6 +5521,7 @@ NTSTATUS _samr_AddGroupMember(struct pipes_struct *p,
 			      struct samr_AddGroupMember *r)
 {
 	struct samr_group_info *ginfo;
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 	uint32_t group_rid;
 
@@ -5495,7 +5532,7 @@ NTSTATUS _samr_AddGroupMember(struct pipes_struct *p,
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ginfo->sid)));
+	DEBUG(10, ("sid is %s\n", dom_sid_str_buf(&ginfo->sid, &buf)));
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), &ginfo->sid,
 				&group_rid)) {
@@ -5592,8 +5629,9 @@ NTSTATUS _samr_DeleteUser(struct pipes_struct *p,
 	unbecome_root();
 
 	if(!ret) {
+		struct dom_sid_buf buf;
 		DEBUG(5,("_samr_DeleteUser: User %s doesn't exist.\n",
-			sid_string_dbg(&uinfo->sid)));
+			 dom_sid_str_buf(&uinfo->sid, &buf)));
 		TALLOC_FREE(sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -5635,6 +5673,7 @@ NTSTATUS _samr_DeleteDomainGroup(struct pipes_struct *p,
 				 struct samr_DeleteDomainGroup *r)
 {
 	struct samr_group_info *ginfo;
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 	uint32_t group_rid;
 
@@ -5647,7 +5686,7 @@ NTSTATUS _samr_DeleteDomainGroup(struct pipes_struct *p,
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ginfo->sid)));
+	DEBUG(10, ("sid is %s\n", dom_sid_str_buf(&ginfo->sid, &buf)));
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), &ginfo->sid,
 				&group_rid)) {
@@ -5665,7 +5704,7 @@ NTSTATUS _samr_DeleteDomainGroup(struct pipes_struct *p,
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(5,("_samr_DeleteDomainGroup: Failed to delete mapping "
 			 "entry for group %s: %s\n",
-			 sid_string_dbg(&ginfo->sid),
+			 dom_sid_str_buf(&ginfo->sid, &buf),
 			 nt_errstr(status)));
 		return status;
 	}
@@ -5686,6 +5725,7 @@ NTSTATUS _samr_DeleteDomAlias(struct pipes_struct *p,
 			      struct samr_DeleteDomAlias *r)
 {
 	struct samr_alias_info *ainfo;
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 
 	DEBUG(5, ("_samr_DeleteDomAlias: %d\n", __LINE__));
@@ -5697,7 +5737,7 @@ NTSTATUS _samr_DeleteDomAlias(struct pipes_struct *p,
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ainfo->sid)));
+	DEBUG(10, ("sid is %s\n", dom_sid_str_buf(&ainfo->sid, &buf)));
 
 	/* Don't let Windows delete builtin groups */
 
@@ -6198,6 +6238,7 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 
 {
 	struct dom_sid info_sid;
+	struct dom_sid_buf buf;
 	GROUP_MAP *map;
 	struct samr_domain_info *dinfo;
 	struct samr_group_info *ginfo;
@@ -6239,7 +6280,7 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 	sid_compose(&info_sid, &dinfo->sid, r->in.rid);
 
 	DEBUG(10, ("_samr_OpenGroup:Opening SID: %s\n",
-		   sid_string_dbg(&info_sid)));
+		   dom_sid_str_buf(&info_sid, &buf)));
 
 	map = talloc_zero(p->mem_ctx, GROUP_MAP);
 	if (!map) {
@@ -6274,10 +6315,11 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(struct pipes_struct *p,
 					     struct samr_RemoveMemberFromForeignDomain *r)
 {
 	struct samr_domain_info *dinfo;
+	struct dom_sid_buf buf;
 	NTSTATUS		result;
 
 	DEBUG(5,("_samr_RemoveMemberFromForeignDomain: removing SID [%s]\n",
-		 sid_string_dbg(r->in.sid)));
+		 dom_sid_str_buf(r->in.sid, &buf)));
 
 	/* Find the policy handle. Open a policy on it. */
 
@@ -6289,7 +6331,7 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(struct pipes_struct *p,
 	}
 
 	DEBUG(8, ("_samr_RemoveMemberFromForeignDomain: sid is %s\n",
-		  sid_string_dbg(&dinfo->sid)));
+		  dom_sid_str_buf(&dinfo->sid, &buf)));
 
 	/* we can only delete a user from a group since we don't have
 	   nested groups anyways.  So in the latter case, just say OK */
@@ -6306,10 +6348,11 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(struct pipes_struct *p,
 	 * other cases. */
 
 	if (!sid_check_is_builtin(&dinfo->sid)) {
+		struct dom_sid_buf buf2;
 		DEBUG(1,("_samr_RemoveMemberFromForeignDomain: domain_sid = %s, "
 			 "global_sam_sid() = %s\n",
-			 sid_string_dbg(&dinfo->sid),
-			 sid_string_dbg(get_global_sam_sid())));
+			 dom_sid_str_buf(&dinfo->sid, &buf),
+			 dom_sid_str_buf(get_global_sam_sid(), &buf2)));
 		DEBUGADD(1,("please report to samba-technical@lists.samba.org!\n"));
 		return NT_STATUS_OK;
 	}
