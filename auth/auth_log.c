@@ -270,7 +270,7 @@ static void log_authentication_event_json(
 	log_json(msg_ctx,
 		 lp_ctx,
 		 &wrapper,
-		 DBGC_AUTH_AUDIT,
+		 DBGC_AUTH_AUDIT_JSON,
 		 debug_level);
 	json_free(&wrapper);
 	return;
@@ -405,7 +405,7 @@ static void log_successful_authz_event_json(
 	log_json(msg_ctx,
 		 lp_ctx,
 		 &wrapper,
-		 DBGC_AUTH_AUDIT,
+		 DBGC_AUTH_AUDIT_JSON,
 		 debug_level);
 	json_free(&wrapper);
 	return;
