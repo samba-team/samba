@@ -464,7 +464,7 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc_action(
 			return ret;
 		}
 
-		DEBUG(10, ("Sepecial sid %s not mapped. falling back to "
+		DEBUG(10, ("Special sid %s not mapped. falling back to "
 			   "regular allocation\n",
 			   dom_sid_str_buf(ctx->map->sid, &buf)));
 	}
