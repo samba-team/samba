@@ -847,6 +847,7 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 		bool ok;
 		uint64_t account_type, xid;
 		enum id_type type;
+		struct dom_sid_buf buf;
 
 		if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
 			continue;
@@ -872,7 +873,6 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 			}
 		}
 		if (map == NULL) {
-			struct dom_sid_buf buf;
 			DBG_DEBUG("Got unexpected sid %s from object %s\n",
 				  dom_sid_str_buf(&sid, &buf),
 				  dn);
@@ -915,7 +915,8 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 		map->xid.id = xid;
 		map->status = ID_MAPPED;
 
-		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_dbg(map->sid),
+		DEBUG(10, ("Mapped %s -> %lu (%d)\n",
+			   dom_sid_str_buf(map->sid, &buf),
 			   (unsigned long)map->xid.id, map->xid.type));
 	}
 

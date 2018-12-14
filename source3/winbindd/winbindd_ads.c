@@ -835,6 +835,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	uint32_t primary_group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint32_t num_groups = 0;
+	struct dom_sid_buf buf;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
 	*p_num_groups = 0;
@@ -867,7 +868,9 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (!ADS_ERR_OK(rc)) {
 		status = ads_ntstatus(rc);
 		DEBUG(1, ("lookup_usergroups(sid=%s) ads_search tokenGroups: "
-			  "%s\n", sid_string_dbg(sid), ads_errstr(rc)));
+			  "%s\n",
+			  dom_sid_str_buf(sid, &buf),
+			  ads_errstr(rc)));
 		goto done;
 	}
 
@@ -876,13 +879,14 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		status = NT_STATUS_UNSUCCESSFUL;
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: "
 			 "invalid number of results (count=%d)\n", 
-			 sid_string_dbg(sid), count));
+			 dom_sid_str_buf(sid, &buf),
+			 count));
 		goto done;
 	}
 
 	if (!msg) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", 
-			 sid_string_dbg(sid)));
+			 dom_sid_str_buf(sid, &buf)));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -895,7 +899,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group_rid)) {
 		DEBUG(1,("%s: No primary group for sid=%s !?\n", 
-			 domain->name, sid_string_dbg(sid)));
+			 domain->name,
+			 dom_sid_str_buf(sid, &buf)));
 		goto done;
 	}
 
@@ -961,7 +966,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	status = (*user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,("ads lookup_usergroups (tokenGroups) succeeded for sid=%s\n",
-		 sid_string_dbg(sid)));
+		 dom_sid_str_buf(sid, &buf)));
 done:
 	TALLOC_FREE(user_dn);
 	ads_msgfree(ads, msg);
@@ -1085,9 +1090,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	uint32_t num_nocache = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint32_t rid;
+	struct dom_sid_buf buf;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name,
-		  sid_string_dbg(group_sid)));
+		  dom_sid_str_buf(group_sid, &buf)));
 
 	*num_names = 0;
 
@@ -1213,7 +1219,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		if (lookup_cached_sid(mem_ctx, &sid, &domain_name, &name,
 		    &name_type)) {
 			DEBUG(10,("ads: lookup_groupmem: got sid %s from "
-				  "cache\n", sid_string_dbg(&sid)));
+				  "cache\n",
+				  dom_sid_str_buf(&sid, &buf)));
 			sid_copy(&(*sid_mem)[*num_names], &sid);
 			(*names)[*num_names] = fill_domain_username_talloc(
 							*names,
@@ -1226,7 +1233,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		}
 		else {
 			DEBUG(10, ("ads: lookup_groupmem: sid %s not found in "
-				   "cache\n", sid_string_dbg(&sid)));
+				   "cache\n",
+				   dom_sid_str_buf(&sid, &buf)));
 			sid_copy(&(sid_mem_nocache)[num_nocache], &sid);
 			num_nocache++;
 		}
@@ -1302,7 +1310,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_groupmem for sid=%s succeeded\n",
-		 sid_string_dbg(group_sid)));
+		 dom_sid_str_buf(group_sid, &buf)));
 
 done:
 

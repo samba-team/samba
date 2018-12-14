@@ -375,8 +375,10 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 	security_token_debug(DBGC_CLASS, 10, token);
 
 	for (i=0; i<num_require_membership_of_sid; i++) {
-		DEBUG(10, ("Checking SID %s\n", sid_string_dbg(
-				   &require_membership_of_sid[i])));
+		struct dom_sid_buf buf;
+		DEBUG(10, ("Checking SID %s\n",
+			   dom_sid_str_buf(&require_membership_of_sid[i],
+					   &buf)));
 		if (nt_token_check_sid(&require_membership_of_sid[i],
 				       token)) {
 			DEBUG(10, ("Access ok\n"));
@@ -3046,6 +3048,7 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 				info3_copy->base.logon_domain.string);
 		if (domain && domain->primary ) {
 			struct dom_sid user_sid;
+			struct dom_sid_buf buf;
 
 			sid_compose(&user_sid,
 				info3_copy->base.domain_sid,
@@ -3060,7 +3063,7 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 			DBG_INFO("PAC for user %s\\%s SID %s primed cache\n",
 				info3_copy->base.logon_domain.string,
 				info3_copy->base.account_name.string,
-				sid_string_dbg(&user_sid));
+				dom_sid_str_buf(&user_sid, &buf));
 		}
 	}
 

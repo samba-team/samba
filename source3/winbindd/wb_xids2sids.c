@@ -221,9 +221,12 @@ static void wb_xids2sids_init_dom_maps_lookupname_done(
 	}
 
 	if (type != SID_NAME_DOMAIN) {
+		struct dom_sid_buf buf;
+
 		DBG_WARNING("SID %s for idmap domain name '%s' "
 			    "not a domain SID\n",
-			    sid_string_dbg(&dom_maps[state->dom_idx].sid),
+			    dom_sid_str_buf(&dom_maps[state->dom_idx].sid,
+					    &buf),
 			    dom_maps[state->dom_idx].name);
 
 		ZERO_STRUCT(dom_maps[state->dom_idx].sid);

@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libcli/security/dom_sid.h"
 
 struct winbindd_getgrnam_state {
 	struct tevent_context *ev;
@@ -168,8 +169,10 @@ NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
 	char *buf;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		struct dom_sid_buf sidbuf;
 		DEBUG(5, ("Could not convert sid %s: %s\n",
-			  sid_string_dbg(&state->sid), nt_errstr(status)));
+			  dom_sid_str_buf(&state->sid, &sidbuf),
+			  nt_errstr(status)));
 		return status;
 	}
 

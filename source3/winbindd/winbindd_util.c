@@ -126,6 +126,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	const char **ignored_domains = NULL;
 	const char **dom = NULL;
 	int role = lp_server_role();
+	struct dom_sid_buf buf;
 
 	if (is_null_sid(sid)) {
 		DBG_ERR("Got null SID for domain [%s]\n", domain_name);
@@ -169,7 +170,8 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 		if (check_domain != NULL) {
 			DBG_ERR("SID [%s] already used by domain [%s], "
 				"expected [%s]\n",
-				sid_string_dbg(sid), check_domain->name,
+				dom_sid_str_buf(sid, &buf),
+				check_domain->name,
 				domain->name);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -292,7 +294,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 
 	DBG_NOTICE("Added domain [%s] [%s] [%s]\n",
 		   domain->name, domain->alt_name,
-		   sid_string_dbg(&domain->sid));
+		   dom_sid_str_buf(&domain->sid, &buf));
 
 	*_d = domain;
 	return NT_STATUS_OK;
@@ -1455,7 +1457,9 @@ struct winbindd_domain *find_default_route_domain(void)
 
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
 {
-	DBG_DEBUG("SID [%s]\n", sid_string_dbg(sid));
+	struct dom_sid_buf buf;
+
+	DBG_DEBUG("SID [%s]\n", dom_sid_str_buf(sid, &buf));
 
 	/*
 	 * SIDs in the S-1-22-{1,2} domain and well-known SIDs should be handled

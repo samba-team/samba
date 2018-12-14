@@ -1280,7 +1280,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	uint32_t rid;
-	struct dom_sid_buf tmp;
+	struct dom_sid_buf sidstr;
 
 	if (!cache->tdb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
@@ -1298,10 +1298,10 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	   fall back to an unsalted cred. */
 
 	centry = wcache_fetch(cache, domain, "CRED/%s",
-			      dom_sid_str_buf(sid, &tmp));
+			      dom_sid_str_buf(sid, &sidstr));
 	if (!centry) {
 		DEBUG(10,("wcache_get_creds: entry for [CRED/%s] not found\n", 
-			  sid_string_dbg(sid)));
+			  dom_sid_str_buf(sid, &sidstr)));
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -1319,7 +1319,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 
 	*cached_nt_pass = (const uint8_t *)centry_hash16(centry, mem_ctx);
 	if (*cached_nt_pass == NULL) {
-		struct dom_sid_buf sidstr;
 
 		dom_sid_str_buf(sid, &sidstr);
 
@@ -1347,7 +1346,8 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	status = centry->status;
 
 	DEBUG(10,("wcache_get_creds: [Cached] - cached creds for user %s status: %s\n",
-		  sid_string_dbg(sid), nt_errstr(status) ));
+		  dom_sid_str_buf(sid, &sidstr),
+		  nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;

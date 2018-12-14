@@ -88,13 +88,15 @@ NTSTATUS winbindd_getusersids_recv(struct tevent_req *req,
 {
 	struct winbindd_getusersids_state *state = tevent_req_data(
 		req, struct winbindd_getusersids_state);
+	struct dom_sid_buf sidbuf;
 	NTSTATUS status;
 	int i;
 	char *result;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("Could not convert sid %s: %s\n",
-			  sid_string_dbg(&state->sid), nt_errstr(status)));
+			  dom_sid_str_buf(&state->sid, &sidbuf),
+			  nt_errstr(status)));
 		return status;
 	}
 
@@ -104,7 +106,6 @@ NTSTATUS winbindd_getusersids_recv(struct tevent_req *req,
 	}
 
 	for (i=0; i<state->num_sids; i++) {
-		struct dom_sid_buf sidbuf;
 		result = talloc_asprintf_append_buffer(
 			result,
 			"%s\n",

@@ -724,6 +724,7 @@ again:
 		enum id_type type;
 		struct id_map *map;
 		uint32_t id;
+		struct dom_sid_buf buf;
 
 		if (i == 0) { /* first entry */
 			entry = ldap_first_entry(
@@ -797,7 +798,10 @@ again:
 			DEBUG(1, ("WARNING: duplicate %s mapping in LDAP. "
 			      "overwriting mapping %u -> %s with %u -> %s\n",
 			      (type == ID_TYPE_UID) ? "UID" : "GID",
-			      id, sid_string_dbg(map->sid), id, sidstr));
+			      id,
+			      dom_sid_str_buf(map->sid, &buf),
+			      id,
+			      sidstr));
 		}
 
 		TALLOC_FREE(sidstr);
@@ -805,7 +809,8 @@ again:
 		/* mapped */
 		map->status = ID_MAPPED;
 
-		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_dbg(map->sid),
+		DEBUG(10, ("Mapped %s -> %lu (%d)\n",
+			   dom_sid_str_buf(map->sid, &buf),
 			   (unsigned long)map->xid.id, map->xid.type));
 	}
 
@@ -940,6 +945,7 @@ again:
 		enum id_type type;
 		struct id_map *map;
 		struct dom_sid sid;
+		struct dom_sid_buf buf;
 		uint32_t id;
 
 		if (i == 0) { /* first entry */
@@ -1024,8 +1030,10 @@ again:
 		map->xid.id = id;
 		map->status = ID_MAPPED;
 
-		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_dbg(map->sid),
-			   (unsigned long)map->xid.id, map->xid.type));
+		DEBUG(10, ("Mapped %s -> %lu (%d)\n",
+			   dom_sid_str_buf(map->sid, &buf),
+			   (unsigned long)map->xid.id,
+			   map->xid.type));
 	}
 
 	/* free the ldap results */

@@ -49,8 +49,9 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 
 	state->lookup_domain = find_lookup_domain_from_sid(sid);
 	if (state->lookup_domain == NULL) {
+		struct dom_sid_buf buf;
 		DEBUG(5, ("Could not find domain for sid %s\n",
-			  sid_string_dbg(sid)));
+			  dom_sid_str_buf(sid, &buf)));
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return tevent_req_post(req, ev);
 	}

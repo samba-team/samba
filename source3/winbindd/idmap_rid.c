@@ -158,9 +158,10 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 
 		if (( ! NT_STATUS_IS_OK(ret)) &&
 		    ( ! NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
+			struct dom_sid_buf buf;
 			/* some fatal error occurred, log it */
 			DEBUG(3, ("Unexpected error resolving a SID (%s)\n",
-				  sid_string_dbg(ids[i]->sid)));
+				  dom_sid_str_buf(ids[i]->sid, &buf)));
 		}
 	}
 

@@ -144,6 +144,7 @@ static NTSTATUS idmap_hash_initialize(struct idmap_domain *dom)
 	/* create the hash table of domain SIDs */
 
 	for (i=0; i<num_domains; i++) {
+		struct dom_sid_buf buf;
 		uint32_t hash;
 
 		if (is_null_sid(&dom_list[i].sid))
@@ -166,7 +167,7 @@ static NTSTATUS idmap_hash_initialize(struct idmap_domain *dom)
 
 		DBG_INFO("Adding %s (%s) -> %d\n",
 			 dom_list[i].domain_name,
-			 sid_string_dbg(&dom_list[i].sid),
+			 dom_sid_str_buf(&dom_list[i].sid, &buf),
 			 hash);
 
 		hashed_domains[hash].sid = talloc(hashed_domains, struct dom_sid);

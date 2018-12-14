@@ -64,8 +64,9 @@ struct tevent_req *winbindd_lookuprids_send(TALLOC_CTX *mem_ctx,
 
 	domain = find_lookup_domain_from_sid(&state->domain_sid);
 	if (domain == NULL) {
+		struct dom_sid_buf buf;
 		DEBUG(5, ("Domain for sid %s not found\n",
-			  sid_string_dbg(&state->domain_sid)));
+			  dom_sid_str_buf(&state->domain_sid, &buf)));
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 		return tevent_req_post(req, ev);
 	}

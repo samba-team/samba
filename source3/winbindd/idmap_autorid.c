@@ -453,6 +453,7 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc_action(
 	ctx = (struct idmap_autorid_sid_to_id_alloc_ctx *)private_data;
 
 	if (idmap_autorid_sid_is_special(ctx->map->sid)) {
+		struct dom_sid_buf buf;
 		NTSTATUS ret;
 
 		ret = idmap_autorid_sid_to_id_special(ctx->dom, ctx->map);
@@ -465,7 +466,7 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc_action(
 
 		DEBUG(10, ("Sepecial sid %s not mapped. falling back to "
 			   "regular allocation\n",
-			   sid_string_dbg(ctx->map->sid)));
+			   dom_sid_str_buf(ctx->map->sid, &buf)));
 	}
 
 	return idmap_tdb_common_new_mapping(ctx->dom, ctx->map);
@@ -481,6 +482,7 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(
 {
 	NTSTATUS ret;
 	struct idmap_autorid_sid_to_id_alloc_ctx alloc_ctx;
+	struct dom_sid_buf buf;
 
 	map->status = ID_UNKNOWN;
 
@@ -495,19 +497,21 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(
 	/* bad things happened */
 	if (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
 		DEBUG(1, ("Looking up SID->ID mapping for %s failed: %s\n",
-			  sid_string_dbg(map->sid), nt_errstr(ret)));
+			  dom_sid_str_buf(map->sid, &buf),
+			  nt_errstr(ret)));
 		return ret;
 	}
 
 	if (dom->read_only) {
 		DEBUG(3, ("Not allocating new mapping for %s, because backend "
-			  "is read-only\n", sid_string_dbg(map->sid)));
+			  "is read-only\n",
+			  dom_sid_str_buf(map->sid, &buf)));
 		map->status = ID_UNMAPPED;
 		return NT_STATUS_NONE_MAPPED;
 	}
 
 	DEBUG(10, ("Creating new mapping in pool for %s\n",
-		   sid_string_dbg(map->sid)));
+		   dom_sid_str_buf(map->sid, &buf)));
 
 	alloc_ctx.dom = dom;
 	alloc_ctx.map = map;
@@ -546,25 +550,26 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 	struct autorid_range_config range;
 	uint32_t rid;
 	struct dom_sid domainsid;
+	struct dom_sid_buf buf;
 	NTSTATUS ret;
 
 	ZERO_STRUCT(range);
 	map->status = ID_UNKNOWN;
 
-	DEBUG(10, ("Trying to map %s\n", sid_string_dbg(map->sid)));
+	DEBUG(10, ("Trying to map %s\n", dom_sid_str_buf(map->sid, &buf)));
 
 	sid_copy(&domainsid, map->sid);
 	if (!sid_split_rid(&domainsid, &rid)) {
 		DEBUG(4, ("Could not determine domain SID from %s, "
 			  "ignoring mapping request\n",
-			  sid_string_dbg(map->sid)));
+			  dom_sid_str_buf(map->sid, &buf)));
 		map->status = ID_UNMAPPED;
 		return NT_STATUS_NONE_MAPPED;
 	}
 
 	if (idmap_autorid_domsid_is_for_alloc(&domainsid)) {
 		DEBUG(10, ("SID %s is for ALLOC range.\n",
-			   sid_string_dbg(map->sid)));
+			   dom_sid_str_buf(map->sid, &buf)));
 
 		return idmap_autorid_sid_to_id_alloc(common, dom, map);
 	}
@@ -709,9 +714,10 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		ret = idmap_autorid_sid_to_id(commoncfg, dom, ids[i]);
 		if ((!NT_STATUS_IS_OK(ret)) &&
 		    (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
+			struct dom_sid_buf buf;
 			/* some fatal error occurred, log it */
 			DEBUG(3, ("Unexpected error resolving a SID (%s)\n",
-				  sid_string_dbg(ids[i]->sid)));
+				  dom_sid_str_buf(ids[i]->sid, &buf)));
 			return ret;
 		}
 

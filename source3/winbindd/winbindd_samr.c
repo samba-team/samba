@@ -668,8 +668,10 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	    !sid_check_is_in_unix_groups(sid) &&
 	    !sid_check_is_unix_groups(sid) &&
 	    !sid_check_is_in_wellknown_domain(sid)) {
+		struct dom_sid_buf buf;
 		DEBUG(0, ("sam_sid_to_name: possible deadlock - trying to "
-			  "lookup SID %s\n", sid_string_dbg(sid)));
+			  "lookup SID %s\n",
+			  dom_sid_str_buf(sid, &buf)));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -746,8 +748,10 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	    !sid_check_is_unix_users(domain_sid) &&
 	    !sid_check_is_unix_groups(domain_sid) &&
 	    !sid_check_is_in_wellknown_domain(domain_sid)) {
+		struct dom_sid_buf buf;
 		DEBUG(0, ("sam_rids_to_names: possible deadlock - trying to "
-			  "lookup SID %s\n", sid_string_dbg(domain_sid)));
+			  "lookup SID %s\n",
+			  dom_sid_str_buf(domain_sid, &buf)));
 		return NT_STATUS_NONE_MAPPED;
 	}
 

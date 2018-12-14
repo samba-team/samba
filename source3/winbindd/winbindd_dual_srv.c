@@ -167,8 +167,10 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 
 	dom = idmap_find_domain_with_sid(d->name.string, d->sid);
 	if (dom == NULL) {
+		struct dom_sid_buf buf;
 		DEBUG(10, ("idmap domain %s:%s not found\n",
-			   d->name.string, sid_string_dbg(d->sid)));
+			   d->name.string,
+			   dom_sid_str_buf(d->sid, &buf)));
 
 		for (i=0; i<num_ids; i++) {
 

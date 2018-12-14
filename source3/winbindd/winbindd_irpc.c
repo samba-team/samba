@@ -602,6 +602,7 @@ static void wb_irpc_lsa_LookupNames4_done(struct tevent_req *subreq)
 	struct wb_irpc_lsa_LookupNames4_state *state =
 		talloc_get_type_abort(nstate->state,
 		struct wb_irpc_lsa_LookupNames4_state);
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 
 	SMB_ASSERT(state->num_pending > 0);
@@ -619,7 +620,8 @@ static void wb_irpc_lsa_LookupNames4_done(struct tevent_req *subreq)
 				   &nstate->authority_sid, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("dom_sid_split_rid(%s) failed - %s\n",
-			 sid_string_dbg(&nstate->sid), nt_errstr(status));
+			dom_sid_str_buf(&nstate->sid, &buf),
+			nt_errstr(status));
 		irpc_send_reply(state->msg, status);
 		return;
 	}
@@ -630,7 +632,8 @@ static void wb_irpc_lsa_LookupNames4_done(struct tevent_req *subreq)
 					 &state->num_domain_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("add_sid_to_array_unique(%s) failed - %s\n",
-			 sid_string_dbg(nstate->authority_sid), nt_errstr(status));
+			dom_sid_str_buf(nstate->authority_sid, &buf),
+			nt_errstr(status));
 		irpc_send_reply(state->msg, status);
 		return;
 	}

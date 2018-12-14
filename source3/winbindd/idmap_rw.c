@@ -23,6 +23,7 @@
 #include "winbindd.h"
 #include "idmap.h"
 #include "idmap_rw.h"
+#include "libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -31,6 +32,7 @@ NTSTATUS idmap_rw_new_mapping(struct idmap_domain *dom,
 			      struct idmap_rw_ops *ops,
 			      struct id_map *map)
 {
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 
 	if (map == NULL) {
@@ -53,7 +55,7 @@ NTSTATUS idmap_rw_new_mapping(struct idmap_domain *dom,
 	}
 
 	DEBUG(10, ("Setting mapping: %s <-> %s %lu\n",
-		   sid_string_dbg(map->sid),
+		   dom_sid_str_buf(map->sid, &buf),
 		   (map->xid.type == ID_TYPE_UID) ? "UID" : "GID",
 		   (unsigned long)map->xid.id));
 
@@ -63,7 +65,7 @@ NTSTATUS idmap_rw_new_mapping(struct idmap_domain *dom,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 		struct id_map *ids[2];
 		DEBUG(5, ("Mapping for %s exists - retrying to map sid\n",
-			  sid_string_dbg(map->sid)));
+			  dom_sid_str_buf(map->sid, &buf)));
 		ids[0] = map;
 		ids[1] = NULL;
 		status = dom->methods->sids_to_unixids(dom, ids);
