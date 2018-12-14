@@ -113,7 +113,7 @@ void audit_log_json(struct json_object* message,
 		    int debug_class,
 		    int debug_level)
 {
-	TALLOC_CTX *ctx = NULL;
+	TALLOC_CTX *frame = NULL;
 	char *s = NULL;
 
 	if (json_is_invalid(message)) {
@@ -121,12 +121,12 @@ void audit_log_json(struct json_object* message,
 		return;
 	}
 
-	ctx = talloc_new(NULL);
-	s = json_to_string(ctx, message);
+	frame = talloc_stackframe();
+	s = json_to_string(frame, message);
 	if (s == NULL) {
 		DBG_ERR("json_to_string returned NULL, "
 			"JSON audit message could not written\n");
-		TALLOC_FREE(ctx);
+		TALLOC_FREE(frame);
 		return;
 	}
 	/*
@@ -138,7 +138,7 @@ void audit_log_json(struct json_object* message,
 	 * can find such lines by the leading {
 	 */
 	DEBUGADDC(debug_class, debug_level, ("%s\n", s));
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(frame);
 }
 
 /*
