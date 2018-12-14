@@ -60,6 +60,154 @@ static bool test_file_load_save(struct torture_context *tctx)
 	return true;
 }
 
+#define TEST_DATA_WITH_NEWLINE TEST_DATA "\n"
+#define TEST_DATA_NO_NEWLINE TEST_DATA
+#define TEST_DATA_EMPTY ""
+#define TEST_DATA_BLANKS_ONLY "\n\n\n\n\n"
+#define TEST_DATA_WITH_TRAILING_BLANKS TEST_DATA TEST_DATA_BLANKS_ONLY
+
+static bool test_file_lines_load(struct torture_context *tctx)
+{
+	char **lines;
+	int numlines;
+	TALLOC_CTX *mem_ctx = tctx;
+
+	/*
+	 * Last line has trailing whitespace
+	 */
+
+	torture_assert(tctx,
+		       file_save(TEST_FILENAME,
+				 TEST_DATA_WITH_NEWLINE,
+				 strlen(TEST_DATA_WITH_NEWLINE)),
+		       "saving file");
+
+	lines = file_lines_load(TEST_FILENAME, &numlines, 0, mem_ctx);
+
+	torture_assert_int_equal(tctx, numlines, 3, "Lines");
+
+	torture_assert_mem_equal(tctx,
+				 lines[0],
+				 TEST_LINE1,
+				 strlen(TEST_LINE1),
+				 "Line 1");
+
+	torture_assert_mem_equal(tctx,
+				 lines[1],
+				 TEST_LINE2,
+				 strlen(TEST_LINE2),
+				 "Line 2");
+
+	torture_assert_mem_equal(tctx,
+				 lines[2],
+				 TEST_LINE3,
+				 strlen(TEST_LINE3),
+				 "Line 3");
+
+	unlink(TEST_FILENAME);
+
+	/*
+	 * Last line has NO trailing whitespace
+	 */
+
+	torture_assert(tctx,
+		       file_save(TEST_FILENAME,
+				 TEST_DATA_NO_NEWLINE,
+				 strlen(TEST_DATA_NO_NEWLINE)),
+		       "saving file");
+
+	lines = file_lines_load(TEST_FILENAME, &numlines, 0, mem_ctx);
+
+	torture_assert_int_equal(tctx, numlines, 3, "Lines");
+
+	torture_assert_mem_equal(tctx,
+				 lines[0],
+				 TEST_LINE1,
+				 strlen(TEST_LINE1),
+				 "Line 1");
+
+	torture_assert_mem_equal(tctx,
+				 lines[1],
+				 TEST_LINE2,
+				 strlen(TEST_LINE2),
+				 "Line 2");
+
+	torture_assert_mem_equal(tctx,
+				 lines[2],
+				 TEST_LINE3,
+				 strlen(TEST_LINE3),
+				 "Line 3");
+
+	unlink(TEST_FILENAME);
+
+	/*
+	 * Empty file
+	 */
+
+	torture_assert(tctx,
+		       file_save(TEST_FILENAME,
+				 TEST_DATA_EMPTY,
+				 strlen(TEST_DATA_EMPTY)),
+		       "saving file");
+
+	lines = file_lines_load(TEST_FILENAME, &numlines, 0, mem_ctx);
+
+	torture_assert_int_equal(tctx, numlines, 0, "Lines");
+
+	unlink(TEST_FILENAME);
+
+	/*
+	 * Just blank lines
+	 */
+
+	torture_assert(tctx,
+		       file_save(TEST_FILENAME,
+				 TEST_DATA_BLANKS_ONLY,
+				 strlen(TEST_DATA_BLANKS_ONLY)),
+		       "saving file");
+
+	lines = file_lines_load(TEST_FILENAME, &numlines, 0, mem_ctx);
+
+	torture_assert_int_equal(tctx, numlines, 0, "Lines");
+
+	unlink(TEST_FILENAME);
+
+	/*
+	 * Several trailing blank lines
+	 */
+
+	torture_assert(tctx,
+		       file_save(TEST_FILENAME,
+				 TEST_DATA_WITH_TRAILING_BLANKS,
+				 strlen(TEST_DATA_WITH_TRAILING_BLANKS)),
+		       "saving file");
+
+	lines = file_lines_load(TEST_FILENAME, &numlines, 0, mem_ctx);
+
+	torture_assert_int_equal(tctx, numlines, 3, "Lines");
+
+	torture_assert_mem_equal(tctx,
+				 lines[0],
+				 TEST_LINE1,
+				 strlen(TEST_LINE1),
+				 "Line 1");
+
+	torture_assert_mem_equal(tctx,
+				 lines[1],
+				 TEST_LINE2,
+				 strlen(TEST_LINE2),
+				 "Line 2");
+
+	torture_assert_mem_equal(tctx,
+				 lines[2],
+				 TEST_LINE3,
+				 strlen(TEST_LINE3),
+				 "Line 3");
+
+	unlink(TEST_FILENAME);
+
+	return true;
+}
 
 static bool test_afdgets(struct torture_context *tctx)
 {
@@ -101,6 +249,10 @@ struct torture_suite *torture_local_util_file(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "file_load_save", 
 				      test_file_load_save);
+
+	torture_suite_add_simple_test(suite,
+				      "file_lines_load",
+				      test_file_lines_load);
 
 	torture_suite_add_simple_test(suite, "afdgets", test_afdgets);
 

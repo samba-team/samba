@@ -220,7 +220,7 @@ parse a buffer into lines
 **/
 char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
 {
-	int i;
+	unsigned int i;
 	char *s, **ret;
 
 	if (!p) return NULL;
@@ -238,11 +238,11 @@ char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx
 	talloc_steal(ret, p);
 
 	ret[0] = p;
-	for (s = p, i=0; s < p+size; s++) {
+	for (s = p, i=1; s < p+size; s++) {
 		if (s[0] == '\n') {
 			s[0] = 0;
-			i++;
 			ret[i] = s+1;
+			i++;
 		}
 		if (s[0] == '\r') s[0] = 0;
 	}
