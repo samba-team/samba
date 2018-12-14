@@ -2937,6 +2937,7 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 	struct lsa_info *info=NULL;
 	PRIVILEGE_SET *privileges;
 	struct lsa_PrivilegeSet *priv_set = NULL;
+	struct dom_sid_buf buf;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
@@ -2960,7 +2961,7 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 	}
 
 	DEBUG(10,("_lsa_EnumPrivsAccount: %s has %d privileges\n",
-		  sid_string_dbg(&info->sid),
+		  dom_sid_str_buf(&info->sid, &buf),
 		  privileges->count));
 
 	priv_set->count = privileges->count;
@@ -3093,8 +3094,9 @@ NTSTATUS _lsa_AddPrivilegesToAccount(struct pipes_struct *p,
 	set = r->in.privs;
 
 	if ( !grant_privilege_set( &info->sid, set ) ) {
+		struct dom_sid_buf buf;
 		DEBUG(3,("_lsa_AddPrivilegesToAccount: grant_privilege_set(%s) failed!\n",
-			 sid_string_dbg(&info->sid) ));
+			 dom_sid_str_buf(&info->sid, &buf)));
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
@@ -3127,8 +3129,9 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(struct pipes_struct *p,
 	set = r->in.privs;
 
 	if ( !revoke_privilege_set( &info->sid, set) ) {
+		struct dom_sid_buf buf;
 		DEBUG(3,("_lsa_RemovePrivilegesFromAccount: revoke_privilege(%s) failed!\n",
-			 sid_string_dbg(&info->sid) ));
+			 dom_sid_str_buf(&info->sid, &buf)));
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
@@ -3424,6 +3427,7 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 	NTSTATUS status;
 	struct lsa_info *info = NULL;
 	PRIVILEGE_SET *privileges;
+	struct dom_sid_buf buf;
 
 	/* find the connection policy handle. */
 
@@ -3451,7 +3455,8 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 	}
 
 	DEBUG(10,("_lsa_EnumAccountRights: %s has %d privileges\n",
-		  sid_string_dbg(r->in.sid), privileges->count));
+		  dom_sid_str_buf(r->in.sid, &buf),
+		  privileges->count));
 
 	status = init_lsa_right_set(p->mem_ctx, r->out.rights, privileges);
 
