@@ -234,6 +234,12 @@ struct dsdb_extended_replicated_object {
 	struct ldb_dn *local_parent_dn;
 };
 
+/*
+ * the schema_dn is passed as struct ldb_dn in
+ * req->op.extended.data
+ */
+#define DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID "1.3.6.1.4.1.7165.4.4.2"
+
 struct dsdb_extended_replicated_objects {
 	/* 
 	 * this is the version of the dsdb_extended_replicated_objects
@@ -261,20 +267,46 @@ struct dsdb_extended_replicated_objects {
 	bool originating_updates;
 };
 
+/* In ldb.h: LDB_EXTENDED_SEQUENCE_NUMBER 1.3.6.1.4.1.7165.4.4.3 */
+
 #define DSDB_EXTENDED_CREATE_PARTITION_OID "1.3.6.1.4.1.7165.4.4.4"
 struct dsdb_create_partition_exop {
 	struct ldb_dn *new_dn;
 };
 
-/*
- * the schema_dn is passed as struct ldb_dn in
- * req->op.extended.data
- */
-#define DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID "1.3.6.1.4.1.7165.4.4.2"
+/* this takes a struct dsdb_fsmo_extended_op */
+#define DSDB_EXTENDED_ALLOCATE_RID_POOL "1.3.6.1.4.1.7165.4.4.5"
 
-#define DSDB_EXTENDED_SCHEMA_LOAD "1.3.6.1.4.1.7165.4.4.10"
+struct dsdb_fsmo_extended_op {
+	uint64_t fsmo_info;
+	struct GUID destination_dsa_guid;
+};
 
 #define DSDB_EXTENDED_SCHEMA_UPGRADE_IN_PROGRESS_OID "1.3.6.1.4.1.7165.4.4.6"
+
+/*
+ * passed from the descriptor module in order to
+ * store the recalucated nTSecurityDescriptor without
+ * modifying the replPropertyMetaData.
+ */
+#define DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.4.7"
+struct dsdb_extended_sec_desc_propagation_op {
+	struct ldb_dn *nc_root;
+	struct ldb_dn *dn;
+	bool include_self;
+};
+
+/* this takes no data */
+#define DSDB_EXTENDED_CREATE_OWN_RID_SET "1.3.6.1.4.1.7165.4.4.8"
+
+/* this takes a struct dsdb_extended_allocate_rid */
+#define DSDB_EXTENDED_ALLOCATE_RID "1.3.6.1.4.1.7165.4.4.9"
+
+struct dsdb_extended_allocate_rid {
+	uint32_t rid;
+};
+
+#define DSDB_EXTENDED_SCHEMA_LOAD "1.3.6.1.4.1.7165.4.4.10"
 
 #define DSDB_OPENLDAP_DEREFERENCE_CONTROL "1.3.6.1.4.1.4203.666.5.16"
 
@@ -313,36 +345,6 @@ struct dsdb_extended_dn_store_format {
 };
 
 #define DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME "DSDB_OPAQUE_PARTITION_MODULE_MSG"
-
-/* this takes a struct dsdb_fsmo_extended_op */
-#define DSDB_EXTENDED_ALLOCATE_RID_POOL "1.3.6.1.4.1.7165.4.4.5"
-
-struct dsdb_fsmo_extended_op {
-	uint64_t fsmo_info;
-	struct GUID destination_dsa_guid;
-};
-
-/* this takes no data */
-#define DSDB_EXTENDED_CREATE_OWN_RID_SET "1.3.6.1.4.1.7165.4.4.8"
-
-/* this takes a struct dsdb_extended_allocate_rid */
-#define DSDB_EXTENDED_ALLOCATE_RID "1.3.6.1.4.1.7165.4.4.9"
-
-struct dsdb_extended_allocate_rid {
-	uint32_t rid;
-};
-
-/*
- * passed from the descriptor module in order to
- * store the recalucated nTSecurityDescriptor without
- * modifying the replPropertyMetaData.
- */
-#define DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.4.7"
-struct dsdb_extended_sec_desc_propagation_op {
-	struct ldb_dn *nc_root;
-	struct ldb_dn *dn;
-	bool include_self;
-};
 
 #define DSDB_ACL_CHECKS_DIRSYNC_FLAG 0x1
 #define DSDB_SAMDB_MINIMUM_ALLOWED_RID   1000
