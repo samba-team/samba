@@ -2052,6 +2052,7 @@ sub provision_chgdcpass($$)
 	my $extra_smb_conf = "
 	check password script = sed -e '/$unacceptable_password/{;q1}; /$unacceptable_password/!{q0}'
 	allow dcerpc auth level connect:lsarpc = yes
+	dcesrv:max auth states = 8
 ";
 	my $extra_provision_options = ["--use-ntvfs"];
 	push (@{$extra_provision_options}, "--dns-backend=BIND9_DLZ");
