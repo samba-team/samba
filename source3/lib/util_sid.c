@@ -40,17 +40,6 @@ char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid)
 }
 
 /*****************************************************************
- Useful function for debug lines.
-*****************************************************************/
-
-char *sid_string_dbg(const struct dom_sid *sid)
-{
-	char *result = dom_sid_string(talloc_tos(), sid);
-	SMB_ASSERT(result != NULL);
-	return result;
-}
-
-/*****************************************************************
  Write a sid out into on-the-wire format.
 *****************************************************************/  
 
