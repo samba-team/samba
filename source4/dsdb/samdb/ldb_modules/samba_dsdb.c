@@ -541,11 +541,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 		} else {
 			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "invalid backend type");
 		}
-		ret = ldb_set_opaque(ldb, "readOnlySchema", (void*)1);
-		if (ret != LDB_SUCCESS) {
-			ldb_set_errstring(ldb, "Failed to set readOnlySchema opaque");
-		}
-
 		cred = ldb_get_opaque(ldb, "credentials");
 		if (!cred || !cli_credentials_authentication_requested(cred)) {
 			ret = set_ldap_credentials(ldb, use_sasl_external);

@@ -386,7 +386,6 @@ static int schema_load(struct ldb_context *ldb,
 		       bool *need_write)
 {
 	struct dsdb_schema *schema;
-	void *readOnlySchema;
 	int ret, metadata_ret;
 	TALLOC_CTX *frame = talloc_stackframe();
 	
@@ -413,33 +412,7 @@ static int schema_load(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 
-	readOnlySchema = ldb_get_opaque(ldb, "readOnlySchema");
-
-	/* If we have the readOnlySchema opaque, then don't check for
-	 * runtime schema updates, as they are not permitted (we would
-	 * have to update the backend server schema too */
-	if (readOnlySchema != NULL) {
-		struct dsdb_schema *new_schema;
-		ret = dsdb_schema_from_db(module, frame, 0, &new_schema);
-		if (ret != LDB_SUCCESS) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "schema_load_init: dsdb_schema_from_db() failed: %d:%s: %s",
-				      ret, ldb_strerror(ret), ldb_errstring(ldb));
-			TALLOC_FREE(frame);
-			return ret;
-		}
-
-		/* "dsdb_set_schema()" steals schema into the ldb_context */
-		ret = dsdb_set_schema(ldb, new_schema, SCHEMA_MEMORY_ONLY);
-		if (ret != LDB_SUCCESS) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "schema_load_init: dsdb_set_schema() failed: %d:%s: %s",
-				      ret, ldb_strerror(ret), ldb_errstring(ldb));
-			TALLOC_FREE(frame);
-			return ret;
-		}
-
-	} else if (metadata_ret == LDB_SUCCESS) {
+	if (metadata_ret == LDB_SUCCESS) {
 		ret = dsdb_set_schema_refresh_function(ldb, dsdb_schema_refresh, module);
 
 		if (ret != LDB_SUCCESS) {
