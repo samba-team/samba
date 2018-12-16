@@ -114,18 +114,17 @@ static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
 static PyObject *py_dom_sid_str(PyObject *py_self)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self);
-	char *str = dom_sid_string(NULL, self);
-	PyObject *ret = PyStr_FromString(str);
-	talloc_free(str);
+	struct dom_sid_buf buf;
+	PyObject *ret = PyStr_FromString(dom_sid_str_buf(self, &buf));
 	return ret;
 }
 
 static PyObject *py_dom_sid_repr(PyObject *py_self)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self);
-	char *str = dom_sid_string(NULL, self);
-	PyObject *ret = PyStr_FromFormat("dom_sid('%s')", str);
-	talloc_free(str);
+	struct dom_sid_buf buf;
+	PyObject *ret = PyStr_FromFormat(
+		"dom_sid('%s')", dom_sid_str_buf(self, &buf));
 	return ret;
 }
 
