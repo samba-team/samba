@@ -105,6 +105,35 @@ Note: Support for python2 (with the exception of a build configured with
       'PYTHON=python2 ./configure --disable-python' and built with
       'PYTHON=python2 make' will be deprecated in the next release.
 
+JSON logging
+------------
+
+Authentication messages now contain the Windows Event Id "eventId" and logon
+type "logonType". The supported event codes and logon types are:
+  Event codes:
+    4624  Successful logon
+    4625  Unsuccessful logon
+
+  Logon Types:
+    2  Interactive
+    3  Network
+    8  NetworkCleartext
+The version number for Authentication messages is now 1.1, changed from 1.0
+
+Password change messages now contain the Windows Event Id "eventId", the
+supported event Id's are:
+  4723 Password changed
+  4724 Password reset
+The version number for PasswordChange messages is now 1.1, changed from 1.0
+
+The leading "JSON <message type>:" and source file  prefix of the JSON formatted
+log entries has been removed to make the parsing of the JSON log messages
+easier. JSON log entries now start with 2 spaces folowed by an opening brace
+i.e. "  {"
+
+
+
+
 REMOVED FEATURES
 ================
 
