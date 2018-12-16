@@ -350,7 +350,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	char *filter = NULL;
 	/* SIDs for the account and his primary group */
 	struct dom_sid *account_sid;
-	const char *primary_group_string;
+	struct dom_sid_buf buf;
 	const char *primary_group_dn;
 	DATA_BLOB primary_group_blob;
 	/* SID structures for the expanded group memberships */
@@ -404,13 +404,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	primary_group_string = dom_sid_string(tmp_ctx, &sids[PRIMARY_GROUP_SID_INDEX]);
-	if (primary_group_string == NULL) {
-		TALLOC_FREE(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
+	primary_group_dn = talloc_asprintf(
+		tmp_ctx,
+		"<SID=%s>",
+		dom_sid_str_buf(&sids[PRIMARY_GROUP_SID_INDEX], &buf));
 	if (primary_group_dn == NULL) {
 		TALLOC_FREE(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
@@ -755,8 +752,9 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 					  "(&(objectSid=%s)(objectClass=domain))",
 					    ldap_encode_ndr_dom_sid(tmp_ctx, domain_sid));
 		if (!domain_dn) {
+			struct dom_sid_buf buf;
 			DEBUG(3, ("authsam_get_user_info_dc_principal: Failed to find domain with: SID %s\n",
-				  dom_sid_string(tmp_ctx, domain_sid)));
+				  dom_sid_str_buf(domain_sid, &buf)));
 			return NT_STATUS_NO_SUCH_USER;
 		}
 

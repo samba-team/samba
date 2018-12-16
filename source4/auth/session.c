@@ -178,19 +178,14 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 		/* Search for each group in the token */
 		for (i = 0; i < num_sids; i++) {
-			char *sid_string;
+			struct dom_sid_buf buf;
 			const char *sid_dn;
 			DATA_BLOB sid_blob;
 
-			sid_string = dom_sid_string(tmp_ctx,
-						      &sids[i]);
-			if (sid_string == NULL) {
-				TALLOC_FREE(user_info_dc);
-				return NT_STATUS_NO_MEMORY;
-			}
-			
-			sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", sid_string);
-			talloc_free(sid_string);
+			sid_dn = talloc_asprintf(
+				tmp_ctx,
+				"<SID=%s>",
+				dom_sid_str_buf(&sids[i], &buf));
 			if (sid_dn == NULL) {
 				TALLOC_FREE(user_info_dc);
 				return NT_STATUS_NO_MEMORY;
