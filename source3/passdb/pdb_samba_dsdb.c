@@ -155,7 +155,8 @@ static struct ldb_message *pdb_samba_dsdb_get_samu_private(
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
 	struct ldb_message *msg;
-	char *sidstr, *filter;
+	struct dom_sid_buf sidstr;
+	char *filter;
 	NTSTATUS status;
 
 	msg = (struct ldb_message *)
@@ -165,14 +166,10 @@ static struct ldb_message *pdb_samba_dsdb_get_samu_private(
 		return talloc_get_type_abort(msg, struct ldb_message);
 	}
 
-	sidstr = dom_sid_string(talloc_tos(), pdb_get_user_sid(sam));
-	if (sidstr == NULL) {
-		return NULL;
-	}
-
 	filter = talloc_asprintf(
-		talloc_tos(), "(&(objectsid=%s)(objectclass=user))", sidstr);
-	TALLOC_FREE(sidstr);
+		talloc_tos(),
+		"(&(objectsid=%s)(objectclass=user))",
+		dom_sid_str_buf(pdb_get_user_sid(sam), &sidstr));
 	if (filter == NULL) {
 		return NULL;
 	}
@@ -725,15 +722,11 @@ static NTSTATUS pdb_samba_dsdb_getsampwsid(struct pdb_methods *m,
 	NTSTATUS status;
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
-	char *sidstr;
-
-	sidstr = dom_sid_string(talloc_tos(), sid);
-	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+	struct dom_sid_buf buf;
 
 	status = pdb_samba_dsdb_getsampwfilter(m, state, sam_acct,
 					   "(&(objectsid=%s)(objectclass=user))",
-					   sidstr);
-	talloc_free(sidstr);
+					   dom_sid_str_buf(sid, &buf));
 	return status;
 }
 
@@ -771,10 +764,15 @@ static NTSTATUS pdb_samba_dsdb_delete_user(struct pdb_methods *m,
 		m->private_data, struct pdb_samba_dsdb_state);
 	struct ldb_dn *dn;
 	int rc;
+	struct dom_sid_buf buf;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	dn = ldb_dn_new_fmt(tmp_ctx, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, pdb_get_user_sid(sam)));
+	dn = ldb_dn_new_fmt(
+		tmp_ctx,
+		state->ldb,
+		"<SID=%s>",
+		dom_sid_str_buf(pdb_get_user_sid(sam), &buf));
 	if (!dn || !ldb_dn_validate(dn)) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -1110,6 +1108,7 @@ static NTSTATUS pdb_samba_dsdb_delete_dom_group(struct pdb_methods *m,
 	struct ldb_message *msg;
 	struct ldb_dn *dn;
 	int rc;
+	struct dom_sid_buf buf;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
@@ -1120,7 +1119,11 @@ static NTSTATUS pdb_samba_dsdb_delete_dom_group(struct pdb_methods *m,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	dn = ldb_dn_new_fmt(tmp_ctx, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, &sid));
+	dn = ldb_dn_new_fmt(
+		tmp_ctx,
+		state->ldb,
+		"<SID=%s>",
+		dom_sid_str_buf(&sid, &buf));
 	if (!dn || !ldb_dn_validate(dn)) {
 		talloc_free(tmp_ctx);
 		ldb_transaction_cancel(state->ldb);
@@ -1193,11 +1196,16 @@ static NTSTATUS pdb_samba_dsdb_enum_group_members(struct pdb_methods *m,
 	uint32_t *members;
 	struct ldb_dn *dn;
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	dn = ldb_dn_new_fmt(tmp_ctx, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, group));
+	dn = ldb_dn_new_fmt(
+		tmp_ctx,
+		state->ldb,
+		"<SID=%s>",
+		dom_sid_str_buf(group, &buf));
 	if (!dn || !ldb_dn_validate(dn)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1285,10 +1293,11 @@ static NTSTATUS fake_enum_group_memberships(struct pdb_samba_dsdb_state *state,
 		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
 			gids[0] = id_map.xid.id;
 		} else {
+			struct dom_sid_buf buf1, buf2;
 			DEBUG(1, (__location__
 				  "Group %s, of which %s is a member, could not be converted to a GID\n",
-				  dom_sid_string(tmp_ctx, &group_sids[0]),
-				  dom_sid_string(tmp_ctx, &user->user_sid)));
+				  dom_sid_str_buf(&group_sids[0], &buf1),
+				  dom_sid_str_buf(&user->user_sid, &buf2)));
 			talloc_free(tmp_ctx);
 			/* We must error out, otherwise a user might
 			 * avoid a DENY acl based on a group they
@@ -1392,9 +1401,11 @@ static NTSTATUS pdb_samba_dsdb_enum_group_memberships(struct pdb_methods *m,
 		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
 			gids[num_groups] = id_map.xid.id;
 		} else {
+			struct dom_sid_buf buf;
 			DEBUG(1, (__location__
 				  "Group %s, of which %s is a member, could not be converted to a GID\n",
-				  dom_sid_string(tmp_ctx, &group_sids[num_groups]),
+				  dom_sid_str_buf(&group_sids[num_groups],
+						  &buf),
 				  ldb_dn_get_linearized(msg->dn)));
 			talloc_free(tmp_ctx);
 			/* We must error out, otherwise a user might
@@ -1434,6 +1445,7 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem_by_sid(struct pdb_methods *m,
 	struct ldb_message *msg;
 	int ret;
 	struct ldb_message_element *el;
+	struct dom_sid_buf buf;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 	msg = ldb_msg_new(tmp_ctx);
@@ -1442,12 +1454,20 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem_by_sid(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = ldb_dn_new_fmt(msg, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, groupsid));
+	msg->dn = ldb_dn_new_fmt(
+		msg,
+		state->ldb,
+		"<SID=%s>",
+		dom_sid_str_buf(groupsid, &buf));
 	if (!msg->dn || !ldb_dn_validate(msg->dn)) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = ldb_msg_add_fmt(msg, "member", "<SID=%s>", dom_sid_string(tmp_ctx, membersid));
+	ret = ldb_msg_add_fmt(
+		msg,
+		"member",
+		"<SID=%s>",
+		dom_sid_str_buf(membersid, &buf));
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -1551,10 +1571,15 @@ static NTSTATUS pdb_samba_dsdb_delete_alias(struct pdb_methods *m,
 	struct ldb_message *msg;
 	struct ldb_dn *dn;
 	int rc;
+	struct dom_sid_buf buf;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	dn = ldb_dn_new_fmt(tmp_ctx, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, sid));
+	dn = ldb_dn_new_fmt(
+		tmp_ctx,
+		state->ldb,
+		"<SID=%s>",
+		dom_sid_str_buf(sid, &buf));
 	if (!dn || !ldb_dn_validate(dn)) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -1713,10 +1738,15 @@ static NTSTATUS pdb_samba_dsdb_enum_aliasmem(struct pdb_methods *m,
 	struct ldb_dn *dn;
 	unsigned int num_members;
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	dn = ldb_dn_new_fmt(tmp_ctx, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, alias));
+	dn = ldb_dn_new_fmt(
+		tmp_ctx,
+		state->ldb,
+		"<SID=%s>",
+		dom_sid_str_buf(alias, &buf));
 	if (!dn || !ldb_dn_validate(dn)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1747,7 +1777,6 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 	unsigned int num_groupSIDs = 0;
 	char *filter;
 	NTSTATUS status;
-	const char *sid_string;
 	const char *sid_dn;
 	DATA_BLOB sid_blob;
 
@@ -1765,13 +1794,12 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 	}
 
 	for (i = 0; i < num_members; i++) {
-		sid_string = dom_sid_string(tmp_ctx, &members[i]);
-		if (sid_string == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
+		struct dom_sid_buf buf;
 
-		sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", sid_string);
+		sid_dn = talloc_asprintf(
+			tmp_ctx,
+			"<SID=%s>",
+			dom_sid_str_buf(&members[i], &buf));
 		if (sid_dn == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -3136,13 +3164,15 @@ static NTSTATUS pdb_samba_dsdb_get_trusted_domain_by_sid(struct pdb_methods *m,
 	};
 	struct ldb_message *msg = NULL;
 	struct pdb_trusted_domain *d = NULL;
+	struct dom_sid_buf buf;
 	NTSTATUS status;
 
 	status = dsdb_trust_search_tdo_by_sid(state->ldb, sid,
 					      attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("dsdb_trust_search_tdo_by_sid(%s) - %s ",
-			dom_sid_string(tmp_ctx, sid), nt_errstr(status));
+			dom_sid_str_buf(sid, &buf),
+			nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
 		return status;
 	}
@@ -3150,7 +3180,8 @@ static NTSTATUS pdb_samba_dsdb_get_trusted_domain_by_sid(struct pdb_methods *m,
 	status = pdb_samba_dsdb_msg_to_trusted_domain(msg, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("pdb_samba_dsdb_msg_to_trusted_domain(%s) - %s ",
-			dom_sid_string(tmp_ctx, sid), nt_errstr(status));
+			dom_sid_str_buf(sid, &buf),
+			nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
 		return status;
 	}
