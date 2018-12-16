@@ -45,7 +45,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
 
     def setUp(self):
         self.message_type = MSG_DSDB_PWD_LOG
-        self.event_type   = DSDB_PWD_EVENT_NAME
+        self.event_type = DSDB_PWD_EVENT_NAME
         super(AuditLogPassChangeTests, self).setUp()
 
         self.remoteAddress = os.environ["CLIENT_IP"]
@@ -97,7 +97,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
     # Discard the messages from the setup code
     #
     def discardSetupMessages(self, dn):
-        messages = self.waitForMessages(1, dn=dn)
+        self.waitForMessages(1, dn=dn)
         self.discardMessages()
 
     def tearDown(self):

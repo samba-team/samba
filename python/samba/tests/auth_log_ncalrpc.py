@@ -44,8 +44,8 @@ class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
         def isLastExpectedMessage(msg):
             return (
                 msg["type"] == "Authorization" and
-                msg["Authorization"]["serviceDescription"]  == "DCE/RPC" and
-                msg["Authorization"]["authType"]            == authTypes[0] and
+                msg["Authorization"]["serviceDescription"] == "DCE/RPC" and
+                msg["Authorization"]["authType"] == authTypes[0] and
                 msg["Authorization"]["transportProtection"] == protection)
 
         if binding:

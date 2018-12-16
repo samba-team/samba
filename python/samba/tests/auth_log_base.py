@@ -29,6 +29,7 @@ import re
 
 msg_ctxs = []
 
+
 class AuthLogTestBase(samba.tests.TestCase):
 
     def setUp(self):

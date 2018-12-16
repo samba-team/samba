@@ -46,8 +46,8 @@ class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
 
     def setUp(self):
         super(AuthLogTestsNetLogon, self).setUp()
-        self.lp      = samba.tests.env_loadparm()
-        self.creds   = Credentials()
+        self.lp = samba.tests.env_loadparm()
+        self.creds = Credentials()
 
         self.session = system_session()
         self.ldb = SamDB(
@@ -55,13 +55,12 @@ class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
             credentials=self.creds,
             lp=self.lp)
 
-        self.domain        = os.environ["DOMAIN"]
-        self.netbios_name  = "NetLogonGood"
-        self.machinepass   = "abcdefghij"
+        self.domain = os.environ["DOMAIN"]
+        self.netbios_name = "NetLogonGood"
+        self.machinepass = "abcdefghij"
         self.remoteAddress = AS_SYSTEM_MAGIC_PATH_TOKEN
-        self.base_dn       = self.ldb.domain_dn()
-        self.dn            = ("cn=%s,cn=users,%s" %
-                              (self.netbios_name, self.base_dn))
+        self.base_dn = self.ldb.domain_dn()
+        self.dn = ("cn=%s,cn=users,%s" % (self.netbios_name, self.base_dn))
 
         utf16pw = text_type('"' + self.machinepass + '"').encode('utf-16-le')
         self.ldb.add({
@@ -81,8 +80,8 @@ class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
         def isLastExpectedMessage(msg):
             return (
                 msg["type"] == "Authorization" and
-                msg["Authorization"]["serviceDescription"]  == "DCE/RPC" and
-                msg["Authorization"]["authType"]            == "schannel" and
+                msg["Authorization"]["serviceDescription"] == "DCE/RPC" and
+                msg["Authorization"]["authType"] == "schannel" and
                 msg["Authorization"]["transportProtection"] == "SEAL")
 
         if binding:

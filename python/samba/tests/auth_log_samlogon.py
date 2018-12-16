@@ -46,8 +46,8 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
 
     def setUp(self):
         super(AuthLogTestsSamLogon, self).setUp()
-        self.lp      = samba.tests.env_loadparm()
-        self.creds   = Credentials()
+        self.lp = samba.tests.env_loadparm()
+        self.creds = Credentials()
 
         self.session = system_session()
         self.ldb = SamDB(
@@ -55,13 +55,13 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
             credentials=self.creds,
             lp=self.lp)
 
-        self.domain        = os.environ["DOMAIN"]
-        self.netbios_name  = "SamLogonTest"
-        self.machinepass   = "abcdefghij"
+        self.domain = os.environ["DOMAIN"]
+        self.netbios_name = "SamLogonTest"
+        self.machinepass = "abcdefghij"
         self.remoteAddress = AS_SYSTEM_MAGIC_PATH_TOKEN
-        self.base_dn       = self.ldb.domain_dn()
-        self.samlogon_dn   = ("cn=%s,cn=users,%s" %
-                              (self.netbios_name, self.base_dn))
+        self.base_dn = self.ldb.domain_dn()
+        self.samlogon_dn = ("cn=%s,cn=users,%s" %
+                           (self.netbios_name, self.base_dn))
 
     def tearDown(self):
         super(AuthLogTestsSamLogon, self).tearDown()
@@ -72,9 +72,9 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         def isLastExpectedMessage(msg):
             return (
                 msg["type"] == "Authentication" and
-                msg["Authentication"]["serviceDescription"]  == "SamLogon" and
-                msg["Authentication"]["authDescription"]     == "network" and
-                msg["Authentication"]["passwordType"]        == "NTLMv2" and
+                msg["Authentication"]["serviceDescription"] == "SamLogon" and
+                msg["Authentication"]["authDescription"] == "network" and
+                msg["Authentication"]["passwordType"] == "NTLMv2" and
                 (msg["Authentication"]["eventId"] ==
                     EVT_ID_SUCCESSFUL_LOGON) and
                 (msg["Authentication"]["logonType"] == EVT_LOGON_NETWORK))
@@ -130,10 +130,14 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         logon_level = netlogon.NetlogonNetworkTransitiveInformation
         logon = samba.dcerpc.netlogon.netr_NetworkInfo()
 
-        logon.challenge = [x if isinstance(x,int) else ord(x) for x in challenge]
+        logon.challenge = [
+            x if isinstance(x, int) else ord(x) for x in challenge]
         logon.nt = netlogon.netr_ChallengeResponse()
         logon.nt.length = len(response["nt_response"])
-        logon.nt.data = [x if isinstance(x,int) else ord(x) for x in response["nt_response"]]
+        logon.nt.data = [
+            x if isinstance(x, int) else ord(x) for
+            x in response["nt_response"]
+        ]
         logon.identity_info = samba.dcerpc.netlogon.netr_IdentityInfo()
         (username, domain) = creds.get_ntlm_username_domain()
 

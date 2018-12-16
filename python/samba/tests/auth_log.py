@@ -77,7 +77,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         # Turn "[foo,bar]" into a list ("foo", "bar") to test
         # lambda x: x removes anything that evaluates to False,
         # including empty strings, so we handle "" as well
-        binding_list = list(filter(lambda x: x, re.compile('[\[,\]]').split(binding)))
+        binding_list = \
+            list(filter(lambda x: x, re.compile('[\[,\]]').split(binding)))
 
         # Handle explicit smb2, smb1 or auto negotiation
         if "smb2" in binding_list:
@@ -103,16 +104,16 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
         self.assertEquals(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
-        self._assert_ncacn_np_serviceDescription(binding,
-                                                 msg["Authentication"]["serviceDescription"])
+        self._assert_ncacn_np_serviceDescription(
+            binding, msg["Authentication"]["serviceDescription"])
         self.assertEquals(authTypes[1],
                           msg["Authentication"]["authDescription"])
 
         # Check the second message it should be an Authorization
         msg = messages[1]
         self.assertEquals("Authorization", msg["type"])
-        self._assert_ncacn_np_serviceDescription(binding,
-                                                 msg["Authorization"]["serviceDescription"])
+        self._assert_ncacn_np_serviceDescription(
+            binding, msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[2], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
@@ -183,8 +184,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         # Check the third message it should be an Authorization
         msg = messages[2]
         self.assertEquals("Authorization", msg["type"])
-        self._assert_ncacn_np_serviceDescription(binding,
-                                                 msg["Authorization"]["serviceDescription"])
+        self._assert_ncacn_np_serviceDescription(
+            binding, msg["Authorization"]["serviceDescription"])
         self.assertEquals(authTypes[3], msg["Authorization"]["authType"])
         self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
@@ -674,7 +675,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
     def test_ldap_anonymous_access(self):
         def isLastExpectedMessage(msg):
             return (msg["type"] == "Authorization" and
-                    msg["Authorization"]["serviceDescription"]  == "LDAP" and
+                    msg["Authorization"]["serviceDescription"] == "LDAP" and
                     msg["Authorization"]["transportProtection"] == "TLS" and
                     msg["Authorization"]["account"] == "ANONYMOUS LOGON" and
                     msg["Authorization"]["authType"] == "no bind")
@@ -808,7 +809,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     msg["Authorization"]["account"] == "ANONYMOUS LOGON" and
                     msg["Authorization"]["transportProtection"] == "SMB")
 
-        server   = os.environ["SERVER"]
+        server = os.environ["SERVER"]
 
         path = "//%s/IPC$" % server
         auth = "-N"
@@ -861,7 +862,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     msg["Authorization"]["account"] == "ANONYMOUS LOGON" and
                     msg["Authorization"]["transportProtection"] == "SMB")
 
-        server   = os.environ["SERVER"]
+        server = os.environ["SERVER"]
 
         path = "//%s/IPC$" % server
         auth = "-N"
@@ -1124,8 +1125,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_INTERACTIVE))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
         samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 1)
 
@@ -1157,8 +1158,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_INTERACTIVE))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = "badPassword"
         samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 1)
 
@@ -1190,8 +1191,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_INTERACTIVE))
 
-        server   = os.environ["SERVER"]
-        user     = "badUser"
+        server = os.environ["SERVER"]
+        user = "badUser"
         password = os.environ["PASSWORD"]
         samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 1)
 
@@ -1221,8 +1222,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
         samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 2)
 
@@ -1253,8 +1254,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = "badPassword"
         samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 2)
 
@@ -1285,8 +1286,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = "badUser"
+        server = os.environ["SERVER"]
+        user = "badUser"
         password = os.environ["PASSWORD"]
         samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 2)
 
@@ -1317,8 +1318,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
         samlogon = "samlogon %s %s %s %d 0x00010000" % (
             user, password, workstation, 2)
@@ -1351,8 +1352,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = "badPassword"
         samlogon = "samlogon %s %s %s %d 0x00010000" % (
             user, password, workstation, 2)
@@ -1385,8 +1386,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = "badUser"
+        server = os.environ["SERVER"]
+        user = "badUser"
         password = os.environ["PASSWORD"]
         samlogon = "samlogon %s %s %s %d 0x00010000" % (
             user, password, workstation, 2)
@@ -1417,8 +1418,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
         samlogon = "schannel;samlogon %s %s %s" % (user, password, workstation)
 
@@ -1459,8 +1460,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["logonType"] ==
                         EVT_LOGON_NETWORK))
 
-        server   = os.environ["SERVER"]
-        user     = os.environ["USERNAME"]
+        server = os.environ["SERVER"]
+        user = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
         samlogon = "schannelsign;samlogon %s %s %s" % (
             user, password, workstation)
