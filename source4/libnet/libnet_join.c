@@ -610,10 +610,13 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		status = od.out.result;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "samr_OpenDomain for [%s] failed: %s",
-						      dom_sid_string(tmp_ctx, connect_with_info->out.domain_sid),
-						      nt_errstr(status));
+		struct dom_sid_buf buf;
+		r->out.error_string = talloc_asprintf(
+			mem_ctx,
+			"samr_OpenDomain for [%s] failed: %s",
+			dom_sid_str_buf(connect_with_info->out.domain_sid,
+					&buf),
+			nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
 	}

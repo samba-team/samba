@@ -71,17 +71,13 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 							 struct ldb_dn **fsp_dn,
 							 char **error_string)
 {
-	const char *sidstr = dom_sid_string(mem_ctx, sid);
+	struct dom_sid_buf buf;
 	/* We assume that ForeignSecurityPrincipals are under the BASEDN of the main domain */
 	struct ldb_dn *basedn = samdb_search_dn(state->sam_ldb, mem_ctx,
 						state->base_dn[SAM_DATABASE_DOMAIN],
 						"(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
 	struct ldb_message *msg;
 	int ret;
-
-	if (!sidstr) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	if (basedn == NULL) {
 		*error_string = talloc_asprintf(mem_ctx, 
@@ -98,7 +94,8 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 
 	/* add core elements to the ldb_message for the alias */
 	msg->dn = basedn;
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr))
+	if ( ! ldb_dn_add_child_fmt(
+		     msg->dn, "CN=%s", dom_sid_str_buf(sid, &buf)))
 		return NT_STATUS_UNSUCCESSFUL;
 	
 	ldb_msg_add_string(msg, "objectClass", "foreignSecurityPrincipal");
@@ -973,20 +970,15 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	int ret;
 	uint32_t i;
-	char *dnstr, *sidstr;
+	char *dnstr;
+	struct dom_sid_buf buf;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sidstr = dom_sid_string(msg, sid);
-	if (sidstr == NULL) {
-		TALLOC_FREE(msg);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dnstr = talloc_asprintf(msg, "sid=%s", sidstr);
+	dnstr = talloc_asprintf(msg, "sid=%s", dom_sid_str_buf(sid, &buf));
 	if (dnstr == NULL) {
 		TALLOC_FREE(msg);
 		return NT_STATUS_NO_MEMORY;
@@ -1050,8 +1042,11 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	} else if (ret > 1) {
-		*error_string = talloc_asprintf(mem_ctx, "More than one account with SID: %s", 
-						dom_sid_string(mem_ctx, sid));
+		struct dom_sid_buf buf;
+		*error_string = talloc_asprintf(
+			mem_ctx,
+			"More than one account with SID: %s",
+			dom_sid_str_buf(sid, &buf));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);

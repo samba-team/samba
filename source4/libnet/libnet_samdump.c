@@ -183,6 +183,7 @@ NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		for (s=samdump_state->secrets; s; s=s->next) {
 			size_t converted_size = 0;
 			char *secret_string;
+			struct dom_sid_buf buf;
 			if (strcasecmp_m(s->name, secret_name) != 0) {
 				continue;
 			}
@@ -196,7 +197,8 @@ NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 			printf("%s\t%s\t%s\n", 
-			       t->name, dom_sid_string(mem_ctx, t->sid), 
+			       t->name,
+			       dom_sid_str_buf(t->sid, &buf),
 			       secret_string);
 		}
 	}
