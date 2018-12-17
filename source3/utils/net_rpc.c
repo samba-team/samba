@@ -7431,6 +7431,9 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 				lp_netbios_name(), SMB_SIGNING_IPC_DEFAULT,
 				0, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			DBG_ERR("NetBIOS support disabled, unable to connect\n");
+		}
 		return false;
 	}
 	status = smbXcli_negprot(cli->conn, cli->timeout, PROTOCOL_CORE,
