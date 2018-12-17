@@ -1177,7 +1177,7 @@ def distonly(ctx):
 
     version = get_version()
 
-    distfile = file('.distversion', 'w')
+    distfile = open('.distversion', 'w')
     for field in version.vcs_fields:
         distfile.write('%s=%s\n' % (field, str(version.vcs_fields[field])))
     distfile.close()
