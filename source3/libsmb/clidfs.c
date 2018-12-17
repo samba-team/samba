@@ -196,6 +196,10 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		flags, &c);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			DBG_ERR("NetBIOS support disabled, unable to connect");
+		}
+
 		DBG_WARNING("Connection to %s failed (Error %s)\n",
 			    server,
 			    nt_errstr(status));
