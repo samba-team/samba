@@ -118,17 +118,39 @@ type "logonType". The supported event codes and logon types are:
     2  Interactive
     3  Network
     8  NetworkCleartext
+
 The version number for Authentication messages is now 1.1, changed from 1.0
 
 Password change messages now contain the Windows Event Id "eventId", the
 supported event Id's are:
   4723 Password changed
   4724 Password reset
+
 The version number for PasswordChange messages is now 1.1, changed from 1.0
+
+Group membership change messages now contain the Windows Event Id "eventId",
+the supported event Id's are:
+  4728 A member was added to a security enabled global group
+  4729 A member was removed from a security enabled global group
+  4732 A member was added to a security enabled local group
+  4733 A member was removed from a security enabled local group
+  4746 A member was added to a security disabled local group
+  4747 A member was removed from a security disabled local group
+  4751 A member was added to a security disabled global group
+  4752 A member was removed from a security disabled global group
+  4756 A member was added to a security enabled universal group
+  4757 A member was removed from a security enabled universal group
+  4761 A member was added to a security disabled universal group
+  4762 A member was removed from a security disabled universal group
+
+
+The version number for GroupChange messages is now 1.1, changed from 1.0. Also
+A GroupChange message is generated when a new user is created to log that the
+user has been added to their primary group.
 
 The leading "JSON <message type>:" and source file  prefix of the JSON formatted
 log entries has been removed to make the parsing of the JSON log messages
-easier. JSON log entries now start with 2 spaces folowed by an opening brace
+easier. JSON log entries now start with 2 spaces followed by an opening brace
 i.e. "  {"
 
 

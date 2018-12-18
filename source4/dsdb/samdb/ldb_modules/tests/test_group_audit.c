@@ -82,8 +82,8 @@ void audit_message_send(
 	messages_sent++;
 }
 
-#define check_group_change_message(m, u, a)\
-	_check_group_change_message(m, u, a, __FILE__, __LINE__);
+#define check_group_change_message(m, u, a, e)                                 \
+	_check_group_change_message(m, u, a, e, __FILE__, __LINE__);
 /*
  * declare the internal cmocka cm_print_error so that we can output messages
  * in sub unit format
@@ -102,17 +102,18 @@ void cm_print_error(const char * const format, ...);
  * There should be a user element matching the expected value
  * There should be an action matching the expected value
  */
-static void _check_group_change_message(
-	const int message,
-	const char *user,
-	const char *action,
-	const char *file,
-	const int line)
+static void _check_group_change_message(const int message,
+					const char *user,
+					const char *action,
+					enum event_id_type event_id,
+					const char *file,
+					const int line)
 {
 	struct json_object json;
 	json_t *audit = NULL;
 	json_t *v = NULL;
 	const char* value;
+	int int_value;
 	int cmp;
 
 	json = messages[message];
@@ -157,12 +158,11 @@ static void _check_group_change_message(
 	/*
 	 * Validate the groupChange element
 	 */
-	if (json_object_size(audit) != 10) {
-		cm_print_error(
-		    "Unexpected number of elements in groupChange "
-		    "%zu != %d\n",
-		    json_object_size(audit),
-		    10);
+	if (json_object_size(audit) != 11) {
+		cm_print_error("Unexpected number of elements in groupChange "
+			       "%zu != %d\n",
+			       json_object_size(audit),
+			       11);
 		_fail(file, line);
 	}
 	/*
@@ -183,7 +183,6 @@ static void _check_group_change_message(
 		    user);
 		_fail(file, line);
 	}
-
 	/*
 	 * Validate the action element
 	 */
@@ -200,6 +199,23 @@ static void _check_group_change_message(
 		    "Unexpected action \"%s\" != \"%s\"\n",
 		    value,
 		    action);
+		_fail(file, line);
+	}
+
+	/*
+	 * Validate the eventId element
+	 */
+	v = json_object_get(audit, "eventId");
+	if (v == NULL) {
+		cm_print_error("No eventId element\n");
+		_fail(file, line);
+	}
+
+	int_value = json_integer_value(v);
+	if (int_value != event_id) {
+		cm_print_error("Unexpected eventId \"%d\" != \"%d\"\n",
+			       int_value,
+			       event_id);
 		_fail(file, line);
 	}
 }
@@ -752,6 +768,7 @@ static void test_audit_group_json(void **state)
 	struct GUID transaction_id;
 	const char *const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
 
+	enum event_id_type event_id = EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP;
 
 	struct json_object json;
 	json_t *audit = NULL;
@@ -779,13 +796,13 @@ static void test_audit_group_json(void **state)
 	add_transaction_id(req, TRANSACTION);
 
 	before = time(NULL);
-	json = audit_group_json(
-		module,
-		req,
-		"the-action",
-		"the-user-name",
-		"the-group-name",
-		LDB_ERR_OPERATIONS_ERROR);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_ERR_OPERATIONS_ERROR);
 	assert_int_equal(3, json_object_size(json.root));
 
 	v = json_object_get(json.root, "type");
@@ -800,11 +817,17 @@ static void test_audit_group_json(void **state)
 	audit = json_object_get(json.root, "groupChange");
 	assert_non_null(audit);
 	assert_true(json_is_object(audit));
-	assert_int_equal(10, json_object_size(audit));
+	assert_int_equal(11, json_object_size(audit));
 
 	o = json_object_get(audit, "version");
 	assert_non_null(o);
 	check_version(o, AUDIT_MAJOR, AUDIT_MINOR);
+
+	v = json_object_get(audit, "eventId");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+			 json_integer_value(v));
 
 	v = json_object_get(audit, "statusCode");
 	assert_non_null(v);
@@ -887,6 +910,7 @@ static void test_log_membership_changes_removed(void **state)
 	struct ldb_request *req = NULL;
 	struct ldb_message_element *new_el = NULL;
 	struct ldb_message_element *old_el = NULL;
+	uint32_t group_type = GTYPE_SECURITY_GLOBAL_GROUP;
 	int status = 0;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -931,7 +955,7 @@ static void test_log_membership_changes_removed(void **state)
 	 * call log_membership_changes
 	 */
 	messages_sent = 0;
-	log_membership_changes(module, req, new_el, old_el, status);
+	log_membership_changes(module, req, new_el, old_el, group_type, status);
 
 	/*
 	 * Check the results
@@ -941,7 +965,8 @@ static void test_log_membership_changes_removed(void **state)
 	check_group_change_message(
 	    0,
 	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Removed");
+	    "Removed",
+	    EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP);
 
 	/*
 	 * Clean up
@@ -969,6 +994,7 @@ static void test_log_membership_changes_remove_all(void **state)
 	struct ldb_message_element *new_el = NULL;
 	struct ldb_message_element *old_el = NULL;
 	int status = 0;
+	uint32_t group_type = GTYPE_SECURITY_BUILTIN_LOCAL_GROUP;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
 	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
@@ -1007,7 +1033,7 @@ static void test_log_membership_changes_remove_all(void **state)
 	 * call log_membership_changes
 	 */
 	messages_sent = 0;
-	log_membership_changes( module, req, new_el, old_el, status);
+	log_membership_changes(module, req, new_el, old_el, group_type, status);
 
 	/*
 	 * Check the results
@@ -1017,12 +1043,14 @@ static void test_log_membership_changes_remove_all(void **state)
 	check_group_change_message(
 	    0,
 	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Removed");
+	    "Removed",
+	    EVT_ID_USER_REMOVED_FROM_LOCAL_SEC_GROUP);
 
 	check_group_change_message(
 	    1,
 	    "CN=testuser131953,CN=Users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Removed");
+	    "Removed",
+	    EVT_ID_USER_REMOVED_FROM_LOCAL_SEC_GROUP);
 
 	/*
 	 * Clean up
@@ -1052,6 +1080,7 @@ static void test_log_membership_changes_added(void **state)
 	struct ldb_request *req = NULL;
 	struct ldb_message_element *new_el = NULL;
 	struct ldb_message_element *old_el = NULL;
+	uint32_t group_type = GTYPE_SECURITY_DOMAIN_LOCAL_GROUP;
 	int status = 0;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -1095,7 +1124,7 @@ static void test_log_membership_changes_added(void **state)
 	 * call log_membership_changes
 	 */
 	messages_sent = 0;
-	log_membership_changes( module, req, new_el, old_el, status);
+	log_membership_changes(module, req, new_el, old_el, group_type, status);
 
 	/*
 	 * Check the results
@@ -1105,7 +1134,8 @@ static void test_log_membership_changes_added(void **state)
 	check_group_change_message(
 	    0,
 	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Added");
+	    "Added",
+	    EVT_ID_USER_ADDED_TO_LOCAL_SEC_GROUP);
 
 	/*
 	 * Clean up
@@ -1133,6 +1163,7 @@ static void test_log_membership_changes_add_to_empty(void **state)
 	struct ldb_request *req = NULL;
 	struct ldb_message_element *new_el = NULL;
 	struct ldb_message_element *old_el = NULL;
+	uint32_t group_type = GTYPE_SECURITY_UNIVERSAL_GROUP;
 	int status = 0;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -1174,18 +1205,20 @@ static void test_log_membership_changes_add_to_empty(void **state)
 	 * Run log membership changes
 	 */
 	messages_sent = 0;
-	log_membership_changes( module, req, new_el, old_el, status);
+	log_membership_changes(module, req, new_el, old_el, group_type, status);
 	assert_int_equal(2, messages_sent);
 
 	check_group_change_message(
 	    0,
 	    "cn=grpadttstuser01,cn=users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Added");
+	    "Added",
+	    EVT_ID_USER_ADDED_TO_UNIVERSAL_SEC_GROUP);
 
 	check_group_change_message(
 	    1,
-            "CN=testuser131953,CN=Users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Added");
+	    "CN=testuser131953,CN=Users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Added",
+	    EVT_ID_USER_ADDED_TO_UNIVERSAL_SEC_GROUP);
 
 	json_free(&messages[0]);
 	json_free(&messages[1]);
@@ -1216,6 +1249,7 @@ static void test_log_membership_changes_rmd_flags(void **state)
 	struct ldb_request *req = NULL;
 	struct ldb_message_element *new_el = NULL;
 	struct ldb_message_element *old_el = NULL;
+	uint32_t group_type = GTYPE_SECURITY_GLOBAL_GROUP;
 	int status = 0;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -1286,7 +1320,7 @@ static void test_log_membership_changes_rmd_flags(void **state)
 	 * call log_membership_changes
 	 */
 	messages_sent = 0;
-	log_membership_changes( module, req, new_el, old_el, status);
+	log_membership_changes(module, req, new_el, old_el, group_type, status);
 
 	/*
 	 * Check the results
@@ -1296,11 +1330,13 @@ static void test_log_membership_changes_rmd_flags(void **state)
 	check_group_change_message(
 	    0,
 	    "cn=grpadttstuser03,cn=users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Removed");
+	    "Removed",
+	    EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP);
 	check_group_change_message(
 	    1,
 	    "cn=grpadttstuser04,cn=users,DC=addom,DC=samba,DC=example,DC=com",
-	    "Added");
+	    "Added",
+	    EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP);
 
 	/*
 	 * Clean up
@@ -1310,6 +1346,71 @@ static void test_log_membership_changes_rmd_flags(void **state)
 	TALLOC_FREE(ctx);
 }
 
+static void test_get_add_member_event(void **state)
+{
+	assert_int_equal(
+	    EVT_ID_USER_ADDED_TO_LOCAL_SEC_GROUP,
+	    get_add_member_event(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP));
+
+	assert_int_equal(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+			 get_add_member_event(GTYPE_SECURITY_GLOBAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_ADDED_TO_LOCAL_SEC_GROUP,
+	    get_add_member_event(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+
+	assert_int_equal(EVT_ID_USER_ADDED_TO_UNIVERSAL_SEC_GROUP,
+			 get_add_member_event(GTYPE_SECURITY_UNIVERSAL_GROUP));
+
+	assert_int_equal(EVT_ID_USER_ADDED_TO_GLOBAL_GROUP,
+			 get_add_member_event(GTYPE_DISTRIBUTION_GLOBAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_ADDED_TO_LOCAL_GROUP,
+	    get_add_member_event(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_ADDED_TO_UNIVERSAL_GROUP,
+	    get_add_member_event(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP));
+
+	assert_int_equal(EVT_ID_NONE, get_add_member_event(0));
+
+	assert_int_equal(EVT_ID_NONE, get_add_member_event(UINT32_MAX));
+}
+
+static void test_get_remove_member_event(void **state)
+{
+	assert_int_equal(
+	    EVT_ID_USER_REMOVED_FROM_LOCAL_SEC_GROUP,
+	    get_remove_member_event(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP));
+
+	assert_int_equal(EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP,
+			 get_remove_member_event(GTYPE_SECURITY_GLOBAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_REMOVED_FROM_LOCAL_SEC_GROUP,
+	    get_remove_member_event(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_REMOVED_FROM_UNIVERSAL_SEC_GROUP,
+	    get_remove_member_event(GTYPE_SECURITY_UNIVERSAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_REMOVED_FROM_GLOBAL_GROUP,
+	    get_remove_member_event(GTYPE_DISTRIBUTION_GLOBAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_REMOVED_FROM_LOCAL_GROUP,
+	    get_remove_member_event(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP));
+
+	assert_int_equal(
+	    EVT_ID_USER_REMOVED_FROM_UNIVERSAL_GROUP,
+	    get_remove_member_event(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP));
+
+	assert_int_equal(EVT_ID_NONE, get_remove_member_event(0));
+
+	assert_int_equal(EVT_ID_NONE, get_remove_member_event(UINT32_MAX));
+}
 /*
  * Note: to run under valgrind us:
  *       valgrind --suppressions=test_group_audit.valgrind bin/test_group_audit
@@ -1319,17 +1420,19 @@ static void test_log_membership_changes_rmd_flags(void **state)
  */
 int main(void) {
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test(test_audit_group_json),
-		cmocka_unit_test(test_get_transaction_id),
-		cmocka_unit_test(test_audit_group_hr),
-		cmocka_unit_test(test_get_parsed_dns),
-		cmocka_unit_test(test_dn_compare),
-		cmocka_unit_test(test_get_primary_group_dn),
-		cmocka_unit_test(test_log_membership_changes_removed),
-		cmocka_unit_test(test_log_membership_changes_remove_all),
-		cmocka_unit_test(test_log_membership_changes_added),
-		cmocka_unit_test(test_log_membership_changes_add_to_empty),
-		cmocka_unit_test(test_log_membership_changes_rmd_flags),
+	    cmocka_unit_test(test_audit_group_json),
+	    cmocka_unit_test(test_get_transaction_id),
+	    cmocka_unit_test(test_audit_group_hr),
+	    cmocka_unit_test(test_get_parsed_dns),
+	    cmocka_unit_test(test_dn_compare),
+	    cmocka_unit_test(test_get_primary_group_dn),
+	    cmocka_unit_test(test_log_membership_changes_removed),
+	    cmocka_unit_test(test_log_membership_changes_remove_all),
+	    cmocka_unit_test(test_log_membership_changes_added),
+	    cmocka_unit_test(test_log_membership_changes_add_to_empty),
+	    cmocka_unit_test(test_log_membership_changes_rmd_flags),
+	    cmocka_unit_test(test_get_add_member_event),
+	    cmocka_unit_test(test_get_remove_member_event),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);

@@ -21,6 +21,10 @@ from __future__ import print_function
 
 import samba.tests
 from samba.dcerpc.messaging import MSG_GROUP_LOG, DSDB_GROUP_EVENT_NAME
+from samba.dcerpc.windows_event_ids import (
+    EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+    EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP
+)
 from samba.samdb import SamDB
 from samba.auth import system_session
 import os
@@ -100,9 +104,9 @@ class GroupAuditTests(AuditLogTestBase):
         #
         # Wait for the primary group change for the created user.
         #
-        messages = self.waitForMessages(1)
+        messages = self.waitForMessages(2)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEquals(2,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["groupChange"]
@@ -120,6 +124,21 @@ class GroupAuditTests(AuditLogTestBase):
         service_description = self.get_service_description()
         self.assertEquals(service_description, "LDAP")
 
+        # Check the Add message for the new users primary group
+        audit = messages[1]["groupChange"]
+
+        self.assertEqual("Added", audit["action"])
+        user_dn = "cn=" + USER_NAME + ",cn=users," + self.base_dn
+        group_dn = "cn=domain users,cn=users," + self.base_dn
+        self.assertTrue(user_dn.lower(), audit["user"].lower())
+        self.assertTrue(group_dn.lower(), audit["group"].lower())
+        self.assertRegexpMatches(audit["remoteAddress"],
+                                 self.remoteAddress)
+        self.assertTrue(self.is_guid(audit["sessionId"]))
+        session_id = self.get_session()
+        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+                          audit["eventId"])
         #
         # Add the user to a group
         #
@@ -231,11 +250,13 @@ class GroupAuditTests(AuditLogTestBase):
         #
         # Wait for the primary group change for the created user.
         #
-        messages = self.waitForMessages(1)
+        messages = self.waitForMessages(2)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEquals(2,
                           len(messages),
                           "Did not receive the expected number of messages")
+
+        # Check the PrimaryGroup message
         audit = messages[0]["groupChange"]
 
         self.assertEqual("PrimaryGroup", audit["action"])
@@ -250,6 +271,22 @@ class GroupAuditTests(AuditLogTestBase):
         self.assertEquals(session_id, audit["sessionId"])
         service_description = self.get_service_description()
         self.assertEquals(service_description, "LDAP")
+
+        # Check the Add message for the new users primary group
+        audit = messages[1]["groupChange"]
+
+        self.assertEqual("Added", audit["action"])
+        user_dn = "cn=" + USER_NAME + ",cn=users," + self.base_dn
+        group_dn = "cn=domain users,cn=users," + self.base_dn
+        self.assertTrue(user_dn.lower(), audit["user"].lower())
+        self.assertTrue(group_dn.lower(), audit["group"].lower())
+        self.assertRegexpMatches(audit["remoteAddress"],
+                                 self.remoteAddress)
+        self.assertTrue(self.is_guid(audit["sessionId"]))
+        session_id = self.get_session()
+        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+                          audit["eventId"])
 
         #
         # Add the user to a group, the user needs to be a member of a group
@@ -277,6 +314,8 @@ class GroupAuditTests(AuditLogTestBase):
         self.assertEquals(session_id, audit["sessionId"])
         service_description = self.get_service_description()
         self.assertEquals(service_description, "LDAP")
+        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+                          audit["eventId"])
 
         #
         # Change the primary group of a user
@@ -323,6 +362,8 @@ class GroupAuditTests(AuditLogTestBase):
         self.assertEquals(session_id, audit["sessionId"])
         service_description = self.get_service_description()
         self.assertEquals(service_description, "LDAP")
+        self.assertEquals(EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP,
+                          audit["eventId"])
 
         audit = messages[1]["groupChange"]
 
@@ -338,6 +379,8 @@ class GroupAuditTests(AuditLogTestBase):
         self.assertEquals(session_id, audit["sessionId"])
         service_description = self.get_service_description()
         self.assertEquals(service_description, "LDAP")
+        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+                          audit["eventId"])
 
         audit = messages[2]["groupChange"]
 

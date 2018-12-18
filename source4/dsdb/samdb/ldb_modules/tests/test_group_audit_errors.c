@@ -139,6 +139,7 @@ static void test_audit_group_json(void **state)
 	struct GUID transaction_id;
 	const char *const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
 
+	enum event_id_type event_id = EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP;
 
 	struct json_object json;
 
@@ -166,13 +167,13 @@ static void test_audit_group_json(void **state)
 
 	will_return(__wrap_json_new_object, false);
 
-	json = audit_group_json(
-		module,
-		req,
-		"the-action",
-		"the-user-name",
-		"the-group-name",
-		LDB_ERR_OPERATIONS_ERROR);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_ERR_OPERATIONS_ERROR);
 	assert_true(json_is_invalid(&json));
 
 	/*
@@ -182,13 +183,13 @@ static void test_audit_group_json(void **state)
 	will_return(__wrap_json_new_object, true);
 	will_return(__wrap_json_add_version, JSON_ERROR);
 
-	json = audit_group_json(
-		module,
-		req,
-		"the-action",
-		"the-user-name",
-		"the-group-name",
-		LDB_ERR_OPERATIONS_ERROR);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_ERR_OPERATIONS_ERROR);
 	assert_true(json_is_invalid(&json));
 
 	/*
@@ -199,13 +200,13 @@ static void test_audit_group_json(void **state)
 	will_return(__wrap_json_add_version, 0);
 	will_return(__wrap_json_new_object, false);
 
-	json = audit_group_json(
-		module,
-		req,
-		"the-action",
-		"the-user-name",
-		"the-group-name",
-		LDB_ERR_OPERATIONS_ERROR);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_ERR_OPERATIONS_ERROR);
 	assert_true(json_is_invalid(&json));
 
 	/*
@@ -216,13 +217,13 @@ static void test_audit_group_json(void **state)
 	will_return(__wrap_json_new_object, true);
 	will_return(__wrap_json_add_timestamp, JSON_ERROR);
 
-	json = audit_group_json(
-		module,
-		req,
-		"the-action",
-		"the-user-name",
-		"the-group-name",
-		LDB_ERR_OPERATIONS_ERROR);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_ERR_OPERATIONS_ERROR);
 	assert_true(json_is_invalid(&json));
 
 
@@ -234,13 +235,13 @@ static void test_audit_group_json(void **state)
 	will_return(__wrap_json_new_object, true);
 	will_return(__wrap_json_add_timestamp, 0);
 
-	json = audit_group_json(
-		module,
-		req,
-		"the-action",
-		"the-user-name",
-		"the-group-name",
-		LDB_ERR_OPERATIONS_ERROR);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_ERR_OPERATIONS_ERROR);
 	assert_false(json_is_invalid(&json));
 
 	json_free(&json);
