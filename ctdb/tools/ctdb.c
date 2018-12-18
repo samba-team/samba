@@ -626,6 +626,9 @@ static int str_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 
 	if (strncmp(str, "0x", 2) == 0) {
 		ret = hex_to_data(str+2, len-2, mem_ctx, &data);
+		if (ret != 0) {
+			return ret;
+		}
 	} else {
 		data.dptr = talloc_memdup(mem_ctx, str, len);
 		if (data.dptr == NULL) {
@@ -635,7 +638,7 @@ static int str_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 	}
 
 	*out = data;
-	return ret;
+	return 0;
 }
 
 static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
