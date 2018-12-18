@@ -63,8 +63,9 @@ echo "Wait until vacuuming deletes the record on active nodes"
 # 1. Original node processes delete queue, asks lmaster to fetch
 # 2. lmaster recoverd fetches
 # 3. lmaster processes delete queue
-# If vacuuming is just missed then need an extra interval.
-wait_until $((vacuum_interval * 4)) database_has_zero_records
+# If vacuuming is just missed then need an extra interval
+t=$((vacuum_interval * 4))
+wait_until "${t}/10" database_has_zero_records
 
 echo "Continue node ${first}"
 try_command_on_node $first $CTDB continue
