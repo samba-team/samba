@@ -9,7 +9,7 @@ fi
 CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
 	--builtin-libraries=replace,popt \
 	--bundled-libraries=!talloc,!tevent,!tdb \
-	--minimum-library-version=talloc:2.0.8,tdb:1.2.11,tevent:0.9.16 \
+	--minimum-library-version=talloc:2.1.14,tdb:1.3.17,tevent:0.9.37 \
 	--prefix=/usr \
 	--includedir=/usr/include/ctdb \
 	--libdir=${_libdir} \
