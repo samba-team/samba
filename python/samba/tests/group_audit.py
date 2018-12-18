@@ -47,7 +47,7 @@ class GroupAuditTests(AuditLogTestBase):
 
     def setUp(self):
         self.message_type = MSG_GROUP_LOG
-        self.event_type   = DSDB_GROUP_EVENT_NAME
+        self.event_type = DSDB_GROUP_EVENT_NAME
         super(GroupAuditTests, self).setUp()
 
         self.remoteAddress = os.environ["CLIENT_IP"]
