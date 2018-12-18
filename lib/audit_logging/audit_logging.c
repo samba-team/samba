@@ -245,6 +245,12 @@ void audit_message_send(
 		return;
 	}
 
+	ctx = talloc_new(NULL);
+	if (ctx == NULL) {
+		DBG_ERR("Out of memory creating temporary context\n");
+		return;
+	}
+
 	/* Need to refetch the address each time as the destination server may
 	 * have disconnected and reconnected in the interim, in which case
 	 * messages may get lost
