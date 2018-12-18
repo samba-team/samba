@@ -115,9 +115,6 @@ def options(opt):
     gr.add_option('--enable-gccdeps',
                    help=("Enable use of gcc -MD dependency module"),
                    action="store_true", dest='enable_gccdeps', default=True)
-    gr.add_option('--timestamp-dependencies',
-                   help=("use file timestamps instead of content for build dependencies (BROKEN)"),
-                   action="store_true", dest='timestamp_dependencies', default=False)
     gr.add_option('--pedantic',
 		   help=("Enable even more compiler warnings"),
 		   action='store_true', dest='pedantic', default=False)
@@ -219,9 +216,6 @@ def configure(conf):
     conf.env.srcdir = conf.srcnode.abspath()
 
     conf.define('SRCDIR', conf.env['srcdir'])
-
-    if Options.options.timestamp_dependencies:
-        conf.ENABLE_TIMESTAMP_DEPENDENCIES()
 
     conf.SETUP_CONFIGURE_CACHE(Options.options.enable_configure_cache)
 

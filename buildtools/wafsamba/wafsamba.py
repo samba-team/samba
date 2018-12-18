@@ -721,22 +721,6 @@ Build.BuildContext.SET_BUILD_GROUP = SET_BUILD_GROUP
 
 
 
-@conf
-def ENABLE_TIMESTAMP_DEPENDENCIES(conf):
-    """use timestamps instead of file contents for deps
-    this currently doesn't work"""
-    def h_file(filename):
-        import stat
-        st = os.stat(filename)
-        if stat.S_ISDIR(st[stat.ST_MODE]): raise IOError('not a file')
-        m = Utils.md5()
-        m.update(str(st.st_mtime))
-        m.update(str(st.st_size))
-        m.update(filename)
-        return m.digest()
-    Utils.h_file = h_file
-
-
 def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
     '''used to copy scripts from the source tree into the build directory
        for use by selftest'''
