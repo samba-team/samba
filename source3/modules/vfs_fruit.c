@@ -3719,6 +3719,87 @@ static int fruit_open(vfs_handle_struct *handle,
 	return fd;
 }
 
+static int fruit_close_meta(vfs_handle_struct *handle,
+			    files_struct *fsp)
+{
+	int ret;
+	struct fruit_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	switch (config->meta) {
+	case FRUIT_META_STREAM:
+		ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
+		break;
+
+	case FRUIT_META_NETATALK:
+		ret = close(fsp->fh->fd);
+		fsp->fh->fd = -1;
+		break;
+
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
+		return -1;
+	}
+
+	return ret;
+}
+
+
+static int fruit_close_rsrc(vfs_handle_struct *handle,
+			    files_struct *fsp)
+{
+	int ret;
+	struct fruit_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	switch (config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+	case FRUIT_RSRC_ADFILE:
+		ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
+		break;
+
+	case FRUIT_RSRC_XATTR:
+		ret = close(fsp->fh->fd);
+		fsp->fh->fd = -1;
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
+		return -1;
+	}
+
+	return ret;
+}
+
+static int fruit_close(vfs_handle_struct *handle,
+                       files_struct *fsp)
+{
+	int ret;
+	int fd;
+
+	fd = fsp->fh->fd;
+
+	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(fsp->fsp_name), fd);
+
+	if (!is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+		return SMB_VFS_NEXT_CLOSE(handle, fsp);
+	}
+
+	if (is_afpinfo_stream(fsp->fsp_name)) {
+		ret = fruit_close_meta(handle, fsp);
+	} else if (is_afpresource_stream(fsp->fsp_name)) {
+		ret = fruit_close_rsrc(handle, fsp);
+	} else {
+		ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
+	}
+
+	return ret;
+}
+
 static int fruit_rename(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname_src,
 			const struct smb_filename *smb_fname_dst)
@@ -7029,6 +7110,7 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.rename_fn = fruit_rename,
 	.rmdir_fn = fruit_rmdir,
 	.open_fn = fruit_open,
+	.close_fn = fruit_close,
 	.pread_fn = fruit_pread,
 	.pwrite_fn = fruit_pwrite,
 	.pread_send_fn = fruit_pread_send,
