@@ -204,6 +204,15 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 
 	status = dom->methods->sids_to_unixids(dom, id_map_ptrs);
 
+	if (NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		/*
+		 * This is okay. We need to transfer the mapped ones
+		 * up to our caller. The individual mappings carry the
+		 * information whether they are mapped or not.
+		 */
+		status = NT_STATUS_OK;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("sids_to_unixids returned %s\n",
 			   nt_errstr(status)));
