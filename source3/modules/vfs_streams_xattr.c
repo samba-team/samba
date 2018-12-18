@@ -544,6 +544,31 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 	return -1;
 }
 
+static int streams_xattr_close(vfs_handle_struct *handle,
+			       files_struct *fsp)
+{
+	int ret;
+	int fd;
+
+	fd = fsp->fh->fd;
+
+	DBG_DEBUG("streams_xattr_close called [%s] fd [%d]\n",
+			smb_fname_str_dbg(fsp->fsp_name), fd);
+
+	if (!is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+		return SMB_VFS_NEXT_CLOSE(handle, fsp);
+	}
+
+	if (is_ntfs_default_stream_smb_fname(fsp->fsp_name)) {
+		return SMB_VFS_NEXT_CLOSE(handle, fsp);
+	}
+
+	ret = close(fd);
+	fsp->fh->fd = -1;
+
+	return ret;
+}
+
 static int streams_xattr_unlink(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
@@ -1643,6 +1668,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.fs_capabilities_fn = streams_xattr_fs_capabilities,
 	.connect_fn = streams_xattr_connect,
 	.open_fn = streams_xattr_open,
+	.close_fn = streams_xattr_close,
 	.stat_fn = streams_xattr_stat,
 	.fstat_fn = streams_xattr_fstat,
 	.lstat_fn = streams_xattr_lstat,
