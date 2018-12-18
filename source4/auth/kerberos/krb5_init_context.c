@@ -541,8 +541,6 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	krb5_log_facility *logf;
 #endif
 
-	initialize_krb5_error_table();
-
 	tmp_ctx = talloc_new(parent_ctx);
 	*smb_krb5_context = talloc_zero(tmp_ctx, struct smb_krb5_context);
 
