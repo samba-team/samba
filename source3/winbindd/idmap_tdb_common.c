@@ -577,8 +577,11 @@ static NTSTATUS idmap_tdb_common_sids_to_unixids_action(struct db_context *db,
 			ret =
 			    idmap_tdb_common_new_mapping(state->dom,
 							 state->ids[i]);
+			DBG_DEBUG("idmap_tdb_common_new_mapping returned %s\n",
+				  nt_errstr(ret));
 			if (!NT_STATUS_IS_OK(ret)) {
-				goto done;
+				ret = STATUS_SOME_UNMAPPED;
+				continue;
 			}
 			num_mapped += 1;
 		}
