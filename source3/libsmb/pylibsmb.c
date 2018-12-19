@@ -656,6 +656,20 @@ static void py_cli_state_dealloc(struct py_cli_state *self)
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
+static PyObject *py_cli_settimeout(struct py_cli_state *self, PyObject *args)
+{
+	unsigned int nmsecs = 0;
+	unsigned int omsecs = 0;
+
+	if (!PyArg_ParseTuple(args, "I", &nmsecs)) {
+		return NULL;
+	}
+
+	omsecs = cli_set_timeout(self->cli, nmsecs);
+
+	return PyInt_FromLong(omsecs);
+}
+
 static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 			       PyObject *kwds)
 {
@@ -951,6 +965,8 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 }
 
 static PyMethodDef py_cli_state_methods[] = {
+	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
+	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
 	{ "create", (PyCFunction)py_cli_create, METH_VARARGS|METH_KEYWORDS,
 	  "Open a file" },
 	{ "close", (PyCFunction)py_cli_close, METH_VARARGS,
