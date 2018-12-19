@@ -248,7 +248,7 @@ def build(bld):
 
                 name = bld.pyembed_libname('pyldb-util')
                 bld.SAMBA_LIBRARY(name,
-                                  deps='ldb',
+                                  deps='replace ldb',
                                   source='pyldb_util.c',
                                   public_headers=('' if private_library else 'pyldb.h'),
                                   public_headers_install=not private_library,
@@ -262,7 +262,7 @@ def build(bld):
 
                 if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
                     bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
-                                     deps='ldb ' + name,
+                                     deps='replace ldb ' + name,
                                      realname='ldb.so',
                                      cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
