@@ -292,7 +292,8 @@ static bool test_max_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	bool ret = true;
 	bool err = false;
 
-	int       i, j, k, last, total;
+	int       i, j, k, last;
+	size_t total;
 	DATA_BLOB eablob;
 	char      *eaname = NULL;
 	int       maxeasize;
@@ -398,7 +399,7 @@ static bool test_max_eas(struct smbcli_state *cli, struct torture_context *tctx)
 		last = j;
 	}
 
-	torture_comment(tctx, "Total EA size:%d\n", total);
+	torture_comment(tctx, "Total EA size:%zu\n", total);
 	if (i == maxeanames) {
 		torture_comment(tctx, "NOTE: More EAs could be available!\n");
 	}
