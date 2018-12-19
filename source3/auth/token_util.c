@@ -745,7 +745,23 @@ NTSTATUS finalize_local_nt_token(struct security_token *result,
 		status = create_builtin_guests(domain_sid);
 		unbecome_root();
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE)) {
+		/*
+		 * NT_STATUS_PROTOCOL_UNREACHABLE:
+		 * => winbindd is not running.
+		 *
+		 * NT_STATUS_ACCESS_DENIED:
+		 * => no idmap config at all
+		 * and wbint_AllocateGid()/winbind_allocate_gid()
+		 * failed.
+		 *
+		 * NT_STATUS_NO_SUCH_GROUP:
+		 * => no idmap config at all and
+		 * "tdbsam:map builtin = no" means
+		 * wbint_Sids2UnixIDs() fails.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_GROUP)) {
 			/*
 			 * Add BUILTIN\Guests directly to token.
 			 * But only if the token already indicates
