@@ -114,13 +114,13 @@ static void ildb_auto_done_callback(struct tevent_context *ev,
   convert a ldb_message structure to a list of ldap_mod structures
   ready for ildap_add() or ildap_modify()
 */
-static struct ldap_mod **ildb_msg_to_mods(void *mem_ctx, int *num_mods,
+static struct ldap_mod **ildb_msg_to_mods(void *mem_ctx, unsigned int *num_mods,
 					  const struct ldb_message *msg,
 					  int use_flags)
 {
 	struct ldap_mod **mods;
 	unsigned int i;
-	int n = 0;
+	unsigned int n = 0;
 
 	/* allocate maximum number of elements needed */
 	mods = talloc_array(mem_ctx, struct ldap_mod *, msg->num_elements+1);
@@ -504,7 +504,7 @@ static int ildb_add(struct ildb_context *ac)
 	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
 	struct ldap_mod **mods;
-	int i,n;
+	unsigned int i,n;
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
@@ -548,7 +548,7 @@ static int ildb_modify(struct ildb_context *ac)
 	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
 	struct ldap_mod **mods;
-	int i,n;
+	unsigned int i,n;
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
