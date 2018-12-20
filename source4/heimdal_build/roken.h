@@ -123,6 +123,10 @@
 #define HAVE_SETEUID
 #endif
 
+#ifndef HAVE_MEMSET_S
+#define HAVE_MEMSET_S
+#endif
+
 #ifndef HAVE_DIRFD
 #ifdef HAVE_DIR_DD_FD
 #define dirfd(x) ((x)->dd_fd)
