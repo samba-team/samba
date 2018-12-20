@@ -1,4 +1,26 @@
 {
+  "packet_rate": [
+    10, 
+    0.22707200050354004
+  ], 
+  "query_details": {
+    "rpc_netlogon:29": {
+      "-": 1
+    }, 
+    "cldap:3": {
+      "\t\t\tNetlogon\t\t\t": 3
+    }, 
+    "ldap:3": {
+      "\t\t\tsubschemaSubentry,dsServiceName,namingContexts,defaultNamingContext,schemaNamingContext,configurationNamingContext,rootDomainNamingContext,supportedControl,supportedLDAPVersion,supportedLDAPPolicies,supportedSASLMechanisms,dnsHostName,ldapServiceName,serverName,supportedCapabilities\t\t\t": 1, 
+      "2\tDC,DC\t\tcn\t\t\t": 1
+    }, 
+    "ldap:2": {
+      "\t\t\t\t\t\t": 1
+    }, 
+    "kerberos:": {
+      "": 1
+    }
+  }, 
   "ngrams": {
     "-\t-": {
       "cldap:3": 1, 
@@ -30,31 +52,10 @@
       "-": 1
     }
   }, 
-  "conversation_rate": [
-    2, 
-    0.12712717056274414
-  ], 
+  "version": 2, 
   "dns": {
     "1": 9, 
     "0": 9
-  }, 
-  "query_details": {
-    "rpc_netlogon:29": {
-      "-": 1
-    }, 
-    "cldap:3": {
-      "\t\t\tNetlogon\t\t\t": 3
-    }, 
-    "ldap:3": {
-      "\t\t\tsubschemaSubentry,dsServiceName,namingContexts,defaultNamingContext,schemaNamingContext,configurationNamingContext,rootDomainNamingContext,supportedControl,supportedLDAPVersion,supportedLDAPPolicies,supportedSASLMechanisms,dnsHostName,ldapServiceName,serverName,supportedCapabilities\t\t\t": 1, 
-      "2\tDC,DC\t\tcn\t\t\t": 1
-    }, 
-    "ldap:2": {
-      "\t\t\t\t\t\t": 1
-    }, 
-    "kerberos:": {
-      "": 1
-    }
   }, 
   "cumulative_duration": 0.39243292808532715
 }

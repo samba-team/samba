@@ -1,0 +1,2 @@
+# This is in flux, so lets fail it for a while
+samba.tests.blackbox.traffic_replay.samba.tests.blackbox.traffic_replay.TrafficLearnerTests.test_summary_generation

@@ -75,4 +75,4 @@ class TrafficLearnerTests(BlackboxTestCase):
             expected_details = {k: sorted(v) for k, v in expected.query_details.items()}
             self.assertEquals(expected_details, actual_details)
             self.assertEquals(expected.cumulative_duration, actual.cumulative_duration)
-            self.assertEquals(expected.conversation_rate, actual.conversation_rate)
+            self.assertEquals(expected.packet_rate, actual.packet_rate)

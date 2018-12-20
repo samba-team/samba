@@ -25,12 +25,13 @@ from samba.tests import BlackboxTestCase
 
 DATA_DIR      = "python/samba/tests/blackbox/testdata"
 SCRIPT        = "script/traffic_replay"
-FIXED         = "--fixed-password trafficreplay01%"
+FIXED         = "--fixed-password=trafficreplay01%"
 SERVER        = os.environ["SERVER"]
 PASSWORD      = os.environ["PASSWORD"]
 USER          = os.environ["USERNAME"]
-STD_OPTIONS   = "-U%s%%%s %s" % (USER, PASSWORD, SERVER)
-EXPECTED_NAME = os.path.join(DATA_DIR, "traffic_replay.expected")
+CREDS         = "-U%s%%%s" % (USER, PASSWORD)
+MODEL         = os.path.join(DATA_DIR, "traffic-sample-very-short.model")
+EXPECTED_OUTPUT = os.path.join(DATA_DIR, "traffic_replay-%s.expected")
 
 
 @contextmanager
@@ -49,7 +50,7 @@ class TrafficLearnerTests(BlackboxTestCase):
 
     def tearDown(self):
         options = "--clean-up"
-        command  = "%s %s %s" % (SCRIPT, options, STD_OPTIONS)
+        command = "%s %s %s %s" % (SCRIPT, options, CREDS, SERVER)
         self.check_run(command)
 
     def test_generate_users_only(self):
@@ -57,16 +58,48 @@ class TrafficLearnerTests(BlackboxTestCase):
            """
         options = ("--generate-users-only --number-of-users 20 "
                    "--number-of-groups 5 --average-groups-per-user 2")
-        command  = "%s %s %s %s" % (
-            SCRIPT, options, FIXED, STD_OPTIONS)
+        command = "%s %s %s %s %s" % (
+            SCRIPT, options, FIXED, CREDS, SERVER)
         self.check_run(command)
+        command = "%s %s %s %s %s %s" % (
+            SCRIPT, MODEL, options, FIXED, CREDS, SERVER)
+        self.check_run(command)
+
+    def test_summary_generation(self):
+        """Ensure a summary file is generated and the contents are correct"""
+
+        for i, opts in enumerate((["--random-seed=3"],
+                                  ["--random-seed=4"],
+                                  ["--random-seed=3",
+                                   "--conversation-persistence=0.5"],
+                                  ["--random-seed=3",
+                                   "--old-scale",
+                                   "--conversation-persistence=0.95"],
+                                  )):
+            with temp_file(self.tempdir) as output:
+                command = ([SCRIPT, MODEL,
+                            "--traffic-summary", output,
+                            "-D1", "-S0.1"] +
+                           opts +
+                           [FIXED, CREDS, SERVER])
+                self.check_run(command)
+                expected = open(EXPECTED_OUTPUT % i).read()
+                actual = open(output).read()
+                self.assertStringsEqual(expected, actual)
+
+    def test_summary_replay_no_fixed(self):
+        """Ensure a summary file with no fixed password fails
+           """
+        command = [SCRIPT, MODEL, CREDS, SERVER]
+        self.check_exit_code(command, 1)
 
     def test_model_replay(self):
         """Ensure a model can be replayed against a DC
            """
-
-        model   = "testdata/traffic-sample-very-short.model"
-        command = "%s %s-D 5 %s %s" % (SCRIPT, model, FIXED, STD_OPTIONS)
+        command = [SCRIPT, MODEL,
+                   FIXED,
+                   '-D2', '-S0.1',
+                   CREDS, SERVER]
         self.check_run(command)
 
     def test_generate_users_only_no_password(self):
@@ -74,5 +107,7 @@ class TrafficLearnerTests(BlackboxTestCase):
            """
         options = ("--generate-users-only --number-of-users 20 "
                    "--number-of-groups 5 --average-groups-per-user 2")
-        command  = "%s %s %s" % (SCRIPT, options, STD_OPTIONS)
+        command  = "%s %s %s %s" % (SCRIPT, options, CREDS, SERVER)
+        self.check_exit_code(command, 1)
+        command = "%s %s %s %s %s" % (SCRIPT, MODEL, options, CREDS, SERVER)
         self.check_exit_code(command, 1)

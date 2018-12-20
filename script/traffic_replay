@@ -235,7 +235,7 @@ def main():
             sys.exit()
 
     # ingest the model
-    if model_file:
+    if model_file and not opts.generate_users_only:
         try:
             model = traffic.TrafficModel()
 
