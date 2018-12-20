@@ -20,6 +20,8 @@
 #ifndef _BYTEORDER_H
 #define _BYTEORDER_H
 
+#include "bytearray.h"
+
 /*
    This file implements macros for machine independent short and 
    int manipulation
@@ -88,8 +90,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 */
 
 
-#define CVAL(buf,pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
-#define CVAL_NC(buf,pos) (((uint8_t *)(buf))[pos]) /* Non-const version of CVAL */
+#define CVAL(buf,pos) ((uint32_t)_DATA_BYTE_CONST(buf, pos))
+#define CVAL_NC(buf,pos) _DATA_BYTE(buf, pos) /* Non-const version of CVAL */
 #define PVAL(buf,pos) (CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL_NC(buf,pos) = (val))
 
