@@ -53,6 +53,11 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (request->wb_flags & WBFLAG_FROM_NSS && !lp_winbind_enum_users()) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	/* Ensure null termination */
 	request->domain_name[sizeof(request->domain_name)-1]='\0';
 
