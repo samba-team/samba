@@ -21,6 +21,7 @@ import samba.getopt as options
 import ldb
 import pwd
 import os
+import io
 import re
 import tempfile
 import difflib
@@ -56,15 +57,56 @@ from samba.netcmd import (
     )
 from samba.compat import text_type
 
-try:
-    import io
-    import gpgme
-    gpgme_support = True
-    decrypt_samba_gpg_help = "Decrypt the SambaGPG password as cleartext source"
-except ImportError as e:
-    gpgme_support = False
-    decrypt_samba_gpg_help = "Decrypt the SambaGPG password not supported, " + \
-            "python-gpgme required"
+
+# python[3]-gpgme is abandoned since ubuntu 1804 and debian 9
+# have to use python[3]-gpg instead
+# The API is different, need to adapt.
+
+def _gpgme_decrypt(encrypted_bytes):
+    """
+    Use python[3]-gpgme to decrypt GPG.
+    """
+    ctx = gpgme.Context()
+    ctx.armor = True  # use ASCII-armored
+    out = io.BytesIO()
+    ctx.decrypt(io.BytesIO(encrypted_bytes), out)
+    return out.getvalue()
+
+
+def _gpg_decrypt(encrypted_bytes):
+    """
+    Use python[3]-gpg to decrypt GPG.
+    """
+    ciphertext = gpg.Data(string=encrypted_bytes)
+    ctx = gpg.Context(armor=True)
+    # plaintext, result, verify_result
+    plaintext, _, _ = ctx.decrypt(ciphertext)
+    return plaintext
+
+
+gpg_decrypt = None
+
+if not gpg_decrypt:
+    try:
+        import gpgme
+        gpg_decrypt = _gpgme_decrypt
+    except ImportError:
+        pass
+
+if not gpg_decrypt:
+    try:
+        import gpg
+        gpg_decrypt = _gpg_decrypt
+    except ImportError:
+        pass
+
+if gpg_decrypt:
+    decrypt_samba_gpg_help = ("Decrypt the SambaGPG password as "
+                              "cleartext source")
+else:
+    decrypt_samba_gpg_help = ("Decrypt the SambaGPG password not supported, "
+                              "python[3]-gpgme or python[3]-gpg required")
+
 
 disabled_virtual_attributes = {
     }
@@ -1024,13 +1066,8 @@ class GetPasswordCommand(Command):
             #
             sgv = get_package("Primary:SambaGPG", min_idx=-1)
             if sgv is not None and unicodePwd is not None:
-                ctx = gpgme.Context()
-                ctx.armor = True
-                cipher_io = io.BytesIO(sgv)
-                plain_io = io.BytesIO()
                 try:
-                    ctx.decrypt(cipher_io, plain_io)
-                    cv = plain_io.getvalue()
+                    cv = gpg_decrypt(sgv)
                     #
                     # We only use the password if it matches
                     # the current nthash stored in the unicodePwd
@@ -1042,14 +1079,13 @@ class GetPasswordCommand(Command):
                     nthash = tmp.get_nt_hash()
                     if nthash == unicodePwd:
                         calculated["Primary:CLEARTEXT"] = cv
-                except gpgme.GpgmeError as e1:
-                    (major, minor, msg) = e1.args
-                    if major == gpgme.ERR_BAD_SECKEY:
-                        msg = "ERR_BAD_SECKEY: " + msg
-                    else:
-                        msg = "MAJOR:%d, MINOR:%d: %s" % (major, minor, msg)
-                    self.outf.write("WARNING: '%s': SambaGPG can't be decrypted into CLEARTEXT: %s\n" % (
-                                    username or account_name, msg))
+
+                except Exception as e:
+                    self.outf.write(
+                        "WARNING: '%s': SambaGPG can't be decrypted "
+                        "into CLEARTEXT: %s\n" % (
+                            username or account_name, e))
+
 
         def get_utf8(a, b, username):
             try:
@@ -1458,7 +1494,7 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
             sambaopts=None, versionopts=None):
         self.lp = sambaopts.get_loadparm()
 
-        if decrypt_samba_gpg and not gpgme_support:
+        if decrypt_samba_gpg and not gpg_decrypt:
             raise CommandError(decrypt_samba_gpg_help)
 
         if filter is None and username is None:
@@ -1800,7 +1836,7 @@ samba-tool user syncpasswords --terminate \\
             if H is None:
                 H = "ldapi://%s" % os.path.abspath(self.lp.private_path("ldap_priv/ldapi"))
 
-            if decrypt_samba_gpg and not gpgme_support:
+            if decrypt_samba_gpg and not gpg_decrypt:
                 raise CommandError(decrypt_samba_gpg_help)
 
             password_attrs = self.parse_attributes(attributes)
