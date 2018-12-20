@@ -54,6 +54,10 @@ class SmbcontrolProcessBlockboxTests(BlackboxTestCase):
     def test_inject_fault(self):
         INJECT = "inject"
         FAULT = "segv"
+        #
+        # Note that this process name needs to be different to the one used
+        # in the sleep test to avoid a race condition
+        #
         pid = self.get_process("rpc_server")
 
         #
@@ -90,7 +94,11 @@ class SmbcontrolProcessBlockboxTests(BlackboxTestCase):
         DURATION = 5     # duration to sleep server for
         DELTA = 1        # permitted error for the sleep duration
 
-        pid = self.get_process("rpc_server")
+        #
+        # Note that this process name needs to be different to the one used
+        # in the inject fault test to avoid a race condition
+        #
+        pid = self.get_process("ldap_server")
         #
         # Ensure we can ping the process before getting it to sleep
         #
