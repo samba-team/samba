@@ -1,4 +1,83 @@
                    =============================
+                   Release Notes for Samba 4.9.4
+                          December 20, 2018
+                   =============================
+
+
+Major bug fixes include:
+------------------------
+
+   o dns: Fix CNAME loop prevention using counter regression (bug #13600).
+
+
+Changes since 4.9.3:
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 9175: libcli/smb: Don't overwrite status code.
+   * BUG 12164: wbinfo --group-info 'NT AUTHORITY\System' does not work.
+   * BUG 13661: Session setup reauth fails to sign response.
+   * BUG 13677: vfs_fruit: Validation of writes on AFP_AfpInfo stream.
+   * BUG 13688: vfs_shadow_copy2: Nicely deal with attempts to open previous
+     version for writing.
+   * BUG 13455: Restoring previous version of stream with vfs_shadow_copy2 fails
+     with NT_STATUS_OBJECT_NAME_INVALID fsp->base_fsp->fsp_name.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 13571: CVE-2018-16853: Fix S4U2Self crash with MIT KDC build.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13708: s3-vfs: Prevent NULL pointer dereference in vfs_glusterfs.
+
+o  Joe Guo <joeg@catalyst.net.nz>
+   * PEP8: fix E231: missing whitespace after ','.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13629: winbindd: Fix crash when taking profiles.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13600: CVE-2018-14629 dns: Fix CNAME loop prevention using counter
+     regression.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13686: 'samba-tool user syscpasswords' fails on a domain with many DCs. 
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13571: CVE-2018-16853: Do not segfault if client is not set.
+   * BUG 13679: lib:util: Fix DEBUGCLASS pointer initializiation.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13696: ctdb-daemon: Exit with error if a database directory does not
+     exist.
+
+o  Justin Stephenson <jstephen@redhat.com>
+   * BUG 13498: s3:libads: Add net ads leave keep-account option.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.9.3
                          November 27, 2018
                    =============================
@@ -122,8 +201,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.9.2
