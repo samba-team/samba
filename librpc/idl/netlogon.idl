@@ -133,11 +133,35 @@ interface netlogon
 		MSV1_0_SUBAUTHENTICATION_DLL_EX		= 0x00100000
 	} netr_LogonParameterControl;
 
+	/* Summary of the of the Query and Response from Microsoft on
+	 * the usage of logon_id in netr_IdendityInfo
+	 *
+	 * [REG:119013019612095] [MS-NRPC]: NETLOGON_LOGON_IDENTITY_INFO: Does
+	 * the Reserved field have LogonId meaning?
+	 *
+	 * Questions:
+	 *   In NetrLogonSamLogonEx does the Reserved field
+	 *   (of NETLOGON_LOGON_IDENTITY_INFO) have LogonId meaning?
+	 *
+	 *   What is a valid LogonID, and does have any audit usage?
+	 *
+	 *   Samba is sending a constant "deadbeef" in hex and would like to
+	 *   understand any usage of this field.
+	 *
+	 * Response:
+	 *   The NRPC spec is accurate in defining the field as Reserved, and
+	 *   without protocol significance. In the header file in our source
+	 *   code, it is defined as LogonId and commented as such, but it’s
+	 *   effectively not used. This is probably why the API structure has
+	 *   that field name. It may have been intended as such but it’s not
+	 *    used.
+	 *
+	 * Samba now sends a random value in this field.
+	 */
 	typedef struct {
 		lsa_String  domain_name;
 		netr_LogonParameterControl parameter_control; /* see MSV1_0_* */
-		uint32      logon_id_low;
-		uint32      logon_id_high;
+		udlong logon_id;
 		lsa_String  account_name;
 		lsa_String  workstation;
 	} netr_IdentityInfo;

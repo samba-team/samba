@@ -361,8 +361,7 @@ static void send_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 
 	identity_info->domain_name.string = user_info->mapped.domain_name;
 	identity_info->parameter_control = user_info->logon_parameters; /* TODO */
-	identity_info->logon_id_low = 0;
-	identity_info->logon_id_high = 0;
+	identity_info->logon_id = 0;
 	identity_info->account_name.string = user_info->mapped.account_name;
 	identity_info->workstation.string
 		= talloc_asprintf(identity_info, "krb5-bad-pw on RODC from %s",

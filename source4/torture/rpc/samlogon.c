@@ -96,8 +96,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 	ninfo.identity_info.domain_name.string = samlogon_state->account_domain;
 	ninfo.identity_info.parameter_control = parameter_control;
-	ninfo.identity_info.logon_id_low = 0;
-	ninfo.identity_info.logon_id_high = 0;
+	ninfo.identity_info.logon_id = 0;
 	ninfo.identity_info.account_name.string = samlogon_state->account_name;
 	ninfo.identity_info.workstation.string = TEST_MACHINE_NAME;
 
@@ -1526,8 +1525,7 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	pinfo.identity_info.domain_name.string = account_domain;
 	pinfo.identity_info.parameter_control = parameter_control;
-	pinfo.identity_info.logon_id_low = 0;
-	pinfo.identity_info.logon_id_high = 0;
+	pinfo.identity_info.logon_id = 0;
 	pinfo.identity_info.account_name.string = account_name;
 	pinfo.identity_info.workstation.string = workstation_name;
 

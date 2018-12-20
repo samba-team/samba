@@ -64,8 +64,7 @@ static NTSTATUS test_SamLogon(struct torture_context *tctx,
 
 	ninfo.identity_info.domain_name.string = domain;
 	ninfo.identity_info.parameter_control = 0;
-	ninfo.identity_info.logon_id_low = 0;
-	ninfo.identity_info.logon_id_high = 0;
+	ninfo.identity_info.logon_id = 0;
 	ninfo.identity_info.account_name.string = account_name;
 	ninfo.identity_info.workstation.string = workstation;
 	generate_random_buffer(ninfo.challenge,

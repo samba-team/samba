@@ -154,8 +154,7 @@ static bool netrlogonsamlogon_w2k_in_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->in.logon->password->identity_info.domain_name.size, 12, "domain_name.size");
 	torture_assert_str_equal(tctx, r->in.logon->password->identity_info.domain_name.string, "W2KDOM", "domain_name.string");
 	torture_assert_int_equal(tctx, r->in.logon->password->identity_info.parameter_control, 0, "parameter_control");
-	torture_assert_int_equal(tctx, r->in.logon->password->identity_info.logon_id_low, 0xdead, "logon_id_low");
-	torture_assert_int_equal(tctx, r->in.logon->password->identity_info.logon_id_high, 0xbeef, "logon_id_high");
+	torture_assert_u64_equal(tctx, r->in.logon->password->identity_info.logon_id, 0xbeef0000dead, "logon_id");
 	torture_assert_int_equal(tctx, r->in.logon->password->identity_info.account_name.length, 26, "account_name.length");
 	torture_assert_int_equal(tctx, r->in.logon->password->identity_info.account_name.size, 26, "account_name.size");
 	torture_assert_str_equal(tctx, r->in.logon->password->identity_info.account_name.string, "administrator", "account_name.string");

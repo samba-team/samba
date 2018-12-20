@@ -3058,8 +3058,7 @@ static bool test_SamLogon(struct torture_context *tctx,
 	identity.parameter_control =
 		MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 		MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
-	identity.logon_id_low = 0;
-	identity.logon_id_high = 0;
+	identity.logon_id = 0;
 	identity.workstation.string = cli_credentials_get_workstation(test_credentials);
 
 	if (interactive) {

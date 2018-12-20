@@ -1212,8 +1212,7 @@ static bool schan(struct torture_context *tctx,
 		ninfo.identity_info.domain_name.string =
 			cli_credentials_get_domain(user_creds);
 		ninfo.identity_info.parameter_control = 0;
-		ninfo.identity_info.logon_id_low = 0;
-		ninfo.identity_info.logon_id_high = 0;
+		ninfo.identity_info.logon_id = 0;
 		ninfo.identity_info.workstation.string =
 			cli_credentials_get_workstation(user_creds);
 		memcpy(ninfo.challenge, chal.data, sizeof(ninfo.challenge));
