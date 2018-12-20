@@ -154,6 +154,7 @@ else:
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid',
                   public_headers='''
                                  attr.h
+                                 bytearray.h
                                  byteorder.h
                                  data_blob.h
                                  debug.h
@@ -285,6 +286,12 @@ else:
 
     bld.SAMBA_BINARY('test_byteorder',
                      source='tests/test_byteorder.c',
+                     deps='cmocka replace samba-util',
+                     local_include=False,
+                     for_selftest=True)
+
+    bld.SAMBA_BINARY('test_bytearray',
+                     source='tests/test_bytearray.c',
                      deps='cmocka replace samba-util',
                      local_include=False,
                      for_selftest=True)

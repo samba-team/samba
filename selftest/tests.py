@@ -389,6 +389,8 @@ plantestsuite("samba.unittests.ms_fnmatch", "none",
               [os.path.join(bindir(), "default/lib/util/test_ms_fnmatch")])
 plantestsuite("samba.unittests.byteorder", "none",
               [os.path.join(bindir(), "default/lib/util/test_byteorder")])
+plantestsuite("samba.unittests.bytearray", "none",
+              [os.path.join(bindir(), "default/lib/util/test_bytearray")])
 plantestsuite("samba.unittests.ntlm_check", "none",
               [os.path.join(bindir(), "default/libcli/auth/test_ntlm_check")])
 plantestsuite("samba.unittests.gnutls", "none",
