@@ -180,13 +180,15 @@ netbsdwinbind_getgroupmembership(void *nsrv, void *nscb, va_list ap)
 	int		 maxgrp	= va_arg(ap, int);
 	int		*groupc	= va_arg(ap, int *);
 
-	struct winbindd_request request;
-	struct winbindd_response response;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	}
 	gid_t	*wblistv;
 	int	wblistc, i, isdup, dupc;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
 	strncpy(request.data.username, uname,
 				sizeof(request.data.username) - 1);
 	i = winbindd_request_response(NULL, WINBINDD_GETGROUPS,
