@@ -229,6 +229,7 @@ typedef struct winbindd_gr {
 /* Flag to tell winbind the NTLMv2 blob is too big for the struct and is in the
  * extra_data field */
 #define WBFLAG_BIG_NTLMV2_BLOB		0x00010000
+#define WBFLAG_FROM_NSS                 0x00020000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
