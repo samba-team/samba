@@ -179,11 +179,6 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define RSBVAL(buf,pos,val) SBVAL(buf,pos,BREV(val))
 #define RSBVALS(buf,pos,val) SBVALS(buf,pos,BREV(val))
 
-/* Alignment macros. */
-#define ALIGN4(p,base) ((p) + ((4 - (PTR_DIFF((p), (base)) & 3)) & 3))
-#define ALIGN2(p,base) ((p) + ((2 - (PTR_DIFF((p), (base)) & 1)) & 1))
-
-
 /* macros for accessing SMB protocol elements */
 #define VWV(vwv) ((vwv)*2)
 
