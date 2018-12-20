@@ -1212,15 +1212,18 @@ bool user_sid_in_group_sid(const struct dom_sid *sid, const struct dom_sid *grou
 	bool result = false;
 	enum lsa_SidType type;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct dom_sid_buf buf;
 
 	if (!lookup_sid(mem_ctx, sid,
 			 NULL, NULL, &type)) {
-		DEBUG(1, ("lookup_sid for %s failed\n", dom_sid_string(mem_ctx, sid)));
+		DEBUG(1, ("lookup_sid for %s failed\n",
+			  dom_sid_str_buf(sid, &buf)));
 		goto done;
 	}
 
 	if (type != SID_NAME_USER) {
-		DEBUG(5, ("%s is a %s, not a user\n", dom_sid_string(mem_ctx, sid),
+		DEBUG(5, ("%s is a %s, not a user\n",
+			  dom_sid_str_buf(sid, &buf),
 			  sid_type_lookup(type)));
 		goto done;
 	}
@@ -1230,7 +1233,8 @@ bool user_sid_in_group_sid(const struct dom_sid *sid, const struct dom_sid *grou
 				       &token);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("could not create token for %s\n", dom_sid_string(mem_ctx, sid)));
+		DEBUG(10, ("could not create token for %s\n",
+			   dom_sid_str_buf(sid, &buf)));
 		goto done;
 	}
 
