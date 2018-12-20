@@ -103,8 +103,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define IVALS(buf,pos) ((int32_t)IVAL(buf,pos))
 #define SSVAL(buf,pos,val) PUSH_LE_U16(buf, pos, val)
 #define SIVAL(buf,pos,val) PUSH_LE_U32(buf, pos, val)
-#define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16_t)(val)))
-#define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32_t)(val)))
+#define SSVALS(buf,pos,val) PUSH_LE_U16(buf, pos, val)
+#define SIVALS(buf,pos,val) PUSH_LE_U32(buf, pos, val)
 
 /* 64 bit macros */
 #define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
