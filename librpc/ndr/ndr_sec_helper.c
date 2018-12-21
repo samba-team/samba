@@ -147,7 +147,8 @@ size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags)
 */
 void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
 {
-	ndr->print(ndr, "%-25s: %s", name, dom_sid_string(ndr, sid));
+	struct dom_sid_buf buf;
+	ndr->print(ndr, "%-25s: %s", name, dom_sid_str_buf(sid, &buf));
 }
 
 void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
