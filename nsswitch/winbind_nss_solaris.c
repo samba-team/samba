@@ -479,13 +479,14 @@ static NSS_STATUS
 _nss_winbind_ipnodes_getbyname(nss_backend_t* be, void *args)
 {
 	nss_XbyY_args_t *argp = (nss_XbyY_args_t*) args;
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	NSS_STATUS ret;
 	int af;
-
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
 
 	/* I assume there that AI_ADDRCONFIG cases are handled in nss
 	   frontend code, at least it seems done so in solaris...
@@ -524,12 +525,13 @@ static NSS_STATUS
 _nss_winbind_hosts_getbyname(nss_backend_t* be, void *args)
 {
 	nss_XbyY_args_t *argp = (nss_XbyY_args_t*) args;
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	NSS_STATUS ret;
-
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
 
 	strncpy(request.data.winsreq, argp->key.name, sizeof(request.data.winsreq) - 1);
 	request.data.winsreq[sizeof(request.data.winsreq) - 1] = '\0';
@@ -548,13 +550,14 @@ static NSS_STATUS
 _nss_winbind_hosts_getbyaddr(nss_backend_t* be, void *args)
 {
 	NSS_STATUS ret;
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	nss_XbyY_args_t	*argp = (nss_XbyY_args_t *)args;
 	const char *p;
-
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
 
 #if defined(AF_INET6)
 	/* winbindd currently does not resolve IPv6 */
