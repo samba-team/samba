@@ -20,3 +20,12 @@ conf.CHECK_STRUCTURE_MEMBER('struct passwd', 'pw_comment',
 conf.CHECK_STRUCTURE_MEMBER('struct passwd', 'pw_age',
                             define='HAVE_PASSWD_PW_AGE',
                             headers='pwd.h')
+
+# AIX 4.3.x and 5.1 do not have as many members in
+# struct secmethod_table as AIX 5.2
+conf.CHECK_STRUCTURE_MEMBER('struct secmethod_table', 'method_attrlist',
+                            define='HAVE_STRUCT_SECMETHOD_TABLE_METHOD_ATTRLIST',
+                            headers='usersec.h')
+conf.CHECK_STRUCTURE_MEMBER('struct secmethod_table', 'method_version',
+                            define='HAVE_STRUCT_SECMETHOD_TABLE_METHOD_VERSION',
+                            headers='usersec.h')
