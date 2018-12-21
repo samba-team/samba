@@ -3359,9 +3359,10 @@ static int cmd_posix_whoami(void)
 	}
 	d_printf("NUM_SIDS:%" PRIu32 "\n", num_sids);
 	for (i = 0; i < num_sids; i++) {
-		char *sid_str = dom_sid_string(ctx, &sids[i]);
-		d_printf("SIDS[%" PRIu32 "]:%s\n", i, sid_str);
-		TALLOC_FREE(sid_str);
+		struct dom_sid_buf buf;
+		d_printf("SIDS[%" PRIu32 "]:%s\n",
+			 i,
+			 dom_sid_str_buf(&sids[i], &buf));
 	}
 	return 0;
 }
