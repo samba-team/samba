@@ -672,6 +672,8 @@ static int wb_aix_user_attrib(const char *key, char *attributes[],
 			results[i] = pwd_to_group(pwd);
 		} else if (strcmp(attributes[i], S_GROUPS) == 0) {
 			results[i] = pwd_to_groupsids(pwd);
+		} else if (strcmp(attributes[i], S_GROUPSIDS) == 0) {
+			results[i] = pwd_to_groupsids(pwd);
 		} else if (strcmp(attributes[i], "SID") == 0) {
 			results[i] = pwd_to_sid(pwd);
 		} else {
@@ -803,6 +805,7 @@ static attrlist_t **wb_aix_attrlist(void)
 		{S_SHELL, 	AL_USERATTR,	SEC_CHAR},
 		{S_PGRP, 	AL_USERATTR,	SEC_CHAR},
 		{S_GROUPS, 	AL_USERATTR, 	SEC_LIST},
+		{S_GROUPSIDS, 	AL_USERATTR, 	SEC_LIST},
 		{"SID", 	AL_USERATTR,	SEC_CHAR},
 
 		/* group attributes */
