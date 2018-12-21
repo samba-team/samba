@@ -994,7 +994,7 @@ static void log_group_membership_changes(
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	struct ldb_message_element *new_val = NULL;
 	int ret;
-	uint32_t group_type;
+	uint32_t group_type = 0;
 	const struct ldb_message *msg = dsdb_audit_get_message(acc->request);
 	if (status == LDB_SUCCESS && msg != NULL) {
 		struct ldb_result *res = NULL;
@@ -1012,14 +1012,14 @@ static void log_group_membership_changes(
 			new_val = ldb_msg_find_element(res->msgs[0], "member");
 			group_type = ldb_msg_find_attr_as_uint(
 			    res->msgs[0], "groupType", 0);
-			log_membership_changes(acc->module,
-					       acc->request,
-					       new_val,
-					       acc->members,
-					       group_type,
-					       status);
-				}
+		}
 	}
+	log_membership_changes(acc->module,
+			       acc->request,
+			       new_val,
+			       acc->members,
+			       group_type,
+			       status);
 	TALLOC_FREE(ctx);
 }
 
