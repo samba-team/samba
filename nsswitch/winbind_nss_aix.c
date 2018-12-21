@@ -605,34 +605,39 @@ static attrval_t pwd_to_groupsids(struct passwd *pwd)
 
 static attrval_t pwd_to_sid(struct passwd *pwd)
 {
+	char buf[(1 /* U/G */ + 10 /* 2^32 */ + 1 /* \n */) + 1] = { 0, };
+	int len;
 	struct winbindd_request request;
 	struct winbindd_response response;
-	attrval_t r;
+	NSS_STATUS result;
+	attrval_t r = {
+		.attr_flag = ENOENT,
+	};
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	len = snprintf(buf, sizeof(buf),
+		       "U%"PRIu32"\n",
+		       (uint32_t)pwd->pw_uid);
+	if (len >= sizeof(buf)) {
+		r = (attrval_t) {
+			.attr_flag = EINVAL,
+		};
+		return r;
+	}
 
-	request.data.uid = pwd->pw_uid;
+	request = (struct winbindd_request) {
+		.extra_data.data = buf,
+		.extra_len = strlen(buf)+1,
+	};
+	response = (struct winbindd_response) {
+		.length = 0,
+	};
 
-#if 0
-	/*
-	 * Removed because WINBINDD_UID_TO_SID is replaced by
-	 * WINBINDD_XIDS_TO_SIDS. I don't have an AIX build
-	 * environment around, so I did not convert this call. If
-	 * someone stumbles over this, please contact me:
-	 * vl@samba.org, I'll convert this.
-	 */
-	if (winbindd_request_response(NULL, WINBINDD_UID_TO_SID,
-				      &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
-		r.attr_flag = ENOENT;
-	} else {
+	result = winbindd_request_response(NULL, WINBINDD_XIDS_TO_SIDS,
+					   &request, &response);
+	if (result == NSS_STATUS_SUCCESS) {
 		r.attr_flag = 0;
 		r.attr_un.au_char = strdup(response.data.sid.sid);
 	}
-#else
-	r.attr_flag = ENOENT;
-#endif
 
 	return r;
 }
