@@ -66,7 +66,7 @@ static int mscat_read_file(TALLOC_CTX *mem_ctx,
 	struct stat sb = {0};
 	size_t alloc_size;
 	size_t count;
-	DATA_BLOB blob;
+	DATA_BLOB blob = data_blob_null;
 	FILE *fp;
 	int rc;
 
@@ -82,22 +82,26 @@ static int mscat_read_file(TALLOC_CTX *mem_ctx,
 
 	if (!S_ISREG(sb.st_mode)) {
 		errno = EINVAL;
+		rc = -1;
 		goto error;
 	}
 	if (SIZE_MAX - 1 < (unsigned long)sb.st_size) {
 		errno = ENOMEM;
+		rc = -1;
 		goto error;
 	}
 	alloc_size = sb.st_size + 1;
 
 	blob = data_blob_talloc_zero(mem_ctx, alloc_size);
 	if (blob.data == NULL) {
+		rc = -1;
 		goto error;
 	}
 
 	count = fread(blob.data, 1, blob.length, fp);
 	if (count != blob.length) {
 		if (ferror(fp)) {
+			rc = -1;
 			goto error;
 		}
 	}
