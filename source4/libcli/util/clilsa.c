@@ -301,9 +301,8 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = 1;
 	NTSTATUS status;
-	struct dom_sid *sid;
+	struct dom_sid sid;
 	TALLOC_CTX *mem_ctx2 = talloc_new(mem_ctx);
-	uint32_t rid;
 
 	status = smblsa_connect(cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -343,11 +342,9 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	sid = domains->domains[0].sid;
-	rid = sids.sids[0].rid;
-	
-	(*sid_str) = talloc_asprintf(mem_ctx, "%s-%u", 
-				     dom_sid_string(mem_ctx2, sid), rid);
+	sid_compose(&sid, domains->domains[0].sid, sids.sids[0].rid);
+
+	(*sid_str) = dom_sid_string(mem_ctx, &sid);
 
 	talloc_free(mem_ctx2);
 
