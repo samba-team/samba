@@ -191,8 +191,8 @@ static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
 	PyObject *py_ldb;
 	struct ldb_context *ldb;
 	const struct dom_sid *sid;
+	struct dom_sid_buf buf;
 	PyObject *ret;
-	char *retstr;
 
 	if (!PyArg_ParseTuple(args, "O", &py_ldb))
 		return NULL;
@@ -205,13 +205,7 @@ static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
 		return NULL;
 	}
 
-	retstr = dom_sid_string(NULL, sid);
-	if (retstr == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	ret = PyStr_FromString(retstr);
-	talloc_free(retstr);
+	ret = PyStr_FromString(dom_sid_str_buf(sid, &buf));
 	return ret;
 }
 
