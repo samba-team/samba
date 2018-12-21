@@ -931,8 +931,8 @@ bool run_benchrw(struct torture_context *tctx)
 			switch (state[i]->mode){
 			/*open multiple connections with the same userid */
 			case START:
-				smb_con = talloc(
-					tctx,struct smb_composite_connect) ;
+				smb_con = talloc_zero(
+					tctx,struct smb_composite_connect);
 				state[i]->req_params=smb_con; 
 				state[i]->mode=OPEN_CONNECTION;
 				req1 = torture_connect_async(
