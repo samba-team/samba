@@ -569,12 +569,12 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 
 static attrval_t pwd_to_group(struct passwd *pwd)
 {
-	attrval_t r;
+	attrval_t r = {
+		.attr_flag = EINVAL,
+	};
 	struct group *grp = wb_aix_getgrgid(pwd->pw_gid);
 
-	if (!grp) {
-		r.attr_flag = EINVAL;
-	} else {
+	if (grp != NULL) {
 		r.attr_flag = 0;
 		r.attr_un.au_char = strdup(grp->gr_name);
 		free_grp(grp);
@@ -585,7 +585,9 @@ static attrval_t pwd_to_group(struct passwd *pwd)
 
 static attrval_t pwd_to_groupsids(struct passwd *pwd)
 {
-	attrval_t r;
+	attrval_t r = {
+		.attr_flag = EINVAL,
+	};
 	char *s, *p;
 	size_t mlen;
 
@@ -605,6 +607,7 @@ static attrval_t pwd_to_groupsids(struct passwd *pwd)
 	replace_commas(p);
 	free(s);
 
+	r.attr_flag = 0;
 	r.attr_un.au_char = p;
 
 	return r;
@@ -663,7 +666,9 @@ static int wb_aix_user_attrib(const char *key, char *attributes[],
 	}
 
 	for (i=0;i<size;i++) {
-		results[i].attr_flag = 0;
+		results[i] = (attrval_t) {
+			.attr_flag = 0,
+		};
 
 		if (strcmp(attributes[i], S_ID) == 0) {
 			results[i].attr_un.au_int = pwd->pw_uid;
