@@ -544,10 +544,15 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		/* Call for the first time */
 
-		ZERO_STRUCT(response);
-		ZERO_STRUCT(request);
-
-		request.data.uid = uid;
+		response = (struct winbindd_response) {
+			.length = 0,
+		};
+		request = (struct winbindd_request) {
+			.wb_flags = WBFLAG_FROM_NSS,
+			.data = {
+				.uid = uid,
+			},
+		};
 
 		winbind_set_client_name("nss_winbind");
 		ret = winbindd_request_response(NULL, WINBINDD_GETPWUID, &request, &response);
@@ -618,8 +623,12 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 
 		/* Call for the first time */
 
-		ZERO_STRUCT(response);
-		ZERO_STRUCT(request);
+		response = (struct winbindd_response) {
+			.length = 0,
+		};
+		request = (struct winbindd_request) {
+			.wb_flags = WBFLAG_FROM_NSS,
+		};
 
 		strncpy(request.data.username, name,
 			sizeof(request.data.username) - 1);
@@ -895,8 +904,12 @@ _nss_winbind_getgrnam_r(const char *name,
 
 		/* Call for the first time */
 
-		ZERO_STRUCT(request);
-		ZERO_STRUCT(response);
+		response = (struct winbindd_response) {
+			.length = 0,
+		};
+		request = (struct winbindd_request) {
+			.wb_flags = WBFLAG_FROM_NSS,
+		};
 
 		strncpy(request.data.groupname, name,
 			sizeof(request.data.groupname));
@@ -978,8 +991,13 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 		/* Call for the first time */
 
-		ZERO_STRUCT(request);
-		ZERO_STRUCT(response);
+		response = (struct winbindd_response) {
+			.length = 0,
+		};
+		request = (struct winbindd_request) {
+			.wb_flags = WBFLAG_FROM_NSS,
+		};
+
 
 		request.data.gid = gid;
 
