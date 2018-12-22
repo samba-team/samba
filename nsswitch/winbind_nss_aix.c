@@ -269,15 +269,16 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 /* take a group id and return a filled struct group */
 static struct group *wb_aix_getgrgid(gid_t gid)
 {
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	struct group *grp;
 	NSS_STATUS ret;
 
 	logit("getgrgid %d\n", gid);
-
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
 
 	request.data.gid = gid;
 
@@ -298,8 +299,12 @@ static struct group *wb_aix_getgrgid(gid_t gid)
 /* take a group name and return a filled struct group */
 static struct group *wb_aix_getgrnam(const char *name)
 {
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	NSS_STATUS ret;
 	struct group *grp;
 
@@ -308,9 +313,6 @@ static struct group *wb_aix_getgrnam(const char *name)
 	}
 
 	logit("getgrnam '%s'\n", name);
-
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
 
 	STRCPY_RETNULL(request.data.groupname, name);
 
@@ -346,8 +348,12 @@ static struct group *wb_aix_getgracct(void *id, int type)
    list of group id numbers to which the user belongs */
 static char *wb_aix_getgrset(char *user)
 {
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	NSS_STATUS ret;
 	int i, idx;
 	char *tmpbuf;
@@ -364,9 +370,6 @@ static char *wb_aix_getgrset(char *user)
 	}
 
 	logit("getgrset '%s'\n", r_user);
-
-        ZERO_STRUCT(response);
-        ZERO_STRUCT(request);
 
 	STRCPY_RETNULL(request.data.username, r_user);
 
@@ -402,15 +405,16 @@ static char *wb_aix_getgrset(char *user)
 /* take a uid and return a filled struct passwd */
 static struct passwd *wb_aix_getpwuid(uid_t uid)
 {
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	NSS_STATUS ret;
 	struct passwd *pwd;
 
 	logit("getpwuid '%d'\n", uid);
-
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
 
 	request.data.uid = uid;
 
@@ -432,8 +436,12 @@ static struct passwd *wb_aix_getpwuid(uid_t uid)
 /* take a username and return a filled struct passwd */
 static struct passwd *wb_aix_getpwnam(const char *name)
 {
-	struct winbindd_response response;
-	struct winbindd_request request;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	NSS_STATUS ret;
 	struct passwd *pwd;
 
@@ -442,9 +450,6 @@ static struct passwd *wb_aix_getpwnam(const char *name)
 	}
 
 	logit("getpwnam '%s'\n", name);
-
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
 
 	STRCPY_RETNULL(request.data.username, name);
 
@@ -468,8 +473,12 @@ static struct passwd *wb_aix_getpwnam(const char *name)
 static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 {
 	NSS_STATUS ret;
-	struct winbindd_request request;
-	struct winbindd_response response;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	int len;
 	char *s;
 
@@ -478,9 +487,6 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 		errno = EINVAL;
 		return -1;
 	}
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
 
 	ret = winbindd_request_response(NULL, WINBINDD_LIST_USERS,
 					&request, &response);
@@ -517,8 +523,12 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 {
 	NSS_STATUS ret;
-	struct winbindd_request request;
-	struct winbindd_response response;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
 	int len;
 	char *s;
 
@@ -527,9 +537,6 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 		errno = EINVAL;
 		return -1;
 	}
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
 
 	ret = winbindd_request_response(NULL, WINBINDD_LIST_GROUPS,
 					&request, &response);
@@ -625,6 +632,7 @@ static attrval_t pwd_to_sid(struct passwd *pwd)
 	}
 
 	request = (struct winbindd_request) {
+		.wb_flags = WBFLAG_FROM_NSS,
 		.extra_data.data = buf,
 		.extra_len = strlen(buf)+1,
 	};
@@ -893,8 +901,12 @@ static int wb_aix_normalize(char *longname, char *shortname)
 static int wb_aix_authenticate(char *user, char *pass,
 			       int *reenter, char **message)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
         NSS_STATUS result;
 	char *r_user = user;
 
@@ -904,9 +916,6 @@ static int wb_aix_authenticate(char *user, char *pass,
 	*message = NULL;
 
 	/* Send off request */
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
 	if (*user == WB_AIX_ENCODED) {
 		r_user = decode_user(r_user);
 		if (!r_user) {
@@ -942,8 +951,12 @@ static int wb_aix_authenticate(char *user, char *pass,
 */
 static int wb_aix_chpass(char *user, char *oldpass, char *newpass, char **message)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	struct winbindd_request request = {
+		.wb_flags = WBFLAG_FROM_NSS,
+	};
+	struct winbindd_response response = {
+		.length = 0,
+	};
         NSS_STATUS result;
 	char *r_user = user;
 
@@ -960,9 +973,6 @@ static int wb_aix_chpass(char *user, char *oldpass, char *newpass, char **messag
 	*message = NULL;
 
 	/* Send off request */
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
 	STRCPY_RET(request.data.chauthtok.user, r_user);
 	STRCPY_RET(request.data.chauthtok.oldpass, oldpass);
 	STRCPY_RET(request.data.chauthtok.newpass, newpass);
