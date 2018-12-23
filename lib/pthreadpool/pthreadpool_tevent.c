@@ -493,23 +493,6 @@ static int pthreadpool_tevent_job_destructor(struct pthreadpool_tevent_job *job)
 	}
 
 	/*
-	 * TODO?: We could further improve this by adjusting
-	 * tevent_threaded_schedule_immediate_destructor()
-	 * and allow TALLOC_FREE() during its time
-	 * in the main_ev->scheduled_immediates list.
-	 *
-	 * PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
-	 * if (state->needs_fence.signaled) {
-	 *       *
-	 *       * The signal function is completed
-	 *       * in future we may be allowed
-	 *       * to call TALLOC_FREE(job->im).
-	 *       *
-	 *      TALLOC_FREE(job->im);
-	 * }
-	 */
-
-	/*
 	 * pthreadpool_tevent_job_orphan() already removed
 	 * it from pool->jobs. And we don't need try
 	 * pthreadpool_cancel_job() again.
