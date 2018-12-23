@@ -33,7 +33,6 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
 #include "lib/tsocket/tsocket.h"
-#include "lib/pthreadpool/pthreadpool_tevent.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath
@@ -253,7 +252,6 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	const char *vfs_user;
 	struct smbd_server_connection *sconn;
 	const char *servicename = lp_const_servicename(snum);
-	int ret;
 
 	sconn = talloc_zero(ctx, struct smbd_server_connection);
 	if (sconn == NULL) {
@@ -276,16 +274,6 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		TALLOC_FREE(sconn);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	/*
-	 * We only provide sync threadpools.
-	 */
-	ret = pthreadpool_tevent_init(sconn, 0, &sconn->sync_thread_pool);
-	if (ret != 0) {
-		TALLOC_FREE(sconn);
-		return NT_STATUS_NO_MEMORY;
-	}
-	sconn->raw_thread_pool = sconn->sync_thread_pool;
 
 	sconn->msg_ctx = msg;
 

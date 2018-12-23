@@ -3907,7 +3907,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	const char *locaddr = NULL;
 	const char *remaddr = NULL;
 	int ret;
-	size_t max_threads;
 	NTSTATUS status;
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
@@ -3953,20 +3952,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	ret = pthreadpool_tevent_init(sconn, lp_aio_max_threads(),
 				      &sconn->raw_thread_pool);
 	if (ret != 0) {
-		exit_server("pthreadpool_tevent_init(raw) failed.");
-	}
-
-	max_threads = pthreadpool_tevent_max_threads(sconn->raw_thread_pool);
-	if (max_threads == 0) {
-		/*
-		 * We only have a sync pool, no need to create a 2nd one.
-		 */
-		sconn->sync_thread_pool = sconn->raw_thread_pool;
-	} else {
-		ret = pthreadpool_tevent_init(sconn, 0, &sconn->sync_thread_pool);
-		if (ret != 0) {
-			exit_server("pthreadpool_tevent_init(sync) failed.");
-		}
+		exit_server("pthreadpool_tevent_init() failed.");
 	}
 
 	if (lp_server_max_protocol() >= PROTOCOL_SMB2_02) {
