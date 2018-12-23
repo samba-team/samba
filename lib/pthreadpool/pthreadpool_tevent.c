@@ -873,7 +873,7 @@ static void pthreadpool_tevent_job_orphan(struct pthreadpool_tevent_job *job)
 	 */
 	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
 	while (job->needs_fence.wrapper) {
-		(void)poll(NULL, 0, 1);
+		poll(NULL, 0, 1);
 		PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
 	}
 	job->wrapper = NULL;
@@ -903,7 +903,7 @@ static void pthreadpool_tevent_job_orphan(struct pthreadpool_tevent_job *job)
 		if (job->needs_fence.signaled) {
 			break;
 		}
-		(void)poll(NULL, 0, 1);
+		poll(NULL, 0, 1);
 		PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
 	}
 
