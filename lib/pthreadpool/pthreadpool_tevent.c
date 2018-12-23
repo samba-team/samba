@@ -719,7 +719,6 @@ static int pthreadpool_tevent_register_ev(
 			return ENOMEM;
 		}
 		tevent_fd_set_auto_close(glue->fde);
-		monitor_fd = -1;
 	}
 
 	/*
