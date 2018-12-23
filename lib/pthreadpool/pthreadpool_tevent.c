@@ -26,39 +26,8 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/attr.h"
 
-/*
- * We try to give some hints to helgrind/drd
- *
- * Note ANNOTATE_BENIGN_RACE_SIZED(address, size, describtion)
- * takes an memory address range that ignored by helgrind/drd
- * 'description' is just ignored...
- *
- *
- * Note that ANNOTATE_HAPPENS_*(unique_uintptr)
- * just takes a DWORD/(void *) as unique key
- * for the barrier.
- */
-#ifdef HAVE_VALGRIND_HELGRIND_H
-#include <valgrind/helgrind.h>
-#endif
-#ifndef ANNOTATE_BENIGN_RACE_SIZED
-#define ANNOTATE_BENIGN_RACE_SIZED(address, size, describtion)
-#endif
-#ifndef ANNOTATE_HAPPENS_BEFORE
-#define ANNOTATE_HAPPENS_BEFORE(unique_uintptr)
-#endif
-#ifndef ANNOTATE_HAPPENS_AFTER
-#define ANNOTATE_HAPPENS_AFTER(unique_uintptr)
-#endif
-#ifndef ANNOTATE_HAPPENS_BEFORE_FORGET_ALL
-#define ANNOTATE_HAPPENS_BEFORE_FORGET_ALL(unique_uintptr)
-#endif
-
 #define PTHREAD_TEVENT_JOB_THREAD_FENCE_INIT(__job) do { \
 	_UNUSED_ const struct pthreadpool_tevent_job *__j = __job; \
-	ANNOTATE_BENIGN_RACE_SIZED(&__j->needs_fence, \
-				   sizeof(__j->needs_fence), \
-				   "race by design, protected by fence"); \
 } while(0);
 
 #ifdef WITH_PTHREADPOOL
@@ -80,14 +49,11 @@
 
 #define PTHREAD_TEVENT_JOB_THREAD_FENCE(__job) do { \
 	_UNUSED_ const struct pthreadpool_tevent_job *__j = __job; \
-	ANNOTATE_HAPPENS_BEFORE(&__job->needs_fence); \
 	__PTHREAD_TEVENT_JOB_THREAD_FENCE(memory_order_seq_cst); \
-	ANNOTATE_HAPPENS_AFTER(&__job->needs_fence); \
 } while(0);
 
 #define PTHREAD_TEVENT_JOB_THREAD_FENCE_FINI(__job) do { \
 	_UNUSED_ const struct pthreadpool_tevent_job *__j = __job; \
-	ANNOTATE_HAPPENS_BEFORE_FORGET_ALL(&__job->needs_fence); \
 } while(0);
 
 struct pthreadpool_tevent_job_state;
