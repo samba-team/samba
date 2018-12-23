@@ -18,43 +18,11 @@
  */
 
 #include "replace.h"
-#include "system/threads.h"
 #include "system/filesys.h"
 #include "pthreadpool_tevent.h"
 #include "pthreadpool.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/dlinklist.h"
-#include "lib/util/attr.h"
-
-#define PTHREAD_TEVENT_JOB_THREAD_FENCE_INIT(__job) do { \
-	_UNUSED_ const struct pthreadpool_tevent_job *__j = __job; \
-} while(0);
-
-#ifdef WITH_PTHREADPOOL
-/*
- * configure checked we have pthread and atomic_thread_fence() available
- */
-#define __PTHREAD_TEVENT_JOB_THREAD_FENCE(__order) do { \
-	atomic_thread_fence(__order); \
-} while(0)
-#else
-/*
- * we're using lib/pthreadpool/pthreadpool_sync.c ...
- */
-#define __PTHREAD_TEVENT_JOB_THREAD_FENCE(__order) do { } while(0)
-#ifndef HAVE___THREAD
-#define __thread
-#endif
-#endif
-
-#define PTHREAD_TEVENT_JOB_THREAD_FENCE(__job) do { \
-	_UNUSED_ const struct pthreadpool_tevent_job *__j = __job; \
-	__PTHREAD_TEVENT_JOB_THREAD_FENCE(memory_order_seq_cst); \
-} while(0);
-
-#define PTHREAD_TEVENT_JOB_THREAD_FENCE_FINI(__job) do { \
-	_UNUSED_ const struct pthreadpool_tevent_job *__j = __job; \
-} while(0);
 
 struct pthreadpool_tevent_job_state;
 
@@ -108,70 +76,6 @@ struct pthreadpool_tevent_job {
 
 	void (*fn)(void *private_data);
 	void *private_data;
-
-	/*
-	 * Coordination between threads
-	 *
-	 * There're only one side writing each element
-	 * either the main process or the job thread.
-	 *
-	 * The coordination is done by a full memory
-	 * barrier using atomic_thread_fence(memory_order_seq_cst)
-	 * wrapped in PTHREAD_TEVENT_JOB_THREAD_FENCE()
-	 */
-	struct {
-		/*
-		 * 'maycancel'
-		 * set when tevent_req_cancel() is called.
-		 * (only written by main thread!)
-		 */
-		bool maycancel;
-
-		/*
-		 * 'orphaned'
-		 * set when talloc_free is called on the job request,
-		 * tevent_context or pthreadpool_tevent.
-		 * (only written by main thread!)
-		 */
-		bool orphaned;
-
-		/*
-		 * 'started'
-		 * set when the job is picked up by a worker thread
-		 * (only written by job thread!)
-		 */
-		bool started;
-
-		/*
-		 * 'executed'
-		 * set once the job function returned.
-		 * (only written by job thread!)
-		 */
-		bool executed;
-
-		/*
-		 * 'finished'
-		 * set when pthreadpool_tevent_job_signal() is entered
-		 * (only written by job thread!)
-		 */
-		bool finished;
-
-		/*
-		 * 'dropped'
-		 * set when pthreadpool_tevent_job_signal() leaves with
-		 * orphaned already set.
-		 * (only written by job thread!)
-		 */
-		bool dropped;
-
-		/*
-		 * 'signaled'
-		 * set when pthreadpool_tevent_job_signal() leaves normal
-		 * and the immediate event was scheduled.
-		 * (only written by job thread!)
-		 */
-		bool signaled;
-	} needs_fence;
 };
 
 static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool);
@@ -396,11 +300,11 @@ static bool pthreadpool_tevent_job_cancel(struct tevent_req *req);
 static int pthreadpool_tevent_job_destructor(struct pthreadpool_tevent_job *job)
 {
 	/*
-	 * We should never be called with needs_fence.orphaned == false.
+	 * We should never be called with state->state != NULL.
 	 * Only pthreadpool_tevent_job_orphan() will call TALLOC_FREE(job)
 	 * after detaching from the request state and pool list.
 	 */
-	if (!job->needs_fence.orphaned) {
+	if (job->state != NULL) {
 		abort();
 	}
 
@@ -423,17 +327,6 @@ static int pthreadpool_tevent_job_destructor(struct pthreadpool_tevent_job *job)
 			 */
 			TALLOC_FREE(job->im);
 		}
-	}
-
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
-	if (job->needs_fence.dropped) {
-		/*
-		 * The signal function saw job->needs_fence.orphaned
-		 * before it started the signaling via the immediate
-		 * event. So we'll never geht triggered and can
-		 * remove job->im and let the whole job go...
-		 */
-		TALLOC_FREE(job->im);
 	}
 
 	/*
@@ -459,15 +352,11 @@ static int pthreadpool_tevent_job_destructor(struct pthreadpool_tevent_job *job)
 	 */
 	DLIST_REMOVE(orphaned_jobs, job);
 
-	PTHREAD_TEVENT_JOB_THREAD_FENCE_FINI(job);
 	return 0;
 }
 
 static void pthreadpool_tevent_job_orphan(struct pthreadpool_tevent_job *job)
 {
-	job->needs_fence.orphaned = true;
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
-
 	/*
 	 * We're the only function that sets
 	 * job->state = NULL;
@@ -588,7 +477,6 @@ struct tevent_req *pthreadpool_tevent_job_send(
 	if (tevent_req_nomem(job->im, req)) {
 		return tevent_req_post(req, ev);
 	}
-	PTHREAD_TEVENT_JOB_THREAD_FENCE_INIT(job);
 	talloc_set_destructor(job, pthreadpool_tevent_job_destructor);
 	DLIST_ADD_END(job->pool->jobs, job);
 	job->state = state;
@@ -605,76 +493,13 @@ struct tevent_req *pthreadpool_tevent_job_send(
 	return req;
 }
 
-static __thread struct pthreadpool_tevent_job *current_job;
-
-bool pthreadpool_tevent_current_job_canceled(void)
-{
-	if (current_job == NULL) {
-		/*
-		 * Should only be called from within
-		 * the job function.
-		 */
-		abort();
-		return false;
-	}
-
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(current_job);
-	return current_job->needs_fence.maycancel;
-}
-
-bool pthreadpool_tevent_current_job_orphaned(void)
-{
-	if (current_job == NULL) {
-		/*
-		 * Should only be called from within
-		 * the job function.
-		 */
-		abort();
-		return false;
-	}
-
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(current_job);
-	return current_job->needs_fence.orphaned;
-}
-
-bool pthreadpool_tevent_current_job_continue(void)
-{
-	if (current_job == NULL) {
-		/*
-		 * Should only be called from within
-		 * the job function.
-		 */
-		abort();
-		return false;
-	}
-
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(current_job);
-	if (current_job->needs_fence.maycancel) {
-		return false;
-	}
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(current_job);
-	if (current_job->needs_fence.orphaned) {
-		return false;
-	}
-
-	return true;
-}
-
 static void pthreadpool_tevent_job_fn(void *private_data)
 {
 	struct pthreadpool_tevent_job *job =
 		talloc_get_type_abort(private_data,
 		struct pthreadpool_tevent_job);
 
-	current_job = job;
-	job->needs_fence.started = true;
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
-
 	job->fn(job->private_data);
-
-	job->needs_fence.executed = true;
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
-	current_job = NULL;
 }
 
 static int pthreadpool_tevent_job_signal(int jobid,
@@ -689,12 +514,8 @@ static int pthreadpool_tevent_job_signal(int jobid,
 	struct tevent_threaded_context *tctx = NULL;
 	struct pthreadpool_tevent_glue *g = NULL;
 
-	job->needs_fence.finished = true;
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
-	if (job->needs_fence.orphaned) {
+	if (state == NULL) {
 		/* Request already gone */
-		job->needs_fence.dropped = true;
-		PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
 		return 0;
 	}
 
@@ -723,8 +544,6 @@ static int pthreadpool_tevent_job_signal(int jobid,
 					  job);
 	}
 
-	job->needs_fence.signaled = true;
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
 	return 0;
 }
 
@@ -747,17 +566,9 @@ static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
 
 	/*
 	 * pthreadpool_tevent_job_cleanup()
-	 * (called by tevent_req_done() or
-	 * tevent_req_error()) will destroy the job.
+	 * will destroy the job.
 	 */
-
-	if (job->needs_fence.executed) {
-		tevent_req_done(state->req);
-		return;
-	}
-
-	tevent_req_error(state->req, ENOEXEC);
-	return;
+	tevent_req_done(state->req);
 }
 
 static bool pthreadpool_tevent_job_cancel(struct tevent_req *req)
@@ -769,19 +580,6 @@ static bool pthreadpool_tevent_job_cancel(struct tevent_req *req)
 	size_t num;
 
 	if (job == NULL) {
-		return false;
-	}
-
-	job->needs_fence.maycancel = true;
-	PTHREAD_TEVENT_JOB_THREAD_FENCE(job);
-	if (job->needs_fence.started) {
-		/*
-		 * It was too late to cancel the request.
-		 *
-		 * The job still has the chance to look
-		 * at pthreadpool_tevent_current_job_canceled()
-		 * or pthreadpool_tevent_current_job_continue()
-		 */
 		return false;
 	}
 

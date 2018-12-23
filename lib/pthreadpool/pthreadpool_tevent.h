@@ -32,20 +32,6 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 size_t pthreadpool_tevent_max_threads(struct pthreadpool_tevent *pool);
 size_t pthreadpool_tevent_queued_jobs(struct pthreadpool_tevent *pool);
 
-/*
- * return true - if tevent_req_cancel() was called.
- */
-bool pthreadpool_tevent_current_job_canceled(void);
-/*
- * return true - if talloc_free() was called on the job request,
- * tevent_context or pthreadpool_tevent.
- */
-bool pthreadpool_tevent_current_job_orphaned(void);
-/*
- * return true if canceled and orphaned are both false.
- */
-bool pthreadpool_tevent_current_job_continue(void);
-
 struct tevent_req *pthreadpool_tevent_job_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct pthreadpool_tevent *pool,
