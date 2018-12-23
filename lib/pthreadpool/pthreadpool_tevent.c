@@ -992,7 +992,6 @@ struct tevent_req *pthreadpool_tevent_job_send(
 	struct pthreadpool_tevent_job_state *state = NULL;
 	struct pthreadpool_tevent_job *job = NULL;
 	int ret;
-	struct pthreadpool_tevent *caller_pool = pool;
 	struct pthreadpool_tevent_wrapper *wrapper = pool->wrapper.ctx;
 
 	pthreadpool_tevent_cleanup_orphaned_jobs();
@@ -1038,7 +1037,7 @@ struct tevent_req *pthreadpool_tevent_job_send(
 		return tevent_req_post(req, ev);
 	}
 	PTHREAD_TEVENT_JOB_THREAD_FENCE_INIT(job);
-	job->per_thread_cwd = pthreadpool_tevent_per_thread_cwd(caller_pool);
+	job->per_thread_cwd = pthreadpool_tevent_per_thread_cwd(pool);
 	talloc_set_destructor(job, pthreadpool_tevent_job_destructor);
 	DLIST_ADD_END(job->pool->jobs, job);
 	job->state = state;
