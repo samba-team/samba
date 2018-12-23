@@ -24,7 +24,6 @@
 #include "system/filesys.h"
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"
-#include "lib/util/blocking.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -53,8 +52,6 @@ struct pthreadpool {
 	 * Threads waiting for work do so here
 	 */
 	pthread_cond_t condvar;
-
-	int check_pipefd[2];
 
 	/*
 	 * Array of jobs
@@ -140,7 +137,6 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 {
 	struct pthreadpool *pool;
 	int ret;
-	bool ok;
 
 	pool = (struct pthreadpool *)malloc(sizeof(struct pthreadpool));
 	if (pool == NULL) {
@@ -158,52 +154,10 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		return ENOMEM;
 	}
 
-	ret = pipe(pool->check_pipefd);
-	if (ret != 0) {
-		free(pool->jobs);
-		free(pool);
-		return ENOMEM;
-	}
-
-	ok = smb_set_close_on_exec(pool->check_pipefd[0]);
-	if (!ok) {
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
-		free(pool->jobs);
-		free(pool);
-		return EINVAL;
-	}
-	ok = smb_set_close_on_exec(pool->check_pipefd[1]);
-	if (!ok) {
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
-		free(pool->jobs);
-		free(pool);
-		return EINVAL;
-	}
-	ret = set_blocking(pool->check_pipefd[0], true);
-	if (ret == -1) {
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
-		free(pool->jobs);
-		free(pool);
-		return EINVAL;
-	}
-	ret = set_blocking(pool->check_pipefd[1], false);
-	if (ret == -1) {
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
-		free(pool->jobs);
-		free(pool);
-		return EINVAL;
-	}
-
 	pool->head = pool->num_jobs = 0;
 
 	ret = pthread_mutex_init(&pool->mutex, NULL);
 	if (ret != 0) {
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
 		free(pool->jobs);
 		free(pool);
 		return ret;
@@ -212,8 +166,6 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 	ret = pthread_cond_init(&pool->condvar, NULL);
 	if (ret != 0) {
 		pthread_mutex_destroy(&pool->mutex);
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
 		free(pool->jobs);
 		free(pool);
 		return ret;
@@ -223,8 +175,6 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 	if (ret != 0) {
 		pthread_cond_destroy(&pool->condvar);
 		pthread_mutex_destroy(&pool->mutex);
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
 		free(pool->jobs);
 		free(pool);
 		return ret;
@@ -247,8 +197,6 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		pthread_mutex_destroy(&pool->fork_mutex);
 		pthread_cond_destroy(&pool->condvar);
 		pthread_mutex_destroy(&pool->mutex);
-		close(pool->check_pipefd[0]);
-		close(pool->check_pipefd[1]);
 		free(pool->jobs);
 		free(pool);
 		return ret;
@@ -412,14 +360,6 @@ static void pthreadpool_child(void)
 		pool->head = 0;
 		pool->num_jobs = 0;
 		pool->stopped = true;
-		if (pool->check_pipefd[0] != -1) {
-			close(pool->check_pipefd[0]);
-			pool->check_pipefd[0] = -1;
-		}
-		if (pool->check_pipefd[1] != -1) {
-			close(pool->check_pipefd[1]);
-			pool->check_pipefd[1] = -1;
-		}
 
 		ret = pthread_cond_init(&pool->condvar, NULL);
 		assert(ret == 0);
@@ -482,14 +422,6 @@ static int pthreadpool_free(struct pthreadpool *pool)
 		return ret2;
 	}
 
-	if (pool->check_pipefd[0] != -1) {
-		close(pool->check_pipefd[0]);
-		pool->check_pipefd[0] = -1;
-	}
-	if (pool->check_pipefd[1] != -1) {
-		close(pool->check_pipefd[1]);
-		pool->check_pipefd[1] = -1;
-	}
 	free(pool->jobs);
 	free(pool);
 
@@ -505,15 +437,6 @@ static int pthreadpool_stop_locked(struct pthreadpool *pool)
 	int ret;
 
 	pool->stopped = true;
-
-	if (pool->check_pipefd[0] != -1) {
-		close(pool->check_pipefd[0]);
-		pool->check_pipefd[0] = -1;
-	}
-	if (pool->check_pipefd[1] != -1) {
-		close(pool->check_pipefd[1]);
-		pool->check_pipefd[1] = -1;
-	}
 
 	if (pool->num_threads == 0) {
 		return 0;
@@ -598,33 +521,6 @@ static void pthreadpool_server_exit(struct pthreadpool *pool)
 	pool->num_threads -= 1;
 
 	free_it = (pool->destroyed && (pool->num_threads == 0));
-
-	while (true) {
-		uint8_t c = 0;
-		ssize_t nwritten = 0;
-
-		if (pool->check_pipefd[1] == -1) {
-			break;
-		}
-
-		nwritten = write(pool->check_pipefd[1], &c, 1);
-		if (nwritten == -1) {
-			if (errno == EINTR) {
-				continue;
-			}
-			if (errno == EAGAIN) {
-				break;
-			}
-#ifdef EWOULDBLOCK
-			if (errno == EWOULDBLOCK) {
-				break;
-			}
-#endif
-			/* ignore ... */
-		}
-
-		break;
-	}
 
 	ret = pthread_mutex_unlock(&pool->mutex);
 	assert(ret == 0);
@@ -954,183 +850,6 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 	assert(unlock_res == 0);
 
 	return res;
-}
-
-int pthreadpool_restart_check(struct pthreadpool *pool)
-{
-	int res;
-	int unlock_res;
-	unsigned possible_threads = 0;
-	unsigned missing_threads = 0;
-
-	assert(!pool->destroyed);
-
-	res = pthread_mutex_lock(&pool->mutex);
-	if (res != 0) {
-		return res;
-	}
-
-	if (pool->stopped) {
-		/*
-		 * Protect against the pool being shut down while
-		 * trying to add a job
-		 */
-		unlock_res = pthread_mutex_unlock(&pool->mutex);
-		assert(unlock_res == 0);
-		return EINVAL;
-	}
-
-	if (pool->num_jobs == 0) {
-		/*
-		 * This also handles the pool->max_threads == 0 case as it never
-		 * calls pthreadpool_put_job()
-		 */
-		unlock_res = pthread_mutex_unlock(&pool->mutex);
-		assert(unlock_res == 0);
-		return 0;
-	}
-
-	if (pool->num_idle > 0) {
-		/*
-		 * We have idle threads and pending jobs,
-		 * this means we better let all threads
-		 * start and check for pending jobs.
-		 */
-		res = pthread_cond_broadcast(&pool->condvar);
-		assert(res == 0);
-	}
-
-	if (pool->num_threads < pool->max_threads) {
-		possible_threads = pool->max_threads - pool->num_threads;
-	}
-
-	if (pool->num_idle < pool->num_jobs) {
-		missing_threads = pool->num_jobs - pool->num_idle;
-	}
-
-	missing_threads = MIN(missing_threads, possible_threads);
-
-	while (missing_threads > 0) {
-
-		res = pthreadpool_create_thread(pool);
-		if (res != 0) {
-			break;
-		}
-
-		missing_threads--;
-	}
-
-	if (missing_threads == 0) {
-		/*
-		 * Ok, we recreated all thread we need.
-		 */
-		unlock_res = pthread_mutex_unlock(&pool->mutex);
-		assert(unlock_res == 0);
-		return 0;
-	}
-
-	if (pool->num_threads != 0) {
-		/*
-		 * At least one thread is still available, let
-		 * that one run the queued jobs.
-		 */
-		unlock_res = pthread_mutex_unlock(&pool->mutex);
-		assert(unlock_res == 0);
-		return 0;
-	}
-
-	/*
-	 * There's no thread available to run any pending jobs.
-	 * The caller may want to cancel the jobs and destroy the pool.
-	 * But that's up to the caller.
-	 */
-	unlock_res = pthread_mutex_unlock(&pool->mutex);
-	assert(unlock_res == 0);
-
-	return res;
-}
-
-int pthreadpool_restart_check_monitor_fd(struct pthreadpool *pool)
-{
-	int fd;
-	int ret;
-	bool ok;
-
-	if (pool->stopped) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (pool->check_pipefd[0] == -1) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	fd = dup(pool->check_pipefd[0]);
-	if (fd == -1) {
-		return -1;
-	}
-
-	ok = smb_set_close_on_exec(fd);
-	if (!ok) {
-		int saved_errno = errno;
-		close(fd);
-		errno = saved_errno;
-		return -1;
-	}
-
-	ret = set_blocking(fd, false);
-	if (ret == -1) {
-		int saved_errno = errno;
-		close(fd);
-		errno = saved_errno;
-		return -1;
-	}
-
-	return fd;
-}
-
-int pthreadpool_restart_check_monitor_drain(struct pthreadpool *pool)
-{
-	if (pool->stopped) {
-		return EINVAL;
-	}
-
-	if (pool->check_pipefd[0] == -1) {
-		return ENOSYS;
-	}
-
-	while (true) {
-		uint8_t buf[128];
-		ssize_t nread;
-
-		nread = read(pool->check_pipefd[0], buf, sizeof(buf));
-		if (nread == -1) {
-			if (errno == EINTR) {
-				continue;
-			}
-			if (errno == EAGAIN) {
-				return 0;
-			}
-#ifdef EWOULDBLOCK
-			if (errno == EWOULDBLOCK) {
-				return 0;
-			}
-#endif
-			if (errno == 0) {
-				errno = INT_MAX;
-			}
-
-			return errno;
-		}
-
-		if (nread < sizeof(buf)) {
-			return 0;
-		}
-	}
-
-	abort();
-	return INT_MAX;
 }
 
 size_t pthreadpool_cancel_job(struct pthreadpool *pool, int job_id,
