@@ -3950,7 +3950,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->msg_ctx = msg_ctx;
 
 	ret = pthreadpool_tevent_init(sconn, lp_aio_max_threads(),
-				      &sconn->raw_thread_pool);
+				      &sconn->pool);
 	if (ret != 0) {
 		exit_server("pthreadpool_tevent_init() failed.");
 	}

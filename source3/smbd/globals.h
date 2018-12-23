@@ -943,7 +943,7 @@ struct smbd_server_connection {
 		} locks;
 	} smb2;
 
-	struct pthreadpool_tevent *raw_thread_pool;
+	struct pthreadpool_tevent *pool;
 
 	struct smbXsrv_client *client;
 };

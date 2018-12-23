@@ -515,7 +515,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (state->async_dosmode) {
 		size_t max_threads;
 
-		max_threads = pthreadpool_tevent_max_threads(conn->sconn->raw_thread_pool);
+		max_threads = pthreadpool_tevent_max_threads(conn->sconn->pool);
 
 		state->max_async_dosmode_active = lp_smbd_max_async_dosmode(
 							SNUM(conn));
@@ -660,7 +660,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 		state->async_dosmode_active++;
 
 		outstanding_aio = pthreadpool_tevent_queued_jobs(
-					state->fsp->conn->sconn->raw_thread_pool);
+					state->fsp->conn->sconn->pool);
 
 		if (outstanding_aio > state->max_async_dosmode_active) {
 			stop = true;

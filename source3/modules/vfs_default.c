@@ -686,7 +686,7 @@ static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 
 	subreq = pthreadpool_tevent_job_send(
-		state, ev, handle->conn->sconn->raw_thread_pool,
+		state, ev, handle->conn->sconn->pool,
 		vfs_pread_do, state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -804,7 +804,7 @@ static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 
 	subreq = pthreadpool_tevent_job_send(
-		state, ev, handle->conn->sconn->raw_thread_pool,
+		state, ev, handle->conn->sconn->pool,
 		vfs_pwrite_do, state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -914,8 +914,7 @@ static struct tevent_req *vfswrap_fsync_send(struct vfs_handle_struct *handle,
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 
 	subreq = pthreadpool_tevent_job_send(
-		state, ev, handle->conn->sconn->raw_thread_pool,
-		vfs_fsync_do, state);
+		state, ev, handle->conn->sconn->pool, vfs_fsync_do, state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -3037,7 +3036,7 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	subreq = pthreadpool_tevent_job_send(
 			state,
 			ev,
-			dir_fsp->conn->sconn->raw_thread_pool,
+			dir_fsp->conn->sconn->pool,
 			vfswrap_getxattrat_do_async,
 			state);
 	if (tevent_req_nomem(subreq, req)) {
