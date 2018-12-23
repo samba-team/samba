@@ -1255,19 +1255,6 @@ struct tevent_context *smbd_impersonate_conn_sess_create(
 struct tevent_context *smbd_impersonate_root_create(struct tevent_context *main_ev);
 struct tevent_context *smbd_impersonate_guest_create(struct tevent_context *main_ev);
 
-struct pthreadpool_tevent *smbd_impersonate_tp_current_create(
-				TALLOC_CTX *mem_ctx,
-				struct pthreadpool_tevent *sync_tp,
-				struct connection_struct *conn,
-				uint64_t vuid, bool chdir_safe,
-				const struct security_unix_token *unix_token);
-struct pthreadpool_tevent *smbd_impersonate_tp_become_create(
-					TALLOC_CTX *mem_ctx,
-					struct pthreadpool_tevent *sync_tp,
-					bool chdir_safe,
-					void (*become_fn)(void),
-					void (*unbecome_fn)(void));
-
 /* The following definitions come from smbd/utmp.c  */
 
 void sys_utmp_claim(const char *username, const char *hostname,
