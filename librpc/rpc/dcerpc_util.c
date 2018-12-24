@@ -34,6 +34,8 @@
    decode */
 void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v)
 {
+	SMB_ASSERT(blob->length >= DCERPC_NCACN_PAYLOAD_OFFSET);
+
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		SSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, v);
 	} else {
@@ -43,6 +45,8 @@ void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v)
 
 uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob)
 {
+	SMB_ASSERT(blob->length >= DCERPC_NCACN_PAYLOAD_OFFSET);
+
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		return SVAL(blob->data, DCERPC_FRAG_LEN_OFFSET);
 	} else {
@@ -52,6 +56,8 @@ uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob)
 
 void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 {
+	SMB_ASSERT(blob->length >= DCERPC_NCACN_PAYLOAD_OFFSET);
+
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		SSVAL(blob->data, DCERPC_AUTH_LEN_OFFSET, v);
 	} else {
@@ -61,6 +67,8 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 
 uint16_t dcerpc_get_auth_length(const DATA_BLOB *blob)
 {
+	SMB_ASSERT(blob->length >= DCERPC_NCACN_PAYLOAD_OFFSET);
+
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		return SVAL(blob->data, DCERPC_AUTH_LEN_OFFSET);
 	} else {
@@ -70,6 +78,8 @@ uint16_t dcerpc_get_auth_length(const DATA_BLOB *blob)
 
 uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob)
 {
+	SMB_ASSERT(blob->length >= DCERPC_NCACN_PAYLOAD_OFFSET);
+
 	return blob->data[DCERPC_DREP_OFFSET];
 }
 
