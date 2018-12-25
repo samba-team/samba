@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_lttng.8">
+
+<refmeta>
+	<refentrytitle>vfs_lttng</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_lttng</refname>
+	<refpurpose>samba module to enable LTTng tracing for samba</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = lttng</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>The LTTng VFS module enable tracepoint on every vfs functions
+	 such as connect_fn, readdir_fn.
+	</para>
+
+	<para>It's kind of comparable with <command>strace -T</command> and
+	is helpful to reveal performance problems with the underlying file
+	and storage subsystems.</para>
+
+	<para>This module is stackable.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+	<variablelist>
+		<varlistentry>
+		<term>vfs objects = lttng</term>
+		<listitem>
+		<para>Enalbe lttng module </para>
+		</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLE</title>
+
+	<para>Setup <command>vfs objects = lttng</command> in /etc/samba/smb.conf.
+	</para>
+
+	<para>
+	1. Run smbd like this:
+	</para>
+	<para>
+	<command>LD_PRELOAD=/usr/lib64/liblttng-ust-fork.so.0 /usr/sbin/smbd --foreground --no-process-group</command>
+	</para>
+
+	<para>
+	2. Start a new LTTng session:
+	</para>
+
+	<para>
+	<command>lttng create</command>
+	</para>
+
+	<para>
+	<command>lttng enable-event -u vfs_lttng:*</command>
+	</para>
+
+	<para>
+	<command>lttng start</command>
+	</para>
+
+	<para>
+	3. Run some performance test. And then stop the LTTng test
+	</para>
+
+	<para>
+	<command> lttng stop </command>
+	</para>
+
+	<para>
+	<command> lttng destroy </command>
+	</para>
+
+	<para>
+	4. Use babeltrace or some other tools(https://lttng.org)  to checkout the result
+	</para>
+
+</refsect1>
+
+
+<refsect1>
+	<title>VERSION</title>
+	<para>This man page is part of version &doc.version; of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+	<para>The LTTng VFS module was created with contributions from
+	Dongmao Zhang
+	</para>
+</refsect1>
+
+</refentry>
