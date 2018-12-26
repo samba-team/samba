@@ -1,4 +1,7 @@
-/* test whether readlink returns a short buffer correctly. */
+/* test whether readlink returns a short buffer incorrectly.
+   We need to return 0 in case readlink is *broken* here - this is because our waf
+   CHECK_CODE function does only allow generating defines in case the test succeeds
+*/
 
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
@@ -20,14 +23,14 @@ int main(void)
 	unlink(FNAME);
 	ret = symlink(DATA, FNAME);
 	if (ret == -1) {
-		exit(1);
+		exit(0);
 	}
 
 	rl_ret = readlink(FNAME, buf, sizeof(buf));
 	if (rl_ret == -1) {
 		unlink(FNAME);
-		exit(1);
+		exit(0);
 	}
 	unlink(FNAME);
-	exit(0);
+	exit(1);
 }
