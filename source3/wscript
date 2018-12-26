@@ -1374,6 +1374,12 @@ main() {
                     addmain=False,
                     execute=True)
 
+    conf.CHECK_CODE('''#include "../tests/readlink.c"''',
+                    'HAVE_BROKEN_READLINK',
+                    msg='Checking for readlink breakage',
+                    addmain=False,
+                    execute=True)
+
     conf.SET_TARGET_TYPE('sendfile', 'EMPTY')
     conf.CHECK_LIB('sendfile')
     if not Options.options.with_sendfile_support == False:
