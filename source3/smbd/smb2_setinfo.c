@@ -284,6 +284,7 @@ static void defer_rename_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct share_mode_lock *lck;
 	int ret_size = 0;
+	bool ok;
 
 	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
@@ -291,6 +292,16 @@ static void defer_rename_done(struct tevent_req *subreq)
 		DEBUG(5, ("dbwrap_record_watch_recv returned %s\n",
 			nt_errstr(status)));
 		tevent_req_nterror(state->req, status);
+		return;
+	}
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user(state->smb2req->tcon->compat,
+			    state->smb2req->session->compat->vuid);
+	if (!ok) {
+		tevent_req_nterror(state->req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
