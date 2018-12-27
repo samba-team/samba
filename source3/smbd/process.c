@@ -4063,7 +4063,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 			   ID_CACHE_KILL, smbd_id_cache_kill);
 
 	messaging_deregister(sconn->msg_ctx,
-			     MSG_SMB_CONF_UPDATED, sconn->raw_ev_ctx);
+			     MSG_SMB_CONF_UPDATED, sconn->ev_ctx);
 	messaging_register(sconn->msg_ctx, sconn,
 			   MSG_SMB_CONF_UPDATED, smbd_conf_updated);
 
