@@ -47,6 +47,9 @@ void brl_timeout_fn(struct tevent_context *event_ctx,
 		TALLOC_FREE(sconn->smb1.locks.brl_timeout);
 	}
 
+	change_to_root_user();	/* TODO: Possibly run all timed events as
+				 * root */
+
 	process_blocking_lock_queue(sconn);
 }
 
