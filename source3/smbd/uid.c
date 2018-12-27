@@ -307,7 +307,7 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 		}
 	}
 	/* Not used, safe to free. */
-	TALLOC_FREE(conn->user_ev_ctx);
+	conn->user_ev_ctx = NULL;
 	TALLOC_FREE(conn->session_info);
 }
 
@@ -482,23 +482,7 @@ static bool check_user_ok(connection_struct *conn,
 		ent->session_info->unix_token->uid = sec_initial_uid();
 	}
 
-	if (vuid == UID_FIELD_INVALID) {
-		ent->user_ev_ctx = smbd_impersonate_conn_sess_create(
-			conn->sconn->raw_ev_ctx, conn, ent->session_info);
-		if (ent->user_ev_ctx == NULL) {
-			TALLOC_FREE(ent->session_info);
-			ent->vuid = UID_FIELD_INVALID;
-			return false;
-		}
-	} else {
-		ent->user_ev_ctx = smbd_impersonate_conn_vuid_create(
-			conn->sconn->raw_ev_ctx, conn, vuid);
-		if (ent->user_ev_ctx == NULL) {
-			TALLOC_FREE(ent->session_info);
-			ent->vuid = UID_FIELD_INVALID;
-			return false;
-		}
-	}
+	ent->user_ev_ctx = conn->sconn->raw_ev_ctx;
 
 	/*
 	 * It's actually OK to call check_user_ok() with

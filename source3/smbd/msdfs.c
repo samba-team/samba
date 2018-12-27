@@ -264,17 +264,8 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->root_ev_ctx = smbd_impersonate_root_create(sconn->raw_ev_ctx);
-	if (sconn->root_ev_ctx == NULL) {
-		TALLOC_FREE(sconn);
-		return NT_STATUS_NO_MEMORY;
-	}
-	sconn->guest_ev_ctx = smbd_impersonate_guest_create(sconn->raw_ev_ctx);
-	if (sconn->guest_ev_ctx == NULL) {
-		TALLOC_FREE(sconn);
-		return NT_STATUS_NO_MEMORY;
-	}
-
+	sconn->root_ev_ctx = sconn->raw_ev_ctx;
+	sconn->guest_ev_ctx = sconn->raw_ev_ctx;
 	sconn->msg_ctx = msg;
 
 	conn = conn_new(sconn);
@@ -328,26 +319,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		vfs_user = get_current_username();
 	}
 
-	/*
-	 * The impersonation has to be done by the caller
-	 * of create_conn_struct_tos[_cwd]().
-	 *
-	 * Note: the context can't be changed anyway
-	 * as we're using our own tevent_context
-	 * and not a global one were other requests
-	 * could change the current unix token.
-	 *
-	 * We just use a wrapper tevent_context in order
-	 * to avoid crashes because TALLOC_FREE(conn->user_ev_ctx)
-	 * would also remove sconn->raw_ev_ctx.
-	 */
-	conn->user_ev_ctx = smbd_impersonate_debug_create(sconn->raw_ev_ctx,
-							  "FAKE impersonation",
-							  DBGLVL_DEBUG);
-	if (conn->user_ev_ctx == NULL) {
-		TALLOC_FREE(conn);
-		return NT_STATUS_NO_MEMORY;
-	}
+	conn->user_ev_ctx = sconn->raw_ev_ctx;
 
 	set_conn_connectpath(conn, connpath);
 

@@ -3900,8 +3900,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 		.ev = ev_ctx,
 		.frame = talloc_stackframe(),
 	};
-	struct tevent_context *root_ev_ctx = NULL;
-	struct tevent_context *guest_ev_ctx = NULL;
 	struct smbXsrv_client *client = NULL;
 	struct smbd_server_connection *sconn = NULL;
 	struct smbXsrv_connection *xconn = NULL;
@@ -3913,18 +3911,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	NTTIME now = timeval_to_nttime(&tv);
 	char *chroot_dir = NULL;
 	int rc;
-
-	root_ev_ctx = smbd_impersonate_root_create(ev_ctx);
-	if (root_ev_ctx == NULL) {
-		DEBUG(0,("smbd_impersonate_root_create() failed\n"));
-		exit_server_cleanly("smbd_impersonate_root_create().\n");
-	}
-
-	guest_ev_ctx = smbd_impersonate_guest_create(ev_ctx);
-	if (guest_ev_ctx == NULL) {
-		DEBUG(0,("smbd_impersonate_guest_create() failed\n"));
-		exit_server_cleanly("smbd_impersonate_guest_create().\n");
-	}
 
 	status = smbXsrv_client_create(ev_ctx, ev_ctx, msg_ctx, now, &client);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3946,8 +3932,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->client = client;
 
 	sconn->raw_ev_ctx = ev_ctx;
-	sconn->root_ev_ctx = root_ev_ctx;
-	sconn->guest_ev_ctx = guest_ev_ctx;
+	sconn->root_ev_ctx = ev_ctx;
+	sconn->guest_ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
 
 	ret = pthreadpool_tevent_init(sconn, lp_aio_max_threads(),

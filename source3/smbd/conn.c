@@ -98,7 +98,7 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 			if (conn->user_ev_ctx == ent->user_ev_ctx) {
 				conn->user_ev_ctx = NULL;
 			}
-			TALLOC_FREE(ent->user_ev_ctx);
+			ent->user_ev_ctx = NULL;
 
 			/*
 			 * We need to keep conn->session_info around
