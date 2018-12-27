@@ -52,18 +52,6 @@ void *messaging_ctdb_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 {
 	struct msg_ctdb_ref *result, *tmp_refs;
 
-	if (tevent_context_is_wrapper(ev)) {
-		/*
-		 * This is really a programmer error!
-		 *
-		 * The main/raw tevent context should
-		 * have been registered first!
-		 */
-		DBG_ERR("Should not be used with a wrapper tevent context\n");
-		*err = EINVAL;
-		return NULL;
-	}
-
 	result = talloc(mem_ctx, struct msg_ctdb_ref);
 	if (result == NULL) {
 		*err = ENOMEM;

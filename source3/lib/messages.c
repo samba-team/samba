@@ -365,11 +365,6 @@ static bool messaging_alert_event_contexts(struct messaging_context *ctx)
 		 * alternatively would be to track whether the
 		 * immediate has already been scheduled. For
 		 * now, avoid that complexity here.
-		 *
-		 * reg->ev and ctx->event_ctx can't
-		 * be wrapper tevent_context pointers
-		 * so we don't need to use
-		 * tevent_context_same_loop().
 		 */
 
 		if (reg->ev == ctx->event_ctx) {
@@ -497,12 +492,6 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	 */
 
 	sec_init();
-
-	if (tevent_context_is_wrapper(ev)) {
-		/* This is really a programmer error! */
-		DBG_ERR("Should not be used with a wrapper tevent context\n");
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	lck_path = lock_path("msg.lock");
 	if (lck_path == NULL) {
@@ -1025,13 +1014,6 @@ struct tevent_req *messaging_filtered_read_send(
 	state->filter = filter;
 	state->private_data = private_data;
 
-	if (tevent_context_is_wrapper(ev)) {
-		/* This is really a programmer error! */
-		DBG_ERR("Wrapper tevent context doesn't use main context.\n");
-		tevent_req_error(req, EINVAL);
-		return tevent_req_post(req, ev);
-	}
-
 	/*
 	 * We have to defer the callback here, as we might be called from
 	 * within a different tevent_context than state->ev
@@ -1351,11 +1333,6 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 {
 	bool consumed;
 	size_t i;
-
-	/*
-	 * ev and msg_ctx->event_ctx can't be wrapper tevent_context pointers
-	 * so we don't need to use tevent_context_same_loop().
-	 */
 
 	if (ev == msg_ctx->event_ctx) {
 		consumed = messaging_dispatch_classic(msg_ctx, rec);

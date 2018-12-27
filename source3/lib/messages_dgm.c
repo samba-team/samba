@@ -993,12 +993,6 @@ int messaging_dgm_init(struct tevent_context *ev,
 		return EEXIST;
 	}
 
-	if (tevent_context_is_wrapper(ev)) {
-		/* This is really a programmer error! */
-		DBG_ERR("Should not be used with a wrapper tevent context\n");
-		return EINVAL;
-	}
-
 	ctx = talloc_zero(NULL, struct messaging_dgm_context);
 	if (ctx == NULL) {
 		goto fail_nomem;
@@ -1692,14 +1686,6 @@ struct messaging_dgm_fde *messaging_dgm_register_tevent_context(
 	struct messaging_dgm_fde *fde;
 
 	if (ctx == NULL) {
-		return NULL;
-	}
-
-	if (tevent_context_is_wrapper(ev)) {
-		/*
-		 * This is really a programmer error!
-		 */
-		DBG_ERR("Should not be used with a wrapper tevent context\n");
 		return NULL;
 	}
 
