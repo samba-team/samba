@@ -209,14 +209,6 @@ struct messaging_ctdb_fde *messaging_ctdb_register_tevent_context(
 		return NULL;
 	}
 
-	if (tevent_context_is_wrapper(ev)) {
-		/*
-		 * This is really a programmer error!
-		 */
-		DBG_ERR("Should not be used with a wrapper tevent context\n");
-		return NULL;
-	}
-
 	fde = talloc(mem_ctx, struct messaging_ctdb_fde);
 	if (fde == NULL) {
 		return NULL;
