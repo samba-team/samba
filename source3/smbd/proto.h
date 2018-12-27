@@ -1211,12 +1211,6 @@ void reply_transs2(struct smb_request *req);
 
 /* The following definitions come from smbd/uid.c  */
 
-#define smbd_impersonate_debug_create(main_ev, name, dbg_lvl) \
-	_smbd_impersonate_debug_create(main_ev, name, dbg_lvl, __location__)
-struct tevent_context *_smbd_impersonate_debug_create(struct tevent_context *main_ev,
-						      const char *name,
-						      int dbg_lvl,
-						      const char *location);
 bool change_to_guest(void);
 NTSTATUS check_user_share_access(connection_struct *conn,
 				const struct auth_session_info *session_info,
