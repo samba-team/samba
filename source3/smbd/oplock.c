@@ -817,11 +817,6 @@ static void oplock_timeout_handler(struct tevent_context *ctx,
 {
 	files_struct *fsp = (files_struct *)private_data;
 
-	/*
-	 * Note this function doesn't run under any specific impersonation and
-	 * is not expected to call any SMB_VFS operation!
-	 */
-
 	SMB_ASSERT(fsp->sent_oplock_break != NO_BREAK_SENT);
 
 	/* Remove the timed event handler. */
@@ -842,15 +837,8 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 			  "around\n"));
 	}
 
-	/*
-	 * For now we keep the logic and use the
-	 * raw event context. We're called from
-	 * the messaging system from a raw event context.
-	 * Also oplock_timeout_handler doesn't invoke
-	 * SMB_VFS calls.
-	 */
 	fsp->oplock_timeout =
-		tevent_add_timer(fsp->conn->sconn->raw_ev_ctx, fsp,
+		tevent_add_timer(fsp->conn->sconn->ev_ctx, fsp,
 				 timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
 				 oplock_timeout_handler, fsp);
 
