@@ -969,7 +969,7 @@ struct vfs_fn_pointers {
 					size_t size);
 	struct tevent_req *(*getxattrat_send_fn)(
 				TALLOC_CTX *mem_ctx,
-				const struct smb_vfs_ev_glue *evg,
+				struct tevent_context *ev,
 				struct vfs_handle_struct *handle,
 				files_struct *dir_fsp,
 				const struct smb_filename *smb_fname,
@@ -1481,7 +1481,7 @@ ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
 				size_t size);
 struct tevent_req *smb_vfs_call_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			const struct smb_filename *smb_fname,
@@ -1910,7 +1910,7 @@ ssize_t vfs_not_implemented_getxattr(vfs_handle_struct *handle,
 				size_t size);
 struct tevent_req *vfs_not_implemented_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			const struct smb_filename *smb_fname,

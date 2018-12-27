@@ -877,14 +877,13 @@ struct vfs_not_implemented_getxattrat_state {
 
 struct tevent_req *vfs_not_implemented_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			const struct smb_filename *smb_fname,
 			const char *xattr_name,
 			size_t alloc_hint)
 {
-	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
 	struct tevent_req *req = NULL;
 	struct vfs_not_implemented_getxattrat_state *state = NULL;
 

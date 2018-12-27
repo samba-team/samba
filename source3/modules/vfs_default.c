@@ -1493,7 +1493,7 @@ struct vfswrap_get_dos_attributes_state {
 	struct vfs_aio_state aio_state;
 	connection_struct *conn;
 	TALLOC_CTX *mem_ctx;
-	const struct smb_vfs_ev_glue *evg;
+	struct tevent_context *ev;
 	files_struct *dir_fsp;
 	struct smb_filename *smb_fname;
 	uint32_t dosmode;
@@ -1509,7 +1509,7 @@ static struct tevent_req *vfswrap_get_dos_attributes_send(
 			files_struct *dir_fsp,
 			struct smb_filename *smb_fname)
 {
-	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_context *ev = dir_fsp->conn->sconn->raw_ev_ctx;
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct vfswrap_get_dos_attributes_state *state = NULL;
@@ -1523,13 +1523,13 @@ static struct tevent_req *vfswrap_get_dos_attributes_send(
 	*state = (struct vfswrap_get_dos_attributes_state) {
 		.conn = dir_fsp->conn,
 		.mem_ctx = mem_ctx,
-		.evg = evg,
+		.ev = ev,
 		.dir_fsp = dir_fsp,
 		.smb_fname = smb_fname,
 	};
 
 	subreq = SMB_VFS_GETXATTRAT_SEND(state,
-					 evg,
+					 ev,
 					 dir_fsp,
 					 smb_fname,
 					 SAMBA_XATTR_DOS_ATTRIB,
@@ -1562,8 +1562,6 @@ static void vfswrap_get_dos_attributes_getxattr_done(struct tevent_req *subreq)
 					     &blob.data);
 	TALLOC_FREE(subreq);
 	if (xattr_size == -1) {
-		const struct smb_vfs_ev_glue *root_evg = NULL;
-
 		status = map_nt_error_from_unix(state->aio_state.error);
 
 		if (state->as_root) {
@@ -1576,14 +1574,15 @@ static void vfswrap_get_dos_attributes_getxattr_done(struct tevent_req *subreq)
 		}
 
 		state->as_root = true;
-		root_evg = smb_vfs_ev_glue_get_root_glue(state->evg);
 
+		become_root();
 		subreq = SMB_VFS_GETXATTRAT_SEND(state,
-						 root_evg,
+						 state->ev,
 						 state->dir_fsp,
 						 state->smb_fname,
 						 SAMBA_XATTR_DOS_ATTRIB,
 						 sizeof(fstring));
+		unbecome_root();
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -2903,13 +2902,22 @@ static ssize_t vfswrap_getxattr(struct vfs_handle_struct *handle,
 }
 
 struct vfswrap_getxattrat_state {
-	int dirfd;
-	char *name;
-	size_t xattr_bufsize;
-	const char *xattr_name;
-	ssize_t xattr_size;
-	uint8_t *xattr_value;
+	struct tevent_context *ev;
+	files_struct *dir_fsp;
+	const struct smb_filename *smb_fname;
+	struct tevent_req *req;
 
+	/*
+	 * The following variables are talloced off "state" which is protected
+	 * by a destructor and thus are guaranteed to be safe to be used in the
+	 * job function in the worker thread.
+	 */
+	char *name;
+	const char *xattr_name;
+	uint8_t *xattr_value;
+	struct security_unix_token *token;
+
+	ssize_t xattr_size;
 	struct vfs_aio_state vfs_aio_state;
 	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
 };
@@ -2920,23 +2928,26 @@ static int vfswrap_getxattrat_state_destructor(
 	return -1;
 }
 
-static void vfswrap_getxattrat_do(void *private_data);
+static void vfswrap_getxattrat_do_sync(struct tevent_req *req);
+static void vfswrap_getxattrat_do_async(void *private_data);
 static void vfswrap_getxattrat_done(struct tevent_req *subreq);
 
 static struct tevent_req *vfswrap_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			const struct smb_filename *smb_fname,
 			const char *xattr_name,
 			size_t alloc_hint)
 {
-	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
-	struct pthreadpool_tevent *tp = smb_vfs_ev_glue_tp_chdir_safe(evg);
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct vfswrap_getxattrat_state *state = NULL;
+	size_t max_threads = 0;
+	bool have_per_thread_cwd = false;
+	bool have_per_thread_creds = false;
+	bool do_async = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct vfswrap_getxattrat_state);
@@ -2944,16 +2955,46 @@ static struct tevent_req *vfswrap_getxattrat_send(
 		return NULL;
 	}
 	*state = (struct vfswrap_getxattrat_state) {
-		.dirfd = dir_fsp->fh->fd,
-		.xattr_bufsize = alloc_hint,
+		.ev = ev,
+		.dir_fsp = dir_fsp,
+		.smb_fname = smb_fname,
+		.req = req,
 	};
+
+	max_threads = pthreadpool_tevent_max_threads(dir_fsp->conn->sconn->pool);
+	if (max_threads >= 1) {
+		/*
+		 * We need a non sync threadpool!
+		 */
+		have_per_thread_cwd = per_thread_cwd_supported();
+	}
+#ifdef HAVE_LINUX_THREAD_CREDENTIALS
+	have_per_thread_creds = true;
+#endif
+	if (have_per_thread_cwd && have_per_thread_creds) {
+		do_async = true;
+	}
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_getxattrat, profile_p,
 				     state->profile_bytes, 0);
 
-	if (state->dirfd == -1) {
+	if (dir_fsp->fh->fd == -1) {
 		DBG_ERR("Need a valid directory fd\n");
 		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
+
+	if (alloc_hint > 0) {
+		state->xattr_value = talloc_zero_array(state,
+						       uint8_t,
+						       alloc_hint);
+		if (tevent_req_nomem(state->xattr_value, req)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (!do_async) {
+		vfswrap_getxattrat_do_sync(req);
 		return tevent_req_post(req, ev);
 	}
 
@@ -2974,22 +3015,32 @@ static struct tevent_req *vfswrap_getxattrat_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (state->xattr_bufsize > 0) {
-		state->xattr_value = talloc_zero_array(state,
-						       uint8_t,
-						       state->xattr_bufsize);
-		if (tevent_req_nomem(state->xattr_value, req)) {
-			return tevent_req_post(req, ev);
-		}
+	/*
+	 * This is a hot codepath so at first glance one might think we should
+	 * somehow optimize away the token allocation and do a
+	 * talloc_reference() or similar black magic instead. But due to the
+	 * talloc_stackframe pool per SMB2 request this should be a simple copy
+	 * without a malloc in most cases.
+	 */
+	if (geteuid() == sec_initial_uid()) {
+		state->token = root_unix_token(state);
+	} else {
+		state->token = copy_unix_token(
+					state,
+					dir_fsp->conn->session_info->unix_token);
+	}
+	if (tevent_req_nomem(state->token, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 
-	subreq = pthreadpool_tevent_job_send(state,
-					     ev,
-					     tp,
-					     vfswrap_getxattrat_do,
-					     state);
+	subreq = pthreadpool_tevent_job_send(
+			state,
+			ev,
+			dir_fsp->conn->sconn->raw_thread_pool,
+			vfswrap_getxattrat_do_async,
+			state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -3000,7 +3051,43 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	return req;
 }
 
-static void vfswrap_getxattrat_do(void *private_data)
+static void vfswrap_getxattrat_do_sync(struct tevent_req *req)
+{
+	struct vfswrap_getxattrat_state *state = talloc_get_type_abort(
+		req, struct vfswrap_getxattrat_state);
+	char *path = NULL;
+	char *tofree = NULL;
+	char pathbuf[PATH_MAX+1];
+	size_t pathlen;
+	int err;
+
+	pathlen = full_path_tos(state->dir_fsp->fsp_name->base_name,
+				state->smb_fname->base_name,
+				pathbuf,
+				sizeof(pathbuf),
+				&path,
+				&tofree);
+	if (pathlen == -1) {
+		tevent_req_error(req, ENOMEM);
+		return;
+	}
+
+	state->xattr_size = getxattr(path,
+				     state->xattr_name,
+				     state->xattr_value,
+				     talloc_array_length(state->xattr_value));
+	err = errno;
+	TALLOC_FREE(tofree);
+	if (state->xattr_size == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static void vfswrap_getxattrat_do_async(void *private_data)
 {
 	struct vfswrap_getxattrat_state *state = talloc_get_type_abort(
 		private_data, struct vfswrap_getxattrat_state);
@@ -3014,14 +3101,22 @@ static void vfswrap_getxattrat_do(void *private_data)
 	/*
 	 * Here we simulate a getxattrat()
 	 * call using fchdir();getxattr()
-	 *
-	 * We don't need to revert the directory
-	 * change as pthreadpool_tevent wrapper
-	 * handlers that.
 	 */
-	SMB_ASSERT(pthreadpool_tevent_current_job_per_thread_cwd());
 
-	ret = fchdir(state->dirfd);
+	per_thread_cwd_activate();
+
+	/* Become the correct credential on this thread. */
+	ret = set_thread_credentials(state->token->uid,
+				     state->token->gid,
+				     (size_t)state->token->ngroups,
+				     state->token->groups);
+	if (ret != 0) {
+		state->xattr_size = -1;
+		state->vfs_aio_state.error = errno;
+		goto end_profile;
+	}
+
+	ret = fchdir(state->dir_fsp->fh->fd);
 	if (ret == -1) {
 		state->xattr_size = -1;
 		state->vfs_aio_state.error = errno;
@@ -3031,7 +3126,7 @@ static void vfswrap_getxattrat_do(void *private_data)
 	state->xattr_size = getxattr(state->name,
 				     state->xattr_name,
 				     state->xattr_value,
-				     state->xattr_bufsize);
+				     talloc_array_length(state->xattr_value));
 	if (state->xattr_size == -1) {
 		state->vfs_aio_state.error = errno;
 	}
@@ -3049,12 +3144,34 @@ static void vfswrap_getxattrat_done(struct tevent_req *subreq)
 	struct vfswrap_getxattrat_state *state = tevent_req_data(
 		req, struct vfswrap_getxattrat_state);
 	int ret;
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user(state->dir_fsp->conn,
+			    state->dir_fsp->vuid);
+	if (!ok) {
+		smb_panic("Can't change to user");
+		return;
+	}
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 	talloc_set_destructor(state, NULL);
-	if (tevent_req_error(req, ret)) {
+	if (ret != 0) {
+		if (ret != EAGAIN) {
+			tevent_req_error(req, ret);
+			return;
+		}
+		/*
+		 * If we get EAGAIN from pthreadpool_tevent_job_recv() this
+		 * means the lower level pthreadpool failed to create a new
+		 * thread. Fallback to sync processing in that case to allow
+		 * some progress for the client.
+		 */
+		vfswrap_getxattrat_do_sync(req);
 		return;
 	}
 

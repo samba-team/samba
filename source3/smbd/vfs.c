@@ -3539,7 +3539,7 @@ static void smb_vfs_call_getxattrat_done(struct tevent_req *subreq);
 
 struct tevent_req *smb_vfs_call_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			const struct smb_filename *smb_fname,
@@ -3549,7 +3549,6 @@ struct tevent_req *smb_vfs_call_getxattrat_send(
 	struct tevent_req *req = NULL;
 	struct smb_vfs_call_getxattrat_state *state = NULL;
 	struct tevent_req *subreq = NULL;
-	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb_vfs_call_getxattrat_state);
@@ -3560,24 +3559,18 @@ struct tevent_req *smb_vfs_call_getxattrat_send(
 	VFS_FIND(getxattrat_send);
 	state->recv_fn = handle->fns->getxattrat_recv_fn;
 
-	ok = smb_vfs_ev_glue_push_use(evg, req);
-	if (!ok) {
-		tevent_req_error(req, EIO);
-		return tevent_req_post(req, evg->return_ev);
-	}
-
 	subreq = handle->fns->getxattrat_send_fn(mem_ctx,
-						 evg->next_glue,
+						 ev,
 						 handle,
 						 dir_fsp,
 						 smb_fname,
 						 xattr_name,
 						 alloc_hint);
-	smb_vfs_ev_glue_pop_use(evg);
-
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, evg->return_ev);
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_defer_callback(req, ev);
+
 	tevent_req_set_callback(subreq, smb_vfs_call_getxattrat_done, req);
 	return req;
 }

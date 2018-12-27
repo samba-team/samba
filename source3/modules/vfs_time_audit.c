@@ -2456,14 +2456,13 @@ static void smb_time_audit_getxattrat_done(struct tevent_req *subreq);
 
 static struct tevent_req *smb_time_audit_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			const struct smb_filename *smb_fname,
 			const char *xattr_name,
 			size_t alloc_hint)
 {
-	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct smb_time_audit_getxattrat_state *state = NULL;
@@ -2480,7 +2479,7 @@ static struct tevent_req *smb_time_audit_getxattrat_send(
 	};
 
 	subreq = SMB_VFS_NEXT_GETXATTRAT_SEND(state,
-					      evg,
+					      ev,
 					      handle,
 					      dir_fsp,
 					      smb_fname,

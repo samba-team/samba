@@ -240,7 +240,6 @@ struct smbd_smb2_query_directory_state {
 	bool async_dosmode;
 	bool async_ask_sharemode;
 	int last_entry_off;
-	struct pthreadpool_tevent *tp_chdir_safe;
 	size_t max_async_dosmode_active;
 	uint32_t async_dosmode_active;
 	bool done;
@@ -279,7 +278,6 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	}
 	state->evg = conn->user_vfs_evg;
 	state->ev = ev;
-	state->tp_chdir_safe = smb_vfs_ev_glue_tp_chdir_safe(state->evg);
 	state->fsp = fsp;
 	state->smb2req = smb2req;
 	state->in_output_buffer_length = in_output_buffer_length;
@@ -519,7 +517,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (state->async_dosmode) {
 		size_t max_threads;
 
-		max_threads = pthreadpool_tevent_max_threads(state->tp_chdir_safe);
+		max_threads = pthreadpool_tevent_max_threads(conn->sconn->raw_thread_pool);
 
 		state->max_async_dosmode_active = lp_smbd_max_async_dosmode(
 							SNUM(conn));
@@ -664,7 +662,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 		state->async_dosmode_active++;
 
 		outstanding_aio = pthreadpool_tevent_queued_jobs(
-					state->tp_chdir_safe);
+					state->fsp->conn->sconn->raw_thread_pool);
 
 		if (outstanding_aio > state->max_async_dosmode_active) {
 			stop = true;

@@ -515,18 +515,18 @@
 #define SMB_VFS_NEXT_GETXATTR(handle,smb_fname,name,value,size) \
 	smb_vfs_call_getxattr((handle)->next,(smb_fname),(name),(value),(size))
 
-#define SMB_VFS_GETXATTRAT_SEND(mem_ctx,evg,dir_fsp,smb_fname, \
+#define SMB_VFS_GETXATTRAT_SEND(mem_ctx,ev,dir_fsp,smb_fname, \
 				xattr_name, alloc_hint) \
-	smb_vfs_call_getxattrat_send((mem_ctx),(evg), \
+	smb_vfs_call_getxattrat_send((mem_ctx),(ev), \
 				     (dir_fsp)->conn->vfs_handles, \
 				     (dir_fsp),(smb_fname),(xattr_name), \
 				     (alloc_hint))
 #define SMB_VFS_GETXATTRAT_RECV(req, aio_state, mem_ctx, xattr_value) \
 	smb_vfs_call_getxattrat_recv((req),(aio_state),(mem_ctx),(xattr_value))
 
-#define SMB_VFS_NEXT_GETXATTRAT_SEND(mem_ctx,evg,handle,dir_fsp,smb_fname, \
+#define SMB_VFS_NEXT_GETXATTRAT_SEND(mem_ctx,ev,handle,dir_fsp,smb_fname, \
 				     xattr_name,alloc_hint) \
-	smb_vfs_call_getxattrat_send((mem_ctx),(evg), \
+	smb_vfs_call_getxattrat_send((mem_ctx),(ev), \
 				     (handle)->next, \
 				     (dir_fsp), (smb_fname),(xattr_name), \
 				     (alloc_hint))
