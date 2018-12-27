@@ -590,7 +590,7 @@ def load_file(filename):
 
 def reconfigure(ctx):
     '''rerun configure if necessary'''
-    if not os.path.exists(".lock-wscript"):
+    if not os.path.exists(os.environ.get('WAFLOCK', '.lock-wscript')):
         raise Errors.WafError('configure has not been run')
     import samba_wildcard
     bld = samba_wildcard.fake_build_environment()
