@@ -22,12 +22,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
-
 #include "includes.h"
 #include "lib/util/server_id.h"
 #include "messaging/messaging.h"
 #include "messaging/messaging_internal.h"
+
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
 
 /*
  * Inject a fault into the currently running process
