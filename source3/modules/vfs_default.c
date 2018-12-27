@@ -1844,7 +1844,7 @@ static struct tevent_req *vfswrap_offload_write_send(
 		return tevent_req_post(req, ev);
 	}
 
-	state->src_ev = src_fsp->conn->user_ev_ctx;
+	state->src_ev = src_fsp->conn->sconn->ev_ctx;
 	state->src_fsp = src_fsp;
 
 	state->buf = talloc_array(state, uint8_t, num);

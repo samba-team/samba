@@ -320,8 +320,6 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		vfs_user = get_current_username();
 	}
 
-	conn->user_ev_ctx = sconn->raw_ev_ctx;
-
 	set_conn_connectpath(conn, connpath);
 
 	/*

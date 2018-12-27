@@ -402,7 +402,6 @@ typedef struct files_struct {
 
 struct vuid_cache_entry {
 	struct auth_session_info *session_info;
-	struct tevent_context *user_ev_ctx;
 	uint64_t vuid; /* SMB2 compat */
 	bool read_only;
 	uint32_t share_access;
@@ -450,7 +449,6 @@ typedef struct connection_struct {
 	 * on the vuid using this tid, this might change per SMB request.
 	 */
 	struct auth_session_info *session_info;
-	struct tevent_context *user_ev_ctx;
 
 	/*
 	 * If the "force group" parameter is set, this is the primary gid that

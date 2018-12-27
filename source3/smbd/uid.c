@@ -78,7 +78,6 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 		}
 	}
 	/* Not used, safe to free. */
-	conn->user_ev_ctx = NULL;
 	TALLOC_FREE(conn->session_info);
 }
 
@@ -204,7 +203,6 @@ static bool check_user_ok(connection_struct *conn,
 			}
 			free_conn_session_info_if_unused(conn);
 			conn->session_info = ent->session_info;
-			conn->user_ev_ctx = ent->user_ev_ctx;
 			conn->read_only = ent->read_only;
 			conn->share_access = ent->share_access;
 			conn->vuid = ent->vuid;
@@ -253,8 +251,6 @@ static bool check_user_ok(connection_struct *conn,
 		ent->session_info->unix_token->uid = sec_initial_uid();
 	}
 
-	ent->user_ev_ctx = conn->sconn->raw_ev_ctx;
-
 	/*
 	 * It's actually OK to call check_user_ok() with
 	 * vuid == UID_FIELD_INVALID as called from change_to_user_by_session().
@@ -267,7 +263,6 @@ static bool check_user_ok(connection_struct *conn,
 	free_conn_session_info_if_unused(conn);
 	conn->session_info = ent->session_info;
 	conn->vuid = ent->vuid;
-	conn->user_ev_ctx = ent->user_ev_ctx;
 	if (vuid == UID_FIELD_INVALID) {
 		/*
 		 * Not strictly needed, just make it really
@@ -276,7 +271,6 @@ static bool check_user_ok(connection_struct *conn,
 		ent->read_only = false;
 		ent->share_access = 0;
 		ent->session_info = NULL;
-		ent->user_ev_ctx = NULL;
 	}
 
 	conn->read_only = readonly_share;

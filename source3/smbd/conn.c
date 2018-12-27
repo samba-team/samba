@@ -94,12 +94,6 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 
 		if (ent->vuid == vuid) {
 			ent->vuid = UID_FIELD_INVALID;
-
-			if (conn->user_ev_ctx == ent->user_ev_ctx) {
-				conn->user_ev_ctx = NULL;
-			}
-			ent->user_ev_ctx = NULL;
-
 			/*
 			 * We need to keep conn->session_info around
 			 * if it's equal to ent->session_info as a SMBulogoff
@@ -123,7 +117,6 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 			} else {
 				TALLOC_FREE(ent->session_info);
 			}
-
 			ent->read_only = False;
 			ent->share_access = 0;
 		}

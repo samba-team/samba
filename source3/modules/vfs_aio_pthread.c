@@ -276,7 +276,7 @@ static int open_async(const files_struct *fsp,
 	}
 
 	subreq = pthreadpool_tevent_job_send(opd,
-					     fsp->conn->user_ev_ctx,
+					     fsp->conn->sconn->ev_ctx,
 					     fsp->conn->sconn->pool,
 					     aio_open_worker, opd);
 	if (subreq == NULL) {
