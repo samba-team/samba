@@ -264,6 +264,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	sconn->ev_ctx = sconn->raw_ev_ctx;
 	sconn->root_ev_ctx = sconn->raw_ev_ctx;
 	sconn->guest_ev_ctx = sconn->raw_ev_ctx;
 	sconn->msg_ctx = msg;

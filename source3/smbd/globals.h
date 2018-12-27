@@ -879,6 +879,7 @@ struct smbd_server_connection {
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
 	const char *remote_hostname;
+	struct tevent_context *ev_ctx;
 	struct tevent_context *raw_ev_ctx;
 	struct tevent_context *root_ev_ctx;
 	struct tevent_context *guest_ev_ctx;

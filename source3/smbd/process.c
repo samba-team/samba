@@ -3931,6 +3931,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	client->sconn = sconn;
 	sconn->client = client;
 
+	sconn->ev_ctx = ev_ctx;
 	sconn->raw_ev_ctx = ev_ctx;
 	sconn->root_ev_ctx = ev_ctx;
 	sconn->guest_ev_ctx = ev_ctx;
