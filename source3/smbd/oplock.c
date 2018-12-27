@@ -354,11 +354,6 @@ static void lease_timeout_handler(struct tevent_context *ctx,
 	struct share_mode_lock *lck;
 	uint16_t old_epoch = lease->lease.lease_epoch;
 
-	/*
-	 * This function runs without any specific impersonation
-	 * and must not call any SMB_VFS operations!
-	 */
-
 	fsp = file_find_one_fsp_from_lease_key(lease->sconn,
 					       &lease->lease.lease_key);
 	if (fsp == NULL) {
@@ -454,12 +449,7 @@ bool fsp_lease_update(struct share_mode_lock *lck,
 
 			DEBUG(10,("%s: setup timeout handler\n", __func__));
 
-			/*
-			 * lease_timeout_handler() only accesses locking.tdb
-			 * so we don't use any impersonation and use
-			 * the raw tevent context.
-			 */
-			lease->timeout = tevent_add_timer(lease->sconn->raw_ev_ctx,
+			lease->timeout = tevent_add_timer(lease->sconn->ev_ctx,
 							  lease, t,
 							  lease_timeout_handler,
 							  lease);
