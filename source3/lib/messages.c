@@ -206,7 +206,7 @@ static bool messaging_register_event_context(struct messaging_context *ctx,
 			continue;
 		}
 
-		if (tevent_context_same_loop(reg->ev, ev)) {
+		if (reg->ev == ev) {
 			reg->refcount += 1;
 			return true;
 		}
@@ -255,7 +255,7 @@ static bool messaging_deregister_event_context(struct messaging_context *ctx,
 			continue;
 		}
 
-		if (tevent_context_same_loop(reg->ev, ev)) {
+		if (reg->ev == ev) {
 			reg->refcount -= 1;
 
 			if (reg->refcount == 0) {
@@ -1025,9 +1025,7 @@ struct tevent_req *messaging_filtered_read_send(
 	state->filter = filter;
 	state->private_data = private_data;
 
-	if (tevent_context_is_wrapper(ev) &&
-	    !tevent_context_same_loop(ev, msg_ctx->event_ctx))
-	{
+	if (tevent_context_is_wrapper(ev)) {
 		/* This is really a programmer error! */
 		DBG_ERR("Wrapper tevent context doesn't use main context.\n");
 		tevent_req_error(req, EINVAL);
@@ -1036,11 +1034,7 @@ struct tevent_req *messaging_filtered_read_send(
 
 	/*
 	 * We have to defer the callback here, as we might be called from
-	 * within a different tevent_context than state->ev.
-	 *
-	 * This is important for two cases:
-	 * 1. nested event contexts, used by blocking ctdb calls
-	 * 2. possible impersonation using wrapper tevent contexts.
+	 * within a different tevent_context than state->ev
 	 */
 	tevent_req_defer_callback(req, state->ev);
 
@@ -1336,7 +1330,7 @@ static bool messaging_dispatch_waiters(struct messaging_context *msg_ctx,
 
 		state = tevent_req_data(
 			req, struct messaging_filtered_read_state);
-		if (tevent_context_same_loop(ev, state->ev) &&
+		if ((ev == state->ev) &&
 		    state->filter(rec, state->private_data)) {
 			messaging_filtered_read_done(req, rec);
 			return true;
