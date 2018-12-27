@@ -878,8 +878,6 @@ struct smbd_server_connection {
 	const char *remote_hostname;
 	struct tevent_context *ev_ctx;
 	struct tevent_context *raw_ev_ctx;
-	struct tevent_context *root_ev_ctx;
-	struct tevent_context *guest_ev_ctx;
 	struct messaging_context *msg_ctx;
 	struct notify_context *notify_ctx;
 	bool using_smb2;
