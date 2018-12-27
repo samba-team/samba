@@ -998,6 +998,7 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
 
+	change_to_root_user();
 	DEBUG(1,("Reloading services after SIGHUP\n"));
 	reload_services(sconn, conn_snum_used, false);
 }
