@@ -143,7 +143,7 @@ static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq)
 		(unsigned int)state->out_output.length ));
 
 	subreq = np_read_send(state->smbreq->conn,
-			      state->smb2req->ev_ctx,
+			      state->smb2req->sconn->ev_ctx,
 			      state->fsp->fake_file_handle,
 			      state->out_output.data,
 			      state->out_output.length);

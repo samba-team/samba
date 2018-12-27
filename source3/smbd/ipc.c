@@ -281,7 +281,7 @@ static void api_dcerpc_cmd(connection_struct *conn, struct smb_request *req,
 	state->num_data = length;
 	state->max_read = max_read;
 
-	subreq = np_write_send(state, req->ev_ctx, state->handle,
+	subreq = np_write_send(state, req->sconn->ev_ctx, state->handle,
 			       state->data, length);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -330,7 +330,7 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 		goto send;
 	}
 
-	subreq = np_read_send(state, req->ev_ctx,
+	subreq = np_read_send(state, req->sconn->ev_ctx,
 			      state->handle, state->data, state->max_read);
 	if (subreq == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);

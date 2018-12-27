@@ -518,8 +518,6 @@ struct smb_request {
 
 	size_t unread_bytes;
 	bool encrypted;
-	/* the tevent_context (wrapper) the request operates on */
-	struct tevent_context *ev_ctx;
 	connection_struct *conn;
 	struct smbd_server_connection *sconn;
 	struct smbXsrv_connection *xconn;

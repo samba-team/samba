@@ -1506,8 +1506,6 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 
 	errno = 0;
 
-	req->ev_ctx = NULL;
-
 	if (!xconn->smb1.negprot.done) {
 		switch (type) {
 			/*
@@ -1642,8 +1640,6 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return conn;
 		}
-
-		req->ev_ctx = conn->user_ev_ctx;
 	} else if (flags & AS_GUEST) {
 		/*
 		 * Does this protocol need to be run as guest? (Only archane
@@ -1653,13 +1649,9 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return conn;
 		}
-
-		req->ev_ctx = req->sconn->guest_ev_ctx;
 	} else {
 		/* This call needs to be run as root */
 		change_to_root_user();
-
-		req->ev_ctx = req->sconn->root_ev_ctx;
 	}
 
 	/* load service specific parameters */

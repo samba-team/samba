@@ -206,7 +206,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	aio_ex->nbyte = smb_maxcnt;
 	aio_ex->offset = startpos;
 
-	req = SMB_VFS_PREAD_SEND(aio_ex, smbreq->ev_ctx,
+	req = SMB_VFS_PREAD_SEND(aio_ex, fsp->conn->sconn->ev_ctx,
 				 fsp,
 				 smb_buf(aio_ex->outbuf.data) + 1 /* pad */,
 				 smb_maxcnt, startpos);
@@ -459,7 +459,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	aio_ex->nbyte = numtowrite;
 	aio_ex->offset = startpos;
 
-	req = pwrite_fsync_send(aio_ex, smbreq->ev_ctx, fsp,
+	req = pwrite_fsync_send(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				data, numtowrite, startpos,
 				aio_ex->write_through);
 	if (req == NULL) {
@@ -705,7 +705,7 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	aio_ex->nbyte = smb_maxcnt;
 	aio_ex->offset = startpos;
 
-	req = SMB_VFS_PREAD_SEND(aio_ex, smbreq->ev_ctx, fsp,
+	req = SMB_VFS_PREAD_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				 preadbuf->data, smb_maxcnt, startpos);
 	if (req == NULL) {
 		DEBUG(0, ("smb2: SMB_VFS_PREAD_SEND failed. "
@@ -846,7 +846,7 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	aio_ex->nbyte = in_data.length;
 	aio_ex->offset = in_offset;
 
-	req = pwrite_fsync_send(aio_ex, smbreq->ev_ctx, fsp,
+	req = pwrite_fsync_send(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				in_data.data, in_data.length, in_offset,
 				write_through);
 	if (req == NULL) {

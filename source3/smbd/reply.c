@@ -5417,7 +5417,7 @@ void reply_close(struct smb_request *req)
 		 */
 
 		fsp->deferred_close = tevent_wait_send(
-			fsp, req->ev_ctx);
+			fsp, fsp->conn->sconn->ev_ctx);
 		if (fsp->deferred_close == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto done;

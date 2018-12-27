@@ -228,7 +228,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	}
 
 	tsubreq = smbd_smb2_create_send(smb2req,
-				       smb2req->ev_ctx,
+				       smb2req->sconn->ev_ctx,
 				       smb2req,
 				       in_oplock_level,
 				       in_impersonation_level,
@@ -1759,7 +1759,7 @@ bool schedule_deferred_open_message_smb2(
 		(unsigned long long)mid ));
 
 	tevent_schedule_immediate(state->im,
-			smb2req->ev_ctx,
+			smb2req->sconn->ev_ctx,
 			smbd_smb2_create_request_dispatch_immediate,
 			smb2req);
 
@@ -1791,7 +1791,7 @@ static bool smbd_smb2_create_cancel(struct tevent_req *req)
 
 	remove_deferred_open_message_smb2_internal(smb2req, mid);
 
-	tevent_req_defer_callback(req, smb2req->ev_ctx);
+	tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
 	tevent_req_nterror(req, NT_STATUS_CANCELLED);
 	return true;
 }

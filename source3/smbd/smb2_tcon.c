@@ -94,7 +94,7 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	}
 
 	subreq = smbd_smb2_tree_connect_send(req,
-					     req->ev_ctx,
+					     req->sconn->ev_ctx,
 					     req,
 					     in_path_string);
 	if (subreq == NULL) {
@@ -491,7 +491,7 @@ NTSTATUS smbd_smb2_request_process_tdis(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, status);
 	}
 
-	subreq = smbd_smb2_tdis_send(req, req->ev_ctx, req);
+	subreq = smbd_smb2_tdis_send(req, req->sconn->ev_ctx, req);
 	if (subreq == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}

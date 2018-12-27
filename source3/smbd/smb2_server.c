@@ -2620,10 +2620,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		SMB_ASSERT(call->fileid_ofs == 0);
 		/* This call needs to be run as root */
 		change_to_root_user();
-		req->ev_ctx = req->sconn->root_ev_ctx;
 	} else {
 		SMB_ASSERT(call->need_tcon);
-		req->ev_ctx = req->tcon->compat->user_ev_ctx;
 	}
 
 #define _INBYTES(_r) \

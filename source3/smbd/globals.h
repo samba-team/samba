@@ -705,9 +705,6 @@ struct smbd_smb2_request {
 	struct smbXsrv_tcon *tcon;
 	uint32_t last_tid;
 
-	/* the tevent_context (wrapper) the request operates on */
-	struct tevent_context *ev_ctx;
-
 	int current_idx;
 	bool do_signing;
 	/* Was the request encrypted? */

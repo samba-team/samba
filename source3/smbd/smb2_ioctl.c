@@ -217,7 +217,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 		break;
 	}
 
-	subreq = smbd_smb2_ioctl_send(req, req->ev_ctx,
+	subreq = smbd_smb2_ioctl_send(req, req->sconn->ev_ctx,
 				      req, in_fsp,
 				      in_ctl_code,
 				      in_input_buffer,

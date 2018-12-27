@@ -2408,7 +2408,7 @@ static void defer_open(struct share_mode_lock *lck,
 	DBG_DEBUG("defering mid %" PRIu64 "\n", req->mid);
 
 	watch_req = dbwrap_watched_watch_send(watch_state,
-					      req->ev_ctx,
+					      req->sconn->ev_ctx,
 					      lck->data->record,
 					      (struct server_id){0});
 	if (watch_req == NULL) {
@@ -2416,7 +2416,7 @@ static void defer_open(struct share_mode_lock *lck,
 	}
 	tevent_req_set_callback(watch_req, defer_open_done, watch_state);
 
-	ok = tevent_req_set_endtime(watch_req, req->ev_ctx, abs_timeout);
+	ok = tevent_req_set_endtime(watch_req, req->sconn->ev_ctx, abs_timeout);
 	if (!ok) {
 		exit_server("tevent_req_set_endtime failed");
 	}
@@ -2508,7 +2508,7 @@ static void setup_kernel_oplock_poll_open(struct timeval request_time,
 	 * As this timer event is owned by req, it will
 	 * disappear if req it talloc_freed.
 	 */
-	open_rec->te = tevent_add_timer(req->ev_ctx,
+	open_rec->te = tevent_add_timer(req->sconn->ev_ctx,
 					req,
 					timeval_current_ofs(1, 0),
 					kernel_oplock_poll_open_timer,
@@ -2695,7 +2695,7 @@ static void schedule_async_open(struct timeval request_time,
 		exit_server("push_deferred_open_message_smb failed");
 	}
 
-	open_rec->te = tevent_add_timer(req->ev_ctx,
+	open_rec->te = tevent_add_timer(req->sconn->ev_ctx,
 					req,
 					timeval_current_ofs(20, 0),
 					schedule_async_open_timer,

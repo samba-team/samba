@@ -122,7 +122,7 @@ NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
-	subreq = smbd_smb2_getinfo_send(req, req->ev_ctx,
+	subreq = smbd_smb2_getinfo_send(req, req->sconn->ev_ctx,
 					req, in_fsp,
 					in_info_type,
 					in_file_info_class,
