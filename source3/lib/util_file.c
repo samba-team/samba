@@ -22,7 +22,7 @@
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/sys_rw.h"
-#include "lib/sys_popen.h"
+#include "lib/util/sys_popen.h"
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_unix.h"
 

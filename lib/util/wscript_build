@@ -68,14 +68,14 @@ bld.SAMBA_LIBRARY('talloc_report',
                   )
 
 bld.SAMBA_SUBSYSTEM('samba-util-core',
-                    source='''data_blob.c util_file.c time.c
+                    source='''data_blob.c util_file.c sys_popen.c time.c
                               signal.c util.c idtree.c fault.c
                               substitute.c util_process.c util_strlist.c
                               strv_util.c bitmap.c select.c pidfile.c
                               become_daemon.c mkdir_p.c''',
                     deps='''time-basic samba-debug socket-blocking talloc
                             tevent execinfo pthread strv tini''',
-                    public_deps='systemd systemd-daemon',
+                    public_deps='systemd systemd-daemon sys_rw',
                     local_include=False)
 
 bld.SAMBA_LIBRARY('iov_buf',
