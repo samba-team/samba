@@ -1225,8 +1225,6 @@ void become_root(void);
 void unbecome_root(void);
 void smbd_become_root(void);
 void smbd_unbecome_root(void);
-bool become_guest(void);
-void unbecome_guest(void);
 bool become_user(connection_struct *conn, uint64_t vuid);
 bool become_user_by_fsp(struct files_struct *fsp);
 bool become_user_by_session(connection_struct *conn,

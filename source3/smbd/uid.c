@@ -599,34 +599,6 @@ void smbd_unbecome_root(void)
 	pop_conn_ctx();
 }
 
-bool become_guest(void)
-{
-	bool ok;
-
-	ok = push_sec_ctx();
-	if (!ok) {
-		return false;
-	}
-
-	push_conn_ctx();
-
-	ok = change_to_guest();
-	if (!ok) {
-		pop_sec_ctx();
-		pop_conn_ctx();
-		return false;
-	}
-
-	return true;
-}
-
-void unbecome_guest(void)
-{
-	pop_sec_ctx();
-	pop_conn_ctx();
-	return;
-}
-
 /****************************************************************************
  Push the current security context then force a change via change_to_user().
  Saves and restores the connection context.
