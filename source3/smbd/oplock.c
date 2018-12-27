@@ -1236,15 +1236,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		TALLOC_FREE(state);
 		return;
 	}
-
-	/*
-	 * do_break_to_none() only operates on the
-	 * locking.tdb and sends network packets to
-	 * the client. That doesn't require any
-	 * impersonation, so we just use the
-	 * raw tevent context here.
-	 */
-	tevent_schedule_immediate(im, sconn->raw_ev_ctx, do_break_to_none, state);
+	tevent_schedule_immediate(im, sconn->ev_ctx, do_break_to_none, state);
 }
 
 static void send_break_to_none(struct messaging_context *msg_ctx,
@@ -1270,11 +1262,6 @@ static void do_break_to_none(struct tevent_context *ctx,
 	uint32_t i;
 	struct share_mode_lock *lck;
 	struct share_mode_data *d;
-
-	/*
-	 * Note this function doesn't run under any specific impersonation and
-	 * is not expected to call any SMB_VFS operation!
-	 */
 
 	lck = get_existing_share_mode_lock(talloc_tos(), state->id);
 	if (lck == NULL) {
