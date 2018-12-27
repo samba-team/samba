@@ -21,7 +21,7 @@
 #include "system/wait.h"
 #include "system/filesys.h"
 #include <talloc.h>
-#include "lib/sys_popen.h"
+#include "lib/util/sys_popen.h"
 #include "lib/util/debug.h"
 
 /**************************************************************************
