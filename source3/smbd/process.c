@@ -977,7 +977,7 @@ static void smbd_setup_sig_term_handler(struct smbd_server_connection *sconn)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(sconn->root_ev_ctx,
+	se = tevent_add_signal(sconn->ev_ctx,
 			       sconn,
 			       SIGTERM, 0,
 			       smbd_sig_term_handler,
@@ -1007,7 +1007,7 @@ static void smbd_setup_sig_hup_handler(struct smbd_server_connection *sconn)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(sconn->root_ev_ctx,
+	se = tevent_add_signal(sconn->ev_ctx,
 			       sconn,
 			       SIGHUP, 0,
 			       smbd_sig_hup_handler,
