@@ -1244,17 +1244,6 @@ const struct security_unix_token *get_current_utok(connection_struct *conn);
 const struct security_token *get_current_nttok(connection_struct *conn);
 uint64_t get_current_vuid(connection_struct *conn);
 
-struct tevent_context *smbd_impersonate_conn_vuid_create(
-				struct tevent_context *main_ev,
-				struct connection_struct *conn,
-				uint64_t vuid);
-struct tevent_context *smbd_impersonate_conn_sess_create(
-				struct tevent_context *main_ev,
-				struct connection_struct *conn,
-				struct auth_session_info *session_info);
-struct tevent_context *smbd_impersonate_root_create(struct tevent_context *main_ev);
-struct tevent_context *smbd_impersonate_guest_create(struct tevent_context *main_ev);
-
 /* The following definitions come from smbd/utmp.c  */
 
 void sys_utmp_claim(const char *username, const char *hostname,
