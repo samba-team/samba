@@ -258,13 +258,12 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->raw_ev_ctx = samba_tevent_context_init(sconn);
-	if (sconn->raw_ev_ctx == NULL) {
+	sconn->ev_ctx = samba_tevent_context_init(sconn);
+	if (sconn->ev_ctx == NULL) {
 		TALLOC_FREE(sconn);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->ev_ctx = sconn->raw_ev_ctx;
 	sconn->msg_ctx = msg;
 
 	conn = conn_new(sconn);
