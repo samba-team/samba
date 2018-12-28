@@ -208,7 +208,7 @@ static NTSTATUS fetch_write_time_recv(struct tevent_req *req);
 
 static struct tevent_req *fetch_dos_mode_send(
 	TALLOC_CTX *mem_ctx,
-	struct smb_vfs_ev_glue *evg,
+	struct tevent_context *ev,
 	struct files_struct *dir_fsp,
 	struct smb_filename **smb_fname,
 	uint32_t info_level,
@@ -217,7 +217,6 @@ static struct tevent_req *fetch_dos_mode_send(
 static NTSTATUS fetch_dos_mode_recv(struct tevent_req *req);
 
 struct smbd_smb2_query_directory_state {
-	struct smb_vfs_ev_glue *evg;
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	uint64_t async_sharemode_count;
@@ -276,8 +275,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->evg = conn->user_vfs_evg;
-	state->ev = ev;
+	state->ev = fsp->conn->sconn->raw_ev_ctx;
 	state->fsp = fsp;
 	state->smb2req = smb2req;
 	state->in_output_buffer_length = in_output_buffer_length;
@@ -647,7 +645,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 		buf = (uint8_t *)state->base_data + state->last_entry_off;
 
 		subreq = fetch_dos_mode_send(state,
-					     state->evg,
+					     state->ev,
 					     state->fsp,
 					     &smb_fname,
 					     state->info_level,
@@ -964,13 +962,12 @@ static void fetch_dos_mode_done(struct tevent_req *subreq);
 
 static struct tevent_req *fetch_dos_mode_send(
 			TALLOC_CTX *mem_ctx,
-			struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct files_struct *dir_fsp,
 			struct smb_filename **smb_fname,
 			uint32_t info_level,
 			uint8_t *entry_marshall_buf)
 {
-	struct tevent_context *ev = dir_fsp->conn->sconn->raw_ev_ctx;
 	struct tevent_req *req = NULL;
 	struct fetch_dos_mode_state *state = NULL;
 	struct tevent_req *subreq = NULL;
