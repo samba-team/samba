@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "globals.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "librpc/gen_ndr/ioctl.h"
@@ -764,7 +765,7 @@ struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
 				    files_struct *dir_fsp,
 				    struct smb_filename *smb_fname)
 {
-	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_context *ev = dir_fsp->conn->sconn->raw_ev_ctx;
 	struct tevent_req *req = NULL;
 	struct dos_mode_at_state *state = NULL;
 	struct tevent_req *subreq = NULL;
@@ -788,7 +789,7 @@ struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = SMB_VFS_GET_DOS_ATTRIBUTES_SEND(state,
-						 evg,
+						 ev,
 						 dir_fsp,
 						 smb_fname);
 	if (tevent_req_nomem(subreq, req)) {

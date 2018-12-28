@@ -903,7 +903,7 @@ struct vfs_fn_pointers {
 
 	struct tevent_req *(*get_dos_attributes_send_fn)(
 				TALLOC_CTX *mem_ctx,
-				const struct smb_vfs_ev_glue *evg,
+				struct tevent_context *ev,
 				struct vfs_handle_struct *handle,
 				files_struct *dir_fsp,
 				struct smb_filename *smb_fname);
@@ -1370,7 +1370,7 @@ NTSTATUS smb_vfs_call_fset_dos_attributes(struct vfs_handle_struct *handle,
 					  uint32_t dosmode);
 struct tevent_req *smb_vfs_call_get_dos_attributes_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			struct smb_filename *smb_fname);
@@ -1852,7 +1852,7 @@ NTSTATUS vfs_not_implemented_get_dos_attributes(struct vfs_handle_struct *handle
 						uint32_t *dosmode);
 struct tevent_req *vfs_not_implemented_get_dos_attributes_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			struct smb_filename *smb_fname);

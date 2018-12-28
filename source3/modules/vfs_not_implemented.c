@@ -717,12 +717,11 @@ struct vfs_not_implemented_get_dos_attributes_state {
 
 struct tevent_req *vfs_not_implemented_get_dos_attributes_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			struct smb_filename *smb_fname)
 {
-	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
 	struct tevent_req *req = NULL;
 	struct vfs_not_implemented_get_dos_attributes_state *state = NULL;
 

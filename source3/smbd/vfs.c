@@ -2284,46 +2284,6 @@ struct smb_vfs_ev_glue *smb_vfs_ev_glue_create_switch(
 	return evg_u;
 }
 
-static bool smb_vfs_ev_glue_push_use(const struct smb_vfs_ev_glue *evg,
-				     struct tevent_req *req)
-{
-	if (evg->run_ev == evg->return_ev) {
-		/*
-		 * We're already in the correct
-		 * impersonation environment.
-		 */
-		return true;
-	}
-
-	/*
-	 * Make sure that our callers callback function
-	 * will be called in the return_ev environment.
-	 */
-	tevent_req_defer_callback(req, evg->return_ev);
-
-	/*
-	 * let the event context wrapper do
-	 * the required impersonation.
-	 */
-	return tevent_context_push_use(evg->run_ev);
-}
-
-static void smb_vfs_ev_glue_pop_use(const struct smb_vfs_ev_glue *evg)
-{
-	if (evg->run_ev == evg->return_ev) {
-		/*
-		 * smb_vfs_ev_glue_push_use() didn't
-		 * change the impersonation environment.
-		 */
-		return;
-	}
-
-	/*
-	 * undo the impersonation
-	 */
-	tevent_context_pop_use(evg->run_ev);
-}
-
 int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user)
 {
@@ -3265,7 +3225,7 @@ static void smb_vfs_call_get_dos_attributes_done(struct tevent_req *subreq);
 
 struct tevent_req *smb_vfs_call_get_dos_attributes_send(
 			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *evg,
+			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
 			struct smb_filename *smb_fname)
@@ -3273,7 +3233,6 @@ struct tevent_req *smb_vfs_call_get_dos_attributes_send(
 	struct tevent_req *req = NULL;
 	struct smb_vfs_call_get_dos_attributes_state *state = NULL;
 	struct tevent_req *subreq = NULL;
-	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb_vfs_call_get_dos_attributes_state);
@@ -3284,22 +3243,16 @@ struct tevent_req *smb_vfs_call_get_dos_attributes_send(
 	VFS_FIND(get_dos_attributes_send);
 	state->recv_fn = handle->fns->get_dos_attributes_recv_fn;
 
-	ok = smb_vfs_ev_glue_push_use(evg, req);
-	if (!ok) {
-		tevent_req_error(req, EIO);
-		return tevent_req_post(req, evg->return_ev);
-	}
-
 	subreq = handle->fns->get_dos_attributes_send_fn(mem_ctx,
-							 evg->next_glue,
+							 ev,
 							 handle,
 							 dir_fsp,
 							 smb_fname);
-	smb_vfs_ev_glue_pop_use(evg);
-
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, evg->return_ev);
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_defer_callback(req, ev);
+
 	tevent_req_set_callback(subreq,
 				smb_vfs_call_get_dos_attributes_done,
 				req);
