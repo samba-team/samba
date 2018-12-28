@@ -273,7 +273,6 @@ static void pthreadpool_tevent_job_fn(void *private_data);
 static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
 					struct tevent_immediate *im,
 					void *private_data);
-static bool pthreadpool_tevent_job_cancel(struct tevent_req *req);
 
 static int pthreadpool_tevent_job_destructor(struct pthreadpool_tevent_job *job)
 {
@@ -448,7 +447,6 @@ struct tevent_req *pthreadpool_tevent_job_send(
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_cancel_fn(req, pthreadpool_tevent_job_cancel);
 	return req;
 }
 
@@ -528,44 +526,6 @@ static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
 	 * will destroy the job.
 	 */
 	tevent_req_done(state->req);
-}
-
-static bool pthreadpool_tevent_job_cancel(struct tevent_req *req)
-{
-	struct pthreadpool_tevent_job_state *state =
-		tevent_req_data(req,
-		struct pthreadpool_tevent_job_state);
-	struct pthreadpool_tevent_job *job = state->job;
-	size_t num;
-
-	if (job == NULL) {
-		return false;
-	}
-
-	num = pthreadpool_cancel_job(job->pool->pool, 0,
-				     pthreadpool_tevent_job_fn,
-				     job);
-	if (num == 0) {
-		/*
-		 * It was too late to cancel the request.
-		 */
-		return false;
-	}
-
-	/*
-	 * It was not too late to cancel the request.
-	 *
-	 * We can remove job->im, as it will never be used.
-	 */
-	TALLOC_FREE(job->im);
-
-	/*
-	 * pthreadpool_tevent_job_cleanup()
-	 * will destroy the job.
-	 */
-	tevent_req_defer_callback(req, state->ev);
-	tevent_req_error(req, ECANCELED);
-	return true;
 }
 
 int pthreadpool_tevent_job_recv(struct tevent_req *req)
