@@ -970,7 +970,7 @@ static struct tevent_req *fetch_dos_mode_send(
 			uint32_t info_level,
 			uint8_t *entry_marshall_buf)
 {
-	struct tevent_context *ev = smb_vfs_ev_glue_ev_ctx(evg);
+	struct tevent_context *ev = dir_fsp->conn->sconn->raw_ev_ctx;
 	struct tevent_req *req = NULL;
 	struct fetch_dos_mode_state *state = NULL;
 	struct tevent_req *subreq = NULL;
@@ -987,7 +987,7 @@ static struct tevent_req *fetch_dos_mode_send(
 
 	state->smb_fname = talloc_move(state, smb_fname);
 
-	subreq = dos_mode_at_send(state, evg, dir_fsp, state->smb_fname);
+	subreq = dos_mode_at_send(state, ev, dir_fsp, state->smb_fname);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

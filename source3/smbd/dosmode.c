@@ -761,11 +761,10 @@ struct dos_mode_at_state {
 static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq);
 
 struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
-				    struct smb_vfs_ev_glue *evg,
+				    struct tevent_context *ev,
 				    files_struct *dir_fsp,
 				    struct smb_filename *smb_fname)
 {
-	struct tevent_context *ev = dir_fsp->conn->sconn->raw_ev_ctx;
 	struct tevent_req *req = NULL;
 	struct dos_mode_at_state *state = NULL;
 	struct tevent_req *subreq = NULL;
