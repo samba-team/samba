@@ -257,8 +257,6 @@
 /* Version 39 - Remove struct dfree_cached_info pointer from
 		connection struct */
 /* Bump to version 40, Samba 4.10 will ship with that */
-/* Version 40 - Introduce smb_vfs_ev_glue infrastructure. */
-/* Version 40 - Add vfs_not_implemented_* helper functions. */
 /* Version 40 - Add SMB_VFS_GETXATTRAT_SEND/RECV */
 /* Version 40 - Add SMB_VFS_GET_DOS_ATTRIBUTES_SEND/RECV */
 
@@ -283,9 +281,6 @@ struct smb_file_time;
 struct blocking_lock_record;
 struct smb_filename;
 struct dfs_GetDFSReferral;
-struct tevent_context;
-struct pthreadpool_tevent;
-struct smb_vfs_ev_glue;
 
 typedef union unid_t {
 	uid_t uid;
@@ -1552,31 +1547,6 @@ void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 
 void smb_vfs_assert_all_fns(const struct vfs_fn_pointers* fns,
 			    const char *module);
-
-/*
- * Notice the "Design of the smb_vfs_ev_glue infrastructure"
- * comment in source3/smbd/vfs.c!
- *
- * This explains smb_vfs_ev_glue infrastructure in detail.
- */
-struct tevent_context *smb_vfs_ev_glue_ev_ctx(const struct smb_vfs_ev_glue *evg);
-struct pthreadpool_tevent *smb_vfs_ev_glue_tp_fd_safe(const struct smb_vfs_ev_glue *evg);
-struct pthreadpool_tevent *smb_vfs_ev_glue_tp_path_safe(const struct smb_vfs_ev_glue *evg);
-struct pthreadpool_tevent *smb_vfs_ev_glue_tp_chdir_safe(const struct smb_vfs_ev_glue *evg);
-const struct smb_vfs_ev_glue *smb_vfs_ev_glue_get_root_glue(const struct smb_vfs_ev_glue *evg);
-struct smb_vfs_ev_glue *smb_vfs_ev_glue_create(TALLOC_CTX *mem_ctx,
-				struct tevent_context *user_ev,
-				struct pthreadpool_tevent *user_tp_fd_safe,
-				struct pthreadpool_tevent *user_tp_path_safe,
-				struct pthreadpool_tevent *user_tp_chdir_safe,
-				struct tevent_context *root_ev,
-				struct pthreadpool_tevent *root_tp_fd_safe,
-				struct pthreadpool_tevent *root_tp_path_safe,
-				struct pthreadpool_tevent *root_tp_chdir_safe);
-struct smb_vfs_ev_glue *smb_vfs_ev_glue_create_switch(
-			TALLOC_CTX *mem_ctx,
-			const struct smb_vfs_ev_glue *return_evg,
-			const struct smb_vfs_ev_glue *run_evg);
 
 /*
  * Helper functions from source3/modules/vfs_not_implemented.c
