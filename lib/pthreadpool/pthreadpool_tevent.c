@@ -82,24 +82,6 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool);
 
 static void pthreadpool_tevent_job_orphan(struct pthreadpool_tevent_job *job);
 
-static struct pthreadpool_tevent_job *orphaned_jobs;
-
-void pthreadpool_tevent_cleanup_orphaned_jobs(void)
-{
-	struct pthreadpool_tevent_job *job = NULL;
-	struct pthreadpool_tevent_job *njob = NULL;
-
-	for (job = orphaned_jobs; job != NULL; job = njob) {
-		njob = job->next;
-
-		/*
-		 * The job destructor keeps the job alive
-		 * (and in the list) or removes it from the list.
-		 */
-		TALLOC_FREE(job);
-	}
-}
-
 static int pthreadpool_tevent_job_signal(int jobid,
 					 void (*job_fn)(void *private_data),
 					 void *job_private_data,
@@ -110,8 +92,6 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 {
 	struct pthreadpool_tevent *pool;
 	int ret;
-
-	pthreadpool_tevent_cleanup_orphaned_jobs();
 
 	pool = talloc_zero(mem_ctx, struct pthreadpool_tevent);
 	if (pool == NULL) {
@@ -184,8 +164,6 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 		return ret;
 	}
 	pool->pool = NULL;
-
-	pthreadpool_tevent_cleanup_orphaned_jobs();
 
 	return 0;
 }
@@ -340,17 +318,9 @@ static int pthreadpool_tevent_job_destructor(struct pthreadpool_tevent_job *job)
 		/*
 		 * state->im still there means, we need to wait for the
 		 * immediate event to be triggered or just leak the memory.
-		 *
-		 * Move it to the orphaned list, if it's not already there.
 		 */
 		return -1;
 	}
-
-	/*
-	 * Finally remove from the orphaned_jobs list
-	 * and let talloc destroy us.
-	 */
-	DLIST_REMOVE(orphaned_jobs, job);
 
 	return 0;
 }
@@ -393,15 +363,6 @@ static void pthreadpool_tevent_job_orphan(struct pthreadpool_tevent_job *job)
 	 */
 	DLIST_REMOVE(job->pool->jobs, job);
 
-	/*
-	 * Add it to the list of orphaned jobs,
-	 * which may be cleaned up later.
-	 *
-	 * The destructor removes it from the list
-	 * when possible or it denies the free
-	 * and keep it in the list.
-	 */
-	DLIST_ADD_END(orphaned_jobs, job);
 	TALLOC_FREE(job);
 }
 
@@ -439,8 +400,6 @@ struct tevent_req *pthreadpool_tevent_job_send(
 	struct pthreadpool_tevent_job_state *state = NULL;
 	struct pthreadpool_tevent_job *job = NULL;
 	int ret;
-
-	pthreadpool_tevent_cleanup_orphaned_jobs();
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct pthreadpool_tevent_job_state);
