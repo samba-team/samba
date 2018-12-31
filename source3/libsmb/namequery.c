@@ -274,7 +274,7 @@ static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
 
 	p++;
 	for (i=0;i< *num_names;i++) {
-		StrnCpy(ret[i].name,p,15);
+		strlcpy(ret[i].name,p,16);
 		trim_char(ret[i].name,'\0',' ');
 		ret[i].type = CVAL(p,15);
 		ret[i].flags = p[16];
