@@ -364,7 +364,7 @@ static int package(struct pack_desc *p, ...)
 			{
 				char *s = va_arg(args,char*);
 				if (p->buflen >= needed) {
-					StrnCpy(p->structbuf,s?s:"",needed-1);
+					strlcpy(p->structbuf,s?s:"",needed);
 				}
 			}
 			break;
