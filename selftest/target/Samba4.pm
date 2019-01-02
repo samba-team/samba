@@ -2315,17 +2315,18 @@ sub check_env($$)
 #   samba4->setup_$envname($self, $path, $dep_1_vars, $dep_2_vars, ...)
 %Samba4::ENV_DEPS = (
 	# name               => [dep_1, dep_2, ...],
-	ad_dc_ntvfs          => [],
-	ad_dc                => [],
-	ad_dc_no_nss         => [],
-	ad_dc_no_ntlm        => [],
-	backupfromdc         => [],
-	customdc             => [],
-	preforkrestartdc     => [],
+	dns_hub              => [],
+	ad_dc_ntvfs          => ["dns_hub"],
+	ad_dc                => ["dns_hub"],
+	ad_dc_no_nss         => ["dns_hub"],
+	ad_dc_no_ntlm        => ["dns_hub"],
+	backupfromdc         => ["dns_hub"],
+	customdc             => ["dns_hub"],
+	preforkrestartdc     => ["dns_hub"],
 
 	fl2008r2dc           => ["ad_dc"],
 	fl2003dc             => ["ad_dc"],
-	fl2000dc             => [],
+	fl2000dc             => ["dns_hub"],
 
 	vampire_2000_dc      => ["fl2000dc"],
 	vampire_dc           => ["ad_dc_ntvfs"],
@@ -2334,7 +2335,7 @@ sub check_env($$)
 
 	rodc                 => ["ad_dc_ntvfs"],
 	rpc_proxy            => ["ad_dc_ntvfs"],
-	chgdcpass            => [],
+	chgdcpass            => ["dns_hub"],
 
 	s4member_dflt_domain => ["ad_dc_ntvfs"],
 	s4member             => ["ad_dc_ntvfs"],
