@@ -2203,7 +2203,6 @@ sub check_env($$)
 	ad_dc                => [],
 	ad_dc_no_nss         => [],
 	ad_dc_no_ntlm        => [],
-	ad_dc_ntvfs          => [],
 	backupfromdc         => [],
 	customdc             => [],
 	preforkrestartdc     => [],
