@@ -146,6 +146,7 @@ sub check_or_start($$$)
 		} else {
 			$ENV{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
 		}
+		$ENV{RESOLV_CONF} = $env_vars->{RESOLV_CONF};
 
 		$ENV{UID_WRAPPER} = "1";
 		$ENV{UID_WRAPPER_ROOT} = "1";
@@ -239,6 +240,7 @@ sub wait_for_start($$)
 		} else {
 			$cmd .= "RESOLV_WRAPPER_HOSTS='$testenv_vars->{RESOLV_WRAPPER_HOSTS}' ";
 		}
+		$cmd .= "RESOLV_CONF='$testenv_vars->{RESOLV_CONF}' ";
 
 		$cmd .= "$ldbsearch ";
 		$cmd .= "$testenv_vars->{CONFIGURATION} ";
@@ -465,6 +467,7 @@ sub setup_namespaces($$:$$)
 	}
 	$cmd_env .= " KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\" ";
 	$cmd_env .= "KRB5CCNAME=\"$localenv->{KRB5_CCACHE}\" ";
+	$cmd_env .= "RESOLV_CONF=\"$localenv->{RESOLV_CONF}\" ";
 
 	my $cmd_config = " $localenv->{CONFIGURATION}";
 
@@ -505,6 +508,7 @@ sub setup_trust($$$$$)
 	}
 	$cmd_env .= " KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\" ";
 	$cmd_env .= "KRB5CCNAME=\"$localenv->{KRB5_CCACHE}\" ";
+	$cmd_env .= "RESOLV_CONF=\"$localenv->{RESOLV_CONF}\" ";
 
 	my $cmd_config = " $localenv->{CONFIGURATION}";
 	my $cmd_creds = $cmd_config;
@@ -629,7 +633,9 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 		$ctx->{samba_dnsupdate} = $python_cmd .  $ctx->{samba_dnsupdate};
 		$ctx->{use_resolv_wrapper} = 1;
 	}
-	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
+
+	my $dns_hub = $self->get_dns_hub_env();
+	$ctx->{resolv_conf} = $dns_hub->{RESOLV_CONF};
 
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
 
@@ -657,6 +663,7 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 	push (@provision_options, "NSS_WRAPPER_HOSTNAME=\"$ctx->{nsswrap_hostname}\"");
 	if (defined($ctx->{use_resolv_wrapper})) {
 		push (@provision_options, "RESOLV_WRAPPER_CONF=\"$ctx->{resolv_conf}\"");
+		push (@provision_options, "RESOLV_CONF=\"$ctx->{resolv_conf}\"");
 	} else {
 		push (@provision_options, "RESOLV_WRAPPER_HOSTS=\"$ctx->{dns_host_file}\"");
 	}
@@ -852,13 +859,6 @@ nogroup:x:65534:nobody
 		print HOSTS "$ctx->{ipv6} ${hostname}.$ctx->{dnsname} ${hostname}\n";
 	}
 	close(HOSTS);
-
-	if (defined($ctx->{resolv_conf})) {
-		open(RESOLV_CONF, ">$ctx->{resolv_conf}");
-		print RESOLV_CONF "nameserver $ctx->{kdc_ipv4}\n";
-		print RESOLV_CONF "nameserver $ctx->{kdc_ipv6}\n";
-		close(RESOLV_CONF);
-	}
 
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
@@ -1283,6 +1283,7 @@ rpc_server:tcpip = no
 	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
@@ -1365,6 +1366,7 @@ sub provision_rpc_proxy($$$)
 	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
@@ -1379,6 +1381,7 @@ sub provision_rpc_proxy($$$)
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$dcvars->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool delegation for-any-protocol '$ret->{NETBIOSNAME}\$' on";
         $cmd .= " $dcvars->{CONFIGURATION}";
         print $cmd;
@@ -1393,6 +1396,7 @@ sub provision_rpc_proxy($$$)
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$dcvars->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool delegation add-service '$ret->{NETBIOSNAME}\$' cifs/$dcvars->{SERVER}";
         $cmd .= " $dcvars->{CONFIGURATION}";
 
@@ -1468,6 +1472,7 @@ sub provision_promoted_dc($$$)
 	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} MEMBER --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
@@ -1487,6 +1492,7 @@ sub provision_promoted_dc($$$)
 	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool domain dcpromo $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs --dns-backend=BIND9_DLZ";
@@ -1570,6 +1576,7 @@ sub provision_vampire_dc($$$)
 	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} --domain-critical-only";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs";
@@ -1652,6 +1659,7 @@ sub provision_subdom_dc($$$)
 	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $ctx->{dnsname} subdomain ";
 	$cmd .= "--parent-domain=$dcvars->{REALM} -U$dcvars->{DC_USERNAME}\@$dcvars->{REALM}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs";
@@ -1939,6 +1947,7 @@ sub provision_rodc($$$)
 	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} RODC";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --server=$dcvars->{DC_SERVER} --use-ntvfs";
@@ -1953,6 +1962,7 @@ sub provision_rodc($$$)
 	my $testallowed_account = "testallowed account";
 	$cmd = "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "$samba_tool rodc preload '$testallowed_account' $ret->{CONFIGURATION}";
 	$cmd .= " --server=$dcvars->{DC_SERVER}";
 
@@ -2510,6 +2520,7 @@ sub setup_generic_vampire_dc
 		}
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+		$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
@@ -2537,6 +2548,7 @@ sub setup_generic_vampire_dc
 		}
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+		$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 		$cmd .= " $samba_tool drs replicate $env->{SERVER} $env->{DC_SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
@@ -2578,6 +2590,7 @@ sub setup_promoted_dc
 		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+		$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
@@ -2620,6 +2633,7 @@ sub setup_subdom_dc
 		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+		$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SUBDOM_DC_SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD} --realm=$dc_vars->{DC_REALM}";
@@ -2662,6 +2676,7 @@ sub setup_rodc
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 	$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+	$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 	$cmd .= " $samba_tool drs replicate $env->{SERVER} $env->{DC_SERVER}";
 	$cmd .= " $dc_vars->{CONFIGURATION}";
 	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";

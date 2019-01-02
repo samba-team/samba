@@ -451,6 +451,7 @@ sub setup_ad_member
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
@@ -546,6 +547,7 @@ sub setup_ad_member_rfc2307
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
@@ -636,6 +638,7 @@ sub setup_ad_member_idmap_rid
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
@@ -724,6 +727,7 @@ sub setup_ad_member_idmap_ad
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
