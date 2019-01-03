@@ -376,6 +376,11 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_cleanup_fn(req, smbsock_connect_cleanup);
 
 	if (port == NBT_SMB_PORT) {
+		if (lp_disable_netbios()) {
+			tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+			return tevent_req_post(req, ev);
+		}
+
 		state->req_139 = nb_connect_send(state, state->ev, state->addr,
 						 state->called_name,
 						 state->called_type,
