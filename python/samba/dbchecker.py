@@ -60,6 +60,7 @@ class dbcheck(object):
 
     def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False,
                  yes=False, quiet=False, in_transaction=False,
+                 quick_membership_checks=False,
                  reset_well_known_acls=False):
         self.samdb = samdb
         self.dict_oid_name = None
@@ -106,6 +107,7 @@ class dbcheck(object):
         self.fix_utf8_userparameters = False
         self.fix_doubled_userparameters = False
         self.fix_sid_rid_set_conflict = False
+        self.quick_membership_checks = quick_membership_checks
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -1199,8 +1201,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         else:
             reverse_syntax_oid = None
 
-        error_count, duplicate_dict, unique_dict = \
-            self.check_duplicate_links(obj, attrname, syntax_oid, linkID, reverse_link_name)
+        is_member_link = attrname in ("member", "memberOf")
+        if is_member_link and self.quick_membership_checks:
+            duplicate_dict = {}
+        else:
+            error_count, duplicate_dict, unique_dict = \
+                self.check_duplicate_links(obj, attrname, syntax_oid,
+                                           linkID, reverse_link_name)
 
         if len(duplicate_dict) != 0:
 
@@ -1385,6 +1392,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     bad_dn = dsdb_dn.prefix + dsdb_dn.dn.get_linearized()
                     self.err_dn_string_component_old(obj.dn, attrname, bad_dn,
                                                      dsdb_dn, res[0].dn)
+                continue
+
+            if is_member_link and self.quick_membership_checks:
                 continue
 
             # check the reverse_link is correct if there should be one
