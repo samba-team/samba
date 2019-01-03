@@ -822,7 +822,11 @@ NTSTATUS cli_read_recv(struct tevent_req *req, size_t *received)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cli_read_sink(char *buf, size_t n, void *priv)
+/*
+ * Helper function for cli_pull(). This takes a chunk of data (buf) read from
+ * a remote file and copies it into the return buffer (priv).
+ */
+NTSTATUS cli_read_sink(char *buf, size_t n, void *priv)
 {
 	char **pbuf = (char **)priv;
 	memcpy(*pbuf, buf, n);

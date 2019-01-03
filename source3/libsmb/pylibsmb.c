@@ -895,14 +895,6 @@ static NTSTATUS py_smb_filesize(struct py_cli_state *self, uint16_t fnum,
 	return status;
 }
 
-static NTSTATUS pull_helper(char *buf, size_t n, void *priv)
-{
-	char **dest_buf = (char **)priv;
-	memcpy(*dest_buf, buf, n);
-	*dest_buf += n;
-	return NT_STATUS_OK;
-}
-
 /*
  * Loads the specified file's contents and returns it
  */
@@ -946,7 +938,7 @@ static PyObject *py_smb_loadfile(struct py_cli_state *self, PyObject *args,
 	/* read the file contents */
 	buf = PyBytes_AS_STRING(result);
 	req = cli_pull_send(NULL, self->ev, self->cli, fnum, 0, size,
-			    size, pull_helper, &buf);
+			    size, cli_read_sink, &buf);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		Py_XDECREF(result);
 		return NULL;

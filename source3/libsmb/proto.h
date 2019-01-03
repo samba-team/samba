@@ -840,6 +840,7 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  off_t start_offset, off_t size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
 		  void *priv, off_t *received);
+NTSTATUS cli_read_sink(char *buf, size_t n, void *priv);
 struct tevent_req *cli_read_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
