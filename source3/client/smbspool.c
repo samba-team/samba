@@ -61,7 +61,7 @@
  * Local functions...
  */
 
-static int      get_exit_code(struct cli_state * cli, NTSTATUS nt_status, bool use_kerberos);
+static int      get_exit_code(struct cli_state * cli, NTSTATUS nt_status);
 static void     list_devices(void);
 static struct cli_state *smb_complete_connection(const char *, const char *,
 	int, const char *, const char *, const char *, const char *, int, bool *need_auth);
@@ -72,6 +72,8 @@ static char    *uri_unescape_alloc(const char *);
 #if 0
 static bool     smb_encrypt;
 #endif
+
+static const char *auth_info_required;
 
 /*
  * 'main()' - Main entry for SMB backend.
@@ -186,6 +188,11 @@ main(int argc,			/* I - Number of command-line arguments */
 		}
 	}
 
+	auth_info_required = getenv("AUTH_INFO_REQUIRED");
+	if (auth_info_required == NULL) {
+		auth_info_required = "none";
+	}
+
 	cmp = strncmp(dev_uri, "smb://", 6);
 	if (cmp != 0) {
 		fprintf(stderr,
@@ -232,6 +239,10 @@ main(int argc,			/* I - Number of command-line arguments */
 		}
 
 		server = uri + 6;
+	}
+
+	if (password != empty_str) {
+		auth_info_required = "username,password";
 	}
 
 	tmp = server;
@@ -353,8 +364,7 @@ done:
 
 static int
 get_exit_code(struct cli_state * cli,
-	      NTSTATUS nt_status,
-	      bool use_kerberos)
+	      NTSTATUS nt_status)
 {
 	int i;
 
@@ -381,10 +391,7 @@ get_exit_code(struct cli_state * cli,
 		}
 
 		if (cli) {
-			if (use_kerberos)
-				fputs("ATTR: auth-info-required=negotiate\n", stderr);
-			else
-				fputs("ATTR: auth-info-required=username,password\n", stderr);
+			fprintf(stderr, "ATTR: auth-info-required=%s\n", auth_info_required);
 		}
 
 		/*
@@ -453,6 +460,7 @@ smb_complete_connection(const char *myname,
 	}
 
 	if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
+		auth_info_required = "negotiate";
 		use_kerberos = true;
 	}
 
@@ -475,7 +483,7 @@ smb_complete_connection(const char *myname,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: Session setup failed: %s\n", nt_errstr(nt_status));
 
-		if (get_exit_code(cli, nt_status, use_kerberos) == 2) {
+		if (get_exit_code(cli, nt_status) == 2) {
 			*need_auth = true;
 		}
 
@@ -489,7 +497,7 @@ smb_complete_connection(const char *myname,
 		fprintf(stderr, "ERROR: Tree connect failed (%s)\n",
 			nt_errstr(nt_status));
 
-		if (get_exit_code(cli, nt_status, use_kerberos) == 2) {
+		if (get_exit_code(cli, nt_status) == 2) {
 			*need_auth = true;
 		}
 
@@ -681,7 +689,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: %s opening remote spool %s\n",
 			nt_errstr(nt_status), title);
-		return get_exit_code(cli, nt_status, false);
+		return get_exit_code(cli, nt_status);
 	}
 
 	/*
@@ -699,7 +707,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 		status = cli_writeall(cli, fnum, 0, (uint8_t *)buffer,
 				      tbytes, nbytes, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
-			int ret = get_exit_code(cli, status, false);
+			int ret = get_exit_code(cli, status);
 			fprintf(stderr, "ERROR: Error writing spool: %s\n",
 				nt_errstr(status));
 			fprintf(stderr, "DEBUG: Returning status %d...\n",
@@ -715,7 +723,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: %s closing remote spool %s\n",
 			nt_errstr(nt_status), title);
-		return get_exit_code(cli, nt_status, false);
+		return get_exit_code(cli, nt_status);
 	} else {
 		return (0);
 	}
