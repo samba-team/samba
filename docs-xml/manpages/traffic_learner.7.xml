@@ -118,8 +118,7 @@
 	</para>
 
 	<para>The model is stored in JSON format, and also contains
-	information about the conversation rate and DNS traffic
-	rate.</para>
+	information about the packet rate and DNS traffic rate.</para>
 
 
 <refsect2>
