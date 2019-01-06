@@ -429,7 +429,7 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, bool claim)
 	else
 		ux.ut_syslen = 0;
 #endif
-#if defined(HAVE_UT_UT_HOST)
+#if defined(HAVE_UX_UT_HOST)
 	utmp_strcpy(ux.ut_host, hostname, sizeof(ux.ut_host));
 #endif
 
