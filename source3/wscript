@@ -1332,8 +1332,8 @@ main() {
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('HPUX_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
-        elif (host_os.rfind('solaris') > -1):
-            conf.CHECK_FUNCS_IN('sendfile', 'sendfilev')
+        elif (host_os.rfind('sunos') > -1):
+            conf.CHECK_FUNCS_IN('sendfilev', 'sendfile')
             conf.CHECK_CODE('''
                             #include <sys/sendfile.h>,
                             int sfvcnt;
@@ -1353,7 +1353,8 @@ main() {
                             nwritten = sendfilev(tofd, vec, sfvcnt, &xferred);
                             ''',
                             '_HAVE_SENDFILEV',
-                            msg='Checking for solaris sendfilev support')
+                            msg='Checking for solaris sendfilev support',
+                            lib='sendfile')
             if conf.CONFIG_SET('_HAVE_SENDFILEV'):
                 conf.DEFINE('HAVE_SENDFILEV', '1')
                 conf.DEFINE('SOLARIS_SENDFILE_API', '1')
