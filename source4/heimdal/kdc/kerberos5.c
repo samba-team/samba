@@ -983,6 +983,7 @@ _kdc_as_rep(krb5_context context,
     pk_client_params *pkp = NULL;
 #endif
     const EncryptionKey *pk_reply_key = NULL;
+    krb5_boolean is_tgs;
 
     memset(&rep, 0, sizeof(rep));
     memset(&session_key, 0, sizeof(session_key));
@@ -1032,6 +1033,8 @@ _kdc_as_rep(krb5_context context,
 
     kdc_log(context, config, 0, "AS-REQ %s from %s for %s",
 	    client_name, from, server_name);
+
+    is_tgs = krb5_principal_is_krbtgt(context, server_princ);
 
     /*
      *
@@ -1101,7 +1104,7 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
     ret = _kdc_db_fetch(context, config, server_princ,
-			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT | flags,
+			HDB_F_GET_SERVER | flags | (is_tgs ? HDB_F_GET_KRBTGT : 0),
 			NULL, NULL, &server);
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", server_name);
