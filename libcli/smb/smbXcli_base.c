@@ -3231,6 +3231,9 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 		avail = MIN(avail, state->conn->smb2.cur_credits);
 		if (avail < charge) {
+			DBG_ERR("Insufficient credits. "
+				"%"PRIu64" available, %"PRIu16" needed\n",
+				avail, charge);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
