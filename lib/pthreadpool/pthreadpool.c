@@ -113,13 +113,10 @@ struct pthreadpool {
 	 * where the forking thread will unlock it again.
 	 */
 	pthread_mutex_t fork_mutex;
-
-	bool per_thread_cwd;
 };
 
 static pthread_mutex_t pthreadpools_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct pthreadpool *pthreadpools = NULL;
-static bool pthreadpool_support_thread_cwd = false;
 static pthread_once_t pthreadpool_atfork_initialized = PTHREAD_ONCE_INIT;
 
 static void pthreadpool_prep_atfork(void);
@@ -186,11 +183,6 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 	pool->max_threads = max_threads;
 	pool->num_idle = 0;
 	pool->prefork_cond = NULL;
-	if (max_threads != 0) {
-		pool->per_thread_cwd = pthreadpool_support_thread_cwd;
-	} else {
-		pool->per_thread_cwd = false;
-	}
 
 	ret = pthread_mutex_lock(&pthreadpools_mutex);
 	if (ret != 0) {
@@ -248,15 +240,6 @@ size_t pthreadpool_queued_jobs(struct pthreadpool *pool)
 	unlock_res = pthread_mutex_unlock(&pool->mutex);
 	assert(unlock_res == 0);
 	return ret;
-}
-
-bool pthreadpool_per_thread_cwd(struct pthreadpool *pool)
-{
-	if (pool->stopped) {
-		return false;
-	}
-
-	return pool->per_thread_cwd;
 }
 
 static void pthreadpool_prepare_pool(struct pthreadpool *pool)
@@ -377,16 +360,6 @@ static void pthreadpool_child(void)
 
 static void pthreadpool_prep_atfork(void)
 {
-#ifdef HAVE_UNSHARE_CLONE_FS
-	int res;
-
-	/* remember if unshare(CLONE_FS) works. */
-	res = unshare(CLONE_FS);
-	if (res == 0) {
-		pthreadpool_support_thread_cwd = true;
-	}
-#endif
-
 	pthread_atfork(pthreadpool_prepare, pthreadpool_parent,
 		       pthreadpool_child);
 }
@@ -598,13 +571,6 @@ static void *pthreadpool_server(void *arg)
 {
 	struct pthreadpool *pool = (struct pthreadpool *)arg;
 	int res;
-
-#ifdef HAVE_UNSHARE_CLONE_FS
-	if (pool->per_thread_cwd) {
-		res = unshare(CLONE_FS);
-		assert(res == 0);
-	}
-#endif
 
 	res = pthread_mutex_lock(&pool->mutex);
 	if (res != 0) {

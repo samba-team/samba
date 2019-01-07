@@ -65,11 +65,6 @@ size_t pthreadpool_queued_jobs(struct pthreadpool *pool)
 	return 0;
 }
 
-bool pthreadpool_per_thread_cwd(struct pthreadpool *pool)
-{
-	return false;
-}
-
 int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 			void (*fn)(void *private_data), void *private_data)
 {

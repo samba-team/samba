@@ -72,23 +72,6 @@ size_t pthreadpool_max_threads(struct pthreadpool *pool);
 size_t pthreadpool_queued_jobs(struct pthreadpool *pool);
 
 /**
- * @brief Check for per thread current working directory support of pthreadpool
- *
- * Since Linux kernel 2.6.16, unshare(CLONE_FS) is supported,
- * which provides a per thread current working directory
- * and allows [f]chdir() within the worker threads.
- *
- * Note that this doesn't work on some contraint container setups,
- * the complete unshare() syscall might be rejected.
- * pthreadpool_per_thread_cwd() returns what is available
- * at runtime, so the callers should really check this!
- *
- * @param[in]	pool		The pool to run the job on
- * @return			supported: true, otherwise: false
- */
-bool pthreadpool_per_thread_cwd(struct pthreadpool *pool);
-
-/**
  * @brief Stop a pthreadpool
  *
  * Stop a pthreadpool. If jobs are submitted, but not yet active in
