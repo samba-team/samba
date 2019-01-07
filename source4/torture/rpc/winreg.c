@@ -1224,14 +1224,39 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 	};
 
 	struct winreg_secinfo_table sec_info_owner_tests[] = {
-		{ sd_owner, 0, WERR_OK,
-			false, (secinfo_verify_fn)_test_owner_present },
-		{ sd_owner, SECINFO_OWNER, WERR_OK,
-			true, (secinfo_verify_fn)_test_owner_present },
-		{ sd_owner, SECINFO_GROUP, WERR_INVALID_PARAMETER },
-		{ sd_owner, SECINFO_DACL, WERR_OK,
-			true, (secinfo_verify_fn)_test_owner_present },
-		{ sd_owner, SECINFO_SACL, WERR_ACCESS_DENIED },
+		{
+			.sd          = sd_owner,
+			.sec_info    = 0,
+			.set_werr    = WERR_OK,
+			.sid_present = false,
+			.fn          = (secinfo_verify_fn)_test_owner_present,
+		},
+		{
+			.sd          = sd_owner,
+			.sec_info    = SECINFO_OWNER,
+			.set_werr    = WERR_OK,
+			.sid_present = true,
+			.fn          = (secinfo_verify_fn)_test_owner_present,
+		},
+		{
+			.sd          = sd_owner,
+			.sec_info    = SECINFO_GROUP,
+			.set_werr    = WERR_INVALID_PARAMETER,
+			.sid_present  = false,
+		},
+		{
+			.sd          = sd_owner,
+			.sec_info    = SECINFO_DACL,
+			.set_werr    = WERR_OK,
+			.sid_present = true,
+			.fn          = (secinfo_verify_fn)_test_owner_present,
+		},
+		{
+			.sd          = sd_owner,
+			.sec_info    = SECINFO_SACL,
+			.set_werr    = WERR_ACCESS_DENIED,
+			.sid_present  = false,
+		},
 	};
 
 	uint32_t sd_owner_good_access_masks[] = {
@@ -1240,14 +1265,39 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 	};
 
 	struct winreg_secinfo_table sec_info_group_tests[] = {
-		{ sd_group, 0, WERR_OK,
-			false, (secinfo_verify_fn)_test_group_present },
-		{ sd_group, SECINFO_OWNER, WERR_INVALID_PARAMETER },
-		{ sd_group, SECINFO_GROUP, WERR_OK,
-			true, (secinfo_verify_fn)_test_group_present },
-		{ sd_group, SECINFO_DACL, WERR_OK,
-			true, (secinfo_verify_fn)_test_group_present },
-		{ sd_group, SECINFO_SACL, WERR_ACCESS_DENIED },
+		{
+			.sd          = sd_group,
+			.sec_info    = 0,
+			.set_werr    = WERR_OK,
+			.sid_present = false,
+			.fn          = (secinfo_verify_fn)_test_group_present,
+		},
+		{
+			.sd          = sd_group,
+			.sec_info    = SECINFO_OWNER,
+			.set_werr    = WERR_INVALID_PARAMETER,
+			.sid_present = false,
+		},
+		{
+			.sd          = sd_group,
+			.sec_info    = SECINFO_GROUP,
+			.set_werr    = WERR_OK,
+			.sid_present = true,
+			.fn          = (secinfo_verify_fn)_test_group_present,
+		},
+		{
+			.sd          = sd_group,
+			.sec_info    = SECINFO_DACL,
+			.set_werr    = WERR_OK,
+			.sid_present = true,
+			.fn          = (secinfo_verify_fn)_test_group_present,
+		},
+		{
+			.sd          = sd_group,
+			.sec_info    = SECINFO_SACL,
+			.set_werr    = WERR_ACCESS_DENIED,
+			.sid_present = false,
+		},
 	};
 
 	uint32_t sd_group_good_access_masks[] = {
@@ -1255,13 +1305,38 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 	};
 
 	struct winreg_secinfo_table sec_info_dacl_tests[] = {
-		{ sd_dacl, 0, WERR_OK,
-			false, (secinfo_verify_fn)_test_dacl_trustee_present },
-		{ sd_dacl, SECINFO_OWNER, WERR_INVALID_PARAMETER },
-		{ sd_dacl, SECINFO_GROUP, WERR_INVALID_PARAMETER },
-		{ sd_dacl, SECINFO_DACL, WERR_OK,
-			true, (secinfo_verify_fn)_test_dacl_trustee_present },
-		{ sd_dacl, SECINFO_SACL, WERR_ACCESS_DENIED },
+		{
+			.sd          = sd_dacl,
+			.sec_info    = 0,
+			.set_werr    = WERR_OK,
+			.sid_present = false,
+			.fn          = (secinfo_verify_fn)_test_dacl_trustee_present,
+		},
+		{
+			.sd          = sd_dacl,
+			.sec_info    = SECINFO_OWNER,
+			.set_werr    = WERR_INVALID_PARAMETER,
+			.sid_present = false,
+		},
+		{
+			.sd          = sd_dacl,
+			.sec_info    = SECINFO_GROUP,
+			.set_werr    = WERR_INVALID_PARAMETER,
+			.sid_present = false,
+		},
+		{
+			.sd          = sd_dacl,
+			.sec_info    = SECINFO_DACL,
+			.set_werr    = WERR_OK,
+			.sid_present = true,
+			.fn          = (secinfo_verify_fn)_test_dacl_trustee_present
+		},
+		{
+			.sd          = sd_dacl,
+			.sec_info    = SECINFO_SACL,
+			.set_werr    = WERR_ACCESS_DENIED,
+			.sid_present = false,
+		},
 	};
 
 	uint32_t sd_dacl_good_access_masks[] = {
@@ -1270,14 +1345,39 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 	};
 
 	struct winreg_secinfo_table sec_info_sacl_tests[] = {
-		{ sd_sacl, 0, WERR_OK,
-			false, (secinfo_verify_fn)_test_sacl_trustee_present },
-		{ sd_sacl, SECINFO_OWNER, WERR_INVALID_PARAMETER },
-		{ sd_sacl, SECINFO_GROUP, WERR_INVALID_PARAMETER },
-		{ sd_sacl, SECINFO_DACL, WERR_OK,
-			false, (secinfo_verify_fn)_test_sacl_trustee_present },
-		{ sd_sacl, SECINFO_SACL, WERR_OK,
-			true, (secinfo_verify_fn)_test_sacl_trustee_present },
+		{
+			.sd          = sd_sacl,
+			.sec_info    = 0,
+			.set_werr    = WERR_OK,
+			.sid_present = false,
+			.fn          = (secinfo_verify_fn)_test_sacl_trustee_present,
+		},
+		{
+			.sd          = sd_sacl,
+			.sec_info    = SECINFO_OWNER,
+			.set_werr    = WERR_INVALID_PARAMETER,
+			.sid_present = false,
+		},
+		{
+			.sd          = sd_sacl,
+			.sec_info    = SECINFO_GROUP,
+			.set_werr    = WERR_INVALID_PARAMETER,
+			.sid_present = false,
+		},
+		{
+			.sd          = sd_sacl,
+			.sec_info    = SECINFO_DACL,
+			.set_werr    = WERR_OK,
+			.sid_present = false,
+			.fn          = (secinfo_verify_fn)_test_sacl_trustee_present,
+		},
+		{
+			.sd          = sd_sacl,
+			.sec_info    = SECINFO_SACL,
+			.set_werr    = WERR_OK,
+			.sid_present = true,
+			.fn          = (secinfo_verify_fn)_test_sacl_trustee_present,
+		},
 	};
 
 	uint32_t sd_sacl_good_access_masks[] = {
