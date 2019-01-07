@@ -47,7 +47,7 @@ def options(opt):
     opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('pam')
     opt.SAMBA3_ADD_OPTION('quotas')
-    opt.SAMBA3_ADD_OPTION('sendfile-support')
+    opt.SAMBA3_ADD_OPTION('sendfile-support', default=None)
     opt.SAMBA3_ADD_OPTION('utmp')
     opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iconv')
@@ -1250,7 +1250,7 @@ main() {
                     addmain=False,
                     execute=True)
 
-    if Options.options.with_sendfile_support:
+    if not Options.options.with_sendfile_support == False:
         if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('k*bsd*-gnu') > -1) or (host_os.rfind('kopensolaris*-gnu') > -1):
             conf.CHECK_CODE('''
                             int tofd, fromfd;
@@ -1265,7 +1265,6 @@ main() {
             if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('LINUX_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('freebsd') > -1) or (host_os.rfind('dragonfly') > -1):
             conf.CHECK_CODE('''
                             #include <sys/types.h>
@@ -1289,7 +1288,6 @@ main() {
             if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('FREEBSD_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('darwin') > -1):
             conf.CHECK_CODE('''
                             #include <sys/types.h>
@@ -1312,7 +1310,6 @@ main() {
             if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('DARWIN_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('hpux') > -1) or (host_os.rfind('osf') > -1):
             conf.CHECK_CODE('''
                             #include <sys/socket.h>
@@ -1331,7 +1328,6 @@ main() {
             if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('HPUX_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('sunos') > -1):
             conf.CHECK_FUNCS_IN('sendfilev', 'sendfile')
             conf.CHECK_CODE('''
@@ -1358,7 +1354,6 @@ main() {
             if conf.CONFIG_SET('_HAVE_SENDFILEV'):
                 conf.DEFINE('HAVE_SENDFILEV', '1')
                 conf.DEFINE('SOLARIS_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('aix') > -1):
             conf.CHECK_CODE('''
                             #include <sys/socket.h>
@@ -1380,8 +1375,9 @@ main() {
             if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('AIX_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
 
+    if Options.options.with_sendfile_support == True and not conf.CONFIG_SET('HAVE_SENDFILE'):
+        conf.fatal('sendfile support not found but it was requested !')
     # Check for getcwd allowing a NULL arg.
     conf.CHECK_CODE('''
 #include <unistd.h>
