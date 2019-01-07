@@ -557,11 +557,21 @@ static bool test_tfork_event_file_handle(struct torture_context *tctx)
 
 	struct tfork *t1 = NULL;
 	pid_t child1;
-	struct pollfd poll1[] = { {-1, POLLIN} };
+	struct pollfd poll1[] = {
+		{
+			.fd = -1,
+			.events = POLLIN,
+		},
+	};
 
 	struct tfork *t2 = NULL;
 	pid_t child2;
-	struct pollfd poll2[] = { {-1, POLLIN} };
+	struct pollfd poll2[] = {
+		{
+			.fd = -1,
+			.events = POLLIN,
+		},
+	};
 
 
 	t1 = tfork_create();
