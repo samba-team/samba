@@ -1357,7 +1357,7 @@ static const struct ntlm_tests {
 	{test_plaintext_nt_broken, "Plaintext NT broken", false},
 	{test_plaintext_nt_only, "Plaintext NT only", false},
 	{test_plaintext_lm_only, "Plaintext LM only", false},
-	{NULL, NULL}
+	{ .name = NULL, }
 };
 
 /*
@@ -1824,7 +1824,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 					popt_get_cmdline_credentials()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.parameter_control          = 0,
 			},
 			{
 				.comment       = "realm\\user",
@@ -1836,7 +1837,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 					popt_get_cmdline_credentials()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.parameter_control          = 0,
 			},
 			{
 				.comment       = "user@domain",
@@ -1852,7 +1854,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 					popt_get_cmdline_credentials()),
 				.network_login = false, /* works for some things, but not NTLMv2.  Odd */
 				.expected_interactive_error = NT_STATUS_OK,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.parameter_control          = 0,
 			},
 			{
 				.comment       = "user@realm",
@@ -1868,7 +1871,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 						popt_get_cmdline_credentials()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.parameter_control          = 0,
 			},
 			{
 				.comment      = "machine domain\\user",
@@ -1886,7 +1890,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.password     = cli_credentials_get_password(machine_credentials),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_NO_SUCH_USER,
-				.expected_network_error = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+				.expected_network_error = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT,
+				.parameter_control          = 0,
 			},
 			{
 				.comment       = "machine realm\\user",
@@ -1930,7 +1935,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.password      = user_password,
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.parameter_control          = 0,
 			},
 			{
 				.comment       = "test user (long pw): user@realm",
@@ -1942,7 +1948,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.password      = user_password,
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.parameter_control          = 0,
 			},
 			{
 				.comment       = "test user (long pw): user@domain",
@@ -1954,7 +1961,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.password      = user_password,
 				.network_login = false, /* works for some things, but not NTLMv2.  Odd */
 				.expected_interactive_error = NT_STATUS_OK,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.parameter_control          = 0,
 			},
 			/* Oddball, can we use the old password ? */
 			{
@@ -1974,7 +1982,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.password      = user_password_wrong_wks,
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_INVALID_WORKSTATION,
-				.expected_network_error     = NT_STATUS_INVALID_WORKSTATION
+				.expected_network_error     = NT_STATUS_INVALID_WORKSTATION,
+				.parameter_control          = 0,
 			}
 		};
 
