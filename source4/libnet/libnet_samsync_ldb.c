@@ -259,6 +259,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	char *cn_name;
 	int cn_name_len;
 	const struct dom_sid *user_sid;
+	struct dom_sid_buf buf;
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
 	struct ldb_message **remote_msgs = NULL;
@@ -288,15 +289,19 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
 
 	if (ret == -1) {
-		*error_string = talloc_asprintf(mem_ctx, "LDB for user %s failed: %s", 
-						dom_sid_string(mem_ctx, user_sid),
-						ldb_errstring(state->sam_ldb));
+		*error_string = talloc_asprintf(
+			mem_ctx,
+			"LDB for user %s failed: %s",
+			dom_sid_str_buf(user_sid, &buf),
+			ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		add = true;
 	} else if (ret > 1) {
-		*error_string = talloc_asprintf(mem_ctx, "More than one user with SID: %s in local LDB", 
-						dom_sid_string(mem_ctx, user_sid));
+		*error_string = talloc_asprintf(
+			mem_ctx,
+			"More than one user with SID: %s in local LDB",
+			dom_sid_str_buf(user_sid, &buf));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = msgs[0]->dn;
@@ -310,18 +315,27 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 				   ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
 		
 		if (ret == -1) {
-			*error_string = talloc_asprintf(mem_ctx, "remote LDAP for user %s failed: %s", 
-							dom_sid_string(mem_ctx, user_sid),
-							ldb_errstring(state->remote_ldb));
+			*error_string = talloc_asprintf(
+				mem_ctx,
+				"remote LDAP for user %s failed: %s",
+				dom_sid_str_buf(user_sid, &buf),
+				ldb_errstring(state->remote_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else if (ret == 0) {
-			*error_string = talloc_asprintf(mem_ctx, "User exists in samsync but not in remote LDAP domain! (base: %s, SID: %s)", 
-							ldb_dn_get_linearized(state->base_dn[database]),
-							dom_sid_string(mem_ctx, user_sid));
+			*error_string = talloc_asprintf(
+				mem_ctx,
+				"User exists in samsync but not in remote "
+				"LDAP domain! (base: %s, SID: %s)",
+				ldb_dn_get_linearized(
+					state->base_dn[database]),
+				dom_sid_str_buf(user_sid, &buf));
 			return NT_STATUS_NO_SUCH_USER;
 		} else if (ret > 1) {
-			*error_string = talloc_asprintf(mem_ctx, "More than one user in remote LDAP domain with SID: %s", 
-							dom_sid_string(mem_ctx, user_sid));
+			*error_string = talloc_asprintf(
+				mem_ctx,
+				"More than one user in remote LDAP domain "
+				"with SID: %s",
+				dom_sid_str_buf(user_sid, &buf));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			
 			/* Try to put things in the same location as the remote server */
