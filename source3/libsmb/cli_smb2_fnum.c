@@ -911,7 +911,9 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	TALLOC_CTX *subframe = NULL;
 	bool mask_has_wild;
-	uint32_t max_trans = smb2cli_conn_max_trans_size(cli->conn);
+	uint32_t max_trans;
+	uint32_t max_avail_len;
+	bool ok;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -957,6 +959,16 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 					&ph);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
+	}
+
+	/*
+	 * ideally, use the max transaction size, but don't send a request
+	 * bigger than we have credits available for
+	 */
+	max_trans = smb2cli_conn_max_trans_size(cli->conn);
+	ok = smb2cli_conn_req_possible(cli->conn, &max_avail_len);
+	if (ok) {
+		max_trans = MIN(max_trans, max_avail_len);
 	}
 
 	do {
