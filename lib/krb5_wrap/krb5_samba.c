@@ -1466,7 +1466,7 @@ krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  princ         The principal as a krb5_principal to search for.
  *
- * @param[in]  flush         Weather to flush the complete keytab.
+ * @param[in]  flush         Whether to flush the complete keytab.
  *
  * @param[in]  keep_old_entries Keep the entry with the previous kvno.
  *
