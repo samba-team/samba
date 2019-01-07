@@ -31,7 +31,6 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 
 size_t pthreadpool_tevent_max_threads(struct pthreadpool_tevent *pool);
 size_t pthreadpool_tevent_queued_jobs(struct pthreadpool_tevent *pool);
-bool pthreadpool_tevent_per_thread_cwd(struct pthreadpool_tevent *pool);
 
 /*
  * return true - if tevent_req_cancel() was called.
@@ -46,12 +45,6 @@ bool pthreadpool_tevent_current_job_orphaned(void);
  * return true if canceled and orphaned are both false.
  */
 bool pthreadpool_tevent_current_job_continue(void);
-
-/*
- * return true if the current job can rely on a per thread
- * current working directory.
- */
-bool pthreadpool_tevent_current_job_per_thread_cwd(void);
 
 struct tevent_req *pthreadpool_tevent_job_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,

@@ -211,8 +211,6 @@ struct pthreadpool_tevent_job {
 		 */
 		bool signaled;
 	} needs_fence;
-
-	bool per_thread_cwd;
 };
 
 static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool);
@@ -284,15 +282,6 @@ size_t pthreadpool_tevent_queued_jobs(struct pthreadpool_tevent *pool)
 	}
 
 	return pthreadpool_queued_jobs(pool->pool);
-}
-
-bool pthreadpool_tevent_per_thread_cwd(struct pthreadpool_tevent *pool)
-{
-	if (pool->pool == NULL) {
-		return false;
-	}
-
-	return pthreadpool_per_thread_cwd(pool->pool);
 }
 
 static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
@@ -713,7 +702,6 @@ struct tevent_req *pthreadpool_tevent_job_send(
 		return tevent_req_post(req, ev);
 	}
 	PTHREAD_TEVENT_JOB_THREAD_FENCE_INIT(job);
-	job->per_thread_cwd = pthreadpool_tevent_per_thread_cwd(pool);
 	talloc_set_destructor(job, pthreadpool_tevent_job_destructor);
 	DLIST_ADD_END(job->pool->jobs, job);
 	job->state = state;
@@ -783,20 +771,6 @@ bool pthreadpool_tevent_current_job_continue(void)
 	}
 
 	return true;
-}
-
-bool pthreadpool_tevent_current_job_per_thread_cwd(void)
-{
-	if (current_job == NULL) {
-		/*
-		 * Should only be called from within
-		 * the job function.
-		 */
-		abort();
-		return false;
-	}
-
-	return current_job->per_thread_cwd;
 }
 
 static void pthreadpool_tevent_job_fn(void *private_data)
