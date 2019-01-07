@@ -469,7 +469,7 @@ NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 
 
 /****************************************************************
- check wether the version number in a GROUP_POLICY_OBJECT match those of the
+ check whether the version number in a GROUP_POLICY_OBJECT match those of the
  locally stored version. If not, fetch the required policy via CIFS
 ****************************************************************/
 
@@ -555,7 +555,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 }
 
 /****************************************************************
- check wether the version numbers in the gpo_list match the locally stored, if
+ check whether the version numbers in the gpo_list match the locally stored, if
  not, go and get each required GPO via CIFS
  ****************************************************************/
 

@@ -1907,7 +1907,7 @@ size_t tevent_queue_length(struct tevent_queue *queue);
  *
  * @param[in]  queue    The queue.
  *
- * @return              Wether the queue is running or not..
+ * @return              Whether the queue is running or not..
  */
 bool tevent_queue_running(struct tevent_queue *queue);
 

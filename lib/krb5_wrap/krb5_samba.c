@@ -1659,7 +1659,7 @@ out:
  *                            this is only set to false for encryption types
  *                            which do not support salting like RC4.
  *
- * @param[in]  keep_old_entries Wether to keep or delte old keytab entries.
+ * @param[in]  keep_old_entries Whether to keep or delete old keytab entries.
  *
  * @retval 0 on Success
  *

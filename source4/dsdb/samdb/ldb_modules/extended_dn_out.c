@@ -748,7 +748,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 			ac->extended_type = 0;
 		}
 
-		/* check if attrs only is specified, in that case check wether we need to modify them */
+		/* check if attrs only is specified, in that case check whether we need to modify them */
 		if (req->op.search.attrs && !is_attr_in_list(req->op.search.attrs, "*")) {
 			if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
 				ac->remove_guid = true;

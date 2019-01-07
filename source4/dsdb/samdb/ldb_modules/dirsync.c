@@ -404,7 +404,7 @@ skip:
 			continue;
 		}
 		/* For links, when our functional level > windows 2000
-		 * we use the RMD_LOCAL_USN information to decide wether
+		 * we use the RMD_LOCAL_USN information to decide whether
 		 * we return the attribute or not.
 		 * For windows 2000 this information is in the replPropertyMetaData
 		 * so it will be handled like any other replicated attribute

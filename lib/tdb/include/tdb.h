@@ -244,7 +244,7 @@ int tdb_reopen(struct tdb_context *tdb);
  * improve performance on systems that keep POSIX locks as a non-scalable data
  * structure in the kernel.
  *
- * @param[in]  parent_longlived Wether the parent is longlived or not.
+ * @param[in]  parent_longlived Whether the parent is longlived or not.
  *
  * @return              0 on success, -1 on error.
  */
