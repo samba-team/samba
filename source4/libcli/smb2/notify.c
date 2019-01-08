@@ -44,6 +44,8 @@ struct smb2_request *smb2_notify_send(struct smb2_tree *tree, struct smb2_notify
 	SIVAL(req->out.body, 0x18, io->in.completion_filter);
 	SIVAL(req->out.body, 0x1C, io->in.unknown);
 
+	req->credit_charge = (MAX(io->in.buffer_size, 1) - 1)/ 65536 + 1;
+
 	old_timeout = req->transport->options.request_timeout;
 	req->transport->options.request_timeout = 0;
 	smb2_transport_send(req);
