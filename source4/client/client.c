@@ -3325,19 +3325,81 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 
-		{ "message", 'M', POPT_ARG_STRING, NULL, 'M', "Send message", "HOST" },
-		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
-		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
-		{ "list", 'L', POPT_ARG_STRING, NULL, 'L', "Get a list of shares available on a host", "HOST" },
-		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
-		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
-		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
-		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
+		{
+			.longName   = "message",
+			.shortName  = 'M',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'M',
+			.descrip    = "Send message",
+			.argDescrip = "HOST",
+		},
+		{
+			.longName   = "ip-address",
+			.shortName  = 'I',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'I',
+			.descrip    = "Use this IP to connect to",
+			.argDescrip = "IP",
+		},
+		{
+			.longName   = "stderr",
+			.shortName  = 'E',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'E',
+			.descrip    = "Write messages to stderr instead of stdout",
+		},
+		{
+			.longName   = "list",
+			.shortName  = 'L',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'L',
+			.descrip    = "Get a list of shares available on a host",
+			.argDescrip = "HOST",
+		},
+		{
+			.longName   = "directory",
+			.shortName  = 'D',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'D',
+			.descrip    = "Start from directory",
+			.argDescrip = "DIR",
+		},
+		{
+			.longName   = "command",
+			.shortName  = 'c',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &cmdstr,
+			.val        = 'c',
+			.descrip    = "Execute semicolon separated commands",
+		},
+		{
+			.longName   = "send-buffer",
+			.shortName  = 'b',
+			.argInfo    = POPT_ARG_INT,
+			.arg        = NULL,
+			.val        = 'b',
+			.descrip    = "Changes the transmit/send buffer",
+			.argDescrip = "BYTES",
+		},
+		{
+			.longName   = "port",
+			.shortName  = 'p',
+			.argInfo    = POPT_ARG_INT,
+			.arg        = &port,
+			.val        = 'p',
+			.descrip    = "Port to connect to",
+			.argDescrip = "PORT",
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{ NULL }
+		POPT_TABLEEND
 	};
 	
 	mem_ctx = talloc_init("client.c/main");
