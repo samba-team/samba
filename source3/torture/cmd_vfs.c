@@ -1939,7 +1939,7 @@ cleanup:
 
 struct cmd_set vfs_commands[] = {
 
-	{ "VFS Commands" },
+	{ .name = "VFS Commands" },
 
 	{ "load", cmd_load_module, "Load a module", "load <module.so>" },
 	{ "populate", cmd_populate, "Populate a data buffer", "populate <char> <size>" },
